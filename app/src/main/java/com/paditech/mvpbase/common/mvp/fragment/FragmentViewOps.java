@@ -2,8 +2,8 @@ package com.paditech.mvpbase.common.mvp.fragment;
 
 
 import android.content.Context;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.paditech.mvpbase.common.base.BaseDialog;
 import com.paditech.mvpbase.common.mvp.BaseViewOps;

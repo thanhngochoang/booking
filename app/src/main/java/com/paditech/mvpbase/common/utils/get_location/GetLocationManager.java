@@ -9,26 +9,21 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.paditech.mvpbase.R;
@@ -40,8 +35,7 @@ import com.paditech.mvpbase.common.mvp.fragment.MVPFragment;
  * Created by ThanhNgocHoang on 9/18/2017.
  */
 
-public class GetLocationManager implements GoogleApiClient.OnConnectionFailedListener,
-        GoogleApiClient.ConnectionCallbacks, LocationListener {
+public class GetLocationManager {
     private final static String TAG = GetLocationManager.class.getSimpleName();
     private final static int PERMISSION_LOCATION = 101;
     private final static int SETTINGS_LOCATION = 201;
@@ -52,7 +46,6 @@ public class GetLocationManager implements GoogleApiClient.OnConnectionFailedLis
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
-    private GoogleApiClient mGoogleApiClient;
     private OnCurrentLocationListener mOnCurrentLocationListener;
 
     public GetLocationManager(MVPActivity mActivity) {
@@ -82,14 +75,6 @@ public class GetLocationManager implements GoogleApiClient.OnConnectionFailedLis
     }
 
     private void init() {
-        mGoogleApiClient = new GoogleApiClient.Builder(getContext())
-                // The next two lines tell the new client that “this” current class will handle connection stuff
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                //fourth line adds the LocationServices API endpoint from GooglePlayServices
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(10000)        // 10 seconds, in milliseconds
@@ -107,6 +92,9 @@ public class GetLocationManager implements GoogleApiClient.OnConnectionFailedLis
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
                     super.onLocationResult(locationResult);
+                    Location location = locationResult.getLastLocation();
+                    if (location != null && mOnCurrentLocationListener != null)
+                        mOnCurrentLocationListener.onCurrentLocationResult(location);
                 }
             };
             if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -115,7 +103,7 @@ public class GetLocationManager implements GoogleApiClient.OnConnectionFailedLis
                     != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, null);
+            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.getMainLooper());
             mFusedLocationClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
                 @Override
                 public void onComplete(@NonNull Task<Location> task) {
@@ -172,62 +160,26 @@ public class GetLocationManager implements GoogleApiClient.OnConnectionFailedLis
     private void checkLocationEnable() {
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
         builder.setAlwaysShow(true);
-        PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient, builder.build());
-        result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
-            @Override
-            public void onResult(LocationSettingsResult result) {
-                final Status status = result.getStatus();
-                switch (status.getStatusCode()) {
-                    case LocationSettingsStatusCodes.SUCCESS:
-                        Log.i(TAG, "All location settings are satisfied.");
-                        break;
-                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                        Log.i(TAG, "Location settings are not satisfied. Show the user_id a dialog to upgrade location settings ");
-
+        SettingsClient client = LocationServices.getSettingsClient(getContext());
+        client.checkLocationSettings(builder.build())
+                .addOnSuccessListener(response -> Log.i(TAG, "All location settings are satisfied."))
+                .addOnFailureListener(e -> {
+                    if (e instanceof ResolvableApiException) {
+                        Log.i(TAG, "Location settings are not satisfied. Show the user a dialog to upgrade location settings");
                         try {
-                            // Show the dialog by calling startResolutionForResult(), and check the result
-                            // in onActivityResult().
-                            status.startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
-                        } catch (IntentSender.SendIntentException e) {
+                            ((ResolvableApiException) e).startResolutionForResult(getActivity(), REQUEST_CHECK_SETTINGS);
+                        } catch (IntentSender.SendIntentException ex) {
                             Log.i(TAG, "PendingIntent unable to execute request.");
                         }
-                        break;
-                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                    } else {
                         Log.i(TAG, "Location settings are inadequate, and cannot be fixed here. Dialog not created.");
-                        break;
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        if (mOnCurrentLocationListener != null)
-            mOnCurrentLocationListener.onCurrentLocationResult(location);
+                    }
+                });
     }
 
     public void onDestroy() {
         if (mFusedLocationClient != null && mLocationCallback != null)
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-            mGoogleApiClient.disconnect();
-        }
     }
 
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -242,7 +194,7 @@ public class GetLocationManager implements GoogleApiClient.OnConnectionFailedLis
                     ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, GetLocationManager.this);
+            getCurrentLocation();
         }
     }
 

@@ -1,21 +1,19 @@
 package com.paditech.mvpbase.screen.find_photographer;
 
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.AppCompatSpinner;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.libraries.places.api.model.Place;
+import com.paditech.mvpbase.common.utils.get_location.PlacePickerHelper;
 import com.paditech.mvpbase.R;
 import com.paditech.mvpbase.common.dialog.DatePickerDialog;
 import com.paditech.mvpbase.common.dialog.SelectItemDialog;
@@ -40,7 +38,7 @@ import static android.app.Activity.RESULT_OK;
  */
 
 public class FindPhotographerFragment extends MVPFragment<FindPhotographerContact.PresenterViewOps>
-        implements FindPhotographerContact.ViewOps, GoogleApiClient.OnConnectionFailedListener, PhotographerAdapter.OnBookClickListener {
+        implements FindPhotographerContact.ViewOps, PhotographerAdapter.OnBookClickListener {
     private static int PLACE_PICKER_REQUEST = 1;
     private static String[] RANGE_PRICE = {"< 200K", "200K-500K", "500K-1M", "> 1M"};
 
@@ -127,14 +125,7 @@ public class FindPhotographerFragment extends MVPFragment<FindPhotographerContac
                     getPresenter().onSearchPhotographers(mSelectedPlace.getLatLng().latitude, mSelectedPlace.getLatLng().longitude, 1);
                 break;
             case R.id.btn_pick_addr:
-                try {
-                    PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
-                    startActivityForResult(builder.build(getActivity()), PLACE_PICKER_REQUEST);
-                } catch (GooglePlayServicesRepairableException e) {
-                    e.printStackTrace();
-                } catch (GooglePlayServicesNotAvailableException e) {
-                    e.printStackTrace();
-                }
+                startActivityForResult(PlacePickerHelper.buildIntent(getActivity()), PLACE_PICKER_REQUEST);
                 break;
         }
     }
@@ -151,17 +142,13 @@ public class FindPhotographerFragment extends MVPFragment<FindPhotographerContac
         tvDate.setText(Constant.FIND_DATE_FORMAT.format(date));
     }
 
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Place place = PlacePicker.getPlace(getActivityContext(), data);
+                Place place = PlacePickerHelper.getPlace(data);
                 if (place != null) {
                     this.mSelectedPlace = place;
                     tvPickAddr.setText(place.getName());

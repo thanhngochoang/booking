@@ -1,15 +1,16 @@
 package com.paditech.mvpbase;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.multidex.MultiDex;
-import android.support.multidex.MultiDexApplication;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.multidex.MultiDex;
+import androidx.multidex.MultiDexApplication;
+import androidx.core.content.ContextCompat;
 
 import com.alamkanak.weekview.WeekViewEvent;
 import com.facebook.FacebookSdk;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
@@ -61,6 +62,9 @@ public class BaseApplication extends MultiDexApplication {
         FacebookSdk.setApplicationId("546233675712070");
         FacebookSdk.sdkInitialize(getApplicationContext());
         FirebaseApp.initializeApp(this);
+        if (!Places.isInitialized()) {
+            Places.initialize(getApplicationContext(), getString(R.string.google_place_api_key));
+        }
         FirebaseDatabase.getInstance().setPersistenceEnabled(true);
         FirebaseAuth.getInstance().addAuthStateListener(new FirebaseAuth.AuthStateListener() {
             @Override

@@ -3,8 +3,8 @@ package com.paditech.mvpbase.common.mvp.activity;
 
 import android.app.Activity;
 import android.content.Context;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import android.view.View;
 
 import com.paditech.mvpbase.common.base.BaseDialog;
