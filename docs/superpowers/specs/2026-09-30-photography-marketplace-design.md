@@ -240,6 +240,7 @@ Quy ước:
 - **Push**: `firebase_messaging`, token lưu vào `users.fcmTokens` khi đăng nhập.
 - **Theme**: sinh `ThemeData` từ tokens; sáng và tối; font Be Vietnam Pro (body) và Fraunces (display) bundle trong assets.
 - **i18n**: `flutter_localizations` + ARB tiếng Việt; không hard‑code chuỗi.
+- **Responsive**: bố cục phải chạy từ 320dp (máy nhỏ) tới 430dp+ và tablet ≥ 600dp (feed và Tìm thợ ảnh chuyển 2 cột qua `LayoutBuilder`); cỡ chữ hệ thống tới 1,3× không cắt chữ; các hộp cùng cấp trong một hàng (kpi, field, nút) co giãn theo nội dung và bằng chiều cao nhau (`Row` + `IntrinsicHeight` + `Expanded`); chữ dài xuống dòng, không `overflow: ellipsis` cho nội dung chính; safe area và vùng chạm ≥ 48dp.
 - **Toolchain**: Flutter stable mới nhất tại thời điểm tạo project; Android build bằng JDK mới nhất mà AGP của Flutter hỗ trợ (hiện 17–21), ghi trong `scripts/env.sh`.
 
 ---

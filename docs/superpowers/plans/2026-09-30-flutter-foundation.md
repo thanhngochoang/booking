@@ -22,6 +22,7 @@
 - Firestore: clients may create/update only their own `users/{uid}` and `photographers/{uid}`; `bookings` are read-only for clients in this sub-project.
 - Fonts: Be Vietnam Pro (body) and Fraunces (display) bundled in `assets/fonts/`.
 - Minimum SDKs: Android 23, iOS 13.
+- Responsive: every screen renders without overflow at 320, 360, 390 and 430 logical px wide and on tablets ≥ 600 (use `LayoutBuilder`; two columns for lists on tablets in later sub-projects). System text scale up to 1.3 must not clip. Sibling boxes in one `Row` (kpi tiles, fields, buttons) use `IntrinsicHeight` + `Expanded` so they grow with content and share one height. Long text wraps; no `TextOverflow.ellipsis` on primary content. Widget tests for screens run at `Size(320, 640)` and `Size(430, 932)` with `textScaler` 1.3.
 - Commits use Conventional Commits and end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 
 ## Review Focus
@@ -2564,6 +2565,24 @@ class ProfileTab extends ConsumerWidget {
 ```
 
 - [ ] **Step 4: Run all tests, run the app**
+
+Add to `placeholder_tabs_test.dart` a size sweep so the empty states never overflow:
+```dart
+  for (final size in const [Size(320, 640), Size(430, 932)]) {
+    testWidgets('bookings tab fits $size at text scale 1.3', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await tester.pumpWidget(MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
+        child: _app(const BookingsTab(), auth, users),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+```
 
 Run: `flutter test && flutter analyze`
 Expected: all tests pass.
