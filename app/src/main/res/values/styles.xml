@@ -1,0 +1,56 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="AppTheme.FullScreen" parent="AppTheme">
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="TextViewDefault">
+        <item name="android:textSize">@dimen/text_size_default</item>
+        <item name="android:textColor">@color/text_color</item>
+    </style>
+
+    <style name="TextViewDefault.White" parent="TextViewDefault">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="TextViewSmall">
+        <item name="android:textSize">@dimen/text_size_small</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/text_color</item>
+    </style>
+
+    <style name="TextViewSmall.Blue" parent="TextViewSmall">
+        <item name="android:textColor">@color/blue</item>
+    </style>
+
+    <style name="ValueProgressBar" parent="android:Widget.ProgressBar.Horizontal">
+        <item name="android:indeterminateOnly">false</item>
+        <item name="android:progressDrawable">@drawable/value_progress_bar</item>
+        <item name="android:minHeight">2dip</item>
+        <item name="android:maxHeight">3dip</item>
+    </style>
+
+    <style name="customRatingBarSmall" parent="@android:style/Widget.RatingBar">
+        <item name="android:progressDrawable">@drawable/custom_ratingbar_small</item>
+        <item name="android:minHeight">10dip</item>
+        <item name="android:maxHeight">10dip</item>
+
+    </style>
+
+    <style name="PopupAnimation" parent="android:Animation">
+        <item name="android:windowEnterAnimation">@anim/show_popup</item>
+        <item name="android:windowExitAnimation">@anim/hide_popup</item>
+    </style>
+</resources>

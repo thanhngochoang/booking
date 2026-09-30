@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_home">
+<TextView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/text_size_big"
+    android:layout_marginTop="@dimen/margin_big"
+    android:gravity="center"
+    android:textColor="@color/white"
+    android:text="Muốn xe chi tiết vui lòng chọn vào hình dưới đây"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="120dp"
+        android:background="@color/gray_transfer"
+        android:orientation="vertical">
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:id="@+id/mess_terms"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Đối với cộng đồng nhiếp ảnh gia"
+                android:textSize="@dimen/text_size_default"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:paddingLeft="@dimen/padding_big"
+                />
+        </ScrollView>
+
+    </LinearLayout>
+
+    <CheckBox
+        android:id="@+id/checkbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/i_am_photographer"
+        android:textColor="@color/white"
+        android:layout_marginLeft="@dimen/margin_big"
+        android:buttonTint="@color/white"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="70dp"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_blue_small_border_selector"
+        android:layout_alignParentBottom="true"
+        android:minHeight="0dp"
+        android:minWidth="0dp"
+        android:text="@string/btn_confirm"
+        android:textColor="@color/white"
+        android:paddingLeft="@dimen/padding_default"
+        android:paddingRight="@dimen/padding_default"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/padding_small"
+        android:id="@+id/btn_confirm"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="@dimen/margin_big"
+        android:layout_marginBottom="70dp"/>
+
+</RelativeLayout>

@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_home"
+        android:orientation="vertical">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/avatar"
+            android:layout_width="@dimen/avatar_size_big"
+            android:layout_height="@dimen/avatar_size_big"
+            android:layout_gravity="center"
+            android:layout_marginTop="@dimen/margin_large"
+            android:src="@color/gray_light"
+            app:civ_border_color="@color/gray_light"
+            app:civ_border_width="@dimen/line_size" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:text="Click vào hình tròn để thay ảnh đại diện"
+            android:textColor="@color/white"
+            android:textSize="@dimen/text_size_tiny"
+            android:textStyle="italic" />
+
+        <Button
+            android:id="@+id/btn_flickr"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_big"
+            android:background="@drawable/bg_blue_small_border_selector"
+            android:drawableLeft="@drawable/logo_flirk"
+            android:gravity="center"
+            android:paddingLeft="@dimen/padding_big"
+            android:paddingRight="@dimen/padding_big"
+            android:text="Connect to flirks"
+            android:textAllCaps="false"
+            android:textColor="@color/white" />
+
+        <Button
+            android:id="@+id/btn_gg_calendar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_default"
+            android:background="@drawable/bg_red_small_border_selector"
+            android:drawableLeft="@drawable/logo_calender"
+            android:gravity="center"
+            android:paddingLeft="@dimen/padding_big"
+            android:paddingRight="@dimen/padding_big"
+            android:text="Connect to Calendar"
+            android:textAllCaps="false"
+            android:textColor="@color/white" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_large"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/line_size"
+                android:layout_marginRight="@dimen/margin_small"
+                android:layout_weight="1"
+                android:background="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Thông tin liên hệ"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_size_default"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/line_size"
+                android:layout_marginLeft="@dimen/margin_small"
+                android:layout_weight="1"
+                android:background="@color/white" />
+
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/et_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_person_white_20dp"
+            android:drawablePadding="@dimen/padding_default"
+            android:ellipsize="end"
+            android:hint="@string/name_hint"
+            android:inputType="textCapWords"
+            android:maxLines="1"
+            android:padding="@dimen/padding_default"
+            android:paddingBottom="@dimen/margin_small"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+        <EditText
+            android:id="@+id/et_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_edit_location_white_20dp"
+            android:drawablePadding="@dimen/padding_default"
+            android:ellipsize="end"
+            android:hint="@string/address_hint"
+            android:inputType="textCapWords"
+            android:maxLines="1"
+            android:padding="@dimen/padding_default"
+            android:paddingBottom="@dimen/margin_small"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+        <EditText
+            android:id="@+id/et_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_local_phone_white_20dp"
+            android:drawablePadding="@dimen/padding_default"
+            android:ellipsize="end"
+            android:hint="@string/phone_hint"
+            android:inputType="phone"
+            android:maxLines="1"
+            android:padding="@dimen/padding_default"
+            android:paddingBottom="@dimen/margin_small"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_large"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/line_size"
+                android:layout_marginRight="@dimen/margin_small"
+                android:layout_weight="1"
+                android:background="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Thiết bị của bạn"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_size_default"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/line_size"
+                android:layout_marginLeft="@dimen/margin_small"
+                android:layout_weight="1"
+                android:background="@color/white" />
+
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/et_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_thanmay"
+            android:drawablePadding="@dimen/padding_default"
+            android:hint="@string/ed_body"
+            android:inputType="textCapSentences"
+            android:lines="3"
+            android:minLines="3"
+            android:padding="@dimen/padding_default"
+            android:paddingBottom="@dimen/margin_small"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+        <EditText
+            android:id="@+id/et_lens"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_lens"
+            android:drawablePadding="@dimen/padding_default"
+            android:hint="@string/ed_lens"
+            android:inputType="textCapSentences"
+            android:minLines="3"
+            android:padding="@dimen/padding_default"
+            android:paddingBottom="@dimen/margin_small"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+        <EditText
+            android:id="@+id/et_gear_other"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_gear_other"
+            android:drawablePadding="@dimen/padding_default"
+            android:hint="@string/ed_gear_other"
+            android:inputType="textCapSentences"
+            android:lines="3"
+            android:minLines="3"
+            android:padding="@dimen/padding_default"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+        <EditText
+            android:id="@+id/et_syle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_style"
+            android:drawablePadding="@dimen/padding_default"
+            android:hint="@string/ed_style"
+            android:inputType="textCapSentences"
+            android:lines="3"
+            android:minLines="3"
+            android:padding="@dimen/padding_default"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+        <com.paditech.mvpbase.common.view.PriceEditText
+            android:id="@+id/et_price"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_large"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_small"
+            android:background="@drawable/bg_white_border_thin"
+            android:drawableLeft="@drawable/ic_price"
+            android:drawablePadding="@dimen/padding_default"
+            android:ellipsize="end"
+            android:hint="@string/ed_price"
+            android:inputType="number"
+            android:maxLines="1"
+            android:padding="@dimen/padding_default"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white_transfer"
+            android:textSize="@dimen/text_size_default" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/margin_small"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/submit_area"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:layout_marginBottom="60dp"
+            android:layout_marginRight="@dimen/margin_large"
+            android:layout_marginTop="@dimen/margin_big"
+            android:background="@drawable/bg_blue_small_border_selector"
+            android:minHeight="0dp"
+            android:paddingBottom="@dimen/margin_small"
+            android:paddingLeft="60dp"
+            android:paddingRight="60dp"
+            android:paddingTop="@dimen/margin_small"
+            android:text="@string/btn_save"
+            android:textColor="@color/white" />
+    </LinearLayout>
+
+
+</ScrollView>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.alamkanak.weekview.WeekView
+        android:id="@+id/weekView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:dayBackgroundColor="@color/gray_transfer"
+        app:eventTextColor="@android:color/white"
+        app:eventTextSize="@dimen/text_size_tiny"
+        app:headerColumnBackground="@color/gray_transfer"
+        app:headerColumnTextColor="@color/blue"
+        app:headerRowBackgroundColor="@color/white_transfer"
+        app:headerRowPadding="@dimen/margin_small"
+        app:hourHeight="30dp"
+        app:noOfVisibleDays="4"
+        app:textSize="@dimen/text_size_small"
+        app:todayBackgroundColor="@color/white_transfer"
+        app:todayHeaderTextColor="@color/red_dark" />
+</LinearLayout>

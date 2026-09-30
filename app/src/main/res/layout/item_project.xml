@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="15dp"
+    android:background="@color/gray_transfer"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+
+    <TextView
+        android:id="@+id/tag_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/label_red"
+        android:paddingBottom="1dp"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        android:paddingTop="1dp"
+        android:text="Past"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_place"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tag_label"
+        android:drawableLeft="@drawable/ic_location_white_trans_15dp"
+        android:drawablePadding="@dimen/margin_small"
+        android:maxLines="1"
+        android:text="Đại học công đoàn"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:id="@+id/tv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/tag_label"
+        android:layout_toRightOf="@id/tag_label"
+        android:paddingLeft="@dimen/padding_small"
+        android:text="Diệu Linh"
+        android:textSize="17sp"
+        android:textColor="@color/white"
+        android:textStyle="bold" />
+
+    <android.support.v7.widget.AppCompatRatingBar
+        android:id="@+id/tv_star"
+        style="@style/customRatingBarSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="right"
+        android:layout_alignTop="@id/tag_label"
+        android:numStars="5"
+        android:rating="4"
+        tools:ignore="RtlHardcoded"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:id="@+id/tv_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_place"
+        android:text="9 lượt"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:id="@+id/tv_totalAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/tv_place"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="right"
+        android:text="800k-900k"
+        android:textColor="@color/white"
+        android:layout_alignParentRight="true" />
+
+    <TextView
+        android:id="@+id/tv_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/tv_count"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="right"
+        android:text="(vnd)-Closed"
+        android:textColor="@color/white"
+        android:layout_alignParentRight="true" />
+</RelativeLayout>

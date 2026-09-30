@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/margin_tiny"
+    android:orientation="horizontal">
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/avatar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="@dimen/margin_small"
+        android:src="@color/gray_light"
+        app:civ_border_color="@color/gray_light"
+        app:civ_border_width="2dp" />
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_marginLeft="60dp"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginTop="@dimen/margin_small"
+        android:src="@drawable/ic_rear_you" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="-8dp"
+        android:layout_marginRight="50dp"
+        android:layout_marginTop="@dimen/margin_tiny"
+        android:layout_toRightOf="@+id/icon"
+        android:background="@drawable/bg_gray_transfer_rouned"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/margin_default"
+        android:paddingRight="@dimen/margin_default">
+
+        <TextView
+            android:id="@+id/tv_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="@dimen/text_size_small" />
+
+        <ImageView
+            android:id="@+id/image"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/margin_small"
+            android:layout_marginTop="@dimen/margin_default"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+
+        <TextView
+            android:id="@+id/tv_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white_transfer"
+            android:textSize="@dimen/text_size_tiny" />
+    </LinearLayout>
+
+</RelativeLayout>

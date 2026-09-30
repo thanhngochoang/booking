@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#ffffff</color>
+    <color name="colorPrimaryDark">#ffffff</color>
+    <color name="colorAccent">#aeaeae</color>
+    <color name="colorDark">#05749f</color>
+
+    <color name="text_color">#707070</color>
+    <color name="text_black">#313131</color>
+    <color name="bg_view_color">#282727</color>
+
+    <color name="blue">#05749f</color>
+    <color name="blue_transfer">#4e05749f</color>
+    <color name="blue_dark">#084d68</color>
+    <color name="gray_light">#efefef</color>
+    <color name="white">#fff</color>
+    <color name="white_transfer">#88ffffff</color>
+    <color name="gray_transfer">#59131313</color>
+    <color name="background_box">#6a000000</color>
+    <color name="divider">#e9e9e9</color>
+    <color name="gray">#565555</color>
+    <color name="gray_red">#ed1c24</color>
+    <color name="red_dark">#B21D14</color>
+    <color name="red">#e91e11</color>
+    <color name="red_transfer">#56b21d14</color>
+    <color name="green">#1a9f02</color>
+    <color name="green_transfer">#601a9f02</color>
+    <color name="yellow_transfer">#64e6c617</color>
+    <color name="closed_transfer">#81898888</color>
+    <color name="pink">#dc3434</color>
+</resources>

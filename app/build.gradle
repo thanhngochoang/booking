@@ -1,0 +1,93 @@
+apply plugin: 'com.android.application'
+apply plugin: 'realm-android'
+
+android {
+    flavorDimensions "default"
+    compileSdkVersion 26
+    buildToolsVersion '26.0.3'
+    defaultConfig {
+        applicationId "com.thanhbk.timnhay"
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    productFlavors {
+        envReal {
+            applicationId "com.thanhbk.timnhay"
+        }
+        envTest {
+            applicationId "com.thanhbk.timnhay"
+        }
+    }
+
+    configurations.all {
+        resolutionStrategy.force 'com.google.code.findbugs:jsr305:1.3.9'
+    }
+
+    realm {
+        syncEnabled = true;
+    }
+
+}
+
+repositories {
+    mavenCentral() // jcenter() works as well because it pulls from Maven Central
+    maven { url 'https://maven.google.com' }
+    google()
+}
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:multidex:1.0.1'
+    //noinspection GradleCompatible
+    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.android.support:design:26.1.0'
+    compile 'com.android.support:cardview-v7:26.1.0'
+
+    compile 'com.github.bumptech.glide:glide:4.4.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.4.0'
+    compile 'com.android.support:support-v4:26.1.0'
+
+
+    compile 'com.google.code.gson:gson:2.8.2'
+    compile 'org.greenrobot:eventbus:3.0.0'
+    compile 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+    compile 'de.hdodenhof:circleimageview:2.2.0'
+    compile 'com.google.code.gson:gson-parent:2.8.2'
+    compile 'com.google.android.gms:play-services:11.8.0'
+    compile 'com.google.firebase:firebase-core:11.8.0'
+    compile 'com.google.firebase:firebase-firestore:11.8.0'
+    compile 'com.google.android.gms:play-services-auth:11.8.0'
+    compile 'com.facebook.android:facebook-android-sdk:4.29.0'
+    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile 'com.github.chrisbanes:PhotoView:2.1.3'
+    compile 'com.googlecode.flickrj-android:flickrj-android:2.1.0'
+    compile('com.google.api-client:google-api-client-android:1.23.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
+    compile('com.google.apis:google-api-services-calendar:v3-rev273-1.23.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
+
+
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    compile 'com.github.alamkanak:android-week-view:1.2.6'
+
+    testCompile 'junit:junit:4.12'
+}
+apply plugin: 'com.google.gms.google-services'

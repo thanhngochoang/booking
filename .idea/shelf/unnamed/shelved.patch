@@ -1,0 +1,21 @@
+Index: .idea/modules.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ProjectModuleManager\">\n    <modules>\n      <module fileurl=\"file://$PROJECT_DIR$/ThankBK.iml\" filepath=\"$PROJECT_DIR$/ThankBK.iml\" />\n      <module fileurl=\"file://$PROJECT_DIR$/app/app.iml\" filepath=\"$PROJECT_DIR$/app/app.iml\" />\n      <module fileurl=\"file://F:\\ThanhBK\\ThankBK\\thanhbk.iml\" filepath=\"F:\\ThanhBK\\ThankBK\\thanhbk.iml\" />\n    </modules>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/modules.xml	(date 1513186244000)
++++ .idea/modules.xml	(revision )
+@@ -2,9 +2,8 @@
+ <project version="4">
+   <component name="ProjectModuleManager">
+     <modules>
+-      <module fileurl="file://$PROJECT_DIR$/ThankBK.iml" filepath="$PROJECT_DIR$/ThankBK.iml" />
+       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+-      <module fileurl="file://F:\ThanhBK\ThankBK\thanhbk.iml" filepath="F:\ThanhBK\ThankBK\thanhbk.iml" />
++      <module fileurl="file://$PROJECT_DIR$/thanhbk.iml" filepath="$PROJECT_DIR$/thanhbk.iml" />
+     </modules>
+   </component>
+ </project>
+\ No newline at end of file

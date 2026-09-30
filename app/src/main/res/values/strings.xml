@@ -1,0 +1,157 @@
+<resources>
+    <string name="app_name">Cộng đồng\nnhiếp ảnh gia</string>
+    <string name="FlickrApiKey">e05291485785b3da730a67cf424d334c</string>
+    <string name="google_place_api_key">AIzaSyC2neqfe60-WSK5uGKOj3-PSXUISmhhFyo</string>
+
+    <!--permission-->
+    <string name="mess_permission_storage">Bạn có muốn cho phép ứng dụng này sử dụng bộ nhớ không?</string>
+    <string name="mess_permission_camera">Bạn có muốn cho phép ứng dụng này sử dụng camera không?</string>
+    <string name="mess_permission_location">Bạn có muốn cho phép ứng dụng này truy cập vị trí của bạn không?</string>
+
+    <!--Action-->
+    <string name="refresh">Tải lại</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Hủy</string>
+    <string name="search">Search</string>
+    <string name="open_drawer">Open drawer</string>
+    <string name="close_drawer">Close drawer</string>
+    <string name="no_data">Chưa có dữ liệu!</string>
+
+    <!--Select multi photos-->
+    <string name="select_multi_photo">Select photos</string>
+    <string name="select_image">Chọn ảnh</string>
+    <string name="pick_image">Chọn từ thư viện</string>
+    <string name="capture_image">Chụp ảnh</string>
+
+    <!--Message -->
+    <string name="mess_no_connect">Không có kết nối mạng.</string>
+    <string name="notice">Thông báo</string>
+
+    <!--Gallery-->
+    <string name="gallery">Gallery</string>
+    <string name="image_counts_format">%d images</string>
+
+    <!--Profile-->
+    <string name="album">Album</string>
+    <string name="book">Book</string>
+    <string name="connect_gg_calendar">Connect GG Calendar</string>
+    <string name="connected_gg_calendar" formatted="false">Connected: %s</string>
+
+    <!--Find Photographer-->
+    <string name="fill_all_info">Nhập đầy đủ các thông tin dưới đây (*)</string>
+    <string name="place">Địa điểm: </string>
+    <string name="click_to_select_place">Click để chọn địa điểm</string>
+    <string name="near_by">Lân cận: </string>
+    <string name="request">Giá</string>
+    <string name="time">Thời gian</string>
+    <string name="date">Ngày</string>
+    <string name="find_photographer">Tìm nháy</string>
+    <string name="find_total_count" formatted="false">(Có %d kết quả phù hợp)</string>
+    <string name="selected_place_empty">Bạn hãy chọn địa điểm chụp để tiếp tục nhé!</string>
+
+    <!--Menu-->
+    <string name="profile">Profile</string>
+    <string name="group">Group</string>
+    <string name="message">Messages</string>
+    <string name="messages">Messages</string>
+    <string name="iam_here">I\'m here</string>
+    <string name="project">My Project</string>
+    <string name="find_project">Find Projects</string>
+    <string name="calendar">Calendar</string>
+    <string name="help">Help</string>
+    <string name="about">About</string>
+    <string name="settings">Settings</string>
+    <string name="register_photographer">Photographer Register</string>
+    <string name="logout">Logout</string>
+
+    <!--Login-->
+    <string name="login_by_fb">Facebook</string>
+    <string name="login_normal">Đăng nhập</string>
+    <string name="login_by_gg">Google</string>
+    <string name="register">Đăng ký</string>
+    <string name="i_am_photographer">Tôi là một Photoghapher</string>
+    <string name="i_want_find_photographer">I want to find photographers</string>
+    <string name="email_hint">Nhập email…</string>
+    <string name="name_hint">Nhập họ và tên…</string>
+    <string name="address_hint">Nhập địa chỉ của bạn…</string>
+    <string name="pass_hint">Enter password</string>
+    <string name="phone_hint">Số điện thoại</string>
+    <string name="pass_confirm_hint">Enter confirm password</string>
+    <string name="iam_photographer">Tôi là một nhiếp ảnh gia</string>
+    <string name="not_has_account_register">Chưa có tài khoản? Đăng ký mới</string>
+    <string name="mess_email_empty">Vui lòng nhập email để đăng nhập!</string>
+    <string name="mess_pass_empty">Vui lòng nhập password để đăng nhập!</string>
+    <string name="mess_confirm_pass_not_match">Xác nhận mật khẩu không khớp!</string>
+    <string name="mess_pass_confirm_empty">Vui lòng nhập xác nhận password để đăng nhập!</string>
+
+
+    <!--Create Album-->
+    <string name="create_album">Tạo album</string>
+    <string name="album_name_hint">Nhập tên album</string>
+    <string name="album_desc_hint">Nhập mô tả album</string>
+    <string name="album_location_hint">Chọn địa điểm chụp album</string>
+    <string name="album_name">Tên album</string>
+    <string name="album_desc">Mô tả album</string>
+    <string name="album_location">Địa điểm chụp album</string>
+    <string name="uploading_album">Đang bắt đầu quá trình upload album…</string>
+    <string name="mess_upload_album_success">Chúc mừng! Bạn đã tạo album thành công!</string>
+
+    <!--Time created-->
+    <string name="planned_date_format" formatted="false">%s \t - \t Ngày %s</string>
+    <string name="address_format" formatted="false">%s %s, %s, %s, %s</string>
+    <string name="just_now">Vừa xong</string>
+    <string name="some_seconds_ago">%s giây trước</string>
+    <string name="one_minute_ago">1 phút trước</string>
+    <string name="some_minute_ago">%s phút trước</string>
+    <string name="one_hour_ago">1 giờ trước</string>
+    <string name="some_hour_ago">%s giờ trước</string>
+    <!--Button-->
+    <string name="btn_confirm">Đồng ý</string>
+    <string name="btn_cancel">Hủy bỏ</string>
+    <string name="btn_save">Cất</string>
+    <string name="btn_close">Đóng</string>
+
+    <!--Update profile-->
+    <string name="ed_body">Thân máy</string>
+    <string name="ed_lens">Ống kính</string>
+    <string name="ed_gear_other">Thiết bị khác</string>
+    <string name="ed_style">Phong cách chụp</string>
+    <string name="ed_price">Nhập giá một ngày chụp...</string>
+    <string name="mess_name_empty">Bạn chưa nhập tên!</string>
+    <string name="mess_price_empty">Bạn chưa nhập giá!</string>
+    <string name="mess_price_invalid">Số tiền không hợp lệ!</string>
+    <string name="mess_address_empty">Bạn chưa nhập địa chỉ!</string>
+    <string name="mess_empty_ed_body">Bạn chưa nhập thông tin thân máy!</string>
+    <string name="mess_empty_lens">Bạn chưa nhập thông tin lens!</string>
+    <string name="mess_empty_style">Bạn chưa nhập phong cách chụp của mình!</string>
+    <string name="save_photographer_success">Chúc mừng. Bạn đã trở thành một nhiếp ảnh gia!</string>
+    <string name="mess_confirm_back">Bạn chưa đăng ký để trở thành nhiếp ảnh gia. Bạn có chắc chắn muốn thoát không?</string>
+
+    <!--BOOK-->
+    <string name="send_message">Send Message</string>
+    <string name="other_price">Chọn giá khác</string>
+    <string name="enter_price">Giá một ngày chụp</string>
+    <string name="choose_enter_price">Nhập giá một ngày chụp</string>
+    <string name="enter_price_mess">Nhập giá muốn đặt</string>
+    <string name="mess_book_success">Bạn đã gửi yêu cầu cho nhiếp ảnh gia thành công! Vui lòng chờ phản hồi.</string>
+    <string name="start_time">Thời gian bắt đầu</string>
+    <string name="end_time">Thời gian kết thúc</string>
+    <string name="book_title">Đặt lịch</string>
+    <string name="booking_detail">Xem chi tiết</string>
+
+    <!--MyProject-->
+    <string name="my_project">My Project</string>
+    <string name="booking_waiting">Đang chờ</string>
+    <string name="booking_accepted">Đã chấp nhận</string>
+    <string name="booking_denied">Bị từ chối</string>
+    <string name="booking_open">Opening</string>
+    <string name="booking_closed">Closed</string>
+    <string name="deny">Từ chối</string>
+    <string name="accept">Chấp nhận</string>
+    <string name="owner">Owner</string>
+    <string name="create_project">Create my project</string>
+    <string name="accept_book_success">Chúc mừng! Bạn đã chấp nhận yêu cầu thành công.</string>
+    <string name="create_project_success">Chúc mừng! Bạn đã tạo project của mình thành công. Hãy chờ các nhiếp ảnh gia tham gia nhé!</string>
+
+    <!--Calendar-->
+</resources>
