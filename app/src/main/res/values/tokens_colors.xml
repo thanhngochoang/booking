@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Design tokens: COLOR. Source of truth is design-system/tokens.json.
+  Layers: primitive (raw hex) -> semantic (purpose) -> component (per widget).
+  Layouts and drawables should reference semantic/component names, never primitives.
+-->
+<resources>
+
+    <!-- ===================== PRIMITIVE ===================== -->
+    <!-- "white" is already declared in colors.xml (#fff) and is reused here. -->
+    <color name="black">#000000</color>
+
+    <color name="brand_50">#E6F3F8</color>
+    <color name="brand_100">#C2E2EE</color>
+    <color name="brand_200">#8FC9DE</color>
+    <color name="brand_300">#5BAFCC</color>
+    <color name="brand_400">#2E92B7</color>
+    <color name="brand_500">#05749F</color>
+    <color name="brand_600">#056487</color>
+    <color name="brand_700">#084D68</color>
+    <color name="brand_800">#063A4F</color>
+    <color name="brand_900">#042837</color>
+
+    <color name="gray_50">#F7F7F7</color>
+    <color name="gray_100">#EFEFEF</color>
+    <color name="gray_200">#E9E9E9</color>
+    <color name="gray_300">#D6D6D6</color>
+    <color name="gray_400">#AEAEAE</color>
+    <color name="gray_500">#898888</color>
+    <color name="gray_600">#707070</color>
+    <color name="gray_700">#565555</color>
+    <color name="gray_800">#313131</color>
+    <color name="gray_900">#1C1C1C</color>
+
+    <color name="green_100">#E3F5DF</color>
+    <color name="green_500">#1A9F02</color>
+    <color name="green_700">#127001</color>
+
+    <color name="red_100">#FCE4E2</color>
+    <color name="red_500">#E91E11</color>
+    <color name="red_700">#B21D14</color>
+
+    <color name="yellow_100">#FBF6DA</color>
+    <color name="yellow_500">#E6C617</color>
+    <color name="yellow_700">#A88F0A</color>
+
+    <!-- ===================== SEMANTIC ===================== -->
+    <!-- Surfaces -->
+    <color name="color_background">@color/white</color>
+    <color name="color_background_subtle">@color/gray_50</color>
+    <color name="color_surface">@color/white</color>
+    <color name="color_surface_muted">@color/gray_100</color>
+
+    <!-- Text / icons -->
+    <color name="color_foreground">@color/gray_800</color>
+    <color name="color_foreground_secondary">@color/gray_600</color>
+    <color name="color_foreground_muted">@color/gray_500</color>
+    <color name="color_foreground_disabled">@color/gray_400</color>
+    <color name="color_foreground_inverse">@color/white</color>
+
+    <!-- Brand -->
+    <color name="color_primary">@color/brand_500</color>
+    <color name="color_primary_pressed">@color/brand_700</color>
+    <color name="color_primary_subtle">@color/brand_50</color>
+    <color name="color_primary_foreground">@color/white</color>
+
+    <color name="color_secondary">@color/gray_100</color>
+    <color name="color_secondary_pressed">@color/gray_200</color>
+    <color name="color_secondary_foreground">@color/gray_800</color>
+
+    <color name="color_destructive">@color/red_500</color>
+    <color name="color_destructive_pressed">@color/red_700</color>
+    <color name="color_destructive_foreground">@color/white</color>
+
+    <!-- Status -->
+    <color name="color_success">@color/green_500</color>
+    <color name="color_success_subtle">@color/green_100</color>
+    <color name="color_warning">@color/yellow_500</color>
+    <color name="color_warning_subtle">@color/yellow_100</color>
+    <color name="color_error">@color/red_500</color>
+    <color name="color_error_subtle">@color/red_100</color>
+    <color name="color_info">@color/brand_500</color>
+    <color name="color_info_subtle">@color/brand_50</color>
+
+    <!-- Lines -->
+    <color name="color_border">@color/gray_200</color>
+    <color name="color_border_strong">@color/gray_300</color>
+    <color name="color_divider">@color/gray_200</color>
+    <color name="color_focus_ring">@color/brand_500</color>
+
+    <!-- Overlays (alpha values are intentional, not derived) -->
+    <color name="color_overlay">#6A000000</color>
+    <color name="color_overlay_light">#88FFFFFF</color>
+
+    <color name="color_rating">@color/yellow_500</color>
+
+    <!-- Booking status (maps 1:1 to BookStatus enum) -->
+    <color name="color_booking_waiting">@color/brand_500</color>
+    <color name="color_booking_accepted">@color/green_500</color>
+    <color name="color_booking_denied">@color/red_700</color>
+    <color name="color_booking_opened">@color/yellow_500</color>
+    <color name="color_booking_closed">@color/gray_500</color>
+
+    <!-- Translucent fills used behind status text on photos (~35% alpha) -->
+    <color name="color_booking_waiting_fill">#5905749F</color>
+    <color name="color_booking_accepted_fill">#591A9F02</color>
+    <color name="color_booking_denied_fill">#59B21D14</color>
+    <color name="color_booking_opened_fill">#59E6C617</color>
+    <color name="color_booking_closed_fill">#59898888</color>
+
+    <!-- ===================== COMPONENT ===================== -->
+    <color name="button_primary_bg">@color/color_primary</color>
+    <color name="button_primary_bg_pressed">@color/color_primary_pressed</color>
+    <color name="button_primary_fg">@color/color_primary_foreground</color>
+    <color name="button_outline_border">@color/color_primary</color>
+    <color name="button_outline_fg">@color/color_primary</color>
+    <color name="button_danger_bg">@color/color_destructive</color>
+    <color name="button_danger_bg_pressed">@color/color_destructive_pressed</color>
+    <color name="button_danger_fg">@color/color_destructive_foreground</color>
+    <color name="button_disabled_bg">@color/color_surface_muted</color>
+    <color name="button_disabled_fg">@color/color_foreground_disabled</color>
+
+    <color name="input_bg">@color/color_surface</color>
+    <color name="input_border">@color/color_border_strong</color>
+    <color name="input_border_focus">@color/color_focus_ring</color>
+    <color name="input_border_error">@color/color_error</color>
+    <color name="input_fg">@color/color_foreground</color>
+    <color name="input_placeholder">@color/color_foreground_muted</color>
+
+    <color name="card_bg">@color/color_surface</color>
+    <color name="card_border">@color/color_border</color>
+
+    <color name="badge_fg">@color/color_foreground_inverse</color>
+
+    <color name="chip_bg">@color/color_surface_muted</color>
+    <color name="chip_bg_selected">@color/color_primary</color>
+    <color name="chip_fg">@color/color_foreground_secondary</color>
+    <color name="chip_fg_selected">@color/color_primary_foreground</color>
+
+    <color name="avatar_border">@color/color_background</color>
+
+    <color name="toolbar_bg">@color/color_background</color>
+    <color name="toolbar_fg">@color/color_foreground</color>
+    <color name="toolbar_fg_on_image">@color/color_overlay_light</color>
+
+    <color name="dialog_bg">@color/color_surface</color>
+    <color name="dialog_scrim">@color/color_overlay</color>
+
+    <color name="chat_bubble_me_bg">@color/color_primary</color>
+    <color name="chat_bubble_me_fg">@color/color_primary_foreground</color>
+    <color name="chat_bubble_you_bg">@color/color_surface_muted</color>
+    <color name="chat_bubble_you_fg">@color/color_foreground</color>
+
+    <color name="divider_color">@color/color_divider</color>
+
+</resources>
