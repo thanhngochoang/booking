@@ -12,3 +12,5 @@
 /.android-sdk
 /.jdk
 /.certs
+
+/graphify-out/*
