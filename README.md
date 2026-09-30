@@ -68,9 +68,14 @@ Project gốc dùng Gradle 4.1, AGP 3.0.1, Support Library 26, Firebase 11.8. Đ
 
 **Trạng thái kiểm chứng:** mã nguồn đã được migrate và kiểm tra tĩnh (không còn tham chiếu `android.support.*`, tài nguyên XML hợp lệ), nhưng **chưa chạy được `assembleEnvTestDebug` thành công** trong môi trường tạo ra thay đổi này vì Maven Central bị chặn. Bước đầu tiên khi checkout: chạy build theo hướng dẫn trên và sửa lỗi biên dịch nếu có (dự kiến nhỏ: deprecation, thiếu import).
 
+## Viết lại bằng Flutter (branch `flutter-rewrite`)
+
+Phiên bản kế tiếp là app Flutter mới trong `app_flutter/`, thiết kế theo `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` (marketplace nhiếp ảnh vận hành bởi cộng đồng: khám phá → tin cậy → đặt cọc → chụp → review → chia sẻ). App Java cũ giữ nguyên để tham chiếu và migrate dữ liệu.
+
 ## Tài liệu
 
 - `CLAUDE.md` — kiến trúc, luồng dữ liệu, quy ước.
 - `design-system/README.md` — design tokens (màu, chữ, spacing, component) và bảng migration từ resource cũ.
 - `docs/MODERNIZATION-REVIEW.md` — đánh giá codebase so với chuẩn Android hiện tại và lộ trình.
 - `docs/UX-REDESIGN.md` — phân tích UX và đề xuất kiến trúc thông tin mới.
+- `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` — spec sản phẩm v1 Flutter (kiến trúc, hành trình, dữ liệu, booking, thanh toán, kiến trúc app, phân rã).
