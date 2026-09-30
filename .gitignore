@@ -7,3 +7,8 @@
 /build
 /captures
 .externalNativeBuild
+
+# Project-local toolchain (no admin rights needed) — see README
+/.android-sdk
+/.jdk
+/.certs
