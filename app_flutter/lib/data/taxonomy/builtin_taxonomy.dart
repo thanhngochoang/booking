@@ -32,6 +32,39 @@ const List<TaxonomyOption> kStyles = [
   TaxonomyOption('documentary', 'Tư liệu'),
 ];
 
+/// Extra skills (spec 3e.2 `extras`). Mirrored in firestore.rules
+/// (`skillExtraIds`); a test keeps the two lists equal.
+const List<TaxonomyOption> kExtras = [
+  TaxonomyOption('retouch', 'Hậu kỳ'),
+  TaxonomyOption('posing', 'Chỉ đạo tạo dáng'),
+  TaxonomyOption('video', 'Quay video'),
+  TaxonomyOption('drone', 'Flycam'),
+  TaxonomyOption('studio', 'Studio'),
+  TaxonomyOption('kids', 'Chụp trẻ em'),
+  TaxonomyOption('pets', 'Thú cưng'),
+  TaxonomyOption('low_light', 'Thiếu sáng'),
+  TaxonomyOption('outdoor', 'Ngoài trời'),
+];
+
+/// Languages a photographer works in, labelled in their own language.
+const List<TaxonomyOption> kLanguages = [
+  TaxonomyOption('vi', 'Tiếng Việt'),
+  TaxonomyOption('en', 'English'),
+  TaxonomyOption('zh', '中文'),
+  TaxonomyOption('ko', '한국어'),
+  TaxonomyOption('ja', '日本語'),
+];
+
+/// Suitable clients (spec 3e.2 `audiences`): matching signals, not
+/// techniques. `couple` is also a specialty code; look items up by group.
+const List<TaxonomyOption> kAudiences = [
+  TaxonomyOption('couple', 'Cặp đôi'),
+  TaxonomyOption('family_kids', 'Gia đình có bé nhỏ'),
+  TaxonomyOption('business', 'Doanh nghiệp'),
+  TaxonomyOption('foreigner', 'Khách nước ngoài'),
+  TaxonomyOption('shy_subjects', 'Người ngại ống kính'),
+];
+
 String _label(List<TaxonomyOption> list, String id) {
   for (final o in list) {
     if (o.id == id) {
@@ -43,3 +76,6 @@ String _label(List<TaxonomyOption> list, String id) {
 
 String specialtyLabel(String id) => _label(kSpecialties, id);
 String styleLabel(String id) => _label(kStyles, id);
+String extraLabel(String id) => _label(kExtras, id);
+String languageLabel(String id) => _label(kLanguages, id);
+String audienceLabel(String id) => _label(kAudiences, id);
