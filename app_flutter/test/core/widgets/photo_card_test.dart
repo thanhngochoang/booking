@@ -1,4 +1,6 @@
 // test/core/widgets/photo_card_test.dart
+import 'dart:ui' show SemanticsAction;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
@@ -67,7 +69,7 @@ void main() {
       _card(
         leading: const PhotoPill(label: 'L'),
         trailing: const PhotoPill(label: 'R'),
-        action: const SizedBox(key: Key('act'), width: 30, height: 30),
+        action: const SizedBox(key: Key('act'), width: 48, height: 48),
       ),
     );
     final card = tester.getRect(find.byType(PhotoCard));
@@ -143,7 +145,7 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('act')));
       expect((taps, acts), (0, 1));
-      await tester.tap(find.text('Minh Trí'));
+      await tester.tapAt(tester.getCenter(find.text('Minh Trí')));
       expect((taps, acts), (1, 1), reason: 'tapping the title opens the card');
     },
   );
@@ -170,4 +172,89 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('a failing photo builder does not break the card or its tap', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      hostWidget(
+        PhotoImageScope(
+          builder: (context, url, fit, cacheWidth, retry) =>
+              const Center(child: Icon(Icons.broken_image)),
+          child: PhotoCard(
+            imageUrl: 'https://img.test/a.jpg',
+            aspect: 4 / 5,
+            title: 'Minh Trí',
+            onTap: () => taps++,
+          ),
+        ),
+        width: 300,
+      ),
+    );
+    await tester.tapAt(tester.getCenter(find.byType(PhotoCard)));
+    expect(taps, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the photo is requested without a retry control', (tester) async {
+    final log = <PhotoRequest>[];
+    await tester.pumpWidget(_card(log: log));
+    expect(log.single.retry, isFalse);
+  });
+
+  testWidgets('semantics: button with tap only when onTap is set; pills read', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        onTap: () {},
+        leading: const PhotoPill(label: 'Rảnh T7 này'),
+      ),
+    );
+    var node = tester.getSemantics(find.byType(PhotoCard));
+    expect(node.flagsCollection.isButton, isTrue);
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    expect(node.label, contains('Rảnh T7 này'));
+    await tester.pumpWidget(_card());
+    node = tester.getSemantics(find.byType(PhotoCard));
+    expect(node.flagsCollection.isButton, isFalse);
+    handle.dispose();
+  });
+
+  testWidgets('the action is its own semantics node', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        onTap: () {},
+        action: Semantics(
+          button: true,
+          label: 'Lưu',
+          child: const SizedBox(key: Key('act'), width: 48, height: 48),
+        ),
+      ),
+    );
+    expect(find.bySemanticsLabel('Lưu'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byType(PhotoCard)).label,
+      isNot(contains('Lưu')),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('a 320dp card with action, title and subtitle fits at 1.3x', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _card(
+        width: 320,
+        textScale: 1.3,
+        title: 'Nguyễn Thị Phương Anh Thư Hoàng Gia',
+        subtitle: 'Quận 3 · ★ 4,9 (58) · 112 buổi chụp chân dung gia đình',
+        action: const Icon(Icons.bookmark_border),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -20,6 +20,8 @@ class PhotoCard extends StatelessWidget {
     this.onTap,
   });
 
+  /// The photo is shown with `retry: false`: tapping the card opens the
+  /// detail, which retries, and pull-to-refresh reloads the feed.
   final String imageUrl;
 
   /// Kept for the blurhash placeholder (a later enhancement); the placeholder
@@ -33,7 +35,9 @@ class PhotoCard extends StatelessWidget {
   final Widget? leadingPill;
   final Widget? trailingPill;
 
-  /// Shown at the right of the text row, for example a save button.
+  /// Shown at the right of the text row, for example a save button. It gets a
+  /// 48dp minimum slot and its own semantics node; narrow cards (under 200dp
+  /// wide) should not pass one, as it crowds the text.
   final Widget? action;
   final VoidCallback? onTap;
 
@@ -42,10 +46,17 @@ class PhotoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasText = title != null || subtitle != null;
-    final label = [title, subtitle].whereType<String>().join(', ');
+    // One node reads the whole card: text, then the labels of PhotoPill pills.
+    final label = [
+      title,
+      subtitle,
+      if (leadingPill case PhotoPill(:final label)) label,
+      if (trailingPill case PhotoPill(:final label)) label,
+    ].whereType<String>().join(', ');
     return Semantics(
       container: true,
       button: onTap != null,
+      onTap: onTap,
       image: true,
       label: label.isEmpty ? null : label,
       child: AspectRatio(
@@ -58,17 +69,25 @@ class PhotoCard extends StatelessWidget {
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  NetworkPhoto(url: imageUrl),
+                  NetworkPhoto(url: imageUrl, retry: false),
                   if (hasText)
-                    const Positioned.fill(
+                    Positioned.fill(
                       child: IgnorePointer(
                         child: DecoratedBox(
-                          key: Key('photo-card-scrim'),
+                          key: const Key('photo-card-scrim'),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin: Alignment.center,
+                              begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [Color(0x00000000), Color(0xB3000000)],
+                              // Clear above 40% height, 0.6 alpha by 75%, 0.8
+                              // at the bottom: 2+2 lines at 1.3x stay readable.
+                              colors: [
+                                Colors.black.withValues(alpha: 0),
+                                Colors.black.withValues(alpha: 0),
+                                Colors.black.withValues(alpha: 0.6),
+                                Colors.black.withValues(alpha: 0.8),
+                              ],
+                              stops: const [0, 0.4, 0.75, 1],
                             ),
                           ),
                         ),
@@ -81,20 +100,27 @@ class PhotoCard extends StatelessWidget {
                     Positioned.fill(
                       child: Material(
                         type: MaterialType.transparency,
-                        child: InkWell(onTap: onTap),
+                        child: InkWell(
+                          onTap: onTap,
+                          excludeFromSemantics: true,
+                        ),
                       ),
                     ),
                   if (leadingPill != null)
                     Positioned(
                       left: AppSpace.s2,
                       top: AppSpace.s2,
-                      child: IgnorePointer(child: leadingPill!),
+                      child: ExcludeSemantics(
+                        child: IgnorePointer(child: leadingPill!),
+                      ),
                     ),
                   if (trailingPill != null)
                     Positioned(
                       right: AppSpace.s2,
                       top: AppSpace.s2,
-                      child: IgnorePointer(child: trailingPill!),
+                      child: ExcludeSemantics(
+                        child: IgnorePointer(child: trailingPill!),
+                      ),
                     ),
                   if (hasText || action != null)
                     Positioned(
@@ -141,7 +167,14 @@ class PhotoCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          ?action,
+                          if (action != null)
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              child: Center(child: action),
+                            ),
                         ],
                       ),
                     ),
