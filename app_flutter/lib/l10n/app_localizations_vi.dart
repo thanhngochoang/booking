@@ -355,4 +355,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get freeBannerBody => 'Đăng ký để giữ chỗ, không cần thanh toán';
+
+  @override
+  String capacityUsed(int used, int total) {
+    return '$used / $total đã đăng ký';
+  }
 }

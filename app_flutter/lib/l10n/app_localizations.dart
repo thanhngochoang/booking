@@ -759,6 +759,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đăng ký để giữ chỗ, không cần thanh toán'**
   String get freeBannerBody;
+
+  /// No description provided for @capacityUsed.
+  ///
+  /// In vi, this message translates to:
+  /// **'{used} / {total} đã đăng ký'**
+  String capacityUsed(int used, int total);
 }
 
 class _AppLocalizationsDelegate

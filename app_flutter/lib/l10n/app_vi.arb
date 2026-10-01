@@ -115,5 +115,12 @@
   "roleSaveError": "Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại.",
   "verifiedLabel": "Đã xác minh",
   "freeTag": "Không thu phí",
-  "freeBannerBody": "Đăng ký để giữ chỗ, không cần thanh toán"
+  "freeBannerBody": "Đăng ký để giữ chỗ, không cần thanh toán",
+  "capacityUsed": "{used} / {total} đã đăng ký",
+  "@capacityUsed": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  }
 }
