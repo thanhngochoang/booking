@@ -91,34 +91,39 @@ class FirestorePhotographerRepository implements PhotographerRepository {
 
   static const _whereInMax = 30;
 
-  /// Users' public documents for [ids], chunked by [_whereInMax].
-  Future<Map<String, Map<String, dynamic>>> _users(List<String> ids) async {
-    final out = <String, Map<String, dynamic>>{};
+  /// Documents of [collection] by id, chunked by [_whereInMax]. Ids that are
+  /// empty or contain '/' cannot be document ids and are simply absent.
+  Future<Map<String, Map<String, dynamic>>> _byIds(
+    String collection,
+    List<String> ids,
+  ) async {
+    final valid = [
+      for (final id in ids)
+        if (id.isNotEmpty && !id.contains('/')) id,
+    ];
     final snaps = await Future.wait([
-      for (var i = 0; i < ids.length; i += _whereInMax)
+      for (var i = 0; i < valid.length; i += _whereInMax)
         _db
-            .collection('users')
+            .collection(collection)
             .where(
               FieldPath.documentId,
-              whereIn: ids.sublist(
+              whereIn: valid.sublist(
                 i,
-                i + _whereInMax > ids.length ? ids.length : i + _whereInMax,
+                i + _whereInMax > valid.length ? valid.length : i + _whereInMax,
               ),
             )
             .get(),
     ]);
-    for (final s in snaps) {
-      for (final d in s.docs) {
-        out[d.id] = d.data();
-      }
-    }
-    return out;
+    return {
+      for (final s in snaps)
+        for (final d in s.docs) d.id: d.data(),
+    };
   }
 
   Future<List<PhotographerSummary>> _join(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) async {
-    final users = await _users([for (final d in docs) d.id]);
+    final users = await _byIds('users', [for (final d in docs) d.id]);
     return [
       for (final d in docs)
         photographerSummaryFrom(
@@ -134,29 +139,23 @@ class FirestorePhotographerRepository implements PhotographerRepository {
     Iterable<String> ids,
   ) async {
     final unique = ids.toSet().toList();
-    if (unique.isEmpty) {
-      return const {};
-    }
-    final snaps = await Future.wait([
-      for (var i = 0; i < unique.length; i += _whereInMax)
-        _db
-            .collection('photographers')
-            .where(
-              FieldPath.documentId,
-              whereIn: unique.sublist(
-                i,
-                i + _whereInMax > unique.length
-                    ? unique.length
-                    : i + _whereInMax,
-              ),
-            )
-            .get(),
-    ]);
-    final docs = [for (final s in snaps) ...s.docs];
-    final list = await _join(docs);
-    return {for (final p in list) p.id: p};
+    final (photographers, users) = await (
+      _byIds('photographers', unique),
+      _byIds('users', unique),
+    ).wait;
+    return {
+      for (final e in photographers.entries)
+        e.key: photographerSummaryFrom(
+          id: e.key,
+          user: users[e.key],
+          photographer: e.value,
+        ),
+    };
   }
 
+  /// Invariant (server): `stats.rating` is always written (0 when there are
+  /// no reviews) whenever `stats.nextFreeDate` is written; a photographer
+  /// without `stats.rating` is not returned by this query.
   @override
   Future<List<PhotographerSummary>> freeThisWeek({
     required DateTime now,
@@ -188,6 +187,8 @@ class FirestorePhotographerRepository implements PhotographerRepository {
     return list;
   }
 
+  /// Unordered pool (`__name__` order); callers cache it. Revisit the
+  /// ordering once there are more than 200 photographers.
   @override
   Future<List<PhotographerSummary>> candidates({int limit = 200}) async {
     final snap = await _db

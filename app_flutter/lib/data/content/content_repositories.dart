@@ -59,7 +59,10 @@ abstract class PhotographerRepository {
 
   /// Photographers whose next free day lies in `[today, today + 7 days)`
   /// (Vietnam calendar days), soonest first, then best rated, then `id`
-  /// ascending. [limit] is clamped to 1..[kMaxPageSize].
+  /// ascending. [limit] is clamped to 1..[kMaxPageSize]. Server invariant:
+  /// `stats.rating` is always written (0 when no reviews) whenever
+  /// `stats.nextFreeDate` is written; a photographer without `stats.rating`
+  /// is not returned.
   Future<List<PhotographerSummary>> freeThisWeek({
     required DateTime now,
     int limit = 12,

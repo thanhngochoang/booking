@@ -177,6 +177,14 @@ void main() {
   });
 
   group('FirestorePhotographerRepository', () {
+    test('summaries ignores empty and slash ids', () async {
+      final db = FakeFirebaseFirestore();
+      await seedPhotographer(db, fixturePhotographer('p1'));
+      final m = await FirestorePhotographerRepository(db: db)
+          .summaries(['', 'a/b', 'p1']);
+      expect(m.keys, ['p1']);
+    });
+
     test(
       'candidates and free-this-week only list published photographers',
       () async {
