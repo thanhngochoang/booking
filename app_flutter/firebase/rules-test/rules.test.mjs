@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, writeBatch, serverTimestamp, Timestamp, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, writeBatch, serverTimestamp, Timestamp, collection, query, where } from 'firebase/firestore';
 
 let env;
 before(async () => {
@@ -381,4 +381,145 @@ test('markers: createdAt on a direct update is the server time or nothing', asyn
     await assertSucceeds(updateDoc(ref, { createdAt: serverTimestamp() }));
     await assertFails(updateDoc(ref, { createdAt: Timestamp.fromMillis(1) }));
   }
+});
+
+// ---- photographers/{uid}.skills (plan 2c, spec 3e.2–3e.3) ----
+const goodSkills = () => ({
+  schemaVersion: 1,
+  specialties: [
+    { id: 'portrait', level: 3, evidencePostIds: ['post1', 'post2'] },
+    { id: 'couple', level: 2, evidencePostIds: [] },
+    { id: 'family', level: 1, evidencePostIds: [] },
+  ],
+  styles: ['natural_light', 'film'],
+  extras: ['retouch', 'posing'],
+  languages: ['vi', 'en'],
+  audiences: ['couple', 'shy_subjects'],
+  yearsExperience: 6,
+});
+const genre = (id, level = 2, evidencePostIds = []) => ({ id, level, evidencePostIds });
+const skillsOwner = async (uid, extra = {}) => {
+  await asPhotographer(uid);
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `photographers/${uid}`), { onboardingComplete: false, verified: false, ...extra }));
+  return env.authenticatedContext(uid).firestore();
+};
+const writeSkills = (db, uid, skills) => setDoc(doc(db, `photographers/${uid}`), { skills }, { merge: true });
+
+test('a photographer can save valid skills in the spec shape', async () => {
+  const db = await skillsOwner('k1');
+  await assertSucceeds(writeSkills(db, 'k1', goodSkills()));
+  await assertSucceeds(writeSkills(db, 'k1', { ...goodSkills(), yearsExperience: null }));
+  await assertSucceeds(writeSkills(db, 'k1', {
+    ...goodSkills(),
+    specialties: [{ id: 'wedding', level: 2, years: 4, evidencePostIds: [] }],
+    languages: ['vi', 'en', 'zh', 'ko', 'ja'],
+  }));
+});
+
+test('skills reject ids outside the catalogue', async () => {
+  const db = await skillsOwner('k2');
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), specialties: [genre('underwater')] }));
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), specialties: [genre('shy_subjects')] }));
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), styles: ['neon'] }));
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), extras: ['juggling'] }));
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), languages: ['fr'] }));
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), audiences: ['kids'] }));
+  await assertFails(writeSkills(db, 'k2', { ...goodSkills(), styles: [7] }));
+});
+
+test('skills enforce the limits', async () => {
+  const db = await skillsOwner('k3');
+  const seven = ['portrait', 'wedding', 'couple', 'family', 'graduation', 'event', 'product'].map((id) => genre(id));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), specialties: seven }));
+  await assertSucceeds(writeSkills(db, 'k3', { ...goodSkills(), specialties: seven.slice(0, 6) }));
+  const fourExperts = ['portrait', 'wedding', 'couple', 'family'].map((id, i) => genre(id, 3, [`e${i}`]));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), specialties: fourExperts }));
+  await assertSucceeds(writeSkills(db, 'k3', { ...goodSkills(), specialties: fourExperts.slice(0, 3) }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), specialties: [genre('portrait', 2, ['a', 'b', 'c', 'd'])] }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), specialties: [genre('portrait', 2, ['a', 'a'])] }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), specialties: [genre('portrait', 2, ['a/b'])] }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), specialties: [genre('portrait'), genre('portrait')] }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), styles: ['natural_light', 'film', 'minimal', 'editorial', 'documentary'] }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), styles: ['film', 'film'] }));
+  await assertFails(writeSkills(db, 'k3', {
+    ...goodSkills(),
+    extras: ['retouch', 'posing', 'video', 'drone', 'studio', 'kids', 'pets', 'low_light', 'outdoor'],
+  }));
+  await assertFails(writeSkills(db, 'k3', { ...goodSkills(), audiences: ['couple', 'family_kids', 'business', 'foreigner', 'shy_subjects'] }));
+});
+
+test('level 3 needs evidence; levels are the integers 1..3', async () => {
+  const db = await skillsOwner('k4');
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [genre('portrait', 3, [])] }));
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [{ id: 'portrait', level: 3 }] }));
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [genre('portrait', 4)] }));
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [genre('portrait', 0)] }));
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [genre('portrait', '3', ['a'])] }));
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [{ ...genre('portrait'), note: 'x' }] }));
+  await assertFails(writeSkills(db, 'k4', { ...goodSkills(), specialties: [{ ...genre('portrait'), years: 60 }] }));
+});
+
+test('at least one genre and one language; years 0..50', async () => {
+  const db = await skillsOwner('k5');
+  await assertFails(writeSkills(db, 'k5', { ...goodSkills(), specialties: [] }));
+  await assertFails(writeSkills(db, 'k5', { ...goodSkills(), languages: [] }));
+  for (const years of [51, -1, 6.5, '6']) {
+    await assertFails(writeSkills(db, 'k5', { ...goodSkills(), yearsExperience: years }));
+  }
+  await assertSucceeds(writeSkills(db, 'k5', { ...goodSkills(), yearsExperience: 0 }));
+  await assertSucceeds(writeSkills(db, 'k5', { ...goodSkills(), yearsExperience: 50 }));
+});
+
+test('completeness and skills.updatedAt are server-only', async () => {
+  const db = await skillsOwner('k6');
+  await assertFails(writeSkills(db, 'k6', { ...goodSkills(), completeness: 99 }));
+  await assertFails(writeSkills(db, 'k6', { ...goodSkills(), updatedAt: new Date() }));
+  const db7 = await skillsOwner('k7', { skills: { ...goodSkills(), completeness: 40 } });
+  // The app's merge write leaves the server value in place.
+  await assertSucceeds(writeSkills(db7, 'k7', { ...goodSkills(), styles: ['minimal'] }));
+  await assertFails(updateDoc(doc(db7, 'photographers/k7'), { 'skills.completeness': 99 }));
+  const snap = await getDoc(doc(db7, 'photographers/k7'));
+  assert.equal(snap.data().skills.completeness, 40);
+});
+
+test('the adapter merge save keeps server skills fields; changing or removing them fails', async () => {
+  const stamp = Timestamp.fromMillis(7000);
+  const db = await skillsOwner('k11', { skills: { ...goodSkills(), completeness: 55, updatedAt: stamp } });
+  const ref = doc(db, 'photographers/k11');
+  // Exact shape of FirestoreSkillsRepository.save: skillsToMap + top-level server time, merged.
+  await assertSucceeds(setDoc(ref, {
+    skills: { ...goodSkills(), styles: ['film'], yearsExperience: null },
+    updatedAt: serverTimestamp(),
+  }, { merge: true }));
+  const snap = await getDoc(ref);
+  assert.equal(snap.data().skills.completeness, 55);
+  assert.equal(snap.data().skills.updatedAt.toMillis(), 7000);
+  assert.deepEqual(snap.data().skills.styles, ['film']);
+  await assertFails(writeSkills(db, 'k11', { ...goodSkills(), completeness: 100 }));
+  await assertFails(writeSkills(db, 'k11', { ...goodSkills(), updatedAt: Timestamp.fromMillis(9000) }));
+  await assertFails(writeSkills(db, 'k11', { ...goodSkills(), updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { 'skills.updatedAt': Timestamp.fromMillis(9000) }));
+  await assertFails(updateDoc(ref, { 'skills.completeness': deleteField() }));
+  await assertFails(updateDoc(ref, { 'skills.updatedAt': deleteField() }));
+  // A full overwrite that drops the server fields is refused as well.
+  await assertFails(setDoc(ref, { onboardingComplete: false, verified: false, skills: goodSkills() }));
+});
+
+test('skills shape: known keys only, schema version 1, owner only', async () => {
+  const db = await skillsOwner('k8');
+  await assertFails(writeSkills(db, 'k8', { ...goodSkills(), schemaVersion: 2 }));
+  const { schemaVersion, ...noVersion } = goodSkills();
+  assert.equal(schemaVersion, 1);
+  await assertFails(writeSkills(db, 'k8', noVersion));
+  await assertFails(writeSkills(db, 'k8', { ...goodSkills(), equipment: ['A7'] }));
+  await assertFails(writeSkills(db, 'k8', 'portrait'));
+  await skillsOwner('k9');
+  await assertFails(writeSkills(db, 'k9', goodSkills()));
+});
+
+test('unchanged legacy skills do not block other profile edits', async () => {
+  const db = await skillsOwner('k10', { skills: { schemaVersion: 1, specialties: [] } });
+  await assertSucceeds(updateDoc(doc(db, 'photographers/k10'), { bio: 'Chân dung' }));
+  await assertFails(writeSkills(db, 'k10', { schemaVersion: 1, specialties: [], styles: ['film'] }));
 });

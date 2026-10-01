@@ -42,7 +42,90 @@ service cloud.firestore {
     // verifiedAt are server-computed; verified is allowed only as false on create.
     function photographerClientFields() {
       return ['bio', 'specialties', 'styles', 'equipment', 'yearsExperience', 'serviceArea',
-              'contactChannels', 'portfolio', 'onboardingComplete', 'verified', 'createdAt', 'updatedAt'];
+              'contactChannels', 'portfolio', 'skills', 'onboardingComplete', 'verified',
+              'createdAt', 'updatedAt'];
+    }
+
+    // ---- photographers/{uid}.skills (spec 3e.2–3e.3) ----
+    // Catalogue ids, mirrored from lib/data/taxonomy/builtin_taxonomy.dart; the Dart test
+    // test/data/skills/rules_catalogue_sync_test.dart keeps both lists equal.
+    function skillSpecialtyIds() {
+      return ['portrait', 'wedding', 'couple', 'family', 'graduation', 'event', 'product',
+              'travel', 'fashion', 'food', 'real_estate', 'newborn', 'street', 'commercial'];
+    }
+    function skillStyleIds() { return ['natural_light', 'film', 'minimal', 'editorial', 'documentary']; }
+    function skillExtraIds() {
+      return ['retouch', 'posing', 'video', 'drone', 'studio', 'kids', 'pets', 'low_light', 'outdoor'];
+    }
+    function skillLanguageIds() { return ['vi', 'en', 'zh', 'ko', 'ja']; }
+    function skillAudienceIds() { return ['couple', 'family_kids', 'business', 'foreigner', 'shy_subjects']; }
+
+    function uniqueTags(xs, allowed, maxSize) {
+      return xs is list && xs.size() <= maxSize && xs.hasOnly(allowed) && xs.toSet().size() == xs.size();
+    }
+    function validPostId(v) { return v is string && v.matches('^[A-Za-z0-9_-]{1,64}$'); }
+    function validEvidence(ev) {
+      return ev is list && ev.size() <= 3 && ev.toSet().size() == ev.size()
+        && (ev.size() < 1 || validPostId(ev[0]))
+        && (ev.size() < 2 || validPostId(ev[1]))
+        && (ev.size() < 3 || validPostId(ev[2]));
+    }
+    function validSpecialty(s) {
+      return s is map
+        && s.keys().hasAll(['id', 'level'])
+        && s.keys().hasOnly(['id', 'level', 'years', 'evidencePostIds'])
+        && s.id in skillSpecialtyIds()
+        && s.level is int && s.level >= 1 && s.level <= 3
+        && (!('years' in s) || (s.years is int && s.years >= 0 && s.years <= 50))
+        && validEvidence(s.get('evidencePostIds', []))
+        && (s.level != 3 || s.get('evidencePostIds', []).size() >= 1);
+    }
+    // Rules cannot loop: the six possible genre slots are checked one by one.
+    function specialtySlotOk(sp, i) { return sp.size() <= i || validSpecialty(sp[i]); }
+    function expertAt(sp, i) { return (sp.size() > i && sp[i].level == 3) ? 1 : 0; }
+    function specialtyIdList(sp) {
+      return sp.size() == 1 ? [sp[0].id]
+        : sp.size() == 2 ? [sp[0].id, sp[1].id]
+        : sp.size() == 3 ? [sp[0].id, sp[1].id, sp[2].id]
+        : sp.size() == 4 ? [sp[0].id, sp[1].id, sp[2].id, sp[3].id]
+        : sp.size() == 5 ? [sp[0].id, sp[1].id, sp[2].id, sp[3].id, sp[4].id]
+        : [sp[0].id, sp[1].id, sp[2].id, sp[3].id, sp[4].id, sp[5].id];
+    }
+    function validSpecialties(sp) {
+      return sp is list && sp.size() >= 1 && sp.size() <= 6
+        && specialtySlotOk(sp, 0) && specialtySlotOk(sp, 1) && specialtySlotOk(sp, 2)
+        && specialtySlotOk(sp, 3) && specialtySlotOk(sp, 4) && specialtySlotOk(sp, 5)
+        && specialtyIdList(sp).toSet().size() == sp.size()
+        && expertAt(sp, 0) + expertAt(sp, 1) + expertAt(sp, 2)
+           + expertAt(sp, 3) + expertAt(sp, 4) + expertAt(sp, 5) <= 3;
+    }
+    // skills.completeness and skills.updatedAt are written by Cloud Functions only. The app saves
+    // with set(merge: true), so request.resource.data.skills is the post-merge map and still holds
+    // the stored server values: each must equal the stored one (or stay absent).
+    function skillsServerFieldsUntouched(after) {
+      let before = resource == null ? {} : resource.data.get('skills', {});
+      return after.get('completeness', null) == before.get('completeness', null)
+        && after.get('updatedAt', null) == before.get('updatedAt', null);
+    }
+    // Checked only when the client changes skills, so an old document never blocks other edits.
+    function validSkills() {
+      let d = request.resource.data;
+      return !('skills' in d)
+        || (resource != null && resource.data.get('skills', null) == d.skills)
+        || (d.skills is map
+            && d.skills.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
+                                        'audiences', 'yearsExperience', 'completeness', 'updatedAt'])
+            && d.skills.get('schemaVersion', 0) == 1
+            && validSpecialties(d.skills.get('specialties', []))
+            && uniqueTags(d.skills.get('styles', []), skillStyleIds(), 4)
+            && uniqueTags(d.skills.get('extras', []), skillExtraIds(), 8)
+            && uniqueTags(d.skills.get('languages', []), skillLanguageIds(), 5)
+            && d.skills.get('languages', []).size() >= 1
+            && uniqueTags(d.skills.get('audiences', []), skillAudienceIds(), 4)
+            && (d.skills.get('yearsExperience', null) == null
+                || (d.skills.yearsExperience is int
+                    && d.skills.yearsExperience >= 0 && d.skills.yearsExperience <= 50))
+            && skillsServerFieldsUntouched(d.skills));
     }
 
     // serviceArea: a city and a whole-number radius in km (centre point added with the location work).
@@ -155,7 +238,8 @@ service cloud.firestore {
         && verifiedUntouched()
         && onlyKeys(photographerClientFields())
         && validServiceArea()
-        && validContactChannels(uid);
+        && validContactChannels(uid)
+        && validSkills();
       allow delete: if false;
 
       match /services/{serviceId} {
