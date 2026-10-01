@@ -1,6 +1,6 @@
 # Đặc tả từng màn hình
 
-Chi tiết cho mọi màn `S01–S46` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S12` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
+Chi tiết cho mọi màn `S01–S65` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S12` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
 
 ## Mục lục
 
@@ -10,7 +10,7 @@ Chi tiết cho mọi màn `S01–S46` của spec `../2026-10-01-remaining-screen
 | [booking.md](booking.md) | S05–S07 Đặt lịch · S08 Chờ thanh toán · S09 Chi tiết booking · S10 Huỷ booking · S11 Hội thoại · S14 Danh sách đặt lịch · S32 Liên hệ · S33 Thêm số điện thoại |
 | [events.md](events.md) | S15 Danh sách sự kiện · S16 Chi tiết · S17 Đăng ký · S18 Vé · S25–S26 Tạo sự kiện · S27 Quản lý sự kiện |
 | [photographer.md](photographer.md) | S19 Công việc · S20 Lịch · S21 Đăng bài · S22 Empty Công việc · S23 Từ chối · S24 Thiết lập hồ sơ · S34 Khu vực & liên hệ · S38–S40 Kỹ năng |
-| [account.md](account.md) | S12 Đánh giá & chia sẻ · S28 Đăng nhập · S29 Chọn vai trò · S30 Hồ sơ cá nhân · S31 Cài đặt · S37 Huy hiệu · S41 Đăng ký · S42 Sửa hồ sơ |
+| [account.md](account.md) | S12 Đánh giá & chia sẻ · S28 Đăng nhập · S29 Chọn vai trò · S30 Hồ sơ cá nhân · S31 Cài đặt · S37 Huy hiệu · S41 Đăng ký · S42 Sửa hồ sơ · S63 Thông báo · S64 Cài đặt thông báo · S65 Xin quyền thông báo |
 
 ## Mẫu cho mỗi màn
 

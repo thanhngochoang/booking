@@ -5,7 +5,7 @@ Ngày: 2026-10-01 · Branch: `flutter-rewrite` · Trạng thái: chờ review
 Bổ sung cho `2026-09-30-photography-marketplace-design.md` (gọi tắt "spec gốc"). Spec này làm các việc:
 
 1. Chốt giao diện theo theme **dark aurora** đang chạy trong app, kèm hai kiểu nút chính (gradient theo theme, hoặc ảnh avatar làm mờ).
-2. Đánh **mã màn hình** `S01–S46` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
+2. Đánh **mã màn hình** `S01–S65` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
 3. Đặc tả mọi màn còn lại, kèm danh mục **Sự kiện** và luồng **tạo sự kiện chụp ảnh** (mới).
 4. Thêm **kênh liên hệ** (gọi điện, Zalo, WhatsApp) và điều kiện **khách phải có số điện thoại** để đặt lịch (xác minh số làm sau).
 5. Thêm **GPS ở Khám phá** để gợi ý sự kiện gần bạn.
@@ -125,8 +125,18 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S53 | Lời mời việc (đếm ngược 30 giây) | `/work/instant/offer/:offerId` | NAG | I4 |
 | S54 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 |
 | S55 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 |
+| S56 | Đăng việc | — | khách | J (đang thiết kế) |
+| S57 | Việc của tôi / chi tiết việc | — | khách | J (đang thiết kế) |
+| S58 | Danh sách ứng tuyển | — | khách | J (đang thiết kế) |
+| S59 | Chi tiết đơn ứng tuyển | — | khách | J (đang thiết kế) |
+| S60 | Chi tiết việc (nhiếp ảnh gia) | — | NAG | J (đang thiết kế) |
+| S61 | Việc đang tuyển | — | NAG | J (đang thiết kế) |
+| S62 | Gửi báo giá (sheet) | — | NAG | J (đang thiết kế) |
+| S63 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N |
+| S64 | Cài đặt thông báo | `/settings/notifications` | cả hai | N |
+| S65 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N |
 
-Splash và Lỗi phiên (đã có) không cần mã. Mã đánh liên tục `S01`–`S55`; màn mới lấy số kế tiếp, không đánh lại số. S47–S55 thuộc tính năng Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
+Splash và Lỗi phiên (đã có) không cần mã. Mã đánh liên tục `S01`–`S65`; màn mới lấy số kế tiếp, không đánh lại số. S56–S62 đã dành cho tính năng **Đăng việc** (đang thiết kế, chưa có mock); S63–S65 thuộc Thông báo (mục 3h). S47–S55 thuộc tính năng Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 
@@ -600,6 +610,87 @@ Mọi biến động tiền là một **bút toán bất biến** (append‑only
 ### 3g.7 Pháp lý
 
 Việc nền tảng nhận và giữ tiền hộ bên thứ ba có thể thuộc **dịch vụ trung gian thanh toán** cần giấy phép của Ngân hàng Nhà nước, hoặc phải đi qua cổng/ngân hàng cung cấp dịch vụ ký quỹ hợp pháp. Cần tham vấn pháp lý trước khi ra mắt (câu hỏi mở 19).
+
+## 3h. Thông báo (S63–S65)
+
+Hộp thư thông báo trong app (S63), cài đặt thông báo (S64) và sheet xin quyền (S65). Push dùng FCM; token lưu ở `devices/{uid}_{installId}` theo kế hoạch [`2026-10-01-instant-i4-photographer-app.md`](../plans/2026-10-01-instant-i4-photographer-app.md). Mock: mục "Thông báo" trong `docs/design/ui-mock.html`.
+
+### 3h.1 Hành vi
+
+- **Điểm vào**: biểu tượng chuông ở S01, S13, S19 kèm chấm số `NotificationBell`; Cài đặt (S31) → "Thông báo" → S64; biểu tượng bánh răng ở S63 → S64.
+- **Chấm số**: đọc từ `users/{uid}.unreadCount`, "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
+- **Danh sách (S63)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
+- **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S58. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới.
+- **Chạm** = đánh dấu đã đọc + đi tới `target` (deep link). **Nhấn giữ** mở menu "Đánh dấu đã đọc / Tắt loại thông báo này" (không có thao tác chỉ vuốt). Hành động đầu trang: "Đánh dấu tất cả đã đọc".
+- **Phân trang**: 30 mục mỗi trang, skeleton khi tải. Empty state có một hành động ("Khám phá nhiếp ảnh gia" cho khách, "Mở Công việc" cho NAG).
+- **Lời mời Chụp ngay không là thông báo trong hộp thư**: chúng mở thẳng màn toàn hình S53 (giữ nguyên spec Chụp ngay). Hộp thư chỉ ghi một dòng "Bạn đã bỏ lỡ một lời mời" sau khi hết hạn.
+
+### 3h.2 Các loại thông báo
+
+| `type` | Vai trò | Biểu tượng (sprite mock) | Mục lọc | `target` | Ghi chú |
+|--------|---------|--------------------------|---------|----------|---------|
+| `booking_accepted` | khách | `i-cal`, tông xanh | Đặt lịch | `/bookings/:id` (S09) | |
+| `booking_declined` | khách | `i-cal`, tông đỏ | Đặt lịch | `/bookings/:id` | Nêu hoàn cọc |
+| `shoot_reminder` | khách (và NAG) | `i-cam` | Đặt lịch / Công việc | `/bookings/:id` | Trước 24 giờ và/hoặc 2 giờ theo S64 |
+| `quote_new` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S58) | Gom theo `groupKey = job:<id>:quotes` |
+| `instant_assigned` | khách | `i-bolt` | Đặt lịch | `/instant/:id` (S49) | |
+| `refund_done` | khách | `i-card` | Đặt lịch | `/bookings/:id` | |
+| `event_soon` | khách | `i-ticket` | Sự kiện | `/events/:id` (S16) hoặc vé S18 | |
+| `booking_request` | NAG | `i-cal`, tông vàng | Công việc | `/work` (S19) | Còn 24 giờ để nhận |
+| `job_match` | NAG | `i-brief` | Công việc | `/jobs/:id` (S60) | |
+| `job_invited` | NAG | `i-brief` | Công việc | `/jobs/:id` (S60) | |
+| `job_selected` | NAG | `i-check` | Công việc | `/work` | Bạn được chọn |
+| `payout_released` | NAG | `i-card` | Hệ thống | `/earnings` (S43) | |
+| `badge_new` | cả hai | `i-award` | Hệ thống | `/u/:uid/badges` (S37) | |
+| `review_new` | cả hai | `i-star` | Hệ thống | hồ sơ của mình (S30) | |
+| `chat_message` | cả hai | `i-chat` | Hệ thống | `/chat/:roomId` (S11) | Chỉ khi app ở nền; gom theo phòng |
+| `instant_missed` | NAG | `i-bolt`, tông xám | Công việc | `/work/instant` (S52) | Bản ghi "bỏ lỡ lời mời" |
+| `promo` | cả hai | `i-info` | Hệ thống | theo `target` | Tắt mặc định (S64) |
+
+Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = thành công, vàng = cần hành động, đỏ = bị từ chối, tím = mặc định).
+
+### 3h.3 Dữ liệu
+
+```
+users/{uid}/notifications/{id}
+  type, title, body
+  target            # đường dẫn deep link, ví dụ "/bookings/01J…"
+  groupKey?         # gom dòng (xem 3h.1)
+  actorIds?         # tối đa 3 id để vẽ avatar; tổng số nằm trong `count`
+  thumbUrl?, count?
+  createdAt, readAt?   # readAt null = chưa đọc
+
+users/{uid}.unreadCount                      # số nguyên, Functions tăng/giảm
+users/{uid}/private/notification_prefs       # S64, chỉ chủ đọc/ghi
+  channels: {booking, jobs, instant, events, chat, badges, promo}: {push: bool, inApp: bool}
+  quietHours: {enabled, from: "22:00", to: "07:00"}
+  reminders: {h24: bool, h2: bool}
+devices/{uid}_{installId}                    # token FCM (kế hoạch I4)
+```
+
+- **Chỉ server ghi** thông báo và `unreadCount`. Client chỉ được đặt `readAt` (rule Firestore giới hạn đúng trường này); "Đánh dấu tất cả đã đọc" gọi callable `markAllNotificationsRead`.
+- Mặc định `prefs`: mọi loại bật Push và Trong app, riêng `promo` tắt cả hai; giờ yên lặng 22:00–07:00 bật; nhắc 24 giờ và 2 giờ bật.
+- Tôn trọng `prefs` ở server: kênh Trong app tắt thì không tạo dòng; kênh Push tắt thì không gửi FCM.
+
+### 3h.4 Pin và dữ liệu mạng
+
+- Không polling. Chỉ lắng nghe 30 mục mới nhất **khi S63 đang mở**; ở nơi khác chỉ lắng nghe trường `unreadCount` của `users/{uid}`.
+- Đánh dấu đã đọc được gom lô (debounce ~1 giây hoặc khi rời màn) thành một `WriteBatch`; cập nhật lạc quan ở UI.
+- Push chỉ mang `type`, `target` và tiêu đề/nội dung ngắn; chi tiết đọc lại từ Firestore khi mở.
+
+### 3h.5 Giờ yên lặng
+
+Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng (không âm, không rung), vẫn vào hộp thư. Ngoại lệ, vẫn phát âm: **giao dịch quan trọng** là lời mời Chụp ngay khi NAG đang bật "Sẵn sàng chụp ngay", thanh toán, và huỷ lịch. Nhắc buổi chụp trước 24 giờ và 2 giờ bật/tắt riêng.
+
+### 3h.6 Thời điểm xin quyền (S65)
+
+- Chỉ hỏi **sau một hành động có ý nghĩa**, không bao giờ khi mở app lần đầu. Khách: sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"). NAG: khi bật "Sẵn sàng chụp ngay" hoặc khi nhận booking đầu tiên.
+- Sheet nêu lợi ích, nút chính "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" lưu thời điểm và hỏi lại sau **7 ngày**, tại một hành động có ý nghĩa kế tiếp. Nếu OS đã từ chối vĩnh viễn thì không hỏi lại mà dùng banner của S64 ("Mở Cài đặt").
+- Android 13+ cần `POST_NOTIFICATIONS`; iOS xin `UNAuthorizationOptions`.
+
+### 3h.7 Cloud Functions
+
+`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, tăng `unreadCount`, gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
 
 ## 4. Thành phần dùng chung cần viết trước
 

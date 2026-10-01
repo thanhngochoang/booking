@@ -171,6 +171,15 @@ Minh hoạ tròn, tiêu đề, mô tả, một nút `AppButton.primary` (tuỳ c
 ### AppSkeleton · Mới
 `AppSkeleton.box({w, h, radius})`, `.line`, `.card`. Khối xám kính nhấp nháy nhẹ (chuyển động tắt khi giảm chuyển động); đúng hình khối nội dung để tránh nhảy bố cục. Không dùng spinner chặn > 1 giây.
 
+### NotificationRow · Mới
+Dòng trong hộp thư S63. `NotificationRow({required NotificationItem item, required VoidCallback onTap, required VoidCallback onMore})`. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `type`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom (`groupKey`) hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S63.
+
+### NotificationBell · Mới
+Biểu tượng chuông có chấm số cho thanh đầu trang S01, S13, S19. `NotificationBell({required int unread, required VoidCallback onTap})`: chuông 36dp (vùng chạm 48dp), chấm số đỏ, "9+" từ mười trở lên, ẩn khi 0. `Semantics.label` theo ngữ cảnh: 0 → "Thông báo", n → "{n} thông báo chưa đọc" (đọc cả cụm, không đọc số trần). `unread` đọc từ `users/{uid}.unreadCount` qua `unreadCountProvider` (không lắng nghe danh sách). Khác `TabBadge` ở chỗ nhãn ngữ nghĩa mang nội dung "thông báo".
+
+### PermissionPrimer · Mới
+Nội dung sheet S65, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required String benefit, required VoidCallback onEnable, required VoidCallback onLater})`. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app. Không chứa logic quyền (controller của S65 gọi `NotificationPermissionPort`).
+
 ### TabBadge · Đã có
 Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget child})`: ẩn khi 0, "9+" từ mười trở lên, nền `error`, `Semantics.value` "{n} mục mới". Số lấy từ `tabBadgesProvider`. Dùng cho Công việc (yêu cầu chờ) và Khám phá (sự kiện mới).
 
@@ -214,6 +223,9 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `VerifiedMark`, `BadgeChip`, `BadgeTile` | S02, S03, S04, S16, S27, S30, S37 |
 | `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S22, S30, S38, S39, S40 |
 | `TabBadge` | thanh tab dưới |
+| `NotificationRow` | S63 |
+| `NotificationBell` | S01, S13, S19 |
+| `PermissionPrimer` | S65 |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (khớp thứ tự triển khai của spec chính)

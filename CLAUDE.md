@@ -61,7 +61,7 @@ Everything above describes the legacy Java app, kept as reference. The rewrite i
 - **Shared widgets**: `docs/superpowers/specs/components/shared-components.md`.
 - **Data model** (backend-agnostic, migration target): `docs/superpowers/specs/data-model/` (`README.md` conventions and ports, `domain-model.md`, `relational-schema.md`).
 - **Recommender service contract**: `services/recommender/api/openapi.yaml`.
-- **Screen codes**: screens are numbered `S01`–`S55` in a single increasing sequence (S47–S55 are instant booking, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`) (never renumber; new screens take the next number). When the user names a code ("fix S07"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec and the code table in sync when one changes.
+- **Screen codes**: screens are numbered `S01`–`S65` (S56–S62 reserved for job posts; S63–S65 notifications) in a single increasing sequence (S47–S55 are instant booking, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`) (never renumber; new screens take the next number). When the user names a code ("fix S07"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec and the code table in sync when one changes.
 
 ### Rules to follow
 
