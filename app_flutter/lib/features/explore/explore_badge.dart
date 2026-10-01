@@ -32,7 +32,7 @@ final exploreSeenAtProvider =
 
 /// New events since the last visit: inside the 25 km cells of the current
 /// origin, or everywhere while there is no location or area. At most 10, so
-/// the tab shows "9+".
+/// `TabBadge` shows "9+".
 final exploreBadgeCountProvider = FutureProvider<int>((ref) {
   final seenAt = ref.watch(exploreSeenAtProvider);
   final origin = ref.watch(exploreResolutionProvider.select((r) => r.origin));

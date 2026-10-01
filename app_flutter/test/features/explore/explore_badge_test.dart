@@ -1,4 +1,5 @@
-// test/features/explore/explore_badge_test.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/location/location_repository.dart';
@@ -25,12 +27,14 @@ import '../../data/events/nearby_events_repository_test.dart' show event;
 final _now = DateTime.utc(2026, 10, 1, 5);
 
 /// Three events created 1h, 2h, 3h ago, one 20 days ago, all in Ho Chi Minh City.
+List<EventSummary> _events({int newEvents = 3}) => [
+  for (var i = 0; i < newEvents; i++)
+    event('e$i', createdAgo: Duration(hours: i + 1)),
+  event('old', createdAgo: const Duration(days: 20)),
+];
+
 FakeNearbyEventsRepository _repo({int newEvents = 3}) =>
-    FakeNearbyEventsRepository([
-      for (var i = 0; i < newEvents; i++)
-        event('e$i', createdAgo: Duration(hours: i + 1)),
-      event('old', createdAgo: const Duration(days: 20)),
-    ]);
+    FakeNearbyEventsRepository(_events(newEvents: newEvents));
 
 Future<(ProviderContainer, SharedPreferences)> _make({
   Map<String, Object> prefsValues = const {},
@@ -106,8 +110,9 @@ void main() {
     },
   );
 
-  testWidgets('choosing the Explore tab clears the badge and stores the time', (
-    tester,
+  Future<SharedPreferences> pumpShell(
+    WidgetTester tester,
+    NearbyEventsRepository repo,
   ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -143,7 +148,7 @@ void main() {
           clockProvider.overrideWithValue(() => _now),
           authRepositoryProvider.overrideWithValue(auth),
           userRepositoryProvider.overrideWithValue(users),
-          nearbyEventsRepositoryProvider.overrideWithValue(_repo()),
+          nearbyEventsRepositoryProvider.overrideWithValue(repo),
           locationRepositoryProvider.overrideWithValue(
             FakeLocationRepository(),
           ),
@@ -157,6 +162,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    return prefs;
+  }
+
+  testWidgets('choosing the Explore tab clears the badge and stores the time', (
+    tester,
+  ) async {
+    final prefs = await pumpShell(tester, _repo());
     expect(find.text('4'), findsOneWidget);
 
     await tester.tap(find.text('Khám phá'));
@@ -168,4 +180,48 @@ void main() {
       _now.toIso8601String(),
     );
   });
+
+  testWidgets('the badge is gone while the count reloads after a visit', (
+    tester,
+  ) async {
+    final repo = _GatedRepo(_events());
+    await pumpShell(tester, repo);
+    expect(find.text('4'), findsOneWidget);
+
+    repo.gate = Completer<void>();
+    await tester.tap(find.text('Khám phá'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('4'), findsNothing);
+
+    repo.gate!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('4'), findsNothing);
+  });
+
+  testWidgets('a failing count shows the shell without a badge', (
+    tester,
+  ) async {
+    final repo = _repo()..failWith = StateError('boom');
+    await pumpShell(tester, repo);
+    expect(find.text('Khám phá'), findsOneWidget);
+    expect(find.text('4'), findsNothing);
+  });
+}
+
+/// Delays `countCreatedSince` until [gate] completes.
+class _GatedRepo extends FakeNearbyEventsRepository {
+  _GatedRepo(super.events);
+
+  Completer<void>? gate;
+
+  @override
+  Future<int> countCreatedSince({
+    List<String>? cells,
+    DateTime? since,
+    int cap = 10,
+  }) async {
+    await gate?.future;
+    return super.countCreatedSince(cells: cells, since: since, cap: cap);
+  }
 }
