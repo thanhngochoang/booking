@@ -777,6 +777,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bước {current} trên {total}'**
   String stepProgressSemantics(int current, int total);
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get phoneLabel;
+
+  /// No description provided for @phoneRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số điện thoại'**
+  String get phoneRequired;
+
+  /// No description provided for @phoneInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại chưa đúng. Ví dụ: 903 123 456'**
+  String get phoneInvalid;
 }
 
 class _AppLocalizationsDelegate

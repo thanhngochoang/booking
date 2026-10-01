@@ -136,5 +136,8 @@
       "current": {"type": "int"},
       "total": {"type": "int"}
     }
-  }
+  },
+  "phoneLabel": "Số điện thoại",
+  "phoneRequired": "Nhập số điện thoại",
+  "phoneInvalid": "Số điện thoại chưa đúng. Ví dụ: 903 123 456"
 }

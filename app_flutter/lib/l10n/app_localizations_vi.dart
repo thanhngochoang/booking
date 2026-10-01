@@ -370,4 +370,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String stepProgressSemantics(int current, int total) {
     return 'Bước $current trên $total';
   }
+
+  @override
+  String get phoneLabel => 'Số điện thoại';
+
+  @override
+  String get phoneRequired => 'Nhập số điện thoại';
+
+  @override
+  String get phoneInvalid => 'Số điện thoại chưa đúng. Ví dụ: 903 123 456';
 }
