@@ -93,3 +93,27 @@ Kiểm tự động: `test/battery/explore_battery_test.dart` (11 test):
 5. Đưa app xuống nền 1 phút rồi quay lại: một lần đọc quyền, không lấy vị trí mới.
 
 Android: máy tầm trung, `flutter run --profile`, DevTools Performance và `adb shell dumpsys batterystats`. iOS: Xcode Instruments (Energy Log, Time Profiler) trên iPhone thật, Energy Impact phải là "Low" khi đứng yên; hiện ghi "iOS: not measured, blocked by iOS enablement". Dán kết quả vào mô tả PR theo bảng mẫu ở trên.
+
+## Lớp dữ liệu nguồn cấp (kế hoạch 3b1)
+
+Kiểm tự động: `test/battery/feed_data_battery_test.dart` (5 test): thư mục `lib/data/content` không có `.snapshots(`, `Timer.periodic`, `StreamController` và cổng không có `Stream<` (không listener nào có thể sống lâu hơn màn hình); yêu cầu trang 100000 bài chỉ trả 50; `candidates` tối đa 200 và `freeThisWeek` tối đa 50; danh sách dịch vụ tối đa 50; thích là đúng một lần ghi một tài liệu, bỏ thích là một lần xoá. Lớp này không có widget nên không có `expectIdle` hay `expectBlurBudget` ở đây; hai hàm hỗ trợ đã có ở `test/support/idle.dart` và `test/support/blur.dart` cho các kế hoạch màn hình.
+
+Bảng đếm lượt đọc theo hành vi thật của adapter (kiểm bằng đọc mã, `fake_cloud_firestore` không đếm lượt đọc):
+
+| Thao tác | Truy vấn / lượt đọc |
+|---|---|
+| Trang nguồn cấp đầu (`feed`, `byPhotographer`), trang 20 | 1 truy vấn `limit(n+1)` = n+1 tài liệu (1 bài nhìn trước). Nếu có bài bị bỏ (xoá mềm, hỏng) thì bù thêm tối đa 3 truy vấn nữa: tối đa 1+3 truy vấn, mỗi lần chỉ xin phần còn thiếu. |
+| Trang sau | Thêm 1 lượt đọc tài liệu con trỏ (`posts/{cursor}`) rồi như trang đầu. |
+| `byId` | 1 tài liệu. |
+| Tóm tắt thợ ảnh (`summaries`, `_join`) | Mỗi tác giả khác nhau: tối đa 2 tài liệu (`photographers` và `users`), gom `whereIn` theo nhóm 30 id, các nhóm chạy song song. Một lần tải Trang chủ: 1 truy vấn trang bài + tối đa 2 tài liệu cho mỗi tác giả khác nhau. |
+| `freeThisWeek` | 1 truy vấn `limit` (tối đa 50) + 1 tài liệu `users` cho mỗi dòng (nhóm 30). |
+| `candidates` | 1 truy vấn tối đa 200 tài liệu + `users` tương ứng (7 nhóm 30); thiết kế để bên gọi lưu đệm. |
+| `activeFor` | 1 truy vấn tối đa 50 tài liệu. |
+| Thích / lưu / theo dõi | 1 lần ghi (hoặc 1 lần xoá) một tài liệu `{uid}_{id}`; `engagementFor` 2 lượt đọc, `savedAmong` 1 lượt đọc mỗi bài trong trang (tối đa 50). |
+
+Đo tay (chưa đo: device profiling pending):
+
+1. Chạy bộ giả lập Firestore và ghi số lượt đọc của một lần tải Trang chủ: mong đợi 1 truy vấn trang bài và tối đa 2 tài liệu cho mỗi tác giả khác nhau; ghi vào mô tả PR.
+2. Khi các màn của kế hoạch 3b4 có mặt: cuộn 5 trang nguồn cấp, kiểm tra DevTools Network không có kết nối mở lâu sau khi rời màn, thêm Performance cho thời gian dựng.
+
+Android: máy tầm trung, `flutter run --profile`, DevTools Network và Performance. iOS: hiện ghi "iOS: not measured, blocked by iOS enablement". Dán kết quả vào mô tả PR theo bảng mẫu ở trên.
