@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 
+import '../../support/idle.dart';
+
 const _childKey = Key('child');
 
 Widget _host({required bool visible, String? label}) => ScreenCodeScope(
@@ -92,5 +94,10 @@ void main() {
     await tester.pumpWidget(_host(visible: true));
     expect(find.bySemanticsLabel('S09'), findsNothing);
     handle.dispose();
+  });
+
+  testWidgets('a shown tag costs no frames at rest', (tester) async {
+    await tester.pumpWidget(_host(visible: true));
+    await expectIdle(tester);
   });
 }

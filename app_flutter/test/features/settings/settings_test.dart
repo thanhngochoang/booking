@@ -14,6 +14,8 @@ import 'package:photobooking/features/settings/show_screen_codes_controller.dart
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import '../../support/idle.dart';
+
 Future<Widget> _app({
   required FakeAuthRepository auth,
   required FakeUserRepository users,
@@ -193,5 +195,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(row).value, isTrue);
     expect(prefs.getBool('showScreenCodes'), isTrue);
+  });
+
+  testWidgets('settings with the screen-code switch on stays idle', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'showScreenCodes': true});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await expectIdle(tester);
   });
 }
