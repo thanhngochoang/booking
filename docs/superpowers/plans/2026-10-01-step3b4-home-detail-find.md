@@ -1715,8 +1715,7 @@ class _PostBlock extends ConsumerWidget {
     final specialty = post.specialtyId ?? (p.specialtyIds.isEmpty ? null : p.specialtyIds.first);
     final from = [
       if (specialty != null) specialtyLabel(specialty),
-      if (p.startingPriceVnd != null)
-        '${l.priceFrom} ${formatMoney(p.startingPriceVnd!, short: true)}',
+      ?priceFromLabel(p.startingPriceVnd, l),
     ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1756,7 +1755,7 @@ class _PostBlock extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
               child: Row(
                 children: [
-                  AppAvatar(url: p.avatarUrl, name: p.displayName, size: AppAvatarSize.sm),
+                  AppAvatar(url: p.avatarUrl, name: p.displayName, size: AppAvatarSize.sm, decorative: true),
                   const SizedBox(width: AppSpace.s3),
                   Expanded(
                     child: Column(
@@ -1823,8 +1822,7 @@ class _FreeThisWeekSection extends ConsumerWidget {
                         : specialtyLabel(p.specialtyIds.first);
                     final from = [
                       ?specialty,
-                      if (p.startingPriceVnd != null)
-                        '${l.priceFrom} ${formatMoney(p.startingPriceVnd!, short: true)}',
+                      ?priceFromLabel(p.startingPriceVnd, l),
                     ].join(' · ');
                     return SizedBox(
                       width: 120,
@@ -1930,7 +1928,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
   - `String formatDuration(int minutes)` in `format.dart` → `45 phút`, `2 giờ`, `1 giờ 30 phút`.
   - `class PostDetail { PostSummary post; PhotographerSummary? photographer; ServiceSummary? service; List<PostSummary> more }` and `postDetailProvider` (`FutureProvider.autoDispose.family<PostDetail?, String>`): null when the post does not exist; a missing service or failed "more" query only leaves that part out; `more` is up to three other posts of the photographer.
   - `PhotoDetailScreen({super.key, required String postId})` wrapped in `ScreenCode(ScreenCodes.photoDetail)`. Keys: `photo-back`, `photo-gallery`, `like`, `save`, `follow`, `photo-profile`, `photo-book`, `service-card`, `more-<postId>`, `page-dot-<i>`.
-  - l10n: `photoBook`, `photoViewProfile`, `photoFollow`, `photoFollowing`, `photoRealShootBy(name, service)`, `photoRemovedTitle`, `photoRemovedBody`, `photoBackHome`, `photoMoreOf(name)`, `photoMoreProfile`, `photoOtherPackages`, `photoServiceInactive`, `photoLike`, `photoUnlike`, `photoPageOf(n, total)`, `photoLoadError`, `servicePhotos(n)`, `serviceDelivery(days)`.
+  - l10n: `photoBook`, `photoViewProfile`, `photoFollow`, `photoFollowing`, `photoRealShootBy(name, service)`, `photoRemovedTitle`, `photoRemovedBody`, `photoBackHome`, `photoMoreOf(name)`, `photoMoreProfile`, `photoItemLabel(i)`, `photoOtherPackages`, `photoServiceInactive`, `photoLike`, `photoUnlike`, `photoPageOf(n, total)`, `photoLoadError`, `servicePhotos(n)`, `serviceDelivery(days)`.
 
 Behaviour: the large 3:4 gallery pages through all images (dots when more than one; double tap likes, once); author row with name and tick, meta line and a follow button; caption; like and save with counts, location; the service card under the post (price, photos, delivery, duration; faded with "Gói này đã ngừng" when inactive); "Thêm của {tên}"; a fixed bottom bar with "Xem hồ sơ" and the one primary action: "Đặt gói này" (opens S33 first if the customer has no phone, then booking with the service chosen) or, when the package is gone, "Xem các gói khác" (S03, tab Gói). A removed post shows "Bài đăng không còn" and a way home. Share and report from the mock are not built (no link domain and no report backend yet).
 
@@ -2211,6 +2209,12 @@ Add to `lib/l10n/app_vi.arb` (comma after the previous last entry), then `flutte
     }
   },
   "photoMoreProfile": "Hồ sơ",
+  "photoItemLabel": "Ảnh {i}",
+  "@photoItemLabel": {
+    "placeholders": {
+      "i": {"type": "int"}
+    }
+  },
   "photoOtherPackages": "Xem các gói khác",
   "photoServiceInactive": "Gói này đã ngừng",
   "photoLike": "Thích",
@@ -2507,7 +2511,7 @@ class _Content extends ConsumerWidget {
                     if (author != null)
                       Row(
                         children: [
-                          AppAvatar(url: author.avatarUrl, name: author.displayName),
+                          AppAvatar(url: author.avatarUrl, name: author.displayName, decorative: true),
                           const SizedBox(width: AppSpace.s3),
                           Expanded(
                             child: Column(
@@ -2610,6 +2614,10 @@ class _Content extends ConsumerWidget {
                                       key: Key('more-${detail.more[i].id}'),
                                       imageUrl: detail.more[i].cover.url,
                                       aspect: 1,
+                                      // No visible text: name the card by the post's caption, else "Ảnh {i}".
+                                      semanticLabel: detail.more[i].caption.isNotEmpty
+                                          ? detail.more[i].caption
+                                          : l.photoItemLabel(i + 1),
                                       onTap: () => context.push('/p/${detail.more[i].id}'),
                                     )
                                   : const SizedBox.shrink(),
@@ -4648,8 +4656,10 @@ void main() {
           expect(r.cacheWidth, isNotNull, reason: '${r.url} on $start');
           expect(r.cacheWidth!, lessThanOrEqualTo(1200), reason: 'full width at 390 dp x 3 is 1170 px');
         }
+        // Avatars are told apart by their fixture URL (PhotoCard and the
+        // PhotographerCard hero are retry:false too, so `retry` says nothing).
         expect(
-          log.where((r) => !r.retry).every((r) => r.cacheWidth! <= 200),
+          log.where((r) => r.url.contains('/avatar-')).every((r) => r.cacheWidth! <= 200),
           isTrue,
           reason: 'avatars are decoded at 48 dp or less',
         );
