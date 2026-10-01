@@ -190,5 +190,23 @@
   "locationPromptBody": "Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.",
   "locationAllow": "Cho phép",
   "locationLater": "Để sau",
-  "locationChooseArea": "Chọn khu vực"
+  "locationChooseArea": "Chọn khu vực",
+  "eventTypePhotoWalk": "Photo walk",
+  "eventTypeMiniSession": "Mini session",
+  "eventTypeWorkshop": "Workshop",
+  "eventTypeCosplay": "Cosplay",
+  "eventTypeOther": "Khác",
+  "eventSeatsLeft": "Còn {n} chỗ",
+  "@eventSeatsLeft": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "eventSoldOut": "Hết chỗ",
+  "eventMonthShort": "T{month}",
+  "@eventMonthShort": {
+    "placeholders": {
+      "month": {"type": "int"}
+    }
+  }
 }

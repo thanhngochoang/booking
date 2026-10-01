@@ -1071,6 +1071,54 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn khu vực'**
   String get locationChooseArea;
+
+  /// No description provided for @eventTypePhotoWalk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Photo walk'**
+  String get eventTypePhotoWalk;
+
+  /// No description provided for @eventTypeMiniSession.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mini session'**
+  String get eventTypeMiniSession;
+
+  /// No description provided for @eventTypeWorkshop.
+  ///
+  /// In vi, this message translates to:
+  /// **'Workshop'**
+  String get eventTypeWorkshop;
+
+  /// No description provided for @eventTypeCosplay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cosplay'**
+  String get eventTypeCosplay;
+
+  /// No description provided for @eventTypeOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get eventTypeOther;
+
+  /// No description provided for @eventSeatsLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} chỗ'**
+  String eventSeatsLeft(int n);
+
+  /// No description provided for @eventSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết chỗ'**
+  String get eventSoldOut;
+
+  /// No description provided for @eventMonthShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'T{month}'**
+  String eventMonthShort(int month);
 }
 
 class _AppLocalizationsDelegate

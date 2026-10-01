@@ -7,3 +7,34 @@ String formatDistance(double km) {
   final rounded = math.max(0.1, roundKm(km));
   return '${rounded.toStringAsFixed(1).replaceAll('.', ',')} km';
 }
+
+/// `1.500.000₫`; with [short] `1,5M` / `250K` for small cards.
+String formatMoney(int vnd, {bool short = false}) {
+  String grouped(int n) {
+    final s = n.toString();
+    final out = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) {
+        out.write('.');
+      }
+      out.write(s[i]);
+    }
+    return out.toString();
+  }
+
+  String compact(double v, String unit) {
+    final rounded = (v * 10).round() / 10;
+    final text = rounded == rounded.roundToDouble()
+        ? rounded.round().toString()
+        : rounded.toStringAsFixed(1).replaceAll('.', ',');
+    return '$text$unit';
+  }
+
+  if (!short || vnd < 1000) {
+    return '${grouped(vnd)}₫';
+  }
+  if (vnd >= 1000000) {
+    return compact(vnd / 1000000, 'M');
+  }
+  return compact(vnd / 1000, 'K');
+}

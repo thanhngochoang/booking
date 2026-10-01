@@ -533,4 +533,32 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get locationChooseArea => 'Chọn khu vực';
+
+  @override
+  String get eventTypePhotoWalk => 'Photo walk';
+
+  @override
+  String get eventTypeMiniSession => 'Mini session';
+
+  @override
+  String get eventTypeWorkshop => 'Workshop';
+
+  @override
+  String get eventTypeCosplay => 'Cosplay';
+
+  @override
+  String get eventTypeOther => 'Khác';
+
+  @override
+  String eventSeatsLeft(int n) {
+    return 'Còn $n chỗ';
+  }
+
+  @override
+  String get eventSoldOut => 'Hết chỗ';
+
+  @override
+  String eventMonthShort(int month) {
+    return 'T$month';
+  }
 }
