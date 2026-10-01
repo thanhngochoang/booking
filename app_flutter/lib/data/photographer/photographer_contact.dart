@@ -94,10 +94,12 @@ class ContactNumbers {
   static ContactNumbers? fromMap(Map<String, dynamic>? m) {
     final phone = m?['phone'];
     if (phone is! String) return null;
+    final zalo = m!['zaloPhone'];
+    final whatsapp = m['whatsappPhone'];
     return ContactNumbers(
       phone: phone,
-      zaloPhone: m!['zaloPhone'] as String?,
-      whatsappPhone: m['whatsappPhone'] as String?,
+      zaloPhone: zalo is String ? zalo : null,
+      whatsappPhone: whatsapp is String ? whatsapp : null,
     );
   }
 

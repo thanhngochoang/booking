@@ -427,6 +427,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get contactInquiry => 'Nhắn tin hỏi trước';
 
   @override
+  String get contactOpening => 'Đang mở liên hệ';
+
+  @override
   String get contactLockedHint =>
       'Liên hệ qua điện thoại mở sau khi bạn đặt lịch';
 

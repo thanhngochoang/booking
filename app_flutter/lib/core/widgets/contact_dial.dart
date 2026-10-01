@@ -243,11 +243,20 @@ class _ContactDialState extends State<ContactDial>
     final borderColor = _open ? scheme.primary : scheme.outlineVariant;
 
     Widget glyph(double size) => widget.busy
-        ? SizedBox(
-            width: size,
-            height: size,
-            child: CircularProgressIndicator(strokeWidth: 2, color: color),
-          )
+        ? (_reduced
+              ? Icon(
+                  Icons.phone_outlined,
+                  size: size,
+                  color: color.withValues(alpha: 0.38),
+                )
+              : SizedBox(
+                  width: size,
+                  height: size,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: color,
+                  ),
+                ))
         : locked
         ? Icon(Icons.chat_bubble_outline_rounded, size: size, color: color)
         : single
@@ -295,7 +304,7 @@ class _ContactDialState extends State<ContactDial>
       link: _link,
       child: Semantics(
         button: true,
-        label: label,
+        label: widget.busy ? '$label, ${l.contactOpening}' : label,
         hint: locked ? l.contactLockedHint : null,
         expanded: expandable ? _open : null,
         child: InkWell(
@@ -496,11 +505,34 @@ class _TrayItem extends StatefulWidget {
 
 class _TrayItemState extends State<_TrayItem> {
   bool _focused = false;
+  bool _keyboardMode =
+      FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_onHighlightMode);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_onHighlightMode);
+    super.dispose();
+  }
+
+  void _onHighlightMode(FocusHighlightMode mode) {
+    final keyboard = mode == FocusHighlightMode.traditional;
+    if (keyboard != _keyboardMode && mounted) {
+      setState(() => _keyboardMode = keyboard);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    // Focus is requested on every open; the ring is only for keyboard users.
+    final showRing = _focused && _keyboardMode;
     final ring = theme.brightness == Brightness.dark
         ? AppColorsDark.focusRing
         : AppColors.focusRing;
@@ -530,8 +562,8 @@ class _TrayItemState extends State<_TrayItem> {
                     shape: BoxShape.circle,
                     color: scheme.secondary,
                     border: Border.all(
-                      color: _focused ? ring : scheme.outlineVariant,
-                      width: _focused ? 2 : 1,
+                      color: showRing ? ring : scheme.outlineVariant,
+                      width: showRing ? 2 : 1,
                     ),
                   ),
                   child: ChannelGlyph(

@@ -193,6 +193,15 @@ test('the adapter write shape (with server timestamps) is accepted', async () =>
   await assertSucceeds(batch.commit());
 });
 
+test('photographer numbers: updatedAt must be the server time', async () => {
+  await asPhotographer('ph1c');
+  const db = env.authenticatedContext('ph1c').firestore();
+  await assertFails(setDoc(doc(db, privateContact('ph1c')),
+    { phone: '+84903123456', updatedAt: Timestamp.fromDate(new Date('2020-01-01')) }));
+  await assertSucceeds(setDoc(doc(db, privateContact('ph1c')),
+    { phone: '+84903123456', updatedAt: serverTimestamp() }));
+});
+
 test('numbers are readable by their owner only, flags by every signed-in user', async () => {
   await asPhotographer('ph2'); await asPhotographer('ph3');
   await env.withSecurityRulesDisabled(async (c) => {

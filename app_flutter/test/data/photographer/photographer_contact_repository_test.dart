@@ -83,6 +83,17 @@ void main() {
       );
     });
 
+    test('fromMap ignores non-string own numbers', () {
+      expect(
+        ContactNumbers.fromMap({
+          'phone': '+84903123456',
+          'zaloPhone': 84912345678,
+          'whatsappPhone': {'x': 1},
+        }),
+        const ContactNumbers(phone: '+84903123456'),
+      );
+    });
+
     test('fromMap needs a phone', () {
       expect(ContactNumbers.fromMap(null), isNull);
       expect(ContactNumbers.fromMap({'zaloPhone': '+84912345678'}), isNull);

@@ -83,6 +83,7 @@ service cloud.firestore {
       return d.keys().hasOnly(['phone', 'zaloPhone', 'whatsappPhone', 'updatedAt'])
         && d.phone is string
         && d.phone.matches('^\\+84[35789][0-9]{8}$')
+        && (!('updatedAt' in d) || d.updatedAt == request.time)
         && (!('zaloPhone' in d)
             || (d.zaloPhone is string && d.zaloPhone.matches('^\\+84[35789][0-9]{8}$')))
         && (!('whatsappPhone' in d)

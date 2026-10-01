@@ -77,7 +77,54 @@ List<double> _itemOpacities(WidgetTester tester) => [
     _opacityOf(tester, Key('contact-item-fade-$c')),
 ];
 
+Border _itemBorder(WidgetTester tester, String code) {
+  final circle = find.descendant(
+    of: find.byKey(Key('contact-$code')),
+    matching: find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+    ),
+  );
+  return (tester.widget<Container>(circle).decoration! as BoxDecoration).border!
+      as Border;
+}
+
 void main() {
+  group('focus ring', () {
+    tearDown(() {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.automatic;
+    });
+
+    testWidgets('a touch open shows no focus ring on any entry', (
+      tester,
+    ) async {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.alwaysTouch;
+      await _pump(tester);
+      await _open(tester);
+      final outline = Theme.of(tester.element(find.byKey(_tray)))
+          .colorScheme
+          .outlineVariant;
+      for (final c in ['call', 'zalo', 'whatsapp']) {
+        final side = _itemBorder(tester, c).top;
+        expect(side.color, outline, reason: c);
+        expect(side.width, 1, reason: c);
+      }
+    });
+
+    testWidgets('a keyboard open rings the first entry', (tester) async {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.alwaysTraditional;
+      await _pump(tester);
+      await _open(tester);
+      expect(_itemBorder(tester, 'call').top.width, 2);
+      expect(_itemBorder(tester, 'zalo').top.width, 1);
+    });
+  });
+
   group('resting state', () {
     testWidgets('only the small button is visible, no channel names', (
       tester,
@@ -559,6 +606,26 @@ void main() {
       await tester.pump(); // a spinner never settles
       expect(picked, isEmpty);
       expect(find.byKey(_tray), findsNothing);
+    });
+  });
+
+  group('busy (reduced motion and semantics)', () {
+    testWidgets('reduced motion shows a static glyph, no spinner', (
+      tester,
+    ) async {
+      await _pump(tester, busy: true, reduced: true);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await expectIdle(tester);
+    });
+
+    testWidgets('busy has a screen-reader value', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(tester, busy: true);
+      expect(
+        tester.getSemantics(find.byKey(_button)).label,
+        contains('Đang mở liên hệ'),
+      );
+      handle.dispose();
     });
   });
 

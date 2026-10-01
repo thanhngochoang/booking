@@ -880,6 +880,12 @@ abstract class AppLocalizations {
   /// **'Nhắn tin hỏi trước'**
   String get contactInquiry;
 
+  /// No description provided for @contactOpening.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang mở liên hệ'**
+  String get contactOpening;
+
   /// No description provided for @contactLockedHint.
   ///
   /// In vi, this message translates to:
