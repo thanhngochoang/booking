@@ -215,5 +215,32 @@
   "areaPickerUse": "Dùng khu vực này",
   "areaPickerUseDevice": "Dùng vị trí của tôi",
   "areaPickerSearch": "Tìm quận, thành phố",
-  "areaPickerNoMatch": "Không tìm thấy khu vực"
+  "areaPickerNoMatch": "Không tìm thấy khu vực",
+  "exploreAround": "Quanh {area} · vị trí gần đúng",
+  "@exploreAround": {
+    "placeholders": {
+      "area": {"type": "String"}
+    }
+  },
+  "exploreAroundMe": "Quanh bạn · vị trí gần đúng",
+  "exploreChange": "Đổi",
+  "exploreRadius": "{km} km",
+  "@exploreRadius": {
+    "placeholders": {
+      "km": {"type": "int"}
+    }
+  },
+  "exploreThisWeek": "Tuần này",
+  "exploreWeekend": "Cuối tuần",
+  "exploreNearbyTitle": "Sự kiện gần bạn",
+  "exploreEventsTitle": "Sự kiện chụp ảnh",
+  "exploreSeeAll": "Xem tất cả",
+  "exploreNoneNearby": "Chưa có sự kiện gần bạn",
+  "exploreWiden": "Tăng bán kính",
+  "exploreTabServices": "Dịch vụ",
+  "exploreTabPlaces": "Địa điểm",
+  "exploreTabStyles": "Phong cách",
+  "exploreTabPhotographers": "Thợ ảnh",
+  "explorePhotographersAll": "Xem tất cả nhiếp ảnh gia",
+  "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại."
 }

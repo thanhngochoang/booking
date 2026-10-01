@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
+import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
@@ -130,7 +131,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           for (final (tab, page) in [
             (AppTab.home, const HomeTab()),
-            (AppTab.explore, const ExploreTab()),
+            (AppTab.explore, const ExploreScreen()),
             (AppTab.action, const ActionTab()),
             (AppTab.bookings, const BookingsTab()),
             (AppTab.profile, const ProfileTab()),

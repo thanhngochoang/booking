@@ -376,7 +376,7 @@ Các kênh liên hệ **không bày sẵn**. Mặc định chỉ có một nút 
 
 ### 3c.2 Quyền riêng tư và kỹ thuật
 
-- Toạ độ chính xác **ở lại trên máy**; không ghi lên Firestore. Truy vấn dùng geohash độ dài 5 (±2,4 km) cùng 8 ô lân cận trên chỉ mục `events (location.geohash, startAt)`, rồi lọc và sắp theo khoảng cách (haversine) ở client.
+- Toạ độ chính xác **ở lại trên máy**; không ghi lên Firestore. Truy vấn dùng tiền tố geohash cùng 8 ô lân cận; độ dài tiền tố chọn theo bán kính (5 ký tự cho ≤ 4 km, 4 ký tự cho ≤ 17 km, 3 ký tự cho ≤ 140 km) để chín ô luôn phủ hết bán kính trên chỉ mục `events (location.geohash, startAt)`, rồi lọc và sắp theo khoảng cách (haversine) ở client.
 - Khu vực chọn thủ công lưu `SharedPreferences` (`area`: tên + geohash 5), không lưu server trừ khi người dùng tự điền "Thành phố" trong hồ sơ.
 - Vị trí cũ hơn 30 phút thì làm mới khi vào màn, dùng bản cũ trong lúc chờ; quá 8 giây không có vị trí thì chuyển sang khu vực đã lưu hoặc S36.
 - Sự kiện không có `geo` bị loại khỏi mục "gần bạn" nhưng vẫn ở "Xem tất cả".

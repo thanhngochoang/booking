@@ -583,4 +583,60 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get areaPickerNoMatch => 'Không tìm thấy khu vực';
+
+  @override
+  String exploreAround(String area) {
+    return 'Quanh $area · vị trí gần đúng';
+  }
+
+  @override
+  String get exploreAroundMe => 'Quanh bạn · vị trí gần đúng';
+
+  @override
+  String get exploreChange => 'Đổi';
+
+  @override
+  String exploreRadius(int km) {
+    return '$km km';
+  }
+
+  @override
+  String get exploreThisWeek => 'Tuần này';
+
+  @override
+  String get exploreWeekend => 'Cuối tuần';
+
+  @override
+  String get exploreNearbyTitle => 'Sự kiện gần bạn';
+
+  @override
+  String get exploreEventsTitle => 'Sự kiện chụp ảnh';
+
+  @override
+  String get exploreSeeAll => 'Xem tất cả';
+
+  @override
+  String get exploreNoneNearby => 'Chưa có sự kiện gần bạn';
+
+  @override
+  String get exploreWiden => 'Tăng bán kính';
+
+  @override
+  String get exploreTabServices => 'Dịch vụ';
+
+  @override
+  String get exploreTabPlaces => 'Địa điểm';
+
+  @override
+  String get exploreTabStyles => 'Phong cách';
+
+  @override
+  String get exploreTabPhotographers => 'Thợ ảnh';
+
+  @override
+  String get explorePhotographersAll => 'Xem tất cả nhiếp ảnh gia';
+
+  @override
+  String get exploreLoadError =>
+      'Không tải được sự kiện. Kiểm tra mạng rồi thử lại.';
 }

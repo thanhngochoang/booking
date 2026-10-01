@@ -23,19 +23,6 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
-class ExploreTab extends ConsumerWidget {
-  const ExploreTab({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(l.tabExplore)),
-      body: EmptyState(title: l.emptyExploreTitle, body: l.emptyExploreBody),
-    );
-  }
-}
-
 class ActionTab extends ConsumerWidget {
   const ActionTab({super.key});
   @override

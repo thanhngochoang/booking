@@ -1161,6 +1161,108 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không tìm thấy khu vực'**
   String get areaPickerNoMatch;
+
+  /// No description provided for @exploreAround.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quanh {area} · vị trí gần đúng'**
+  String exploreAround(String area);
+
+  /// No description provided for @exploreAroundMe.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quanh bạn · vị trí gần đúng'**
+  String get exploreAroundMe;
+
+  /// No description provided for @exploreChange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi'**
+  String get exploreChange;
+
+  /// No description provided for @exploreRadius.
+  ///
+  /// In vi, this message translates to:
+  /// **'{km} km'**
+  String exploreRadius(int km);
+
+  /// No description provided for @exploreThisWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuần này'**
+  String get exploreThisWeek;
+
+  /// No description provided for @exploreWeekend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuối tuần'**
+  String get exploreWeekend;
+
+  /// No description provided for @exploreNearbyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện gần bạn'**
+  String get exploreNearbyTitle;
+
+  /// No description provided for @exploreEventsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện chụp ảnh'**
+  String get exploreEventsTitle;
+
+  /// No description provided for @exploreSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get exploreSeeAll;
+
+  /// No description provided for @exploreNoneNearby.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có sự kiện gần bạn'**
+  String get exploreNoneNearby;
+
+  /// No description provided for @exploreWiden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tăng bán kính'**
+  String get exploreWiden;
+
+  /// No description provided for @exploreTabServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get exploreTabServices;
+
+  /// No description provided for @exploreTabPlaces.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm'**
+  String get exploreTabPlaces;
+
+  /// No description provided for @exploreTabStyles.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phong cách'**
+  String get exploreTabStyles;
+
+  /// No description provided for @exploreTabPhotographers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh'**
+  String get exploreTabPhotographers;
+
+  /// No description provided for @explorePhotographersAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả nhiếp ảnh gia'**
+  String get explorePhotographersAll;
+
+  /// No description provided for @exploreLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được sự kiện. Kiểm tra mạng rồi thử lại.'**
+  String get exploreLoadError;
 }
 
 class _AppLocalizationsDelegate
