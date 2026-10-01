@@ -27,6 +27,7 @@ export 'package:photobooking/core/widgets/phone_field.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
 export 'package:photobooking/core/widgets/screen_code.dart';
 export 'package:photobooking/core/widgets/segmented_tabs.dart';
+export 'package:photobooking/core/widgets/sliver_adaptive_rows.dart';
 export 'package:photobooking/core/widgets/stat_tile.dart';
 export 'package:photobooking/core/widgets/status_badge.dart';
 export 'package:photobooking/core/widgets/step_progress.dart';
