@@ -230,8 +230,7 @@ class FirestoreServiceRepository implements ServiceRepository {
         .get();
     return [
       for (final d in snap.docs)
-        if (serviceFromFirestore(d.id, photographerId, d.data()) case final s?)
-          s,
+        ?serviceFromFirestore(d.id, photographerId, d.data()),
     ];
   }
 }
