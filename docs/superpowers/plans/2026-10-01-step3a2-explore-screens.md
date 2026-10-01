@@ -1905,8 +1905,8 @@ final nearbyEventsProvider = FutureProvider.autoDispose<List<NearbyEvent>>((
   }
   final filters = ref.watch(nearbyFiltersProvider);
   final now = ref.watch(clockProvider)();
-  final precision = geohashPrecisionForRadiusKm(filters.radiusKm);
-  final cells = geohashCells(origin.cellPrefix(precision));
+  final q = geohashQueryFor(filters.radiusKm);
+  final cells = geohashCells(origin.cellPrefix(q.precision), rings: q.rings);
   final events = await ref
       .watch(nearbyEventsRepositoryProvider)
       .inCells(cells, from: now);
@@ -1951,7 +1951,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 - Modify: `lib/features/shell/tab_badges.dart`, `lib/features/shell/tab_shell.dart`
 
 **Interfaces:**
-- Consumes: `NearbyEventsRepository.countCreatedSince`, `exploreResolutionProvider`, `geohashCells`, `geohashPrecisionForRadiusKm`, `clockProvider`, `sharedPreferencesProvider`.
+- Consumes: `NearbyEventsRepository.countCreatedSince`, `exploreResolutionProvider`, `geohashCells` (with `rings:`), `geohashQueryFor`, `clockProvider`, `sharedPreferencesProvider`.
 - Produces:
   - `class ExploreSeenAtController extends Notifier<DateTime?>` with `static const key = 'exploreSeenAt'` and `Future<void> markSeen()`; `exploreSeenAtProvider`.
   - `exploreBadgeCountProvider` (`FutureProvider<int>`): number of events created since `exploreSeenAt` (all events when never seen), inside the 25 km cells of the current origin, or everywhere when there is no location or area (spec 3d.3), capped at 10.
@@ -2162,7 +2162,10 @@ final exploreBadgeCountProvider = FutureProvider<int>((ref) {
   final origin = ref.watch(exploreResolutionProvider.select((r) => r.origin));
   final cells = origin == null
       ? null
-      : geohashCells(origin.cellPrefix(geohashPrecisionForRadiusKm(25)));
+      : (() {
+          final q = geohashQueryFor(25);
+          return geohashCells(origin.cellPrefix(q.precision), rings: q.rings);
+        })();
   return ref
       .watch(nearbyEventsRepositoryProvider)
       .countCreatedSince(cells: cells, since: seenAt);
