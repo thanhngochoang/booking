@@ -53,7 +53,10 @@ service cloud.firestore {
       return d.keys().hasOnly(['phone', 'phoneVerified', 'allowZalo', 'allowWhatsApp', 'updatedAt'])
         && d.phone is string
         && d.phone.matches('^\\+84[35789][0-9]{8}$')
-        && d.get('phoneVerified', false) == (old == null ? false : old.get('phoneVerified', false))
+        && (!('updatedAt' in d) || d.updatedAt == request.time)
+        && ((old != null && d.phone != old.phone)
+            ? d.get('phoneVerified', false) == false
+            : d.get('phoneVerified', false) == (old == null ? false : old.get('phoneVerified', false)))
         && d.get('allowZalo', true) is bool
         && d.get('allowWhatsApp', false) is bool;
     }

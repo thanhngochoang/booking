@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, writeBatch, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 let env;
 before(async () => {
@@ -136,4 +136,25 @@ test('a client can never mark its phone verified', async () => {
 test('the public users doc still refuses a phone field', async () => {
   const db = env.authenticatedContext('c6').firestore();
   await assertFails(setDoc(doc(db, 'users/c6'), { displayName: 'X', phone: '+84903123456' }));
+});
+
+test('changing the phone resets verification; omitting the flag on a change fails', async () => {
+  const seed = (uid) => env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), contactPath(uid)), { phone: '+84903123456', phoneVerified: true }));
+  await seed('v1');
+  const db1 = env.authenticatedContext('v1').firestore();
+  await assertSucceeds(setDoc(doc(db1, contactPath('v1')),
+    { phone: '+84912345678', phoneVerified: false }, { merge: true }));
+  await seed('v2');
+  const db2 = env.authenticatedContext('v2').firestore();
+  await assertFails(setDoc(doc(db2, contactPath('v2')), { phone: '+84912345678' }, { merge: true }));
+  await assertSucceeds(updateDoc(doc(db2, contactPath('v2')), { allowZalo: false }));
+});
+
+test('updatedAt must be the server time', async () => {
+  const db = env.authenticatedContext('t1').firestore();
+  await assertFails(setDoc(doc(db, contactPath('t1')),
+    { phone: '+84903123456', updatedAt: Timestamp.fromDate(new Date('2020-01-01')) }));
+  await assertSucceeds(setDoc(doc(db, contactPath('t1')),
+    { phone: '+84903123456', updatedAt: serverTimestamp() }));
 });
