@@ -14,7 +14,7 @@
 
 - `docs/superpowers/plans/2026-10-01-step2a-phone-and-customer-contact.md`: `UserContact`, `UserContactRepository { Stream<UserContact?> watch(String uid); Future<void> save(String uid, {required String phone, required bool allowZalo, required bool allowWhatsApp}); }`, `FirestoreUserContactRepository({FirebaseFirestore? db})`, `FakeUserContactRepository`, `userContactRepositoryProvider` in `lib/data/user/user_contact_providers.dart`.
 - `docs/superpowers/plans/2026-10-01-step2b-contact-dial-and-channels.md`: `ContactChannel` (core), `ContactChannels`, `ContactNumbers`, `ServiceArea` (`lib/data/photographer/photographer_contact.dart`), `PhotographerContactRepository` + `FirestorePhotographerContactRepository({FirebaseFirestore? db})` + `FakePhotographerContactRepository`, `photographerContactRepositoryProvider`; `ContactSubject`, `ContactLinkError`, `ContactLinkException`, `ContactLinkRepository`, `callableData`, `contactUriFor`, `parseLinkResponse`, `linkErrorFromCode`, `FakeContactLinkRepository` (`lib/data/contact/contact_link_repository.dart`), `contactLinkRepositoryProvider` (`lib/data/contact/contact_providers.dart`).
-- `docs/superpowers/plans/2026-10-01-backend-phase1-firebase-local.md`: Cloud Functions in TypeScript with a **pure domain module** (no `firebase*` imports). This plan assumes its barrel is `app_flutter/firebase/functions/src/domain/index.ts` and that it exports `ERROR_CODES`, `ErrorCode`, `contactUnlocked`, `contactUrl`, `ExternalChannel`, `ContactNumbers` with the signatures listed in Task 3. **The executor must open phase 1's final layout before Task 3** and adjust only `services/api/src/domain/index.ts` (path or aliases); if a function is missing there, add it to phase 1's domain module with its unit test, never to `services/api`.
+- `docs/superpowers/plans/2026-10-01-backend-phase1-firebase-local.md`: Cloud Functions in TypeScript with a **pure domain module** (no `firebase*` imports). Its pure package lives at `packages/domain` (barrel `packages/domain/src/index.ts`). Phase 1's final names are `ERROR_CODES`, `ErrorCode`, `DomainError`, `bookingContactUnlocked`, `ticketContactUnlocked`, `contactUrlFor`, `ExternalChannel`, `ContactNumbers`; this plan's shim (Task 3) maps `contactUnlocked` → `bookingContactUnlocked` and `contactUrl` → `contactUrlFor` with `as` aliases. **The executor must open phase 1's final layout before Task 3** and adjust only `services/api/src/domain/index.ts` (path or aliases); if a function is missing there, add it to phase 1's domain module with its unit test, never to `services/api`.
 
 ## Key decisions
 
@@ -479,7 +479,7 @@ CMD ["node", "dist/server.js"]
 !services/api/api/**
 !services/api/migrations/**
 !services/api/test/fixtures/**
-!app_flutter/firebase/functions/src/domain/**
+!packages/domain/**
 ```
 
 ```yaml
@@ -577,7 +577,7 @@ on:
   pull_request:
     paths:
       - 'services/api/**'
-      - 'app_flutter/firebase/functions/src/domain/**'
+      - 'packages/domain/**'
       - '.github/workflows/api.yml'
 jobs:
   test:
@@ -1477,7 +1477,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Read phase 1's domain barrel**
 
-Open `app_flutter/firebase/functions/src/domain/index.ts` (or wherever phase 1 put its pure domain barrel; check that plan's File Structure). Note the exported names for the six items under "Consumes". Write the shim in Step 4 with those names (alias with `as` when they differ). If one is missing, add it to phase 1's domain module with a unit test in phase 1's test suite, commit that separately (`feat(domain): …`), then continue. Also check that the module imports nothing outside its own folder except npm packages; any npm package it uses must be added to `services/api/package.json` `dependencies` with the same version range.
+Open `packages/domain/src/index.ts` (or wherever phase 1 put its pure domain barrel; check that plan's File Structure). Note the exported names for the six items under "Consumes". Write the shim in Step 4 with those names (alias with `as` when they differ). If one is missing, add it to phase 1's domain module with a unit test in phase 1's test suite, commit that separately (`feat(domain): …`), then continue. Also check that the module imports nothing outside its own folder except npm packages; any npm package it uses must be added to `services/api/package.json` `dependencies` with the same version range.
 
 - [ ] **Step 2: Write the failing tests**
 
@@ -1691,16 +1691,19 @@ Expected: FAIL, `Cannot find module '../src/domain/index.js'` (and `../src/error
  * Rules are imported, never copied: Cloud Functions and this API run the same
  * code. If phase 1 uses other names, alias them here (`export { x as y }`).
  */
+// Phase 1 names (packages/domain): bookingContactUnlocked, contactUrlFor.
+// If their parameters differ from the signatures under "Consumes", wrap them
+// here instead of aliasing; nothing else in services/api changes.
 export {
   ERROR_CODES,
-  contactUnlocked,
-  contactUrl,
-} from '../../../../app_flutter/firebase/functions/src/domain/index.js';
+  bookingContactUnlocked as contactUnlocked,
+  contactUrlFor as contactUrl,
+} from '../../../../packages/domain/src/index.js';
 export type {
   ContactNumbers,
   ErrorCode,
   ExternalChannel,
-} from '../../../../app_flutter/firebase/functions/src/domain/index.js';
+} from '../../../../packages/domain/src/index.js';
 ```
 
 ```ts
@@ -2448,7 +2451,7 @@ Expected: `🚀 api/openapi.yaml → src/generated/api.ts`; the file declares `e
 In `services/api/Dockerfile`, build stage, insert before `RUN npm run build`:
 
 ```dockerfile
-COPY app_flutter/firebase/functions/src/domain/ /repo/app_flutter/firebase/functions/src/domain/
+COPY packages/domain/ /repo/packages/domain/
 ```
 
 and in the final stage, after the migrations lines:
