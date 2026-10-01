@@ -265,6 +265,12 @@
     }
   },
   "priceFrom": "từ",
+  "priceFromValue": "từ {price}",
+  "@priceFromValue": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
   "photographerCardProfile": "Hồ sơ",
   "photographerCardBook": "Đặt lịch"
 }

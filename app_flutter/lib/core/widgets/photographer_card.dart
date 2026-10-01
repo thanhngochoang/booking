@@ -62,14 +62,15 @@ class PhotographerCard extends StatelessWidget {
     final stack = MediaQuery.textScalerOf(context).scale(16) > 18.4;
     final hero = data.heroUrl;
     final meta = _meta(context);
-    final price = data.startingPriceVnd == null
+    final priceLabel = priceFromLabel(data.startingPriceVnd, l);
+    final price = priceLabel == null
         ? '—'
         : formatMoney(data.startingPriceVnd!, short: true);
     final header = [
       data.displayName,
       if (data.verified) l.verifiedLabel,
       meta,
-      '${l.priceFrom} $price',
+      priceLabel,
       availabilityLabel,
     ].whereType<String>().where((e) => e.isNotEmpty).join(', ');
 
@@ -174,13 +175,14 @@ class PhotographerCard extends StatelessWidget {
                                   fontFeatures: [FontFeature.tabularFigures()],
                                 ),
                               ),
-                              Text(
-                                l.priceFrom,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  color: secondary,
+                              if (priceLabel != null)
+                                Text(
+                                  l.priceFrom,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: secondary,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ],

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:photobooking/core/geo.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 /// `1,2 km`: one decimal, a decimal comma, never `0,0 km`.
 String formatDistance(double km) {
@@ -66,3 +67,9 @@ String formatRating(double rating) {
   assert(rating.isFinite);
   return ((rating * 10).round() / 10).toStringAsFixed(1).replaceAll('.', ',');
 }
+
+/// `từ 1,5M`, or null when the price is unknown or not positive (callers then
+/// leave the price out instead of showing `từ 0₫`).
+String? priceFromLabel(int? vnd, AppLocalizations l) => vnd == null || vnd <= 0
+    ? null
+    : l.priceFromValue(formatMoney(vnd, short: true));

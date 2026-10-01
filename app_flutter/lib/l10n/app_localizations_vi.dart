@@ -672,6 +672,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get priceFrom => 'từ';
 
   @override
+  String priceFromValue(String price) {
+    return 'từ $price';
+  }
+
+  @override
   String get photographerCardProfile => 'Hồ sơ';
 
   @override

@@ -130,6 +130,6 @@ Giới hạn: bộ dựng ảnh thật (`CachedNetworkImage`) không chạy tron
 
 1. Cuộn nhanh nguồn cấp 100 bài trên máy tầm trung: đọc thời gian raster và kích thước image cache trong DevTools Memory (không tăng sau 100 thẻ ngoài giới hạn của cache).
 2. Để Trang chủ đứng yên 5 phút: không khung hình mới, không mạng.
-3. Tắt mạng: ảnh lỗi hiện ô "Thử lại" và không tự thử lại; bật mạng rồi chạm ô để tải lại.
+3. Tắt mạng: thẻ ảnh trong feed không bao giờ hiện "Thử lại" (chỉ có ô nền phẳng); chỉ thư viện ảnh ở S02 (retry:true) hiện ô "Thử lại" và không tự thử lại; bật mạng rồi chạm ô để tải lại.
 
 Android: máy tầm trung, `flutter run --profile`, DevTools Performance và Memory, `adb shell dumpsys batterystats`. iOS: Xcode Instruments (Time Profiler, Allocations, Energy Log) trên iPhone thật, Energy Impact phải là "Low" khi đứng yên; hiện ghi "iOS: not measured, blocked by iOS enablement". Dán kết quả vào mô tả PR theo bảng mẫu ở trên (hàng iOS ghi kiểu iPhone ở cột Thiết bị và Energy Impact thay cho các cột chỉ có ở Android).

@@ -16,6 +16,7 @@ Widget _card({
   Widget? trailing,
   Widget? action,
   VoidCallback? onTap,
+  String? semanticLabel,
   double width = 300,
   double textScale = 1,
   Brightness brightness = Brightness.dark,
@@ -33,6 +34,7 @@ Widget _card({
       trailingPill: trailing,
       action: action,
       onTap: onTap,
+      semanticLabel: semanticLabel,
     ),
   ),
   width: width,
@@ -256,5 +258,36 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a flat fill sits under a photo that draws nothing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        PhotoImageScope(
+          builder: (context, url, fit, cacheWidth, retry) =>
+              const SizedBox.shrink(),
+          child: const PhotoCard(imageUrl: 'u', aspect: 4 / 5),
+        ),
+        width: 300,
+      ),
+    );
+    expect(find.byKey(const ValueKey('photo-card-fill')), findsOneWidget);
+  });
+
+  testWidgets('semanticLabel replaces the joined text and pill label', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        leading: const PhotoPill(label: 'Rảnh T7 này'),
+        semanticLabel: 'Ảnh 3',
+      ),
+    );
+    expect(find.bySemanticsLabel('Ảnh 3'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Rảnh T7 này')), findsNothing);
+    handle.dispose();
   });
 }

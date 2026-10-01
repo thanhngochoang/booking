@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/vn_time.dart';
+import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 void main() {
   test('distance has one decimal, a comma and the unit', () {
@@ -54,5 +55,14 @@ void main() {
     expect(formatRating(4.56), '4,6');
     expect(formatRating(4.54), '4,5');
     expect(formatRating(0), '0,0');
+  });
+
+  test('priceFromLabel: null for unknown or non-positive prices', () {
+    final l = AppLocalizationsVi();
+    expect(priceFromLabel(1500000, l), 'từ 1,5M');
+    expect(priceFromLabel(250000, l), 'từ 250K');
+    expect(priceFromLabel(0, l), isNull);
+    expect(priceFromLabel(-5, l), isNull);
+    expect(priceFromLabel(null, l), isNull);
   });
 }

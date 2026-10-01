@@ -18,14 +18,15 @@ class PhotoCard extends StatelessWidget {
     this.trailingPill,
     this.action,
     this.onTap,
+    this.semanticLabel,
   });
 
   /// The photo is shown with `retry: false`: tapping the card opens the
   /// detail, which retries, and pull-to-refresh reloads the feed.
   final String imageUrl;
 
-  /// Kept for the blurhash placeholder (a later enhancement); the placeholder
-  /// today is the flat theme colour.
+  /// Kept for the blurhash placeholder (a later enhancement); the fill under
+  /// the photo today is the flat theme colour.
   final String? blurHash;
 
   /// Width divided by height: 4/5 for the large card, 3/4 for small ones.
@@ -41,18 +42,24 @@ class PhotoCard extends StatelessWidget {
   final Widget? action;
   final VoidCallback? onTap;
 
+  /// The card label for screen readers. Without it the card reads its text
+  /// and pill labels; pass one for cards that show no text.
+  final String? semanticLabel;
+
   static const _radius = AppRadius.lg + 8;
 
   @override
   Widget build(BuildContext context) {
     final hasText = title != null || subtitle != null;
     // One node reads the whole card: text, then the labels of PhotoPill pills.
-    final label = [
-      title,
-      subtitle,
-      if (leadingPill case PhotoPill(:final label)) label,
-      if (trailingPill case PhotoPill(:final label)) label,
-    ].whereType<String>().join(', ');
+    final label =
+        semanticLabel ??
+        [
+          title,
+          subtitle,
+          if (leadingPill case PhotoPill(:final label)) label,
+          if (trailingPill case PhotoPill(:final label)) label,
+        ].whereType<String>().join(', ');
     return Semantics(
       container: true,
       button: onTap != null,
@@ -69,6 +76,12 @@ class PhotoCard extends StatelessWidget {
               return Stack(
                 fit: StackFit.expand,
                 children: [
+                  // Flat fill under the photo: shown while it loads and after a
+                  // failure (retry: false draws nothing of its own).
+                  ColoredBox(
+                    key: const ValueKey('photo-card-fill'),
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                   NetworkPhoto(url: imageUrl, retry: false),
                   if (hasText)
                     Positioned.fill(

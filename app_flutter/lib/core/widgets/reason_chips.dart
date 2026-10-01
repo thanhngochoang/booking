@@ -46,7 +46,7 @@ class ReasonChips extends StatelessWidget {
                       r.text,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 10.5),
+                      style: TextStyle(fontSize: 10.5, color: scheme.onSurface),
                     ),
                   ),
                 ),

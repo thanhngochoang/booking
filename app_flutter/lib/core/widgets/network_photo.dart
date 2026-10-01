@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 
 /// Builds the actual image widget. [cacheWidth] is the decode width in pixels
-/// (null when unknown); [retry] says whether a failed load may show a retry
+/// (always set; [NetworkPhoto] falls back to the screen width); [retry] says whether a failed load may show a retry
 /// button.
 typedef PhotoImageBuilder = Widget Function(
   BuildContext context,
@@ -140,6 +140,9 @@ class _CachedPhotoState extends State<_CachedPhoto> {
     return CachedNetworkImage(
       key: ValueKey('${widget.url}#$_attempt'),
       imageUrl: widget.url,
+      // A retry gets a fresh cache key, so the failed (resized) entry is not
+      // reused; the original is evicted in _reload as well.
+      cacheKey: _attempt > 0 ? '${widget.url}#$_attempt' : null,
       fit: widget.fit,
       memCacheWidth: widget.cacheWidth,
       fadeInDuration: const Duration(milliseconds: 150),

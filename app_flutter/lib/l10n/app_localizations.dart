@@ -1294,6 +1294,12 @@ abstract class AppLocalizations {
   /// **'từ'**
   String get priceFrom;
 
+  /// No description provided for @priceFromValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'từ {price}'**
+  String priceFromValue(String price);
+
   /// No description provided for @photographerCardProfile.
   ///
   /// In vi, this message translates to:

@@ -58,7 +58,9 @@ void main() {
     );
   });
 
-  testWidgets('an unbounded width gives no decode width', (tester) async {
+  testWidgets('an unbounded width falls back to the screen width', (
+    tester,
+  ) async {
     final log = <PhotoRequest>[];
     await tester.pumpWidget(
       hostWidget(

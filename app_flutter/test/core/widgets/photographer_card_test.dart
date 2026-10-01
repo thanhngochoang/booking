@@ -71,6 +71,7 @@ void main() {
     );
     expect(find.text('Chân dung · ★ 4,9 · 112 buổi'), findsOneWidget);
     expect(find.text('—'), findsOneWidget, reason: 'unknown price');
+    expect(find.text('từ'), findsNothing);
     expect(find.byType(PhotoPill), findsNothing);
   });
 
@@ -180,5 +181,46 @@ void main() {
     final book = tester.getRect(find.byKey(const Key('card-book-p1')));
     expect(book.top, profile.top);
     expect(book.left, greaterThan(profile.right));
+  });
+
+  testWidgets('a price of 0 is treated as unknown', (tester) async {
+    await tester.pumpWidget(_card(price: 0));
+    expect(find.text('—'), findsOneWidget);
+    expect(find.text('từ'), findsNothing);
+    expect(find.text('0₫'), findsNothing);
+  });
+
+  testWidgets('the header semantics label lists name, meta, price, slot', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(_card());
+    expect(
+      find.bySemanticsLabel(
+        'Minh Trí, Đã xác minh, Chân dung · 1,2 km · ★ 4,9 · 112 buổi, '
+        'từ 1,5M, Rảnh 12/10',
+      ),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('header semantics omit an unknown price', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(_card(price: null));
+    expect(find.bySemanticsLabel(RegExp(r'từ|—')), findsNothing);
+    handle.dispose();
+  });
+
+  testWidgets('no rating leaves it out of the meta line', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        PhotographerCard(
+          data: fixturePhotographer('p1', reviews: 0),
+          onProfile: () {},
+        ),
+      ),
+    );
+    expect(find.textContaining('★'), findsNothing);
   });
 }
