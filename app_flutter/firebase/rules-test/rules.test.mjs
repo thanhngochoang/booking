@@ -158,3 +158,111 @@ test('updatedAt must be the server time', async () => {
   await assertSucceeds(setDoc(doc(db, contactPath('t1')),
     { phone: '+84903123456', updatedAt: serverTimestamp() }));
 });
+
+const privateContact = (uid) => `photographers/${uid}/private/contact`;
+const goodNumbers = { phone: '+84903123456', zaloPhone: '+84912345678', whatsappPhone: '+14155552671' };
+const allChannels = { call: true, zalo: true, whatsapp: true, acceptInquiries: true };
+
+test('photographer saves numbers, public flags and service area in one batch', async () => {
+  await asPhotographer('ph1');
+  const db = env.authenticatedContext('ph1').firestore();
+  const batch = writeBatch(db);
+  batch.set(doc(db, privateContact('ph1')), goodNumbers);
+  batch.set(doc(db, 'photographers/ph1'), {
+    serviceArea: { city: 'Hà Nội', radiusKm: 20 },
+    contactChannels: allChannels,
+    onboardingComplete: true,
+  }, { merge: true });
+  await assertSucceeds(batch.commit());
+  // Later edits: drop an own number by replacing the doc, flip one flag.
+  await assertSucceeds(setDoc(doc(db, privateContact('ph1')), { phone: '+84903123456' }));
+  await assertSucceeds(updateDoc(doc(db, 'photographers/ph1'), { 'contactChannels': { ...allChannels, zalo: false } }));
+});
+
+test('the adapter write shape (with server timestamps) is accepted', async () => {
+  await asPhotographer('ph1b');
+  const db = env.authenticatedContext('ph1b').firestore();
+  const batch = writeBatch(db);
+  batch.set(doc(db, privateContact('ph1b')), { phone: '+84903123456', updatedAt: serverTimestamp() });
+  batch.set(doc(db, 'photographers/ph1b'), {
+    serviceArea: { city: 'Hà Nội', radiusKm: 20 },
+    contactChannels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    onboardingComplete: true,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+  await assertSucceeds(batch.commit());
+});
+
+test('numbers are readable by their owner only, flags by every signed-in user', async () => {
+  await asPhotographer('ph2'); await asPhotographer('ph3');
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), privateContact('ph2')), goodNumbers);
+    await setDoc(doc(c.firestore(), 'photographers/ph2'), { contactChannels: allChannels, onboardingComplete: true });
+  });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('ph2').firestore(), privateContact('ph2'))));
+  await assertFails(getDoc(doc(env.authenticatedContext('ph3').firestore(), privateContact('ph2')))); // another photographer
+  await assertFails(getDoc(doc(env.authenticatedContext('some-customer').firestore(), privateContact('ph2'))));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), privateContact('ph2'))));
+  const publicDoc = await assertSucceeds(getDoc(doc(env.authenticatedContext('some-customer').firestore(), 'photographers/ph2')));
+  assert.equal(publicDoc.data().contactChannels.call, true);
+  assert.ok(!JSON.stringify(publicDoc.data()).includes('+84'), 'the public photographer doc must hold no number');
+  // Nobody else may write them either.
+  await assertFails(setDoc(doc(env.authenticatedContext('ph3').firestore(), privateContact('ph2')), { phone: '+84903123456' }));
+});
+
+test('numbers never go onto the public photographer doc', async () => {
+  await asPhotographer('ph4');
+  const db = env.authenticatedContext('ph4').firestore();
+  await assertFails(setDoc(doc(db, 'photographers/ph4'), { contact: { phone: '+84903123456' } }));
+  await assertFails(setDoc(doc(db, 'photographers/ph4'), { phone: '+84903123456' }));
+  await assertFails(setDoc(doc(db, 'photographers/ph4'), { contactChannels: { call: false, phone: '+84903123456' } }));
+});
+
+test('private contact validates every number and rejects extras', async () => {
+  await asPhotographer('ph5');
+  const db = env.authenticatedContext('ph5').firestore();
+  const bad = [
+    { phone: '0903123456' }, { phone: '+84123456789' }, { phone: '+8490312345' }, { phone: 5 }, {},
+    { phone: '+84903123456', zaloPhone: '+14155552671' },      // Zalo must be Vietnamese
+    { phone: '+84903123456', whatsappPhone: '0903123456' },    // WhatsApp needs a +country code
+    { phone: '+84903123456', whatsappPhone: '+123' },
+    { phone: '+84903123456', note: 'x' },
+  ];
+  for (const data of bad) await assertFails(setDoc(doc(db, privateContact('ph5')), data));
+  await assertFails(setDoc(doc(db, 'photographers/ph5/private/other'), { phone: '+84903123456' }));
+  await assertSucceeds(setDoc(doc(db, privateContact('ph5')), { phone: '+84903123456', whatsappPhone: '+14155552671' }));
+});
+
+test('only a photographer-role account may write private contact', async () => {
+  await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'users/cust-1'), { displayName: 'C', role: 'customer' }));
+  await assertFails(setDoc(doc(env.authenticatedContext('cust-1').firestore(), privateContact('cust-1')), { phone: '+84903123456' }));
+});
+
+test('a channel cannot be public without a stored number, and flags are validated', async () => {
+  await asPhotographer('ph6');
+  const db = env.authenticatedContext('ph6').firestore();
+  // No private doc yet: turning a channel on fails, all-off passes.
+  await assertFails(setDoc(doc(db, 'photographers/ph6'), { contactChannels: { call: true } }, { merge: true }));
+  await assertSucceeds(setDoc(doc(db, 'photographers/ph6'), { contactChannels: { call: false, zalo: false, whatsapp: false, acceptInquiries: true } }, { merge: true }));
+  // Wrong shapes.
+  await assertFails(setDoc(doc(db, 'photographers/ph6'), { contactChannels: { call: 'yes' } }, { merge: true }));
+  await assertFails(setDoc(doc(db, 'photographers/ph6'), { contactChannels: { sms: true } }, { merge: true }));
+  await assertFails(setDoc(doc(db, 'photographers/ph6'), { contactChannels: true }, { merge: true }));
+  // Once the number exists in the same batch it works.
+  const batch = writeBatch(db);
+  batch.set(doc(db, privateContact('ph6')), { phone: '+84903123456' });
+  batch.set(doc(db, 'photographers/ph6'), { contactChannels: { call: true } }, { merge: true });
+  await assertSucceeds(batch.commit());
+});
+
+test('service area has a city and an integer radius', async () => {
+  await asPhotographer('ph7');
+  const db = env.authenticatedContext('ph7').firestore();
+  await assertSucceeds(setDoc(doc(db, 'photographers/ph7'), { serviceArea: { city: 'Đà Nẵng', radiusKm: 50 } }));
+  for (const serviceArea of [
+    { city: 'Đ', radiusKm: 50 }, { city: 'Đà Nẵng', radiusKm: 0 }, { city: 'Đà Nẵng', radiusKm: 201 },
+    { city: 'Đà Nẵng', radiusKm: 12.5 }, { city: 'Đà Nẵng' }, { city: 'Đà Nẵng', radiusKm: 5, extra: 1 }, 'Đà Nẵng',
+  ]) {
+    await assertFails(setDoc(doc(db, 'photographers/ph7'), { serviceArea }));
+  }
+});

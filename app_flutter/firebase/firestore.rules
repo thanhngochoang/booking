@@ -42,7 +42,51 @@ service cloud.firestore {
     // verifiedAt are server-computed; verified is allowed only as false on create.
     function photographerClientFields() {
       return ['bio', 'specialties', 'styles', 'equipment', 'yearsExperience', 'serviceArea',
-              'portfolio', 'onboardingComplete', 'verified', 'createdAt', 'updatedAt'];
+              'contactChannels', 'portfolio', 'onboardingComplete', 'verified', 'createdAt', 'updatedAt'];
+    }
+
+    // serviceArea: a city and a whole-number radius in km (centre point added with the location work).
+    function validServiceArea() {
+      let d = request.resource.data;
+      return !('serviceArea' in d)
+        || (d.serviceArea is map
+            && d.serviceArea.keys().hasOnly(['city', 'radiusKm', 'center'])
+            && d.serviceArea.city is string
+            && d.serviceArea.city.size() >= 2 && d.serviceArea.city.size() <= 80
+            && d.serviceArea.radiusKm is int
+            && d.serviceArea.radiusKm >= 1 && d.serviceArea.radiusKm <= 200
+            && (!('center' in d.serviceArea) || d.serviceArea.center is latlng));
+    }
+
+    // contactChannels: public on/off flags only, never a number. A channel can be on only if the
+    // private contact doc exists once this write (or batch) is applied.
+    function validContactChannels(uid) {
+      let d = request.resource.data;
+      return !('contactChannels' in d)
+        || (d.contactChannels is map
+            && d.contactChannels.keys().hasOnly(['call', 'zalo', 'whatsapp', 'acceptInquiries'])
+            && d.contactChannels.get('call', false) is bool
+            && d.contactChannels.get('zalo', false) is bool
+            && d.contactChannels.get('whatsapp', false) is bool
+            && d.contactChannels.get('acceptInquiries', true) is bool
+            && (!(d.contactChannels.get('call', false)
+                  || d.contactChannels.get('zalo', false)
+                  || d.contactChannels.get('whatsapp', false))
+                || existsAfter(/databases/$(database)/documents/photographers/$(uid)/private/contact)));
+    }
+
+    // photographers/{uid}/private/contact: the photographer's real numbers. Owner-only; a customer
+    // only ever gets a server-built link (callable getContactLink). Vietnamese E.164 for phone and
+    // Zalo, "+country digits" for WhatsApp.
+    function validPhotographerNumbers() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['phone', 'zaloPhone', 'whatsappPhone', 'updatedAt'])
+        && d.phone is string
+        && d.phone.matches('^\\+84[35789][0-9]{8}$')
+        && (!('zaloPhone' in d)
+            || (d.zaloPhone is string && d.zaloPhone.matches('^\\+84[35789][0-9]{8}$')))
+        && (!('whatsappPhone' in d)
+            || (d.whatsappPhone is string && d.whatsappPhone.matches('^\\+[0-9]{8,15}$')));
     }
 
     // users/{uid}/private/contact: owner-only; E.164 Vietnamese number; the
@@ -78,12 +122,23 @@ service cloud.firestore {
       allow create, update: if isOwner(uid)
         && hasPhotographerRole(uid)
         && verifiedUntouched()
-        && onlyKeys(photographerClientFields());
+        && onlyKeys(photographerClientFields())
+        && validServiceArea()
+        && validContactChannels(uid);
       allow delete: if false;
 
       match /services/{serviceId} {
         allow read: if signedIn();
         allow write: if isOwner(uid) && hasPhotographerRole(uid);
+      }
+
+      match /private/{docId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && hasPhotographerRole(uid)
+          && docId == 'contact'
+          && validPhotographerNumbers();
+        allow delete: if false;
       }
     }
 
