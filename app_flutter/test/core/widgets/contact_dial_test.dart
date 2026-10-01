@@ -606,15 +606,20 @@ void main() {
     expect(find.byKey(_tray), findsNothing);
   });
 
-  testWidgets('locked and reduced-motion dials are idle too', (tester) async {
+  testWidgets('the locked dial is idle at rest', (tester) async {
     await _pump(tester, access: ContactAccess.locked);
     await expectIdle(tester);
+  });
+
+  testWidgets('reduced motion shows the tray fully in one frame, then idles', (
+    tester,
+  ) async {
     await _pump(tester, reduced: true);
     await tester.tap(find.byKey(_button));
     await tester.pump();
-    // Reduced motion: the tray is there after one frame, and once the button's
-    // own ink ripple has faded nothing runs on.
     expect(find.byKey(_tray), findsOneWidget);
+    expect(_opacityOf(tester, const Key('contact-tray-fade')), 1.0);
+    expect(_itemOpacities(tester), [1.0, 1.0, 1.0]);
     await expectIdle(tester);
     expect(find.byKey(_tray), findsOneWidget);
   });

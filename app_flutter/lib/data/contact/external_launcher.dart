@@ -34,8 +34,10 @@ class FakeExternalLauncher implements ExternalLauncher {
   int canOpenCalls = 0;
 
   @override
-  Future<bool> canOpen(Uri uri) async =>
-      ++canOpenCalls > 0 && !unsupportedSchemes.contains(uri.scheme);
+  Future<bool> canOpen(Uri uri) async {
+    canOpenCalls++;
+    return !unsupportedSchemes.contains(uri.scheme);
+  }
 
   @override
   Future<bool> open(Uri uri) async {
