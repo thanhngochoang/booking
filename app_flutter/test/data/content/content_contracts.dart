@@ -401,6 +401,17 @@ void photographerRepositoryContract(
       expect(free.map((p) => p.id), ['a', 'b', 'z']);
     });
 
+    test('freeThisWeek clamps its limit to at most 50', () async {
+      final repo = await create([
+        for (var i = 0; i < 55; i++)
+          fixturePhotographer('f$i', nextFreeDate: '2026-10-02'),
+      ]);
+      expect(
+        await repo.freeThisWeek(now: fixtureNow, limit: 1000),
+        hasLength(50),
+      );
+    });
+
     test(
       'freeThisWeek honours the limit and clamps it to at least 1',
       () async {
@@ -497,6 +508,15 @@ void serviceRepositoryContract(String name, ServiceRepoFactory create) {
         expect(listed.map((s) => s.id).toSet(), {'s1', 's2'});
       },
     );
+
+    test('activeFor clamps its limit to 1..50', () async {
+      final repo = await create([
+        for (var i = 0; i < 55; i++) fixtureService('v$i'),
+      ]);
+      expect(await repo.activeFor('p1'), hasLength(50));
+      expect(await repo.activeFor('p1', limit: 0), hasLength(1));
+      expect(await repo.activeFor('p1', limit: 1000), hasLength(50));
+    });
   });
 }
 
