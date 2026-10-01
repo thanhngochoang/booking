@@ -109,7 +109,7 @@ Bảng đếm lượt đọc theo hành vi thật của adapter (kiểm bằng �
 | `freeThisWeek` | 1 truy vấn `limit` (tối đa 50) + 1 tài liệu `users` cho mỗi dòng (nhóm 30). |
 | `candidates` | 1 truy vấn tối đa 200 tài liệu + `users` tương ứng (7 nhóm 30); thiết kế để bên gọi lưu đệm. |
 | `activeFor` | 1 truy vấn tối đa 50 tài liệu. |
-| Thích / lưu / theo dõi | 1 lần ghi (hoặc 1 lần xoá) một tài liệu `{uid}_{id}`; `engagementFor` 2 lượt đọc, `savedAmong` 1 lượt đọc mỗi bài trong trang (tối đa 50). |
+| Thích / lưu / theo dõi | 1 lần ghi (hoặc 1 lần xoá) một tài liệu `{uid}_{id}`; `engagementFor` 2 lượt đọc, `savedAmong` 1–2 truy vấn (nhóm 30 id). |
 
 Ghi chú chi phí đọc: trước bản sửa này một lần tải Trang chủ tốn khoảng 82 lượt đọc; `savedAmong` nay chỉ còn khoảng 1–2 truy vấn (1 truy vấn `userId` + `postId whereIn` cho mỗi 30 id) thay vì 1 lượt đọc mỗi bài. Khởi động nguội của bộ gợi ý khoảng 400 lượt đọc. Về sau: Cloud Functions phi chuẩn hoá `displayName`/`avatarUrl` vào `photographers` và `posts` để bỏ lượt đọc `users`.
 
