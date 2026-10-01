@@ -513,11 +513,32 @@ void main() {
         await tester.pump();
         expect(
           tester.getSemantics(find.byKey(const Key('contact-zalo'))),
-          isSemantics(label: 'Zalo', isButton: true),
+          isSemantics(label: 'Zalo', isButton: true, hasTapAction: true),
         );
+        for (final k in ['contact-call', 'contact-whatsapp']) {
+          expect(
+            tester.getSemantics(find.byKey(Key(k))),
+            isSemantics(isButton: true, hasTapAction: true),
+          );
+        }
         handle.dispose();
       },
     );
+  });
+
+  group('semantics actions', () {
+    testWidgets('the screen-reader tap action selects the entry', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final picked = <ContactChannel>[];
+      await _pump(tester, onSelected: picked.add);
+      await _open(tester);
+      tester.semantics.tap(find.semantics.byLabel('Zalo'));
+      await tester.pumpAndSettle();
+      expect(picked, [ContactChannel.zalo]);
+      handle.dispose();
+    });
   });
 
   group('busy', () {

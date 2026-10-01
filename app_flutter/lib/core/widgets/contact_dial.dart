@@ -507,6 +507,7 @@ class _TrayItemState extends State<_TrayItem> {
     return Semantics(
       button: true,
       label: widget.channel.label(context.l10n),
+      onTap: widget.onTap,
       excludeSemantics: true,
       child: InkWell(
         key: Key('contact-${widget.channel.code}'),
