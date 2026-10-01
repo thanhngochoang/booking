@@ -120,7 +120,7 @@ Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Ch
 Dòng thời gian 7 bước của booking. `StatusTimeline({required List<TimelineStep> steps})`. Bước đã xong chấm xanh, bước hiện tại viền primary + quầng, bước tới chấm trống; đường nối dọc; mỗi bước có tên + dòng phụ (thời điểm, hướng dẫn). `Semantics`: "Bước 2 trong 7, đang diễn ra". Dùng ở S09.
 
 ### StatTile · Mới
-Ô số liệu. `StatTile({required String value, required String label})`. Số Fraunces 22 `tabularFigures` ở trên, nhãn 10,5 một dòng bên dưới (`FittedBox(scaleDown)`), nền kính, viền mảnh. Hàng ô dùng `IntrinsicHeight` + `Expanded` để cùng một hàng và cùng chiều cao. Dùng ở S03 (thống kê), S19, S27. Nhãn màu `foregroundSecondary` (≥ 4,5:1).
+Ô số liệu. `StatTile({required String value, required String label})`. Số Fraunces 22 `tabularFigures` ở trên, nhãn 10,5 một dòng bên dưới (`FittedBox(scaleDown)`), nền trong mờ `surfaceMuted`, viền mảnh, không mờ nền (ô nằm trong thẻ đã mờ). Hàng ô dùng `IntrinsicHeight` + `Expanded` để cùng một hàng và cùng chiều cao. Dùng ở S03 (thống kê), S19, S27. Nhãn màu `foregroundSecondary` (≥ 4,5:1).
 
 ### FreeTag và FreeBanner · Mới
 Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nhạt (`successSubtle` ở sáng, xanh 20% ở tối), chữ xanh đậm (≥ 4,5:1), nhãn “Không thu phí”, đặt ở chỗ giá của `EventCard` (thay “0₫”). `FreeBanner({String? body})` là dải đầy chiều rộng dưới ảnh bìa ở S16: biểu tượng tích + “Không thu phí” (đậm) + dòng phụ “Đăng ký để giữ chỗ, không cần thanh toán”. Không chỉ dựa vào màu (luôn có chữ). Dùng ở S13, S15, S16, S26 (xem trước), S35; S17 và S27 xử lý riêng (bỏ cổng, doanh thu “—”).

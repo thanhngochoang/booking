@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
-import 'package:photobooking/core/widgets/glass_card.dart';
 
 /// A big number over a one-line label. Put two or three in a [StatTileRow].
 class StatTile extends StatelessWidget {
@@ -20,8 +19,15 @@ class StatTile extends StatelessWidget {
     return Semantics(
       label: '$value, $label',
       child: ExcludeSemantics(
-        child: GlassCard(
-          highlight: false,
+        child: DecoratedBox(
+          // Translucent fill, no blur: tiles sit on cards that already blur.
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondary,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s2,
