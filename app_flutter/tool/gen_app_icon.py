@@ -1,142 +1,127 @@
 #!/usr/bin/env python3
-"""Generate the app icon (outlined camera on brand teal) for Android and iOS.
+"""Generate the app icon (gradient aperture on dark) for Android and iOS.
 
 Usage (from app_flutter/):  python3 tool/gen_app_icon.py
-Needs only Pillow. All geometry lives in CAMERA below, on a 1024 x 1024 canvas,
-so the SVG master, the Android vector and the PNGs stay identical.
+Needs Pillow and numpy. The source is design-system/brand/logo-source.png: a
+1254 x 1254 render of the aperture on a dark rounded square. Only the aperture
+is lifted out (alpha from brightness), then re-composed on each target canvas,
+so every size gets a clean background and the right safe-zone margin.
 """
 import json
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
-BG = "#05749F"      # brand-500 (design-system/tokens.json)
-FG = "#FFFFFF"
-STROKE = 44         # px on the 1024 canvas
+BRAND = ROOT.parent / "design-system" / "brand"
+SOURCE = BRAND / "logo-source.png"
 
-# Camera, centred, ~55% of the canvas wide: inside the adaptive-icon safe circle (66/108).
-CAMERA = {
-    "body": (232, 368, 792, 732, 76),          # x0, y0, x1, y1, corner radius
-    "hump": [(390, 368), (434, 300), (590, 300), (634, 368)],
-    "lens_outer": (512, 552, 122),             # cx, cy, r
-    "lens_inner": (512, 552, 52),
-    "flash": (704, 446, 20),                   # filled dot
-}
+# Aperture circle in the source, measured from its coloured strokes.
+CENTER = (624, 618)
+RADIUS = 445
+PAD = 12            # keep the anti-aliased rim
 
+# Background gradient sampled from the source's rounded square (top -> bottom).
+BG_TOP = (0x1B, 0x1B, 0x20)
+BG_BOTTOM = (0x05, 0x05, 0x08)
 
-def draw_icon(size: int, rounded: bool = False, transparent_bg: bool = False) -> Image.Image:
-    ss = 4  # supersample for smooth strokes
-    n = 1024 * ss
-    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    if not transparent_bg:
-        if rounded:
-            d.rounded_rectangle((0, 0, n - 1, n - 1), radius=int(n * 0.22), fill=BG)
-        else:
-            d.rectangle((0, 0, n, n), fill=BG)
-    s = lambda v: int(v * ss)
-    w = s(STROKE)
-    x0, y0, x1, y1, r = CAMERA["body"]
-    d.rounded_rectangle((s(x0), s(y0), s(x1), s(y1)), radius=s(r), outline=FG, width=w)
-    d.line([(s(x), s(y)) for x, y in CAMERA["hump"]], fill=FG, width=w, joint="curve")
-    for x, y in (CAMERA["hump"][0], CAMERA["hump"][-1]):  # round caps; joins use joint="curve"
-        d.ellipse((s(x) - w // 2, s(y) - w // 2, s(x) + w // 2, s(y) + w // 2), fill=FG)
-    for key, width in (("lens_outer", w), ("lens_inner", int(w * 0.7))):
-        cx, cy, rr = CAMERA[key]
-        d.ellipse((s(cx - rr), s(cy - rr), s(cx + rr), s(cy + rr)), outline=FG, width=width)
-    cx, cy, rr = CAMERA["flash"]
-    d.ellipse((s(cx - rr), s(cy - rr), s(cx + rr), s(cy + rr)), fill=FG)
-    return img.resize((size, size), Image.LANCZOS)
+# Aperture diameter as a share of the canvas.
+FULL_BLEED = 0.72   # iOS and legacy Android icons
+ADAPTIVE = 0.54     # adaptive foreground: inside the 66/108 safe circle
 
 
-def svg() -> str:
-    x0, y0, x1, y1, r = CAMERA["body"]
-    hump = " ".join(f"{x},{y}" for x, y in CAMERA["hump"])
-    lo, li, fl = CAMERA["lens_outer"], CAMERA["lens_inner"], CAMERA["flash"]
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <rect width="1024" height="1024" fill="{BG}"/>
-  <g fill="none" stroke="{FG}" stroke-width="{STROKE}" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" rx="{r}"/>
-    <polyline points="{hump}"/>
-    <circle cx="{lo[0]}" cy="{lo[1]}" r="{lo[2]}"/>
-    <circle cx="{li[0]}" cy="{li[1]}" r="{li[2]}" stroke-width="{int(STROKE * 0.7)}"/>
-  </g>
-  <circle cx="{fl[0]}" cy="{fl[1]}" r="{fl[2]}" fill="{FG}"/>
-</svg>
-"""
+def aperture() -> Image.Image:
+    """The aperture strokes on transparency, cropped to a square around the circle."""
+    cx, cy = CENTER
+    r = RADIUS + PAD
+    src = Image.open(SOURCE).convert("RGB").crop((cx - r, cy - r, cx + r, cy + r))
+    rgb = np.asarray(src).astype(np.float32)
+    # The interior is near black (~5); strokes reach full brightness.
+    alpha = np.clip((rgb.max(axis=2) - 14) / 170, 0, 1)
+    # Un-premultiply against black so edges keep their hue when re-composed.
+    colour = np.clip(rgb / np.maximum(alpha, 1e-3)[..., None], 0, 255)
+    out = np.dstack([colour, alpha * 255]).astype(np.uint8)
+    # Nothing outside the circle (drops the source's rounded-square edge).
+    img = Image.fromarray(out, "RGBA")
+    mask = Image.new("L", img.size, 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, img.width - 1, img.height - 1), fill=255)
+    img.putalpha(Image.fromarray(np.minimum(np.asarray(img.getchannel("A")), np.asarray(mask))))
+    return img
 
 
-def android_vector(fill_color: str) -> str:
-    """Adaptive-icon foreground: 108dp viewport; the 1024 art maps onto it 1:1 in proportion."""
-    k = 108 / 1024
-    f = lambda v: f"{v * k:.2f}"
-    x0, y0, x1, y1, r = CAMERA["body"]
-    body = (f"M{f(x0 + r)},{f(y0)} H{f(x1 - r)} A{f(r)},{f(r)} 0 0 1 {f(x1)},{f(y0 + r)} "
-            f"V{f(y1 - r)} A{f(r)},{f(r)} 0 0 1 {f(x1 - r)},{f(y1)} H{f(x0 + r)} "
-            f"A{f(r)},{f(r)} 0 0 1 {f(x0)},{f(y1 - r)} V{f(y0 + r)} A{f(r)},{f(r)} 0 0 1 {f(x0 + r)},{f(y0)} Z")
-    hump = "M" + " L".join(f"{f(x)},{f(y)}" for x, y in CAMERA["hump"])
+def gradient(size: int) -> Image.Image:
+    t = np.linspace(0, 1, size, dtype=np.float32)[:, None, None]
+    rows = np.array(BG_TOP, np.float32) * (1 - t) + np.array(BG_BOTTOM, np.float32) * t
+    return Image.fromarray(np.repeat(rows, size, axis=1).astype(np.uint8), "RGB").convert("RGBA")
 
-    def circle(cx, cy, rr):
-        return (f"M{f(cx - rr)},{f(cy)} A{f(rr)},{f(rr)} 0 1 0 {f(cx + rr)},{f(cy)} "
-                f"A{f(rr)},{f(rr)} 0 1 0 {f(cx - rr)},{f(cy)} Z")
 
-    sw = f(STROKE)
-    stroke = (f'        android:fillColor="#00000000" android:strokeColor="{fill_color}" '
-              f'android:strokeWidth="{sw}" android:strokeLineCap="round" android:strokeLineJoin="round"')
-    lo, li, fl = CAMERA["lens_outer"], CAMERA["lens_inner"], CAMERA["flash"]
-    return f"""<?xml version="1.0" encoding="utf-8"?>
-<!-- Generated by tool/gen_app_icon.py. Outlined camera, adaptive-icon foreground. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:pathData="{body}"
-{stroke}/>
-    <path android:pathData="{hump}"
-{stroke}/>
-    <path android:pathData="{circle(*lo)}"
-{stroke}/>
-    <path android:pathData="{circle(*li)}"
-        android:fillColor="#00000000" android:strokeColor="{fill_color}"
-        android:strokeWidth="{f(STROKE * 0.7)}"/>
-    <path android:pathData="{circle(*fl)}" android:fillColor="{fill_color}"/>
-</vector>
-"""
+def place(art: Image.Image, size: int, share: float, canvas: Image.Image) -> Image.Image:
+    d = round(size * share * (RADIUS + PAD) / RADIUS)
+    a = art.resize((d, d), Image.LANCZOS)
+    canvas.alpha_composite(a, ((size - d) // 2, (size - d) // 2))
+    return canvas
+
+
+def full_icon(art: Image.Image, size: int, rounded: bool = False) -> Image.Image:
+    img = place(art, size, FULL_BLEED, gradient(size))
+    if rounded:
+        mask = Image.new("L", (size * 4, size * 4), 0)
+        ImageDraw.Draw(mask).rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1),
+                                               radius=int(size * 4 * 0.22), fill=255)
+        img.putalpha(mask.resize((size, size), Image.LANCZOS))
+    return img
+
+
+def foreground(art: Image.Image, size: int, mono: bool = False) -> Image.Image:
+    img = place(art, size, ADAPTIVE, Image.new("RGBA", (size, size), (0, 0, 0, 0)))
+    if mono:  # themed icons only use the alpha channel
+        black = Image.new("RGBA", img.size, (0, 0, 0, 255))
+        black.putalpha(img.getchannel("A"))
+        img = black
+    return img
 
 
 def main() -> None:
-    brand = ROOT.parent / "design-system" / "brand"
-    brand.mkdir(parents=True, exist_ok=True)
-    (brand / "app-icon.svg").write_text(svg())
-    draw_icon(1024).convert("RGB").save(brand / "app-icon-1024.png")
+    art = aperture()
+    full_icon(art, 1024).convert("RGB").save(BRAND / "app-icon-1024.png")
+    # In-app logo (login, splash); Flutter rounds the corners itself.
+    (ROOT / "assets" / "brand").mkdir(parents=True, exist_ok=True)
+    full_icon(art, 384).convert("RGB").save(ROOT / "assets" / "brand" / "logo.png")
 
     res = ROOT / "android" / "app" / "src" / "main" / "res"
     for folder, px in {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
-        draw_icon(px, rounded=True).save(res / f"mipmap-{folder}" / "ic_launcher.png")
+        out = res / f"mipmap-{folder}"
+        full_icon(art, px, rounded=True).save(out / "ic_launcher.png")
+        fg = px * 108 // 48  # adaptive layers are 108dp against a 48dp icon
+        foreground(art, fg).save(out / "ic_launcher_foreground.png")
+        foreground(art, fg, mono=True).save(out / "ic_launcher_monochrome.png")
     (res / "drawable").mkdir(exist_ok=True)
-    (res / "drawable" / "ic_launcher_foreground.xml").write_text(android_vector(FG))
-    (res / "drawable" / "ic_launcher_monochrome.xml").write_text(android_vector("#FF000000"))
+    (res / "drawable" / "ic_launcher_background.xml").write_text(f"""<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated by tool/gen_app_icon.py. Dark gradient behind the aperture. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient android:angle="270"
+        android:startColor="#{bytes(BG_TOP).hex().upper()}"
+        android:endColor="#{bytes(BG_BOTTOM).hex().upper()}"/>
+</shape>
+""")
     (res / "mipmap-anydpi-v26").mkdir(exist_ok=True)
     (res / "mipmap-anydpi-v26" / "ic_launcher.xml").write_text("""<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background"/>
-    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
-    <monochrome android:drawable="@drawable/ic_launcher_monochrome"/>
+    <background android:drawable="@drawable/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
 </adaptive-icon>
 """)
-    (res / "values" / "ic_launcher_colors.xml").write_text(f"""<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="ic_launcher_background">{BG}</color>
-</resources>
-""")
+    (res / "values" / "ic_launcher_colors.xml").unlink(missing_ok=True)
 
     ios = ROOT / "ios" / "Runner" / "Assets.xcassets" / "AppIcon.appiconset"
     contents = json.loads((ios / "Contents.json").read_text())
     for image in contents["images"]:
         pts = float(image["size"].split("x")[0])
         px = round(pts * int(image["scale"].rstrip("x")))
-        draw_icon(px).convert("RGB").save(ios / image["filename"])  # iOS: square, no alpha
-    print("icons written: design-system/brand, Android mipmaps + adaptive, iOS AppIcon")
+        full_icon(art, px).convert("RGB").save(ios / image["filename"])  # iOS: square, no alpha
+    print("icons written: design-system/brand, assets/brand/logo.png, Android mipmaps + adaptive, iOS AppIcon")
 
 
 if __name__ == "__main__":
