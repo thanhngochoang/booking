@@ -19,5 +19,7 @@ if [ -n "$P" ]; then
     JOPTS="$JOPTS -Dhttp.proxyUser=${AUTH%%:*} -Dhttp.proxyPassword=${AUTH#*:} -Dhttps.proxyUser=${AUTH%%:*} -Dhttps.proxyPassword=${AUTH#*:}"
   fi
 fi
-export JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true $JOPTS"
+mkdir -p "$ROOT/.home/tmp"
+export ANDROID_USER_HOME="$ROOT/.home/.android" GRADLE_USER_HOME="$ROOT/.home/.gradle"
+export JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true -Duser.home=$ROOT/.home -Djava.io.tmpdir=$ROOT/.home/tmp $JOPTS"
 exec "$ROOT/.flutter/bin/dart" "$@"

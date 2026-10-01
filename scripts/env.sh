@@ -50,3 +50,13 @@ fi
 
 echo "JAVA_HOME=$JAVA_HOME"
 echo "ANDROID_HOME=$ANDROID_HOME"
+
+# Node (npm, Firebase CLI) also needs the corporate CA
+[ -f "$ROOT/.certs/keychain.pem" ] || { security find-certificate -a -p /Library/Keychains/System.keychain > "$ROOT/.certs/keychain.pem" 2>/dev/null; security find-certificate -a -p "$HOME/Library/Keychains/login.keychain-db" >> "$ROOT/.certs/keychain.pem" 2>/dev/null; }
+# Keep a CA the user already configured (e.g. Cloudflare Zero Trust root) and add it to Java too.
+if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -f "$NODE_EXTRA_CA_CERTS" ] && [ "$NODE_EXTRA_CA_CERTS" != "$ROOT/.certs/keychain.pem" ]; then
+  /usr/bin/grep -q "$(sed -n 2p "$NODE_EXTRA_CA_CERTS")" "$ROOT/.certs/keychain.pem" 2>/dev/null || cat "$NODE_EXTRA_CA_CERTS" >> "$ROOT/.certs/keychain.pem"
+  keytool -list -keystore "$TS" -storepass changeit -alias user-extra-ca >/dev/null 2>&1 || \
+    keytool -importcert -noprompt -trustcacerts -keystore "$TS" -storepass changeit -alias user-extra-ca -file "$NODE_EXTRA_CA_CERTS" >/dev/null 2>&1
+fi
+export NODE_EXTRA_CA_CERTS="$ROOT/.certs/keychain.pem"
