@@ -17,6 +17,7 @@ export 'package:photobooking/core/widgets/capacity_bar.dart';
 export 'package:photobooking/core/widgets/cta_surface.dart';
 export 'package:photobooking/core/widgets/empty_state.dart';
 export 'package:photobooking/core/widgets/free_tag.dart';
+export 'package:photobooking/core/widgets/phone_field.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
 export 'package:photobooking/core/widgets/screen_code.dart';
 export 'package:photobooking/core/widgets/stat_tile.dart';
