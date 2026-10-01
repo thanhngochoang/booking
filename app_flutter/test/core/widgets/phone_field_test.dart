@@ -105,4 +105,64 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  group('international', () {
+    Future<TextEditingController> pumpIntl(
+      WidgetTester tester, {
+      GlobalKey<FormState>? form,
+      String? label,
+      double width = 390,
+      double textScale = 1.0,
+    }) async {
+      final c = TextEditingController();
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        hostWidget(
+          Form(
+            key: form,
+            child: PhoneField(controller: c, international: true, label: label),
+          ),
+          width: width,
+          textScale: textScale,
+        ),
+      );
+      return c;
+    }
+
+    testWidgets('keeps the + and digits, drops the rest, no fixed +84 prefix', (
+      tester,
+    ) async {
+      final c = await pumpIntl(tester);
+      await tester.enterText(find.byType(TextFormField), '+1 (415) 555-2671');
+      expect(c.text, '+14155552671');
+      expect(find.text('+84 '), findsNothing);
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.keyboardType, TextInputType.phone);
+    });
+
+    testWidgets('error message asks for a country code', (tester) async {
+      final form = GlobalKey<FormState>();
+      await pumpIntl(tester, form: form);
+      await tester.enterText(find.byType(TextFormField), '4155552671');
+      expect(form.currentState!.validate(), isFalse);
+      await tester.pump();
+      expect(
+        find.text('Nhập số có mã quốc gia, ví dụ: +1 415 555 2671'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextFormField), '+14155552671');
+      expect(form.currentState!.validate(), isTrue);
+    });
+
+    testWidgets('a custom label replaces "Số điện thoại"', (tester) async {
+      await pumpIntl(tester, label: 'Số WhatsApp');
+      expect(find.text('Số WhatsApp'), findsOneWidget);
+      expect(find.text('Số điện thoại'), findsNothing);
+    });
+
+    testWidgets('fits 320dp at 1.3x', (tester) async {
+      await pumpIntl(tester, width: 320, textScale: 1.3);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

@@ -47,14 +47,32 @@ String formatNational(String digits) {
 }
 
 /// E.164 from the text of a `PhoneField`, or null while it is not valid.
-String? phoneFromField(String fieldText) =>
-    normalizePhone('+84${nationalDigits(fieldText)}');
+/// A national field (default) holds only the digits after the fixed "+84";
+/// an [international] field holds the whole number as typed.
+String? phoneFromField(String fieldText, {bool international = false}) =>
+    international
+    ? normalizePhone(fieldText, international: true)
+    : normalizePhone('+84${nationalDigits(fieldText)}');
+
+/// What an international field keeps: one leading "+" if present, then digits
+/// only, at most 15 (the E.164 maximum).
+String internationalInput(String input) {
+  final s = input.trim();
+  var digits = s.replaceAll(RegExp(r'\D'), '');
+  if (digits.length > 15) digits = digits.substring(0, 15);
+  return s.startsWith('+') ? '+$digits' : digits;
+}
 
 /// Text to prefill a `PhoneField` from a stored E.164 number.
 String nationalFromE164(String e164) => formatNational(nationalDigits(e164));
 
-String? validatePhone(String? fieldText, AppLocalizations l) {
+String? validatePhone(
+  String? fieldText,
+  AppLocalizations l, {
+  bool international = false,
+}) {
   final t = (fieldText ?? '').trim();
   if (t.isEmpty) return l.phoneRequired;
-  return phoneFromField(t) == null ? l.phoneInvalid : null;
+  if (phoneFromField(t, international: international) != null) return null;
+  return international ? l.phoneInvalidInternational : l.phoneInvalid;
 }

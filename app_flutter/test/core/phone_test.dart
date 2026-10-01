@@ -86,4 +86,45 @@ void main() {
       expect(validatePhone('903 123 456', l), isNull);
     });
   });
+
+  group('international field', () {
+    final l = AppLocalizationsVi();
+    test('phoneFromField international keeps other countries and still reads Vietnamese', () {
+      expect(
+        phoneFromField('+1 415 555 2671', international: true),
+        '+14155552671',
+      );
+      expect(
+        phoneFromField('0903 123 456', international: true),
+        '+84903123456',
+      );
+      expect(phoneFromField('+84012345678', international: true), isNull);
+      expect(
+        phoneFromField('415 555 2671', international: true),
+        isNull,
+      ); // no +
+      expect(phoneFromField('', international: true), isNull);
+    });
+
+    test('internationalInput keeps one leading + and at most 15 digits', () {
+      expect(internationalInput('+1 (415) 555-2671'), '+14155552671');
+      expect(internationalInput('0903 123 456'), '0903123456');
+      expect(internationalInput('12345678901234567'), '123456789012345');
+      expect(internationalInput('1+2'), '12');
+      expect(internationalInput('abc'), '');
+    });
+
+    test('validatePhone has its own message for international fields', () {
+      expect(validatePhone('', l, international: true), l.phoneRequired);
+      expect(
+        validatePhone('12345', l, international: true),
+        l.phoneInvalidInternational,
+      );
+      expect(validatePhone('+14155552671', l, international: true), isNull);
+      expect(
+        validatePhone('+14155552671', l),
+        l.phoneInvalid,
+      ); // national field still refuses it
+    });
+  });
 }

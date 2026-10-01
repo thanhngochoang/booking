@@ -381,6 +381,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get phoneInvalid => 'Số điện thoại chưa đúng. Ví dụ: 903 123 456';
 
   @override
+  String get phoneInvalidInternational =>
+      'Nhập số có mã quốc gia, ví dụ: +1 415 555 2671';
+
+  @override
   String get addPhoneTitle => 'Thêm số điện thoại để đặt lịch';
 
   @override

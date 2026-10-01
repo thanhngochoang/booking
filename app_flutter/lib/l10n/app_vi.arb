@@ -140,6 +140,7 @@
   "phoneLabel": "Số điện thoại",
   "phoneRequired": "Nhập số điện thoại",
   "phoneInvalid": "Số điện thoại chưa đúng. Ví dụ: 903 123 456",
+  "phoneInvalidInternational": "Nhập số có mã quốc gia, ví dụ: +1 415 555 2671",
   "addPhoneTitle": "Thêm số điện thoại để đặt lịch",
   "addPhoneBody": "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.",
   "addPhoneExample": "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.",

@@ -796,6 +796,12 @@ abstract class AppLocalizations {
   /// **'Số điện thoại chưa đúng. Ví dụ: 903 123 456'**
   String get phoneInvalid;
 
+  /// No description provided for @phoneInvalidInternational.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số có mã quốc gia, ví dụ: +1 415 555 2671'**
+  String get phoneInvalidInternational;
+
   /// No description provided for @addPhoneTitle.
   ///
   /// In vi, this message translates to:

@@ -4,12 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/phone.dart';
 
-/// Vietnamese phone number input with a fixed "+84" prefix. The text is the
-/// national form `903 123 456`; typing or pasting `0903…` or `+84…` is
-/// normalised. Read the number with [phoneFromField].
+/// Phone number input. By default a Vietnamese number with a fixed "+84"
+/// prefix: the text is the national form `903 123 456`, and typing or pasting
+/// `0903…` or `+84…` is normalised. With [international] (WhatsApp) the field
+/// holds the whole number, `+` and digits, e.g. `+14155552671`.
+/// Read the number with [phoneFromField] (pass the same [international]).
 ///
-/// Note: only a paste (or a whole-text edit) can carry a "+84"; typing "+"
-/// digit by digit is read as national digits.
+/// Note: only a paste (or a whole-text edit) can carry a "+84" into a national
+/// field; typing "+" digit by digit is read as national digits.
 class PhoneField extends StatelessWidget {
   const PhoneField({
     super.key,
@@ -19,6 +21,8 @@ class PhoneField extends StatelessWidget {
     this.onChanged,
     this.validator,
     this.autofocus = false,
+    this.international = false,
+    this.label,
   });
 
   final TextEditingController controller;
@@ -30,6 +34,12 @@ class PhoneField extends StatelessWidget {
   final FormFieldValidator<String>? validator;
   final bool autofocus;
 
+  /// Accept any country's number (`+` and 8–15 digits), for WhatsApp.
+  final bool international;
+
+  /// Replaces the default "Số điện thoại".
+  final String? label;
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -39,15 +49,24 @@ class PhoneField extends StatelessWidget {
       autofocus: autofocus,
       keyboardType: TextInputType.phone,
       textInputAction: TextInputAction.done,
-      autofillHints: const [AutofillHints.telephoneNumberNational],
-      inputFormatters: [_NationalPhoneFormatter()],
+      autofillHints: [
+        international
+            ? AutofillHints.telephoneNumber
+            : AutofillHints.telephoneNumberNational,
+      ],
+      inputFormatters: [
+        international
+            ? _InternationalPhoneFormatter()
+            : _NationalPhoneFormatter(),
+      ],
       onChanged: onChanged,
-      validator: validator ?? (v) => validatePhone(v, l),
+      validator:
+          validator ?? (v) => validatePhone(v, l, international: international),
       decoration: InputDecoration(
-        labelText: l.phoneLabel,
+        labelText: label ?? l.phoneLabel,
         floatingLabelBehavior: FloatingLabelBehavior.always,
-        hintText: '903 123 456',
-        prefixText: '+84 ',
+        hintText: international ? '+1 415 555 2671' : '903 123 456',
+        prefixText: international ? null : '+84 ',
         prefixIcon: const Icon(Icons.phone_outlined),
         errorText: errorText,
       ),
@@ -62,6 +81,20 @@ class _NationalPhoneFormatter extends TextInputFormatter {
     TextEditingValue next,
   ) {
     final text = formatNational(nationalDigits(next.text));
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+}
+
+class _InternationalPhoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue old,
+    TextEditingValue next,
+  ) {
+    final text = internationalInput(next.text);
     return TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
