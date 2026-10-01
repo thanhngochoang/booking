@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/screen_codes.dart';
 
 void main() {
-  test('codes are S01..S55, in order, with no gaps or repeats', () {
+  test('codes are S01..S65, in order, with no gaps or repeats', () {
     final expected = [
-      for (var i = 1; i <= 55; i++) 'S${i.toString().padLeft(2, '0')}',
+      for (var i = 1; i <= 65; i++) 'S${i.toString().padLeft(2, '0')}',
     ];
     expect(ScreenCodes.all, expected);
   });

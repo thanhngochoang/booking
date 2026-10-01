@@ -1,5 +1,5 @@
 // lib/core/screen_codes.dart
-/// One code per screen, `S01`..`S55`. The single source in Dart; the table in
+/// One code per screen, `S01`..`S65`. The single source in Dart; the table in
 /// `docs/superpowers/specs/2026-10-01-remaining-screens.md` (section 2) and the
 /// mock `docs/design/ui-mock.html` use the same codes.
 ///
@@ -62,6 +62,18 @@ abstract final class ScreenCodes {
   static const instantOffer = 'S53';
   static const instantJob = 'S54';
   static const instantCancel = 'S55';
+  // Job posts (reserved, design in progress).
+  static const jobPost = 'S56';
+  static const myJobs = 'S57';
+  static const jobApplications = 'S58';
+  static const applicationDetail = 'S59';
+  static const jobDetailForPhotographer = 'S60';
+  static const openJobs = 'S61';
+  static const submitQuote = 'S62';
+  // Notifications.
+  static const notifications = 'S63';
+  static const notificationSettings = 'S64';
+  static const notificationPermission = 'S65';
 
   static const all = <String>[
     home,
@@ -119,5 +131,15 @@ abstract final class ScreenCodes {
     instantOffer,
     instantJob,
     instantCancel,
+    jobPost,
+    myJobs,
+    jobApplications,
+    applicationDetail,
+    jobDetailForPhotographer,
+    openJobs,
+    submitQuote,
+    notifications,
+    notificationSettings,
+    notificationPermission,
   ];
 }
