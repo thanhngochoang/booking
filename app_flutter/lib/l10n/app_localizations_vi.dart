@@ -379,4 +379,31 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get phoneInvalid => 'Số điện thoại chưa đúng. Ví dụ: 903 123 456';
+
+  @override
+  String get addPhoneTitle => 'Thêm số điện thoại để đặt lịch';
+
+  @override
+  String get addPhoneBody =>
+      'Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.';
+
+  @override
+  String get addPhoneExample =>
+      'Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.';
+
+  @override
+  String get allowZaloLabel => 'Cho phép liên hệ qua Zalo';
+
+  @override
+  String get allowWhatsAppLabel => 'Cho phép liên hệ qua WhatsApp';
+
+  @override
+  String get phonePrivacy =>
+      'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.';
+
+  @override
+  String get addPhoneSave => 'Lưu và tiếp tục';
+
+  @override
+  String get phoneSaveError => 'Không lưu được số điện thoại. Thử lại nhé.';
 }

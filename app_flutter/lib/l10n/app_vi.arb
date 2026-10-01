@@ -139,5 +139,13 @@
   },
   "phoneLabel": "Số điện thoại",
   "phoneRequired": "Nhập số điện thoại",
-  "phoneInvalid": "Số điện thoại chưa đúng. Ví dụ: 903 123 456"
+  "phoneInvalid": "Số điện thoại chưa đúng. Ví dụ: 903 123 456",
+  "addPhoneTitle": "Thêm số điện thoại để đặt lịch",
+  "addPhoneBody": "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.",
+  "addPhoneExample": "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.",
+  "allowZaloLabel": "Cho phép liên hệ qua Zalo",
+  "allowWhatsAppLabel": "Cho phép liên hệ qua WhatsApp",
+  "phonePrivacy": "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
+  "addPhoneSave": "Lưu và tiếp tục",
+  "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé."
 }

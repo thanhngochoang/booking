@@ -795,6 +795,54 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Số điện thoại chưa đúng. Ví dụ: 903 123 456'**
   String get phoneInvalid;
+
+  /// No description provided for @addPhoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm số điện thoại để đặt lịch'**
+  String get addPhoneTitle;
+
+  /// No description provided for @addPhoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.'**
+  String get addPhoneBody;
+
+  /// No description provided for @addPhoneExample.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.'**
+  String get addPhoneExample;
+
+  /// No description provided for @allowZaloLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép liên hệ qua Zalo'**
+  String get allowZaloLabel;
+
+  /// No description provided for @allowWhatsAppLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép liên hệ qua WhatsApp'**
+  String get allowWhatsAppLabel;
+
+  /// No description provided for @phonePrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
+  String get phonePrivacy;
+
+  /// No description provided for @addPhoneSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu và tiếp tục'**
+  String get addPhoneSave;
+
+  /// No description provided for @phoneSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được số điện thoại. Thử lại nhé.'**
+  String get phoneSaveError;
 }
 
 class _AppLocalizationsDelegate

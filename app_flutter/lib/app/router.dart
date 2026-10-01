@@ -6,6 +6,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
@@ -116,6 +117,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const EditProfileScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/profile/phone',
+        builder: (_, state) =>
+            AddPhoneScreen(returnTo: state.uri.queryParameters['returnTo']),
       ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => TabShell(shell),
