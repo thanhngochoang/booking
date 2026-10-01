@@ -94,8 +94,7 @@ class FirestorePostRepository implements PostRepository {
     final hasMore = docs.length > n;
     final pageDocs = hasMore ? docs.take(n).toList() : docs;
     final posts = <PostSummary>[
-      for (final d in pageDocs)
-        if (postFromFirestore(d.id, d.data()) case final p?) p,
+      for (final d in pageDocs) ?postFromFirestore(d.id, d.data()),
     ];
     return PostPage(
       posts: posts,
