@@ -1,6 +1,6 @@
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
-import 'package:photobooking/data/contact/externallauncher.dart';
+import 'package:photobooking/data/contact/external_launcher.dart';
 
 enum ContactOpenResult {
   opened,
