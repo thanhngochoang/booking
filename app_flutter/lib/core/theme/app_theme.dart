@@ -171,6 +171,9 @@ ThemeData _build({
       shape: RoundedRectangleBorder(borderRadius: radius),
     ),
     navigationBarTheme: NavigationBarThemeData(
+      // Material 3 defaults to 80dp; 64 keeps the labels and gives the page
+      // 16dp more room.
+      height: 64,
       backgroundColor: surface,
       indicatorColor: Colors.transparent,
       labelTextStyle: WidgetStateProperty.resolveWith(

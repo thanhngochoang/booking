@@ -163,14 +163,18 @@ class ProfileTab extends ConsumerWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
+                                      // The card offers the other mode, so
+                                      // its text names the mode you'd switch to.
                                       Text(
-                                        l.profileModeTitle,
+                                        isPhotographer
+                                            ? l.profileOfferCustomerTitle
+                                            : l.profileOfferPhotographerTitle,
                                         style: theme.textTheme.titleMedium,
                                       ),
                                       Text(
                                         isPhotographer
-                                            ? l.profileModePhotographerBody
-                                            : l.profileModeCustomerBody,
+                                            ? l.profileOfferCustomerBody
+                                            : l.profileOfferPhotographerBody,
                                         style: theme.textTheme.bodySmall,
                                       ),
                                     ],

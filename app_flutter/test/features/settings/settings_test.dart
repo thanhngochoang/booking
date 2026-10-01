@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
@@ -56,6 +57,26 @@ Future<(FakeAuthRepository, FakeUserRepository)> _signedIn() async {
 }
 
 void main() {
+  test(
+    'button style defaults to gradient and restores the saved choice',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(buttonStyleProvider), ButtonStyleMode.gradient);
+      await c.read(buttonStyleProvider.notifier).set(ButtonStyleMode.avatar);
+      expect(prefs.getString('buttonStyle'), 'avatar');
+      final again = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(again.dispose);
+      expect(again.read(buttonStyleProvider), ButtonStyleMode.avatar);
+    },
+  );
+
   test('theme mode defaults to dark and restores the saved choice', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();

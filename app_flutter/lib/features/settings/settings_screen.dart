@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -13,7 +14,10 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final mode = ref.watch(themeModeProvider);
-    final name = ref.watch(currentProfileProvider).value?.displayName;
+    final profile = ref.watch(currentProfileProvider).value;
+    final name = profile?.displayName;
+    final hasAvatar = profile?.avatarUrl != null;
+    final buttonStyle = ref.watch(buttonStyleProvider);
     final themes = [
       (ThemeMode.dark, l.themeDark, Icons.dark_mode_outlined),
       (ThemeMode.light, l.themeLight, Icons.light_mode_outlined),
@@ -59,6 +63,55 @@ class SettingsScreen extends ConsumerWidget {
                             ref.read(themeModeProvider.notifier).set(value),
                       ),
                   ],
+                ),
+              ),
+              const SizedBox(height: AppSpace.s6),
+              _SectionLabel(l.settingsButtonStyle),
+              GlassCard(
+                highlight: false,
+                child: Column(
+                  children: [
+                    ListTile(
+                      key: const Key('button-gradient'),
+                      leading: const Icon(Icons.gradient_rounded),
+                      title: Text(l.buttonStyleGradient),
+                      selected: buttonStyle == ButtonStyleMode.gradient,
+                      trailing: buttonStyle == ButtonStyleMode.gradient
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () => ref
+                          .read(buttonStyleProvider.notifier)
+                          .set(ButtonStyleMode.gradient),
+                    ),
+                    ListTile(
+                      key: const Key('button-avatar'),
+                      enabled: hasAvatar,
+                      leading: const Icon(Icons.face_retouching_natural),
+                      title: Text(l.buttonStyleAvatar),
+                      subtitle: hasAvatar
+                          ? null
+                          : Text(l.buttonStyleAvatarNeedsPhoto),
+                      selected:
+                          hasAvatar && buttonStyle == ButtonStyleMode.avatar,
+                      trailing:
+                          hasAvatar && buttonStyle == ButtonStyleMode.avatar
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () => ref
+                          .read(buttonStyleProvider.notifier)
+                          .set(ButtonStyleMode.avatar),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpace.s4),
+              Semantics(
+                label: l.settingsButtonPreview,
+                child: ExcludeSemantics(
+                  child: AppButton.primary(
+                    l.settingsButtonPreview,
+                    onPressed: () {},
+                  ),
                 ),
               ),
             ],

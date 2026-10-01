@@ -12,6 +12,10 @@ void main() {
     expect(AppColorsDark.background, const Color(0xFF0B0B10));
     expect(AppColorsDark.destructive, AppColors.destructive);
   });
+  test('light CTA gradient stays in the brand hue', () {
+    expect(AppColors.ctaLightStart, AppColors.primary);
+    expect(AppColors.ctaLightEnd, const Color(0xFF702BDB));
+  });
   test('spacing is a 4dp grid', () {
     expect(AppSpace.s1, 4);
     expect(AppSpace.s4, 16);

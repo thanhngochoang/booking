@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/cta_surface.dart';
 
 enum _Kind { primary, outline, text }
 
-/// The blue → violet → magenta of the logo; white text passes AA on every stop.
-const ctaGradient = LinearGradient(
-  colors: [AppColors.ctaStart, AppColors.ctaMid, AppColors.ctaEnd],
-);
-
 class AppButton extends StatelessWidget {
-  /// The screen's main action, filled with [ctaGradient]. Use once per screen.
+  /// The screen's main action, filled by [CtaSurface] (theme gradient, or the
+  /// blurred avatar when the viewer chose that). Use once per screen.
   const AppButton.primary(
     this.label, {
     super.key,
@@ -111,24 +108,26 @@ class _GradientFill extends StatelessWidget {
     final radius = shape is RoundedRectangleBorder
         ? shape.borderRadius.resolve(Directionality.of(context))
         : BorderRadius.circular(AppRadius.md);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedOpacity(
       opacity: dimmed ? 0.5 : 1,
       duration: const Duration(milliseconds: 150),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: ctaGradient,
           borderRadius: radius,
           boxShadow: dimmed
               ? null
               : [
                   BoxShadow(
-                    color: AppColors.ctaMid.withValues(alpha: 0.35),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
+                    color: dark
+                        ? AppColors.ctaMid.withValues(alpha: 0.35)
+                        : AppColors.ctaLightStart.withValues(alpha: 0.25),
+                    blurRadius: dark ? 18 : 12,
+                    offset: Offset(0, dark ? 8 : 4),
                   ),
                 ],
         ),
-        child: child,
+        child: CtaSurface(borderRadius: radius, child: child),
       ),
     );
   }

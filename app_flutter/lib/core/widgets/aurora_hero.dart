@@ -23,7 +23,7 @@ class AuroraHero extends StatelessWidget {
       fontFamily: AppFonts.display,
       fontSize: 36,
       fontWeight: FontWeight.w600,
-      height: 1.05,
+      height: 1.2,
       letterSpacing: -0.5,
       color: theme.colorScheme.onSurface,
     );
@@ -45,9 +45,13 @@ class AuroraHero extends StatelessWidget {
           blendMode: BlendMode.srcIn,
           shaderCallback: (bounds) =>
               LinearGradient(colors: accentColors).createShader(bounds),
-          child: Text(accent, style: headline),
+          // Vietnamese stacks tone marks above and dots below the letters;
+          // the mask layer is only as tall as its child, so give it room.
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
+            child: Text(accent, style: headline),
+          ),
         ),
-        const SizedBox(height: AppSpace.s2),
         Text(
           tagline,
           style: theme.textTheme.bodyLarge?.copyWith(

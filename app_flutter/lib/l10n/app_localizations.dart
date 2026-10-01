@@ -100,6 +100,12 @@ abstract class AppLocalizations {
   /// **'Cộng đồng nhiếp ảnh gia'**
   String get appName;
 
+  /// No description provided for @tabBadgeCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} mục mới'**
+  String tabBadgeCount(int count);
+
   /// No description provided for @tabHome.
   ///
   /// In vi, this message translates to:
@@ -538,6 +544,36 @@ abstract class AppLocalizations {
   /// **'Theo hệ thống'**
   String get themeSystem;
 
+  /// No description provided for @settingsButtonStyle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểu nút chính'**
+  String get settingsButtonStyle;
+
+  /// No description provided for @buttonStyleGradient.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gradient theo giao diện'**
+  String get buttonStyleGradient;
+
+  /// No description provided for @buttonStyleAvatar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh đại diện làm mờ'**
+  String get buttonStyleAvatar;
+
+  /// No description provided for @buttonStyleAvatarNeedsPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.'**
+  String get buttonStyleAvatarNeedsPhoto;
+
+  /// No description provided for @settingsButtonPreview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem trước nút'**
+  String get settingsButtonPreview;
+
   /// No description provided for @editProfileTitle.
   ///
   /// In vi, this message translates to:
@@ -562,46 +598,52 @@ abstract class AppLocalizations {
   /// **'Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.'**
   String get editProfileError;
 
-  /// No description provided for @profileModeTitle.
+  /// No description provided for @profileOfferPhotographerTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Chế độ sử dụng'**
-  String get profileModeTitle;
+  /// **'Tôi là nhiếp ảnh gia'**
+  String get profileOfferPhotographerTitle;
 
-  /// No description provided for @profileModeCustomerBody.
+  /// No description provided for @profileOfferPhotographerBody.
   ///
   /// In vi, this message translates to:
-  /// **'Bạn đang dùng app để tìm và thuê nhiếp ảnh gia.'**
-  String get profileModeCustomerBody;
+  /// **'Đăng ảnh, nhận booking và quản lý lịch. Bạn vẫn đổi lại được bất cứ lúc nào.'**
+  String get profileOfferPhotographerBody;
 
-  /// No description provided for @profileModePhotographerBody.
+  /// No description provided for @profileOfferCustomerTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Bạn đang nhận chụp và quản lý lịch làm việc.'**
-  String get profileModePhotographerBody;
+  /// **'Tôi cần đặt lịch'**
+  String get profileOfferCustomerTitle;
+
+  /// No description provided for @profileOfferCustomerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm nhiếp ảnh gia, đặt lịch và nhắn tin. Bạn vẫn đổi lại được bất cứ lúc nào.'**
+  String get profileOfferCustomerBody;
 
   /// No description provided for @profileSwitchToCustomer.
   ///
   /// In vi, this message translates to:
-  /// **'Chuyển sang chế độ người thuê'**
+  /// **'Chuyển qua chế độ đặt lịch'**
   String get profileSwitchToCustomer;
 
   /// No description provided for @profileSwitchToPhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'Chuyển sang chế độ nhận chụp'**
+  /// **'Chuyển qua chế độ nhiếp ảnh'**
   String get profileSwitchToPhotographer;
 
   /// No description provided for @profileSwitchedToCustomer.
   ///
   /// In vi, this message translates to:
-  /// **'Đã chuyển sang chế độ người thuê.'**
+  /// **'Đã chuyển qua chế độ đặt lịch.'**
   String get profileSwitchedToCustomer;
 
   /// No description provided for @profileSwitchedToPhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'Đã chuyển sang chế độ nhận chụp.'**
+  /// **'Đã chuyển qua chế độ nhiếp ảnh.'**
   String get profileSwitchedToPhotographer;
 
   /// No description provided for @profileSwitchError.

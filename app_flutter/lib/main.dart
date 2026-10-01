@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/app/app.dart';
 import 'package:photobooking/app/router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/firebase_options.dart';
 
@@ -28,11 +30,16 @@ class _Root extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final avatarUrl = ref.watch(currentProfileProvider).value?.avatarUrl;
+    final useAvatar =
+        ref.watch(buttonStyleProvider) == ButtonStyleMode.avatar &&
+        avatarUrl != null;
     return MyApp(
       router: router,
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
       themeMode: ref.watch(themeModeProvider),
+      ctaAvatar: useAvatar ? NetworkImage(avatarUrl) : null,
     );
   }
 }

@@ -70,18 +70,18 @@ void main() {
     expect(find.text('Nhiếp ảnh gia'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing, reason: 'nothing switched yet');
 
-    await tester.tap(find.text('Chuyển sang chế độ người thuê'));
+    await tester.tap(find.text('Chuyển qua chế độ đặt lịch'));
     await tester.pumpAndSettle();
     final uid = auth.currentUser!.uid;
     expect((await users.watch(uid).first)?.role, UserRole.customer);
     expect(find.text('Khách hàng'), findsOneWidget);
-    expect(find.text('Đã chuyển sang chế độ người thuê.'), findsOneWidget);
+    expect(find.text('Đã chuyển qua chế độ đặt lịch.'), findsOneWidget);
     expect(users.photographerDocs, contains(uid), reason: 'kept for later');
 
-    await tester.tap(find.text('Chuyển sang chế độ nhận chụp'));
+    await tester.tap(find.text('Chuyển qua chế độ nhiếp ảnh'));
     await tester.pumpAndSettle();
     expect((await users.watch(uid).first)?.role, UserRole.photographer);
-    expect(find.text('Đã chuyển sang chế độ nhận chụp.'), findsOneWidget);
+    expect(find.text('Đã chuyển qua chế độ nhiếp ảnh.'), findsOneWidget);
   });
   testWidgets('a failed switch keeps the role and says so', (tester) async {
     final auth = FakeAuthRepository();

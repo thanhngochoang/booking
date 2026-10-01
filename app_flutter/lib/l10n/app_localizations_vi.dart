@@ -13,6 +13,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get appName => 'Cộng đồng nhiếp ảnh gia';
 
   @override
+  String tabBadgeCount(int count) {
+    return '$count mục mới';
+  }
+
+  @override
   String get tabHome => 'Trang chủ';
 
   @override
@@ -236,6 +241,22 @@ class AppLocalizationsVi extends AppLocalizations {
   String get themeSystem => 'Theo hệ thống';
 
   @override
+  String get settingsButtonStyle => 'Kiểu nút chính';
+
+  @override
+  String get buttonStyleGradient => 'Gradient theo giao diện';
+
+  @override
+  String get buttonStyleAvatar => 'Ảnh đại diện làm mờ';
+
+  @override
+  String get buttonStyleAvatarNeedsPhoto =>
+      'Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.';
+
+  @override
+  String get settingsButtonPreview => 'Xem trước nút';
+
+  @override
   String get editProfileTitle => 'Chỉnh sửa hồ sơ';
 
   @override
@@ -249,28 +270,30 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.';
 
   @override
-  String get profileModeTitle => 'Chế độ sử dụng';
+  String get profileOfferPhotographerTitle => 'Tôi là nhiếp ảnh gia';
 
   @override
-  String get profileModeCustomerBody =>
-      'Bạn đang dùng app để tìm và thuê nhiếp ảnh gia.';
+  String get profileOfferPhotographerBody =>
+      'Đăng ảnh, nhận booking và quản lý lịch. Bạn vẫn đổi lại được bất cứ lúc nào.';
 
   @override
-  String get profileModePhotographerBody =>
-      'Bạn đang nhận chụp và quản lý lịch làm việc.';
+  String get profileOfferCustomerTitle => 'Tôi cần đặt lịch';
 
   @override
-  String get profileSwitchToCustomer => 'Chuyển sang chế độ người thuê';
+  String get profileOfferCustomerBody =>
+      'Tìm nhiếp ảnh gia, đặt lịch và nhắn tin. Bạn vẫn đổi lại được bất cứ lúc nào.';
 
   @override
-  String get profileSwitchToPhotographer => 'Chuyển sang chế độ nhận chụp';
+  String get profileSwitchToCustomer => 'Chuyển qua chế độ đặt lịch';
 
   @override
-  String get profileSwitchedToCustomer => 'Đã chuyển sang chế độ người thuê.';
+  String get profileSwitchToPhotographer => 'Chuyển qua chế độ nhiếp ảnh';
 
   @override
-  String get profileSwitchedToPhotographer =>
-      'Đã chuyển sang chế độ nhận chụp.';
+  String get profileSwitchedToCustomer => 'Đã chuyển qua chế độ đặt lịch.';
+
+  @override
+  String get profileSwitchedToPhotographer => 'Đã chuyển qua chế độ nhiếp ảnh.';
 
   @override
   String get profileSwitchError =>

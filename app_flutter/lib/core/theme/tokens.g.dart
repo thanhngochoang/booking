@@ -46,6 +46,8 @@ class AppColors {
   static const Color ctaStart = Color(0xFF3D63FF);
   static const Color ctaMid = Color(0xFF8A3FFC);
   static const Color ctaEnd = Color(0xFFD6249F);
+  static const Color ctaLightStart = Color(0xFF8338F5);
+  static const Color ctaLightEnd = Color(0xFF702BDB);
   static const Color spectrumCyan = Color(0xFF14E0F5);
   static const Color spectrumViolet = Color(0xFF8A3FFC);
   static const Color spectrumPink = Color(0xFFFF45D0);
@@ -98,6 +100,8 @@ class AppColorsDark {
   static const Color ctaStart = AppColors.ctaStart;
   static const Color ctaMid = AppColors.ctaMid;
   static const Color ctaEnd = AppColors.ctaEnd;
+  static const Color ctaLightStart = AppColors.ctaLightStart;
+  static const Color ctaLightEnd = AppColors.ctaLightEnd;
   static const Color spectrumCyan = AppColors.spectrumCyan;
   static const Color spectrumViolet = AppColors.spectrumViolet;
   static const Color spectrumPink = AppColors.spectrumPink;

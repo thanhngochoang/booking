@@ -6,6 +6,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/shell/tab_badges.dart';
 
 class TabShell extends ConsumerWidget {
   const TabShell(this.shell, {super.key});
@@ -16,6 +17,7 @@ class TabShell extends ConsumerWidget {
     final role =
         ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
     final specs = tabsFor(role);
+    final badges = ref.watch(tabBadgesProvider);
     final l = context.l10n;
     return AuroraBackground(
       child: Scaffold(
@@ -29,16 +31,17 @@ class TabShell extends ConsumerWidget {
             for (final s in specs)
               NavigationDestination(
                 icon: s.emphasized
-                    ? Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          gradient: ctaGradient,
-                          shape: BoxShape.circle,
+                    ? SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CtaSurface(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Center(
+                            child: Icon(s.icon, color: Colors.white),
+                          ),
                         ),
-                        child: Icon(s.icon, color: Colors.white),
                       )
-                    : Icon(s.icon),
+                    : TabBadge(count: badges[s.tab] ?? 0, child: Icon(s.icon)),
                 label: s.label(l),
               ),
           ],
