@@ -28,6 +28,7 @@ export 'package:photobooking/core/widgets/error_state.dart';
 export 'package:photobooking/core/widgets/free_tag.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
 export 'package:photobooking/core/widgets/location_prompt_card.dart';
+export 'package:photobooking/core/widgets/network_photo.dart';
 export 'package:photobooking/core/widgets/phone_field.dart';
 export 'package:photobooking/core/widgets/screen_code.dart';
 export 'package:photobooking/core/widgets/segmented_tabs.dart';

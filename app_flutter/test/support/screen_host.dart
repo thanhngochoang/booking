@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import 'photo_scope.dart';
+
 /// Hosts a screen the way the app does, with the given provider overrides.
 /// `retry` is off so a failing provider does not leave a retry timer running.
 Widget screenApp({
@@ -26,7 +28,7 @@ Widget screenApp({
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context)
             .copyWith(textScaler: TextScaler.linear(textScale)),
-        child: child!,
+        child: testPhotoScope(child: child!),
       ),
       home: home,
     ),
@@ -54,7 +56,7 @@ Widget screenRouterApp({
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context)
             .copyWith(textScaler: TextScaler.linear(textScale)),
-        child: child!,
+        child: testPhotoScope(child: child!),
       ),
     ),
   );
