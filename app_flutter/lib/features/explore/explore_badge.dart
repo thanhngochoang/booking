@@ -18,10 +18,16 @@ class ExploreSeenAtController extends Notifier<DateTime?> {
 
   Future<void> markSeen() async {
     final now = ref.read(clockProvider)();
-    state = now;
-    await ref
-        .read(sharedPreferencesProvider)
-        .setString(key, now.toIso8601String());
+    try {
+      await ref
+          .read(sharedPreferencesProvider)
+          .setString(key, now.toIso8601String());
+    } on Object {
+      return; // keep the old marker; the badge simply stays
+    }
+    if (ref.mounted) {
+      state = now;
+    }
   }
 }
 
