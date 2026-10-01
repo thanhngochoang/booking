@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cộng đồng nhiếp ảnh gia</string>
+    <string name="facebook_app_id">546233675712070</string>
+    <string name="fb_login_protocol_scheme">fb546233675712070</string>
+    <!-- Meta developer console > Settings > Advanced > Client token -->
+    <string name="facebook_client_token"></string>
+</resources>
