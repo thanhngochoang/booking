@@ -31,10 +31,12 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
     final l = context.l10n;
     final theme = Theme.of(context);
     final location = ref.watch(locationControllerProvider);
-    final areas = ref.watch(areasProvider).value ?? const <AreaOption>[];
+    final areasAsync = ref.watch(areasProvider);
+    final areas = areasAsync.value ?? const <AreaOption>[];
+    final loadingAreas = !areasAsync.hasValue;
     if (!_seeded && location.loaded) {
       _seeded = true;
-      _selected =
+      _selected ??=
           location.area?.id ??
           (location.permission == LocationPermissionStatus.granted &&
                   location.location != null
@@ -58,45 +60,64 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpace.s5,
-              0,
-              AppSpace.s5,
-              AppSpace.s3,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(
-                  header: true,
-                  child: Text(
-                    l.areaPickerTitle,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.s1),
-                Text(l.areaPickerBody, style: theme.textTheme.bodySmall),
-                if (areas.length > 8) ...[
-                  const SizedBox(height: AppSpace.s3),
-                  TextField(
-                    key: const Key('area-search'),
-                    onChanged: (v) => setState(() => _query = v),
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      hintText: l.areaPickerSearch,
-                      prefixIcon: const Icon(Icons.search),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
           Flexible(
             child: ListView(
               shrinkWrap: true,
               padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.s2,
+                    0,
+                    AppSpace.s2,
+                    AppSpace.s3,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          l.areaPickerTitle,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpace.s1),
+                      Text(l.areaPickerBody, style: theme.textTheme.bodySmall),
+                      if (areas.length > 8) ...[
+                        const SizedBox(height: AppSpace.s3),
+                        TextField(
+                          key: const Key('area-search'),
+                          onChanged: (v) => setState(() => _query = v),
+                          textInputAction: TextInputAction.search,
+                          decoration: InputDecoration(
+                            hintText: l.areaPickerSearch,
+                            prefixIcon: const Icon(Icons.search),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (location.permission ==
+                    LocationPermissionStatus.deniedForever) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.s2,
+                      AppSpace.s1,
+                      AppSpace.s2,
+                      AppSpace.s2,
+                    ),
+                    child: AppButton.outline(
+                      l.areaPickerOpenSettings,
+                      key: const Key('area-open-settings'),
+                      icon: const Icon(Icons.settings_outlined),
+                      onPressed: () => ref
+                          .read(locationControllerProvider.notifier)
+                          .openSettings(),
+                    ),
+                  ),
+                ],
                 if (offersDevice && folded.isEmpty)
                   _AreaRow(
                     key: const Key('area-use-device'),
@@ -112,7 +133,9 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                     selected: _selected == a.id,
                     onTap: () => setState(() => _selected = a.id),
                   ),
-                if (shown.isEmpty)
+                if (loadingAreas)
+                  const _AreaSkeletons()
+                else if (shown.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(AppSpace.s4),
                     child: Text(
@@ -130,18 +153,6 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (location.permission ==
-                    LocationPermissionStatus.deniedForever) ...[
-                  AppButton.outline(
-                    l.areaPickerOpenSettings,
-                    key: const Key('area-open-settings'),
-                    icon: const Icon(Icons.settings_outlined),
-                    onPressed: () => ref
-                        .read(locationControllerProvider.notifier)
-                        .openSettings(),
-                  ),
-                  const SizedBox(height: AppSpace.s2),
-                ],
                 AppButton.primary(
                   l.areaPickerUse,
                   key: const Key('area-use'),
@@ -162,13 +173,33 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
       return;
     }
     setState(() => _saving = true);
-    final controller = ref.read(locationControllerProvider.notifier);
-    if (id == _deviceId) {
-      await controller.useDeviceLocation();
-    } else {
-      await controller.chooseArea(areas.firstWhere((a) => a.id == id));
+    var close = true;
+    try {
+      final controller = ref.read(locationControllerProvider.notifier);
+      if (id == _deviceId) {
+        await controller.useDeviceLocation();
+        if (!mounted) {
+          return;
+        }
+        final s = ref.read(locationControllerProvider);
+        // Stay open when the device fix did not arrive (for example the
+        // permission ended denied forever): the sheet rebuilds from it.
+        close =
+            s.area == null &&
+            s.location != null &&
+            s.permission == LocationPermissionStatus.granted;
+      } else if (ref.read(locationControllerProvider).area?.id != id) {
+        final match = areas.where((a) => a.id == id);
+        if (match.isNotEmpty) {
+          await controller.chooseArea(match.first);
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
-    if (mounted) {
+    if (close && mounted) {
       Navigator.of(context).pop();
     }
   }
@@ -226,6 +257,28 @@ class _AreaRow extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AreaSkeletons extends StatelessWidget {
+  const _AreaSkeletons();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSkeletonScope(
+      child: Column(
+        children: [
+          for (var i = 0; i < 4; i++)
+            const Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpace.s3,
+                vertical: AppSpace.s4,
+              ),
+              child: AppSkeleton.line(),
+            ),
+        ],
       ),
     );
   }

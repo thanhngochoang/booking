@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/location/location_repository.dart';
@@ -13,6 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/screen_host.dart';
 
 final _t0 = DateTime.utc(2026, 10, 1, 5);
+
+class _Delayed implements AreaRepository {
+  final completer = Completer<List<AreaOption>>();
+  @override
+  Future<List<AreaOption>> list() => completer.future;
+}
 
 class _Throwing implements AreaRepository {
   @override
@@ -127,16 +136,22 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('area-hn-hoan-kiem')),
       100,
-      scrollable: find.descendant(
-        of: find.byType(ListView),
-        matching: find.byType(Scrollable),
-      ),
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     final selected = tester.getSemantics(
       find.byKey(const Key('area-hn-hoan-kiem')),
     );
     expect(selected.label, contains('Hoàn Kiếm'));
+    expect(
+      selected.getSemanticsData().flagsCollection.isSelected,
+      Tristate.isTrue,
+    );
     expect(_enabled(tester, 'area-use'), isTrue);
   });
 
@@ -213,5 +228,101 @@ void main() {
     // Material scales button padding with the text, so 52 is a floor.
     expect(button.height, greaterThanOrEqualTo(52));
     expect(button.bottom, lessThanOrEqualTo(568));
+  });
+
+  testWidgets('while the list loads: skeleton, no no-match text', (
+    tester,
+  ) async {
+    final delayed = _Delayed();
+    final (app, _, _) = await _app(areas: delayed);
+    await tester.pumpWidget(app);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text('mở'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(AppSkeleton), findsWidgets);
+    expect(find.text('Không tìm thấy khu vực'), findsNothing);
+    delayed.completer.complete(builtInAreas);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const Key('area-hcm-q1')), findsOneWidget);
+    expect(find.byType(AppSkeleton), findsNothing);
+  });
+
+  testWidgets('a saved area missing from the list does not break confirm', (
+    tester,
+  ) async {
+    final (app, prefs, _) = await _app(
+      prefsValues: {
+        LocationController.areaKey: jsonEncode({
+          'id': 'gone',
+          'name': 'Gone',
+          'geohash5': 'w3gvk',
+        }),
+      },
+    );
+    await _open(tester, app);
+    expect(_enabled(tester, 'area-use'), isTrue);
+    await tester.tap(find.byKey(const Key('area-use')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Chọn khu vực của bạn'), findsNothing);
+    expect(prefs.getString(LocationController.areaKey), contains('gone'));
+  });
+
+  testWidgets('device row that ends denied-forever keeps the sheet open', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final repo = FakeLocationRepository(
+      statusAfterRequest: LocationPermissionStatus.deniedForever,
+    );
+    await tester.pumpWidget(
+      screenApp(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          locationRepositoryProvider.overrideWithValue(repo),
+          clockProvider.overrideWithValue(() => _t0),
+        ],
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showAreaPicker(context),
+              child: const Text('mở'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('mở'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('area-use-device')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('area-use')));
+    await tester.pumpAndSettle();
+    expect(find.text('Chọn khu vực của bạn'), findsOneWidget);
+    expect(find.byKey(const Key('area-open-settings')), findsOneWidget);
+    expect(_enabled(tester, 'area-use'), isTrue);
+  });
+
+  testWidgets('keyboard open at 320x568, 1.3x, denied-forever: no overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.reset);
+    final (app, _, _) = await _app(
+      status: LocationPermissionStatus.deniedForever,
+      textScale: 1.3,
+    );
+    await _open(tester, app);
+    // The header scrolls with the list, so the field is reachable.
+    await tester.ensureVisible(find.byKey(const Key('area-search')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('area-search')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }
