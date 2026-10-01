@@ -73,3 +73,23 @@ Kiểm tự động: `test/battery/location_foundations_battery_test.dart` (đ�
 
 Android: máy tầm trung, `flutter run --profile`, DevTools Performance và `adb shell dumpsys batterystats`.
 iOS: Xcode Instruments (Energy Log, Time Profiler) trên iPhone thật; Energy Impact phải là "Low" khi đứng yên và mũi tên vị trí không được còn sau khi lấy vị trí. Hiện chưa build iOS được: ghi "iOS: not measured, blocked by iOS enablement". Dòng iOS trong bảng ghi model iPhone ở cột Thiết bị và Energy Impact thay cho các cột chỉ có ở Android.
+
+## Màn Khám phá (kế hoạch 3a2)
+
+Kiểm tự động: `test/battery/explore_battery_test.dart` (11 test):
+
+- Màn đã tải xong không còn khung hình nào ở cả bốn trạng thái (hỏi vị trí, sự kiện gần bạn, chọn khu vực, sheet khu vực đang mở). Skeleton có nhịp đập nên phải kiểm sau khi dữ liệu đã về. Ngân sách blur: thẻ xin vị trí 1, hàng sự kiện 0, sheet 1.
+- Vị trí chỉ hỏi một lần: kéo để làm mới, quay lại từ nền và đổi bán kính dùng lại vị trí còn mới (30 phút); chạm "Cho phép" gọi OS đúng một lần và lấy đúng một vị trí.
+- Rời màn thì không còn việc nào chạy: bỏ lifecycle observer, các provider `autoDispose` dừng, không còn truy vấn sự kiện.
+- Danh sách 100 sự kiện dựng lười (dưới 25 hàng được dựng).
+- Rà mã nguồn: thư mục Explore không có `Timer.periodic`, `Stream.periodic`, `AnimationController`, `Ticker`, `getPositionStream`; cổng sự kiện dựa trên Future; không có ảnh mạng.
+
+Đo tay (chưa đo: device profiling pending, cần điện thoại thật qua adb):
+
+1. Lần đầu vào Khám phá trên máy mới cài: chạm "Cho phép" một lần, cuộn 100 sự kiện, xem raster time.
+2. Để Khám phá ở chế độ gần bạn 5 phút không chạm.
+3. Đổi chip bán kính 10 lần.
+4. Mở sheet khu vực 10 lần.
+5. Đưa app xuống nền 1 phút rồi quay lại: một lần đọc quyền, không lấy vị trí mới.
+
+Android: máy tầm trung, `flutter run --profile`, DevTools Performance và `adb shell dumpsys batterystats`. iOS: Xcode Instruments (Energy Log, Time Profiler) trên iPhone thật, Energy Impact phải là "Low" khi đứng yên; hiện ghi "iOS: not measured, blocked by iOS enablement". Dán kết quả vào mô tả PR theo bảng mẫu ở trên.
