@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
+import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -18,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
     final name = profile?.displayName;
     final hasAvatar = profile?.avatarUrl != null;
     final buttonStyle = ref.watch(buttonStyleProvider);
+    final showCodes = ref.watch(showScreenCodesProvider);
     final themes = [
       (ThemeMode.dark, l.themeDark, Icons.dark_mode_outlined),
       (ThemeMode.light, l.themeLight, Icons.light_mode_outlined),
@@ -114,6 +117,22 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (kDebugMode) ...[
+                const SizedBox(height: AppSpace.s6),
+                _SectionLabel(l.settingsDeveloper),
+                GlassCard(
+                  highlight: false,
+                  child: SwitchListTile(
+                    key: const Key('show-screen-codes'),
+                    secondary: const Icon(Icons.pin_outlined),
+                    title: Text(l.settingsShowScreenCodes),
+                    subtitle: Text(l.settingsShowScreenCodesBody),
+                    value: showCodes,
+                    onChanged: (v) =>
+                        ref.read(showScreenCodesProvider.notifier).set(v),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

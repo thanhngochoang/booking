@@ -257,6 +257,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsButtonPreview => 'Xem trước nút';
 
   @override
+  String get settingsDeveloper => 'Dành cho nhà phát triển';
+
+  @override
+  String get settingsShowScreenCodes => 'Hiện mã màn hình';
+
+  @override
+  String get settingsShowScreenCodesBody =>
+      'Nhãn Sxx ở góc trên trái mỗi màn, để gọi tên màn khi cần chỉnh sửa.';
+
+  @override
   String get editProfileTitle => 'Chỉnh sửa hồ sơ';
 
   @override

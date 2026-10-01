@@ -574,6 +574,24 @@ abstract class AppLocalizations {
   /// **'Xem trước nút'**
   String get settingsButtonPreview;
 
+  /// No description provided for @settingsDeveloper.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dành cho nhà phát triển'**
+  String get settingsDeveloper;
+
+  /// No description provided for @settingsShowScreenCodes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện mã màn hình'**
+  String get settingsShowScreenCodes;
+
+  /// No description provided for @settingsShowScreenCodesBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhãn Sxx ở góc trên trái mỗi màn, để gọi tên màn khi cần chỉnh sửa.'**
+  String get settingsShowScreenCodesBody;
+
   /// No description provided for @editProfileTitle.
   ///
   /// In vi, this message translates to:

@@ -176,4 +176,22 @@ void main() {
       expect(again.read(showScreenCodesProvider), isTrue);
     },
   );
+
+  testWidgets('the screen-code switch is offered in debug and saves', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    final row = find.byKey(const Key('show-screen-codes'));
+    await tester.scrollUntilVisible(row, 200);
+    expect(tester.widget<SwitchListTile>(row).value, isFalse);
+
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(tester.widget<SwitchListTile>(row).value, isTrue);
+    expect(prefs.getBool('showScreenCodes'), isTrue);
+  });
 }
