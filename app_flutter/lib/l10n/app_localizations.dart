@@ -1162,6 +1162,12 @@ abstract class AppLocalizations {
   /// **'Không tìm thấy khu vực'**
   String get areaPickerNoMatch;
 
+  /// No description provided for @areaDeviceFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lấy được vị trí. Chọn một khu vực hoặc thử lại.'**
+  String get areaDeviceFailed;
+
   /// No description provided for @exploreAround.
   ///
   /// In vi, this message translates to:

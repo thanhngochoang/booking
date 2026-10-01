@@ -10,10 +10,9 @@ abstract class NearbyEventsRepository {
   /// of [cells] (prefixes of length 2 to 5). Only prefixes are passed in: the
   /// user's coordinates never reach a repository.
   ///
-  /// Cells are a coarse cover, so the caller filters by exact distance. An
-  /// adapter must therefore return every matching event, or at least filter
-  /// by distance before any [limit] is applied; otherwise far events inside
-  /// the cells could crowd out near ones.
+  /// Cells are a coarse cover. An adapter must return every public event in
+  /// [cells] from [from] (paging internally if needed) rather than truncating
+  /// at [limit]; the caller filters by distance.
   Future<List<EventSummary>> inCells(
     List<String> cells, {
     required DateTime from,

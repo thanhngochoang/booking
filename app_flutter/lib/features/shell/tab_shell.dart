@@ -7,6 +7,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/explore_badge.dart';
+import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/shell/tab_badges.dart';
 
 class TabShell extends ConsumerWidget {
@@ -29,6 +30,8 @@ class TabShell extends ConsumerWidget {
           onDestinationSelected: (i) {
             if (specs[i].tab == AppTab.explore) {
               ref.read(exploreSeenAtProvider.notifier).markSeen();
+              // A fix older than 30 minutes is refreshed on entering.
+              ref.read(locationControllerProvider.notifier).refresh();
             }
             shell.goBranch(i, initialLocation: i == shell.currentIndex);
           },

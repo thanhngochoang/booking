@@ -306,6 +306,56 @@ void main() {
     expect(_enabled(tester, 'area-use'), isTrue);
   });
 
+  testWidgets('device row with no fix (timeout) shows the failure message', (
+    tester,
+  ) async {
+    final (app, _, repo) = await _app(status: LocationPermissionStatus.granted);
+    repo.location = null;
+    await _open(tester, app);
+    await tester.tap(find.byKey(const Key('area-use-device')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('area-device-failed')), findsNothing);
+    await tester.tap(find.byKey(const Key('area-use')));
+    await tester.pumpAndSettle();
+    expect(find.text('Chọn khu vực của bạn'), findsOneWidget);
+    expect(
+      find.text('Không lấy được vị trí. Chọn một khu vực hoặc thử lại.'),
+      findsOneWidget,
+    );
+    // Changing the selection clears it.
+    await tester.tap(find.byKey(const Key('area-hcm-q1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('area-device-failed')), findsNothing);
+  });
+
+  testWidgets('device row refused by the OS shows the failure message', (
+    tester,
+  ) async {
+    final (app, _, repo) = await _app();
+    repo.statusAfterRequest = LocationPermissionStatus.denied;
+    await _open(tester, app);
+    await tester.tap(find.byKey(const Key('area-use-device')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('area-use')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('area-device-failed')), findsOneWidget);
+  });
+
+  testWidgets('the search field keeps the query across rebuilds', (
+    tester,
+  ) async {
+    final (app, _, _) = await _app();
+    await _open(tester, app);
+    await tester.enterText(find.byKey(const Key('area-search')), 'quan 1');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('area-hcm-q1')));
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(
+      find.byKey(const Key('area-search')),
+    );
+    expect(field.controller!.text, 'quan 1');
+  });
+
   testWidgets('keyboard open at 320x568, 1.3x, denied-forever: no overflow', (
     tester,
   ) async {

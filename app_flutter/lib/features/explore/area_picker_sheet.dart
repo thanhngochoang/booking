@@ -25,6 +25,14 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
   bool _seeded = false;
   String _query = '';
   bool _saving = false;
+  bool _deviceFailed = false;
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +96,7 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                         const SizedBox(height: AppSpace.s3),
                         TextField(
                           key: const Key('area-search'),
+                          controller: _searchController,
                           onChanged: (v) => setState(() => _query = v),
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
@@ -124,14 +133,20 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                     label: l.areaPickerUseDevice,
                     icon: Icons.my_location_outlined,
                     selected: _selected == _deviceId,
-                    onTap: () => setState(() => _selected = _deviceId),
+                    onTap: () => setState(() {
+                      _selected = _deviceId;
+                      _deviceFailed = false;
+                    }),
                   ),
                 for (final a in shown)
                   _AreaRow(
                     key: Key('area-${a.id}'),
                     label: a.name,
                     selected: _selected == a.id,
-                    onTap: () => setState(() => _selected = a.id),
+                    onTap: () => setState(() {
+                      _selected = a.id;
+                      _deviceFailed = false;
+                    }),
                   ),
                 if (loadingAreas)
                   const _AreaSkeletons()
@@ -153,6 +168,22 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Semantics(
+                  liveRegion: true,
+                  child: _deviceFailed
+                      ? Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpace.s3),
+                          child: Text(
+                            l.areaDeviceFailed,
+                            key: const Key('area-device-failed'),
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
                 AppButton.primary(
                   l.areaPickerUse,
                   key: const Key('area-use'),
@@ -172,7 +203,10 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
     if (id == null) {
       return;
     }
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _deviceFailed = false;
+    });
     var close = true;
     try {
       final controller = ref.read(locationControllerProvider.notifier);
@@ -188,6 +222,9 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
             s.area == null &&
             s.location != null &&
             s.permission == LocationPermissionStatus.granted;
+        if (!close) {
+          _deviceFailed = true;
+        }
       } else if (ref.read(locationControllerProvider).area?.id != id) {
         final match = areas.where((a) => a.id == id);
         if (match.isNotEmpty) {

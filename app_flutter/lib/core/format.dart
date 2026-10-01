@@ -8,7 +8,8 @@ String formatDistance(double km) {
   return '${rounded.toStringAsFixed(1).replaceAll('.', ',')} km';
 }
 
-/// `1.500.000₫`; with [short] `1,5M` / `250K` for small cards.
+/// `1.500.000₫`; with [short] `1,5M` / `250K` for small cards. Callers show
+/// the FreeTag for 0, never `0₫`.
 String formatMoney(int vnd, {bool short = false}) {
   String grouped(int n) {
     final s = n.toString();
@@ -34,6 +35,10 @@ String formatMoney(int vnd, {bool short = false}) {
     return '${grouped(vnd)}₫';
   }
   if (vnd >= 1000000) {
+    return compact(vnd / 1000000, 'M');
+  }
+  // 999.950 rounds to 1000K: switch to M instead.
+  if ((vnd / 1000 * 10).round() >= 10000) {
     return compact(vnd / 1000000, 'M');
   }
   return compact(vnd / 1000, 'K');

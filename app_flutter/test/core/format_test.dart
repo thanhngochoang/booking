@@ -18,6 +18,9 @@ void main() {
     expect(formatMoney(600000, short: true), '600K');
     expect(formatMoney(1250, short: true), '1,3K');
     expect(formatMoney(999, short: true), '999₫');
+    expect(formatMoney(999950, short: true), '1M');
+    expect(formatMoney(999950, short: true), isNot('1000K'));
+    expect(formatMoney(999949, short: true), '999,9K');
     expect(formatMoney(12000000, short: true), '12M');
   });
 }

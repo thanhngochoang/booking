@@ -53,6 +53,9 @@ Future<(ProviderContainer, SharedPreferences)> _make({
     ],
   );
   addTearDown(c.dispose);
+  // Let the permission status load: while it loads the badge stays at 0.
+  c.read(locationControllerProvider);
+  await pumpEventQueue();
   return (c, prefs);
 }
 
@@ -60,6 +63,24 @@ void main() {
   test('never seen: counts every public event, no location needed', () async {
     final (c, _) = await _make();
     expect(await c.read(exploreBadgeCountProvider.future), 4);
+  });
+
+  test('returns 0 without querying while the location is resolving', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final repo = _CountingRepo(_events());
+    final c = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        clockProvider.overrideWithValue(() => _now),
+        nearbyEventsRepositoryProvider.overrideWithValue(repo),
+        locationRepositoryProvider.overrideWithValue(FakeLocationRepository()),
+      ],
+    );
+    addTearDown(c.dispose);
+    expect(c.read(exploreResolutionProvider).mode, ExploreMode.loading);
+    expect(await c.read(exploreBadgeCountProvider.future), 0);
+    expect(repo.countCalls, 0);
   });
 
   test('counts only events created after the last visit', () async {
@@ -112,8 +133,10 @@ void main() {
 
   Future<SharedPreferences> pumpShell(
     WidgetTester tester,
-    NearbyEventsRepository repo,
-  ) async {
+    NearbyEventsRepository repo, {
+    FakeLocationRepository? location,
+    DateTime Function()? clock,
+  }) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final auth = FakeAuthRepository();
@@ -145,12 +168,12 @@ void main() {
         retry: (_, _) => null,
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          clockProvider.overrideWithValue(() => _now),
+          clockProvider.overrideWithValue(clock ?? () => _now),
           authRepositoryProvider.overrideWithValue(auth),
           userRepositoryProvider.overrideWithValue(users),
           nearbyEventsRepositoryProvider.overrideWithValue(repo),
           locationRepositoryProvider.overrideWithValue(
-            FakeLocationRepository(),
+            location ?? FakeLocationRepository(),
           ),
         ],
         child: MaterialApp.router(
@@ -179,6 +202,23 @@ void main() {
       prefs.getString(ExploreSeenAtController.key),
       _now.toIso8601String(),
     );
+  });
+
+  testWidgets('entering Explore after 31 minutes refreshes a stale fix', (
+    tester,
+  ) async {
+    var now = _now;
+    final location = FakeLocationRepository(
+      status: LocationPermissionStatus.granted,
+      location: ApproxLocation(lat: 10.7769, lng: 106.7009, capturedAt: _now),
+    );
+    await pumpShell(tester, _repo(), location: location, clock: () => now);
+    expect(location.locationCalls, 1);
+
+    now = _now.add(const Duration(minutes: 31));
+    await tester.tap(find.text('Khám phá'));
+    await tester.pumpAndSettle();
+    expect(location.locationCalls, 2);
   });
 
   testWidgets('the badge is gone while the count reloads after a visit', (
@@ -222,6 +262,22 @@ class _GatedRepo extends FakeNearbyEventsRepository {
     int cap = 10,
   }) async {
     await gate?.future;
+    return super.countCreatedSince(cells: cells, since: since, cap: cap);
+  }
+}
+
+class _CountingRepo extends FakeNearbyEventsRepository {
+  _CountingRepo(super.events);
+
+  int countCalls = 0;
+
+  @override
+  Future<int> countCreatedSince({
+    List<String>? cells,
+    DateTime? since,
+    int cap = 10,
+  }) {
+    countCalls++;
     return super.countCreatedSince(cells: cells, since: since, cap: cap);
   }
 }

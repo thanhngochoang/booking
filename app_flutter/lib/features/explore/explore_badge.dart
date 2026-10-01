@@ -41,6 +41,12 @@ final exploreSeenAtProvider =
 /// `TabBadge` shows "9+".
 final exploreBadgeCountProvider = FutureProvider<int>((ref) {
   final seenAt = ref.watch(exploreSeenAtProvider);
+  final mode = ref.watch(exploreResolutionProvider.select((r) => r.mode));
+  if (mode == ExploreMode.loading ||
+      mode == ExploreMode.locating ||
+      mode == ExploreMode.requesting) {
+    return Future.value(0);
+  }
   final origin = ref.watch(exploreResolutionProvider.select((r) => r.origin));
   final cells = origin == null
       ? null

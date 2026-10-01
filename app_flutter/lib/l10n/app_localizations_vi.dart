@@ -585,6 +585,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get areaPickerNoMatch => 'Không tìm thấy khu vực';
 
   @override
+  String get areaDeviceFailed =>
+      'Không lấy được vị trí. Chọn một khu vực hoặc thử lại.';
+
+  @override
   String exploreAround(String area) {
     return 'Quanh $area · vị trí gần đúng';
   }

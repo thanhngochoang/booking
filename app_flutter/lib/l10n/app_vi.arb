@@ -216,6 +216,7 @@
   "areaPickerUseDevice": "Dùng vị trí của tôi",
   "areaPickerSearch": "Tìm quận, thành phố",
   "areaPickerNoMatch": "Không tìm thấy khu vực",
+  "areaDeviceFailed": "Không lấy được vị trí. Chọn một khu vực hoặc thử lại.",
   "exploreAround": "Quanh {area} · vị trí gần đúng",
   "@exploreAround": {
     "placeholders": {

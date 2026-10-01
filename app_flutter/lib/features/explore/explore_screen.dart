@@ -49,7 +49,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   /// Coming back from the Settings app: pick up a permission change.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    // Only the active tab refreshes (the other branches stay mounted).
+    if (state == AppLifecycleState.resumed &&
+        TickerMode.valuesOf(context).enabled) {
       ref.read(locationControllerProvider.notifier).refresh();
     }
   }

@@ -339,6 +339,9 @@ class LocationController extends Notifier<LocationState> {
         state.location == null) {
       return;
     }
+    if (state.location!.isStale(_now())) {
+      return; // only a fresh fix replaces the chosen area
+    }
     await _prefs.remove(areaKey);
     state = state.copyWith(clearArea: true);
   }

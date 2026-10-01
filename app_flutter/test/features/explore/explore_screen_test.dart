@@ -172,7 +172,61 @@ void main() {
       );
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
-      expect(find.text('Sự kiện chụp ảnh'), findsNothing);
+      // The list is lazy and off-screen items are skipped by default, so
+      // look past the viewport and make sure the fetch really happened.
+      expect(w.repo.upcomingCalls, 1);
+      expect(find.text('Sự kiện chụp ảnh', skipOffstage: false), findsNothing);
+      expect(find.byType(NearbyEventTile, skipOffstage: false), findsNothing);
+    });
+  });
+
+  group('resume refreshes location only when Explore is the active tab', () {
+    Future<void> background(WidgetTester t) async {
+      for (final st in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        t.binding.handleAppLifecycleStateChanged(st);
+      }
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('active: refreshes, also while the S36 sheet is open', (
+      tester,
+    ) async {
+      final w = ExploreWorld(status: LocationPermissionStatus.denied);
+      await tester.pumpWidget(await _app(w));
+      await tester.pumpAndSettle();
+      final before = w.location.statusCalls;
+      await background(tester);
+      expect(w.location.statusCalls, before + 1);
+
+      await _reveal(tester, find.byKey(const Key('location-choose-area')));
+      await tester.tap(find.byKey(const Key('location-choose-area')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('area-use')), findsOneWidget);
+      final open = w.location.statusCalls;
+      await background(tester);
+      expect(w.location.statusCalls, open + 1);
+    });
+
+    testWidgets('inactive branch: no refresh', (tester) async {
+      final w = ExploreWorld(status: LocationPermissionStatus.denied);
+      await w.init();
+      await tester.pumpWidget(
+        screenApp(
+          home: const TickerMode(enabled: false, child: ExploreScreen()),
+          overrides: w.overrides,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final before = w.location.statusCalls;
+      await background(tester);
+      expect(w.location.statusCalls, before);
     });
   });
 

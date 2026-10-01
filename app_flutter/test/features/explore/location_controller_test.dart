@@ -401,6 +401,24 @@ void main() {
     });
 
     test(
+      'a stale old fix and a failed refetch: useDeviceLocation keeps the area',
+      () async {
+        final repo = FakeLocationRepository(
+          status: LocationPermissionStatus.granted,
+          location: _fix(),
+        );
+        final e = await _env(repo: repo);
+        await e.ctrl.chooseArea(builtInAreas.first);
+        e.clock.now = _t0.add(const Duration(minutes: 31));
+        repo.location = null;
+        await e.ctrl.useDeviceLocation();
+        expect(repo.locationCalls, 2);
+        expect(e.state.area, isNotNull);
+        expect(e.prefs.getString(LocationController.areaKey), isNotNull);
+      },
+    );
+
+    test(
       'granted but no fix: useDeviceLocation keeps the saved area',
       () async {
         final repo = FakeLocationRepository(
