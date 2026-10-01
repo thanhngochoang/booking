@@ -20,7 +20,7 @@ class FakePostRepository implements PostRepository {
     final list = List.of(_posts)
       ..sort((a, b) {
         final byTime = b.createdAt.compareTo(a.createdAt);
-        return byTime != 0 ? byTime : a.id.compareTo(b.id);
+        return byTime != 0 ? byTime : b.id.compareTo(a.id);
       });
     return list;
   }
@@ -87,9 +87,9 @@ class FakePostRepository implements PostRepository {
 }
 
 class FakePostEngagementRepository implements PostEngagementRepository {
-  final _liked = <String>{};
-  final _saved = <String>{};
-  final _following = <String>{};
+  final _liked = <(String, String)>{};
+  final _saved = <(String, String)>{};
+  final _following = <(String, String)>{};
 
   Object? failWith;
 
@@ -100,7 +100,7 @@ class FakePostEngagementRepository implements PostEngagementRepository {
   /// asserting how much a screen reads.
   int readCalls = 0;
 
-  String _k(String uid, String id) => '${uid}_$id';
+  (String, String) _k(String uid, String id) => (uid, id);
 
   void _check() {
     if (failWith != null) {
@@ -203,9 +203,13 @@ class FakePhotographerRepository implements PhotographerRepository {
           return d != null && d.compareTo(from) >= 0 && d.compareTo(to) < 0;
         }).toList()..sort((a, b) {
           final byDay = a.nextFreeDate!.compareTo(b.nextFreeDate!);
-          return byDay != 0 ? byDay : b.ratingAvg.compareTo(a.ratingAvg);
+          if (byDay != 0) {
+            return byDay;
+          }
+          final byRating = b.ratingAvg.compareTo(a.ratingAvg);
+          return byRating != 0 ? byRating : a.id.compareTo(b.id);
         });
-    return list.take(limit).toList();
+    return list.take(clampPageSize(limit)).toList();
   }
 
   @override
@@ -240,7 +244,10 @@ class FakeServiceRepository implements ServiceRepository {
   }
 
   @override
-  Future<List<ServiceSummary>> activeFor(String photographerId) async {
+  Future<List<ServiceSummary>> activeFor(
+    String photographerId, {
+    int limit = 50,
+  }) async {
     if (failWith != null) {
       throw failWith!;
     }

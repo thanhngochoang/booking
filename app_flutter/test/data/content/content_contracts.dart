@@ -28,6 +28,22 @@ void postRepositoryContract(String name, PostRepoFactory create) {
   group('PostRepository contract: $name', () {
     List<String> ids(PostPage p) => p.posts.map((e) => e.id).toList();
 
+    Future<List<String>> walk(
+      Future<PostPage> Function(String? cursor) fetch,
+    ) async {
+      final out = <String>[];
+      String? cursor;
+      for (var guard = 0; guard < 100; guard++) {
+        final page = await fetch(cursor);
+        out.addAll(ids(page));
+        cursor = page.nextCursor;
+        if (cursor == null) {
+          return out;
+        }
+      }
+      fail('paging did not terminate');
+    }
+
     test('feed is newest first', () async {
       final repo = await create(contractPosts());
       expect(ids(await repo.feed()), ['a', 'b', 'c', 'd', 'e']);
@@ -84,18 +100,129 @@ void postRepositoryContract(String name, PostRepoFactory create) {
       expect(await repo.byId('missing'), isNull);
     });
 
-    test('a page size over 50 is clamped', () async {
-      final many = [
-        for (var i = 0; i < 60; i++)
-          fixturePost('m$i', age: Duration(minutes: i + 1)),
-      ];
-      final repo = await create(many);
-      final page = await repo.feed(limit: 1000);
-      expect(page.posts, hasLength(50));
-      expect(page.nextCursor, isNotNull);
+    test(
+      'a page size over 50 is clamped and the cursor reaches the rest',
+      () async {
+        final many = [
+          for (var i = 0; i < 60; i++)
+            fixturePost('m$i', age: Duration(minutes: i + 1)),
+        ];
+        final repo = await create(many);
+        final page = await repo.feed(limit: 1000);
+        expect(page.posts, hasLength(50));
+        expect(page.nextCursor, isNotNull);
+        final page2 = await repo.feed(limit: 1000, cursor: page.nextCursor);
+        expect(page2.posts, hasLength(10));
+        expect(page2.nextCursor, isNull);
+      },
+    );
+
+    test('a page size of 0 or below returns exactly one post', () async {
+      final repo = await create(contractPosts());
+      expect((await repo.feed(limit: 0)).posts, hasLength(1));
+      expect((await repo.feed(limit: -5)).posts, hasLength(1));
+      expect((await repo.byPhotographer('p1', limit: 0)).posts, hasLength(1));
     });
+
+    test(
+      'posts with the same time order by id descending, across pages',
+      () async {
+        final tied = [
+          for (final id in ['t1', 't2', 't3', 't4', 't5'])
+            fixturePost(id, age: const Duration(hours: 1)),
+          fixturePost('old', age: const Duration(hours: 9)),
+        ];
+        final repo = await create(tied);
+        final full = ids(await repo.feed());
+        expect(full, ['t5', 't4', 't3', 't2', 't1', 'old']);
+        expect(ids(await repo.feed()), full, reason: 'stable between calls');
+        expect(await walk((c) => repo.feed(limit: 2, cursor: c)), full);
+        expect(await walk((c) => repo.feed(limit: 3, cursor: c)), full);
+      },
+    );
+
+    test(
+      'walking with a kind filter is complete with others interleaved',
+      () async {
+        final repo = await create(_interleaved());
+        final expected = [
+          for (var i = 0; i < 12; i++)
+            if (i % 3 == 0) 'x$i',
+        ];
+        expect(
+          await walk(
+            (c) => repo.feed(kind: PostKind.realShoot, limit: 3, cursor: c),
+          ),
+          expected,
+        );
+        expect(
+          await walk(
+            (c) => repo.feed(kind: PostKind.realShoot, limit: 1, cursor: c),
+          ),
+          expected,
+        );
+      },
+    );
+
+    test(
+      'walking with a specialty filter is complete with others interleaved',
+      () async {
+        final repo = await create(_interleaved());
+        final expected = [
+          for (var i = 0; i < 12; i++)
+            if (i % 2 == 0) 'x$i',
+        ];
+        expect(
+          await walk(
+            (c) => repo.feed(specialtyId: 'wedding', limit: 2, cursor: c),
+          ),
+          expected,
+        );
+      },
+    );
+
+    test(
+      'walking byPhotographer is complete with others interleaved',
+      () async {
+        final repo = await create(_interleaved());
+        final expected = [
+          for (var i = 0; i < 12; i++)
+            if (i % 4 == 0) 'x$i',
+        ];
+        expect(
+          await walk((c) => repo.byPhotographer('p2', limit: 2, cursor: c)),
+          expected,
+        );
+      },
+    );
+
+    test(
+      'an unknown or stale cursor gives an empty page without a cursor',
+      () async {
+        final repo = await create(contractPosts());
+        final feed = await repo.feed(cursor: 'no-such-post');
+        expect(feed.posts, isEmpty);
+        expect(feed.nextCursor, isNull);
+        final mine = await repo.byPhotographer('p1', cursor: 'no-such-post');
+        expect(mine.posts, isEmpty);
+        expect(mine.nextCursor, isNull);
+      },
+    );
   });
 }
+
+/// 12 posts, `x0` newest. Kind real_shoot when i % 3 == 0, specialty wedding
+/// when i % 2 == 0, photographer p2 when i % 4 == 0 (else p1).
+List<PostSummary> _interleaved() => [
+  for (var i = 0; i < 12; i++)
+    fixturePost(
+      'x$i',
+      age: Duration(minutes: i + 1),
+      kind: i % 3 == 0 ? PostKind.realShoot : PostKind.work,
+      specialtyId: i % 2 == 0 ? 'wedding' : 'portrait',
+      photographerId: i % 4 == 0 ? 'p2' : 'p1',
+    ),
+];
 
 void engagementContract(
   String name,
@@ -119,13 +246,30 @@ void engagementContract(
       },
     );
 
-    test('setters are idempotent', () async {
+    test('setters are idempotent, checked after every call', () async {
       final repo = await create();
-      await repo.setLiked('u1', 'a', true);
-      await repo.setLiked('u1', 'a', true);
-      await repo.setLiked('u1', 'a', false);
-      await repo.setLiked('u1', 'a', false);
-      expect((await repo.engagementFor('u1', 'a')).liked, isFalse);
+      Future<void> check(
+        Future<void> Function(bool) set,
+        Future<bool> Function() read,
+      ) async {
+        for (final v in [true, true, false, false]) {
+          await set(v);
+          expect(await read(), v);
+        }
+      }
+
+      await check(
+        (v) => repo.setLiked('u1', 'a', v),
+        () async => (await repo.engagementFor('u1', 'a')).liked,
+      );
+      await check(
+        (v) => repo.setSaved('u1', 'a', v),
+        () async => (await repo.engagementFor('u1', 'a')).saved,
+      );
+      await check(
+        (v) => repo.setFollowing('u1', 'p1', v),
+        () => repo.isFollowing('u1', 'p1'),
+      );
     });
 
     test('savedAmong returns only the saved ones among those asked', () async {
@@ -220,15 +364,85 @@ void photographerRepositoryContract(
       expect(free.map((p) => p.id), ['p2', 'p3', 'p1']);
     });
 
-    test('freeThisWeek honours the limit', () async {
+    test(
+      'freeThisWeek uses the Vietnamese day, not the UTC day (lower edge)',
+      () async {
+        final repo = await create(contractPhotographers());
+        // 2026-10-01 01:00 in Vietnam: 09-30 is yesterday, 10-01 is today.
+        final free = await repo.freeThisWeek(
+          now: DateTime.utc(2026, 9, 30, 18),
+        );
+        expect(free.map((p) => p.id), ['p2', 'p3', 'p1']);
+      },
+    );
+
+    test('freeThisWeek window ends before today + 7 (upper edge)', () async {
       final repo = await create(contractPhotographers());
-      expect(await repo.freeThisWeek(now: fixtureNow, limit: 1), hasLength(1));
+      // 2026-10-08 01:00 in Vietnam: window [10-08, 10-15).
+      final free = await repo.freeThisWeek(now: DateTime.utc(2026, 10, 7, 18));
+      expect(free.map((p) => p.id), ['p4']);
+      // 2026-10-07 23:00 in Vietnam: window [10-07, 10-14) already holds 10-08.
+      final before = await repo.freeThisWeek(
+        now: DateTime.utc(2026, 10, 7, 16),
+      );
+      expect(before.map((p) => p.id), ['p4']);
+      // 2026-10-01 12:00: 10-08 is exactly today + 7, so it is out.
+      final today = await repo.freeThisWeek(now: fixtureNow);
+      expect(today.map((p) => p.id), isNot(contains('p4')));
+    });
+
+    test('freeThisWeek ties on day and rating go to the smaller id', () async {
+      final repo = await create([
+        fixturePhotographer('z', nextFreeDate: '2026-10-02', rating: 4.0),
+        fixturePhotographer('a', nextFreeDate: '2026-10-02', rating: 4.0),
+        fixturePhotographer('b', nextFreeDate: '2026-10-02', rating: 4.0),
+      ]);
+      final free = await repo.freeThisWeek(now: fixtureNow);
+      expect(free.map((p) => p.id), ['a', 'b', 'z']);
+    });
+
+    test(
+      'freeThisWeek honours the limit and clamps it to at least 1',
+      () async {
+        final repo = await create(contractPhotographers());
+        expect(
+          await repo.freeThisWeek(now: fixtureNow, limit: 1),
+          hasLength(1),
+        );
+        expect(
+          await repo.freeThisWeek(now: fixtureNow, limit: 0),
+          hasLength(1),
+        );
+        expect(
+          await repo.freeThisWeek(now: fixtureNow, limit: -1),
+          hasLength(1),
+        );
+      },
+    );
+
+    test('summaries accepts more ids than a single whereIn allows', () async {
+      final seed = [for (var i = 0; i < 35; i++) fixturePhotographer('q$i')];
+      final repo = await create(seed);
+      final m = await repo.summaries([
+        for (var i = 0; i < 35; i++) 'q$i',
+        'ghost',
+      ]);
+      expect(m.keys.toSet(), {for (var i = 0; i < 35; i++) 'q$i'});
     });
 
     test('candidates honours the limit', () async {
       final repo = await create(contractPhotographers());
       expect(await repo.candidates(limit: 3), hasLength(3));
       expect((await repo.candidates()).length, 6);
+    });
+
+    test('candidates clamps its limit to 1..200', () async {
+      final repo = await create([
+        for (var i = 0; i < 205; i++) fixturePhotographer('c$i'),
+      ]);
+      expect(await repo.candidates(limit: 0), hasLength(1));
+      expect(await repo.candidates(limit: -1), hasLength(1));
+      expect(await repo.candidates(limit: 1000), hasLength(200));
     });
   });
 }

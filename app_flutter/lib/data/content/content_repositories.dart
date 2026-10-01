@@ -11,7 +11,10 @@ int clampPageSize(int limit, [int max = kMaxPageSize]) =>
     limit < 1 ? 1 : (limit > max ? max : limit);
 
 abstract class PostRepository {
-  /// Newest first. [limit] is clamped to 1..[kMaxPageSize].
+  /// Newest first: `createdAt` descending, then `id` descending (a total
+  /// order, so paging through ties is stable). [limit] is clamped to
+  /// 1..[kMaxPageSize]. `nextCursor` is non-null exactly when more posts
+  /// follow. An unknown or stale [cursor] yields an empty page with no cursor.
   Future<PostPage> feed({
     PostKind? kind,
     String? specialtyId,
@@ -19,6 +22,7 @@ abstract class PostRepository {
     int limit = 20,
   });
 
+  /// Same ordering, clamping and cursor rules as [feed].
   Future<PostPage> byPhotographer(
     String photographerId, {
     String? cursor,
@@ -36,7 +40,9 @@ class PostEngagement {
 }
 
 /// The viewer's own likes, saves and follows. Counters on posts are written
-/// by the server; the client only writes these marker documents.
+/// by the server; the client only writes these marker documents. Each setter
+/// writes only the viewer's own marker, never a counter. Setters are
+/// idempotent.
 abstract class PostEngagementRepository {
   Future<PostEngagement> engagementFor(String uid, String postId);
   Future<Set<String>> savedAmong(String uid, Iterable<String> postIds);
@@ -47,22 +53,30 @@ abstract class PostEngagementRepository {
 }
 
 abstract class PhotographerRepository {
-  /// Photographers by id; unknown ids are absent from the result.
+  /// Photographers by id; unknown ids are absent from the result. [ids] may
+  /// have any length; adapters chunk `whereIn` queries by 30.
   Future<Map<String, PhotographerSummary>> summaries(Iterable<String> ids);
 
   /// Photographers whose next free day lies in `[today, today + 7 days)`
-  /// (Vietnam calendar days), soonest first, then best rated.
+  /// (Vietnam calendar days), soonest first, then best rated, then `id`
+  /// ascending. [limit] is clamped to 1..[kMaxPageSize].
   Future<List<PhotographerSummary>> freeThisWeek({
     required DateTime now,
     int limit = 12,
   });
 
-  /// Published photographers, for ranking on the device when the recommender
-  /// service is not available.
+  /// The recommender candidate pool, for ranking on the device when the
+  /// recommender service is not available. The one list whose [limit] is
+  /// clamped to 1..200 instead of 1..[kMaxPageSize].
   Future<List<PhotographerSummary>> candidates({int limit = 200});
 }
 
 abstract class ServiceRepository {
   Future<ServiceSummary?> byId(String photographerId, String serviceId);
-  Future<List<ServiceSummary>> activeFor(String photographerId);
+
+  /// Active services only; [limit] is clamped to 1..[kMaxPageSize].
+  Future<List<ServiceSummary>> activeFor(
+    String photographerId, {
+    int limit = 50,
+  });
 }

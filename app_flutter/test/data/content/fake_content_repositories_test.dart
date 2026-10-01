@@ -24,6 +24,10 @@ void main() {
       ..failWith = StateError('offline');
     expect(() => eng.setLiked('u', 'a', true), throwsStateError);
     expect(eng.writeCalls, 0);
+    expect(() => eng.engagementFor('u', 'a'), throwsStateError);
+    expect(() => eng.savedAmong('u', ['a']), throwsStateError);
+    expect(() => eng.isFollowing('u', 'p1'), throwsStateError);
+    expect(eng.readCalls, 0);
     final ph = FakePhotographerRepository()..failWith = StateError('offline');
     expect(() => ph.candidates(), throwsStateError);
     final sv = FakeServiceRepository()..failWith = StateError('offline');
