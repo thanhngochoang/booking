@@ -29,6 +29,9 @@ class FakePostRepository implements PostRepository {
     final n = clampPageSize(limit);
     var start = 0;
     if (cursor != null) {
+      if (cursor.isEmpty || cursor.contains('/')) {
+        return const PostPage();
+      }
       final i = sorted.indexWhere((p) => p.id == cursor);
       start = i < 0 ? sorted.length : i + 1;
     }
@@ -76,6 +79,9 @@ class FakePostRepository implements PostRepository {
   Future<PostSummary?> byId(String postId) async {
     if (failWith != null) {
       throw failWith!;
+    }
+    if (postId.isEmpty || postId.contains('/')) {
+      return null;
     }
     for (final p in _posts) {
       if (p.id == postId) {
@@ -234,6 +240,12 @@ class FakeServiceRepository implements ServiceRepository {
   Future<ServiceSummary?> byId(String photographerId, String serviceId) async {
     if (failWith != null) {
       throw failWith!;
+    }
+    if (photographerId.isEmpty ||
+        photographerId.contains('/') ||
+        serviceId.isEmpty ||
+        serviceId.contains('/')) {
+      return null;
     }
     for (final s in _all) {
       if (s.photographerId == photographerId && s.id == serviceId) {

@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, writeBatch, serverTimestamp, Timestamp, collection, query, where } from 'firebase/firestore';
 
 let env;
 before(async () => {
@@ -329,8 +329,56 @@ for (const [col, field, extra] of [['likes', 'postId', 'post1'], ['saves', 'post
 }
 
 test('a client cannot touch counters on posts or users through likes', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'users/v1'), { displayName: 'V', role: 'photographer', followerCount: 3, savedCount: 1 });
+    await setDoc(doc(c.firestore(), 'photographers/v1'), {
+      onboardingComplete: true, verified: false, bio: 'x', followerCount: 3, stats: { rating: 4 },
+    });
+  });
   const db = env.authenticatedContext('v1').firestore();
+  // Allowed updates still work, so the failures below are about the counters.
+  await assertSucceeds(updateDoc(doc(db, 'users/v1'), { displayName: 'Vee' }));
+  await assertSucceeds(updateDoc(doc(db, 'photographers/v1'), { bio: 'y' }));
   await assertFails(updateDoc(doc(db, 'users/v1'), { savedCount: 10 }));
+  await assertFails(updateDoc(doc(db, 'users/v1'), { followerCount: 10 }));
   await assertFails(updateDoc(doc(db, 'photographers/v1'), { followerCount: 10 }));
   await assertFails(updateDoc(doc(db, 'photographers/v1'), { 'stats.rating': 5 }));
+  await assertFails(updateDoc(doc(db, 'photographers/v1'), { verified: true }));
+});
+
+test('saves: listing needs the userId filter and only your own', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'saves/l1_post1'), { userId: 'l1', postId: 'post1' });
+    await setDoc(doc(c.firestore(), 'saves/l1_post2'), { userId: 'l1', postId: 'post2' });
+    await setDoc(doc(c.firestore(), 'saves/l2_post1'), { userId: 'l2', postId: 'post1' });
+  });
+  const db = env.authenticatedContext('l1').firestore();
+  const saves = collection(db, 'saves');
+  const own = await assertSucceeds(getDocs(query(saves, where('userId', '==', 'l1'), where('postId', 'in', ['post1', 'post2']))));
+  assert.equal(own.size, 2);
+  await assertFails(getDocs(saves)); // no userId filter
+  await assertFails(getDocs(query(saves, where('postId', '==', 'post1')))); // filter on something else
+  await assertFails(getDocs(query(saves, where('userId', '==', 'l2')))); // someone else's
+  await assertFails(getDocs(query(collection(env.unauthenticatedContext().firestore(), 'saves'), where('userId', '==', 'l1'))));
+});
+
+test('markers: uid v1 cannot get or delete v1_x_post1, which belongs to v1_x', async () => {
+  for (const [col, field] of [['likes', 'postId'], ['saves', 'postId'], ['follows', 'photographerId']]) {
+    await env.withSecurityRulesDisabled(async (c) =>
+      setDoc(doc(c.firestore(), `${col}/v1_x_post1`), { userId: 'v1_x', [field]: 'post1' }));
+    const db = env.authenticatedContext('v1').firestore();
+    await assertFails(getDoc(doc(db, `${col}/v1_x_post1`)));
+    await assertFails(deleteDoc(doc(db, `${col}/v1_x_post1`)));
+    await assertFails(setDoc(doc(db, `${col}/v1_x_post1`), { userId: 'v1', [field]: 'x_post1', createdAt: serverTimestamp() }));
+  }
+});
+
+test('markers: createdAt on a direct update is the server time or nothing', async () => {
+  for (const [col, field, target] of [['likes', 'postId', 'post1'], ['saves', 'postId', 'post1'], ['follows', 'photographerId', 'p1']]) {
+    await env.withSecurityRulesDisabled(async (c) =>
+      setDoc(doc(c.firestore(), `${col}/u7_${target}`), { userId: 'u7', [field]: target, createdAt: Timestamp.fromMillis(5000) }));
+    const ref = doc(env.authenticatedContext('u7').firestore(), `${col}/u7_${target}`);
+    await assertSucceeds(updateDoc(ref, { createdAt: serverTimestamp() }));
+    await assertFails(updateDoc(ref, { createdAt: Timestamp.fromMillis(1) }));
+  }
 });

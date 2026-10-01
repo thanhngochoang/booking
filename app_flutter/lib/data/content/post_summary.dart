@@ -39,7 +39,7 @@ class PostSummary {
     this.likeCount = 0,
     this.saveCount = 0,
     required this.createdAt,
-  });
+  }) : assert(images.length > 0, 'a post has at least one image');
 
   final String id;
   final PostKind kind;

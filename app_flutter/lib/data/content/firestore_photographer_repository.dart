@@ -14,6 +14,8 @@ String? _str(Object? v) => v is String ? v : null;
 Map<String, dynamic> _map(Object? v) =>
     v is Map ? Map<String, dynamic>.from(v) : const {};
 
+bool _validId(String id) => id.isNotEmpty && !id.contains('/');
+
 List<String> _strings(Object? v) => [if (v is List) ...v.whereType<String>()];
 
 /// Maps a `photographers/{id}` document (plus the public `users/{id}` one for
@@ -34,7 +36,8 @@ PhotographerSummary photographerSummaryFrom({
   final skillStyles = _strings(skills['styles']);
   final flatStyles = _strings(photographer['styles']);
   final area = _map(photographer['serviceArea']);
-  final geo = area['geo'];
+  // `center` is the stored field (security rules); `geo` is legacy data.
+  final geo = area['center'] is GeoPoint ? area['center'] : area['geo'];
   final stats = _map(photographer['stats']);
   final created = photographer['createdAt'];
   return PhotographerSummary(
@@ -99,7 +102,7 @@ class FirestorePhotographerRepository implements PhotographerRepository {
   ) async {
     final valid = [
       for (final id in ids)
-        if (id.isNotEmpty && !id.contains('/')) id,
+        if (_validId(id)) id,
     ];
     final snaps = await Future.wait([
       for (var i = 0; i < valid.length; i += _whereInMax)
@@ -213,6 +216,9 @@ class FirestoreServiceRepository implements ServiceRepository {
 
   @override
   Future<ServiceSummary?> byId(String photographerId, String serviceId) async {
+    if (!_validId(photographerId) || !_validId(serviceId)) {
+      return null;
+    }
     final snap = await _services(photographerId).doc(serviceId).get();
     final data = snap.data();
     return data == null

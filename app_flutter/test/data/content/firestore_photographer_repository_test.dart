@@ -26,7 +26,7 @@ Future<void> seedPhotographer(
     if (p.coverUrl != null) 'coverUrl': p.coverUrl,
     'serviceArea': {
       'city': p.areaLabel,
-      if (p.hasGeo) 'geo': GeoPoint(p.lat!, p.lng!),
+      if (p.hasGeo) 'center': GeoPoint(p.lat!, p.lng!),
       'radiusKm': 20,
     },
     'stats': {
@@ -98,7 +98,7 @@ void main() {
           'styles': ['minimal'],
           'serviceArea': {
             'city': 'Quận 3',
-            'geo': const GeoPoint(10.78, 106.68),
+            'center': const GeoPoint(10.78, 106.68),
           },
           'stats': {
             'rating': 4,
@@ -120,12 +120,25 @@ void main() {
       ], reason: 'skills win over the flat list');
       expect(p.styleIds, ['film']);
       expect(p.areaLabel, 'Quận 3');
-      expect(p.lat, 10.78);
+      expect((p.lat, p.lng), (10.78, 106.68));
       expect(p.ratingAvg, 4.0);
       expect(p.reviewCount, 12);
       expect(p.startingPriceVnd, 2000000);
       expect(p.createdAt, DateTime.utc(2026, 1, 2));
     });
+
+    test(
+      'falls back to the legacy serviceArea.geo when there is no center',
+      () {
+        final p = photographerSummaryFrom(
+          id: 'p3',
+          photographer: {
+            'serviceArea': {'city': 'Q1', 'geo': const GeoPoint(10.5, 106.5)},
+          },
+        );
+        expect((p.lat, p.lng), (10.5, 106.5));
+      },
+    );
 
     test('falls back to the flat specialties and survives a bare document', () {
       final p = photographerSummaryFrom(

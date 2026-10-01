@@ -197,6 +197,20 @@ void postRepositoryContract(String name, PostRepoFactory create) {
     );
 
     test(
+      'invalid ids: byId is null, a bad cursor gives an empty page',
+      () async {
+        final repo = await create(contractPosts());
+        expect(await repo.byId(''), isNull);
+        expect(await repo.byId('a/b'), isNull);
+        for (final bad in ['', 'a/b']) {
+          final page = await repo.feed(cursor: bad);
+          expect(page.posts, isEmpty);
+          expect(page.nextCursor, isNull);
+        }
+      },
+    );
+
+    test(
       'an unknown or stale cursor gives an empty page without a cursor',
       () async {
         final repo = await create(contractPosts());
@@ -279,6 +293,7 @@ void engagementContract(
       await repo.setSaved('u2', 'b', true);
       expect(await repo.savedAmong('u1', ['a', 'b', 'c']), {'a', 'c'});
       expect(await repo.savedAmong('u1', const []), isEmpty);
+      expect(await repo.savedAmong('u1', ['', 'a/b', 'a']), {'a'});
     });
 
     test('users do not see each other\'s likes', () async {
@@ -508,6 +523,14 @@ void serviceRepositoryContract(String name, ServiceRepoFactory create) {
         expect(listed.map((s) => s.id).toSet(), {'s1', 's2'});
       },
     );
+
+    test('byId with an empty or slash id is null', () async {
+      final repo = await create(contractServices());
+      expect(await repo.byId('', 's1'), isNull);
+      expect(await repo.byId('p1', ''), isNull);
+      expect(await repo.byId('p1', 'a/b'), isNull);
+      expect(await repo.byId('p/1', 's1'), isNull);
+    });
 
     test('activeFor clamps its limit to 1..50', () async {
       final repo = await create([

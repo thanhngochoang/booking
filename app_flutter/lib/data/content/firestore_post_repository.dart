@@ -68,6 +68,8 @@ PostSummary? postFromFirestore(String id, Map<String, dynamic> d) {
 
 const _maxExtraRounds = 3;
 
+bool _validId(String id) => id.isNotEmpty && !id.contains('/');
+
 class FirestorePostRepository implements PostRepository {
   FirestorePostRepository({FirebaseFirestore? db})
     : _db = db ?? FirebaseFirestore.instance;
@@ -96,6 +98,9 @@ class FirestorePostRepository implements PostRepository {
         .orderBy('createdAt', descending: true)
         .orderBy(FieldPath.documentId, descending: true);
     if (cursor != null) {
+      if (!_validId(cursor)) {
+        return const PostPage(posts: [], nextCursor: null);
+      }
       final at = await _posts.doc(cursor).get();
       if (!at.exists) {
         return const PostPage(posts: [], nextCursor: null);
@@ -168,6 +173,9 @@ class FirestorePostRepository implements PostRepository {
 
   @override
   Future<PostSummary?> byId(String postId) async {
+    if (!_validId(postId)) {
+      return null;
+    }
     final snap = await _posts.doc(postId).get();
     final data = snap.data();
     return data == null ? null : postFromFirestore(snap.id, data);
@@ -208,13 +216,29 @@ class FirestoreEngagementRepository implements PostEngagementRepository {
 
   @override
   Future<Set<String>> savedAmong(String uid, Iterable<String> postIds) async {
-    final ids = postIds.toSet().toList();
+    final ids = [
+      for (final id in postIds.toSet())
+        if (_validId(id)) id,
+    ];
+    const chunkSize = 30; // Firestore whereIn limit
     final snaps = await Future.wait([
-      for (final id in ids) _doc('saves', uid, id).get(),
+      for (var i = 0; i < ids.length; i += chunkSize)
+        _db
+            .collection('saves')
+            .where('userId', isEqualTo: uid)
+            .where(
+              'postId',
+              whereIn: ids.sublist(
+                i,
+                i + chunkSize > ids.length ? ids.length : i + chunkSize,
+              ),
+            )
+            .get(),
     ]);
     return {
-      for (var i = 0; i < ids.length; i++)
-        if (snaps[i].exists) ids[i],
+      for (final s in snaps)
+        for (final d in s.docs)
+          if (d.data()['postId'] is String) d.data()['postId'] as String,
     };
   }
 

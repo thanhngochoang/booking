@@ -110,8 +110,18 @@ service cloud.firestore {
     // key off the document id, because a missing document has no `resource`
     // and "not liked yet" must be answerable.
     function markerId(uid, id) { return uid + '_' + id; }
+    // The id prefix before the first '_' must be the caller's uid (uids contain
+    // no '_', so split is exact; string slicing is not used because the rules
+    // language does not guarantee it). A marker is really theirs only when its
+    // stored userId says so as well: uid `v1` must not touch `v1_x_post1`,
+    // which belongs to uid `v1_x`.
     function ownMarkerName(docId) {
-      return signedIn() && docId.matches(request.auth.uid + '_.+');
+      return signedIn()
+        && docId.split('_').size() > 1
+        && docId.split('_')[0] == request.auth.uid;
+    }
+    function ownMarkerDoc() {
+      return resource.data.get('userId', null) == request.auth.uid;
     }
     // Markers are written with set() (idempotent): createdAt is the server time
     // of the write, or (on an update) the value already stored.
@@ -121,6 +131,7 @@ service cloud.firestore {
         && d.userId == request.auth.uid
         && d[targetField] is string
         && docId == markerId(request.auth.uid, d[targetField])
+        && (resource == null || ownMarkerDoc())
         && (d.createdAt == request.time
             || (resource != null && d.createdAt == resource.data.get('createdAt', null)));
     }
@@ -177,19 +188,22 @@ service cloud.firestore {
     }
 
     match /likes/{docId} {
-      allow read: if ownMarkerName(docId);
+      allow get: if ownMarkerName(docId) && (resource == null || ownMarkerDoc());
+      allow list: if signedIn() && resource.data.userId == request.auth.uid;
       allow create, update: if ownMarkerName(docId) && validMarker(docId, 'postId');
-      allow delete: if ownMarkerName(docId);
+      allow delete: if ownMarkerName(docId) && ownMarkerDoc();
     }
     match /saves/{docId} {
-      allow read: if ownMarkerName(docId);
+      allow get: if ownMarkerName(docId) && (resource == null || ownMarkerDoc());
+      allow list: if signedIn() && resource.data.userId == request.auth.uid;
       allow create, update: if ownMarkerName(docId) && validMarker(docId, 'postId');
-      allow delete: if ownMarkerName(docId);
+      allow delete: if ownMarkerName(docId) && ownMarkerDoc();
     }
     match /follows/{docId} {
-      allow read: if ownMarkerName(docId);
+      allow get: if ownMarkerName(docId) && (resource == null || ownMarkerDoc());
+      allow list: if signedIn() && resource.data.userId == request.auth.uid;
       allow create, update: if ownMarkerName(docId) && validMarker(docId, 'photographerId');
-      allow delete: if ownMarkerName(docId);
+      allow delete: if ownMarkerName(docId) && ownMarkerDoc();
     }
 
     match /{document=**} {

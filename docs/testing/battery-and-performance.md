@@ -111,6 +111,8 @@ Bảng đếm lượt đọc theo hành vi thật của adapter (kiểm bằng �
 | `activeFor` | 1 truy vấn tối đa 50 tài liệu. |
 | Thích / lưu / theo dõi | 1 lần ghi (hoặc 1 lần xoá) một tài liệu `{uid}_{id}`; `engagementFor` 2 lượt đọc, `savedAmong` 1 lượt đọc mỗi bài trong trang (tối đa 50). |
 
+Ghi chú chi phí đọc: trước bản sửa này một lần tải Trang chủ tốn khoảng 82 lượt đọc; `savedAmong` nay chỉ còn khoảng 1–2 truy vấn (1 truy vấn `userId` + `postId whereIn` cho mỗi 30 id) thay vì 1 lượt đọc mỗi bài. Khởi động nguội của bộ gợi ý khoảng 400 lượt đọc. Về sau: Cloud Functions phi chuẩn hoá `displayName`/`avatarUrl` vào `photographers` và `posts` để bỏ lượt đọc `users`.
+
 Đo tay (chưa đo: device profiling pending):
 
 1. Chạy bộ giả lập Firestore và ghi số lượt đọc của một lần tải Trang chủ: mong đợi 1 truy vấn trang bài và tối đa 2 tài liệu cho mỗi tác giả khác nhau; ghi vào mô tả PR.

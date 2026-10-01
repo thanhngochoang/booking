@@ -10,6 +10,9 @@ const kMaxPageSize = 50;
 int clampPageSize(int limit, [int max = kMaxPageSize]) =>
     limit < 1 ? 1 : (limit > max ? max : limit);
 
+/// Every method throws on transport failure; callers must not depend on the
+/// exception type. Ids that are empty or contain '/' cannot name a document:
+/// lookups return null and a cursor of that shape gives an empty last page.
 abstract class PostRepository {
   /// Newest first: `createdAt` descending, then `id` descending (a total
   /// order, so paging through ties is stable). [limit] is clamped to
