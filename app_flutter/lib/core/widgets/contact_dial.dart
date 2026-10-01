@@ -78,6 +78,27 @@ class _ContactDialState extends State<ContactDial>
     duration: _openDuration,
     reverseDuration: _closeDuration,
   );
+  // Curves stay with the direction the motion started in until it completes,
+  // so reversing mid-way continues smoothly instead of snapping.
+  late final _trayAnim = CurvedAnimation(
+    parent: _anim,
+    curve: Curves.easeOutBack,
+    reverseCurve: Curves.easeIn,
+  );
+  // Index = position counted from the right: right-most enters first.
+  late final _itemAnims = List.generate(3, (fromRight) {
+    final begin = _stagger.inMilliseconds * fromRight;
+    final total = _openDuration.inMilliseconds;
+    return CurvedAnimation(
+      parent: _anim,
+      curve: Interval(
+        begin / total,
+        ((begin + 160) / total).clamp(0.0, 1.0),
+        curve: Curves.easeOut,
+      ),
+      reverseCurve: Curves.easeIn,
+    );
+  });
   final _portal = OverlayPortalController();
   final _link = LayerLink();
   final _buttonFocus = FocusNode(debugLabel: 'ContactDial button');
@@ -87,12 +108,16 @@ class _ContactDialState extends State<ContactDial>
   );
   bool _open = false;
   bool _below = false;
+  bool _resetting = false;
 
   @override
   void initState() {
     super.initState();
     _anim.addStatusListener((status) {
-      if (status == AnimationStatus.dismissed && !_open && _portal.isShowing) {
+      if (status == AnimationStatus.dismissed &&
+          !_open &&
+          _portal.isShowing &&
+          !_resetting) {
         _portal.hide();
       }
     });
@@ -104,15 +129,26 @@ class _ContactDialState extends State<ContactDial>
     final changed =
         old.access != widget.access ||
         !listEquals(old.channels, widget.channels);
-    if (_open && changed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _close(refocus: false);
-      });
+    if ((_open || _anim.value > 0) && changed) {
+      // Synchronously: no tappable remnant of the old state may survive.
+      _open = false;
+      _resetting = true;
+      _anim.value = 0;
+      _resetting = false;
+      if (_portal.isShowing) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_open && _portal.isShowing) _portal.hide();
+        });
+      }
     }
   }
 
   @override
   void dispose() {
+    _trayAnim.dispose();
+    for (final a in _itemAnims) {
+      a.dispose();
+    }
     _anim.dispose();
     _buttonFocus.dispose();
     for (final n in _itemFocus) {
@@ -182,6 +218,7 @@ class _ContactDialState extends State<ContactDial>
   }
 
   void _select(ContactChannel channel) {
+    if (!_open) return;
     _close();
     widget.onSelected(channel);
   }
@@ -300,6 +337,9 @@ class _ContactDialState extends State<ContactDial>
   }
 
   Widget _buildOverlay(BuildContext context, List<ContactChannel> external) {
+    if (widget.access == ContactAccess.locked || external.length < 2) {
+      return const SizedBox.shrink();
+    }
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () => _close(),
@@ -310,7 +350,9 @@ class _ContactDialState extends State<ContactDial>
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: _close,
+              // While the tray is closing the scrim covers the button: a tap
+              // there brings the tray back.
+              onTap: () => !_open && _anim.isAnimating ? _openTray() : _close(),
               child: const SizedBox.expand(),
             ),
           ),
@@ -324,7 +366,8 @@ class _ContactDialState extends State<ContactDial>
               alignment: _below ? Alignment.topRight : Alignment.bottomRight,
               child: _Tray(
                 channels: external,
-                animation: _anim,
+                animation: _trayAnim,
+                itemAnimations: _itemAnims,
                 reduced: _reduced,
                 below: _below,
                 focusNodes: _itemFocus,
@@ -342,6 +385,7 @@ class _Tray extends StatelessWidget {
   const _Tray({
     required this.channels,
     required this.animation,
+    required this.itemAnimations,
     required this.reduced,
     required this.below,
     required this.focusNodes,
@@ -350,6 +394,7 @@ class _Tray extends StatelessWidget {
 
   final List<ContactChannel> channels;
   final Animation<double> animation;
+  final List<Animation<double>> itemAnimations;
   final bool reduced;
   final bool below;
   final List<FocusNode> focusNodes;
@@ -364,13 +409,8 @@ class _Tray extends StatelessWidget {
       child: AnimatedBuilder(
         animation: animation,
         builder: (context, _) {
-          final reversing = animation.status == AnimationStatus.reverse;
-          // Out: ease with a slight overshoot. In: plain ease-in, no stagger.
-          final eased = reduced
-              ? 1.0
-              : (reversing ? Curves.easeIn : Curves.easeOutBack).transform(
-                  animation.value,
-                );
+          // In: ease with a slight overshoot. Out: plain ease-in, no stagger.
+          final eased = reduced ? 1.0 : animation.value;
           return Opacity(
             key: const Key('contact-tray-fade'),
             opacity: eased.clamp(0.0, 1.0),
@@ -404,7 +444,7 @@ class _Tray extends StatelessWidget {
                             if (i > 0) const SizedBox(width: _gap),
                             FocusTraversalOrder(
                               order: NumericFocusOrder(i.toDouble()),
-                              child: _itemFrame(context, i, reversing),
+                              child: _itemFrame(context, i),
                             ),
                           ],
                         ],
@@ -421,22 +461,9 @@ class _Tray extends StatelessWidget {
   }
 
   /// Entries enter right to left, 40ms apart; on the way out all fade together.
-  Widget _itemFrame(BuildContext context, int index, bool reversing) {
+  Widget _itemFrame(BuildContext context, int index) {
     final fromRight = channels.length - 1 - index;
-    double t;
-    if (reduced) {
-      t = 1;
-    } else if (reversing) {
-      t = Curves.easeIn.transform(animation.value);
-    } else {
-      final begin = _stagger.inMilliseconds * fromRight;
-      final total = _openDuration.inMilliseconds;
-      t = Interval(
-        begin / total,
-        ((begin + 160) / total).clamp(0.0, 1.0),
-        curve: Curves.easeOut,
-      ).transform(animation.value);
-    }
+    final t = reduced ? 1.0 : itemAnimations[fromRight].value;
     return Opacity(
       key: Key('contact-item-fade-${channels[index].code}'),
       opacity: t.clamp(0.0, 1.0),
@@ -477,50 +504,55 @@ class _TrayItemState extends State<_TrayItem> {
     final ring = theme.brightness == Brightness.dark
         ? AppColorsDark.focusRing
         : AppColors.focusRing;
-    return InkWell(
-      key: Key('contact-${widget.channel.code}'),
-      focusNode: widget.focusNode,
-      onFocusChange: (focused) => setState(() => _focused = focused),
-      onTap: widget.onTap,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: SizedBox(
-        width: _itemWidth,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: _circle,
-                height: _circle,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: scheme.secondary,
-                  border: Border.all(
-                    color: _focused ? ring : scheme.outlineVariant,
-                    width: _focused ? 2 : 1,
+    return Semantics(
+      button: true,
+      label: widget.channel.label(context.l10n),
+      excludeSemantics: true,
+      child: InkWell(
+        key: Key('contact-${widget.channel.code}'),
+        focusNode: widget.focusNode,
+        onFocusChange: (focused) => setState(() => _focused = focused),
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: SizedBox(
+          width: _itemWidth,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: _circle,
+                  height: _circle,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: scheme.secondary,
+                    border: Border.all(
+                      color: _focused ? ring : scheme.outlineVariant,
+                      width: _focused ? 2 : 1,
+                    ),
                   ),
-                ),
-                child: _ChannelGlyph(
-                  widget.channel,
-                  size: 22,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  widget.channel.label(context.l10n),
-                  maxLines: 1,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: _labelSize,
+                  child: _ChannelGlyph(
+                    widget.channel,
+                    size: 22,
                     color: scheme.onSurface,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.channel.label(context.l10n),
+                    maxLines: 1,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontSize: _labelSize,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

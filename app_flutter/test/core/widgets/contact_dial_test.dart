@@ -333,6 +333,51 @@ void main() {
     });
   });
 
+  group('interruptions', () {
+    testWidgets('closing mid-open continues smoothly, no jump', (tester) async {
+      await _pump(tester);
+      await tester.tap(find.byKey(_button));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final before = _opacityOf(tester, const Key('contact-tray-fade'));
+      final item = tester.getCenter(find.byKey(const Key('contact-zalo')));
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump(const Duration(milliseconds: 16));
+      final after = _opacityOf(tester, const Key('contact-tray-fade'));
+      expect(before - after, lessThan(0.25));
+      expect(item, isNotNull);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('tapping the button during the close reopens the tray', (
+      tester,
+    ) async {
+      await _pump(tester);
+      await _open(tester);
+      final at = tester.getCenter(find.byKey(_button));
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tapAt(at);
+      await tester.pumpAndSettle();
+      expect(find.byKey(_tray), findsOneWidget);
+      expect(_opacityOf(tester, const Key('contact-tray-fade')), 1.0);
+    });
+
+    testWidgets('becoming locked while open leaves nothing tappable', (
+      tester,
+    ) async {
+      final picked = <ContactChannel>[];
+      await _pump(tester, onSelected: picked.add);
+      await _open(tester);
+      final zalo = tester.getCenter(find.byKey(const Key('contact-zalo')));
+      await _pump(tester, access: ContactAccess.locked, onSelected: picked.add);
+      await tester.pump();
+      await tester.tapAt(zalo);
+      await tester.pumpAndSettle();
+      expect(picked, isEmpty);
+    });
+  });
+
   group('closing', () {
     testWidgets('tap outside', (tester) async {
       await _pump(tester);
@@ -464,6 +509,13 @@ void main() {
         await _pump(tester);
         await _open(tester);
         expect(find.byType(SvgPicture), findsNWidgets(2));
+        final handle = tester.ensureSemantics();
+        await tester.pump();
+        expect(
+          tester.getSemantics(find.byKey(const Key('contact-zalo'))),
+          isSemantics(label: 'Zalo', isButton: true),
+        );
+        handle.dispose();
       },
     );
   });
