@@ -251,5 +251,11 @@
       "day": {"type": "int"},
       "month": {"type": "int"}
     }
+  },
+  "reasonsSemantics": "Gợi ý vì: {reasons}",
+  "@reasonsSemantics": {
+    "placeholders": {
+      "reasons": {"type": "String"}
+    }
   }
 }

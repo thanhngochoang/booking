@@ -657,4 +657,9 @@ class AppLocalizationsVi extends AppLocalizations {
     });
     return '$_temp0, ngày $day tháng $month';
   }
+
+  @override
+  String reasonsSemantics(String reasons) {
+    return 'Gợi ý vì: $reasons';
+  }
 }

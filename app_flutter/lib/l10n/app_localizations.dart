@@ -1275,6 +1275,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}, ngày {day} tháng {month}'**
   String eventDateSpoken(String weekday, int day, int month);
+
+  /// No description provided for @reasonsSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gợi ý vì: {reasons}'**
+  String reasonsSemantics(String reasons);
 }
 
 class _AppLocalizationsDelegate
