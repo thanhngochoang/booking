@@ -148,12 +148,13 @@ Hai lớp mờ ảnh của mục 1.2 spec chính.
 `showAppSheet<T>(context, {required WidgetBuilder builder, bool confirmDismiss = false, String? confirmTitle})`. Mặt kính `surface` ~92% đục + blur 24, nền sau là `BlurScrim` (không phải lớp tối phẳng), radius 28 trên, thanh kéo, cao tối đa 88%, cuộn bên trong khi dài, nút chính cố định ở đáy kèm tổng tiền, `SafeArea`. `confirmDismiss: true` hỏi "Bỏ dữ liệu đã nhập?" khi vuốt xuống/chạm ngoài mà có thay đổi. Nền sau là `BlurScrim` (đo độ tương phản trên mặt sheet). Mở từ nút nguồn (trượt lên + mờ), Back đóng. Dùng ở S05–S07, S10, S17, S23, S33, S36, S40.
 
 ### ApertureLoader · Mới
-Hiệu ứng chờ đặc trưng của app: logo đơn sắc (: vòng ngoài + 8 lá khẩu) trên đĩa tô , các lá **xoay quanh điểm neo của chúng trên vành ngoài** nên đầu trong chụm vào tâm rồi toả ra như khẩu độ ống kính đóng mở. ;  là phần vẽ tĩnh (CustomPainter,  0 = mở, 1 = khép, tương ứng góc xoay 0 → 18°).
-- Chuyển động: chu kỳ 2,4 s, , mở → khép (45–55% giữ khép) → mở, lặp lại. Chỉ một  cho cả 8 lá.
-- Chỉ chạy khi  và màn đang hiển thị ();  dừng hẳn controller (không còn ticker,  qua). Giảm chuyển động (): đứng yên ở trạng thái mở, thông báo bằng  ("Đang tìm", "Đang chờ thanh toán"…).
-- Dùng cho **chờ cấp màn**: S48 (tìm nhiếp ảnh gia, kèm sóng toả), S08 (chờ thanh toán), splash, đăng bài S21 khi đang tải ảnh, tạo sự kiện S26 khi đang đăng, các trạng thái chờ > 1 giây không có skeleton. Không dùng trong nút (nút giữ vòng quay nhỏ của ) và không thay skeleton của danh sách.
-- Hiệu năng: vẽ bằng một  (không 8 widget),  quanh loader để phần còn lại của màn không vẽ lại; không blur.
-- Test: idle khi  và khi giảm chuyển động; đang chạy thì có đúng 1 ticker; golden 3 khung (0, 0.5, 1) ở sáng/tối;  1 khép kín tâm (không lộ lỗ lớn hơn 4% đường kính).
+Hiệu ứng chờ đặc trưng của app: logo đơn sắc (`design-system/brand/logo-mono.svg`: vòng ngoài + 8 lá khẩu) trên đĩa tô `CtaSurface`, các lá **xoay quanh điểm neo của chúng trên vành ngoài** nên đầu trong chụm vào tâm rồi toả ra như khẩu độ ống kính đóng mở. `ApertureLoader({double size = 66, bool active = true, String? semanticsLabel})`; `ApertureMark({double size = 34, double closure = 0, Color? color})` là phần vẽ tĩnh (CustomPainter, `closure` 0 = mở, 1 = khép, tương ứng góc xoay 0 → 18°).
+- Hình học (hộp 100): vòng tròn tâm (50, 50) bán kính 42; lá thứ k, `t = k·45° − 90°`: điểm đầu = tâm + 10·(cos t, sin t), điểm điều khiển = tâm + 33·hướng(t + 32°), điểm cuối trên vành = tâm + 42·hướng(t + 118°), đường cong bậc hai. Nét 4,2, đầu tròn.
+- Chuyển động: chu kỳ 2,4 s, `Curves.easeInOutCubic`, mở → khép (giữ khép 45–55%) → mở, lặp lại. Một `AnimationController` cho cả 8 lá.
+- Chỉ chạy khi `active` và màn đang hiển thị (`TickerMode`); `active: false` dừng hẳn controller (không còn ticker, `expectIdle` qua). Giảm chuyển động (`MediaQuery.disableAnimations`): đứng yên ở trạng thái mở, đọc `semanticsLabel` ("Đang tìm", "Đang chờ thanh toán"…).
+- Dùng cho **chờ cấp màn**: S48 (tìm nhiếp ảnh gia, có sóng toả quanh), S08 (chờ thanh toán), splash, S21 khi đang tải ảnh lên, S26 khi đang đăng sự kiện, mọi trạng thái chờ hơn 1 giây không có skeleton. Không dùng trong nút (nút giữ vòng quay nhỏ của `AppButton.loading`) và không thay skeleton của danh sách.
+- Hiệu năng: một `CustomPainter` (không phải 8 widget), `RepaintBoundary` quanh loader để phần còn lại của màn không vẽ lại; không blur.
+- Test: idle khi `active: false` và khi giảm chuyển động; đang chạy thì có đúng 1 ticker; golden 3 khung (`closure` 0, 0,5, 1) ở sáng và tối.
 
 ### StepProgress · Mới
 `StepProgress({required int current, required int total, String? label})`. Thanh `total` đoạn, các đoạn tới `current` tô gradient; chữ "n / N" bên cạnh; `Semantics(value: 'Bước n trên N')`. Dùng ở S05–S07, S24–S26, S34, S38.
