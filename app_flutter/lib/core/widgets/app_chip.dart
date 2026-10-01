@@ -48,40 +48,49 @@ class AppChip extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       onTap: () => onChanged(!selected),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-        child: Center(
-          widthFactor: 1,
-          child: Material(
-            color: fill,
-            shape: StadiumBorder(side: BorderSide(color: edge)),
-            child: InkWell(
-              customBorder: const StadiumBorder(),
-              onTap: () => onChanged(!selected),
-              child: SizedBox(
-                height: 32,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (leading != null) ...[
-                        IconTheme(
-                          data: IconThemeData(color: text, size: 16),
-                          child: leading!,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onChanged(!selected),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          child: Center(
+            widthFactor: 1,
+            child: Material(
+              color: fill,
+              shape: StadiumBorder(side: BorderSide(color: edge)),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: () => onChanged(!selected),
+                child: SizedBox(
+                  height: 32,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s3,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (leading != null) ...[
+                          IconTheme(
+                            data: IconThemeData(color: text, size: 16),
+                            child: leading!,
+                          ),
+                          const SizedBox(width: AppSpace.s1),
+                        ],
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: text,
+                              fontSize: AppText.sm,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: AppSpace.s1),
                       ],
-                      Text(
-                        label,
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: text,
-                          fontSize: AppText.sm,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

@@ -106,6 +106,7 @@ void main() {
     );
     final node = tester.getSemantics(find.byType(AppChip));
     expect(node.label, 'Không thu phí');
+    expect(node.flagsCollection.isButton, isTrue);
     expect(node.flagsCollection.isSelected, Tristate.isTrue);
     handle.dispose();
   });
@@ -122,5 +123,39 @@ void main() {
       ),
     );
     expect(find.byKey(const Key('lead')), findsOneWidget);
+  });
+
+  testWidgets('the whole 48dp box is the tap target, not just the pill', (
+    tester,
+  ) async {
+    bool? seen;
+    await tester.pumpWidget(
+      hostWidget(
+        AppChip(label: 'A', selected: false, onChanged: (v) => seen = v),
+      ),
+    );
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(AppChip)) + const Offset(24, 4),
+    );
+    expect(seen, isTrue);
+  });
+
+  testWidgets('a long label ellipsizes at 320dp and 1.3x without overflow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        AppChip(
+          label: 'Một nhãn rất dài rất dài rất dài rất dài rất dài rất dài',
+          selected: true,
+          leading: const Icon(Icons.place_outlined),
+          onChanged: (_) {},
+        ),
+        width: 320,
+        textScale: 1.3,
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(find.byType(AppChip)).width, lessThanOrEqualTo(320));
   });
 }
