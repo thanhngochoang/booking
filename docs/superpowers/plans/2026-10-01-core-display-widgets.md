@@ -524,7 +524,7 @@ void main() {
 }
 ```
 
-(`FontFeature` needs `import 'dart:ui';` — add it at the top of the test file.)
+(`FontFeature` comes with `package:flutter/material.dart`; no `dart:ui` import is needed.)
 
 - [ ] **Step 2: Run and see it fail**
 
@@ -535,8 +535,6 @@ Expected: FAIL, `StatTile` undefined.
 
 ```dart
 // lib/core/widgets/stat_tile.dart
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
@@ -992,7 +990,7 @@ class StepProgress extends StatelessWidget {
 }
 ```
 
-Add `import 'dart:ui' show FontFeature;` at the top of the file. Export from `core.dart`.
+Export from `core.dart` (`FontFeature` comes with `material.dart`).
 
 - [ ] **Step 4: Run the whole suite**
 
