@@ -151,55 +151,58 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
     );
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: overlayStyleFor(theme),
-      child: AuroraBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(),
-          body: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpace.s5,
-                0,
-                AppSpace.s5,
-                AppSpace.s2,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AuroraHero(
-                        lead: l.registerHeadlineLead,
-                        accent: l.registerHeadlineAccent,
-                        tagline: l.registerTagline,
-                      ),
-                      const SizedBox(height: AppSpace.s5),
-                      card,
-                      const SizedBox(height: AppSpace.s2),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            l.haveAccountPrompt,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: secondary,
+    return ScreenCode(
+      ScreenCodes.register,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyleFor(theme),
+        child: AuroraBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(),
+            body: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s5,
+                  0,
+                  AppSpace.s5,
+                  AppSpace.s2,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AuroraHero(
+                          lead: l.registerHeadlineLead,
+                          accent: l.registerHeadlineAccent,
+                          tagline: l.registerTagline,
+                        ),
+                        const SizedBox(height: AppSpace.s5),
+                        card,
+                        const SizedBox(height: AppSpace.s2),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              l.haveAccountPrompt,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: secondary,
+                              ),
                             ),
-                          ),
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              foregroundColor: theme.colorScheme.primary,
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                foregroundColor: theme.colorScheme.primary,
+                              ),
+                              onPressed: loading ? null : () => context.pop(),
+                              child: Text(l.loginButton),
                             ),
-                            onPressed: loading ? null : () => context.pop(),
-                            child: Text(l.loginButton),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

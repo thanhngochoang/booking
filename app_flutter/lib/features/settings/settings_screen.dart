@@ -26,114 +26,117 @@ class SettingsScreen extends ConsumerWidget {
       (ThemeMode.light, l.themeLight, Icons.light_mode_outlined),
       (ThemeMode.system, l.themeSystem, Icons.brightness_auto_outlined),
     ];
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l.settingsTitle)),
-        body: SafeArea(
-          top: false,
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpace.s5),
-            children: [
-              _SectionLabel(l.settingsAccount),
-              GlassCard(
-                highlight: false,
-                child: ListTile(
-                  key: const Key('settings-edit-profile'),
-                  leading: const Icon(Icons.person_outline_rounded),
-                  title: Text(l.settingsEditProfile),
-                  subtitle: Text(name ?? l.settingsEditProfileBody),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push('/settings/profile'),
-                ),
-              ),
-              const SizedBox(height: AppSpace.s6),
-              _SectionLabel(l.settingsAppearance),
-              GlassCard(
-                highlight: false,
-                child: Column(
-                  children: [
-                    for (final (value, label, icon) in themes)
-                      ListTile(
-                        key: Key('theme-${value.name}'),
-                        leading: Icon(icon),
-                        title: Text(label),
-                        selected: value == mode,
-                        trailing: value == mode
-                            ? const Icon(Icons.check_rounded)
-                            : null,
-                        onTap: () =>
-                            ref.read(themeModeProvider.notifier).set(value),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpace.s6),
-              _SectionLabel(l.settingsButtonStyle),
-              GlassCard(
-                highlight: false,
-                child: Column(
-                  children: [
-                    ListTile(
-                      key: const Key('button-gradient'),
-                      leading: const Icon(Icons.gradient_rounded),
-                      title: Text(l.buttonStyleGradient),
-                      selected: buttonStyle == ButtonStyleMode.gradient,
-                      trailing: buttonStyle == ButtonStyleMode.gradient
-                          ? const Icon(Icons.check_rounded)
-                          : null,
-                      onTap: () => ref
-                          .read(buttonStyleProvider.notifier)
-                          .set(ButtonStyleMode.gradient),
-                    ),
-                    ListTile(
-                      key: const Key('button-avatar'),
-                      enabled: hasAvatar,
-                      leading: const Icon(Icons.face_retouching_natural),
-                      title: Text(l.buttonStyleAvatar),
-                      subtitle: hasAvatar
-                          ? null
-                          : Text(l.buttonStyleAvatarNeedsPhoto),
-                      selected:
-                          hasAvatar && buttonStyle == ButtonStyleMode.avatar,
-                      trailing:
-                          hasAvatar && buttonStyle == ButtonStyleMode.avatar
-                          ? const Icon(Icons.check_rounded)
-                          : null,
-                      onTap: () => ref
-                          .read(buttonStyleProvider.notifier)
-                          .set(ButtonStyleMode.avatar),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpace.s4),
-              Semantics(
-                label: l.settingsButtonPreview,
-                child: ExcludeSemantics(
-                  child: AppButton.primary(
-                    l.settingsButtonPreview,
-                    onPressed: () {},
-                  ),
-                ),
-              ),
-              if (kDebugMode) ...[
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(l.settingsDeveloper),
+    return ScreenCode(
+      ScreenCodes.settings,
+      child: AuroraBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(title: Text(l.settingsTitle)),
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpace.s5),
+              children: [
+                _SectionLabel(l.settingsAccount),
                 GlassCard(
                   highlight: false,
-                  child: SwitchListTile(
-                    key: const Key('show-screen-codes'),
-                    secondary: const Icon(Icons.pin_outlined),
-                    title: Text(l.settingsShowScreenCodes),
-                    subtitle: Text(l.settingsShowScreenCodesBody),
-                    value: showCodes,
-                    onChanged: (v) =>
-                        ref.read(showScreenCodesProvider.notifier).set(v),
+                  child: ListTile(
+                    key: const Key('settings-edit-profile'),
+                    leading: const Icon(Icons.person_outline_rounded),
+                    title: Text(l.settingsEditProfile),
+                    subtitle: Text(name ?? l.settingsEditProfileBody),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push('/settings/profile'),
                   ),
                 ),
+                const SizedBox(height: AppSpace.s6),
+                _SectionLabel(l.settingsAppearance),
+                GlassCard(
+                  highlight: false,
+                  child: Column(
+                    children: [
+                      for (final (value, label, icon) in themes)
+                        ListTile(
+                          key: Key('theme-${value.name}'),
+                          leading: Icon(icon),
+                          title: Text(label),
+                          selected: value == mode,
+                          trailing: value == mode
+                              ? const Icon(Icons.check_rounded)
+                              : null,
+                          onTap: () =>
+                              ref.read(themeModeProvider.notifier).set(value),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s6),
+                _SectionLabel(l.settingsButtonStyle),
+                GlassCard(
+                  highlight: false,
+                  child: Column(
+                    children: [
+                      ListTile(
+                        key: const Key('button-gradient'),
+                        leading: const Icon(Icons.gradient_rounded),
+                        title: Text(l.buttonStyleGradient),
+                        selected: buttonStyle == ButtonStyleMode.gradient,
+                        trailing: buttonStyle == ButtonStyleMode.gradient
+                            ? const Icon(Icons.check_rounded)
+                            : null,
+                        onTap: () => ref
+                            .read(buttonStyleProvider.notifier)
+                            .set(ButtonStyleMode.gradient),
+                      ),
+                      ListTile(
+                        key: const Key('button-avatar'),
+                        enabled: hasAvatar,
+                        leading: const Icon(Icons.face_retouching_natural),
+                        title: Text(l.buttonStyleAvatar),
+                        subtitle: hasAvatar
+                            ? null
+                            : Text(l.buttonStyleAvatarNeedsPhoto),
+                        selected:
+                            hasAvatar && buttonStyle == ButtonStyleMode.avatar,
+                        trailing:
+                            hasAvatar && buttonStyle == ButtonStyleMode.avatar
+                            ? const Icon(Icons.check_rounded)
+                            : null,
+                        onTap: () => ref
+                            .read(buttonStyleProvider.notifier)
+                            .set(ButtonStyleMode.avatar),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s4),
+                Semantics(
+                  label: l.settingsButtonPreview,
+                  child: ExcludeSemantics(
+                    child: AppButton.primary(
+                      l.settingsButtonPreview,
+                      onPressed: () {},
+                    ),
+                  ),
+                ),
+                if (kDebugMode) ...[
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(l.settingsDeveloper),
+                  GlassCard(
+                    highlight: false,
+                    child: SwitchListTile(
+                      key: const Key('show-screen-codes'),
+                      secondary: const Icon(Icons.pin_outlined),
+                      title: Text(l.settingsShowScreenCodes),
+                      subtitle: Text(l.settingsShowScreenCodesBody),
+                      value: showCodes,
+                      onChanged: (v) =>
+                          ref.read(showScreenCodesProvider.notifier).set(v),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

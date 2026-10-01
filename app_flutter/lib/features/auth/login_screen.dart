@@ -216,72 +216,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: overlayStyleFor(theme),
-      child: Scaffold(
-        body: Stack(
-          children: [
-            const Positioned.fill(child: AuroraBackground()),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, viewport) => SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpace.s5,
-                    AppSpace.s3,
-                    AppSpace.s5,
-                    AppSpace.s1,
-                  ),
-                  child: ConstrainedBox(
-                    // Centre vertically on tall screens, scroll on short ones.
-                    constraints: BoxConstraints(
-                      minHeight: viewport.maxHeight - AppSpace.s3 - AppSpace.s1,
+    return ScreenCode(
+      ScreenCodes.login,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyleFor(theme),
+        child: Scaffold(
+          body: Stack(
+            children: [
+              const Positioned.fill(child: AuroraBackground()),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, viewport) => SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.s5,
+                      AppSpace.s3,
+                      AppSpace.s5,
+                      AppSpace.s1,
                     ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 440),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AuroraHero(
-                              lead: l.loginHeadlineLead,
-                              accent: l.loginHeadlineAccent,
-                              tagline: l.loginTagline,
-                            ),
-                            const SizedBox(height: AppSpace.s5),
-                            card,
-                            const SizedBox(height: AppSpace.s2),
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  l.noAccountPrompt,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: secondary,
+                    child: ConstrainedBox(
+                      // Centre vertically on tall screens, scroll on short ones.
+                      constraints: BoxConstraints(
+                        minHeight:
+                            viewport.maxHeight - AppSpace.s3 - AppSpace.s1,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              AuroraHero(
+                                lead: l.loginHeadlineLead,
+                                accent: l.loginHeadlineAccent,
+                                tagline: l.loginTagline,
+                              ),
+                              const SizedBox(height: AppSpace.s5),
+                              card,
+                              const SizedBox(height: AppSpace.s2),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    l.noAccountPrompt,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: secondary,
+                                    ),
                                   ),
-                                ),
-                                TextButton(
-                                  key: const Key('register'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: theme.colorScheme.primary,
+                                  TextButton(
+                                    key: const Key('register'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          theme.colorScheme.primary,
+                                    ),
+                                    onPressed: loading
+                                        ? null
+                                        : () => context.push('/register'),
+                                    child: Text(l.registerLink),
                                   ),
-                                  onPressed: loading
-                                      ? null
-                                      : () => context.push('/register'),
-                                  child: Text(l.registerLink),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

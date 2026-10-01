@@ -47,45 +47,50 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
     }
 
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l.editProfileTitle)),
-        body: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpace.s5),
-            child: GlassCard(
-              highlight: false,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpace.s5),
-                child: Form(
-                  key: _form,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextFormField(
-                        key: const Key('edit-name'),
-                        controller: _name,
-                        enabled: !saving,
-                        textCapitalization: TextCapitalization.words,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.name],
-                        onFieldSubmitted: (_) => save(),
-                        decoration: InputDecoration(
-                          labelText: l.displayNameLabel,
-                          prefixIcon: const Icon(Icons.person_outline_rounded),
+    return ScreenCode(
+      ScreenCodes.editProfile,
+      child: AuroraBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(title: Text(l.editProfileTitle)),
+          body: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpace.s5),
+              child: GlassCard(
+                highlight: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpace.s5),
+                  child: Form(
+                    key: _form,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          key: const Key('edit-name'),
+                          controller: _name,
+                          enabled: !saving,
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.name],
+                          onFieldSubmitted: (_) => save(),
+                          decoration: InputDecoration(
+                            labelText: l.displayNameLabel,
+                            prefixIcon: const Icon(
+                              Icons.person_outline_rounded,
+                            ),
+                          ),
+                          validator: (v) => validateName(v, l),
                         ),
-                        validator: (v) => validateName(v, l),
-                      ),
-                      const SizedBox(height: AppSpace.s5),
-                      AppButton.primary(
-                        l.editProfileSave,
-                        key: const Key('edit-save'),
-                        loading: saving,
-                        onPressed: save,
-                      ),
-                    ],
+                        const SizedBox(height: AppSpace.s5),
+                        AppButton.primary(
+                          l.editProfileSave,
+                          key: const Key('edit-save'),
+                          loading: saving,
+                          onPressed: save,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
