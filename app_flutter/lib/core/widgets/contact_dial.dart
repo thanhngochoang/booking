@@ -251,7 +251,7 @@ class _ContactDialState extends State<ContactDial>
         : locked
         ? Icon(Icons.chat_bubble_outline_rounded, size: size, color: color)
         : single
-        ? _ChannelGlyph(external.single, size: size, color: color)
+        ? ChannelGlyph(external.single, size: size, color: color)
         : Icon(Icons.phone_outlined, size: size, color: color);
 
     final visual = widget.style == ContactDialStyle.icon
@@ -534,7 +534,7 @@ class _TrayItemState extends State<_TrayItem> {
                       width: _focused ? 2 : 1,
                     ),
                   ),
-                  child: _ChannelGlyph(
+                  child: ChannelGlyph(
                     widget.channel,
                     size: 22,
                     color: scheme.onSurface,
@@ -562,9 +562,15 @@ class _TrayItemState extends State<_TrayItem> {
 }
 
 /// Phone glyph for Gọi, the brand files for Zalo and WhatsApp, drawn in one
-/// colour. Decorative: every use sits next to a text label.
-class _ChannelGlyph extends StatelessWidget {
-  const _ChannelGlyph(this.channel, {required this.size, required this.color});
+/// colour. Decorative: every use sits next to a text label. Shared by the dial
+/// and the photographer setup screen.
+class ChannelGlyph extends StatelessWidget {
+  const ChannelGlyph(
+    this.channel, {
+    super.key,
+    required this.size,
+    required this.color,
+  });
 
   final ContactChannel channel;
   final double size;

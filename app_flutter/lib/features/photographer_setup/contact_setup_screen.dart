@@ -131,7 +131,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
 
   Widget _channel({
     required Key key,
-    required IconData icon,
+    required Widget icon,
     required String title,
     required String hint,
     required bool value,
@@ -148,7 +148,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
         children: [
           SwitchListTile(
             key: key,
-            secondary: Icon(icon),
+            secondary: icon,
             title: Text(title),
             subtitle: Text(hint),
             value: value,
@@ -191,6 +191,8 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
     String? err(ContactSetupField f) => _errorText(l, errors[f]);
     final channelsError = err(ContactSetupField.channels);
     void changed() => setState(() {});
+    Widget glyph(ContactChannel c) =>
+        ChannelGlyph(c, size: 24, color: theme.colorScheme.onSurface);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpace.s5),
@@ -251,7 +253,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
               const SizedBox(height: AppSpace.s3),
               _channel(
                 key: const Key('channel-call'),
-                icon: Icons.call_outlined,
+                icon: glyph(ContactChannel.call),
                 title: l.setupChannelCall,
                 hint: l.setupChannelCallHint,
                 value: _call,
@@ -265,7 +267,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
               const SizedBox(height: AppSpace.s3),
               _channel(
                 key: const Key('channel-zalo'),
-                icon: Icons.chat_outlined,
+                icon: glyph(ContactChannel.zalo),
                 title: l.setupChannelZalo,
                 hint: l.setupChannelZaloHint,
                 value: _zalo,
@@ -288,7 +290,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
               const SizedBox(height: AppSpace.s3),
               _channel(
                 key: const Key('channel-whatsapp'),
-                icon: Icons.forum_outlined,
+                icon: glyph(ContactChannel.whatsapp),
                 title: l.setupChannelWhatsApp,
                 hint: l.setupChannelWhatsAppHint,
                 value: _whatsapp,
@@ -312,7 +314,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
               const SizedBox(height: AppSpace.s3),
               _channel(
                 key: const Key('channel-inapp'),
-                icon: Icons.mark_chat_unread_outlined,
+                icon: glyph(ContactChannel.inApp),
                 title: l.setupInAppOnly,
                 hint: l.setupInAppOnlyHint,
                 value: _inAppOnly,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
@@ -82,6 +83,26 @@ bool _switchOn(WidgetTester tester, String key) =>
     tester.widget<SwitchListTile>(find.byKey(Key(key))).value;
 
 void main() {
+  testWidgets(
+    'Zalo and WhatsApp cards use the brand glyphs, not Material icons',
+    (tester) async {
+      await _open(tester);
+      for (final k in ['channel-zalo', 'channel-whatsapp']) {
+        expect(
+          find.descendant(
+            of: find.byKey(Key(k)),
+            matching: find.byType(SvgPicture),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: find.byKey(Key(k)), matching: find.byType(Icon)),
+          findsNothing,
+        );
+      }
+    },
+  );
+
   testWidgets('step 4 of 4, with the title in the app bar', (tester) async {
     await _open(tester);
     expect(find.text('4 / 4'), findsOneWidget);
