@@ -125,10 +125,25 @@ class FakeUserContactRepository implements UserContactRepository {
   /// Test setup without going through [save].
   void seed(String uid, UserContact contact) => _contacts[uid] = contact;
 
+  /// Open [watch] subscriptions, so tests can prove screens stop listening.
+  int watchers = 0;
+
   @override
-  Stream<UserContact?> watch(String uid) async* {
-    yield _contacts[uid];
-    yield* _c(uid).stream;
+  Stream<UserContact?> watch(String uid) {
+    late final StreamController<UserContact?> out;
+    StreamSubscription<UserContact?>? inner;
+    out = StreamController<UserContact?>(
+      onListen: () {
+        watchers++;
+        out.add(_contacts[uid]);
+        inner = _c(uid).stream.listen(out.add);
+      },
+      onCancel: () async {
+        watchers--;
+        await inner?.cancel();
+      },
+    );
+    return out.stream;
   }
 
   @override

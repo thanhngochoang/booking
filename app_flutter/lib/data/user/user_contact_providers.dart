@@ -9,7 +9,9 @@ final userContactRepositoryProvider = Provider<UserContactRepository>(
 
 /// The signed-in user's private contact; null while signed out or when no
 /// number has been saved yet.
-final currentContactProvider = StreamProvider<UserContact?>((ref) async* {
+final currentContactProvider = StreamProvider.autoDispose<UserContact?>((
+  ref,
+) async* {
   final user = await ref.watch(authStateProvider.future);
   if (user == null) {
     yield null;

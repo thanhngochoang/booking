@@ -316,4 +316,27 @@ void main() {
       expect(contacts.stored(auth.currentUser!.uid)!.phone, '+84903123456');
     },
   );
+
+  testWidgets('S42 listens to the private contact only while open', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 0);
+
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 1);
+    await expectIdle(tester);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 0);
+  });
 }
