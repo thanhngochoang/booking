@@ -208,5 +208,12 @@
     "placeholders": {
       "month": {"type": "int"}
     }
-  }
+  },
+  "areaPickerTitle": "Chọn khu vực của bạn",
+  "areaPickerBody": "Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.",
+  "areaPickerOpenSettings": "Mở Cài đặt để bật vị trí",
+  "areaPickerUse": "Dùng khu vực này",
+  "areaPickerUseDevice": "Dùng vị trí của tôi",
+  "areaPickerSearch": "Tìm quận, thành phố",
+  "areaPickerNoMatch": "Không tìm thấy khu vực"
 }

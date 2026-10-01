@@ -1119,6 +1119,48 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'T{month}'**
   String eventMonthShort(int month);
+
+  /// No description provided for @areaPickerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực của bạn'**
+  String get areaPickerTitle;
+
+  /// No description provided for @areaPickerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.'**
+  String get areaPickerBody;
+
+  /// No description provided for @areaPickerOpenSettings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở Cài đặt để bật vị trí'**
+  String get areaPickerOpenSettings;
+
+  /// No description provided for @areaPickerUse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng khu vực này'**
+  String get areaPickerUse;
+
+  /// No description provided for @areaPickerUseDevice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng vị trí của tôi'**
+  String get areaPickerUseDevice;
+
+  /// No description provided for @areaPickerSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm quận, thành phố'**
+  String get areaPickerSearch;
+
+  /// No description provided for @areaPickerNoMatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy khu vực'**
+  String get areaPickerNoMatch;
 }
 
 class _AppLocalizationsDelegate

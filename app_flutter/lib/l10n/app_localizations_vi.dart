@@ -561,4 +561,26 @@ class AppLocalizationsVi extends AppLocalizations {
   String eventMonthShort(int month) {
     return 'T$month';
   }
+
+  @override
+  String get areaPickerTitle => 'Chọn khu vực của bạn';
+
+  @override
+  String get areaPickerBody =>
+      'Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.';
+
+  @override
+  String get areaPickerOpenSettings => 'Mở Cài đặt để bật vị trí';
+
+  @override
+  String get areaPickerUse => 'Dùng khu vực này';
+
+  @override
+  String get areaPickerUseDevice => 'Dùng vị trí của tôi';
+
+  @override
+  String get areaPickerSearch => 'Tìm quận, thành phố';
+
+  @override
+  String get areaPickerNoMatch => 'Không tìm thấy khu vực';
 }
