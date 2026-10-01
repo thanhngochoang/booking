@@ -11,35 +11,59 @@
 | Build | Gradle 8.9, Android Gradle Plugin 8.5.2 |
 | Kiến trúc | MVP tự viết (xem `CLAUDE.md`), Realm cache, EventBus |
 
-## Yêu cầu môi trường
+## Setup trên máy mới (không cần quyền admin)
 
-Toolchain nằm **trong thư mục project**, không cần cài hệ thống hay quyền admin:
-
-| Thành phần | Vị trí | Cách có |
-|-----------|--------|---------|
-| Android SDK (platform 34, build‑tools 34.0.0, platform‑tools) | `.android-sdk/` (gitignored) | `scripts/install-sdk.sh` |
-| JDK 17 | `.jdk/` (gitignored) hoặc Homebrew `openjdk@17` | Giải nén tar.gz Temurin/Zulu 17 (macOS aarch64) vào `.jdk/`, hoặc `brew install openjdk@17` |
-| Truststore TLS | `.certs/truststore.jks` (gitignored) | `scripts/env.sh` tự tạo |
-
-**Vì sao JDK 17 mà không phải mới hơn:** Android Gradle Plugin 8.5 chỉ chạy trên JDK 17–21 và D8/R8 chưa biên dịch được class file của Java 22+. JDK 26/27 có trên máy nhưng AGP không dùng được. Khi AGP hỗ trợ, đổi `JAVA_HOME` trong `scripts/env.sh` và `compileOptions` trong `app/build.gradle`.
-
-**Vì sao cần truststore:** máy nằm sau Cloudflare Zero Trust gateway (chứng chỉ HTTPS bị ký lại). JDK không tin CA đó nên Gradle tải dependency sẽ lỗi `PKIX path building failed`. `scripts/env.sh` ghép cacerts của JDK với chứng chỉ trong macOS keychain thành một truststore và đăng ký cho Gradle (`~/.gradle/gradle.properties`).
-
-## Build
+Mọi công cụ nằm **trong thư mục repo**, không cài vào hệ thống. Chỉ cần sẵn `git`, `curl`, `unzip`, `python3` (macOS có sẵn) và một JDK 17 do user sở hữu.
 
 ```bash
-scripts/install-sdk.sh          # lần đầu: tải SDK vào .android-sdk/
-source scripts/env.sh           # JAVA_HOME, ANDROID_HOME, truststore, local.properties
+git clone <repo-url> booking && cd booking
+git checkout flutter-rewrite          # branch đang phát triển app Flutter
+scripts/setup.sh                      # tải Android SDK, Flutter SDK, font; kiểm tra flutter doctor
+source scripts/env.sh                 # chạy lại trong MỖI shell mới
+cd app_flutter && flutter pub get && flutter run
+```
 
+`scripts/setup.sh` làm tuần tự:
+
+| Bước | Script | Kết quả |
+|------|--------|---------|
+| Android SDK | `scripts/install-sdk.sh` | `.android-sdk/` với platform 34 + 36, build-tools 34.0.0 + 36.0.0, platform-tools. Tải zip thẳng từ dl.google.com nên không cần sdkmanager. |
+| Flutter SDK | `scripts/install-flutter.sh` | `.flutter/` bản stable mới nhất cho CPU của máy. |
+| Font | `scripts/fetch-fonts.sh` | Be Vietnam Pro + Fraunces vào `app_flutter/assets/fonts/`. |
+| Môi trường | `scripts/env.sh` | `JAVA_HOME`, `ANDROID_HOME`, `PATH` (ưu tiên `scripts/bin`), `local.properties`, truststore TLS. |
+
+**JDK 17**: `env.sh` tìm theo thứ tự `.jdk/` trong repo → Homebrew `openjdk@17` (`/opt/homebrew` hoặc `/usr/local`). Không cần sudo: `brew install openjdk@17`, hoặc giải nén tar.gz Temurin/Zulu 17 vào `.jdk/` sao cho có `.jdk/Contents/Home/bin/java`. Vì sao 17 mà không mới hơn: Android Gradle Plugin 8.x (cả app Java cũ lẫn Flutter) chỉ chạy trên JDK 17–21.
+
+**`scripts/bin/flutter` và `scripts/bin/dart`** là wrapper đặt `HOME=.home/` trong repo trước khi gọi Flutter thật. Nhờ vậy Dart, Gradle, Android debug keystore và pub cache đều ghi vào `.home/`, `.pub-cache/`, không đụng home thật. Debug keystore nằm ở `.home/.android/debug.keystore`; SHA‑1 của nó cần đăng ký trong Firebase cho Google Sign‑In (`cd app_flutter/android && ./gradlew signingReport`).
+
+**Mạng công ty (Cloudflare Zero Trust)**: nếu máy nằm sau gateway ký lại HTTPS, Gradle báo `PKIX path building failed`. `env.sh` tự ghép cacerts của JDK với chứng chỉ trong macOS keychain thành `.certs/truststore.jks` và đăng ký cho Gradle qua `.home/.gradle/gradle.properties`. Máy không có gateway thì bước này vô hại.
+
+**Chạy trong Claude Code sandbox**: `flutter test` cần bind cổng local; bật trong settings `"sandbox": { "network": { "allowLocalBinding": true } }`. Sandbox cũng cấm ghi thư mục `.idea/`, nên `flutter create` phải chạy ở thư mục tạm rồi `mv` vào repo (đã làm cho `app_flutter/`).
+
+Thư mục sinh ra và đã gitignore: `.android-sdk/ .flutter/ .jdk/ .home/ .pub-cache/ .certs/ local.properties`.
+
+### Build app Java cũ (`app/`)
+
+```bash
+source scripts/env.sh
 ./gradlew assembleEnvTestDebug              # APK debug
-./gradlew assembleEnvRealRelease            # APK release (chưa ký)
-./gradlew installEnvTestDebug               # cài lên thiết bị
 ./gradlew testEnvTestDebugUnitTest          # unit test JVM
 ./gradlew testEnvTestDebugUnitTest --tests com.paditech.mvpbase.ExampleUnitTest
-./gradlew connectedEnvTestDebugAndroidTest  # instrumented test (cần thiết bị)
 ```
 
 Hai flavor `envReal` và `envTest` hiện giống hệt nhau (cùng applicationId, `Config.java` rỗng).
+
+### Build app Flutter (`app_flutter/`)
+
+```bash
+source scripts/env.sh && cd app_flutter
+flutter pub get
+dart run tool/gen_tokens.dart               # theme từ design-system/tokens.json (khi có)
+dart run build_runner build --delete-conflicting-outputs
+flutter gen-l10n
+flutter analyze && flutter test
+flutter build apk --debug
+```
 
 ## Cấu hình cần điền trước khi chạy
 

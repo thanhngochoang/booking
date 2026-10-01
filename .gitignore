@@ -16,3 +16,7 @@
 /graphify-out/*
 # graphify knowledge graph output (regenerate with /graphify)
 /graphify-out
+/.flutter
+/.pub-cache
+/.home
+/.flutter-config

@@ -20,6 +20,8 @@ fi
 export ANDROID_HOME="$ROOT/.android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$ROOT/scripts/bin:$ROOT/.flutter/bin:$PATH"
+export PUB_CACHE="$ROOT/.pub-cache"
 unset JAVA_TOOL_OPTIONS
 
 # --- TLS: this machine sits behind a Cloudflare Zero Trust gateway that re-signs HTTPS.

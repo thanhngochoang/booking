@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Runs flutter with a project-local HOME so Dart/Flutter/Gradle/Android write only inside the repo (no admin, sandbox-safe).
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+export HOME="$ROOT/.home" PUB_CACHE="$ROOT/.pub-cache" ANDROID_HOME="$ROOT/.android-sdk" ANDROID_SDK_ROOT="$ROOT/.android-sdk"
+export FLUTTER_SUPPRESS_ANALYTICS=true
+unset JAVA_TOOL_OPTIONS
+[ -n "${JAVA_HOME:-}" ] || export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+exec "$ROOT/.flutter/bin/flutter" "$@"
