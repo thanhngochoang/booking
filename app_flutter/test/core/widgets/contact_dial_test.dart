@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 
+import '../../support/idle.dart';
 import 'widget_host.dart';
 
 const _all = [
@@ -590,5 +591,45 @@ void main() {
         },
       );
     }
+  });
+
+  testWidgets('the dial costs no frames closed, open, or after closing', (
+    tester,
+  ) async {
+    await _pump(tester);
+    await expectIdle(tester);
+    await _open(tester);
+    expect(find.byKey(_tray), findsOneWidget);
+    await expectIdle(tester);
+    await tester.tap(find.byKey(_button));
+    await expectIdle(tester);
+    expect(find.byKey(_tray), findsNothing);
+  });
+
+  testWidgets('locked and reduced-motion dials are idle too', (tester) async {
+    await _pump(tester, access: ContactAccess.locked);
+    await expectIdle(tester);
+    await _pump(tester, reduced: true);
+    await tester.tap(find.byKey(_button));
+    await tester.pump();
+    // Reduced motion: the tray is there after one frame, and once the button's
+    // own ink ripple has faded nothing runs on.
+    expect(find.byKey(_tray), findsOneWidget);
+    await expectIdle(tester);
+    expect(find.byKey(_tray), findsOneWidget);
+  });
+
+  testWidgets('the closed dial adds no blur and no overlay entry', (
+    tester,
+  ) async {
+    await _pump(tester);
+    expect(find.byKey(_tray), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(ContactDial),
+        matching: find.byType(BackdropFilter),
+      ),
+      findsNothing,
+    );
   });
 }

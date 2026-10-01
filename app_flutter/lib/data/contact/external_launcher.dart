@@ -30,9 +30,12 @@ class FakeExternalLauncher implements ExternalLauncher {
   /// URLs that were opened, in order.
   final opened = <Uri>[];
 
+  /// How many times the platform was asked (a probe is a platform call).
+  int canOpenCalls = 0;
+
   @override
   Future<bool> canOpen(Uri uri) async =>
-      !unsupportedSchemes.contains(uri.scheme);
+      ++canOpenCalls > 0 && !unsupportedSchemes.contains(uri.scheme);
 
   @override
   Future<bool> open(Uri uri) async {

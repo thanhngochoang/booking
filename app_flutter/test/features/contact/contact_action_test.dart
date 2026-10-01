@@ -313,4 +313,35 @@ void main() {
       },
     );
   });
+
+  testWidgets('canOpen is probed once, not on every rebuild', (tester) async {
+    final h = _Harness();
+    Widget tree(double pad) => ProviderScope(
+      overrides: [
+        contactLinkRepositoryProvider.overrideWithValue(h.links),
+        externalLauncherProvider.overrideWithValue(h.external),
+      ],
+      child: hostWidget(
+        Padding(
+          padding: EdgeInsets.only(top: 300, left: 290 - pad),
+          child: ContactAction(
+            access: ContactAccess.unlocked,
+            channels: _channelList,
+            subject: _subject,
+            source: 'S09',
+            onEvent: h.log,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpWidget(tree(0));
+    await tester.pumpAndSettle();
+    final first = h.external.canOpenCalls;
+    expect(first, greaterThan(0));
+    for (var i = 1; i <= 3; i++) {
+      await tester.pumpWidget(tree(i.toDouble()));
+      await tester.pumpAndSettle();
+    }
+    expect(h.external.canOpenCalls, first);
+  });
 }

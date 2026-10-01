@@ -11,6 +11,8 @@ import 'package:photobooking/data/photographer/photographer_contact_repository.d
 import 'package:photobooking/features/photographer_setup/contact_setup_screen.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import '../../support/idle.dart';
+
 class _H {
   _H(this.auth, this.repo, this.widget);
   final FakeAuthRepository auth;
@@ -326,5 +328,14 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('S34 is idle at rest and keeps blur passes within budget', (
+    tester,
+  ) async {
+    await _open(tester);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await expectIdle(tester);
+    expect(find.byType(BackdropFilter).evaluate().length, lessThanOrEqualTo(4));
   });
 }
