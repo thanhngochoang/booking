@@ -829,7 +829,7 @@ Create `docs/testing/battery-and-performance.md` with exactly this content:
 - Danh sách dài dùng `ListView.builder`/`SliverList`, không `Column` chứa hết phần tử.
 - Ảnh giải mã đúng kích thước hiển thị (`cacheWidth`/`memCacheWidth`), không tải ảnh gốc cho thumbnail.
 - Lắng nghe Firestore/stream gắn với màn (`autoDispose`): rời màn là huỷ. Chỉ phiên đăng nhập và hồ sơ của mình được giữ suốt vòng đời app.
-- Vị trí: hỏi một lần (`getCurrentPosition`, độ chính xác thấp/trung bình, có hạn chờ), dùng lại vị trí đã lưu trong 15 phút; không theo dõi liên tục, không xin quyền chạy nền.
+- Vị trí: hỏi một lần (`getCurrentPosition`, độ chính xác thấp/trung bình, có hạn chờ), dùng lại vị trí đã lưu trong 30 phút (spec chính 3c.2); không theo dõi liên tục, không xin quyền chạy nền.
 - Không dịch vụ nền, không wakelock.
 
 ## Đo tay (thiết bị Android thật, bản profile)
