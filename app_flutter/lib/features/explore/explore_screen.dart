@@ -31,6 +31,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     with WidgetsBindingObserver {
   ExploreCategoryTab _tab = ExploreCategoryTab.services;
 
+  /// Keeps the scroll position when the skeleton scope appears or goes.
+  final _scrollKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -57,15 +60,54 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final resolution = ref.watch(exploreResolutionProvider);
     final nearby = resolution.mode == ExploreMode.nearby;
     final isCustomer =
-        ref.watch(currentProfileProvider).value?.role != UserRole.photographer;
+        ref.watch(currentProfileProvider).value?.role == UserRole.customer;
     final controller = ref.read(locationControllerProvider.notifier);
+    final resolving =
+        resolution.mode == ExploreMode.loading ||
+        resolution.mode == ExploreMode.locating;
+    // No fetch (and no header flicker) while the location is still unknown.
+    final eventsLoading =
+        resolving ||
+        (nearby
+            ? ref.watch(nearbyEventsProvider).isLoading
+            : ref.watch(upcomingEventsProvider).isLoading);
 
     final category = _CategorySection(
       tab: _tab,
       onTab: (t) => setState(() => _tab = t),
       tappable: isCustomer,
     );
-    final events = _EventsSection(nearby: nearby);
+    final events = _EventsSection(nearby: nearby, resolving: resolving);
+
+    final scroll = CustomScrollView(
+      key: _scrollKey,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s4,
+            AppSpace.s2,
+            AppSpace.s4,
+            AppSpace.s6,
+          ),
+          sliver: SliverMainAxisGroup(
+            slivers: nearby
+                ? [
+                    ..._locationSlivers(context, resolution),
+                    events.build(context, ref),
+                    category.build(context, ref),
+                  ]
+                : [
+                    // S13: the four entry points first, then the location
+                    // card or chip, then the events.
+                    category.build(context, ref),
+                    ..._locationSlivers(context, resolution),
+                    events.build(context, ref),
+                  ],
+          ),
+        ),
+      ],
+    );
 
     return ScreenCode(
       nearby ? ScreenCodes.exploreNearby : ScreenCodes.exploreNoLocation,
@@ -78,28 +120,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ref.invalidate(nearbyEventsProvider);
             ref.invalidate(upcomingEventsProvider);
           },
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpace.s4,
-                  AppSpace.s2,
-                  AppSpace.s4,
-                  AppSpace.s6,
-                ),
-                sliver: SliverMainAxisGroup(
-                  slivers: [
-                    ..._locationSlivers(context, resolution),
-                    // Events first in both layouts: the category list is long
-                    // (14 services) and would push them off the first screen.
-                    events.build(context, ref),
-                    category.build(context, ref),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          // One pulse for every skeleton on the screen.
+          child: eventsLoading ? AppSkeletonScope(child: scroll) : scroll,
         ),
       ),
     );
@@ -115,9 +137,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       case ExploreMode.loading:
       case ExploreMode.locating:
         return const [
-          SliverToBoxAdapter(
-            child: AppSkeletonScope(child: AppSkeleton.box(height: 120)),
-          ),
+          SliverToBoxAdapter(child: AppSkeleton.box(height: 120)),
           _Gap(AppSpace.s5),
         ];
       case ExploreMode.ask:
@@ -244,21 +264,21 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _EventsSection {
-  const _EventsSection({required this.nearby});
+  const _EventsSection({required this.nearby, required this.resolving});
   final bool nearby;
+  final bool resolving;
 
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final routesReady = ref.watch(eventRoutesReadyProvider);
-    final distanceOf = <String, String>{};
 
     VoidCallback? tapFor(EventSummary e) =>
         routesReady ? () => context.push(eventPath(e.id)) : null;
 
-    Widget tile(EventSummary e) => NearbyEventTile(
+    Widget tile(EventSummary e, [double? km]) => NearbyEventTile(
       key: Key('event-tile-${e.id}'),
       event: e,
-      distanceLabel: distanceOf[e.id],
+      distanceLabel: km == null ? null : formatDistance(km),
       onTap: tapFor(e),
     );
 
@@ -277,17 +297,18 @@ class _EventsSection {
     );
 
     Widget loadingSliver() => const SliverToBoxAdapter(
-      child: AppSkeletonScope(
-        child: Column(
-          children: [
-            AppSkeleton.card(height: 88),
-            SizedBox(height: AppSpace.s3),
-            AppSkeleton.card(height: 88),
-          ],
-        ),
+      child: Column(
+        children: [
+          AppSkeleton.card(height: 88),
+          SizedBox(height: AppSpace.s3),
+          AppSkeleton.card(height: 88),
+        ],
       ),
     );
 
+    if (resolving) {
+      return SliverMainAxisGroup(slivers: [header, gap, loadingSliver(), tail]);
+    }
     if (nearby) {
       final async = ref.watch(nearbyEventsProvider);
       return SliverMainAxisGroup(
@@ -308,13 +329,11 @@ class _EventsSection {
                   ),
                 ];
               }
-              for (final n in items) {
-                distanceOf[n.event.id] = formatDistance(n.distanceKm);
-              }
               return [
                 SliverAdaptiveRows(
                   itemCount: items.length,
-                  itemBuilder: (_, i) => tile(items[i].event),
+                  itemBuilder: (_, i) =>
+                      tile(items[i].event, items[i].distanceKm),
                 ),
               ];
             },

@@ -61,27 +61,38 @@ class NearbyEventTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s2,
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              vn.day.toString().padLeft(2, '0'),
-                              style: const TextStyle(
-                                fontFamily: AppFonts.display,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
+                        child: Semantics(
+                          label: l.eventDateSpoken(
+                            vn.weekday.toString(),
+                            vn.day,
+                            vn.month,
+                          ),
+                          child: ExcludeSemantics(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  vn.day.toString().padLeft(2, '0'),
+                                  style: const TextStyle(
+                                    fontFamily: AppFonts.display,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  l.eventMonthShort(vn.month),
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              l.eventMonthShort(vn.month),
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

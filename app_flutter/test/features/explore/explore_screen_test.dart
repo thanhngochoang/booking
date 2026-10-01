@@ -33,6 +33,37 @@ Future<Widget> _app(
         );
 }
 
+/// The lists are lazy: scroll the Explore list until [f] is built, then
+/// bring it fully into view. (`scrollUntilVisible` cannot take a `.first`
+/// finder while nothing matches yet.)
+Future<void> _reveal(WidgetTester t, Finder f) async {
+  final list = find
+      .descendant(
+        of: find.byType(CustomScrollView),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  for (var i = 0; i < 60 && f.evaluate().isEmpty; i++) {
+    await t.drag(list, const Offset(0, -200));
+    await t.pump();
+  }
+  await t.ensureVisible(f.first);
+  await t.pumpAndSettle();
+}
+
+Future<void> _toTop(WidgetTester t) async {
+  await t.drag(
+    find
+        .descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+    const Offset(0, 5000),
+  );
+  await t.pumpAndSettle();
+}
+
 double _top(WidgetTester t, String text) => t.getTopLeft(find.text(text)).dy;
 
 void main() {
@@ -43,6 +74,7 @@ void main() {
       final w = ExploreWorld();
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('location-allow')));
       expect(find.text('Sự kiện gần bạn'), findsOneWidget);
       expect(find.text('Cho phép'), findsOneWidget);
       expect(w.location.requestCalls, 0);
@@ -59,8 +91,10 @@ void main() {
       final w = ExploreWorld();
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('location-allow')));
       await tester.tap(find.byKey(const Key('location-allow')));
       await tester.pumpAndSettle();
+      await _toTop(tester);
       expect(w.location.requestCalls, 1);
       expect(find.text('Quanh bạn · vị trí gần đúng'), findsOneWidget);
       expect(
@@ -85,6 +119,7 @@ void main() {
       final w = ExploreWorld();
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('location-later')));
       await tester.tap(find.byKey(const Key('location-later')));
       await tester.pumpAndSettle();
       expect(find.text('Cho phép'), findsNothing);
@@ -98,14 +133,17 @@ void main() {
       final w = ExploreWorld();
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('location-later')));
       await tester.tap(find.byKey(const Key('location-later')));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('location-choose-area')));
       await tester.tap(find.byKey(const Key('location-choose-area')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('area-hcm-q1')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('area-use')));
       await tester.pumpAndSettle();
+      await _toTop(tester);
       expect(
         find.text('Quanh Quận 1, TP.HCM · vị trí gần đúng'),
         findsOneWidget,
@@ -119,6 +157,7 @@ void main() {
       final w = ExploreWorld(status: LocationPermissionStatus.denied);
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byType(NearbyEventTile));
       expect(find.text('Sự kiện chụp ảnh'), findsOneWidget);
       expect(find.byType(NearbyEventTile), findsWidgets);
       expect(w.repo.upcomingCalls, 1);
@@ -142,6 +181,7 @@ void main() {
       final w = ExploreWorld(status: LocationPermissionStatus.deniedForever);
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('location-choose-area')));
       await tester.tap(find.byKey(const Key('location-choose-area')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('area-open-settings')), findsOneWidget);
@@ -249,6 +289,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('explore-see-all')), findsNothing);
+        await _reveal(tester, find.byType(NearbyEventTile));
         final tile = tester.widget<NearbyEventTile>(
           find.byType(NearbyEventTile).first,
         );
@@ -282,11 +323,13 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        await _reveal(tester, find.byKey(const Key('explore-see-all')));
         await tester.tap(find.byKey(const Key('explore-see-all')));
         await tester.pumpAndSettle();
         expect(find.text('events-list'), findsOneWidget);
         router.pop();
         await tester.pumpAndSettle();
+        await _reveal(tester, find.byKey(const Key('event-tile-near')));
         await tester.tap(find.byKey(const Key('event-tile-near')));
         await tester.pumpAndSettle();
         expect(find.text('event-near'), findsOneWidget);
@@ -336,6 +379,13 @@ void main() {
       await tester.tap(find.byKey(const Key('category-services-portrait')));
       await tester.pumpAndSettle();
       expect(find.text('find'), findsNothing);
+      final tile = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byKey(const Key('category-services-portrait')),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(tile.onTap, isNull);
     });
 
     testWidgets('the four category tabs switch the tiles', (tester) async {
@@ -362,13 +412,45 @@ void main() {
     w.repo.failWith = StateError('offline');
     await tester.pumpWidget(await _app(w));
     await tester.pumpAndSettle();
+    await _reveal(tester, find.byKey(const Key('error-retry')));
     expect(
       find.text('Không tải được sự kiện. Kiểm tra mạng rồi thử lại.'),
       findsOneWidget,
     );
     w.repo.failWith = null;
+    await _reveal(tester, find.byKey(const Key('error-retry')));
     await tester.tap(find.byKey(const Key('error-retry')));
     await tester.pumpAndSettle();
+    await _reveal(tester, find.byType(NearbyEventTile));
     expect(find.byType(NearbyEventTile), findsWidgets);
   });
+
+  for (final status in [
+    LocationPermissionStatus.notAsked,
+    LocationPermissionStatus.denied,
+  ]) {
+    testWidgets('S13 (${status.name}) fits 320x640 at 1.3x end to end', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final w = ExploreWorld(status: status);
+      await tester.pumpWidget(await _app(w, textScale: 1.3));
+      await tester.pumpAndSettle();
+      final list = find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      for (var i = 0; i < 30; i++) {
+        await tester.drag(list, const Offset(0, -300));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(NearbyEventTile), findsWidgets);
+    });
+  }
 }

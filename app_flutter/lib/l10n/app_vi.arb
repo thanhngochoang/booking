@@ -242,5 +242,13 @@
   "exploreTabStyles": "Phong cách",
   "exploreTabPhotographers": "Thợ ảnh",
   "explorePhotographersAll": "Xem tất cả nhiếp ảnh gia",
-  "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại."
+  "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại.",
+  "eventDateSpoken": "{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}, ngày {day} tháng {month}",
+  "@eventDateSpoken": {
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "day": {"type": "int"},
+      "month": {"type": "int"}
+    }
+  }
 }

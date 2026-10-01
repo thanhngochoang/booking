@@ -639,4 +639,18 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get exploreLoadError =>
       'Không tải được sự kiện. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String eventDateSpoken(String weekday, int day, int month) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      '1': 'Thứ hai',
+      '2': 'Thứ ba',
+      '3': 'Thứ tư',
+      '4': 'Thứ năm',
+      '5': 'Thứ sáu',
+      '6': 'Thứ bảy',
+      'other': 'Chủ nhật',
+    });
+    return '$_temp0, ngày $day tháng $month';
+  }
 }
