@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nhiep_anh_gia/app/app.dart';
+import 'package:photobooking/app/app.dart';
 
 void main() {
   testWidgets('MyApp renders the route given by the router', (tester) async {

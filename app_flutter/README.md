@@ -11,7 +11,8 @@ From the repo root, once per machine:
 ```bash
 scripts/setup.sh            # Android SDK, Flutter SDK, fonts into the repo
 source scripts/env.sh       # every new shell
-cp app/google-services.json app_flutter/android/app/   # Firebase Android config (gitignored)
+# Firebase: add Android app com.thanhbk.photobooking in the console and put its
+# google-services.json in app_flutter/android/app/ (gitignored). See ../docs/FIREBASE-SETUP.md
 ```
 
 Then:
@@ -29,7 +30,7 @@ Full Firebase setup (project, SHA‑1, providers, Firestore, rules): `../docs/FI
 
 `lib/firebase_options.dart` is gitignored. Recreate it from `android/app/google-services.json`
 (fields `api_key`, `mobilesdk_app_id`, `project_number`, `project_id`, `storage_bucket`) or run
-`flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.timnhay`.
+`flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.photobooking`.
 
 **Facebook login** needs `facebook_client_token` in `android/app/src/main/res/values/strings.xml`
 (Meta developer console → Settings → Advanced → Client token). It is empty in git; until it is

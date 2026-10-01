@@ -6,14 +6,14 @@ Tài liệu này hướng dẫn nối app `app_flutter/` với một Firebase pr
 
 | Mục | Giá trị |
 |-----|---------|
-| Android package (applicationId) | `com.thanhbk.timnhay` |
+| Android package (applicationId) | `com.thanhbk.photobooking` |
 | Firebase project đang dùng (từ app cũ) | `time-96441` |
 | Facebook App ID | `546233675712070` |
 | SHA‑1 debug (máy này, `.home/.android/debug.keystore`) | `D2:BC:10:FD:7C:AF:07:A5:29:9B:03:FF:F8:F2:B6:7E:AF:DB:0D:14` |
 | SHA‑256 debug | `59:A1:19:16:D9:3B:DC:50:66:8C:BC:93:DA:CF:80:D2:54:3F:1F:46:CE:05:AC:0E:F3:38:8B:53:8B:CA:87:D7` |
 | Facebook key hash debug | `0rwQ/XyvB6UpmwP/+PK2fq/bDRQ=` |
 
-Mỗi máy và mỗi keystore có SHA‑1 riêng. `app/google-services.json` hiện chỉ đăng ký SHA‑1 của keystore năm 2017 (`b6:72:7d:…`), nên Google Sign‑In sẽ lỗi cho tới khi bạn thêm SHA‑1 ở trên (bước 3).
+Mỗi máy và mỗi keystore có SHA‑1 riêng. App Flutter dùng package `com.thanhbk.photobooking`, khác app Java cũ, nên phải thêm nó như một app Android mới trong Firebase (bước 2) và tải `google-services.json` mới (bước 7). File cũ `app/google-services.json` không dùng được cho app Flutter: Gradle sẽ báo `No matching client found for package name 'com.thanhbk.photobooking'`.
 
 Lấy lại các giá trị này trên máy khác:
 
@@ -37,8 +37,8 @@ Khi dùng project mới, gói Spark (miễn phí) đủ cho sub‑project 1. Ri�
 ## 2. Thêm (hoặc kiểm tra) app Android
 
 1. Vào **Project settings** (bánh răng) → **General** → **Your apps**.
-2. Nếu chưa có app Android `com.thanhbk.timnhay`, bấm **Add app → Android**:
-   - Package name: `com.thanhbk.timnhay`
+2. Thêm app Android `com.thanhbk.photobooking` (app Java cũ `com.thanhbk.timnhay` là app khác, giữ nguyên): bấm **Add app → Android**:
+   - Package name: `com.thanhbk.photobooking`
    - App nickname: `Nhiếp ảnh gia (Flutter)`
    - Debug signing certificate SHA‑1: dán SHA‑1 ở bảng trên
 3. Bỏ qua các bước "Add Firebase SDK". Flutter và Gradle plugin đã được cấu hình sẵn.
@@ -66,8 +66,8 @@ Nên bật thêm ở **Settings → User actions**: "Email enumeration protectio
 Mở https://developers.facebook.com/apps, chọn app `546233675712070`. Nếu không có quyền vào app này, tạo app mới loại **Consumer**, rồi thay App ID trong `app_flutter/android/app/src/main/res/values/strings.xml` (`facebook_app_id` và `fb_login_protocol_scheme` = `fb<APP_ID>`).
 
 1. **Settings → Basic**: copy **App secret** sang Firebase (bước 4). Ở **Add platform → Android**:
-   - Package name: `com.thanhbk.timnhay`
-   - Default activity class name: `com.thanhbk.nhiep_anh_gia.MainActivity`
+   - Package name: `com.thanhbk.photobooking`
+   - Default activity class name: `com.thanhbk.photobooking.MainActivity`
    - Key hashes: dán key hash ở bảng trên (thêm một dòng cho mỗi máy, và cho keystore release)
 2. **Settings → Advanced → Security → Client token**: copy vào `facebook_client_token` trong `strings.xml`. Facebook SDK 13+ bắt buộc có giá trị này.
 3. **Use cases → Authentication and account creation → Facebook Login → Settings**: dán redirect URI của Firebase vào **Valid OAuth Redirect URIs**.
@@ -102,7 +102,7 @@ Lưu ý khi dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `book
    ```bash
    source scripts/env.sh && cd app_flutter
    dart pub global activate flutterfire_cli
-   dart pub global run flutterfire_cli:flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.timnhay --yes
+   dart pub global run flutterfire_cli:flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.photobooking --yes
    ```
 
    **Cách B, sinh từ `google-services.json`** (không cần login):
@@ -110,7 +110,7 @@ Lưu ý khi dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `book
    cd app_flutter && python3 - <<'EOF'
    import json
    d = json.load(open('android/app/google-services.json')); p = d['project_info']
-   c = next(x for x in d['client'] if x['client_info']['android_client_info']['package_name'] == 'com.thanhbk.timnhay')
+   c = next(x for x in d['client'] if x['client_info']['android_client_info']['package_name'] == 'com.thanhbk.photobooking')
    open('lib/firebase_options.dart', 'w').write(f"""import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
    import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 

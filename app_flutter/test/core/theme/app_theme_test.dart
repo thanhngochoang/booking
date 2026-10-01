@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/core/theme/app_theme.dart';
-import 'package:nhiep_anh_gia/core/theme/tokens.g.dart';
+import 'package:photobooking/core/theme/app_theme.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
 
 void main() {
   test('light theme uses token colors and fonts', () {

@@ -4,7 +4,7 @@
 
 | | |
 |--|--|
-| applicationId | `com.thanhbk.timnhay` |
+| applicationId | `com.thanhbk.timnhay` (app Java cũ) · `com.thanhbk.photobooking` (app Flutter) |
 | Java package | `com.paditech.mvpbase` |
 | minSdk / targetSdk / compileSdk | 23 / 34 / 34 |
 | Ngôn ngữ | Java 17 |

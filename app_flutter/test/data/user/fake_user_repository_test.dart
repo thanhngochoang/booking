@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_repository.dart';
-import 'package:nhiep_anh_gia/data/user/user_profile.dart';
-import 'package:nhiep_anh_gia/data/user/user_repository.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/user/user_repository.dart';
 
 void main() {
   test('ensureProfile creates a role-less profile once', () async {

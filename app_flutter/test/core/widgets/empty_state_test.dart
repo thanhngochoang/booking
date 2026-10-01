@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/core/widgets/empty_state.dart';
+import 'package:photobooking/core/widgets/empty_state.dart';
 
 void main() {
   testWidgets('shows title, body and calls action', (tester) async {

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_error.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_repository.dart';
+import 'package:photobooking/data/auth/auth_error.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
 
 void main() {
   test(

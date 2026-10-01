@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/app/router.dart';
+import 'package:photobooking/app/router.dart';
 
 void main() {
   test('signed out users go to /login except on auth routes', () {

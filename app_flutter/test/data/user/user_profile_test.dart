@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/data/user/user_profile.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 
 void main() {
   test('round-trips JSON with role as snake string', () {

@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_providers.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_repository.dart';
-import 'package:nhiep_anh_gia/data/user/user_profile.dart';
-import 'package:nhiep_anh_gia/data/user/user_repository.dart';
-import 'package:nhiep_anh_gia/features/auth/auth_controller.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/auth/auth_controller.dart';
 
 Future<void> _settle() =>
     Future<void>.delayed(const Duration(milliseconds: 20));

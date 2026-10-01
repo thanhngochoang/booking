@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/features/auth/auth_form_validators.dart';
-import 'package:nhiep_anh_gia/l10n/app_localizations.dart';
+import 'package:photobooking/features/auth/auth_form_validators.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 void main() {
   late AppLocalizations l;

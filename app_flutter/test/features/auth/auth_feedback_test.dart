@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_providers.dart';
-import 'package:nhiep_anh_gia/data/auth/auth_repository.dart';
-import 'package:nhiep_anh_gia/features/auth/login_screen.dart';
-import 'package:nhiep_anh_gia/features/auth/register_screen.dart';
-import 'package:nhiep_anh_gia/l10n/app_localizations.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/features/auth/login_screen.dart';
+import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 Widget _app(AuthRepository repo, Widget home) => ProviderScope(
   overrides: [authRepositoryProvider.overrideWithValue(repo)],

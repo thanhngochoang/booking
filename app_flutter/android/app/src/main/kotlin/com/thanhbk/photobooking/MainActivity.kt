@@ -1,4 +1,4 @@
-package com.thanhbk.nhiep_anh_gia
+package com.thanhbk.photobooking
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhiep_anh_gia/core/theme/tokens.g.dart';
-import 'package:nhiep_anh_gia/core/widgets/status_badge.dart';
-import 'package:nhiep_anh_gia/data/booking/booking_status.dart';
-import 'package:nhiep_anh_gia/l10n/app_localizations.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/status_badge.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('badge shows Vietnamese label and status color', (tester) async {
