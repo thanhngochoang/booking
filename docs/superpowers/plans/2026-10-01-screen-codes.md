@@ -69,8 +69,11 @@ void main() {
     final spec = File(
       '../docs/superpowers/specs/2026-10-01-remaining-screens.md',
     ).readAsStringSync();
+    // Only the code table in section 2; later sections have other S-tables.
+    final start = spec.indexOf('## 2. Mã màn hình');
+    final table = spec.substring(start, spec.indexOf('\n## ', start + 1));
     final inSpec = RegExp(r'^\| (S\d\d) \|', multiLine: true)
-        .allMatches(spec)
+        .allMatches(table)
         .map((m) => m.group(1)!)
         .toList();
     expect(inSpec, ScreenCodes.all);
