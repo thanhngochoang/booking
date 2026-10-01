@@ -67,13 +67,24 @@ flutter build apk --debug
 
 ## Cấu hình cần điền trước khi chạy
 
-| Khoá | File | Ghi chú |
-|------|------|---------|
-| `facebook_client_token` | `app/src/main/res/values/strings.xml` | Bắt buộc từ Facebook SDK 13+. Lấy tại Meta developer console → Settings → Advanced. Đang để trống. |
-| `google_place_api_key` | `app/src/main/res/values/strings.xml` | Places SDK (Autocomplete) và Maps. Bật "Places API" cho key này trong Google Cloud. |
-| `google-services.json` | `app/` | Cấu hình Firebase. Nên tách theo flavor (`app/src/envReal/`, `app/src/envTest/`). |
+Không có key hay bí mật nào trong source code. Tất cả nằm trong file `.env` ở thư mục gốc (gitignored), tạo từ mẫu:
 
-Các key này đang được commit trong repo. Nên chuyển sang `local.properties` hoặc `secrets-gradle-plugin` và xoá khỏi lịch sử git.
+```bash
+cp .env.example .env    # rồi điền giá trị
+```
+
+| Biến | Dùng cho | Ghi chú |
+|------|----------|---------|
+| `GOOGLE_PLACES_API_KEY` | App Java cũ: Places Autocomplete, Maps | Giới hạn key cho Places API và cho app Android (package + SHA‑1) trong Google Cloud. |
+| `FACEBOOK_CLIENT_TOKEN` | Cả hai app | Meta developer console → Settings → Advanced → Client token. |
+| `APP_GOOGLE_SERVICES_JSON_B64` | App Java cũ (tuỳ chọn) | `base64` của `app/google-services.json`; `scripts/env.sh` ghi ra file khi file chưa có. |
+| `FLUTTER_GOOGLE_SERVICES_JSON_B64` | App Flutter (tuỳ chọn) | Tương tự cho `app_flutter/android/app/google-services.json`. |
+
+Gradle đọc biến từ môi trường trước, sau đó mới đến `.env`, rồi đưa vào `resValue`. Vì vậy Android Studio cũng build được mà không cần `source scripts/env.sh`. Biến đã đặt sẵn trong môi trường (ví dụ secret trên CI) luôn thắng giá trị trong `.env`.
+
+Các file `google-services.json` và `app_flutter/lib/firebase_options.dart` cũng gitignored. Lấy chúng từ Firebase console, xem `docs/FIREBASE-SETUP.md`.
+
+Lịch sử git của các commit cũ vẫn còn các key đã lộ. Hãy thu hồi hoặc giới hạn chúng trong Google Cloud Console; gỡ khỏi code hiện tại không làm key cũ hết hiệu lực.
 
 ## Nâng cấp 2017 → 2026 (branch `develop`)
 

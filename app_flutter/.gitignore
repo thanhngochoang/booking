@@ -50,3 +50,6 @@ app.*.map.json
 # Firebase config contains keys; keep out of git
 /lib/firebase_options.dart
 /android/app/google-services.json
+
+# graphify knowledge graph output
+/graphify-out

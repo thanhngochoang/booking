@@ -32,9 +32,9 @@ Full Firebase setup (project, SHA‑1, providers, Firestore, rules): `../docs/FI
 (fields `api_key`, `mobilesdk_app_id`, `project_number`, `project_id`, `storage_bucket`) or run
 `flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.photobooking`.
 
-**Facebook login** needs `facebook_client_token` in `android/app/src/main/res/values/strings.xml`
-(Meta developer console → Settings → Advanced → Client token). It is empty in git; until it is
-filled, the Facebook button shows the generic sign-in error.
+**Facebook login** needs `FACEBOOK_CLIENT_TOKEN` in the repo-root `.env` (copy `.env.example`;
+Meta developer console → Settings → Advanced → Client token). Gradle injects it as
+`@string/facebook_client_token`. Until it is set, the Facebook button shows the generic sign-in error.
 
 ## Tests
 

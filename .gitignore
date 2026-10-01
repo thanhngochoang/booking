@@ -20,3 +20,7 @@
 /.pub-cache
 /.home
 /.flutter-config
+
+# Secrets: local only (see .env.example)
+/.env
+/app/google-services.json

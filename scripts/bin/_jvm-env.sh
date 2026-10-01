@@ -4,6 +4,22 @@ export HOME="$ROOT/.home" PUB_CACHE="$ROOT/.pub-cache"
 export ANDROID_HOME="$ROOT/.android-sdk" ANDROID_SDK_ROOT="$ROOT/.android-sdk"
 export ANDROID_USER_HOME="$ROOT/.home/.android" GRADLE_USER_HOME="$ROOT/.home/.gradle"
 export FLUTTER_SUPPRESS_ANALYTICS=true
+
+# Load secrets from the repo-root .env (gitignored; template: .env.example).
+# A variable already set in the environment wins over .env (portable: bash and zsh).
+if [ -f "$ROOT/.env" ]; then
+  while IFS= read -r _l || [ -n "$_l" ]; do
+    case "$_l" in ''|'#'*|*[!A-Za-z0-9_]*=*) [ -z "${_l%%[A-Za-z_]*=*}" ] || continue ;; esac
+    _k="${_l%%=*}"; _v="${_l#*=}"; _v="${_v%\"}"; _v="${_v#\"}"
+    case "$_k" in ''|*[!A-Za-z0-9_]*) continue ;; esac
+    eval "_cur=\${$_k:-}"
+    [ -n "$_cur" ] || export "$_k=$_v"
+  done < "$ROOT/.env"
+  unset _l _k _v _cur
+fi
+_write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && printf '%s' "$1" | base64 -d > "$2" && chmod 600 "$2"; }
+_write_b64 "${APP_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app/google-services.json"
+_write_b64 "${FLUTTER_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app_flutter/android/app/google-services.json"
 if [ -z "${JAVA_HOME:-}" ]; then
   for j in "$ROOT/.jdk/Contents/Home" "$ROOT/.jdk" /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home; do
     [ -x "$j/bin/java" ] && { export JAVA_HOME="$j"; break; }

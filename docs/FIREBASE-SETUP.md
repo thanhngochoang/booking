@@ -69,11 +69,11 @@ Mở https://developers.facebook.com/apps, chọn app `546233675712070`. Nếu k
    - Package name: `com.thanhbk.photobooking`
    - Default activity class name: `com.thanhbk.photobooking.MainActivity`
    - Key hashes: dán key hash ở bảng trên (thêm một dòng cho mỗi máy, và cho keystore release)
-2. **Settings → Advanced → Security → Client token**: copy vào `facebook_client_token` trong `strings.xml`. Facebook SDK 13+ bắt buộc có giá trị này.
+2. **Settings → Advanced → Security → Client token**: điền vào `FACEBOOK_CLIENT_TOKEN` trong file `.env` ở thư mục gốc (tạo từ `.env.example`). Facebook SDK 13+ bắt buộc có giá trị này. Gradle tự đưa nó vào app.
 3. **Use cases → Authentication and account creation → Facebook Login → Settings**: dán redirect URI của Firebase vào **Valid OAuth Redirect URIs**.
 4. Khi app còn ở chế độ Development, chỉ tài khoản có vai trò trong app (Admin, Developer, Tester) mới đăng nhập được. Thêm tài khoản test ở **App roles**.
 
-`facebook_client_token` không phải bí mật cấp cao (nó nằm trong APK), nhưng repo đang để trống. Nếu không muốn commit nó, giữ thay đổi đó ở local.
+Không ghi token vào `strings.xml` hay bất kỳ file nào được commit. `.env` đã nằm trong gitignore.
 
 ## 6. Tạo Firestore và deploy rules
 
@@ -158,7 +158,7 @@ Kiểm tra lần lượt:
 |-------------|-------------------------|
 | Google Sign‑In báo lỗi ngay, logcat có `ApiException: 10` | SHA‑1 của máy chưa được đăng ký, hoặc `google-services.json` cũ. Làm lại bước 3 và 7. |
 | Google trả về nhưng Firebase báo `invalid-credential` | Thiếu Web client (`client_type: 3`) trong `google-services.json`. Bật lại Google provider ở bước 4 rồi tải lại file. |
-| Facebook báo lỗi chung | `facebook_client_token` còn trống, key hash chưa thêm, hoặc tài khoản không có vai trò trong app ở chế độ Development (bước 5). |
+| Facebook báo lỗi chung | `FACEBOOK_CLIENT_TOKEN` trong `.env` còn trống, key hash chưa thêm, hoặc tài khoản không có vai trò trong app ở chế độ Development (bước 5). |
 | Facebook: "Invalid key hash" | Dán đúng key hash mà thông báo lỗi hiển thị vào Meta → Settings → Basic → Android. |
 | Kẹt ở màn "Không tải được tài khoản" | Firestore chưa được tạo, hoặc rules chưa deploy (bước 6). Bấm "Thử lại" sau khi sửa. |
 | `PERMISSION_DENIED` khi chọn vai trò | Rules trên server khác bản trong repo. Deploy lại ở bước 6. |

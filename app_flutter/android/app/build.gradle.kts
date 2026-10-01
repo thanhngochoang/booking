@@ -5,10 +5,25 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Secrets come from the environment or the repo-root .env (gitignored); never from source.
+fun secret(name: String): String {
+    System.getenv(name)?.takeIf { it.isNotBlank() }?.let { return it }
+    val f = rootProject.file("../../.env")
+    if (!f.exists()) return ""
+    return f.readLines()
+        .firstOrNull { it.trim().startsWith("$name=") }
+        ?.substringAfter('=')?.trim()?.trim('"', '\'')
+        ?: ""
+}
+
 android {
     namespace = "com.thanhbk.photobooking"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    buildFeatures {
+        resValues = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -28,6 +43,7 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        resValue("string", "facebook_client_token", secret("FACEBOOK_CLIENT_TOKEN"))
     }
 
     buildTypes {
