@@ -55,6 +55,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loginButton => 'Đăng nhập';
 
   @override
+  String get loginTagline => 'Đặt lịch nhiếp ảnh gia cho mọi khoảnh khắc.';
+
+  @override
+  String get loginOrDivider => 'hoặc';
+
+  @override
+  String get noAccountPrompt => 'Chưa có tài khoản?';
+
+  @override
+  String get registerLink => 'Đăng ký';
+
+  @override
+  String get showPassword => 'Hiện mật khẩu';
+
+  @override
+  String get hidePassword => 'Ẩn mật khẩu';
+
+  @override
   String get registerButton => 'Đăng ký';
 
   @override
@@ -62,9 +80,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get continueWithFacebook => 'Tiếp tục với Facebook';
-
-  @override
-  String get noAccountRegister => 'Chưa có tài khoản? Đăng ký';
 
   @override
   String get haveAccountLogin => 'Đã có tài khoản? Đăng nhập';

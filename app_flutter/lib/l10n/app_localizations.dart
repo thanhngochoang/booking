@@ -184,6 +184,42 @@ abstract class AppLocalizations {
   /// **'Đăng nhập'**
   String get loginButton;
 
+  /// No description provided for @loginTagline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch nhiếp ảnh gia cho mọi khoảnh khắc.'**
+  String get loginTagline;
+
+  /// No description provided for @loginOrDivider.
+  ///
+  /// In vi, this message translates to:
+  /// **'hoặc'**
+  String get loginOrDivider;
+
+  /// No description provided for @noAccountPrompt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tài khoản?'**
+  String get noAccountPrompt;
+
+  /// No description provided for @registerLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký'**
+  String get registerLink;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện mật khẩu'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn mật khẩu'**
+  String get hidePassword;
+
   /// No description provided for @registerButton.
   ///
   /// In vi, this message translates to:
@@ -201,12 +237,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tiếp tục với Facebook'**
   String get continueWithFacebook;
-
-  /// No description provided for @noAccountRegister.
-  ///
-  /// In vi, this message translates to:
-  /// **'Chưa có tài khoản? Đăng ký'**
-  String get noAccountRegister;
 
   /// No description provided for @haveAccountLogin.
   ///

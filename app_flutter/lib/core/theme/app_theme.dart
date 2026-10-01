@@ -12,6 +12,7 @@ ThemeData buildLightTheme() => _build(
   foreground: AppColors.foreground,
   foregroundSecondary: AppColors.foregroundSecondary,
   border: AppColors.border,
+  borderStrong: AppColors.borderStrong,
   error: AppColors.error,
 );
 
@@ -25,6 +26,7 @@ ThemeData buildDarkTheme() => _build(
   foreground: AppColorsDark.foreground,
   foregroundSecondary: AppColorsDark.foregroundSecondary,
   border: AppColorsDark.border,
+  borderStrong: AppColorsDark.borderStrong,
   error: AppColorsDark.error,
 );
 
@@ -38,6 +40,7 @@ ThemeData _build({
   required Color foreground,
   required Color foregroundSecondary,
   required Color border,
+  required Color borderStrong,
   required Color error,
 }) {
   final scheme = ColorScheme(
@@ -51,6 +54,7 @@ ThemeData _build({
     surface: surface,
     onSurface: foreground,
     outline: border,
+    outlineVariant: border,
   );
   TextStyle body(double size, {FontWeight w = FontWeight.w400, Color? c}) =>
       TextStyle(
@@ -119,7 +123,7 @@ ThemeData _build({
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: radiusMd,
-        borderSide: BorderSide(color: border),
+        borderSide: BorderSide(color: borderStrong),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: radiusMd,
@@ -139,5 +143,6 @@ ThemeData _build({
       ),
     ),
     dividerColor: border,
+    dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
   );
 }

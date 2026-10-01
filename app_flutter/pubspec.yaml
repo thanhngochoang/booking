@@ -68,6 +68,8 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   generate: true
+  assets:
+    - assets/brand/logo.png
   fonts:
     - family: Be Vietnam Pro
       fonts:

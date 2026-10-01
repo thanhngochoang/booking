@@ -38,6 +38,7 @@
   --primitive-color-sand-100: #EDE9E3;
   --primitive-color-sand-200: #E3DFD8;
   --primitive-color-sand-300: #CFCAC1;
+  --primitive-color-sand-600: #67625B;
   --primitive-spacing-0: 0dp;
   --primitive-spacing-1: 4dp;
   --primitive-spacing-2: 8dp;
@@ -85,7 +86,7 @@
   --color-surface: #FFFFFF;
   --color-surface-muted: #EDE9E3;
   --color-foreground: #313131;
-  --color-foreground-secondary: #707070;
+  --color-foreground-secondary: #67625B;
   --color-foreground-muted: #898888;
   --color-foreground-disabled: #AEAEAE;
   --color-foreground-inverse: #FFFFFF;
@@ -175,7 +176,7 @@
   --chip-radius: 999dp;
   --chip-bg: #EDE9E3;
   --chip-bg-selected: #05749F;
-  --chip-fg: #707070;
+  --chip-fg: #67625B;
   --chip-fg-selected: #FFFFFF;
   --avatar-size-xs: 32dp;
   --avatar-size-sm: 40dp;

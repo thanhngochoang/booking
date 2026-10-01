@@ -8,7 +8,7 @@ class AppColors {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceMuted = Color(0xFFEDE9E3);
   static const Color foreground = Color(0xFF313131);
-  static const Color foregroundSecondary = Color(0xFF707070);
+  static const Color foregroundSecondary = Color(0xFF67625B);
   static const Color foregroundMuted = Color(0xFF898888);
   static const Color foregroundDisabled = Color(0xFFAEAEAE);
   static const Color foregroundInverse = Color(0xFFFFFFFF);

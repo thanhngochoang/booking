@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,12 @@ Widget _wrap(Widget child, AuthRepository repo) => ProviderScope(
     home: child,
   ),
 );
+
+class _PendingGoogle extends FakeAuthRepository {
+  final pending = Completer<AuthUser>();
+  @override
+  Future<AuthUser> signInWithGoogle() => pending.future;
+}
 
 void main() {
   testWidgets('wrong password shows the specific Vietnamese message', (
@@ -47,4 +55,24 @@ void main() {
       expect(btn.onPressed, isNotNull);
     },
   );
+  testWidgets('only the tapped button spins; the rest are disabled', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const LoginScreen(), _PendingGoogle()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('google')));
+    await tester.pump();
+    AppButton btn(String k) => tester.widget<AppButton>(find.byKey(Key(k)));
+    expect(btn('google').loading, isTrue);
+    expect(btn('login').loading, isFalse);
+    expect(btn('login').onPressed, isNull);
+    expect(btn('facebook').onPressed, isNull);
+    final email = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const Key('email')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(email.enabled, isFalse);
+  });
 }
