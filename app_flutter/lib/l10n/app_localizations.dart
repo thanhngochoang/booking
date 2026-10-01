@@ -741,6 +741,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại.'**
   String get roleSaveError;
+
+  /// No description provided for @verifiedLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh'**
+  String get verifiedLabel;
 }
 
 class _AppLocalizationsDelegate

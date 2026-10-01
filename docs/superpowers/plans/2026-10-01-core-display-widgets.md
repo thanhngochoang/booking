@@ -85,7 +85,11 @@ Widget hostWidget(
     home: Scaffold(
       body: Align(
         alignment: Alignment.topLeft,
-        child: SizedBox(width: width, child: child),
+        // Loose inside the fixed width, so small widgets keep their own size.
+        child: SizedBox(
+          width: width,
+          child: Align(alignment: Alignment.topLeft, child: child),
+        ),
       ),
     ),
   );

@@ -346,4 +346,7 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get roleSaveError =>
       'Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get verifiedLabel => 'Đã xác minh';
 }
