@@ -1041,6 +1041,36 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'**
   String get setupSaveError;
+
+  /// No description provided for @locationPromptTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện gần bạn'**
+  String get locationPromptTitle;
+
+  /// No description provided for @locationPromptBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.'**
+  String get locationPromptBody;
+
+  /// No description provided for @locationAllow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho phép'**
+  String get locationAllow;
+
+  /// No description provided for @locationLater.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để sau'**
+  String get locationLater;
+
+  /// No description provided for @locationChooseArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực'**
+  String get locationChooseArea;
 }
 
 class _AppLocalizationsDelegate

@@ -185,5 +185,10 @@
   "setupCityRequired": "Nhập thành phố bạn nhận việc",
   "setupNoChannel": "Bật ít nhất một kênh, hoặc chọn \"Chỉ nhận tin nhắn trong app\".",
   "setupWhatsAppNeedsNumber": "Nhập số WhatsApp có mã quốc gia, ví dụ +1 415 555 2671",
-  "setupSaveError": "Không lưu được thiết lập. Kiểm tra mạng rồi thử lại."
+  "setupSaveError": "Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.",
+  "locationPromptTitle": "Sự kiện gần bạn",
+  "locationPromptBody": "Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.",
+  "locationAllow": "Cho phép",
+  "locationLater": "Để sau",
+  "locationChooseArea": "Chọn khu vực"
 }

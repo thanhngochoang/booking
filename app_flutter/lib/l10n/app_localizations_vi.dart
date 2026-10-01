@@ -517,4 +517,20 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get setupSaveError =>
       'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get locationPromptTitle => 'Sự kiện gần bạn';
+
+  @override
+  String get locationPromptBody =>
+      'Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.';
+
+  @override
+  String get locationAllow => 'Cho phép';
+
+  @override
+  String get locationLater => 'Để sau';
+
+  @override
+  String get locationChooseArea => 'Chọn khu vực';
 }
