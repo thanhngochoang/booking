@@ -885,6 +885,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Liên hệ qua điện thoại mở sau khi bạn đặt lịch'**
   String get contactLockedHint;
+
+  /// No description provided for @contactOpenError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở được liên hệ. Thử lại nhé.'**
+  String get contactOpenError;
 }
 
 class _AppLocalizationsDelegate

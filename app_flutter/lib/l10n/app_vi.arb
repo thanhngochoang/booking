@@ -154,5 +154,6 @@
   "contactZalo": "Zalo",
   "contactWhatsApp": "WhatsApp",
   "contactInquiry": "Nhắn tin hỏi trước",
-  "contactLockedHint": "Liên hệ qua điện thoại mở sau khi bạn đặt lịch"
+  "contactLockedHint": "Liên hệ qua điện thoại mở sau khi bạn đặt lịch",
+  "contactOpenError": "Không mở được liên hệ. Thử lại nhé."
 }

@@ -429,4 +429,7 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get contactLockedHint =>
       'Liên hệ qua điện thoại mở sau khi bạn đặt lịch';
+
+  @override
+  String get contactOpenError => 'Không mở được liên hệ. Thử lại nhé.';
 }
