@@ -6,6 +6,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/explore/explore_badge.dart';
 import 'package:photobooking/features/shell/tab_badges.dart';
 
 class TabShell extends ConsumerWidget {
@@ -25,8 +26,12 @@ class TabShell extends ConsumerWidget {
         body: shell,
         bottomNavigationBar: NavigationBar(
           selectedIndex: shell.currentIndex,
-          onDestinationSelected: (i) =>
-              shell.goBranch(i, initialLocation: i == shell.currentIndex),
+          onDestinationSelected: (i) {
+            if (specs[i].tab == AppTab.explore) {
+              ref.read(exploreSeenAtProvider.notifier).markSeen();
+            }
+            shell.goBranch(i, initialLocation: i == shell.currentIndex);
+          },
           destinations: [
             for (final s in specs)
               NavigationDestination(
