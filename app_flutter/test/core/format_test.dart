@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/format.dart';
+import 'package:photobooking/core/vn_time.dart';
 
 void main() {
   test('distance has one decimal, a comma and the unit', () {
@@ -40,6 +41,11 @@ void main() {
     expect(formatDayMonth(saturday), '03/10');
     expect(formatDay(DateTime.utc(2026, 10, 4)), 'CN 04/10');
     expect(formatDay(DateTime.utc(2026, 12, 25)), 'T6 25/12');
+  });
+
+  test('formatDay of a Vietnamese date shifted past midnight', () {
+    // 17:30 UTC on Fri 2 Oct is 00:30 on Sat 3 Oct in Vietnam.
+    expect(formatDay(toVn(DateTime.utc(2026, 10, 2, 17, 30))), 'T7 03/10');
   });
 
   test('formatRating has one decimal and a comma', () {

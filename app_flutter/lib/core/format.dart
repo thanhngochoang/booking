@@ -45,8 +45,10 @@ String formatMoney(int vnd, {bool short = false}) {
 }
 
 /// `T2`..`T7`, `CN` for [DateTime.monday]..[DateTime.sunday].
-String weekdayLabel(int weekday) =>
-    weekday == DateTime.sunday ? 'CN' : 'T${weekday + 1}';
+String weekdayLabel(int weekday) {
+  assert(weekday >= DateTime.monday && weekday <= DateTime.sunday);
+  return weekday == DateTime.sunday ? 'CN' : 'T${weekday + 1}';
+}
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -58,6 +60,9 @@ String formatDayMonth(DateTime day) => '${_two(day.day)}/${_two(day.month)}';
 String formatDay(DateTime day) =>
     '${weekdayLabel(day.weekday)} ${formatDayMonth(day)}';
 
-/// `4,9`.
-String formatRating(double rating) =>
-    ((rating * 10).round() / 10).toStringAsFixed(1).replaceAll('.', ',');
+/// `4,9`. Callers handle a missing rating (null or no reviews) themselves;
+/// [rating] must be finite.
+String formatRating(double rating) {
+  assert(rating.isFinite);
+  return ((rating * 10).round() / 10).toStringAsFixed(1).replaceAll('.', ',');
+}
