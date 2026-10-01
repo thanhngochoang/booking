@@ -13,6 +13,7 @@ class MyApp extends StatelessWidget {
     this.darkTheme,
     this.themeMode = ThemeMode.dark,
     this.ctaAvatar,
+    this.showScreenCodes = false,
   });
   final GoRouter router;
   final ThemeData? theme;
@@ -24,6 +25,9 @@ class MyApp extends StatelessWidget {
   /// Avatar painted (blurred, tinted) behind main buttons; null = gradient.
   final ImageProvider? ctaAvatar;
 
+  /// Debug aid, see [ScreenCode].
+  final bool showScreenCodes;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
@@ -32,8 +36,13 @@ class MyApp extends StatelessWidget {
       theme: theme,
       darkTheme: darkTheme,
       themeMode: themeMode,
-      builder: (context, child) =>
-          CtaAvatarScope(avatar: ctaAvatar, child: child ?? const SizedBox()),
+      builder: (context, child) => ScreenCodeScope(
+        visible: showScreenCodes,
+        child: CtaAvatarScope(
+          avatar: ctaAvatar,
+          child: child ?? const SizedBox(),
+        ),
+      ),
       locale: const Locale('vi'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

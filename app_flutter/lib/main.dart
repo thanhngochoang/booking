@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import 'package:photobooking/app/router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
+import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/firebase_options.dart';
 
@@ -40,6 +42,7 @@ class _Root extends ConsumerWidget {
       darkTheme: buildDarkTheme(),
       themeMode: ref.watch(themeModeProvider),
       ctaAvatar: useAvatar ? NetworkImage(avatarUrl) : null,
+      showScreenCodes: kDebugMode && ref.watch(showScreenCodesProvider),
     );
   }
 }

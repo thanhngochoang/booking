@@ -10,6 +10,7 @@ import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
+import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -154,4 +155,25 @@ void main() {
       'Minh',
     );
   });
+
+  test(
+    'screen codes are off by default and the choice is remembered',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(showScreenCodesProvider), isFalse);
+      await c.read(showScreenCodesProvider.notifier).set(true);
+      expect(prefs.getBool('showScreenCodes'), isTrue);
+
+      final again = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(again.dispose);
+      expect(again.read(showScreenCodesProvider), isTrue);
+    },
+  );
 }
