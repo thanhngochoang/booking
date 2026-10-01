@@ -53,11 +53,7 @@ class NetworkPhoto extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final ratio = MediaQuery.devicePixelRatioOf(context);
-        final width = constraints.maxWidth;
-        final cacheWidth = (width.isFinite && width > 0)
-            ? ((width * ratio) / 50).ceil() * 50
-            : null;
+        final cacheWidth = _decodeWidth(context, constraints.maxWidth);
         final image = PhotoImageScope.of(context)(
           context,
           url,
@@ -65,16 +61,35 @@ class NetworkPhoto extends StatelessWidget {
           cacheWidth,
           retry,
         );
+        // The image itself is silent; a failed load's retry control (built by
+        // the production builder) stays reachable by screen readers.
         return semanticLabel == null
-            ? ExcludeSemantics(child: image)
+            ? image
             : Semantics(
                 image: true,
                 label: semanticLabel,
-                child: ExcludeSemantics(child: image),
+                container: true,
+                child: image,
               );
       },
     );
   }
+}
+
+/// Decode width in px, rounded up to 50. Never null, so the original size is
+/// never decoded: an unbounded or zero layout width falls back to the screen
+/// width, and that to a fixed 1080.
+int _decodeWidth(BuildContext context, double layoutWidth) {
+  final ratio = MediaQuery.devicePixelRatioOf(context);
+  int round(double dp) => ((dp * ratio) / 50).ceil() * 50;
+  if (layoutWidth.isFinite && layoutWidth > 0) {
+    return round(layoutWidth);
+  }
+  final screen = MediaQuery.sizeOf(context).width;
+  if (screen.isFinite && screen > 0) {
+    return round(screen);
+  }
+  return 1080;
 }
 
 /// Production image: disk cache, decode at [cacheWidth], flat placeholder, and
@@ -109,7 +124,11 @@ class _CachedPhotoState extends State<_CachedPhoto> {
   int _attempt = 0;
 
   Future<void> _reload() async {
-    await CachedNetworkImage.evictFromCache(widget.url);
+    try {
+      await CachedNetworkImage.evictFromCache(widget.url);
+    } on Object {
+      // A cache that cannot be cleared must not block the reload.
+    }
     if (mounted) {
       setState(() => _attempt++);
     }
@@ -128,17 +147,43 @@ class _CachedPhotoState extends State<_CachedPhoto> {
       placeholder: (context, _) =>
           widget.retry ? ColoredBox(color: fill) : const SizedBox.shrink(),
       errorWidget: (context, _, _) => widget.retry
-          ? ColoredBox(
-              color: fill,
-              child: Center(
-                child: IconButton(
-                  tooltip: context.l10n.retry,
-                  icon: const Icon(Icons.refresh_rounded),
-                  onPressed: _reload,
-                ),
-              ),
-            )
+          ? PhotoRetryTile(fill: fill, onRetry: _reload)
           : const SizedBox.shrink(),
+    );
+  }
+}
+
+/// The failed-load tile: the whole tile is the tap target (so it works in
+/// boxes under 48 dp) and one "Thử lại" button node for screen readers.
+@visibleForTesting
+class PhotoRetryTile extends StatelessWidget {
+  const PhotoRetryTile({super.key, required this.fill, required this.onRetry});
+
+  final Color fill;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      button: true,
+      label: context.l10n.retry,
+      onTap: onRetry,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onRetry,
+        child: ExcludeSemantics(
+          child: ColoredBox(
+            color: fill,
+            child: const Center(
+              child: Padding(
+                padding: EdgeInsets.all(4),
+                child: FittedBox(child: Icon(Icons.refresh_rounded, size: 24)),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

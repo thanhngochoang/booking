@@ -71,7 +71,80 @@ void main() {
         ),
       ),
     );
-    expect(log.last.cacheWidth, isNull);
+    // Falls back to the screen width in physical pixels, rounded up to 50.
+    final screen = tester.view.physicalSize.width.ceilToDouble();
+    expect(log.last.cacheWidth, (screen / 50).ceil() * 50);
+    expect(log.last.cacheWidth, isNotNull);
+  });
+
+  testWidgets('a zero width falls back to the screen width', (tester) async {
+    final log = <PhotoRequest>[];
+    await tester.pumpWidget(
+      hostWidget(
+        testPhotoScope(
+          log: log,
+          child: const SizedBox(height: 50, child: NetworkPhoto(url: 'u')),
+        ),
+        width: 0,
+      ),
+    );
+    expect(log.last.cacheWidth, isNotNull);
+    expect(log.last.cacheWidth! % 50, 0);
+  });
+
+  testWidgets('an exact multiple is not rounded up', (tester) async {
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final log = <PhotoRequest>[];
+    await tester.pumpWidget(
+      hostWidget(
+        testPhotoScope(
+          log: log,
+          child: const SizedBox(height: 50, child: NetworkPhoto(url: 'u')),
+        ),
+        width: 100,
+      ),
+    );
+    expect(log.last.cacheWidth, 200);
+  });
+
+  testWidgets('a fractional pixel ratio rounds up', (tester) async {
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    final log = <PhotoRequest>[];
+    await tester.pumpWidget(
+      hostWidget(
+        testPhotoScope(
+          log: log,
+          child: const SizedBox(height: 50, child: NetworkPhoto(url: 'u')),
+        ),
+        width: 100,
+      ),
+    );
+    expect(log.last.cacheWidth, 300, reason: '262.5 px rounds up to 300');
+  });
+
+  testWidgets('the error tile is a tappable "Thử lại" node, even tiny', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    var taps = 0;
+    await tester.pumpWidget(
+      hostWidget(
+        SizedBox(
+          width: 30,
+          height: 30,
+          child: PhotoRetryTile(fill: Colors.grey, onRetry: () => taps++),
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Thử lại')),
+      matchesSemantics(label: 'Thử lại', isButton: true, hasTapAction: true),
+    );
+    await tester.tapAt(const Offset(2, 2));
+    expect(taps, 1, reason: 'the whole tile is the hit area');
+    handle.dispose();
   });
 
   testWidgets(
