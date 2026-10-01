@@ -8,8 +8,8 @@ class RoleController extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   Future<void> choose(UserRole role) async {
-    // Await the stream: on a fresh provider the first value is not in yet.
-    final uid = (await ref.read(authStateProvider.future))?.uid;
+    // Synchronous read: the auth stream may be paused when nobody listens.
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
     if (uid == null) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
