@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
@@ -29,6 +31,9 @@ Future<void> _show(WidgetTester tester, Widget screen) async {
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         userRepositoryProvider.overrideWithValue(users),
+        userContactRepositoryProvider.overrideWithValue(
+          FakeUserContactRepository(),
+        ),
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
       child: ScreenCodeScope(

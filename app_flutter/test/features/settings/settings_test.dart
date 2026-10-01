@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
@@ -20,6 +22,7 @@ Future<Widget> _app({
   required FakeAuthRepository auth,
   required FakeUserRepository users,
   required SharedPreferences prefs,
+  FakeUserContactRepository? contacts,
 }) async {
   final router = GoRouter(
     initialLocation: '/settings',
@@ -40,6 +43,9 @@ Future<Widget> _app({
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
       userRepositoryProvider.overrideWithValue(users),
+      userContactRepositoryProvider.overrideWithValue(
+        contacts ?? FakeUserContactRepository(),
+      ),
       sharedPreferencesProvider.overrideWithValue(prefs),
     ],
     child: MaterialApp.router(
@@ -206,4 +212,108 @@ void main() {
     await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
     await expectIdle(tester);
   });
+
+  testWidgets('editing the phone saves it to the private contact only', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('edit-phone')), '0903123456');
+    await tester.tap(find.byKey(const Key('edit-allow-whatsapp')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+
+    final uid = auth.currentUser!.uid;
+    expect(
+      contacts.stored(uid),
+      const UserContact(
+        phone: '+84903123456',
+        allowZalo: true,
+        allowWhatsApp: true,
+      ),
+    );
+    expect(
+      (await users.watch(uid).first)!.toJson().containsKey('phone'),
+      isFalse,
+    );
+  });
+
+  testWidgets('an invalid phone blocks saving', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('edit-phone')), '90312345');
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Số điện thoại chưa đúng. Ví dụ: 903 123 456'),
+      findsOneWidget,
+    );
+    expect(contacts.stored(auth.currentUser!.uid), isNull);
+    expect(
+      find.byType(SettingsScreen),
+      findsNothing,
+    ); // still on the edit screen
+  });
+
+  testWidgets(
+    'a stored number prefills the field and an empty field keeps it',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final (auth, users) = await _signedIn();
+      final contacts = FakeUserContactRepository()
+        ..seed(
+          auth.currentUser!.uid,
+          const UserContact(phone: '+84903123456', allowZalo: false),
+        );
+      await tester.pumpWidget(
+        await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-edit-profile')));
+      await tester.pumpAndSettle();
+      // The hint text is also '903 123 456', so read the field's own text.
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('edit-phone')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        '903 123 456',
+      );
+      expect(
+        tester
+            .widget<SwitchListTile>(find.byKey(const Key('edit-allow-zalo')))
+            .value,
+        isFalse,
+      );
+
+      await tester.enterText(find.byKey(const Key('edit-phone')), '');
+      await tester.tap(find.byKey(const Key('edit-save')));
+      await tester.pumpAndSettle();
+      expect(contacts.stored(auth.currentUser!.uid)!.phone, '+84903123456');
+    },
+  );
 }
