@@ -122,9 +122,12 @@ class FakePhotographerContactRepository
           out.add(read());
         });
       },
-      onCancel: () async {
+      // Not awaited: `Stream.first` waits for this future, and a broadcast
+      // subscription's cancel only completes on the real event loop, which
+      // would leave `first` hanging under a widget test's fake clock.
+      onCancel: () {
         watchers--;
-        await inner?.cancel();
+        unawaited(inner?.cancel());
       },
     );
     return out.stream;

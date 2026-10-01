@@ -891,6 +891,150 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không mở được liên hệ. Thử lại nhé.'**
   String get contactOpenError;
+
+  /// No description provided for @setupContactTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực và liên hệ'**
+  String get setupContactTitle;
+
+  /// No description provided for @setupContactArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực phục vụ'**
+  String get setupContactArea;
+
+  /// No description provided for @setupContactCity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành phố'**
+  String get setupContactCity;
+
+  /// No description provided for @setupContactRadius.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bán kính phục vụ'**
+  String get setupContactRadius;
+
+  /// No description provided for @setupRadiusValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{km} km'**
+  String setupRadiusValue(int km);
+
+  /// No description provided for @setupContactPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại · bắt buộc'**
+  String get setupContactPhone;
+
+  /// No description provided for @setupContactChannels.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn kênh khách được dùng để liên hệ bạn.'**
+  String get setupContactChannels;
+
+  /// No description provided for @setupChannelCall.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi điện'**
+  String get setupChannelCall;
+
+  /// No description provided for @setupChannelCallHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng số điện thoại ở trên'**
+  String get setupChannelCallHint;
+
+  /// No description provided for @setupChannelZalo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Zalo'**
+  String get setupChannelZalo;
+
+  /// No description provided for @setupChannelZaloHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng số ở trên hoặc nhập số riêng'**
+  String get setupChannelZaloHint;
+
+  /// No description provided for @setupZaloOwn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số Zalo riêng (để trống nếu dùng số trên)'**
+  String get setupZaloOwn;
+
+  /// No description provided for @setupChannelWhatsApp.
+  ///
+  /// In vi, this message translates to:
+  /// **'WhatsApp'**
+  String get setupChannelWhatsApp;
+
+  /// No description provided for @setupChannelWhatsAppHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số quốc tế riêng, hoặc dùng số ở trên'**
+  String get setupChannelWhatsAppHint;
+
+  /// No description provided for @setupWhatsAppOwn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số WhatsApp có mã quốc gia (để trống nếu dùng số trên)'**
+  String get setupWhatsAppOwn;
+
+  /// No description provided for @setupInAppOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ nhận tin nhắn trong app'**
+  String get setupInAppOnly;
+
+  /// No description provided for @setupInAppOnlyHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chỉ nhắn được trong ứng dụng. Bạn có thể bật gọi, Zalo hay WhatsApp sau.'**
+  String get setupInAppOnlyHint;
+
+  /// No description provided for @setupContactPrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số của bạn không hiện công khai. Khách chỉ dùng được các kênh này sau khi đã đặt lịch.'**
+  String get setupContactPrivacy;
+
+  /// No description provided for @setupContactBack.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get setupContactBack;
+
+  /// No description provided for @setupContactFinish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất'**
+  String get setupContactFinish;
+
+  /// No description provided for @setupCityRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập thành phố bạn nhận việc'**
+  String get setupCityRequired;
+
+  /// No description provided for @setupNoChannel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật ít nhất một kênh, hoặc chọn \"Chỉ nhận tin nhắn trong app\".'**
+  String get setupNoChannel;
+
+  /// No description provided for @setupWhatsAppNeedsNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số WhatsApp có mã quốc gia, ví dụ +1 415 555 2671'**
+  String get setupWhatsAppNeedsNumber;
+
+  /// No description provided for @setupSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'**
+  String get setupSaveError;
 }
 
 class _AppLocalizationsDelegate

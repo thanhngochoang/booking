@@ -89,9 +89,9 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 - **Thông tin**: `/setup/4` · sub‑project 2 · Chưa có.
 - **Mục đích**: nơi phục vụ và kênh khách được liên hệ.
 - **Bố cục**: `StepProgress` 4/4; ô khu vực phục vụ (thành phố + bán kính km); ô SĐT (bắt buộc, `PhoneField`); ba thẻ công tắc: Gọi điện (dùng số trên), Zalo (dùng số trên hoặc nhập riêng), WhatsApp (nhập số quốc tế riêng); "Quay lại" + "Hoàn tất".
-- **Dữ liệu**: ghi `photographers/{uid}.serviceArea` và `.contact`, đặt `onboardingComplete = true`.
-- **Trạng thái**: cần ≥ 1 số hợp lệ và ≥ 1 kênh bật hoặc xác nhận "Chỉ nhận tin nhắn trong app"; WhatsApp bật mà trống → dùng số chính nếu hợp lệ quốc tế, không thì báo lỗi dưới ô.
-- **Chuỗi**: `s34_title` "Khu vực và liên hệ", `s34_area` "Khu vực phục vụ", `s34_phone` "Số điện thoại · bắt buộc", `s34_channels` "Chọn kênh khách được dùng để liên hệ bạn.", `s34_finish` "Hoàn tất".
+- **Dữ liệu**: một batch ghi `photographers/{uid}.serviceArea` (`city`, `radiusKm`) và `.contactChannels` (cờ công khai `call/zalo/whatsapp/acceptInquiries`, không có số), `photographers/{uid}/private/contact` (số, chỉ chủ đọc), và đặt `onboardingComplete = true`. Kênh chỉ bật được khi đã có số (rules kiểm bằng `existsAfter`).
+- **Trạng thái**: cần ≥ 1 số hợp lệ và ≥ 1 kênh bật hoặc xác nhận "Chỉ nhận tin nhắn trong app"; WhatsApp bật mà trống → dùng số chính nếu hợp lệ quốc tế, không thì báo lỗi dưới ô. Công tắc "Chỉ nhận tin nhắn trong app" thay cho việc bật kênh ngoài: bật nó thì ba công tắc kia tắt, bật một kênh ngoài thì nó tắt. Lỗi hiện sau lần bấm "Hoàn tất" đầu tiên rồi cập nhật theo từng thay đổi.
+- **Chuỗi**: `s34_title` "Khu vực và liên hệ", `s34_area` "Khu vực phục vụ", `s34_phone` "Số điện thoại · bắt buộc", `s34_channels` "Chọn kênh khách được dùng để liên hệ bạn.", `s34_finish` "Hoàn tất". Khoá arb: `setupContact*`, `setupChannel*`, `setupInAppOnly*` (camelCase, `lib/l10n/app_vi.arb`).
 - **Phân tích**: `setup_complete{channels}`.
 - **Chấp nhận**: sau "Hoàn tất", hồ sơ hiện công khai và vào được S19; chỉ các kênh bật xuất hiện ở S32.
 

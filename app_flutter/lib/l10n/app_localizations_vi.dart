@@ -432,4 +432,86 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get contactOpenError => 'Không mở được liên hệ. Thử lại nhé.';
+
+  @override
+  String get setupContactTitle => 'Khu vực và liên hệ';
+
+  @override
+  String get setupContactArea => 'Khu vực phục vụ';
+
+  @override
+  String get setupContactCity => 'Thành phố';
+
+  @override
+  String get setupContactRadius => 'Bán kính phục vụ';
+
+  @override
+  String setupRadiusValue(int km) {
+    return '$km km';
+  }
+
+  @override
+  String get setupContactPhone => 'Số điện thoại · bắt buộc';
+
+  @override
+  String get setupContactChannels =>
+      'Chọn kênh khách được dùng để liên hệ bạn.';
+
+  @override
+  String get setupChannelCall => 'Gọi điện';
+
+  @override
+  String get setupChannelCallHint => 'Dùng số điện thoại ở trên';
+
+  @override
+  String get setupChannelZalo => 'Zalo';
+
+  @override
+  String get setupChannelZaloHint => 'Dùng số ở trên hoặc nhập số riêng';
+
+  @override
+  String get setupZaloOwn => 'Số Zalo riêng (để trống nếu dùng số trên)';
+
+  @override
+  String get setupChannelWhatsApp => 'WhatsApp';
+
+  @override
+  String get setupChannelWhatsAppHint =>
+      'Nhập số quốc tế riêng, hoặc dùng số ở trên';
+
+  @override
+  String get setupWhatsAppOwn =>
+      'Số WhatsApp có mã quốc gia (để trống nếu dùng số trên)';
+
+  @override
+  String get setupInAppOnly => 'Chỉ nhận tin nhắn trong app';
+
+  @override
+  String get setupInAppOnlyHint =>
+      'Khách chỉ nhắn được trong ứng dụng. Bạn có thể bật gọi, Zalo hay WhatsApp sau.';
+
+  @override
+  String get setupContactPrivacy =>
+      'Số của bạn không hiện công khai. Khách chỉ dùng được các kênh này sau khi đã đặt lịch.';
+
+  @override
+  String get setupContactBack => 'Quay lại';
+
+  @override
+  String get setupContactFinish => 'Hoàn tất';
+
+  @override
+  String get setupCityRequired => 'Nhập thành phố bạn nhận việc';
+
+  @override
+  String get setupNoChannel =>
+      'Bật ít nhất một kênh, hoặc chọn \"Chỉ nhận tin nhắn trong app\".';
+
+  @override
+  String get setupWhatsAppNeedsNumber =>
+      'Nhập số WhatsApp có mã quốc gia, ví dụ +1 415 555 2671';
+
+  @override
+  String get setupSaveError =>
+      'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.';
 }

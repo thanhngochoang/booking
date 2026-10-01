@@ -155,5 +155,34 @@
   "contactWhatsApp": "WhatsApp",
   "contactInquiry": "Nhắn tin hỏi trước",
   "contactLockedHint": "Liên hệ qua điện thoại mở sau khi bạn đặt lịch",
-  "contactOpenError": "Không mở được liên hệ. Thử lại nhé."
+  "contactOpenError": "Không mở được liên hệ. Thử lại nhé.",
+  "setupContactTitle": "Khu vực và liên hệ",
+  "setupContactArea": "Khu vực phục vụ",
+  "setupContactCity": "Thành phố",
+  "setupContactRadius": "Bán kính phục vụ",
+  "setupRadiusValue": "{km} km",
+  "@setupRadiusValue": {
+    "placeholders": {
+      "km": {"type": "int"}
+    }
+  },
+  "setupContactPhone": "Số điện thoại · bắt buộc",
+  "setupContactChannels": "Chọn kênh khách được dùng để liên hệ bạn.",
+  "setupChannelCall": "Gọi điện",
+  "setupChannelCallHint": "Dùng số điện thoại ở trên",
+  "setupChannelZalo": "Zalo",
+  "setupChannelZaloHint": "Dùng số ở trên hoặc nhập số riêng",
+  "setupZaloOwn": "Số Zalo riêng (để trống nếu dùng số trên)",
+  "setupChannelWhatsApp": "WhatsApp",
+  "setupChannelWhatsAppHint": "Nhập số quốc tế riêng, hoặc dùng số ở trên",
+  "setupWhatsAppOwn": "Số WhatsApp có mã quốc gia (để trống nếu dùng số trên)",
+  "setupInAppOnly": "Chỉ nhận tin nhắn trong app",
+  "setupInAppOnlyHint": "Khách chỉ nhắn được trong ứng dụng. Bạn có thể bật gọi, Zalo hay WhatsApp sau.",
+  "setupContactPrivacy": "Số của bạn không hiện công khai. Khách chỉ dùng được các kênh này sau khi đã đặt lịch.",
+  "setupContactBack": "Quay lại",
+  "setupContactFinish": "Hoàn tất",
+  "setupCityRequired": "Nhập thành phố bạn nhận việc",
+  "setupNoChannel": "Bật ít nhất một kênh, hoặc chọn \"Chỉ nhận tin nhắn trong app\".",
+  "setupWhatsAppNeedsNumber": "Nhập số WhatsApp có mã quốc gia, ví dụ +1 415 555 2671",
+  "setupSaveError": "Không lưu được thiết lập. Kiểm tra mạng rồi thử lại."
 }

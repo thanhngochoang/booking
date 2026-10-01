@@ -131,9 +131,9 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 - **Điểm vào**: nút "Liên hệ" ở S09 (và S16 khi đã có vé), `ContactDial` trên thẻ ở S19, S27.
 - **Bố cục**: nút nhỏ lúc nghỉ; khi bấm, **một khay** (radius 28, căn phải theo nút) trồi lên phía trên với ba biểu tượng tròn 44dp xếp ngang: Gọi, Zalo, WhatsApp, mỗi biểu tượng có nhãn chữ bên dưới. Zalo và WhatsApp dùng đúng biểu tượng của hãng, đơn sắc (spec chính 3b.6). "Nhắn tin trong app" không nằm trong khay, đã có nút "Nhắn tin" riêng bên cạnh nút Liên hệ.
 - **Dữ liệu**: kênh bật từ `photographers/{uid}.contactChannels` (hoặc `customerContact` ở S19/S27); URL lấy lúc chạm bằng `getContactLink({bookingId | registrationId, channel})`, lỗi `contact_locked` nếu chưa đủ điều kiện. Không hiển thị số, ứng dụng không lưu số.
-- **Trạng thái**: một kênh khả dụng → bấm nút mở thẳng kênh đó, không bung; không kênh ngoài nào → ẩn nút Liên hệ (còn nút "Nhắn tin"); đang lấy liên kết → viên được chọn hiện vòng chờ; giảm chuyển động → hiện/ẩn tức thì.
+- **Trạng thái**: một kênh khả dụng → bấm nút mở thẳng kênh đó, không bung; không kênh ngoài nào → ẩn nút Liên hệ (còn nút "Nhắn tin"); đang lấy liên kết → nút Liên hệ hiện vòng chờ (khay đã đóng); giảm chuyển động → hiện/ẩn tức thì.
 - **Tương tác**: khay mở 240ms, ba biểu tượng vào so le 40ms từ phải sang; đóng 140ms; bấm ra ngoài, bấm lại nút, Back, hoặc chọn một viên đều đóng; chọn viên → mở ứng dụng ngoài (`tel:`, `https://zalo.me/…`, `https://wa.me/…`) hoặc vào S11.
-- **Chuỗi**: `s32_label` "Liên hệ", `s32_call` "Gọi điện", `s32_zalo` "Zalo", `s32_whatsapp` "WhatsApp", `s32_locked` "Liên hệ qua điện thoại mở sau khi bạn đặt lịch".
+- **Chuỗi**: `s32_label` "Liên hệ", `s32_call` "Gọi điện", `s32_zalo` "Zalo", `s32_whatsapp` "WhatsApp", `s32_locked` "Liên hệ qua điện thoại mở sau khi bạn đặt lịch", `s32_inquiry` "Nhắn tin hỏi trước", `s32_openError` "Không mở được liên hệ. Thử lại nhé.".
 - **Phân tích**: `contact_tapped{channel, source}` (không ghi số); `contact_locked{source}` khi bị từ chối.
 - **Chấp nhận**: không có đường nào lấy được số trước khi đặt (kể cả đọc Firestore trực tiếp: rules chặn `private/contact`); số đầy đủ chỉ đi vào ứng dụng ngoài; tiêu điểm vào viên đầu khi mở, Esc đóng và trả tiêu điểm; không che nút chính.
 
