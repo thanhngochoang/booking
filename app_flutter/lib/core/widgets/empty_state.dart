@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/tokens.g.dart';
 
 class EmptyState extends StatelessWidget {

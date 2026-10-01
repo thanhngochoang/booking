@@ -5,6 +5,7 @@ import '../../core/l10n_ext.dart';
 import '../../core/theme/tokens.g.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/user/user_profile.dart';
+import '../auth/auth_controller.dart';
 import 'role_controller.dart';
 
 class RoleScreen extends ConsumerStatefulWidget {
@@ -20,42 +21,73 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final loading = ref.watch(roleControllerProvider).isLoading;
+    ref.listen(roleControllerProvider, (_, next) {
+      if (next.hasError && !next.isLoading) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l.roleSaveError)));
+      }
+    });
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.s5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppSpace.s8),
-              Text(l.roleTitle, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: AppSpace.s6),
-              _RoleCard(
-                key: const Key('role-customer'),
-                title: l.roleCustomerTitle,
-                body: l.roleCustomerBody,
-                icon: Icons.search,
-                selected: _selected == UserRole.customer,
-                onTap: () => setState(() => _selected = UserRole.customer),
+        // Scrolls on short or landscape screens and with large text, while the
+        // button still sits at the bottom when there is room.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpace.s5),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - AppSpace.s5 * 2,
               ),
-              const SizedBox(height: AppSpace.s3),
-              _RoleCard(
-                key: const Key('role-photographer'),
-                title: l.rolePhotographerTitle,
-                body: l.rolePhotographerBody,
-                icon: Icons.camera_alt_outlined,
-                selected: _selected == UserRole.photographer,
-                onTap: () => setState(() => _selected = UserRole.photographer),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppSpace.s8),
+                    Text(
+                      l.roleTitle,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: AppSpace.s6),
+                    _RoleCard(
+                      key: const Key('role-customer'),
+                      title: l.roleCustomerTitle,
+                      body: l.roleCustomerBody,
+                      icon: Icons.search,
+                      selected: _selected == UserRole.customer,
+                      onTap: () =>
+                          setState(() => _selected = UserRole.customer),
+                    ),
+                    const SizedBox(height: AppSpace.s3),
+                    _RoleCard(
+                      key: const Key('role-photographer'),
+                      title: l.rolePhotographerTitle,
+                      body: l.rolePhotographerBody,
+                      icon: Icons.camera_alt_outlined,
+                      selected: _selected == UserRole.photographer,
+                      onTap: () =>
+                          setState(() => _selected = UserRole.photographer),
+                    ),
+                    const Spacer(),
+                    const SizedBox(height: AppSpace.s5),
+                    AppButton.primary(
+                      l.roleContinue,
+                      key: const Key('role-continue'),
+                      loading: loading,
+                      onPressed: () => ref
+                          .read(roleControllerProvider.notifier)
+                          .choose(_selected),
+                    ),
+                    const SizedBox(height: AppSpace.s2),
+                    AppButton.text(
+                      l.signOut,
+                      key: const Key('role-sign-out'),
+                      onPressed: () =>
+                          ref.read(authControllerProvider.notifier).signOut(),
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
-              AppButton.primary(
-                l.roleContinue,
-                key: const Key('role-continue'),
-                loading: loading,
-                onPressed: () =>
-                    ref.read(roleControllerProvider.notifier).choose(_selected),
-              ),
-            ],
+            ),
           ),
         ),
       ),

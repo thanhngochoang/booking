@@ -23,8 +23,7 @@ AuthError mapAuthException(Object e) {
     return switch (e.code) {
       'wrong-password' ||
       'invalid-credential' ||
-      'invalid-email' =>
-        AuthError.wrongPassword,
+      'invalid-email' => AuthError.wrongPassword,
       'user-not-found' => AuthError.userNotFound,
       'email-already-in-use' => AuthError.emailInUse,
       'weak-password' => AuthError.weakPassword,

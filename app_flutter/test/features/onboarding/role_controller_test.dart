@@ -19,7 +19,9 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
-    await container.read(roleControllerProvider.notifier).choose(UserRole.photographer);
+    await container
+        .read(roleControllerProvider.notifier)
+        .choose(UserRole.photographer);
     final p = await users.watch(u.uid).first;
     expect(p!.role, UserRole.photographer);
     expect(container.read(roleControllerProvider).hasError, isFalse);

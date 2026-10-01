@@ -29,6 +29,10 @@ flutter run                                              # or: flutter build apk
 (fields `api_key`, `mobilesdk_app_id`, `project_number`, `project_id`, `storage_bucket`) or run
 `flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.timnhay`.
 
+**Facebook login** needs `facebook_client_token` in `android/app/src/main/res/values/strings.xml`
+(Meta developer console → Settings → Advanced → Client token). It is empty in git; until it is
+filled, the Facebook button shows the generic sign-in error.
+
 ## Tests
 
 ```bash

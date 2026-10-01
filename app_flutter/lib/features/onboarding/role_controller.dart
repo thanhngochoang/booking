@@ -18,5 +18,6 @@ class RoleController extends AsyncNotifier<void> {
   }
 }
 
-final roleControllerProvider =
-    AsyncNotifierProvider<RoleController, void>(RoleController.new);
+final roleControllerProvider = AsyncNotifierProvider<RoleController, void>(
+  RoleController.new,
+);

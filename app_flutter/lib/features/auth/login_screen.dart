@@ -31,11 +31,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l = context.l10n;
     final loading = ref.watch(authControllerProvider).isLoading;
     ref.listen(authControllerProvider, (_, next) {
+      // A loading state still carries the previous error; only react to a
+      // finished attempt, and only on the route the user is looking at.
+      if (next.isLoading || !(ModalRoute.of(context)?.isCurrent ?? true)) {
+        return;
+      }
       final err = next.value;
       if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authErrorMessage(err, l))),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(authErrorMessage(err, l))));
       }
     });
     final notifier = ref.read(authControllerProvider.notifier);
@@ -49,7 +53,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpace.s10),
-                Text(l.appName, style: Theme.of(context).textTheme.displayLarge),
+                Text(
+                  l.appName,
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
                 const SizedBox(height: AppSpace.s8),
                 TextFormField(
                   key: const Key('email'),

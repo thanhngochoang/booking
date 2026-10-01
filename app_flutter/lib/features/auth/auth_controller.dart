@@ -23,16 +23,24 @@ class AuthController extends AsyncNotifier<AuthError?> {
   }
 
   Future<void> signInEmail(String email, String password) => _run(
-        () => ref
-            .read(authRepositoryProvider)
-            .signInWithEmail(email.trim(), password),
-      );
+    () => ref
+        .read(authRepositoryProvider)
+        .signInWithEmail(email.trim(), password),
+  );
 
-  Future<void> register(String email, String password, String name) => _run(
-        () => ref
+  Future<void> register(String email, String password, String name) =>
+      _run(() async {
+        final user = await ref
             .read(authRepositoryProvider)
-            .registerWithEmail(email.trim(), password, name.trim()),
-      );
+            .registerWithEmail(email.trim(), password, name.trim());
+        // authStateChanges fires before the display name is set, so the
+        // users/{uid} doc may already exist with the email prefix.
+        await ref
+            .read(userRepositoryProvider)
+            .setDisplayName(user.uid, name.trim());
+      });
+
+  Future<void> signOut() => ref.read(authRepositoryProvider).signOut();
 
   Future<void> google() =>
       _run(() => ref.read(authRepositoryProvider).signInWithGoogle());
@@ -45,10 +53,10 @@ final authControllerProvider =
     AsyncNotifierProvider<AuthController, AuthError?>(AuthController.new);
 
 String authErrorMessage(AuthError e, AppLocalizations l) => switch (e) {
-      AuthError.wrongPassword => l.authErrorWrongPassword,
-      AuthError.userNotFound => l.authErrorUserNotFound,
-      AuthError.emailInUse => l.authErrorEmailInUse,
-      AuthError.weakPassword => l.authErrorWeakPassword,
-      AuthError.network => l.authErrorNetwork,
-      AuthError.cancelled || AuthError.unknown => l.authErrorUnknown,
-    };
+  AuthError.wrongPassword => l.authErrorWrongPassword,
+  AuthError.userNotFound => l.authErrorUserNotFound,
+  AuthError.emailInUse => l.authErrorEmailInUse,
+  AuthError.weakPassword => l.authErrorWeakPassword,
+  AuthError.network => l.authErrorNetwork,
+  AuthError.cancelled || AuthError.unknown => l.authErrorUnknown,
+};

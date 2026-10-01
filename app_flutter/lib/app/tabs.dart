@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../data/user/user_profile.dart';
 import '../l10n/app_localizations.dart';
 
@@ -28,15 +29,15 @@ class TabSpec {
   final bool emphasized;
 
   String label(AppLocalizations l) => switch (labelKey) {
-        'tabHome' => l.tabHome,
-        'tabExplore' => l.tabExplore,
-        'tabFind' => l.tabFind,
-        'tabCreate' => l.tabCreate,
-        'tabBookings' => l.tabBookings,
-        'tabWork' => l.tabWork,
-        'tabProfile' => l.tabProfile,
-        _ => labelKey,
-      };
+    'tabHome' => l.tabHome,
+    'tabExplore' => l.tabExplore,
+    'tabFind' => l.tabFind,
+    'tabCreate' => l.tabCreate,
+    'tabBookings' => l.tabBookings,
+    'tabWork' => l.tabWork,
+    'tabProfile' => l.tabProfile,
+    _ => labelKey,
+  };
 }
 
 List<TabSpec> tabsFor(UserRole role) {

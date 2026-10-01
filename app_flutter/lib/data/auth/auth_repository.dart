@@ -43,9 +43,9 @@ class FirebaseAuthRepository implements AuthRepository {
     fb.FirebaseAuth? auth,
     GoogleSignIn? google,
     FacebookAuth? facebook,
-  })  : _auth = auth ?? fb.FirebaseAuth.instance,
-        _google = google ?? GoogleSignIn.instance,
-        _facebook = facebook ?? FacebookAuth.instance;
+  }) : _auth = auth ?? fb.FirebaseAuth.instance,
+       _google = google ?? GoogleSignIn.instance,
+       _facebook = facebook ?? FacebookAuth.instance;
 
   final fb.FirebaseAuth _auth;
   final GoogleSignIn _google;
@@ -53,11 +53,11 @@ class FirebaseAuthRepository implements AuthRepository {
   bool _googleReady = false;
 
   AuthUser _map(fb.User u) => AuthUser(
-        uid: u.uid,
-        email: u.email,
-        displayName: u.displayName,
-        photoUrl: u.photoURL,
-      );
+    uid: u.uid,
+    email: u.email,
+    displayName: u.displayName,
+    photoUrl: u.photoURL,
+  );
 
   @override
   Stream<AuthUser?> authStateChanges() =>
@@ -128,9 +128,14 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<AuthUser> signInWithFacebook() async {
-    final result = await _facebook.login(
-      permissions: const ['email', 'public_profile'],
-    );
+    final LoginResult result;
+    try {
+      result = await _facebook.login(
+        permissions: const ['email', 'public_profile'],
+      );
+    } catch (_) {
+      throw const AuthException(AuthError.unknown);
+    }
     if (result.status == LoginStatus.cancelled) {
       throw const AuthException(AuthError.cancelled);
     }
@@ -159,8 +164,11 @@ class FirebaseAuthRepository implements AuthRepository {
 
 /// In-memory implementation for tests and widget previews.
 class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.cancelSocial = false});
+  FakeAuthRepository({this.cancelSocial = false, this.emitBeforeName = false});
   final bool cancelSocial;
+
+  /// Mimics Firebase: authStateChanges fires before updateDisplayName lands.
+  final bool emitBeforeName;
   final _users = <String, ({String password, AuthUser user})>{};
   final _controller = StreamController<AuthUser?>.broadcast();
   AuthUser? _current;
@@ -201,10 +209,17 @@ class FakeAuthRepository implements AuthRepository {
       throw const AuthException(AuthError.emailInUse);
     }
     if (password.length < 8) throw const AuthException(AuthError.weakPassword);
-    final user =
-        AuthUser(uid: 'fake-${++_seq}', email: email, displayName: displayName);
+    final user = AuthUser(
+      uid: 'fake-${++_seq}',
+      email: email,
+      displayName: displayName,
+    );
     _users[email] = (password: password, user: user);
-    _emit(user);
+    _emit(
+      emitBeforeName
+          ? AuthUser(uid: user.uid, email: email, displayName: null)
+          : user,
+    );
     return user;
   }
 

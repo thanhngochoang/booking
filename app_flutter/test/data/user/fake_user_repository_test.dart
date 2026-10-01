@@ -11,7 +11,11 @@ void main() {
     expect(p1.needsRole, isTrue);
     await repo.setRole('u1', UserRole.photographer);
     final p2 = await repo.ensureProfile(user);
-    expect(p2.role, UserRole.photographer, reason: 'existing profile is not overwritten');
+    expect(
+      p2.role,
+      UserRole.photographer,
+      reason: 'existing profile is not overwritten',
+    );
     expect(repo.photographerDocs, contains('u1'));
   });
   test('watch emits null for unknown uid then the profile', () async {

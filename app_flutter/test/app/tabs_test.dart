@@ -4,10 +4,13 @@ import 'package:nhiep_anh_gia/data/user/user_profile.dart';
 
 void main() {
   test('paths are fixed and ordered', () {
-    expect(
-      AppTab.values.map((t) => t.path),
-      ['/home', '/explore', '/action', '/bookings', '/profile'],
-    );
+    expect(AppTab.values.map((t) => t.path), [
+      '/home',
+      '/explore',
+      '/action',
+      '/bookings',
+      '/profile',
+    ]);
   });
   test('middle and bookings tabs change by role', () {
     final c = tabsFor(UserRole.customer);

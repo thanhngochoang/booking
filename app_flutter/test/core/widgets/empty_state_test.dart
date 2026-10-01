@@ -24,7 +24,11 @@ void main() {
   });
   testWidgets('hides the button when there is no action', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: EmptyState(title: 'a', body: 'b'))),
+      const MaterialApp(
+        home: Scaffold(
+          body: EmptyState(title: 'a', body: 'b'),
+        ),
+      ),
     );
     expect(find.byType(FilledButton), findsNothing);
   });

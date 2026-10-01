@@ -21,7 +21,8 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, update: if isOwner(uid) && validRole();
+      allow create, update: if isOwner(uid) && validRole()
+        && !('email' in request.resource.data);
       allow delete: if false;
     }
 

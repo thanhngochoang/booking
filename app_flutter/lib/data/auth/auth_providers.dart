@@ -4,10 +4,12 @@ import '../user/user_profile.dart';
 import '../user/user_repository.dart';
 import 'auth_repository.dart';
 
-final authRepositoryProvider =
-    Provider<AuthRepository>((ref) => FirebaseAuthRepository());
-final userRepositoryProvider =
-    Provider<UserRepository>((ref) => FirestoreUserRepository());
+final authRepositoryProvider = Provider<AuthRepository>(
+  (ref) => FirebaseAuthRepository(),
+);
+final userRepositoryProvider = Provider<UserRepository>(
+  (ref) => FirestoreUserRepository(),
+);
 
 final authStateProvider = StreamProvider<AuthUser?>(
   (ref) => ref.watch(authRepositoryProvider).authStateChanges(),
@@ -22,5 +24,9 @@ final currentProfileProvider = StreamProvider<UserProfile?>((ref) async* {
   }
   final repo = ref.watch(userRepositoryProvider);
   await repo.ensureProfile(user);
-  yield* repo.watch(user.uid);
+  // If the doc disappears (deleted by an admin), recreate it without a role
+  // so the router sends the user back to onboarding.
+  yield* repo
+      .watch(user.uid)
+      .asyncMap((p) async => p ?? await repo.ensureProfile(user));
 });

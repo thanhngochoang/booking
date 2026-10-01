@@ -45,3 +45,9 @@ test('client can create its photographer doc unverified, but never verify itself
   await assertFails(setDoc(doc(env.authenticatedContext('p2').firestore(), 'photographers/p2'), { verified: true }));
   await assertSucceeds(updateDoc(doc(db, 'photographers/p1'), { onboardingComplete: true }));
 });
+test('users docs never hold an email address (readable by every signed-in user)', async () => {
+  const db = env.authenticatedContext('e1').firestore();
+  await assertFails(setDoc(doc(db, 'users/e1'), { displayName: 'E', email: 'e@x.vn' }));
+  await assertSucceeds(setDoc(doc(db, 'users/e1'), { displayName: 'E' }));
+  await assertFails(updateDoc(doc(db, 'users/e1'), { email: 'e@x.vn' }));
+});

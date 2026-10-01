@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
+
 import 'tokens.g.dart';
 
 ThemeData buildLightTheme() => _build(
-      brightness: Brightness.light,
-      primary: AppColors.primary,
-      onPrimary: AppColors.primaryForeground,
-      background: AppColors.background,
-      surface: AppColors.surface,
-      surfaceMuted: AppColors.surfaceMuted,
-      foreground: AppColors.foreground,
-      foregroundSecondary: AppColors.foregroundSecondary,
-      border: AppColors.border,
-      error: AppColors.error,
-    );
+  brightness: Brightness.light,
+  primary: AppColors.primary,
+  onPrimary: AppColors.primaryForeground,
+  background: AppColors.background,
+  surface: AppColors.surface,
+  surfaceMuted: AppColors.surfaceMuted,
+  foreground: AppColors.foreground,
+  foregroundSecondary: AppColors.foregroundSecondary,
+  border: AppColors.border,
+  error: AppColors.error,
+);
 
 ThemeData buildDarkTheme() => _build(
-      brightness: Brightness.dark,
-      primary: AppColorsDark.primary,
-      onPrimary: AppColorsDark.primaryForeground,
-      background: AppColorsDark.background,
-      surface: AppColorsDark.surface,
-      surfaceMuted: AppColorsDark.surfaceMuted,
-      foreground: AppColorsDark.foreground,
-      foregroundSecondary: AppColorsDark.foregroundSecondary,
-      border: AppColorsDark.border,
-      error: AppColorsDark.error,
-    );
+  brightness: Brightness.dark,
+  primary: AppColorsDark.primary,
+  onPrimary: AppColorsDark.primaryForeground,
+  background: AppColorsDark.background,
+  surface: AppColorsDark.surface,
+  surfaceMuted: AppColorsDark.surfaceMuted,
+  foreground: AppColorsDark.foreground,
+  foregroundSecondary: AppColorsDark.foregroundSecondary,
+  border: AppColorsDark.border,
+  error: AppColorsDark.error,
+);
 
 ThemeData _build({
   required Brightness brightness,
@@ -60,12 +61,12 @@ ThemeData _build({
         height: 1.4,
       );
   TextStyle display(double size) => TextStyle(
-        fontFamily: AppFonts.display,
-        fontSize: size,
-        fontWeight: FontWeight.w500,
-        color: foreground,
-        height: 1.15,
-      );
+    fontFamily: AppFonts.display,
+    fontSize: size,
+    fontWeight: FontWeight.w500,
+    color: foreground,
+    height: 1.15,
+  );
   final radiusMd = BorderRadius.circular(AppRadius.md);
   return ThemeData(
     useMaterial3: true,

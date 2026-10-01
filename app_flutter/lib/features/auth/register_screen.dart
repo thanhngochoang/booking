@@ -34,11 +34,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final l = context.l10n;
     final loading = ref.watch(authControllerProvider).isLoading;
     ref.listen(authControllerProvider, (_, next) {
+      // A loading state still carries the previous error; only react to a
+      // finished attempt, and only on the route the user is looking at.
+      if (next.isLoading || !(ModalRoute.of(context)?.isCurrent ?? true)) {
+        return;
+      }
       final err = next.value;
       if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authErrorMessage(err, l))),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(authErrorMessage(err, l))));
       }
     });
     return Scaffold(
@@ -78,8 +82,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   key: const Key('confirm'),
                   controller: _confirm,
                   obscureText: true,
-                  decoration:
-                      InputDecoration(labelText: l.passwordConfirmLabel),
+                  decoration: InputDecoration(
+                    labelText: l.passwordConfirmLabel,
+                  ),
                   validator: (v) => validateConfirm(v, _password.text, l),
                 ),
                 const SizedBox(height: AppSpace.s5),
@@ -89,11 +94,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   loading: loading,
                   onPressed: () {
                     if (_form.currentState!.validate()) {
-                      ref.read(authControllerProvider.notifier).register(
-                            _email.text,
-                            _password.text,
-                            _name.text,
-                          );
+                      ref
+                          .read(authControllerProvider.notifier)
+                          .register(_email.text, _password.text, _name.text);
                     }
                   },
                 ),

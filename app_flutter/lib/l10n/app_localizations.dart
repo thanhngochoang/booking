@@ -447,6 +447,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã đánh giá'**
   String get statusReviewed;
+
+  /// No description provided for @sessionErrorTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được tài khoản'**
+  String get sessionErrorTitle;
+
+  /// No description provided for @sessionErrorBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra kết nối mạng rồi thử lại. Nếu vẫn lỗi, hãy đăng xuất và đăng nhập lại.'**
+  String get sessionErrorBody;
+
+  /// No description provided for @retry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử lại'**
+  String get retry;
+
+  /// No description provided for @roleSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại.'**
+  String get roleSaveError;
 }
 
 class _AppLocalizationsDelegate

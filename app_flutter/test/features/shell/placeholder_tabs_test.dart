@@ -8,7 +8,9 @@ import 'package:nhiep_anh_gia/data/user/user_repository.dart';
 import 'package:nhiep_anh_gia/features/shell/placeholder_tabs.dart';
 import 'package:nhiep_anh_gia/l10n/app_localizations.dart';
 
-Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(UserRole role) async {
+Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
+  UserRole role,
+) async {
   final auth = FakeAuthRepository();
   final users = FakeUserRepository();
   final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');
@@ -32,15 +34,17 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
     );
 
 void main() {
-  testWidgets('bookings tab shows work empty state for photographers',
-      (tester) async {
+  testWidgets('bookings tab shows work empty state for photographers', (
+    tester,
+  ) async {
     final (auth, users) = await _signedIn(UserRole.photographer);
     await tester.pumpWidget(_app(const BookingsTab(), auth, users));
     await tester.pumpAndSettle();
     expect(find.text('Chưa có yêu cầu nào'), findsOneWidget);
   });
-  testWidgets('bookings tab shows customer empty state for customers',
-      (tester) async {
+  testWidgets('bookings tab shows customer empty state for customers', (
+    tester,
+  ) async {
     final (auth, users) = await _signedIn(UserRole.customer);
     await tester.pumpWidget(_app(const BookingsTab(), auth, users));
     await tester.pumpAndSettle();

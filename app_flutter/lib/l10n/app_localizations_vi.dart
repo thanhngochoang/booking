@@ -189,4 +189,18 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get statusReviewed => 'Đã đánh giá';
+
+  @override
+  String get sessionErrorTitle => 'Không tải được tài khoản';
+
+  @override
+  String get sessionErrorBody =>
+      'Kiểm tra kết nối mạng rồi thử lại. Nếu vẫn lỗi, hãy đăng xuất và đăng nhập lại.';
+
+  @override
+  String get retry => 'Thử lại';
+
+  @override
+  String get roleSaveError =>
+      'Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại.';
 }

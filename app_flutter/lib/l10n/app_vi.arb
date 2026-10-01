@@ -58,5 +58,9 @@
   "statusCancelled": "Đã huỷ",
   "statusUpcoming": "Sắp tới",
   "statusCompleted": "Hoàn thành",
-  "statusReviewed": "Đã đánh giá"
+  "statusReviewed": "Đã đánh giá",
+  "sessionErrorTitle": "Không tải được tài khoản",
+  "sessionErrorBody": "Kiểm tra kết nối mạng rồi thử lại. Nếu vẫn lỗi, hãy đăng xuất và đăng nhập lại.",
+  "retry": "Thử lại",
+  "roleSaveError": "Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại."
 }
