@@ -70,6 +70,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationDefaultAccuracyReduced</key>
+	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Chúng tôi dùng vị trí gần đúng của bạn để gợi ý sự kiện quanh đây. Vị trí không được lưu lên máy chủ.</string>
 </dict>

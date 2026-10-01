@@ -69,8 +69,7 @@ void main() {
       expect(loc.isStale(DateTime.utc(2026, 10, 1, 5, 31)), isTrue);
     });
     test('toString never prints coordinates', () {
-      expect(loc.toString(), isNot(contains('10.77')));
-      expect(loc.toString(), isNot(contains('106.70')));
+      expect(loc.toString(), 'ApproxLocation(<redacted>)');
     });
   });
 
@@ -87,6 +86,16 @@ void main() {
       );
       expect(await off.request(), LocationPermissionStatus.serviceOff);
       expect(fake.requestCalls, 1);
+    });
+  });
+
+  group('FakeLocationRepository denied', () {
+    test('request moves denied to statusAfterRequest', () async {
+      final fake = FakeLocationRepository(
+        status: LocationPermissionStatus.denied,
+        statusAfterRequest: LocationPermissionStatus.deniedForever,
+      );
+      expect(await fake.request(), LocationPermissionStatus.deniedForever);
     });
   });
 
@@ -157,10 +166,19 @@ void main() {
       expect(loc.geohash5, hasLength(5));
     });
 
-    test('gives null when the platform throws', () async {
+    test('gives null when the platform throws an Exception', () async {
       final (repo, gateway, _) = await _make();
-      gateway.positionError = StateError('no fix');
+      gateway.positionError = Exception('no fix');
       expect(await repo.currentApproxLocation(), isNull);
+    });
+
+    test('lets an Error (a bug) propagate', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.positionError = StateError('bug');
+      await expectLater(
+        repo.currentApproxLocation(),
+        throwsA(isA<StateError>()),
+      );
     });
 
     test('gives null when no fix arrives within the timeout', () async {

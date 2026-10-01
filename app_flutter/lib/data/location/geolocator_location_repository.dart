@@ -1,5 +1,3 @@
-// Private fields cannot be named initializing formals.
-// ignore_for_file: prefer_initializing_formals
 import 'package:geolocator/geolocator.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,12 +57,10 @@ class GeolocatorGateway implements LocationGateway {
 
 class GeolocatorLocationRepository implements LocationRepository {
   GeolocatorLocationRepository({
-    required LocationGateway gateway,
-    required SharedPreferences prefs,
+    required this._gateway,
+    required this._prefs,
     DateTime Function()? now,
-  }) : _gateway = gateway,
-       _prefs = prefs,
-       _now = now ?? (() => DateTime.now().toUtc());
+  }) : _now = now ?? (() => DateTime.now().toUtc());
 
   /// Set the first time we show the OS dialog. The platform reports "denied"
   /// both before the first request and after one refusal; this flag tells
@@ -111,7 +107,7 @@ class GeolocatorLocationRepository implements LocationRepository {
     try {
       final p = await _gateway.lowAccuracyPosition(timeout).timeout(timeout);
       return ApproxLocation(lat: p.lat, lng: p.lng, capturedAt: _now());
-    } catch (_) {
+    } on Exception catch (_) {
       return null;
     }
   }

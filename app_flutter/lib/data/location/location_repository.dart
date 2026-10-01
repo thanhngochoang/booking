@@ -44,6 +44,9 @@ abstract class LocationRepository {
   Future<LocationPermissionStatus> permissionStatus();
 
   /// Shows the OS dialog when the OS allows it and returns the new status.
+  ///
+  /// Platform errors may be thrown (for example a request already in
+  /// progress); callers guard re-entry.
   Future<LocationPermissionStatus> request();
 
   /// Low-accuracy fix, or null when none arrives within [timeout] or the
