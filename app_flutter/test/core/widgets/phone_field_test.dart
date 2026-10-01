@@ -40,6 +40,25 @@ void main() {
     },
   );
 
+  testWidgets('a pasted 84… number without + loses the country code', (
+    tester,
+  ) async {
+    final c = await pump(tester);
+    await tester.enterText(find.byType(TextFormField), '84903123456');
+    expect(c.text, '903 123 456');
+  });
+
+  testWidgets('the +84 prefix is visible on an empty unfocused field', (
+    tester,
+  ) async {
+    await pump(tester);
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(
+      field.decoration!.floatingLabelBehavior,
+      FloatingLabelBehavior.always,
+    );
+  });
+
   testWidgets('letters are dropped and input stops at nine digits', (
     tester,
   ) async {

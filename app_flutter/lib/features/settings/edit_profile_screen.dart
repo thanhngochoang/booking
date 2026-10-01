@@ -52,6 +52,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final saving = ref.watch(editProfileControllerProvider).isLoading;
+    // Without a stored number the switches have nothing to be saved against,
+    // so they wait for a valid one instead of looking saved when they are not.
+    final hasNumber =
+        ref.watch(currentContactProvider).value != null ||
+        phoneFromField(_phone.text) != null;
+    final canToggle = !saving && hasNumber;
     ref.listen(editProfileControllerProvider, (prev, next) {
       if (next.isLoading || !(prev?.isLoading ?? false)) return;
       final messenger = ScaffoldMessenger.of(context);
@@ -118,6 +124,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           key: const Key('edit-phone'),
                           controller: _phone,
                           enabled: !saving,
+                          onChanged: (_) => setState(() {}),
                           // Optional here: empty means "leave as is".
                           validator: (v) => (v ?? '').trim().isEmpty
                               ? null
@@ -128,7 +135,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           contentPadding: EdgeInsets.zero,
                           title: Text(l.allowZaloLabel),
                           value: _zalo,
-                          onChanged: saving
+                          onChanged: !canToggle
                               ? null
                               : (v) => setState(() => _zalo = v),
                         ),
@@ -137,7 +144,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           contentPadding: EdgeInsets.zero,
                           title: Text(l.allowWhatsAppLabel),
                           value: _whatsApp,
-                          onChanged: saving
+                          onChanged: !canToggle
                               ? null
                               : (v) => setState(() => _whatsApp = v),
                         ),

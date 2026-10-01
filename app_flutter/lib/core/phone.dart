@@ -22,12 +22,16 @@ String? normalizePhone(String input, {bool international = false}) {
 }
 
 /// What goes after the fixed "+84" in a field: digits only, no leading 0,
-/// at most 9. A leading "+84" (pasted) is dropped; without "+", "84…" is part
-/// of the number (08x numbers exist).
+/// at most 9. A leading "+84" (pasted) is dropped. Without "+", exactly 11
+/// digits starting with "84" (the wa.me / export form `84903123456`) also lose
+/// the "84"; shorter "84…" input is part of the number (084 numbers exist).
 String nationalDigits(String input) {
   final s = _compact(input);
   var d = s.startsWith('+84') ? s.substring(3) : s;
   d = d.replaceAll(RegExp(r'\D'), '');
+  if (!s.startsWith('+84') && d.length == 11 && d.startsWith('84')) {
+    d = d.substring(2);
+  }
   if (d.startsWith('0')) d = d.substring(1);
   return d.length > 9 ? d.substring(0, 9) : d;
 }

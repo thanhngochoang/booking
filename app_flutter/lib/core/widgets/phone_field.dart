@@ -45,6 +45,7 @@ class PhoneField extends StatelessWidget {
       validator: validator ?? (v) => validatePhone(v, l),
       decoration: InputDecoration(
         labelText: l.phoneLabel,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
         hintText: '903 123 456',
         prefixText: '+84 ',
         prefixIcon: const Icon(Icons.phone_outlined),

@@ -228,6 +228,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('edit-phone')), '0903123456');
+    await tester.pump();
     await tester.tap(find.byKey(const Key('edit-allow-whatsapp')));
     await tester.pump();
     await tester.tap(find.byKey(const Key('edit-save')));
@@ -246,6 +247,37 @@ void main() {
       (await users.watch(uid).first)!.toJson().containsKey('phone'),
       isFalse,
     );
+  });
+
+  testWidgets('without a stored number the switches wait for a valid one', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+
+    SwitchListTile tile(String key) =>
+        tester.widget<SwitchListTile>(find.byKey(Key(key)));
+    expect(tile('edit-allow-zalo').onChanged, isNull);
+    expect(tile('edit-allow-whatsapp').onChanged, isNull);
+
+    await tester.enterText(find.byKey(const Key('edit-phone')), '0903123456');
+    await tester.pump();
+    expect(tile('edit-allow-zalo').onChanged, isNotNull);
+    expect(tile('edit-allow-whatsapp').onChanged, isNotNull);
+
+    await tester.tap(find.byKey(const Key('edit-allow-whatsapp')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+    expect(contacts.stored(auth.currentUser!.uid)!.allowWhatsApp, isTrue);
   });
 
   testWidgets('an invalid phone blocks saving', (tester) async {

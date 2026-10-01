@@ -51,10 +51,11 @@ void main() {
       expect(nationalDigits('+84 903 123 456'), '903123456');
       expect(nationalDigits('903 123 456'), '903123456');
       expect(nationalDigits('0'), '');
-      expect(
-        nationalDigits('84312345678'),
-        '843123456',
-      ); // no "+": 84 is part of the number
+      // No "+": 11 digits starting with 84 is the wa.me form, drop the 84.
+      expect(nationalDigits('84312345678'), '312345678');
+      expect(nationalDigits('84903123456'), '903123456');
+      // 9 digits starting with 84 is a 084 national number: unchanged.
+      expect(nationalDigits('843123456'), '843123456');
       expect(nationalDigits('9031234567890'), '903123456');
     });
     test('formatNational groups by three', () {
@@ -67,6 +68,7 @@ void main() {
       expect(phoneFromField('903 123 456'), '+84903123456');
       expect(phoneFromField('0903123456'), '+84903123456');
       expect(phoneFromField('+84 903 123 456'), '+84903123456');
+      expect(phoneFromField('84903123456'), '+84903123456');
       expect(phoneFromField('90312345'), isNull);
       expect(phoneFromField('123456789'), isNull);
     });
