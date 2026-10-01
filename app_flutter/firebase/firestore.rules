@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    function validRole() {
+      return !('role' in request.resource.data)
+        || request.resource.data.role == null
+        || request.resource.data.role in ['customer', 'photographer'];
+    }
+
+    // verified / verifiedAt are set only by admins (Cloud Functions / console).
+    // A client may create its own doc with verified == false, and never change it afterwards.
+    function verifiedUntouched() {
+      return resource == null
+        ? (!('verified' in request.resource.data) || request.resource.data.verified == false)
+            && !('verifiedAt' in request.resource.data)
+        : !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt']);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid) && validRole();
+      allow delete: if false;
+    }
+
+    match /photographers/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid) && verifiedUntouched();
+      allow delete: if false;
+
+      match /services/{serviceId} {
+        allow read: if signedIn();
+        allow write: if isOwner(uid);
+      }
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if signedIn()
+        && (resource.data.customerId == request.auth.uid
+            || resource.data.photographerId == request.auth.uid);
+      allow write: if false; // only Cloud Functions (sub-project 4)
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
