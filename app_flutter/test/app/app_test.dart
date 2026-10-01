@@ -6,7 +6,7 @@ import 'package:nhiep_anh_gia/app/app.dart';
 void main() {
   testWidgets('MyApp renders the route given by the router', (tester) async {
     final router = GoRouter(
-      routes: [GoRoute(path: '/', builder: (_, __) => const Text('ok'))],
+      routes: [GoRoute(path: '/', builder: (_, _) => const Text('ok'))],
     );
     await tester.pumpWidget(MyApp(router: router));
     await tester.pumpAndSettle();

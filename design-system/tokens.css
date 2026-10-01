@@ -34,6 +34,10 @@
   --primitive-color-yellow-100: #FBF6DA;
   --primitive-color-yellow-500: #E6C617;
   --primitive-color-yellow-700: #A88F0A;
+  --primitive-color-sand-50: #F4F1EC;
+  --primitive-color-sand-100: #EDE9E3;
+  --primitive-color-sand-200: #E3DFD8;
+  --primitive-color-sand-300: #CFCAC1;
   --primitive-spacing-0: 0dp;
   --primitive-spacing-1: 4dp;
   --primitive-spacing-2: 8dp;
@@ -70,14 +74,16 @@
   --primitive-duration-fast: 150ms;
   --primitive-duration-normal: 250ms;
   --primitive-duration-slow: 400ms;
+  --primitive-font-display: Fraunces;
+  --primitive-font-body: Be Vietnam Pro;
 }
 
 /* === SEMANTIC === */
 :root {
-  --color-background: #FFFFFF;
-  --color-background-subtle: #F7F7F7;
+  --color-background: #F4F1EC;
+  --color-background-subtle: #EDE9E3;
   --color-surface: #FFFFFF;
-  --color-surface-muted: #EFEFEF;
+  --color-surface-muted: #EDE9E3;
   --color-foreground: #313131;
   --color-foreground-secondary: #707070;
   --color-foreground-muted: #898888;
@@ -101,9 +107,9 @@
   --color-error-subtle: #FCE4E2;
   --color-info: #05749F;
   --color-info-subtle: #E6F3F8;
-  --color-border: #E9E9E9;
-  --color-border-strong: #D6D6D6;
-  --color-divider: #E9E9E9;
+  --color-border: #E3DFD8;
+  --color-border-strong: #CFCAC1;
+  --color-divider: #E3DFD8;
   --color-focus-ring: #05749F;
   --color-overlay: #6A000000;
   --color-overlay-light: #88FFFFFF;
@@ -142,19 +148,19 @@
   --button-outline-fg: #05749F;
   --button-danger-bg: #E91E11;
   --button-danger-fg: #FFFFFF;
-  --button-disabled-bg: #EFEFEF;
+  --button-disabled-bg: #EDE9E3;
   --button-disabled-fg: #AEAEAE;
   --input-height: 48dp;
   --input-padding-x: 12dp;
   --input-radius: 8dp;
   --input-bg: #FFFFFF;
-  --input-border: #D6D6D6;
+  --input-border: #CFCAC1;
   --input-border-focus: #05749F;
   --input-border-error: #E91E11;
   --input-fg: #313131;
   --input-placeholder: #898888;
   --card-bg: #FFFFFF;
-  --card-border: #E9E9E9;
+  --card-border: #E3DFD8;
   --card-radius: 8dp;
   --card-padding: 16dp;
   --card-elevation: 2dp;
@@ -167,7 +173,7 @@
   --chip-height: 32dp;
   --chip-padding-x: 12dp;
   --chip-radius: 999dp;
-  --chip-bg: #EFEFEF;
+  --chip-bg: #EDE9E3;
   --chip-bg-selected: #05749F;
   --chip-fg: #707070;
   --chip-fg-selected: #FFFFFF;
@@ -176,10 +182,10 @@
   --avatar-size-md: 48dp;
   --avatar-size-lg: 64dp;
   --avatar-size-xl: 96dp;
-  --avatar-border: #FFFFFF;
+  --avatar-border: #F4F1EC;
   --avatar-border-width: 2dp;
   --toolbar-height: 56dp;
-  --toolbar-bg: #FFFFFF;
+  --toolbar-bg: #F4F1EC;
   --toolbar-fg: #313131;
   --toolbar-fg-on-image: #88FFFFFF;
   --dialog-bg: #FFFFFF;
@@ -189,12 +195,12 @@
   --dialog-scrim: #6A000000;
   --chat-bubble-me-bg: #05749F;
   --chat-bubble-me-fg: #FFFFFF;
-  --chat-bubble-you-bg: #EFEFEF;
+  --chat-bubble-you-bg: #EDE9E3;
   --chat-bubble-you-fg: #313131;
   --chat-bubble-radius: 12dp;
   --chat-bubble-padding: 12dp;
   --chat-bubble-max-width: 260dp;
-  --divider-color: #E9E9E9;
+  --divider-color: #E3DFD8;
   --divider-thickness: 0.8dp;
 }
 

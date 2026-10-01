@@ -13,7 +13,7 @@ class _Root extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = GoRouter(
-      routes: [GoRoute(path: '/', builder: (_, __) => const Scaffold())],
+      routes: [GoRoute(path: '/', builder: (_, _) => const Scaffold())],
     );
     return MyApp(router: router);
   }
