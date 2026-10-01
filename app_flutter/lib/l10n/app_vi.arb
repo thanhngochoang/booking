@@ -122,5 +122,19 @@
       "used": {"type": "int"},
       "total": {"type": "int"}
     }
+  },
+  "stepProgressCount": "{current} / {total}",
+  "@stepProgressCount": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "stepProgressSemantics": "Bước {current} trên {total}",
+  "@stepProgressSemantics": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
   }
 }

@@ -360,4 +360,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String capacityUsed(int used, int total) {
     return '$used / $total đã đăng ký';
   }
+
+  @override
+  String stepProgressCount(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String stepProgressSemantics(int current, int total) {
+    return 'Bước $current trên $total';
+  }
 }

@@ -765,6 +765,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{used} / {total} đã đăng ký'**
   String capacityUsed(int used, int total);
+
+  /// No description provided for @stepProgressCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{current} / {total}'**
+  String stepProgressCount(int current, int total);
+
+  /// No description provided for @stepProgressSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bước {current} trên {total}'**
+  String stepProgressSemantics(int current, int total);
 }
 
 class _AppLocalizationsDelegate
