@@ -45,10 +45,29 @@ service cloud.firestore {
               'portfolio', 'onboardingComplete', 'verified', 'createdAt', 'updatedAt'];
     }
 
+    // users/{uid}/private/contact: owner-only; E.164 Vietnamese number; the
+    // verified flag is never changed by a client (verification comes later).
+    function validContact(uid) {
+      let d = request.resource.data;
+      let old = resource == null ? null : resource.data;
+      return d.keys().hasOnly(['phone', 'phoneVerified', 'allowZalo', 'allowWhatsApp', 'updatedAt'])
+        && d.phone is string
+        && d.phone.matches('^\\+84[35789][0-9]{8}$')
+        && d.get('phoneVerified', false) == (old == null ? false : old.get('phoneVerified', false))
+        && d.get('allowZalo', true) is bool
+        && d.get('allowWhatsApp', false) is bool;
+    }
+
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid) && validRole() && onlyKeys(userClientFields());
       allow delete: if false;
+
+      match /private/{docId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && docId == 'contact' && validContact(uid);
+        allow delete: if false;
+      }
     }
 
     match /photographers/{uid} {

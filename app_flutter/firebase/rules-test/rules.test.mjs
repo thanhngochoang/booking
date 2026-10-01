@@ -91,3 +91,49 @@ test('users docs accept only profile fields, never server counters', async () =>
   await assertFails(setDoc(doc(db, 'users/k2'.replace('k2', 'k1')), { displayName: 'K', savedCount: 5 }));
   await assertSucceeds(updateDoc(doc(db, 'users/k1'), { displayName: 'Kim', avatarUrl: 'https://x/y.jpg' }));
 });
+
+const contactPath = (uid) => `users/${uid}/private/contact`;
+
+test('owner can save a valid private contact; defaults work', async () => {
+  const db = env.authenticatedContext('c1').firestore();
+  await assertSucceeds(setDoc(doc(db, contactPath('c1')), {
+    phone: '+84903123456', allowZalo: true, allowWhatsApp: false, phoneVerified: false,
+  }));
+  await assertSucceeds(setDoc(doc(db, contactPath('c1')), { phone: '+84321234567' }, { merge: true }));
+  await assertSucceeds(getDoc(doc(db, contactPath('c1'))));
+});
+
+test('nobody else can read or write someone\'s private contact', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), contactPath('c2')), { phone: '+84903123456' }));
+  const other = env.authenticatedContext('c3').firestore();
+  await assertFails(getDoc(doc(other, contactPath('c2'))));
+  await assertFails(setDoc(doc(other, contactPath('c2')), { phone: '+84912345678' }));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), contactPath('c2'))));
+});
+
+test('contact rejects malformed numbers, extra fields and other documents', async () => {
+  const db = env.authenticatedContext('c4').firestore();
+  for (const phone of ['0903123456', '+8490312345', '+84123456789', '903123456', 123]) {
+    await assertFails(setDoc(doc(db, contactPath('c4')), { phone }));
+  }
+  await assertFails(setDoc(doc(db, contactPath('c4')), { phone: '+84903123456', note: 'x' }));
+  await assertFails(setDoc(doc(db, contactPath('c4')), { phone: '+84903123456', allowZalo: 'yes' }));
+  await assertFails(setDoc(doc(db, 'users/c4/private/other'), { phone: '+84903123456' }));
+  await assertFails(setDoc(doc(db, contactPath('c4')), {}));
+});
+
+test('a client can never mark its phone verified', async () => {
+  const db = env.authenticatedContext('c5').firestore();
+  await assertFails(setDoc(doc(db, contactPath('c5')), { phone: '+84903123456', phoneVerified: true }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), contactPath('c5')), { phone: '+84903123456', phoneVerified: true }));
+  // Toggling a permission keeps the server's flag untouched.
+  await assertSucceeds(updateDoc(doc(db, contactPath('c5')), { allowZalo: false }));
+  await assertFails(updateDoc(doc(db, contactPath('c5')), { phoneVerified: false }));
+});
+
+test('the public users doc still refuses a phone field', async () => {
+  const db = env.authenticatedContext('c6').firestore();
+  await assertFails(setDoc(doc(db, 'users/c6'), { displayName: 'X', phone: '+84903123456' }));
+});
