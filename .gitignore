@@ -24,3 +24,4 @@
 # Secrets: local only (see .env.example)
 /.env
 /app/google-services.json
+.claude/*

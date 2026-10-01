@@ -15,6 +15,9 @@ elif [ -x "$ROOT/.jdk/bin/java" ]; then
   export JAVA_HOME="$ROOT/.jdk"
 elif [ -d /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]; then
   export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+elif [ -d /opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home ]; then
+  # Gradle 9.x (app_flutter) runs on JDK 23 too.
+  export JAVA_HOME=/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home
 fi
 
 export ANDROID_HOME="$ROOT/.android-sdk"

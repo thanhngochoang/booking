@@ -13,5 +13,5 @@ r=[x for x in d['releases'] if x['hash']==h and x.get('dart_sdk_arch')=='$A'][0]
 print(d['base_url']+'/'+r['archive'])")"
 echo "Downloading $REL"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/flutter.XXXXXX")"; curl -sSL -o "$TMP/flutter.zip" "$REL"
-unzip -q "$TMP/flutter.zip" -d "$ROOT" && rm -rf "$TMP"
+unzip -q "$TMP/flutter.zip" -d "$TMP" && mv "$TMP/flutter" "$DEST" && rm -rf "$TMP"
 "$DEST/bin/flutter" --version

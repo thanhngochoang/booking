@@ -7,7 +7,7 @@ Tài liệu này hướng dẫn nối app `app_flutter/` với một Firebase pr
 | Mục | Giá trị |
 |-----|---------|
 | Android package (applicationId) | `com.thanhbk.photobooking` |
-| Firebase project đang dùng (từ app cũ) | `time-96441` |
+| Firebase project đang dùng | `booking-c1922` (theo `app_flutter/android/app/google-services.json`) |
 | Facebook App ID | `546233675712070` |
 | SHA‑1 debug (máy này, `.home/.android/debug.keystore`) | `D2:BC:10:FD:7C:AF:07:A5:29:9B:03:FF:F8:F2:B6:7E:AF:DB:0D:14` |
 | SHA‑256 debug | `59:A1:19:16:D9:3B:DC:50:66:8C:BC:93:DA:CF:80:D2:54:3F:1F:46:CE:05:AC:0E:F3:38:8B:53:8B:CA:87:D7` |
@@ -29,37 +29,42 @@ File keystore chỉ có sau lần build Android đầu tiên (`flutter build apk
 
 Mở https://console.firebase.google.com.
 
-- **Thấy project `time-96441`**: dùng tiếp project này. Dữ liệu người dùng cũ còn ở đó, và sau này có thể migrate (spec mục 5).
-- **Không thấy** (project thuộc tài khoản khác hoặc đã bị xoá): bấm **Add project** để tạo project mới, ví dụ `nhiep-anh-gia`. Tắt Google Analytics nếu chưa cần. Ở các bước sau, thay `time-96441` bằng id mới.
+- **Đã có project `booking-c1922`**: chọn nó. Đây là project mà `google-services.json` của app Flutter đang trỏ tới.
+- **Tạo project mới**: bấm nút tạo project, nhập tên, chấp nhận điều khoản, **Continue**, tắt Google Analytics nếu chưa cần, rồi **Create project**. Ở các bước sau, thay `booking-c1922` bằng id mới.
+
+Project cũ `time-96441` của app Java không dùng cho app Flutter (xem lưu ý ở bước 6).
 
 Khi dùng project mới, gói Spark (miễn phí) đủ cho sub‑project 1. Riêng Cloud Functions (đặt cọc ở sub‑project 4) cần gói Blaze.
 
 ## 2. Thêm (hoặc kiểm tra) app Android
 
-1. Vào **Project settings** (bánh răng) → **General** → **Your apps**.
-2. Thêm app Android `com.thanhbk.photobooking` (app Java cũ `com.thanhbk.timnhay` là app khác, giữ nguyên): bấm **Add app → Android**:
+1. Bấm bánh răng cạnh **Project Overview** → **Project settings** → tab **General** → thẻ **Your apps**.
+2. Thêm app Android `com.thanhbk.photobooking` (app Java cũ `com.thanhbk.timnhay` là app khác, giữ nguyên): bấm **Add app** → biểu tượng Android:
    - Package name: `com.thanhbk.photobooking`
    - App nickname: `Nhiếp ảnh gia (Flutter)`
    - Debug signing certificate SHA‑1: dán SHA‑1 ở bảng trên
+   - Bấm **Register app**.
 3. Bỏ qua các bước "Add Firebase SDK". Flutter và Gradle plugin đã được cấu hình sẵn.
 
 ## 3. Thêm SHA‑1 và SHA‑256
 
-Vẫn trong **Project settings → General → app Android**: bấm **Add fingerprint**, thêm cả SHA‑1 lẫn SHA‑256 của từng máy dev. Sau này khi phát hành, thêm cả SHA của keystore release và của Play App Signing.
+Vẫn trong **Project settings → General → Your apps**, chọn app Android, mục **SHA certificate fingerprints**: bấm **Add fingerprint**, thêm cả SHA‑1 lẫn SHA‑256 của từng máy dev. Sau này khi phát hành, thêm cả SHA của keystore release và của Play App Signing.
 
 Mỗi lần thêm fingerprint, phải tải lại `google-services.json` (bước 7) vì OAuth client mới chỉ có trong file mới.
 
 ## 4. Bật đăng nhập
 
-Vào **Build → Authentication → Get started → Sign‑in method**.
+Menu trái: **Security → Authentication**. Nếu là lần đầu, bấm **Get started**. Sau đó mở tab **Sign‑in method**.
+
+Bỏ qua bước này thì mọi kiểu đăng nhập đều hỏng. API của Firebase Auth trả về `CONFIGURATION_NOT_FOUND`, và app chỉ báo lỗi chung.
 
 | Provider | Cách bật |
 |----------|----------|
 | Email/Password | Enable. Không bật "Email link". |
 | Google | Enable, chọn support email, Save. Firebase tự tạo "Web client". App lấy client này qua `default_web_client_id` trong `google-services.json` để nhận `idToken`. |
-| Facebook | Enable, điền **App ID** `546233675712070` và **App secret** (lấy ở bước 5). Copy **OAuth redirect URI** mà Firebase hiển thị (dạng `https://time-96441.firebaseapp.com/__/auth/handler`) để dùng ở bước 5. |
+| Facebook | Enable, điền **App ID** `546233675712070` và **App secret** (lấy ở bước 5). Copy **OAuth redirect URI** mà Firebase hiển thị (dạng `https://booking-c1922.firebaseapp.com/__/auth/handler`) để dùng ở bước 5. |
 
-Nên bật thêm ở **Settings → User actions**: "Email enumeration protection" (mặc định bật ở project mới). Khi bật, sai email và sai mật khẩu đều báo "Email hoặc mật khẩu không đúng.". App đã xử lý trường hợp này.
+Nên bật thêm ở **Security → Authentication → Settings → User actions**: "Email enumeration protection" (mặc định bật ở project mới). Khi bật, sai email và sai mật khẩu đều báo "Email hoặc mật khẩu không đúng.". App đã xử lý trường hợp này.
 
 ## 5. Cấu hình Facebook (Meta for Developers)
 
@@ -77,32 +82,34 @@ Không ghi token vào `strings.xml` hay bất kỳ file nào được commit. `.
 
 ## 6. Tạo Firestore và deploy rules
 
-1. Vào **Build → Firestore Database → Create database**.
-   - Location: `asia-southeast1 (Singapore)`, gần Việt Nam nhất. Location không đổi được sau khi tạo.
-   - Mode: **Production** (rules của repo sẽ ghi đè ngay ở bước kế).
+1. Menu trái: **Databases & Storage → Firestore** → **Create database** (hoặc **Add database**).
+   - Edition: **Standard edition** → **Next**.
+   - Database ID: giữ `(default)`. App gọi `FirebaseFirestore.instance`, tức chỉ dùng database mặc định. Đặt id khác thì app không thấy database.
+   - Location: `asia-southeast1 (Singapore)`, gần Việt Nam nhất → **Next**. Location không đổi được sau khi tạo.
+   - Security rules: **Production mode** (rules của repo sẽ ghi đè ngay ở bước kế) → **Create**.
 2. Deploy rules và indexes từ repo. Firebase CLI đã có sẵn trong `app_flutter/firebase/rules-test/node_modules`, không cần cài global:
 
 ```bash
 source scripts/env.sh
 cd app_flutter/firebase
 npx --prefix rules-test firebase login          # mở trình duyệt, chỉ cần một lần
-npx --prefix rules-test firebase deploy --only firestore:rules,firestore:indexes --project time-96441
+npx --prefix rules-test firebase deploy --only firestore:rules,firestore:indexes --project booking-c1922
 ```
 
-Trong Claude Code, chạy lệnh `firebase login` bằng tiền tố `!` vì nó cần tương tác. Sau khi deploy, vào **Firestore → Rules** để kiểm tra nội dung giống `app_flutter/firebase/firestore.rules`.
+Trong Claude Code, chạy lệnh `firebase login` bằng tiền tố `!` vì nó cần tương tác. Sau khi deploy, vào **Databases & Storage → Firestore → Rules** để kiểm tra nội dung giống `app_flutter/firebase/firestore.rules`.
 
-Lưu ý khi dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `booking`, `albums`, `chat_room` mà không tuân theo rules mới (ví dụ có `mail_address`, `is_photographer`). Deploy rules mới sẽ chặn app cũ ghi tiếp. Nếu app cũ còn người dùng thật, hãy tạo project mới cho app Flutter rồi migrate sau.
+Vì sao không dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `booking`, `albums`, `chat_room` mà không tuân theo rules mới (ví dụ có `mail_address`, `is_photographer`). Deploy rules mới sẽ chặn app cũ ghi tiếp. Vì vậy app Flutter dùng project riêng `booking-c1922`, dữ liệu cũ sẽ migrate sau.
 
 ## 7. Tải cấu hình về máy
 
-1. **Project settings → General → app Android → google-services.json**: tải file, đặt vào `app_flutter/android/app/google-services.json`. File này đã nằm trong gitignore.
+1. **Project settings → General → Your apps**, chọn app Android → **google-services.json**: tải file, đặt vào `app_flutter/android/app/google-services.json`. File này đã nằm trong gitignore.
 2. Tạo `app_flutter/lib/firebase_options.dart` (cũng gitignored). Dùng một trong hai cách:
 
    **Cách A, FlutterFire CLI** (cần Firebase CLI đã login):
    ```bash
    source scripts/env.sh && cd app_flutter
    dart pub global activate flutterfire_cli
-   dart pub global run flutterfire_cli:flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.photobooking --yes
+   dart pub global run flutterfire_cli:flutterfire configure --project=booking-c1922 --platforms=android --android-package-name=com.thanhbk.photobooking --yes
    ```
 
    **Cách B, sinh từ `google-services.json`** (không cần login):
@@ -160,7 +167,8 @@ Kiểm tra lần lượt:
 | Google trả về nhưng Firebase báo `invalid-credential` | Thiếu Web client (`client_type: 3`) trong `google-services.json`. Bật lại Google provider ở bước 4 rồi tải lại file. |
 | Facebook báo lỗi chung | `FACEBOOK_CLIENT_TOKEN` trong `.env` còn trống, key hash chưa thêm, hoặc tài khoản không có vai trò trong app ở chế độ Development (bước 5). |
 | Facebook: "Invalid key hash" | Dán đúng key hash mà thông báo lỗi hiển thị vào Meta → Settings → Basic → Android. |
-| Kẹt ở màn "Không tải được tài khoản" | Firestore chưa được tạo, hoặc rules chưa deploy (bước 6). Bấm "Thử lại" sau khi sửa. |
+| Đăng ký hoặc đăng nhập nào cũng báo lỗi chung | Chưa bấm **Get started** ở Security → Authentication, hoặc provider chưa bật (bước 4). |
+| Kẹt ở màn "Không tải được tài khoản" | Firestore chưa được tạo, database không phải `(default)`, hoặc rules chưa deploy (bước 6). Bấm "Thử lại" sau khi sửa. |
 | `PERMISSION_DENIED` khi chọn vai trò | Rules trên server khác bản trong repo. Deploy lại ở bước 6. |
 | Build lỗi `File google-services.json is missing` | Chưa làm bước 7. |
 
