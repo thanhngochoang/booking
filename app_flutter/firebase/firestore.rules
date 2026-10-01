@@ -106,6 +106,25 @@ service cloud.firestore {
         && d.get('allowWhatsApp', false) is bool;
     }
 
+    // likes/saves/follows: markers named {uid}_{targetId}, owned by uid. Reads
+    // key off the document id, because a missing document has no `resource`
+    // and "not liked yet" must be answerable.
+    function markerId(uid, id) { return uid + '_' + id; }
+    function ownMarkerName(docId) {
+      return signedIn() && docId.matches(request.auth.uid + '_.+');
+    }
+    // Markers are written with set() (idempotent): createdAt is the server time
+    // of the write, or (on an update) the value already stored.
+    function validMarker(docId, targetField) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['userId', targetField, 'createdAt'])
+        && d.userId == request.auth.uid
+        && d[targetField] is string
+        && docId == markerId(request.auth.uid, d[targetField])
+        && (d.createdAt == request.time
+            || (resource != null && d.createdAt == resource.data.get('createdAt', null)));
+    }
+
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid) && validRole() && onlyKeys(userClientFields());
@@ -148,6 +167,29 @@ service cloud.firestore {
         && (resource.data.customerId == request.auth.uid
             || resource.data.photographerId == request.auth.uid);
       allow write: if false; // only Cloud Functions (sub-project 4)
+    }
+
+    // Posts are read by any signed-in user. Creation is added with the Create
+    // Post screen; counters are always written by Cloud Functions.
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /likes/{docId} {
+      allow read: if ownMarkerName(docId);
+      allow create, update: if ownMarkerName(docId) && validMarker(docId, 'postId');
+      allow delete: if ownMarkerName(docId);
+    }
+    match /saves/{docId} {
+      allow read: if ownMarkerName(docId);
+      allow create, update: if ownMarkerName(docId) && validMarker(docId, 'postId');
+      allow delete: if ownMarkerName(docId);
+    }
+    match /follows/{docId} {
+      allow read: if ownMarkerName(docId);
+      allow create, update: if ownMarkerName(docId) && validMarker(docId, 'photographerId');
+      allow delete: if ownMarkerName(docId);
     }
 
     match /{document=**} {

@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, updateDoc, writeBatch, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 let env;
 before(async () => {
@@ -274,4 +274,63 @@ test('service area has a city and an integer radius', async () => {
   ]) {
     await assertFails(setDoc(doc(db, 'photographers/ph7'), { serviceArea }));
   }
+});
+
+// ---- discovery: posts, likes, saves, follows ----
+test('any signed-in user reads posts; nobody writes them from the client yet', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'posts/post1'), { photographerId: 'p1', serviceId: 's1', imageUrls: ['x'] }));
+  const db = env.authenticatedContext('v1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'posts/post1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'posts/post1')));
+  await assertFails(setDoc(doc(db, 'posts/post2'), { photographerId: 'v1', serviceId: 's1', imageUrls: ['x'] }));
+  await assertFails(updateDoc(doc(db, 'posts/post1'), { likeCount: 9999 }));
+});
+
+for (const [col, field, extra] of [['likes', 'postId', 'post1'], ['saves', 'postId', 'post1'], ['follows', 'photographerId', 'p1']]) {
+  test(`${col}: the owner creates, reads (even a missing doc) and deletes their own marker`, async () => {
+    const db = env.authenticatedContext('v1').firestore();
+    const ref = doc(db, `${col}/v1_${extra}`);
+    await assertSucceeds(getDoc(ref)); // a missing document must be readable to know "not liked"
+    await assertSucceeds(setDoc(ref, { userId: 'v1', [field]: extra, createdAt: serverTimestamp() }));
+    await assertSucceeds(getDoc(ref));
+    await assertSucceeds(deleteDoc(ref));
+  });
+
+  test(`${col}: nobody else's marker can be read, created, changed or deleted`, async () => {
+    await env.withSecurityRulesDisabled(async (c) =>
+      setDoc(doc(c.firestore(), `${col}/v2_${extra}`), { userId: 'v2', [field]: extra }));
+    const db = env.authenticatedContext('v1').firestore();
+    await assertFails(getDoc(doc(db, `${col}/v2_${extra}`)));
+    await assertFails(setDoc(doc(db, `${col}/v2_${extra}`), { userId: 'v2', [field]: extra, createdAt: serverTimestamp() }));
+    await assertFails(deleteDoc(doc(db, `${col}/v2_${extra}`)));
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), `${col}/v1_${extra}`)));
+  });
+
+  test(`${col}: a marker must match its document id and carry only the expected fields`, async () => {
+    const db = env.authenticatedContext('v1').firestore();
+    await assertFails(setDoc(doc(db, `${col}/v1_other`), { userId: 'v1', [field]: extra, createdAt: serverTimestamp() })); // id/target mismatch
+    await assertFails(setDoc(doc(db, `${col}/v1_${extra}`), { userId: 'v2', [field]: extra, createdAt: serverTimestamp() })); // wrong owner
+    await assertFails(setDoc(doc(db, `${col}/v1_${extra}`), { userId: 'v1', [field]: extra, createdAt: serverTimestamp(), weight: 5 })); // extra field
+    await assertFails(setDoc(doc(db, `${col}/v1_${extra}`), { userId: 'v1', [field]: extra, createdAt: Timestamp.fromMillis(1000) })); // client-chosen time
+    await assertFails(setDoc(doc(db, `${col}/v1_${extra}`), { userId: 'v1', [field]: extra })); // no createdAt
+    await assertSucceeds(setDoc(doc(db, `${col}/v1_${extra}`), { userId: 'v1', [field]: extra, createdAt: serverTimestamp() }));
+  });
+
+  test(`${col}: set() on an existing marker (idempotent write) keeps the same shape`, async () => {
+    const db = env.authenticatedContext('v1').firestore();
+    const ref = doc(db, `${col}/v1_${extra}`);
+    await assertSucceeds(setDoc(ref, { userId: 'v1', [field]: extra, createdAt: serverTimestamp() }));
+    await assertSucceeds(setDoc(ref, { userId: 'v1', [field]: extra, createdAt: serverTimestamp() })); // repeat
+    await assertFails(setDoc(ref, { userId: 'v1', [field]: 'changed', createdAt: serverTimestamp() })); // retarget
+    await assertFails(updateDoc(ref, { userId: 'v2' })); // change owner
+    await assertFails(updateDoc(ref, { weight: 5 })); // extra field
+  });
+}
+
+test('a client cannot touch counters on posts or users through likes', async () => {
+  const db = env.authenticatedContext('v1').firestore();
+  await assertFails(updateDoc(doc(db, 'users/v1'), { savedCount: 10 }));
+  await assertFails(updateDoc(doc(db, 'photographers/v1'), { followerCount: 10 }));
+  await assertFails(updateDoc(doc(db, 'photographers/v1'), { 'stats.rating': 5 }));
 });
