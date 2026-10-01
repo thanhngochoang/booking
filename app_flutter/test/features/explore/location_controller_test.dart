@@ -74,6 +74,12 @@ class _Gated extends FakeLocationRepository {
   }
 }
 
+class _ThrowingStatus extends FakeLocationRepository {
+  @override
+  Future<LocationPermissionStatus> permissionStatus() async =>
+      throw StateError('boom');
+}
+
 class _ThrowingRequest extends FakeLocationRepository {
   @override
   Future<LocationPermissionStatus> request() async {
@@ -354,9 +360,57 @@ void main() {
           location: _fix(),
         );
         final e = await _env(repo: repo);
+        e.clock.now = _t0.add(const Duration(minutes: 31));
         repo.location = null;
         await e.ctrl.refreshLocation();
-        expect(e.state.location, isNotNull);
+        expect(repo.locationCalls, 2);
+        expect(e.state.location!.capturedAt, _t0);
+      },
+    );
+
+    test('overlapping fetches share one platform call', () async {
+      final repo = _Gated(location: _fix());
+      repo.status = LocationPermissionStatus.granted;
+      final e = await _env(repo: repo);
+      final a = e.ctrl.refreshLocation();
+      final b = e.ctrl.refreshLocation();
+      await pumpEventQueue();
+      repo.locationGate.complete();
+      await Future.wait([a, b]);
+      expect(repo.locationCalls, 1);
+    });
+  });
+
+  group('robustness', () {
+    test('a throwing permissionStatus still leaves loading', () async {
+      final e = await _env(repo: _ThrowingStatus());
+      expect(e.state.loaded, isTrue);
+      expect(e.resolution.mode, ExploreMode.ask);
+    });
+
+    test('deniedForever: useDeviceLocation keeps the saved area', () async {
+      final repo = FakeLocationRepository(
+        status: LocationPermissionStatus.deniedForever,
+      );
+      final e = await _env(repo: repo);
+      await e.ctrl.chooseArea(builtInAreas.first);
+      await e.ctrl.useDeviceLocation();
+      expect(e.state.area, isNotNull);
+      expect(e.prefs.getString(LocationController.areaKey), isNotNull);
+      expect(repo.requestCalls, 0);
+    });
+
+    test(
+      'granted but no fix: useDeviceLocation keeps the saved area',
+      () async {
+        final repo = FakeLocationRepository(
+          status: LocationPermissionStatus.granted,
+        );
+        final e = await _env(repo: repo);
+        await e.ctrl.chooseArea(builtInAreas.first);
+        await e.ctrl.useDeviceLocation();
+        expect(e.state.area, isNotNull);
+        expect(e.prefs.getString(LocationController.areaKey), isNotNull);
       },
     );
   });

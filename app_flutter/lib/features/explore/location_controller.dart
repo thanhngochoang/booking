@@ -15,6 +15,7 @@ final locationRepositoryProvider = Provider<LocationRepository>(
   (ref) => GeolocatorLocationRepository(
     gateway: const GeolocatorGateway(),
     prefs: ref.watch(sharedPreferencesProvider),
+    now: ref.watch(clockProvider),
   ),
 );
 
@@ -207,7 +208,13 @@ class LocationController extends Notifier<LocationState> {
   /// Re-reads the permission (also on returning from the Settings app) and
   /// fetches a fix when allowed.
   Future<void> refresh() async {
-    final status = await _repo.permissionStatus();
+    LocationPermissionStatus status;
+    try {
+      status = await _repo.permissionStatus();
+    } catch (_) {
+      // Keep the previous permission; never stay on "loading".
+      status = state.permission;
+    }
     if (!ref.mounted) {
       return;
     }
@@ -221,14 +228,37 @@ class LocationController extends Notifier<LocationState> {
     }
   }
 
-  Future<void> _locate({bool force = false}) async {
+  Future<void>? _locating;
+
+  /// One fetch at a time: overlapping calls await the one in flight.
+  Future<void> _locate({bool force = false}) {
+    final running = _locating;
+    if (running != null) {
+      return running;
+    }
     final current = state.location;
     if (!force && current != null && !current.isStale(_now())) {
+      return Future.value();
+    }
+    final f = _fetchFix(current);
+    _locating = f;
+    return f.whenComplete(() => _locating = null);
+  }
+
+  Future<void> _fetchFix(ApproxLocation? current) async {
+    state = state.copyWith(locating: true);
+    ApproxLocation? fresh;
+    try {
+      fresh = await _repo.currentApproxLocation();
+    } catch (_) {
+      fresh = null;
+    }
+    if (!ref.mounted) {
       return;
     }
-    state = state.copyWith(locating: true);
-    final fresh = await _repo.currentApproxLocation();
-    if (!ref.mounted) {
+    if (state.permission != LocationPermissionStatus.granted) {
+      // Revoked while the fix was in flight: drop it.
+      state = state.copyWith(locating: false, clearLocation: true);
       return;
     }
     // Keep the previous fix when the new attempt fails (spec: use the old one).
@@ -283,32 +313,39 @@ class LocationController extends Notifier<LocationState> {
     state = state.copyWith(area: saved);
   }
 
-  /// Back to "near me". Asks for permission first if it was never asked; if
-  /// that is refused the chosen area stays.
+  /// Back to "near me". Asks for permission first if it was never asked. The
+  /// chosen area is dropped only once a device fix is actually in hand; in
+  /// every other case (refused, off, no fix in time) it stays.
   Future<void> useDeviceLocation() async {
-    if (state.permission == LocationPermissionStatus.notAsked ||
-        state.permission == LocationPermissionStatus.denied) {
-      await allow();
-      if (state.permission != LocationPermissionStatus.granted) {
+    if (!state.loaded) {
+      await refresh();
+      if (!ref.mounted) {
         return;
       }
     }
+    if (state.permission == LocationPermissionStatus.notAsked ||
+        state.permission == LocationPermissionStatus.denied) {
+      await allow();
+      if (!ref.mounted) {
+        return;
+      }
+    }
+    if (state.permission != LocationPermissionStatus.granted) {
+      return;
+    }
+    await _locate();
+    if (!ref.mounted ||
+        state.permission != LocationPermissionStatus.granted ||
+        state.location == null) {
+      return;
+    }
     await _prefs.remove(areaKey);
     state = state.copyWith(clearArea: true);
-    if (state.permission == LocationPermissionStatus.granted) {
-      await _locate();
-    }
   }
 
   /// Pull to refresh.
-  Future<void> refreshLocation() async {
-    await refresh();
-    if (ref.mounted && state.permission == LocationPermissionStatus.granted) {
-      await _locate(force: _isStale());
-    }
-  }
-
-  bool _isStale() => state.location?.isStale(_now()) ?? true;
+  Future<void> refreshLocation() =>
+      refresh(); // refetches when the fix is stale
 
   Future<void> openSettings() => _repo.openSettings();
 }
