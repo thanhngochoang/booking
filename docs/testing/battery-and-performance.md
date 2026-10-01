@@ -119,3 +119,17 @@ Ghi chú chi phí đọc: trước bản sửa này một lần tải Trang ch�
 2. Khi các màn của kế hoạch 3b4 có mặt: cuộn 5 trang nguồn cấp, kiểm tra DevTools Network không có kết nối mở lâu sau khi rời màn, thêm Performance cho thời gian dựng.
 
 Android: máy tầm trung, `flutter run --profile`, DevTools Network và Performance. iOS: hiện ghi "iOS: not measured, blocked by iOS enablement". Dán kết quả vào mô tả PR theo bảng mẫu ở trên.
+
+## Thẻ nguồn cấp (kế hoạch 3b2)
+
+Kiểm tự động: `test/battery/feed_cards_battery_test.dart` (5 test): một nguồn cấp gồm 5 `PhotoCard`, 5 `PhotographerCard` và một `AppAvatar` đứng yên không còn khung hình nào được lên lịch (`expectIdle`) và có 0 `BackdropFilter` (`expectBlurBudget(max: 0)`); mọi ảnh được yêu cầu với độ rộng giải mã (`cacheWidth`) khác null, làm tròn lên bội số của 50 px (ở tỉ lệ điểm ảnh 3), và ảnh đại diện không bao giờ thử lại và không giải mã ảnh gốc (48 dp x 3 = 144 px, tối đa 200); `network_photo.dart` dùng `CachedNetworkImage` với `memCacheWidth: widget.cacheWidth`, không có `Image.network` hay `NetworkImage(` trần, không có `Timer`, `Ticker`, `AnimationController` hay `Stream.periodic` (chỉ có hiệu ứng hiện dần 150 ms tự kết thúc); năm tệp thẻ (`app_avatar`, `reason_chips`, `photo_card`, `photographer_card`, `network_photo`) không có `BackdropFilter`, `AnimationController` hay `.repeat(`.
+
+Giới hạn: bộ dựng ảnh thật (`CachedNetworkImage`) không chạy trong test widget (test dùng `testPhotoScope`), nên được kiểm bằng đọc mã nguồn và bằng đo tay dưới đây. Danh sách thẻ ở các màn của kế hoạch 3b4 phải dùng `ListView.builder` hoặc sliver lười.
+
+Đo tay (chưa đo: device profiling pending), làm khi 3b4 đã đặt thẻ lên Trang chủ và Tìm:
+
+1. Cuộn nhanh nguồn cấp 100 bài trên máy tầm trung: đọc thời gian raster và kích thước image cache trong DevTools Memory (không tăng sau 100 thẻ ngoài giới hạn của cache).
+2. Để Trang chủ đứng yên 5 phút: không khung hình mới, không mạng.
+3. Tắt mạng: ảnh lỗi hiện ô "Thử lại" và không tự thử lại; bật mạng rồi chạm ô để tải lại.
+
+Android: máy tầm trung, `flutter run --profile`, DevTools Performance và Memory, `adb shell dumpsys batterystats`. iOS: Xcode Instruments (Time Profiler, Allocations, Energy Log) trên iPhone thật, Energy Impact phải là "Low" khi đứng yên; hiện ghi "iOS: not measured, blocked by iOS enablement". Dán kết quả vào mô tả PR theo bảng mẫu ở trên (hàng iOS ghi kiểu iPhone ở cột Thiết bị và Energy Impact thay cho các cột chỉ có ở Android).
