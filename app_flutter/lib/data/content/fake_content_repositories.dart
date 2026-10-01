@@ -253,6 +253,7 @@ class FakeServiceRepository implements ServiceRepository {
     }
     return _all
         .where((s) => s.photographerId == photographerId && s.active)
+        .take(clampPageSize(limit))
         .toList();
   }
 }
