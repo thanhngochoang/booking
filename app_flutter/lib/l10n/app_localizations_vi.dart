@@ -662,4 +662,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String reasonsSemantics(String reasons) {
     return 'Gợi ý vì: $reasons';
   }
+
+  @override
+  String photographerSessions(int n) {
+    return '$n buổi';
+  }
+
+  @override
+  String get priceFrom => 'từ';
+
+  @override
+  String get photographerCardProfile => 'Hồ sơ';
+
+  @override
+  String get photographerCardBook => 'Đặt lịch';
 }

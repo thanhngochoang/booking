@@ -1281,6 +1281,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Gợi ý vì: {reasons}'**
   String reasonsSemantics(String reasons);
+
+  /// No description provided for @photographerSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} buổi'**
+  String photographerSessions(int n);
+
+  /// No description provided for @priceFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'từ'**
+  String get priceFrom;
+
+  /// No description provided for @photographerCardProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get photographerCardProfile;
+
+  /// No description provided for @photographerCardBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get photographerCardBook;
 }
 
 class _AppLocalizationsDelegate

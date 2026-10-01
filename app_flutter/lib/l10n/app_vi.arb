@@ -257,5 +257,14 @@
     "placeholders": {
       "reasons": {"type": "String"}
     }
-  }
+  },
+  "photographerSessions": "{n} buổi",
+  "@photographerSessions": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "priceFrom": "từ",
+  "photographerCardProfile": "Hồ sơ",
+  "photographerCardBook": "Đặt lịch"
 }
