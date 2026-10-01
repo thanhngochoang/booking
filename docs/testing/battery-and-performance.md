@@ -60,3 +60,16 @@ Gói ứng dụng: `com.thanhbk.photobooking`.
 | Màn / kịch bản | Khung hình đứng yên (30 s) | Janky % | p90 (ms) | CPU đứng yên | Wake lock | GPS (s) | PSS (MB) | Thiết bị |
 |---|---|---|---|---|---|---|---|---|
 | S… | | | | | | | | |
+
+## Nền tảng vị trí (kế hoạch 3a1)
+
+Kiểm tự động: `test/battery/location_foundations_battery_test.dart` (đứng yên không lên khung hình, danh sách dựng lười, tối đa 4 `BackdropFilter` và không lồng nhau, adapter vị trí chỉ lấy một lần với độ chính xác thấp, manifest Android chỉ xin `ACCESS_COARSE_LOCATION`, Info.plist chỉ xin when-in-use).
+
+Đo tay sau khi 3a2 đưa các thành phần lên màn hình (chưa đo: device profiling pending):
+
+1. Mở Khám phá, chạm "Cho phép", đồng ý: biểu tượng vị trí phải tắt trong vài giây; lần vào lại trong 30 phút không được bật lại.
+2. Để Khám phá mở 5 phút không chạm: ghi mức pin hoặc năng lượng thay đổi, timeline không có khung hình.
+3. Mở và đóng sheet khu vực 10 lần: raster time dưới 16 ms.
+
+Android: máy tầm trung, `flutter run --profile`, DevTools Performance và `adb shell dumpsys batterystats`.
+iOS: Xcode Instruments (Energy Log, Time Profiler) trên iPhone thật; Energy Impact phải là "Low" khi đứng yên và mũi tên vị trí không được còn sau khi lấy vị trí. Hiện chưa build iOS được: ghi "iOS: not measured, blocked by iOS enablement". Dòng iOS trong bảng ghi model iPhone ở cột Thiết bị và Energy Impact thay cho các cột chỉ có ở Android.
