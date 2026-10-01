@@ -141,11 +141,11 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 ## S33 · Thêm số điện thoại
 
-- **Thông tin**: `/profile/phone?returnTo=…` (sheet) · khách · sub‑project 2 · Chưa có.
+- **Thông tin**: `/profile/phone?returnTo=…` (sheet; bản đầu là trang đầy đủ, chuyển vào `AppBottomSheet` khi widget đó có) · khách · sub‑project 2 · Chưa có.
 - **Mục đích**: có số điện thoại để đặt lịch (xác minh làm sau).
 - **Điểm vào → ra**: tự mở khi khách bấm đặt lịch/đăng ký mà hồ sơ thiếu số (S02, S03, S04, S16); S31/S30 cũng mở. Lưu xong → quay lại `returnTo`.
 - **Bố cục**: tiêu đề "Thêm số điện thoại để đặt lịch", giải thích vì sao; `PhoneField` (tiền tố +84, định dạng `903 123 456`); ví dụ; hai công tắc "Cho phép liên hệ qua Zalo" (bật sẵn) và "WhatsApp" (tắt sẵn); ghi chú riêng tư "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc."; nút "Lưu và tiếp tục".
 - **Dữ liệu**: ghi `users/{uid}/private/contact` (`phone` E.164, `allowZalo`, `allowWhatsApp`, `phoneVerified:false`).
 - **Trạng thái**: sai định dạng → lỗi dưới ô ("Số cần 10 chữ số, bắt đầu bằng 0"); lưu lỗi → SnackBar, giữ sheet; đóng không lưu → huỷ luồng đặt, trở lại màn trước.
-- **Chuỗi**: `s33_title` "Thêm số điện thoại để đặt lịch", `s33_body` "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.", `s33_phone` "Số điện thoại", `s33_example` "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.", `s33_allowZalo` "Cho phép liên hệ qua Zalo", `s33_allowWhatsApp` "Cho phép liên hệ qua WhatsApp", `s33_privacy` "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.", `s33_save` "Lưu và tiếp tục", `s33_errorFormat` "Số cần 10 chữ số, bắt đầu bằng 0".
+- **Chuỗi**: `s33_title` "Thêm số điện thoại để đặt lịch", `s33_body` "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.", `s33_phone` "Số điện thoại", `s33_example` "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.", `s33_allowZalo` "Cho phép liên hệ qua Zalo", `s33_allowWhatsApp` "Cho phép liên hệ qua WhatsApp", `s33_privacy` "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.", `s33_save` "Lưu và tiếp tục", `s33_errorFormat` "Số điện thoại chưa đúng. Ví dụ: 903 123 456".
 - **Chấp nhận**: hợp lệ mới bật nút; chấp nhận `0903123456`, `+84 903 123 456`, từ chối `090312345`, `0123456789`; hồ sơ có số thì sheet không hiện nữa; mọi nhánh server vẫn chặn khi thiếu số.

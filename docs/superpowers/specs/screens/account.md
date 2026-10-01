@@ -96,5 +96,5 @@ Màn: S12, S28, S29, S30, S31, S37, S41, S42. Quy ước chung ở [README.md](R
 - **Mục đích**: sửa thông tin hồ sơ của mình.
 - **Chuỗi (đã có)**: `editProfileTitle` "Chỉnh sửa hồ sơ", `displayNameLabel`, `editProfileSave` "Lưu", `editProfileSaved`, `editProfileError`. **Cần thêm**: `s42_phone` "Số điện thoại", `s42_allowZalo` "Cho phép liên hệ qua Zalo", `s42_allowWhatsApp` "Cho phép liên hệ qua WhatsApp", `s42_phoneHint` "Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.", `s42_changeAvatar` "Đổi ảnh đại diện".
 - **Hành vi hiện tại**: sửa tên hiển thị, lưu có SnackBar thành công/lỗi.
-- **Thay đổi cần làm**: thêm ô số điện thoại (`PhoneField`, ghi `users/{uid}/private/contact`) với hai công tắc cho phép Zalo/WhatsApp; đổi avatar; với NAG liên kết "Kỹ năng" (S38) và "Kênh liên hệ" (S34 phần công tắc).
+- **Thay đổi cần làm**: thêm ô số điện thoại (`PhoneField`, ghi `users/{uid}/private/contact`) với hai công tắc cho phép Zalo/WhatsApp; đổi avatar; với NAG liên kết "Kỹ năng" (S38) và "Kênh liên hệ" (S34 phần công tắc). Ô số điện thoại để trống = giữ nguyên số đã lưu (không xoá số từ màn này). Đổi ảnh đại diện làm ở kế hoạch 2d.
 - **Chấp nhận**: số hợp lệ mới lưu; số không bao giờ ghi vào `users/{uid}` (public); đổi avatar cập nhật nút kiểu avatar ngay.
