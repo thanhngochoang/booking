@@ -276,7 +276,7 @@ alter table posts add constraint fk_posts_booking foreign key (booking_id) refer
 
 create table payments (
   id              text primary key,
-  subject_type    text not null check (subject_type in ('booking','event_registration')),
+  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request')),
   subject_id      text not null,
   payee_id        text references users(id),      -- nhiếp ảnh gia / chủ sự kiện nhận tiền; null = nền tảng
   provider        text not null check (provider in ('momo','vnpay')),
@@ -544,6 +544,100 @@ create table audit_log (
 );
 create table app_config (key text primary key, value jsonb not null, version int not null default 1, updated_at timestamptz not null default now());
 ```
+
+### 2.8 Chụp ngay (schema `dispatch`)
+
+Đặc tả ở [`../2026-10-01-instant-booking-design.md`](../2026-10-01-instant-booking-design.md) mục 7. Vị trí "đang sẵn sàng" chỉ nằm trong Redis (TTL 10 phút), không có bảng.
+
+```sql
+create schema if not exists dispatch;
+create extension if not exists postgis;
+
+create table dispatch.cities (
+  id          text primary key,
+  name        text not null,
+  boundary    geography(Polygon, 4326) not null,
+  surge       numeric(3,2) not null default 1.00 check (surge >= 1.00 and surge <= 3.00),
+  active      boolean not null default false
+);
+
+create table dispatch.instant_packages (
+  id                 text primary key,           -- ULID
+  code               text not null,              -- 'p30' | 'p60' | 'p120'
+  duration_min       integer not null check (duration_min > 0),
+  photos             integer not null check (photos >= 0),
+  price_vnd          bigint not null check (price_vnd > 0),
+  price_list_version integer not null,
+  active             boolean not null default true,
+  unique (code, price_list_version)
+);
+
+create table dispatch.instant_requests (
+  id              text primary key,
+  customer_id     text not null references users(id),
+  package_id      text not null references dispatch.instant_packages(id),
+  city_id         text not null references dispatch.cities(id),
+  genre           text not null,
+  meet_point      geography(Point, 4326) not null,
+  meet_address    text not null,
+  note            text check (char_length(note) <= 140),
+  expand          boolean not null default false,
+  amount_vnd      bigint not null check (amount_vnd > 0),
+  payout_vnd      bigint not null check (payout_vnd >= 0 and payout_vnd <= amount_vnd),
+  status          text not null check (status in ('pending_payment','payment_failed','searching','assigned','en_route','arrived','in_progress','completed','no_match','cancelled_by_customer','no_show_customer','disputed')),
+  photographer_id text references photographers(id),
+  round           smallint not null default 1 check (round in (1,2)),
+  requested_at    timestamptz not null,
+  assigned_at     timestamptz,
+  arrived_at      timestamptz,
+  started_at      timestamptz,
+  finished_at     timestamptz,
+  completed_at    timestamptz,
+  cancelled_at    timestamptz,
+  cancel_reason   text,
+  version         integer not null default 0
+);
+create index instant_requests_status_city on dispatch.instant_requests (status, city_id);
+create index instant_requests_meet_point on dispatch.instant_requests using gist (meet_point);
+-- One open job per photographer.
+create unique index instant_requests_one_open_job on dispatch.instant_requests (photographer_id)
+  where status in ('assigned','en_route','arrived','in_progress');
+
+create table dispatch.instant_offers (
+  id              text primary key,
+  request_id      text not null references dispatch.instant_requests(id),
+  photographer_id text not null references photographers(id),
+  round           smallint not null check (round in (1,2)),
+  score           numeric(5,4) not null,
+  reasons         jsonb not null default '[]',
+  offered_at      timestamptz not null,
+  expires_at      timestamptz not null,
+  outcome         text not null check (outcome in ('pending','accepted','declined','expired','withdrawn')),
+  decided_at      timestamptz,
+  unique (request_id, photographer_id)
+);
+create index instant_offers_request on dispatch.instant_offers (request_id);
+create index instant_offers_photographer_outcome on dispatch.instant_offers (photographer_id, outcome);
+
+create table dispatch.photographer_instant_settings (
+  photographer_id            text primary key references photographers(id),
+  price_list_version_accepted integer,
+  help_ready                 boolean not null default false,
+  home_city_id               text references dispatch.cities(id),
+  updated_at                 timestamptz not null
+);
+
+create table dispatch.photographer_reliability (
+  photographer_id text primary key references photographers(id),
+  offers          integer not null default 0,
+  accepted        integer not null default 0,
+  cancelled       integer not null default 0,
+  no_show         integer not null default 0,
+  updated_at      timestamptz not null
+);
+```
+
+Tiền của chụp ngay đi qua `payments` và sổ cái (mục 2.4) với `subject_type = 'instant_request'`.
 
 ## 3. Ánh xạ Firestore → bảng
 

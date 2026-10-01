@@ -116,8 +116,17 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S44 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 |
 | S45 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S16) | cả hai | 3b |
 | S46 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b |
+| S47 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá | `/instant` | khách | I5 |
+| S48 | Đang tìm nhiếp ảnh gia | `/instant/:id` (`searching`) | khách | I5 |
+| S49 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 |
+| S50 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 |
+| S51 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 |
+| S52 | Sẵn sàng chụp ngay (công tắc, bảng giá) | `/work/instant` | NAG | I4 |
+| S53 | Lời mời việc (đếm ngược 30 giây) | `/work/instant/offer/:offerId` | NAG | I4 |
+| S54 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 |
+| S55 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 |
 
-Splash và Lỗi phiên (đã có) không cần mã. Mã đánh liên tục `S01`–`S46`; màn mới lấy số kế tiếp, không đánh lại số.
+Splash và Lỗi phiên (đã có) không cần mã. Mã đánh liên tục `S01`–`S55`; màn mới lấy số kế tiếp, không đánh lại số. S47–S55 thuộc tính năng Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 
@@ -476,7 +485,7 @@ taxonomy/skills/items/{id}
 
 - Thư mục `services/recommender/` trong repo, build và triển khai độc lập (Cloud Run). Hợp đồng API là tệp **`services/recommender/api/openapi.yaml`** (có phiên bản `/v1`); ứng dụng và Functions sinh kiểu dữ liệu từ đó, nên đổi thuật toán không đổi hợp đồng.
 - **Triển khai theo giai đoạn (không cần hệ thống riêng ngay)**: *Giai đoạn 1 (ra mắt)*: logic xếp hạng là gói TypeScript thuần `packages/recommender-core` (không phụ thuộc Firebase), chạy **trong hàm `recommend`** và có `LocalRecommender` dự phòng ở ứng dụng; chưa dựng Cloud Run. *Giai đoạn 2*: bọc cùng gói đó thành dịch vụ Cloud Run khi chạm ngưỡng: ≥ 5.000 nhiếp ảnh gia hoạt động, p95 > 400 ms, cần đặc trưng hoặc mô hình tính ngoại tuyến (nhúng ảnh, học xếp hạng), hoặc có client thứ hai (web, quản trị). Hợp đồng `openapi.yaml` và `RecommendationRepository` **không đổi** giữa hai giai đoạn.
-- **Xếp hạng khác ghép cặp**: v1 chỉ *xếp hạng* gợi ý cho khách tự chọn. *Ghép cặp tự động* (nhận yêu cầu của khách, chọn và mời nhiếp ảnh gia phù hợp, xử lý nhiều khách tranh một nhiếp ảnh gia) là sản phẩm khác (gần với "dự án mở", ngoài phạm vi v1) và sẽ cần dịch vụ điều phối riêng khi làm.
+- **Xếp hạng khác ghép cặp**: v1 chỉ *xếp hạng* gợi ý cho khách tự chọn. *Ghép cặp tự động* (nhận yêu cầu của khách, chọn và mời nhiếp ảnh gia phù hợp, xử lý nhiều khách tranh một nhiếp ảnh gia) là sản phẩm khác và cần dịch vụ điều phối riêng. **Đã chốt 2026-10-01**: làm dạng "Chụp ngay" kiểu Uber, xem [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md); module chấm điểm dùng chung với `recommender-core`.
 - Ứng dụng **không gọi thẳng** dịch vụ: gọi hàm callable `recommend` (xác thực, App Check, giới hạn tần suất, rút gọn dữ liệu), hàm này gọi dịch vụ bằng danh tính dịch vụ. Dịch vụ không mở công khai.
 - **Bộ xếp hạng cắm được**: mỗi thuật toán là một `Scorer` đăng ký tên (`rules-v1`, sau này `ltr-v2`…). Tham số `algorithm` chọn bản; không truyền thì dùng bản mặc định trong cấu hình. Trọng số và ngưỡng nằm trong cấu hình (Remote Config / tài liệu `config/recommender`), đổi không cần phát hành.
 - **Thử nghiệm A/B**: `experiment` + hash `userId` chọn bản; mỗi phản hồi trả `algorithm`, `algorithmVersion`, `requestId` để gắn vào nhật ký.

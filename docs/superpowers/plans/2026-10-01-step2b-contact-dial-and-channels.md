@@ -1682,11 +1682,13 @@ void main() {
 
   test('iOS lists tel so canLaunchUrl can tell a phone from a tablet', () {
     final plist = File('ios/Runner/Info.plist').readAsStringSync();
-    expect(
-      RegExp(r'<key>LSApplicationQueriesSchemes</key>\s*<array>\s*<string>tel</string>\s*</array>')
-          .hasMatch(plist),
-      isTrue,
-    );
+    // The array is shared with other schemes (Facebook login on iOS adds
+    // fbapi…), so only check that tel is in it.
+    final array = RegExp(r'<key>LSApplicationQueriesSchemes</key>\s*<array>([\s\S]*?)</array>')
+        .firstMatch(plist)
+        ?.group(1);
+    expect(array, isNotNull);
+    expect(array, contains('<string>tel</string>'));
   });
 
   test('url_launcher is a dependency', () {
@@ -1738,7 +1740,7 @@ with
     </queries>
 ```
 
-In `ios/Runner/Info.plist` insert, directly before `<key>UIApplicationSupportsIndirectInputEvents</key>`:
+In `ios/Runner/Info.plist`, if a `LSApplicationQueriesSchemes` array already exists (the iOS enablement plan adds one for Facebook), add `<string>tel</string>` to it; otherwise insert, directly before `<key>UIApplicationSupportsIndirectInputEvents</key>`:
 
 ```xml
 	<key>LSApplicationQueriesSchemes</key>

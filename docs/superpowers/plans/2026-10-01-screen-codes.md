@@ -4,7 +4,7 @@
 
 **Goal:** Every screen carries its `Sxx` code, and a debug-only switch in Settings shows the code as a small tag at the top-left of the screen.
 
-**Architecture:** `ScreenCodes` holds the 46 codes as constants, with a test that keeps them identical to the spec table. `ScreenCode` is a core widget that draws the tag when `kDebugMode` and an inherited `ScreenCodeScope` says "visible" (same pattern as `CtaAvatarScope`, so `core/` never imports `features/`). The switch is a `Notifier<bool>` persisted in `SharedPreferences`, wired into `MyApp` from `main.dart`.
+**Architecture:** `ScreenCodes` holds the 55 codes as constants, with a test that keeps them identical to the spec table. `ScreenCode` is a core widget that draws the tag when `kDebugMode` and an inherited `ScreenCodeScope` says "visible" (same pattern as `CtaAvatarScope`, so `core/` never imports `features/`). The switch is a `Notifier<bool>` persisted in `SharedPreferences`, wired into `MyApp` from `main.dart`.
 
 **Tech Stack:** Flutter, Riverpod 3 (`Notifier`), `shared_preferences`, `flutter_test`, `flutter gen-l10n`.
 
@@ -15,7 +15,7 @@
 - Run every command from `app_flutter/` after `source ../scripts/env.sh && export HOME="$PWD/../.home" && export PATH="$PWD/../.flutter/bin:$PATH"`.
 - Imports are `package:photobooking/...` only; features import `package:photobooking/core/core.dart`, not files inside `core/` (CLAUDE.md).
 - Files inside `core/` import each other directly, not through `core.dart`.
-- Screen codes run `S01`–`S46`, are never renumbered, and the Dart constants must match the table in section 2 of the main spec.
+- Screen codes run `S01`–`S55`, are never renumbered, and the Dart constants must match the table in section 2 of the main spec.
 - The tag is shown only when `kDebugMode && showScreenCodes`; in release `ScreenCode` returns `child` unchanged (no extra node).
 - Tag look: background `#FF2D95`, white text, monospace 11, radius 6, `IgnorePointer`, below the status bar (`SafeArea`), top-left.
 - UI strings live in `lib/l10n/app_vi.arb` (Vietnamese, with full diacritics); regenerate with `flutter gen-l10n`; no hard-coded UI text.
@@ -48,7 +48,7 @@
 - Test: `test/core/screen_codes_test.dart`
 
 **Interfaces:**
-- Produces: `abstract final class ScreenCodes` with one `static const String` per screen (names below) and `static const List<String> all` (S01…S46 in order). Later tasks use `ScreenCodes.login`, `.role`, `.register`, `.profile`, `.settings`, `.editProfile`.
+- Produces: `abstract final class ScreenCodes` with one `static const String` per screen (names below) and `static const List<String> all` (S01…S55 in order). Later tasks use `ScreenCodes.login`, `.role`, `.register`, `.profile`, `.settings`, `.editProfile`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -60,8 +60,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/screen_codes.dart';
 
 void main() {
-  test('codes are S01..S46, in order, with no gaps or repeats', () {
-    final expected = [for (var i = 1; i <= 46; i++) 'S${i.toString().padLeft(2, '0')}'];
+  test('codes are S01..S55, in order, with no gaps or repeats', () {
+    final expected = [for (var i = 1; i <= 55; i++) 'S${i.toString().padLeft(2, '0')}'];
     expect(ScreenCodes.all, expected);
   });
 
@@ -96,7 +96,7 @@ Expected: FAIL, "Target of URI doesn't exist: 'package:photobooking/core/screen_
 
 ```dart
 // lib/core/screen_codes.dart
-/// One code per screen, `S01`..`S46`. The single source in Dart; the table in
+/// One code per screen, `S01`..`S55`. The single source in Dart; the table in
 /// `docs/superpowers/specs/2026-10-01-remaining-screens.md` (section 2) and the
 /// mock `docs/design/ui-mock.html` use the same codes.
 ///
@@ -149,6 +149,16 @@ abstract final class ScreenCodes {
   static const payoutAccount = 'S44';
   static const eventTimeline = 'S45';
   static const eventChat = 'S46';
+  // Instant booking (docs/superpowers/specs/2026-10-01-instant-booking-design.md).
+  static const instantRequest = 'S47';
+  static const instantSearching = 'S48';
+  static const instantTracking = 'S49';
+  static const instantInProgress = 'S50';
+  static const instantNoMatch = 'S51';
+  static const instantAvailability = 'S52';
+  static const instantOffer = 'S53';
+  static const instantJob = 'S54';
+  static const instantCancel = 'S55';
 
   static const all = <String>[
     home, photoDetail, photographerProfile, findPhotographer, bookService,
@@ -159,7 +169,9 @@ abstract final class ScreenCodes {
     manageEvent, login, role, profile, settings, contactAfterBooking, addPhone,
     setupContact, exploreNearby, pickArea, badges, skillsPart1, skillsPart2,
     skillEvidence, register, editProfile, earnings, payoutAccount,
-    eventTimeline, eventChat,
+    eventTimeline, eventChat, instantRequest, instantSearching,
+    instantTracking, instantInProgress, instantNoMatch, instantAvailability,
+    instantOffer, instantJob, instantCancel,
   ];
 }
 ```

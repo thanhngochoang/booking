@@ -199,7 +199,7 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `ReasonCode` | `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent` | |
 | `SignalType` | `impression`, `click`, `inquiry`, `booking` | |
 | `ContactChannel` | `in_app`, `call`, `zalo`, `whatsapp` | |
-| `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict` | Mã lỗi nghiệp vụ ổn định |
+| `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict`, `no_match`, `offer_expired`, `already_assigned`, `not_eligible`, `outside_service_area`, `price_changed` | Mã lỗi nghiệp vụ ổn định; sáu mã cuối của Chụp ngay (`../2026-10-01-instant-booking-design.md` mục 6) |
 
 ## 5. Máy trạng thái
 

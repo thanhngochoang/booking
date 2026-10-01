@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Mock hi-fi "Cộng đồng nhiếp ảnh gia" (theme dark aurora). Bản lưu trong repo của artifact
-     https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (phiên bản 23). Mở trực tiếp bằng trình duyệt.
-     Mỗi màn có mã Sxx (S01–S46, đủ 46 màn): bật nút "Debug" ở đầu trang để thấy mã, hoặc thêm #S12 vào URL.
+     https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (phiên bản 24). Mở trực tiếp bằng trình duyệt.
+     Mỗi màn có mã Sxx (S01–S55, đủ 55 màn): bật nút "Debug" ở đầu trang để thấy mã, hoặc thêm #S12 vào URL.
      Spec: docs/superpowers/specs/ . Khi sửa mock, đồng bộ lại spec và bảng mã màn hình ở cuối trang. -->
 <html lang="vi">
 <head>
@@ -21,6 +21,7 @@
   --btn:linear-gradient(90deg,#3D63FF,#8A3FFC,#D6249F); --btn-ink:#fff; --btn-shadow:0 8px 18px rgba(138,63,252,.35);
   --free-bg:rgba(26,159,2,.2); --free-ink:#7BE070; --sheet-bg:rgba(23,21,31,.92); --scrim:rgba(0,0,0,.35);
   --glow:1; --bezel:#000; --shadow:rgba(0,0,0,.5);
+  --map-bg:#1A1C24; --map-block:#22252F; --map-road:#3A3E4C; --map-water:#16324A; --map-park:#1E3328;
   --p1:linear-gradient(160deg,#B9A08C 0%,#4A3527 100%);
   --p2:linear-gradient(150deg,#8FB6C9 0%,#1E3A4A 100%);
   --p3:linear-gradient(140deg,#E2C9B0 0%,#7A5238 100%);
@@ -32,12 +33,12 @@
   color-scheme:dark;
 }
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
-  --bg:#F4F1EC; --surface:#FFFFFF; --glass:rgba(255,255,255,.72); --field:#EDE9E3; --glass-hi:#FFFFFF;
+  --bg:#F4F1EC; --surface:#FFFFFF; --glass:rgba(255,255,255,.72); --field:#EDE9E3; --glass-hi:#FFFFFF; --map-bg:#ECE8E1; --map-block:#E2DDD4; --map-road:#FFFFFF; --map-water:#BFD9EA; --map-park:#CFE3C8;
   --ink:#313131; --ink-2:#67625B; --ink-3:#898888; --line:#E3DFD8; --line-2:#CFCAC1;
   --accent:#8338F5; --accent-ink:#FFFFFF; --accent-soft:#F4EEFF; --focus:#8338F5;
   --cta:linear-gradient(135deg,#8338F5,#702BDB); --btn:linear-gradient(135deg,#8338F5,#702BDB); --btn-ink:#fff; --btn-shadow:0 4px 12px rgba(131,56,245,.25); --free-bg:#E3F5DF; --free-ink:#127001; --sheet-bg:rgba(255,255,255,.92); --scrim:rgba(0,0,0,.25); --glow:.5; --bezel:#1B1A18; --shadow:rgba(0,0,0,.18); color-scheme:light}}
 :root[data-theme="light"]{
-  --bg:#F4F1EC; --surface:#FFFFFF; --glass:rgba(255,255,255,.72); --field:#EDE9E3; --glass-hi:#FFFFFF;
+  --bg:#F4F1EC; --surface:#FFFFFF; --glass:rgba(255,255,255,.72); --field:#EDE9E3; --glass-hi:#FFFFFF; --map-bg:#ECE8E1; --map-block:#E2DDD4; --map-road:#FFFFFF; --map-water:#BFD9EA; --map-park:#CFE3C8;
   --ink:#313131; --ink-2:#67625B; --ink-3:#898888; --line:#E3DFD8; --line-2:#CFCAC1;
   --accent:#8338F5; --accent-ink:#FFFFFF; --accent-soft:#F4EEFF; --focus:#8338F5;
   --cta:linear-gradient(135deg,#8338F5,#702BDB); --btn:linear-gradient(135deg,#8338F5,#702BDB); --btn-ink:#fff; --btn-shadow:0 4px 12px rgba(131,56,245,.25); --free-bg:#E3F5DF; --free-ink:#127001; --sheet-bg:rgba(255,255,255,.92); --scrim:rgba(0,0,0,.25); --glow:.5; --bezel:#1B1A18; --shadow:rgba(0,0,0,.18); color-scheme:light}
@@ -259,6 +260,38 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
 @media (prefers-reduced-motion:no-preference){.rail{scroll-behavior:smooth}}
 @media (max-width:360px){body{padding-inline:12px}.step,.phone{width:calc(100vw - 24px)}.phone .body{padding:4px 10px 0}}
 @media (min-width:900px){.rail{flex-wrap:wrap;overflow:visible}.step{flex:0 0 312px}}
+
+/* Instant booking (S47–S55): map, search pulse, offer countdown */
+.map{position:relative;border-radius:var(--r2);overflow:hidden;background:var(--map-bg);flex:none}
+.map svg.base{position:absolute;inset:0;width:100%;height:100%}
+.map .mpin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;font-weight:600;color:var(--ink)}
+.map .mpin i{width:14px;height:14px;border-radius:50%;border:3px solid #fff;background:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+.map .mpin.self i{background:#3D63FF}
+.map .mpin span{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1px 5px;white-space:nowrap}
+.map .mfab{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;background:var(--surface);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center}
+.map .mfab svg{width:16px;height:16px;stroke:var(--ink);fill:none;stroke-width:1.8}
+.pulse{position:relative;width:150px;height:150px;margin:6px auto 0;flex:none}
+.pulse b{position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent);opacity:0}
+.pulse .core{position:absolute;inset:50px;border-radius:50%;background:var(--cta);display:flex;align-items:center;justify-content:center;box-shadow:var(--btn-shadow)}
+.pulse .core svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8}
+@media (prefers-reduced-motion:no-preference){.pulse b{animation:pulse 2.4s ease-out infinite}.pulse b:nth-child(2){animation-delay:.8s}.pulse b:nth-child(3){animation-delay:1.6s}}
+@media (prefers-reduced-motion:reduce){.pulse b:nth-child(1){opacity:.5;inset:20px}.pulse b:nth-child(2){opacity:.3}}
+@keyframes pulse{0%{transform:scale(.35);opacity:.9}100%{transform:scale(1);opacity:0}}
+.cd{position:relative;width:96px;height:96px;margin:0 auto;flex:none}
+.cd .ring{width:96px;height:96px;background:conic-gradient(var(--accent) 0 72%,var(--field) 72% 100%)}
+.cd b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums}
+.cd b small{font-family:var(--body);font-size:10px;font-weight:500;color:var(--ink-3)}
+.pkg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pkg div{border:1px solid var(--line-2);border-radius:14px;padding:8px 6px;text-align:center;font-size:11px;background:var(--glass)}
+.pkg div b{display:block;font-size:13px}
+.pkg div.on{border-color:var(--accent);background:var(--accent-soft)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.35}
+.chk i{width:18px;height:18px;border-radius:5px;border:2px solid var(--line-2);flex:none;margin-top:1px}
+.chk i.on{background:var(--accent);border-color:var(--accent);position:relative}
+.chk i.on::after{content:"";position:absolute;left:4px;top:0;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.sw2{width:40px;height:24px;border-radius:12px;background:var(--field);border:1px solid var(--line-2);position:relative;flex:none}
+.sw2::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--ink-3)}
+.sw2.on{background:var(--accent);border-color:var(--accent)}.sw2.on::after{left:18px;background:#fff}
 </style>
 </head>
 <body>
@@ -1156,6 +1189,136 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
     <div class="cap"><span class="n new">Mới</span><span class="n">S46 · Nhóm chat sự kiện</span><b>Một nhóm cho người tham gia</b><span>Tự thêm khi vé được thanh toán, tự mở lại cho xem sau sự kiện 7 ngày. Thông báo của chủ sự kiện được ghim đầu nhóm. Thành viên chỉ thấy tên và avatar, không thấy số điện thoại.</span></div></div>
   </div>
 
+  <h2>Chụp ngay · đặt tức thì như gọi xe</h2>
+  <p>Khách cần thợ ngay bây giờ: chọn gói, ghim điểm hẹn, trả trước. Hệ thống mời lần lượt từng nhiếp ảnh gia phù hợp ở gần (30 giây mỗi người), người nhận đi tới và khách theo dõi trên bản đồ. Spec: <code>2026-10-01-instant-booking-design.md</code>.</p>
+  <div class="rail">
+
+    <div class="step" id="S47"><div class="phone" data-code="S47"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic"><svg><use href="#i-back"/></svg></div><div class="t" style="font-size:17px">Chụp ngay<small style="text-transform:none;letter-spacing:0">Nhiếp ảnh gia tới trong 30–90 phút</small></div><div class="ic" style="opacity:0"></div></div>
+        <div class="map" style="height:132px"><svg class="base" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="260" height="200" fill="var(--map-bg)"/><path d="M0 170 Q60 150 120 175 T260 160 V200 H0Z" fill="var(--map-water)"/><rect x="150" y="105" width="70" height="40" rx="6" fill="var(--map-park)"/><g fill="var(--map-block)"><rect x="12" y="12" width="60" height="40" rx="4"/><rect x="88" y="12" width="70" height="40" rx="4"/><rect x="174" y="12" width="74" height="28" rx="4"/><rect x="12" y="68" width="60" height="50" rx="4"/><rect x="88" y="68" width="48" height="50" rx="4"/></g><g stroke="var(--map-road)" stroke-width="8" fill="none" stroke-linecap="round"><path d="M0 60 H260"/><path d="M80 0 V160"/><path d="M166 0 V100 L240 150"/><path d="M0 128 Q90 140 150 100"/></g></svg><div class="mpin self" style="left:44%;top:58%"><i></i><span>Điểm hẹn · Công viên Tao Đàn</span></div><div class="mfab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div></div>
+        <div class="pkg"><div><b>30 phút</b>15 ảnh<br><span class="tn">390K</span></div><div class="on"><b>1 giờ</b>30 ảnh<br><span class="tn">690K</span></div><div><b>2 giờ</b>60 ảnh<br><span class="tn">1,19M</span></div></div>
+        <div class="chips"><span class="chip on">Chân dung</span><span class="chip">Cặp đôi</span><span class="chip">Gia đình</span><span class="chip">Sản phẩm</span></div>
+        <div class="chk"><i></i><span><b>Mở rộng tìm kiếm</b><br><span class="meta">Tìm cả nhiếp ảnh gia khác ở gần nếu chưa có người nhận.</span></span></div>
+        <div class="esc"><svg><use href="#i-lock"/></svg><span>Tiền được giữ an toàn và hoàn 100% nếu không có người nhận. Thường có người nhận trong khoảng 4 phút.</span></div>
+      </div>
+      <div class="foot"><div class="btn pri">Thanh toán 690.000₫ và tìm</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S47 · Chụp ngay</span><b>Giá chắc chắn trước khi tìm</b><span>Gói do nền tảng đặt giá, khoá lúc trả. Ghim điểm hẹn mặc định là vị trí hiện tại. "Mở rộng tìm kiếm" tắt sẵn: bật thì sau vòng ưu tiên mời cả nhiếp ảnh gia khác ở gần.</span></div></div>
+
+    <div class="step" id="S48"><div class="phone" data-code="S48"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic" style="opacity:0"></div><div class="t" style="font-size:17px;text-align:center">Đang tìm nhiếp ảnh gia</div><div class="ic" style="opacity:0"></div></div>
+        <div class="pulse" role="img" aria-label="Đang tìm"><b></b><b></b><b></b><div class="core"><svg><use href="#i-cam"/></svg></div></div>
+        <div style="text-align:center"><b style="font-family:var(--display);font-size:18px">Đang mời người phù hợp gần bạn</b><div class="meta" style="margin-top:4px">Đã tìm <span class="tn">1:12</span> · bán kính 3 km · vòng ưu tiên</div></div>
+        <div class="card"><div class="t"><b>Chân dung · 1 giờ</b><span class="meta">Công viên Tao Đàn · 690.000₫ đã thanh toán</span></div><span class="badge b-pen">Đang tìm</span></div>
+        <div class="meta x" style="text-align:center">Bạn có thể thoát app; chúng tôi báo ngay khi có người nhận. Quá 10 phút chưa có ai, tiền tự hoàn đủ.</div>
+      </div>
+      <div class="foot"><div class="btn txt" style="color:var(--bad)">Huỷ yêu cầu</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S48 · Đang tìm</span><b>Chờ có đếm giờ và lối thoát</b><span>Sóng tìm kiếm tắt khi giảm chuyển động. Mời lần lượt, bán kính 3 → 6 → 10 km, tối đa 10 phút; quá hạn tự hoàn đủ. Huỷ là chữ đỏ mở S55.</span></div></div>
+
+    <div class="step" id="S49"><div class="phone" data-code="S49"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body flush">
+        <div class="map" style="height:250px;border-radius:0"><svg class="base" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="260" height="200" fill="var(--map-bg)"/><path d="M0 170 Q60 150 120 175 T260 160 V200 H0Z" fill="var(--map-water)"/><rect x="150" y="105" width="70" height="40" rx="6" fill="var(--map-park)"/><g fill="var(--map-block)"><rect x="12" y="12" width="60" height="40" rx="4"/><rect x="88" y="12" width="70" height="40" rx="4"/><rect x="174" y="12" width="74" height="28" rx="4"/><rect x="12" y="68" width="60" height="50" rx="4"/><rect x="88" y="68" width="48" height="50" rx="4"/></g><g stroke="var(--map-road)" stroke-width="8" fill="none" stroke-linecap="round"><path d="M0 60 H260"/><path d="M80 0 V160"/><path d="M166 0 V100 L240 150"/><path d="M0 128 Q90 140 150 100"/></g><path d="M60 150 C90 120,110 120,140 95 S190 60,215 52" fill="none" stroke="#8A3FFC" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 7"/></svg><div class="mpin self" style="left:83%;top:28%"><i></i><span>Bạn</span></div><div class="mpin" style="left:24%;top:76%"><i></i><span>Minh Trí · 9 phút</span></div><div class="mfab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div></div>
+        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+          <div class="row"><span class="av m"></span><div class="grow"><b style="font-size:14px">Minh Trí</b> <span class="vf" role="img" aria-label="Đã xác minh" title="Đã xác minh"><svg><use href="#i-check"/></svg></span><div class="meta">★ 4.9 · 112 buổi · đến trong khoảng <b class="tn">9 phút</b></div></div><span class="badge b-ok">Đang đến</span></div>
+          <div class="meta x">Đối chiếu ảnh đại diện khi gặp. Vị trí của Minh Trí chỉ hiện trong lúc đang đến.</div>
+          <div class="row" style="gap:8px"><div class="btn out sm">Nhắn tin</div><div class="cdial" data-static="1" style="flex:1"><div class="cbtn" role="button" tabindex="0" aria-label="Liên hệ" aria-haspopup="true" aria-expanded="false" style="width:100%;height:38px;border-radius:14px;font-size:12px"><svg style="width:16px;height:16px"><use href="#i-phone"/></svg>Liên hệ</div></div></div>
+          <div class="btn txt" style="color:var(--bad);height:32px">Huỷ (miễn phí thêm 1:40)</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S49 · Đang đến</span><b>Theo dõi như gọi xe</b><span>Bản đồ Goong, ghim có nhãn chữ, ETA bằng số. Liên hệ đã mở khoá vì đã trả tiền. Huỷ miễn phí trong 2 phút đầu, có đếm ngược.</span></div></div>
+
+    <div class="step" id="S50"><div class="phone" data-code="S50"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic" style="opacity:0"></div><div class="t" style="font-size:17px;text-align:center">Đang chụp</div><div class="ic"><svg><use href="#i-chat"/></svg></div></div>
+        <div class="cd" role="img" aria-label="Còn 38 phút"><div class="ring" style="background:conic-gradient(var(--accent) 0 63%,var(--field) 63% 100%)"></div><b>38:12<small>còn lại</small></b></div>
+        <div class="card"><span class="av m"></span><div class="t"><b>Minh Trí · Chân dung 1 giờ</b><span class="meta">Bắt đầu 15:42 · Công viên Tao Đàn</span></div><span class="badge b-ok">Đang chụp</span></div>
+        <div class="tl done"><i></i><div><b>Đã nhận · 15:21</b></div></div><div class="tl done"><i></i><div><b>Đã đến · 15:38</b></div></div><div class="tl"><i></i><div><b>Hoàn thành và giao 30 ảnh trong 48 giờ</b></div></div>
+        <div class="meta x">Khi Minh Trí bấm Hoàn thành, bạn xác nhận ở đây. Không xác nhận thì tự hoàn thành sau 2 giờ; có vấn đề thì báo trong 24 giờ.</div>
+      </div>
+      <div class="foot"><div class="btn pri">Xác nhận hoàn thành</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S50 · Đang chụp</span><b>Đồng hồ buổi chụp và một nút</b><span>Khách xác nhận hoàn thành; không xác nhận thì tự hoàn thành sau 2 giờ, khiếu nại trong 24 giờ. Tiền thả cho thợ theo luật tiền treo.</span></div></div>
+
+    <div class="step" id="S51"><div class="phone" data-code="S51"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic"><svg><use href="#i-back"/></svg></div><div class="t" style="font-size:17px">Chụp ngay</div><div class="ic" style="opacity:0"></div></div>
+        <div class="empty"><div class="ill ph p5" style="border-radius:50%"></div><b>Chưa tìm được nhiếp ảnh gia</b><span>Đã hoàn <b class="tn">690.000₫</b> về MoMo. Gần bạn lúc này ít người đang sẵn sàng.</span></div>
+        <div class="chk"><i class="on"></i><span><b>Mở rộng tìm kiếm</b><br><span class="meta">Lần này tìm cả nhiếp ảnh gia khác ở gần.</span></span></div>
+        <div class="btn out">Đặt lịch thường với người bạn chọn</div>
+      </div>
+      <div class="foot"><div class="btn pri">Thử lại</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S51 · Không tìm được người</span><b>Hoàn tiền trước, gợi ý sau</b><span>Báo rõ số tiền đã hoàn. Thử lại giữ lựa chọn cũ và đề nghị bật mở rộng; hoặc chuyển sang đặt lịch thường.</span></div></div>
+
+    <div class="step" id="S52"><div class="phone" data-code="S52"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic"><svg><use href="#i-back"/></svg></div><div class="t" style="font-size:17px">Chụp ngay</div><div class="ic" style="opacity:0"></div></div>
+        <div class="card hi"><div class="t"><b style="font-size:15px">Sẵn sàng chụp ngay</b><span class="meta">Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.</span></div><span class="sw2 on" role="switch" aria-checked="true" aria-label="Sẵn sàng chụp ngay"></span></div>
+        <div class="card"><div class="t"><b>Sẵn sàng hỗ trợ</b><span class="meta">Được ưu tiên mời cả việc gấp, xa hơn một chút.</span></div><span class="sw2" role="switch" aria-checked="false" aria-label="Sẵn sàng hỗ trợ"></span></div>
+        <div class="sec"><b>Bảng giá gói</b><span>Bản 3 · đã đồng ý</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><div class="opt" style="padding:8px 12px"><span class="grow"><b>30 phút · 15 ảnh</b><span class="meta">Khách trả <span class="tn">390K</span></span></span><span style="text-align:right"><span class="meta x">Bạn nhận</span><br><b class="tn">312K</b></span></div><div class="opt" style="padding:8px 12px"><span class="grow"><b>1 giờ · 30 ảnh</b><span class="meta">Khách trả <span class="tn">690K</span></span></span><span style="text-align:right"><span class="meta x">Bạn nhận</span><br><b class="tn">552K</b></span></div><div class="opt" style="padding:8px 12px"><span class="grow"><b>2 giờ · 60 ảnh</b><span class="meta">Khách trả <span class="tn">1,19M</span></span></span><span style="text-align:right"><span class="meta x">Bạn nhận</span><br><b class="tn">952K</b></span></div></div>
+        <div class="meta x">Bật lâu không mở app, chúng tôi hỏi lại sau 30 phút. Huỷ sau khi nhận làm giảm điểm tin cậy.</div>
+      </div>
+      <div class="foot"><div class="btn out">Tắt khi xong việc hôm nay</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S52 · Sẵn sàng chụp ngay</span><b>Một công tắc, giá minh bạch</b><span>Bật được khi hồ sơ đầy đủ, có số điện thoại và đã đồng ý bảng giá. "Sẵn sàng hỗ trợ" vào nhóm ưu tiên. Bảng giá hiện cả phần nhiếp ảnh gia nhận.</span></div></div>
+
+    <div class="step" id="S53"><div class="phone" data-code="S53"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic" style="opacity:0"></div><div class="t" style="font-size:17px;text-align:center">Lời mời chụp ngay</div><div class="ic" style="opacity:0"></div></div>
+        <div class="cd" role="timer" aria-label="Còn 22 giây"><div class="ring"></div><b>22<small>giây</small></b></div>
+        <div style="text-align:center"><b style="font-family:var(--display);font-size:24px" class="tn">552.000₫</b><div class="meta">Bạn nhận · Chân dung 1 giờ · 30 ảnh</div></div>
+        <div class="card"><div class="ic" style="background:var(--accent-soft);color:var(--accent)"><svg><use href="#i-pin"/></svg></div><div class="t"><b>Khu vực Phường Bến Thành, Quận 1</b><span class="meta">2,1 km · khoảng 8 phút · địa chỉ hiện khi bạn nhận</span></div></div>
+        <div class="meta x">Ghi chú của khách: "Chụp chân dung ở hồ, mình mặc áo dài trắng."</div>
+      </div>
+      <div class="foot"><div class="btn out" style="flex:0 0 34%">Từ chối</div><div class="btn pri" style="height:56px">Nhận việc</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S53 · Lời mời việc</span><b>30 giây, đủ thông tin để quyết</b><span>Đếm ngược bằng số và vòng. Chỉ thấy khu phố và khoảng cách; địa chỉ chính xác hiện sau khi nhận. Nút Nhận cao 56dp.</span></div></div>
+
+    <div class="step" id="S54"><div class="phone" data-code="S54"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body">
+        <div class="bar"><div class="ic" style="opacity:0"></div><div class="t" style="font-size:17px">Đang đến<small style="text-transform:none;letter-spacing:0">Lan Anh · Chân dung 1 giờ</small></div><div class="ic"><svg><use href="#i-chat"/></svg></div></div>
+        <div class="map" style="height:150px"><svg class="base" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="260" height="200" fill="var(--map-bg)"/><path d="M0 170 Q60 150 120 175 T260 160 V200 H0Z" fill="var(--map-water)"/><rect x="150" y="105" width="70" height="40" rx="6" fill="var(--map-park)"/><g fill="var(--map-block)"><rect x="12" y="12" width="60" height="40" rx="4"/><rect x="88" y="12" width="70" height="40" rx="4"/><rect x="174" y="12" width="74" height="28" rx="4"/><rect x="12" y="68" width="60" height="50" rx="4"/><rect x="88" y="68" width="48" height="50" rx="4"/></g><g stroke="var(--map-road)" stroke-width="8" fill="none" stroke-linecap="round"><path d="M0 60 H260"/><path d="M80 0 V160"/><path d="M166 0 V100 L240 150"/><path d="M0 128 Q90 140 150 100"/></g><path d="M60 150 C90 120,110 120,140 95 S190 60,215 52" fill="none" stroke="#8A3FFC" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 7"/></svg><div class="mpin self" style="left:83%;top:28%"><i></i><span>Lan Anh</span></div><div class="mpin" style="left:24%;top:76%"><i></i><span>Bạn</span></div></div>
+        <div class="card"><div class="t"><b>Cổng Trương Định, Công viên Tao Đàn</b><span class="meta">55C Nguyễn Thị Minh Khai, Quận 1 · 1,4 km</span></div><div class="btn out xs" style="flex:none">Chỉ đường</div></div>
+        <div class="tl done"><i></i><div><b>Đã nhận · 15:21</b></div></div><div class="tl"><i></i><div><b>Đã đến (bật khi còn cách 200 m)</b></div></div><div class="tl"><i></i><div><b>Bắt đầu chụp · Hoàn thành</b></div></div>
+        <div class="meta x">Thông báo "Đang nhận việc chụp ngay" hiện trong lúc chia sẻ vị trí. Tới nơi là dừng.</div>
+      </div>
+      <div class="foot"><div class="btn pri">Đã đến</div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S54 · Đang đến (thợ)</span><b>Chỉ đường và các mốc</b><span>Nút chính đổi theo mốc: Đã đến (bật khi cách ≤ 200 m), Bắt đầu chụp, Hoàn thành. Chia sẻ vị trí 10–15 giây một lần, dừng khi tới.</span></div></div>
+
+    <div class="step" id="S55"><div class="phone" data-code="S55"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body flush"><div class="map" style="height:300px;border-radius:0"><svg class="base" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="260" height="200" fill="var(--map-bg)"/><path d="M0 170 Q60 150 120 175 T260 160 V200 H0Z" fill="var(--map-water)"/><rect x="150" y="105" width="70" height="40" rx="6" fill="var(--map-park)"/><g fill="var(--map-block)"><rect x="12" y="12" width="60" height="40" rx="4"/><rect x="88" y="12" width="70" height="40" rx="4"/><rect x="174" y="12" width="74" height="28" rx="4"/><rect x="12" y="68" width="60" height="50" rx="4"/><rect x="88" y="68" width="48" height="50" rx="4"/></g><g stroke="var(--map-road)" stroke-width="8" fill="none" stroke-linecap="round"><path d="M0 60 H260"/><path d="M80 0 V160"/><path d="M166 0 V100 L240 150"/><path d="M0 128 Q90 140 150 100"/></g><path d="M60 150 C90 120,110 120,140 95 S190 60,215 52" fill="none" stroke="#8A3FFC" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 7"/></svg></div></div>
+      <div class="dim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="h3">Huỷ chụp ngay?</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+          <div class="opt" style="padding:8px 12px"><span class="grow">Đang tìm, hoặc 2 phút đầu sau khi có người nhận</span><b>Hoàn 100%</b></div>
+          <div class="opt on" style="padding:8px 12px"><span class="grow">Nhiếp ảnh gia đang đến (bây giờ)</span><b>Hoàn 80%</b></div>
+          <div class="opt" style="padding:8px 12px"><span class="grow">Đã đến, bạn không có mặt sau 15 phút</span><b>Hoàn 50%</b></div>
+        </div>
+        <div class="meta x">Bạn sẽ được hoàn <b class="tn">552.000₫</b>; <span class="tn">138.000₫</span> là phí đi lại trả cho Minh Trí.</div>
+        <div class="btn dng">Huỷ và hoàn 552.000₫</div>
+        <div class="btn txt" style="color:var(--ink)">Giữ yêu cầu</div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S55 · Huỷ chụp ngay</span><b>Thấy số tiền trước khi huỷ</b><span>Mốc hiện tại được tô; số tiền hoàn và phí lấy từ server (dryRun). Xác nhận là nút đỏ, không bao giờ là nút gradient.</span></div></div>
+  </div>
+
   <h2>Quy tắc component</h2>
   <div class="tbl"><table>
     <tr><th>Component</th><th>Quy tắc</th><th>Xuất hiện ở</th></tr>
@@ -1179,7 +1342,7 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
 
   <h2>Mã màn hình</h2>
   <p>Bật "Debug" ở đầu trang để hiện mã ở góc trên trái mỗi màn. Thêm <code>#S12</code> vào link để nhảy thẳng tới màn đó.</p>
-  <div class="tbl"><table><tr><th>Mã</th><th>Màn hình</th><th>Nhóm</th><th></th></tr><tr><td><code>S01</code></td><td>Trang chủ</td><td>Khách</td><td></td></tr><tr><td><code>S02</code></td><td>Chi tiết ảnh</td><td>Khách</td><td></td></tr><tr><td><code>S03</code></td><td>Hồ sơ nhiếp ảnh gia</td><td>Khách</td><td></td></tr><tr><td><code>S04</code></td><td>Tìm thợ ảnh (tab giữa)</td><td>Khách</td><td></td></tr><tr><td><code>S05</code></td><td>Đặt lịch, bước 1/4</td><td>Khách</td><td></td></tr><tr><td><code>S06</code></td><td>Đặt lịch, bước 2/4</td><td>Khách</td><td></td></tr><tr><td><code>S07</code></td><td>Đặt lịch, bước 4/4</td><td>Khách</td><td></td></tr><tr><td><code>S08</code></td><td>Chờ thanh toán</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S09</code></td><td>Chi tiết booking</td><td>Khách</td><td></td></tr><tr><td><code>S10</code></td><td>Huỷ booking</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S11</code></td><td>Hội thoại</td><td>Khách</td><td></td></tr><tr><td><code>S12</code></td><td>Hậu buổi chụp</td><td>Khách</td><td></td></tr><tr><td><code>S13</code></td><td>Khám phá</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S14</code></td><td>Danh sách đặt lịch</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S15</code></td><td>Danh sách sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S16</code></td><td>Chi tiết sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S17</code></td><td>Đăng ký sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S18</code></td><td>Vé sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S19</code></td><td>Công việc</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S20</code></td><td>Lịch rảnh</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S21</code></td><td>Đăng bài (tab giữa)</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S22</code></td><td>Empty state</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S23</code></td><td>Từ chối yêu cầu</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S24</code></td><td>Thiết lập hồ sơ</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S25</code></td><td>Tạo sự kiện, bước 1/2</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S26</code></td><td>Tạo sự kiện, bước 2/2</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S27</code></td><td>Quản lý sự kiện</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S28</code></td><td>Đăng nhập</td><td>Có sẵn</td><td></td></tr><tr><td><code>S29</code></td><td>Chọn vai trò</td><td>Có sẵn</td><td></td></tr><tr><td><code>S30</code></td><td>Hồ sơ</td><td>Có sẵn</td><td></td></tr><tr><td><code>S31</code></td><td>Cài đặt</td><td>Có sẵn</td><td></td></tr><tr><td><code>S32</code></td><td>Liên hệ nhiếp ảnh gia (sheet)</td><td>Liên hệ</td><td>Mới</td></tr><tr><td><code>S33</code></td><td>Thêm số điện thoại (sheet)</td><td>Liên hệ</td><td>Mới</td></tr><tr><td><code>S34</code></td><td>Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ)</td><td>Liên hệ</td><td>Mới</td></tr><tr><td><code>S35</code></td><td>Khám phá, đã bật vị trí</td><td>Vị trí</td><td>Mới</td></tr><tr><td><code>S36</code></td><td>Chọn khu vực thủ công (sheet)</td><td>Vị trí</td><td>Mới</td></tr><tr><td><code>S37</code></td><td>Huy hiệu</td><td>Hồ sơ</td><td>Mới</td></tr><tr><td><code>S38</code></td><td>Kỹ năng, phần 1 (thể loại, mức độ)</td><td>Kỹ năng</td><td>Mới</td></tr><tr><td><code>S39</code></td><td>Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ)</td><td>Kỹ năng</td><td>Mới</td></tr><tr><td><code>S40</code></td><td>Minh chứng kỹ năng (sheet)</td><td>Kỹ năng</td><td>Mới</td></tr><tr><td><code>S41</code></td><td>Đăng ký</td><td>Có sẵn</td><td></td></tr><tr><td><code>S42</code></td><td>Sửa hồ sơ</td><td>Có sẵn</td><td></td></tr><tr><td><code>S43</code></td><td>Thu nhập</td><td>Tiền treo</td><td>Mới</td></tr><tr><td><code>S44</code></td><td>Tài khoản nhận tiền</td><td>Tiền treo</td><td>Mới</td></tr><tr><td><code>S45</code></td><td>Timeline sự kiện</td><td>Sự kiện</td><td>Mới</td></tr><tr><td><code>S46</code></td><td>Nhóm chat sự kiện</td><td>Sự kiện</td><td>Mới</td></tr></table></div>
+  <div class="tbl"><table><tr><th>Mã</th><th>Màn hình</th><th>Nhóm</th><th></th></tr><tr><td><code>S01</code></td><td>Trang chủ</td><td>Khách</td><td></td></tr><tr><td><code>S02</code></td><td>Chi tiết ảnh</td><td>Khách</td><td></td></tr><tr><td><code>S03</code></td><td>Hồ sơ nhiếp ảnh gia</td><td>Khách</td><td></td></tr><tr><td><code>S04</code></td><td>Tìm thợ ảnh (tab giữa)</td><td>Khách</td><td></td></tr><tr><td><code>S05</code></td><td>Đặt lịch, bước 1/4</td><td>Khách</td><td></td></tr><tr><td><code>S06</code></td><td>Đặt lịch, bước 2/4</td><td>Khách</td><td></td></tr><tr><td><code>S07</code></td><td>Đặt lịch, bước 4/4</td><td>Khách</td><td></td></tr><tr><td><code>S08</code></td><td>Chờ thanh toán</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S09</code></td><td>Chi tiết booking</td><td>Khách</td><td></td></tr><tr><td><code>S10</code></td><td>Huỷ booking</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S11</code></td><td>Hội thoại</td><td>Khách</td><td></td></tr><tr><td><code>S12</code></td><td>Hậu buổi chụp</td><td>Khách</td><td></td></tr><tr><td><code>S13</code></td><td>Khám phá</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S14</code></td><td>Danh sách đặt lịch</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S15</code></td><td>Danh sách sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S16</code></td><td>Chi tiết sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S17</code></td><td>Đăng ký sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S18</code></td><td>Vé sự kiện</td><td>Khách</td><td>Mới</td></tr><tr><td><code>S19</code></td><td>Công việc</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S20</code></td><td>Lịch rảnh</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S21</code></td><td>Đăng bài (tab giữa)</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S22</code></td><td>Empty state</td><td>Nhiếp ảnh gia</td><td></td></tr><tr><td><code>S23</code></td><td>Từ chối yêu cầu</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S24</code></td><td>Thiết lập hồ sơ</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S25</code></td><td>Tạo sự kiện, bước 1/2</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S26</code></td><td>Tạo sự kiện, bước 2/2</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S27</code></td><td>Quản lý sự kiện</td><td>Nhiếp ảnh gia</td><td>Mới</td></tr><tr><td><code>S28</code></td><td>Đăng nhập</td><td>Có sẵn</td><td></td></tr><tr><td><code>S29</code></td><td>Chọn vai trò</td><td>Có sẵn</td><td></td></tr><tr><td><code>S30</code></td><td>Hồ sơ</td><td>Có sẵn</td><td></td></tr><tr><td><code>S31</code></td><td>Cài đặt</td><td>Có sẵn</td><td></td></tr><tr><td><code>S32</code></td><td>Liên hệ nhiếp ảnh gia (sheet)</td><td>Liên hệ</td><td>Mới</td></tr><tr><td><code>S33</code></td><td>Thêm số điện thoại (sheet)</td><td>Liên hệ</td><td>Mới</td></tr><tr><td><code>S34</code></td><td>Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ)</td><td>Liên hệ</td><td>Mới</td></tr><tr><td><code>S35</code></td><td>Khám phá, đã bật vị trí</td><td>Vị trí</td><td>Mới</td></tr><tr><td><code>S36</code></td><td>Chọn khu vực thủ công (sheet)</td><td>Vị trí</td><td>Mới</td></tr><tr><td><code>S37</code></td><td>Huy hiệu</td><td>Hồ sơ</td><td>Mới</td></tr><tr><td><code>S38</code></td><td>Kỹ năng, phần 1 (thể loại, mức độ)</td><td>Kỹ năng</td><td>Mới</td></tr><tr><td><code>S39</code></td><td>Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ)</td><td>Kỹ năng</td><td>Mới</td></tr><tr><td><code>S40</code></td><td>Minh chứng kỹ năng (sheet)</td><td>Kỹ năng</td><td>Mới</td></tr><tr><td><code>S41</code></td><td>Đăng ký</td><td>Có sẵn</td><td></td></tr><tr><td><code>S42</code></td><td>Sửa hồ sơ</td><td>Có sẵn</td><td></td></tr><tr><td><code>S43</code></td><td>Thu nhập</td><td>Tiền treo</td><td>Mới</td></tr><tr><td><code>S44</code></td><td>Tài khoản nhận tiền</td><td>Tiền treo</td><td>Mới</td></tr><tr><td><code>S45</code></td><td>Timeline sự kiện</td><td>Sự kiện</td><td>Mới</td></tr><tr><td><code>S46</code></td><td>Nhóm chat sự kiện</td><td>Sự kiện</td><td>Mới</td></tr><tr><td><code>S47</code></td><td>Chụp ngay: gói, điểm hẹn</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S48</code></td><td>Đang tìm nhiếp ảnh gia</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S49</code></td><td>Đang đến (bản đồ, ETA)</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S50</code></td><td>Đang chụp</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S51</code></td><td>Không tìm được người</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S52</code></td><td>Sẵn sàng chụp ngay</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S53</code></td><td>Lời mời việc</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S54</code></td><td>Đang đến (nhiếp ảnh gia)</td><td>Chụp ngay</td><td>Mới</td></tr><tr><td><code>S55</code></td><td>Huỷ chụp ngay (sheet)</td><td>Chụp ngay</td><td>Mới</td></tr></table></div>
 
   <h2>Tiến độ so với app</h2>
   <div class="tbl"><table>
@@ -1192,6 +1355,7 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
     <tr><td>Kỹ năng, gợi ý</td><td>S38–S40, dịch vụ recommender</td><td>Chưa có</td></tr>
     <tr><td>Tiền treo, timeline và nhóm chat sự kiện</td><td>S43–S46</td><td>Chưa có</td></tr>
     <tr><td>Nhiếp ảnh gia</td><td>S19–S27 (công việc, sự kiện của nhiếp ảnh gia)</td><td>Chưa có</td></tr>
+    <tr><td>Chụp ngay</td><td>S47–S55, dịch vụ điều phối</td><td>Chưa có (đã có spec)</td></tr>
   </table></div>
   <p class="note">Spec triển khai các màn còn lại: <code>docs/superpowers/specs/2026-10-01-remaining-screens.md</code>.</p>
 </div>
