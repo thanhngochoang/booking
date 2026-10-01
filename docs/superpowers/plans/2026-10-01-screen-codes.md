@@ -283,6 +283,8 @@ void main() {
               child: Align(
                 alignment: Alignment.topLeft,
                 child: GestureDetector(
+                  // An empty SizedBox is not hit-testable on its own.
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => taps++,
                   child: const SizedBox(key: _childKey, width: 200, height: 200),
                 ),
