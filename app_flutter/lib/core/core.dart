@@ -14,6 +14,7 @@ export 'package:photobooking/core/widgets/aurora_background.dart';
 export 'package:photobooking/core/widgets/aurora_hero.dart';
 export 'package:photobooking/core/widgets/cta_surface.dart';
 export 'package:photobooking/core/widgets/empty_state.dart';
+export 'package:photobooking/core/widgets/free_tag.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
 export 'package:photobooking/core/widgets/screen_code.dart';
 export 'package:photobooking/core/widgets/status_badge.dart';

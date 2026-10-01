@@ -349,4 +349,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get verifiedLabel => 'Đã xác minh';
+
+  @override
+  String get freeTag => 'Không thu phí';
+
+  @override
+  String get freeBannerBody => 'Đăng ký để giữ chỗ, không cần thanh toán';
 }

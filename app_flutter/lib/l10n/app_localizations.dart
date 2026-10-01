@@ -747,6 +747,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã xác minh'**
   String get verifiedLabel;
+
+  /// No description provided for @freeTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thu phí'**
+  String get freeTag;
+
+  /// No description provided for @freeBannerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký để giữ chỗ, không cần thanh toán'**
+  String get freeBannerBody;
 }
 
 class _AppLocalizationsDelegate
