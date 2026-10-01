@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info:
+  title: Recommender service
+  version: 1.0.0
+  description: |
+    Dịch vụ gợi ý chạy riêng cho ứng dụng Cộng đồng nhiếp ảnh gia.
+    Ứng dụng KHÔNG gọi thẳng dịch vụ này: gọi hàm Firebase callable `recommend`
+    (xác thực, App Check, giới hạn tần suất), hàm đó gọi dịch vụ bằng danh tính dịch vụ.
+    Hợp đồng ổn định theo phiên bản đường dẫn (/v1). Thuật toán đổi bên trong, hợp đồng không đổi.
+servers:
+  - url: https://recommender-REPLACE_ME.a.run.app
+    description: Cloud Run (riêng tư, IAM)
+security:
+  - serviceIdentity: []
+paths:
+  /v1/recommend/photographers:
+    post:
+      operationId: recommendPhotographers
+      summary: Xếp hạng nhiếp ảnh gia theo ngữ cảnh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendPhotographersRequest'
+      responses:
+        '200':
+          description: Danh sách đã xếp hạng
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/recommend/photographers/{photographerId}/similar:
+    get:
+      operationId: similarPhotographers
+      summary: Nhiếp ảnh gia tương tự (S03)
+      parameters:
+        - name: photographerId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 20, default: 8 }
+        - name: algorithm
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Danh sách tương tự
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendResponse'
+        '404':
+          description: Không có nhiếp ảnh gia
+  /v1/feedback:
+    post:
+      operationId: sendFeedback
+      summary: Nhận lô tín hiệu để đánh giá và huấn luyện
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackBatch'
+      responses:
+        '202':
+          description: Đã nhận
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /v1/health:
+    get:
+      operationId: health
+      summary: Kiểm tra sống
+      responses:
+        '200':
+          description: Còn sống
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, algorithms]
+                properties:
+                  status: { type: string, enum: [ok] }
+                  algorithms:
+                    type: array
+                    description: Thuật toán đã đăng ký và bản mặc định
+                    items:
+                      type: object
+                      required: [name, version, default]
+                      properties:
+                        name: { type: string, example: rules-v1 }
+                        version: { type: string, example: 1.0.0 }
+                        default: { type: boolean }
+components:
+  securitySchemes:
+    serviceIdentity:
+      type: http
+      scheme: bearer
+      bearerFormat: Google ID token của tài khoản dịch vụ gọi
+  responses:
+    BadRequest:
+      description: Yêu cầu sai
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Quá giới hạn
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: invalid_argument }
+        message: { type: string }
+    Context:
+      type: object
+      description: Ngữ cảnh tìm kiếm. Vị trí chỉ là geohash, không phải toạ độ.
+      properties:
+        specialty:
+          type: string
+          description: id trong taxonomy/skills (ví dụ portrait)
+        date:
+          type: string
+          format: date
+        geohash6:
+          type: string
+          minLength: 6
+          maxLength: 6
+          description: Ô ≈ 1,2 km
+        budgetMax:
+          type: integer
+          minimum: 0
+          description: VNĐ
+        styles:
+          type: array
+          items: { type: string }
+        audiences:
+          type: array
+          items: { type: string }
+    RecommendPhotographersRequest:
+      type: object
+      required: [context]
+      properties:
+        algorithm:
+          type: string
+          description: Tên thuật toán; bỏ trống thì dùng bản mặc định trong cấu hình
+          example: rules-v1
+        experiment:
+          type: string
+          description: Tên thử nghiệm A/B (nếu có)
+        userKey:
+          type: string
+          description: Mã người dùng đã băm; dùng chọn nhóm A/B và nhật ký, không phải uid
+        context:
+          $ref: '#/components/schemas/Context'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+        cursor:
+          type: string
+        excludeIds:
+          type: array
+          items: { type: string }
+          maxItems: 100
+    Reason:
+      type: object
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          enum: [skill_match, near, free_on_date, top_rated, fast_reply, new_talent]
+        text:
+          type: string
+          description: Câu tiếng Việt hiển thị, ví dụ "Chuyên sâu chân dung"
+    RecommendedItem:
+      type: object
+      required: [photographerId, rank, score, reasons]
+      properties:
+        photographerId: { type: string }
+        rank: { type: integer, minimum: 1 }
+        score: { type: number, minimum: 0, maximum: 1 }
+        reasons:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/Reason'
+        breakdown:
+          type: object
+          description: Chỉ có khi bật gỡ lỗi; điểm từng thành phần
+          additionalProperties: { type: number }
+    RecommendResponse:
+      type: object
+      required: [requestId, algorithm, algorithmVersion, items]
+      properties:
+        requestId: { type: string }
+        algorithm: { type: string, example: rules-v1 }
+        algorithmVersion: { type: string, example: 1.0.0 }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendedItem'
+        nextCursor:
+          type: string
+          nullable: true
+    FeedbackSignal:
+      type: object
+      required: [type, requestId, photographerId, at]
+      properties:
+        type:
+          type: string
+          enum: [impression, click, inquiry, booking]
+        requestId: { type: string }
+        photographerId: { type: string }
+        rank: { type: integer, minimum: 1 }
+        algorithmVersion: { type: string }
+        at: { type: string, format: date-time }
+    FeedbackBatch:
+      type: object
+      required: [userKey, signals]
+      properties:
+        userKey: { type: string }
+        signals:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/FeedbackSignal'

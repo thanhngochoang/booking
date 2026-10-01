@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-"Cộng đồng nhiếp ảnh gia" (applicationId `com.thanhbk.timnhay`) is a native Android app (Java, 2017) for booking photographers. Two roles share one app: customers find/book photographers and post open projects; photographers manage albums, accept/deny bookings and attend open projects. Both roles can chat 1‑1. There is no custom backend: everything goes through Firebase (Auth via Facebook/Google, Firestore, Realtime Database, Storage).
+"Cộng đồng nhiếp ảnh gia" (applicationId `com.thanhbk.booking`) is a native Android app (Java, 2017) for booking photographers. Two roles share one app: customers find/book photographers and post open projects; photographers manage albums, accept/deny bookings and attend open projects. Both roles can chat 1‑1. There is no custom backend: everything goes through Firebase (Auth via Facebook/Google, Firestore, Realtime Database, Storage).
 
 UI strings are Vietnamese. Java package is `com.paditech.mvpbase` (the app was scaffolded from a Paditech MVP template; `APIService`/`APIClient` and `FlickrManager` are leftover template code, not used by the core flows).
 
@@ -48,3 +48,36 @@ Presenters are instantiated by reflection through the `PresenterFactory` singlet
 - Date/time display formats are centralised in `common/utils/Constant.java`.
 - Calendar screen uses `android-week-view` and can sync to Google Calendar via the Google Calendar API (`google_calendar_account` on `User`).
 - Registration terms are the static HTML asset `app/src/main/assets/list_terms.html`.
+
+## Flutter rewrite (`app_flutter/`, branch `flutter-rewrite`)
+
+Everything above describes the legacy Java app, kept as reference. The rewrite is a Flutter app (package `photobooking`, Riverpod + go_router + freezed) on Firebase today, designed so the backend can later move to a self-hosted system. Design and specs are written in Vietnamese.
+
+### Design and specs (read before building or changing a screen)
+
+- **UI mock**: `docs/design/ui-mock.html`, a standalone page; open it in a browser. The "Debug" button shows each screen's code; add `#S12` to the URL to jump to a screen. Published copy: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (private; the repo file is the source to edit).
+- **Main spec**: `docs/superpowers/specs/2026-10-01-remaining-screens.md` (theme, screen-code table, events, contact, location, badges, recommender, escrow, open questions). It extends the original `2026-09-30-photography-marketplace-design.md`.
+- **Per-screen specs**: `docs/superpowers/specs/screens/` (`README.md` has the template and cross-cutting conventions).
+- **Shared widgets**: `docs/superpowers/specs/components/shared-components.md`.
+- **Data model** (backend-agnostic, migration target): `docs/superpowers/specs/data-model/` (`README.md` conventions and ports, `domain-model.md`, `relational-schema.md`).
+- **Recommender service contract**: `services/recommender/api/openapi.yaml`.
+- **Screen codes**: screens are numbered `S01`–`S46` in a single increasing sequence (never renumber; new screens take the next number). When the user names a code ("fix S07"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec and the code table in sync when one changes.
+
+### Rules to follow
+
+- **Theme**: dark aurora is the default; tokens come from `design-system/tokens.json` → `dart run tool/gen_tokens.dart` → `lib/core/theme/tokens.g.dart` (never edit the generated file). Use `AppColors`/`AppSpace`/`AppRadius`, not raw hex or numbers.
+- **One primary action per screen**: `AppButton.primary` (filled by `CtaSurface`: theme gradient, or the user's blurred avatar). Cancel/decline is a red button inside a confirmation sheet, never the gradient button.
+- **Imports**: `package:photobooking/...` only (enforced by lint), and features import `core/core.dart`, not files inside `core/`.
+- **Firebase isolation**: `cloud_firestore`/`firebase_*` may only appear in the data adapters, `firebase_options.dart` and `main.dart`; domain and features depend on repository interfaces. Follow the id, time, money and enum conventions in `data-model/README.md` (ULID/opaque ids, UTC instants, integer VND, string enum codes, no Firebase types in the domain).
+- **Strings** live in `lib/l10n/app_vi.arb` (run `flutter gen-l10n`); no hard-coded UI text. Free events show the tag "Không thu phí", never "0₫".
+- **Money and contact rules** (product decisions, do not weaken): deposits and ticket money are held in escrow until the shoot/event is completed; phone, Zalo and WhatsApp channels unlock only after booking/ticket payment (before that, only in-app "inquiry" chat); a customer needs a phone number to book; phone numbers never go in the public `users/{uid}` document.
+
+### Commands (run from `app_flutter/`)
+
+```bash
+source ../scripts/env.sh && export HOME="$PWD/../.home"   # project-local Flutter/JDK; HOME avoids tool-telemetry writes outside the sandbox
+export PATH="$PWD/../.flutter/bin:$PATH"
+flutter analyze && flutter test
+dart run tool/gen_tokens.dart      # after editing design-system/tokens.json
+flutter gen-l10n                   # after editing lib/l10n/app_vi.arb
+```
