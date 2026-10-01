@@ -43,3 +43,21 @@ String formatMoney(int vnd, {bool short = false}) {
   }
   return compact(vnd / 1000, 'K');
 }
+
+/// `T2`..`T7`, `CN` for [DateTime.monday]..[DateTime.sunday].
+String weekdayLabel(int weekday) =>
+    weekday == DateTime.sunday ? 'CN' : 'T${weekday + 1}';
+
+String _two(int n) => n.toString().padLeft(2, '0');
+
+/// `12/10`.
+String formatDayMonth(DateTime day) => '${_two(day.day)}/${_two(day.month)}';
+
+/// `T7 12/10`. [day] is a Vietnamese calendar date; only its calendar fields
+/// are read, so no time zone conversion happens here.
+String formatDay(DateTime day) =>
+    '${weekdayLabel(day.weekday)} ${formatDayMonth(day)}';
+
+/// `4,9`.
+String formatRating(double rating) =>
+    ((rating * 10).round() / 10).toStringAsFixed(1).replaceAll('.', ',');
