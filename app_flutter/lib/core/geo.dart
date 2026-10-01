@@ -93,13 +93,14 @@ String encodeGeohash(double lat, double lng, {int precision = 9}) {
   return (lat: b.lat, lng: b.lng);
 }
 
-/// [hash] followed by its neighbours, all of the same length. Cells past a pole
-/// do not exist and are skipped; longitude wraps at the antimeridian.
-List<String> geohashCells(String hash) {
+/// [hash] followed by the cells around it within [rings] steps (a
+/// (2*rings+1)^2 block), all of the same length. Cells past a pole do not exist
+/// and are skipped; longitude wraps at the antimeridian.
+List<String> geohashCells(String hash, {int rings = 1}) {
   final b = _decodeBox(hash);
   final neighbours = <String>{};
-  for (var dy = -1; dy <= 1; dy++) {
-    for (var dx = -1; dx <= 1; dx++) {
+  for (var dy = -rings; dy <= rings; dy++) {
+    for (var dx = -rings; dx <= rings; dx++) {
       final lat = b.lat + dy * 2 * b.latErr;
       if (lat > 90 || lat < -90) {
         continue;
@@ -149,4 +150,23 @@ int geohashPrecisionForRadiusKm(double radiusKm) {
     return 3;
   }
   return 2;
+}
+
+/// Geohash length and ring count to query for a [radiusKm] search.
+///
+/// Precision-4 cells are about 39 km wide by 19.5 km tall, so one ring would
+/// leave gaps for a 25 km radius; two rings cover a 39 km radius at Vietnam's
+/// latitudes. Precision 5 (4.9 km cells) with one ring covers 4 km, precision 3
+/// (156 km tall) with one ring covers 140 km, and precision 2 covers the rest.
+({int precision, int rings}) geohashQueryFor(double radiusKm) {
+  if (radiusKm <= 4) {
+    return (precision: 5, rings: 1);
+  }
+  if (radiusKm <= 39) {
+    return (precision: 4, rings: 2);
+  }
+  if (radiusKm <= 140) {
+    return (precision: 3, rings: 1);
+  }
+  return (precision: 2, rings: 1);
 }

@@ -93,4 +93,33 @@ void main() {
       expect(geohashPrecisionForRadiusKm(300), 2);
     });
   });
+
+  group('rings and geohashQueryFor', () {
+    test('two rings give a 5x5 block, cell first', () {
+      final cells = geohashCells('w3gv', rings: 2);
+      expect(cells.toSet(), hasLength(25));
+      expect(cells.first, 'w3gv');
+    });
+
+    test('a point 25 km from HCMC is inside the queried cells', () {
+      final q = geohashQueryFor(25);
+      final centre = encodeGeohash(10.7769, 106.7009, precision: q.precision);
+      final cells = geohashCells(centre, rings: q.rings);
+      final far = encodeGeohash(10.7769 + 0.225, 106.7009, precision: 4);
+      expect(
+        haversineKm(10.7769, 106.7009, 10.7769 + 0.225, 106.7009),
+        closeTo(25, 0.5),
+      );
+      expect(cells, contains(far));
+    });
+
+    test('boundaries', () {
+      expect(geohashQueryFor(4), (precision: 5, rings: 1));
+      expect(geohashQueryFor(4.1), (precision: 4, rings: 2));
+      expect(geohashQueryFor(39), (precision: 4, rings: 2));
+      expect(geohashQueryFor(40), (precision: 3, rings: 1));
+      expect(geohashQueryFor(140), (precision: 3, rings: 1));
+      expect(geohashQueryFor(141), (precision: 2, rings: 1));
+    });
+  });
 }

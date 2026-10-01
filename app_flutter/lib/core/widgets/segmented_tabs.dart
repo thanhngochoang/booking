@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsRole;
+
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/app_theme.dart';
@@ -42,6 +44,7 @@ class SegmentedTabs<T> extends StatelessWidget {
             Expanded(
               child: Semantics(
                 button: true,
+                role: SemanticsRole.tab,
                 selected: o.value == value,
                 inMutuallyExclusiveGroup: true,
                 label: o.label,

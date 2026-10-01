@@ -55,14 +55,15 @@ class AppChip extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           child: Center(
             widthFactor: 1,
+            heightFactor: 1,
             child: Material(
               color: fill,
               shape: StadiumBorder(side: BorderSide(color: edge)),
               child: InkWell(
                 customBorder: const StadiumBorder(),
                 onTap: () => onChanged(!selected),
-                child: SizedBox(
-                  height: 32,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 32),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s3,
@@ -70,10 +71,10 @@ class AppChip extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (leading != null) ...[
+                        if (leading != null || selected) ...[
                           IconTheme(
                             data: IconThemeData(color: text, size: 16),
-                            child: leading!,
+                            child: leading ?? const Icon(Icons.check),
                           ),
                           const SizedBox(width: AppSpace.s1),
                         ],

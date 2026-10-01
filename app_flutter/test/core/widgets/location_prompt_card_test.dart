@@ -61,6 +61,10 @@ void main() {
       _card(LocationPromptState.requesting, onAllow: () => allow++),
     );
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    final handle = tester.ensureSemantics();
+    await tester.pump();
+    expect(find.bySemanticsLabel('Cho phép'), findsOneWidget);
+    handle.dispose();
     await tester.tap(
       find.byKey(const Key('location-allow')),
       warnIfMissed: false,

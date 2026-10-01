@@ -1,4 +1,4 @@
-import 'dart:ui' show Tristate;
+import 'dart:ui' show SemanticsRole, Tristate;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
@@ -55,6 +55,7 @@ void main() {
     final selected = tester.getSemantics(find.bySemanticsLabel('Địa điểm'));
     final other = tester.getSemantics(find.bySemanticsLabel('Dịch vụ'));
     expect(selected.flagsCollection.isSelected, Tristate.isTrue);
+    expect(selected.role, SemanticsRole.tab);
     expect(other.flagsCollection.isSelected, Tristate.isFalse);
     handle.dispose();
   });

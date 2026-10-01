@@ -80,10 +80,7 @@ void main() {
     await tester.pumpWidget(
       hostWidget(AppChip(label: 'A', selected: false, onChanged: (_) {})),
     );
-    expect(
-      tester.getSize(find.byType(AppChip)).height,
-      greaterThanOrEqualTo(48),
-    );
+    expect(tester.getSize(find.byType(AppChip)).height, 48);
     expect(
       tester
           .getSize(
@@ -157,5 +154,43 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(tester.getSize(find.byType(AppChip)).width, lessThanOrEqualTo(320));
+  });
+
+  testWidgets('stays 48dp tall inside a taller parent', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        SizedBox(
+          height: 200,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: AppChip(label: 'A', selected: false, onChanged: (_) {}),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(AppChip)).height, 48);
+  });
+
+  testWidgets('selected chip without leading shows a check', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(AppChip(label: 'A', selected: true, onChanged: (_) {})),
+    );
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    await tester.pumpWidget(
+      hostWidget(AppChip(label: 'A', selected: false, onChanged: (_) {})),
+    );
+    expect(find.byIcon(Icons.check), findsNothing);
+    await tester.pumpWidget(
+      hostWidget(
+        AppChip(
+          label: 'A',
+          selected: true,
+          onChanged: (_) {},
+          leading: const Icon(Icons.place_outlined),
+        ),
+      ),
+    );
+    expect(find.byIcon(Icons.check), findsNothing);
+    expect(find.byIcon(Icons.place_outlined), findsOneWidget);
   });
 }

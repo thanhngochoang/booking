@@ -49,15 +49,26 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final onGradient = _kind == _Kind.primary;
     final Widget child = loading
-        ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: onGradient
-                  ? Colors.white
-                  : style?.foregroundColor?.resolve(const {}),
-            ),
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              // Keeps the width and the accessible name while the spinner shows.
+              Opacity(
+                opacity: 0,
+                alwaysIncludeSemantics: true,
+                child: Text(label),
+              ),
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: onGradient
+                      ? Colors.white
+                      : style?.foregroundColor?.resolve(const {}),
+                ),
+              ),
+            ],
           )
         : icon == null
         ? Text(label)
