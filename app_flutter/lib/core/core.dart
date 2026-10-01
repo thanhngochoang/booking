@@ -4,6 +4,7 @@
 /// directly to keep the barrel free of cycles.
 library;
 
+export 'package:photobooking/core/contact_channel.dart';
 export 'package:photobooking/core/l10n_ext.dart';
 export 'package:photobooking/core/phone.dart';
 export 'package:photobooking/core/screen_codes.dart';
