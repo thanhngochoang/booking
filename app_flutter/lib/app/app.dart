@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 
-import '../l10n/app_localizations.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key, required this.router, this.theme, this.darkTheme});
@@ -17,6 +17,8 @@ class MyApp extends StatelessWidget {
       routerConfig: router,
       theme: theme,
       darkTheme: darkTheme,
+      // The brand look is the dark aperture canvas; light stays available.
+      themeMode: ThemeMode.dark,
       locale: const Locale('vi'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

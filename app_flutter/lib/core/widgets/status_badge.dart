@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../data/booking/booking_status.dart';
-import '../l10n_ext.dart';
-import '../theme/tokens.g.dart';
+import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 
 class StatusBadge extends StatelessWidget {
   const StatusBadge(this.status, {super.key});

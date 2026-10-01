@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/l10n_ext.dart';
-import '../../core/theme/tokens.g.dart';
-import '../../core/widgets/app_button.dart';
-import '../../core/widgets/empty_state.dart';
-import '../../data/auth/auth_providers.dart';
-import '../../data/user/user_profile.dart';
+import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 
 UserRole _role(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
@@ -17,6 +14,7 @@ class HomeTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(l.tabHome)),
       body: EmptyState(title: l.emptyHomeTitle, body: l.emptyHomeBody),
     );
@@ -29,6 +27,7 @@ class ExploreTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(l.tabExplore)),
       body: EmptyState(title: l.emptyExploreTitle, body: l.emptyExploreBody),
     );
@@ -42,6 +41,7 @@ class ActionTab extends ConsumerWidget {
     final l = context.l10n;
     final photographer = _role(ref) == UserRole.photographer;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(photographer ? l.tabCreate : l.tabFind)),
       body: EmptyState(
         title: photographer ? l.emptyCreateTitle : l.emptyFindTitle,
@@ -58,6 +58,7 @@ class BookingsTab extends ConsumerWidget {
     final l = context.l10n;
     final photographer = _role(ref) == UserRole.photographer;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(photographer ? l.tabWork : l.tabBookings)),
       body: EmptyState(
         title: photographer ? l.emptyWorkTitle : l.emptyBookingsTitle,
@@ -78,6 +79,7 @@ class ProfileTab extends ConsumerWidget {
         : l.profileRoleCustomer;
     final avatar = profile?.avatarUrl;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: Text(l.tabProfile)),
       body: SafeArea(
         child: Padding(

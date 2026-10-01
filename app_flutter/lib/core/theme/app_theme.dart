@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'tokens.g.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
+
+/// Controls (buttons, inputs, chips) share the login card's rounder shape.
+const controlRadius = 16.0;
+const controlHeight = 52.0;
 
 ThemeData buildLightTheme() => _build(
   brightness: Brightness.light,
@@ -13,9 +17,11 @@ ThemeData buildLightTheme() => _build(
   foregroundSecondary: AppColors.foregroundSecondary,
   border: AppColors.border,
   borderStrong: AppColors.borderStrong,
+  focusRing: AppColors.focusRing,
   error: AppColors.error,
 );
 
+/// The app's look: glass controls on the dark aperture canvas.
 ThemeData buildDarkTheme() => _build(
   brightness: Brightness.dark,
   primary: AppColorsDark.primary,
@@ -27,6 +33,7 @@ ThemeData buildDarkTheme() => _build(
   foregroundSecondary: AppColorsDark.foregroundSecondary,
   border: AppColorsDark.border,
   borderStrong: AppColorsDark.borderStrong,
+  focusRing: AppColorsDark.focusRing,
   error: AppColorsDark.error,
 );
 
@@ -41,6 +48,7 @@ ThemeData _build({
   required Color foregroundSecondary,
   required Color border,
   required Color borderStrong,
+  required Color focusRing,
   required Color error,
 }) {
   final scheme = ColorScheme(
@@ -53,7 +61,7 @@ ThemeData _build({
     onError: Colors.white,
     surface: surface,
     onSurface: foreground,
-    outline: border,
+    outline: borderStrong,
     outlineVariant: border,
   );
   TextStyle body(double size, {FontWeight w = FontWeight.w400, Color? c}) =>
@@ -67,11 +75,16 @@ ThemeData _build({
   TextStyle display(double size) => TextStyle(
     fontFamily: AppFonts.display,
     fontSize: size,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     color: foreground,
     height: 1.15,
   );
-  final radiusMd = BorderRadius.circular(AppRadius.md);
+  final radius = BorderRadius.circular(controlRadius);
+  final shape = RoundedRectangleBorder(borderRadius: radius);
+  OutlineInputBorder side(Color c, [double w = 1]) => OutlineInputBorder(
+    borderRadius: radius,
+    borderSide: BorderSide(color: c, width: w),
+  );
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
@@ -90,45 +103,59 @@ ThemeData _build({
       labelSmall: body(AppText.xs, w: FontWeight.w500, c: foregroundSecondary),
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: background,
+      backgroundColor: Colors.transparent,
       foregroundColor: foreground,
       elevation: 0,
       scrolledUnderElevation: 0,
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(AppSpace.s12),
-        shape: RoundedRectangleBorder(borderRadius: radiusMd),
-        textStyle: body(AppText.base, w: FontWeight.w600),
+        minimumSize: const Size.fromHeight(controlHeight),
+        shape: shape,
+        textStyle: body(AppText.md, w: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(AppSpace.s12),
-        side: BorderSide(color: border),
+        minimumSize: const Size.fromHeight(controlHeight),
+        side: BorderSide(color: borderStrong),
         foregroundColor: foreground,
-        shape: RoundedRectangleBorder(borderRadius: radiusMd),
+        shape: shape,
+        textStyle: body(AppText.md, w: FontWeight.w600),
       ),
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primary,
+        textStyle: body(AppText.base, w: FontWeight.w600),
+      ),
+    ),
+    // Filled, borderless fields; the focus ring is the only outline.
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: surface,
+      fillColor: surfaceMuted,
       contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s3,
-        vertical: AppSpace.s3,
+        horizontal: AppSpace.s4,
+        vertical: AppSpace.s4,
       ),
-      border: OutlineInputBorder(
-        borderRadius: radiusMd,
-        borderSide: BorderSide(color: border),
+      border: side(Colors.transparent),
+      enabledBorder: side(Colors.transparent),
+      disabledBorder: side(Colors.transparent),
+      focusedBorder: side(focusRing, 2),
+      errorBorder: side(error),
+      focusedErrorBorder: side(error, 2),
+    ),
+    cardTheme: CardThemeData(
+      color: surfaceMuted,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg + 8),
+        side: BorderSide(color: border),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: radiusMd,
-        borderSide: BorderSide(color: borderStrong),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: radiusMd,
-        borderSide: BorderSide(color: primary, width: 2),
-      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: radius),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surface,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/tokens.g.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:photobooking/core/core.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 enum BookingStatus {
   draft,

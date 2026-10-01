@@ -1,0 +1,16 @@
+/// Shared building blocks for every feature: theme, tokens and widgets.
+///
+/// Features import this one file; files inside `core/` import each other
+/// directly to keep the barrel free of cycles.
+library;
+
+export 'package:photobooking/core/l10n_ext.dart';
+export 'package:photobooking/core/theme/app_theme.dart';
+export 'package:photobooking/core/theme/tokens.g.dart';
+export 'package:photobooking/core/widgets/app_button.dart';
+export 'package:photobooking/core/widgets/app_logo.dart';
+export 'package:photobooking/core/widgets/aurora_background.dart';
+export 'package:photobooking/core/widgets/aurora_hero.dart';
+export 'package:photobooking/core/widgets/empty_state.dart';
+export 'package:photobooking/core/widgets/glass_card.dart';
+export 'package:photobooking/core/widgets/status_badge.dart';

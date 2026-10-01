@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../user/user_profile.dart';
-import '../user/user_repository.dart';
-import 'auth_repository.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/user/user_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => FirebaseAuthRepository(),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../data/user/user_profile.dart';
-import '../l10n/app_localizations.dart';
+import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 enum AppTab {
   home('/home'),

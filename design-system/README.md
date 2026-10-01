@@ -37,11 +37,11 @@ Các file XML Android được viết tay theo JSON. Khi đổi giá trị, sử
 
 ### Bảng màu primitive
 
-Màu thương hiệu giữ nguyên teal‑blue `#05749F` đang dùng trong app, mở rộng thành thang 10 bậc. Thang xám lấy từ các giá trị xám có sẵn trong `colors.xml` cũ.
+Màu thương hiệu là tím `#8338F5` lấy từ logo khẩu độ (giữa dải xanh → tím → hồng), mở rộng thành thang 10 bậc. Thang `aperture` giữ các màu phổ của logo cho gradient và nền aurora. Thang xám lấy từ các giá trị xám có sẵn trong `colors.xml` cũ.
 
 | Thang | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 |
 |-------|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-| brand | E6F3F8 | C2E2EE | 8FC9DE | 5BAFCC | 2E92B7 | **05749F** | 056487 | 084D68 | 063A4F | 042837 |
+| brand | F4EEFF | E6D9FF | CDB4FF | B08AFF | 9A63FD | **8338F5** | 702BDB | 5B21B6 | 43188A | 2C0F5C |
 | gray | F7F7F7 | EFEFEF | E9E9E9 | D6D6D6 | AEAEAE | 898888 | 707070 | 565555 | 313131 | 1C1C1C |
 | green | | E3F5DF | | | | 1A9F02 | | 127001 | | |
 | red | | FCE4E2 | | | | E91E11 | | B21D14 | | |
@@ -93,7 +93,7 @@ Màu thương hiệu giữ nguyên teal‑blue `#05749F` đang dùng trong app, 
 | gray_600 `#707070` | 4.9:1 | Text phụ, đạt AA |
 | gray_500 `#898888` | 3.5:1 | Chỉ dùng cho text ≥ 18sp hoặc placeholder |
 | gray_400 `#AEAEAE` | 2.3:1 | Chỉ dùng cho disabled, không dùng cho text đọc được |
-| brand_500 `#05749F` | 5.3:1 | Text link và nút, đạt AA |
+| brand_500 `#8338F5` | 5.5:1 (4.8:1 trên nền be) | Text link và nút, đạt AA |
 | yellow_500 `#E6C617` | 1.7:1 | Không đặt text trắng lên; badge OPENED nên dùng text gray_800 |
 
 Lưu ý: `colorAccent` cũ (`#aeaeae`) không đủ tương phản. Khi cập nhật theme, đặt `colorAccent` = `@color/color_primary`.

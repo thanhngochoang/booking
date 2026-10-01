@@ -55,7 +55,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loginButton => 'Đăng nhập';
 
   @override
-  String get loginTagline => 'Đặt lịch nhiếp ảnh gia cho mọi khoảnh khắc.';
+  String get loginHeadlineLead => 'Bắt trọn';
+
+  @override
+  String get loginHeadlineAccent => 'mọi khoảnh khắc';
+
+  @override
+  String get loginTagline => 'Tìm thợ ảnh hợp gu, đặt lịch chỉ vài chạm.';
+
+  @override
+  String get loginWelcome => 'Chào bạn!';
+
+  @override
+  String get loginWelcomeBody => 'Đăng nhập để tiếp tục';
+
+  @override
+  String get socialGoogle => 'Google';
+
+  @override
+  String get socialFacebook => 'Facebook';
 
   @override
   String get loginOrDivider => 'hoặc';
@@ -82,7 +100,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get continueWithFacebook => 'Tiếp tục với Facebook';
 
   @override
-  String get haveAccountLogin => 'Đã có tài khoản? Đăng nhập';
+  String get haveAccountPrompt => 'Đã có tài khoản?';
+
+  @override
+  String get registerHeadlineLead => 'Tham gia';
+
+  @override
+  String get registerHeadlineAccent => 'cộng đồng ảnh';
+
+  @override
+  String get registerTagline => 'Kết nối thợ ảnh, lưu giữ khoảnh khắc.';
+
+  @override
+  String get registerWelcomeBody => 'Điền vài thông tin để bắt đầu';
 
   @override
   String get signOut => 'Đăng xuất';

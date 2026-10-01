@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/auth/auth_error.dart';
-import '../../data/auth/auth_providers.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:photobooking/data/auth/auth_error.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 /// State is the last [AuthError] to show, or null. Loading while an action runs.
 class AuthController extends AsyncNotifier<AuthError?> {

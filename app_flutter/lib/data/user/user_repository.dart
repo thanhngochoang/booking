@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../auth/auth_repository.dart';
-import 'user_profile.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 
 /// Fields written to users/{uid}. Every signed-in user can read that doc,
 /// so the email (already in Firebase Auth) is never stored there.

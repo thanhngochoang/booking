@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/auth/auth_providers.dart';
-import '../../data/user/user_profile.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 
 class RoleController extends AsyncNotifier<void> {
   @override

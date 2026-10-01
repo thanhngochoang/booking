@@ -46,6 +46,7 @@ dependencies:
   google_sign_in: ^7.2.0
   flutter_facebook_auth: ^7.2.0
   intl: ^0.20.3
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +71,7 @@ flutter:
   generate: true
   assets:
     - assets/brand/logo.png
+    - assets/social/
   fonts:
     - family: Be Vietnam Pro
       fonts:

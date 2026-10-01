@@ -36,6 +36,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('email')), 'a@b.vn');
     await tester.enterText(find.byKey(const Key('password')), 'wrongpass');
+    await tester.ensureVisible(find.byKey(const Key('login')));
     await tester.tap(find.byKey(const Key('login')));
     await tester.pumpAndSettle();
     expect(find.text('Email hoặc mật khẩu không đúng.'), findsOneWidget);
@@ -47,6 +48,7 @@ void main() {
         _wrap(const LoginScreen(), FakeAuthRepository(cancelSocial: true)),
       );
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('google')));
       await tester.tap(find.byKey(const Key('google')));
       await tester.pumpAndSettle();
       expect(find.byType(SnackBar), findsNothing);
@@ -60,6 +62,7 @@ void main() {
   ) async {
     await tester.pumpWidget(_wrap(const LoginScreen(), _PendingGoogle()));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('google')));
     await tester.tap(find.byKey(const Key('google')));
     await tester.pump();
     AppButton btn(String k) => tester.widget<AppButton>(find.byKey(Key(k)));

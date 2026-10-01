@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../data/auth/auth_providers.dart';
-import '../features/auth/login_screen.dart';
-import '../features/auth/register_screen.dart';
-import '../features/onboarding/role_screen.dart';
-import '../features/onboarding/session_error_screen.dart';
-import '../features/onboarding/splash_screen.dart';
-import '../features/shell/placeholder_tabs.dart';
-import '../features/shell/tab_shell.dart';
-import 'tabs.dart';
+import 'package:photobooking/app/tabs.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/features/auth/login_screen.dart';
+import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/features/onboarding/role_screen.dart';
+import 'package:photobooking/features/onboarding/session_error_screen.dart';
+import 'package:photobooking/features/onboarding/splash_screen.dart';
+import 'package:photobooking/features/shell/placeholder_tabs.dart';
+import 'package:photobooking/features/shell/tab_shell.dart';
 
 const _authRoutes = {'/login', '/register'};
 const _onboardingRoute = '/onboarding/role';

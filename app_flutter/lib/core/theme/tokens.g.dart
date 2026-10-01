@@ -12,9 +12,9 @@ class AppColors {
   static const Color foregroundMuted = Color(0xFF898888);
   static const Color foregroundDisabled = Color(0xFFAEAEAE);
   static const Color foregroundInverse = Color(0xFFFFFFFF);
-  static const Color primary = Color(0xFF05749F);
-  static const Color primaryPressed = Color(0xFF084D68);
-  static const Color primarySubtle = Color(0xFFE6F3F8);
+  static const Color primary = Color(0xFF8338F5);
+  static const Color primaryPressed = Color(0xFF5B21B6);
+  static const Color primarySubtle = Color(0xFFF4EEFF);
   static const Color primaryForeground = Color(0xFFFFFFFF);
   static const Color secondary = Color(0xFFEFEFEF);
   static const Color secondaryPressed = Color(0xFFE9E9E9);
@@ -28,39 +28,48 @@ class AppColors {
   static const Color warningSubtle = Color(0xFFFBF6DA);
   static const Color error = Color(0xFFE91E11);
   static const Color errorSubtle = Color(0xFFFCE4E2);
-  static const Color info = Color(0xFF05749F);
-  static const Color infoSubtle = Color(0xFFE6F3F8);
+  static const Color info = Color(0xFF8338F5);
+  static const Color infoSubtle = Color(0xFFF4EEFF);
   static const Color border = Color(0xFFE3DFD8);
   static const Color borderStrong = Color(0xFFCFCAC1);
   static const Color divider = Color(0xFFE3DFD8);
-  static const Color focusRing = Color(0xFF05749F);
+  static const Color focusRing = Color(0xFF8338F5);
   static const Color overlay = Color(0x6A000000);
   static const Color overlayLight = Color(0x88FFFFFF);
   static const Color rating = Color(0xFFE6C617);
-  static const Color bookingWaiting = Color(0xFF05749F);
+  static const Color bookingWaiting = Color(0xFF8338F5);
   static const Color bookingAccepted = Color(0xFF1A9F02);
   static const Color bookingDenied = Color(0xFFB21D14);
   static const Color bookingOpened = Color(0xFFE6C617);
   static const Color bookingClosed = Color(0xFF898888);
+  static const Color heroCanvas = Color(0xFF0B0B10);
+  static const Color ctaStart = Color(0xFF3D63FF);
+  static const Color ctaMid = Color(0xFF8A3FFC);
+  static const Color ctaEnd = Color(0xFFD6249F);
+  static const Color spectrumCyan = Color(0xFF14E0F5);
+  static const Color spectrumViolet = Color(0xFF8A3FFC);
+  static const Color spectrumPink = Color(0xFFFF45D0);
+  static const Color spectrumOrange = Color(0xFFFF8A4C);
+  static const Color spectrumYellow = Color(0xFFFFD54A);
 }
 
 class AppColorsDark {
   AppColorsDark._();
-  static const Color background = Color(0xFF1C1C1C);
-  static const Color backgroundSubtle = Color(0xFF313131);
-  static const Color surface = Color(0xFF313131);
-  static const Color surfaceMuted = Color(0xFF565555);
+  static const Color background = Color(0xFF0B0B10);
+  static const Color backgroundSubtle = Color(0xFF13121A);
+  static const Color surface = Color(0xFF17151F);
+  static const Color surfaceMuted = Color(0x14FFFFFF);
   static const Color foreground = Color(0xFFF7F7F7);
   static const Color foregroundSecondary = Color(0xFFD6D6D6);
   static const Color foregroundMuted = Color(0xFFAEAEAE);
   static const Color foregroundDisabled = Color(0xFF707070);
   static const Color foregroundInverse = AppColors.foregroundInverse;
-  static const Color primary = Color(0xFF5BAFCC);
-  static const Color primaryPressed = Color(0xFF8FC9DE);
-  static const Color primarySubtle = Color(0xFF042837);
-  static const Color primaryForeground = Color(0xFF1C1C1C);
-  static const Color secondary = Color(0xFF565555);
-  static const Color secondaryPressed = Color(0xFF707070);
+  static const Color primary = Color(0xFFB08AFF);
+  static const Color primaryPressed = Color(0xFFCDB4FF);
+  static const Color primarySubtle = Color(0xFF2C0F5C);
+  static const Color primaryForeground = Color(0xFF0B0B10);
+  static const Color secondary = Color(0x14FFFFFF);
+  static const Color secondaryPressed = Color(0x24FFFFFF);
   static const Color secondaryForeground = Color(0xFFF7F7F7);
   static const Color destructive = AppColors.destructive;
   static const Color destructivePressed = AppColors.destructivePressed;
@@ -73,10 +82,10 @@ class AppColorsDark {
   static const Color errorSubtle = AppColors.errorSubtle;
   static const Color info = AppColors.info;
   static const Color infoSubtle = AppColors.infoSubtle;
-  static const Color border = Color(0xFF565555);
-  static const Color borderStrong = Color(0xFF707070);
-  static const Color divider = Color(0xFF565555);
-  static const Color focusRing = AppColors.focusRing;
+  static const Color border = Color(0x1FFFFFFF);
+  static const Color borderStrong = Color(0x33FFFFFF);
+  static const Color divider = Color(0x1FFFFFFF);
+  static const Color focusRing = Color(0xFF14E0F5);
   static const Color overlay = AppColors.overlay;
   static const Color overlayLight = AppColors.overlayLight;
   static const Color rating = AppColors.rating;
@@ -85,6 +94,15 @@ class AppColorsDark {
   static const Color bookingDenied = AppColors.bookingDenied;
   static const Color bookingOpened = AppColors.bookingOpened;
   static const Color bookingClosed = AppColors.bookingClosed;
+  static const Color heroCanvas = AppColors.heroCanvas;
+  static const Color ctaStart = AppColors.ctaStart;
+  static const Color ctaMid = AppColors.ctaMid;
+  static const Color ctaEnd = AppColors.ctaEnd;
+  static const Color spectrumCyan = AppColors.spectrumCyan;
+  static const Color spectrumViolet = AppColors.spectrumViolet;
+  static const Color spectrumPink = AppColors.spectrumPink;
+  static const Color spectrumOrange = AppColors.spectrumOrange;
+  static const Color spectrumYellow = AppColors.spectrumYellow;
 }
 
 class AppSpace {

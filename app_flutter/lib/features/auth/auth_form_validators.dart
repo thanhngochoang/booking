@@ -1,4 +1,4 @@
-import '../../l10n/app_localizations.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 final _email = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 

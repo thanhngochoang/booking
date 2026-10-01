@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/tokens.g.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_button.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -41,7 +42,7 @@ class EmptyState extends StatelessWidget {
             Text(body, style: t.bodySmall, textAlign: TextAlign.center),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpace.s4),
-              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+              AppButton.primary(actionLabel!, onPressed: onAction),
             ],
           ],
         ),

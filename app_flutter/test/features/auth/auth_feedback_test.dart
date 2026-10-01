@@ -60,6 +60,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('email')), 'a@b.vn');
     await tester.enterText(find.byKey(const Key('password')), 'password1');
     await tester.enterText(find.byKey(const Key('confirm')), 'password1');
+    await tester.ensureVisible(find.byKey(const Key('register')));
     await tester.tap(find.byKey(const Key('register')));
     await tester.pumpAndSettle();
     expect(find.text('Email này đã được dùng. Hãy đăng nhập.'), findsOneWidget);

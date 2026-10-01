@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'auth_error.dart';
+import 'package:photobooking/data/auth/auth_error.dart';
 
 class AuthUser {
   const AuthUser({
@@ -154,10 +154,18 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
+    // Social logouts are best-effort: a provider that was never used (or whose
+    // plugin is unavailable) must not fail the Firebase sign-out.
+    Future<void> quiet(Future<void> Function() f) async {
+      try {
+        await f();
+      } catch (_) {}
+    }
+
     await Future.wait([
       _auth.signOut(),
-      if (_googleReady) _google.signOut(),
-      _facebook.logOut(),
+      if (_googleReady) quiet(_google.signOut),
+      quiet(_facebook.logOut),
     ]);
   }
 }

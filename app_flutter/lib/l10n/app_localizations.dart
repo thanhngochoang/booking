@@ -184,11 +184,47 @@ abstract class AppLocalizations {
   /// **'Đăng nhập'**
   String get loginButton;
 
+  /// No description provided for @loginHeadlineLead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt trọn'**
+  String get loginHeadlineLead;
+
+  /// No description provided for @loginHeadlineAccent.
+  ///
+  /// In vi, this message translates to:
+  /// **'mọi khoảnh khắc'**
+  String get loginHeadlineAccent;
+
   /// No description provided for @loginTagline.
   ///
   /// In vi, this message translates to:
-  /// **'Đặt lịch nhiếp ảnh gia cho mọi khoảnh khắc.'**
+  /// **'Tìm thợ ảnh hợp gu, đặt lịch chỉ vài chạm.'**
   String get loginTagline;
+
+  /// No description provided for @loginWelcome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chào bạn!'**
+  String get loginWelcome;
+
+  /// No description provided for @loginWelcomeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng nhập để tiếp tục'**
+  String get loginWelcomeBody;
+
+  /// No description provided for @socialGoogle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Google'**
+  String get socialGoogle;
+
+  /// No description provided for @socialFacebook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Facebook'**
+  String get socialFacebook;
 
   /// No description provided for @loginOrDivider.
   ///
@@ -238,11 +274,35 @@ abstract class AppLocalizations {
   /// **'Tiếp tục với Facebook'**
   String get continueWithFacebook;
 
-  /// No description provided for @haveAccountLogin.
+  /// No description provided for @haveAccountPrompt.
   ///
   /// In vi, this message translates to:
-  /// **'Đã có tài khoản? Đăng nhập'**
-  String get haveAccountLogin;
+  /// **'Đã có tài khoản?'**
+  String get haveAccountPrompt;
+
+  /// No description provided for @registerHeadlineLead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tham gia'**
+  String get registerHeadlineLead;
+
+  /// No description provided for @registerHeadlineAccent.
+  ///
+  /// In vi, this message translates to:
+  /// **'cộng đồng ảnh'**
+  String get registerHeadlineAccent;
+
+  /// No description provided for @registerTagline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết nối thợ ảnh, lưu giữ khoảnh khắc.'**
+  String get registerTagline;
+
+  /// No description provided for @registerWelcomeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điền vài thông tin để bắt đầu'**
+  String get registerWelcomeBody;
 
   /// No description provided for @signOut.
   ///
