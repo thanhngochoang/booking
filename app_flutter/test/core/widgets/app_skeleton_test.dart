@@ -60,4 +60,73 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('bones in one scope share a single animation', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const AppSkeletonScope(
+          child: Column(
+            children: [
+              AppSkeleton.box(width: 20, height: 20),
+              AppSkeleton.line(width: 40),
+              AppSkeleton.card(),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    final fades = tester
+        .widgetList<FadeTransition>(
+          find.descendant(
+            of: find.byType(AppSkeleton),
+            matching: find.byType(FadeTransition),
+          ),
+        )
+        .toList();
+    expect(fades, hasLength(3));
+    expect(fades.map((f) => f.opacity).toSet(), hasLength(1));
+    expect(tester.hasRunningAnimations, isTrue);
+  });
+
+  testWidgets('reduced motion toggled on a live widget stops at opaque', (
+    tester,
+  ) async {
+    final reduce = ValueNotifier(false);
+    addTearDown(reduce.dispose);
+    await tester.pumpWidget(
+      hostWidget(
+        ValueListenableBuilder<bool>(
+          valueListenable: reduce,
+          builder: (context, r, _) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: r),
+            child: const Column(
+              children: [
+                AppSkeletonScope(
+                  child: AppSkeleton.box(key: Key('scoped'), height: 10),
+                ),
+                AppSkeleton.box(key: Key('own'), height: 10),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.hasRunningAnimations, isTrue);
+
+    reduce.value = true;
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.hasRunningAnimations, isFalse);
+    for (final k in ['scoped', 'own']) {
+      final fade = tester.widget<FadeTransition>(
+        find.descendant(
+          of: find.byKey(Key(k)),
+          matching: find.byType(FadeTransition),
+        ),
+      );
+      expect(fade.opacity.value, 1.0, reason: k);
+    }
+  });
 }
