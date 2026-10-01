@@ -25,6 +25,8 @@ flutter gen-l10n
 flutter run                                              # or: flutter build apk --debug
 ```
 
+Full Firebase setup (project, SHA‑1, providers, Firestore, rules): `../docs/FIREBASE-SETUP.md`.
+
 `lib/firebase_options.dart` is gitignored. Recreate it from `android/app/google-services.json`
 (fields `api_key`, `mobilesdk_app_id`, `project_number`, `project_id`, `storage_bucket`) or run
 `flutterfire configure --project=time-96441 --platforms=android --android-package-name=com.thanhbk.timnhay`.

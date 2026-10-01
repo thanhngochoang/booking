@@ -101,6 +101,7 @@ Bắt đầu: xem `app_flutter/README.md`. CI (`.github/workflows/flutter.yml`) 
 ## Tài liệu
 
 - `CLAUDE.md` — kiến trúc, luồng dữ liệu, quy ước.
+- `docs/FIREBASE-SETUP.md` — từng bước nối app Flutter với Firebase (project, SHA‑1, Google/Facebook login, Firestore rules, firebase_options.dart).
 - `design-system/README.md` — design tokens (màu, chữ, spacing, component) và bảng migration từ resource cũ.
 - `docs/MODERNIZATION-REVIEW.md` — đánh giá codebase so với chuẩn Android hiện tại và lộ trình.
 - `docs/UX-REDESIGN.md` — phân tích UX và đề xuất kiến trúc thông tin mới.
