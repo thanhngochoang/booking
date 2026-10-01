@@ -410,4 +410,23 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get phoneSaveError => 'Không lưu được số điện thoại. Thử lại nhé.';
+
+  @override
+  String get contactLabel => 'Liên hệ';
+
+  @override
+  String get contactCall => 'Gọi điện';
+
+  @override
+  String get contactZalo => 'Zalo';
+
+  @override
+  String get contactWhatsApp => 'WhatsApp';
+
+  @override
+  String get contactInquiry => 'Nhắn tin hỏi trước';
+
+  @override
+  String get contactLockedHint =>
+      'Liên hệ qua điện thoại mở sau khi bạn đặt lịch';
 }

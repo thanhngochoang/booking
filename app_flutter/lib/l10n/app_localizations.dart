@@ -849,6 +849,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không lưu được số điện thoại. Thử lại nhé.'**
   String get phoneSaveError;
+
+  /// No description provided for @contactLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ'**
+  String get contactLabel;
+
+  /// No description provided for @contactCall.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi điện'**
+  String get contactCall;
+
+  /// No description provided for @contactZalo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Zalo'**
+  String get contactZalo;
+
+  /// No description provided for @contactWhatsApp.
+  ///
+  /// In vi, this message translates to:
+  /// **'WhatsApp'**
+  String get contactWhatsApp;
+
+  /// No description provided for @contactInquiry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin hỏi trước'**
+  String get contactInquiry;
+
+  /// No description provided for @contactLockedHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ qua điện thoại mở sau khi bạn đặt lịch'**
+  String get contactLockedHint;
 }
 
 class _AppLocalizationsDelegate

@@ -148,5 +148,11 @@
   "allowWhatsAppLabel": "Cho phép liên hệ qua WhatsApp",
   "phonePrivacy": "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
   "addPhoneSave": "Lưu và tiếp tục",
-  "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé."
+  "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé.",
+  "contactLabel": "Liên hệ",
+  "contactCall": "Gọi điện",
+  "contactZalo": "Zalo",
+  "contactWhatsApp": "WhatsApp",
+  "contactInquiry": "Nhắn tin hỏi trước",
+  "contactLockedHint": "Liên hệ qua điện thoại mở sau khi bạn đặt lịch"
 }
