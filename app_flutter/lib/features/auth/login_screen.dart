@@ -82,7 +82,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           foregroundColor: _googleText,
           disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
           disabledForegroundColor: _googleText.withValues(alpha: 0.6),
-          side: BorderSide.none,
+          // Google's light-theme button keeps a grey outline.
+          side: theme.brightness == Brightness.dark
+              ? BorderSide.none
+              : const BorderSide(color: Color(0xFF747775)),
         ),
         loading: busy(_Method.google),
         onPressed: start(_Method.google, notifier.google),
@@ -110,8 +113,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
 
-    // The card is glass over the dark canvas in either app theme.
-    final cardTheme = buildDarkTheme();
+    final cardTheme = theme;
+    final secondary = theme.textTheme.bodySmall?.color;
     final card = Theme(
       data: cardTheme,
       child: GlassCard(
@@ -127,7 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(
                   l.loginWelcomeBody,
                   style: cardTheme.textTheme.bodySmall?.copyWith(
-                    color: onHeroSecondary,
+                    color: secondary,
                   ),
                 ),
                 const SizedBox(height: AppSpace.s4),
@@ -214,11 +217,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
+      value: overlayStyleFor(theme),
       child: Scaffold(
-        backgroundColor: AppColors.heroCanvas,
         body: Stack(
           children: [
             const Positioned.fill(child: AuroraBackground()),
@@ -258,13 +258,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 Text(
                                   l.noAccountPrompt,
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: onHeroSecondary,
+                                    color: secondary,
                                   ),
                                 ),
                                 TextButton(
                                   key: const Key('register'),
                                   style: TextButton.styleFrom(
-                                    foregroundColor: AppColors.spectrumCyan,
+                                    foregroundColor: theme.colorScheme.primary,
                                   ),
                                   onPressed: loading
                                       ? null

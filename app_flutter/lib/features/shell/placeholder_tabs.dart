@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/onboarding/role_controller.dart';
 
 UserRole _role(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
@@ -73,43 +75,146 @@ class ProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final theme = Theme.of(context);
     final profile = ref.watch(currentProfileProvider).value;
-    final roleLabel = profile?.role == UserRole.photographer
-        ? l.profileRolePhotographer
-        : l.profileRoleCustomer;
+    final isPhotographer = profile?.role == UserRole.photographer;
+    final switching = ref.watch(roleSwitchControllerProvider).isLoading;
+    ref.listen(roleSwitchControllerProvider, (prev, next) {
+      // Only a finished switch the user started: loading -> data/error.
+      if (next.isLoading || !(prev?.isLoading ?? false)) return;
+      final message = next.hasError
+          ? l.profileSwitchError
+          : next.value == UserRole.photographer
+          ? l.profileSwitchedToPhotographer
+          : l.profileSwitchedToCustomer;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
+    });
     final avatar = profile?.avatarUrl;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(l.tabProfile)),
+      appBar: AppBar(
+        title: Text(l.tabProfile),
+        actions: [
+          IconButton(
+            key: const Key('open-settings'),
+            tooltip: l.settingsTitle,
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/settings'),
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.s5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundImage: avatar == null ? null : NetworkImage(avatar),
-                child: avatar == null ? const Icon(Icons.person) : null,
+        // Scrolls on short or landscape screens; sign-out still sits at the
+        // bottom when there is room.
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpace.s5),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: box.maxHeight - AppSpace.s5 * 2,
               ),
-              const SizedBox(height: AppSpace.s3),
-              Text(
-                profile?.displayName ?? '',
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 32,
+                        backgroundImage: avatar == null
+                            ? null
+                            : NetworkImage(avatar),
+                        child: avatar == null ? const Icon(Icons.person) : null,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpace.s3),
+                    Text(
+                      profile?.displayName ?? '',
+                      style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      isPhotographer
+                          ? l.profileRolePhotographer
+                          : l.profileRoleCustomer,
+                      style: theme.textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpace.s6),
+                    GlassCard(
+                      highlight: false,
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpace.s4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  isPhotographer
+                                      ? Icons.camera_alt_outlined
+                                      : Icons.search,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                const SizedBox(width: AppSpace.s3),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l.profileModeTitle,
+                                        style: theme.textTheme.titleMedium,
+                                      ),
+                                      Text(
+                                        isPhotographer
+                                            ? l.profileModePhotographerBody
+                                            : l.profileModeCustomerBody,
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpace.s4),
+                            AppButton.outline(
+                              isPhotographer
+                                  ? l.profileSwitchToCustomer
+                                  : l.profileSwitchToPhotographer,
+                              key: const Key('switch-role'),
+                              icon: const Icon(Icons.swap_horiz_rounded),
+                              loading: switching,
+                              onPressed: profile == null
+                                  ? null
+                                  : () => ref
+                                        .read(
+                                          roleSwitchControllerProvider.notifier,
+                                        )
+                                        .switchTo(
+                                          isPhotographer
+                                              ? UserRole.customer
+                                              : UserRole.photographer,
+                                        ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(height: AppSpace.s5),
+                    AppButton.outline(
+                      l.signOut,
+                      key: const Key('sign-out'),
+                      onPressed: switching
+                          ? null
+                          : () => ref.read(authRepositoryProvider).signOut(),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                roleLabel,
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-              AppButton.outline(
-                l.signOut,
-                key: const Key('sign-out'),
-                onPressed: () => ref.read(authRepositoryProvider).signOut(),
-              ),
-            ],
+            ),
           ),
         ),
       ),

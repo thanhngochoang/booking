@@ -17,7 +17,9 @@ abstract class UserRepository {
   /// Creates users/{uid} with role null when missing; never overwrites.
   Future<UserProfile> ensureProfile(AuthUser user);
 
-  /// Sets the role; also creates photographers/{uid} for photographers.
+  /// Sets the role. The first switch to photographer creates
+  /// photographers/{uid}; later switches keep that doc (and its onboarding
+  /// progress) untouched, so people can move between modes freely.
   Future<void> setRole(String uid, UserRole role);
 
   /// Creates or updates users/{uid}.displayName; safe to race ensureProfile.
@@ -68,12 +70,17 @@ class FirestoreUserRepository implements UserRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
     if (role == UserRole.photographer) {
-      batch.set(_db.collection('photographers').doc(uid), {
-        'onboardingComplete': false,
-        'verified': false,
-        'specialties': <String>[],
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      final photographer = _db.collection('photographers').doc(uid);
+      // Re-setting these on a returning photographer would reset their
+      // onboarding, and rules reject touching `verified` once it is true.
+      if (!(await photographer.get()).exists) {
+        batch.set(photographer, {
+          'onboardingComplete': false,
+          'verified': false,
+          'specialties': <String>[],
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     }
     await batch.commit();
   }

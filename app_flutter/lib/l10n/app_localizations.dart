@@ -490,6 +490,126 @@ abstract class AppLocalizations {
   /// **'Nhiếp ảnh gia'**
   String get profileRolePhotographer;
 
+  /// No description provided for @settingsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cài đặt'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsEditProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh sửa hồ sơ'**
+  String get settingsEditProfile;
+
+  /// No description provided for @settingsEditProfileBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên hiển thị'**
+  String get settingsEditProfileBody;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao diện'**
+  String get settingsAppearance;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối'**
+  String get themeDark;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sáng'**
+  String get themeLight;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo hệ thống'**
+  String get themeSystem;
+
+  /// No description provided for @editProfileTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh sửa hồ sơ'**
+  String get editProfileTitle;
+
+  /// No description provided for @editProfileSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get editProfileSave;
+
+  /// No description provided for @editProfileSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu hồ sơ.'**
+  String get editProfileSaved;
+
+  /// No description provided for @editProfileError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.'**
+  String get editProfileError;
+
+  /// No description provided for @profileModeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chế độ sử dụng'**
+  String get profileModeTitle;
+
+  /// No description provided for @profileModeCustomerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang dùng app để tìm và thuê nhiếp ảnh gia.'**
+  String get profileModeCustomerBody;
+
+  /// No description provided for @profileModePhotographerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang nhận chụp và quản lý lịch làm việc.'**
+  String get profileModePhotographerBody;
+
+  /// No description provided for @profileSwitchToCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển sang chế độ người thuê'**
+  String get profileSwitchToCustomer;
+
+  /// No description provided for @profileSwitchToPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển sang chế độ nhận chụp'**
+  String get profileSwitchToPhotographer;
+
+  /// No description provided for @profileSwitchedToCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển sang chế độ người thuê.'**
+  String get profileSwitchedToCustomer;
+
+  /// No description provided for @profileSwitchedToPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển sang chế độ nhận chụp.'**
+  String get profileSwitchedToPhotographer;
+
+  /// No description provided for @profileSwitchError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.'**
+  String get profileSwitchError;
+
   /// No description provided for @statusRequested.
   ///
   /// In vi, this message translates to:

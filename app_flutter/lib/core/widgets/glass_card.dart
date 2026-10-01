@@ -10,21 +10,23 @@ class GlassCard extends StatelessWidget {
 
   final Widget child;
 
-  /// Spectrum hairline; without it the edge is a plain 12% white line.
+  /// Spectrum hairline; without it the edge is the theme's plain hairline.
   final bool highlight;
 
   static const _radius = BorderRadius.all(Radius.circular(28));
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         borderRadius: _radius,
         boxShadow: [
           BoxShadow(
-            color: Color(0x59000000),
+            color: Color(dark ? 0x59000000 : 0x1A000000),
             blurRadius: 40,
-            offset: Offset(0, 20),
+            offset: const Offset(0, 20),
           ),
         ],
       ),
@@ -33,13 +35,20 @@ class GlassCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: CustomPaint(
-            foregroundPainter: SpectrumBorder(_radius, highlight: highlight),
+            foregroundPainter: SpectrumBorder(
+              _radius,
+              highlight: highlight,
+              plain: theme.colorScheme.outlineVariant,
+            ),
             child: DecoratedBox(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0x26FFFFFF), Color(0x0DFFFFFF)],
+                  // Frosted white either way: faint on dark, milky on light.
+                  colors: dark
+                      ? const [Color(0x26FFFFFF), Color(0x0DFFFFFF)]
+                      : const [Color(0xD9FFFFFF), Color(0xA6FFFFFF)],
                 ),
               ),
               child: child,
@@ -52,10 +61,17 @@ class GlassCard extends StatelessWidget {
 }
 
 class SpectrumBorder extends CustomPainter {
-  const SpectrumBorder(this.radius, {this.highlight = true});
+  const SpectrumBorder(
+    this.radius, {
+    this.highlight = true,
+    this.plain = AppColorsDark.border,
+  });
 
   final BorderRadius radius;
   final bool highlight;
+
+  /// Edge colour when [highlight] is off.
+  final Color plain;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -72,12 +88,12 @@ class SpectrumBorder extends CustomPainter {
                 Colors.white.withValues(alpha: 0.12),
                 AppColors.spectrumPink.withValues(alpha: 0.7),
               ]
-            : [AppColorsDark.border, AppColorsDark.border],
+            : [plain, plain],
       ).createShader(rect);
     canvas.drawRRect(radius.toRRect(rect.deflate(0.6)), paint);
   }
 
   @override
   bool shouldRepaint(SpectrumBorder old) =>
-      old.radius != radius || old.highlight != highlight;
+      old.radius != radius || old.highlight != highlight || old.plain != plain;
 }

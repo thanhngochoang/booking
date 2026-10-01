@@ -55,9 +55,47 @@ void main() {
     await tester.pumpWidget(_app(const ProfileTab(), auth, users));
     await tester.pumpAndSettle();
     expect(find.text('Minh'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('sign-out')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('sign-out')));
     await tester.pumpAndSettle();
     expect(auth.currentUser, isNull);
+  });
+  testWidgets('photographer switches to customer and back from profile', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    await tester.pumpWidget(_app(const ProfileTab(), auth, users));
+    await tester.pumpAndSettle();
+    expect(find.text('Nhiếp ảnh gia'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing, reason: 'nothing switched yet');
+
+    await tester.tap(find.text('Chuyển sang chế độ người thuê'));
+    await tester.pumpAndSettle();
+    final uid = auth.currentUser!.uid;
+    expect((await users.watch(uid).first)?.role, UserRole.customer);
+    expect(find.text('Khách hàng'), findsOneWidget);
+    expect(find.text('Đã chuyển sang chế độ người thuê.'), findsOneWidget);
+    expect(users.photographerDocs, contains(uid), reason: 'kept for later');
+
+    await tester.tap(find.text('Chuyển sang chế độ nhận chụp'));
+    await tester.pumpAndSettle();
+    expect((await users.watch(uid).first)?.role, UserRole.photographer);
+    expect(find.text('Đã chuyển sang chế độ nhận chụp.'), findsOneWidget);
+  });
+  testWidgets('a failed switch keeps the role and says so', (tester) async {
+    final auth = FakeAuthRepository();
+    final users = FakeUserRepository(failSetRole: true);
+    final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');
+    await users.ensureProfile(u);
+    await tester.pumpWidget(_app(const ProfileTab(), auth, users));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('switch-role')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Không đổi được chế độ. Kiểm tra mạng rồi thử lại.'),
+      findsOneWidget,
+    );
   });
   for (final size in const [Size(320, 640), Size(430, 932)]) {
     testWidgets('bookings tab fits $size at text scale 1.3', (tester) async {

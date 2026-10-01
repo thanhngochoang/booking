@@ -212,6 +212,71 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileRolePhotographer => 'Nhiếp ảnh gia';
 
   @override
+  String get settingsTitle => 'Cài đặt';
+
+  @override
+  String get settingsAccount => 'Tài khoản';
+
+  @override
+  String get settingsEditProfile => 'Chỉnh sửa hồ sơ';
+
+  @override
+  String get settingsEditProfileBody => 'Tên hiển thị';
+
+  @override
+  String get settingsAppearance => 'Giao diện';
+
+  @override
+  String get themeDark => 'Tối';
+
+  @override
+  String get themeLight => 'Sáng';
+
+  @override
+  String get themeSystem => 'Theo hệ thống';
+
+  @override
+  String get editProfileTitle => 'Chỉnh sửa hồ sơ';
+
+  @override
+  String get editProfileSave => 'Lưu';
+
+  @override
+  String get editProfileSaved => 'Đã lưu hồ sơ.';
+
+  @override
+  String get editProfileError =>
+      'Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get profileModeTitle => 'Chế độ sử dụng';
+
+  @override
+  String get profileModeCustomerBody =>
+      'Bạn đang dùng app để tìm và thuê nhiếp ảnh gia.';
+
+  @override
+  String get profileModePhotographerBody =>
+      'Bạn đang nhận chụp và quản lý lịch làm việc.';
+
+  @override
+  String get profileSwitchToCustomer => 'Chuyển sang chế độ người thuê';
+
+  @override
+  String get profileSwitchToPhotographer => 'Chuyển sang chế độ nhận chụp';
+
+  @override
+  String get profileSwitchedToCustomer => 'Đã chuyển sang chế độ người thuê.';
+
+  @override
+  String get profileSwitchedToPhotographer =>
+      'Đã chuyển sang chế độ nhận chụp.';
+
+  @override
+  String get profileSwitchError =>
+      'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.';
+
+  @override
   String get statusRequested => 'Đã gửi';
 
   @override

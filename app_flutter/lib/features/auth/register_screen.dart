@@ -33,6 +33,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final secondary = theme.textTheme.bodySmall?.color;
     final loading = ref.watch(authControllerProvider).isLoading;
     ref.listen(authControllerProvider, (_, next) {
       // A loading state still carries the previous error; only react to a
@@ -75,9 +76,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: AppSpace.s1),
                 Text(
                   l.registerWelcomeBody,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: onHeroSecondary,
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: secondary),
                 ),
                 const SizedBox(height: AppSpace.s4),
                 TextFormField(
@@ -153,9 +152,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
+      value: overlayStyleFor(theme),
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -190,12 +187,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Text(
                             l.haveAccountPrompt,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: onHeroSecondary,
+                              color: secondary,
                             ),
                           ),
                           TextButton(
                             style: TextButton.styleFrom(
-                              foregroundColor: AppColors.spectrumCyan,
+                              foregroundColor: theme.colorScheme.primary,
                             ),
                             onPressed: loading ? null : () => context.pop(),
                             child: Text(l.loginButton),

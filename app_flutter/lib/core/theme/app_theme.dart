@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Controls (buttons, inputs, chips) share the login card's rounder shape.
 const controlRadius = 16.0;
 const controlHeight = 52.0;
+
+/// Status bar icons that read on [theme]'s canvas, over a transparent bar.
+SystemUiOverlayStyle overlayStyleFor(ThemeData theme) =>
+    (theme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark)
+        .copyWith(statusBarColor: Colors.transparent);
 
 ThemeData buildLightTheme() => _build(
   brightness: Brightness.light,
@@ -104,6 +112,11 @@ ThemeData _build({
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
+      systemOverlayStyle:
+          (brightness == Brightness.dark
+                  ? SystemUiOverlayStyle.light
+                  : SystemUiOverlayStyle.dark)
+              .copyWith(statusBarColor: Colors.transparent),
       foregroundColor: foreground,
       elevation: 0,
       scrolledUnderElevation: 0,

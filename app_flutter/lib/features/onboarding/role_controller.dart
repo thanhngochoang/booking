@@ -21,3 +21,26 @@ class RoleController extends AsyncNotifier<void> {
 final roleControllerProvider = AsyncNotifierProvider<RoleController, void>(
   RoleController.new,
 );
+
+/// Switching mode from the profile tab. Its value is the role just applied
+/// (null until the first switch), so the UI can confirm the right mode
+/// without waiting for the profile stream.
+class RoleSwitchController extends AsyncNotifier<UserRole?> {
+  @override
+  UserRole? build() => null;
+
+  Future<void> switchTo(UserRole role) async {
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    if (uid == null) return;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(userRepositoryProvider).setRole(uid, role);
+      return role;
+    });
+  }
+}
+
+final roleSwitchControllerProvider =
+    AsyncNotifierProvider<RoleSwitchController, UserRole?>(
+      RoleSwitchController.new,
+    );

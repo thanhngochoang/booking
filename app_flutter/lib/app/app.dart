@@ -5,10 +5,19 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.router, this.theme, this.darkTheme});
+  const MyApp({
+    super.key,
+    required this.router,
+    this.theme,
+    this.darkTheme,
+    this.themeMode = ThemeMode.dark,
+  });
   final GoRouter router;
   final ThemeData? theme;
   final ThemeData? darkTheme;
+
+  /// The brand look is the dark canvas; users can pick light in Settings.
+  final ThemeMode themeMode;
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +26,7 @@ class MyApp extends StatelessWidget {
       routerConfig: router,
       theme: theme,
       darkTheme: darkTheme,
-      // The brand look is the dark aperture canvas; light stays available.
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       locale: const Locale('vi'),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

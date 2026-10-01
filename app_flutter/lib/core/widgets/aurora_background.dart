@@ -11,6 +11,9 @@ class AuroraBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Pastel on the light canvas, so text over it keeps its contrast.
+    final strength = theme.brightness == Brightness.dark ? 1.0 : 0.5;
     Widget glow(Color c, double size, double alpha) => Container(
       width: size,
       height: size,
@@ -18,7 +21,7 @@ class AuroraBackground extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            c.withValues(alpha: alpha),
+            c.withValues(alpha: alpha * strength),
             c.withValues(alpha: 0),
           ],
         ),
@@ -52,7 +55,7 @@ class AuroraBackground extends StatelessWidget {
       ),
     );
     return ColoredBox(
-      color: AppColors.heroCanvas,
+      color: theme.scaffoldBackgroundColor,
       child: Stack(fit: StackFit.expand, children: [glows, ?child]),
     );
   }
