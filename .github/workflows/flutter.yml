@@ -1,0 +1,43 @@
+name: flutter
+on:
+  push:
+    branches: [flutter-rewrite, develop, main]
+  pull_request:
+    paths: ['app_flutter/**', 'design-system/**', '.github/workflows/flutter.yml']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - run: flutter pub get
+      - name: Generate code (tokens, freezed, l10n)
+        run: |
+          dart run tool/gen_tokens.dart
+          git diff --exit-code lib/core/theme/tokens.g.dart || (echo "tokens.g.dart is stale: run dart run tool/gen_tokens.dart" && exit 1)
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+      - name: Stub Firebase options (real file is gitignored)
+        run: |
+          cat > lib/firebase_options.dart <<'DART'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => android;
+            static const FirebaseOptions android = FirebaseOptions(apiKey: 'ci', appId: '1:1:android:1', messagingSenderId: '1', projectId: 'demo-nag');
+          }
+          DART
+      - run: flutter analyze
+      - run: flutter test
+      - name: Firestore rules tests (emulator)
+        working-directory: app_flutter/firebase/rules-test
+        run: npm ci && npm test
+      # Android build needs google-services.json; enable once it is stored as a secret:
+      #   echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json && flutter build apk --debug

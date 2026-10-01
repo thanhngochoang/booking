@@ -96,6 +96,8 @@ Project gốc dùng Gradle 4.1, AGP 3.0.1, Support Library 26, Firebase 11.8. Đ
 
 Phiên bản kế tiếp là app Flutter mới trong `app_flutter/`, thiết kế theo `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` (marketplace nhiếp ảnh vận hành bởi cộng đồng: khám phá → tin cậy → đặt cọc → chụp → review → chia sẻ). App Java cũ giữ nguyên để tham chiếu và migrate dữ liệu.
 
+Bắt đầu: xem `app_flutter/README.md`. CI (`.github/workflows/flutter.yml`) chạy analyze, test và Firestore rules test mỗi lần push.
+
 ## Tài liệu
 
 - `CLAUDE.md` — kiến trúc, luồng dữ liệu, quy ước.
