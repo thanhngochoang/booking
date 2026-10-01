@@ -99,7 +99,7 @@ pending_payment ──paid──▶ searching ──accept──▶ assigned ─
 ## 5. Kiến trúc
 
 ```
-App Flutter ──Firebase callable (giai đoạn 1) / HTTP + ID token (giai đoạn 2)──▶ dispatch-service (TypeScript)
+App Flutter ──HTTPS + Firebase ID token──▶ dispatch-service (TypeScript)
    ▲  ▲                                                                            │
    │  └── FCM data message: lời mời, đã có người nhận, đổi trạng thái              ├── Redis: GEO vị trí đang sẵn sàng, khoá lời mời, hàng đợi hẹn giờ (BullMQ)
    │                                                                               ├── PostgreSQL + PostGIS: yêu cầu, lời mời, cài đặt, độ tin cậy, sổ cái
@@ -109,7 +109,8 @@ App Flutter ──Firebase callable (giai đoạn 1) / HTTP + ID token (giai đo
         instant_offers/{photographerId} lời mời đang chờ của người đó (chỉ người đó đọc)
 ```
 
-- **Thư mục**: `services/dispatch/` (cạnh `services/recommender/`, `services/api/` của backend giai đoạn 2). Hợp đồng `services/dispatch/api/openapi.yaml`, phiên bản `/v1`.
+- **Thư mục**: `services/dispatch/` (cạnh `services/recommender/`, `services/api/` của backend giai đoạn 2). Hợp đồng [`services/dispatch/api/openapi.yaml`](../../../services/dispatch/api/openapi.yaml), phiên bản `/v1`, gồm cả dạng bản sao Firestore (`*Mirror`). Domain thuần ở `packages/dispatch-core` (cạnh `packages/domain` của backend giai đoạn 1).
+- **Gọi dịch vụ**: ứng dụng gọi thẳng HTTPS kèm Firebase ID token (cùng cách kiểm token với backend giai đoạn 2), không qua callable, để chỉ có một adapter từ đầu.
 - **Module**:
   - `domain/` (TypeScript thuần, không import hạ tầng): máy trạng thái, luật vòng mời, chấm điểm, tính tiền và huỷ. Dùng chung chấm điểm với `recommender-core`.
   - `presence`: bật/tắt sẵn sàng, cập nhật vị trí → `GEOADD online:{cityId}` + `presence:{uid}` TTL 10 phút. Hết TTL coi như ngoại tuyến.
@@ -121,7 +122,7 @@ App Flutter ──Firebase callable (giai đoạn 1) / HTTP + ID token (giai đo
 - **Triển khai**: Cloud Run (hoặc container trong Docker Compose của backend giai đoạn 2 khi chạy local), Redis có lưu bền (Memorystore hoặc container), PostgreSQL dùng chung cơ sở dữ liệu của backend giai đoạn 2 (schema `dispatch`).
 - **Vì sao không chỉ Firestore**: nhiều thành phố từ đầu; vị trí cập nhật liên tục (ghi Firestore tính tiền từng lần); cần khoá chống mời trùng và hẹn giờ chính xác. Firestore chỉ còn là kênh realtime cho app ở giai đoạn đầu, để không phải thêm WebSocket ngay.
 
-## 6. API (tóm tắt, chi tiết ở `openapi.yaml`)
+## 6. API (tóm tắt; hợp đồng đầy đủ ở `services/dispatch/api/openapi.yaml`)
 
 | Thao tác | Ai gọi | Ghi chú |
 |---|---|---|

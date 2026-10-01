@@ -1,0 +1,534 @@
+openapi: 3.0.3
+info:
+  title: Dispatch service (Chụp ngay)
+  version: 1.0.0
+  description: |
+    Dịch vụ điều phối "Chụp ngay" (đặt nhiếp ảnh gia tức thì). Đặc tả:
+    docs/superpowers/specs/2026-10-01-instant-booking-design.md.
+
+    - Ứng dụng gọi thẳng dịch vụ qua HTTPS, kèm Firebase ID token ở header
+      `Authorization: Bearer <idToken>` (cùng cách xác thực với backend giai đoạn 2).
+    - Mọi thay đổi trạng thái chỉ do dịch vụ thực hiện. Ứng dụng nghe trạng thái realtime
+      từ bản sao Firestore (schema `*Mirror` bên dưới, `x-firestore-path`), chỉ dịch vụ ghi.
+    - Tiền là số nguyên VND, thời gian là chuỗi ISO 8601 UTC, id là ULID, enum là chuỗi.
+    - Lỗi luôn có dạng `Error` với `code` lấy từ `ErrorCode` của data-model.
+    Hợp đồng ổn định theo phiên bản đường dẫn (/v1).
+servers:
+  - url: http://localhost:8090
+    description: Docker Compose (local)
+  - url: https://dispatch-REPLACE_ME.a.run.app
+    description: Cloud Run
+security:
+  - firebaseIdToken: []
+paths:
+  /v1/health:
+    get:
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Dịch vụ, Redis và PostgreSQL đều sẵn sàng
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, redis, postgres]
+                properties:
+                  ok: { type: boolean }
+                  redis: { type: boolean }
+                  postgres: { type: boolean }
+  /v1/packages:
+    get:
+      operationId: listPackages
+      summary: Gói và giá hiện tại của một thành phố (S47, S52)
+      parameters:
+        - name: cityId
+          in: query
+          schema: { type: string }
+          description: Bỏ trống thì suy từ `lat`/`lng`.
+        - name: lat
+          in: query
+          schema: { type: number, format: double }
+        - name: lng
+          in: query
+          schema: { type: number, format: double }
+      responses:
+        '200':
+          description: Gói đang bán
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PackagesResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+  /v1/requests:
+    post:
+      operationId: createRequest
+      summary: Khách gửi yêu cầu chụp ngay (S47)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRequestBody' }
+      responses:
+        '201':
+          description: Đã tạo, chờ thanh toán
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateRequestResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+  /v1/requests/{requestId}/cancel:
+    post:
+      operationId: cancelRequest
+      summary: Huỷ (khách hoặc nhiếp ảnh gia); `dryRun` chỉ báo giá hoàn cho S55
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancelBody' }
+      responses:
+        '200':
+          description: Số tiền hoàn và phí (đã áp dụng, hoặc dự tính khi dryRun)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CancelQuote' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/requests/{requestId}/confirm-complete:
+    post:
+      operationId: confirmComplete
+      summary: Khách xác nhận hoàn thành (S50)
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      responses:
+        '204': { description: Đã hoàn thành }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/requests/{requestId}/location:
+    post:
+      operationId: postLocation
+      summary: Vị trí của nhiếp ảnh gia khi đang đến (S54); tối đa 1 lần / 5 giây
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LocationFix' }
+      responses:
+        '204': { description: Đã nhận }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /v1/requests/{requestId}/arrive:
+    post:
+      operationId: arrive
+      summary: Nhiếp ảnh gia báo đã đến (≤ 200 m, hoặc force kèm lý do khi GPS kém)
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArriveBody' }
+      responses:
+        '204': { description: Đã chuyển sang arrived }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+  /v1/requests/{requestId}/start:
+    post:
+      operationId: startShoot
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      responses:
+        '204': { description: Đã chuyển sang in_progress }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/requests/{requestId}/finish:
+    post:
+      operationId: finishShoot
+      summary: Nhiếp ảnh gia bấm Hoàn thành; khách xác nhận hoặc tự hoàn thành sau 2 giờ
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      responses:
+        '204': { description: Đã ghi finishedAt }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/presence:
+    put:
+      operationId: putPresence
+      summary: Bật/tắt sẵn sàng và cập nhật vị trí khi sẵn sàng (S52)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PresenceBody' }
+      responses:
+        '200':
+          description: Trạng thái sau khi cập nhật
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PresenceResponse' }
+        '403': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+  /v1/instant-settings:
+    get:
+      operationId: getInstantSettings
+      responses:
+        '200':
+          description: Cài đặt chụp ngay của nhiếp ảnh gia
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstantSettings' }
+    put:
+      operationId: putInstantSettings
+      summary: Chấp nhận bảng giá, bật "Sẵn sàng hỗ trợ"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InstantSettingsBody' }
+      responses:
+        '200':
+          description: Đã lưu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstantSettings' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/offers/{offerId}/accept:
+    post:
+      operationId: acceptOffer
+      parameters: [ { $ref: '#/components/parameters/OfferId' } ]
+      responses:
+        '200':
+          description: Đã nhận; trả địa chỉ chính xác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AcceptResponse' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/offers/{offerId}/decline:
+    post:
+      operationId: declineOffer
+      parameters: [ { $ref: '#/components/parameters/OfferId' } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { $ref: '#/components/schemas/DeclineReason' }
+      responses:
+        '204': { description: Đã từ chối }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /v1/payments/webhook/{provider}:
+    post:
+      operationId: paymentWebhook
+      summary: Cổng thanh toán báo kết quả (kế hoạch I6); xác thực bằng chữ ký của cổng
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/PaymentProvider' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: Đã ghi nhận (idempotent) }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /v1/dev/payments/{requestId}/succeed:
+    post:
+      operationId: devPaymentSucceed
+      summary: Chỉ có khi PAYMENTS=fake (local, test); giả lập cổng báo đã trả
+      parameters: [ { $ref: '#/components/parameters/RequestId' } ]
+      responses:
+        '204': { description: Yêu cầu chuyển sang searching }
+        '404': { description: Không bật cổng giả }
+components:
+  securitySchemes:
+    firebaseIdToken:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token
+  parameters:
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    OfferId:
+      name: offerId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+  responses:
+    Error:
+      description: Lỗi nghiệp vụ hoặc đầu vào
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Id:
+      type: string
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+      description: ULID
+    Instant:
+      type: string
+      format: date-time
+      description: ISO 8601 UTC, ví dụ 2026-10-01T08:30:00.000Z
+    Vnd:
+      type: integer
+      format: int64
+      minimum: 0
+    ErrorCode:
+      type: string
+      enum: [phone_required, contact_locked, invalid_argument, permission_denied, not_found, conflict,
+             no_match, offer_expired, already_assigned, not_eligible, outside_service_area, price_changed,
+             unauthenticated, internal]
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        message: { type: string, description: Tiếng Anh, cho log; ứng dụng hiển thị chuỗi riêng theo code }
+        requestId: { type: string, description: Id truy vết }
+        details:
+          type: object
+          additionalProperties: true
+          description: 'Ví dụ not_eligible: {"reasons": ["profile_incomplete","no_phone","price_list_not_accepted","outside_city","location_denied"]}; price_changed: {"amountVnd": 720000}'
+    Genre:
+      type: string
+      enum: [portrait, couple, family, small_event, product]
+    PackageCode:
+      type: string
+      enum: [p30, p60, p120]
+    Package:
+      type: object
+      required: [id, code, durationMin, photos, priceVnd, payoutVnd]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        code: { $ref: '#/components/schemas/PackageCode' }
+        durationMin: { type: integer }
+        photos: { type: integer }
+        priceVnd: { $ref: '#/components/schemas/Vnd' }
+        payoutVnd: { $ref: '#/components/schemas/Vnd' }
+    PackagesResponse:
+      type: object
+      required: [cityId, cityName, priceListVersion, surge, packages]
+      properties:
+        cityId: { type: string }
+        cityName: { type: string }
+        priceListVersion: { type: integer }
+        surge: { type: number, description: '1.00–3.00, đã nhân vào priceVnd' }
+        typicalMatchMinutes:
+          type: integer
+          nullable: true
+          description: Trung vị 7 ngày ở khu vực; null khi chưa đủ dữ liệu (S47 ẩn dòng này)
+        packages:
+          type: array
+          items: { $ref: '#/components/schemas/Package' }
+    LatLng:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number, format: double, minimum: -90, maximum: 90 }
+        lng: { type: number, format: double, minimum: -180, maximum: 180 }
+    MeetPoint:
+      allOf:
+        - $ref: '#/components/schemas/LatLng'
+        - type: object
+          required: [address]
+          properties:
+            address: { type: string, maxLength: 200 }
+    CreateRequestBody:
+      type: object
+      required: [packageId, genre, meetPoint, expand, expectedAmountVnd, provider]
+      properties:
+        packageId: { $ref: '#/components/schemas/Id' }
+        genre: { $ref: '#/components/schemas/Genre' }
+        meetPoint: { $ref: '#/components/schemas/MeetPoint' }
+        note: { type: string, maxLength: 140 }
+        expand: { type: boolean }
+        expectedAmountVnd:
+          allOf: [ { $ref: '#/components/schemas/Vnd' } ]
+          description: Giá khách đã thấy; khác giá hiện tại thì lỗi price_changed
+        provider: { $ref: '#/components/schemas/PaymentProvider' }
+    PaymentProvider:
+      type: string
+      enum: [momo, vnpay, fake]
+    CreateRequestResponse:
+      type: object
+      required: [requestId, amountVnd, paymentUrl]
+      properties:
+        requestId: { $ref: '#/components/schemas/Id' }
+        amountVnd: { $ref: '#/components/schemas/Vnd' }
+        paymentUrl:
+          type: string
+          description: URL cổng (https) để mở; với provider=fake là `fake://pay/<requestId>`
+    CancelBody:
+      type: object
+      required: [dryRun]
+      properties:
+        dryRun: { type: boolean }
+        reason: { type: string, maxLength: 140 }
+    CancelRule:
+      type: string
+      enum: [free_searching, free_grace, en_route_fee, no_show, photographer_fault, photographer_cancel]
+    CancelQuote:
+      type: object
+      required: [rule, refundVnd, photographerVnd, platformVnd]
+      properties:
+        rule: { $ref: '#/components/schemas/CancelRule' }
+        refundVnd: { $ref: '#/components/schemas/Vnd' }
+        photographerVnd: { $ref: '#/components/schemas/Vnd' }
+        platformVnd: { $ref: '#/components/schemas/Vnd' }
+        graceEndsAt:
+          allOf: [ { $ref: '#/components/schemas/Instant' } ]
+          nullable: true
+          description: Hết 2 phút huỷ miễn phí sau assigned (S49 đếm ngược)
+    LocationFix:
+      allOf:
+        - $ref: '#/components/schemas/LatLng'
+        - type: object
+          required: [accuracyM, at]
+          properties:
+            accuracyM: { type: number, minimum: 0 }
+            headingDeg: { type: number, nullable: true }
+            speedMps: { type: number, nullable: true }
+            at: { $ref: '#/components/schemas/Instant' }
+    ArriveBody:
+      type: object
+      required: [fix]
+      properties:
+        fix: { $ref: '#/components/schemas/LocationFix' }
+        force: { type: boolean, default: false }
+        reason: { type: string, maxLength: 140 }
+    PresenceBody:
+      type: object
+      required: [online]
+      properties:
+        online: { type: boolean }
+        helpReady: { type: boolean }
+        fix: { $ref: '#/components/schemas/LocationFix' }
+    PresenceResponse:
+      type: object
+      required: [online, helpReady]
+      properties:
+        online: { type: boolean }
+        helpReady: { type: boolean }
+        cityId: { type: string, nullable: true }
+        expiresAt:
+          allOf: [ { $ref: '#/components/schemas/Instant' } ]
+          nullable: true
+          description: TTL presence; ứng dụng gửi lại vị trí trước mốc này (khi di chuyển > 300 m hoặc 5 phút)
+    InstantSettingsBody:
+      type: object
+      properties:
+        acceptPriceListVersion: { type: integer }
+        helpReady: { type: boolean }
+    InstantSettings:
+      type: object
+      required: [currentPriceListVersion, helpReady, eligible, reasons]
+      properties:
+        acceptedPriceListVersion: { type: integer, nullable: true }
+        currentPriceListVersion: { type: integer }
+        helpReady: { type: boolean }
+        eligible: { type: boolean }
+        reasons:
+          type: array
+          items:
+            type: string
+            enum: [profile_incomplete, no_phone, price_list_not_accepted, outside_city, location_denied]
+    DeclineReason:
+      type: string
+      enum: [too_far, busy, genre_mismatch, other]
+    AcceptResponse:
+      type: object
+      required: [requestId, meetPoint, customerName]
+      properties:
+        requestId: { $ref: '#/components/schemas/Id' }
+        meetPoint: { $ref: '#/components/schemas/MeetPoint' }
+        customerName: { type: string }
+    InstantRequestStatus:
+      type: string
+      enum: [pending_payment, payment_failed, searching, assigned, en_route, arrived, in_progress, completed,
+             no_match, cancelled_by_customer, no_show_customer, disputed]
+    PhotographerCard:
+      type: object
+      required: [uid, displayName, verified, rating, completedShoots]
+      properties:
+        uid: { type: string }
+        displayName: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        verified: { type: boolean }
+        rating: { type: number, nullable: true }
+        completedShoots: { type: integer }
+    InstantRequestMirror:
+      type: object
+      x-firestore-path: instant_requests/{requestId}
+      description: Chỉ dịch vụ ghi; đọc được bởi customerId và photographerId của yêu cầu
+      required: [status, customerId, packageCode, genre, amountVnd, expand, round, requestedAt, updatedAt]
+      properties:
+        status: { $ref: '#/components/schemas/InstantRequestStatus' }
+        customerId: { type: string }
+        photographerId: { type: string, nullable: true }
+        photographer:
+          allOf: [ { $ref: '#/components/schemas/PhotographerCard' } ]
+          nullable: true
+        packageCode: { $ref: '#/components/schemas/PackageCode' }
+        genre: { $ref: '#/components/schemas/Genre' }
+        amountVnd: { $ref: '#/components/schemas/Vnd' }
+        expand: { type: boolean }
+        round: { type: integer, enum: [1, 2] }
+        radiusKm: { type: integer, enum: [3, 6, 10], description: Bán kính đang tìm (S48) }
+        searchEndsAt:
+          allOf: [ { $ref: '#/components/schemas/Instant' } ]
+          nullable: true
+        etaMinutes: { type: integer, nullable: true }
+        etaEstimated: { type: boolean, description: true khi ETA là ước tính (không có Goong) }
+        graceEndsAt:
+          allOf: [ { $ref: '#/components/schemas/Instant' } ]
+          nullable: true
+        meetPoint:
+          allOf: [ { $ref: '#/components/schemas/MeetPoint' } ]
+          nullable: true
+          description: Chỉ có từ assigned trở đi
+        requestedAt: { $ref: '#/components/schemas/Instant' }
+        assignedAt: { allOf: [ { $ref: '#/components/schemas/Instant' } ], nullable: true }
+        arrivedAt: { allOf: [ { $ref: '#/components/schemas/Instant' } ], nullable: true }
+        startedAt: { allOf: [ { $ref: '#/components/schemas/Instant' } ], nullable: true }
+        finishedAt: { allOf: [ { $ref: '#/components/schemas/Instant' } ], nullable: true }
+        refundVnd: { allOf: [ { $ref: '#/components/schemas/Vnd' } ], nullable: true }
+        updatedAt: { $ref: '#/components/schemas/Instant' }
+    InstantTrackMirror:
+      type: object
+      x-firestore-path: instant_tracks/{requestId}
+      description: Điểm mới nhất của nhiếp ảnh gia khi en_route; xoá khi arrived hoặc kết thúc
+      required: [lat, lng, accuracyM, at]
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+        accuracyM: { type: number }
+        headingDeg: { type: number, nullable: true }
+        at: { $ref: '#/components/schemas/Instant' }
+    InstantOfferMirror:
+      type: object
+      x-firestore-path: instant_offers/{photographerId}
+      description: Lời mời đang chờ của nhiếp ảnh gia (tối đa một); xoá khi nhận, từ chối hoặc hết hạn
+      required: [offerId, requestId, packageCode, genre, payoutVnd, distanceKm, travelMinutes, area, expiresAt]
+      properties:
+        offerId: { $ref: '#/components/schemas/Id' }
+        requestId: { $ref: '#/components/schemas/Id' }
+        packageCode: { $ref: '#/components/schemas/PackageCode' }
+        genre: { $ref: '#/components/schemas/Genre' }
+        payoutVnd: { $ref: '#/components/schemas/Vnd' }
+        distanceKm: { type: number }
+        travelMinutes: { type: integer }
+        area: { type: string, description: 'Mức khu phố, ví dụ "Phường Bến Thành, Quận 1"; không có địa chỉ chính xác' }
+        note: { type: string, nullable: true }
+        expiresAt: { $ref: '#/components/schemas/Instant' }
