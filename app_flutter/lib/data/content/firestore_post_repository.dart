@@ -6,11 +6,14 @@ import 'package:photobooking/data/content/post_summary.dart';
 
 int _int(Object? v) => v is num ? v.toInt() : 0;
 
-DateTime _instant(Object? v) =>
-    v is Timestamp ? v.toDate().toUtc() : DateTime.now().toUtc();
+String? _str(Object? v) => v is String ? v : null;
 
 /// Maps a `posts/{id}` document. Returns null for documents that cannot be
-/// shown: soft-deleted, or missing the photographer, the service or any image.
+/// shown: soft-deleted, missing or wrong-typed photographer, service, image
+/// list or `createdAt` (a stored value that is not a Timestamp, including
+/// null, is malformed: a pending server timestamp cannot be told apart from
+/// an explicit null in the map, so it is skipped too; feeds read committed
+/// documents, where the server has filled it in). Never throws.
 PostSummary? postFromFirestore(String id, Map<String, dynamic> d) {
   if (d['deletedAt'] != null) {
     return null;
@@ -18,50 +21,52 @@ PostSummary? postFromFirestore(String id, Map<String, dynamic> d) {
   final photographerId = d['photographerId'];
   final serviceId = d['serviceId'];
   final urls = d['imageUrls'];
+  final createdAt = d['createdAt'];
   if (photographerId is! String ||
       serviceId is! String ||
       urls is! List ||
-      urls.isEmpty) {
+      urls.isEmpty ||
+      urls.any((u) => u is! String) ||
+      createdAt is! Timestamp) {
     return null;
   }
   final meta = d['imageMeta'] is List ? d['imageMeta'] as List : const [];
-  final images = <PostImage>[
-    for (var i = 0; i < urls.length; i++)
+  final images = <PostImage>[];
+  for (var i = 0; i < urls.length; i++) {
+    final m = i < meta.length && meta[i] is Map ? meta[i] as Map : null;
+    images.add(
       PostImage(
         url: urls[i] as String,
-        blurHash: i < meta.length && meta[i] is Map
-            ? (meta[i] as Map)['blurHash'] as String?
-            : null,
-        width: i < meta.length && meta[i] is Map
-            ? ((meta[i] as Map)['w'] as num?)?.toInt()
-            : null,
-        height: i < meta.length && meta[i] is Map
-            ? ((meta[i] as Map)['h'] as num?)?.toInt()
-            : null,
+        blurHash: _str(m?['blurHash']),
+        width: (m?['w'] is num) ? (m!['w'] as num).toInt() : null,
+        height: (m?['h'] is num) ? (m!['h'] as num).toInt() : null,
       ),
-  ];
+    );
+  }
   final location = d['location'];
   return PostSummary(
     id: id,
-    kind: PostKind.fromCode(d['kind'] as String?),
-    authorId: (d['authorId'] as String?) ?? photographerId,
+    kind: PostKind.fromCode(_str(d['kind'])),
+    authorId: _str(d['authorId']) ?? photographerId,
     photographerId: photographerId,
     serviceId: serviceId,
-    bookingId: d['bookingId'] as String?,
+    bookingId: _str(d['bookingId']),
     images: images,
-    caption: (d['caption'] as String?) ?? '',
-    locationName: location is Map ? location['name'] as String? : null,
-    styleId: d['style'] as String?,
-    specialtyId: d['specialty'] as String?,
+    caption: _str(d['caption']) ?? '',
+    locationName: location is Map ? _str(location['name']) : null,
+    styleId: _str(d['style']),
+    specialtyId: _str(d['specialty']),
     hashtags: [
       if (d['hashtags'] is List) ...(d['hashtags'] as List).whereType<String>(),
     ],
     inPortfolio: d['inPortfolio'] == true,
     likeCount: _int(d['likeCount']),
     saveCount: _int(d['saveCount']),
-    createdAt: _instant(d['createdAt']),
+    createdAt: createdAt.toDate().toUtc(),
   );
 }
+
+const _maxExtraRounds = 3;
 
 class FirestorePostRepository implements PostRepository {
   FirestorePostRepository({FirebaseFirestore? db})
@@ -71,14 +76,22 @@ class FirestorePostRepository implements PostRepository {
   CollectionReference<Map<String, dynamic>> get _posts =>
       _db.collection('posts');
 
+  /// Pages by (createdAt desc, id desc). Documents that cannot be mapped
+  /// (soft-deleted, malformed) are skipped and topped up from the following
+  /// documents, with one post of look-ahead so `nextCursor` is non-null exactly
+  /// when another showable post follows. The cursor is the id of the raw
+  /// document of the last post on the page.
+  ///
+  /// Known edge: the top-up is bounded to [_maxExtraRounds] extra queries. If
+  /// that many consecutive documents are unshowable, the page may be short and
+  /// carries a cursor (of the last document examined) although the rest may
+  /// turn out to be empty.
   Future<PostPage> _page(
     Query<Map<String, dynamic>> base,
     String? cursor,
     int limit,
   ) async {
     final n = clampPageSize(limit);
-    // Total order: createdAt desc, then document id desc. The cursor is the id
-    // of the last document of the page; startAfterDocument encodes both keys.
     var q = base
         .orderBy('createdAt', descending: true)
         .orderBy(FieldPath.documentId, descending: true);
@@ -89,17 +102,40 @@ class FirestorePostRepository implements PostRepository {
       }
       q = q.startAfterDocument(at);
     }
-    final snap = await q.limit(n + 1).get();
-    final docs = snap.docs;
-    final hasMore = docs.length > n;
-    final pageDocs = hasMore ? docs.take(n).toList() : docs;
-    final posts = <PostSummary>[
-      for (final d in pageDocs) ?postFromFirestore(d.id, d.data()),
-    ];
-    return PostPage(
-      posts: posts,
-      nextCursor: hasMore ? pageDocs.last.id : null,
-    );
+    final posts = <PostSummary>[];
+    final rawIds = <String>[]; // raw document id of each collected post
+    QueryDocumentSnapshot<Map<String, dynamic>>? last;
+    for (var round = 0; round <= _maxExtraRounds; round++) {
+      final want = n + 1 - posts.length;
+      final snap = await (last == null ? q : q.startAfterDocument(last))
+          .limit(want)
+          .get();
+      for (final d in snap.docs) {
+        final p = postFromFirestore(d.id, d.data());
+        if (p != null) {
+          posts.add(p);
+          rawIds.add(d.id);
+        }
+      }
+      if (snap.docs.length < want) {
+        return _result(posts, rawIds, n);
+      }
+      last = snap.docs.last;
+      if (posts.length > n) {
+        break;
+      }
+    }
+    if (posts.length > n) {
+      return _result(posts, rawIds, n);
+    }
+    return PostPage(posts: posts, nextCursor: last?.id);
+  }
+
+  PostPage _result(List<PostSummary> posts, List<String> rawIds, int n) {
+    if (posts.length <= n) {
+      return PostPage(posts: posts, nextCursor: null);
+    }
+    return PostPage(posts: posts.take(n).toList(), nextCursor: rawIds[n - 1]);
   }
 
   @override

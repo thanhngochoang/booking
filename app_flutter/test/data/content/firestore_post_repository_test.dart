@@ -101,12 +101,45 @@ void main() {
       expect(p.hashtags, isEmpty);
     });
 
-    test('a pending server timestamp reads as "now", not a crash', () {
-      final before = DateTime.now().toUtc();
-      final p = postFromFirestore('z', {...full, 'createdAt': null})!;
+    test('a createdAt that is not a Timestamp (even null) is skipped', () {
+      expect(postFromFirestore('z', {...full, 'createdAt': null}), isNull);
+      expect(postFromFirestore('z', {...full, 'createdAt': 'x'}), isNull);
+      final noKey = {...full}..remove('createdAt');
+      expect(postFromFirestore('z', noKey), isNull);
+    });
+
+    test('wrong-typed fields fall back or skip, never throw', () {
+      final p = postFromFirestore('w', {
+        ...full,
+        'kind': 3,
+        'authorId': 5,
+        'caption': 7,
+        'style': 1,
+        'location': {'name': 4},
+        'imageMeta': [
+          {'blurHash': 9, 'w': 'x', 'h': null},
+        ],
+      })!;
+      expect(p.kind, PostKind.work);
+      expect(p.authorId, 'p1');
+      expect(p.caption, '');
+      expect(p.styleId, isNull);
+      expect(p.locationName, isNull);
+      expect(p.images.first.blurHash, isNull);
+      expect(p.images.first.width, isNull);
       expect(
-        p.createdAt.isBefore(before.subtract(const Duration(seconds: 1))),
-        isFalse,
+        postFromFirestore('w', {
+          ...full,
+          'imageUrls': [null],
+        }),
+        isNull,
+      );
+      expect(
+        postFromFirestore('w', {
+          ...full,
+          'imageUrls': ['https://img.test/1.jpg', 4],
+        }),
+        isNull,
       );
     });
 
@@ -170,6 +203,78 @@ void main() {
       expect(page.posts, isEmpty);
       expect(page.nextCursor, isNull);
     });
+
+    Future<List<List<String>>> walkPages(
+      FirestorePostRepository repo,
+      int limit,
+    ) async {
+      final pages = <List<String>>[];
+      String? cursor;
+      for (var i = 0; i < 20; i++) {
+        final page = await repo.feed(limit: limit, cursor: cursor);
+        pages.add(page.posts.map((p) => p.id).toList());
+        cursor = page.nextCursor;
+        if (cursor == null) {
+          return pages;
+        }
+        expect(page.posts, isNotEmpty, reason: 'no empty page with a cursor');
+      }
+      fail('did not terminate');
+    }
+
+    test(
+      'skipped documents are topped up; no empty page with a cursor',
+      () async {
+        final db = await seededDb(contractPosts());
+        await db.collection('posts').doc('b').update({
+          'deletedAt': Timestamp.now(),
+        });
+        final pages = await walkPages(FirestorePostRepository(db: db), 2);
+        expect(pages, [
+          ['a', 'c'],
+          ['d', 'e'],
+        ]);
+      },
+    );
+
+    test('when only skipped documents remain the page has no cursor', () async {
+      final db = await seededDb(contractPosts());
+      await db.collection('posts').doc('e').update({
+        'deletedAt': Timestamp.now(),
+      });
+      final repo = FirestorePostRepository(db: db);
+      final page = await repo.feed(limit: 4);
+      expect(page.posts.map((p) => p.id), ['a', 'b', 'c', 'd']);
+      expect(page.nextCursor, isNull);
+      await db.collection('posts').doc('d').update({
+        'deletedAt': Timestamp.now(),
+      });
+      final p2 = await repo.feed(limit: 3);
+      expect(p2.posts.map((p) => p.id), ['a', 'b', 'c']);
+      expect(p2.nextCursor, isNull);
+    });
+
+    test(
+      'a long run of skipped documents is bounded and keeps a cursor',
+      () async {
+        final db = await seededDb([
+          for (var i = 0; i < 12; i++)
+            fixturePost('m$i', age: Duration(minutes: i + 1)),
+        ]);
+        for (var i = 1; i < 12; i++) {
+          await db.collection('posts').doc('m$i').update({
+            'deletedAt': Timestamp.now(),
+          });
+        }
+        final repo = FirestorePostRepository(db: db);
+        // Rounds examine m0..m3 (look-ahead of 1 each): the bound is hit.
+        final page = await repo.feed(limit: 1);
+        expect(page.posts.map((p) => p.id), ['m0']);
+        expect(page.nextCursor, isNotNull);
+        final rest = await repo.feed(limit: 1, cursor: page.nextCursor);
+        expect(rest.posts, isEmpty);
+      },
+    );
 
     test('a post without images is skipped, not shown', () async {
       final db = await seededDb(contractPosts());
