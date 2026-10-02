@@ -263,6 +263,6 @@ class _GridSkeleton extends StatelessWidget {
     crossAxisSpacing: AppSpace.s2,
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
-    children: [for (var i = 0; i < 6; i++) const AppSkeleton.box(height: 100)],
+    children: [for (var i = 0; i < 6; i++) AppSkeleton.box(height: 100)],
   );
 }

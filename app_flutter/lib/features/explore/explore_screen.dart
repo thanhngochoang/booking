@@ -142,9 +142,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     switch (resolution.mode) {
       case ExploreMode.loading:
       case ExploreMode.locating:
-        return const [
+        return [
           SliverToBoxAdapter(child: AppSkeleton.box(height: 120)),
-          _Gap(AppSpace.s5),
+          const _Gap(AppSpace.s5),
         ];
       case ExploreMode.ask:
       case ExploreMode.requesting:
@@ -339,11 +339,11 @@ class _EventsSection {
       child: ErrorState(message: l.exploreLoadError, onRetry: retry),
     );
 
-    Widget loadingSliver() => const SliverToBoxAdapter(
+    Widget loadingSliver() => SliverToBoxAdapter(
       child: Column(
         children: [
           AppSkeleton.card(height: 88),
-          SizedBox(height: AppSpace.s3),
+          const SizedBox(height: AppSpace.s3),
           AppSkeleton.card(height: 88),
         ],
       ),

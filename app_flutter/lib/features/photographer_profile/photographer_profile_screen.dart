@@ -289,13 +289,13 @@ class _Loading extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpace.s4),
         children: [
-          const AppSkeleton.box(height: 220),
+          AppSkeleton.box(height: 220),
           const SizedBox(height: AppSpace.s4),
-          const AppSkeleton.line(width: 180),
+          AppSkeleton.line(width: 180),
           const SizedBox(height: AppSpace.s2),
-          const AppSkeleton.line(width: 240),
+          AppSkeleton.line(width: 240),
           const SizedBox(height: AppSpace.s4),
-          const AppSkeleton.card(height: 90),
+          AppSkeleton.card(height: 90),
         ],
       ),
     ),

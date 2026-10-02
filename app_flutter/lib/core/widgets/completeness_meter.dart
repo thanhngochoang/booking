@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 
 /// "Độ khớp hồ sơ 72%" with a gradient bar and the next thing to do
@@ -9,6 +10,8 @@ import 'package:photobooking/core/widgets/cta_surface.dart';
 /// the server's (`skills.completeness`); [percent] is null until the server
 /// has scored the profile ("Chưa có điểm", empty bar).
 class CompletenessMeter extends StatelessWidget {
+  static Widget skeleton({Key? key}) => _CompletenessMeterSkeleton(key: key);
+
   const CompletenessMeter({super.key, required this.percent, this.nextHint});
 
   final int? percent;
@@ -87,6 +90,41 @@ class CompletenessMeter extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _CompletenessMeterSkeleton extends StatelessWidget {
+  const _CompletenessMeterSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 20,
+          child: Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppSkeleton.line(widthFactor: 0.6, height: 14),
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              AppSkeleton.box(width: 36, height: 14),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpace.s2),
+        AppSkeleton.box(
+          width: double.infinity,
+          height: 6,
+          radius: AppRadius.full,
+        ),
+      ],
     );
   }
 }

@@ -2,11 +2,26 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 
 /// A photo with optional text on a bottom gradient (S02.01, S02.03, S10.01, S03.01). No
 /// border, no shadow, and no blur: a feed of these must stay cheap.
 class PhotoCard extends StatelessWidget {
+  static Widget skeleton({Key? key, double aspect = 4 / 5}) => AspectRatio(
+    key: key,
+    aspectRatio: aspect,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final small = constraints.maxWidth < 200;
+        return AppSkeleton.box(
+          width: double.infinity,
+          height: double.infinity,
+          radius: small ? _smallRadius : _radius,
+        );
+      },
+    ),
+  );
   const PhotoCard({
     super.key,
     required this.imageUrl,

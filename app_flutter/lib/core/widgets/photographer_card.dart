@@ -5,6 +5,7 @@ import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_avatar.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 import 'package:photobooking/core/widgets/photo_card.dart';
 import 'package:photobooking/core/widgets/reason_chips.dart';
@@ -17,6 +18,8 @@ import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 /// name with the verified tick, meta, price from, why recommended, and two
 /// actions. No blur: a list of these must stay cheap.
 class PhotographerCard extends StatelessWidget {
+  static Widget skeleton({Key? key}) => _PhotographerCardSkeleton(key: key);
+
   const PhotographerCard({
     super.key,
     required this.data,
@@ -227,6 +230,87 @@ class PhotographerCard extends StatelessWidget {
                       Expanded(child: bookButton),
                     ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotographerCardSkeleton extends StatelessWidget {
+  const _PhotographerCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final glass = Theme.of(context).brightness == Brightness.dark
+        ? AppColorsDark.glass
+        : AppColors.glass;
+    return Material(
+      color: glass,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: AppSkeleton.box(
+              width: double.infinity,
+              height: double.infinity,
+              radius: 0,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpace.s2h),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppAvatar.skeleton(size: AppAvatarSize.sm),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        AppSkeleton.line(height: 16, width: 140),
+                        AppSkeleton.line(height: 12, width: 100),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s2),
+                SizedBox(
+                  height: 40,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      AppSkeleton.line(height: 16, width: 48),
+                      AppSkeleton.line(height: 10, width: 24),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2h),
+            child: SizedBox(
+              height: AppSpace.s12,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: AppSkeleton.box(
+                  height: 38,
+                  radius: AppRadius.control,
+                ),
+              ),
+            ),
           ),
         ],
       ),

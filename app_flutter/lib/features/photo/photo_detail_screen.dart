@@ -109,8 +109,8 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
           children: [
             Positioned.fill(
               child: detail.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(AppSpace.s4),
+                loading: () => Padding(
+                  padding: const EdgeInsets.all(AppSpace.s4),
                   child: AppSkeleton.card(height: 400),
                 ),
                 error: (_, _) => Center(

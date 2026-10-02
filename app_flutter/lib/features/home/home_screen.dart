@@ -112,9 +112,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     List<Widget> body() {
       if (feed.isLoading) {
-        return const [
+        return [
           SliverPadding(
-            padding: EdgeInsets.all(AppSpace.s4),
+            padding: const EdgeInsets.all(AppSpace.s4),
             sliver: SliverToBoxAdapter(child: AppSkeleton.card(height: 360)),
           ),
         ];

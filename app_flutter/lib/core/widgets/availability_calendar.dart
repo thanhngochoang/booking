@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/calendar_days.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -47,6 +48,9 @@ Color _field(ThemeData t) =>
 /// of the grid. All dates are calendar days (UTC midnight, see
 /// `calendar_days.dart`).
 class AvailabilityCalendar extends StatelessWidget {
+  static Widget skeleton({Key? key, bool showHeader = true}) =>
+      _AvailabilityCalendarSkeleton(key: key, showHeader: showHeader);
+
   const AvailabilityCalendar({
     super.key,
     required this.month,
@@ -433,6 +437,77 @@ class AvailabilityLegend extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2),
             child: Text(DayState.off.label(l), style: base),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AvailabilityCalendarSkeleton extends StatelessWidget {
+  const _AvailabilityCalendarSkeleton({super.key, this.showHeader = true});
+  final bool showHeader;
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = AvailabilityCalendar._gap;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showHeader)
+          SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                const SizedBox(width: 48),
+                Expanded(
+                  child: Center(
+                    child: AppSkeleton.line(width: 120, height: 16),
+                  ),
+                ),
+                const SizedBox(width: 48),
+              ],
+            ),
+          ),
+        SizedBox(
+          height: 14,
+          child: Row(
+            children: [
+              for (var i = 0; i < 7; i++)
+                Expanded(
+                  child: Center(
+                    child: AppSkeleton.line(width: 20, height: 12),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpace.s1),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var w = 0; w < 6; w++)
+              Padding(
+                padding: EdgeInsets.only(top: w == 0 ? 0 : gap),
+                child: Row(
+                  children: [
+                    for (var c = 0; c < 7; c++)
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: c == 0 ? 0 : gap / 2,
+                            right: c == 6 ? 0 : gap / 2,
+                          ),
+                          child: AppSkeleton.box(
+                            height: AvailabilityCalendar.cellHeight,
+                            radius: AppRadius.sm,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ],
     );

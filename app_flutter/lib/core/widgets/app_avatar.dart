@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 
 enum AppAvatarSize {
@@ -35,6 +36,14 @@ String avatarInitial(String name) {
 /// The name is announced to screen readers unless [decorative] is set (use it
 /// next to a visible name). A [badge] keeps its own semantics.
 class AppAvatar extends StatelessWidget {
+  static Widget skeleton({
+    Key? key,
+    AppAvatarSize size = AppAvatarSize.md,
+  }) => AppSkeleton.circle(
+    key: key,
+    size: size.dimension,
+  );
+
   const AppAvatar({
     super.key,
     this.url,

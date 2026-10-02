@@ -161,14 +161,14 @@ class _FindPhotographerScreenState
     final theme = Theme.of(context);
     final now = ref.watch(clockProvider)();
     if (results.isLoading) {
-      return const [
+      return [
         SliverPadding(
-          padding: EdgeInsets.all(AppSpace.s4),
+          padding: const EdgeInsets.all(AppSpace.s4),
           sliver: SliverToBoxAdapter(
             child: Column(
               children: [
                 AppSkeleton.card(height: _skeletonHeight),
-                SizedBox(height: AppSpace.s3),
+                const SizedBox(height: AppSpace.s3),
                 AppSkeleton.card(height: _skeletonHeight),
               ],
             ),

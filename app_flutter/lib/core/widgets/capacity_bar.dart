@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 
 /// Filled share of a limited resource (event seats, badge progress), always
 /// with text so the meaning does not rest on the bar alone.
 class CapacityBar extends StatelessWidget {
+  static Widget skeleton({Key? key}) => _CapacityBarSkeleton(key: key);
+
   const CapacityBar({
     super.key,
     required this.used,
@@ -30,6 +33,7 @@ class CapacityBar extends StatelessWidget {
       label: text,
       child: ExcludeSemantics(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
@@ -63,6 +67,33 @@ class CapacityBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CapacityBarSkeleton extends StatelessWidget {
+  const _CapacityBarSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppSkeleton.box(
+          width: double.infinity,
+          height: 6,
+          radius: AppRadius.full,
+        ),
+        const SizedBox(height: AppSpace.s1),
+        SizedBox(
+          height: 17,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppSkeleton.line(widthFactor: 0.4, height: 12),
+          ),
+        ),
+      ],
     );
   }
 }
