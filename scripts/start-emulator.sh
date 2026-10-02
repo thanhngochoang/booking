@@ -13,7 +13,10 @@ if adb devices | grep -q '^emulator-.*device$'; then
 fi
 
 echo "Starting $AVD..."
-nohup "$ANDROID_HOME/emulator/emulator" -avd "$AVD" >"$ROOT/.home/emulator.log" 2>&1 &
+# New session (setsid via perl, macOS has no setsid binary): the VS Code task terminal sends SIGHUP
+# when this script exits, and the emulator ignores nohup and shuts down unless it is detached.
+perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' "$ANDROID_HOME/emulator/emulator" -avd "$AVD" \
+  </dev/null >"$ROOT/.home/emulator.log" 2>&1 &
 adb wait-for-device
 until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 2; done
 echo "Emulator ready."
