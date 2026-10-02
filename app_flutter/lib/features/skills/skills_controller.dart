@@ -111,7 +111,8 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
   Future<PhotographerSkills> _withoutDeletedEvidence(
     PhotographerSkills s,
   ) async {
-    final ids = s.evidencePostIds;
+    // At most 6 genres x 3 posts; a malformed draft must not fan out more.
+    final ids = s.evidencePostIds.take(18).toList();
     if (ids.isEmpty) return s;
     final posts = ref.read(postRepositoryProvider);
     try {
@@ -184,6 +185,15 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
     }
     if (!current.unsaved) {
       await _drafts.clear(_uid);
+      if (ref.mounted) {
+        state = AsyncData(
+          SkillsEditorState(
+            saved: current.saved,
+            start: current.draft,
+            draft: current.draft,
+          ),
+        );
+      }
       return SkillsSubmitResult.saved;
     }
     final repo = ref.read(skillsRepositoryProvider);

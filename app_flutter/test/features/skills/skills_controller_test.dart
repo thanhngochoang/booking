@@ -235,4 +235,45 @@ void main() {
     );
     expect(c.read(skillsControllerProvider).hasError, isTrue);
   });
+
+  test(
+    'restored draft, edited back to saved, submit: dirty is false',
+    () async {
+      const draft = PhotographerSkills(
+        specialties: [SpecialtySkill(id: 'food')],
+        languages: ['vi'],
+      );
+      final (_, c) = await _open(
+        saved: _wedding,
+        before: (w) => SkillsDraftStore(w.prefs).write(w.uid, draft),
+      );
+      _ctrl(c).toggleSpecialty('food');
+      _ctrl(c).toggleSpecialty('wedding');
+      expect(_st(c).draft, _wedding);
+      expect(_st(c).dirty, isTrue);
+      expect(await _ctrl(c).submit(), SkillsSubmitResult.saved);
+      expect(_st(c).dirty, isFalse);
+      expect(_st(c).unsaved, isFalse);
+    },
+  );
+
+  test('a malformed draft looks up at most 18 evidence posts', () async {
+    final ids = [for (var i = 0; i < 25; i++) 'p$i'];
+    final draft = PhotographerSkills(
+      specialties: [
+        SpecialtySkill(id: 'portrait', level: 3, evidencePostIds: ids),
+      ],
+      languages: const ['vi'],
+    );
+    final (_, c) = await _open(
+      posts: (uid) => [
+        for (final id in ids) fixturePost(id, photographerId: uid),
+      ],
+      before: (w) => SkillsDraftStore(w.prefs).write(w.uid, draft),
+    );
+    expect(
+      _st(c).draft.specialty('portrait')!.evidencePostIds,
+      ids.take(18).toList(),
+    );
+  });
 }
