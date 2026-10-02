@@ -68,9 +68,14 @@ GALLERY_CSS = '''
 .stage .lab{position:absolute;top:6px;right:8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .row3{display:flex;gap:16px;align-items:center;justify-content:space-around;flex-wrap:wrap}
 .row3 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
-/* Skeleton: field fill with an aurora sweep; still under reduced motion. */
-.sk{display:block;background:var(--field);position:relative;overflow:hidden;flex:none}
-.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(110deg,transparent 30%,rgba(20,224,245,.16) 44%,rgba(138,63,252,.22) 50%,rgba(255,69,208,.16) 56%,transparent 70%)}
+/* Skeleton: white only (no hues, dark theme included), white sweep; still under reduced motion. */
+:root{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:rgba(255,255,255,.7);--sk-edge:var(--line);--sk-shine:#fff}}
+:root[data-theme="light"]{--sk-fill:rgba(255,255,255,.7);--sk-edge:var(--line);--sk-shine:#fff}
+:root[data-theme="dark"]{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
+.sk{display:block;background:var(--sk-fill);box-shadow:inset 0 0 0 1px var(--sk-edge);position:relative;overflow:hidden;flex:none}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(110deg,transparent 35%,var(--sk-shine) 50%,transparent 65%)}
+.stage.plain{background:var(--bg)}
 @media (prefers-reduced-motion:no-preference){.sk::after{animation:skx 1.6s linear infinite}}
 @keyframes skx{to{transform:translateX(100%)}}
 .mini-sheet{position:relative;background:var(--sheet-bg);border:1px solid var(--line);border-radius:22px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
@@ -204,11 +209,12 @@ tile('states', 'EmptyState · ErrorState · OfflineBanner', 'EmptyState({title, 
 nav = ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, *_ in T)
 tiles = []
 for a, n, api, use, real, skel in T:
+    plain = ' plain' if a in ('signatureloader', 'signatureloader-vib', 'asyncview') else ''  # loaders sit on the bare screen background
     tiles.append(f'''    <section class="tile" id="{a}">
       <h3>{n}</h3>
       <div class="api">{html.escape(api)}</div>
       <div class="use">Dùng ở: {use}</div>
-      <div class="pair"><div class="stage"><span class="lab">Thật</span>{real}</div><div class="stage"><span class="lab">Skeleton</span>{skel}</div></div>
+      <div class="pair"><div class="stage{plain}"><span class="lab">Thật</span>{real}</div><div class="stage{plain}"><span class="lab">Skeleton</span>{skel}</div></div>
     </section>''')
 
 page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh gia" (Flutter). Sinh bởi scripts/tools/build_ui_components.py
