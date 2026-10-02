@@ -89,11 +89,11 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S17 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ⬜ chưa có plan (sự kiện) |
 | S18 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ⬜ chưa có plan (sự kiện) |
 | S19 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
-| S20 | Lịch của tôi | `/work/calendar` | NAG | 2 | ⬜ plan 2d1 |
+| S20 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) |
 | S21 | Đăng bài | `/action` (NAG) | NAG | 3 | 🟡 khung tạm → plan 3c |
 | S22 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | 🟡 khung tạm (empty chung) |
 | S23 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
-| S24 | Thiết lập hồ sơ, bước 1–2 (giới thiệu, gói) | `/setup/:step` | NAG | 2 | ⬜ plan 2d1 |
+| S24 | Thiết lập hồ sơ, bước 1–2 (giới thiệu, gói) | `/setup/:step` | NAG | 2 | ✅ đã làm (2d1) |
 | S25 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ⬜ chưa có plan (sự kiện) |
 | S26 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b | ⬜ chưa có plan (sự kiện) |
 | S27 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ⬜ chưa có plan (sự kiện) |
