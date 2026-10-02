@@ -25,3 +25,4 @@
 /.env
 /app/google-services.json
 .claude/*
+packages/*
