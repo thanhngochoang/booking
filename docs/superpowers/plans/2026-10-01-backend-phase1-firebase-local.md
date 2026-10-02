@@ -4,6 +4,8 @@
 
 > **Rules emulator tests (2026-10-02, user):** do not run the Firestore/Storage rules tests on the emulator (`app_flutter/firebase/rules-test`, `npm test`, `npm run test:*`) while executing this plan; the sandbox cannot run them. Still write or update the rules and their test files as the task says, but skip every step that runs them and every `Expected:` that depends on them; CI (`flutter.yml`, `firebase-deploy.yml`) runs them on push and blocks deploy on failure. Record the skip in the ledger.
 
+> **Added 2026-10-02:** Tasks 10–14 implement spec `docs/superpowers/specs/2026-10-02-photographer-write-function-design.md`: the Firestore trigger `onPhotographerWrite` scores `photographers/{uid}.skills` ("Độ khớp hồ sơ") and removes evidence that is not the photographer's own post; S38 shows the server's number and no longer computes it on the device; CI tests and deploys the functions. They need Tasks 1–7 (domain package, functions project, emulator harness, CI) and plan 2c (done). Task 14 brings the **CI deploy of Cloud Functions** forward from "Out of scope: Cloud deploy" (the spec asks for it); App Check enforcement, production latency/cold-start measurement and the `minInstances` decision stay out of scope.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A developer runs the whole backend on their machine with one command (`scripts/backend-local.sh`): Auth, Firestore, Functions, Storage and the Emulator UI, with saved data and deterministic seed accounts. A debug build of the Flutter app started with `--dart-define=USE_EMULATORS=true` talks to it (Android emulator, Genymotion, iOS Simulator, real device). The first server function the client plans already rely on, `getContactLink`, is implemented with unit, emulator-integration and performance tests, together with a reusable server-side `requirePhone(uid)` guard.
@@ -58,6 +60,20 @@ Marked here so nobody adds them to this plan:
 - **Flutter Firebase isolation:** `cloud_functions`, `firebase_storage` and the other `firebase_*` packages only in `lib/data/**` adapters, `lib/firebase_options.dart` and `lib/main.dart`. Emulators are used only when `kDebugMode` and `--dart-define=USE_EMULATORS=true`; release and profile builds can never reach them.
 - **Test values only:** seed accounts use `@seed.test` addresses and a documented test password; seed numbers are fictional. The seed writes only to emulators.
 - Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- **Emulator tests in Tasks 10–14 run on CI only** (rule 2026-10-02): write `test/integration/*` and the rules tests, never run `npm run test:integration` or `rules-test` `npm test` locally, and do not wait for an emulator `Expected:`. Unit tests run locally: `npm test` (node `--test` through `tsx`) and `flutter test --no-pub`.
+- **Server-owned skills fields (Tasks 10–14):** `skills.completeness` (0–100), `skills.completenessNext` (`specialties | levels | evidence | styles | languages | audiences | extras`, or `null` at 100), `skills.updatedAt`, `skills.evidenceRemovedAt` are written only by `onPhotographerWrite` through the Admin SDK. The app never computes the score or the next step. Weights (spec 3e.2): specialties 25, levels 20, evidence for every level-3 genre 20, styles 10, languages 10, audiences 10, extras 5.
+- **Trigger options (Task 11):** Firestore v2 `onDocumentWritten('photographers/{uid}')`, region `asia-southeast1`, `memory 256MiB`, `timeoutSeconds 30`, `maxInstances 10`, `minInstances 0`, `retry: true`.
+- **Evidence:** at most 18 post ids per run, read in one `db.getAll`; a post counts when it exists, has no `deletedAt`, and its owner (`authorId`, else `photographerId`, the same rule as the app's `postFromFirestore`) is the photographer. A level-3 genre left without evidence becomes level 2.
+- **Deploy only through CI** (`firebase-deploy.yml` job `deploy-functions`); never `firebase deploy` from a machine.
+- **Flutter commands (Task 13):** as for Task 8; run tests with `flutter test --no-pub` and `flutter analyze --no-pub`.
+
+## Review Focus (Tasks 10–14)
+
+- **Trigger re-entry loop:** the Function's own write changes only server fields, so the next run must stop at `unchanged` before any read; after a write that also cleaned `specialties`, the next run reads once, finds the stored score current (`up_to_date`) and writes nothing, so there is never a third write. Pinned by Task 10 (`unchanged`, `up_to_date` tests) and Task 11 (integration "saving the same skills again writes nothing more").
+- **A user save while the Function runs:** the update carries `precondition: { lastUpdateTime }` of the snapshot the trigger got; a newer save makes it fail with FAILED_PRECONDITION (or NOT_FOUND after a delete), the Function returns `stale` without retrying, and the trigger of the newer save scores it. Pinned by Task 10 (`stale`) and Task 11 (`isStaleWriteError`, deleted-document writer).
+- **Evidence of a deleted post** (document gone, or `deletedAt` set), of another photographer, or of a customer's real-shoot post is removed, a level-3 genre without evidence drops to level 2, `evidenceRemovedAt` is set and S38 says so once per removal. Pinned by Task 10 (`isOwnEvidencePost`, `cleanEvidence`, use case), Task 11 (integration) and Task 13 (SnackBar once, a newer removal shows again).
+- **A profile with no skills:** a `photographers/{uid}` document without `skills` is left untouched; skills with no genre score 10 (Vietnamese) with next step `specialties`; a profile never scored shows "Chưa có điểm" + "Lưu để tính độ khớp" on S38. Pinned by Tasks 10, 11 (integration) and 13.
+- **A malformed skills map:** not a map or `schemaVersion !== 1` → `warn` log, nothing written; malformed entries inside a schema-1 map are read tolerantly like `skillsFromMap` (dropped, bad level → 2, duplicates once) and an evidence id that is not an opaque id (`a/b`) is never read (a `doc('a/b')` would throw and retry forever) and is removed; malformed server fields read by the app become `null`. Pinned by Tasks 10, 11 and 13.
 
 ## File Structure
 
@@ -92,6 +108,11 @@ Marked here so nobody adds them to this plan:
 | `app_flutter/ios/Runner/Info.plist` (modify) | `NSAllowsLocalNetworking` |
 | `app_flutter/lib/data/contact/functions_contact_link_repository.dart` (modify if present), plan 2b text (modify) | region + timeout |
 | `app_flutter/test/data/backend/*.dart`, `test/emulator_platform_config_test.dart` (create) | Flutter tests |
+| `packages/domain/src/skills.ts`, `src/score_skills.ts`, `test/skills.test.ts`, `test/score_skills.test.ts`, `test/fixtures/skills_completeness.json` (create, Task 10) | `parseSkills`, evidence rules, `skillsCompleteness`, loop guard; use case `scorePhotographerSkills` over ports; shared score table |
+| `app_flutter/firebase/functions/src/infra/skills_firestore.ts`, `src/infra/live_skills.ts`, `src/triggers/photographer_write.ts`, `test/unit/photographer_write.test.ts`, `test/integration/photographer_write.test.ts` (create, Task 11); `src/config.ts`, `src/index.ts` (modify) | posts reader, preconditioned writer, wiring, trigger `onPhotographerWrite` |
+| `app_flutter/firebase/firestore.rules`, `rules-test/rules.test.mjs` (modify, Task 12) | pin `completenessNext`, `evidenceRemovedAt` |
+| `app_flutter/lib/data/skills/skills_server_info.dart` (create), `skills_repository.dart`, `firestore_skills_repository.dart`, `skills_providers.dart`, `lib/core/widgets/completeness_meter.dart`, `lib/features/skills/*` (modify), `lib/data/skills/skills_completeness.dart` (delete) (Task 13) | S38 shows the server score |
+| `.github/workflows/flutter.yml`, `firebase-deploy.yml`, `docs/FIREBASE-SETUP.md`, specs, mock, plan 2d2 (modify, Task 14) | CI job, deploy job, setup, docs |
 
 ---
 
@@ -3458,3 +3479,3118 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 9: Performance check (moved)
 
 Moved to `docs/superpowers/plans/2026-10-02-final-battery-performance.md` (section "2026-10-01-backend-phase1-firebase-local.md"). Nothing to do here.
+
+---
+
+### Task 10: Pure skills rules and the `scorePhotographerSkills` use case (`packages/domain`)
+
+**Files:**
+- Create: `packages/domain/src/skills.ts`, `packages/domain/src/score_skills.ts`, `packages/domain/test/skills.test.ts`, `packages/domain/test/score_skills.test.ts`, `packages/domain/test/fixtures/skills_completeness.json`
+- Modify: `packages/domain/src/index.ts`
+
+**Interfaces:**
+- Consumes: Task 1 (`isId`, the purity lint and test); the Dart reading rules of `app_flutter/lib/data/skills/photographer_skills.dart` (`skillsFromMap`: non-map → nothing, malformed entries dropped, duplicate genre ids once, level outside 1..3 → 2, non-int years → null, string lists deduplicated, non-strings dropped) and the score cases of `app_flutter/test/data/skills/skills_completeness_test.dart` (ported into the JSON table; Task 13 deletes the Dart file); spec 3e.2 weights.
+- Produces (all exported from `@photobooking/domain`):
+  - `SKILLS_SCHEMA_VERSION = 1`, `SERVER_SKILL_FIELDS = ['completeness', 'completenessNext', 'updatedAt', 'evidenceRemovedAt'] as const`.
+  - `type SkillLevel = 1 | 2 | 3`; `interface SpecialtySkill { id: string; level: SkillLevel; years: number | null; evidencePostIds: readonly string[] }`; `interface Skills { specialties: readonly SpecialtySkill[]; styles, extras, languages, audiences: readonly string[]; yearsExperience: number | null }` (all `readonly`).
+  - `parseSkills(raw: unknown): Skills | null` (null = malformed: not a map, or `schemaVersion !== 1`).
+  - `MAX_EVIDENCE_READS = 18`; `evidenceIds(skills: Skills): string[]`; `interface EvidencePostRecord { authorId?: unknown; photographerId?: unknown; deletedAt?: unknown }`; `isOwnEvidencePost(uid: string, post: EvidencePostRecord | undefined): boolean`; `cleanEvidence(skills: Skills, ownedIds: ReadonlySet<string>): { skills: Skills; removed: boolean }`.
+  - `COMPLETENESS_STEPS` (`'specialties','levels','evidence','styles','languages','audiences','extras'`), `type CompletenessStep`, `COMPLETENESS_POINTS: Readonly<Record<CompletenessStep, number>>`, `interface Completeness { percent: number; next: CompletenessStep | null }`, `skillsCompleteness(skills: Skills): Completeness`.
+  - `sameClientSkills(before: unknown, after: unknown): boolean` (equal after dropping `SERVER_SKILL_FIELDS`; key order ignored).
+  - `interface StoredSpecialty { id: string; level: SkillLevel; years?: number; evidencePostIds: readonly string[] }`, `toStoredSpecialties(specialties: readonly SpecialtySkill[]): StoredSpecialty[]` (the app's `skillsToMap` shape).
+  - Ports and use case: `interface SkillsWriteEvent { uid: string; before: unknown; after: unknown; deleted: boolean }` (`before`/`after` = the raw `skills` values), `interface OwnedPostsReader { owned(uid: string, postIds: readonly string[]): Promise<ReadonlySet<string>> }`, `interface SkillsScoreUpdate { completeness: number; completenessNext: CompletenessStep | null; specialties: readonly StoredSpecialty[] | null }` (`specialties` non-null only when evidence was removed), `interface SkillsScoreWriter { write(update: SkillsScoreUpdate): Promise<'written' | 'stale'> }`, `interface ScoreSkillsDeps { posts: OwnedPostsReader; writer: SkillsScoreWriter }`, `type ScoreSkillsOutcome = 'deleted' | 'no_skills' | 'unchanged' | 'malformed' | 'up_to_date' | 'written' | 'stale'`, `type SkillsScorePlan`, `planSkillsScore(e: SkillsWriteEvent): SkillsScorePlan`, `scorePhotographerSkills(e: SkillsWriteEvent, deps: ScoreSkillsDeps): Promise<ScoreSkillsOutcome>`.
+
+- [ ] **Step 1: Write the shared score table**
+
+```json
+// packages/domain/test/fixtures/skills_completeness.json
+{
+  "about": "Profile score cases (spec 3e.2). Ported from app_flutter/test/data/skills/skills_completeness_test.dart, which Task 13 deletes. Skills are stored maps as the app writes them.",
+  "cases": [
+    { "name": "nothing chosen: 0, first step is choosing a genre", "skills": { "schemaVersion": 1 }, "percent": 0, "next": "specialties" },
+    { "name": "a new photographer with Vietnamese ticked starts at 10", "skills": { "schemaVersion": 1, "languages": ["vi"] }, "percent": 10, "next": "specialties" },
+    { "name": "one genre at Thành thạo earns genre, level and evidence points", "skills": { "schemaVersion": 1, "specialties": [{ "id": "portrait", "level": 2, "evidencePostIds": [] }], "languages": ["vi"] }, "percent": 75, "next": "styles" },
+    { "name": "a Chuyên sâu genre without evidence: evidence is next", "skills": { "schemaVersion": 1, "specialties": [{ "id": "couple", "level": 2, "evidencePostIds": [] }, { "id": "portrait", "level": 3, "evidencePostIds": [] }], "styles": ["film"], "extras": ["retouch"], "languages": ["vi", "en"], "audiences": ["couple"] }, "percent": 80, "next": "evidence" },
+    { "name": "a complete profile is 100 with no next step", "skills": { "schemaVersion": 1, "specialties": [{ "id": "portrait", "level": 3, "evidencePostIds": ["a"] }], "styles": ["film"], "extras": ["retouch"], "languages": ["vi"], "audiences": ["couple"] }, "percent": 100, "next": null },
+    { "name": "a level outside 1..3 counts as Thành thạo", "skills": { "schemaVersion": 1, "specialties": [{ "id": "portrait", "level": 7 }], "styles": ["film"], "languages": ["vi"] }, "percent": 85, "next": "audiences" },
+    { "name": "tags without a genre", "skills": { "schemaVersion": 1, "styles": ["film"], "extras": ["retouch"], "languages": ["vi"], "audiences": ["couple"] }, "percent": 35, "next": "specialties" },
+    { "name": "a duplicate genre counts once, the first entry wins", "skills": { "schemaVersion": 1, "specialties": [{ "id": "portrait", "level": 3, "evidencePostIds": ["a"] }, { "id": "portrait", "level": 1, "evidencePostIds": [] }], "languages": ["vi", "vi"] }, "percent": 75, "next": "styles" },
+    { "name": "only extras missing", "skills": { "schemaVersion": 1, "specialties": [{ "id": "portrait", "level": 1, "evidencePostIds": [] }], "styles": ["film"], "languages": ["vi"], "audiences": ["couple"] }, "percent": 95, "next": "extras" }
+  ]
+}
+```
+
+(Write the file without the first `// packages/...` line.)
+
+- [ ] **Step 2: Write the failing tests**
+
+```ts
+// packages/domain/test/skills.test.ts
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  COMPLETENESS_POINTS,
+  COMPLETENESS_STEPS,
+  MAX_EVIDENCE_READS,
+  cleanEvidence,
+  evidenceIds,
+  isOwnEvidencePost,
+  parseSkills,
+  sameClientSkills,
+  skillsCompleteness,
+  toStoredSpecialties,
+  type SkillLevel,
+  type Skills,
+  type SpecialtySkill,
+} from '../src/index.js';
+
+const genre = (id: string, level: SkillLevel = 2, evidencePostIds: string[] = [], years: number | null = null): SpecialtySkill =>
+  ({ id, level, years, evidencePostIds });
+const skills = (over: Partial<Skills> = {}): Skills =>
+  ({ specialties: [], styles: [], extras: [], languages: [], audiences: [], yearsExperience: null, ...over });
+
+describe('parseSkills', () => {
+  test("reads the stored shape (the app's skillsToMap) and ignores server fields", () => {
+    assert.deepEqual(
+      parseSkills({
+        schemaVersion: 1,
+        specialties: [
+          { id: 'portrait', level: 3, years: 6, evidencePostIds: ['p1', 'p2'] },
+          { id: 'couple', level: 1, evidencePostIds: [] },
+        ],
+        styles: ['film'],
+        extras: ['retouch'],
+        languages: ['vi', 'en'],
+        audiences: ['couple'],
+        yearsExperience: 6,
+        completeness: 72,
+        completenessNext: 'audiences',
+      }),
+      skills({
+        specialties: [genre('portrait', 3, ['p1', 'p2'], 6), genre('couple', 1)],
+        styles: ['film'],
+        extras: ['retouch'],
+        languages: ['vi', 'en'],
+        audiences: ['couple'],
+        yearsExperience: 6,
+      }),
+    );
+  });
+
+  test('anything but a schema-1 map is malformed', () => {
+    for (const raw of [undefined, null, 'portrait', 5, [], ['portrait'], {}, { schemaVersion: 2 }, { schemaVersion: '1' }]) {
+      assert.equal(parseSkills(raw), null, JSON.stringify(raw) ?? 'undefined');
+    }
+  });
+
+  test('tolerant like skillsFromMap: bad entries dropped, bad level is 2, duplicates once', () => {
+    assert.deepEqual(
+      parseSkills({
+        schemaVersion: 1,
+        specialties: [
+          'portrait',
+          null,
+          { level: 3 },
+          { id: 7 },
+          { id: 'wedding', level: 9, years: 'six', evidencePostIds: ['a', 5, 'a', 'b'] },
+          { id: 'wedding', level: 3, evidencePostIds: ['z'] },
+          { id: 'family', level: '3' },
+        ],
+        styles: 'film',
+        extras: ['retouch', 'retouch', 1],
+        languages: ['vi'],
+        yearsExperience: 6.5,
+      }),
+      skills({ specialties: [genre('wedding', 2, ['a', 'b']), genre('family', 2)], extras: ['retouch'], languages: ['vi'] }),
+    );
+  });
+});
+
+describe('evidence', () => {
+  test('evidenceIds: every opaque id once, at most 18; other ids are never read', () => {
+    assert.deepEqual(
+      evidenceIds(skills({ specialties: [genre('portrait', 3, ['a', 'b', 'a/b']), genre('couple', 2, ['b', 'c', ''])] })),
+      ['a', 'b', 'c'],
+    );
+    const many = Array.from({ length: 7 }, (_, i) => genre(`g${i}`, 2, [`x${i}a`, `x${i}b`, `x${i}c`]));
+    assert.equal(MAX_EVIDENCE_READS, 18);
+    assert.equal(evidenceIds(skills({ specialties: many })).length, MAX_EVIDENCE_READS);
+  });
+
+  test('isOwnEvidencePost: a live post of this photographer only', () => {
+    assert.equal(isOwnEvidencePost('u1', { authorId: 'u1', photographerId: 'u1' }), true);
+    assert.equal(isOwnEvidencePost('u1', { photographerId: 'u1' }), true, 'older posts without authorId');
+    assert.equal(isOwnEvidencePost('u1', { authorId: 'c9', photographerId: 'u1' }), false, "a customer's real-shoot post");
+    assert.equal(isOwnEvidencePost('u1', { authorId: 'u2', photographerId: 'u2' }), false);
+    assert.equal(isOwnEvidencePost('u1', { authorId: 'u1', deletedAt: new Date() }), false, 'soft-deleted');
+    assert.equal(isOwnEvidencePost('u1', { authorId: 'u1', deletedAt: null }), true);
+    assert.equal(isOwnEvidencePost('u1', undefined), false, 'missing document');
+  });
+
+  test('cleanEvidence removes posts of other photographers and posts that are gone', () => {
+    const s = skills({
+      specialties: [genre('couple', 2, ['own1', 'other', 'gone']), genre('family', 1, ['own2'])],
+      languages: ['vi'],
+    });
+    assert.deepEqual(cleanEvidence(s, new Set(['own1', 'own2'])), {
+      skills: skills({ specialties: [genre('couple', 2, ['own1']), genre('family', 1, ['own2'])], languages: ['vi'] }),
+      removed: true,
+    });
+  });
+
+  test('a Chuyên sâu genre left without evidence drops to Thành thạo; one post left keeps it', () => {
+    const s = skills({ specialties: [genre('portrait', 3, ['other']), genre('wedding', 3, ['own', 'gone'])] });
+    assert.deepEqual(cleanEvidence(s, new Set(['own'])).skills.specialties, [genre('portrait', 2, []), genre('wedding', 3, ['own'])]);
+  });
+
+  test('nothing to remove: the same skills object and removed false', () => {
+    const s = skills({ specialties: [genre('portrait', 3, ['a'])] });
+    const result = cleanEvidence(s, new Set(['a', 'unrelated']));
+    assert.equal(result.removed, false);
+    assert.equal(result.skills, s);
+  });
+});
+
+describe('skillsCompleteness', () => {
+  test('weights of spec 3e.2, highest first, 100 in total', () => {
+    assert.deepEqual([...COMPLETENESS_STEPS], ['specialties', 'levels', 'evidence', 'styles', 'languages', 'audiences', 'extras']);
+    assert.deepEqual(COMPLETENESS_STEPS.map((s) => COMPLETENESS_POINTS[s]), [25, 20, 20, 10, 10, 10, 5]);
+  });
+
+  const table = JSON.parse(readFileSync(new URL('./fixtures/skills_completeness.json', import.meta.url), 'utf8')) as {
+    cases: { name: string; skills: unknown; percent: number; next: string | null }[];
+  };
+  for (const c of table.cases) {
+    test(c.name, () => {
+      const s = parseSkills(c.skills);
+      assert.ok(s !== null, 'fixture skills must parse');
+      assert.deepEqual(skillsCompleteness(s), { percent: c.percent, next: c.next });
+    });
+  }
+});
+
+describe('sameClientSkills', () => {
+  const base = { schemaVersion: 1, specialties: [{ id: 'portrait', level: 2, evidencePostIds: ['a'] }], languages: ['vi'] };
+
+  test("server fields are ignored (the Function's own write)", () => {
+    const after = { ...base, completeness: 75, completenessNext: 'styles', updatedAt: new Date(), evidenceRemovedAt: new Date() };
+    assert.equal(sameClientSkills(base, after), true);
+  });
+
+  test('key order does not matter; any client change does', () => {
+    assert.equal(
+      sameClientSkills(base, { languages: ['vi'], specialties: [{ evidencePostIds: ['a'], level: 2, id: 'portrait' }], schemaVersion: 1 }),
+      true,
+    );
+    assert.equal(sameClientSkills(base, { ...base, languages: ['vi', 'en'] }), false);
+    assert.equal(sameClientSkills(base, { ...base, specialties: [{ id: 'portrait', level: 2, evidencePostIds: [] }] }), false);
+    assert.equal(sameClientSkills(base, { ...base, styles: [] }), false);
+  });
+
+  test('no skills before is never the same as skills after', () => {
+    assert.equal(sameClientSkills(undefined, base), false);
+    assert.equal(sameClientSkills(undefined, undefined), true);
+  });
+});
+
+test("toStoredSpecialties writes the app's shape: years only when known", () => {
+  assert.deepEqual(toStoredSpecialties([genre('portrait', 3, ['a'], 6), genre('couple')]), [
+    { id: 'portrait', level: 3, years: 6, evidencePostIds: ['a'] },
+    { id: 'couple', level: 2, evidencePostIds: [] },
+  ]);
+});
+```
+
+```ts
+// packages/domain/test/score_skills.test.ts
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  isOwnEvidencePost,
+  scorePhotographerSkills,
+  type EvidencePostRecord,
+  type ScoreSkillsDeps,
+  type SkillsScoreUpdate,
+  type SkillsWriteEvent,
+} from '../src/index.js';
+
+const P = 'p1';
+
+function fakes(posts: Record<string, EvidencePostRecord> = {}, writeResult: 'written' | 'stale' = 'written') {
+  const reads: string[][] = [];
+  const writes: SkillsScoreUpdate[] = [];
+  const deps: ScoreSkillsDeps = {
+    posts: {
+      async owned(uid, ids) {
+        reads.push([...ids]);
+        return new Set(ids.filter((id) => isOwnEvidencePost(uid, posts[id])));
+      },
+    },
+    writer: {
+      async write(update) {
+        writes.push(update);
+        return writeResult;
+      },
+    },
+  };
+  return { deps, reads, writes };
+}
+
+const ev = (before: unknown, after: unknown, deleted = false): SkillsWriteEvent => ({ uid: P, before, after, deleted });
+const saved = (over: Record<string, unknown> = {}) => ({
+  schemaVersion: 1,
+  specialties: [{ id: 'portrait', level: 2, evidencePostIds: [] }],
+  languages: ['vi'],
+  ...over,
+});
+
+describe('scorePhotographerSkills', () => {
+  test('a deleted profile is skipped without reading or writing', async () => {
+    const f = fakes();
+    assert.equal(await scorePhotographerSkills(ev(saved(), undefined, true), f.deps), 'deleted');
+    assert.deepEqual([f.reads, f.writes], [[], []]);
+  });
+
+  test('a profile without skills is skipped', async () => {
+    const f = fakes();
+    assert.equal(await scorePhotographerSkills(ev(undefined, undefined), f.deps), 'no_skills');
+    assert.deepEqual(f.writes, []);
+  });
+
+  test("a change of server fields only (the Function's own write) stops before any read", async () => {
+    const f = fakes({ own: { authorId: P } });
+    const before = saved({ specialties: [{ id: 'portrait', level: 3, evidencePostIds: ['own'] }] });
+    const after = { ...before, completeness: 100, completenessNext: null, updatedAt: new Date() };
+    assert.equal(await scorePhotographerSkills(ev(before, after), f.deps), 'unchanged');
+    assert.deepEqual([f.reads, f.writes], [[], []]);
+  });
+
+  test('a malformed skills value is not scored and nothing is written', async () => {
+    for (const after of ['portrait', [], { specialties: [] }, { schemaVersion: 2 }]) {
+      const f = fakes();
+      assert.equal(await scorePhotographerSkills(ev(undefined, after), f.deps), 'malformed', JSON.stringify(after));
+      assert.deepEqual(f.writes, []);
+    }
+  });
+
+  test('evidence of another photographer, of a deleted post or with a bad id is removed; Chuyên sâu drops', async () => {
+    const f = fakes({
+      own: { authorId: P, photographerId: P },
+      theirs: { authorId: 'p2', photographerId: 'p2' },
+      trashed: { authorId: P, deletedAt: new Date() },
+    });
+    const after = saved({
+      specialties: [
+        { id: 'portrait', level: 3, evidencePostIds: ['theirs', 'trashed', 'a/b'] },
+        { id: 'couple', level: 2, years: 4, evidencePostIds: ['own', 'missing'] },
+      ],
+      styles: ['film'],
+    });
+    assert.equal(await scorePhotographerSkills(ev(undefined, after), f.deps), 'written');
+    assert.deepEqual(f.reads, [['theirs', 'trashed', 'own', 'missing']], 'one read, bad id never read');
+    assert.deepEqual(f.writes, [
+      {
+        completeness: 85,
+        completenessNext: 'audiences',
+        specialties: [
+          { id: 'portrait', level: 2, evidencePostIds: [] },
+          { id: 'couple', level: 2, years: 4, evidencePostIds: ['own'] },
+        ],
+      },
+    ]);
+  });
+
+  test('no evidence: no read; score and next step written, specialties left alone', async () => {
+    const f = fakes();
+    assert.equal(await scorePhotographerSkills(ev(undefined, saved()), f.deps), 'written');
+    assert.deepEqual(f.reads, []);
+    assert.deepEqual(f.writes, [{ completeness: 75, completenessNext: 'styles', specialties: null }]);
+  });
+
+  test('the re-run after the Function removed evidence finds the score current and writes nothing', async () => {
+    const f = fakes({ own: { authorId: P } });
+    const before = saved({ specialties: [{ id: 'portrait', level: 3, evidencePostIds: ['own', 'theirs'] }] });
+    const after = saved({
+      specialties: [{ id: 'portrait', level: 3, evidencePostIds: ['own'] }],
+      completeness: 75,
+      completenessNext: 'styles',
+      updatedAt: new Date(),
+      evidenceRemovedAt: new Date(),
+    });
+    assert.equal(await scorePhotographerSkills(ev(before, after), f.deps), 'up_to_date');
+    assert.deepEqual(f.writes, []);
+  });
+
+  test('a photographer with no genre yet scores 10 and is told to choose one', async () => {
+    const f = fakes();
+    assert.equal(await scorePhotographerSkills(ev(undefined, { schemaVersion: 1, specialties: [], languages: ['vi'] }), f.deps), 'written');
+    assert.deepEqual(f.writes, [{ completeness: 10, completenessNext: 'specialties', specialties: null }]);
+  });
+
+  test('a stored score without completenessNext (an older run) is written again', async () => {
+    const f = fakes();
+    assert.equal(await scorePhotographerSkills(ev(undefined, saved({ completeness: 75 })), f.deps), 'written');
+    assert.deepEqual(f.writes, [{ completeness: 75, completenessNext: 'styles', specialties: null }]);
+  });
+
+  test('a user save during the run makes the write stale; the next trigger scores it', async () => {
+    const f = fakes({}, 'stale');
+    assert.equal(await scorePhotographerSkills(ev(undefined, saved()), f.deps), 'stale');
+    assert.equal(f.writes.length, 1);
+  });
+
+  test('a failed post read rejects (so Functions retries) and writes nothing', async () => {
+    const writes: SkillsScoreUpdate[] = [];
+    const deps: ScoreSkillsDeps = {
+      posts: { owned: () => Promise.reject(new Error('unavailable')) },
+      writer: {
+        async write(update) {
+          writes.push(update);
+          return 'written';
+        },
+      },
+    };
+    const after = saved({ specialties: [{ id: 'portrait', level: 3, evidencePostIds: ['a'] }] });
+    await assert.rejects(scorePhotographerSkills(ev(undefined, after), deps), /unavailable/);
+    assert.deepEqual(writes, []);
+  });
+});
+```
+
+- [ ] **Step 3: Run and see it fail**
+
+Run (from `packages/domain`): `npm test`
+Expected: FAIL. `skills.test.ts` and `score_skills.test.ts` stop with `SyntaxError: The requested module '../src/index.js' does not provide an export named …`; the other files still pass (`ℹ pass 53`).
+
+- [ ] **Step 4: Implement the pure rules**
+
+```ts
+// packages/domain/src/skills.ts
+// Photographer skills (spec 3e.2–3e.3): the reading rules of the app's skillsFromMap
+// (app_flutter/lib/data/skills/photographer_skills.dart), the evidence check and the
+// "Độ khớp hồ sơ" score. Pure: the Function onPhotographerWrite wires it to Firestore.
+import { isId } from './ids.js';
+
+export const SKILLS_SCHEMA_VERSION = 1;
+
+/** Fields of `photographers/{uid}.skills` written only by the server (Admin SDK). */
+export const SERVER_SKILL_FIELDS = ['completeness', 'completenessNext', 'updatedAt', 'evidenceRemovedAt'] as const;
+
+/** 1 Cơ bản, 2 Thành thạo, 3 Chuyên sâu. */
+export type SkillLevel = 1 | 2 | 3;
+
+export interface SpecialtySkill {
+  readonly id: string;
+  readonly level: SkillLevel;
+  readonly years: number | null;
+  readonly evidencePostIds: readonly string[];
+}
+
+/** The client-owned part of `photographers/{uid}.skills`. */
+export interface Skills {
+  readonly specialties: readonly SpecialtySkill[];
+  readonly styles: readonly string[];
+  readonly extras: readonly string[];
+  readonly languages: readonly string[];
+  readonly audiences: readonly string[];
+  readonly yearsExperience: number | null;
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const integer = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) ? v : null);
+
+/** Strings only, each once, in their first order (Dart `_strings`). */
+function strings(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return [...new Set(v.filter((x): x is string => typeof x === 'string'))];
+}
+
+/**
+ * The stored skills map → Skills, or null when it is not a schema-1 map (malformed: the
+ * Function logs it and writes nothing). Inside a schema-1 map it is as tolerant as the app:
+ * malformed genres are dropped, a duplicate genre id counts once (first wins), a level outside
+ * 1..3 reads as 2, non-integer years read as null.
+ */
+export function parseSkills(raw: unknown): Skills | null {
+  if (!isRecord(raw) || raw.schemaVersion !== SKILLS_SCHEMA_VERSION) return null;
+  const specialties: SpecialtySkill[] = [];
+  const seen = new Set<string>();
+  const list: unknown = raw.specialties;
+  if (Array.isArray(list)) {
+    for (const e of list) {
+      if (!isRecord(e)) continue;
+      const id = e.id;
+      if (typeof id !== 'string' || seen.has(id)) continue;
+      seen.add(id);
+      const lv = e.level;
+      specialties.push({
+        id,
+        level: lv === 1 || lv === 3 ? lv : 2,
+        years: integer(e.years),
+        evidencePostIds: strings(e.evidencePostIds),
+      });
+    }
+  }
+  return {
+    specialties,
+    styles: strings(raw.styles),
+    extras: strings(raw.extras),
+    languages: strings(raw.languages),
+    audiences: strings(raw.audiences),
+    yearsExperience: integer(raw.yearsExperience),
+  };
+}
+
+/** 6 genres × 3 posts: the most one run reads (spec 3e.2). */
+export const MAX_EVIDENCE_READS = 18;
+
+/**
+ * Post ids to look up, each once, at most 18. Ids that are not opaque ids are left out: they
+ * cannot be a post (and `doc('a/b')` would throw), so cleanEvidence removes them.
+ */
+export function evidenceIds(skills: Skills): string[] {
+  const ids = new Set(skills.specialties.flatMap((s) => s.evidencePostIds).filter(isId));
+  return [...ids].slice(0, MAX_EVIDENCE_READS);
+}
+
+/** The fields of a `posts/{id}` document the evidence check reads. */
+export interface EvidencePostRecord {
+  readonly authorId?: unknown;
+  readonly photographerId?: unknown;
+  readonly deletedAt?: unknown;
+}
+
+/**
+ * Evidence must be the photographer's own live post: the document exists, has no `deletedAt`,
+ * and its owner (`authorId`, else `photographerId`, like the app's postFromFirestore) is `uid`.
+ * A customer's real-shoot post about the photographer (`authorId` = the customer) does not count.
+ */
+export function isOwnEvidencePost(uid: string, post: EvidencePostRecord | undefined): boolean {
+  if (post === undefined || (post.deletedAt !== undefined && post.deletedAt !== null)) return false;
+  const owner = typeof post.authorId === 'string' ? post.authorId : post.photographerId;
+  return owner === uid;
+}
+
+/** Keeps only owned evidence; a level-3 genre left with none becomes level 2. */
+export function cleanEvidence(skills: Skills, ownedIds: ReadonlySet<string>): { skills: Skills; removed: boolean } {
+  let removed = false;
+  const specialties = skills.specialties.map((sp): SpecialtySkill => {
+    const kept = sp.evidencePostIds.filter((id) => ownedIds.has(id));
+    if (kept.length === sp.evidencePostIds.length) return sp;
+    removed = true;
+    return { ...sp, level: sp.level === 3 && kept.length === 0 ? 2 : sp.level, evidencePostIds: kept };
+  });
+  return removed ? { skills: { ...skills, specialties }, removed } : { skills, removed };
+}
+
+/** Score parts of spec 3e.2, highest weight first; `next` is the first one missing. */
+export const COMPLETENESS_STEPS = ['specialties', 'levels', 'evidence', 'styles', 'languages', 'audiences', 'extras'] as const;
+
+export type CompletenessStep = (typeof COMPLETENESS_STEPS)[number];
+
+export const COMPLETENESS_POINTS: Readonly<Record<CompletenessStep, number>> = {
+  specialties: 25,
+  levels: 20,
+  evidence: 20,
+  styles: 10,
+  languages: 10,
+  audiences: 10,
+  extras: 5,
+};
+
+export interface Completeness {
+  /** 0..100; shown only to the photographer. */
+  readonly percent: number;
+  /** First missing step, or null at 100. */
+  readonly next: CompletenessStep | null;
+}
+
+function done(s: Skills, step: CompletenessStep): boolean {
+  const any = s.specialties.length > 0;
+  switch (step) {
+    case 'specialties':
+      return any;
+    case 'levels':
+      return any && s.specialties.every((x) => x.level >= 1 && x.level <= 3);
+    case 'evidence':
+      return any && s.specialties.every((x) => x.level !== 3 || x.evidencePostIds.length > 0);
+    case 'styles':
+      return s.styles.length > 0;
+    case 'languages':
+      return s.languages.length > 0;
+    case 'audiences':
+      return s.audiences.length > 0;
+    case 'extras':
+      return s.extras.length > 0;
+  }
+}
+
+/** "Độ khớp hồ sơ" (spec 3e.2) and the first missing step. */
+export function skillsCompleteness(s: Skills): Completeness {
+  let percent = 0;
+  let next: CompletenessStep | null = null;
+  for (const step of COMPLETENESS_STEPS) {
+    if (done(s, step)) percent += COMPLETENESS_POINTS[step];
+    else next ??= step;
+  }
+  return { percent, next };
+}
+
+const SERVER_FIELDS = new Set<string>(SERVER_SKILL_FIELDS);
+
+function clientPart(v: unknown): unknown {
+  if (!isRecord(v)) return v;
+  return Object.fromEntries(Object.entries(v).filter(([k]) => !SERVER_FIELDS.has(k)));
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
+  }
+  if (!isRecord(a) || !isRecord(b)) return false;
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => Object.hasOwn(b, k) && deepEqual(a[k], b[k]));
+}
+
+/**
+ * The loop guard: true when the two raw skills values differ only in server fields, so the
+ * write that fired the trigger was the Function's own (or an identical save) and needs no work.
+ */
+export function sameClientSkills(before: unknown, after: unknown): boolean {
+  return deepEqual(clientPart(before), clientPart(after));
+}
+
+/** A genre as the app stores it (`skillsToMap`): `years` only when known. */
+export interface StoredSpecialty {
+  readonly id: string;
+  readonly level: SkillLevel;
+  readonly years?: number;
+  readonly evidencePostIds: readonly string[];
+}
+
+export function toStoredSpecialties(specialties: readonly SpecialtySkill[]): StoredSpecialty[] {
+  return specialties.map((s) => ({
+    id: s.id,
+    level: s.level,
+    ...(s.years === null ? {} : { years: s.years }),
+    evidencePostIds: [...s.evidencePostIds],
+  }));
+}
+```
+
+- [ ] **Step 5: Implement the use case over ports**
+
+```ts
+// packages/domain/src/score_skills.ts
+// Use case behind the Firestore trigger onPhotographerWrite (spec 2026-10-02 §2): skip what needs
+// no work, check the evidence with one read, score, write once. Firestore lives in the adapters.
+import {
+  cleanEvidence,
+  evidenceIds,
+  parseSkills,
+  sameClientSkills,
+  skillsCompleteness,
+  toStoredSpecialties,
+  type CompletenessStep,
+  type Skills,
+  type StoredSpecialty,
+} from './skills.js';
+
+/** One write of `photographers/{uid}`: the raw `skills` values before and after. */
+export interface SkillsWriteEvent {
+  readonly uid: string;
+  readonly before: unknown;
+  readonly after: unknown;
+  /** The document itself was deleted. */
+  readonly deleted: boolean;
+}
+
+/** Which of `postIds` are the photographer's own live posts (one batched read). */
+export interface OwnedPostsReader {
+  owned(uid: string, postIds: readonly string[]): Promise<ReadonlySet<string>>;
+}
+
+export interface SkillsScoreUpdate {
+  readonly completeness: number;
+  readonly completenessNext: CompletenessStep | null;
+  /** The cleaned genres when evidence was removed (then `evidenceRemovedAt` is set too); else null. */
+  readonly specialties: readonly StoredSpecialty[] | null;
+}
+
+/**
+ * Writes the server fields only if the document is still the one the trigger saw; `stale` when
+ * it changed (a newer save, whose own trigger scores it) or was deleted. Other failures throw.
+ */
+export interface SkillsScoreWriter {
+  write(update: SkillsScoreUpdate): Promise<'written' | 'stale'>;
+}
+
+export interface ScoreSkillsDeps {
+  readonly posts: OwnedPostsReader;
+  readonly writer: SkillsScoreWriter;
+}
+
+export type ScoreSkillsOutcome = 'deleted' | 'no_skills' | 'unchanged' | 'malformed' | 'up_to_date' | 'written' | 'stale';
+
+export type SkillsScorePlan =
+  | { readonly kind: 'skip'; readonly reason: 'deleted' | 'no_skills' | 'unchanged' | 'malformed' }
+  | { readonly kind: 'score'; readonly skills: Skills };
+
+/** What a write needs, decided without any read. `unchanged` is the re-entry guard. */
+export function planSkillsScore(e: SkillsWriteEvent): SkillsScorePlan {
+  if (e.deleted) return { kind: 'skip', reason: 'deleted' };
+  if (e.after === undefined) return { kind: 'skip', reason: 'no_skills' };
+  if (sameClientSkills(e.before, e.after)) return { kind: 'skip', reason: 'unchanged' };
+  const skills = parseSkills(e.after);
+  return skills === null ? { kind: 'skip', reason: 'malformed' } : { kind: 'score', skills };
+}
+
+const storedField = (raw: unknown, key: string): unknown =>
+  typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>)[key] : undefined;
+
+/**
+ * Scores `photographers/{uid}.skills` and removes evidence that is not the photographer's own.
+ * Idempotent: a re-run finds the score current (`up_to_date`) and writes nothing. Read and write
+ * failures propagate so Cloud Functions retries the event.
+ */
+export async function scorePhotographerSkills(e: SkillsWriteEvent, deps: ScoreSkillsDeps): Promise<ScoreSkillsOutcome> {
+  const plan = planSkillsScore(e);
+  if (plan.kind === 'skip') return plan.reason;
+  const ids = evidenceIds(plan.skills);
+  const owned = ids.length === 0 ? new Set<string>() : await deps.posts.owned(e.uid, ids);
+  const { skills, removed } = cleanEvidence(plan.skills, owned);
+  const { percent, next } = skillsCompleteness(skills);
+  if (!removed && storedField(e.after, 'completeness') === percent && storedField(e.after, 'completenessNext') === next) {
+    return 'up_to_date';
+  }
+  return deps.writer.write({
+    completeness: percent,
+    completenessNext: next,
+    specialties: removed ? toStoredSpecialties(skills.specialties) : null,
+  });
+}
+```
+
+Append to `packages/domain/src/index.ts`:
+
+```ts
+export * from './skills.js';
+export * from './score_skills.js';
+```
+
+- [ ] **Step 6: Run and see it pass**
+
+Run (from `packages/domain`): `npm run typecheck && npm run lint && npm test`
+Expected: typecheck and lint clean (the purity lint and `purity.test.ts` accept `src/skills.ts` and `src/score_skills.ts`: relative imports only); `ℹ tests 86`, `ℹ pass 86`, `ℹ fail 0` (53 before + 22 in `skills.test.ts` + 11 in `score_skills.test.ts`).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add packages/domain
+git commit -m "feat(domain): skills parsing, evidence check, profile score and the scorePhotographerSkills use case
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 11: Firestore trigger `onPhotographerWrite` (adapters, wiring, emulator test)
+
+**Files:**
+- Create: `app_flutter/firebase/functions/src/infra/skills_firestore.ts`, `src/infra/live_skills.ts`, `src/triggers/photographer_write.ts`, `test/unit/photographer_write.test.ts`, `test/integration/photographer_write.test.ts`
+- Modify: `app_flutter/firebase/functions/src/config.ts`, `app_flutter/firebase/functions/src/index.ts`
+
+**Interfaces:**
+- Consumes: Task 10 (`scorePhotographerSkills`, `isOwnEvidencePost`, `ScoreSkillsDeps`, `OwnedPostsReader`, `SkillsScoreWriter`, `SkillsScoreUpdate`, `ScoreSkillsOutcome`); Task 4 (`REGION`, `db()`, build, npm scripts `test` and `test:integration`, the `--only auth,firestore,functions` emulator run); Task 5 (`emulatorProject`, `resetEmulators`); Task 6 (`src/index.ts` exporting `getContactLink`, `liveContactDeps`).
+- Produces:
+  - `TRIGGER_OPTIONS = { region: REGION, memory: '256MiB', timeoutSeconds: 30, maxInstances: 10, minInstances: 0, retry: true }` in `src/config.ts`.
+  - `POSTS = 'posts'`, `firestoreOwnedPostsReader(db: Firestore): OwnedPostsReader` (one `db.getAll`), `skillsUpdateFields(update: SkillsScoreUpdate): DocumentData`, `isStaleWriteError(e: unknown): boolean` (gRPC 9 FAILED_PRECONDITION, 5 NOT_FOUND), `firestoreSkillsScoreWriter(db: Firestore, uid: string, lastUpdateTime: Timestamp | undefined): SkillsScoreWriter`.
+  - `liveSkillsDeps(uid: string, lastUpdateTime: Timestamp | undefined): ScoreSkillsDeps`.
+  - `interface PhotographerWriteInput { uid: string; before: DocumentData | undefined; after: DocumentData | undefined }`, `handlePhotographerWrite(input, deps): Promise<ScoreSkillsOutcome>` (logs `warn` for `malformed`, `info` for `written`/`stale`).
+  - Deployed function `onPhotographerWrite` (Firestore v2 `onDocumentWritten('photographers/{uid}')`, `asia-southeast1`).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// app_flutter/firebase/functions/test/unit/photographer_write.test.ts
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { FieldValue, type Firestore } from 'firebase-admin/firestore';
+import type { ScoreSkillsDeps, SkillsScoreUpdate } from '@photobooking/domain';
+import { REGION, TRIGGER_OPTIONS } from '../../src/config.js';
+import { firestoreSkillsScoreWriter, isStaleWriteError, skillsUpdateFields } from '../../src/infra/skills_firestore.js';
+import { handlePhotographerWrite } from '../../src/triggers/photographer_write.js';
+
+const serverTime = (v: unknown) => v instanceof FieldValue && v.isEqual(FieldValue.serverTimestamp());
+
+describe('onPhotographerWrite plumbing', () => {
+  test('trigger options: Singapore, small, bounded, retried', () => {
+    assert.deepEqual(TRIGGER_OPTIONS, {
+      region: REGION,
+      memory: '256MiB',
+      timeoutSeconds: 30,
+      maxInstances: 10,
+      minInstances: 0,
+      retry: true,
+    });
+  });
+
+  test('update fields: score with server time; specialties and evidenceRemovedAt only after a removal', () => {
+    const plain = skillsUpdateFields({ completeness: 75, completenessNext: 'styles', specialties: null });
+    assert.deepEqual(Object.keys(plain).sort(), ['skills.completeness', 'skills.completenessNext', 'skills.updatedAt']);
+    assert.equal(plain['skills.completeness'], 75);
+    assert.equal(plain['skills.completenessNext'], 'styles');
+    assert.ok(serverTime(plain['skills.updatedAt']));
+    const cleaned = skillsUpdateFields({
+      completeness: 100,
+      completenessNext: null,
+      specialties: [{ id: 'portrait', level: 2, evidencePostIds: [] }],
+    });
+    assert.equal(cleaned['skills.completenessNext'], null);
+    assert.deepEqual(cleaned['skills.specialties'], [{ id: 'portrait', level: 2, evidencePostIds: [] }]);
+    assert.ok(serverTime(cleaned['skills.evidenceRemovedAt']));
+  });
+
+  test('stale writes are FAILED_PRECONDITION and NOT_FOUND; anything else is rethrown', () => {
+    assert.equal(isStaleWriteError({ code: 9 }), true);
+    assert.equal(isStaleWriteError({ code: 5 }), true);
+    assert.equal(isStaleWriteError({ code: 14 }), false);
+    assert.equal(isStaleWriteError(new Error('boom')), false);
+    assert.equal(isStaleWriteError(null), false);
+  });
+
+  test('a write for a deleted document (no update time) touches nothing', async () => {
+    const writer = firestoreSkillsScoreWriter({} as Firestore, 'p1', undefined);
+    assert.equal(await writer.write({ completeness: 10, completenessNext: 'specialties', specialties: null }), 'stale');
+  });
+
+  test('the handler passes the skills maps of both snapshots to the use case', async () => {
+    const writes: SkillsScoreUpdate[] = [];
+    const deps: ScoreSkillsDeps = {
+      posts: { owned: async () => new Set<string>() },
+      writer: {
+        write: async (u) => {
+          writes.push(u);
+          return 'written';
+        },
+      },
+    };
+    const outcome = await handlePhotographerWrite(
+      {
+        uid: 'p1',
+        before: { bio: 'x' },
+        after: {
+          bio: 'x',
+          skills: { schemaVersion: 1, specialties: [{ id: 'portrait', level: 2, evidencePostIds: [] }], languages: ['vi'] },
+        },
+      },
+      deps,
+    );
+    assert.equal(outcome, 'written');
+    assert.deepEqual(writes, [{ completeness: 75, completenessNext: 'styles', specialties: null }]);
+  });
+
+  test('the handler skips a deleted document and a malformed skills value (warning logged)', async () => {
+    const deps: ScoreSkillsDeps = {
+      posts: { owned: async () => new Set<string>() },
+      writer: { write: async () => assert.fail('nothing may be written') },
+    };
+    assert.equal(await handlePhotographerWrite({ uid: 'p1', before: { skills: {} }, after: undefined }, deps), 'deleted');
+    assert.equal(await handlePhotographerWrite({ uid: 'p1', before: undefined, after: { skills: 'portrait' } }, deps), 'malformed');
+  });
+});
+```
+
+```ts
+// app_flutter/firebase/functions/test/integration/photographer_write.test.ts
+import { after, before, describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
+import { Timestamp, getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { emulatorProject, resetEmulators } from '../../seed/emulator_client.js';
+
+// The real trigger on the Functions emulator: Admin writes to photographers/{uid} fire it.
+// CI only (rule 2026-10-02); not run while executing the plan.
+
+const P = 'skills-p1';
+const OTHER = 'skills-p2';
+let app: App;
+let db: Firestore;
+
+const post = (author: string) => ({
+  authorId: author,
+  photographerId: author,
+  serviceId: 'seed-service-portrait',
+  imageUrls: ['https://example.test/1.jpg'],
+  createdAt: Timestamp.now(),
+});
+
+before(async () => {
+  await resetEmulators();
+  app = initializeApp({ projectId: emulatorProject() }, 'skills-test');
+  db = getFirestore(app);
+  await db.doc('posts/ev-own').set(post(P));
+  await db.doc('posts/ev-theirs').set(post(OTHER));
+});
+after(async () => {
+  await deleteApp(app);
+});
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const skillsOf = async (uid: string) =>
+  (await db.doc(`photographers/${uid}`).get()).data()?.skills as Record<string, unknown> | undefined;
+
+async function scored(uid: string, timeoutMs = 20_000): Promise<Record<string, unknown>> {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    const s = await skillsOf(uid);
+    if (s?.completeness !== undefined) return s;
+    if (Date.now() > end) throw new Error('onPhotographerWrite did not score the profile in time');
+    await sleep(250);
+  }
+}
+
+const clientSkills = {
+  schemaVersion: 1,
+  specialties: [
+    { id: 'portrait', level: 3, evidencePostIds: ['ev-theirs'] },
+    { id: 'couple', level: 2, evidencePostIds: ['ev-own', 'ev-gone'] },
+  ],
+  styles: ['film'],
+  extras: [],
+  languages: ['vi'],
+  audiences: [],
+  yearsExperience: null,
+};
+
+describe('onPhotographerWrite on the emulators', () => {
+  test('foreign and missing evidence is removed, the level drops and the score is written', async () => {
+    await db.doc(`photographers/${P}`).set({ onboardingComplete: false, verified: false, skills: clientSkills, updatedAt: Timestamp.now() });
+    const s = await scored(P);
+    assert.deepEqual(s.specialties, [
+      { id: 'portrait', level: 2, evidencePostIds: [] },
+      { id: 'couple', level: 2, evidencePostIds: ['ev-own'] },
+    ]);
+    assert.equal(s.completeness, 85);
+    assert.equal(s.completenessNext, 'audiences');
+    assert.ok(s.updatedAt instanceof Timestamp);
+    assert.ok(s.evidenceRemovedAt instanceof Timestamp);
+  });
+
+  test('saving the same skills again writes nothing more', async () => {
+    const first = await scored(P);
+    // What the app sends next time: the cleaned client part plus a new top-level updatedAt.
+    await db.doc(`photographers/${P}`).set({ skills: { ...clientSkills, specialties: first.specialties }, updatedAt: Timestamp.now() }, { merge: true });
+    await sleep(5_000);
+    const again = await skillsOf(P);
+    assert.ok(again !== undefined);
+    assert.equal((again.updatedAt as Timestamp).toMillis(), (first.updatedAt as Timestamp).toMillis());
+    assert.equal(again.completeness, 85);
+  });
+
+  test('a profile without skills is left alone', async () => {
+    await db.doc(`photographers/${OTHER}`).set({ onboardingComplete: false, verified: false, bio: 'Chưa có kỹ năng' });
+    await sleep(3_000);
+    assert.equal(await skillsOf(OTHER), undefined);
+  });
+});
+```
+
+- [ ] **Step 2: Run the unit tests and see them fail**
+
+Run (from `app_flutter/firebase/functions`): `npm test`
+Expected: FAIL. `photographer_write.test.ts` does not load (`TRIGGER_OPTIONS` is not exported by `src/config.js`, `ERR_MODULE_NOT_FOUND` for `src/infra/skills_firestore.js`); the other 21 tests pass.
+
+The integration test is **CI only**: do not run `npm run test:integration` here (Global Constraints). Before this task's code it would time out waiting for the score.
+
+- [ ] **Step 3: Implement**
+
+In `app_flutter/firebase/functions/src/config.ts`, add below the existing `import type { CallableOptions } …` line:
+
+```ts
+import type { DocumentOptions } from 'firebase-functions/v2/firestore';
+```
+
+and append at the end of the file:
+
+```ts
+/**
+ * Options of every Firestore trigger (onPhotographerWrite, spec 2026-10-02 §2). `retry: true`:
+ * a failed read or write is retried; the use case is idempotent (precondition + loop guard).
+ */
+export const TRIGGER_OPTIONS = {
+  region: REGION,
+  memory: '256MiB',
+  timeoutSeconds: 30,
+  maxInstances: 10,
+  minInstances: 0,
+  retry: true,
+} as const satisfies Omit<DocumentOptions, 'document'>;
+```
+
+```ts
+// app_flutter/firebase/functions/src/infra/skills_firestore.ts
+import { FieldValue, type DocumentData, type Firestore, type Timestamp } from 'firebase-admin/firestore';
+import { isOwnEvidencePost, type OwnedPostsReader, type SkillsScoreUpdate, type SkillsScoreWriter } from '@photobooking/domain';
+
+// Firestore adapters of the onPhotographerWrite ports. Reads go through one `db.getAll`.
+
+export const POSTS = 'posts';
+
+export function firestoreOwnedPostsReader(db: Firestore): OwnedPostsReader {
+  return {
+    async owned(uid, postIds) {
+      if (postIds.length === 0) return new Set<string>();
+      const snaps = await db.getAll(...postIds.map((id) => db.collection(POSTS).doc(id)));
+      return new Set(snaps.filter((s) => isOwnEvidencePost(uid, s.exists ? s.data() : undefined)).map((s) => s.id));
+    },
+  };
+}
+
+/** Field paths of the single update (dotted, so the client-owned part of `skills` stays as is). */
+export function skillsUpdateFields(update: SkillsScoreUpdate): DocumentData {
+  return {
+    'skills.completeness': update.completeness,
+    'skills.completenessNext': update.completenessNext,
+    'skills.updatedAt': FieldValue.serverTimestamp(),
+    ...(update.specialties === null
+      ? {}
+      : { 'skills.specialties': update.specialties, 'skills.evidenceRemovedAt': FieldValue.serverTimestamp() }),
+  };
+}
+
+/** gRPC FAILED_PRECONDITION (9: changed since the trigger's snapshot) or NOT_FOUND (5: deleted). */
+export function isStaleWriteError(e: unknown): boolean {
+  if (typeof e !== 'object' || e === null || !('code' in e)) return false;
+  return e.code === 9 || e.code === 5;
+}
+
+/**
+ * Writes only if `photographers/{uid}` still has the update time of the snapshot the trigger got.
+ * A newer save fails the precondition: `stale`, no retry (that save's own trigger scores it).
+ */
+export function firestoreSkillsScoreWriter(db: Firestore, uid: string, lastUpdateTime: Timestamp | undefined): SkillsScoreWriter {
+  return {
+    async write(update) {
+      if (lastUpdateTime === undefined) return 'stale';
+      try {
+        await db.collection('photographers').doc(uid).update(skillsUpdateFields(update), { lastUpdateTime });
+        return 'written';
+      } catch (e) {
+        if (isStaleWriteError(e)) return 'stale';
+        throw e;
+      }
+    },
+  };
+}
+```
+
+```ts
+// app_flutter/firebase/functions/src/infra/live_skills.ts
+import type { Timestamp } from 'firebase-admin/firestore';
+import type { ScoreSkillsDeps } from '@photobooking/domain';
+import { db } from './admin.js';
+import { firestoreOwnedPostsReader, firestoreSkillsScoreWriter } from './skills_firestore.js';
+
+/** Production wiring of onPhotographerWrite for one event (the writer carries its precondition). */
+export function liveSkillsDeps(uid: string, lastUpdateTime: Timestamp | undefined): ScoreSkillsDeps {
+  const firestore = db();
+  return {
+    posts: firestoreOwnedPostsReader(firestore),
+    writer: firestoreSkillsScoreWriter(firestore, uid, lastUpdateTime),
+  };
+}
+```
+
+```ts
+// app_flutter/firebase/functions/src/triggers/photographer_write.ts
+import type { DocumentData } from 'firebase-admin/firestore';
+import * as logger from 'firebase-functions/logger';
+import { scorePhotographerSkills, type ScoreSkillsDeps, type ScoreSkillsOutcome } from '@photobooking/domain';
+
+/** The two snapshots of one `photographers/{uid}` write; `after` undefined when it was deleted. */
+export interface PhotographerWriteInput {
+  readonly uid: string;
+  readonly before: DocumentData | undefined;
+  readonly after: DocumentData | undefined;
+}
+
+export async function handlePhotographerWrite(input: PhotographerWriteInput, deps: ScoreSkillsDeps): Promise<ScoreSkillsOutcome> {
+  const outcome = await scorePhotographerSkills(
+    { uid: input.uid, before: input.before?.skills, after: input.after?.skills, deleted: input.after === undefined },
+    deps,
+  );
+  if (outcome === 'malformed') {
+    // The rules refuse such writes; reaching here means an Admin write or a rules gap.
+    logger.warn('onPhotographerWrite: skills do not match the schema; nothing written', { uid: input.uid });
+  } else if (outcome === 'written' || outcome === 'stale') {
+    logger.info('onPhotographerWrite', { uid: input.uid, outcome });
+  }
+  return outcome;
+}
+```
+
+Replace `app_flutter/firebase/functions/src/index.ts` with:
+
+```ts
+import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onCall } from 'firebase-functions/v2/https';
+import { handleGetContactLink } from './callables/get_contact_link.js';
+import { CALLABLE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
+import { liveContactDeps } from './infra/live.js';
+import { liveSkillsDeps } from './infra/live_skills.js';
+import { handlePhotographerWrite } from './triggers/photographer_write.js';
+
+// Entry point of the Cloud Functions codebase. Each export is one deployed function.
+
+/** `{bookingId | registrationId, channel}` → `{url}`; contract in plan 2b "Out of scope". */
+export const getContactLink = onCall(CALLABLE_OPTIONS, (request) => handleGetContactLink(request, liveContactDeps()));
+
+/**
+ * Scores `photographers/{uid}.skills` ("Độ khớp hồ sơ") and removes evidence that is not the
+ * photographer's own post (spec 2026-10-02-photographer-write-function-design.md).
+ */
+export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'photographers/{uid}' }, async (event) => {
+  const uid = event.params.uid;
+  const after = event.data?.after;
+  const live = after?.exists === true ? after : undefined;
+  await handlePhotographerWrite(
+    { uid, before: event.data?.before.data(), after: live?.data() },
+    liveSkillsDeps(uid, live?.updateTime),
+  );
+});
+```
+
+- [ ] **Step 4: Run and see it pass**
+
+Run (from `app_flutter/firebase/functions`): `npm run lint && npm run typecheck && npm test && npm run build`
+Expected: lint and typecheck clean; `ℹ tests 27`, `ℹ pass 27`, `ℹ fail 0` (21 before + 6; the malformed case prints one `WARNING` JSON log line with the uid only); build prints `lib/index.js` and `⚡ Done`.
+
+CI runs `npm run test:integration` (Task 14): its log shows `✔ functions: Loaded functions definitions from source: getContactLink, onPhotographerWrite`, the three `onPhotographerWrite on the emulators` tests pass and `ℹ fail 0`. Not run locally.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app_flutter/firebase/functions
+git commit -m "feat(functions): onPhotographerWrite scores skills and removes invalid evidence server-side
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 12: Rules pin `completenessNext` and `evidenceRemovedAt` as server-owned
+
+**Files:**
+- Modify: `app_flutter/firebase/firestore.rules` (function `validSkills`), `app_flutter/firebase/rules-test/rules.test.mjs`
+
+**Interfaces:**
+- Consumes: the existing `validSkills(k, before)` (keys allow-list and the `k.diff(before).affectedKeys()` pin of `completeness`/`updatedAt`) and the rules-test helpers `goodSkills`, `genre`, `skillsOwner`, `writeSkills`, imports `doc`, `setDoc`, `getDoc`, `updateDoc`, `deleteField`, `serverTimestamp`, `Timestamp`, `assert`, `assertSucceeds`, `assertFails` (plan 2c); Task 11's field names.
+- Produces: rule "a client may neither set, change nor remove `skills.completenessNext` or `skills.evidenceRemovedAt`; the app's merge save keeps them" (same policy as `completeness` and `skills.updatedAt`).
+
+- [ ] **Step 1: Write the failing rules tests**
+
+Append to `app_flutter/firebase/rules-test/rules.test.mjs`, after the test `'the adapter merge save keeps server skills fields; changing or removing them fails'`:
+
+```js
+test('completenessNext and evidenceRemovedAt are server-only like completeness', async () => {
+  const stamp = Timestamp.fromMillis(8000);
+  const server = { completeness: 85, completenessNext: 'audiences', updatedAt: stamp, evidenceRemovedAt: stamp };
+  const db = await skillsOwner('k12', { skills: { ...goodSkills(), ...server } });
+  const ref = doc(db, 'photographers/k12');
+  // Exact shape of FirestoreSkillsRepository.save: the stored server fields survive the merge.
+  await assertSucceeds(setDoc(ref, { skills: { ...goodSkills(), styles: ['film'] }, updatedAt: serverTimestamp() }, { merge: true }));
+  const snap = await getDoc(ref);
+  assert.equal(snap.data().skills.completenessNext, 'audiences');
+  assert.equal(snap.data().skills.evidenceRemovedAt.toMillis(), 8000);
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), completenessNext: 'styles' }));
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), completenessNext: null }));
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), evidenceRemovedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { 'skills.completenessNext': deleteField() }));
+  await assertFails(updateDoc(ref, { 'skills.evidenceRemovedAt': deleteField() }));
+  // None stored yet: the client cannot add them either, not even as null.
+  const fresh = await skillsOwner('k13');
+  await assertFails(writeSkills(fresh, 'k13', { ...goodSkills(), completenessNext: null }));
+  await assertFails(writeSkills(fresh, 'k13', { ...goodSkills(), evidenceRemovedAt: Timestamp.fromMillis(1) }));
+  await assertSucceeds(writeSkills(fresh, 'k13', goodSkills()));
+});
+
+test('expression budget: the largest valid skills save still passes with all four server fields stored', async () => {
+  const ids = (p) => [`${p}1`, `${p}2`, `${p}3`];
+  const largest = {
+    ...goodSkills(),
+    specialties: [
+      genre('portrait', 3, ids('a')), genre('wedding', 3, ids('b')), genre('couple', 3, ids('c')),
+      genre('family', 2, ids('d')), genre('graduation', 2, ids('e')), { ...genre('event', 1, ids('f')), years: 50 },
+    ],
+    styles: ['natural_light', 'film', 'minimal', 'editorial'],
+    extras: ['retouch', 'posing', 'video', 'drone', 'studio', 'kids', 'pets', 'low_light'],
+    languages: ['vi', 'en', 'zh', 'ko', 'ja'],
+    audiences: ['couple', 'family_kids', 'business', 'foreigner'],
+  };
+  const stamp = Timestamp.fromMillis(9000);
+  const db = await skillsOwner('k14', {
+    skills: { ...largest, completeness: 100, completenessNext: null, updatedAt: stamp, evidenceRemovedAt: stamp },
+  });
+  await assertSucceeds(setDoc(doc(db, 'photographers/k14'), {
+    skills: { ...largest, yearsExperience: 7 },
+    updatedAt: serverTimestamp(),
+  }, { merge: true }));
+});
+```
+
+- [ ] **Step 2: (CI only) the new tests fail before the rule change**
+
+Do not run the rules tests locally (banner at the top of this plan; record the skip in the ledger). On CI, before Step 3, the first new test fails at the first `assertSucceeds` (the stored `completenessNext` key is outside `validSkills`' allow-list, so every save of that profile is refused); the second fails the same way.
+
+- [ ] **Step 3: Implement**
+
+In `app_flutter/firebase/firestore.rules`, replace
+
+```
+    // skills.completeness and skills.updatedAt are written by Cloud Functions only: each must equal
+    // the stored value, and be absent (not even null) when none is stored.
+    function validSkills(k, before) {
+      return k is map
+        && k.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
+                             'audiences', 'yearsExperience', 'completeness', 'updatedAt'])
+        && k.get('schemaVersion', 0) == 1
+        && !k.diff(before).affectedKeys().hasAny(['completeness', 'updatedAt'])
+```
+
+with
+
+```
+    // skills.completeness, completenessNext, updatedAt and evidenceRemovedAt are written by the
+    // Cloud Function onPhotographerWrite only: each must equal the stored value, and be absent (not
+    // even null) when none is stored. The two extra names add 4 list entries to a request, far
+    // inside the 1000-expression budget (rules test "expression budget …" pins the largest save).
+    function validSkills(k, before) {
+      return k is map
+        && k.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
+                             'audiences', 'yearsExperience', 'completeness', 'completenessNext',
+                             'updatedAt', 'evidenceRemovedAt'])
+        && k.get('schemaVersion', 0) == 1
+        && !k.diff(before).affectedKeys().hasAny(['completeness', 'completenessNext', 'updatedAt',
+                                                  'evidenceRemovedAt'])
+```
+
+(The Function writes through the Admin SDK, which rules do not apply to.)
+
+- [ ] **Step 4: (CI only) all rules tests pass**
+
+Not run locally. CI (`flutter.yml` step "Firestore rules tests (emulator)" and `firebase-deploy.yml` job `test`) runs `npm test` in `app_flutter/firebase/rules-test`; it must end with `ℹ fail 0`, and blocks the rules deploy otherwise. If CI reports `Exceeded maximum number of expressions`, the budget test names the cause: report it instead of loosening `validSpecialties`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app_flutter/firebase/firestore.rules app_flutter/firebase/rules-test/rules.test.mjs
+git commit -m "feat(rules): skills.completenessNext and skills.evidenceRemovedAt are server-owned
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 13: S38 shows the server's score; the on-device score is deleted
+
+**Files:**
+- Create: `app_flutter/lib/data/skills/skills_server_info.dart`, `app_flutter/test/data/skills/no_device_score_test.dart`
+- Modify: `app_flutter/lib/data/skills/skills_repository.dart`, `lib/data/skills/firestore_skills_repository.dart`, `lib/data/skills/skills_providers.dart`, `lib/core/widgets/completeness_meter.dart`, `lib/features/skills/skills_draft_store.dart`, `lib/features/skills/skills_controller.dart`, `lib/features/skills/skills_screen.dart`, `lib/l10n/app_vi.arb` (+ generated `lib/l10n/app_localizations*.dart`), `test/data/skills/skills_repository_test.dart`, `test/core/widgets/completeness_meter_test.dart`, `test/features/skills/skills_controller_test.dart`, `test/features/skills/skills_screen_test.dart`
+- Delete: `app_flutter/lib/data/skills/skills_completeness.dart`, `app_flutter/test/data/skills/skills_completeness_test.dart` (its cases live in `packages/domain/test/fixtures/skills_completeness.json`, Task 10)
+
+**Interfaces:**
+- Consumes: Task 11's stored fields (`skills.completeness` int 0..100, `skills.completenessNext` step code or null, `skills.evidenceRemovedAt` Timestamp); plan 2c: `PhotographerSkills`, `skillsFromMap`, `skillsToMap`, `SkillsRepository`, `FakeSkillsRepository` (`seed`, `stored`, `loadCalls`, `saveCalls`, `failLoadWith`, `failSaveWith`, `holdSave`), `FirestoreSkillsRepository`, `skillsRepositoryProvider`, `photographerSkillsProvider`, `SkillsDraftStore`, `SkillsController`, `SkillsEditorState`, `CompletenessMeter`, test support `SkillsWorld` (`skills`, `prefs`, `uid`) and `skillsApp`.
+- Produces:
+  - `enum CompletenessStepCode { specialties, levels, evidence, styles, languages, audiences, extras }` with `static CompletenessStepCode? fromCode(Object? code)` (code = `name`).
+  - `class SkillsServerInfo { const SkillsServerInfo({int? completeness, CompletenessStepCode? next, DateTime? evidenceRemovedAt}); static const none; }` (value equality; `evidenceRemovedAt` is UTC).
+  - `SkillsServerInfo skillsServerInfoFromMap(Object? raw, DateTime? Function(Object? value) instant)`.
+  - `class SkillsSnapshot { const SkillsSnapshot(PhotographerSkills skills, [SkillsServerInfo server = SkillsServerInfo.none]); }`.
+  - `SkillsRepository.load(String uid) → Future<SkillsSnapshot>` (was `Future<PhotographerSkills>`); `FakeSkillsRepository.seedServer(String uid, SkillsServerInfo info)`.
+  - `photographerSkillsSnapshotProvider` (`FutureProvider.autoDispose.family<SkillsSnapshot, String>`, the one read); `photographerSkillsProvider` keeps its type and derives from it (plan 2d2 uses both; Task 14 updates its text).
+  - `CompletenessMeter({required int? percent, String? nextHint})`: `null` shows "Chưa có điểm" and an empty bar.
+  - `SkillsDraftStore.evidenceSeenKeyFor(uid)` = `'skillsEvidenceSeen.<uid>'`, `evidenceRemovedSeen(uid) → DateTime?`, `markEvidenceRemovedSeen(uid, DateTime at)`.
+  - `SkillsEditorState`: new `server` (`SkillsServerInfo`), `scored` (the skills the server number belongs to: the saved skills at open), `evidenceRemovedNotice` (bool), getter `scoreOutdated` (`draft != scored`); the getter `completeness` is removed. `SkillsController.evidenceRemovedNoticeShown()`.
+  - l10n: `completenessNone` "Chưa có điểm", `skillsFitSaveToScore` "Lưu để tính độ khớp", `skillsFitSaveToUpdate` "Lưu để cập nhật độ khớp", `skillsEvidenceRemoved` "Một số minh chứng không hợp lệ đã được gỡ", `skillsHintEvidenceAny` "Thêm ảnh minh chứng cho thể loại Chuyên sâu"; the six `skillsHint*` strings lose their `{percent}` (the server stores the next step, not the score after it).
+
+S38 hint, in order (spec §3): no server number → "Lưu để tính độ khớp"; number and `draft != scored` → keep the number, "Lưu để cập nhật độ khớp"; otherwise by `completenessNext` (`null` → "Hồ sơ kỹ năng đã đầy đủ"; `evidence` names the first level-3 genre of `scored` without posts).
+
+- [ ] **Step 1: Write the failing tests**
+
+Replace `test/data/skills/skills_repository_test.dart` with:
+
+```dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/skills/firestore_skills_repository.dart';
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skill_taxonomy.dart';
+import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
+
+const skills = PhotographerSkills(
+  specialties: [
+    SpecialtySkill(id: 'portrait', level: 3, evidencePostIds: ['p1']),
+  ],
+  styles: ['film'],
+  languages: ['vi'],
+  yearsExperience: 4,
+);
+
+void contract(String name, Future<SkillsRepository> Function() create) {
+  group('$name contract', () {
+    test('a photographer without skills loads as empty, not scored', () async {
+      final snap = await (await create()).load('nobody');
+      expect(snap.skills, PhotographerSkills.empty);
+      expect(snap.server, SkillsServerInfo.none);
+    });
+
+    test('save then load returns the same skills', () async {
+      final repo = await create();
+      await repo.save('u1', skills);
+      expect((await repo.load('u1')).skills, skills);
+    });
+
+    test('a second save replaces lists and clears years', () async {
+      final repo = await create();
+      await repo.save('u1', skills);
+      const next = PhotographerSkills(
+        specialties: [SpecialtySkill(id: 'wedding')],
+        styles: ['minimal'],
+        languages: ['en'],
+      );
+      await repo.save('u1', next);
+      expect((await repo.load('u1')).skills, next);
+    });
+
+    test('photographers are kept apart', () async {
+      final repo = await create();
+      await repo.save('u1', skills);
+      expect((await repo.load('u2')).skills, PhotographerSkills.empty);
+    });
+  });
+}
+
+void main() {
+  contract('fake', () async => FakeSkillsRepository());
+  contract(
+    'firestore',
+    () async => FirestoreSkillsRepository(db: FakeFirebaseFirestore()),
+  );
+
+  test('the fake counts calls, seeds and fails on demand', () async {
+    final repo = FakeSkillsRepository()..seed('u1', skills);
+    expect((await repo.load('u1')).skills, skills);
+    expect(repo.loadCalls, 1);
+    repo.failSaveWith = StateError('offline');
+    await expectLater(
+      repo.save('u1', PhotographerSkills.empty),
+      throwsStateError,
+    );
+    expect(repo.stored('u1'), skills);
+    expect(repo.saveCalls, 1);
+    repo.failLoadWith = StateError('offline');
+    await expectLater(repo.load('u1'), throwsStateError);
+  });
+
+  test('the fake returns the seeded server info and keeps it across saves', () async {
+    const info = SkillsServerInfo(
+      completeness: 75,
+      next: CompletenessStepCode.styles,
+    );
+    final repo = FakeSkillsRepository()
+      ..seed('u1', skills)
+      ..seedServer('u1', info);
+    expect((await repo.load('u1')).server, info);
+    await repo.save('u1', PhotographerSkills.initial);
+    expect((await repo.load('u1')).server, info);
+  });
+
+  group('Firestore adapter', () {
+    test('writes photographers/{uid}.skills in the spec shape and keeps other fields', () async {
+      final db = FakeFirebaseFirestore();
+      await db.collection('photographers').doc('u1').set({
+        'bio': 'Chân dung',
+        'onboardingComplete': false,
+        'skills': {
+          'completeness': 40,
+          'completenessNext': 'styles',
+          'styles': ['editorial'],
+        },
+      });
+      await FirestoreSkillsRepository(db: db).save('u1', skills);
+      final data = (await db.collection('photographers').doc('u1').get())
+          .data()!;
+      expect(data['bio'], 'Chân dung');
+      expect(data['updatedAt'], isA<Timestamp>());
+      final stored = Map<String, dynamic>.from(data['skills'] as Map);
+      expect(
+        stored['completeness'],
+        40,
+        reason: 'server-owned, never written by the client',
+      );
+      expect(stored['completenessNext'], 'styles');
+      expect(stored['schemaVersion'], 1);
+      expect(stored['styles'], ['film']);
+      expect(stored['specialties'], [
+        {
+          'id': 'portrait',
+          'level': 3,
+          'evidencePostIds': ['p1'],
+        },
+      ]);
+      expect(stored['yearsExperience'], 4);
+    });
+
+    test(
+      'a document with only the old flat specialties list has no skills yet',
+      () async {
+        final db = FakeFirebaseFirestore();
+        await db.collection('photographers').doc('u1').set({
+          'specialties': ['wedding'],
+        });
+        final snap = await FirestoreSkillsRepository(db: db).load('u1');
+        expect(snap.skills, PhotographerSkills.empty);
+        expect(snap.server, SkillsServerInfo.none);
+      },
+    );
+
+    test('reads the server fields of onPhotographerWrite; times as UTC', () async {
+      final db = FakeFirebaseFirestore();
+      await db.collection('photographers').doc('u1').set({
+        'skills': {
+          ...skillsToMap(skills),
+          'completeness': 85,
+          'completenessNext': 'audiences',
+          'updatedAt': Timestamp.fromDate(DateTime.utc(2026, 10, 2, 8)),
+          'evidenceRemovedAt': Timestamp.fromDate(
+            DateTime.utc(2026, 10, 2, 8, 30),
+          ),
+        },
+      });
+      final snap = await FirestoreSkillsRepository(db: db).load('u1');
+      expect(snap.skills, skills);
+      expect(
+        snap.server,
+        SkillsServerInfo(
+          completeness: 85,
+          next: CompletenessStepCode.audiences,
+          evidenceRemovedAt: DateTime.utc(2026, 10, 2, 8, 30),
+        ),
+      );
+      expect(snap.server.evidenceRemovedAt!.isUtc, isTrue);
+    });
+
+    test('not scored yet, or malformed server fields, read as null', () async {
+      final db = FakeFirebaseFirestore();
+      await db.collection('photographers').doc('u1').set({
+        'skills': skillsToMap(skills),
+      });
+      await db.collection('photographers').doc('u2').set({
+        'skills': {
+          ...skillsToMap(skills),
+          'completeness': 140,
+          'completenessNext': 'bogus',
+          'evidenceRemovedAt': '2026-10-02',
+        },
+      });
+      await db.collection('photographers').doc('u3').set({
+        'skills': {...skillsToMap(skills), 'completeness': '85'},
+      });
+      final repo = FirestoreSkillsRepository(db: db);
+      for (final uid in ['u1', 'u2', 'u3']) {
+        expect((await repo.load(uid)).server, SkillsServerInfo.none, reason: uid);
+      }
+    });
+  });
+
+  test('providers: built-in catalogue and one read per photographer', () async {
+    final repo = FakeSkillsRepository()
+      ..seed('u1', skills)
+      ..seedServer('u1', const SkillsServerInfo(completeness: 90));
+    final container = ProviderContainer(
+      overrides: [skillsRepositoryProvider.overrideWithValue(repo)],
+      retry: (_, _) => null,
+    );
+    addTearDown(container.dispose);
+    expect(
+      container.read(skillCatalogProvider).ids(SkillGroup.language),
+      hasLength(5),
+    );
+    final a = container.listen(photographerSkillsProvider('u1'), (_, _) {});
+    final b = container.listen(
+      photographerSkillsSnapshotProvider('u1'),
+      (_, _) {},
+    );
+    addTearDown(a.close);
+    addTearDown(b.close);
+    expect(
+      await container.read(photographerSkillsProvider('u1').future),
+      skills,
+    );
+    expect(
+      (await container.read(photographerSkillsSnapshotProvider('u1').future))
+          .server
+          .completeness,
+      90,
+    );
+    expect(repo.loadCalls, 1);
+  });
+}
+```
+
+```dart
+// test/data/skills/no_device_score_test.dart
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  test('the app never computes the profile score (spec 2026-10-02 §3)', () {
+    expect(
+      File('lib/data/skills/skills_completeness.dart').existsSync(),
+      isFalse,
+    );
+    final offenders = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .where((f) => f.readAsStringSync().contains('skills_completeness'))
+        .map((f) => f.path)
+        .toList();
+    expect(offenders, isEmpty);
+  });
+}
+```
+
+In `test/core/widgets/completeness_meter_test.dart`, add inside `main()` after the test `'clamps to 0..100 and works without a hint'`:
+
+```dart
+  testWidgets('not scored yet: "Chưa có điểm", empty bar, the hint still shows', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        const CompletenessMeter(percent: null, nextHint: 'Lưu để tính độ khớp'),
+      ),
+    );
+    expect(find.text('Chưa có điểm'), findsOneWidget);
+    expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
+    expect(
+      tester
+          .widget<FractionallySizedBox>(find.byType(FractionallySizedBox))
+          .widthFactor,
+      0,
+    );
+    expect(
+      tester.getSemantics(find.byType(CompletenessMeter)),
+      isSemantics(
+        label: 'Độ khớp hồ sơ',
+        value: 'Chưa có điểm',
+        hint: 'Lưu để tính độ khớp',
+      ),
+    );
+    handle.dispose();
+  });
+```
+
+In `test/features/skills/skills_controller_test.dart`, add the import `import 'package:photobooking/data/skills/skills_server_info.dart';` after the `skills_rules.dart` import; in the first test replace `    expect(_st(c).completeness.percent, 10);` with
+
+```dart
+    expect(_st(c).server, SkillsServerInfo.none);
+    expect(_st(c).evidenceRemovedNotice, isFalse);
+```
+
+and add at the end of `main()`:
+
+```dart
+  test('the server score stays while editing; scoreOutdated follows the draft', () async {
+    const info = SkillsServerInfo(
+      completeness: 75,
+      next: CompletenessStepCode.styles,
+    );
+    final (_, c) = await _open(
+      saved: _wedding,
+      before: (w) async => w.skills.seedServer(w.uid, info),
+    );
+    expect(_st(c).server, info);
+    expect(_st(c).scored, _wedding);
+    expect(_st(c).scoreOutdated, isFalse);
+    _ctrl(c).toggleTag(SkillGroup.style, 'film');
+    expect(_st(c).server, info);
+    expect(_st(c).scoreOutdated, isTrue);
+    expect(await _ctrl(c).submit(), SkillsSubmitResult.saved);
+    expect(_st(c).server, info, reason: 'no number is computed on the device');
+    expect(
+      _st(c).scoreOutdated,
+      isTrue,
+      reason: 'the Function scores the new skills; S38 shows it next time',
+    );
+  });
+
+  test('evidence removed by the server: notice once, a newer removal again', () async {
+    final at = DateTime.utc(2026, 10, 2, 8);
+    final (w, c) = await _open(
+      saved: _wedding,
+      before: (world) async {
+        world.skills.seedServer(
+          world.uid,
+          SkillsServerInfo(completeness: 75, evidenceRemovedAt: at),
+        );
+        await SkillsDraftStore(world.prefs).markEvidenceRemovedSeen(
+          world.uid,
+          at.subtract(const Duration(minutes: 1)),
+        );
+      },
+    );
+    expect(_st(c).evidenceRemovedNotice, isTrue);
+    await _ctrl(c).evidenceRemovedNoticeShown();
+    expect(_st(c).evidenceRemovedNotice, isFalse);
+    expect(SkillsDraftStore(w.prefs).evidenceRemovedSeen(w.uid), at);
+    expect(w.prefs.getInt('skillsEvidenceSeen.${w.uid}'), at.millisecondsSinceEpoch);
+  });
+
+  test('evidence removal already seen: no notice', () async {
+    final at = DateTime.utc(2026, 10, 2, 8);
+    final (_, c) = await _open(
+      saved: _wedding,
+      before: (w) async {
+        w.skills.seedServer(
+          w.uid,
+          SkillsServerInfo(completeness: 75, evidenceRemovedAt: at),
+        );
+        await SkillsDraftStore(w.prefs).markEvidenceRemovedSeen(w.uid, at);
+      },
+    );
+    expect(_st(c).evidenceRemovedNotice, isFalse);
+  });
+```
+
+In `test/features/skills/skills_screen_test.dart`, add the import `import 'package:photobooking/data/skills/skills_server_info.dart';` after the `photographer_skills.dart` import. In the first test replace
+
+```dart
+      expect(
+        tester
+            .widget<CompletenessMeter>(find.byType(CompletenessMeter))
+            .percent,
+        10,
+      );
+      expect(find.text('Chọn ít nhất 1 thể loại để lên 75%'), findsOneWidget);
+```
+
+with
+
+```dart
+      expect(
+        tester
+            .widget<CompletenessMeter>(find.byType(CompletenessMeter))
+            .percent,
+        isNull,
+      );
+      expect(find.text('Chưa có điểm'), findsOneWidget);
+      expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
+```
+
+In the test `'Chuyên sâu without evidence: warning, and Tiếp tục saves nothing'` replace
+
+```dart
+      expect(
+        find.text('Thêm ảnh minh chứng cho Chân dung để lên 75%'),
+        findsOneWidget,
+      );
+```
+
+with
+
+```dart
+      expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
+```
+
+and add before the test `'the app router registers the three skills routes'`:
+
+```dart
+  const portrait = PhotographerSkills(
+    specialties: [SpecialtySkill(id: 'portrait')],
+    languages: ['vi'],
+  );
+
+  Future<void> seedScore(SkillsWorld w, SkillsServerInfo info) async =>
+      w.skills.seedServer(w.uid, info);
+
+  int? meterPercent(WidgetTester tester) => tester
+      .widget<CompletenessMeter>(find.byType(CompletenessMeter))
+      .percent;
+
+  testWidgets('S38 shows the server score and the hint for its next step', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 75,
+          next: CompletenessStepCode.styles,
+        ),
+      ),
+    );
+    expect(meterPercent(tester), 75);
+    expect(find.text('75%'), findsOneWidget);
+    expect(find.text('Chọn phong cách'), findsOneWidget);
+  });
+
+  testWidgets('an edit keeps the saved number and asks to save to update it', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 75,
+          next: CompletenessStepCode.styles,
+        ),
+      ),
+    );
+    await _tapKey(tester, 'style-film');
+    expect(meterPercent(tester), 75);
+    expect(find.text('Lưu để cập nhật độ khớp'), findsOneWidget);
+    expect(find.text('Chọn phong cách'), findsNothing);
+  });
+
+  testWidgets('next step evidence names the Chuyên sâu genre without posts', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: const PhotographerSkills(
+        specialties: [SpecialtySkill(id: 'portrait', level: 3)],
+        languages: ['vi'],
+      ),
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 55,
+          next: CompletenessStepCode.evidence,
+        ),
+      ),
+    );
+    expect(find.text('Thêm ảnh minh chứng cho Chân dung'), findsOneWidget);
+  });
+
+  testWidgets('a complete profile says so', (tester) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (w) => seedScore(w, const SkillsServerInfo(completeness: 100)),
+    );
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('Hồ sơ kỹ năng đã đầy đủ'), findsOneWidget);
+  });
+
+  testWidgets('evidence removed by the server: the SnackBar shows once', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    final removedAt = DateTime.utc(2026, 10, 2, 8);
+    final w = await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (world) => seedScore(
+        world,
+        SkillsServerInfo(
+          completeness: 75,
+          next: CompletenessStepCode.styles,
+          evidenceRemovedAt: removedAt,
+        ),
+      ),
+    );
+    expect(
+      find.text('Một số minh chứng không hợp lệ đã được gỡ'),
+      findsOneWidget,
+    );
+    expect(SkillsDraftStore(w.prefs).evidenceRemovedSeen(w.uid), removedAt);
+    // Open S38 again on the same device: no second notice.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(skillsApp(w, initialLocation: '/profile/skills'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CompletenessMeter), findsOneWidget);
+    expect(
+      find.text('Một số minh chứng không hợp lệ đã được gỡ'),
+      findsNothing,
+    );
+  });
+```
+
+- [ ] **Step 2: Run and see it fail**
+
+Run (from `app_flutter/`): `flutter test --no-pub test/data/skills test/core/widgets/completeness_meter_test.dart test/features/skills`
+Expected: FAIL to compile: `Error when reading 'lib/data/skills/skills_server_info.dart': No such file or directory`, then `Undefined name 'SkillsServerInfo'` / `The method 'seedServer' isn't defined`; `no_device_score_test.dart` fails because `lib/data/skills/skills_completeness.dart` exists.
+
+- [ ] **Step 3: Server info and the repository**
+
+```dart
+// lib/data/skills/skills_server_info.dart
+import 'package:photobooking/data/skills/photographer_skills.dart';
+
+/// Step codes of `skills.completenessNext`, written by the Cloud Function
+/// `onPhotographerWrite` (`COMPLETENESS_STEPS` in packages/domain), highest
+/// weight first. The app shows them; it never computes them.
+enum CompletenessStepCode {
+  specialties,
+  levels,
+  evidence,
+  styles,
+  languages,
+  audiences,
+  extras;
+
+  static CompletenessStepCode? fromCode(Object? code) {
+    for (final c in values) {
+      if (c.name == code) return c;
+    }
+    return null;
+  }
+}
+
+/// What the server wrote into `photographers/{uid}.skills`. All null until
+/// the Function has scored the skills once.
+class SkillsServerInfo {
+  const SkillsServerInfo({
+    this.completeness,
+    this.next,
+    this.evidenceRemovedAt,
+  });
+
+  static const none = SkillsServerInfo();
+
+  /// "Độ khớp hồ sơ", 0..100.
+  final int? completeness;
+
+  /// The first missing step; null when complete or not scored yet.
+  final CompletenessStepCode? next;
+
+  /// UTC instant of the last time the Function removed invalid evidence.
+  final DateTime? evidenceRemovedAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SkillsServerInfo &&
+      other.completeness == completeness &&
+      other.next == next &&
+      other.evidenceRemovedAt == evidenceRemovedAt;
+
+  @override
+  int get hashCode => Object.hash(completeness, next, evidenceRemovedAt);
+
+  @override
+  String toString() =>
+      'SkillsServerInfo($completeness, ${next?.name}, $evidenceRemovedAt)';
+}
+
+/// Reads the server fields of a stored skills map. [instant] turns the stored
+/// time value into a [DateTime] (the adapter passes its own converter, so no
+/// Firebase type reaches this file). Anything malformed reads as null.
+SkillsServerInfo skillsServerInfoFromMap(
+  Object? raw,
+  DateTime? Function(Object? value) instant,
+) {
+  if (raw is! Map) return SkillsServerInfo.none;
+  final c = raw['completeness'];
+  return SkillsServerInfo(
+    completeness: c is int && c >= 0 && c <= 100 ? c : null,
+    next: CompletenessStepCode.fromCode(raw['completenessNext']),
+    evidenceRemovedAt: instant(raw['evidenceRemovedAt'])?.toUtc(),
+  );
+}
+
+/// One read of `photographers/{uid}.skills`: the client part and the
+/// server's part.
+class SkillsSnapshot {
+  const SkillsSnapshot(this.skills, [this.server = SkillsServerInfo.none]);
+
+  final PhotographerSkills skills;
+  final SkillsServerInfo server;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SkillsSnapshot && other.skills == skills && other.server == server;
+
+  @override
+  int get hashCode => Object.hash(skills, server);
+}
+```
+
+Replace `lib/data/skills/skills_repository.dart` with:
+
+```dart
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
+
+/// Reads and writes `photographers/{uid}.skills`. One-shot reads only: the
+/// skills change when their owner saves them, so no screen needs a listener.
+abstract class SkillsRepository {
+  /// The skills ([PhotographerSkills.empty] when none are saved) and what the
+  /// server wrote about them ([SkillsServerInfo.none] until scored).
+  Future<SkillsSnapshot> load(String uid);
+
+  /// Writes the client-owned part (never the server fields `completeness`,
+  /// `completenessNext`, `updatedAt`, `evidenceRemovedAt` inside `skills`).
+  /// Callers validate with `validateSkills` first.
+  Future<void> save(String uid, PhotographerSkills skills);
+}
+
+class FakeSkillsRepository implements SkillsRepository {
+  final _stored = <String, PhotographerSkills>{};
+  final _server = <String, SkillsServerInfo>{};
+  int loadCalls = 0;
+  int saveCalls = 0;
+  Object? failLoadWith;
+  Object? failSaveWith;
+
+  /// When set, [save] waits for it (a save still in flight).
+  Future<void>? holdSave;
+
+  void seed(String uid, PhotographerSkills skills) => _stored[uid] = skills;
+
+  /// What `onPhotographerWrite` would have written; kept across [save], like
+  /// the merge write keeps the server fields.
+  void seedServer(String uid, SkillsServerInfo info) => _server[uid] = info;
+
+  PhotographerSkills? stored(String uid) => _stored[uid];
+
+  @override
+  Future<SkillsSnapshot> load(String uid) async {
+    loadCalls++;
+    final failure = failLoadWith;
+    if (failure != null) throw failure;
+    return SkillsSnapshot(
+      _stored[uid] ?? PhotographerSkills.empty,
+      _server[uid] ?? SkillsServerInfo.none,
+    );
+  }
+
+  @override
+  Future<void> save(String uid, PhotographerSkills skills) async {
+    saveCalls++;
+    final hold = holdSave;
+    if (hold != null) await hold;
+    final failure = failSaveWith;
+    if (failure != null) throw failure;
+    _stored[uid] = skills;
+  }
+}
+```
+
+Replace `lib/data/skills/firestore_skills_repository.dart` with:
+
+```dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
+
+/// `photographers/{uid}.skills` on Firestore. The merge write keeps the
+/// server's fields (`completeness`, `completenessNext`, `updatedAt`,
+/// `evidenceRemovedAt`, written by `onPhotographerWrite`) and every other
+/// field of the document.
+class FirestoreSkillsRepository implements SkillsRepository {
+  FirestoreSkillsRepository({FirebaseFirestore? db})
+    : _db = db ?? FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  DocumentReference<Map<String, dynamic>> _doc(String uid) =>
+      _db.collection('photographers').doc(uid);
+
+  @override
+  Future<SkillsSnapshot> load(String uid) async {
+    final raw = (await _doc(uid).get()).data()?['skills'];
+    return SkillsSnapshot(
+      skillsFromMap(raw),
+      skillsServerInfoFromMap(raw, _instant),
+    );
+  }
+
+  @override
+  Future<void> save(String uid, PhotographerSkills skills) => _doc(uid).set({
+    'skills': skillsToMap(skills),
+    'updatedAt': FieldValue.serverTimestamp(),
+  }, SetOptions(merge: true));
+}
+
+DateTime? _instant(Object? v) => v is Timestamp ? v.toDate().toUtc() : null;
+```
+
+Replace `lib/data/skills/skills_providers.dart` with:
+
+```dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:photobooking/data/skills/firestore_skills_repository.dart';
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skill_taxonomy.dart';
+import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
+
+final skillsRepositoryProvider = Provider<SkillsRepository>(
+  (ref) => FirestoreSkillsRepository(),
+);
+
+/// The skills catalogue. Built in today; a remote `taxonomy/skills` reader
+/// (with this list as fallback) can override it without touching screens.
+final skillCatalogProvider = Provider<TaxonomyCatalog>(
+  (ref) => builtInSkillCatalog,
+);
+
+/// A photographer's skills and the server's score of them, read once while
+/// a screen shows them. Invalidate this one after a save.
+final photographerSkillsSnapshotProvider = FutureProvider.autoDispose
+    .family<SkillsSnapshot, String>(
+      (ref, uid) => ref.watch(skillsRepositoryProvider).load(uid),
+      retry: (_, _) => null,
+    );
+
+/// Any photographer's skills (S03); the same single read as
+/// [photographerSkillsSnapshotProvider].
+final photographerSkillsProvider = FutureProvider.autoDispose
+    .family<PhotographerSkills, String>(
+      (ref, uid) async =>
+          (await ref.watch(photographerSkillsSnapshotProvider(uid).future))
+              .skills,
+      retry: (_, _) => null,
+    );
+```
+
+- [ ] **Step 4: The meter, the device mark and the strings**
+
+Replace `lib/core/widgets/completeness_meter.dart` with:
+
+```dart
+import 'package:flutter/material.dart';
+
+import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/cta_surface.dart';
+
+/// "Độ khớp hồ sơ 72%" with a gradient bar and the next thing to do
+/// (S38, later S30 and S22). Only the photographer sees it. The number is
+/// the server's (`skills.completeness`); [percent] is null until the server
+/// has scored the profile ("Chưa có điểm", empty bar).
+class CompletenessMeter extends StatelessWidget {
+  const CompletenessMeter({super.key, required this.percent, this.nextHint});
+
+  final int? percent;
+  final String? nextHint;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final secondary = dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    final p = percent?.clamp(0, 100);
+    final value = p == null ? l.completenessNone : l.completenessPercent(p);
+    final radius = BorderRadius.circular(AppRadius.full);
+    return Semantics(
+      container: true,
+      label: l.completenessTitle,
+      value: value,
+      hint: nextHint,
+      excludeSemantics: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l.completenessTitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s2),
+          SizedBox(
+            height: 6,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary,
+                borderRadius: radius,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: (p ?? 0) / 100,
+                  heightFactor: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: ctaGradientFor(theme.brightness),
+                      borderRadius: radius,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (nextHint != null) ...[
+            const SizedBox(height: AppSpace.s2),
+            Text(
+              nextHint!,
+              style: theme.textTheme.bodySmall?.copyWith(color: secondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+```
+
+Replace `lib/features/skills/skills_draft_store.dart` with:
+
+```dart
+// lib/features/skills/skills_draft_store.dart
+import 'dart:convert';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/features/settings/theme_mode_controller.dart';
+
+/// The unsaved S38 draft, kept on this device so leaving the screen (or the
+/// app) loses nothing. It may be incomplete; Firestore only ever gets valid
+/// skills. Also remembers which evidence removal S38 already announced.
+class SkillsDraftStore {
+  SkillsDraftStore(this._prefs);
+  final SharedPreferences _prefs;
+
+  static String keyFor(String uid) => 'skillsDraft.$uid';
+
+  static String evidenceSeenKeyFor(String uid) => 'skillsEvidenceSeen.$uid';
+
+  PhotographerSkills? read(String uid) {
+    final raw = _prefs.getString(keyFor(uid));
+    if (raw == null) return null;
+    try {
+      return skillsFromMap(jsonDecode(raw));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> write(String uid, PhotographerSkills skills) async {
+    await _prefs.setString(keyFor(uid), jsonEncode(skillsToMap(skills)));
+  }
+
+  Future<void> clear(String uid) async {
+    await _prefs.remove(keyFor(uid));
+  }
+
+  /// The last `skills.evidenceRemovedAt` this device told the photographer
+  /// about (UTC), or null.
+  DateTime? evidenceRemovedSeen(String uid) {
+    final ms = _prefs.getInt(evidenceSeenKeyFor(uid));
+    return ms == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+  }
+
+  Future<void> markEvidenceRemovedSeen(String uid, DateTime at) async {
+    await _prefs.setInt(evidenceSeenKeyFor(uid), at.millisecondsSinceEpoch);
+  }
+}
+
+final skillsDraftStoreProvider = Provider<SkillsDraftStore>(
+  (ref) => SkillsDraftStore(ref.watch(sharedPreferencesProvider)),
+);
+```
+
+In `lib/l10n/app_vi.arb`, replace
+
+```
+  "skillsHintSpecialty": "Chọn ít nhất 1 thể loại để lên {percent}%",
+  "@skillsHintSpecialty": {"placeholders": {"percent": {"type": "int"}}},
+  "skillsHintEvidence": "Thêm ảnh minh chứng cho {name} để lên {percent}%",
+  "@skillsHintEvidence": {"placeholders": {"name": {"type": "String"}, "percent": {"type": "int"}}},
+  "skillsHintStyles": "Chọn phong cách để lên {percent}%",
+  "@skillsHintStyles": {"placeholders": {"percent": {"type": "int"}}},
+  "skillsHintLanguages": "Chọn ngôn ngữ để lên {percent}%",
+  "@skillsHintLanguages": {"placeholders": {"percent": {"type": "int"}}},
+  "skillsHintAudiences": "Chọn khách phù hợp để lên {percent}%",
+  "@skillsHintAudiences": {"placeholders": {"percent": {"type": "int"}}},
+  "skillsHintExtras": "Chọn kỹ năng thêm để lên {percent}%",
+  "@skillsHintExtras": {"placeholders": {"percent": {"type": "int"}}},
+  "skillsHintDone": "Hồ sơ kỹ năng đã đầy đủ",
+```
+
+with
+
+```
+  "skillsHintSpecialty": "Chọn ít nhất 1 thể loại",
+  "skillsHintEvidence": "Thêm ảnh minh chứng cho {name}",
+  "@skillsHintEvidence": {"placeholders": {"name": {"type": "String"}}},
+  "skillsHintEvidenceAny": "Thêm ảnh minh chứng cho thể loại Chuyên sâu",
+  "skillsHintStyles": "Chọn phong cách",
+  "skillsHintLanguages": "Chọn ngôn ngữ",
+  "skillsHintAudiences": "Chọn khách phù hợp",
+  "skillsHintExtras": "Chọn kỹ năng thêm",
+  "skillsHintDone": "Hồ sơ kỹ năng đã đầy đủ",
+  "skillsFitSaveToScore": "Lưu để tính độ khớp",
+  "skillsFitSaveToUpdate": "Lưu để cập nhật độ khớp",
+  "skillsEvidenceRemoved": "Một số minh chứng không hợp lệ đã được gỡ",
+```
+
+and replace
+
+```
+  "completenessPercent": "{percent}%",
+```
+
+with
+
+```
+  "completenessNone": "Chưa có điểm",
+  "completenessPercent": "{percent}%",
+```
+
+Run (from `app_flutter/`): `flutter gen-l10n`
+Expected: no output; `lib/l10n/app_localizations.dart` now declares `String get skillsHintSpecialty;` and `String skillsHintEvidence(String name);`.
+
+- [ ] **Step 5: Controller**
+
+Replace `lib/features/skills/skills_controller.dart` with:
+
+```dart
+// lib/features/skills/skills_controller.dart
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skill_taxonomy.dart';
+import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/skills/skills_rules.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
+import 'package:photobooking/features/skills/skills_analytics.dart';
+import 'package:photobooking/features/skills/skills_draft_store.dart';
+
+/// [busy]: a submit is already running; this one did nothing.
+enum SkillsSubmitResult { saved, invalid, failed, busy }
+
+class SkillsEditorState {
+  const SkillsEditorState({
+    required this.saved,
+    required this.start,
+    required this.draft,
+    this.restoredDraft = false,
+    this.showIssues = false,
+    this.issues = const [],
+    this.saving = false,
+    this.server = SkillsServerInfo.none,
+    this.scored = PhotographerSkills.empty,
+    this.evidenceRemovedNotice = false,
+  });
+
+  /// What Firestore holds.
+  final PhotographerSkills saved;
+
+  /// What the screen opened with (saved skills or the device draft).
+  final PhotographerSkills start;
+  final PhotographerSkills draft;
+
+  /// The draft came from the device, not from the server.
+  final bool restoredDraft;
+
+  /// Issues are shown after the first refused "Tiếp tục".
+  final bool showIssues;
+  final List<SkillIssue> issues;
+  final bool saving;
+
+  /// What `onPhotographerWrite` stored when the screen opened. Never
+  /// computed on the device (spec 2026-10-02 §3).
+  final SkillsServerInfo server;
+
+  /// The skills [server] describes: the saved skills at open.
+  final PhotographerSkills scored;
+
+  /// The Function removed evidence since this device last said so.
+  final bool evidenceRemovedNotice;
+
+  /// Leaving now asks "Lưu bản nháp?".
+  bool get dirty => draft != start;
+
+  /// The server does not have this draft yet.
+  bool get unsaved => draft != saved;
+
+  /// The number shown belongs to other skills than the draft: S38 keeps it
+  /// and says "Lưu để cập nhật độ khớp".
+  bool get scoreOutdated => draft != scored;
+
+  bool get canSubmit => draft.specialties.isNotEmpty && !saving;
+
+  bool hasIssue(SkillIssueCode code, {String? itemId}) =>
+      showIssues &&
+      issues.any(
+        (i) => i.code == code && (itemId == null || i.itemId == itemId),
+      );
+
+  SkillsEditorState copyWith({
+    PhotographerSkills? saved,
+    PhotographerSkills? start,
+    PhotographerSkills? draft,
+    bool? showIssues,
+    List<SkillIssue>? issues,
+    bool? saving,
+    bool? evidenceRemovedNotice,
+  }) => SkillsEditorState(
+    saved: saved ?? this.saved,
+    start: start ?? this.start,
+    draft: draft ?? this.draft,
+    restoredDraft: restoredDraft,
+    showIssues: showIssues ?? this.showIssues,
+    issues: issues ?? this.issues,
+    saving: saving ?? this.saving,
+    server: server,
+    scored: scored,
+    evidenceRemovedNotice: evidenceRemovedNotice ?? this.evidenceRemovedNotice,
+  );
+}
+
+/// S38/S39 editor: loads once, edits a draft (copied to the device on every
+/// change), validates and saves once. No listener, no timer.
+class SkillsController extends AsyncNotifier<SkillsEditorState> {
+  late String _uid;
+  late TaxonomyCatalog _catalog;
+  late SkillsDraftStore _drafts;
+  late SkillsEventLogger _log;
+
+  @override
+  Future<SkillsEditorState> build() async {
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+    if (uid == null) throw StateError('signed_out');
+    _uid = uid;
+    _catalog = ref.read(skillCatalogProvider);
+    _drafts = ref.read(skillsDraftStoreProvider);
+    _log = ref.read(skillsAnalyticsProvider);
+    final snapshot = await ref.read(skillsRepositoryProvider).load(uid);
+    final saved = snapshot.skills;
+    final local = _drafts.read(uid);
+    final opened = local ?? _baseline(saved);
+    final draft = await _withoutDeletedEvidence(opened);
+    final removedAt = snapshot.server.evidenceRemovedAt;
+    final seen = _drafts.evidenceRemovedSeen(uid);
+    return SkillsEditorState(
+      saved: saved,
+      start: draft,
+      draft: draft,
+      restoredDraft: local != null && local != _baseline(saved),
+      server: snapshot.server,
+      scored: saved,
+      evidenceRemovedNotice:
+          removedAt != null && (seen == null || removedAt.isAfter(seen)),
+    );
+  }
+
+  /// What the screen shows when there is no device draft: the saved skills,
+  /// or [PhotographerSkills.initial] for a photographer with none.
+  static PhotographerSkills _baseline(PhotographerSkills saved) =>
+      saved.isEmpty ? PhotographerSkills.initial : saved;
+
+  Future<PhotographerSkills> _withoutDeletedEvidence(
+    PhotographerSkills s,
+  ) async {
+    // At most 6 genres x 3 posts; a malformed draft must not fan out more.
+    final ids = s.evidencePostIds.take(18).toList();
+    if (ids.isEmpty) return s;
+    final posts = ref.read(postRepositoryProvider);
+    try {
+      final found = await Future.wait(ids.map(posts.byId));
+      return withoutMissingEvidence(s, {
+        for (final p in found)
+          if (p != null) p.id,
+      });
+    } catch (_) {
+      // Offline: keep the list; the server re-checks evidence.
+      return s;
+    }
+  }
+
+  /// S38 showed "Một số minh chứng không hợp lệ đã được gỡ": remember the
+  /// removal on this device so the next open stays quiet.
+  Future<void> evidenceRemovedNoticeShown() async {
+    final current = state.value;
+    final at = current?.server.evidenceRemovedAt;
+    if (current == null || at == null || !current.evidenceRemovedNotice) {
+      return;
+    }
+    state = AsyncData(current.copyWith(evidenceRemovedNotice: false));
+    await _drafts.markEvidenceRemovedSeen(_uid, at);
+  }
+
+  SkillEdit? toggleSpecialty(String id) =>
+      _apply((s) => withSpecialtyToggled(s, id, _catalog));
+
+  SkillEdit? setLevel(String id, int level) =>
+      _apply((s) => withSpecialtyLevel(s, id, level));
+
+  SkillEdit? toggleTag(SkillGroup group, String id) =>
+      _apply((s) => withTagToggled(s, group, id, _catalog));
+
+  SkillEdit? setEvidence(String specialtyId, List<String> postIds) {
+    final e = _apply((s) => withEvidence(s, specialtyId, postIds));
+    if (e != null && e.accepted) {
+      _log('skill_evidence_set', {
+        'skillId': specialtyId,
+        'count': e.skills.specialty(specialtyId)!.evidencePostIds.length,
+      });
+    }
+    return e;
+  }
+
+  void setYears(int? years) =>
+      _apply((s) => SkillEdit(withYearsExperience(s, years)));
+
+  SkillEdit? _apply(SkillEdit Function(PhotographerSkills draft) edit) {
+    final current = state.value;
+    if (current == null || current.saving) return null;
+    final result = edit(current.draft);
+    if (!result.accepted || result.skills == current.draft) return result;
+    state = AsyncData(
+      current.copyWith(
+        draft: result.skills,
+        issues: current.showIssues
+            ? validateSkills(result.skills, _catalog, previous: current.saved)
+            : const [],
+      ),
+    );
+    unawaited(
+      result.skills == _baseline(current.saved)
+          ? _drafts.clear(_uid)
+          : _drafts.write(_uid, result.skills),
+    );
+    return result;
+  }
+
+  Future<SkillsSubmitResult> submit() async {
+    final current = state.value;
+    if (current == null) return SkillsSubmitResult.failed;
+    if (current.saving) return SkillsSubmitResult.busy;
+    final issues = validateSkills(
+      current.draft,
+      _catalog,
+      previous: current.saved,
+    );
+    if (issues.isNotEmpty) {
+      state = AsyncData(current.copyWith(showIssues: true, issues: issues));
+      return SkillsSubmitResult.invalid;
+    }
+    if (!current.unsaved) {
+      // Set before the first await so a second tap sees it (one push).
+      state = AsyncData(current.copyWith(saving: true));
+      await _drafts.clear(_uid);
+      if (ref.mounted) {
+        state = AsyncData(
+          SkillsEditorState(
+            saved: current.saved,
+            start: current.draft,
+            draft: current.draft,
+            server: current.server,
+            scored: current.scored,
+          ),
+        );
+      }
+      return SkillsSubmitResult.saved;
+    }
+    final repo = ref.read(skillsRepositoryProvider);
+    state = AsyncData(
+      current.copyWith(saving: true, showIssues: false, issues: const []),
+    );
+    try {
+      await repo.save(_uid, current.draft);
+    } catch (_) {
+      if (ref.mounted) state = AsyncData(current.copyWith(saving: false));
+      return SkillsSubmitResult.failed;
+    }
+    await _drafts.clear(_uid);
+    _log('skills_save', {
+      'specialties': current.draft.specialties.length,
+      'expert': current.draft.expertCount,
+    });
+    if (ref.mounted) {
+      state = AsyncData(
+        SkillsEditorState(
+          saved: current.draft,
+          start: current.draft,
+          draft: current.draft,
+          // The Function scores the saved skills; S38 shows it next time.
+          server: current.server,
+          scored: current.scored,
+        ),
+      );
+      ref.invalidate(photographerSkillsSnapshotProvider(_uid));
+    }
+    return SkillsSubmitResult.saved;
+  }
+
+  /// "Bỏ thay đổi": forget the device draft and go back to the saved skills.
+  /// Does nothing while a save is in flight (that save wins).
+  Future<void> discardDraft() async {
+    if (state.value?.saving ?? false) return;
+    await _drafts.clear(_uid);
+    final current = state.value;
+    if (current == null || current.saving || !ref.mounted) return;
+    final base = _baseline(current.saved);
+    state = AsyncData(
+      current.copyWith(
+        start: base,
+        draft: base,
+        showIssues: false,
+        issues: const [],
+      ),
+    );
+  }
+}
+
+final skillsControllerProvider =
+    AsyncNotifierProvider.autoDispose<SkillsController, SkillsEditorState>(
+      SkillsController.new,
+      retry: (_, _) => null,
+    );
+```
+
+- [ ] **Step 6: Screen**
+
+In `lib/features/skills/skills_screen.dart`:
+
+1. Add `import 'dart:async';` and an empty line above `import 'package:flutter/material.dart';`, and replace `import 'package:photobooking/data/skills/skills_completeness.dart';` with `import 'package:photobooking/data/skills/skills_server_info.dart';`.
+2. In `_onLoaded`, replace the line `      if (s.restoredDraft) _snack(context.l10n.skillsDraftRestored);` with:
+
+```dart
+      final l = context.l10n;
+      final messenger = ScaffoldMessenger.of(context);
+      // Queued, not replacing each other: both can apply to the same open.
+      if (s.restoredDraft) {
+        messenger.showSnackBar(SnackBar(content: Text(l.skillsDraftRestored)));
+      }
+      if (s.evidenceRemovedNotice) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l.skillsEvidenceRemoved)),
+        );
+        unawaited(_ctrl.evidenceRemovedNoticeShown());
+      }
+```
+
+3. In `_content`, delete the line `    final report = s.completeness;` and replace
+
+```dart
+                    child: CompletenessMeter(
+                      percent: report.percent,
+                      nextHint: _hintText(l, catalog, report),
+                    ),
+```
+
+with
+
+```dart
+                    child: CompletenessMeter(
+                      percent: s.server.completeness,
+                      nextHint: _hintText(l, catalog, s),
+                    ),
+```
+
+4. Replace the whole top-level function `String _hintText(AppLocalizations l, TaxonomyCatalog catalog, CompletenessReport report) { … }` with:
+
+```dart
+/// The meter's hint (spec 2026-10-02 §3): no server number yet → save to
+/// get one; the draft differs from the scored skills → save to update it;
+/// otherwise the server's next step.
+String _hintText(
+  AppLocalizations l,
+  TaxonomyCatalog catalog,
+  SkillsEditorState s,
+) {
+  if (s.server.completeness == null) return l.skillsFitSaveToScore;
+  if (s.scoreOutdated) return l.skillsFitSaveToUpdate;
+  return switch (s.server.next) {
+    null => l.skillsHintDone,
+    CompletenessStepCode.specialties ||
+    CompletenessStepCode.levels => l.skillsHintSpecialty,
+    CompletenessStepCode.evidence => _evidenceHint(l, catalog, s.scored),
+    CompletenessStepCode.styles => l.skillsHintStyles,
+    CompletenessStepCode.languages => l.skillsHintLanguages,
+    CompletenessStepCode.audiences => l.skillsHintAudiences,
+    CompletenessStepCode.extras => l.skillsHintExtras,
+  };
+}
+
+/// Names the first Chuyên sâu genre without posts in the scored skills.
+String _evidenceHint(
+  AppLocalizations l,
+  TaxonomyCatalog catalog,
+  PhotographerSkills scored,
+) {
+  for (final sp in scored.specialties) {
+    if (sp.isExpert && sp.evidencePostIds.isEmpty) {
+      return l.skillsHintEvidence(catalog.label(SkillGroup.specialty, sp.id));
+    }
+  }
+  return l.skillsHintEvidenceAny;
+}
+```
+
+- [ ] **Step 7: Delete the on-device score**
+
+```bash
+git rm lib/data/skills/skills_completeness.dart test/data/skills/skills_completeness_test.dart
+```
+
+- [ ] **Step 8: Run and see it pass**
+
+Run (from `app_flutter/`): `flutter test --no-pub test/data/skills test/core/widgets/completeness_meter_test.dart test/features/skills`
+Expected: `All tests passed!`.
+
+Run: `dart format lib test && flutter analyze --no-pub && flutter test --no-pub`
+Expected: `No issues found!`, then `All tests passed!` (no golden renders S38 or the meter today).
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add lib/data/skills lib/core/widgets/completeness_meter.dart lib/features/skills lib/l10n test/data/skills test/core/widgets/completeness_meter_test.dart test/features/skills
+git commit -m "feat(skills): S38 shows the server's profile score; no score is computed on the device
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 14: CI job, deploy job, setup doc and the spec/doc updates
+
+**Files:**
+- Modify: `.github/workflows/flutter.yml`, `.github/workflows/firebase-deploy.yml`, `docs/FIREBASE-SETUP.md`, `CLAUDE.md`, `docs/superpowers/specs/2026-10-01-remaining-screens.md` (§3e.2, §3e.3, S38 row), `docs/superpowers/specs/screens/photographer.md` (S38), `docs/superpowers/specs/components/shared-components.md` (`CompletenessMeter`), `docs/superpowers/specs/data-model/domain-model.md`, `docs/superpowers/specs/data-model/relational-schema.md`, `docs/design/ui-mock.html` (S38 hint), `docs/superpowers/plans/2026-10-01-step2d2-photographer-profile.md` (uses the deleted `skillsCompleteness`)
+
+**Interfaces:**
+- Consumes: Task 7's CI steps in `flutter.yml` (`Domain package (pure TypeScript)`, `Cloud Functions (unit + emulator integration)`, `pull_request.paths` with `packages/**`); the existing `firebase-deploy.yml` jobs `test` and `deploy` (GitHub environments `dev`/`production`, `vars.FIREBASE_PROJECT_ID`, `secrets.FIREBASE_SERVICE_ACCOUNT`, skip while the id is unset); npm scripts `typecheck`, `lint`, `test`, `test:integration` (Tasks 1, 4); Task 13's `photographerSkillsSnapshotProvider` and `CompletenessMeter(percent: int?)`.
+- Produces: `flutter.yml` job `functions` (Node 22, Java 17): domain `npm ci`, typecheck, lint, test; functions `npm ci`, lint, typecheck, unit test, `test:integration` on the emulators (auth, firestore, functions). `firebase-deploy.yml`: `paths` add `packages/**` and `app_flutter/firebase/functions/**`; job `functions-test` (same checks); job `deploy-functions` (`needs: [test, functions-test]`) running `firebase deploy --only functions --project "$PROJECT_ID"` for `dev` (push `flutter-rewrite`/`develop`) and `production` (push `main`), skipped while `FIREBASE_PROJECT_ID` is unset, independent of the rules `deploy` job. `docs/FIREBASE-SETUP.md` §11.
+
+- [ ] **Step 1: `flutter.yml`: a separate `functions` job**
+
+In `.github/workflows/flutter.yml`, delete the two steps Task 7 added to job `test`:
+
+```yaml
+      - name: Domain package (pure TypeScript)
+        working-directory: packages/domain
+        run: npm ci && npm run typecheck && npm run lint && npm test
+      - name: Cloud Functions (unit + emulator integration)
+        working-directory: app_flutter/firebase/functions
+        run: npm ci && npm run lint && npm test && npm run test:integration
+```
+
+and append this job at the end of the file (after the two `# Android build …` comment lines of job `test`, at the indentation of `test:`):
+
+```yaml
+  # Domain rules and Cloud Functions (spec 2026-10-02 §4). The emulator tests run here only,
+  # never while executing plans (rule 2026-10-02).
+  functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Domain package (pure TypeScript)
+        working-directory: packages/domain
+        run: npm ci && npm run typecheck && npm run lint && npm test
+      - name: Cloud Functions (lint, typecheck, unit)
+        working-directory: app_flutter/firebase/functions
+        run: npm ci && npm run lint && npm run typecheck && npm test
+      - name: Cloud Functions (emulator integration)
+        working-directory: app_flutter/firebase/functions
+        run: npm run test:integration
+```
+
+(The `pull_request.paths` line already lists `packages/**` since Task 7; `app_flutter/**` covers the functions folder.)
+
+- [ ] **Step 2: `firebase-deploy.yml`: test and deploy the functions**
+
+Replace the header comment and the `push` trigger
+
+```yaml
+# Deploys Firestore rules + indexes from app_flutter/firebase/ after the emulator
+# rules tests pass. Storage rules deploy only on manual run.
+```
+
+with
+
+```yaml
+# Deploys Firestore rules + indexes from app_flutter/firebase/ after the emulator
+# rules tests pass, and the Cloud Functions after the domain/functions tests pass
+# (separate job: a functions failure never blocks the rules). Storage rules deploy
+# only on manual run. Functions need the Blaze plan, the APIs and IAM roles of
+# docs/FIREBASE-SETUP.md section 11.
+```
+
+and
+
+```yaml
+    paths: ['app_flutter/firebase/**', '.github/workflows/firebase-deploy.yml']
+```
+
+with
+
+```yaml
+    paths: ['app_flutter/firebase/**', 'app_flutter/firebase/functions/**', 'packages/**', '.github/workflows/firebase-deploy.yml']
+```
+
+Insert after job `test` (before `  deploy:`):
+
+```yaml
+  functions-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Domain package (pure TypeScript)
+        working-directory: packages/domain
+        run: npm ci && npm run typecheck && npm run lint && npm test
+      - name: Cloud Functions (lint, typecheck, unit, emulator integration)
+        working-directory: app_flutter/firebase/functions
+        run: npm ci && npm run lint && npm run typecheck && npm test && npm run test:integration
+
+```
+
+Append at the end of the file:
+
+```yaml
+
+  deploy-functions:
+    needs: [test, functions-test]
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'main' && 'production' || 'dev') }}
+    env:
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+    defaults:
+      run:
+        working-directory: app_flutter/firebase/functions
+    steps:
+      - name: Skip when the environment has no project
+        if: ${{ env.PROJECT_ID == '' }}
+        working-directory: .
+        run: echo "::warning::FIREBASE_PROJECT_ID is not set for this environment; Cloud Functions not deployed."
+      - uses: actions/checkout@v4
+        if: ${{ env.PROJECT_ID != '' }}
+      - uses: actions/setup-node@v4
+        if: ${{ env.PROJECT_ID != '' }}
+        with: { node-version: '22' }
+      - run: npm ci
+        if: ${{ env.PROJECT_ID != '' }}
+      - uses: google-github-actions/auth@v2
+        if: ${{ env.PROJECT_ID != '' }}
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      # predeploy (firebase.json) runs `npm run build`: typecheck + esbuild bundle with packages/domain.
+      # --force lets the CLI set the Artifact Registry cleanup policy on the first deploy and remove
+      # functions that are no longer in src/index.ts, without an interactive prompt.
+      - name: Deploy Cloud Functions
+        if: ${{ env.PROJECT_ID != '' }}
+        run: >
+          npx firebase deploy --config ../firebase.json --non-interactive --force
+          --project "$PROJECT_ID" --only functions
+```
+
+(`working-directory: .` on the skip step: before checkout, `app_flutter/firebase/functions` does not exist yet.)
+
+- [ ] **Step 3: Check both workflows parse and name the jobs**
+
+Run (repo root): `ruby -ryaml -e 'a = YAML.load_file(".github/workflows/flutter.yml"); b = YAML.load_file(".github/workflows/firebase-deploy.yml"); puts a["jobs"].keys.join(","), b["jobs"].keys.join(","), b["jobs"]["deploy-functions"]["needs"].join(","), b[true]["push"]["paths"].join(",")'`
+Expected:
+
+```
+test,functions
+test,functions-test,deploy,deploy-functions
+test,functions-test
+app_flutter/firebase/**,app_flutter/firebase/functions/**,packages/**,.github/workflows/firebase-deploy.yml
+```
+
+(Ruby's YAML 1.1 reads the key `on` as `true`.) Run: `grep -c "test:integration" .github/workflows/flutter.yml .github/workflows/firebase-deploy.yml`
+Expected: `.github/workflows/flutter.yml:1` and `.github/workflows/firebase-deploy.yml:1`.
+
+- [ ] **Step 4: `docs/FIREBASE-SETUP.md`**
+
+In section 10, replace
+
+```markdown
+Workflow `.github/workflows/firebase-deploy.yml` có 2 job: `test` chạy `npm test` trên emulator, `deploy` chỉ chạy khi test pass.
+```
+
+with
+
+```markdown
+Workflow `.github/workflows/firebase-deploy.yml` có 4 job: `test` chạy test rules trên emulator, `deploy` (rules và indexes) chỉ chạy khi `test` pass; `functions-test` chạy test của `packages/domain` và Cloud Functions (cả test emulator), `deploy-functions` chỉ chạy khi `test` và `functions-test` pass (điều kiện riêng ở mục 11). Hai job deploy độc lập: functions lỗi không chặn deploy rules.
+```
+
+and add this row at the end of the first table of section 10 (after the "Chạy tay" row):
+
+```markdown
+| Push hoặc chạy tay như trên, khi có thay đổi trong `app_flutter/firebase/**` hoặc `packages/**` | như trên | Cloud Functions (`getContactLink`, `onPhotographerWrite`), job `deploy-functions` |
+```
+
+Insert before `## Sự cố thường gặp`:
+
+```markdown
+## 11. Cloud Functions (deploy qua CI)
+
+Job `deploy-functions` deploy codebase `app_flutter/firebase/functions` (region `asia-southeast1`: `getContactLink`, `onPhotographerWrite`) bằng `firebase deploy --only functions`. Không deploy từ máy. Làm các bước dưới đây một lần cho mỗi project: **dev** ngay, **production** khi đã có project.
+
+1. **Gói Blaze.** Firebase Console → ⚙ → **Usage and billing** → **Details & settings** → **Modify plan** → **Blaze**. Cloud Functions không chạy trên gói Spark. Nên đặt budget alert (ví dụ 5 USD) trong Google Cloud Billing.
+2. **Bật API** tại `https://console.cloud.google.com/apis/library?project=<project-id>`: Cloud Functions API, Cloud Build API, Artifact Registry API, Eventarc API, Cloud Run Admin API. Service account của CI không có quyền bật API, nên bật trước bằng tay.
+3. **Thêm role cho service account CI** (`github-firebase-deploy`, mục 10.1) ở trang IAM `https://console.cloud.google.com/iam-admin/iam?project=<project-id>`:
+
+   | Role | Để làm gì |
+   |------|-----------|
+   | Cloud Functions Developer (`roles/cloudfunctions.developer`) | Tạo và cập nhật function |
+   | Service Account User (`roles/iam.serviceAccountUser`) | Cho function chạy bằng service account mặc định |
+   | Artifact Registry Writer (`roles/artifactregistry.writer`) | Lưu image build của function |
+   | Cloud Run Admin (`roles/run.admin`) | Function thế hệ 2 chạy trên Cloud Run |
+   | Eventarc Admin (`roles/eventarc.admin`) | Tạo trigger Firestore của `onPhotographerWrite` |
+
+4. **Chạy thử**: **Run workflow** như 10.3. Kiểm tra: job `deploy-functions` xanh; Console → **Functions** có `getContactLink` và `onPhotographerWrite` ở `asia-southeast1`. Trong app, sửa kỹ năng ở S38 rồi lưu, mở lại S38: "Độ khớp hồ sơ" hiện số do server ghi (trước lần lưu đầu tiên là "Chưa có điểm").
+
+Workflow chạy với `--force` để Firebase CLI tự đặt chính sách dọn image cũ trong Artifact Registry ở lần deploy đầu và xoá function không còn trong `src/index.ts`. Thiếu điều kiện nào thì chỉ job `deploy-functions` đỏ, kèm thông báo của Firebase CLI; job `deploy` (rules) không bị ảnh hưởng.
+
+| Lỗi trong log | Cách sửa |
+|---------------|----------|
+| `must be on the Blaze (pay-as-you-go) plan` | Bước 1. |
+| `... API has not been used in project ... or it is disabled` | Bật API được nêu (bước 2), chờ vài phút rồi chạy lại. |
+| `Permission 'cloudfunctions.functions.create' denied`, `iam.serviceAccounts.actAs`, `artifactregistry...`, `run.services...`, `eventarc.triggers...` | Thiếu role tương ứng (bước 3). |
+| `Since this is your first time using 2nd gen functions, we need a little bit longer to finish setting everything up` | Lần đầu dùng Eventarc: chờ vài phút rồi chạy lại. |
+
+```
+
+In the last section ("Test rules không cần project thật"), replace
+
+```markdown
+CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR.
+```
+
+with
+
+```markdown
+CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR, cùng job `functions` (test của `packages/domain` và Cloud Functions, kể cả test trên emulator). Test emulator chỉ chạy trên CI.
+```
+
+- [ ] **Step 5: `CLAUDE.md`**
+
+In the last paragraph of "### Commands (run from `app_flutter/`)", replace
+
+```text
+deploys Firestore to GitHub environment `dev`
+```
+
+with
+
+```text
+deploys Firestore and the Cloud Functions (job `deploy-functions`, after the domain and functions tests; the project must be on Blaze) to GitHub environment `dev`
+```
+
+and replace
+
+```text
+`docs/FIREBASE-SETUP.md` (sections 6, 9, 10)
+```
+
+with
+
+```text
+`docs/FIREBASE-SETUP.md` (sections 6, 9, 10, 11)
+```
+
+- [ ] **Step 6: Spec updates (spec 2026-10-02 §6)**
+
+Each item is one exact replacement (old text, then new text).
+
+`docs/superpowers/specs/2026-10-01-remaining-screens.md`, §3e.2:
+
+```text
+Do Function tính, chỉ để nhắc nhiếp ảnh gia; không hiện cho khách.
+```
+
+```text
+Do Function `onPhotographerWrite` tính (app không tính), lưu cùng `completenessNext` (mã bước còn thiếu đầu tiên: `specialties | levels | evidence | styles | languages | audiences | extras`, `null` khi đủ 100); chỉ để nhắc nhiếp ảnh gia; không hiện cho khách.
+```
+
+Same file, §3e.3 code block, the line
+
+```text
+  completeness: 72            # Function tính
+```
+
+becomes
+
+```text
+  completeness: 72            # Function tính
+  completenessNext: "audiences"  # Function ghi; null khi đủ 100
+  evidenceRemovedAt           # Function ghi khi gỡ minh chứng không hợp lệ
+```
+
+Same file, §3e.3 first bullet, two replacements:
+
+```text
+(trừ `completeness`, `updatedAt` do Function ghi)
+```
+
+```text
+(trừ `completeness`, `completenessNext`, `updatedAt`, `evidenceRemovedAt` do Function ghi)
+```
+
+and
+
+```text
+client không ghi các trường do server sở hữu (`completeness`, `skills.updatedAt`).
+```
+
+```text
+client không ghi các trường do server sở hữu (`completeness`, `completenessNext`, `skills.updatedAt`, `evidenceRemovedAt`).
+```
+
+Same file, §3e.3 second bullet:
+
+```text
+Kiểm quyền sở hữu minh chứng và tính `completeness` sẽ do Function `onPhotographerWrite` làm (đang thiết kế, **chưa xây**); đến lúc đó app hiện điểm tính trên máy cùng công thức.
+```
+
+```text
+Function `onPhotographerWrite` kiểm quyền sở hữu minh chứng (gỡ id không phải bài còn sống của chính họ, hạ "Chuyên sâu" không còn minh chứng xuống "Thành thạo", ghi `evidenceRemovedAt`) và tính `completeness`; app không tính điểm (spec `2026-10-02-photographer-write-function-design.md`).
+```
+
+Same file, §3e.3 third bullet (whole line):
+
+```text
+- Function `onPhotographerWrite` (chưa xây) sẽ kiểm tra lược đồ, kiểm `evidencePostIds` thuộc bài của chính họ, tính `completeness`, rồi báo dịch vụ gợi ý cập nhật chỉ mục (3e.4).
+```
+
+```text
+- Function `onPhotographerWrite` (Firestore trigger `photographers/{uid}`, `asia-southeast1`; backend phase 1, Task 10–14) đọc lược đồ bằng `parseSkills` (`packages/domain`), kiểm `evidencePostIds` bằng một lần `getAll`, tính `completeness`/`completenessNext`, ghi một lần với precondition `lastUpdateTime`; bỏ qua lần ghi chỉ đổi trường server. Báo dịch vụ gợi ý cập nhật chỉ mục (3e.4) để plan recommender.
+```
+
+Same file, code table row S38:
+
+```text
+`skills.completeness` cập nhật sau khi lưu. |
+```
+
+```text
+`skills.completeness` do Function tính sau khi lưu; S38 hiện số đó ở lần mở sau. |
+```
+
+`docs/superpowers/specs/screens/photographer.md`, S38 **Dữ liệu**:
+
+```text
+Độ khớp hồ sơ tính ngay trên máy bằng đúng công thức 3e.2 (`skillsCompleteness`); khi có Function `onPhotographerWrite` thì Function ghi `completeness` theo cùng công thức.
+```
+
+```text
+Độ khớp hồ sơ và bước kế tiếp do Function `onPhotographerWrite` tính (`skills.completeness`, `skills.completenessNext`); app chỉ hiện số đã lưu: chưa có số → "Chưa có điểm" + "Lưu để tính độ khớp"; nháp khác bản đã lưu → giữ số, gợi ý "Lưu để cập nhật độ khớp"; còn lại gợi ý theo `completenessNext` (không kèm "để lên N%", vì server không lưu số sau bước đó). Khi Function gỡ minh chứng không hợp lệ (`skills.evidenceRemovedAt` mới hơn mốc `skillsEvidenceSeen.<uid>` trên máy), lần mở S38 kế tiếp báo "Một số minh chứng không hợp lệ đã được gỡ" một lần.
+```
+
+`docs/superpowers/specs/components/shared-components.md`:
+
+```text
+`CompletenessMeter({required int percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. Dùng ở S38, S30, S22.
+```
+
+```text
+`CompletenessMeter({required int? percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. `percent` là số server ghi (`skills.completeness`); `null` (chưa tính) hiện "Chưa có điểm" và thanh rỗng. Dùng ở S38, S30, S22.
+```
+
+`docs/superpowers/specs/data-model/domain-model.md`, row `PhotographerStats`:
+
+```text
+`nextFreeDate?`, `skillsCompleteness` |
+```
+
+```text
+`nextFreeDate?`, `skillsCompleteness`, `skillsCompletenessNext?` (mã bước còn thiếu đầu tiên), `skillsEvidenceRemovedAt?` (lần Function gỡ minh chứng gần nhất) |
+```
+
+`docs/superpowers/specs/data-model/relational-schema.md`, the line
+
+```text
+  skills_completeness  smallint not null default 0 check (skills_completeness between 0 and 100),
+```
+
+becomes
+
+```text
+  skills_completeness  smallint not null default 0 check (skills_completeness between 0 and 100),
+  skills_completeness_next text check (skills_completeness_next in ('specialties', 'levels', 'evidence', 'styles', 'languages', 'audiences', 'extras')),
+  skills_evidence_removed_at timestamptz,
+```
+
+and in its mapping table
+
+```text
+`skills.completeness`→`skills_completeness` |
+```
+
+```text
+`skills.completeness`→`skills_completeness`; `skills.completenessNext`→`skills_completeness_next`; `skills.evidenceRemovedAt`→`skills_evidence_removed_at` |
+```
+
+`docs/design/ui-mock.html`, S38 meter hint (the hint no longer carries a number; this spec is newer than the mock):
+
+```text
+Thêm ảnh minh chứng cho Chân dung để lên 85%
+```
+
+```text
+Thêm ảnh minh chứng cho Chân dung
+```
+
+- [ ] **Step 7: Plan 2d2 reads the server score**
+
+Plan 2d2 (runs after this plan) still uses the deleted `skillsCompleteness`. In `docs/superpowers/plans/2026-10-01-step2d2-photographer-profile.md`, make these exact replacements (old, then new):
+
+1. In the S03 header widget's import block, delete the line
+
+```text
+import 'package:photobooking/data/skills/skills_completeness.dart';
+```
+
+2. Add a line after
+
+```text
+    final skills = ref.watch(photographerSkillsProvider(s.id)).value ?? PhotographerSkills.empty;
+```
+
+so it reads
+
+```text
+    final skills = ref.watch(photographerSkillsProvider(s.id)).value ?? PhotographerSkills.empty;
+    final skillsScore = ref.watch(photographerSkillsSnapshotProvider(s.id)).value?.server.completeness;
+```
+
+3. ```text
+                CompletenessMeter(percent: skillsCompleteness(skills).percent),
+   ```
+   ```text
+                CompletenessMeter(percent: skillsScore),
+   ```
+
+4. ```text
+      ..invalidate(photographerSkillsProvider(widget.uid));
+   ```
+   ```text
+      ..invalidate(photographerSkillsSnapshotProvider(widget.uid));
+   ```
+
+5. Task 7 **Interfaces**:
+   ```text
+`photographerSkillsProvider`, `skillsCompleteness`, `CompletenessMeter`
+   ```
+   ```text
+`photographerSkillsProvider`, `photographerSkillsSnapshotProvider` (server score, backend phase 1 Task 13), `CompletenessMeter`
+   ```
+   and
+   ```text
+(device-computed `skillsCompleteness`)
+   ```
+   ```text
+(server `skills.completeness`; "Chưa có điểm" until the Function has scored)
+   ```
+
+6. Task 7 Step 3:
+   ```text
+`package:photobooking/data/skills/skills_completeness.dart`, 
+   ```
+   (with its trailing space) → nothing.
+
+7. `_SkillsTile.build`:
+   ```text
+    final skills = ref.watch(photographerSkillsProvider(uid)).value;
+   ```
+   ```text
+    final skills = ref.watch(photographerSkillsSnapshotProvider(uid)).value;
+   ```
+   then
+   ```text
+              child: CompletenessMeter(percent: skillsCompleteness(skills).percent),
+   ```
+   ```text
+              child: CompletenessMeter(percent: skills.server.completeness),
+   ```
+   then
+   ```text
+          ref.invalidate(photographerSkillsProvider(uid));
+   ```
+   ```text
+          ref.invalidate(photographerSkillsSnapshotProvider(uid));
+   ```
+
+8. Header lines listing the consumed 2c names:
+   ```text
+`skillsCompleteness(PhotographerSkills).percent`, `CompletenessMeter({required int percent, String? nextHint})`
+   ```
+   ```text
+`photographerSkillsSnapshotProvider` → `SkillsSnapshot.server.completeness` (backend phase 1 Task 13), `CompletenessMeter({required int? percent, String? nextHint})`
+   ```
+   and
+   ```text
+`skillsCompleteness`/`CompletenessMeter`
+   ```
+   ```text
+`photographerSkillsSnapshotProvider`/`CompletenessMeter`
+   ```
+
+Run (repo root): `grep -n "skillsCompleteness\|skills_completeness" docs/superpowers/plans/2026-10-01-step2d2-photographer-profile.md docs/superpowers/specs/screens/photographer.md docs/superpowers/specs/2026-10-01-remaining-screens.md; grep -c "để lên" docs/design/ui-mock.html`
+Expected: the first grep prints nothing, then `0`.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add .github/workflows/flutter.yml .github/workflows/firebase-deploy.yml docs/FIREBASE-SETUP.md CLAUDE.md docs/superpowers/specs docs/design/ui-mock.html docs/superpowers/plans/2026-10-01-step2d2-photographer-profile.md
+git commit -m "ci(functions): test and deploy Cloud Functions; docs for onPhotographerWrite and the server score
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+After the push, CI must show job `functions` green (domain, unit and the emulator tests of Tasks 6, 11) and, on `firebase-deploy`, `functions-test` green; `deploy-functions` deploys to `dev` once §11 is done, or prints the `FIREBASE_PROJECT_ID is not set` warning. Record the CI run URL in the ledger.
