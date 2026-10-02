@@ -202,6 +202,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   ],
                   AppChip(
                     key: const Key('filter-this-week'),
+                    kind: AppChipKind.context,
                     label: l.exploreThisWeek,
                     selected: filters.thisWeek,
                     onChanged: (_) => filterController.toggleThisWeek(),
@@ -209,6 +210,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   const SizedBox(width: AppSpace.s2),
                   AppChip(
                     key: const Key('filter-weekend'),
+                    kind: AppChipKind.context,
                     label: l.exploreWeekend,
                     selected: filters.weekend,
                     onChanged: (_) => filterController.toggleWeekend(),
@@ -216,6 +218,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   const SizedBox(width: AppSpace.s2),
                   AppChip(
                     key: const Key('filter-free'),
+                    kind: AppChipKind.context,
                     label: l.freeTag,
                     selected: filters.freeOnly,
                     onChanged: (_) => filterController.toggleFree(),

@@ -4,11 +4,11 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Which look a selected chip takes (spec section 1).
 enum AppChipKind {
-  /// A filter: selected is a solid `primary` pill (S04, S15, S35).
+  /// A filter: selected is a solid `primary` pill (S04, S15, S35 radius).
   filter,
 
   /// A single choice or context (category row, style): selected is
-  /// `primarySubtle` with a primary border and text (S01, S06, S25, S40).
+  /// `primarySubtle` with a primary border and text (S01, S06, S25, S40; S35 date and free toggles).
   context,
 }
 
@@ -37,8 +37,11 @@ class AppChip extends StatelessWidget {
     final scheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
     final subtle = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
+    final secondaryInk = dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
     final (fill, text, edge) = !selected
-        ? (scheme.secondary, scheme.onSurface, scheme.outlineVariant)
+        ? (scheme.secondary, secondaryInk, scheme.outline)
         : kind == AppChipKind.filter
         ? (scheme.primary, scheme.onPrimary, scheme.primary)
         : (subtle, scheme.primary, scheme.primary);
@@ -71,10 +74,10 @@ class AppChip extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (leading != null || selected) ...[
+                        if (leading != null) ...[
                           IconTheme(
                             data: IconThemeData(color: text, size: 16),
-                            child: leading ?? const Icon(Icons.check),
+                            child: leading!,
                           ),
                           const SizedBox(width: AppSpace.s1),
                         ],
@@ -86,7 +89,7 @@ class AppChip extends StatelessWidget {
                             style: TextStyle(
                               color: text,
                               fontSize: AppText.sm,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),

@@ -42,6 +42,7 @@ class AppColors {
   static const Color bookingDenied = Color(0xFFB21D14);
   static const Color bookingOpened = Color(0xFFE6C617);
   static const Color bookingClosed = Color(0xFF898888);
+  static const Color pillInk = Color(0xFF1B1A18);
   static const Color heroCanvas = Color(0xFF0B0B10);
   static const Color ctaStart = Color(0xFF3D63FF);
   static const Color ctaMid = Color(0xFF8A3FFC);
@@ -96,6 +97,7 @@ class AppColorsDark {
   static const Color bookingDenied = AppColors.bookingDenied;
   static const Color bookingOpened = AppColors.bookingOpened;
   static const Color bookingClosed = AppColors.bookingClosed;
+  static const Color pillInk = AppColors.pillInk;
   static const Color heroCanvas = AppColors.heroCanvas;
   static const Color ctaStart = AppColors.ctaStart;
   static const Color ctaMid = AppColors.ctaMid;

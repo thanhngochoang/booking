@@ -48,7 +48,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _card(
-        leading: const PhotoPill(label: 'Rảnh T7 này', dot: true),
+        leading: const PhotoPill(label: 'Rảnh T7 này', dot: PhotoPillDot.ok),
         trailing: const PhotoPill(label: 'Chân dung · từ 1,5M'),
         action: const Icon(Icons.bookmark_border, key: Key('save')),
       ),
@@ -289,5 +289,60 @@ void main() {
     expect(find.bySemanticsLabel('Ảnh 3'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Rảnh T7 này')), findsNothing);
     handle.dispose();
+  });
+
+  group('PhotoPill', () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance(), lb = b.computeLuminance();
+      final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    testWidgets('is a white 94% pill with dark text', (tester) async {
+      await tester.pumpWidget(hostWidget(const PhotoPill(label: 'Rảnh')));
+      final deco =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: find.byType(PhotoPill),
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(deco.color, Colors.white.withValues(alpha: 0.94));
+      final text = tester.widget<Text>(find.text('Rảnh')).style!.color!;
+      expect(text, AppColors.pillInk);
+      // On the lightest and the darkest photo the text stays at 4.5:1.
+      for (final photo in [Colors.white, Colors.black]) {
+        expect(
+          contrast(text, Color.alphaBlend(deco.color!, photo)),
+          greaterThanOrEqualTo(4.5),
+        );
+      }
+    });
+
+    testWidgets('dot is green for ok and yellow for warn, none by default', (
+      tester,
+    ) async {
+      Future<Color?> dotColor(PhotoPillDot? d) async {
+        await tester.pumpWidget(hostWidget(PhotoPill(label: 'x', dot: d)));
+        final dots = find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).shape == BoxShape.circle,
+        );
+        if (dots.evaluate().isEmpty) return null;
+        return ((tester.widget<DecoratedBox>(dots).decoration) as BoxDecoration)
+            .color;
+      }
+
+      expect(await dotColor(null), isNull);
+      expect(await dotColor(PhotoPillDot.ok), AppColors.success);
+      expect(await dotColor(PhotoPillDot.warn), AppColors.warning);
+    });
   });
 }

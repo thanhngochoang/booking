@@ -201,40 +201,48 @@ class PhotoCard extends StatelessWidget {
   }
 }
 
-/// A small dark pill over a photo: availability ("Rảnh T7 này"), package and
-/// price. White text on a 55% black fill keeps 4.5:1 on any photo.
+/// Availability dot colour on a [PhotoPill].
+enum PhotoPillDot {
+  /// Available (green).
+  ok,
+
+  /// Partly available, e.g. "Còn buổi chiều" (yellow).
+  warn,
+}
+
+/// A small white pill over a photo: availability ("Rảnh T7 này"), package and
+/// price. Dark text on 94% white keeps 4.5:1 on any photo.
 class PhotoPill extends StatelessWidget {
-  const PhotoPill({super.key, required this.label, this.dot = false});
+  const PhotoPill({super.key, required this.label, this.dot});
 
   final String label;
 
-  /// A green dot before the label, meaning "free".
-  final bool dot;
+  /// An availability dot before the label; none when null.
+  final PhotoPillDot? dot;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.55),
+        color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s2,
-          vertical: AppSpace.s1,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (dot) ...[
-              const DecoratedBox(
+            if (dot != null) ...[
+              DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.success,
+                  color: dot == PhotoPillDot.ok
+                      ? AppColors.success
+                      : AppColors.warning,
                   shape: BoxShape.circle,
                 ),
-                child: SizedBox.square(dimension: 6),
+                child: const SizedBox.square(dimension: 7),
               ),
-              const SizedBox(width: AppSpace.s1),
+              const SizedBox(width: 5),
             ],
             Flexible(
               child: Text(
@@ -242,9 +250,10 @@ class PhotoPill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.pillInk,
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
             ),

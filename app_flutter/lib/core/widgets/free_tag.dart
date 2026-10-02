@@ -32,18 +32,19 @@ class FreeTag extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.fill,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s2,
-          vertical: AppSpace.s1,
+          vertical: 3,
         ),
         child: Text(
           context.l10n.freeTag,
           style: TextStyle(
-            fontSize: AppText.sm,
+            fontSize: AppText.xs,
             fontWeight: FontWeight.w600,
+            letterSpacing: 0.4, // mock .tag: .04em of 10px
             color: c.text,
           ),
         ),

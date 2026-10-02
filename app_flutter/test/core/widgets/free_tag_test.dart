@@ -46,6 +46,24 @@ void main() {
     });
   }
 
+  testWidgets('tag is a pill with 10px tracked text', (tester) async {
+    await tester.pumpWidget(hostWidget(const FreeTag()));
+    final deco =
+        tester
+                .widget<DecoratedBox>(
+                  find.descendant(
+                    of: find.byType(FreeTag),
+                    matching: find.byType(DecoratedBox),
+                  ),
+                )
+                .decoration
+            as BoxDecoration;
+    expect(deco.borderRadius, BorderRadius.circular(AppRadius.full));
+    final style = tester.widget<Text>(find.text('Không thu phí')).style!;
+    expect(style.fontSize, AppText.xs);
+    expect(style.letterSpacing, closeTo(0.4, 1e-9));
+  });
+
   testWidgets('banner shows title and the default hint', (tester) async {
     await tester.pumpWidget(
       hostWidget(const FreeBanner(), width: 320, textScale: 1.3),

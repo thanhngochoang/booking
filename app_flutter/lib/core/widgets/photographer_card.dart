@@ -129,7 +129,7 @@ class PhotographerCard extends StatelessWidget {
                               top: AppSpace.s2,
                               child: PhotoPill(
                                 label: availabilityLabel!,
-                                dot: true,
+                                dot: PhotoPillDot.ok,
                               ),
                             ),
                         ],

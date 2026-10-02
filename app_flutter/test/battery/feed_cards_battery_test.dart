@@ -26,7 +26,10 @@ Widget _feed(List<PhotoRequest> log) => hostWidget(
                 aspect: 4 / 5,
                 title: 'Minh Trí',
                 subtitle: 'Quận 3',
-                leadingPill: const PhotoPill(label: 'Rảnh T7 này', dot: true),
+                leadingPill: const PhotoPill(
+                  label: 'Rảnh T7 này',
+                  dot: PhotoPillDot.ok,
+                ),
                 action: const Icon(Icons.bookmark_border),
                 onTap: () {},
               ),

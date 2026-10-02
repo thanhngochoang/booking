@@ -171,13 +171,9 @@ void main() {
     expect(tester.getSize(find.byType(AppChip)).height, 48);
   });
 
-  testWidgets('selected chip without leading shows a check', (tester) async {
+  testWidgets('selected chip has no automatic check icon', (tester) async {
     await tester.pumpWidget(
       hostWidget(AppChip(label: 'A', selected: true, onChanged: (_) {})),
-    );
-    expect(find.byIcon(Icons.check), findsOneWidget);
-    await tester.pumpWidget(
-      hostWidget(AppChip(label: 'A', selected: false, onChanged: (_) {})),
     );
     expect(find.byIcon(Icons.check), findsNothing);
     await tester.pumpWidget(
@@ -190,7 +186,17 @@ void main() {
         ),
       ),
     );
-    expect(find.byIcon(Icons.check), findsNothing);
     expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+  });
+
+  testWidgets('unselected label is secondary ink at weight 500', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(AppChip(label: 'A', selected: false, onChanged: (_) {})),
+    );
+    final style = tester.widget<Text>(find.text('A')).style!;
+    expect(style.color, AppColorsDark.foregroundSecondary);
+    expect(style.fontWeight, FontWeight.w500);
   });
 }

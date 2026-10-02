@@ -23,21 +23,22 @@ class StatTile extends StatelessWidget {
           // Translucent fill, no blur: tiles sit on cards that already blur.
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.secondary,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.s2,
-              vertical: AppSpace.s3,
-            ),
+            // Mock .kpi: padding 10 8 10 12, content pinned to the bottom.
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 FittedBox(
                   fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     value,
                     maxLines: 1,
@@ -49,9 +50,10 @@ class StatTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpace.s1),
+                const SizedBox(height: 2),
                 FittedBox(
                   fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     label,
                     maxLines: 1,

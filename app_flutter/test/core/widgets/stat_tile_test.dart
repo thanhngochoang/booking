@@ -57,4 +57,38 @@ void main() {
     expect(find.bySemanticsLabel('5, Đã nhận'), findsOneWidget);
     handle.dispose();
   });
+
+  testWidgets('tile is left-aligned, radius 16, content pinned to the bottom', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const SizedBox(
+          width: 160,
+          height: 120,
+          child: StatTile(value: '5', label: 'Đã nhận'),
+        ),
+      ),
+    );
+    final deco =
+        tester
+                .widget<DecoratedBox>(
+                  find
+                      .descendant(
+                        of: find.byType(StatTile),
+                        matching: find.byType(DecoratedBox),
+                      )
+                      .first,
+                )
+                .decoration
+            as BoxDecoration;
+    expect(deco.borderRadius, BorderRadius.circular(AppRadius.xl));
+    final tile = tester.getRect(find.byType(StatTile));
+    final value = tester.getRect(find.text('5'));
+    final label = tester.getRect(find.text('Đã nhận'));
+    expect(value.left - tile.left, lessThan(20));
+    expect(label.left, closeTo(value.left, 0.5));
+    expect(tile.bottom - label.bottom, lessThan(20));
+    expect(value.top - tile.top, greaterThan(30));
+  });
 }
