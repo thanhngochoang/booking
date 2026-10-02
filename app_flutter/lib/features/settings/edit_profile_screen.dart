@@ -90,13 +90,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(title: Text(l.editProfileTitle)),
-          body: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpace.s5),
-              child: GlassCard(
-                highlight: false,
-                child: Padding(
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppSpace.s5),
                   child: Form(
                     key: _form,
@@ -149,22 +147,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               : (v) => setState(() => _whatsApp = v),
                         ),
                         Text(
-                          l.phonePrivacy,
+                          l.editProfilePhoneHint,
                           style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: AppSpace.s5),
-                        AppButton.primary(
-                          l.editProfileSave,
-                          key: const Key('edit-save'),
-                          loading: saving,
-                          onPressed: save,
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
+              AppFooterBar(
+                child: AppButton.primary(
+                  l.editProfileSave,
+                  key: const Key('edit-save'),
+                  loading: saving,
+                  onPressed: save,
+                ),
+              ),
+            ],
           ),
         ),
       ),

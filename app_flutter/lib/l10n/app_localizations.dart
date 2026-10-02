@@ -856,6 +856,12 @@ abstract class AppLocalizations {
   /// **'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
   String get phonePrivacy;
 
+  /// No description provided for @editProfilePhoneHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
+  String get editProfilePhoneHint;
+
   /// No description provided for @addPhoneSave.
   ///
   /// In vi, this message translates to:

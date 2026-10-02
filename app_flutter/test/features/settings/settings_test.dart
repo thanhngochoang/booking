@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -371,5 +372,76 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(contacts.watchers, 0);
+  });
+
+  group('mock layout', () {
+    Future<void> openSettings(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final (auth, users) = await _signedIn();
+      await tester.pumpWidget(
+        await _app(auth: auth, users: users, prefs: prefs),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('S42: own phone hint, fields on the page, sticky "Lưu"', (
+      tester,
+    ) async {
+      await openSettings(tester);
+      await tester.tap(find.byKey(const Key('settings-edit-profile')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(GlassCard), findsNothing);
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('edit-save')),
+          matching: find.byType(Scrollable),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('edit-save')),
+          matching: find.byType(AppFooterBar),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('S31: small-caps muted group labels', (tester) async {
+      await openSettings(tester);
+      final label = tester.widget<Text>(find.text('TÀI KHOẢN'));
+      expect(label.style?.fontSize, AppText.xs2);
+      expect(label.style?.letterSpacing, closeTo(0.88, 0.01));
+      final dark =
+          Theme.of(tester.element(find.text('TÀI KHOẢN'))).brightness ==
+          Brightness.dark;
+      expect(
+        label.style?.color,
+        dark ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted,
+      );
+      expect(
+        tester.getSemantics(find.text('TÀI KHOẢN')),
+        matchesSemantics(label: 'Tài khoản', isHeader: true),
+      );
+    });
+
+    testWidgets('S31: hairlines between rows, small preview button', (
+      tester,
+    ) async {
+      await openSettings(tester);
+      // Three theme rows and two button-style rows: 2 + 1 dividers.
+      expect(find.byType(Divider), findsNWidgets(3));
+      final preview = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Xem trước nút'),
+      );
+      expect(preview.size, AppButtonSize.small);
+    });
   });
 }

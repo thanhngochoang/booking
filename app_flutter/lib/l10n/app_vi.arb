@@ -150,6 +150,7 @@
   "allowZaloLabel": "Cho phép liên hệ qua Zalo",
   "allowWhatsAppLabel": "Cho phép liên hệ qua WhatsApp",
   "phonePrivacy": "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
+  "editProfilePhoneHint": "Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
   "addPhoneSave": "Lưu và tiếp tục",
   "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé.",
   "contactLabel": "Liên hệ",

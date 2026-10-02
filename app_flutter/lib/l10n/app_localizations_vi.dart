@@ -415,6 +415,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.';
 
   @override
+  String get editProfilePhoneHint =>
+      'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.';
+
+  @override
   String get addPhoneSave => 'Lưu và tiếp tục';
 
   @override

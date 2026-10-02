@@ -55,7 +55,9 @@ class SettingsScreen extends ConsumerWidget {
                   highlight: false,
                   child: Column(
                     children: [
-                      for (final (value, label, icon) in themes)
+                      for (final (i, (value, label, icon))
+                          in themes.indexed) ...[
+                        if (i > 0) const _RowDivider(),
                         ListTile(
                           key: Key('theme-${value.name}'),
                           leading: Icon(icon),
@@ -67,6 +69,7 @@ class SettingsScreen extends ConsumerWidget {
                           onTap: () =>
                               ref.read(themeModeProvider.notifier).set(value),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -88,6 +91,7 @@ class SettingsScreen extends ConsumerWidget {
                             .read(buttonStyleProvider.notifier)
                             .set(ButtonStyleMode.gradient),
                       ),
+                      const _RowDivider(),
                       ListTile(
                         key: const Key('button-avatar'),
                         enabled: hasAvatar,
@@ -115,6 +119,7 @@ class SettingsScreen extends ConsumerWidget {
                   child: ExcludeSemantics(
                     child: AppButton.primary(
                       l.settingsButtonPreview,
+                      size: AppButtonSize.small,
                       onPressed: () {},
                     ),
                   ),
@@ -149,11 +154,42 @@ class _SectionLabel extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: AppSpace.s1, bottom: AppSpace.s2),
-    child: Semantics(
-      header: true,
-      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-    ),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    // Mock: 10.5px uppercase, .08em tracking, --ink-3. Read in sentence case.
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpace.s1, bottom: AppSpace.s2),
+      child: Semantics(
+        header: true,
+        label: text,
+        child: ExcludeSemantics(
+          child: Text(
+            text.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: AppText.xs2,
+              fontWeight: FontWeight.w500,
+              letterSpacing: AppText.xs2 * 0.08,
+              color: dark
+                  ? AppColorsDark.foregroundMuted
+                  : AppColors.foregroundMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Hairline between rows of one settings card (mock S31).
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) => Divider(
+    height: 1,
+    thickness: 1,
+    indent: AppSpace.s4,
+    endIndent: AppSpace.s4,
+    color: Theme.of(context).colorScheme.outlineVariant,
   );
 }
