@@ -6,7 +6,7 @@
 
 **Goal:** The screens and shared widgets built so far (tab bar, S13, S35, S36, S33, S34, S42, S31, S30, core widgets) look and read like the committed mock `docs/design/ui-mock.html` (published artifact LptNpoqnt5KjQ5tUaPjYDM). User requirement, 2026-10-02: "giao diện phải giống artifact đã commit".
 
-**Spec:** the mock itself is the authority for layout, order, copy, component type and states; `docs/superpowers/specs/2026-10-01-remaining-screens.md` and `specs/screens/*.md` stay the authority for behaviour. The audit `.superpowers/mock-parity-audit.md` lists every deviation with mock/app/file:line (row ids such as E3, C1, N4 below refer to it). Where the spec is newer than the mock (Task 11), the mock is updated instead of the app.
+**Spec:** the mock itself is the authority for layout, order, copy, component type and states; `docs/superpowers/specs/2026-10-01-remaining-screens.md` and `specs/screens/*.md` stay the authority for behaviour. The audit `docs/superpowers/handover/mock-parity-audit.md` lists every deviation with mock/app/file:line (row ids such as E3, C1, N4 below refer to it). Where the spec is newer than the mock (Task 11), the mock is updated instead of the app.
 
 **User rulings (2026-10-02):**
 - PhotographerCard shows a small gradient "Đặt …" button (`AppButton.primary`, small size) on every card, as in the mock. "One primary action per screen" means the screen's main CTA; per-item card actions styled primary in the mock are allowed. Record this in CLAUDE.md and `specs/components/shared-components.md`.
