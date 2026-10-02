@@ -128,8 +128,8 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 - **Thông tin**: `/profile/skills/evidence?skill=…` (sheet mở từ dòng "Chỉnh" ở S38; link này mở S38 ở chế độ sửa rồi mở sheet cho thể loại `skill`) · sub‑project 2 · Chưa có.
 - **Mục đích**: gắn 1–3 ảnh thật của mình vào một thể loại để thuật toán tin cậy hơn.
 - **Bố cục**: tiêu đề "Minh chứng · {thể loại}" + "n / 3"; giải thích; lưới 3 cột ảnh portfolio (ô chọn có viền và dấu); nút "Xong".
-- **Dữ liệu**: `posts (photographerId)` của chính mình; ghi `evidencePostIds` của thể loại. Chỉ bài có `authorId` là chính nhiếp ảnh gia (không gồm bài `real_shoot` của khách gắn vào trang), 30 bài mỗi trang.
-- **Trạng thái**: chưa có bài nào → empty "Đăng bài trước" + nút tới S21; chọn quá 3 → âm báo và dòng báo ngay trong sheet (SnackBar sẽ bị modal che), bỏ chọn một ảnh để chọn thêm; mức "Chuyên sâu" cần ≥ 1 ảnh mới đóng sheet bằng "Xong".
+- **Dữ liệu**: `posts (photographerId)` của chính mình; ghi `evidencePostIds` của thể loại. Chỉ bài có `authorId` là chính nhiếp ảnh gia (không gồm bài `real_shoot` của khách gắn vào trang), 30 bài mỗi trang. Vì lọc trên máy, một trang có thể ngắn hoặc rỗng dù còn bài: mỗi lần tải đọc tối đa 5 trang tới khi đủ 30 bài của mình hoặc hết; lưới ngắn không cuộn được thì tự tải trang tiếp.
+- **Trạng thái**: chưa có bài nào (đã đọc hết) → empty "Đăng bài trước" + nút tới S21; trang tiếp lỗi → giữ ảnh đã hiện, dòng "Không tải thêm được. Thử lại" dưới lưới (chạm để tải lại trang đó; cuộn không tự thử lại); chọn quá 3 → âm báo và dòng báo ngay trong sheet (SnackBar sẽ bị modal che), bỏ chọn một ảnh để chọn thêm; mức "Chuyên sâu" cần ≥ 1 ảnh mới đóng sheet bằng "Xong".
 - **Chuỗi**: `s40_title` "Minh chứng · {name}", `s40_body` "Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.", `s40_done` "Xong", `s40_empty` "Đăng bài trước".
 - **Phân tích**: `skill_evidence_set{skillId, count}`.
 - **Chấp nhận**: chỉ chọn được bài của chính mình; bài bị xoá thì gỡ khỏi minh chứng và hạ nhắc nhở ở S38.
