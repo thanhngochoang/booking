@@ -7,6 +7,7 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
 import 'package:photobooking/data/skills/skills_rules.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
 import 'package:photobooking/features/skills/skills_controller.dart';
 import 'package:photobooking/features/skills/skills_draft_store.dart';
 
@@ -44,7 +45,8 @@ void main() {
     expect(_st(c).saved, PhotographerSkills.empty);
     expect(_st(c).dirty, isFalse);
     expect(_st(c).canSubmit, isFalse);
-    expect(_st(c).completeness.percent, 10);
+    expect(_st(c).server, SkillsServerInfo.none);
+    expect(_st(c).evidenceRemovedNotice, isFalse);
     expect(w.skills.loadCalls, 1);
   });
 
@@ -302,5 +304,79 @@ void main() {
       _st(c).draft.specialty('portrait')!.evidencePostIds,
       ids.take(18).toList(),
     );
+  });
+
+  test(
+    'the server score stays while editing; scoreOutdated follows the draft',
+    () async {
+      const info = SkillsServerInfo(
+        completeness: 75,
+        next: CompletenessStepCode.styles,
+      );
+      final (_, c) = await _open(
+        saved: _wedding,
+        before: (w) async => w.skills.seedServer(w.uid, info),
+      );
+      expect(_st(c).server, info);
+      expect(_st(c).scored, _wedding);
+      expect(_st(c).scoreOutdated, isFalse);
+      _ctrl(c).toggleTag(SkillGroup.style, 'film');
+      expect(_st(c).server, info);
+      expect(_st(c).scoreOutdated, isTrue);
+      expect(await _ctrl(c).submit(), SkillsSubmitResult.saved);
+      expect(
+        _st(c).server,
+        info,
+        reason: 'no number is computed on the device',
+      );
+      expect(
+        _st(c).scoreOutdated,
+        isTrue,
+        reason: 'the Function scores the new skills; S38 shows it next time',
+      );
+    },
+  );
+
+  test(
+    'evidence removed by the server: notice once, a newer removal again',
+    () async {
+      final at = DateTime.utc(2026, 10, 2, 8);
+      final (w, c) = await _open(
+        saved: _wedding,
+        before: (world) async {
+          world.skills.seedServer(
+            world.uid,
+            SkillsServerInfo(completeness: 75, evidenceRemovedAt: at),
+          );
+          await SkillsDraftStore(world.prefs).markEvidenceRemovedSeen(
+            world.uid,
+            at.subtract(const Duration(minutes: 1)),
+          );
+        },
+      );
+      expect(_st(c).evidenceRemovedNotice, isTrue);
+      await _ctrl(c).evidenceRemovedNoticeShown();
+      expect(_st(c).evidenceRemovedNotice, isFalse);
+      expect(SkillsDraftStore(w.prefs).evidenceRemovedSeen(w.uid), at);
+      expect(
+        w.prefs.getInt('skillsEvidenceSeen.${w.uid}'),
+        at.millisecondsSinceEpoch,
+      );
+    },
+  );
+
+  test('evidence removal already seen: no notice', () async {
+    final at = DateTime.utc(2026, 10, 2, 8);
+    final (_, c) = await _open(
+      saved: _wedding,
+      before: (w) async {
+        w.skills.seedServer(
+          w.uid,
+          SkillsServerInfo(completeness: 75, evidenceRemovedAt: at),
+        );
+        await SkillsDraftStore(w.prefs).markEvidenceRemovedSeen(w.uid, at);
+      },
+    );
+    expect(_st(c).evidenceRemovedNotice, isFalse);
   });
 }

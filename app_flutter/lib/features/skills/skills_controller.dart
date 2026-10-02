@@ -7,9 +7,9 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
-import 'package:photobooking/data/skills/skills_completeness.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_rules.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
 import 'package:photobooking/features/skills/skills_analytics.dart';
 import 'package:photobooking/features/skills/skills_draft_store.dart';
 
@@ -25,6 +25,9 @@ class SkillsEditorState {
     this.showIssues = false,
     this.issues = const [],
     this.saving = false,
+    this.server = SkillsServerInfo.none,
+    this.scored = PhotographerSkills.empty,
+    this.evidenceRemovedNotice = false,
   });
 
   /// What Firestore holds.
@@ -42,15 +45,27 @@ class SkillsEditorState {
   final List<SkillIssue> issues;
   final bool saving;
 
+  /// What `onPhotographerWrite` stored when the screen opened. Never
+  /// computed on the device (spec 2026-10-02 §3).
+  final SkillsServerInfo server;
+
+  /// The skills [server] describes: the saved skills at open.
+  final PhotographerSkills scored;
+
+  /// The Function removed evidence since this device last said so.
+  final bool evidenceRemovedNotice;
+
   /// Leaving now asks "Lưu bản nháp?".
   bool get dirty => draft != start;
 
   /// The server does not have this draft yet.
   bool get unsaved => draft != saved;
 
-  bool get canSubmit => draft.specialties.isNotEmpty && !saving;
+  /// The number shown belongs to other skills than the draft: S38 keeps it
+  /// and says "Lưu để cập nhật độ khớp".
+  bool get scoreOutdated => draft != scored;
 
-  CompletenessReport get completeness => skillsCompleteness(draft);
+  bool get canSubmit => draft.specialties.isNotEmpty && !saving;
 
   bool hasIssue(SkillIssueCode code, {String? itemId}) =>
       showIssues &&
@@ -65,6 +80,7 @@ class SkillsEditorState {
     bool? showIssues,
     List<SkillIssue>? issues,
     bool? saving,
+    bool? evidenceRemovedNotice,
   }) => SkillsEditorState(
     saved: saved ?? this.saved,
     start: start ?? this.start,
@@ -73,6 +89,9 @@ class SkillsEditorState {
     showIssues: showIssues ?? this.showIssues,
     issues: issues ?? this.issues,
     saving: saving ?? this.saving,
+    server: server,
+    scored: scored,
+    evidenceRemovedNotice: evidenceRemovedNotice ?? this.evidenceRemovedNotice,
   );
 }
 
@@ -92,15 +111,22 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
     _catalog = ref.read(skillCatalogProvider);
     _drafts = ref.read(skillsDraftStoreProvider);
     _log = ref.read(skillsAnalyticsProvider);
-    final saved = await ref.read(skillsRepositoryProvider).load(uid);
+    final snapshot = await ref.read(skillsRepositoryProvider).load(uid);
+    final saved = snapshot.skills;
     final local = _drafts.read(uid);
     final opened = local ?? _baseline(saved);
     final draft = await _withoutDeletedEvidence(opened);
+    final removedAt = snapshot.server.evidenceRemovedAt;
+    final seen = _drafts.evidenceRemovedSeen(uid);
     return SkillsEditorState(
       saved: saved,
       start: draft,
       draft: draft,
       restoredDraft: local != null && local != _baseline(saved),
+      server: snapshot.server,
+      scored: saved,
+      evidenceRemovedNotice:
+          removedAt != null && (seen == null || removedAt.isAfter(seen)),
     );
   }
 
@@ -126,6 +152,18 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
       // Offline: keep the list; the server re-checks evidence.
       return s;
     }
+  }
+
+  /// S38 showed "Một số minh chứng không hợp lệ đã được gỡ": remember the
+  /// removal on this device so the next open stays quiet.
+  Future<void> evidenceRemovedNoticeShown() async {
+    final current = state.value;
+    final at = current?.server.evidenceRemovedAt;
+    if (current == null || at == null || !current.evidenceRemovedNotice) {
+      return;
+    }
+    state = AsyncData(current.copyWith(evidenceRemovedNotice: false));
+    await _drafts.markEvidenceRemovedSeen(_uid, at);
   }
 
   SkillEdit? toggleSpecialty(String id) =>
@@ -195,6 +233,8 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
             saved: current.saved,
             start: current.draft,
             draft: current.draft,
+            server: current.server,
+            scored: current.scored,
           ),
         );
       }
@@ -221,9 +261,12 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
           saved: current.draft,
           start: current.draft,
           draft: current.draft,
+          // The Function scores the saved skills; S38 shows it next time.
+          server: current.server,
+          scored: current.scored,
         ),
       );
-      ref.invalidate(photographerSkillsProvider(_uid));
+      ref.invalidate(photographerSkillsSnapshotProvider(_uid));
     }
     return SkillsSubmitResult.saved;
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +9,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
-import 'package:photobooking/data/skills/skills_completeness.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_rules.dart';
 import 'package:photobooking/features/skills/evidence_sheet.dart';
@@ -81,7 +83,18 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _years.text = s.draft.yearsExperience?.toString() ?? '';
-      if (s.restoredDraft) _snack(context.l10n.skillsDraftRestored);
+      final l = context.l10n;
+      final messenger = ScaffoldMessenger.of(context);
+      // Queued, not replacing each other: both can apply to the same open.
+      if (s.restoredDraft) {
+        messenger.showSnackBar(SnackBar(content: Text(l.skillsDraftRestored)));
+      }
+      if (s.evidenceRemovedNotice) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l.skillsEvidenceRemoved)),
+        );
+        unawaited(_ctrl.evidenceRemovedNoticeShown());
+      }
       final open = widget.openEvidenceFor;
       if (open != null && s.draft.specialty(open) != null) _editEvidence(open);
     });
@@ -280,7 +293,6 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
     final muted = dark
         ? AppColorsDark.foregroundMuted
         : AppColors.foregroundMuted;
-    final report = s.completeness;
     final count = s.draft.specialties.length;
     final enabled = s.canSubmit && (_setup || s.unsaved);
     String name(String id) => catalog.label(SkillGroup.specialty, id);
@@ -322,8 +334,8 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
                       vertical: AppSpace.s2h,
                     ),
                     child: CompletenessMeter(
-                      percent: report.percent,
-                      nextHint: _hintText(l, catalog, report),
+                      percent: s.server.completeness,
+                      nextHint: _hintText(l, catalog, s),
                     ),
                   ),
                 ),
@@ -538,25 +550,44 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
   }
 }
 
+/// The meter's hint (spec 2026-10-02 §3): no server number yet → save to
+/// get one; the draft differs from the scored skills → save to update it;
+/// otherwise the server's next step and the score it brings.
 String _hintText(
   AppLocalizations l,
   TaxonomyCatalog catalog,
-  CompletenessReport report,
+  SkillsEditorState s,
 ) {
-  final h = report.next;
-  if (h == null) return l.skillsHintDone;
-  return switch (h.step) {
-    CompletenessStep.specialties ||
-    CompletenessStep.levels => l.skillsHintSpecialty(h.percentAfter),
-    CompletenessStep.evidence => l.skillsHintEvidence(
-      catalog.label(SkillGroup.specialty, h.specialtyId!),
-      h.percentAfter,
-    ),
-    CompletenessStep.styles => l.skillsHintStyles(h.percentAfter),
-    CompletenessStep.languages => l.skillsHintLanguages(h.percentAfter),
-    CompletenessStep.audiences => l.skillsHintAudiences(h.percentAfter),
-    CompletenessStep.extras => l.skillsHintExtras(h.percentAfter),
+  if (s.server.completeness == null) return l.skillsFitSaveToScore;
+  if (s.scoreOutdated) return l.skillsFitSaveToUpdate;
+  final step = s.server.next;
+  if (step == null) return l.skillsHintDone;
+  final text = switch (step) {
+    CompletenessStepCode.specialties ||
+    CompletenessStepCode.levels => l.skillsHintSpecialty,
+    CompletenessStepCode.evidence => _evidenceHint(l, catalog, s.scored),
+    CompletenessStepCode.styles => l.skillsHintStyles,
+    CompletenessStepCode.languages => l.skillsHintLanguages,
+    CompletenessStepCode.audiences => l.skillsHintAudiences,
+    CompletenessStepCode.extras => l.skillsHintExtras,
   };
+  // "… để lên 85%" (mock S38) when the server stored the score after it.
+  final after = s.server.nextAfter;
+  return after == null ? text : l.skillsHintTarget(text, after);
+}
+
+/// Names the first Chuyên sâu genre without posts in the scored skills.
+String _evidenceHint(
+  AppLocalizations l,
+  TaxonomyCatalog catalog,
+  PhotographerSkills scored,
+) {
+  for (final sp in scored.specialties) {
+    if (sp.isExpert && sp.evidencePostIds.isEmpty) {
+      return l.skillsHintEvidence(catalog.label(SkillGroup.specialty, sp.id));
+    }
+  }
+  return l.skillsHintEvidenceAny;
 }
 
 String? _rejectionText(AppLocalizations l, SkillEdit e) =>

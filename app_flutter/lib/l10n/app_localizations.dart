@@ -1366,6 +1366,12 @@ abstract class AppLocalizations {
   /// **'Độ khớp hồ sơ'**
   String get completenessTitle;
 
+  /// No description provided for @completenessNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có điểm'**
+  String get completenessNone;
+
   /// No description provided for @completenessPercent.
   ///
   /// In vi, this message translates to:
@@ -1651,44 +1657,74 @@ abstract class AppLocalizations {
   /// No description provided for @skillsHintSpecialty.
   ///
   /// In vi, this message translates to:
-  /// **'Chọn ít nhất 1 thể loại để lên {percent}%'**
-  String skillsHintSpecialty(int percent);
+  /// **'Chọn ít nhất 1 thể loại'**
+  String get skillsHintSpecialty;
 
   /// No description provided for @skillsHintEvidence.
   ///
   /// In vi, this message translates to:
-  /// **'Thêm ảnh minh chứng cho {name} để lên {percent}%'**
-  String skillsHintEvidence(String name, int percent);
+  /// **'Thêm ảnh minh chứng cho {name}'**
+  String skillsHintEvidence(String name);
+
+  /// No description provided for @skillsHintEvidenceAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh minh chứng cho thể loại Chuyên sâu'**
+  String get skillsHintEvidenceAny;
 
   /// No description provided for @skillsHintStyles.
   ///
   /// In vi, this message translates to:
-  /// **'Chọn phong cách để lên {percent}%'**
-  String skillsHintStyles(int percent);
+  /// **'Chọn phong cách'**
+  String get skillsHintStyles;
 
   /// No description provided for @skillsHintLanguages.
   ///
   /// In vi, this message translates to:
-  /// **'Chọn ngôn ngữ để lên {percent}%'**
-  String skillsHintLanguages(int percent);
+  /// **'Chọn ngôn ngữ'**
+  String get skillsHintLanguages;
 
   /// No description provided for @skillsHintAudiences.
   ///
   /// In vi, this message translates to:
-  /// **'Chọn khách phù hợp để lên {percent}%'**
-  String skillsHintAudiences(int percent);
+  /// **'Chọn khách phù hợp'**
+  String get skillsHintAudiences;
 
   /// No description provided for @skillsHintExtras.
   ///
   /// In vi, this message translates to:
-  /// **'Chọn kỹ năng thêm để lên {percent}%'**
-  String skillsHintExtras(int percent);
+  /// **'Chọn kỹ năng thêm'**
+  String get skillsHintExtras;
 
   /// No description provided for @skillsHintDone.
   ///
   /// In vi, this message translates to:
   /// **'Hồ sơ kỹ năng đã đầy đủ'**
   String get skillsHintDone;
+
+  /// No description provided for @skillsFitSaveToScore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu để tính độ khớp'**
+  String get skillsFitSaveToScore;
+
+  /// No description provided for @skillsFitSaveToUpdate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu để cập nhật độ khớp'**
+  String get skillsFitSaveToUpdate;
+
+  /// No description provided for @skillsHintTarget.
+  ///
+  /// In vi, this message translates to:
+  /// **'{hint} để lên {percent}%'**
+  String skillsHintTarget(String hint, int percent);
+
+  /// No description provided for @skillsEvidenceRemoved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một số minh chứng không hợp lệ đã được gỡ'**
+  String get skillsEvidenceRemoved;
 
   /// No description provided for @skillsLeaveTitle.
   ///

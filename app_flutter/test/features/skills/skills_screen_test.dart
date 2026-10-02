@@ -10,6 +10,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/skills/evidence_sheet.dart';
 import 'package:photobooking/features/skills/skills_draft_store.dart';
@@ -106,9 +107,10 @@ void main() {
         tester
             .widget<CompletenessMeter>(find.byType(CompletenessMeter))
             .percent,
-        10,
+        isNull,
       );
-      expect(find.text('Chọn ít nhất 1 thể loại để lên 75%'), findsOneWidget);
+      expect(find.text('Chưa có điểm'), findsOneWidget);
+      expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
       expect(_submitPressed(tester), isNull);
       await _tapKey(tester, 'specialty-portrait');
       expect(find.byKey(const Key('level-portrait')), findsOneWidget);
@@ -184,10 +186,7 @@ void main() {
         find.text('Mức Chuyên sâu cần ít nhất 1 ảnh minh chứng'),
         findsOneWidget,
       );
-      expect(
-        find.text('Thêm ảnh minh chứng cho Chân dung để lên 75%'),
-        findsOneWidget,
-      );
+      expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
       await _tapKey(tester, 'skills-submit');
       expect(find.text('Kiểm tra lại các mục được đánh dấu'), findsOneWidget);
       expect(find.text('S34'), findsNothing);
@@ -519,6 +518,155 @@ void main() {
       expect(w.skills.stored(w.uid)!.yearsExperience, 4);
     },
   );
+
+  const portrait = PhotographerSkills(
+    specialties: [SpecialtySkill(id: 'portrait')],
+    languages: ['vi'],
+  );
+
+  Future<void> seedScore(SkillsWorld w, SkillsServerInfo info) async =>
+      w.skills.seedServer(w.uid, info);
+
+  int? meterPercent(WidgetTester tester) =>
+      tester.widget<CompletenessMeter>(find.byType(CompletenessMeter)).percent;
+
+  testWidgets('S38 shows the server score and the hint for its next step', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 75,
+          next: CompletenessStepCode.styles,
+        ),
+      ),
+    );
+    expect(meterPercent(tester), 75);
+    expect(find.text('75%'), findsOneWidget);
+    expect(find.text('Chọn phong cách'), findsOneWidget);
+  });
+
+  testWidgets('an edit keeps the saved number and asks to save to update it', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 75,
+          next: CompletenessStepCode.styles,
+        ),
+      ),
+    );
+    await _tapKey(tester, 'style-film');
+    expect(meterPercent(tester), 75);
+    expect(find.text('Lưu để cập nhật độ khớp'), findsOneWidget);
+    expect(find.text('Chọn phong cách'), findsNothing);
+  });
+
+  testWidgets('next step evidence names the Chuyên sâu genre without posts', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: const PhotographerSkills(
+        specialties: [SpecialtySkill(id: 'portrait', level: 3)],
+        languages: ['vi'],
+      ),
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 55,
+          next: CompletenessStepCode.evidence,
+        ),
+      ),
+    );
+    expect(find.text('Thêm ảnh minh chứng cho Chân dung'), findsOneWidget);
+  });
+
+  testWidgets('a complete profile says so', (tester) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (w) => seedScore(w, const SkillsServerInfo(completeness: 100)),
+    );
+    expect(find.text('100%'), findsOneWidget);
+    expect(find.text('Hồ sơ kỹ năng đã đầy đủ'), findsOneWidget);
+  });
+
+  testWidgets('evidence removed by the server: the SnackBar shows once', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    final removedAt = DateTime.utc(2026, 10, 2, 8);
+    final w = await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: portrait,
+      before: (world) => seedScore(
+        world,
+        SkillsServerInfo(
+          completeness: 75,
+          next: CompletenessStepCode.styles,
+          evidenceRemovedAt: removedAt,
+        ),
+      ),
+    );
+    expect(
+      find.text('Một số minh chứng không hợp lệ đã được gỡ'),
+      findsOneWidget,
+    );
+    expect(SkillsDraftStore(w.prefs).evidenceRemovedSeen(w.uid), removedAt);
+    // Open S38 again on the same device: no second notice.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(skillsApp(w, initialLocation: '/profile/skills'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CompletenessMeter), findsOneWidget);
+    expect(
+      find.text('Một số minh chứng không hợp lệ đã được gỡ'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('the hint says what the next step brings, as in the mock', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    await _pump(
+      tester,
+      at: '/profile/skills',
+      saved: const PhotographerSkills(
+        specialties: [SpecialtySkill(id: 'portrait', level: 3)],
+        languages: ['vi'],
+      ),
+      before: (w) => seedScore(
+        w,
+        const SkillsServerInfo(
+          completeness: 72,
+          next: CompletenessStepCode.evidence,
+          nextAfter: 85,
+        ),
+      ),
+    );
+    expect(find.text('72%'), findsOneWidget);
+    expect(
+      find.text('Thêm ảnh minh chứng cho Chân dung để lên 85%'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('the app router registers the three skills routes', (
     tester,

@@ -53,6 +53,38 @@ void main() {
     );
   });
 
+  testWidgets(
+    'not scored yet: "Chưa có điểm", empty bar, the hint still shows',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        hostWidget(
+          const CompletenessMeter(
+            percent: null,
+            nextHint: 'Lưu để tính độ khớp',
+          ),
+        ),
+      );
+      expect(find.text('Chưa có điểm'), findsOneWidget);
+      expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
+      expect(
+        tester
+            .widget<FractionallySizedBox>(find.byType(FractionallySizedBox))
+            .widthFactor,
+        0,
+      );
+      expect(
+        tester.getSemantics(find.byType(CompletenessMeter)),
+        isSemantics(
+          label: 'Độ khớp hồ sơ',
+          value: 'Chưa có điểm',
+          hint: 'Lưu để tính độ khớp',
+        ),
+      );
+      handle.dispose();
+    },
+  );
+
   testWidgets('fits 320dp at 1.3x in both themes, no blur', (tester) async {
     for (final b in Brightness.values) {
       await tester.pumpWidget(

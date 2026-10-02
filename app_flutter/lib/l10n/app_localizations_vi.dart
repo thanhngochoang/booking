@@ -710,6 +710,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get completenessTitle => 'Độ khớp hồ sơ';
 
   @override
+  String get completenessNone => 'Chưa có điểm';
+
+  @override
   String completenessPercent(int percent) {
     return '$percent%';
   }
@@ -868,37 +871,46 @@ class AppLocalizationsVi extends AppLocalizations {
   String get skillsDraftRestored => 'Đã mở lại bản nháp chưa lưu';
 
   @override
-  String skillsHintSpecialty(int percent) {
-    return 'Chọn ít nhất 1 thể loại để lên $percent%';
+  String get skillsHintSpecialty => 'Chọn ít nhất 1 thể loại';
+
+  @override
+  String skillsHintEvidence(String name) {
+    return 'Thêm ảnh minh chứng cho $name';
   }
 
   @override
-  String skillsHintEvidence(String name, int percent) {
-    return 'Thêm ảnh minh chứng cho $name để lên $percent%';
-  }
+  String get skillsHintEvidenceAny =>
+      'Thêm ảnh minh chứng cho thể loại Chuyên sâu';
 
   @override
-  String skillsHintStyles(int percent) {
-    return 'Chọn phong cách để lên $percent%';
-  }
+  String get skillsHintStyles => 'Chọn phong cách';
 
   @override
-  String skillsHintLanguages(int percent) {
-    return 'Chọn ngôn ngữ để lên $percent%';
-  }
+  String get skillsHintLanguages => 'Chọn ngôn ngữ';
 
   @override
-  String skillsHintAudiences(int percent) {
-    return 'Chọn khách phù hợp để lên $percent%';
-  }
+  String get skillsHintAudiences => 'Chọn khách phù hợp';
 
   @override
-  String skillsHintExtras(int percent) {
-    return 'Chọn kỹ năng thêm để lên $percent%';
-  }
+  String get skillsHintExtras => 'Chọn kỹ năng thêm';
 
   @override
   String get skillsHintDone => 'Hồ sơ kỹ năng đã đầy đủ';
+
+  @override
+  String get skillsFitSaveToScore => 'Lưu để tính độ khớp';
+
+  @override
+  String get skillsFitSaveToUpdate => 'Lưu để cập nhật độ khớp';
+
+  @override
+  String skillsHintTarget(String hint, int percent) {
+    return '$hint để lên $percent%';
+  }
+
+  @override
+  String get skillsEvidenceRemoved =>
+      'Một số minh chứng không hợp lệ đã được gỡ';
 
   @override
   String get skillsLeaveTitle => 'Lưu bản nháp?';
