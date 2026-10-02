@@ -8,7 +8,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:photobooking/core/contact_channel.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/screen_codes.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/screen_code.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 enum ContactDialStyle {
@@ -349,42 +351,49 @@ class _ContactDialState extends State<ContactDial>
     if (widget.access == ContactAccess.locked || external.length < 2) {
       return const SizedBox.shrink();
     }
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): () => _close(),
-      },
-      child: Stack(
-        children: [
-          // Catches taps outside the tray (and on the button itself).
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              // While the tray is closing the scrim covers the button: a tap
-              // there brings the tray back.
-              onTap: () => !_open && _anim.isAnimating ? _openTray() : _close(),
-              child: const SizedBox.expand(),
-            ),
-          ),
-          CompositedTransformFollower(
-            link: _link,
-            showWhenUnlinked: false,
-            targetAnchor: _below ? Alignment.bottomRight : Alignment.topRight,
-            followerAnchor: _below ? Alignment.topRight : Alignment.bottomRight,
-            offset: Offset(0, _below ? _gap : -_gap),
-            child: Align(
-              alignment: _below ? Alignment.topRight : Alignment.bottomRight,
-              child: _Tray(
-                channels: external,
-                animation: _trayAnim,
-                itemAnimations: _itemAnims,
-                reduced: _reduced,
-                below: _below,
-                focusNodes: _itemFocus,
-                onSelect: _select,
+    // The open tray is S32: its tag covers the host screen's while shown.
+    return ScreenCode(
+      ScreenCodes.contactAfterBooking,
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () => _close(),
+        },
+        child: Stack(
+          children: [
+            // Catches taps outside the tray (and on the button itself).
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                // While the tray is closing the scrim covers the button: a tap
+                // there brings the tray back.
+                onTap: () =>
+                    !_open && _anim.isAnimating ? _openTray() : _close(),
+                child: const SizedBox.expand(),
               ),
             ),
-          ),
-        ],
+            CompositedTransformFollower(
+              link: _link,
+              showWhenUnlinked: false,
+              targetAnchor: _below ? Alignment.bottomRight : Alignment.topRight,
+              followerAnchor: _below
+                  ? Alignment.topRight
+                  : Alignment.bottomRight,
+              offset: Offset(0, _below ? _gap : -_gap),
+              child: Align(
+                alignment: _below ? Alignment.topRight : Alignment.bottomRight,
+                child: _Tray(
+                  channels: external,
+                  animation: _trayAnim,
+                  itemAnimations: _itemAnims,
+                  reduced: _reduced,
+                  below: _below,
+                  focusNodes: _itemFocus,
+                  onSelect: _select,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

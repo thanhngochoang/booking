@@ -1,6 +1,6 @@
 # Đặc tả từng màn hình
 
-Chi tiết cho mọi màn `S01–S65` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S12` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
+Chi tiết cho mọi màn `S01–S67` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S12` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
 
 ## Mục lục
 

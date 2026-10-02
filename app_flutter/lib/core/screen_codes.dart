@@ -1,5 +1,5 @@
 // lib/core/screen_codes.dart
-/// One code per screen, `S01`..`S65`. The single source in Dart; the table in
+/// One code per screen, `S01`..`S67`. The single source in Dart; the table in
 /// `docs/superpowers/specs/2026-10-01-remaining-screens.md` (section 2) and the
 /// mock `docs/design/ui-mock.html` use the same codes.
 ///
@@ -74,6 +74,9 @@ abstract final class ScreenCodes {
   static const notifications = 'S63';
   static const notificationSettings = 'S64';
   static const notificationPermission = 'S65';
+  // App start (built before codes existed; numbered last).
+  static const splash = 'S66';
+  static const sessionError = 'S67';
 
   static const all = <String>[
     home,
@@ -141,5 +144,7 @@ abstract final class ScreenCodes {
     notifications,
     notificationSettings,
     notificationPermission,
+    splash,
+    sessionError,
   ];
 }

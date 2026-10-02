@@ -5,7 +5,7 @@ Ngày: 2026-10-01 · Branch: `flutter-rewrite` · Trạng thái: chờ review
 Bổ sung cho `2026-09-30-photography-marketplace-design.md` (gọi tắt "spec gốc"). Spec này làm các việc:
 
 1. Chốt giao diện theo theme **dark aurora** đang chạy trong app, kèm hai kiểu nút chính (gradient theo theme, hoặc ảnh avatar làm mờ).
-2. Đánh **mã màn hình** `S01–S65` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
+2. Đánh **mã màn hình** `S01–S67` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
 3. Đặc tả mọi màn còn lại, kèm danh mục **Sự kiện** và luồng **tạo sự kiện chụp ảnh** (mới).
 4. Thêm **kênh liên hệ** (gọi điện, Zalo, WhatsApp) và điều kiện **khách phải có số điện thoại** để đặt lịch (xác minh số làm sau).
 5. Thêm **GPS ở Khám phá** để gợi ý sự kiện gần bạn.
@@ -135,8 +135,10 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S63 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) |
 | S64 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) |
 | S65 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) |
+| S66 | Splash (khôi phục phiên, tải hồ sơ) | `/splash` | — | 1 · **đã có** | ✅ đã làm |
+| S67 | Lỗi phiên (không tải được hồ sơ) | `/session-error` | — | 1 · **đã có** | ✅ đã làm |
 
-Splash và Lỗi phiên (đã có) không cần mã. Mã đánh liên tục `S01`–`S65`; màn mới lấy số kế tiếp, không đánh lại số. S56–S62 đã dành cho tính năng **Đăng việc** (đang thiết kế, chưa có mock); S63–S65 thuộc Thông báo (mục 3h). S47–S55 thuộc tính năng Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
+Splash (S66) và Lỗi phiên (S67) có trước bảng mã nên lấy hai số cuối. Mã đánh liên tục `S01`–`S67`; màn mới lấy số kế tiếp, không đánh lại số. S56–S62 đã dành cho tính năng **Đăng việc** (đang thiết kế, chưa có mock); S63–S65 thuộc Thông báo (mục 3h). S47–S55 thuộc tính năng Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 

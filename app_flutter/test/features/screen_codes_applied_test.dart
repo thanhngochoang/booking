@@ -13,6 +13,8 @@ import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
+import 'package:photobooking/features/onboarding/session_error_screen.dart';
+import 'package:photobooking/features/onboarding/splash_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
@@ -58,6 +60,8 @@ void main() {
     (ScreenCodes.settings, SettingsScreen()),
     (ScreenCodes.register, RegisterScreen()),
     (ScreenCodes.editProfile, EditProfileScreen()),
+    (ScreenCodes.splash, SplashScreen()),
+    (ScreenCodes.sessionError, SessionErrorScreen()),
   ];
   for (final (code, screen) in cases) {
     testWidgets('$code is shown on ${screen.runtimeType}', (tester) async {
