@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/app/router.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 
 void main() {
   test('signed out users go to /login except on auth routes', () {
@@ -186,5 +187,11 @@ void main() {
       ),
       isNull,
     );
+  });
+
+  test('photographer-only routes send everyone else home', () {
+    expect(photographerOnlyRedirect(UserRole.photographer), isNull);
+    expect(photographerOnlyRedirect(UserRole.customer), '/home');
+    expect(photographerOnlyRedirect(null), '/home');
   });
 }

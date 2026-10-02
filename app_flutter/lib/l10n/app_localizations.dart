@@ -1078,6 +1078,78 @@ abstract class AppLocalizations {
   /// **'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'**
   String get setupSaveError;
 
+  /// No description provided for @setupIntroHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu bản thân'**
+  String get setupIntroHeading;
+
+  /// No description provided for @setupIntroHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đọc phần này trước khi đặt lịch. Viết ngắn, nói rõ bạn chụp kiểu gì.'**
+  String get setupIntroHint;
+
+  /// No description provided for @setupBioLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu ngắn'**
+  String get setupBioLabel;
+
+  /// No description provided for @setupBioHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ánh sáng tự nhiên, ít dàn dựng. Chuyên chân dung ngoài trời ở Sài Gòn.'**
+  String get setupBioHint;
+
+  /// No description provided for @setupEquipmentLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị (không bắt buộc)'**
+  String get setupEquipmentLabel;
+
+  /// No description provided for @setupEquipmentHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: Sony A7 IV'**
+  String get setupEquipmentHint;
+
+  /// No description provided for @setupEquipmentAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm thiết bị'**
+  String get setupEquipmentAdd;
+
+  /// No description provided for @setupEquipmentRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá {item}'**
+  String setupEquipmentRemove(String item);
+
+  /// No description provided for @setupEquipmentFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 8 thiết bị.'**
+  String get setupEquipmentFull;
+
+  /// No description provided for @setupNext.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get setupNext;
+
+  /// No description provided for @introBioRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết vài dòng giới thiệu'**
+  String get introBioRequired;
+
+  /// No description provided for @introBioTooLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 300 ký tự'**
+  String get introBioTooLong;
+
   /// No description provided for @locationPromptTitle.
   ///
   /// In vi, this message translates to:

@@ -537,6 +537,46 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.';
 
   @override
+  String get setupIntroHeading => 'Giới thiệu bản thân';
+
+  @override
+  String get setupIntroHint =>
+      'Khách đọc phần này trước khi đặt lịch. Viết ngắn, nói rõ bạn chụp kiểu gì.';
+
+  @override
+  String get setupBioLabel => 'Giới thiệu ngắn';
+
+  @override
+  String get setupBioHint =>
+      'Ánh sáng tự nhiên, ít dàn dựng. Chuyên chân dung ngoài trời ở Sài Gòn.';
+
+  @override
+  String get setupEquipmentLabel => 'Thiết bị (không bắt buộc)';
+
+  @override
+  String get setupEquipmentHint => 'Ví dụ: Sony A7 IV';
+
+  @override
+  String get setupEquipmentAdd => 'Thêm thiết bị';
+
+  @override
+  String setupEquipmentRemove(String item) {
+    return 'Xoá $item';
+  }
+
+  @override
+  String get setupEquipmentFull => 'Tối đa 8 thiết bị.';
+
+  @override
+  String get setupNext => 'Tiếp tục';
+
+  @override
+  String get introBioRequired => 'Viết vài dòng giới thiệu';
+
+  @override
+  String get introBioTooLong => 'Tối đa 300 ký tự';
+
+  @override
   String get locationPromptTitle => 'Sự kiện gần bạn';
 
   @override
