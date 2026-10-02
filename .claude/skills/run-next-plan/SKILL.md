@@ -79,9 +79,21 @@ When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for l
 2. In the branch, update what the plan says to update: the "Trạng thái" cells of `remaining-screens.md` for the screens it built, a handover ledger `docs/superpowers/handover/ledger-<plan>.md` (rulings, deferred items), and **its own row** in RUN-ORDER.md's "To run" table: `done <date> (PR #n)` for a whole row, or the step's cell / a "remaining: …" note for a lane step. Touch only that row, so PRs from other machines don't conflict.
 3. Rebase onto the latest `origin/develop`, push, and open the PR:
    ```bash
-   gh pr create --base develop --head plan/8b-booking-sheet --title "<type>(<scope>): <plan summary> (<id>)" --body "…"
+   gh pr create --base develop --head plan/8b-booking-sheet --title "feat(booking): S04.01–S04.04 booking sheet [8b]" --body "…"
    ```
-   The body names the RUN-ORDER unit, the tasks done, test results, rulings, deferred items and any cross-lane requests, and ends with the Claude Code attribution line. If you only know the PR number after creating it, amend the row in a follow-up commit.
+   **PR title convention.** Every plan PR is titled `<type>(<scope>): <summary> [<unit-id>]`, because the title becomes the merge commit message on `develop`, and the `[id]` ties the history back to RUN-ORDER and the board.
+   - `type`: `feat` for new screens or behaviour, `fix`, `refactor` (e.g. migrating screens to AsyncView), `perf`, `test`, `docs`, `chore`, `build`, `ci`. Choose by what the PR mostly does.
+   - `scope`: one lowercase area, matching the commit scopes already in the log. Examples: `booking`, `chat`, `review`, `explore`, `profile`, `core`, `data`, `domain`, `functions`, `rules`, `api`, `l10n`. If the PR spans several areas, use the one the plan is named after.
+   - `summary`: English, imperative or noun phrase, no final period. Put the screen codes first when the plan builds screens (`S05.01–S05.03 booking detail and lists`).
+   - `[unit-id]`: exactly the board id, e.g. `[8b]`, `[9]`, `[8a2/2-L1]`.
+   - Keep it to about 90 characters. Examples:
+     - `refactor(core): move existing screens to AsyncView and component skeletons [8a2/2-L1]`
+     - `feat(core): ReasonPicker, ProviderPicker, ConfirmSheet and chat widgets [8a2/2-L2]`
+     - `feat(api): self-hosted API and PostgreSQL backend, phase 2 [9]`
+
+   `land.py` refuses a title that doesn't follow this (exit 6). Fix it with `gh pr edit <n> --title "…"` and land again.
+
+   The body uses these headings: **Unit** (RUN-ORDER row/step and plan file), **Tasks done**, **Tests** (commands and results), **Rulings** (mock vs spec decisions), **Deferred**, **Cross-lane requests**. It ends with the Claude Code attribution line. If you only know the PR number after creating it, amend the row in a follow-up commit.
 4. Move the claim to review:
    ```bash
    BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/board.py set 8b "in review" --pr 123
@@ -121,6 +133,7 @@ What each exit code means and what to do:
   4. Rebase onto develop and land again.
 
   If the overlap means the plans themselves collide (both really change the same logic), stop and ask the user.
+- **6, the title doesn't follow the convention**: run `gh pr edit <n> --title "<type>(<scope>): <summary> [<id>]"`, then land again.
 - **5, blocked by branch rules or the merge was refused** (e.g. a review is now required): stop. Tell the user the PR link and leave the claim `in review`.
 
 ## Continuous mode: keep going until the feature is done
