@@ -506,6 +506,62 @@ test('the adapter merge save keeps server skills fields; changing or removing th
   await assertFails(setDoc(ref, { onboardingComplete: false, verified: false, skills: goodSkills() }));
 });
 
+test('completenessNext, completenessNextAfter and evidenceRemovedAt are server-only like completeness', async () => {
+  const stamp = Timestamp.fromMillis(8000);
+  const server = {
+    completeness: 85, completenessNext: 'audiences', completenessNextAfter: 'styles',
+    updatedAt: stamp, evidenceRemovedAt: stamp,
+  };
+  const db = await skillsOwner('k12', { skills: { ...goodSkills(), ...server } });
+  const ref = doc(db, 'photographers/k12');
+  // Exact shape of FirestoreSkillsRepository.save: the stored server fields survive the merge.
+  await assertSucceeds(setDoc(ref, { skills: { ...goodSkills(), styles: ['film'] }, updatedAt: serverTimestamp() }, { merge: true }));
+  const snap = await getDoc(ref);
+  assert.equal(snap.data().skills.completenessNext, 'audiences');
+  assert.equal(snap.data().skills.completenessNextAfter, 'styles');
+  assert.equal(snap.data().skills.evidenceRemovedAt.toMillis(), 8000);
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), completenessNext: 'styles' }));
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), completenessNext: null }));
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), completenessNextAfter: 'extras' }));
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), completenessNextAfter: null }));
+  await assertFails(writeSkills(db, 'k12', { ...goodSkills(), evidenceRemovedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { 'skills.completenessNext': deleteField() }));
+  await assertFails(updateDoc(ref, { 'skills.completenessNextAfter': deleteField() }));
+  await assertFails(updateDoc(ref, { 'skills.evidenceRemovedAt': deleteField() }));
+  // None stored yet: the client cannot add them either, not even as null.
+  const fresh = await skillsOwner('k13');
+  await assertFails(writeSkills(fresh, 'k13', { ...goodSkills(), completenessNext: null }));
+  await assertFails(writeSkills(fresh, 'k13', { ...goodSkills(), completenessNextAfter: null }));
+  await assertFails(writeSkills(fresh, 'k13', { ...goodSkills(), evidenceRemovedAt: Timestamp.fromMillis(1) }));
+  await assertSucceeds(writeSkills(fresh, 'k13', goodSkills()));
+});
+
+test('expression budget: the largest valid skills save still passes with all five server fields stored', async () => {
+  const ids = (p) => [`${p}1`, `${p}2`, `${p}3`];
+  const largest = {
+    ...goodSkills(),
+    specialties: [
+      genre('portrait', 3, ids('a')), genre('wedding', 3, ids('b')), genre('couple', 3, ids('c')),
+      genre('family', 2, ids('d')), genre('graduation', 2, ids('e')), { ...genre('event', 1, ids('f')), years: 50 },
+    ],
+    styles: ['natural_light', 'film', 'minimal', 'editorial'],
+    extras: ['retouch', 'posing', 'video', 'drone', 'studio', 'kids', 'pets', 'low_light'],
+    languages: ['vi', 'en', 'zh', 'ko', 'ja'],
+    audiences: ['couple', 'family_kids', 'business', 'foreigner'],
+  };
+  const stamp = Timestamp.fromMillis(9000);
+  const db = await skillsOwner('k14', {
+    skills: {
+      ...largest, completeness: 100, completenessNext: null, completenessNextAfter: null,
+      updatedAt: stamp, evidenceRemovedAt: stamp,
+    },
+  });
+  await assertSucceeds(setDoc(doc(db, 'photographers/k14'), {
+    skills: { ...largest, yearsExperience: 7 },
+    updatedAt: serverTimestamp(),
+  }, { merge: true }));
+});
+
 test('skills shape: known keys only, schema version 1, owner only', async () => {
   const db = await skillsOwner('k8');
   await assertFails(writeSkills(db, 'k8', { ...goodSkills(), schemaVersion: 2 }));

@@ -118,14 +118,20 @@ service cloud.firestore {
     }
     // k: the skills map after the write (post-merge for set(merge: true), so it still holds the
     // stored server fields); before: the stored skills map ({} on create).
-    // skills.completeness and skills.updatedAt are written by Cloud Functions only: each must equal
-    // the stored value, and be absent (not even null) when none is stored.
+    // skills.completeness, completenessNext, completenessNextAfter, updatedAt and evidenceRemovedAt
+    // are written by the Cloud Function onPhotographerWrite only: each must equal the stored value,
+    // and be absent (not even null) when none is stored. The extra names add a handful of list
+    // entries to a request, far inside the 1000-expression budget (rules test "expression budget ..."
+    // pins the largest save).
     function validSkills(k, before) {
       return k is map
         && k.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
-                             'audiences', 'yearsExperience', 'completeness', 'updatedAt'])
+                             'audiences', 'yearsExperience', 'completeness', 'completenessNext',
+                             'completenessNextAfter', 'updatedAt', 'evidenceRemovedAt'])
         && k.get('schemaVersion', 0) == 1
-        && !k.diff(before).affectedKeys().hasAny(['completeness', 'updatedAt'])
+        && !k.diff(before).affectedKeys().hasAny(['completeness', 'completenessNext',
+                                                  'completenessNextAfter', 'updatedAt',
+                                                  'evidenceRemovedAt'])
         && uniqueTags(k.get('styles', []), skillStyleIds(), 4)
         && uniqueTags(k.get('extras', []), skillExtraIds(), 8)
         && uniqueTags(k.get('audiences', []), skillAudienceIds(), 4)
