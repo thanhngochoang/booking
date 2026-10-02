@@ -2042,7 +2042,7 @@ import type { EligibilityReason } from './types.js';
 /** What dispatch knows about a photographer (PostgreSQL rows, cached in Redis by the service). */
 export interface PhotographerFacts {
   uid: string;
-  /** photographers.onboarding_complete (S24 + S34 done). */
+  /** photographers.onboarding_complete (S08.01 + S08.05 done). */
   onboardingComplete: boolean;
   /** photographer_contact_numbers row exists. */
   hasPhone: boolean;
@@ -2056,7 +2056,7 @@ export interface PhotographerFacts {
   helpReady: boolean;
   /** photographer_reliability counters. */
   reliability: { offers: number; accepted: number; cancelled: number; noShow: number };
-  /** Specialty id → level 1..3 (S38). null: no skills data available at all. */
+  /** Specialty id → level 1..3 (S08.02). null: no skills data available at all. */
   specialtyLevels: Readonly<Record<string, 1 | 2 | 3>> | null;
 }
 
@@ -2933,7 +2933,7 @@ import type { DispatchConfig } from './config.js';
 
 /**
  * Spec §2.1: "Thường có người nhận trong khoảng {n} phút" = median time from search start to
- * assigned over the last 7 days in the city; null (hidden on S47) below the minimum sample size.
+ * assigned over the last 7 days in the city; null (hidden on S13.01) below the minimum sample size.
  */
 export function typicalMatchMinutes(samplesMs: readonly number[], cfg: Pick<DispatchConfig, 'stats'>): number | null {
   const valid = samplesMs.filter((v) => Number.isFinite(v) && v >= 0);

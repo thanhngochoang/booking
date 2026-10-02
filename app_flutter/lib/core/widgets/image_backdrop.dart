@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/widgets/aurora_background.dart';
 
-/// The lead photo of an intro page (S03 cover, later S16 and S28), blurred
+/// The lead photo of an intro page (S03.01 cover, later S11.02 and S01.03), blurred
 /// behind the content (spec §1.2): scaled 1.3×, blur σ[sigma], saturation
 /// 130 %, [opacity] over the aurora, fading into the page over the top
 /// [height] of the box.

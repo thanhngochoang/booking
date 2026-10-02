@@ -45,7 +45,7 @@ class FreeTag extends StatelessWidget {
   }
 }
 
-/// Full-width strip under an event cover (S16) for events with `price == 0`.
+/// Full-width strip under an event cover (S11.02) for events with `price == 0`.
 class FreeBanner extends StatelessWidget {
   const FreeBanner({super.key, this.body});
 

@@ -2,7 +2,7 @@ import 'package:photobooking/core/core.dart';
 
 /// Where the OS permission stands, as the UI needs to tell the cases apart.
 enum LocationPermissionStatus {
-  /// Never asked: show the prompt card (S13).
+  /// Never asked: show the prompt card (S02.03).
   notAsked,
   granted,
 

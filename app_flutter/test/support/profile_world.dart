@@ -27,7 +27,7 @@ import 'screen_host.dart';
 const profileBio =
     'Ánh sáng tự nhiên, ít dàn dựng. Chuyên chân dung ngoài trời ở Sài Gòn.';
 
-/// A phone tall enough that S03's header, tabs and the start of the tab
+/// A phone tall enough that S03.01's header, tabs and the start of the tab
 /// content are all laid out (slivers below the viewport are not built).
 void usePhoneFor(
   WidgetTester tester, {
@@ -40,7 +40,7 @@ void usePhoneFor(
 }
 
 /// 3b4's discovery world (p1 Minh Trí verified, p2 Hồng Nhung, p3, p4 …)
-/// plus what S03 reads: public profiles, skills, the availability month,
+/// plus what S03.01 reads: public profiles, skills, the availability month,
 /// the photographer's contact flags, and stub routes for every link.
 class ProfileWorld {
   ProfileWorld({UserRole role = UserRole.customer, bool hasPhone = true})

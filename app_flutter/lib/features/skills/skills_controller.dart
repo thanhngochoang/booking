@@ -61,7 +61,7 @@ class SkillsEditorState {
   /// The server does not have this draft yet.
   bool get unsaved => draft != saved;
 
-  /// The number shown belongs to other skills than the draft: S38 keeps it
+  /// The number shown belongs to other skills than the draft: S08.02 keeps it
   /// and says "Lưu để cập nhật độ khớp".
   bool get scoreOutdated => draft != scored;
 
@@ -95,7 +95,7 @@ class SkillsEditorState {
   );
 }
 
-/// S38/S39 editor: loads once, edits a draft (copied to the device on every
+/// S08.02/S08.03 editor: loads once, edits a draft (copied to the device on every
 /// change), validates and saves once. No listener, no timer.
 class SkillsController extends AsyncNotifier<SkillsEditorState> {
   late String _uid;
@@ -154,7 +154,7 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
     }
   }
 
-  /// S38 showed "Một số minh chứng không hợp lệ đã được gỡ": remember the
+  /// S08.02 showed "Một số minh chứng không hợp lệ đã được gỡ": remember the
   /// removal on this device so the next open stays quiet.
   Future<void> evidenceRemovedNoticeShown() async {
     final current = state.value;
@@ -261,7 +261,7 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
           saved: current.draft,
           start: current.draft,
           draft: current.draft,
-          // The Function scores the saved skills; S38 shows it next time.
+          // The Function scores the saved skills; S08.02 shows it next time.
           server: current.server,
           scored: current.scored,
         ),

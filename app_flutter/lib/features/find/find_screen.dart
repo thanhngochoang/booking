@@ -19,7 +19,7 @@ const _loadMoreExtent = 600.0;
 const _skeletonHeight = 280.0;
 const _noteIconSize = 14.0;
 
-/// S04: compare photographers by area, day, service, price and rating.
+/// S02.06: compare photographers by area, day, service, price and rating.
 class FindPhotographerScreen extends ConsumerStatefulWidget {
   const FindPhotographerScreen({
     super.key,

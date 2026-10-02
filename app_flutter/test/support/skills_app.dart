@@ -32,7 +32,7 @@ Widget skillsApp(
       ),
       GoRoute(
         path: '/setup/2',
-        builder: (_, _) => const Scaffold(body: Text('S24 bước 2')),
+        builder: (_, _) => const Scaffold(body: Text('S08.01 bước 2')),
       ),
       GoRoute(
         path: '/setup/3',
@@ -40,11 +40,11 @@ Widget skillsApp(
       ),
       GoRoute(
         path: '/setup/4',
-        builder: (_, _) => const Scaffold(body: Text('S34')),
+        builder: (_, _) => const Scaffold(body: Text('S08.05')),
       ),
       GoRoute(
         path: '/profile',
-        builder: (_, _) => const Scaffold(body: Text('S30')),
+        builder: (_, _) => const Scaffold(body: Text('S09.01')),
       ),
       GoRoute(
         path: '/profile/skills',
@@ -59,7 +59,7 @@ Widget skillsApp(
       ),
       GoRoute(
         path: '/action',
-        builder: (_, _) => const Scaffold(body: Text('S21')),
+        builder: (_, _) => const Scaffold(body: Text('S10.01')),
       ),
     ],
   );

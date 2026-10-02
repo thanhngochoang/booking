@@ -8,7 +8,7 @@ import 'package:photobooking/core/widgets/glass_card.dart';
 
 enum LocationPromptState { ask, requesting, denied }
 
-/// Asks for location at the moment the user wants it (S13). It does not call
+/// Asks for location at the moment the user wants it (S02.03). It does not call
 /// the OS permission dialog; the screen does that in [onAllow].
 class LocationPromptCard extends StatelessWidget {
   const LocationPromptCard({
@@ -68,7 +68,7 @@ class LocationPromptCard extends StatelessWidget {
         ),
       ],
     );
-    // Mock S13 `.card.hi`: 36dp accent-soft icon, bold 13px title, body,
+    // Mock S02.03 `.card.hi`: 36dp accent-soft icon, bold 13px title, body,
     // then two compact buttons inside the text column.
     return GlassCard(
       highlight: !requesting,

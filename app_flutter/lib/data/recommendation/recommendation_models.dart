@@ -5,7 +5,7 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/reason.dart';
 
 /// "Phù hợp nhất" is the recommender's own order; the others are applied by
-/// the plain query path (spec S04).
+/// the plain query path (spec S02.06).
 enum RecommendationSort { best, near, price, rating }
 
 @immutable
@@ -232,10 +232,10 @@ class RecommendationSignal {
 abstract class RecommendationRepository {
   Future<RecommendationPage> recommendPhotographers(RecommendationQuery query);
 
-  /// Photographers similar to [photographerId] (S03 "Thợ ảnh tương tự").
+  /// Photographers similar to [photographerId] (S03.01 "Thợ ảnh tương tự").
   Future<RecommendationPage> similar(String photographerId, {int limit = 8});
 
-  /// Order for the Home feed (S01 "Dành cho bạn").
+  /// Order for the Home feed (S02.01 "Dành cho bạn").
   Future<PostRecommendationPage> recommendPosts(PostRecommendationQuery query);
 
   /// Never throws: feedback must not break a screen.

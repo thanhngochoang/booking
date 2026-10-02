@@ -234,7 +234,7 @@ held ──(completed + hết cửa sổ khiếu nại)──▶ released ──
  └──▶ disputed ──(admin)──▶ released | refunded | partially_refunded
 ```
 
-Mỗi chuyển ghi `LedgerEntry` bất biến. `released` còn gọi là "sắp nhận" ở S43.
+Mỗi chuyển ghi `LedgerEntry` bất biến. `released` còn gọi là "sắp nhận" ở S06.05.
 
 ### Nhóm chat sự kiện
 

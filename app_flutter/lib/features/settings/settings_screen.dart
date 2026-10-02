@@ -203,7 +203,7 @@ class _SectionLabel extends StatelessWidget {
 }
 
 /// Phone row: the last 4 digits, or "Chưa thêm". The contact stream is
-/// autoDispose and S31 is a pushed route, so no listener outlives it.
+/// autoDispose and S09.02 is a pushed route, so no listener outlives it.
 class _PhoneTile extends ConsumerWidget {
   const _PhoneTile();
 
@@ -261,7 +261,7 @@ class _SkillsTile extends ConsumerWidget {
   }
 }
 
-/// Hairline between rows of one settings card (mock S31).
+/// Hairline between rows of one settings card (mock S09.02).
 class _RowDivider extends StatelessWidget {
   const _RowDivider();
 

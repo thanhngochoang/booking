@@ -74,7 +74,7 @@ Future<void> _pump(
             access: access,
             channels: channels,
             subject: access == ContactAccess.unlocked ? _subject : null,
-            source: 'S09',
+            source: 'S05.02',
             onInquiry: () => h.inquiries++,
             onEvent: h.log,
           ),
@@ -104,7 +104,7 @@ void main() {
       ]);
       expect(h.links.requests.single.channel, ContactChannel.zalo);
       expect(h.events, [
-        {'name': 'contact_tapped', 'channel': 'zalo', 'source': 'S09'},
+        {'name': 'contact_tapped', 'channel': 'zalo', 'source': 'S05.02'},
       ]);
       expect(h.events.toString(), isNot(contains('903')));
     },
@@ -143,7 +143,7 @@ void main() {
         'contact_tapped',
         'contact_locked',
       ]);
-      expect(h.events.last['source'], 'S09');
+      expect(h.events.last['source'], 'S05.02');
     },
   );
 
@@ -187,7 +187,7 @@ void main() {
       expect(h.links.requests, isEmpty);
       expect(h.external.opened, isEmpty);
       expect(h.events, [
-        {'name': 'contact_tapped', 'channel': 'in_app', 'source': 'S09'},
+        {'name': 'contact_tapped', 'channel': 'in_app', 'source': 'S05.02'},
       ]);
     },
   );
@@ -247,7 +247,7 @@ void main() {
                 photographerId: 'p1',
                 access: access,
                 subject: access == ContactAccess.unlocked ? _subject : null,
-                source: 'S09',
+                source: 'S05.02',
               ),
             ),
           ),
@@ -328,7 +328,7 @@ void main() {
             access: ContactAccess.unlocked,
             channels: _channelList,
             subject: _subject,
-            source: 'S09',
+            source: 'S05.02',
             onEvent: h.log,
           ),
         ),

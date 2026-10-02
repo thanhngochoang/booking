@@ -30,7 +30,7 @@ class OwnPostsState {
   bool get hasMore => nextCursor != null;
 }
 
-/// The signed-in photographer's own posts for S40, a page at a time
+/// The signed-in photographer's own posts for S08.04, a page at a time
 /// (one-shot reads; nothing stays open when the sheet closes).
 ///
 /// `byPhotographer` also returns customers' real-shoot posts about the

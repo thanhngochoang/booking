@@ -123,7 +123,7 @@ void main() {
     });
   }
 
-  testWidgets('S30: switch is the small primary, shared avatar, h3 title', (
+  testWidgets('S09.01: switch is the small primary, shared avatar, h3 title', (
     tester,
   ) async {
     final (auth, users) = await _signedIn(UserRole.customer);

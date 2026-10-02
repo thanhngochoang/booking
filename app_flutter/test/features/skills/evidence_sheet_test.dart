@@ -165,7 +165,7 @@ void main() {
     expect(done().onPressed, isNotNull);
   });
 
-  testWidgets('no posts: "Đăng bài trước" and a way to S21, no Xong', (
+  testWidgets('no posts: "Đăng bài trước" and a way to S10.01, no Xong', (
     tester,
   ) async {
     final w = await SkillsWorld.create();

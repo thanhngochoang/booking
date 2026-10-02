@@ -392,7 +392,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('S34 is idle at rest and keeps blur passes within budget', (
+  testWidgets('S08.05 is idle at rest and keeps blur passes within budget', (
     tester,
   ) async {
     await _open(tester);

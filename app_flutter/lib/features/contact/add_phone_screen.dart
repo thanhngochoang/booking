@@ -8,7 +8,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/contact/return_to.dart';
 import 'package:photobooking/features/contact/save_contact_controller.dart';
 
-/// S33 as a bottom sheet over the screen the customer was booking from.
+/// S04.05 as a bottom sheet over the screen the customer was booking from.
 /// Resolves to true once the number is saved; closing without saving resolves
 /// to null and leaves no number, so the booking gate stays closed.
 Future<bool?> showAddPhoneSheet(BuildContext context, {String? returnTo}) {
@@ -66,7 +66,7 @@ class AddPhoneScreen extends StatelessWidget {
   }
 }
 
-/// The S33 form: title, body, phone, example, Zalo/WhatsApp, privacy, save.
+/// The S04.05 form: title, body, phone, example, Zalo/WhatsApp, privacy, save.
 class AddPhoneContent extends ConsumerStatefulWidget {
   const AddPhoneContent({super.key, required this.onSaved});
 

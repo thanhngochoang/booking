@@ -81,7 +81,7 @@ void main() {
   });
 
   testWidgets(
-    'without a phone number S33 comes first, with the booking as returnTo',
+    'without a phone number S04.05 comes first, with the booking as returnTo',
     (tester) async {
       await tester.pumpWidget(
         await _app(

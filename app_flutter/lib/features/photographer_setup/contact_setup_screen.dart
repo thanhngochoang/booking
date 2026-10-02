@@ -8,7 +8,7 @@ import 'package:photobooking/features/photographer_setup/contact_setup_controlle
 import 'package:photobooking/features/photographer_setup/contact_setup_logic.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// S34: setup step 4/4. Service area, main number, and which outside
+/// S08.05: setup step 4/4. Service area, main number, and which outside
 /// channels customers may use after they have booked.
 class ContactSetupScreen extends ConsumerWidget {
   const ContactSetupScreen({super.key});

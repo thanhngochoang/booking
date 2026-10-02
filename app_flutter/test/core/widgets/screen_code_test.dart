@@ -25,27 +25,27 @@ Widget _host({required bool visible, String? label}) => ScreenCodeScope(
 void main() {
   testWidgets('shows the code when the switch is on', (tester) async {
     await tester.pumpWidget(_host(visible: true));
-    expect(find.text('S09'), findsOneWidget);
+    expect(find.text('S05.02'), findsOneWidget);
   });
 
   testWidgets('a sub-part shows code.label', (tester) async {
     await tester.pumpWidget(_host(visible: true, label: 'timeline'));
-    expect(find.text('S09.timeline'), findsOneWidget);
+    expect(find.text('S05.02.timeline'), findsOneWidget);
   });
 
   testWidgets('shows nothing when the switch is off', (tester) async {
     await tester.pumpWidget(_host(visible: false));
-    expect(find.text('S09'), findsNothing);
+    expect(find.text('S05.02'), findsNothing);
     expect(find.byKey(_childKey), findsOneWidget);
   });
 
   testWidgets('without a scope the tag is hidden', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: ScreenCode('S09', child: SizedBox(key: _childKey)),
+        home: ScreenCode('S05.02', child: SizedBox(key: _childKey)),
       ),
     );
-    expect(find.text('S09'), findsNothing);
+    expect(find.text('S05.02'), findsNothing);
   });
 
   testWidgets('the tag does not change the child layout or block taps', (
@@ -63,7 +63,7 @@ void main() {
         child: MaterialApp(
           home: Scaffold(
             body: ScreenCode(
-              'S09',
+              'S05.02',
               child: Align(
                 alignment: Alignment.topLeft,
                 child: GestureDetector(
@@ -92,7 +92,7 @@ void main() {
   testWidgets('the tag is not announced by screen readers', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(_host(visible: true));
-    expect(find.bySemanticsLabel('S09'), findsNothing);
+    expect(find.bySemanticsLabel('S05.02'), findsNothing);
     handle.dispose();
   });
 

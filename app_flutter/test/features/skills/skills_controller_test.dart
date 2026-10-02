@@ -332,7 +332,7 @@ void main() {
       expect(
         _st(c).scoreOutdated,
         isTrue,
-        reason: 'the Function scores the new skills; S38 shows it next time',
+        reason: 'the Function scores the new skills; S08.02 shows it next time',
       );
     },
   );

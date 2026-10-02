@@ -89,7 +89,7 @@ class AperturePainter extends CustomPainter {
       old.closure != closure || old.color != color;
 }
 
-/// The app's screen-level wait (S48 searching, S47 opening payment, S54
+/// The app's screen-level wait (S13.03 searching, S13.01 opening payment, S14.03
 /// resuming…). Runs only while [active] and visible; reduced motion shows
 /// the open mark, still.
 class ApertureLoader extends StatefulWidget {

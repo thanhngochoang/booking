@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-/// Step 1 of profile setup (S24): what a customer reads first. Lives on the
+/// Step 1 of profile setup (S08.01): what a customer reads first. Lives on the
 /// public `photographers/{uid}` document; no contact data here.
 @immutable
 class PhotographerIntro {

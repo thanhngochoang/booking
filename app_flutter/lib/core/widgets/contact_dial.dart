@@ -362,7 +362,7 @@ class _ContactDialState extends State<ContactDial>
     if (widget.access == ContactAccess.locked || external.length < 2) {
       return const SizedBox.shrink();
     }
-    // The open tray is S32: its tag covers the host screen's while shown.
+    // The open tray is S05.04: its tag covers the host screen's while shown.
     return ScreenCode(
       ScreenCodes.contactAfterBooking,
       child: CallbackShortcuts(

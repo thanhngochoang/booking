@@ -16,7 +16,7 @@ enum ContactSetupError {
   noChannel,
 }
 
-/// The raw state of the S34 form.
+/// The raw state of the S08.05 form.
 class ContactSetupInput {
   const ContactSetupInput({
     this.city = '',
@@ -49,7 +49,7 @@ class ContactSetupInput {
   /// "Chỉ nhận tin nhắn trong app": no outside channel, on purpose.
   final bool inAppOnly;
 
-  /// Kept from the existing profile; S34 does not change it.
+  /// Kept from the existing profile; S08.05 does not change it.
   final bool acceptInquiries;
 }
 
@@ -73,7 +73,7 @@ class ContactSetupResult {
   bool get ok => errors.isEmpty;
 }
 
-/// Validates S34 and builds what gets saved. Pure, so every rule is tested
+/// Validates S08.05 and builds what gets saved. Pure, so every rule is tested
 /// without a widget.
 ContactSetupResult validateContactSetup(ContactSetupInput i) {
   final errors = <ContactSetupField, ContactSetupError>{};

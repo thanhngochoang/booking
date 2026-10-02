@@ -13,7 +13,7 @@ import 'package:photobooking/features/explore/location_controller.dart';
 import '../../support/explore_world.dart';
 import '../../support/screen_host.dart';
 
-/// S13 and S35 laid out as in `docs/design/ui-mock.html` (mock parity 1,
+/// S02.03 and S02.04 laid out as in `docs/design/ui-mock.html` (mock parity 1,
 /// Task 9), on a 390×844 phone.
 Future<ExploreWorld> _open(
   WidgetTester tester, {
@@ -49,7 +49,7 @@ Finder _tiles() => find.byWidgetPredicate(
 );
 
 void main() {
-  group('S13 category grid', () {
+  group('S02.03 category grid', () {
     testWidgets('four short 21:9 tiles in two columns on a phone', (
       tester,
     ) async {
@@ -142,7 +142,7 @@ void main() {
     });
   });
 
-  group('S35', () {
+  group('S02.04', () {
     testWidgets('the location line has a 15dp accent pin', (tester) async {
       await _open(tester, world: _nearbyWorld());
       final pin = tester.widget<Icon>(find.byKey(const Key('explore-pin')));

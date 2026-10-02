@@ -8,10 +8,10 @@ import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/features/calendar/my_calendar_controller.dart';
 
-/// S20 "Lịch của tôi": the photographer marks days off; booked and pending
+/// S06.04 "Lịch của tôi": the photographer marks days off; booked and pending
 /// days come from bookings and events and are read-only here.
 ///
-/// Layout follows mock S20: three month tabs, the calendar without its own
+/// Layout follows mock S06.04: three month tabs, the calendar without its own
 /// month header (tabs and swipe change the month), the legend, the selected
 /// day's section with an accent text action, and the hint at the bottom.
 class MyCalendarScreen extends ConsumerStatefulWidget {

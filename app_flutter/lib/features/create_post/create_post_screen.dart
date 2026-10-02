@@ -10,9 +10,9 @@ import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 import 'package:photobooking/features/create_post/create_post_providers.dart';
 import 'package:photobooking/features/create_post/post_composer.dart';
 
-/// S21: publish once for the feed and the portfolio, always tied to a package.
+/// S10.01: publish once for the feed and the portfolio, always tied to a package.
 ///
-/// Mock S21: "Đăng bài" bar · two-column photo grid with a "+" tile · caption
+/// Mock S10.01: "Đăng bài" bar · two-column photo grid with a "+" tile · caption
 /// · the package field (accent border, required) · place and style side by
 /// side · "Thêm vào portfolio" switch · sticky footer with "Đăng". The
 /// "Bài đăng / Sự kiện" tabs arrive with the events plan.

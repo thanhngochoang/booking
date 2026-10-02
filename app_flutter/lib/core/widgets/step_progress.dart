@@ -22,7 +22,7 @@ class StepProgress extends StatelessWidget {
   /// Name of the current step, shown before the count.
   final String? label;
 
-  /// False when the count is shown elsewhere, e.g. in the app bar (S34).
+  /// False when the count is shown elsewhere, e.g. in the app bar (S08.05).
   final bool showCount;
 
   @override

@@ -115,7 +115,7 @@ class PackageDraft {
 }
 
 /// What the photographer typed in setup but has not saved yet, and the step
-/// to come back to, kept on this device per user (spec S24 "lưu nháp mỗi
+/// to come back to, kept on this device per user (spec S08.01 "lưu nháp mỗi
 /// bước", "thoát và quay lại tiếp tục đúng bước"). Saved data is in the
 /// backend; this never holds anything the server needs.
 class SetupDraftStore {
@@ -163,7 +163,7 @@ final setupDraftStoreProvider = Provider<SetupDraftStore>(
   (ref) => SetupDraftStore(ref.watch(sharedPreferencesProvider)),
 );
 
-/// Where `/setup` resumes. Steps 3 (S38) and 4 (S34) are other plans' routes.
+/// Where `/setup` resumes. Steps 3 (S08.02) and 4 (S08.05) are other plans' routes.
 String setupResumePath(int step) => switch (step) {
   2 => '/setup/2',
   3 => '/setup/3',

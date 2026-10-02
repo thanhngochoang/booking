@@ -162,7 +162,7 @@ void main() {
     await tester.enterText(_key('setup-bio'), 'Ánh sáng tự nhiên.');
     await tester.tap(_key('setup-next'));
     await tester.pumpAndSettle();
-    // The existing setup-flow message (ARB `setupSaveError`, shared with S34).
+    // The existing setup-flow message (ARB `setupSaveError`, shared with S08.05).
     expect(
       find.text('Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'),
       findsOneWidget,

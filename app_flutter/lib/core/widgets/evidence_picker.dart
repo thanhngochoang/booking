@@ -13,7 +13,7 @@ class PostThumb {
   final String imageUrl;
 }
 
-/// 3-column grid to pick up to [max] of the photographer's own posts (S40).
+/// 3-column grid to pick up to [max] of the photographer's own posts (S08.04).
 /// Lazy: only visible tiles are built, and each photo is decoded at tile
 /// width by [NetworkPhoto]. No blur inside tiles.
 class EvidencePicker extends StatelessWidget {

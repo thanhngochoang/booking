@@ -256,7 +256,7 @@ void main() {
       expect(result.value, isNull);
     });
 
-    testWidgets('the sheet carries the S33 screen code', (tester) async {
+    testWidgets('the sheet carries the S04.05 screen code', (tester) async {
       final h = await sheetHarness();
       await tester.pumpWidget(gateApp(h, ValueNotifier<bool?>(null)));
       await tester.tap(find.text('gate'));

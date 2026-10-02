@@ -8,7 +8,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A customer pays a "Chụp ngay" request with MoMo or VNPay for real. The dispatch service builds the provider's signed payment page, verifies every IPN signature (MoMo HMAC-SHA256 POST answered with 204, VNPay HMAC-SHA512 GET answered with `RspCode`), checks the amount, ignores duplicates, and only then moves the request to `searching`. A reconciliation job asks the provider about payments with no IPN after 5 minutes. Refunds from the cancel and no-match rules go back through the provider, with retries and a manual queue. Completed (and fee-bearing cancelled) requests release the photographer's share after the 24-hour dispute window into payout lines; a customer dispute freezes it; ops export payouts to CSV for a manual bank run. The app opens the payment page outside the app, comes back through an App Link / Universal Link (`https://<host>/instant/<id>`) or `photobooking://instant/<id>`, and never trusts the redirect: S48 waits on the Firestore mirror. No polling, and no timer or listener runs while the customer is in the payment app.
+**Goal:** A customer pays a "Chụp ngay" request with MoMo or VNPay for real. The dispatch service builds the provider's signed payment page, verifies every IPN signature (MoMo HMAC-SHA256 POST answered with 204, VNPay HMAC-SHA512 GET answered with `RspCode`), checks the amount, ignores duplicates, and only then moves the request to `searching`. A reconciliation job asks the provider about payments with no IPN after 5 minutes. Refunds from the cancel and no-match rules go back through the provider, with retries and a manual queue. Completed (and fee-bearing cancelled) requests release the photographer's share after the 24-hour dispute window into payout lines; a customer dispute freezes it; ops export payouts to CSV for a manual bank run. The app opens the payment page outside the app, comes back through an App Link / Universal Link (`https://<host>/instant/<id>`) or `photobooking://instant/<id>`, and never trusts the redirect: S13.03 waits on the Firestore mirror. No polling, and no timer or listener runs while the customer is in the payment app.
 
 **Architecture:** Plan I3's `PaymentGateway` port stays exactly as written; MoMo and VNPay are two new implementations registered in `buildGateways` and pass the shared `runGatewayContract` suite. The flow is unchanged: route → `verifyWebhook` (pure, signature + shape) → `handlePaymentEvent` (idempotent by `payments.status`) → `acknowledge`. One optional second port, `PaymentStatusSource` (`queryPayment`, `queryRefund`), is used only by the reconciliation job. Signatures live in pure modules (`momo-sign.ts`, `vnpay-sign.ts`, `vn-time.ts`) with self-generated test vectors. Two self-rescheduling BullMQ ticks (`payments-reconcile` every minute, `escrow-release` every 5 minutes) join I3's queue. Money stays in the shared tables of `relational-schema.md` §2.4, plus a few columns and two tables (`payment_notifications`, `disputes`). The app gets a real `PaymentLauncher` (`GatewayPaymentLauncher` over plan 2b's `ExternalLauncher`), a `ReturnLinkSource` port over `app_links`, and a foreground-gated mirror provider for `/instant/:id`.
 
@@ -20,7 +20,7 @@
 
 - `docs/superpowers/plans/2026-10-01-instant-i3-dispatch-service.md` (all tasks): the `PaymentGateway` family and `buildGateways` (Task 3), `MirrorWriter` (Task 4), `Scheduler`/`JOB_NAMES`/`ManualScheduler` (Task 5), `Deps`, `buildApp`, `wire`, `createLogger`, test helpers (Task 6), the money migration and `Database` types (Task 7), `createRequest`, `handlePaymentEvent`, `expirePayment`, `executeRefund`, `applySplit`, `paymentForRequest`, `heldVnd`, the webhook routes (Task 10), completion settlement (Task 13), cancellation (Task 14), `reconcile()` (Task 15).
 - `docs/superpowers/plans/2026-10-01-instant-i4-photographer-app.md`: `instant_models.dart` / `instant_wire.dart` (`InstantRequestView`, `requestViewFromMap`, `PaymentProvider`, `CreatedRequest`, `DispatchException`), `FakeInstantMirror.listenersOf`, `TickingBuilder.debugActiveCount`, `AppButton.danger`, `wireInstantNavigation` and its `routerProvider` edit.
-- `docs/superpowers/plans/2026-10-01-instant-i5-customer-app.md`: `PaymentLauncher`/`PaymentStart`/`DevFakePaymentLauncher`/`UnavailablePaymentLauncher`/`FakePaymentLauncher` and `paymentLauncherProvider` (Task 2), `InstantDraft` (Task 5), `InstantBookController.submit` (Task 5), S47 screen (Task 6), `InstantRequestScreen`, `InstantPaymentPendingView`, `InstantPaymentFailedView`, `InstantCustomerActions` (Task 7), `InstantCustomerWorld`, `instantCustomerApp` (test support).
+- `docs/superpowers/plans/2026-10-01-instant-i5-customer-app.md`: `PaymentLauncher`/`PaymentStart`/`DevFakePaymentLauncher`/`UnavailablePaymentLauncher`/`FakePaymentLauncher` and `paymentLauncherProvider` (Task 2), `InstantDraft` (Task 5), `InstantBookController.submit` (Task 5), S13.01 screen (Task 6), `InstantRequestScreen`, `InstantPaymentPendingView`, `InstantPaymentFailedView`, `InstantCustomerActions` (Task 7), `InstantCustomerWorld`, `instantCustomerApp` (test support).
 - `docs/superpowers/plans/2026-10-01-step2b-contact-dial-and-channels.md`: `ExternalLauncher`, `FakeExternalLauncher`, `externalLauncherProvider` (`lib/data/contact/contact_providers.dart`).
 - `docs/superpowers/plans/2026-10-01-ios-enablement.md` Task 1 (`ios/Flutter/Secrets.xcconfig.example`, `test/platform/ios_config_test.dart`) and plan I4's `ios/Runner/Runner.entitlements`.
 - **[người dùng]** before Task 13 only: MoMo Business test merchant (partner code, access key, secret key) and a VNPay sandbox terminal (TMN code, hash secret) registered with the staging IPN URLs; a public https staging host for the dispatch service.
@@ -46,8 +46,8 @@
 | 15 | Ledger for release and payout | `escrow_released +share` (owner = photographer), `payout_paid −amount` (owner), `adjustment −x` note `fee_reversal` when a dispute refund exceeds the share; a payout hold is a status (`on_hold`, `disputed`), not an entry | Append-only ledger records money movements only (spec main §3g.5); no new ledger type. |
 | 16 | Dispute | `POST /v1/requests/{id}/dispute` (customer, ≤ 24 h after `completed`, state machine `open_dispute`); ops resolve with the CLI (`release` or `refund <vnd>`) | "Endpoint/flag only, ops UI later"; resolution rules beyond release/refund are product decisions. |
 | 17 | Payout execution | Out of scope: `ops payouts-export` writes a CSV (no full account number) and moves payouts to `processing`; `payout-paid` / `payout-failed` record the bank result | Spec main §3g.4 manual phase; legal open question §3g.7. |
-| 18 | App provider choice | `--dart-define=PAYMENT_PROVIDERS=momo,vnpay`; chips on S47 when two; the choice is session state (`paymentChoiceProvider`) | Mirrors S07's MoMo/VNPay choice in the mock. |
-| 19 | App waiting | S48 `payment` state shows the gateway, a fixed deadline (no ticking), "Mở lại trang thanh toán" (same order) and "Huỷ yêu cầu"; the mirror listener is closed while the app is in the background and reopened on resume | No polling; nothing runs behind the payment app; Firestore delivers the current document on resume. |
+| 18 | App provider choice | `--dart-define=PAYMENT_PROVIDERS=momo,vnpay`; chips on S13.01 when two; the choice is session state (`paymentChoiceProvider`) | Mirrors S04.03's MoMo/VNPay choice in the mock. |
+| 19 | App waiting | S13.03 `payment` state shows the gateway, a fixed deadline (no ticking), "Mở lại trang thanh toán" (same order) and "Huỷ yêu cầu"; the mirror listener is closed while the app is in the background and reopened on resume | No polling; nothing runs behind the payment app; Firestore delivers the current document on resume. |
 
 ## Global Constraints
 
@@ -57,7 +57,7 @@
 - **Secrets:** provider keys only from the environment (`MOMO_*`, `VNPAY_*`), checked for length at boot, never in `raw`, error messages, logs or responses; logs drop URL query strings (VNPay puts `vnp_SecureHash` there, `GET /v1/packages` puts coordinates there) and redact `secretKey`, `accessKey`, `hashSecret`, `signature`, `vnp_SecureHash`. `.env.example` holds self-made test values only.
 - **Never trust the redirect:** only a verified IPN or a status query answer moves money state; the return page and the app's link handler ignore every provider query parameter.
 - **Money:** integer VND (VNPay amounts ×100 only at the boundary), every settlement and resolution keeps `refunds + photographer + platform = collected`; ledger append-only; refunds only from what is held; a payment already released is never refunded here (spec main §3g.3, adjustment on a later payout).
-- **App rules (CLAUDE.md):** `package:photobooking/...` imports, features import `core/core.dart`; strings in `app_vi.arb`; one primary action per screen (S48 has none); cancel is a red text button and the confirmation a red `AppButton.danger`; no Firebase import outside adapters; phone numbers untouched.
+- **App rules (CLAUDE.md):** `package:photobooking/...` imports, features import `core/core.dart`; strings in `app_vi.arb`; one primary action per screen (S13.03 has none); cancel is a red text button and the confirmation a red `AppButton.danger`; no Firebase import outside adapters; phone numbers untouched.
 - Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
 ## Signature reference (from the providers' documentation)
@@ -106,7 +106,7 @@ Self-generated vectors (keys in `test/payments/fixtures.ts`: MoMo `NAGTEST` / `n
 | `services/dispatch/test/payments/*`, `test/config-payments.test.ts`, `test/logging.test.ts`, `test/app-links.test.ts` (create) | Tests |
 | `app_flutter/pubspec.yaml`, `lib/data/instant/payment_config.dart`, `gateway_payment_launcher.dart`, `return_links.dart` (create / modify) | Real launcher, provider choice, return links |
 | `app_flutter/lib/data/instant/instant_models.dart`, `instant_wire.dart`, `instant_providers.dart` (modify) | Mirror fields, providers |
-| `app_flutter/lib/features/instant/instant_return_links.dart`, `instant_foreground.dart`, `payment_method_picker.dart` (create); `instant_request_screen.dart`, `views/instant_searching_view.dart`, `instant_draft.dart`, `instant_book_controller.dart`, `instant_book_screen.dart`, `lib/app/router.dart`, `lib/l10n/app_vi.arb` (modify) | Link wiring, foreground gate, S47 picker, S48 payment wait |
+| `app_flutter/lib/features/instant/instant_return_links.dart`, `instant_foreground.dart`, `payment_method_picker.dart` (create); `instant_request_screen.dart`, `views/instant_searching_view.dart`, `instant_draft.dart`, `instant_book_controller.dart`, `instant_book_screen.dart`, `lib/app/router.dart`, `lib/l10n/app_vi.arb` (modify) | Link wiring, foreground gate, S13.01 picker, S13.03 payment wait |
 | `app_flutter/android/app/src/main/AndroidManifest.xml`, `android/app/build.gradle.kts`, `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements`, `ios/Flutter/Debug.xcconfig`, `Release.xcconfig`, `Secrets.xcconfig.example` (modify) | App Link / Universal Link / URL scheme |
 | `app_flutter/test/...` (create) | Data, widget, platform and battery tests |
 | `docs/design/ui-mock.html`, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`, `2026-10-01-remaining-screens.md`, `docs/testing/battery-and-performance.md`, `services/dispatch/README.md` (modify) | Docs alignment |
@@ -164,11 +164,11 @@ In `InstantRequestMirror`, directly below `        refundVnd: { allOf: [ { $ref:
         paymentProvider:
           allOf: [ { $ref: '#/components/schemas/PaymentProvider' } ]
           nullable: true
-          description: Cổng khách đã chọn (S48 "Cổng MoMo chưa báo về"); kế hoạch I6
+          description: Cổng khách đã chọn (S13.03 "Cổng MoMo chưa báo về"); kế hoạch I6
         paymentExpiresAt:
           allOf: [ { $ref: '#/components/schemas/Instant' } ]
           nullable: true
-          description: Hạn thanh toán, chỉ khi pending_payment (S48); kế hoạch I6
+          description: Hạn thanh toán, chỉ khi pending_payment (S13.03); kế hoạch I6
 ```
 
 In `services/dispatch/test/contract.test.ts` (I3), add `'openDispute'` to the `PENDING` set (its route arrives in Task 10, which removes it again), so the contract suite stays green in between.
@@ -282,7 +282,7 @@ In §4, directly below the `RefundStatus` row insert:
 | `DisputeResolution` | `released`, `refunded`, `partially_refunded` | |
 ```
 
-In §5 "Tiền treo (escrow)", directly below `Mỗi chuyển ghi `LedgerEntry` bất biến. `released` còn gọi là "sắp nhận" ở S43.` add:
+In §5 "Tiền treo (escrow)", directly below `Mỗi chuyển ghi `LedgerEntry` bất biến. `released` còn gọi là "sắp nhận" ở S06.05.` add:
 
 ```
 Bút toán (kế hoạch I6): thả tiền `escrow_released +phần nhiếp ảnh gia` (`accountOwnerId` = nhiếp ảnh gia); chi trả `payout_paid −số tiền lô` (`accountOwnerId`, `payoutId`); hoàn khi khiếu nại vượt phần nhiếp ảnh gia thì phần còn lại lấy từ phí nền tảng: `adjustment −x` ghi chú `fee_reversal`. "Giữ chi trả" không phải bút toán (không có tiền chuyển): `escrowStatus = disputed` hoặc `Payout.status = on_hold`.
@@ -2313,7 +2313,7 @@ export interface PayoutAccountsTable {
   id: string;
   user_id: string;
   bank_code: string;
-  /** Encrypted by the S44 tooling; insert-only here (tests), never selected by this service. */
+  /** Encrypted by the S06.06 tooling; insert-only here (tests), never selected by this service. */
   account_number_enc: ColumnType<never, Buffer, never>;
   account_last4: string;
   holder_name: string;
@@ -3472,7 +3472,7 @@ describe('escrow release for Chụp ngay: completed + 24 h (spec main §3g.2, pl
     expect((await releaseDueEscrow(w.deps)).released).toBe(0); // idempotent
   });
 
-  it('payout lines: none without a payout account; batched into one pending payout once S44 is filled in', async () => {
+  it('payout lines: none without a payout account; batched into one pending payout once S06.06 is filled in', async () => {
     const a = await completedRequest(app, w, db, 'c1', 'p1');
     w.clock.advance(DAY);
     await releaseDueEscrow(w.deps);
@@ -3572,7 +3572,7 @@ export async function photographerShareVnd(db: Exec, paymentId: string): Promise
 
 /**
  * Adds a released payment to the payee's open payout (status pending), creating one if needed.
- * No active payout account (S44 not filled in): the money stays `released` and is batched later
+ * No active payout account (S06.06 not filled in): the money stays `released` and is batched later
  * (spec main §3g.4). Returns whether it was batched.
  */
 export async function attachToPayout(trx: Trx, payeeId: string, paymentId: string, amount: number): Promise<boolean> {
@@ -4195,7 +4195,7 @@ export const PAYOUT_CSV_HEADER = ['payout_id', 'payee_id', 'holder_name', 'bank_
  * Manual payout run (spec main §3g.4 "admin duyệt từng lô và chuyển khoản thủ công"): every
  * `pending` payout becomes `processing` (approved_by, scheduled_at) and is returned as CSV for the
  * bank transfer. The full account number is not exported (payout_accounts.account_number_enc is
- * decrypted only by the S44/KMS tooling; open question in plan I6).
+ * decrypted only by the S06.06/KMS tooling; open question in plan I6).
  */
 export async function exportPendingPayouts(db: Db, by: string, now: Date): Promise<{ csv: string; payouts: number; totalVnd: number }> {
   await requireAdmin(db, by);
@@ -4730,7 +4730,7 @@ From a shell with the same environment:
 
 With the app of Tasks 14–16 built with `--dart-define=APP_LINK_HOST=<staging host>` (Android `app.linkHost` in `android/local.properties`, iOS `APP_LINK_HOST` in `Secrets.xcconfig`) and the host serving `assetlinks.json` / `apple-app-site-association` (Task 12, `ANDROID_CERT_SHA256` and `APPLE_APP_ID` set):
 
-- Android: `adb shell pm get-app-links com.thanhbk.photobooking` lists the host as `verified`; after a sandbox payment the browser returns straight into the app on S48.
+- Android: `adb shell pm get-app-links com.thanhbk.photobooking` lists the host as `verified`; after a sandbox payment the browser returns straight into the app on S13.03.
 - iOS: after a sandbox payment, Safari's return opens the app (or the return page's "Mở ứng dụng" does); `swcutil dl -d <host>` (macOS) or the device's Associated Domains diagnostics show the domain.
 
 - [ ] **Step 6: Record and commit**
@@ -4751,7 +4751,7 @@ Append to `services/dispatch/README.md`:
 | VNPay IPN trả tiền, huỷ (24) | nhật ký IPN của VNPay, `payment_notifications` | `RspCode 00`, `processed` |
 | VNPay hoàn 03, querydr | `vnpay-refund`, `vnpay-query` | `done`/`pending`, mã trạng thái hoàn ghi lại |
 | `vnp_IpAddr` | VNPay xác nhận | ghi lại |
-| App Link / Universal Link | thiết bị thật | mở thẳng S48 |
+| App Link / Universal Link | thiết bị thật | mở thẳng S13.03 |
 ````
 
 ```bash
@@ -4983,8 +4983,8 @@ import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/payment_config.dart';
 import 'package:photobooking/data/instant/payment_launcher.dart';
 
-/// The gateway the customer picked on S47 (null = the build's first gateway).
-/// Kept for the session, like the draft (S33 and S51 come back to it).
+/// The gateway the customer picked on S13.01 (null = the build's first gateway).
+/// Kept for the session, like the draft (S04.05 and S13.07 come back to it).
 class PaymentChoice extends Notifier<PaymentProvider?> {
   @override
   PaymentProvider? build() => null;
@@ -5514,7 +5514,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 16: App: S47 gateway choice, S48 payment wait, mirror closed behind the payment app
+### Task 16: App: S13.01 gateway choice, S13.03 payment wait, mirror closed behind the payment app
 
 **Files:**
 - Create: `app_flutter/lib/features/instant/payment_method_picker.dart`, `app_flutter/lib/features/instant/instant_foreground.dart`, `app_flutter/test/support/instant_payment_support.dart`, `app_flutter/test/features/instant/instant_payment_wait_test.dart`
@@ -5523,14 +5523,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: Task 14 (`paymentConfigProvider`, `paymentChoiceProvider`, `paymentLauncherProvider`), I5 (`InstantDraft`, `InstantRequestScreen`, `InstantCustomerActions`, views), I4 (`instantRequestProvider`, `TickingBuilder`, `ApertureLoader`, `AppButton.danger`), 3a1 (`AppChip`, `showAppSheet`), 3a2 (`formatMoney`).
 - Produces:
-  - `String paymentProviderLabel(PaymentProvider, AppLocalizations)`, `const PaymentMethodPicker()` (keys `instant-provider`, `instant-provider-<code>`, `instant-provider-single`) on S47 above the escrow line.
+  - `String paymentProviderLabel(PaymentProvider, AppLocalizations)`, `const PaymentMethodPicker()` (keys `instant-provider`, `instant-provider-<code>`, `instant-provider-single`) on S13.01 above the escrow line.
   - `appForegroundProvider` (`NotifierProvider<AppForeground, bool>`: visible = resumed or inactive), `ForegroundInstantRequest` / `foregroundInstantRequestProvider` (`NotifierProvider.autoDispose.family<…, AsyncValue<InstantRequestView?>, String>`, `retry()`).
   - `InstantPaymentPendingView({required InstantRequestView view})` (keys `payment-pending-body`, `payment-deadline`, `payment-reopen`, `payment-cancel`, `payment-cancel-confirm`, `payment-cancel-keep`); `InstantPaymentFailedView` with the late-refund text.
   - `InstantDraft.lastPaymentUrl`, `InstantDraftController.setLastPaymentUrl(Uri)`.
   - Test support `withPayment(view, {provider, expiresAt, refundVnd})`, `goBackground(tester)`, `goForeground(tester)`.
   - l10n keys below.
 
-Layout (mock S48 "Đang chờ xác nhận thanh toán", as on S08): the aperture wait; "Đang chờ xác nhận thanh toán"; "Cổng MoMo chưa báo về. Thường mất dưới một phút. Nếu bạn đã trả, đừng trả lại: kết quả tự hiện ở đây."; "Hạn thanh toán 15:15" (a fixed clock time, no countdown); outline "Mở lại trang thanh toán" (only when this session opened it; same order, cannot be paid twice); red text "Huỷ yêu cầu" → sheet "Huỷ yêu cầu này?" / "Chưa có khoản nào bị trừ. Nếu bạn đã trả xong, tiền sẽ được hoàn đủ tự động." / red "Huỷ yêu cầu" / outline "Tiếp tục chờ". No primary button (one-primary rule: S48 has none).
+Layout (mock S13.03 "Đang chờ xác nhận thanh toán", as on S04.04): the aperture wait; "Đang chờ xác nhận thanh toán"; "Cổng MoMo chưa báo về. Thường mất dưới một phút. Nếu bạn đã trả, đừng trả lại: kết quả tự hiện ở đây."; "Hạn thanh toán 15:15" (a fixed clock time, no countdown); outline "Mở lại trang thanh toán" (only when this session opened it; same order, cannot be paid twice); red text "Huỷ yêu cầu" → sheet "Huỷ yêu cầu này?" / "Chưa có khoản nào bị trừ. Nếu bạn đã trả xong, tiền sẽ được hoàn đủ tự động." / red "Huỷ yêu cầu" / outline "Tiếp tục chờ". No primary button (one-primary rule: S13.03 has none).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -5626,7 +5626,7 @@ void main() {
   void pending({PaymentProvider provider = PaymentProvider.momo}) =>
       w.mirror.setRequest('RQ1', withPayment(w.request(InstantStatus.pendingPayment), provider: provider, expiresAt: _expires));
 
-  testWidgets('S48 · payment: the gateway, a fixed deadline, no ticking clock', (tester) async {
+  testWidgets('S13.03 · payment: the gateway, a fixed deadline, no ticking clock', (tester) async {
     pending();
     await open(tester);
     expect(find.text('Đang chờ xác nhận thanh toán'), findsWidgets);
@@ -5648,7 +5648,7 @@ void main() {
     expect(w.payment.opened.single.paymentUrl.toString(), 'https://test-payment.momo.vn/v2/gateway/pay?t=abc');
   });
 
-  testWidgets('"Huỷ yêu cầu": says nothing was taken (or will be refunded), cancels, back to S47', (tester) async {
+  testWidgets('"Huỷ yêu cầu": says nothing was taken (or will be refunded), cancels, back to S13.01', (tester) async {
     pending();
     await open(tester);
     await tester.tap(find.byKey(const Key('payment-cancel')));
@@ -5675,7 +5675,7 @@ void main() {
     }
   });
 
-  group('PaymentMethodPicker (S47)', () {
+  group('PaymentMethodPicker (S13.01)', () {
     Future<ProviderContainer> host(WidgetTester tester, PaymentConfig config) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -5762,7 +5762,7 @@ String paymentProviderLabel(PaymentProvider p, AppLocalizations l) => switch (p)
   PaymentProvider.fake => l.instantPaymentGateway,
 };
 
-/// S47: "Thanh toán qua [MoMo] [VNPay]" (mock S47, as on S07). One gateway →
+/// S13.01: "Thanh toán qua [MoMo] [VNPay]" (mock S13.01, as on S04.03). One gateway →
 /// a line of text; the debug fake gateway → nothing.
 class PaymentMethodPicker extends ConsumerWidget {
   const PaymentMethodPicker({super.key});
@@ -5994,7 +5994,7 @@ class InstantPaymentPendingView extends ConsumerWidget {
   }
 }
 
-/// The gateway refused or was cancelled (spec §10): back to S47, choices kept.
+/// The gateway refused or was cancelled (spec §10): back to S13.01, choices kept.
 /// Money that arrived after the request closed is refunded in full and said so.
 class InstantPaymentFailedView extends StatelessWidget {
   const InstantPaymentFailedView({super.key, required this.view});
@@ -6054,14 +6054,14 @@ In `lib/features/instant/instant_book_screen.dart`, add `import 'package:photobo
 - [ ] **Step 4: Run and see them pass**
 
 Run: `flutter gen-l10n && flutter test test/features/instant && flutter analyze`
-Expected: PASS (7 new tests; I5's request screen tests still pass: the pending text "Đang chờ xác nhận thanh toán" and "Thanh toán chưa thành công" / "Thử lại" are kept, and with the default debug config the picker draws nothing on S47).
+Expected: PASS (7 new tests; I5's request screen tests still pass: the pending text "Đang chờ xác nhận thanh toán" and "Thanh toán chưa thành công" / "Thử lại" are kept, and with the default debug config the picker draws nothing on S13.01).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 dart format lib test
 git add lib test
-git commit -m "feat(instant): MoMo/VNPay choice on S47, payment wait on S48 without timers, mirror closed behind the payment app
+git commit -m "feat(instant): MoMo/VNPay choice on S13.01, payment wait on S13.03 without timers, mirror closed behind the payment app
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -6073,17 +6073,17 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `docs/design/ui-mock.html`, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`, `docs/superpowers/specs/2026-10-01-remaining-screens.md`, `docs/testing/battery-and-performance.md`
 
-No new screen code: the payment wait is a state of S48 (`ScreenCode` label `payment`, as in plan I5).
+No new screen code: the payment wait is a state of S13.03 (`ScreenCode` label `payment`, as in plan I5).
 
-- [ ] **Step 1: Mock S47**
+- [ ] **Step 1: Mock S13.01**
 
-In `docs/design/ui-mock.html`, inside `data-code="S47"`, directly above `<div class="esc"><svg><use href="#i-lock"/></svg><span>Tiền được giữ an toàn và hoàn 100% nếu không có người nhận. Thường có người nhận trong khoảng 4 phút.</span></div>` insert
+In `docs/design/ui-mock.html`, inside `data-code="S13.01"`, directly above `<div class="esc"><svg><use href="#i-lock"/></svg><span>Tiền được giữ an toàn và hoàn 100% nếu không có người nhận. Thường có người nhận trong khoảng 4 phút.</span></div>` insert
 
 ```html
         <div class="chips"><span class="meta x" style="align-self:center">Thanh toán qua</span><span class="chip on">MoMo</span><span class="chip">VNPay</span></div>
 ```
 
-and in the S47 caption replace `"Mở rộng tìm kiếm" tắt sẵn: bật thì sau vòng ưu tiên mời cả nhiếp ảnh gia khác ở gần.</span>` with `"Mở rộng tìm kiếm" tắt sẵn: bật thì sau vòng ưu tiên mời cả nhiếp ảnh gia khác ở gần. Chọn MoMo hoặc VNPay; trang thanh toán mở ngoài ứng dụng, kết quả chỉ lấy từ xác nhận (IPN) của cổng.</span>`. In the S48 caption, before `Huỷ là chữ đỏ mở S55.` add `Trước khi cổng xác nhận: "Đang chờ xác nhận thanh toán", hạn thanh toán, "Mở lại trang thanh toán", "Huỷ yêu cầu" (chưa trừ tiền; tiền đến muộn được hoàn đủ). `. Open the mock with `#S47` and `#S48` and check both captions and the chip row.
+and in the S13.01 caption replace `"Mở rộng tìm kiếm" tắt sẵn: bật thì sau vòng ưu tiên mời cả nhiếp ảnh gia khác ở gần.</span>` with `"Mở rộng tìm kiếm" tắt sẵn: bật thì sau vòng ưu tiên mời cả nhiếp ảnh gia khác ở gần. Chọn MoMo hoặc VNPay; trang thanh toán mở ngoài ứng dụng, kết quả chỉ lấy từ xác nhận (IPN) của cổng.</span>`. In the S13.03 caption, before `Huỷ là chữ đỏ mở S13.08.` add `Trước khi cổng xác nhận: "Đang chờ xác nhận thanh toán", hạn thanh toán, "Mở lại trang thanh toán", "Huỷ yêu cầu" (chưa trừ tiền; tiền đến muộn được hoàn đủ). `. Open the mock with `#S13.01` and `#S13.03` and check both captions and the chip row.
 
 - [ ] **Step 2: `2026-10-01-instant-booking-design.md`**
 
@@ -6092,7 +6092,7 @@ and in the S47 caption replace `"Mở rộng tìm kiếm" tắt sẵn: bật th�
 3. §10 table: below the `price_changed` row add
 
 ```
-| Cổng không tạo được thanh toán (lỗi, hết giờ chờ) | Yêu cầu `payment_failed` ngay (không chờ 15 phút); S47 giữ lựa chọn, khách chọn cổng khác |
+| Cổng không tạo được thanh toán (lỗi, hết giờ chờ) | Yêu cầu `payment_failed` ngay (không chờ 15 phút); S13.01 giữ lựa chọn, khách chọn cổng khác |
 | Không có IPN | Dịch vụ hỏi cổng sau 5 phút rồi giãn dần (10, 20, 40, 80 phút); quá 2 giờ thì đóng thanh toán |
 | Tiền về sau khi yêu cầu đã đóng (hết hạn, huỷ, cổng báo lỗi trước đó) | Ghi nhận rồi hoàn 100% tự động qua cổng gốc |
 | Sai số tiền trong IPN | Không đổi trạng thái; ghi `payment_notifications` để admin xử lý |
@@ -6115,7 +6115,7 @@ Append:
 ## Chụp ngay: thanh toán (kế hoạch I6)
 
 - Trong lúc khách ở ứng dụng MoMo hoặc trình duyệt VNPay: app không có `Timer`, không gọi mạng, không giữ listener Firestore (`foregroundInstantRequestProvider` đóng khi `hidden`/`paused`, mở lại khi quay về). Test tự động: `test/battery/instant_payment_battery_test.dart`.
-- Đo tay (Android và iOS): 10 phút gồm 3 lần trả bằng MoMo test (chuyển app) và 1 lần huỷ ở VNPay. Ngưỡng: không wake lock của app; mạng của app chỉ bật lúc mở trang thanh toán và lúc quay lại; S48 đổi sang "Đang tìm" ≤ 2 giây sau khi IPN tới (xem `payment_notifications.received_at`).
+- Đo tay (Android và iOS): 10 phút gồm 3 lần trả bằng MoMo test (chuyển app) và 1 lần huỷ ở VNPay. Ngưỡng: không wake lock của app; mạng của app chỉ bật lúc mở trang thanh toán và lúc quay lại; S13.03 đổi sang "Đang tìm" ≤ 2 giây sau khi IPN tới (xem `payment_notifications.received_at`).
 - Phía dịch vụ: webhook p95 < 100 ms (trong tiến trình, `webhook_ms`); một lượt đối soát tối đa 24 lời gọi, 4 song song, < 48 giây kể cả khi mọi lời gọi hết hạn 8 giây; lượt rỗng không gọi cổng.
 ````
 

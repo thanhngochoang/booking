@@ -18,7 +18,7 @@ import 'package:photobooking/features/explore/widgets/event_tile.dart';
 
 enum ExploreCategoryTab { services, places, styles, photographers }
 
-/// S13 (no location chosen) and S35 (location or area chosen): one screen,
+/// S02.03 (no location chosen) and S02.04 (location or area chosen): one screen,
 /// two layouts.
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
@@ -100,7 +100,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     category.build(context, ref),
                   ]
                 : [
-                    // S13: the four entry points first, then the location
+                    // S02.03: the four entry points first, then the location
                     // card or chip, then the events.
                     category.build(context, ref),
                     ..._locationSlivers(context, resolution),
@@ -535,7 +535,7 @@ class _CategorySection {
   }
 }
 
-/// Mock S13 `.grid2`: the first four entries of the tab as short 21:9
+/// Mock S02.03 `.grid2`: the first four entries of the tab as short 21:9
 /// tiles, two per row on a phone and four from 600dp. "Xem tất cả" opens
 /// the rest of the tab in place.
 class _CategoryGrid extends StatefulWidget {

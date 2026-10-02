@@ -5,7 +5,7 @@ import 'package:photobooking/data/photographer/photographer_setup_providers.dart
 import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 
-/// Writes the photographer's packages from S24 step 2. Each call answers
+/// Writes the photographer's packages from S08.01 step 2. Each call answers
 /// whether it went through; the screen shows the message.
 class SetupPackagesController extends AsyncNotifier<void> {
   @override

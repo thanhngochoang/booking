@@ -27,7 +27,7 @@ Future<void> _pump(WidgetTester tester, {required bool visible}) =>
     );
 
 void main() {
-  testWidgets('the open tray is tagged S32, the closed dial is not', (
+  testWidgets('the open tray is tagged S05.04, the closed dial is not', (
     tester,
   ) async {
     await _pump(tester, visible: true);

@@ -1,4 +1,4 @@
-# Instant I5: "Chụp ngay" Customer App (S47–S51, S55) Implementation Plan
+# Instant I5: "Chụp ngay" Customer App (S13) Implementation Plan
 
 > **Battery/performance (2026-10-02, user):** this plan has no battery, idle, blur-budget or performance task or test steps. All of that runs once at the end in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Skip any such step inside a task (e.g. `expectIdle`, `expectBlurBudget`, listener counters, profiling); keep the functional tests.
 
@@ -6,27 +6,27 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A customer taps "Chụp ngay" on Home or Find, picks a package and a kind of shoot, pins the meet point on a Goong map (current location, drag, or address search), pays the fixed price, watches the search (S48), follows the photographer on the map with an ETA and contact unlocked (S49), sees the shoot timer and confirms completion (S50), gets an automatic refund when nobody accepts and can retry or book normally (S51), and can cancel at any step after seeing the refund from a dry run (S55).
+**Goal:** A customer taps "Chụp ngay" on Home or Find, picks a package and a kind of shoot, pins the meet point on a Goong map (current location, drag, or address search), pays the fixed price, watches the search (S13.03), follows the photographer on the map with an ETA and contact unlocked (S13.05), sees the shoot timer and confirms completion (S13.06), gets an automatic refund when nobody accepts and can retry or book normally (S13.07), and can cancel at any step after seeing the refund from a dry run (S13.08).
 
-**Architecture:** One `InstantBookingRepository` port (HTTP adapter over phase 2's `ApiClient` pointed at `DISPATCH_URL`, plus a fake) for packages, request creation, cancel and confirm; realtime state comes only from the read-only Firestore mirror of plan I4 (`instantRequestProvider`, `instantTrackProvider`). A keep-alive `InstantDraft` holds the customer's choices across the S33 phone detour and the S51 retry. `InstantBookController` (S47) takes one medium-accuracy fix, reverse-geocodes with Goong, quotes, creates the request and hands the `paymentUrl` to a `PaymentLauncher` port (debug: `fake://` handled in-app by calling the dev endpoint; real gateways are plan I6). A single route `/instant/:id` shows S48, S49, S50 or S51 from the mirror status, each in its own `ScreenCode`. Address search uses a `PlaceSearch` port with a Goong Autocomplete adapter whose errors never carry the key. A two-party integration test runs customer and photographer containers against one in-memory dispatch fake.
+**Architecture:** One `InstantBookingRepository` port (HTTP adapter over phase 2's `ApiClient` pointed at `DISPATCH_URL`, plus a fake) for packages, request creation, cancel and confirm; realtime state comes only from the read-only Firestore mirror of plan I4 (`instantRequestProvider`, `instantTrackProvider`). A keep-alive `InstantDraft` holds the customer's choices across the S04.05 phone detour and the S13.07 retry. `InstantBookController` (S13.01) takes one medium-accuracy fix, reverse-geocodes with Goong, quotes, creates the request and hands the `paymentUrl` to a `PaymentLauncher` port (debug: `fake://` handled in-app by calling the dev endpoint; real gateways are plan I6). A single route `/instant/:id` shows S13.03, S13.05, S13.06 or S13.07 from the mirror status, each in its own `ScreenCode`. Address search uses a `PlaceSearch` port with a Goong Autocomplete adapter whose errors never carry the key. A two-party integration test runs customer and photographer containers against one in-memory dispatch fake.
 
 **Tech Stack:** Flutter, Riverpod 3, go_router, `http` (Goong; dispatch via `ApiClient`), `maplibre_gl` through plan I4's `AppMap`, `flutter_test`, `fake_async`, `http/testing.dart` `MockClient`.
 
-**Spec:** `docs/superpowers/specs/2026-10-01-instant-booking-design.md` (§2.1, §3, §4, §5, §6, §8, §9, §10, §11); contract `services/dispatch/api/openapi.yaml` (customer paths `GET /v1/health`, `GET /v1/packages`, `POST /v1/requests`, `POST /v1/requests/{id}/cancel`, `POST /v1/requests/{id}/confirm-complete`, `POST /v1/dev/payments/{id}/succeed`; `InstantRequestMirror`, `InstantTrackMirror`; error codes `phone_required`, `outside_service_area`, `price_changed`); mock `docs/design/ui-mock.html` screens `data-code="S47"` … `"S51"`, `"S55"`; `docs/superpowers/specs/screens/README.md`; `docs/superpowers/specs/components/shared-components.md` (ApertureLoader, ContactDial, AppBottomSheet).
+**Spec:** `docs/superpowers/specs/2026-10-01-instant-booking-design.md` (§2.1, §3, §4, §5, §6, §8, §9, §10, §11); contract `services/dispatch/api/openapi.yaml` (customer paths `GET /v1/health`, `GET /v1/packages`, `POST /v1/requests`, `POST /v1/requests/{id}/cancel`, `POST /v1/requests/{id}/confirm-complete`, `POST /v1/dev/payments/{id}/succeed`; `InstantRequestMirror`, `InstantTrackMirror`; error codes `phone_required`, `outside_service_area`, `price_changed`); mock `docs/design/ui-mock.html` screens `data-code="S13.01"` … `"S13.07"`, `"S13.08"`; `docs/superpowers/specs/screens/README.md`; `docs/superpowers/specs/components/shared-components.md` (ApertureLoader, ContactDial, AppBottomSheet).
 
 **Prerequisite (all done first; exact APIs used are listed per task under "Consumes"):**
 
 - `docs/superpowers/plans/2026-10-01-instant-i4-photographer-app.md` (all tasks): `instant_models.dart` / `instant_wire.dart` (`LatLng`, `MeetPoint`, `PackagesQuote`, `InstantPackage`, `CreatedRequest`, `CancelQuote`, `InstantRequestView`, `InstantTrack`, `InstantStatus`, `InstantGenre`, `InstantPackageCode`, `PaymentProvider`, `DispatchError`, `DispatchException`, `DispatchPaths`, `dispatchGuard`, `createRequestBody`, `cancelBody`, `packagesQuoteFromJson`, `createdRequestFromJson`, `cancelQuoteFromJson`), `fakePackagesQuote`, `DisabledDispatch`, `dispatchApiClientProvider`, `FakeInstantMirror`, `instantMirrorProvider`, `instantRequestProvider`, `instantTrackProvider`, `TrackingLocationSource`/`FakeTrackingLocationSource`/`FixAccuracy`, `trackingLocationProvider`, `InstantNotifier`/`FakeInstantNotifier`/`LocalInstantNotifier`/`InstantTap`, `InstantPush`/`PushMessages`/`FakePushMessages`, `instantNotifierProvider`, `pushMessagesProvider`, `fcm_background.dart`, `wireInstantNavigation`, `genreLabel`, `packageLabel`, `AppMap`/`MapMarker`/`AppMapScope`, `GoongConfig`, `TickingBuilder`, `CountdownRing`, `ApertureLoader`, `AppButton.danger`, `showInstantCancelSheet`/`InstantCancelRole`, `InstantMilestones`/`Milestone`, `instantErrorText`, `ContactSubject.instant`, `InstantWorld`, `FakeMapEngine`, the photographer screens and the l10n keys of I4.
-- `docs/superpowers/plans/2026-10-01-screen-codes.md`: `ScreenCodes.instantRequest` (S47), `.instantSearching` (S48), `.instantTracking` (S49), `.instantInProgress` (S50), `.instantNoMatch` (S51), `.instantCancel` (S55); `expectIdle`; `docs/testing/battery-and-performance.md`.
+- `docs/superpowers/plans/2026-10-01-screen-codes.md`: `ScreenCodes.instantRequest` (S13.01), `.instantSearching` (S13.03), `.instantTracking` (S13.05), `.instantInProgress` (S13.06), `.instantNoMatch` (S13.07), `.instantCancel` (S13.08); `expectIdle`; `docs/testing/battery-and-performance.md`.
 - `docs/superpowers/plans/2026-10-01-core-display-widgets.md`: `hostWidget`, `VerifiedName(String name, {TextStyle? style})`.
-- `docs/superpowers/plans/2026-10-01-step2a-phone-and-customer-contact.md`: `currentContactProvider` (`StreamProvider.autoDispose<UserContact?>`), route `/profile/phone?returnTo=…` (S33 goes to `returnTo` with `context.go` after saving), `FakeUserContactRepository`.
+- `docs/superpowers/plans/2026-10-01-step2a-phone-and-customer-contact.md`: `currentContactProvider` (`StreamProvider.autoDispose<UserContact?>`), route `/profile/phone?returnTo=…` (S04.05 goes to `returnTo` with `context.go` after saving), `FakeUserContactRepository`.
 - `docs/superpowers/plans/2026-10-01-step2b-contact-dial-and-channels.md`: `PhotographerContactAction({required String photographerId, required ContactAccess access, required String source, ContactSubject? subject, ContactDialStyle style, VoidCallback? onInquiry})`, `ContactDialStyle.labeled`, `photographerContactRepositoryProvider`, `FakePhotographerContactRepository.seed(uid, {channels, numbers, area})`, `ContactChannels`.
 - `docs/superpowers/plans/2026-10-01-step3a1-location-foundations.md`: `AppChip`, `showAppSheet`, `formatDistance`, `toVn`, `LocationRepository`/`FakeLocationRepository`/`LocationPermissionStatus`, `test/support/blur.dart`.
 - `docs/superpowers/plans/2026-10-01-step3a2-explore-screens.md`: `formatMoney`, `clockProvider`, `locationRepositoryProvider`, `ErrorState`, `AppSkeleton`, `screenApp`/`screenRouterApp`.
 - `docs/superpowers/plans/2026-10-01-step3b2-feed-cards.md`: `AppAvatar({String? url, required String name, AppAvatarSize size})`.
-- `docs/superpowers/plans/2026-10-01-step3b4-home-detail-find.md`: `HomeScreen` (`lib/features/home/home_screen.dart`), `FindPhotographerScreen` (`lib/features/find/find_screen.dart`), `test/support/discovery_world.dart` (`DiscoveryWorld`), route `/action` (S04).
+- `docs/superpowers/plans/2026-10-01-step3b4-home-detail-find.md`: `HomeScreen` (`lib/features/home/home_screen.dart`), `FindPhotographerScreen` (`lib/features/find/find_screen.dart`), `test/support/discovery_world.dart` (`DiscoveryWorld`), route `/action` (S02.06).
 - `docs/superpowers/plans/2026-10-01-backend-phase2-selfhosted-postgres.md` Task 8: `ApiClient`, `MockApi`, `apiError`, `StaticIdTokenSource`; the `http` package.
-- Plan I3 (dispatch service with `PAYMENTS=fake`) only for the manual end-to-end run (Task 15). Plan I6 implements a real `PaymentLauncher` (MoMo/VNPay) behind the port defined in Task 2; S12 "Đánh giá" for an instant request (`/instant/:id/review`) belongs to the review plan and is linked by path.
+- Plan I3 (dispatch service with `PAYMENTS=fake`) only for the manual end-to-end run (Task 15). Plan I6 implements a real `PaymentLauncher` (MoMo/VNPay) behind the port defined in Task 2; S05.05 "Đánh giá" for an instant request (`/instant/:id/review`) belongs to the review plan and is linked by path.
 
 ## Global Constraints
 
@@ -36,9 +36,9 @@
 - **Data conventions** (`data-model/README.md`): ids opaque strings, instants UTC, money integer VND, enum string codes, no Firebase type outside adapters. Request bodies are built only by I4's `instant_wire.dart` (checked against `openapi.yaml`).
 - **UI strings** only in `lib/l10n/app_vi.arb` (Vietnamese with full diacritics), then `flutter gen-l10n`; keys camelCase with the `instant…` prefix (I4's convention). Free events are not involved here; prices use `formatMoney` (`690.000₫`; short `690K` only on the package tiles).
 - **Theme:** `AppColors`/`AppColorsDark`/`AppSpace`/`AppRadius`; no raw hex in features.
-- **One primary action per screen** (`AppButton.primary`): S47 "Thanh toán {giá} và tìm", S48 none (the red text "Huỷ yêu cầu"), S49 none, S50 "Xác nhận hoàn thành" (then "Đánh giá"), S51 "Thử lại". Cancel is a red text button that opens S55; the confirmation inside the sheet is the red `AppButton.danger`, never the gradient, and the refund is shown in words first.
-- **Money and contact rules (product decisions, do not weaken):** the customer pays in full before the search and the money is held in escrow until completion (shown on S47); phone/Zalo/WhatsApp open only after payment (S49 shows `PhotographerContactAction` with `ContactAccess.unlocked` only once the request is `assigned`); a customer needs a phone number to request (S33 first, `phone_required` handled); phone numbers never go into `users/{uid}` or any `instant_*` document; the exact meet point is sent only by the customer's explicit choice.
-- **Location and battery:** the customer's location is read **once** per S47 visit (medium accuracy, with a deadline) and reused through the draft; no stream on the customer side; the map exists only on S47 and S49 (S54 in I4); the pulse and the aperture wait run only while searching / waiting and are still under reduced motion; `TickingBuilder` is the only per-second clock and runs only while it is on screen; every mirror listener is `autoDispose` and closes with its screen.
+- **One primary action per screen** (`AppButton.primary`): S13.01 "Thanh toán {giá} và tìm", S13.03 none (the red text "Huỷ yêu cầu"), S13.05 none, S13.06 "Xác nhận hoàn thành" (then "Đánh giá"), S13.07 "Thử lại". Cancel is a red text button that opens S13.08; the confirmation inside the sheet is the red `AppButton.danger`, never the gradient, and the refund is shown in words first.
+- **Money and contact rules (product decisions, do not weaken):** the customer pays in full before the search and the money is held in escrow until completion (shown on S13.01); phone/Zalo/WhatsApp open only after payment (S13.05 shows `PhotographerContactAction` with `ContactAccess.unlocked` only once the request is `assigned`); a customer needs a phone number to request (S04.05 first, `phone_required` handled); phone numbers never go into `users/{uid}` or any `instant_*` document; the exact meet point is sent only by the customer's explicit choice.
+- **Location and battery:** the customer's location is read **once** per S13.01 visit (medium accuracy, with a deadline) and reused through the draft; no stream on the customer side; the map exists only on S13.01 and S13.05 (S14.03 in I4); the pulse and the aperture wait run only while searching / waiting and are still under reduced motion; `TickingBuilder` is the only per-second clock and runs only while it is on screen; every mirror listener is `autoDispose` and closes with its screen.
 - **Goong keys** come from `--dart-define=GOONG_API_KEY=…` / `GOONG_MAPTILES_KEY=…` (I4's `GoongConfig`), are restricted to the app's package name / bundle id in the Goong console, and never reach a log, an exception text or analytics.
 - Interactive controls have a 48dp touch target; meaning never rests on colour alone; every map pin has a text label; widget tests run at 390dp and at 320dp with text scale 1.3, dark and light.
 - Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
@@ -56,14 +56,14 @@
 | `lib/core/widgets/search_pulse.dart` (create) | `SearchPulse` (rings around `ApertureLoader`) |
 | `lib/features/instant/instant_draft.dart` (create) | `InstantDraft`, `instantDraftProvider` |
 | `lib/features/instant/instant_customer_rules.dart` (create) | grace, stale track, late cancel, elapsed, defaults |
-| `lib/features/instant/instant_book_controller.dart` (create) | S47 controller, `InstantSubmitResult` |
+| `lib/features/instant/instant_book_controller.dart` (create) | S13.01 controller, `InstantSubmitResult` |
 | `lib/features/instant/meet_point_search_sheet.dart` (create) | address search sheet and its controller |
-| `lib/features/instant/instant_book_screen.dart` (create) | S47 |
+| `lib/features/instant/instant_book_screen.dart` (create) | S13.01 |
 | `lib/features/instant/customer_only.dart` (create) | role guard |
 | `lib/features/instant/instant_customer_actions.dart` (create) | cancel quote / cancel / confirm |
 | `lib/features/instant/instant_request_screen.dart` (create) | `/instant/:id` status switch |
-| `lib/features/instant/views/instant_searching_view.dart`, `instant_tracking_view.dart`, `instant_shoot_view.dart`, `instant_no_match_view.dart`, `instant_closed_view.dart` (create) | S48 (+ payment states), S49, S50 (+ completed), S51, closed states |
-| `lib/features/instant/instant_entry.dart` (create) | `InstantHomeCard` (S01), `InstantFindButton` (S04) |
+| `lib/features/instant/views/instant_searching_view.dart`, `instant_tracking_view.dart`, `instant_shoot_view.dart`, `instant_no_match_view.dart`, `instant_closed_view.dart` (create) | S13.03 (+ payment states), S13.05, S13.06 (+ completed), S13.07, closed states |
+| `lib/features/instant/instant_entry.dart` (create) | `InstantHomeCard` (S02.01), `InstantFindButton` (S02.06) |
 | `lib/features/home/home_screen.dart`, `lib/features/find/find_screen.dart` (modify, 3b4) | entry points |
 | `lib/data/instant/instant_push.dart`, `instant_notifier.dart`, `local_instant_notifier.dart`, `fcm_background.dart` (modify, I4) | customer pushes and notifications |
 | `lib/features/instant_work/instant_navigation.dart` (modify, I4) | open `/instant/:id` from customer notifications |
@@ -231,7 +231,7 @@ import 'package:photobooking/data/instant/fake_instant_repositories.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/instant_wire.dart';
 
-/// The customer side of the dispatch service (S47–S51, S55). Status changes
+/// The customer side of the dispatch service (S13). Status changes
 /// are never written here: the app reads them from the mirror.
 abstract class InstantBookingRepository {
   /// `GET /v1/health`; false hides "Chụp ngay" (spec §10).
@@ -793,7 +793,7 @@ class PlaceSearchException implements Exception {
   String toString() => 'PlaceSearchException';
 }
 
-/// Address search and reverse geocoding for the meet point (S47).
+/// Address search and reverse geocoding for the meet point (S13.01).
 abstract class PlaceSearch {
   Future<List<PlaceSuggestion>> suggest(String input, {LatLng? near, required String sessionToken});
   Future<MeetPoint?> details(String placeId, {required String sessionToken});
@@ -966,7 +966,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: `SearchPulse` (S48 rings around the `ApertureLoader`)
+### Task 4: `SearchPulse` (S13.03 rings around the `ApertureLoader`)
 
 **Files:**
 - Create: `lib/core/widgets/search_pulse.dart`, `test/core/widgets/search_pulse_test.dart`
@@ -1058,7 +1058,7 @@ import 'package:photobooking/core/widgets/aperture_loader.dart';
 
 const _centre = 66.0;
 
-/// S48: rings radiating from the brand aperture while the service looks for
+/// S13.03: rings radiating from the brand aperture while the service looks for
 /// a photographer. Still (and costing nothing) when [active] is false, when
 /// the screen is not visible, or under reduced motion.
 class SearchPulse extends StatefulWidget {
@@ -1167,14 +1167,14 @@ Expected: PASS (6 tests).
 ```bash
 dart format lib test
 git add lib/core lib/l10n test/core/widgets/search_pulse_test.dart
-git commit -m "feat(core): SearchPulse, rings around the aperture loader for S48
+git commit -m "feat(core): SearchPulse, rings around the aperture loader for S13.03
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 5: The draft, customer rules and `InstantBookController` (S47 logic)
+### Task 5: The draft, customer rules and `InstantBookController` (S13.01 logic)
 
 **Files:**
 - Create: `lib/features/instant/instant_draft.dart`, `lib/features/instant/instant_customer_rules.dart`, `lib/features/instant/instant_book_controller.dart`, `test/support/instant_customer_world.dart`, `test/features/instant/instant_customer_rules_test.dart`, `test/features/instant/instant_book_controller_test.dart`
@@ -1183,7 +1183,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: Tasks 1–3; I4 `trackingLocationProvider`, `FixAccuracy`, `distanceMeters`, `InstantWorld`; 3a2 `locationRepositoryProvider`; 2a `currentContactProvider`; 2b `photographerContactRepositoryProvider`, `FakePhotographerContactRepository`, `ContactChannels`.
 - Produces:
-  - `class InstantDraft` (`package` = `p60`, `genre` = `portrait`, `meetPoint`, `note` (≤ 140), `expand` = false, `lastRequestId`, `lastQuote`), `class InstantDraftController extends Notifier<InstantDraft>` with `setPackage`, `setGenre`, `setMeetPoint`, `setNote`, `setExpand`, `setLastRequest(String id)`, `setLastQuote(PackagesQuote q)`; `instantDraftProvider` (keep-alive: survives S33 and S51 → S47).
+  - `class InstantDraft` (`package` = `p60`, `genre` = `portrait`, `meetPoint`, `note` (≤ 140), `expand` = false, `lastRequestId`, `lastQuote`), `class InstantDraftController extends Notifier<InstantDraft>` with `setPackage`, `setGenre`, `setMeetPoint`, `setNote`, `setExpand`, `setLastRequest(String id)`, `setLastQuote(PackagesQuote q)`; `instantDraftProvider` (keep-alive: survives S04.05 and S13.07 → S13.01).
   - Rules: `instantDefaultCenter` (Quận 1), `searchWindow` (10 min), `staleTrackAfter` (3 min), `lateFreeCancelAfter` (15 min), `requoteAfterKm` (3), `ignoreMoveBelowM` (15); `String formatClock(Duration)` (`1:12`), `Duration searchElapsed(InstantRequestView, DateTime now)`, `Duration? graceLeft(InstantRequestView, DateTime now)`, `bool trackStale(InstantTrack?, InstantRequestView, DateTime now)`, `bool photographerLate(InstantRequestView, int? firstEtaMinutes, DateTime now)`, `Duration shootRemaining(InstantRequestView, DateTime now)`, `bool customerCanCancel(InstantStatus)`, `bool canConfirmComplete(InstantRequestView, DateTime now)`.
   - `sealed class InstantSubmitResult` with `InstantSubmitNeedsPhone`, `InstantSubmitStarted(String requestId)`, `InstantSubmitPriceChanged(int amountVnd)`, `InstantSubmitFailed(DispatchError error)`.
   - `class InstantBookState` (`quote`, `loadingQuote`, `locating`, `locationDenied`, `submitting`, `outsideArea`, `quoteError`, `cameraToken`).
@@ -1191,7 +1191,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - Test support `InstantCustomerWorld` (extends `InstantWorld` as a customer: `booking`, `payment`, `places`, `photographerContacts`, `meet`, `request(InstantStatus, {…})`, `track({Duration age, double northMeters})`).
   - l10n: `instantMeetPointHere` "Vị trí của bạn", `instantMeetPointPinned` "Điểm đã ghim".
 
-Behaviour: S47 takes **one** medium fix (with the OS permission only when needed), names it by reverse geocoding (or "Vị trí của bạn"), and quotes there; with a meet point already in the draft (back from S33, retry from S51) it takes no fix. Moving the pin less than 15 m is ignored (camera settling); moving more re-names the point and re-quotes only beyond 3 km. Submit: no phone → S33; `phone_required` → S33; `price_changed` → re-quote and say the new price; `outside_service_area` → banner; payment launcher unavailable or failed → message; otherwise the request id for `/instant/:id`.
+Behaviour: S13.01 takes **one** medium fix (with the OS permission only when needed), names it by reverse geocoding (or "Vị trí của bạn"), and quotes there; with a meet point already in the draft (back from S04.05, retry from S13.07) it takes no fix. Moving the pin less than 15 m is ignored (camera settling); moving more re-names the point and re-quotes only beyond 3 km. Submit: no phone → S04.05; `phone_required` → S04.05; `price_changed` → re-quote and say the new price; `outside_service_area` → banner; payment launcher unavailable or failed → message; otherwise the request id for `/instant/:id`.
 
 - [ ] **Step 1: Make the shared world's phone optional**
 
@@ -1450,7 +1450,7 @@ void main() {
     expect(w.booking.packagesCalls, 2);
   });
 
-  test('submit without a phone number goes to S33 and creates nothing', () async {
+  test('submit without a phone number goes to S04.05 and creates nothing', () async {
     final noPhone = InstantCustomerWorld(withPhone: false);
     await noPhone.init();
     final c = await started(world: noPhone);
@@ -1479,7 +1479,7 @@ void main() {
     expect(c.read(instantDraftProvider).lastRequestId, 'RQ1');
   });
 
-  test('phone_required from the service also goes to S33', () async {
+  test('phone_required from the service also goes to S04.05', () async {
     final c = await started();
     w.booking.createError = DispatchError.phoneRequired;
     expect(await c.read(instantBookProvider.notifier).submit(), isA<InstantSubmitNeedsPhone>());
@@ -1548,8 +1548,8 @@ import 'package:photobooking/data/instant/instant_models.dart';
 
 const _keep = Object();
 
-/// What the customer chose on S47. Kept for the whole session so S33 (add a
-/// phone) and S51 ("Thử lại") come back to the same choices.
+/// What the customer chose on S13.01. Kept for the whole session so S04.05 (add a
+/// phone) and S13.07 ("Thử lại") come back to the same choices.
 class InstantDraft {
   const InstantDraft({
     this.package = InstantPackageCode.p60,
@@ -1609,7 +1609,7 @@ final instantDraftProvider = NotifierProvider<InstantDraftController, InstantDra
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 
-/// Where S47's map starts when the location is unknown (Quận 1, TP. HCM).
+/// Where S13.01's map starts when the location is unknown (Quận 1, TP. HCM).
 const instantDefaultCenter = LatLng(10.7769, 106.7009);
 
 /// Spec §3.2: the whole search takes at most 10 minutes.
@@ -1773,7 +1773,7 @@ class InstantBookController extends Notifier<InstantBookState> {
 
   @override
   InstantBookState build() {
-    // Keeps the private contact listener alive while S47 is open, so submit
+    // Keeps the private contact listener alive while S13.01 is open, so submit
     // can read it without a second subscription.
     ref.listen(currentContactProvider, (_, _) {});
     return const InstantBookState();
@@ -1928,14 +1928,14 @@ Expected: PASS (7 + 11 new tests; I4's tests still pass with the optional phone)
 ```bash
 dart format lib test
 git add lib/features/instant lib/l10n test/support test/features/instant
-git commit -m "feat(instant): customer draft, S47 controller with one location fix, phone gate and price change
+git commit -m "feat(instant): customer draft, S13.01 controller with one location fix, phone gate and price change
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 6: S47 screen, meet-point search sheet and the `/instant` route
+### Task 6: S13.01 screen, meet-point search sheet and the `/instant` route
 
 **Files:**
 - Create: `lib/features/instant/customer_only.dart`, `lib/features/instant/meet_point_search_sheet.dart`, `lib/features/instant/instant_book_screen.dart`, `lib/features/instant/instant_request_screen.dart` (placeholder, replaced in Task 7), `test/support/instant_customer_screens.dart`, `test/features/instant/instant_book_screen_test.dart`, `test/features/instant/meet_point_search_sheet_test.dart`
@@ -1946,11 +1946,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Produces:
   - `const CustomerOnly({super.key, required Widget child})`.
   - `Future<MeetPoint?> showMeetPointSearch(BuildContext context, {LatLng? near})`; `MeetPointSearchController` (`NotifierProvider.autoDispose`, debounced 300 ms, ≥ 2 characters, one Goong session token per sheet). Keys: `meet-search-field`, `meet-result-<placeId>`, `meet-search-empty`, `meet-search-error`.
-  - `const InstantBookScreen({super.key})` (S47, route `/instant`). Keys: `instant-search`, `instant-map`, `instant-package-<code>`, `instant-genre-<code>`, `instant-expand`, `instant-note`, `instant-escrow`, `instant-outside`, `instant-regular`, `instant-pay`, `instant-paying`.
+  - `const InstantBookScreen({super.key})` (S13.01, route `/instant`). Keys: `instant-search`, `instant-map`, `instant-package-<code>`, `instant-genre-<code>`, `instant-expand`, `instant-note`, `instant-escrow`, `instant-outside`, `instant-regular`, `instant-pay`, `instant-paying`.
   - Test support `instantCustomerApp(InstantCustomerWorld w, {required String location, Brightness brightness, double textScale})` with stubs `/profile/phone`, `/action` ("find"), `/home`, `/chat/:chatId`, `/instant/:id/review`.
   - l10n listed in Step 3.
 
-Layout (mock S47): app bar "Chụp ngay" / "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút"; a search field "Tìm địa chỉ" (opens the sheet); the 180dp map with a fixed centre pin "Điểm hẹn · {địa chỉ}" (drag the map under it) and "Về vị trí của tôi"; the location hint when location is off; the outside-area banner with "Đặt lịch thường"; three package tiles (duration, photos, short price; "1 giờ" preselected); genre chips (five); "Mở rộng tìm kiếm" (off) with its explanation; the note (≤ 140); the escrow line with the typical match time when known; the one primary "Thanh toán {giá} và tìm". While the request is created and the payment opens, a scrim with the `ApertureLoader` ("Đang mở thanh toán") covers the screen and the button shows its spinner.
+Layout (mock S13.01): app bar "Chụp ngay" / "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút"; a search field "Tìm địa chỉ" (opens the sheet); the 180dp map with a fixed centre pin "Điểm hẹn · {địa chỉ}" (drag the map under it) and "Về vị trí của tôi"; the location hint when location is off; the outside-area banner with "Đặt lịch thường"; three package tiles (duration, photos, short price; "1 giờ" preselected); genre chips (five); "Mở rộng tìm kiếm" (off) with its explanation; the note (≤ 140); the escrow line with the typical match time when known; the one primary "Thanh toán {giá} và tìm". While the request is created and the payment opens, a scrim with the `ApertureLoader` ("Đang mở thanh toán") covers the screen and the button shows its spinner.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2092,7 +2092,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('no phone number: S33 first, coming back here', (tester) async {
+  testWidgets('no phone number: S04.05 first, coming back here', (tester) async {
     final noPhone = InstantCustomerWorld(withPhone: false);
     await noPhone.init();
     await tester.pumpWidget(instantCustomerApp(noPhone, location: '/instant'));
@@ -2168,7 +2168,7 @@ void main() {
 }
 ```
 
-(`InstantBookScreenMarker` is a private-free marker: add `class InstantBookScreenMarker extends StatelessWidget { const InstantBookScreenMarker({super.key}); @override Widget build(BuildContext context) => const SizedBox.shrink(); }` at the end of `instant_book_screen.dart` and put one in the S47 tree, so tests can tell that S47 is gone after paying.)
+(`InstantBookScreenMarker` is a private-free marker: add `class InstantBookScreenMarker extends StatelessWidget { const InstantBookScreenMarker({super.key}); @override Widget build(BuildContext context) => const SizedBox.shrink(); }` at the end of `instant_book_screen.dart` and put one in the S13.01 tree, so tests can tell that S13.01 is gone after paying.)
 
 ```dart
 // test/features/instant/meet_point_search_sheet_test.dart
@@ -2476,7 +2476,7 @@ import 'package:photobooking/features/instant/instant_draft.dart';
 import 'package:photobooking/features/instant/meet_point_search_sheet.dart';
 import 'package:photobooking/features/instant_common/instant_errors.dart';
 
-/// S47: package, kind of shoot, meet point, "Mở rộng tìm kiếm", fixed price.
+/// S13.01: package, kind of shoot, meet point, "Mở rộng tìm kiếm", fixed price.
 class InstantBookScreen extends ConsumerStatefulWidget {
   const InstantBookScreen({super.key});
 
@@ -2787,7 +2787,7 @@ class _PackageTile extends StatelessWidget {
   }
 }
 
-/// Lets tests tell that S47 is (or is no longer) on screen.
+/// Lets tests tell that S13.01 is (or is no longer) on screen.
 class InstantBookScreenMarker extends StatelessWidget {
   const InstantBookScreenMarker({super.key});
 
@@ -2844,14 +2844,14 @@ Expected: PASS (12 + 3 new tests).
 ```bash
 dart format lib test
 git add lib/features/instant lib/app/router.dart lib/l10n test/support test/features/instant
-git commit -m "feat(instant): S47 Chụp ngay with packages, meet-point map and Goong search
+git commit -m "feat(instant): S13.01 Chụp ngay with packages, meet-point map and Goong search
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 7: `/instant/:id` status switch, S48 and the customer S55
+### Task 7: `/instant/:id` status switch, S13.03 and the customer S13.08
 
 **Files:**
 - Create: `lib/features/instant/instant_customer_actions.dart`, `lib/features/instant/views/instant_pill.dart`, `lib/features/instant/views/instant_searching_view.dart`, `lib/features/instant/views/instant_tracking_view.dart`, `lib/features/instant/views/instant_shoot_view.dart`, `lib/features/instant/views/instant_no_match_view.dart`, `lib/features/instant/views/instant_closed_view.dart` (the last four as placeholders, replaced in Tasks 8–10), `test/features/instant/instant_request_screen_test.dart`
@@ -2862,12 +2862,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Produces:
   - `class InstantCustomerActions { Future<CancelQuote> quoteCancel(String id); Future<CancelQuote> cancel(String id); Future<void> confirmComplete(String id); }`, `instantCustomerActionsProvider`.
   - `enum InstantPillTone { waiting, good }`, `const InstantPill(String text, {Key? key, InstantPillTone tone = InstantPillTone.good})`.
-  - `const InstantRequestScreen({super.key, required String requestId, bool openCancel = false})` — loading → `ApertureLoader`; missing → message; `pending_payment` → `InstantPaymentPendingView` (S48 · `payment`); `payment_failed` → `InstantPaymentFailedView` (S47 · `payment_failed`, "Thử lại" back to S47 with the draft); `searching` → `InstantSearchingView` (S48); `assigned`/`en_route`/`arrived` → `InstantTrackingView` (S49); `in_progress`/`completed` → `InstantShootView` (S50); `no_match` → `InstantNoMatchView` (S51); the other final states → `InstantClosedView`. `openCancel` (route `/instant/:id/cancel`) opens S55 once the request can be cancelled.
+  - `const InstantRequestScreen({super.key, required String requestId, bool openCancel = false})` — loading → `ApertureLoader`; missing → message; `pending_payment` → `InstantPaymentPendingView` (S13.03 · `payment`); `payment_failed` → `InstantPaymentFailedView` (S13.01 · `payment_failed`, "Thử lại" back to S13.01 with the draft); `searching` → `InstantSearchingView` (S13.03); `assigned`/`en_route`/`arrived` → `InstantTrackingView` (S13.05); `in_progress`/`completed` → `InstantShootView` (S13.06); `no_match` → `InstantNoMatchView` (S13.07); the other final states → `InstantClosedView`. `openCancel` (route `/instant/:id/cancel`) opens S13.08 once the request can be cancelled.
   - `const InstantSearchingView({super.key, required InstantRequestView view, required VoidCallback onCancel})`. Keys: `searching-meta`, `searching-card`, `instant-cancel`.
   - Placeholder constructors for Tasks 8–10: `InstantTrackingView({required InstantRequestView view, required VoidCallback onCancel})`, `InstantShootView({required InstantRequestView view})`, `InstantNoMatchView({required InstantRequestView view})`, `InstantClosedView({required InstantRequestView view})`.
   - l10n listed in Step 3.
 
-Layout (mock S48): "Đang tìm nhiếp ảnh gia" centred, no back arrow; `SearchPulse` (active only in this view, so it stops as soon as the status changes); "Đang mời người phù hợp gần bạn"; "Đã tìm 1:12 · bán kính 3 km · vòng ưu tiên" (one tick per second, radius and round from the mirror); the request card "Chân dung · 1 giờ" / "Công viên Tao Đàn · 690.000₫ đã thanh toán" with the "Đang tìm" pill; the note that the app may be left and the 10-minute refund; the red text "Huỷ yêu cầu" (→ S55). On first show it asks for notification permission (the "assigned" push), once.
+Layout (mock S13.03): "Đang tìm nhiếp ảnh gia" centred, no back arrow; `SearchPulse` (active only in this view, so it stops as soon as the status changes); "Đang mời người phù hợp gần bạn"; "Đã tìm 1:12 · bán kính 3 km · vòng ưu tiên" (one tick per second, radius and round from the mirror); the request card "Chân dung · 1 giờ" / "Công viên Tao Đàn · 690.000₫ đã thanh toán" with the "Đang tìm" pill; the note that the app may be left and the 10-minute refund; the red text "Huỷ yêu cầu" (→ S13.08). On first show it asks for notification permission (the "assigned" push), once.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2911,7 +2911,7 @@ void main() {
     expect(find.text('Không tìm thấy yêu cầu này.'), findsOneWidget);
   });
 
-  testWidgets('waiting for the gateway: the aperture wait; paid → S48', (tester) async {
+  testWidgets('waiting for the gateway: the aperture wait; paid → S13.03', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.pendingPayment));
     await open(tester);
     expect(find.text('Đang chờ xác nhận thanh toán'), findsWidgets);
@@ -2921,7 +2921,7 @@ void main() {
     expect(find.byType(SearchPulse), findsOneWidget);
   });
 
-  testWidgets('payment failed: "Thử lại" goes back to S47 with the choices kept', (tester) async {
+  testWidgets('payment failed: "Thử lại" goes back to S13.01 with the choices kept', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.paymentFailed));
     await open(tester);
     expect(find.text('Thanh toán chưa thành công'), findsOneWidget);
@@ -2930,7 +2930,7 @@ void main() {
     expect(find.text('Chụp ngay'), findsOneWidget);
   });
 
-  testWidgets('S48: pulse, elapsed time to the second, radius and round, the paid request, red cancel', (tester) async {
+  testWidgets('S13.03: pulse, elapsed time to the second, radius and round, the paid request, red cancel', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.searching));
     await open(tester);
     final c = ProviderScope.containerOf(tester.element(find.byType(InstantRequestScreen)));
@@ -2967,7 +2967,7 @@ void main() {
     expect(find.byType(SearchPulse), findsNothing);
   });
 
-  testWidgets('S55 from S48: the dry run first, then the red confirmation cancels', (tester) async {
+  testWidgets('S13.08 from S13.03: the dry run first, then the red confirmation cancels', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.searching));
     await open(tester);
     await tester.tap(find.byKey(const Key('instant-cancel')));
@@ -2979,7 +2979,7 @@ void main() {
     expect(w.booking.cancelCalls, ['quote RQ1', 'cancel RQ1']);
   });
 
-  testWidgets('/instant/:id/cancel opens S55 directly', (tester) async {
+  testWidgets('/instant/:id/cancel opens S13.08 directly', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.searching));
     await open(tester, at: '/instant/RQ1/cancel');
     await tester.pumpAndSettle();
@@ -2996,7 +2996,7 @@ void main() {
   });
 
   for (final b in Brightness.values) {
-    testWidgets('S48 fits 320dp at 1.3x (${b.name})', (tester) async {
+    testWidgets('S13.03 fits 320dp at 1.3x (${b.name})', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -3042,7 +3042,7 @@ Strings (`lib/l10n/app_vi.arb`, then `flutter gen-l10n`):
   "instantRequestMissing": "Không tìm thấy yêu cầu này.",
 ```
 
-(The S48 test expects `find.text('Đang tìm')` once: the pill. The pulse's label "Đang tìm" is a `Semantics` label, not a `Text`.)
+(The S13.03 test expects `find.text('Đang tìm')` once: the pill. The pulse's label "Đang tìm" is a `Semantics` label, not a `Text`.)
 
 ```dart
 // lib/features/instant/instant_customer_actions.dart
@@ -3114,7 +3114,7 @@ import 'package:photobooking/features/instant/views/instant_pill.dart';
 import 'package:photobooking/features/instant_common/instant_services.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// S48: the search, with a clock and a way out.
+/// S13.03: the search, with a clock and a way out.
 class InstantSearchingView extends ConsumerStatefulWidget {
   const InstantSearchingView({super.key, required this.view, required this.onCancel});
   final InstantRequestView view;
@@ -3224,7 +3224,7 @@ class _InstantSearchingViewState extends ConsumerState<InstantSearchingView> {
   }
 }
 
-/// S48 before the gateway confirmed: the aperture wait, nothing to do.
+/// S13.03 before the gateway confirmed: the aperture wait, nothing to do.
 class InstantPaymentPendingView extends StatelessWidget {
   const InstantPaymentPendingView({super.key, required this.view});
   final InstantRequestView view;
@@ -3252,7 +3252,7 @@ class InstantPaymentPendingView extends StatelessWidget {
   }
 }
 
-/// The gateway refused or was cancelled (spec §10): back to S47, choices kept.
+/// The gateway refused or was cancelled (spec §10): back to S13.01, choices kept.
 class InstantPaymentFailedView extends StatelessWidget {
   const InstantPaymentFailedView({super.key, required this.view});
   final InstantRequestView view;
@@ -3408,14 +3408,14 @@ Expected: PASS (11 new tests).
 ```bash
 dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
-git commit -m "feat(instant): /instant/:id status switch, S48 search with pulse and clock, customer cancel sheet
+git commit -m "feat(instant): /instant/:id status switch, S13.03 search with pulse and clock, customer cancel sheet
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 8: S49 "Đang đến" (map, ETA, grace, stale position, late, contact)
+### Task 8: S13.05 "Đang đến" (map, ETA, grace, stale position, late, contact)
 
 **Files:**
 - Modify (replace the placeholder): `lib/features/instant/views/instant_tracking_view.dart`; modify `lib/l10n/app_vi.arb`
@@ -3423,9 +3423,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `instantTrackProvider` (I4), `AppMap`/`MapMarker`, `AppAvatar` (3b2), `VerifiedName`, `PhotographerContactAction` + `ContactDialStyle.labeled` (2b), `ContactSubject.instant` (I4), `TickingBuilder`, `graceLeft`, `trackStale`, `photographerLate`, `formatClock`, `InstantPill`.
-- Produces: `const InstantTrackingView({super.key, required InstantRequestView view, required VoidCallback onCancel})` (S49). Keys: `tracking-map`, `tracking-headline`, `tracking-meta`, `tracking-stale`, `tracking-chat`, `instant-cancel`. l10n listed in Step 3.
+- Produces: `const InstantTrackingView({super.key, required InstantRequestView view, required VoidCallback onCancel})` (S13.05). Keys: `tracking-map`, `tracking-headline`, `tracking-meta`, `tracking-stale`, `tracking-chat`, `instant-cancel`. l10n listed in Step 3.
 
-Layout (mock S49): the 250dp map edge to edge (pins "Bạn" at the meet point and "Minh Trí · 9 phút" at the photographer's last position; the photographer pin glides between points, jumps under reduced motion; "Về vị trí của tôi" refits; while there is no position, only "Bạn"); the photographer card (avatar, name with the verified mark, "★ 4,9 · 112 buổi · đến trong khoảng 9 phút", "(ước tính)" when the ETA is estimated, pill "Đang đến" / "Đã đến"); the headline "Minh Trí đã nhận · đến trong khoảng 9 phút" or "Đã đến điểm hẹn"; "Đang chờ cập nhật vị trí" when no position came for 3 minutes; the note to compare the avatar on meeting; outline "Nhắn tin" and the labelled contact dial (unlocked: the request is paid); the red cancel text: "Huỷ (miễn phí thêm 1:40)" during the grace period, "Huỷ miễn phí vì nhiếp ảnh gia trễ" 15 minutes past the first ETA, otherwise "Huỷ yêu cầu". One clock: once a second during the grace period, every 15 s otherwise (stale check), none once arrived.
+Layout (mock S13.05): the 250dp map edge to edge (pins "Bạn" at the meet point and "Minh Trí · 9 phút" at the photographer's last position; the photographer pin glides between points, jumps under reduced motion; "Về vị trí của tôi" refits; while there is no position, only "Bạn"); the photographer card (avatar, name with the verified mark, "★ 4,9 · 112 buổi · đến trong khoảng 9 phút", "(ước tính)" when the ETA is estimated, pill "Đang đến" / "Đã đến"); the headline "Minh Trí đã nhận · đến trong khoảng 9 phút" or "Đã đến điểm hẹn"; "Đang chờ cập nhật vị trí" when no position came for 3 minutes; the note to compare the avatar on meeting; outline "Nhắn tin" and the labelled contact dial (unlocked: the request is paid); the red cancel text: "Huỷ (miễn phí thêm 1:40)" during the grace period, "Huỷ miễn phí vì nhiếp ảnh gia trễ" 15 minutes past the first ETA, otherwise "Huỷ yêu cầu". One clock: once a second during the grace period, every 15 s otherwise (stale check), none once arrived.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3471,7 +3471,7 @@ void main() {
     expect(find.text('★ 4,9 · 112 buổi · đến trong khoảng 9 phút'), findsOneWidget);
     expect(find.text('Đang đến'), findsOneWidget);
     expect(find.byType(PhotographerContactAction), findsOneWidget);
-    expect(find.byType(CtaSurface), findsNothing, reason: 'S49 has no primary action');
+    expect(find.byType(CtaSurface), findsNothing, reason: 'S13.05 has no primary action');
     await tester.tap(find.byKey(const Key('tracking-chat')));
     await tester.pumpAndSettle();
     expect(find.text('chat RQ1'), findsOneWidget);
@@ -3612,7 +3612,7 @@ import 'package:photobooking/features/instant/views/instant_pill.dart';
 
 String _rating(double r) => r.toStringAsFixed(1).replaceAll('.', ',');
 
-/// S49: the photographer on the map with the ETA, contact, and the
+/// S13.05: the photographer on the map with the ETA, contact, and the
 /// cancel rules spelled out on the button.
 class InstantTrackingView extends ConsumerStatefulWidget {
   const InstantTrackingView({super.key, required this.view, required this.onCancel});
@@ -3823,14 +3823,14 @@ Expected: PASS (11 new tests).
 ```bash
 dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
-git commit -m "feat(instant): S49 tracking with map, ETA, grace countdown, stale position and late free cancel
+git commit -m "feat(instant): S13.05 tracking with map, ETA, grace countdown, stale position and late free cancel
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 9: S50 "Đang chụp" and the completed state
+### Task 9: S13.06 "Đang chụp" and the completed state
 
 **Files:**
 - Modify (replace the placeholder): `lib/features/instant/views/instant_shoot_view.dart`; modify `lib/l10n/app_vi.arb`
@@ -3838,9 +3838,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `CountdownRing`, `TickingBuilder`, `InstantMilestones`/`Milestone`, `instantCustomerActionsProvider`, `shootRemaining`, `canConfirmComplete`, `instantDraftProvider` (`lastQuote` for the photo count), `AppAvatar`, `instantErrorText`, `toVn`, `genreLabel`, `packageLabel`, I4's `instantMilestoneAccepted` / `instantMilestoneArrived`.
-- Produces: `const InstantShootView({super.key, required InstantRequestView view})` (S50; completed → `ScreenCode(S50, label: 'done')`). Keys: `shoot-ring`, `shoot-chat`, `shoot-confirm`, `shoot-done`. l10n listed in Step 3.
+- Produces: `const InstantShootView({super.key, required InstantRequestView view})` (S13.06; completed → `ScreenCode(S13.06, label: 'done')`). Keys: `shoot-ring`, `shoot-chat`, `shoot-confirm`, `shoot-done`. l10n listed in Step 3.
 
-Layout (mock S50): "Đang chụp" with a chat icon; the ring with `38:12` / "còn lại" (one tick per second until finished or time is up); "Minh Trí đã báo hoàn thành." once finished; the card (avatar, "Minh Trí · Chân dung 1 giờ", "Bắt đầu 15:42 · Công viên Tao Đàn", pill "Đang chụp"); milestones "Đã nhận · 15:21", "Đã đến · 15:38", "Hoàn thành và giao 30 ảnh trong 48 giờ"; the note on auto-completion after 2 hours and reporting within 24 hours; the one primary "Xác nhận hoàn thành" (enabled when the photographer finished or the package time is over). Completed: "Buổi chụp đã hoàn thành" and the primary "Đánh giá" (→ `/instant/:id/review`, S12).
+Layout (mock S13.06): "Đang chụp" with a chat icon; the ring with `38:12` / "còn lại" (one tick per second until finished or time is up); "Minh Trí đã báo hoàn thành." once finished; the card (avatar, "Minh Trí · Chân dung 1 giờ", "Bắt đầu 15:42 · Công viên Tao Đàn", pill "Đang chụp"); milestones "Đã nhận · 15:21", "Đã đến · 15:38", "Hoàn thành và giao 30 ảnh trong 48 giờ"; the note on auto-completion after 2 hours and reporting within 24 hours; the one primary "Xác nhận hoàn thành" (enabled when the photographer finished or the package time is over). Completed: "Buổi chụp đã hoàn thành" and the primary "Đánh giá" (→ `/instant/:id/review`, S05.05).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3909,7 +3909,7 @@ void main() {
     expect(TickingBuilder.debugActiveCount, 0);
   });
 
-  testWidgets('the photo count comes from the quote seen on S47', (tester) async {
+  testWidgets('the photo count comes from the quote seen on S13.01', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.inProgress, startedAt: w.now));
     await open(tester);
     expect(find.text('Hoàn thành và giao ảnh trong 48 giờ'), findsOneWidget);
@@ -3987,7 +3987,7 @@ import 'package:photobooking/features/instant/views/instant_pill.dart';
 import 'package:photobooking/features/instant_common/instant_errors.dart';
 import 'package:photobooking/features/instant_common/instant_milestones.dart';
 
-/// S50: the shoot clock and one button; then "Đánh giá" once completed.
+/// S13.06: the shoot clock and one button; then "Đánh giá" once completed.
 class InstantShootView extends ConsumerStatefulWidget {
   const InstantShootView({super.key, required this.view});
   final InstantRequestView view;
@@ -4168,14 +4168,14 @@ Expected: PASS (7 new tests).
 ```bash
 dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
-git commit -m "feat(instant): S50 shoot clock with confirmation and the completed state
+git commit -m "feat(instant): S13.06 shoot clock with confirmation and the completed state
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 10: S51 "Không tìm được người" and the closed states
+### Task 10: S13.07 "Không tìm được người" and the closed states
 
 **Files:**
 - Modify (replace the placeholders): `lib/features/instant/views/instant_no_match_view.dart`, `lib/features/instant/views/instant_closed_view.dart`; modify `lib/l10n/app_vi.arb`
@@ -4184,11 +4184,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `instantDraftProvider`, `formatMoney`, `AppButton`, `EmptyState`, `AppTab`.
 - Produces:
-  - `const InstantNoMatchView({super.key, required InstantRequestView view})` (S51). Keys: `nomatch-title`, `nomatch-refund`, `nomatch-expand`, `nomatch-regular`, `nomatch-retry`.
-  - `const InstantClosedView({super.key, required InstantRequestView view})`: `cancelled_by_customer` → S55 · `done` ("Đã huỷ yêu cầu", "Đã hoàn {số tiền}."), `no_show_customer` → S49 · `no_show`, `disputed` → S50 · `disputed`; "Về trang chủ". Key `closed-state`.
+  - `const InstantNoMatchView({super.key, required InstantRequestView view})` (S13.07). Keys: `nomatch-title`, `nomatch-refund`, `nomatch-expand`, `nomatch-regular`, `nomatch-retry`.
+  - `const InstantClosedView({super.key, required InstantRequestView view})`: `cancelled_by_customer` → S13.08 · `done` ("Đã huỷ yêu cầu", "Đã hoàn {số tiền}."), `no_show_customer` → S13.05 · `no_show`, `disputed` → S13.06 · `disputed`; "Về trang chủ". Key `closed-state`.
   - l10n listed in Step 3.
 
-Layout (mock S51): back arrow and "Chụp ngay"; an empty-state block "Chưa tìm được nhiếp ảnh gia" and "Đã hoàn 690.000₫. Gần bạn lúc này ít người đang sẵn sàng." (refund first); "Mở rộng tìm kiếm" **ticked** with "Lần này tìm cả nhiếp ảnh gia khác ở gần."; outline "Đặt lịch thường với người bạn chọn" (→ `/action`, S04); the one primary "Thử lại" (→ S47 with the previous package, kind and meet point, and the chosen expand).
+Layout (mock S13.07): back arrow and "Chụp ngay"; an empty-state block "Chưa tìm được nhiếp ảnh gia" and "Đã hoàn 690.000₫. Gần bạn lúc này ít người đang sẵn sàng." (refund first); "Mở rộng tìm kiếm" **ticked** with "Lần này tìm cả nhiếp ảnh gia khác ở gần."; outline "Đặt lịch thường với người bạn chọn" (→ `/action`, S02.06); the one primary "Thử lại" (→ S13.01 with the previous package, kind and meet point, and the chosen expand).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -4314,7 +4314,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/features/instant/instant_draft.dart';
 
-/// S51: the refund first, then a retry with "Mở rộng" suggested, or a normal booking.
+/// S13.07: the refund first, then a retry with "Mở rộng" suggested, or a normal booking.
 class InstantNoMatchView extends ConsumerStatefulWidget {
   const InstantNoMatchView({super.key, required this.view});
   final InstantRequestView view;
@@ -4450,7 +4450,7 @@ Expected: PASS (7 new tests).
 ```bash
 dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
-git commit -m "feat(instant): S51 no match with refund and retry, closed states
+git commit -m "feat(instant): S13.07 no match with refund and retry, closed states
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -4749,7 +4749,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 12: Entry points on S01 Home and S04 Find
+### Task 12: Entry points on S02.01 Home and S02.06 Find
 
 **Files:**
 - Create: `lib/features/instant/instant_entry.dart`, `test/features/instant/instant_entry_test.dart`
@@ -4759,8 +4759,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `instantBookingRepositoryProvider`, `paymentLauncherProvider`, `currentProfileProvider`, `UserRole`, 3b4's `HomeScreen` and `FindPhotographerScreen`, `DiscoveryWorld`, `screenRouterApp`.
 - Produces:
   - `instantAvailableProvider` (`FutureProvider<bool>`, kept for the app session: one `GET /v1/health` per session; false when the payment launcher is unavailable, the service is not configured or unhealthy, spec §10 "Nút Chụp ngay ẩn").
-  - `const InstantHomeCard({super.key})` (key `home-instant`): a card at the top of S01 (under the greeting) "Chụp ngay" / "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút" → `/instant`; customers only.
-  - `const InstantFindButton({super.key})` (key `find-instant`): an outline button above S04's filters "Chụp ngay · có người tới trong 30–90 phút" → `/instant` (S04 has no primary action, so this stays outline).
+  - `const InstantHomeCard({super.key})` (key `home-instant`): a card at the top of S02.01 (under the greeting) "Chụp ngay" / "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút" → `/instant`; customers only.
+  - `const InstantFindButton({super.key})` (key `find-instant`): an outline button above S02.06's filters "Chụp ngay · có người tới trong 30–90 phút" → `/instant` (S02.06 has no primary action, so this stays outline).
   - `FakeInstantBookingRepository.healthCalls`.
   - l10n `instantFindButton` "Chụp ngay · có người tới trong 30–90 phút".
 
@@ -4791,7 +4791,7 @@ Widget _cards(InstantCustomerWorld w) => screenRouterApp(
         path: '/home',
         builder: (_, _) => const Scaffold(body: Column(children: [InstantHomeCard(), InstantFindButton()])),
       ),
-      GoRoute(path: '/instant', builder: (_, _) => const Text('S47')),
+      GoRoute(path: '/instant', builder: (_, _) => const Text('S13.01')),
     ],
   ),
   overrides: w.overrides,
@@ -4808,7 +4808,7 @@ void main() {
     expect(w.booking.healthCalls, 1);
     await tester.tap(find.byKey(const Key('home-instant')));
     await tester.pumpAndSettle();
-    expect(find.text('S47'), findsOneWidget);
+    expect(find.text('S13.01'), findsOneWidget);
   });
 
   testWidgets('hidden for photographers, when unhealthy, and without payment', (tester) async {
@@ -4835,7 +4835,7 @@ void main() {
     expect(find.byKey(const Key('home-instant')), findsNothing);
   });
 
-  testWidgets('S01 and S04 carry the entries', (tester) async {
+  testWidgets('S02.01 and S02.06 carry the entries', (tester) async {
     final d = DiscoveryWorld();
     await d.init();
     final overrides = [
@@ -4849,7 +4849,7 @@ void main() {
         routes: [
           GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
           GoRoute(path: '/action', builder: (_, _) => const FindPhotographerScreen()),
-          GoRoute(path: '/instant', builder: (_, _) => const Text('S47')),
+          GoRoute(path: '/instant', builder: (_, _) => const Text('S13.01')),
         ],
       ),
       overrides: overrides,
@@ -4858,7 +4858,7 @@ void main() {
     expect(find.byKey(const Key('home-instant')), findsOneWidget);
   });
 
-  testWidgets('S04 shows the Chụp ngay button above the filters', (tester) async {
+  testWidgets('S02.06 shows the Chụp ngay button above the filters', (tester) async {
     final d = DiscoveryWorld();
     await d.init();
     await tester.pumpWidget(screenRouterApp(
@@ -4866,7 +4866,7 @@ void main() {
         initialLocation: '/action',
         routes: [
           GoRoute(path: '/action', builder: (_, _) => const FindPhotographerScreen()),
-          GoRoute(path: '/instant', builder: (_, _) => const Text('S47')),
+          GoRoute(path: '/instant', builder: (_, _) => const Text('S13.01')),
         ],
       ),
       overrides: [
@@ -4879,7 +4879,7 @@ void main() {
     expect(find.byKey(const Key('find-instant')), findsOneWidget);
     await tester.tap(find.byKey(const Key('find-instant')));
     await tester.pumpAndSettle();
-    expect(find.text('S47'), findsOneWidget);
+    expect(find.text('S13.01'), findsOneWidget);
   });
 }
 ```
@@ -4935,7 +4935,7 @@ bool _show(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role == UserRole.customer &&
     (ref.watch(instantAvailableProvider).value ?? false);
 
-/// S01: the floating "Chụp ngay" card at the top of Home (spec §2.1).
+/// S02.01: the floating "Chụp ngay" card at the top of Home (spec §2.1).
 class InstantHomeCard extends ConsumerWidget {
   const InstantHomeCard({super.key});
 
@@ -4982,7 +4982,7 @@ class InstantHomeCard extends ConsumerWidget {
   }
 }
 
-/// S04: "Chụp ngay" above the list of photographers.
+/// S02.06: "Chụp ngay" above the list of photographers.
 class InstantFindButton extends ConsumerWidget {
   const InstantFindButton({super.key});
 
@@ -5642,7 +5642,7 @@ Moved to `docs/superpowers/plans/2026-10-02-final-battery-performance.md` (secti
 - Consumes: `InstantCustomerWorld`, `instantCustomerApp`, `FakeMapEngine`, `TickingBuilder.debugActiveCount`.
 - Produces: this plan's battery gate (no production API).
 
-What is checked: the customer side never opens a location stream and takes at most one fix per S47 visit (none when the draft already has the meet point); the pulse animates only while searching and is idle under reduced motion, and the only clock left is the 1 Hz search timer; leaving S48 for S49 stops both; S49 at rest (no grace, no new position) schedules no frames and its clock ticks every 15 s, not every second; S50 has one clock until finished; S51 and the closed states are idle; the map is built on S47 and S49 only; every mirror listener closes with the screen; one health check per session; at most four blurs per screen, none nested.
+What is checked: the customer side never opens a location stream and takes at most one fix per S13.01 visit (none when the draft already has the meet point); the pulse animates only while searching and is idle under reduced motion, and the only clock left is the 1 Hz search timer; leaving S13.03 for S13.05 stops both; S13.05 at rest (no grace, no new position) schedules no frames and its clock ticks every 15 s, not every second; S13.06 has one clock until finished; S13.07 and the closed states are idle; the map is built on S13.01 and S13.05 only; every mirror listener closes with the screen; one health check per session; at most four blurs per screen, none nested.
 
 - [ ] **Step 1: Write the tests**
 
@@ -5671,7 +5671,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('S47: one medium fix, no stream, the map, idle at rest, no blur', (tester) async {
+  testWidgets('S13.01: one medium fix, no stream, the map, idle at rest, no blur', (tester) async {
     await open(tester, '/instant');
     await tester.pumpAndSettle();
     expect(w.location.currentFixCalls, 1);
@@ -5681,7 +5681,7 @@ void main() {
     expectBlurBudget();
   });
 
-  testWidgets('S48 under reduced motion: no animation, only the 1 Hz search clock; S49 stops it', (tester) async {
+  testWidgets('S13.03 under reduced motion: no animation, only the 1 Hz search clock; S13.05 stops it', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     w.mirror.setRequest('RQ1', w.request(InstantStatus.searching));
@@ -5689,13 +5689,13 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     expect(tester.binding.transientCallbackCount, 0);
     expect(TickingBuilder.debugActiveCount, 1);
-    expect(w.map.builds, 0, reason: 'no map on S48');
+    expect(w.map.builds, 0, reason: 'no map on S13.03');
     w.mirror.setRequest('RQ1', w.request(InstantStatus.enRoute));
     await tester.pump();
     expect(find.byType(SearchPulse), findsNothing);
   });
 
-  testWidgets('S48 animated: the pulse runs only while searching', (tester) async {
+  testWidgets('S13.03 animated: the pulse runs only while searching', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.searching));
     await open(tester, '/instant/RQ1');
     await tester.pump(const Duration(milliseconds: 100));
@@ -5705,7 +5705,7 @@ void main() {
     expect(TickingBuilder.debugActiveCount, 0);
   });
 
-  testWidgets('S49 at rest: no frames; the clock ticks every 15 s, not every second', (tester) async {
+  testWidgets('S13.05 at rest: no frames; the clock ticks every 15 s, not every second', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.enRoute));
     w.mirror.setTrack('RQ1', w.track());
     await open(tester, '/instant/RQ1');
@@ -5717,7 +5717,7 @@ void main() {
     expectBlurBudget();
   });
 
-  testWidgets('S50: one clock until finished; S51: idle; neither builds a map', (tester) async {
+  testWidgets('S13.06: one clock until finished; S13.07: idle; neither builds a map', (tester) async {
     w.mirror.setRequest('RQ1', w.request(InstantStatus.inProgress, startedAt: w.now));
     await open(tester, '/instant/RQ1');
     expect(TickingBuilder.debugActiveCount, 1);
@@ -5740,7 +5740,7 @@ void main() {
     expect(w.location.activeStreams, 0);
   });
 
-  testWidgets('back to S47 from S33 or S51 takes no new fix', (tester) async {
+  testWidgets('back to S13.01 from S04.05 or S13.07 takes no new fix', (tester) async {
     await open(tester, '/instant');
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
@@ -5765,9 +5765,9 @@ Expected: analyze clean; the whole suite passes (I4's, I5's and the earlier plan
 
 - [ ] **Step 4: Manual profiling on real devices (Android and iOS)**
 
-Follow `docs/testing/battery-and-performance.md`: the general steps for S47–S51 and S55 (frames at rest, scrolling S47, CPU at rest, memory), then the Chụp ngay scenarios of I4 (A–C, with a second phone as photographer) and this plan (D–E). Build with `flutter run --profile --dart-define=DISPATCH_URL=http://<host>:8090 --dart-define=GOONG_MAPTILES_KEY=<key> --dart-define=GOONG_API_KEY=<key>` against plan I3's local service with `PAYMENTS=fake`.
+Follow `docs/testing/battery-and-performance.md`: the general steps for S13 (frames at rest, scrolling S13.01, CPU at rest, memory), then the Chụp ngay scenarios of I4 (A–C, with a second phone as photographer) and this plan (D–E). Build with `flutter run --profile --dart-define=DISPATCH_URL=http://<host>:8090 --dart-define=GOONG_MAPTILES_KEY=<key> --dart-define=GOONG_API_KEY=<key>` against plan I3's local service with `PAYMENTS=fake`.
 
-Also check by hand, once per platform: Goong tiles load in light and dark (the style follows the theme); address search returns Vietnamese results near the pin; the key restriction works (a build with another package name gets 403 from Goong); with reduced motion on (Android: Remove animations; iOS: Reduce Motion) S48's rings and aperture stand still and S49's pin jumps instead of gliding; the "Minh Trí đã nhận" notification arrives with the app in the background.
+Also check by hand, once per platform: Goong tiles load in light and dark (the style follows the theme); address search returns Vietnamese results near the pin; the key restriction works (a build with another package name gets 403 from Goong); with reduced motion on (Android: Remove animations; iOS: Reduce Motion) S13.03's rings and aperture stand still and S13.05's pin jumps instead of gliding; the "Minh Trí đã nhận" notification arrives with the app in the background.
 
 Record the filled-in result table (Android and iOS rows, "Chụp ngay D/E") in the PR description. Any value over a threshold blocks the merge. Until the iOS enablement device tasks are done, write "iOS: not measured, blocked by iOS enablement".
 
@@ -5785,10 +5785,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ## Self-Review
 
-- **Spec coverage:** §2.1 entry points on S01 (card) and S04 (button) (Task 12); S47 packages, five kinds of shoot, meet point defaulting to the current location with drag and Goong Autocomplete, note ≤ 140, "Mở rộng tìm kiếm" off by default, fixed price on the button, typical match time hidden when unknown, escrow note (Tasks 3, 5, 6); missing phone → S33 via `/profile/phone?returnTo=/instant` and back (Tasks 5, 6); pay → S48 (Tasks 2, 6, 7); S49 map, ETA, photographer card, "Nhắn tin" and `ContactDial` unlocked after payment (Task 8); arrived → S50 shoot timer, confirm, auto-completion note, review link (Task 9); no match → S51 with the refund first, retry with the previous choices and expand suggested, or "Đặt lịch thường" (Task 10); S55 at any step before the shoot with the dry-run amounts and a red confirmation (Tasks 7, 8, I4 Task 11); §3.1 one route switching on the mirror status, each state in its own screen code (Task 7); §4 cancel table amounts add up, tested end to end (Task 13); §5 HTTPS + Firebase ID token through the shared `ApiClient`, Firestore mirror read only (Tasks 1, 7, 8); §6 customer calls and the `phone_required` / `outside_service_area` / `price_changed` errors (Tasks 1, 5, 6); §8 Vietnamese strings ("Chụp ngay", "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút", "Mở rộng tìm kiếm", "Tìm cả nhiếp ảnh gia khác ở gần nếu chưa có người nhận", "Thanh toán {giá} và tìm", "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.", "Đang tìm nhiếp ảnh gia gần bạn" → the mock's "Đang mời người phù hợp gần bạn", "{tên} đã nhận · đến trong khoảng {n} phút", "Đã đến điểm hẹn", "Chưa tìm được nhiếp ảnh gia. Đã hoàn {số tiền}."), map pins with labels, "Về vị trí của tôi", reduced motion stops the pulse and the pin glide (Tasks 4, 6–10); §9 customer location once at S47, map only on S47/S49, interpolated pin, privacy (Tasks 5, 8, 15); §10 payment failed keeps the choices, lost connection resumes from the mirror, three minutes without a position, late beyond 15 minutes → free cancel, Goong down → map placeholder with ETA and contact still working, outside service area, price change, service down hides the entry (Tasks 6–8, 12); §11 widget tests at 320dp/1.3×/light/dark, `expectIdle` with the pulse only while searching and idle under reduced motion, S55 amounts from the dry run, the two-party integration with no match, photographer cancel and customer cancel at each milestone (all tasks, 13, 15).
-- **Deviations (flagged, not hidden):** (1) S47 builds a live map (the mock shows one; dragging needs it), so "map only on S49/S54" becomes "S47, S49, S54"; the battery test checks S48, S50, S51 have none. (2) The pin is fixed at the centre and the map is dragged under it (more accessible and robust than dragging a marker); spec text updated in Task 14. (3) The S48 centre is plan I4's `ApertureLoader` (coordinator decision), not a camera icon or the colour logo; `SearchPulse` adds the rings. (4) The FCM `assigned` message gains optional `photographerName` and `etaMinutes` for the background notification; plan I3 must send them (spec §5 updated). (5) Tiles show short prices (`1,2M` from the shared formatter where the mock has `1,19M`). (6) Release builds hide "Chụp ngay" until plan I6 ships a real `PaymentLauncher`. (7) "Late beyond 15 minutes" is measured from the first ETA this screen saw; the service still decides the rule through the dry run. (8) S48's elapsed time starts at `searchEndsAt − 10 min` (the mirror has no `paidAt`). (9) S12 for an instant request is linked by path (`/instant/:id/review`), and "Nhắn tin" by `/chat/:id`; neither screen exists yet. (10) An `assigned` push received in the foreground navigates to `/instant/:id` (ride-app behaviour) instead of showing a banner.
+- **Spec coverage:** §2.1 entry points on S02.01 (card) and S02.06 (button) (Task 12); S13.01 packages, five kinds of shoot, meet point defaulting to the current location with drag and Goong Autocomplete, note ≤ 140, "Mở rộng tìm kiếm" off by default, fixed price on the button, typical match time hidden when unknown, escrow note (Tasks 3, 5, 6); missing phone → S04.05 via `/profile/phone?returnTo=/instant` and back (Tasks 5, 6); pay → S13.03 (Tasks 2, 6, 7); S13.05 map, ETA, photographer card, "Nhắn tin" and `ContactDial` unlocked after payment (Task 8); arrived → S13.06 shoot timer, confirm, auto-completion note, review link (Task 9); no match → S13.07 with the refund first, retry with the previous choices and expand suggested, or "Đặt lịch thường" (Task 10); S13.08 at any step before the shoot with the dry-run amounts and a red confirmation (Tasks 7, 8, I4 Task 11); §3.1 one route switching on the mirror status, each state in its own screen code (Task 7); §4 cancel table amounts add up, tested end to end (Task 13); §5 HTTPS + Firebase ID token through the shared `ApiClient`, Firestore mirror read only (Tasks 1, 7, 8); §6 customer calls and the `phone_required` / `outside_service_area` / `price_changed` errors (Tasks 1, 5, 6); §8 Vietnamese strings ("Chụp ngay", "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút", "Mở rộng tìm kiếm", "Tìm cả nhiếp ảnh gia khác ở gần nếu chưa có người nhận", "Thanh toán {giá} và tìm", "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.", "Đang tìm nhiếp ảnh gia gần bạn" → the mock's "Đang mời người phù hợp gần bạn", "{tên} đã nhận · đến trong khoảng {n} phút", "Đã đến điểm hẹn", "Chưa tìm được nhiếp ảnh gia. Đã hoàn {số tiền}."), map pins with labels, "Về vị trí của tôi", reduced motion stops the pulse and the pin glide (Tasks 4, 6–10); §9 customer location once at S13.01, map only on S13.01/S13.05, interpolated pin, privacy (Tasks 5, 8, 15); §10 payment failed keeps the choices, lost connection resumes from the mirror, three minutes without a position, late beyond 15 minutes → free cancel, Goong down → map placeholder with ETA and contact still working, outside service area, price change, service down hides the entry (Tasks 6–8, 12); §11 widget tests at 320dp/1.3×/light/dark, `expectIdle` with the pulse only while searching and idle under reduced motion, S13.08 amounts from the dry run, the two-party integration with no match, photographer cancel and customer cancel at each milestone (all tasks, 13, 15).
+- **Deviations (flagged, not hidden):** (1) S13.01 builds a live map (the mock shows one; dragging needs it), so "map only on S13.05/S14.03" becomes "S13.01, S13.05, S14.03"; the battery test checks S13.03, S13.06, S13.07 have none. (2) The pin is fixed at the centre and the map is dragged under it (more accessible and robust than dragging a marker); spec text updated in Task 14. (3) The S13.03 centre is plan I4's `ApertureLoader` (coordinator decision), not a camera icon or the colour logo; `SearchPulse` adds the rings. (4) The FCM `assigned` message gains optional `photographerName` and `etaMinutes` for the background notification; plan I3 must send them (spec §5 updated). (5) Tiles show short prices (`1,2M` from the shared formatter where the mock has `1,19M`). (6) Release builds hide "Chụp ngay" until plan I6 ships a real `PaymentLauncher`. (7) "Late beyond 15 minutes" is measured from the first ETA this screen saw; the service still decides the rule through the dry run. (8) S13.03's elapsed time starts at `searchEndsAt − 10 min` (the mirror has no `paidAt`). (9) S05.05 for an instant request is linked by path (`/instant/:id/review`), and "Nhắn tin" by `/chat/:id`; neither screen exists yet. (10) An `assigned` push received in the foreground navigates to `/instant/:id` (ride-app behaviour) instead of showing a banner.
 - **Placeholders:** none in the final code (Tasks 6 and 7 create temporary screen/view stubs that Tasks 7–10 replace within this plan).
 - **Type consistency:** `InstantBookingRepository`, `FakeInstantBookingRepository` (`created`, `cancelCalls`, `confirmCalls`, `healthCalls`, `createError`, `packagesError`), `PaymentLauncher`/`PaymentStart`/`FakePaymentLauncher`, `PlaceSearch`/`PlaceSuggestion`/`FakePlaceSearch`/`PlaceSearchException`, `instantBookingRepositoryProvider`, `paymentLauncherProvider`, `placeSearchProvider`, `instantAvailableProvider`, `SearchPulse`, `InstantDraft`/`instantDraftProvider`, `InstantBookController`/`instantBookProvider`/`InstantSubmitResult`, `InstantCustomerActions`, `InstantRequestScreen`, the five views, `InstantHomeCard`, `InstantFindButton`, `InstantCustomerWorld`, `instantCustomerApp`, `FakeDispatchServer` and all widget keys are spelled the same in tests and code; the I4 names consumed are those I4 produces.
-- **Risks:** Goong endpoint paths and JSON shapes are taken from Goong's public REST docs and must be confirmed with a real key (Task 3 says where to adapt); MapLibre platform views do not render in widget tests, so everything map-related is tested through `FakeMapEngine` and checked by hand on devices; `currentContactProvider` is `autoDispose` (plan 2a Task 8), kept alive by S47's controller with `ref.listen`; plan 3b4's Home/Find screens are modified by inserting one sliver each, so a later restructure of those screens must keep the entries; the fake dispatch service implements only what the apps need of spec §3–§4 and is not a substitute for I3's tests.
-- **Battery and performance:** Task 15 adds idle tests for S47–S51 and S55 (via I4's sheet tests), counts fixes and location streams on the customer side, checks that the pulse runs only while searching and not under reduced motion, that clocks stop when the state changes, that S49 ticks every 15 s at rest, that the map exists only on S47/S49, that mirror listeners close with the screen, one health check per session, and the blur budget; the manual scenarios D/E join I4's A/B/C with spec §9 thresholds on Android and iOS.
+- **Risks:** Goong endpoint paths and JSON shapes are taken from Goong's public REST docs and must be confirmed with a real key (Task 3 says where to adapt); MapLibre platform views do not render in widget tests, so everything map-related is tested through `FakeMapEngine` and checked by hand on devices; `currentContactProvider` is `autoDispose` (plan 2a Task 8), kept alive by S13.01's controller with `ref.listen`; plan 3b4's Home/Find screens are modified by inserting one sliver each, so a later restructure of those screens must keep the entries; the fake dispatch service implements only what the apps need of spec §3–§4 and is not a substitute for I3's tests.
+- **Battery and performance:** Task 15 adds idle tests for S13 (via I4's sheet tests), counts fixes and location streams on the customer side, checks that the pulse runs only while searching and not under reduced motion, that clocks stop when the state changes, that S13.05 ticks every 15 s at rest, that the map exists only on S13.01/S13.05, that mirror listeners close with the screen, one health check per session, and the blur budget; the manual scenarios D/E join I4's A/B/C with spec §9 thresholds on Android and iOS.
 

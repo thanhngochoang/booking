@@ -5,8 +5,8 @@ Mở rộng: `2026-10-01-remaining-screens.md` §3e.2, §3e.3; plan thực hiệ
 
 ## 1. Mục tiêu và quyết định của người dùng
 
-- **Điểm "Độ khớp hồ sơ" chỉ tính ở server.** App không tính điểm, không tính gợi ý bước tiếp theo. S38 hiện con số server đã lưu; khi đang sửa thì ghi "Lưu để cập nhật độ khớp". (Chọn phương án 1, 2026-10-02.)
-- **Minh chứng phải là bài của chính nhiếp ảnh gia.** Function tự sửa: gỡ id không hợp lệ (bài không tồn tại hoặc `authorId` khác), thể loại "Chuyên sâu" không còn minh chứng thì hạ xuống "Thành thạo". Lần mở S38 kế tiếp báo "Một số minh chứng không hợp lệ đã được gỡ". (Phương án được khuyên; người dùng không phản đối.)
+- **Điểm "Độ khớp hồ sơ" chỉ tính ở server.** App không tính điểm, không tính gợi ý bước tiếp theo. S08.02 hiện con số server đã lưu; khi đang sửa thì ghi "Lưu để cập nhật độ khớp". (Chọn phương án 1, 2026-10-02.)
+- **Minh chứng phải là bài của chính nhiếp ảnh gia.** Function tự sửa: gỡ id không hợp lệ (bài không tồn tại hoặc `authorId` khác), thể loại "Chuyên sâu" không còn minh chứng thì hạ xuống "Thành thạo". Lần mở S08.02 kế tiếp báo "Một số minh chứng không hợp lệ đã được gỡ". (Phương án được khuyên; người dùng không phản đối.)
 - **Function nằm trong project Functions của backend-phase1** (`app_flutter/firebase/functions`, logic thuần trong `packages/domain`), plan đó chạy ngay sau 2c.
 - **Deploy qua CI**, không deploy từ máy. Test emulator chỉ chạy trên CI (quy tắc 2026-10-02).
 
@@ -27,9 +27,9 @@ Ngoài phạm vi: báo dịch vụ gợi ý cập nhật chỉ mục (3e.4) — 
 
 - **Xoá tính điểm trên máy**: bỏ `lib/data/skills/skills_completeness.dart` và test của nó; các ca test chuyển sang bảng JSON chung `packages/domain/test/fixtures/skills_completeness.json` (TS chạy bảng này).
 - **Đọc trường server**: `SkillsRepository.load` trả thêm `SkillsServerInfo { int? completeness; CompletenessStepCode? next; DateTime? evidenceRemovedAt }` (domain, không kiểu Firebase; adapter chuyển `Timestamp` → UTC `DateTime`).
-- **S38**: `CompletenessMeter(percent: int?)`. `null` → "Chưa có điểm" + gợi ý "Lưu để tính độ khớp". Có số và bản nháp khác bản đã lưu → giữ số đã lưu, gợi ý "Lưu để cập nhật độ khớp". Có số và không đổi → gợi ý theo mã `next` (chuỗi trong `app_vi.arb`, giữ nội dung gợi ý hiện có).
+- **S08.02**: `CompletenessMeter(percent: int?)`. `null` → "Chưa có điểm" + gợi ý "Lưu để tính độ khớp". Có số và bản nháp khác bản đã lưu → giữ số đã lưu, gợi ý "Lưu để cập nhật độ khớp". Có số và không đổi → gợi ý theo mã `next` (chuỗi trong `app_vi.arb`, giữ nội dung gợi ý hiện có).
 - **Báo gỡ minh chứng**: nếu `evidenceRemovedAt` mới hơn mốc đã thấy (lưu `SharedPreferences`, khoá `skillsEvidenceSeen.<uid>`) → SnackBar "Một số minh chứng không hợp lệ đã được gỡ" một lần, rồi ghi mốc.
-- Không thêm listener: số mới hiện ở lần mở S38 kế tiếp (sau khi lưu, S38 rời màn ở cả hai chế độ).
+- Không thêm listener: số mới hiện ở lần mở S08.02 kế tiếp (sau khi lưu, S08.02 rời màn ở cả hai chế độ).
 
 ## 4. CI và triển khai
 
@@ -41,8 +41,8 @@ Ngoài phạm vi: báo dịch vụ gợi ý cập nhật chỉ mục (3e.4) — 
 
 - Unit (TS, `node --test`): `parseSkills`, `cleanEvidence` (bài của người khác, bài đã xoá, mức 3 hạ 2, không gỡ gì), `skillsCompleteness` theo bảng JSON, chặn vòng lặp (chỉ đổi trường server → bỏ qua).
 - Tích hợp (emulator, chỉ CI): ghi hồ sơ có minh chứng của người khác → đọc lại thấy id bị gỡ, mức hạ, `completeness` đúng, `evidenceRemovedAt` có; ghi lại y nguyên → Function không ghi thêm.
-- Flutter: adapter đọc `SkillsServerInfo`; S38 hiện số server, ba trạng thái gợi ý, SnackBar gỡ minh chứng một lần; không còn import `skills_completeness.dart`.
+- Flutter: adapter đọc `SkillsServerInfo`; S08.02 hiện số server, ba trạng thái gợi ý, SnackBar gỡ minh chứng một lần; không còn import `skills_completeness.dart`.
 
 ## 6. Tài liệu cần sửa khi làm
 
-`2026-10-01-remaining-screens.md` §3e.2 ("Do Function tính" giữ, thêm `completenessNext`, `evidenceRemovedAt`), §3e.3 (dòng 488–489: Function đã có); `screens/photographer.md` S38 (bỏ "tính ngay trên máy"); `components/shared-components.md` (`CompletenessMeter.percent` nullable); `data-model/` (hai trường server mới).
+`2026-10-01-remaining-screens.md` §3e.2 ("Do Function tính" giữ, thêm `completenessNext`, `evidenceRemovedAt`), §3e.3 (dòng 488–489: Function đã có); `screens/photographer.md` S08.02 (bỏ "tính ngay trên máy"); `components/shared-components.md` (`CompletenessMeter.percent` nullable); `data-model/` (hai trường server mới).

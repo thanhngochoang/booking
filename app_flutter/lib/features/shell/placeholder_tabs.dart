@@ -17,7 +17,7 @@ UserRole _role(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
 
 /// After switching to photographer: open the setup while it is unfinished
-/// (spec S30). Without a router above (some widget tests) it does nothing.
+/// (spec S09.01). Without a router above (some widget tests) it does nothing.
 Future<void> _openSetupIfUnfinished(BuildContext context, WidgetRef ref) async {
   final uid = ref.read(authRepositoryProvider).currentUser?.uid;
   if (uid == null) {

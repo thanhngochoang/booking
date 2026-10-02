@@ -8,7 +8,7 @@ final photographerContactRepositoryProvider =
       (ref) => FirestorePhotographerContactRepository(),
     );
 
-/// Public contact flags of one photographer (what S32 shows).
+/// Public contact flags of one photographer (what S05.04 shows).
 final photographerChannelsProvider = StreamProvider.autoDispose
     .family<ContactChannels?, String>(
       (ref, photographerId) => ref

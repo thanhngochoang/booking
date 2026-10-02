@@ -383,7 +383,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  group('mock S36', () {
+  group('mock S02.05', () {
     testWidgets('areas are bordered option tiles', (tester) async {
       final (app, _, _) = await _app();
       await _open(tester, app);

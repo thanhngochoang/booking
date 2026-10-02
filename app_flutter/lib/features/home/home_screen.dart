@@ -31,7 +31,7 @@ const _realShootAspect = 0.8;
 /// The hero card never grows past this on wide screens.
 const _heroMaxWidth = 560.0;
 
-/// S01. Photos first: the large card, who is free this week, real shoots.
+/// S02.01. Photos first: the large card, who is free this week, real shoots.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 

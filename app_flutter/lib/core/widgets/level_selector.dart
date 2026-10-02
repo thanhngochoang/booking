@@ -6,7 +6,7 @@ import 'package:photobooking/core/theme/app_theme.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// Three-step level picker for one genre (S38): Cơ bản · Thành thạo ·
+/// Three-step level picker for one genre (S08.02): Cơ bản · Thành thạo ·
 /// Chuyên sâu. One tab stop; arrow keys step the level; screen readers get
 /// one adjustable node ("Chân dung, mức Chuyên sâu").
 class LevelSelector extends StatefulWidget {

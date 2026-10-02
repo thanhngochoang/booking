@@ -9,7 +9,7 @@ import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 
-/// The fixed bar of S03. Visitors: the in-app inquiry (the only contact
+/// The fixed bar of S03.01. Visitors: the in-app inquiry (the only contact
 /// before a booking, spec 3b.1) and "Đặt lịch · từ …". Owner: "Chỉnh sửa
 /// hồ sơ". Sits below the scroll view, so it never covers the last item.
 class ProfileBottomBar extends ConsumerWidget {

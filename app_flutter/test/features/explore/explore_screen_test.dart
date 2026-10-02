@@ -67,7 +67,7 @@ Future<void> _toTop(WidgetTester t) async {
 double _top(WidgetTester t, String text) => t.getTopLeft(find.text(text)).dy;
 
 void main() {
-  group('S13 before any location choice', () {
+  group('S02.03 before any location choice', () {
     testWidgets('asks nothing at start: only the card with Cho phép / Để sau', (
       tester,
     ) async {
@@ -195,7 +195,7 @@ void main() {
       await t.pumpAndSettle();
     }
 
-    testWidgets('active: refreshes, also while the S36 sheet is open', (
+    testWidgets('active: refreshes, also while the S02.05 sheet is open', (
       tester,
     ) async {
       final w = ExploreWorld(status: LocationPermissionStatus.denied);
@@ -230,7 +230,7 @@ void main() {
     });
   });
 
-  group('S36 from denied-forever', () {
+  group('S02.05 from denied-forever', () {
     testWidgets('the picker offers the Settings shortcut', (tester) async {
       final w = ExploreWorld(status: LocationPermissionStatus.deniedForever);
       await tester.pumpWidget(await _app(w));
@@ -242,7 +242,7 @@ void main() {
     });
   });
 
-  group('S35 nearby', () {
+  group('S02.04 nearby', () {
     Future<ExploreWorld> nearby(
       WidgetTester tester, {
       double textScale = 1,
@@ -483,7 +483,7 @@ void main() {
     LocationPermissionStatus.notAsked,
     LocationPermissionStatus.denied,
   ]) {
-    testWidgets('S13 (${status.name}) fits 320x640 at 1.3x end to end', (
+    testWidgets('S02.03 (${status.name}) fits 320x640 at 1.3x end to end', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(320, 640);

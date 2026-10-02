@@ -7,7 +7,7 @@ final publicProfileRepositoryProvider = Provider<PublicProfileRepository>(
   (ref) => FirestorePublicProfileRepository(),
 );
 
-/// S03's profile, read once per visit (pull the screen again to refresh;
+/// S03.01's profile, read once per visit (pull the screen again to refresh;
 /// the owner's edits invalidate it on return).
 final photographerProfileProvider = FutureProvider.autoDispose
     .family<PhotographerProfile?, String>(

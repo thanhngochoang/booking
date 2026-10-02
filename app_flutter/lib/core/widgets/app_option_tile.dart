@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// One choice of a single-choice list (mock `.opt`, S36; later S06, S47):
+/// One choice of a single-choice list (mock `.opt`, S02.05; later S04.02, S13.01):
 /// a bordered glass card with a radio. Selected = accent border, accent-soft
 /// fill and a filled radio. No blur, so it is safe in long lists.
 class AppOptionTile extends StatelessWidget {

@@ -1,16 +1,16 @@
 # Đặc tả từng màn hình
 
-Chi tiết cho mọi màn `S01–S67` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S12` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
+Chi tiết cho mọi màn `S01–S17` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
 
 ## Mục lục
 
 | Tệp | Màn |
 |-----|-----|
-| [discovery.md](discovery.md) | S01 Trang chủ · S02 Chi tiết ảnh · S03 Hồ sơ nhiếp ảnh gia · S04 Tìm thợ ảnh · S13 Khám phá · S35 Khám phá đã bật vị trí · S36 Chọn khu vực |
-| [booking.md](booking.md) | S05–S07 Đặt lịch · S08 Chờ thanh toán · S09 Chi tiết booking · S10 Huỷ booking · S11 Hội thoại · S14 Danh sách đặt lịch · S32 Liên hệ · S33 Thêm số điện thoại |
-| [events.md](events.md) | S15 Danh sách sự kiện · S16 Chi tiết · S17 Đăng ký · S18 Vé · S25–S26 Tạo sự kiện · S27 Quản lý sự kiện |
-| [photographer.md](photographer.md) | S19 Công việc · S20 Lịch · S21 Đăng bài · S22 Empty Công việc · S23 Từ chối · S24 Thiết lập hồ sơ · S34 Khu vực & liên hệ · S38–S40 Kỹ năng |
-| [account.md](account.md) | S12 Đánh giá & chia sẻ · S28 Đăng nhập · S29 Chọn vai trò · S30 Hồ sơ cá nhân · S31 Cài đặt · S37 Huy hiệu · S41 Đăng ký · S42 Sửa hồ sơ · S63 Thông báo · S64 Cài đặt thông báo · S65 Xin quyền thông báo |
+| [discovery.md](discovery.md) | S02.01 Trang chủ · S02.02 Chi tiết ảnh · S03.01 Hồ sơ nhiếp ảnh gia · S02.06 Tìm thợ ảnh · S02.03 Khám phá · S02.04 Khám phá đã bật vị trí · S02.05 Chọn khu vực |
+| [booking.md](booking.md) | S04.01–S04.03 Đặt lịch · S04.04 Chờ thanh toán · S05.02 Chi tiết booking · S05.03 Huỷ booking · S07.01 Hội thoại · S05.01 Danh sách đặt lịch · S05.04 Liên hệ · S04.05 Thêm số điện thoại |
+| [events.md](events.md) | S11.01 Danh sách sự kiện · S11.02 Chi tiết · S11.03 Đăng ký · S11.04 Vé · S12.01, S12.02 Tạo sự kiện · S12.03 Quản lý sự kiện |
+| [photographer.md](photographer.md) | S06.01 Công việc · S06.04 Lịch · S10.01 Đăng bài · S06.02 Empty Công việc · S06.03 Từ chối · S08.01 Thiết lập hồ sơ · S08.05 Khu vực & liên hệ · S08.02–S08.04 Kỹ năng |
+| [account.md](account.md) | S05.05 Đánh giá & chia sẻ · S01.03 Đăng nhập · S01.05 Chọn vai trò · S09.01 Hồ sơ cá nhân · S09.02 Cài đặt · S03.02 Huy hiệu · S01.04 Đăng ký · S09.03 Sửa hồ sơ · S17.01 Thông báo · S17.02 Cài đặt thông báo · S17.03 Xin quyền thông báo |
 
 ## Mẫu cho mỗi màn
 
@@ -42,15 +42,15 @@ Mỗi màn có đúng các mục sau (bỏ mục không áp dụng và ghi "—"
 
 **Truy cập.** Vùng chạm ≥ 48dp, khoảng cách giữa hai vùng chạm ≥ 8dp. Mọi biểu tượng đứng một mình có `Semantics.label`. Trạng thái không chỉ dựa vào màu (luôn có chữ hoặc biểu tượng). Tiêu điểm bàn phím thấy rõ, thứ tự Tab theo thứ tự thị giác. Tôn trọng `MediaQuery.disableAnimations`.
 
-**Responsive.** Kiểm ở 320, 360, 390, 430dp và ≥ 600dp. Chữ hệ thống tới 1,3× không cắt (xuống dòng; không `ellipsis` cho nội dung chính). Hộp cùng cấp trong một hàng dùng `IntrinsicHeight` + `Expanded`. Màn có danh sách chuyển 2 cột từ 600dp (S01, S04, S13, S15, S35). Tôn trọng safe area; thanh dưới cố định có đệm cuối để nội dung không bị che.
+**Responsive.** Kiểm ở 320, 360, 390, 430dp và ≥ 600dp. Chữ hệ thống tới 1,3× không cắt (xuống dòng; không `ellipsis` cho nội dung chính). Hộp cùng cấp trong một hàng dùng `IntrinsicHeight` + `Expanded`. Màn có danh sách chuyển 2 cột từ 600dp (S02.01, S02.06, S02.03, S11.01, S02.04). Tôn trọng safe area; thanh dưới cố định có đệm cuối để nội dung không bị che.
 
-**Nút dưới cùng.** Nút chính ở đáy màn hoặc đáy sheet cao đúng 52dp và cùng chiều cao trên mọi màn (S05–S07 cũng vậy); không co giãn theo nội dung sheet. Nút phụ cùng hàng (Quay lại, Lưu nháp) cùng chiều cao với nút chính.
+**Nút dưới cùng.** Nút chính ở đáy màn hoặc đáy sheet cao đúng 52dp và cùng chiều cao trên mọi màn (S04.01–S04.03 cũng vậy); không co giãn theo nội dung sheet. Nút phụ cùng hàng (Quay lại, Lưu nháp) cùng chiều cao với nút chính.
 
 **Số tiền, ngày giờ.** `1.500.000₫` (dấu chấm ngăn nghìn, `₫` sau); rút gọn `1,5M` chỉ trên thẻ nhỏ. Ngày `T7 12/10`, giờ `15:30`, múi giờ Asia/Ho_Chi_Minh. Giá 0 của sự kiện hiển thị tag “Không thu phí”, không bao giờ “0₫”. Số dùng chữ số đều (`tabularFigures`).
 
 **Phân tích.** Mỗi màn gửi `screen_view{code}` khi hiện. Tên sự kiện `snake_case`, tham số không chứa số điện thoại, vị trí chính xác hay nội dung tin nhắn.
 
-**Vai trò.** Màn nói "khách" hay "NAG" là vai trò được vào; vai trò khác vào route thì chuyển về `/home`. Ngoài hai vai trò chọn ở S29 còn có quyền nhân viên `admin` và `sales` (custom claim `staffRole`, không tự chọn được); hiện chỉ dùng để tạo và quản lý sự kiện (spec chính mục 3.6).
+**Vai trò.** Màn nói "khách" hay "NAG" là vai trò được vào; vai trò khác vào route thì chuyển về `/home`. Ngoài hai vai trò chọn ở S01.05 còn có quyền nhân viên `admin` và `sales` (custom claim `staffRole`, không tự chọn được); hiện chỉ dùng để tạo và quản lý sự kiện (spec chính mục 3.6).
 
 **Chuỗi.** Mọi chuỗi trong `lib/l10n/app_vi.arb`, khóa `sNN_…` cho chuỗi riêng màn, khóa chung cho chuỗi dùng lại (`commonRetry`, `commonCancel`…). Không hard‑code.
 

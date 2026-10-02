@@ -23,7 +23,7 @@ class ScreenCodeScope extends InheritedWidget {
   bool updateShouldNotify(ScreenCodeScope old) => old.visible != visible;
 }
 
-/// Debug aid: draws the screen's code (`S09`, or `S09.timeline` with [label])
+/// Debug aid: draws the screen's code (`S05.02`, or `S05.02.timeline` with [label])
 /// at the top-left so a change request can name the screen. In release builds,
 /// or while the switch is off, it returns [child] untouched.
 class ScreenCode extends StatelessWidget {

@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/widgets/app_chip.dart';
 
-/// Multi-select chip for a catalogue item (S38, S39).
+/// Multi-select chip for a catalogue item (S08.02, S08.03).
 ///
 /// [disabled] means "this group is full": an unselected chip is dimmed and
 /// announces "Đã đủ số lượng", but taps are still reported so the screen can
-/// explain the limit (spec S38: "chọn thể loại thứ 7 → báo").
+/// explain the limit (spec S08.02: "chọn thể loại thứ 7 → báo").
 class SkillChip extends StatelessWidget {
   const SkillChip({
     super.key,

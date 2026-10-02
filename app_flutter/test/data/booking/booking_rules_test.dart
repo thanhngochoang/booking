@@ -85,7 +85,7 @@ void main() {
       });
     });
 
-    group('S14 Tab grouping', () {
+    group('S05.01 Tab grouping', () {
       Booking makeBooking({
         required String id,
         required BookingStatus status,

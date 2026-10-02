@@ -5,7 +5,7 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 
 /// "Độ khớp hồ sơ 72%" with a gradient bar and the next thing to do
-/// (S38, later S30 and S22). Only the photographer sees it. The number is
+/// (S08.02, later S09.01 and S06.02). Only the photographer sees it. The number is
 /// the server's (`skills.completeness`); [percent] is null until the server
 /// has scored the profile ("Chưa có điểm", empty bar).
 class CompletenessMeter extends StatelessWidget {

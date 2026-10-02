@@ -383,7 +383,7 @@ void main() {
     },
   );
 
-  testWidgets('S42 listens to the private contact only while open', (
+  testWidgets('S09.03 listens to the private contact only while open', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -394,7 +394,7 @@ void main() {
       await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
     );
     await tester.pumpAndSettle();
-    // S31's phone row already holds the (autoDispose) contact stream; S42
+    // S09.02's phone row already holds the (autoDispose) contact stream; S09.03
     // shares that one subscription instead of opening a second.
     expect(contacts.watchers, 1);
 
@@ -423,7 +423,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('S42: own phone hint, fields on the page, sticky "Lưu"', (
+    testWidgets('S09.03: own phone hint, fields on the page, sticky "Lưu"', (
       tester,
     ) async {
       await openSettings(tester);
@@ -452,7 +452,7 @@ void main() {
       );
     });
 
-    testWidgets('S31: small-caps muted group labels', (tester) async {
+    testWidgets('S09.02: small-caps muted group labels', (tester) async {
       await openSettings(tester);
       final label = tester.widget<Text>(find.text('TÀI KHOẢN'));
       expect(label.style?.fontSize, AppText.xs2);
@@ -470,7 +470,7 @@ void main() {
       );
     });
 
-    testWidgets('S31: hairlines between rows, small preview button', (
+    testWidgets('S09.02: hairlines between rows, small preview button', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 2400);
@@ -487,7 +487,7 @@ void main() {
     });
   });
 
-  testWidgets('S42 name field has no icon', (tester) async {
+  testWidgets('S09.03 name field has no icon', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final (auth, users) = await _signedIn();
@@ -514,7 +514,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('S42 keyboard up at 320x568: name field and Lưu reachable', (
+  testWidgets('S09.03 keyboard up at 320x568: name field and Lưu reachable', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 568);
@@ -528,7 +528,7 @@ void main() {
     expect(find.byKey(const Key('edit-name')).hitTestable(), findsOneWidget);
   });
 
-  testWidgets('S42 fits 320x640 at 1.3x', (tester) async {
+  testWidgets('S09.03 fits 320x640 at 1.3x', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = 1.3;
@@ -539,7 +539,7 @@ void main() {
     expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
   });
 
-  testWidgets('S42 changes the avatar and shows it', (tester) async {
+  testWidgets('S09.03 changes the avatar and shows it', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final (auth, users) = await _signedIn();
@@ -567,7 +567,7 @@ void main() {
     );
   });
 
-  group('S31 account rows', () {
+  group('S09.02 account rows', () {
     Future<void> open(
       WidgetTester tester,
       FakeAuthRepository auth,

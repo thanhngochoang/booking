@@ -39,7 +39,7 @@ final bookingContactStreamProvider =
       return repo.watchBookingContact(bookingId);
     });
 
-/// Groups customer bookings into S14 tabs (upcoming, pending, history).
+/// Groups customer bookings into S05.01 tabs (upcoming, pending, history).
 final groupedCustomerBookingsProvider =
     Provider.family<AsyncValue<Map<BookingTab, List<Booking>>>, String>((
       ref,

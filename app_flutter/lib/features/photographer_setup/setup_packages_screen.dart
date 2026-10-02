@@ -11,9 +11,9 @@ import 'package:photobooking/features/photographer_setup/package_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_controller.dart';
 
-/// S24, setup step 2/4: the packages customers book. At least one active
+/// S08.01, setup step 2/4: the packages customers book. At least one active
 /// package is needed to go on. The form is kept as a device draft until a
-/// package is added. Layout follows mock S24: package cards, then the form
+/// package is added. Layout follows mock S08.01: package cards, then the form
 /// (name; price + duration; edited count + delivery days; small outline
 /// "Thêm gói này"), sticky footer "Quay lại" + "Tiếp tục".
 class SetupPackagesScreen extends ConsumerStatefulWidget {
@@ -276,7 +276,7 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          // Mock S24 `.bar`: back · "Hồ sơ nhiếp ảnh gia" · "2 / 4".
+          // Mock S08.01 `.bar`: back · "Hồ sơ nhiếp ảnh gia" · "2 / 4".
           appBar: AppBar(
             title: Text(l.setupFlowTitle),
             actions: [
@@ -589,7 +589,7 @@ class _DurationSheet extends StatelessWidget {
   }
 }
 
-/// Mock S24 `.card`: name, meta line and the short price; tap to edit.
+/// Mock S08.01 `.card`: name, meta line and the short price; tap to edit.
 class _PackageCard extends StatelessWidget {
   const _PackageCard({
     required this.package,

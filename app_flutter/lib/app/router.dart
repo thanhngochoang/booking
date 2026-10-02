@@ -77,7 +77,7 @@ String? computeRedirect({
   return null;
 }
 
-/// S20 and S24 are for photographers only (spec screens/README.md "Vai trò").
+/// S06.04 and S08.01 are for photographers only (spec screens/README.md "Vai trò").
 String? photographerOnlyRedirect(UserRole? role) =>
     role == UserRole.photographer ? null : AppTab.home.path;
 

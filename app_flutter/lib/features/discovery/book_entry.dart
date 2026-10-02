@@ -23,9 +23,9 @@ String bookingPath({
   ).toString();
 }
 
-/// Starts a booking from S02, S03 or S04. A customer without a phone number
-/// is sent to S33 first and comes back to the booking (spec 3b.1); reading the
-/// contact fails closed, so a failure also goes through S33.
+/// Starts a booking from S02.02, S03.01 or S02.06. A customer without a phone number
+/// is sent to S04.05 first and comes back to the booking (spec 3b.1); reading the
+/// contact fails closed, so a failure also goes through S04.05.
 Future<void> startBooking(
   BuildContext context,
   WidgetRef ref, {

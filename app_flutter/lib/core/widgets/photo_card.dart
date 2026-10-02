@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 
-/// A photo with optional text on a bottom gradient (S01, S13, S21, S03). No
+/// A photo with optional text on a bottom gradient (S02.01, S02.03, S10.01, S03.01). No
 /// border, no shadow, and no blur: a feed of these must stay cheap.
 class PhotoCard extends StatelessWidget {
   const PhotoCard({
@@ -42,7 +42,7 @@ class PhotoCard extends StatelessWidget {
   /// wide) should not pass one, as it crowds the text.
   final Widget? action;
 
-  /// Interactive content (an author row, S01) in the bottom text slot, in
+  /// Interactive content (an author row, S02.01) in the bottom text slot, in
   /// place of [title] and [subtitle]. It keeps its own taps and semantics.
   final Widget? overlay;
   final VoidCallback? onTap;

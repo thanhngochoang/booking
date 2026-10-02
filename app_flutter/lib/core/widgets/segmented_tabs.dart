@@ -11,8 +11,8 @@ class SegmentOption<T> {
   final String label;
 }
 
-/// A row of equal segments of which exactly one is selected: S03, S13, S14,
-/// S18, S19. Labels stay on one line and scale down instead of wrapping.
+/// A row of equal segments of which exactly one is selected: S03.01, S02.03, S05.01,
+/// S11.04, S06.01. Labels stay on one line and scale down instead of wrapping.
 class SegmentedTabs<T> extends StatelessWidget {
   const SegmentedTabs({
     super.key,

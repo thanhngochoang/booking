@@ -23,7 +23,7 @@ final areaRepositoryProvider = Provider<AreaRepository>(
   (ref) => const BuiltInAreaRepository(),
 );
 
-/// The pickable areas; never fails, so S36 always has something to show.
+/// The pickable areas; never fails, so S02.05 always has something to show.
 final areasProvider = FutureProvider<List<AreaOption>>((ref) async {
   try {
     final list = await ref.watch(areaRepositoryProvider).list();

@@ -184,7 +184,7 @@ void main() {
   );
 
   testWidgets(
-    'taps: card to S02, name row to S03, small card to S03, "Xem tất cả" to S04',
+    'taps: card to S02.02, name row to S03.01, small card to S03.01, "Xem tất cả" to S02.06',
     (tester) async {
       final w = DiscoveryWorld();
       final router = _router();

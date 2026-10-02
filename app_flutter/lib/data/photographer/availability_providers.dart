@@ -12,7 +12,7 @@ final availabilityRepositoryProvider = Provider<AvailabilityRepository>(
 typedef AvailabilityMonth = ({String uid, DateTime month});
 
 /// The non-free days of one photographer's month. Listens only while a
-/// screen shows that month (S20, S03 "Lịch", later S06).
+/// screen shows that month (S06.04, S03.01 "Lịch", later S04.02).
 final availabilityMonthProvider = StreamProvider.autoDispose
     .family<Map<DateTime, AvailabilityDay>, AvailabilityMonth>((ref, key) {
       final m = monthOf(key.month);

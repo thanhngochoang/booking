@@ -4,7 +4,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 
-/// Saves S34. Its value turns true once the save went through.
+/// Saves S08.05. Its value turns true once the save went through.
 class SetupContactController extends AsyncNotifier<bool> {
   @override
   bool build() => false;

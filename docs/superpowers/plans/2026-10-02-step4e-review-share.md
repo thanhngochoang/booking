@@ -1,4 +1,4 @@
-# Step 4e: Review and share S12, reviews on S03 Implementation Plan
+# Step 4e: Review and share S05.05, reviews on S03.01 Implementation Plan
 
 > **Battery/performance (2026-10-02, user):** no battery, idle, blur-budget or performance steps; they run once in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Keep the functional tests.
 
@@ -8,13 +8,13 @@
 
 > **Detail level (user, 2026-10-02):** exact interfaces, tests listed by name with expected behaviour, sample code only for the parts easy to get wrong.
 
-**Goal:** After a completed shoot the customer rates it (1–5 stars and a 10–1000 character comment), optionally shares up to 10 photos as a "Buổi chụp thật" post tagged with the photographer and the package, and the booking becomes `reviewed`; the review appears on the photographer's profile (S03 "Đánh giá") and updates their rating.
+**Goal:** After a completed shoot the customer rates it (1–5 stars and a 10–1000 character comment), optionally shares up to 10 photos as a "Buổi chụp thật" post tagged with the photographer and the package, and the booking becomes `reviewed`; the review appears on the photographer's profile (S03.01 "Đánh giá") and updates their rating.
 
-**Architecture:** The customer's photos upload straight to Storage under their own uid (existing `posts/{uid}/{postId}/{file}` rule, plan 3c), then one callable `submitReview` runs a single transaction: check the booking is the caller's and `completed` and has no review, write `reviews/{bookingId}`, create the `real_shoot` post when photos were shared, and move the booking to `reviewed` with a timeline event. A Firestore trigger `onReviewWrite` folds the rating into `photographers/{uid}.stats` (`rating`, `reviewCount`, `ratingSum`). Rules stay pure TypeScript in `packages/domain`; Functions are adapters; the app gets a `ReviewRepository`, S12 at `/b/:id/review` and a real reviews list on S03.
+**Architecture:** The customer's photos upload straight to Storage under their own uid (existing `posts/{uid}/{postId}/{file}` rule, plan 3c), then one callable `submitReview` runs a single transaction: check the booking is the caller's and `completed` and has no review, write `reviews/{bookingId}`, create the `real_shoot` post when photos were shared, and move the booking to `reviewed` with a timeline event. A Firestore trigger `onReviewWrite` folds the rating into `photographers/{uid}.stats` (`rating`, `reviewCount`, `ratingSum`). Rules stay pure TypeScript in `packages/domain`; Functions are adapters; the app gets a `ReviewRepository`, S05.05 at `/b/:id/review` and a real reviews list on S03.01.
 
 **Tech Stack:** TypeScript (domain, Functions v2), Firestore rules; Flutter, Riverpod 3, existing `MediaUploader` and image preparation from plan 3c.
 
-**Spec:** `docs/superpowers/specs/screens/account.md` (S12); `docs/superpowers/specs/screens/discovery.md` (S03 "Đánh giá", "Chưa có đánh giá → empty có chữ rõ"); `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` §5 (`reviews/{bookingId}`, `posts` `kind: real_shoot`, `authorId` = customer, `bookingId`), §6 (`completed ──review──▶ reviewed`); `docs/superpowers/specs/data-model/domain-model.md` §2.3 (`Post`), §2.4 (`Review`), §6 invariants 6 and 8; `docs/superpowers/specs/2026-10-01-remaining-screens.md` §3e.7 (signals; not built here); mock `docs/design/ui-mock.html` `data-code="S12"` and S03's reviews tab.
+**Spec:** `docs/superpowers/specs/screens/account.md` (S05.05); `docs/superpowers/specs/screens/discovery.md` (S03.01 "Đánh giá", "Chưa có đánh giá → empty có chữ rõ"); `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` §5 (`reviews/{bookingId}`, `posts` `kind: real_shoot`, `authorId` = customer, `bookingId`), §6 (`completed ──review──▶ reviewed`); `docs/superpowers/specs/data-model/domain-model.md` §2.3 (`Post`), §2.4 (`Review`), §6 invariants 6 and 8; `docs/superpowers/specs/2026-10-01-remaining-screens.md` §3e.7 (signals; not built here); mock `docs/design/ui-mock.html` `data-code="S05.05"` and S03.01's reviews tab.
 
 **Prerequisite:** plans 4a–4d merged into `flutter-rewrite`.
 
@@ -23,11 +23,11 @@
 Task 1 Step 1 checks these exist (ledger and adapt any difference):
 
 - Domain (4a): `Booking` (`id`, `customerId`, `photographerId`, `serviceId`, `serviceSnapshot`, `day`, `place`, `status`, `reviewedAt?`, `version`), `BookingEventRecord`, `graphemeCount`, `DomainError`, `Clock`, `IdGenerator`, `isId`; Functions `bookingFromFirestore`, `bookingToFirestore`, `BOOKINGS_COLLECTION`, `TRIGGER_OPTIONS`, `CALLABLE_OPTIONS`, `toHttpsError`, `CallableInput`, `db()`.
-- App: `Booking`, `bookingProvider`, `BookingCard`/`BookingSummary` (4b), `bookingFeaturesProvider` and `DetailAction.review/.viewReview` wiring in `BookingDetailScreen._onAction` and `MyBookingsScreen._onReview` (4c), `MediaUploader` (`upload(PickedImage, storagePath:)` → `UploadEvent` with `UploadedMedia(url, storagePath)`), `imagePickerProvider` (`pick(max:)`), plan 3c's image preparation that yields `blurHash`, `width`, `height` for each picked photo (find it in `lib/features/create_post/` or `lib/data/media/`; reuse, do not duplicate), `PostKind.realShoot` (`lib/data/content/post_summary.dart`), `photographerProfileProvider`, `userRepositoryProvider`, `ReviewsSliver` (`lib/features/photographer_profile/widgets/profile_sections.dart`), `ScreenCodes.reviewAndShare` (S12), `newUlid` in the app (`lib/core/ulid.dart`).
+- App: `Booking`, `bookingProvider`, `BookingCard`/`BookingSummary` (4b), `bookingFeaturesProvider` and `DetailAction.review/.viewReview` wiring in `BookingDetailScreen._onAction` and `MyBookingsScreen._onReview` (4c), `MediaUploader` (`upload(PickedImage, storagePath:)` → `UploadEvent` with `UploadedMedia(url, storagePath)`), `imagePickerProvider` (`pick(max:)`), plan 3c's image preparation that yields `blurHash`, `width`, `height` for each picked photo (find it in `lib/features/create_post/` or `lib/data/media/`; reuse, do not duplicate), `PostKind.realShoot` (`lib/data/content/post_summary.dart`), `photographerProfileProvider`, `userRepositoryProvider`, `ReviewsSliver` (`lib/features/photographer_profile/widgets/profile_sections.dart`), `ScreenCodes.reviewAndShare` (S05.05), `newUlid` in the app (`lib/core/ulid.dart`).
 
 ## Global Constraints
 
-- S12 (verbatim): "Back + "Buổi chụp thế nào?"; `BookingCard` thu gọn; 5 sao lớn (chạm chọn, giữ trượt chọn); ô nhận xét (bắt buộc, 10–1000 ký tự); section "Chia sẻ ảnh bạn thích" (tuỳ chọn, ≤ 10) với lưới ảnh chọn từ thư viện; nhắc "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {tên}, có tag nhiếp ảnh gia"; thanh dưới "Chỉ đánh giá" + "Gửi & chia sẻ {n} ảnh"."
+- S05.05 (verbatim): "Back + "Buổi chụp thế nào?"; `BookingCard` thu gọn; 5 sao lớn (chạm chọn, giữ trượt chọn); ô nhận xét (bắt buộc, 10–1000 ký tự); section "Chia sẻ ảnh bạn thích" (tuỳ chọn, ≤ 10) với lưới ảnh chọn từ thư viện; nhắc "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {tên}, có tag nhiếp ảnh gia"; thanh dưới "Chỉ đánh giá" + "Gửi & chia sẻ {n} ảnh"."
 - "ghi `reviews/{bookingId}` (một đánh giá/booking) và, nếu có ảnh, bài `posts` `kind=real_shoot` (`bookingId`, `serviceId`). Function `onReviewWrite` cập nhật `stats` và huy hiệu."
 - "chưa chọn sao hoặc nhận xét ngắn → nút vô hiệu; đang tải ảnh → tiến độ từng ảnh; booking chưa `completed` → chặn; đã đánh giá → chuyển sang xem lại, không sửa."
 - Strings: `s12_title` "Buổi chụp thế nào?", `s12_text` "Nhận xét", `s12_share` "Chia sẻ ảnh bạn thích", `s12_optional` "Tuỳ chọn", `s12_onlyReview` "Chỉ đánh giá", `s12_submitShare` "Gửi & chia sẻ {n} ảnh".
@@ -39,12 +39,12 @@ Task 1 Step 1 checks these exist (ledger and adapt any difference):
 
 1. **Who writes.** Clients never write `reviews` or `real_shoot` posts (rules deny); `submitReview` writes both in the booking's transaction, so a review without the `reviewed` status (or the reverse) cannot exist.
 2. **Photo upload path.** The app picks a post id (ULID) before uploading and stores the files at `posts/{customerUid}/{postId}/{index}.jpg` (existing Storage rule: owner writes, signed-in users read, ≤ 8 MB). `submitReview` checks every `storagePath` starts with `posts/{callerUid}/{postId}/` and every `url` is a Firebase Storage download URL of this project's bucket for that path (prefix `https://firebasestorage.googleapis.com/v0/b/{bucket}/o/` + URL-encoded path; the bucket comes from the Functions config; in the emulator the host is `http://127.0.0.1:9199/` — accept both through a configured `storageUrlPrefixes` list).
-3. **Post shape** (same fields the feed reads for `work` posts, plan 3b1): `{kind: 'real_shoot', authorId: customerId, photographerId, serviceId: booking.serviceId, bookingId, imageUrls, imageMeta: [{blurHash, w, h}], caption: <the review text>, location: {name: booking.place.name}, likeCount: 0, saveCount: 0, inPortfolio: false, createdAt}`. The caption is the review text (S02's "Chụp bởi … · gói …" line already renders real-shoot posts).
+3. **Post shape** (same fields the feed reads for `work` posts, plan 3b1): `{kind: 'real_shoot', authorId: customerId, photographerId, serviceId: booking.serviceId, bookingId, imageUrls, imageMeta: [{blurHash, w, h}], caption: <the review text>, location: {name: booking.place.name}, likeCount: 0, saveCount: 0, inPortfolio: false, createdAt}`. The caption is the review text (S02.02's "Chụp bởi … · gói …" line already renders real-shoot posts).
 4. **Buttons.** With 0 photos the bottom bar shows one primary "Gửi đánh giá" (`reviewSubmit`); with ≥ 1 photo it shows outline "Chỉ đánh giá" (submits without the photos) + primary "Gửi & chia sẻ {n} ảnh". One primary per screen either way.
 5. **Uploads first, submit after.** Photos upload when picked (progress per tile, retry on a failed tile, remove a tile). Submitting with photos waits until all are uploaded; a failed tile blocks "Gửi & chia sẻ" but not "Chỉ đánh giá". Files of removed tiles, and all files when the customer chooses "Chỉ đánh giá", are deleted with `MediaUploader.delete` (best effort).
 6. **Stats.** `photographers/{uid}.stats`: `ratingSum` (int), `reviewCount` (int), `rating` = `round(ratingSum / reviewCount, 1)` (one decimal, half up). Reviews are never edited or deleted in v1, so the trigger only handles creates; it is idempotent through a marker `reviews/{bookingId}.countedAt` set in the same transaction.
-7. **Badges** ("toast huy hiệu nếu vừa đạt") wait for the badges plan (S37): `onReviewWrite` has a clearly named no-op hook `awardBadgesAfterReview` that the badges plan fills.
-8. **S03 reviews list.** Newest first, 10 per page, each row: customer avatar + display name (from `users/{uid}`), stars, date (`dd/MM/yyyy`), text (4 lines, "Xem thêm" expands), up to 3 photo thumbnails linking to the real-shoot post (`/p/{postId}`). Header line "{rating} · {n} đánh giá". `reviews/{bookingId}` is readable by any signed-in user (public on the profile); it holds no phone or contact data.
+7. **Badges** ("toast huy hiệu nếu vừa đạt") wait for the badges plan (S03.02): `onReviewWrite` has a clearly named no-op hook `awardBadgesAfterReview` that the badges plan fills.
+8. **S03.01 reviews list.** Newest first, 10 per page, each row: customer avatar + display name (from `users/{uid}`), stars, date (`dd/MM/yyyy`), text (4 lines, "Xem thêm" expands), up to 3 photo thumbnails linking to the real-shoot post (`/p/{postId}`). Header line "{rating} · {n} đánh giá". `reviews/{bookingId}` is readable by any signed-in user (public on the profile); it holds no phone or contact data.
 9. **Review doc**: `reviews/{bookingId}`: `customerId`, `photographerId`, `serviceId`, `rating`, `text`, `photoPostId?`, `createdAt`, `countedAt?` (set by the trigger).
 
 ## Review Focus
@@ -70,10 +70,10 @@ Task 1 Step 1 checks these exist (ledger and adapt any difference):
 | `app_flutter/firebase/firestore.rules`, `firestore.indexes.json`, `rules-test/rules.test.mjs` (modify) | `reviews` read, index `(photographerId, createdAt desc)` |
 | `app_flutter/lib/data/review/review.dart`, `review_repository.dart`, `firestore_review_repository.dart`, `review_providers.dart` (create) | app data layer |
 | `app_flutter/test/support/fake_review_repository.dart` (create) | fake |
-| `app_flutter/lib/features/review/review_screen.dart`, `review_controller.dart`, `widgets/star_rating.dart`, `widgets/share_photo_grid.dart` (create) | S12 |
+| `app_flutter/lib/features/review/review_screen.dart`, `review_controller.dart`, `widgets/star_rating.dart`, `widgets/share_photo_grid.dart` (create) | S05.05 |
 | `app_flutter/lib/features/photographer_profile/widgets/profile_sections.dart` (modify) | real `ReviewsSliver` |
 | `app_flutter/lib/features/booking/booking_features.dart`, `booking_detail_screen.dart`, `my_bookings_screen.dart`, `lib/app/router.dart`, `lib/l10n/app_vi.arb` (modify) | flag, entry points, route, strings |
-| `docs/superpowers/specs/2026-10-01-remaining-screens.md` (modify) | code table S12 |
+| `docs/superpowers/specs/2026-10-01-remaining-screens.md` (modify) | code table S05.05 |
 
 ---
 
@@ -192,7 +192,7 @@ final bookingReviewProvider = StreamProvider.autoDispose.family<Review?, String>
 
 ---
 
-### Task 4: S12 review and share `/b/:id/review`
+### Task 4: S05.05 review and share `/b/:id/review`
 
 **Files:**
 - Create: `lib/features/review/review_screen.dart`, `review_controller.dart`, `widgets/star_rating.dart`, `widgets/share_photo_grid.dart`
@@ -210,13 +210,13 @@ Layout per mock: app bar Back + `reviewTitle`; `BookingCard(size: compact)` with
 - [ ] **Step 1: Failing tests:**
   - star_rating: "tap selects the tapped star"; "dragging across selects continuously"; "semantics expose a slider with increase/decrease"; "read-only ignores taps".
   - controller: "submit is disabled without stars or with a short text"; "picking photos uploads each with progress under posts/{uid}/{postId}/"; "a failed tile blocks sharing but not review-only"; "review-only deletes uploaded files and sends no photos"; "remove deletes that file"; "at most 10 photos".
-  - screen: "shows the compact card, stars, the comment field with a counter, and the share section"; "0 photos: one primary Gửi đánh giá"; "with photos: Chỉ đánh giá and Gửi & chia sẻ 2 ảnh"; "submitting sends rating, trimmed text, postId and the uploaded photos, then opens S09 with the thanks message"; "a conflict after a lost response shows the review as sent"; "a booking that is not completed shows chưa đánh giá được"; "an existing review shows the read-only view"; "S09 Đánh giá and S14 Đánh giá open this screen; S09 Xem đánh giá opens the read-only view"; "320 dp and 1.3× text, light and dark: no overflow; the bottom bar stays visible above the keyboard".
+  - screen: "shows the compact card, stars, the comment field with a counter, and the share section"; "0 photos: one primary Gửi đánh giá"; "with photos: Chỉ đánh giá and Gửi & chia sẻ 2 ảnh"; "submitting sends rating, trimmed text, postId and the uploaded photos, then opens S05.02 with the thanks message"; "a conflict after a lost response shows the review as sent"; "a booking that is not completed shows chưa đánh giá được"; "an existing review shows the read-only view"; "S05.02 Đánh giá and S05.01 Đánh giá open this screen; S05.02 Xem đánh giá opens the read-only view"; "320 dp and 1.3× text, light and dark: no overflow; the bottom bar stays visible above the keyboard".
 - [ ] **Step 2: Run** → FAIL. **Step 3: Implement** (+ ARB: `reviewTitle`, `reviewText`, `reviewTextHint`, `reviewTextTooShort` "Viết ít nhất 10 ký tự", `reviewShare`, `reviewOptional`, `reviewShareHint` "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {name}, có tag nhiếp ảnh gia", `reviewOnly`, `reviewSubmitShare` "Gửi & chia sẻ {n} ảnh", `reviewSubmit` "Gửi đánh giá", `reviewNotYet`, `reviewThanks`, `reviewShared` "Đã chia sẻ {n} ảnh", `reviewStarsSemantics` "{n} trên 5 sao", `reviewUploadFailed` "Tải ảnh lỗi. Thử lại"). **Step 4: Run** → PASS (whole `test/features`).
-- [ ] **Step 5: Commit** `feat(review): S12 rate the shoot and share photos as a real shoot`.
+- [ ] **Step 5: Commit** `feat(review): S05.05 rate the shoot and share photos as a real shoot`.
 
 ---
 
-### Task 5: Reviews on S03, end-to-end, code table
+### Task 5: Reviews on S03.01, end-to-end, code table
 
 **Files:**
 - Modify: `lib/features/photographer_profile/widgets/profile_sections.dart`, `lib/features/photographer_profile/photographer_profile_screen.dart` (pass the photographer id to `ReviewsSliver`), `lib/l10n/app_vi.arb`, `docs/superpowers/specs/2026-10-01-remaining-screens.md`
@@ -225,12 +225,12 @@ Layout per mock: app bar Back + `reviewTitle`; `BookingCard(size: compact)` with
 **Interfaces:**
 - Produces: `final photographerReviewsProvider = AsyncNotifierProvider.autoDispose.family<PhotographerReviews, List<Review>, String>(...)` with `loadMore()`; `ReviewsSliver({required String photographerId})` rendering Decision 8 (keeps the existing empty state strings `profileNoReviewsTitle`/`Body` when the list is empty).
 
-- [ ] **Step 1: Failing tests:** reviews sliver: "shows the newest reviews with name, stars, date and text"; "Xem thêm expands a long review"; "photo thumbnails open the real-shoot post"; "scrolling to the end loads the next page"; "no reviews keeps the empty state"; "320 dp, 1.3×". E2E (fakes for booking, review, media, profile): completed booking → S09 "Đánh giá" → 5 stars, text, 2 photos → "Gửi & chia sẻ 2 ảnh" → S09 shows `reviewed` with timeline step 7 done → S03 "Đánh giá" lists the review.
+- [ ] **Step 1: Failing tests:** reviews sliver: "shows the newest reviews with name, stars, date and text"; "Xem thêm expands a long review"; "photo thumbnails open the real-shoot post"; "scrolling to the end loads the next page"; "no reviews keeps the empty state"; "320 dp, 1.3×". E2E (fakes for booking, review, media, profile): completed booking → S05.02 "Đánh giá" → 5 stars, text, 2 photos → "Gửi & chia sẻ 2 ảnh" → S05.02 shows `reviewed` with timeline step 7 done → S03.01 "Đánh giá" lists the review.
 - [ ] **Step 2: Run** → FAIL. **Step 3: Implement** (+ ARB `reviewsHeader` "{rating} · {n} đánh giá", `reviewsMore` "Xem thêm"). **Step 4: Run** whole suite + analyze → PASS.
-- [ ] **Step 5: Update the code table:** S12 "✅ đã làm (4e) · huy hiệu chờ plan huy hiệu". Commit `feat(profile): reviews on S03; end-to-end review flow; mark S12 built`.
+- [ ] **Step 5: Update the code table:** S05.05 "✅ đã làm (4e) · huy hiệu chờ plan huy hiệu". Commit `feat(profile): reviews on S03.01; end-to-end review flow; mark S05.05 built`.
 
 ---
 
 ## Self-review notes
 
-- Spec coverage: S12 layout, stars tap/drag, text 10–1000, ≤ 10 photos with per-photo progress, hint, two buttons (Tasks 4, Decision 4); one review per booking and `completed` only (Task 1); real-shoot post with `bookingId`, `serviceId`, photographer tag (Tasks 1–2); `onReviewWrite` stats (Task 2); review on the profile (Task 5); already reviewed → read-only (Task 4). Not covered by design: badges and their toast (badges plan, hook in Task 2), the push "Buổi chụp thế nào?" (notifications plan), "Đã giao ảnh" photographer action (not in any spec screen yet), analytics `review_submit` (no analytics port).
+- Spec coverage: S05.05 layout, stars tap/drag, text 10–1000, ≤ 10 photos with per-photo progress, hint, two buttons (Tasks 4, Decision 4); one review per booking and `completed` only (Task 1); real-shoot post with `bookingId`, `serviceId`, photographer tag (Tasks 1–2); `onReviewWrite` stats (Task 2); review on the profile (Task 5); already reviewed → read-only (Task 4). Not covered by design: badges and their toast (badges plan, hook in Task 2), the push "Buổi chụp thế nào?" (notifications plan), "Đã giao ảnh" photographer action (not in any spec screen yet), analytics `review_submit` (no analytics port).

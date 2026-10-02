@@ -15,7 +15,7 @@ import 'package:photobooking/features/photographer_profile/widgets/profile_botto
 import 'package:photobooking/features/photographer_profile/widgets/profile_header.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_sections.dart';
 
-/// S03 "Hồ sơ nhiếp ảnh gia" at `/u/:uid`, for visitors and the owner.
+/// S03.01 "Hồ sơ nhiếp ảnh gia" at `/u/:uid`, for visitors and the owner.
 class PhotographerProfileScreen extends ConsumerStatefulWidget {
   const PhotographerProfileScreen({
     super.key,

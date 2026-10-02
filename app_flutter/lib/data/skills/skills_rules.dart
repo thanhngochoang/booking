@@ -44,7 +44,7 @@ class SkillIssue {
 final _postId = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
 
 /// Everything that stops [s] from being saved, in the order the sections
-/// appear on S38/S39. Ids already in [previous] may be retired items.
+/// appear on S08.02/S08.03. Ids already in [previous] may be retired items.
 List<SkillIssue> validateSkills(
   PhotographerSkills s,
   TaxonomyCatalog catalog, {
@@ -290,8 +290,8 @@ SkillEdit withEvidence(
 PhotographerSkills withYearsExperience(PhotographerSkills s, int? years) =>
     s.copyWith(yearsExperience: years);
 
-/// Drops evidence ids whose post no longer exists (spec S40: a deleted post
-/// leaves the evidence and the S38 warning comes back).
+/// Drops evidence ids whose post no longer exists (spec S08.04: a deleted post
+/// leaves the evidence and the S08.02 warning comes back).
 PhotographerSkills withoutMissingEvidence(
   PhotographerSkills s,
   Set<String> existingPostIds,

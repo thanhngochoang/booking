@@ -200,7 +200,7 @@ void main() {
   });
 
   testWidgets(
-    '"Đặt gói này" opens the booking with the package, or S33 first without a phone',
+    '"Đặt gói này" opens the booking with the package, or S04.05 first without a phone',
     (tester) async {
       final router = await _open(tester, DiscoveryWorld());
       await tester.tap(find.byKey(const Key('photo-book')));
@@ -215,7 +215,7 @@ void main() {
     },
   );
 
-  testWidgets('"Xem hồ sơ" opens S03', (tester) async {
+  testWidgets('"Xem hồ sơ" opens S03.01', (tester) async {
     await _open(tester, DiscoveryWorld());
     await tester.tap(find.byKey(const Key('photo-profile')));
     await tester.pumpAndSettle();

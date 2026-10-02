@@ -20,21 +20,21 @@ import 'package:photobooking/features/skills/skills_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 enum SkillsMode {
-  /// Setup step 3/4 (`/setup/3`): "Quay lại" + "Tiếp tục" → S34.
+  /// Setup step 3/4 (`/setup/3`): "Quay lại" + "Tiếp tục" → S08.05.
   setup,
 
   /// From the profile (`/profile/skills`): "Lưu thay đổi" → back.
   edit,
 }
 
-/// S38 + S39: genres and levels, then styles, extra skills, languages,
+/// S08.02 + S08.03: genres and levels, then styles, extra skills, languages,
 /// suitable clients and years, on one scrolling page.
 class SkillsScreen extends ConsumerStatefulWidget {
   const SkillsScreen({super.key, required this.mode, this.openEvidenceFor});
 
   final SkillsMode mode;
 
-  /// Deep link `/profile/skills/evidence?skill=…`: open S40 for this genre
+  /// Deep link `/profile/skills/evidence?skill=…`: open S08.04 for this genre
   /// once the skills are loaded (ignored when the genre is not chosen).
   final String? openEvidenceFor;
 
@@ -50,7 +50,7 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
   bool _loaded = false;
   bool _allowPop = false;
 
-  /// A tap on the primary button is being handled (until S34 is popped in
+  /// A tap on the primary button is being handled (until S08.05 is popped in
   /// setup mode, for good once leaving in edit mode): a second tap on the
   /// still-visible button does nothing.
   bool _submitting = false;
@@ -253,7 +253,7 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
         child: AuroraBackground(
           child: Scaffold(
             backgroundColor: Colors.transparent,
-            // Mock S38/S39 `.bar`: back · "Kỹ năng" · "3 / 4" (setup only).
+            // Mock S08.02/S08.03 `.bar`: back · "Kỹ năng" · "3 / 4" (setup only).
             appBar: AppBar(
               title: Text(l.skillsTitle),
               actions: [
@@ -508,7 +508,7 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
   Widget _chips(List<Widget> children) =>
       Wrap(spacing: AppSpace.s2, runSpacing: AppSpace.s2, children: children);
 
-  /// Mock S39 shows the count only on "Phong cách"; the other groups explain
+  /// Mock S08.03 shows the count only on "Phong cách"; the other groups explain
   /// their limit with a SnackBar and dimmed chips when full.
   Widget _tagSection(
     SkillsEditorState s,
@@ -580,7 +580,7 @@ String _hintText(
     CompletenessStepCode.audiences => l.skillsHintAudiences,
     CompletenessStepCode.extras => l.skillsHintExtras,
   };
-  // "… để lên 85%" (mock S38) when the server stored the score after it.
+  // "… để lên 85%" (mock S08.02) when the server stored the score after it.
   final after = s.server.nextAfter;
   return after == null ? text : l.skillsHintTarget(text, after);
 }

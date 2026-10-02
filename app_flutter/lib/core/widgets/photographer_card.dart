@@ -13,7 +13,7 @@ import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/reason.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 
-/// A photographer to compare (S01 "Rảnh tuần này" long form, S04): hero photo,
+/// A photographer to compare (S02.01 "Rảnh tuần này" long form, S02.06): hero photo,
 /// name with the verified tick, meta, price from, why recommended, and two
 /// actions. No blur: a list of these must stay cheap.
 class PhotographerCard extends StatelessWidget {

@@ -34,7 +34,7 @@ List<DateTime> monthWindow(
 }
 
 /// Marks [days] off ([off]) or frees them for [uid]; true when saved. Used
-/// by [CalendarEditController] and by S20's undo, which must still work
+/// by [CalendarEditController] and by S06.04's undo, which must still work
 /// after the screen (and so the controller) is gone.
 Future<bool> writeDaysOff(
   AvailabilityRepository repo,
@@ -50,7 +50,7 @@ Future<bool> writeDaysOff(
   }
 }
 
-/// Marks days off / frees them for the signed-in photographer (S20).
+/// Marks days off / frees them for the signed-in photographer (S06.04).
 class CalendarEditController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}

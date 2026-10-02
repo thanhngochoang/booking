@@ -5,7 +5,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/features/settings/avatar_controller.dart';
 
-/// The avatar and its "Đổi ảnh đại diện" button (S42, S24 step 1), centred as
+/// The avatar and its "Đổi ảnh đại diện" button (S09.03, S08.01 step 1), centred as
 /// in the mock. The circle crops the photo; it is uploaded as picked.
 class AvatarEditor extends ConsumerWidget {
   const AvatarEditor({super.key});

@@ -27,14 +27,14 @@ const int _moreSlots = 3;
 const double _stackBodyPx = 16;
 const double _stackAbovePx = 18.4;
 
-/// "Chân dung · Quận 3 · ★ 4,9 (58)": only the parts that exist (mock S02).
+/// "Chân dung · Quận 3 · ★ 4,9 (58)": only the parts that exist (mock S02.02).
 String _authorMeta(PhotographerSummary p) => [
   if (p.specialtyIds.isNotEmpty) specialtyLabel(p.specialtyIds.first),
   if (p.areaLabel != null && p.areaLabel!.isNotEmpty) p.areaLabel!,
   if (p.hasRating) '★ ${formatRating(p.ratingAvg)} (${p.reviewCount})',
 ].join(' · ');
 
-/// S02: from one photo to the package it was shot with, and to booking it.
+/// S02.02: from one photo to the package it was shot with, and to booking it.
 class PhotoDetailScreen extends ConsumerStatefulWidget {
   const PhotoDetailScreen({super.key, required this.postId});
   final String postId;

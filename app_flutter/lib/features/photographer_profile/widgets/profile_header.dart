@@ -10,7 +10,7 @@ import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 
-/// Top of S03: photo, avatar over it, name + check, genres · area, follow,
+/// Top of S03.01: photo, avatar over it, name + check, genres · area, follow,
 /// the four stats, bio, skill tags, equipment, and the owner's meter.
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.profile, required this.owner});

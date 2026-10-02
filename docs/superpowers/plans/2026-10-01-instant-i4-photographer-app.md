@@ -1,20 +1,20 @@
-# Instant I4: "Chụp ngay" Photographer App (S52–S55) Implementation Plan
+# Instant I4: "Chụp ngay" Photographer App (S13.08, S14) Implementation Plan
 
 > **Rules emulator tests (2026-10-02, user):** do not run the Firestore/Storage rules tests on the emulator (`app_flutter/firebase/rules-test`, `npm test`, `npm run test:*`) while executing this plan; the sandbox cannot run them. Still write or update the rules and their test files as the task says, but skip every step that runs them and every `Expected:` that depends on them; CI (`flutter.yml`, `firebase-deploy.yml`) runs them on push and blocks deploy on failure. Record the skip in the ledger.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A photographer can switch on "Sẵn sàng chụp ngay" (S52) after accepting the package price list, receive a 30-second offer full screen even when the app is in the background (S53), accept it, drive to the customer with live location sharing and an external "Chỉ đường" (S54), mark "Đã đến" / "Bắt đầu chụp" / "Hoàn thành", or cancel with the amount shown first (S55), and the phone stops using GPS as soon as it is not needed.
+**Goal:** A photographer can switch on "Sẵn sàng chụp ngay" (S14.01) after accepting the package price list, receive a 30-second offer full screen even when the app is in the background (S14.02), accept it, drive to the customer with live location sharing and an external "Chỉ đường" (S14.03), mark "Đã đến" / "Bắt đầu chụp" / "Hoàn thành", or cancel with the amount shown first (S13.08), and the phone stops using GPS as soon as it is not needed.
 
 **Architecture:** Everything the app sends goes over HTTPS to the dispatch service (`services/dispatch/api/openapi.yaml`) through the existing `ApiClient` + `IdTokenSource` of backend phase 2 (a second `ApiClient` instance pointed at `DISPATCH_URL`, no second HTTP client class). Two ports, `PresenceRepository` and `InstantJobRepository`, have an HTTP adapter and an in-memory fake. Realtime state is read only from the Firestore mirror (`instant_offers/{uid}`, `instant_requests/{id}`, `instant_tracks/{id}`) behind a read-only `InstantMirror` port. A keep-alive `InstantSessionController` owns presence (one medium-accuracy fix, then a 300 m distance-filtered stream and a 5-minute network heartbeat that reuses the last fix), the Android foreground service with the "Tắt" action, the offer listener, the 30-minute auto-off prompt and the low-battery prompt. A keep-alive `InstantJobController` owns one accepted job: a high-accuracy route stream throttled to one post every 10–15 s while `assigned`/`en_route`, stopped the moment the job is `arrived`, finished, cancelled or the photographer goes offline. Platform plugins (geolocator, flutter_foreground_task, flutter_local_notifications, firebase_messaging, battery_plus, maplibre_gl) each sit behind a small port with a fake, so every behaviour, including battery properties, is unit-tested.
 
 **Tech Stack:** Flutter, Riverpod 3, go_router, `http` (via phase 2's `ApiClient`), `cloud_firestore` (mirror and device adapters only), `geolocator` (already added by 3a1), new `flutter_foreground_task`, `flutter_local_notifications`, `firebase_messaging`, `battery_plus`, `maplibre_gl`; dev: `fake_async`, `yaml`; Firestore rules + `@firebase/rules-unit-testing`; `flutter_test`.
 
-**Spec:** `docs/superpowers/specs/2026-10-01-instant-booking-design.md` (§2.2, §3, §5, §6, §8, §9, §10, §11); contract `services/dispatch/api/openapi.yaml` (paths, schemas, enums, error codes; the Dart wire layer is checked against it by a test); mock `docs/design/ui-mock.html` screens `data-code="S52"`, `"S53"`, `"S54"`, `"S55"`; `docs/superpowers/specs/screens/README.md` (per-screen conventions); `docs/superpowers/specs/components/shared-components.md`; `docs/superpowers/specs/data-model/README.md` (ids, UTC instants, integer VND, string enums, `Device` entity in `domain-model.md`).
+**Spec:** `docs/superpowers/specs/2026-10-01-instant-booking-design.md` (§2.2, §3, §5, §6, §8, §9, §10, §11); contract `services/dispatch/api/openapi.yaml` (paths, schemas, enums, error codes; the Dart wire layer is checked against it by a test); mock `docs/design/ui-mock.html` screens `data-code="S14.01"`, `"S14.02"`, `"S14.03"`, `"S13.08"`; `docs/superpowers/specs/screens/README.md` (per-screen conventions); `docs/superpowers/specs/components/shared-components.md`; `docs/superpowers/specs/data-model/README.md` (ids, UTC instants, integer VND, string enums, `Device` entity in `domain-model.md`).
 
 **Prerequisite (all done first; exact APIs used are listed per task under "Consumes"):**
 
-- `docs/superpowers/plans/2026-10-01-screen-codes.md`: `ScreenCode`, `ScreenCodes.instantAvailability` (S52), `.instantOffer` (S53), `.instantJob` (S54), `.instantCancel` (S55); `test/support/idle.dart` (`expectIdle`); `docs/testing/battery-and-performance.md`.
+- `docs/superpowers/plans/2026-10-01-screen-codes.md`: `ScreenCode`, `ScreenCodes.instantAvailability` (S14.01), `.instantOffer` (S14.02), `.instantJob` (S14.03), `.instantCancel` (S13.08); `test/support/idle.dart` (`expectIdle`); `docs/testing/battery-and-performance.md`.
 - `docs/superpowers/plans/2026-10-01-core-display-widgets.md`: `hostWidget` in `test/core/widgets/widget_host.dart`.
 - `docs/superpowers/plans/2026-10-01-step2a-phone-and-customer-contact.md`: route `/profile/phone?returnTo=…`, `UserContact`, `FakeUserContactRepository`, `userContactRepositoryProvider`.
 - `docs/superpowers/plans/2026-10-01-step2b-contact-dial-and-channels.md`: `ContactChannel`, `ContactAccess`, `ContactAction`, `ContactSubject` (`lib/data/contact/contact_link_repository.dart`), `FakeContactLinkRepository`, `ExternalLauncher`/`FakeExternalLauncher` (`lib/data/contact/external_launcher.dart`), `contactLinkRepositoryProvider`, `externalLauncherProvider` (`lib/data/contact/contact_providers.dart`); Android `<queries>` block.
@@ -36,9 +36,9 @@
 - **UI strings** only in `lib/l10n/app_vi.arb` (Vietnamese with full diacritics), then `flutter gen-l10n`; keys are camelCase with an `instant…` prefix (the convention of the existing arb, as in plan 2b). Code that runs without a `BuildContext` (session controller, background isolate) uses `lookupAppLocalizations(const Locale('vi'))`.
 - **Theme:** colours, spacing, radii from `AppColors`/`AppColorsDark`/`AppSpace`/`AppRadius`; no raw hex in features. Secondary text uses `AppColorsDark.foregroundSecondary` / `AppColors.foregroundSecondary`.
 - **One primary action per screen** (`AppButton.primary`). Cancel and decline are never the gradient button: the screen shows a red text or outline button that opens a sheet, and the sheet's confirmation is `AppButton.danger` (red, added in Task 7). The amount refunded is always shown in words before the confirmation.
-- **Contact rules (product decisions, do not weaken):** phone/Zalo/WhatsApp open only after payment (an assigned instant request is paid, so S54 may show `ContactAction` with `ContactAccess.unlocked`); the app never shows or stores a phone number; phone numbers never go into the public `users/{uid}` document (or any `instant_*` mirror). The exact meet-point address is shown only after "Nhận" (S53 shows the area and distance only).
+- **Contact rules (product decisions, do not weaken):** phone/Zalo/WhatsApp open only after payment (an assigned instant request is paid, so S14.03 may show `ContactAction` with `ContactAccess.unlocked`); the app never shows or stores a phone number; phone numbers never go into the public `users/{uid}` document (or any `instant_*` mirror). The exact meet-point address is shown only after "Nhận" (S14.02 shows the area and distance only).
 - **Location and battery (spec §9, a deliberate exception to the "no background service" rule of `docs/testing/battery-and-performance.md`, documented there in Task 15):** location runs only while the photographer is available or en route; idle presence uses medium accuracy (≈100 m), a 300 m distance filter and a 5-minute heartbeat that re-sends the last fix without a new GPS fix; en route uses high accuracy, posted every 10–15 s (never faster than the service's 1 per 5 s); GPS stops on `arrived`, on finish/cancel and when going offline. Android: foreground service type `location` with the persistent notification "Đang nhận việc chụp ngay" and a "Tắt" action, `ACCESS_FINE_LOCATION` + `FOREGROUND_SERVICE_LOCATION`, **never** `ACCESS_BACKGROUND_LOCATION`, no wake lock. iOS: "When In Use" only, `allowsBackgroundLocationUpdates` + `showsBackgroundLocationIndicator` while sharing, `UIBackgroundModes` = `location` only, **never** `NSLocationAlways*`.
-- Interactive controls have a 48dp touch target (S53 "Nhận việc" is at least 56dp); meaning never rests on colour alone; every map pin has a text label; animations honour `MediaQuery.disableAnimationsOf`. Widget tests run at 390dp and at 320dp with text scale 1.3, in dark and light themes.
+- Interactive controls have a 48dp touch target (S14.02 "Nhận việc" is at least 56dp); meaning never rests on colour alone; every map pin has a text label; animations honour `MediaQuery.disableAnimationsOf`. Widget tests run at 390dp and at 320dp with text scale 1.3, in dark and light themes.
 - The Goong map key comes from `--dart-define=GOONG_MAPTILES_KEY=…` (restricted by package name / bundle id in the Goong console), is never logged and never appears in an exception text.
 - Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
@@ -88,17 +88,17 @@
 | `lib/data/instant/firebase_push_messages.dart`, `firestore_device_registry.dart`, `fcm_background.dart` (create) | FCM adapter, `devices/{id}` writer, background handler |
 | `lib/data/instant/instant_labels.dart` (create) | genre/package labels and the offer notification text (no `BuildContext`) |
 | `lib/features/instant_common/instant_services.dart` (create) | platform service providers |
-| `lib/features/instant_common/instant_cancel_sheet.dart` (create) | S55 sheet (customer and photographer) |
-| `lib/features/instant_common/instant_milestones.dart` (create) | the "Đã nhận · 15:21" milestone list (S50, S54) |
+| `lib/features/instant_common/instant_cancel_sheet.dart` (create) | S13.08 sheet (customer and photographer) |
+| `lib/features/instant_common/instant_milestones.dart` (create) | the "Đã nhận · 15:21" milestone list (S13.06, S14.03) |
 | `lib/features/instant_work/instant_rules.dart` (create) | presence/route send policies, arrive radius, directions URIs |
 | `lib/features/instant_work/instant_session_controller.dart` (create) | presence, foreground service, offers, auto-off, battery |
 | `lib/features/instant_work/instant_job_controller.dart` (create) | accept/decline, route tracking, arrive/start/finish/cancel |
 | `lib/features/instant_work/instant_navigation.dart` (create) | notification taps and new offers → routes |
 | `lib/features/instant_work/photographer_only.dart` (create) | role guard for `/work/instant…` |
-| `lib/features/instant_work/instant_availability_screen.dart` (create) | S52 |
+| `lib/features/instant_work/instant_availability_screen.dart` (create) | S14.01 |
 | `lib/features/instant_work/instant_work_card.dart` (create) | entry card on the Công việc tab |
-| `lib/features/instant_work/instant_offer_screen.dart` (create) | S53 |
-| `lib/features/instant_work/instant_job_screen.dart` (create) | S54 |
+| `lib/features/instant_work/instant_offer_screen.dart` (create) | S14.02 |
+| `lib/features/instant_work/instant_job_screen.dart` (create) | S14.03 |
 | `lib/features/shell/placeholder_tabs.dart`, `lib/app/router.dart`, `lib/main.dart` (modify) | entry card, routes, plugin wiring |
 | `lib/data/contact/contact_link_repository.dart` (modify, plan 2b) | `ContactSubject.instant` |
 | `firebase/firestore.rules`, `firebase/rules-test/rules.test.mjs` (modify) | `instant_*` read-only rules, `devices/{id}` owner rules |
@@ -1652,7 +1652,7 @@ class DispatchConfig {
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 
-/// Photographer availability (S52). Errors are [DispatchException]s.
+/// Photographer availability (S14.01). Errors are [DispatchException]s.
 abstract class PresenceRepository {
   /// `PUT /v1/presence`; `not_eligible` when a condition is missing.
   Future<PresenceState> setPresence({required bool online, bool? helpReady, LocationFix? fix});
@@ -1665,7 +1665,7 @@ abstract class PresenceRepository {
   Future<PackagesQuote> packagesNear(LatLng at);
 }
 
-/// One offer and the job it becomes (S53, S54, S55).
+/// One offer and the job it becomes (S14.02, S14.03, S13.08).
 abstract class InstantJobRepository {
   /// `offer_expired` or `already_assigned` when another photographer won.
   Future<AcceptedJob> accept(String offerId);
@@ -1798,7 +1798,7 @@ import 'package:photobooking/data/instant/instant_repositories.dart';
 
 typedef PresenceCall = ({bool online, bool? helpReady, LocationFix? fix});
 
-/// The price list the fakes and tests use (mock S52 values).
+/// The price list the fakes and tests use (mock S14.01 values).
 PackagesQuote fakePackagesQuote({int version = 3, int? typicalMatchMinutes = 4}) => PackagesQuote(
   cityId: 'hcm',
   cityName: 'TP. Hồ Chí Minh',
@@ -2600,7 +2600,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:photobooking/data/instant/instant_models.dart';
 import 'package:photobooking/data/instant/tracking_location.dart';
 
-/// geolocator streams for Chụp ngay. Permission is asked elsewhere (S52,
+/// geolocator streams for Chụp ngay. Permission is asked elsewhere (S14.01,
 /// through plan 3a1's `LocationRepository`), never "Always". On Android the
 /// streams keep running in the background because `ForegroundSession`
 /// (Task 5) holds a foreground service of type location.
@@ -3949,7 +3949,7 @@ Platform files:
        <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
        <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
    ```
-   and add `android:showWhenLocked="true"` and `android:turnScreenOn="true"` to the `.MainActivity` `<activity>` element (the full-screen offer shows over the lock screen; Flutter draws S53 once the activity starts).
+   and add `android:showWhenLocked="true"` and `android:turnScreenOn="true"` to the `.MainActivity` `<activity>` element (the full-screen offer shows over the lock screen; Flutter draws S14.02 once the activity starts).
 2. Create `ios/Runner/Runner.entitlements`:
    ```xml
    <?xml version="1.0" encoding="UTF-8"?>
@@ -4558,7 +4558,7 @@ class AppMapView {
   final double zoom;
   final List<MapMarker> markers;
 
-  /// Frame every marker (S49, S54) instead of [center].
+  /// Frame every marker (S13.05, S14.03) instead of [center].
   final bool fitMarkers;
 
   /// When it changes the engine moves the camera (to [center] or the fit).
@@ -4586,7 +4586,7 @@ class AppMapScope extends InheritedWidget {
   bool updateShouldNotify(AppMapScope old) => old.engine != engine;
 }
 
-/// The one map widget of the app. Only S47, S49 and S54 build it.
+/// The one map widget of the app. Only S13.01, S13.05 and S14.03 build it.
 class AppMap extends StatelessWidget {
   const AppMap({
     super.key,
@@ -4962,7 +4962,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 8: `ApertureLoader` and `ApertureMark` (screen-level wait)
 
-> **Done ahead of this plan (2026-10-02)**, together with the splash and S34 loading states. Skip this task when executing I4; `ApertureLoader` is already exported from `core/core.dart`. Two fixes against the code below were applied: the hold uses `t <= 0.55` (at exactly 0.55 the eased curve gives 0.9999993 and failed the 1e-9 check), and `TickerMode.of` became `TickerMode.valuesOf(context).enabled` (deprecated since Flutter 3.35). CI runs `flutter test --exclude-tags golden`; the `golden` tag is declared in `dart_test.yaml`.
+> **Done ahead of this plan (2026-10-02)**, together with the splash and S08.05 loading states. Skip this task when executing I4; `ApertureLoader` is already exported from `core/core.dart`. Two fixes against the code below were applied: the hold uses `t <= 0.55` (at exactly 0.55 the eased curve gives 0.9999993 and failed the 1e-9 check), and `TickerMode.of` became `TickerMode.valuesOf(context).enabled` (deprecated since Flutter 3.35). CI runs `flutter test --exclude-tags golden`; the `golden` tag is declared in `dart_test.yaml`.
 
 **Files:**
 - Create: `lib/core/widgets/aperture_loader.dart`, `test/core/widgets/aperture_loader_test.dart`, `test/core/widgets/goldens/` (generated)
@@ -4975,7 +4975,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `const ApertureLoader({super.key, double size = 66, bool active = true, String? semanticsLabel})` — a `CtaSurface`-filled circle with the primary button's shadow and a white `ApertureMark` (34/66 of the size); one `AnimationController` (2.4 s, `Curves.easeInOutCubic`, open → closed, held closed 45–55 %, → open, repeating) that runs only while `active`, `TickerMode` is on and animations are not disabled; otherwise it stops completely and shows the open mark; `RepaintBoundary` around it; `Semantics(label: semanticsLabel)`.
   - `double apertureClosureAt(double t)` (the cycle curve, for tests).
 
-Used by plan I4 for the S54 resume wait and by plan I5 (S48 centre, S47 while creating a request and opening payment). Buttons keep `AppButton.loading`; lists keep `AppSkeleton`.
+Used by plan I4 for the S14.03 resume wait and by plan I5 (S13.03 centre, S13.01 while creating a request and opening payment). Buttons keep `AppButton.loading`; lists keep `AppSkeleton`.
 
 - [x] **Step 1: Write the failing test**
 
@@ -5160,7 +5160,7 @@ class AperturePainter extends CustomPainter {
   bool shouldRepaint(AperturePainter old) => old.closure != closure || old.color != color;
 }
 
-/// The app's screen-level wait (S48 searching, S47 opening payment, S54
+/// The app's screen-level wait (S13.03 searching, S13.01 opening payment, S14.03
 /// resuming…). Runs only while [active] and visible; reduced motion shows
 /// the open mark, still.
 class ApertureLoader extends StatefulWidget {
@@ -5287,7 +5287,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - Test support `InstantWorld` (all fakes, `init()`, `overrides`, `now`, `advance(FakeAsync, Duration)`, `fixAt(double northMeters, {double accuracy})`, `offer({String id, Duration ttl})`, `view(InstantStatus)`, `eligibleSettings`).
   - l10n: `instantForegroundChannel`, `instantForegroundTitle`, `instantForegroundText`, `instantStillAvailableTitle`, `instantStillAvailableBody`, `instantLowBatteryTitle`, `instantLowBatteryBody`.
 
-Behaviour (spec §2.2, §9): going online asks for location permission (when in use) and notification permission, takes **one** medium fix (or reuses one taken by S52 in the last minute), calls `PUT /v1/presence`, starts the foreground service, a 300 m presence stream and a 5-minute heartbeat that re-sends the last fix (no GPS fix), and listens to `instant_offers/{uid}`. While a job is active, idle presence and the offer listener pause (one offer at a time) and resume after it if still online. Going offline (switch, "Tắt" in the notification, auto-off, `not_eligible`) cancels every stream and timer, stops the service and sends `online: false`. In the background for 30 minutes → "Vẫn muốn nhận việc?" notification; no answer in 5 minutes → off; opening the app counts as an answer. Battery below 15 % → one prompt per session.
+Behaviour (spec §2.2, §9): going online asks for location permission (when in use) and notification permission, takes **one** medium fix (or reuses one taken by S14.01 in the last minute), calls `PUT /v1/presence`, starts the foreground service, a 300 m presence stream and a 5-minute heartbeat that re-sends the last fix (no GPS fix), and listens to `instant_offers/{uid}`. While a job is active, idle presence and the offer listener pause (one offer at a time) and resume after it if still online. Going offline (switch, "Tắt" in the notification, auto-off, `not_eligible`) cancels every stream and timer, stops the service and sends `online: false`. In the background for 30 minutes → "Vẫn muốn nhận việc?" notification; no answer in 5 minutes → off; opening the app counts as an answer. Battery below 15 % → one prompt per session.
 
 - [ ] **Step 1: Add the dev dependency**
 
@@ -5833,7 +5833,7 @@ final pushRegistrationProvider = Provider<void>((ref) {
 Append to `lib/data/instant/instant_providers.dart` (import `package:photobooking/data/auth/auth_providers.dart`):
 
 ```dart
-/// The signed-in photographer's pending offer (S53 reads it directly, so a
+/// The signed-in photographer's pending offer (S14.02 reads it directly, so a
 /// cold start from a notification works even before the session is online).
 final instantOfferProvider = StreamProvider.autoDispose<InstantOffer?>((ref) {
   final uid = ref.watch(authStateProvider).value?.uid;
@@ -5970,7 +5970,7 @@ class InstantSessionController extends Notifier<InstantSessionState> {
     return f != null && _now().difference(f.at) < const Duration(minutes: 1) ? f : null;
   }
 
-  /// S52 opened: settings, permission, and the price list where the
+  /// S14.01 opened: settings, permission, and the price list where the
   /// photographer is (one fix, reused by [goOnline]).
   Future<void> refresh() async {
     final status = await ref.read(locationRepositoryProvider).permissionStatus();
@@ -6647,7 +6647,7 @@ class InstantJobController extends Notifier<InstantJobState> {
     }
   }
 
-  /// S54 opened after a restart: follow the mirror; tracking starts only if
+  /// S14.03 opened after a restart: follow the mirror; tracking starts only if
   /// the photographer is still on the way.
   Future<void> resume(String requestId) async {
     if (state.requestId == requestId) {
@@ -6822,7 +6822,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 11: S55 cancel sheet, milestones and error texts (shared with plan I5)
+### Task 11: S13.08 cancel sheet, milestones and error texts (shared with plan I5)
 
 **Files:**
 - Create: `lib/features/instant_common/instant_cancel_sheet.dart`, `lib/features/instant_common/instant_milestones.dart`, `lib/features/instant_common/instant_errors.dart`, `test/features/instant_common/instant_cancel_sheet_test.dart`, `test/features/instant_common/instant_milestones_test.dart`
@@ -6832,7 +6832,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `showAppSheet` (3a1), `AppButton.danger` (Task 7), `AppSkeleton.box` (3a2), `formatMoney`, `CancelQuote`, `CancelRule`, `DispatchException`, `ScreenCode`, `ScreenCodes.instantCancel`, `hostWidget`, `expectIdle`, `expectBlurBudget`.
 - Produces:
   - `enum InstantCancelRole { customer, photographer }`; `Future<bool> showInstantCancelSheet(BuildContext context, {required InstantCancelRole role, required Future<CancelQuote> Function() quote, required Future<Object?> Function() confirm, String? photographerName})` (true when cancelled); `class InstantCancelSheet extends StatefulWidget` (same parameters). Keys: `cancel-row-free`, `cancel-row-en-route`, `cancel-row-no-show`, `cancel-row-late`, `cancel-amount`, `cancel-confirm`, `cancel-keep`, `cancel-retry`.
-  - Customer layout (mock S55): title "Huỷ chụp ngay?"; the three rules with "Hoàn 100% / 80% / 50%" (plus "Nhiếp ảnh gia trễ quá 15 phút · Hoàn 100%" when that is the current rule), the current one highlighted and marked "(bây giờ)"; the amounts from the dry run in words; red "Huỷ và hoàn {số tiền}"; text "Giữ yêu cầu". Photographer layout: "Huỷ việc này?", "Khách được hoàn {số tiền}. Huỷ sau khi nhận làm giảm điểm tin cậy.", red "Huỷ việc này", text "Giữ việc". A `conflict`/`invalid_argument` on confirm (the state changed) re-quotes and says so.
+  - Customer layout (mock S13.08): title "Huỷ chụp ngay?"; the three rules with "Hoàn 100% / 80% / 50%" (plus "Nhiếp ảnh gia trễ quá 15 phút · Hoàn 100%" when that is the current rule), the current one highlighted and marked "(bây giờ)"; the amounts from the dry run in words; red "Huỷ và hoàn {số tiền}"; text "Giữ yêu cầu". Photographer layout: "Huỷ việc này?", "Khách được hoàn {số tiền}. Huỷ sau khi nhận làm giảm điểm tin cậy.", red "Huỷ việc này", text "Giữ việc". A `conflict`/`invalid_argument` on confirm (the state changed) re-quotes and says so.
   - `class Milestone { const Milestone(String label, {required bool done}); }`, `const InstantMilestones({super.key, required List<Milestone> items})`.
   - `String instantErrorText(DispatchError e, AppLocalizations l)`.
   - l10n listed in Step 3.
@@ -7096,7 +7096,7 @@ class Milestone {
   final bool done;
 }
 
-/// "Đã nhận · 15:21 / Đã đến / Bắt đầu chụp · Hoàn thành" (S50, S54).
+/// "Đã nhận · 15:21 / Đã đến / Bắt đầu chụp · Hoàn thành" (S13.06, S14.03).
 class InstantMilestones extends StatelessWidget {
   const InstantMilestones({super.key, required this.items});
   final List<Milestone> items;
@@ -7153,7 +7153,7 @@ import 'package:photobooking/data/instant/instant_models.dart';
 
 enum InstantCancelRole { customer, photographer }
 
-/// S55. The amount always comes from the service's dry run and is shown in
+/// S13.08. The amount always comes from the service's dry run and is shown in
 /// words before the red confirmation.
 Future<bool> showInstantCancelSheet(
   BuildContext context, {
@@ -7377,14 +7377,14 @@ Expected: PASS (8 + 1 tests). `AppSkeleton.box` pulses only while the quote load
 ```bash
 dart format lib test
 git add lib/features/instant_common lib/l10n test/features/instant_common
-git commit -m "feat(instant): S55 cancel sheet with dry-run amounts and a red confirmation
+git commit -m "feat(instant): S13.08 cancel sheet with dry-run amounts and a red confirmation
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 12: S52 "Sẵn sàng chụp ngay", routes and the Công việc entry card
+### Task 12: S14.01 "Sẵn sàng chụp ngay", routes and the Công việc entry card
 
 **Files:**
 - Create: `lib/features/instant_work/photographer_only.dart`, `lib/features/instant_work/instant_availability_screen.dart`, `lib/features/instant_work/instant_work_card.dart`, `test/support/instant_screens.dart`, `test/features/instant_work/instant_availability_screen_test.dart`, `test/features/instant_work/instant_work_card_test.dart`
@@ -7394,13 +7394,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `instantSessionProvider` (Task 9), `instantErrorText` (Task 11), `packageLabel` (Task 6), `GlassCard`, `AppButton`, `AppSkeleton`, `formatMoney`, `currentProfileProvider`, `AppTab`, `UserRole`, `dispatchConfigProvider`, `screenRouterApp`.
 - Produces:
   - `const PhotographerOnly({super.key, required Widget child})` (customers are sent to `/home`).
-  - `const InstantAvailabilityScreen({super.key})` (S52, route `/work/instant`). Keys: `instant-online` (the `SwitchListTile`), `instant-help`, `instant-accept-prices`, `instant-off-today`, `instant-reason-<code>`, `instant-reason-fix-<code>`, `instant-package-<code>`, `instant-still-banner`, `instant-battery-banner`.
-  - `const InstantWorkCard({super.key})` (key `instant-work-card`), shown at the top of the photographer's Công việc tab (`BookingsTab` until S19 replaces it).
+  - `const InstantAvailabilityScreen({super.key})` (S14.01, route `/work/instant`). Keys: `instant-online` (the `SwitchListTile`), `instant-help`, `instant-accept-prices`, `instant-off-today`, `instant-reason-<code>`, `instant-reason-fix-<code>`, `instant-package-<code>`, `instant-still-banner`, `instant-battery-banner`.
+  - `const InstantWorkCard({super.key})` (key `instant-work-card`), shown at the top of the photographer's Công việc tab (`BookingsTab` until S06.01 replaces it).
   - Routes: `/work/instant` with children `offer/:offerId` (Task 13) and `:id` (Task 14).
   - Test support `instantScreenApp(InstantWorld w, {required String location, Brightness brightness, double textScale})` with stub routes `/profile/phone`, `/setup/1`, `/home`, `/chat/:chatId`.
   - l10n listed in Step 3.
 
-Layout (mock S52, top to bottom): app bar "Chụp ngay"; banners (still available, low battery, auto-off) when relevant; highlighted `GlassCard` "Sẵn sàng chụp ngay" + switch; when conditions are missing, the reasons with a "Sửa"/"Cho phép" action each; card "Sẵn sàng hỗ trợ" + switch (enabled once the price list is accepted); "Bảng giá gói" + "Bản 3 · đã đồng ý"; one row per package "1 giờ · 30 ảnh / Khách trả 690.000₫ / Bạn nhận 552.000₫"; the note about the 30-minute check and reliability. Bottom: the one primary "Đồng ý bảng giá bản {n}" while the current version is not accepted, otherwise (when on) the outline "Tắt khi xong việc hôm nay". One blur (the highlighted card).
+Layout (mock S14.01, top to bottom): app bar "Chụp ngay"; banners (still available, low battery, auto-off) when relevant; highlighted `GlassCard` "Sẵn sàng chụp ngay" + switch; when conditions are missing, the reasons with a "Sửa"/"Cho phép" action each; card "Sẵn sàng hỗ trợ" + switch (enabled once the price list is accepted); "Bảng giá gói" + "Bản 3 · đã đồng ý"; one row per package "1 giờ · 30 ảnh / Khách trả 690.000₫ / Bạn nhận 552.000₫"; the note about the 30-minute check and reliability. Bottom: the one primary "Đồng ý bảng giá bản {n}" while the current version is not accepted, otherwise (when on) the outline "Tắt khi xong việc hôm nay". One blur (the highlighted card).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -7505,7 +7505,7 @@ void main() {
     expect(w.foreground.running, isFalse);
   });
 
-  testWidgets('missing conditions say what to do: phone goes to S33 and comes back', (tester) async {
+  testWidgets('missing conditions say what to do: phone goes to S04.05 and comes back', (tester) async {
     w.presence.settingsValue = const InstantSettings(
       acceptedPriceListVersion: 3,
       currentPriceListVersion: 3,
@@ -7586,7 +7586,7 @@ import '../../support/instant_screens.dart';
 import '../../support/instant_world.dart';
 
 void main() {
-  testWidgets('the Công việc tab starts with the Chụp ngay card; it opens S52', (tester) async {
+  testWidgets('the Công việc tab starts with the Chụp ngay card; it opens S14.01', (tester) async {
     final w = InstantWorld();
     await w.init();
     await tester.pumpWidget(instantScreenApp(w, location: '/bookings'));
@@ -7689,7 +7689,7 @@ import 'package:photobooking/features/instant_common/instant_errors.dart';
 import 'package:photobooking/features/instant_work/instant_session_controller.dart';
 import 'package:photobooking/features/instant_work/photographer_only.dart';
 
-/// S52: the availability switch, "Sẵn sàng hỗ trợ" and the price list.
+/// S14.01: the availability switch, "Sẵn sàng hỗ trợ" and the price list.
 class InstantAvailabilityScreen extends ConsumerStatefulWidget {
   const InstantAvailabilityScreen({super.key});
 
@@ -7962,7 +7962,7 @@ import 'package:photobooking/data/instant/http_instant_repositories.dart';
 import 'package:photobooking/data/instant/instant_providers.dart';
 import 'package:photobooking/features/instant_work/instant_session_controller.dart';
 
-/// Top of the Công việc tab: on/off at a glance, opens S52. Hidden when the
+/// Top of the Công việc tab: on/off at a glance, opens S14.01. Hidden when the
 /// dispatch service is not configured in this build.
 class InstantWorkCard extends ConsumerWidget {
   const InstantWorkCard({super.key});
@@ -8024,7 +8024,7 @@ class InstantWorkCard extends ConsumerWidget {
           : EmptyState(title: l.emptyBookingsTitle, body: l.emptyBookingsBody),
 ```
 
-(Step 5's S19 plan keeps `InstantWorkCard` as the first card of the Công việc tab; note this in that plan when it is written.)
+(Step 5's S06.01 plan keeps `InstantWorkCard` as the first card of the Công việc tab; note this in that plan when it is written.)
 
 `lib/app/router.dart`: add imports for the three instant work screens and, next to the other top-level routes (before the `StatefulShellRoute`):
 
@@ -8055,14 +8055,14 @@ Expected: PASS (8 + 1 new tests; the shell tests still pass because customers se
 ```bash
 dart format lib test
 git add lib/features/instant_work lib/features/shell lib/app/router.dart lib/l10n test/support test/features/instant_work
-git commit -m "feat(instant): S52 availability with price list and the Công việc entry card
+git commit -m "feat(instant): S14.01 availability with price list and the Công việc entry card
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 13: S53 offer screen and offer navigation
+### Task 13: S14.02 offer screen and offer navigation
 
 **Files:**
 - Create: `lib/features/instant_work/instant_navigation.dart`, `test/features/instant_work/instant_offer_screen_test.dart`, `test/features/instant_work/instant_navigation_test.dart`
@@ -8071,11 +8071,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `instantOfferProvider` (Task 9), `instantJobProvider` (Task 10), `instantSessionProvider`, `TickingBuilder`, `CountdownRing`, `AppButton.danger`, `AppChip`, `showAppSheet`, `genreLabel`, `packageLabel`, `formatMoney`, `formatDistance`, `clockProvider`, `InstantNotifier.taps`/`launchTap`, `PushMessages.opened`/`initial`.
 - Produces:
-  - `const InstantOfferScreen({super.key, required String offerId})` (S53). Keys: `offer-countdown`, `offer-accept` (≥ 56dp), `offer-decline`, `decline-reason-<code>`, `decline-confirm`, `decline-keep`, `offer-expired`.
+  - `const InstantOfferScreen({super.key, required String offerId})` (S14.02). Keys: `offer-countdown`, `offer-accept` (≥ 56dp), `offer-decline`, `decline-reason-<code>`, `decline-confirm`, `decline-keep`, `offer-expired`.
   - `void wireInstantNavigation(Ref ref, GoRouter router)`: opens `/work/instant/offer/:id` for a new pending offer, a tapped offer notification (also the one that launched the app) and an opened FCM offer; "Vẫn nhận" → `keepAvailable()`, "Tắt" → `goOffline()`. Called by `routerProvider`.
   - l10n listed in Step 3.
 
-Layout (mock S53): app bar "Lời mời chụp ngay" (no back arrow; the decision is the way out); the countdown ring with whole seconds and "giây"; the payout in large type and "Bạn nhận · Chân dung 1 giờ · 30 ảnh"; a card with the area ("Khu vực Phường Bến Thành, Quận 1") and "2,1 km · khoảng 8 phút · địa chỉ hiện khi bạn nhận"; the customer's note; bottom: outline "Từ chối" (34 %) and the primary "Nhận việc" (56dp). Expired or missing offer → "Lời mời đã hết hạn" and a way back to S52.
+Layout (mock S14.02): app bar "Lời mời chụp ngay" (no back arrow; the decision is the way out); the countdown ring with whole seconds and "giây"; the payout in large type and "Bạn nhận · Chân dung 1 giờ · 30 ảnh"; a card with the area ("Khu vực Phường Bến Thành, Quận 1") and "2,1 km · khoảng 8 phút · địa chỉ hiện khi bạn nhận"; the customer's note; bottom: outline "Từ chối" (34 %) and the primary "Nhận việc" (56dp). Expired or missing offer → "Lời mời đã hết hạn" and a way back to S14.01.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -8140,7 +8140,7 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('"Nhận việc" is at least 56dp and the only gradient button; accepting opens S54', (tester) async {
+  testWidgets('"Nhận việc" is at least 56dp and the only gradient button; accepting opens S14.03', (tester) async {
     await tester.pumpWidget(instantScreenApp(w, location: '/work/instant/offer/O1'));
     await tester.pump();
     expect(tester.getSize(find.byKey(const Key('offer-accept'))).height, greaterThanOrEqualTo(56));
@@ -8152,7 +8152,7 @@ void main() {
     expect(find.byType(InstantJobScreen), findsOneWidget);
   });
 
-  testWidgets('someone else was faster: a message and back to S52', (tester) async {
+  testWidgets('someone else was faster: a message and back to S14.01', (tester) async {
     w.jobs.acceptError = DispatchError.alreadyAssigned;
     await tester.pumpWidget(instantScreenApp(w, location: '/work/instant/offer/O1'));
     await tester.pump();
@@ -8250,7 +8250,7 @@ void main() {
 
   Widget app() => ProviderScope(overrides: w.overrides, child: const _App());
 
-  testWidgets('a tapped offer notification opens S53', (tester) async {
+  testWidgets('a tapped offer notification opens S14.02', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
     w.notifier.tap(const InstantTap(InstantTapKind.offer, id: 'O7'));
@@ -8265,7 +8265,7 @@ void main() {
     expect(find.text('offer O8'), findsOneWidget);
   });
 
-  testWidgets('a new pending offer while the app is open opens S53 once', (tester) async {
+  testWidgets('a new pending offer while the app is open opens S14.02 once', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
     final c = ProviderScope.containerOf(tester.element(find.text('home')));
@@ -8275,7 +8275,7 @@ void main() {
     expect(find.text('offer O3'), findsOneWidget);
   });
 
-  testWidgets('an opened FCM offer (iOS alert) opens S53; "Tắt" turns availability off', (tester) async {
+  testWidgets('an opened FCM offer (iOS alert) opens S14.02; "Tắt" turns availability off', (tester) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
     final c = ProviderScope.containerOf(tester.element(find.text('home')));
@@ -8347,7 +8347,7 @@ import 'package:photobooking/features/instant_work/photographer_only.dart';
 
 const _offerWindow = Duration(seconds: 30);
 
-/// S53: one offer, 30 seconds, area and distance only.
+/// S14.02: one offer, 30 seconds, area and distance only.
 class InstantOfferScreen extends ConsumerStatefulWidget {
   const InstantOfferScreen({super.key, required this.offerId});
   final String offerId;
@@ -8617,7 +8617,7 @@ import 'package:photobooking/features/instant_common/instant_services.dart';
 import 'package:photobooking/features/instant_work/instant_session_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// Offers reach S53 from four places: the mirror while the app is open, a
+/// Offers reach S14.02 from four places: the mirror while the app is open, a
 /// tapped local notification (Android full-screen / heads-up), the
 /// notification that launched the app, and an opened FCM alert (iOS).
 void wireInstantNavigation(Ref ref, GoRouter router) {
@@ -8695,14 +8695,14 @@ Expected: PASS (10 + 4 new tests; `test/app/router_test.dart` keeps passing beca
 ```bash
 dart format lib test
 git add lib/features/instant_work lib/app/router.dart lib/l10n test
-git commit -m "feat(instant): S53 offer with a 30-second countdown and offer navigation from notifications
+git commit -m "feat(instant): S14.02 offer with a 30-second countdown and offer navigation from notifications
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 14: S54 job screen (map, "Chỉ đường", milestones, state buttons, contact)
+### Task 14: S14.03 job screen (map, "Chỉ đường", milestones, state buttons, contact)
 
 **Files:**
 - Modify (replace the placeholder): `lib/features/instant_work/instant_job_screen.dart`
@@ -8713,10 +8713,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `instantJobProvider`, `instantRequestProvider`, `AppMap`, `MapMarker`, `ApertureLoader`, `InstantMilestones`, `showInstantCancelSheet`, `canArrive`, `gpsPoor`, `metersTo`, `ContactAction` (`ContactAction({required ContactAccess access, required List<ContactChannel> channels, required String source, ContactSubject? subject, ContactDialStyle style, VoidCallback? onInquiry})`), `formatDistance`, `toVn`, `genreLabel`, `packageLabel`.
 - Produces:
   - `const ContactSubject.instant(String id)` with `ContactSubjectType.instant`; `callableData` sends `{instantRequestId, channel}`.
-  - `const InstantJobScreen({super.key, required String requestId})` (S54). Keys: `job-map`, `job-directions`, `job-arrive`, `job-arrive-force`, `arrive-reason`, `arrive-force-confirm`, `job-start`, `job-finish`, `job-cancel`, `job-chat`, `job-done`.
+  - `const InstantJobScreen({super.key, required String requestId})` (S14.03). Keys: `job-map`, `job-directions`, `job-arrive`, `job-arrive-force`, `arrive-reason`, `arrive-force-confirm`, `job-start`, `job-finish`, `job-cancel`, `job-chat`, `job-done`.
   - l10n listed in Step 3.
 
-Layout (mock S54): app bar "Đang đến" / "Đã đến" / "Đang chụp" with "Lan Anh · Chân dung 1 giờ" under it, a chat icon (→ `/chat/:requestId`) and the call dial; a 160dp `AppMap` while on the way or arrived (pins "Bạn" and the customer's name, fitted; "Về vị trí của tôi" refits); the exact address with the distance and "Chỉ đường" (opens the first maps app that can: Android `geo:`, iOS Apple Maps, else Google Maps on the web); milestones "Đã nhận · 15:21", "Đã đến (bật khi còn cách 200 m)", "Bắt đầu chụp · Hoàn thành"; the note about the notification while sharing; a red text "Huỷ việc" (→ S55 photographer); bottom primary by state: "Đã đến" (disabled beyond 200 m with "Còn cách 0,6 km…"; when GPS accuracy is worse than 100 m an extra text button "Tôi đã đến nơi (GPS yếu)" opens a reason sheet and sends `force`), then "Bắt đầu chụp", then "Hoàn thành". After finishing or cancelling, a short summary and "Về Chụp ngay".
+Layout (mock S14.03): app bar "Đang đến" / "Đã đến" / "Đang chụp" with "Lan Anh · Chân dung 1 giờ" under it, a chat icon (→ `/chat/:requestId`) and the call dial; a 160dp `AppMap` while on the way or arrived (pins "Bạn" and the customer's name, fitted; "Về vị trí của tôi" refits); the exact address with the distance and "Chỉ đường" (opens the first maps app that can: Android `geo:`, iOS Apple Maps, else Google Maps on the web); milestones "Đã nhận · 15:21", "Đã đến (bật khi còn cách 200 m)", "Bắt đầu chụp · Hoàn thành"; the note about the notification while sharing; a red text "Huỷ việc" (→ S13.08 photographer); bottom primary by state: "Đã đến" (disabled beyond 200 m with "Còn cách 0,6 km…"; when GPS accuracy is worse than 100 m an extra text button "Tôi đã đến nơi (GPS yếu)" opens a reason sheet and sends `force`), then "Bắt đầu chụp", then "Hoàn thành". After finishing or cancelling, a short summary and "Về Chụp ngay".
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -8934,7 +8934,7 @@ import 'package:photobooking/features/instant_work/instant_job_controller.dart';
 import 'package:photobooking/features/instant_work/instant_rules.dart';
 import 'package:photobooking/features/instant_work/photographer_only.dart';
 
-/// S54: on the way, arrived, shooting. The route stream lives in
+/// S14.03: on the way, arrived, shooting. The route stream lives in
 /// [InstantJobController]; this screen only shows it.
 class InstantJobScreen extends ConsumerStatefulWidget {
   const InstantJobScreen({super.key, required this.requestId});
@@ -9249,7 +9249,7 @@ Expected: PASS (1 + 9 new tests).
 ```bash
 dart format lib test
 git add lib/features/instant_work lib/data/contact lib/l10n test
-git commit -m "feat(instant): S54 job screen with directions, milestones, arrive within 200 m and the cancel sheet
+git commit -m "feat(instant): S14.03 job screen with directions, milestones, arrive within 200 m and the cancel sheet
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -9267,10 +9267,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 1. `2026-10-01-instant-booking-design.md`:
    - §5, after "**Gọi dịch vụ**", add: "Ứng dụng đọc địa chỉ dịch vụ từ `--dart-define=DISPATCH_URL` (trống thì ẩn Chụp ngay) và dùng chung `ApiClient` + ID token của backend giai đoạn 2. **FCM** (dữ liệu là chuỗi): `type=offer` kèm mọi trường của `InstantOfferMirror`; `type=assigned` + `requestId`; `type=status` + `requestId`, `status`. Android gửi data-only `priority: high` (app tự hiện thông báo toàn màn); iOS gửi kèm alert APNs `interruption-level: time-sensitive`. **Token thiết bị**: `devices/{uid}_{installId}` `{userId, provider: 'fcm', token, platform, lastSeenAt}` (thực thể `Device`), chỉ chủ ghi; dịch vụ đọc bằng Admin SDK."
-   - §8, under the screen table, add: "S53 lấy số ảnh của gói từ bảng giá đã tải ở S52 (bản sao lời mời không có số ảnh). S54 liên hệ khách qua `ContactSubject.instant` (`getContactLink({instantRequestId, channel})`); máy chủ cần mở khoá khi yêu cầu ở `assigned`…`in_progress` và 30 ngày sau `completed`, trả số của bên kia; trước khi có, chỉ kênh Nhắn tin hoạt động. Nút Nhắn tin mở `/chat/{requestId}` (phòng chat do I3 tạo khi `assigned`)."
+   - §8, under the screen table, add: "S14.02 lấy số ảnh của gói từ bảng giá đã tải ở S14.01 (bản sao lời mời không có số ảnh). S14.03 liên hệ khách qua `ContactSubject.instant` (`getContactLink({instantRequestId, channel})`); máy chủ cần mở khoá khi yêu cầu ở `assigned`…`in_progress` và 30 ngày sau `completed`, trả số của bên kia; trước khi có, chỉ kênh Nhắn tin hoạt động. Nút Nhắn tin mở `/chat/{requestId}` (phòng chat do I3 tạo khi `assigned`)."
    - §9, under the table, add: "Tên độ chính xác: '~100 m' là `LocationAccuracy.medium` của geolocator (Android balanced, iOS hundred meters). Sẵn sàng: luồng lọc 300 m + nhịp 5 phút gửi lại điểm cũ (không lấy điểm mới). Bấm 'Tắt' trên thông báo khi đang đến: tắt sẵn sàng sau chuyến, vẫn chia sẻ vị trí tới khi 'Đã đến'. Mở app được tính là trả lời 'Vẫn muốn nhận việc?'."
-   - §13, add open question 7: "Android 14+: quyền `USE_FULL_SCREEN_INTENT` chỉ tự cấp cho app gọi điện/báo thức; app này xin người dùng bật ở Cài đặt (S52 khi bật Sẵn sàng), nếu không thì lời mời là thông báo nổi ưu tiên cao. Cần kiểm chính sách Google Play trước khi phát hành."
-2. `components/shared-components.md`: add under section 4 (after ApertureLoader) entries "### TickingBuilder · Mới" ("Dựng lại mỗi giây khi `active`; dừng hẳn khi tắt hoặc rời cây. `Timer.periodic` duy nhất được phép trong UI. Dùng S48–S50, S53."), "### CountdownRing · Mới" ("`CountdownRing({remaining, total, unit, semanticsLabel, size})`: số giây làm tròn lên + vòng; không chỉ bằng màu; một nhãn đọc. S50, S53."), "### AppMap · Mới" ("`AppMap({center, semanticsLabel, zoom, markers, fitMarkers, cameraToken, onCameraIdle, centerPinLabel, onMyLocation})` trên `AppMapScope` (MapLibre + Goong ở app, bản giả trong test). Mọi ghim có nhãn chữ; nút 'Về vị trí của tôi' 48dp; ghim trượt 0,9 s, tắt khi giảm chuyển động. Chỉ S47, S49, S54."); in "### AppButton · Đã có" append "Biến thể `AppButton.danger` (đỏ, đặc) chỉ dùng cho xác nhận huỷ/từ chối trong sheet."; change "### ApertureLoader · Mới" to "### ApertureLoader · Mới (kế hoạch I4 Task 8)".
+   - §13, add open question 7: "Android 14+: quyền `USE_FULL_SCREEN_INTENT` chỉ tự cấp cho app gọi điện/báo thức; app này xin người dùng bật ở Cài đặt (S14.01 khi bật Sẵn sàng), nếu không thì lời mời là thông báo nổi ưu tiên cao. Cần kiểm chính sách Google Play trước khi phát hành."
+2. `components/shared-components.md`: add under section 4 (after ApertureLoader) entries "### TickingBuilder · Mới" ("Dựng lại mỗi giây khi `active`; dừng hẳn khi tắt hoặc rời cây. `Timer.periodic` duy nhất được phép trong UI. Dùng S13.03, S13.05, S13.06, S14.02."), "### CountdownRing · Mới" ("`CountdownRing({remaining, total, unit, semanticsLabel, size})`: số giây làm tròn lên + vòng; không chỉ bằng màu; một nhãn đọc. S13.06, S14.02."), "### AppMap · Mới" ("`AppMap({center, semanticsLabel, zoom, markers, fitMarkers, cameraToken, onCameraIdle, centerPinLabel, onMyLocation})` trên `AppMapScope` (MapLibre + Goong ở app, bản giả trong test). Mọi ghim có nhãn chữ; nút 'Về vị trí của tôi' 48dp; ghim trượt 0,9 s, tắt khi giảm chuyển động. Chỉ S13.01, S13.05, S14.03."); in "### AppButton · Đã có" append "Biến thể `AppButton.danger` (đỏ, đặc) chỉ dùng cho xác nhận huỷ/từ chối trong sheet."; change "### ApertureLoader · Mới" to "### ApertureLoader · Mới (kế hoạch I4 Task 8)".
 3. `docs/testing/battery-and-performance.md`:
    - In "Quy tắc khi viết code", change the first bullet's "không `Timer.periodic`" to "không `Timer.periodic` (trừ `TickingBuilder` khi đồng hồ đang hiện trên màn)", and the last bullet to "Không dịch vụ nền, không wakelock (ngoại lệ duy nhất: Chụp ngay, mục dưới)."
    - Append:
@@ -9287,13 +9287,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
    | Đã đến, đang chụp, tắt sẵn sàng | tắt | tắt | không |
 
    - Không `ACCESS_BACKGROUND_LOCATION`, không "Luôn luôn" trên iOS (`UIBackgroundModes` chỉ có `location`), không wakelock.
-   - Bản đồ (MapLibre) chỉ dựng ở S47, S49, S54; ghim di chuyển nội suy, không vẽ lại cả bản đồ.
+   - Bản đồ (MapLibre) chỉ dựng ở S13.01, S13.05, S14.03; ghim di chuyển nội suy, không vẽ lại cả bản đồ.
 
    ### Đo tay Chụp ngay (máy thật, bản profile, Android và iOS)
 
    | Kịch bản | Cách làm | Ngưỡng |
    |---|---|---|
-   | A. Sẵn sàng 1 giờ không có việc | Sạc đầy, rút sạc; Android: `adb shell dumpsys battery unplug` và `adb shell dumpsys batterystats --reset`; iOS: Instruments mẫu Energy Log. Bật Sẵn sàng ở S52, khoá màn, để yên 60 phút. | **≤ 3 % pin**; Android `batterystats`: không Wake lock của app, GPS chỉ bật khi di chuyển; iOS Energy Impact "Low" phần lớn thời gian |
+   | A. Sẵn sàng 1 giờ không có việc | Sạc đầy, rút sạc; Android: `adb shell dumpsys battery unplug` và `adb shell dumpsys batterystats --reset`; iOS: Instruments mẫu Energy Log. Bật Sẵn sàng ở S14.01, khoá màn, để yên 60 phút. | **≤ 3 % pin**; Android `batterystats`: không Wake lock của app, GPS chỉ bật khi di chuyển; iOS Energy Impact "Low" phần lớn thời gian |
    | B. Đang đến 30 phút | Dịch vụ chạy local (I3); tạo yêu cầu từ máy khách, nhận ở máy nhiếp ảnh gia, di chuyển 30 phút rồi "Đã đến". | **≤ 6 % pin**; log dịch vụ có 120–180 lần `POST …/location` |
    | C. GPS tắt | Bật Sẵn sàng rồi tắt; và đang đến rồi "Đã đến". | **GPS tắt trong 10 giây**: Android biểu tượng vị trí mất, `adb shell dumpsys location \| grep -A3 photobooking` không còn yêu cầu; iOS chấm xanh/mũi tên mất |
 
@@ -9322,7 +9322,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `InstantWorld`, `instantScreenApp`, `FakeMapEngine`, `TickingBuilder.debugActiveCount`, the session and job controllers.
 - Produces: the battery gate of this plan (no new production API).
 
-What is checked: screens at rest schedule no frames (S52 off and on, S54 en route, S55 open); the only ticking clock is S53's and only while the offer is live; idle presence takes at most one GPS fix per 5 minutes when not moving (in fact one in total) and refreshes presence every 5 minutes; en route posts every 10–15 s; zero location streams and zero posts after "Đã đến" or going offline; the foreground service runs only while needed; every Firestore listener closes with its owner; the map exists only on S54 in this plan; at most four blurs per screen, none nested; `Timer.periodic` appears only in `TickingBuilder` and the presence heartbeat.
+What is checked: screens at rest schedule no frames (S14.01 off and on, S14.03 en route, S13.08 open); the only ticking clock is S14.02's and only while the offer is live; idle presence takes at most one GPS fix per 5 minutes when not moving (in fact one in total) and refreshes presence every 5 minutes; en route posts every 10–15 s; zero location streams and zero posts after "Đã đến" or going offline; the foreground service runs only while needed; every Firestore listener closes with its owner; the map exists only on S14.03 in this plan; at most four blurs per screen, none nested; `Timer.periodic` appears only in `TickingBuilder` and the presence heartbeat.
 
 - [ ] **Step 1: Write the tests**
 
@@ -9354,7 +9354,7 @@ void main() {
   });
 
   group('screens at rest', () {
-    testWidgets('S52 off and on: no frames, one blur, no map', (tester) async {
+    testWidgets('S14.01 off and on: no frames, one blur, no map', (tester) async {
       await tester.pumpWidget(instantScreenApp(w, location: '/work/instant'));
       await expectIdle(tester);
       expectBlurBudget();
@@ -9364,7 +9364,7 @@ void main() {
       expect(w.map.builds, 0);
     });
 
-    testWidgets('S53: exactly one ticking clock while live, none after expiry or leaving', (tester) async {
+    testWidgets('S14.02: exactly one ticking clock while live, none after expiry or leaving', (tester) async {
       w.mirror.setOffer(w.uid, w.offer());
       await tester.pumpWidget(instantScreenApp(w, location: '/work/instant/offer/O1'));
       await tester.pump();
@@ -9379,7 +9379,7 @@ void main() {
       expect(TickingBuilder.debugActiveCount, 0);
     });
 
-    testWidgets('S54 en route: the map is built here, at rest no frames; S55 open stays idle with one blur', (tester) async {
+    testWidgets('S14.03 en route: the map is built here, at rest no frames; S13.08 open stays idle with one blur', (tester) async {
       w.mirror.setRequest('R1', w.view(InstantStatus.enRoute));
       await tester.pumpWidget(instantScreenApp(w, location: '/work/instant/R1'));
       await tester.pump();
@@ -9392,7 +9392,7 @@ void main() {
       expectBlurBudget(max: 1);
     });
 
-    testWidgets('S54 resuming under reduced motion: the aperture wait is still', (tester) async {
+    testWidgets('S14.03 resuming under reduced motion: the aperture wait is still', (tester) async {
       tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       await tester.pumpWidget(instantScreenApp(w, location: '/work/instant/R9'));
@@ -9489,7 +9489,7 @@ void main() {
     });
   });
 
-  testWidgets('S53\'s offer listener closes when the screen does (session offline)', (tester) async {
+  testWidgets('S14.02\'s offer listener closes when the screen does (session offline)', (tester) async {
     w.mirror.setOffer(w.uid, w.offer());
     await tester.pumpWidget(instantScreenApp(w, location: '/work/instant/offer/O1'));
     await tester.pump();
@@ -9529,11 +9529,11 @@ Only code changes that remove the cause. Re-run Step 2, then the whole suite: `f
 
 - [ ] **Step 4: Manual profiling on real devices (Android and iOS)**
 
-Follow `docs/testing/battery-and-performance.md`: the general steps for S52, S53, S54 and the S55 sheet (frames at rest, CPU at rest, memory), then the three Chụp ngay scenarios of Task 15 with their thresholds (spec §9): **A** available 1 hour ≤ 3 % battery; **B** en route 30 minutes ≤ 6 %; **C** GPS off within 10 s after "Đã đến" and after switching availability off. Build with `flutter run --profile --dart-define=DISPATCH_URL=http://<host>:8090 --dart-define=GOONG_MAPTILES_KEY=<key>` against the local dispatch service of plan I3 (fake payments) and a second phone (or the customer flow of plan I5) to create requests.
+Follow `docs/testing/battery-and-performance.md`: the general steps for S14.01, S14.02, S14.03 and the S13.08 sheet (frames at rest, CPU at rest, memory), then the three Chụp ngay scenarios of Task 15 with their thresholds (spec §9): **A** available 1 hour ≤ 3 % battery; **B** en route 30 minutes ≤ 6 %; **C** GPS off within 10 s after "Đã đến" and after switching availability off. Build with `flutter run --profile --dart-define=DISPATCH_URL=http://<host>:8090 --dart-define=GOONG_MAPTILES_KEY=<key>` against the local dispatch service of plan I3 (fake payments) and a second phone (or the customer flow of plan I5) to create requests.
 
 Also check by hand, once per platform:
-- Android 14: Settings → Apps → the app → "Full screen notifications" (allow, then deny) — with the screen locked an offer opens S53 over the lock screen when allowed, and is a heads-up notification with sound when denied; the persistent notification "Đang nhận việc chụp ngay" shows "Tắt", and "Tắt" switches availability off.
-- iOS: the blue location indicator shows only while available or en route; an offer with the app in the background arrives as a time-sensitive notification and opens S53. **[người dùng]** steps before the iOS run: upload the APNs key in Firebase console → Cloud Messaging; enable Push Notifications and Time Sensitive Notifications for the App ID; restrict the Goong keys to `com.thanhbk.photobooking` in the Goong console.
+- Android 14: Settings → Apps → the app → "Full screen notifications" (allow, then deny) — with the screen locked an offer opens S14.02 over the lock screen when allowed, and is a heads-up notification with sound when denied; the persistent notification "Đang nhận việc chụp ngay" shows "Tắt", and "Tắt" switches availability off.
+- iOS: the blue location indicator shows only while available or en route; an offer with the app in the background arrives as a time-sensitive notification and opens S14.02. **[người dùng]** steps before the iOS run: upload the APNs key in Firebase console → Cloud Messaging; enable Push Notifications and Time Sensitive Notifications for the App ID; restrict the Goong keys to `com.thanhbk.photobooking` in the Goong console.
 
 Record the filled-in result table (Android and iOS rows, plus "Chụp ngay A/B/C") in the PR description. Any value over a threshold blocks the merge: fix it in this plan's code, add a test that would have caught it, and re-measure. Until the iOS enablement plan's device tasks are done, write "iOS: not measured, blocked by iOS enablement" in the iOS rows.
 
@@ -9551,10 +9551,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ## Self-Review
 
-- **Spec coverage:** §2.2 S52 conditions (profile, phone, current price list, open city, location permission → `reasons` with fixes; Task 12), "Sẵn sàng hỗ trợ" (Tasks 9, 12), price list with customer price and payout and the accepted version saved (`PUT /v1/instant-settings`; Tasks 2, 9, 12); S53 full screen even in the background (Android full-screen intent and heads-up, iOS time-sensitive; FCM data and mirror listener; Tasks 6, 9, 13), package, genre, distance, travel time, payout, area only, note, 30 s countdown in number and ring, "Nhận" ≥ 56dp, "Từ chối" with optional reason (Task 13); S54 exact address after accepting, "Chỉ đường" to an external maps app, "Đã đến" ≤ 200 m or confirmed with a reason when GPS is poor, "Bắt đầu chụp", "Hoàn thành", chat and contact (Tasks 4, 10, 14); one job at a time, availability restored afterwards (Tasks 9, 10); §3 statuses and the mirror (Tasks 1, 3); §6 every photographer call (`/presence`, `/instant-settings`, `/offers/{id}/accept|decline`, `/requests/{id}/location|arrive|start|finish|cancel`) and the new error codes (Tasks 1, 2), checked against `openapi.yaml` (Task 1); §7 mirror read-only rules (Task 3); §8 S52–S55 with screen codes, red cancel in a sheet, amounts in words, map pins with text labels, "Về vị trí của tôi" (Tasks 7, 11–14); §9 location table, Android foreground service with "Tắt", no background permission, iOS background location indicator and `UIBackgroundModes` location, auto-off 30 + 5 minutes, battery < 15 %, map only on S54 (S47/S49 in I5), privacy (Tasks 4–9, 14–16); §10 `already_assigned`, `offer_expired`, FCM late (mirror), GPS loss handled by the customer side (I5), arrive > 200 m refused (Tasks 10, 13, 14); §11 widget tests at 320dp/1.3×/light/dark, `expectIdle`, S53 countdown to the second, rules tests (all tasks, Task 16).
-- **Deviations (flagged, not hidden):** (1) phase 2's `ApiClient.get`/`uriFor` gain an optional `query` (needed for `GET /v1/packages?lat&lng`; backwards compatible). (2) The FCM data keys and the `devices/{uid}_{installId}` token collection are not in the contract; this plan defines them and Task 15 writes them into spec §5 for I3. (3) `ContactSubject.instant` needs server support in `getContactLink` / `POST /v1/contact-links`; until then only "Nhắn tin" works on S54, and the photographer can only offer "Gọi" (the customer's Zalo/WhatsApp flags are private). (4) S53 takes the photo count from the price list loaded on S52 (the offer mirror has none) and falls back to "Bạn nhận · Chân dung 1 giờ". (5) After a restart S54 shows "Khách" instead of the customer's name (not in the mirror). (6) "Nhắn tin" links to `/chat/{requestId}` by path; no chat plan exists yet. (7) The `instant_*` rules are written here; if plan I3 already ships them, keep one copy. (8) `ACCESS_FINE_LOCATION` is now declared for the whole app, so Android 12+ shows the precise/approximate choice in Explore too; 3a1's tests and the iOS reason text are relaxed accordingly. (9) Opening the app counts as answering "Vẫn muốn nhận việc?"; "Tắt" in the notification during a trip turns availability off for after the trip but keeps sharing until "Đã đến". (10) `ApertureLoader` (spec'd for S48) is built here (Task 8) because S53/S54 need it first; plan I5 consumes it. (11) The Google Maps fallback of spec §1 is not built; if Goong fails, the map shows the placeholder and the rest of S54 works.
+- **Spec coverage:** §2.2 S14.01 conditions (profile, phone, current price list, open city, location permission → `reasons` with fixes; Task 12), "Sẵn sàng hỗ trợ" (Tasks 9, 12), price list with customer price and payout and the accepted version saved (`PUT /v1/instant-settings`; Tasks 2, 9, 12); S14.02 full screen even in the background (Android full-screen intent and heads-up, iOS time-sensitive; FCM data and mirror listener; Tasks 6, 9, 13), package, genre, distance, travel time, payout, area only, note, 30 s countdown in number and ring, "Nhận" ≥ 56dp, "Từ chối" with optional reason (Task 13); S14.03 exact address after accepting, "Chỉ đường" to an external maps app, "Đã đến" ≤ 200 m or confirmed with a reason when GPS is poor, "Bắt đầu chụp", "Hoàn thành", chat and contact (Tasks 4, 10, 14); one job at a time, availability restored afterwards (Tasks 9, 10); §3 statuses and the mirror (Tasks 1, 3); §6 every photographer call (`/presence`, `/instant-settings`, `/offers/{id}/accept|decline`, `/requests/{id}/location|arrive|start|finish|cancel`) and the new error codes (Tasks 1, 2), checked against `openapi.yaml` (Task 1); §7 mirror read-only rules (Task 3); §8 S13.08, S14 with screen codes, red cancel in a sheet, amounts in words, map pins with text labels, "Về vị trí của tôi" (Tasks 7, 11–14); §9 location table, Android foreground service with "Tắt", no background permission, iOS background location indicator and `UIBackgroundModes` location, auto-off 30 + 5 minutes, battery < 15 %, map only on S14.03 (S13.01/S13.05 in I5), privacy (Tasks 4–9, 14–16); §10 `already_assigned`, `offer_expired`, FCM late (mirror), GPS loss handled by the customer side (I5), arrive > 200 m refused (Tasks 10, 13, 14); §11 widget tests at 320dp/1.3×/light/dark, `expectIdle`, S14.02 countdown to the second, rules tests (all tasks, Task 16).
+- **Deviations (flagged, not hidden):** (1) phase 2's `ApiClient.get`/`uriFor` gain an optional `query` (needed for `GET /v1/packages?lat&lng`; backwards compatible). (2) The FCM data keys and the `devices/{uid}_{installId}` token collection are not in the contract; this plan defines them and Task 15 writes them into spec §5 for I3. (3) `ContactSubject.instant` needs server support in `getContactLink` / `POST /v1/contact-links`; until then only "Nhắn tin" works on S14.03, and the photographer can only offer "Gọi" (the customer's Zalo/WhatsApp flags are private). (4) S14.02 takes the photo count from the price list loaded on S14.01 (the offer mirror has none) and falls back to "Bạn nhận · Chân dung 1 giờ". (5) After a restart S14.03 shows "Khách" instead of the customer's name (not in the mirror). (6) "Nhắn tin" links to `/chat/{requestId}` by path; no chat plan exists yet. (7) The `instant_*` rules are written here; if plan I3 already ships them, keep one copy. (8) `ACCESS_FINE_LOCATION` is now declared for the whole app, so Android 12+ shows the precise/approximate choice in Explore too; 3a1's tests and the iOS reason text are relaxed accordingly. (9) Opening the app counts as answering "Vẫn muốn nhận việc?"; "Tắt" in the notification during a trip turns availability off for after the trip but keeps sharing until "Đã đến". (10) `ApertureLoader` (spec'd for S13.03) is built here (Task 8) because S14.02/S14.03 need it first; plan I5 consumes it. (11) The Google Maps fallback of spec §1 is not built; if Goong fails, the map shows the placeholder and the rest of S14.03 works.
 - **Placeholders:** none (Task 12 creates two temporary screen stubs that Tasks 13 and 14 replace in this plan).
 - **Type consistency:** `LatLng`, `LocationFix`, `MeetPoint`, `InstantOffer`, `InstantRequestView`, `InstantTrack`, `CancelQuote`, `DispatchError`/`DispatchException`, `PresenceRepository`, `InstantJobRepository`, `InstantMirror`, `TrackingLocationSource`, `ForegroundSession`, `InstantNotifier`/`InstantTap`, `PushMessages`/`InstantPush`, `DeviceRegistry`, `InstantSessionController`/`instantSessionProvider`, `InstantJobController`/`instantJobProvider`, `instantRequestProvider`, `instantTrackProvider`, `instantOfferProvider`, `AppMap`/`MapMarker`/`AppMapScope`, `TickingBuilder`, `CountdownRing`, `ApertureLoader`, `AppButton.danger`, `showInstantCancelSheet`/`InstantCancelRole`, `InstantMilestones`/`Milestone`, `instantErrorText`, `InstantWorld`, `instantScreenApp`, `FakeMapEngine` and every widget key are spelled the same in tests and code; plan I5 uses them by these names.
-- **Risks:** Android 14 restricts full-screen intents to calling/alarm apps (the user must allow it; otherwise a heads-up notification) and Google Play policy must be checked (spec §13 Q7); iOS background offers depend on I3 sending an APNs alert with `time-sensitive` and on the entitlement; `flutter_foreground_task` and `maplibre_gl` APIs change between majors (Step 1 of Tasks 5 and 7 pins and checks them; only the adapter files would change); geolocator streams in the background on Android rely on the foreground service started by another plugin, verified only on a device (Task 16 scenario A); MapLibre's platform view on low-end Android is the main frame-time risk on S54; golden images differ between macOS and Linux (Task 8 Step 4); several tests read platform files as text (manifest, plist, adapters), which is brittle by design.
-- **Battery and performance:** Task 16 adds idle tests for S52/S53/S54/S55, one ticking clock only while an offer is live, fake-counted GPS fixes, streams, posts and listeners for available, en-route, arrived and offline, the map only on S54, the blur budget, a `Timer.periodic` audit, and the manual scenarios A/B/C with the spec §9 thresholds on Android and iOS.
+- **Risks:** Android 14 restricts full-screen intents to calling/alarm apps (the user must allow it; otherwise a heads-up notification) and Google Play policy must be checked (spec §13 Q7); iOS background offers depend on I3 sending an APNs alert with `time-sensitive` and on the entitlement; `flutter_foreground_task` and `maplibre_gl` APIs change between majors (Step 1 of Tasks 5 and 7 pins and checks them; only the adapter files would change); geolocator streams in the background on Android rely on the foreground service started by another plugin, verified only on a device (Task 16 scenario A); MapLibre's platform view on low-end Android is the main frame-time risk on S14.03; golden images differ between macOS and Linux (Task 8 Step 4); several tests read platform files as text (manifest, plist, adapters), which is brittle by design.
+- **Battery and performance:** Task 16 adds idle tests for S14.01/S14.02/S14.03/S13.08, one ticking clock only while an offer is live, fake-counted GPS fixes, streams, posts and listeners for available, en-route, arrived and offline, the map only on S14.03, the blur budget, a `Timer.periodic` audit, and the manual scenarios A/B/C with the spec §9 thresholds on Android and iOS.
 

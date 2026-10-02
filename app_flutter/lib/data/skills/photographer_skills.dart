@@ -48,7 +48,7 @@ class SpecialtySkill {
   /// 1 Cơ bản, 2 Thành thạo, 3 Chuyên sâu.
   final int level;
 
-  /// Optional years in this genre (kept as read; not edited in S38).
+  /// Optional years in this genre (kept as read; not edited in S08.02).
   final int? years;
 
   /// The photographer's own post ids, 0..3, in the order they were picked.
@@ -117,7 +117,7 @@ class PhotographerSkills {
 
   int get expertCount => specialties.where((s) => s.isExpert).length;
 
-  /// Every post used as evidence, for the small badge on S03.
+  /// Every post used as evidence, for the small badge on S03.01.
   Set<String> get evidencePostIds => {
     for (final s in specialties) ...s.evidencePostIds,
   };

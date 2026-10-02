@@ -6,7 +6,7 @@ import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
-/// Changes the signed-in user's avatar (S42, S24 step 1): pick one photo
+/// Changes the signed-in user's avatar (S09.03, S08.01 step 1): pick one photo
 /// from the gallery, upload it to `avatars/{uid}/{ulid}.jpg`, point
 /// `users/{uid}` at it, then delete the previous upload. A cancelled pick
 /// changes nothing. The value turns true after a change went through.
@@ -21,7 +21,7 @@ class AvatarController extends AsyncNotifier<bool> {
     if (uid == null) {
       return;
     }
-    // Leaving S42 (Lưu, Back) must not drop the change halfway.
+    // Leaving S09.03 (Lưu, Back) must not drop the change halfway.
     final link = ref.keepAlive();
     try {
       await _change(uid);

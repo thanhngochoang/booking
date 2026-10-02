@@ -36,13 +36,13 @@ Color _tertiary(ThemeData t) =>
 Color _field(ThemeData t) =>
     _dark(t) ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted;
 
-/// Mock `.cal` (S20): rounded cells; free plain, pending dashed accent
+/// Mock `.cal` (S06.04): rounded cells; free plain, pending dashed accent
 /// outline and accent text, booked struck through in tertiary, off on the
 /// field fill, selected on the CTA gradient. The pending outline uses the
 /// accent (`primary`) colour, the closest token to the mock's `--pending`.
 ///
-/// Used read-only on S03, for picking a day on S06 (`editable: false`: only
-/// free days answer), and for marking days off on S20 (`editable: true`:
+/// Used read-only on S03.01, for picking a day on S04.02 (`editable: false`: only
+/// free days answer), and for marking days off on S06.04 (`editable: true`:
 /// every day in bounds answers and the screen decides). Times are not part
 /// of the grid. All dates are calendar days (UTC midnight, see
 /// `calendar_days.dart`).
@@ -72,7 +72,7 @@ class AvailabilityCalendar extends StatelessWidget {
   final DateTime? selected;
   final ValueChanged<DateTime>? onSelect;
 
-  /// Starts a range on S20 (the alternative to dragging: press and hold the
+  /// Starts a range on S06.04 (the alternative to dragging: press and hold the
   /// first day, then tap the last).
   final ValueChanged<DateTime>? onLongPress;
   final bool editable;
@@ -398,7 +398,7 @@ class _DashedOutline extends CustomPainter {
 }
 
 /// The four day states named in one wrapping row, each styled like its state
-/// in the calendar (mock S20 legend).
+/// in the calendar (mock S06.04 legend).
 class AvailabilityLegend extends StatelessWidget {
   const AvailabilityLegend({super.key});
 

@@ -4,11 +4,11 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Which look a selected chip takes (spec section 1).
 enum AppChipKind {
-  /// A filter: selected is a solid `primary` pill (S04, S15, S35 radius).
+  /// A filter: selected is a solid `primary` pill (S02.06, S11.01, S02.04 radius).
   filter,
 
   /// A single choice or context (category row, style): selected is
-  /// `primarySubtle` with a primary border and text (S01, S06, S25, S40; S35 date and free toggles).
+  /// `primarySubtle` with a primary border and text (S02.01, S04.02, S12.01, S08.04; S02.04 date and free toggles).
   context,
 }
 

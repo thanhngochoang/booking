@@ -26,7 +26,7 @@ class _Quiet extends StatelessWidget {
   );
 }
 
-/// S03 "Portfolio": a lazy two-column grid (only visible tiles are built,
+/// S03.01 "Portfolio": a lazy two-column grid (only visible tiles are built,
 /// each photo decoded at tile size by `NetworkPhoto`), "Xem thêm ảnh", then
 /// "Thợ ảnh tương tự".
 class PortfolioSliver extends ConsumerWidget {
@@ -208,7 +208,7 @@ class _Similar extends ConsumerWidget {
   }
 }
 
-/// S03 "Gói": a visitor taps a package to book it (phone gate included);
+/// S03.01 "Gói": a visitor taps a package to book it (phone gate included);
 /// the owner taps to edit packages.
 class ServicesSliver extends ConsumerWidget {
   const ServicesSliver({
@@ -310,7 +310,7 @@ class _ServiceTile extends StatelessWidget {
   }
 }
 
-/// S03 "Lịch": the same `AvailabilityCalendar` as S20, read-only. Switching
+/// S03.01 "Lịch": the same `AvailabilityCalendar` as S06.04, read-only. Switching
 /// months rebuilds only this sliver; its month listener closes when the
 /// tab is left.
 class CalendarSliver extends ConsumerStatefulWidget {
@@ -363,7 +363,7 @@ class _CalendarSliverState extends ConsumerState<CalendarSliver> {
   }
 }
 
-/// S03 "Đánh giá": reviews arrive with step 6; until then a clear empty state.
+/// S03.01 "Đánh giá": reviews arrive with step 6; until then a clear empty state.
 class ReviewsSliver extends StatelessWidget {
   const ReviewsSliver({super.key});
 

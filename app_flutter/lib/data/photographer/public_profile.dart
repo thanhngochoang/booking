@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 
-/// What S03 shows about a photographer: the discovery summary (name, avatar,
+/// What S03.01 shows about a photographer: the discovery summary (name, avatar,
 /// verified, stats, area, starting price) plus the intro of setup step 1.
 /// Built only from public documents; contact numbers are never part of it.
 @immutable
@@ -18,7 +18,7 @@ class PhotographerProfile {
 
   String get id => summary.id;
 
-  /// Setup finished (S34 sets `onboardingComplete`); only then is the
+  /// Setup finished (S08.05 sets `onboardingComplete`); only then is the
   /// profile shown to other people.
   bool get published => intro.onboardingComplete;
 }

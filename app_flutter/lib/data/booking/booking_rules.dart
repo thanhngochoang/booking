@@ -55,7 +55,7 @@ class BookingRules {
     }
   }
 
-  /// Determines which S14 tab a booking belongs to.
+  /// Determines which S05.01 tab a booking belongs to.
   /// Draft bookings are excluded from all tabs (returns null).
   static BookingTab? tabForBooking(Booking booking) {
     return switch (booking.status) {
@@ -70,7 +70,7 @@ class BookingRules {
     };
   }
 
-  /// Groups bookings into S14 tabs and sorts them:
+  /// Groups bookings into S05.01 tabs and sorts them:
   /// - upcoming: nearest shoot date first
   /// - pending: newest request first
   /// - history: newest update first
@@ -153,7 +153,7 @@ class BookingRules {
   }
 }
 
-/// S14 tab categories.
+/// S05.01 tab categories.
 enum BookingTab {
   /// Sắp tới: accepted, upcoming
   upcoming,

@@ -10,7 +10,7 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A signed-in user (a photographer by default) with in-memory packages and
-/// posts, for the S21 Create post screen and the tab that mounts it.
+/// posts, for the S10.01 Create post screen and the tab that mounts it.
 class CreatePostWorld {
   CreatePostWorld({
     this.role = UserRole.photographer,

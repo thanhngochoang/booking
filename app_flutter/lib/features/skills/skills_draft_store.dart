@@ -7,9 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
-/// The unsaved S38 draft, kept on this device so leaving the screen (or the
+/// The unsaved S08.02 draft, kept on this device so leaving the screen (or the
 /// app) loses nothing. It may be incomplete; Firestore only ever gets valid
-/// skills. Also remembers which evidence removal S38 already announced.
+/// skills. Also remembers which evidence removal S08.02 already announced.
 class SkillsDraftStore {
   SkillsDraftStore(this._prefs);
   final SharedPreferences _prefs;

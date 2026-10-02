@@ -8,7 +8,7 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 
-/// S03 "Gói": active packages, cheapest first. One-shot.
+/// S03.01 "Gói": active packages, cheapest first. One-shot.
 final profilePackagesProvider = FutureProvider.autoDispose
     .family<List<ServiceSummary>, String>((ref, uid) async {
       final list = await ref.watch(serviceRepositoryProvider).activeFor(uid);
@@ -18,7 +18,7 @@ final profilePackagesProvider = FutureProvider.autoDispose
       ]..sort((a, b) => a.priceVnd.compareTo(b.priceVnd));
     }, retry: (_, _) => null);
 
-/// S03 "Thợ ảnh tương tự" (spec 3e.9). Never fails the screen: any error
+/// S03.01 "Thợ ảnh tương tự" (spec 3e.9). Never fails the screen: any error
 /// gives an empty list and the section hides.
 final similarPhotographersProvider = FutureProvider.autoDispose
     .family<List<PhotographerSummary>, String>((ref, uid) async {

@@ -13,7 +13,7 @@ abstract class PhotographerContactRepository {
 
   Stream<ServiceArea?> watchServiceArea(String photographerId);
 
-  /// S34 "Hoàn tất": writes the service area and public flags to
+  /// S08.05 "Hoàn tất": writes the service area and public flags to
   /// `photographers/{uid}`, the numbers to `photographers/{uid}/private/contact`
   /// (one batch, so a channel is never public without a number) and sets
   /// `onboardingComplete`.

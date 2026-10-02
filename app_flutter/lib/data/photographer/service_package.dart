@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-/// Durations a package can have (spec S24: 1, 2, 3, 4, 6 or 8 hours).
+/// Durations a package can have (spec S08.01: 1, 2, 3, 4, 6 or 8 hours).
 const kPackageDurationsMinutes = [60, 120, 180, 240, 360, 480];
 
 /// What the photographer types for a package. Money is whole VND.

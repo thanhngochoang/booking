@@ -1,6 +1,6 @@
 import 'package:photobooking/core/core.dart';
 
-/// A district or city the user can pick when location is off (S36).
+/// A district or city the user can pick when location is off (S02.05).
 class AreaOption {
   const AreaOption({
     required this.id,
@@ -93,7 +93,7 @@ class BuiltInAreaRepository implements AreaRepository {
   Future<List<AreaOption>> list() async => builtInAreas;
 }
 
-/// Used when the `taxonomy/areas` list cannot be loaded (spec S36, "lỗi tải
+/// Used when the `taxonomy/areas` list cannot be loaded (spec S02.05, "lỗi tải
 /// danh sách → dùng danh sách tích hợp sẵn").
 const List<AreaOption> builtInAreas = [
   AreaOption(id: 'hcm-q1', name: 'Quận 1, TP.HCM', lat: 10.7769, lng: 106.7009),

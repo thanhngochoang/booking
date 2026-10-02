@@ -149,7 +149,7 @@ void main() {
     final sub = c.listen(avatarControllerProvider, (_, _) {});
     final done = c.read(avatarControllerProvider.notifier).change();
     await Future<void>.delayed(Duration.zero);
-    sub.close(); // S42 popped: no listener is left
+    sub.close(); // S09.03 popped: no listener is left
     await Future<void>.delayed(Duration.zero);
     gated.gate.complete();
     await done;

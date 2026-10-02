@@ -16,7 +16,7 @@ typedef ContactEventLogger = void Function(
   Map<String, Object?> params,
 );
 
-/// S32 behaviour around [ContactDial]: hides channels the device cannot open,
+/// S05.04 behaviour around [ContactDial]: hides channels the device cannot open,
 /// asks [ContactLauncher] for the link and opens it, shows a spinner while
 /// waiting and a message when it fails.
 class ContactAction extends ConsumerStatefulWidget {
@@ -37,7 +37,7 @@ class ContactAction extends ConsumerStatefulWidget {
   final ContactAccess access;
   final List<ContactChannel> channels;
 
-  /// Screen code that hosts the button (`S03`, `S09`, `S16`, ...), for analytics.
+  /// Screen code that hosts the button (`S03.01`, `S05.02`, `S11.02`, ...), for analytics.
   final String source;
 
   /// The booking or registration that unlocked contact.

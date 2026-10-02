@@ -8,7 +8,7 @@ import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
-/// Radius chips of S35.
+/// Radius chips of S02.04.
 const kRadiusOptionsKm = [10.0, 25.0, 50.0];
 
 @immutable

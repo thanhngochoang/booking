@@ -38,7 +38,7 @@
 | 12 | Area of an offer | Goong reverse geocode at request creation (commune, district), else the address minus its first segment | Spec §2.2 "điểm hẹn ở mức khu phố"; no exact address before accept. |
 | 13 | Initial ETA (lateness rule) | The accepted offer's `near` reason (`etaMinutes`) | Plan I2 decision 10; DDL verbatim, no new column. |
 | 14 | Ledger | capture `deposit_received +amount`; refunds `refund_issued −refund` with a `refunds` row; platform part `fee_charged +platform`; the photographer's part stays `held` with `payee_id` and `release_after` (= +24 h) for the escrow release job of the payments plan / I6 | Spec main §3g, domain-model §5 escrow, invariant 11. |
-| 15 | Device tokens and FCM payload | `PushTokenSource` port; first adapter reads Firestore `devices/{uid}_{installId}` as plan I4's app writes them; FCM `offer` data carries every `InstantOfferMirror` field (plan I4 Task 6) | One source of tokens for both apps; S53 opens from the notification alone. The self-hosted `devices` table replaces only the adapter. |
+| 15 | Device tokens and FCM payload | `PushTokenSource` port; first adapter reads Firestore `devices/{uid}_{installId}` as plan I4's app writes them; FCM `offer` data carries every `InstantOfferMirror` field (plan I4 Task 6) | One source of tokens for both apps; S14.02 opens from the notification alone. The self-hosted `devices` table replaces only the adapter. |
 | 16 | Payments in local and tests | `PAYMENTS=fake`: `FakePaymentGateway` with an HMAC-signed webhook, plus `POST /v1/dev/payments/{id}/succeed`; refused in production | Same code path as real providers (webhook → `handlePaymentEvent`). |
 
 ## Global Constraints
@@ -192,14 +192,14 @@ In `components.schemas.ErrorCode`, replace the enum's last line `             un
       description: 'limit_exceeded: quá tần suất cho phép (postLocation: 1 lần / 5 giây), HTTP 429'
 ```
 
-In `InstantRequestMirror`, replace `radiusKm: { type: integer, enum: [3, 6, 10], description: Bán kính đang tìm (S48) }` with:
+In `InstantRequestMirror`, replace `radiusKm: { type: integer, enum: [3, 6, 10], description: Bán kính đang tìm (S13.03) }` with:
 
 ```yaml
         radiusKm:
           type: integer
           minimum: 1
           maximum: 50
-          description: Bán kính đang tìm (S48); v1 là 3, 6 hoặc 10 nhưng mỗi thành phố cấu hình được (spec §3.2)
+          description: Bán kính đang tìm (S13.03); v1 là 3, 6 hoặc 10 nhưng mỗi thành phố cấu hình được (spec §3.2)
 ```
 
 - [ ] **Step 2: Edit `relational-schema.md`**
@@ -1947,7 +1947,7 @@ import type { InstantOfferMirror } from '../mirror/mirror.js';
 
 /**
  * FCM data messages (spec §5: offer, assigned, status), as plan I4's app parses them: all values
- * are strings (FCM data maps); `offer` carries every InstantOfferMirror field so S53 can open from
+ * are strings (FCM data maps); `offer` carries every InstantOfferMirror field so S14.02 can open from
  * the notification alone, even before the Firestore listener is up.
  */
 export type PushMessage =
@@ -4012,7 +4012,7 @@ beforeEach(async () => {
 
 const get = (q: string) => app.inject({ method: 'GET', url: `/v1/packages?${q}`, headers: as('c1') });
 
-describe('GET /v1/packages (S47, S52)', () => {
+describe('GET /v1/packages (S13.01, S14.01)', () => {
   it('prices are package × city surge, rounded to 1,000 ₫, with the photographer payout', async () => {
     const res = await get('cityId=hcm');
     expect(res.statusCode).toBe(200);
@@ -4327,7 +4327,7 @@ beforeEach(async () => {
 
 const presence = (uid: string, payload: object) => app.inject({ method: 'PUT', url: '/v1/presence', headers: as(uid), payload });
 
-describe('instant settings (S52)', () => {
+describe('instant settings (S14.01)', () => {
   it('shows the current price list and eligibility', async () => {
     const ok = await app.inject({ method: 'GET', url: '/v1/instant-settings', headers: as('p1') });
     expect(ok.json()).toEqual({ acceptedPriceListVersion: 1, currentPriceListVersion: 1, helpReady: false, eligible: true, reasons: [] });
@@ -4480,7 +4480,7 @@ export interface InstantSettingsView {
 }
 
 /**
- * S52 header (spec §2.2 step 1). `eligible`/`reasons` cover what the server knows without a
+ * S14.01 header (spec §2.2 step 1). `eligible`/`reasons` cover what the server knows without a
  * location (profile, phone, price list); city and location are checked at PUT /v1/presence.
  */
 export async function getInstantSettings(deps: Deps, uid: string): Promise<InstantSettingsView> {
@@ -4745,7 +4745,7 @@ const webhook = (payload: object, signature?: string) => {
 const paymentOf = (requestId: string) =>
   db.selectFrom('payments').selectAll().where('subject_type', '=', 'instant_request').where('subject_id', '=', requestId).executeTakeFirstOrThrow();
 
-describe('POST /v1/requests (S47)', () => {
+describe('POST /v1/requests (S13.01)', () => {
   it('locks the price, creates the payment and the pending_payment mirror', async () => {
     const res = await create('c1');
     expect(res.statusCode).toBe(201);
@@ -6033,7 +6033,7 @@ const accept = (uid: string, offerId: string) => app.inject({ method: 'POST', ur
 const decline = (uid: string, offerId: string, payload?: object) =>
   app.inject({ method: 'POST', url: `/v1/offers/${offerId}/decline`, headers: as(uid), ...(payload ? { payload } : {}) });
 
-describe('accept (S53 "Nhận")', () => {
+describe('accept (S14.02 "Nhận")', () => {
   it('assigns, returns the exact address, mirrors the photographer card, ETA and grace window', async () => {
     const id = await paidRequest(app, 'c1');
     await w.runDue();
@@ -6087,7 +6087,7 @@ describe('expiry (30 s, spec §3.2)', () => {
   });
 });
 
-describe('decline (S53 "Từ chối")', () => {
+describe('decline (S14.02 "Từ chối")', () => {
   it('moves to the next photographer at once; a reason is optional', async () => {
     await paidRequest(app, 'c1');
     await w.runDue();
@@ -6223,7 +6223,7 @@ export async function acceptOffer(deps: Deps, photographerId: string, offerId: s
   return { requestId: req.id, meetPoint: { ...req.meetPoint, address: req.meetAddress }, customerName: accepted.customerName };
 }
 
-/** Decline (S53 "Từ chối") or expiry: the offer closes, the photographer is never asked again for this request. */
+/** Decline (S14.02 "Từ chối") or expiry: the offer closes, the photographer is never asked again for this request. */
 async function closeOffer(deps: Deps, offerId: string, outcome: 'declined' | 'expired', photographerId: string | null): Promise<boolean> {
   const now = deps.clock.now();
   const closed = await deps.db.transaction().execute(async (trx) => {
@@ -6406,7 +6406,7 @@ afterAll(async () => {
 const post = (path: string, uid = 'p1', payload?: object) =>
   app.inject({ method: 'POST', url: `/v1/requests/${id}/${path}`, headers: as(uid), ...(payload ? { payload } : {}) });
 
-describe('on the way (S49, S54)', () => {
+describe('on the way (S13.05, S14.03)', () => {
   it('the first location makes it en_route and writes the one track doc', async () => {
     const res = await post('location', 'p1', fixAt(north(HCM, 1.8), w.clock.now()));
     expect(res.statusCode).toBe(204);
@@ -6776,7 +6776,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 14: Cancellation for both sides (S55), with `dryRun`
+### Task 14: Cancellation for both sides (S13.08), with `dryRun`
 
 **Files:**
 - Create: `services/dispatch/src/requests/cancel.ts`, `services/dispatch/test/cancel.test.ts`
@@ -6835,7 +6835,7 @@ async function money(id: string) {
   return { pay, refunded: refunds.reduce((s, r) => s + r.amount, 0), held: await heldVnd(w.deps, pay.id) };
 }
 
-describe('S55: dryRun shows exactly what the cancellation then does (spec §4)', () => {
+describe('S13.08: dryRun shows exactly what the cancellation then does (spec §4)', () => {
   const cases: Array<[string, () => Promise<string>, number, string, number, number]> = [
     // name, setup → requestId, minutes to wait, rule, refund, photographer
     ['searching', () => paidRequest(app, 'c1'), 0, 'free_searching', 600_000, 0],
@@ -6975,7 +6975,7 @@ async function quoteFor(db: Exec, deps: Deps, req: RequestRow, uid: string, now:
 }
 
 /**
- * POST /v1/requests/{id}/cancel (spec §4, S55). `dryRun` returns the quote without changing
+ * POST /v1/requests/{id}/cancel (spec §4, S13.08). `dryRun` returns the quote without changing
  * anything; otherwise the same quote, recomputed under the row lock with the server clock, is
  * applied: status, money (refund + ledger), reliability penalty. A photographer's cancellation
  * puts the request back to searching without them (spec §3.1).

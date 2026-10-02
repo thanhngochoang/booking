@@ -55,13 +55,13 @@ Everything above describes the legacy Java app, kept as reference. The rewrite i
 
 ### Design and specs (read before building or changing a screen)
 
-- **UI mock**: `docs/design/ui-mock.html`, a standalone page; open it in a browser. The "Debug" button shows each screen's code; add `#S12` to the URL to jump to a screen. Published copy: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (private; the repo file is the source to edit).
+- **UI mock**: `docs/design/ui-mock.html`, a standalone page; open it in a browser. The "Debug" button shows each screen's code; add `#S05.05` to the URL to jump to a screen. Published copy: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (private; the repo file is the source to edit).
 - **Main spec**: `docs/superpowers/specs/2026-10-01-remaining-screens.md` (theme, screen-code table, events, contact, location, badges, recommender, escrow, open questions). It extends the original `2026-09-30-photography-marketplace-design.md`.
 - **Per-screen specs**: `docs/superpowers/specs/screens/` (`README.md` has the template and cross-cutting conventions).
 - **Shared widgets**: `docs/superpowers/specs/components/shared-components.md`.
 - **Data model** (backend-agnostic, migration target): `docs/superpowers/specs/data-model/` (`README.md` conventions and ports, `domain-model.md`, `relational-schema.md`).
 - **Recommender service contract**: `services/recommender/api/openapi.yaml`.
-- **Screen codes**: screens are numbered `S01`–`S67` (S56–S62 reserved for job posts; S63–S65 notifications; S66 splash, S67 session error) in a single increasing sequence (S47–S55 are instant booking, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`) (never renumber; new screens take the next number). When the user names a code ("fix S07"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec and the code table in sync when one changes.
+- **Screen codes**: each `Sxx` is a use case (a complete user flow) and each screen in it is `Sxx.yy` (e.g. `S04.02` = date & time step of Đặt lịch); 17 use cases `S01`–`S17` (S13–S14 instant booking, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`; S15–S16 job posts, in design; S17 notifications). A new screen takes the next `.yy` in its use case, a new use case the next `Sxx`; never renumber inside a use case. The table with the old flat codes (`S01`–`S67`, used before 2026-10-02 in commits, ledgers and executed plans) is in the main spec §2; `scripts/tools/screen_code_map.py` converts. When the user names a code ("fix S04.03"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec, `lib/core/screen_codes.dart` and the code table in sync when one changes.
 
 ### Rules to follow
 

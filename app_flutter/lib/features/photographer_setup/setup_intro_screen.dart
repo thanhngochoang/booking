@@ -11,10 +11,10 @@ import 'package:photobooking/features/photographer_setup/intro_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_controller.dart';
 
-/// S24, setup step 1/4: name, short bio, equipment (years and genres are
-/// step 3, S38). Everything typed is kept as a device draft until
-/// "Tiếp tục" saves it. Layout follows the other step screens (S34, S38) and
-/// mock S24 step 2: AppBar "n / 4", progress, h3 + hint, fields, sticky footer.
+/// S08.01, setup step 1/4: name, short bio, equipment (years and genres are
+/// step 3, S08.02). Everything typed is kept as a device draft until
+/// "Tiếp tục" saves it. Layout follows the other step screens (S08.05, S08.02) and
+/// mock S08.01 step 2: AppBar "n / 4", progress, h3 + hint, fields, sticky footer.
 class SetupIntroScreen extends ConsumerStatefulWidget {
   const SetupIntroScreen({super.key});
 
@@ -180,7 +180,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          // Mock S24 `.bar`: back · "Hồ sơ nhiếp ảnh gia" · "1 / 4".
+          // Mock S08.01 `.bar`: back · "Hồ sơ nhiếp ảnh gia" · "1 / 4".
           appBar: AppBar(
             title: Text(l.setupFlowTitle),
             actions: [
@@ -264,7 +264,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                           onChanged: (_) => _changed(),
                         ),
                         const SizedBox(height: AppSpace.s4),
-                        // Mock `.meta.x` label above a chip row (S25).
+                        // Mock `.meta.x` label above a chip row (S12.01).
                         Text(
                           l.setupEquipmentLabel,
                           style: theme.textTheme.bodySmall?.copyWith(

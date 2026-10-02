@@ -8,7 +8,7 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 const double _codeBoxWidth = 72;
 const String _dialCode = '+84';
 
-/// Phone number input. By default two boxes (mock S33): a read-only "Mã +84"
+/// Phone number input. By default two boxes (mock S04.05): a read-only "Mã +84"
 /// box, then the number. In [international] mode the code box is hidden (the
 /// number carries its own `+` code). The text is the national form
 /// `903 123 456`; typing or pasting `0903…` or `+84…` is normalised. With [international] (WhatsApp) the field
@@ -76,7 +76,7 @@ class PhoneField extends StatelessWidget {
       ),
     );
     if (international) return number;
-    // Mock S33/S34/S42: a fixed "Mã +84" box (72dp), then the number.
+    // Mock S04.05/S08.05/S09.03: a fixed "Mã +84" box (72dp), then the number.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -2,7 +2,7 @@
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// The four tabs of S03.
+/// The four tabs of S03.01.
 enum ProfileSection { portfolio, services, calendar, reviews }
 
 /// `?tab=` of `/u/:uid` (plan 3b4 links `?tab=services`).

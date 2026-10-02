@@ -24,7 +24,7 @@ final photographerSkillsSnapshotProvider = FutureProvider.autoDispose
       retry: (_, _) => null,
     );
 
-/// Any photographer's skills (S03); the same single read as
+/// Any photographer's skills (S03.01); the same single read as
 /// [photographerSkillsSnapshotProvider].
 final photographerSkillsProvider = FutureProvider.autoDispose
     .family<PhotographerSkills, String>(

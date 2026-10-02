@@ -124,7 +124,7 @@ void main() {
       expect(find.text('1 / 6'), findsOneWidget);
       expect(find.text('Chân dung: 0 / 3 ảnh minh chứng'), findsOneWidget);
       expect(_submitPressed(tester), isNotNull);
-      expect(w.event('screen_view'), {'code': 'S38'});
+      expect(w.event('screen_view'), {'code': 'S08.02'});
     },
   );
 
@@ -190,7 +190,7 @@ void main() {
       expect(find.text('Lưu để tính độ khớp'), findsOneWidget);
       await _tapKey(tester, 'skills-submit');
       expect(find.text('Kiểm tra lại các mục được đánh dấu'), findsOneWidget);
-      expect(find.text('S34'), findsNothing);
+      expect(find.text('S08.05'), findsNothing);
       expect(w.skills.saveCalls, 0);
     },
   );
@@ -207,7 +207,7 @@ void main() {
     expect(find.text('Chọn ít nhất 1 ngôn ngữ'), findsNothing);
   });
 
-  testWidgets('a valid setup saves catalogue ids and opens S34', (
+  testWidgets('a valid setup saves catalogue ids and opens S08.05', (
     tester,
   ) async {
     _tallPhone(tester);
@@ -221,7 +221,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('skills-years')), '6');
     await tester.pumpAndSettle();
     await _tapKey(tester, 'skills-submit');
-    expect(find.text('S34'), findsOneWidget);
+    expect(find.text('S08.05'), findsOneWidget);
     expect(
       w.skills.stored(w.uid),
       const PhotographerSkills(
@@ -242,7 +242,7 @@ void main() {
     );
   });
 
-  testWidgets('evidence: pick in S40, the row updates, saved with the skills', (
+  testWidgets('evidence: pick in S08.04, the row updates, saved with the skills', (
     tester,
   ) async {
     _tallPhone(tester);
@@ -260,21 +260,21 @@ void main() {
       findsNothing,
     );
     await _tapKey(tester, 'skills-submit');
-    expect(find.text('S34'), findsOneWidget);
+    expect(find.text('S08.05'), findsOneWidget);
     expect(w.skills.stored(w.uid)!.specialty('portrait')!.evidencePostIds, [
       'm1',
       'm2',
     ]);
   });
 
-  testWidgets('no posts yet: the sheet leads to S21', (tester) async {
+  testWidgets('no posts yet: the sheet leads to S10.01', (tester) async {
     _tallPhone(tester);
     await _pump(tester);
     await _tapKey(tester, 'specialty-portrait');
     await _tapKey(tester, 'evidence-edit-portrait');
     expect(find.text('Đăng bài trước'), findsOneWidget);
     await _tap(tester, find.text('Đăng bài'));
-    expect(find.text('S21'), findsOneWidget);
+    expect(find.text('S10.01'), findsOneWidget);
   });
 
   testWidgets(
@@ -364,7 +364,7 @@ void main() {
     },
   );
 
-  testWidgets('a double tap on an unchanged "Tiếp tục" opens S34 once', (
+  testWidgets('a double tap on an unchanged "Tiếp tục" opens S08.05 once', (
     tester,
   ) async {
     _tallPhone(tester);
@@ -375,13 +375,13 @@ void main() {
     await tester.tap(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
-    expect(find.text('S34', skipOffstage: false), findsOneWidget);
+    expect(find.text('S08.05', skipOffstage: false), findsOneWidget);
     expect(w.events.where((e) => e.$1 == 'skills_step'), hasLength(1));
     expect(find.text('Không lưu được kỹ năng. Thử lại nhé.'), findsNothing);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     await _tap(tester, submit);
-    expect(find.text('S34'), findsOneWidget, reason: 'back from S34, again');
+    expect(find.text('S08.05'), findsOneWidget, reason: 'back from S08.05, again');
   });
 
   testWidgets('unticking a genre with evidence asks first', (tester) async {
@@ -407,10 +407,10 @@ void main() {
     _tallPhone(tester);
     await _pump(tester);
     await _tapKey(tester, 'skills-back');
-    expect(find.text('S24 bước 2'), findsOneWidget);
+    expect(find.text('S08.01 bước 2'), findsOneWidget);
   });
 
-  testWidgets('the deep link opens S40 for that genre', (tester) async {
+  testWidgets('the deep link opens S08.04 for that genre', (tester) async {
     _tallPhone(tester);
     await _pump(
       tester,
@@ -521,7 +521,7 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('skills-submit')));
       await tester.pumpAndSettle();
-      expect(find.text('S34'), findsOneWidget);
+      expect(find.text('S08.05'), findsOneWidget);
       expect(w.skills.stored(w.uid)!.yearsExperience, 4);
     },
   );
@@ -537,7 +537,7 @@ void main() {
   int? meterPercent(WidgetTester tester) =>
       tester.widget<CompletenessMeter>(find.byType(CompletenessMeter)).percent;
 
-  testWidgets('S38 shows the server score and the hint for its next step', (
+  testWidgets('S08.02 shows the server score and the hint for its next step', (
     tester,
   ) async {
     _tallPhone(tester);
@@ -637,7 +637,7 @@ void main() {
       findsOneWidget,
     );
     expect(SkillsDraftStore(w.prefs).evidenceRemovedSeen(w.uid), removedAt);
-    // Open S38 again on the same device: no second notice.
+    // Open S08.02 again on the same device: no second notice.
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(skillsApp(w, initialLocation: '/profile/skills'));
     await tester.pumpAndSettle();

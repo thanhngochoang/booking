@@ -6,7 +6,7 @@ void main() {
     expect(
       builtInAreas.length,
       greaterThan(8),
-      reason: 'S36 shows search above 8',
+      reason: 'S02.05 shows search above 8',
     );
     expect(
       builtInAreas.map((a) => a.id).toSet(),

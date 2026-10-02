@@ -8,8 +8,8 @@ import 'package:photobooking/features/explore/location_controller.dart';
 
 const _deviceId = '__device__';
 
-/// S36: pick a district or city when location is off. Opened from S13, S35
-/// and S04.
+/// S02.05: pick a district or city when location is off. Opened from S02.03, S02.04
+/// and S02.06.
 Future<void> showAreaPicker(BuildContext context) =>
     showAppSheet<void>(context, builder: (_) => const AreaPickerSheet());
 
@@ -94,7 +94,7 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                       ),
                       const SizedBox(height: AppSpace.s1),
                       // "Vị trí đang tắt…" only fits when location is off
-                      // (S35 "Đổi" opens the sheet with it on).
+                      // (S02.04 "Đổi" opens the sheet with it on).
                       Text(
                         location.permission == LocationPermissionStatus.granted
                             ? l.areaPickerBodyOn
@@ -174,7 +174,7 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                         )
                       : const SizedBox.shrink(),
                 ),
-                // Mock S36: after the list, just above the main button.
+                // Mock S02.05: after the list, just above the main button.
                 // Hidden while the keyboard is up, so the list keeps room.
                 if (location.permission ==
                         LocationPermissionStatus.deniedForever &&

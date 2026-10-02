@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/skills/own_posts_controller.dart';
 
-/// S40: pick 1–3 of your own posts as evidence for one genre. Returns the
+/// S08.04: pick 1–3 of your own posts as evidence for one genre. Returns the
 /// ids in pick order after "Xong", or null when dismissed (nothing changes).
 Future<List<String>?> showEvidenceSheet(
   BuildContext context, {
