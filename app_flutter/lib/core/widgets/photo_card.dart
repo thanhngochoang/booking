@@ -17,6 +17,7 @@ class PhotoCard extends StatelessWidget {
     this.leadingPill,
     this.trailingPill,
     this.action,
+    this.overlay,
     this.onTap,
     this.semanticLabel,
   });
@@ -40,6 +41,10 @@ class PhotoCard extends StatelessWidget {
   /// 48dp minimum slot and its own semantics node; narrow cards (under 200dp
   /// wide) should not pass one, as it crowds the text.
   final Widget? action;
+
+  /// Interactive content (an author row, S01) in the bottom text slot, in
+  /// place of [title] and [subtitle]. It keeps its own taps and semantics.
+  final Widget? overlay;
   final VoidCallback? onTap;
 
   /// The card label for screen readers. Without it the card reads its text
@@ -52,7 +57,7 @@ class PhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasText = title != null || subtitle != null;
+    final hasText = title != null || subtitle != null || overlay != null;
     // One node reads the whole card: text, then the labels of PhotoPill pills.
     final label =
         semanticLabel ??
@@ -147,43 +152,47 @@ class PhotoCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(
-                            child: ExcludeSemantics(
-                              child: IgnorePointer(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (title != null)
-                                      Text(
-                                        title!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: small
-                                              ? AppText.sm
-                                              : AppText.base,
-                                        ),
-                                      ),
-                                    if (subtitle != null)
-                                      Text(
-                                        subtitle!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.85,
+                          if (overlay != null)
+                            Expanded(child: overlay!)
+                          else
+                            Expanded(
+                              child: ExcludeSemantics(
+                                child: IgnorePointer(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (title != null)
+                                        Text(
+                                          title!,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: small
+                                                ? AppText.sm
+                                                : AppText.base,
                                           ),
-                                          fontSize: small ? 10.5 : AppText.sm,
                                         ),
-                                      ),
-                                  ],
+                                      if (subtitle != null)
+                                        Text(
+                                          subtitle!,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.85,
+                                            ),
+                                            fontSize: small ? 10.5 : AppText.sm,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                           if (action != null)
                             ConstrainedBox(
                               constraints: const BoxConstraints(

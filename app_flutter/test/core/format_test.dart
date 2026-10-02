@@ -65,4 +65,13 @@ void main() {
     expect(priceFromLabel(-5, l), isNull);
     expect(priceFromLabel(null, l), isNull);
   });
+
+  test('formatDuration in hours and minutes', () {
+    final l = AppLocalizationsVi();
+    expect(formatDuration(45, l), '45 phút');
+    expect(formatDuration(60, l), '1 giờ');
+    expect(formatDuration(120, l), '2 giờ');
+    expect(formatDuration(90, l), '1 giờ 30 phút');
+    expect(formatDuration(480, l), '8 giờ');
+  });
 }

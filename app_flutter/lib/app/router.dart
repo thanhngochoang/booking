@@ -10,9 +10,11 @@ import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
+import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
+import 'package:photobooking/features/photo/photo_detail_screen.dart';
 import 'package:photobooking/features/photographer_setup/contact_setup_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
@@ -181,19 +183,58 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/setup/4', builder: (_, _) => const ContactSetupScreen()),
+      GoRoute(
+        path: '/p/:postId',
+        builder: (_, state) =>
+            PhotoDetailScreen(postId: state.pathParameters['postId']!),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => TabShell(shell),
         branches: [
-          for (final (tab, page) in [
-            (AppTab.home, const HomeTab()),
-            (AppTab.explore, const ExploreScreen()),
-            (AppTab.action, const ActionTab()),
-            (AppTab.bookings, const BookingsTab()),
-            (AppTab.profile, const ProfileTab()),
-          ])
-            StatefulShellBranch(
-              routes: [GoRoute(path: tab.path, builder: (_, _) => page)],
-            ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppTab.home.path,
+                builder: (_, _) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppTab.explore.path,
+                builder: (_, _) => const ExploreScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppTab.action.path,
+                builder: (_, state) => ActionTab(
+                  specialty: state.uri.queryParameters['specialty'],
+                  style: state.uri.queryParameters['style'],
+                  area: state.uri.queryParameters['area'],
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppTab.bookings.path,
+                builder: (_, _) => const BookingsTab(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppTab.profile.path,
+                builder: (_, _) => const ProfileTab(),
+              ),
+            ],
+          ),
         ],
       ),
     ],

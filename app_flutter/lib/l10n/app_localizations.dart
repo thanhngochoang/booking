@@ -418,18 +418,6 @@ abstract class AppLocalizations {
   /// **'Tiếp tục'**
   String get roleContinue;
 
-  /// No description provided for @emptyHomeTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Ảnh đẹp sẽ xuất hiện ở đây'**
-  String get emptyHomeTitle;
-
-  /// No description provided for @emptyHomeBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Theo dõi nhiếp ảnh gia bạn thích để bắt đầu.'**
-  String get emptyHomeBody;
-
   /// No description provided for @emptyExploreTitle.
   ///
   /// In vi, this message translates to:
@@ -441,18 +429,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.'**
   String get emptyExploreBody;
-
-  /// No description provided for @emptyFindTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tìm nhiếp ảnh gia rảnh đúng ngày bạn cần'**
-  String get emptyFindTitle;
-
-  /// No description provided for @emptyFindBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Chọn địa điểm, ngày và dịch vụ để so sánh.'**
-  String get emptyFindBody;
 
   /// No description provided for @emptyCreateTitle.
   ///
@@ -2271,6 +2247,408 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Mới tham gia'**
   String get reasonNewTalent;
+
+  /// No description provided for @homePillFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh {day} này'**
+  String homePillFree(String day);
+
+  /// No description provided for @engagementError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại nhé.'**
+  String get engagementError;
+
+  /// No description provided for @back.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get back;
+
+  /// No description provided for @homeGreeting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chào {name}'**
+  String homeGreeting(String name);
+
+  /// No description provided for @homeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay chụp gì?'**
+  String get homeTitle;
+
+  /// No description provided for @homeForYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dành cho bạn'**
+  String get homeForYou;
+
+  /// No description provided for @homeFreeThisWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh tuần này'**
+  String get homeFreeThisWeek;
+
+  /// No description provided for @homeRealShoots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp thật'**
+  String get homeRealShoots;
+
+  /// No description provided for @homeFromCustomers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ khách hàng'**
+  String get homeFromCustomers;
+
+  /// No description provided for @homeRealShootBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name}'**
+  String homeRealShootBy(String name);
+
+  /// No description provided for @homeEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ảnh nào quanh bạn'**
+  String get homeEmptyTitle;
+
+  /// No description provided for @homeEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.'**
+  String get homeEmptyBody;
+
+  /// No description provided for @homeEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá nhiếp ảnh gia'**
+  String get homeEmptyAction;
+
+  /// No description provided for @homeLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ảnh. Kiểm tra mạng rồi thử lại.'**
+  String get homeLoadError;
+
+  /// No description provided for @photoSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu ảnh'**
+  String get photoSave;
+
+  /// No description provided for @photoUnsave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu'**
+  String get photoUnsave;
+
+  /// No description provided for @photoBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt gói này'**
+  String get photoBook;
+
+  /// No description provided for @photoViewProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ'**
+  String get photoViewProfile;
+
+  /// No description provided for @photoFollow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi'**
+  String get photoFollow;
+
+  /// No description provided for @photoFollowing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get photoFollowing;
+
+  /// No description provided for @photoRealShootBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name} · gói {service}'**
+  String photoRealShootBy(String name, String service);
+
+  /// No description provided for @photoRealShootByName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name}'**
+  String photoRealShootByName(String name);
+
+  /// No description provided for @photoRemovedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài đăng không còn'**
+  String get photoRemovedTitle;
+
+  /// No description provided for @photoRemovedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài đăng này đã bị gỡ hoặc không tồn tại.'**
+  String get photoRemovedBody;
+
+  /// No description provided for @photoBackHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get photoBackHome;
+
+  /// No description provided for @photoMoreOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm của {name}'**
+  String photoMoreOf(String name);
+
+  /// No description provided for @photoMoreProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get photoMoreProfile;
+
+  /// No description provided for @photoItemLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {i}'**
+  String photoItemLabel(int i);
+
+  /// No description provided for @photoOtherPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem các gói khác'**
+  String get photoOtherPackages;
+
+  /// No description provided for @photoServiceInactive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói này đã ngừng'**
+  String get photoServiceInactive;
+
+  /// No description provided for @photoLike.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thích'**
+  String get photoLike;
+
+  /// No description provided for @photoUnlike.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thích'**
+  String get photoUnlike;
+
+  /// No description provided for @photoPageOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {n} trên {total}'**
+  String photoPageOf(int n, int total);
+
+  /// No description provided for @photoLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài đăng. Kiểm tra mạng rồi thử lại.'**
+  String get photoLoadError;
+
+  /// No description provided for @servicePhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh'**
+  String servicePhotos(int n);
+
+  /// No description provided for @serviceDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'giao sau {days} ngày'**
+  String serviceDelivery(int days);
+
+  /// No description provided for @serviceDurationMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{m} phút'**
+  String serviceDurationMinutes(int m);
+
+  /// No description provided for @serviceDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{h} giờ'**
+  String serviceDurationHours(int h);
+
+  /// No description provided for @serviceDurationHoursMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{h} giờ {m} phút'**
+  String serviceDurationHoursMinutes(int h, int m);
+
+  /// No description provided for @findDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày'**
+  String get findDate;
+
+  /// No description provided for @findService.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get findService;
+
+  /// No description provided for @findPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá'**
+  String get findPrice;
+
+  /// No description provided for @findRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get findRating;
+
+  /// No description provided for @findNearMe.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quanh bạn'**
+  String get findNearMe;
+
+  /// No description provided for @findCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} nhiếp ảnh gia'**
+  String findCount(String count);
+
+  /// No description provided for @findCountOnDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} nhiếp ảnh gia rảnh {day}'**
+  String findCountOnDay(String count, String day);
+
+  /// No description provided for @findSortBest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phù hợp nhất'**
+  String get findSortBest;
+
+  /// No description provided for @findSortNear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần tôi'**
+  String get findSortNear;
+
+  /// No description provided for @findSortPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá'**
+  String get findSortPrice;
+
+  /// No description provided for @findSortRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get findSortRating;
+
+  /// No description provided for @findNoResult.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ai khớp bộ lọc'**
+  String get findNoResult;
+
+  /// No description provided for @findNoResultBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử bỏ bớt bộ lọc hoặc chọn ngày khác.'**
+  String get findNoResultBody;
+
+  /// No description provided for @findClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá bộ lọc'**
+  String get findClear;
+
+  /// No description provided for @findFallbackNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xếp theo sao và khoảng cách'**
+  String get findFallbackNote;
+
+  /// No description provided for @findLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách. Kiểm tra mạng rồi thử lại.'**
+  String get findLoadError;
+
+  /// No description provided for @findBookDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt {day}'**
+  String findBookDay(String day);
+
+  /// No description provided for @findDateTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get findDateTitle;
+
+  /// No description provided for @findDateClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá ngày'**
+  String get findDateClear;
+
+  /// No description provided for @findDateDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get findDateDone;
+
+  /// No description provided for @findServiceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get findServiceTitle;
+
+  /// No description provided for @findServiceAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả dịch vụ'**
+  String get findServiceAll;
+
+  /// No description provided for @findPriceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách'**
+  String get findPriceTitle;
+
+  /// No description provided for @findPriceAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi mức giá'**
+  String get findPriceAny;
+
+  /// No description provided for @findPriceUnder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dưới {price}'**
+  String findPriceUnder(String price);
+
+  /// No description provided for @findRatingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá tối thiểu'**
+  String get findRatingTitle;
+
+  /// No description provided for @findRatingAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi đánh giá'**
+  String get findRatingAny;
+
+  /// No description provided for @findRatingMin.
+  ///
+  /// In vi, this message translates to:
+  /// **'★ {rating}+'**
+  String findRatingMin(String rating);
 }
 
 class _AppLocalizationsDelegate

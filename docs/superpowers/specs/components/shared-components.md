@@ -161,7 +161,7 @@ Hiệu ứng chờ đặc trưng của app: logo đơn sắc (`design-system/bra
 `StepProgress({required int current, required int total, String? label, bool showCount = true})`. Thanh `total` đoạn, các đoạn tới `current` tô gradient; chữ "n / N" bên cạnh; `Semantics(value: 'Bước n trên N')`. Dùng ở S05–S07, S24–S26, S34, S38. Theo mock (thành phần "Bước nhiều trang"), màn nhiều bước đặt "n / N" ở góc phải thanh tiêu đề và thanh tiến độ ngay dưới thanh tiêu đề, ngoài vùng cuộn: khi đó dùng `showCount: false` (S34).
 
 ### AppOptionTile · Mới
-`AppOptionTile({required String label, required bool selected, required VoidCallback onTap, Widget? leading})`. Một lựa chọn trong danh sách chọn một (mock `.opt`): viền 1px `outline`, radius 16, nền kính không blur (dùng được trong danh sách dài), radio 18dp viền 2px; đã chọn = viền + chấm radio primary, nền `primarySubtle`. Cao ≥ 48dp; `Semantics(checked, inMutuallyExclusiveGroup, selected)`. Dùng ở S36; sau này S06, S47.
+`AppOptionTile({required String label, required bool selected, required VoidCallback onTap, Widget? leading})`. Một lựa chọn trong danh sách chọn một (mock `.opt`): viền 1px `outline`, radius 16, nền kính không blur (dùng được trong danh sách dài), radio 18dp viền 2px; đã chọn = viền + chấm radio primary, nền `primarySubtle`. Cao ≥ 48dp; `Semantics(checked, inMutuallyExclusiveGroup, selected)`. Dùng ở S36 và S04 (các sheet dịch vụ, giá, đánh giá); sau này S06, S47.
 
 ### AppFooterBar · Mới
 `AppFooterBar({required Widget child})`. Hàng nút dính đáy của màn biểu mẫu (mock `.foot`): nền `surface`, viền mảnh phía trên, đệm 10/16/12, có `SafeArea` dưới; đặt ngoài vùng cuộn. Màn nhiều bước: "Quay lại" `outline` rộng 36% + nút chính. Dùng ở S34, S42.
@@ -222,7 +222,7 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `AppBottomSheet` | S05–S07, S10, S17, S23, S33, S36, S40 |
 | `StepProgress` | S05–S07, S24–S26, S34, S38 |
 | `AppFooterBar` | S34, S42 |
-| `AppOptionTile` | S36 (sau: S06, S47) |
+| `AppOptionTile` | S36, S04 (sau: S06, S47) |
 | `AvailabilityCalendar` | S03, S04, S06, S20 |
 | `StatusTimeline` | S09 |
 | `CapacityBar`, `StatTile` | S03, S16, S19, S27, S37 |
