@@ -38,3 +38,11 @@ DateTime? parseDayKey(String key) {
   final date = DateTime.utc(y, mo, d);
   return (date.year == y && date.month == mo && date.day == d) ? date : null;
 }
+
+/// `yyyy-MM-dd` from the calendar fields of [date]. Unlike [vnDateKey] it does
+/// not convert from an instant: pass a date that already is the Vietnamese
+/// calendar date (a date-picker value, `parseDayKey`, `toVn(...)`).
+String dayKeyOf(DateTime date) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${date.year.toString().padLeft(4, '0')}-${two(date.month)}-${two(date.day)}';
+}
