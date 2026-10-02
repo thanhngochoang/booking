@@ -242,30 +242,31 @@ void main() {
     );
   });
 
-  testWidgets('evidence: pick in S08.04, the row updates, saved with the skills', (
-    tester,
-  ) async {
-    _tallPhone(tester);
-    final w = await _pump(tester, posts: _ownPosts(4));
-    await _tapKey(tester, 'specialty-portrait');
-    await _level(tester, 'portrait', 'Chuyên sâu');
-    await _tapKey(tester, 'evidence-edit-portrait');
-    expect(find.byType(EvidenceSheet), findsOneWidget);
-    await _tapKey(tester, 'evidence-m1');
-    await _tapKey(tester, 'evidence-m2');
-    await _tapKey(tester, 'evidence-done');
-    expect(find.text('Chân dung: 2 / 3 ảnh minh chứng'), findsOneWidget);
-    expect(
-      find.text('Mức Chuyên sâu cần ít nhất 1 ảnh minh chứng'),
-      findsNothing,
-    );
-    await _tapKey(tester, 'skills-submit');
-    expect(find.text('S08.05'), findsOneWidget);
-    expect(w.skills.stored(w.uid)!.specialty('portrait')!.evidencePostIds, [
-      'm1',
-      'm2',
-    ]);
-  });
+  testWidgets(
+    'evidence: pick in S08.04, the row updates, saved with the skills',
+    (tester) async {
+      _tallPhone(tester);
+      final w = await _pump(tester, posts: _ownPosts(4));
+      await _tapKey(tester, 'specialty-portrait');
+      await _level(tester, 'portrait', 'Chuyên sâu');
+      await _tapKey(tester, 'evidence-edit-portrait');
+      expect(find.byType(EvidenceSheet), findsOneWidget);
+      await _tapKey(tester, 'evidence-m1');
+      await _tapKey(tester, 'evidence-m2');
+      await _tapKey(tester, 'evidence-done');
+      expect(find.text('Chân dung: 2 / 3 ảnh minh chứng'), findsOneWidget);
+      expect(
+        find.text('Mức Chuyên sâu cần ít nhất 1 ảnh minh chứng'),
+        findsNothing,
+      );
+      await _tapKey(tester, 'skills-submit');
+      expect(find.text('S08.05'), findsOneWidget);
+      expect(w.skills.stored(w.uid)!.specialty('portrait')!.evidencePostIds, [
+        'm1',
+        'm2',
+      ]);
+    },
+  );
 
   testWidgets('no posts yet: the sheet leads to S10.01', (tester) async {
     _tallPhone(tester);
@@ -381,7 +382,11 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     await _tap(tester, submit);
-    expect(find.text('S08.05'), findsOneWidget, reason: 'back from S08.05, again');
+    expect(
+      find.text('S08.05'),
+      findsOneWidget,
+      reason: 'back from S08.05, again',
+    );
   });
 
   testWidgets('unticking a genre with evidence asks first', (tester) async {

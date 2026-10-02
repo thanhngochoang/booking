@@ -590,23 +590,42 @@ void main() {
   });
 
   group('busy', () {
-    testWidgets('shows a spinner and ignores taps while a link is fetched', (
-      tester,
-    ) async {
-      final picked = <ContactChannel>[];
-      await _pump(tester, busy: true, onSelected: picked.add);
-      expect(
-        find.descendant(
-          of: find.byKey(_button),
-          matching: find.byType(CircularProgressIndicator),
-        ),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(_button));
-      await tester.pump(); // a spinner never settles
-      expect(picked, isEmpty);
-      expect(find.byKey(_tray), findsNothing);
-    });
+    testWidgets(
+      'shows the inline loader and ignores taps while a link is fetched',
+      (tester) async {
+        final picked = <ContactChannel>[];
+        await _pump(tester, busy: true, onSelected: picked.add);
+        expect(
+          find.descendant(
+            of: find.byKey(_button),
+            matching: find.byType(SignatureLoader),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<SignatureLoader>(
+                find.descendant(
+                  of: find.byKey(_button),
+                  matching: find.byType(SignatureLoader),
+                ),
+              )
+              .size,
+          LoaderSize.inline,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(_button),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsNothing,
+        );
+        await tester.tap(find.byKey(_button));
+        await tester.pump();
+        expect(picked, isEmpty);
+        expect(find.byKey(_tray), findsNothing);
+      },
+    );
   });
 
   group('busy (reduced motion and semantics)', () {
@@ -614,6 +633,7 @@ void main() {
       tester,
     ) async {
       await _pump(tester, busy: true, reduced: true);
+      expect(find.byType(SignatureLoader), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       await expectIdle(tester);
     });

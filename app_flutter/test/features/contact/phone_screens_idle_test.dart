@@ -14,7 +14,9 @@ import 'package:photobooking/l10n/app_localizations.dart';
 import '../../support/idle.dart';
 
 void main() {
-  testWidgets('S04.05 is idle at rest and after typing a number', (tester) async {
+  testWidgets('S04.05 is idle at rest and after typing a number', (
+    tester,
+  ) async {
     final auth = FakeAuthRepository();
     final users = FakeUserRepository();
     final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');

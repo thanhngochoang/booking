@@ -60,7 +60,8 @@ void main() {
     await tester.pumpWidget(
       _card(LocationPromptState.requesting, onAllow: () => allow++),
     );
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(SignatureLoader), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     final handle = tester.ensureSemantics();
     await tester.pump();
     expect(find.bySemanticsLabel('Cho phép'), findsOneWidget);

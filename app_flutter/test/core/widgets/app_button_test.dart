@@ -100,6 +100,21 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets(
+    'AppButton loading shows the inline loader and no CircularProgressIndicator',
+    (tester) async {
+      await tester.pumpWidget(
+        hostWidget(AppButton.primary('Đặt', loading: true, onPressed: () {})),
+      );
+      expect(find.byType(SignatureLoader), findsOneWidget);
+      expect(
+        tester.widget<SignatureLoader>(find.byType(SignatureLoader)).size,
+        LoaderSize.inline,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
   for (final b in Brightness.values) {
     testWidgets('320dp x1.3 does not overflow (${b.name})', (tester) async {
       await tester.pumpWidget(

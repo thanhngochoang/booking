@@ -46,8 +46,9 @@ class ContactSetupScreen extends ConsumerWidget {
             bottom: false,
             child: prefill.when(
               data: (draft) => _ContactSetupForm(draft: draft),
-              loading: () =>
-                  Center(child: ApertureLoader(semanticsLabel: l.loadingLabel)),
+              loading: () => Center(
+                child: SignatureLoader(semanticsLabel: l.loadingLabel),
+              ),
               // A failed prefill must not block a first-time setup.
               error: (_, _) =>
                   const _ContactSetupForm(draft: ContactSetupDraft()),

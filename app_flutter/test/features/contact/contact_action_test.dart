@@ -201,17 +201,17 @@ void main() {
       await tester.tap(find.byKey(_button));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('contact-whatsapp')));
-      // The spinner never settles, so pump a fixed time instead.
       await tester.pump(const Duration(milliseconds: 400));
       expect(
         find.descendant(
           of: find.byKey(_button),
-          matching: find.byType(CircularProgressIndicator),
+          matching: find.byType(SignatureLoader),
         ),
         findsOneWidget,
       );
       slow.completer.complete(Uri.parse('https://wa.me/84903123456'));
       await tester.pumpAndSettle();
+      expect(find.byType(SignatureLoader), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(h.external.opened.single.toString(), 'https://wa.me/84903123456');
     },

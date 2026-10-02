@@ -11,6 +11,7 @@ import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/screen_codes.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/screen_code.dart';
+import 'package:photobooking/core/widgets/signature_loader.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 enum ContactDialStyle {
@@ -259,9 +260,11 @@ class _ContactDialState extends State<ContactDial>
               : SizedBox(
                   width: size,
                   height: size,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: color,
+                  child: FittedBox(
+                    child: SignatureLoader(
+                      size: LoaderSize.inline,
+                      color: color,
+                    ),
                   ),
                 ))
         : locked
