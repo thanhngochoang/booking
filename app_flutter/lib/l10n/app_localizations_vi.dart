@@ -213,6 +213,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsEditProfileBody => 'Tên hiển thị';
 
   @override
+  String get settingsPhone => 'Số điện thoại';
+
+  @override
+  String get settingsPhoneEmpty => 'Chưa thêm';
+
+  @override
+  String get settingsSkills => 'Kỹ năng';
+
+  @override
+  String get settingsSkillsBody => 'Thể loại, mức độ và phong cách';
+
+  @override
+  String get settingsPublicProfile => 'Xem hồ sơ công khai';
+
+  @override
+  String get settingsPublicProfileBody => 'Hồ sơ như khách nhìn thấy';
+
+  @override
   String get settingsAppearance => 'Giao diện';
 
   @override

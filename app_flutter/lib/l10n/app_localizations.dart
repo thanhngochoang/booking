@@ -490,6 +490,42 @@ abstract class AppLocalizations {
   /// **'Tên hiển thị'**
   String get settingsEditProfileBody;
 
+  /// No description provided for @settingsPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get settingsPhone;
+
+  /// No description provided for @settingsPhoneEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thêm'**
+  String get settingsPhoneEmpty;
+
+  /// No description provided for @settingsSkills.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỹ năng'**
+  String get settingsSkills;
+
+  /// No description provided for @settingsSkillsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thể loại, mức độ và phong cách'**
+  String get settingsSkillsBody;
+
+  /// No description provided for @settingsPublicProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ công khai'**
+  String get settingsPublicProfile;
+
+  /// No description provided for @settingsPublicProfileBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ như khách nhìn thấy'**
+  String get settingsPublicProfileBody;
+
   /// No description provided for @settingsAppearance.
   ///
   /// In vi, this message translates to:

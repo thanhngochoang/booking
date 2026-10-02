@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
@@ -40,13 +43,32 @@ class SettingsScreen extends ConsumerWidget {
                 _SectionLabel(l.settingsAccount),
                 GlassCard(
                   highlight: false,
-                  child: ListTile(
-                    key: const Key('settings-edit-profile'),
-                    leading: const Icon(Icons.person_outline_rounded),
-                    title: Text(l.settingsEditProfile),
-                    subtitle: Text(name ?? l.settingsEditProfileBody),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.push('/settings/profile'),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        key: const Key('settings-edit-profile'),
+                        leading: const Icon(Icons.person_outline_rounded),
+                        title: Text(l.settingsEditProfile),
+                        subtitle: Text(name ?? l.settingsEditProfileBody),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push('/settings/profile'),
+                      ),
+                      const _RowDivider(),
+                      const _PhoneTile(),
+                      if (profile?.role == UserRole.photographer) ...[
+                        const _RowDivider(),
+                        _SkillsTile(uid: profile!.uid),
+                        const _RowDivider(),
+                        ListTile(
+                          key: const Key('profile-public'),
+                          leading: const Icon(Icons.storefront_outlined),
+                          title: Text(l.settingsPublicProfile),
+                          subtitle: Text(l.settingsPublicProfileBody),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => context.push('/u/${profile.uid}'),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(height: AppSpace.s6),
@@ -176,6 +198,58 @@ class _SectionLabel extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Phone row: the last 4 digits, or "Chưa thêm". The contact stream is
+/// autoDispose and S31 is a pushed route, so no listener outlives it.
+class _PhoneTile extends ConsumerWidget {
+  const _PhoneTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final phone = ref.watch(currentContactProvider).value?.phone ?? '';
+    final tail = phone.length > 4 ? phone.substring(phone.length - 4) : phone;
+    return ListTile(
+      key: const Key('profile-phone'),
+      leading: const Icon(Icons.phone_outlined),
+      title: Text(l.settingsPhone),
+      subtitle: Text(tail.isEmpty ? l.settingsPhoneEmpty : '•••• $tail'),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () => context.push('/profile/phone'),
+    );
+  }
+}
+
+/// Skills row with the server's completeness score (never computed here).
+class _SkillsTile extends ConsumerWidget {
+  const _SkillsTile({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final snapshot = ref.watch(photographerSkillsSnapshotProvider(uid)).value;
+    return ListTile(
+      key: const Key('profile-skills'),
+      leading: const Icon(Icons.auto_awesome_outlined),
+      title: Text(l.settingsSkills),
+      subtitle: snapshot == null
+          ? Text(l.settingsSkillsBody)
+          : Padding(
+              padding: const EdgeInsets.only(top: AppSpace.s1),
+              child: CompletenessMeter(percent: snapshot.server.completeness),
+            ),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () async {
+        await context.push('/profile/skills');
+        if (context.mounted) {
+          ref.invalidate(photographerSkillsSnapshotProvider(uid));
+        }
+      },
     );
   }
 }
