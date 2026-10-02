@@ -10,3 +10,6 @@ Task 1: complete (policy, errors, types, shared fixtures, 103 tests pass, typech
 
 Task 2: dispatched
 Task 2: complete (booking state machine, decideTransition, roleOf, 121 tests pass, typecheck and lint clean)
+
+Task 3: dispatched
+Task 3: complete (escrow and ledger maths, payments, refunds, ledger entries, invariants 11 & 12, 130 tests pass, typecheck and lint clean)
