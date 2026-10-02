@@ -1564,4 +1564,113 @@ class AppLocalizationsVi extends AppLocalizations {
   String profileResponseHours(int hours) {
     return '~$hours giờ';
   }
+
+  @override
+  String get profileTabPortfolio => 'Portfolio';
+
+  @override
+  String get profileTabServices => 'Gói';
+
+  @override
+  String get profileTabCalendar => 'Lịch';
+
+  @override
+  String get profileTabReviews => 'Đánh giá';
+
+  @override
+  String get profileBook => 'Đặt lịch';
+
+  @override
+  String profileBookFrom(String price) {
+    return 'Đặt lịch · từ $price';
+  }
+
+  @override
+  String get profileNoServices => 'Nhiếp ảnh gia chưa đăng gói';
+
+  @override
+  String get profileFollow => 'Theo dõi';
+
+  @override
+  String get profileFollowing => 'Đang theo dõi';
+
+  @override
+  String profileStatReviews(int count) {
+    return '$count đánh giá';
+  }
+
+  @override
+  String get profileStatNoReviews => 'đánh giá';
+
+  @override
+  String get profileStatShoots => 'buổi chụp';
+
+  @override
+  String get profileStatResponse => 'phản hồi';
+
+  @override
+  String get profileStatYears => 'kinh nghiệm';
+
+  @override
+  String profileYearsValue(int years) {
+    return '$years năm';
+  }
+
+  @override
+  String profileEquipment(String list) {
+    return 'Thiết bị: $list';
+  }
+
+  @override
+  String get profileNoPortfolio => 'Chưa có ảnh nào';
+
+  @override
+  String get profileMorePhotos => 'Xem thêm ảnh';
+
+  @override
+  String get profileSimilar => 'Thợ ảnh tương tự';
+
+  @override
+  String get profilePhoto => 'Ảnh portfolio';
+
+  @override
+  String get profileEvidenceBadge => 'Ảnh minh chứng kỹ năng';
+
+  @override
+  String get profileNoReviewsTitle => 'Chưa có đánh giá';
+
+  @override
+  String get profileNoReviewsBody =>
+      'Đánh giá hiện ở đây sau những buổi chụp đầu tiên.';
+
+  @override
+  String get profileNotFound => 'Không tìm thấy hồ sơ.';
+
+  @override
+  String get profileNotReadyTitle => 'Hồ sơ này chưa sẵn sàng';
+
+  @override
+  String get profileNotReadyBody =>
+      'Nhiếp ảnh gia đang hoàn thiện hồ sơ. Quay lại sau nhé.';
+
+  @override
+  String get profileLoadError => 'Không tải được hồ sơ.';
+
+  @override
+  String get profileEdit => 'Chỉnh sửa hồ sơ';
+
+  @override
+  String get profileEditIntro => 'Giới thiệu';
+
+  @override
+  String get profileEditPackages => 'Gói dịch vụ';
+
+  @override
+  String get profileEditSkills => 'Kỹ năng';
+
+  @override
+  String get profileEditPhoto => 'Ảnh đại diện và tên';
+
+  @override
+  String get profileEditContact => 'Khu vực và liên hệ';
 }

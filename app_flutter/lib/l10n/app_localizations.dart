@@ -2805,6 +2805,204 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'~{hours} giờ'**
   String profileResponseHours(int hours);
+
+  /// No description provided for @profileTabPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Portfolio'**
+  String get profileTabPortfolio;
+
+  /// No description provided for @profileTabServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói'**
+  String get profileTabServices;
+
+  /// No description provided for @profileTabCalendar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch'**
+  String get profileTabCalendar;
+
+  /// No description provided for @profileTabReviews.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get profileTabReviews;
+
+  /// No description provided for @profileBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get profileBook;
+
+  /// No description provided for @profileBookFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch · từ {price}'**
+  String profileBookFrom(String price);
+
+  /// No description provided for @profileNoServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia chưa đăng gói'**
+  String get profileNoServices;
+
+  /// No description provided for @profileFollow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi'**
+  String get profileFollow;
+
+  /// No description provided for @profileFollowing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get profileFollowing;
+
+  /// No description provided for @profileStatReviews.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} đánh giá'**
+  String profileStatReviews(int count);
+
+  /// No description provided for @profileStatNoReviews.
+  ///
+  /// In vi, this message translates to:
+  /// **'đánh giá'**
+  String get profileStatNoReviews;
+
+  /// No description provided for @profileStatShoots.
+  ///
+  /// In vi, this message translates to:
+  /// **'buổi chụp'**
+  String get profileStatShoots;
+
+  /// No description provided for @profileStatResponse.
+  ///
+  /// In vi, this message translates to:
+  /// **'phản hồi'**
+  String get profileStatResponse;
+
+  /// No description provided for @profileStatYears.
+  ///
+  /// In vi, this message translates to:
+  /// **'kinh nghiệm'**
+  String get profileStatYears;
+
+  /// No description provided for @profileYearsValue.
+  ///
+  /// In vi, this message translates to:
+  /// **'{years} năm'**
+  String profileYearsValue(int years);
+
+  /// No description provided for @profileEquipment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị: {list}'**
+  String profileEquipment(String list);
+
+  /// No description provided for @profileNoPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ảnh nào'**
+  String get profileNoPortfolio;
+
+  /// No description provided for @profileMorePhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm ảnh'**
+  String get profileMorePhotos;
+
+  /// No description provided for @profileSimilar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh tương tự'**
+  String get profileSimilar;
+
+  /// No description provided for @profilePhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh portfolio'**
+  String get profilePhoto;
+
+  /// No description provided for @profileEvidenceBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh minh chứng kỹ năng'**
+  String get profileEvidenceBadge;
+
+  /// No description provided for @profileNoReviewsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có đánh giá'**
+  String get profileNoReviewsTitle;
+
+  /// No description provided for @profileNoReviewsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá hiện ở đây sau những buổi chụp đầu tiên.'**
+  String get profileNoReviewsBody;
+
+  /// No description provided for @profileNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy hồ sơ.'**
+  String get profileNotFound;
+
+  /// No description provided for @profileNotReadyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ này chưa sẵn sàng'**
+  String get profileNotReadyTitle;
+
+  /// No description provided for @profileNotReadyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đang hoàn thiện hồ sơ. Quay lại sau nhé.'**
+  String get profileNotReadyBody;
+
+  /// No description provided for @profileLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được hồ sơ.'**
+  String get profileLoadError;
+
+  /// No description provided for @profileEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh sửa hồ sơ'**
+  String get profileEdit;
+
+  /// No description provided for @profileEditIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu'**
+  String get profileEditIntro;
+
+  /// No description provided for @profileEditPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói dịch vụ'**
+  String get profileEditPackages;
+
+  /// No description provided for @profileEditSkills.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỹ năng'**
+  String get profileEditSkills;
+
+  /// No description provided for @profileEditPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh đại diện và tên'**
+  String get profileEditPhoto;
+
+  /// No description provided for @profileEditContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực và liên hệ'**
+  String get profileEditContact;
 }
 
 class _AppLocalizationsDelegate
