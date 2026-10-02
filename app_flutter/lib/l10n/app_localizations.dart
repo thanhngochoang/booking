@@ -1407,6 +1407,66 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ảnh {index}'**
   String skillEvidencePhoto(int index);
+
+  /// No description provided for @skillsCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / {max}'**
+  String skillsCount(int n, int max);
+
+  /// No description provided for @skillEvidenceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng · {name}'**
+  String skillEvidenceTitle(String name);
+
+  /// No description provided for @skillEvidenceBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.'**
+  String get skillEvidenceBody;
+
+  /// No description provided for @skillEvidenceDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get skillEvidenceDone;
+
+  /// No description provided for @skillEvidenceEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài trước'**
+  String get skillEvidenceEmpty;
+
+  /// No description provided for @skillEvidenceEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa có bài đăng nào. Đăng ảnh vào portfolio rồi quay lại chọn ảnh minh chứng.'**
+  String get skillEvidenceEmptyBody;
+
+  /// No description provided for @skillEvidenceEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài'**
+  String get skillEvidenceEmptyAction;
+
+  /// No description provided for @skillEvidenceMax.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 3 ảnh. Bỏ chọn một ảnh để chọn ảnh khác.'**
+  String get skillEvidenceMax;
+
+  /// No description provided for @skillEvidenceNeedOne.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mức Chuyên sâu cần ít nhất 1 ảnh'**
+  String get skillEvidenceNeedOne;
+
+  /// No description provided for @skillEvidenceLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài đăng của bạn.'**
+  String get skillEvidenceLoadError;
 }
 
 class _AppLocalizationsDelegate

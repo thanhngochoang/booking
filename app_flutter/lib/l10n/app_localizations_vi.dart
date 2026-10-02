@@ -735,4 +735,41 @@ class AppLocalizationsVi extends AppLocalizations {
   String skillEvidencePhoto(int index) {
     return 'Ảnh $index';
   }
+
+  @override
+  String skillsCount(int n, int max) {
+    return '$n / $max';
+  }
+
+  @override
+  String skillEvidenceTitle(String name) {
+    return 'Minh chứng · $name';
+  }
+
+  @override
+  String get skillEvidenceBody =>
+      'Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.';
+
+  @override
+  String get skillEvidenceDone => 'Xong';
+
+  @override
+  String get skillEvidenceEmpty => 'Đăng bài trước';
+
+  @override
+  String get skillEvidenceEmptyBody =>
+      'Bạn chưa có bài đăng nào. Đăng ảnh vào portfolio rồi quay lại chọn ảnh minh chứng.';
+
+  @override
+  String get skillEvidenceEmptyAction => 'Đăng bài';
+
+  @override
+  String get skillEvidenceMax =>
+      'Tối đa 3 ảnh. Bỏ chọn một ảnh để chọn ảnh khác.';
+
+  @override
+  String get skillEvidenceNeedOne => 'Mức Chuyên sâu cần ít nhất 1 ảnh';
+
+  @override
+  String get skillEvidenceLoadError => 'Không tải được bài đăng của bạn.';
 }
