@@ -24,6 +24,15 @@ abstract class UserRepository {
 
   /// Creates or updates users/{uid}.displayName; safe to race ensureProfile.
   Future<void> setDisplayName(String uid, String name);
+
+  /// Points users/{uid} at a newly uploaded avatar ([url] for display,
+  /// [storagePath] so it can be deleted later). Returns the previous
+  /// storage path, or null when the old photo was not uploaded by the app.
+  Future<String?> setAvatar(
+    String uid, {
+    required String url,
+    required String storagePath,
+  });
 }
 
 class FirestoreUserRepository implements UserRepository {
@@ -90,6 +99,21 @@ class FirestoreUserRepository implements UserRepository {
     'displayName': name,
     'updatedAt': FieldValue.serverTimestamp(),
   }, SetOptions(merge: true));
+
+  @override
+  Future<String?> setAvatar(
+    String uid, {
+    required String url,
+    required String storagePath,
+  }) async {
+    final old = (await _doc(uid).get()).data()?['avatarPath'];
+    await _doc(uid).set({
+      'avatarUrl': url,
+      'avatarPath': storagePath,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    return old is String ? old : null;
+  }
 }
 
 class FakeUserRepository implements UserRepository {
@@ -98,6 +122,8 @@ class FakeUserRepository implements UserRepository {
   final bool failSetRole;
   final _profiles = <String, UserProfile>{};
   final photographerDocs = <String>{};
+  final avatarPaths = <String, String>{};
+  bool failSetAvatar = false;
   final _controllers = <String, StreamController<UserProfile?>>{};
 
   StreamController<UserProfile?> _c(String uid) => _controllers.putIfAbsent(
@@ -142,6 +168,23 @@ class FakeUserRepository implements UserRepository {
         .copyWith(displayName: name);
     _profiles[uid] = p;
     _c(uid).add(p);
+  }
+
+  @override
+  Future<String?> setAvatar(
+    String uid, {
+    required String url,
+    required String storagePath,
+  }) async {
+    if (failSetAvatar) throw StateError('unavailable');
+    final old = avatarPaths[uid];
+    avatarPaths[uid] = storagePath;
+    final p =
+        (_profiles[uid] ?? UserProfile(uid: uid, displayName: 'Người dùng'))
+            .copyWith(avatarUrl: url);
+    _profiles[uid] = p;
+    _c(uid).add(p);
+    return old;
   }
 
   /// Simulates an admin deleting users/{uid} while the app is open.

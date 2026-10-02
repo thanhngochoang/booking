@@ -12,6 +12,15 @@ service cloud.firestore {
         : request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
     }
 
+    // users/{uid}.avatarPath: the storage key of the user's own uploaded
+    // avatar, so the previous file can be deleted (data-model §2.6).
+    function validAvatar(uid) {
+      let d = request.resource.data;
+      return !('avatarPath' in d)
+        || (d.avatarPath is string
+            && d.avatarPath.matches('^avatars/' + uid + '/[0-9A-HJKMNP-TV-Z]{26}[.]jpg$'));
+    }
+
     function validRole() {
       return !('role' in request.resource.data)
         || request.resource.data.role == null
@@ -35,7 +44,7 @@ service cloud.firestore {
     // Fields of users/{uid} a client may write. No email (any signed-in user can read
     // this doc) and no server counters (followerCount, followingCount, savedCount…).
     function userClientFields() {
-      return ['displayName', 'avatarUrl', 'role', 'createdAt', 'updatedAt'];
+      return ['displayName', 'avatarUrl', 'avatarPath', 'role', 'createdAt', 'updatedAt'];
     }
 
     // Fields of photographers/{uid} a client may write. stats.*, startingPrice and
@@ -306,7 +315,7 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, update: if isOwner(uid) && validRole() && onlyKeys(userClientFields());
+      allow create, update: if isOwner(uid) && validRole() && validAvatar(uid) && onlyKeys(userClientFields());
       allow delete: if false;
 
       match /private/{docId} {
