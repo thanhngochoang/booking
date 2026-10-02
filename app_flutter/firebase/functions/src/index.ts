@@ -4,7 +4,7 @@ import { handleGetContactLink } from './callables/get_contact_link.js';
 import { CALLABLE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
 import { liveContactDeps } from './infra/live.js';
 import { liveSkillsDeps } from './infra/live_skills.js';
-import { handlePhotographerWrite } from './triggers/photographer_write.js';
+import { handlePhotographerEvent } from './triggers/photographer_write.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -13,14 +13,14 @@ export const getContactLink = onCall(CALLABLE_OPTIONS, (request) => handleGetCon
 
 /**
  * Scores `photographers/{uid}.skills` ("Độ khớp hồ sơ") and removes evidence that is not the
- * photographer's own post (spec 2026-10-02-photographer-write-function-design.md).
+ * photographer's own post (spec 2026-10-02-photographer-write-function-design.md). Events older than
+ * 1 hour and permanent Firestore errors end without a retry (handlePhotographerEvent).
  */
 export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'photographers/{uid}' }, async (event) => {
   const uid = event.params.uid;
   const after = event.data?.after;
   const live = after?.exists === true ? after : undefined;
-  await handlePhotographerWrite(
-    { uid, before: event.data?.before.data(), after: live?.data() },
+  await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
     liveSkillsDeps(uid, live?.updateTime),
   );
 });
