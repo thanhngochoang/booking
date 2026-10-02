@@ -292,10 +292,12 @@ class _Content extends ConsumerWidget {
                     if (post.kind == PostKind.realShoot && author != null) ...[
                       const SizedBox(height: AppSpace.s2),
                       Text(
-                        l.photoRealShootBy(
-                          author.displayName,
-                          service?.name ?? '',
-                        ),
+                        service == null
+                            ? l.photoRealShootByName(author.displayName)
+                            : l.photoRealShootBy(
+                                author.displayName,
+                                service.name,
+                              ),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

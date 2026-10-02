@@ -24,6 +24,10 @@ const _loadMoreExtent = 600.0;
 const _freeCardWidth = 120.0;
 const _freeCardAspect = 3 / 4;
 
+/// "Buổi chụp thật" is a two-column grid at every width.
+const _realShootColumns = 2;
+const _realShootAspect = 0.8;
+
 /// The hero card never grows past this on wide screens.
 const _heroMaxWidth = 560.0;
 
@@ -492,11 +496,11 @@ class _RealShootsSection extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
                   sliver: SliverGrid.builder(
                     gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 220,
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _realShootColumns,
                           mainAxisSpacing: AppSpace.s2,
                           crossAxisSpacing: AppSpace.s2,
-                          childAspectRatio: 0.8,
+                          childAspectRatio: _realShootAspect,
                         ),
                     itemCount: list.length,
                     itemBuilder: (context, i) {

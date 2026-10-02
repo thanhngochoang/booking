@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/photo/photo_detail_screen.dart';
 
+import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
 import '../../support/content_fixtures.dart';
@@ -246,6 +247,29 @@ void main() {
       );
     },
   );
+
+  testWidgets('a real-shoot photo whose package is gone shows no package', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      DiscoveryWorld(
+        posts: [
+          ...discoveryPosts(),
+          fixturePost(
+            'r3',
+            kind: PostKind.realShoot,
+            authorId: 'cu1',
+            photographerId: 'p1',
+            serviceId: 'gone',
+          ),
+        ],
+      ),
+      start: '/p/r3',
+    );
+    expect(find.text('Chụp bởi Minh Trí'), findsOneWidget);
+    expect(find.textContaining('· gói'), findsNothing);
+  });
 
   testWidgets('a removed post says so and leads home', (tester) async {
     await _open(tester, DiscoveryWorld(), start: '/p/ghost');

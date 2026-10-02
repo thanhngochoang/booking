@@ -23,6 +23,18 @@ class _Spy extends DelegatingRecommender {
   }
 }
 
+/// Answers every photographer page after a delay, like a real network.
+class _Slow extends DelegatingRecommender {
+  _Slow(super.inner);
+  @override
+  Future<RecommendationPage> recommendPhotographers(
+    RecommendationQuery q,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return super.recommendPhotographers(q);
+  }
+}
+
 GoRouter _router({String start = '/action'}) => GoRouter(
   initialLocation: start,
   routes: [
@@ -461,6 +473,49 @@ void main() {
       expect(find.text('21 nhiếp ảnh gia'), findsOneWidget);
     },
   );
+
+  testWidgets('a filter chosen after the first page never shows stale cards', (
+    tester,
+  ) async {
+    // Every page takes 200 ms: the viewport fill must not page from the old
+    // list while the filter reload is still running.
+    final w = DiscoveryWorld(
+      photographers: [
+        for (var i = 0; i < 15; i++)
+          fixturePhotographer(
+            'h${i.toString().padLeft(2, '0')}',
+            rating: 4.9,
+            reviews: 1000 - i,
+            completed: 500,
+          ),
+        for (var i = 0; i < 15; i++)
+          fixturePhotographer(
+            'l${i.toString().padLeft(2, '0')}',
+            rating: 4.5,
+            reviews: 500 - i,
+            completed: 250,
+          ),
+      ],
+      recommenderFactory: (x) => _Slow(x.localRecommender()),
+    );
+    await _open(tester, w);
+    await _choose(tester, 'find-rating', '★ 4,8+');
+    // Timers do not schedule frames: pump through the 200 ms pages by hand.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(
+      find.textContaining(RegExp(r'^15\+? nhiếp ảnh gia$')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('find-card-h00')), findsOneWidget);
+    for (var i = 0; i < 15; i++) {
+      expect(
+        find.byKey(Key('find-card-l${i.toString().padLeft(2, '0')}')),
+        findsNothing,
+      );
+    }
+  });
 
   testWidgets('a failing load shows the retry', (tester) async {
     final w = DiscoveryWorld();

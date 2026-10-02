@@ -110,7 +110,11 @@ class _FindPhotographerScreenState
     if (!mounted || !_scroll.hasClients) {
       return;
     }
-    final data = ref.read(findResultsProvider).value;
+    final results = ref.read(findResultsProvider);
+    if (results.isLoading) {
+      return;
+    }
+    final data = results.value;
     final cursor = data?.cursor;
     if (data == null ||
         cursor == null ||

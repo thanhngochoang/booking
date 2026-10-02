@@ -59,12 +59,8 @@
   "rolePhotographerTitle": "Nhận chụp",
   "rolePhotographerBody": "Đăng ảnh, nhận yêu cầu, quản lý lịch và doanh thu.",
   "roleContinue": "Tiếp tục",
-  "emptyHomeTitle": "Ảnh đẹp sẽ xuất hiện ở đây",
-  "emptyHomeBody": "Theo dõi nhiếp ảnh gia bạn thích để bắt đầu.",
   "emptyExploreTitle": "Khám phá theo dịch vụ và địa điểm",
   "emptyExploreBody": "Chân dung, cưới, gia đình, kỷ yếu và hơn thế.",
-  "emptyFindTitle": "Tìm nhiếp ảnh gia rảnh đúng ngày bạn cần",
-  "emptyFindBody": "Chọn địa điểm, ngày và dịch vụ để so sánh.",
   "emptyCreateTitle": "Cho mọi người thấy bạn chụp gì",
   "emptyCreateBody": "Mỗi bài đăng gắn một gói dịch vụ để khách đặt ngay.",
   "emptyBookingsTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
@@ -546,6 +542,12 @@
     "placeholders": {
       "name": {"type": "String"},
       "service": {"type": "String"}
+    }
+  },
+  "photoRealShootByName": "Chụp bởi {name}",
+  "@photoRealShootByName": {
+    "placeholders": {
+      "name": {"type": "String"}
     }
   },
   "photoRemovedTitle": "Bài đăng không còn",

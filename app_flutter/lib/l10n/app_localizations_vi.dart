@@ -176,23 +176,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get roleContinue => 'Tiếp tục';
 
   @override
-  String get emptyHomeTitle => 'Ảnh đẹp sẽ xuất hiện ở đây';
-
-  @override
-  String get emptyHomeBody => 'Theo dõi nhiếp ảnh gia bạn thích để bắt đầu.';
-
-  @override
   String get emptyExploreTitle => 'Khám phá theo dịch vụ và địa điểm';
 
   @override
   String get emptyExploreBody =>
       'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.';
-
-  @override
-  String get emptyFindTitle => 'Tìm nhiếp ảnh gia rảnh đúng ngày bạn cần';
-
-  @override
-  String get emptyFindBody => 'Chọn địa điểm, ngày và dịch vụ để so sánh.';
 
   @override
   String get emptyCreateTitle => 'Cho mọi người thấy bạn chụp gì';
@@ -1320,6 +1308,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String photoRealShootBy(String name, String service) {
     return 'Chụp bởi $name · gói $service';
+  }
+
+  @override
+  String photoRealShootByName(String name) {
+    return 'Chụp bởi $name';
   }
 
   @override

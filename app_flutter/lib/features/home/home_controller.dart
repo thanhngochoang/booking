@@ -57,6 +57,7 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
   @override
   Future<HomeFeedState> build() {
     resetOnUserChange(ref, ref.invalidateSelf);
+    _generation++;
     return _loadFirst(null);
   }
 
@@ -100,7 +101,10 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
 
   Future<void> loadMore() async {
     final current = state.value;
-    if (current == null || current.cursor == null || current.loadingMore) {
+    if (state.isLoading ||
+        current == null ||
+        current.cursor == null ||
+        current.loadingMore) {
       return;
     }
     state = AsyncData(current.copyWith(loadingMore: true));

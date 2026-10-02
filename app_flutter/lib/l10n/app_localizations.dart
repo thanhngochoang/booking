@@ -418,18 +418,6 @@ abstract class AppLocalizations {
   /// **'Tiếp tục'**
   String get roleContinue;
 
-  /// No description provided for @emptyHomeTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Ảnh đẹp sẽ xuất hiện ở đây'**
-  String get emptyHomeTitle;
-
-  /// No description provided for @emptyHomeBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Theo dõi nhiếp ảnh gia bạn thích để bắt đầu.'**
-  String get emptyHomeBody;
-
   /// No description provided for @emptyExploreTitle.
   ///
   /// In vi, this message translates to:
@@ -441,18 +429,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.'**
   String get emptyExploreBody;
-
-  /// No description provided for @emptyFindTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tìm nhiếp ảnh gia rảnh đúng ngày bạn cần'**
-  String get emptyFindTitle;
-
-  /// No description provided for @emptyFindBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Chọn địa điểm, ngày và dịch vụ để so sánh.'**
-  String get emptyFindBody;
 
   /// No description provided for @emptyCreateTitle.
   ///
@@ -2397,6 +2373,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chụp bởi {name} · gói {service}'**
   String photoRealShootBy(String name, String service);
+
+  /// No description provided for @photoRealShootByName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name}'**
+  String photoRealShootByName(String name);
 
   /// No description provided for @photoRemovedTitle.
   ///

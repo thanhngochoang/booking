@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
+import 'package:photobooking/features/discovery/auth_reset.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
 @immutable
@@ -55,7 +56,10 @@ class FindFiltersController extends Notifier<FindFilters> {
   static const _keep = Object();
 
   @override
-  FindFilters build() => const FindFilters();
+  FindFilters build() {
+    resetOnUserChange(ref, ref.invalidateSelf);
+    return const FindFilters();
+  }
 
   FindFilters _with({
     Object? specialtyId = _keep,
@@ -208,7 +212,12 @@ class FindResultsController extends AsyncNotifier<FindResults> {
 
   Future<void> loadMore() async {
     final current = state.value;
-    if (current == null || current.cursor == null || current.loadingMore) {
+    // A reload keeps the previous value while it runs; paging from it would
+    // write the old list over the fresh results.
+    if (state.isLoading ||
+        current == null ||
+        current.cursor == null ||
+        current.loadingMore) {
       return;
     }
     final mine = _generation;

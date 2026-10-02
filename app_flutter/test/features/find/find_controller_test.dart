@@ -48,6 +48,18 @@ List<String> _ids(FindResults r) =>
     r.items.map((e) => e.photographer.id).toList();
 
 void main() {
+  test('filters are reset when another user signs in', () async {
+    final (c, w, _) = await _make();
+    c.listen(findFiltersProvider, (_, _) {});
+    c.read(findFiltersProvider.notifier).setMinRating(4.5);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(findFiltersProvider).minRating, 4.5, reason: 'same user');
+    await w.auth.signOut();
+    await Future<void>.delayed(Duration.zero);
+    await c.pump();
+    expect(c.read(findFiltersProvider).minRating, isNull);
+  });
+
   group('FindFilters', () {
     test('setters change one thing, clear keeps the sort', () async {
       final (c, _, _) = await _make();
