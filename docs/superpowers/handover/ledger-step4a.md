@@ -34,3 +34,5 @@ Task 9: complete (seed fixtures across requested/accepted/upcoming/completed sta
 
 Task 10: dispatched
 Task 10: complete (Flutter booking domain models, mirror rules, repository port, firestore adapter, providers, fake repository, fixtures, 1405 tests pass, analyze clean)
+
+Plan 4a complete. All 10 tasks passed. Merging to flutter-rewrite.

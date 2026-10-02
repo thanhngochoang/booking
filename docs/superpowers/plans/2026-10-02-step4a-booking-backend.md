@@ -144,11 +144,11 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Math & policy functions: `computeDeposit(price: number): { deposit: number; remaining: number }`, `refundPercent(hoursBeforeStart: number): number`, `computeRefund(deposit: number, percent: number): number`, `computeAcceptDeadline(paidAt: Date, startsAt: Date): Date`, `computeDaySlots(durationMinutes: number): string[]`, `isDateString(v: unknown): boolean`, `isTimeString(v: unknown): boolean`, `parseVnDateTime(date: string, time: string): Date`.
   - Types: `BookingStatus`, `EscrowStatus`, `PaymentProvider`, `Booking`, `BookingContactSnapshot`, `BookingEventRecord`.
 
-- [ ] **Step 1: Write failing tests in `packages/domain/test/booking_policy.test.ts`**
-- [ ] **Step 2: Add new error codes to `packages/domain/src/errors.ts`**
-- [ ] **Step 3: Implement policy & math in `packages/domain/src/booking_policy.ts` and types in `packages/domain/src/booking.ts`**
-- [ ] **Step 4: Create shared fixture `packages/domain/test/fixtures/booking_policy.json`**
-- [ ] **Step 5: Export from `packages/domain/src/index.ts` and verify with `npm test`**
+- [x] **Step 1: Write failing tests in `packages/domain/test/booking_policy.test.ts`**
+- [x] **Step 2: Add new error codes to `packages/domain/src/errors.ts`**
+- [x] **Step 3: Implement policy & math in `packages/domain/src/booking_policy.ts` and types in `packages/domain/src/booking.ts`**
+- [x] **Step 4: Create shared fixture `packages/domain/test/fixtures/booking_policy.json`**
+- [x] **Step 5: Export from `packages/domain/src/index.ts` and verify with `npm test`**
 
 ---
 
@@ -166,9 +166,9 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - `decideTransition(booking: Booking, action: TransitionAction, actor: { id?: string; role: 'customer' | 'photographer' | 'system' }, now: Date, reason?: string): { nextStatus: BookingStatus; refundPercent: number; cancelRecord?: Booking['cancel'] }`
   - Transition matrix validation following domain-model §5.
 
-- [ ] **Step 1: Write failing state machine tests in `booking_machine.test.ts`**
-- [ ] **Step 2: Implement `roleOf` and `decideTransition` in `booking_machine.ts`**
-- [ ] **Step 3: Export from `index.ts` and verify `npm test`**
+- [x] **Step 1: Write failing state machine tests in `booking_machine.test.ts`**
+- [x] **Step 2: Implement `roleOf` and `decideTransition` in `booking_machine.ts`**
+- [x] **Step 3: Export from `index.ts` and verify `npm test`**
 
 ---
 
@@ -185,9 +185,9 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Invariants: Invariant 11 (`Payment.amount = sum(received) - refund_issued`), Invariant 12 (refunds only from `held`).
   - Maths: `createDepositPayment(...)`, `applyRefundToPayment(...)`, `releaseEscrow(...)`, `disputeEscrow(...)`.
 
-- [ ] **Step 1: Write failing escrow tests in `escrow.test.ts`**
-- [ ] **Step 2: Implement escrow entities and ledger calculations in `escrow.ts`**
-- [ ] **Step 3: Export from `index.ts` and verify `npm test`**
+- [x] **Step 1: Write failing escrow tests in `escrow.test.ts`**
+- [x] **Step 2: Implement escrow entities and ledger calculations in `escrow.ts`**
+- [x] **Step 3: Export from `index.ts` and verify `npm test`**
 
 ---
 
@@ -205,10 +205,10 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Use cases: `createBookingDraft`, `createDeposit`, `confirmFakePayment`, `handlePaymentNotification`, `checkDeposit`.
   - In-memory reference adapters: `MemoryBookingStore`, `FakePaymentGateway`.
 
-- [ ] **Step 1: Write failing tests in `create_booking.test.ts` and `deposit.test.ts`**
-- [ ] **Step 2: Implement ports, requests, and reference adapters**
-- [ ] **Step 3: Implement use cases `createBookingDraft`, `createDeposit`, `confirmFakePayment`, `handlePaymentNotification`**
-- [ ] **Step 4: Export from `index.ts` and verify `npm test`**
+- [x] **Step 1: Write failing tests in `create_booking.test.ts` and `deposit.test.ts`**
+- [x] **Step 2: Implement ports, requests, and reference adapters**
+- [x] **Step 3: Implement use cases `createBookingDraft`, `createDeposit`, `confirmFakePayment`, `handlePaymentNotification`**
+- [x] **Step 4: Export from `index.ts` and verify `npm test`**
 
 ---
 
@@ -231,9 +231,9 @@ Where the specs are silent or an open question blocks a value, this plan takes t
     - Sweep 4: Auto-complete `upcoming` at `endsAt + 24h`.
     - Sweep 5: Release held escrow at `completedAt + 24h` (or start + 24h for late cancel retained portion).
 
-- [ ] **Step 1: Write failing tests in `transition_booking.test.ts` and `booking_sweeps.test.ts`**
-- [ ] **Step 2: Implement `transitionBooking`, `openDispute`, and `runBookingSweeps`**
-- [ ] **Step 3: Verify with `npm test` and check purity with `purity.test.ts`**
+- [x] **Step 1: Write failing tests in `transition_booking.test.ts` and `booking_sweeps.test.ts`**
+- [x] **Step 2: Implement `transitionBooking`, `openDispute`, and `runBookingSweeps`**
+- [x] **Step 3: Verify with `npm test` and check purity with `purity.test.ts`**
 
 ---
 
@@ -250,9 +250,9 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Transactional `BookingStore` implementation over Firestore `runTransaction`.
   - Live adapters: `FirestoreServiceCatalog`, `FirestoreCustomerContactReader`, `liveBookingDeps`.
 
-- [ ] **Step 1: Write failing unit tests in `booking_firestore.test.ts`**
-- [ ] **Step 2: Implement Firestore store, mappers, and readers**
-- [ ] **Step 3: Verify unit tests pass: `cd app_flutter/firebase/functions && npm test`**
+- [x] **Step 1: Write failing unit tests in `booking_firestore.test.ts`**
+- [x] **Step 2: Implement Firestore store, mappers, and readers**
+- [x] **Step 3: Verify unit tests pass: `cd app_flutter/firebase/functions && npm test`**
 
 ---
 
@@ -269,9 +269,9 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Exported scheduled function: `bookingClock` (every 15 minutes, Asia/Ho_Chi_Minh).
   - Dev configuration `.env.booking-c1922` with `PAYMENTS_MODE=fake`.
 
-- [ ] **Step 1: Write failing unit tests for callables in `booking_callables.test.ts`**
-- [ ] **Step 2: Implement callables and `bookingClock`**
-- [ ] **Step 3: Verify `npm test`, `npm run typecheck`, `npm run lint` in `app_flutter/firebase/functions`**
+- [x] **Step 1: Write failing unit tests for callables in `booking_callables.test.ts`**
+- [x] **Step 2: Implement callables and `bookingClock`**
+- [x] **Step 3: Verify `npm test`, `npm run typecheck`, `npm run lint` in `app_flutter/firebase/functions`**
 
 ---
 
@@ -289,9 +289,9 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Composite indexes for sweep queries.
   - Spec documentation updated.
 
-- [ ] **Step 1: Add rules and rule tests (without running them locally per standing rules)**
-- [ ] **Step 2: Add composite indexes for booking queries**
-- [ ] **Step 3: Update spec files with contact copy location and fields**
+- [x] **Step 1: Add rules and rule tests (without running them locally per standing rules)**
+- [x] **Step 2: Add composite indexes for booking queries**
+- [x] **Step 3: Update spec files with contact copy location and fields**
 
 ---
 
@@ -304,8 +304,8 @@ Where the specs are silent or an open question blocks a value, this plan takes t
 - Produces:
   - Seed bookings across `requested`, `accepted`, `upcoming`, and `completed` states with payments, ledger entries, contact copy, and availability days.
 
-- [ ] **Step 1: Update `fixtures.ts` and `fixtures.test.ts`**
-- [ ] **Step 2: Verify `npm test` in `app_flutter/firebase/functions`**
+- [x] **Step 1: Update `fixtures.ts` and `fixtures.test.ts`**
+- [x] **Step 2: Verify `npm test` in `app_flutter/firebase/functions`**
 
 ---
 
@@ -323,8 +323,8 @@ Where the specs are silent or an open question blocks a value, this plan takes t
   - Port `BookingRepository` and implementations `FirestoreBookingRepository` + `FakeBookingRepository`.
   - Riverpod providers (`bookingProvider`, `myBookingsProvider`, etc.).
 
-- [ ] **Step 1: Create domain models, run `dart run build_runner build`**
-- [ ] **Step 2: Implement client mirror rules and write `booking_rules_test.dart`**
-- [ ] **Step 3: Implement repository port and test fake, write `booking_repository_test.dart`**
-- [ ] **Step 4: Implement Firestore adapter and providers**
-- [ ] **Step 5: Format and verify: `dart format lib test` and `flutter test`**
+- [x] **Step 1: Create domain models, run `dart run build_runner build`**
+- [x] **Step 2: Implement client mirror rules and write `booking_rules_test.dart`**
+- [x] **Step 3: Implement repository port and test fake, write `booking_repository_test.dart`**
+- [x] **Step 4: Implement Firestore adapter and providers**
+- [x] **Step 5: Format and verify: `dart format lib test` and `flutter test`**

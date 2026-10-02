@@ -12,7 +12,7 @@ Standing rules (user, 2026-10-02):
 
 ## Done
 
-screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3b2 · backend-phase1 · 2d1 · 3b3 · 3b4 · 3c · 2d2
+screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3b2 · backend-phase1 · 2d1 · 3b3 · 3b4 · 3c · 2d2 · 4a
 
 ## To run
 
@@ -26,6 +26,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 6 | `2026-10-01-step3b4-home-detail-find.md` (S01, S02, S04) | done 2026-10-02; /u/:id and /u/:id/book routes come with 2d2 and step 4 (taps there hit the router error page until then) |
 | 7 | `2026-10-01-step3c-create-post.md` (S21) | done 2026-10-02 |
 | 8 | `2026-10-01-step2d2-photographer-profile.md` (S03) | done 2026-10-02; S30 rows (phone, skills, public profile) went to S31 per the new mock; /u/:uid/book and /ask come with step 4 |
+| 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
 | 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | not started |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | not started |
 | 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
@@ -37,4 +38,4 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 
 ## Not planned yet
 
-Booking flow and work (S05–S12, S14, S19, S23, S43, S44), events (S15–S18, S25–S27, S45, S46), badges (S37), notifications (S63–S65), job posts "Đăng việc" (S56–S62, still in design).
+Booking flow and work UI (S05–S12, S14, S19, S23, S43, S44; backend and repository done in 4a), events (S15–S18, S25–S27, S45, S46), badges (S37), notifications (S63–S65), job posts "Đăng việc" (S56–S62, still in design).
