@@ -478,5 +478,32 @@
   "calendarOpenEvent": "Quản lý sự kiện",
   "calendarSaveError": "Không lưu được lịch. Thử lại nhé.",
   "calendarLoadError": "Không tải được lịch.",
-  "calendarPickDay": "Chọn một ngày để xem chi tiết."
+  "calendarPickDay": "Chọn một ngày để xem chi tiết.",
+  "reasonFreeOnDate": "Rảnh {day}",
+  "@reasonFreeOnDate": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "reasonSkillMatch": "Chuyên {specialty}",
+  "@reasonSkillMatch": {
+    "placeholders": {
+      "specialty": {"type": "String"}
+    }
+  },
+  "reasonNear": "Cách {distance}",
+  "@reasonNear": {
+    "placeholders": {
+      "distance": {"type": "String"}
+    }
+  },
+  "reasonTopRated": "★ {rating} · {count} đánh giá",
+  "@reasonTopRated": {
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "reasonFastReply": "Phản hồi nhanh",
+  "reasonNewTalent": "Mới tham gia"
 }

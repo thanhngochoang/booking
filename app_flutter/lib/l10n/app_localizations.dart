@@ -2235,6 +2235,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn một ngày để xem chi tiết.'**
   String get calendarPickDay;
+
+  /// No description provided for @reasonFreeOnDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh {day}'**
+  String reasonFreeOnDate(String day);
+
+  /// No description provided for @reasonSkillMatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyên {specialty}'**
+  String reasonSkillMatch(String specialty);
+
+  /// No description provided for @reasonNear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cách {distance}'**
+  String reasonNear(String distance);
+
+  /// No description provided for @reasonTopRated.
+  ///
+  /// In vi, this message translates to:
+  /// **'★ {rating} · {count} đánh giá'**
+  String reasonTopRated(String rating, int count);
+
+  /// No description provided for @reasonFastReply.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phản hồi nhanh'**
+  String get reasonFastReply;
+
+  /// No description provided for @reasonNewTalent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới tham gia'**
+  String get reasonNewTalent;
 }
 
 class _AppLocalizationsDelegate

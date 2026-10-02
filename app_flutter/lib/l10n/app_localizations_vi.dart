@@ -1224,4 +1224,30 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarPickDay => 'Chọn một ngày để xem chi tiết.';
+
+  @override
+  String reasonFreeOnDate(String day) {
+    return 'Rảnh $day';
+  }
+
+  @override
+  String reasonSkillMatch(String specialty) {
+    return 'Chuyên $specialty';
+  }
+
+  @override
+  String reasonNear(String distance) {
+    return 'Cách $distance';
+  }
+
+  @override
+  String reasonTopRated(String rating, int count) {
+    return '★ $rating · $count đánh giá';
+  }
+
+  @override
+  String get reasonFastReply => 'Phản hồi nhanh';
+
+  @override
+  String get reasonNewTalent => 'Mới tham gia';
 }
