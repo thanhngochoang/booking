@@ -6,6 +6,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/features/settings/avatar_editor.dart';
 import 'package:photobooking/features/photographer_setup/intro_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_controller.dart';
@@ -229,6 +230,8 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                             color: muted,
                           ),
                         ),
+                        const SizedBox(height: AppSpace.s4),
+                        const AvatarEditor(),
                         const SizedBox(height: AppSpace.s4),
                         TextField(
                           key: const Key('setup-name'),

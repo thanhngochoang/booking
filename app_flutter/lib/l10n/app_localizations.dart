@@ -586,6 +586,24 @@ abstract class AppLocalizations {
   /// **'Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.'**
   String get editProfileError;
 
+  /// No description provided for @editProfileChangeAvatar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi ảnh đại diện'**
+  String get editProfileChangeAvatar;
+
+  /// No description provided for @editProfileAvatarSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đổi ảnh đại diện.'**
+  String get editProfileAvatarSaved;
+
+  /// No description provided for @editProfileAvatarError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đổi được ảnh. Thử lại nhé.'**
+  String get editProfileAvatarError;
+
   /// No description provided for @profileOfferPhotographerTitle.
   ///
   /// In vi, this message translates to:

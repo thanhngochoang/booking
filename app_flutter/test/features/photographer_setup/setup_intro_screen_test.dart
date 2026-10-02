@@ -56,6 +56,7 @@ void main() {
   testWidgets('saves name, intro and equipment, then opens step 2', (
     tester,
   ) async {
+    usePhone(tester, height: 1400); // the avatar row pushes the form down
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
     await tester.pumpAndSettle();
@@ -89,6 +90,7 @@ void main() {
   testWidgets('equipment typed but not added is saved with the rest', (
     tester,
   ) async {
+    usePhone(tester, height: 1400); // the avatar row pushes the form down
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
     await tester.pumpAndSettle();
@@ -122,6 +124,7 @@ void main() {
   testWidgets('equipment stops at eight and ignores duplicates', (
     tester,
   ) async {
+    usePhone(tester, height: 1400); // the avatar row pushes the form down
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
     await tester.pumpAndSettle();

@@ -264,6 +264,15 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.';
 
   @override
+  String get editProfileChangeAvatar => 'Đổi ảnh đại diện';
+
+  @override
+  String get editProfileAvatarSaved => 'Đã đổi ảnh đại diện.';
+
+  @override
+  String get editProfileAvatarError => 'Không đổi được ảnh. Thử lại nhé.';
+
+  @override
   String get profileOfferPhotographerTitle => 'Tôi là nhiếp ảnh gia';
 
   @override

@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
@@ -18,12 +21,15 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 import '../../support/idle.dart';
+import '../../support/photo_scope.dart';
 
 Future<Widget> _app({
   required FakeAuthRepository auth,
   required FakeUserRepository users,
   required SharedPreferences prefs,
   FakeUserContactRepository? contacts,
+  FakeImagePicker? picker,
+  FakeMediaUploader? uploader,
 }) async {
   final router = GoRouter(
     initialLocation: '/settings',
@@ -41,6 +47,7 @@ Future<Widget> _app({
     ],
   );
   return ProviderScope(
+    retry: (_, _) => null,
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
       userRepositoryProvider.overrideWithValue(users),
@@ -48,9 +55,12 @@ Future<Widget> _app({
         contacts ?? FakeUserContactRepository(),
       ),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      imagePickerProvider.overrideWithValue(picker ?? FakeImagePicker()),
+      mediaUploaderProvider.overrideWithValue(uploader ?? FakeMediaUploader()),
     ],
     child: MaterialApp.router(
       routerConfig: router,
+      builder: (context, child) => testPhotoScope(child: child!),
       locale: const Locale('vi'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -482,6 +492,7 @@ void main() {
     await openEdit(tester);
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('edit-name')));
     expect(find.byKey(const Key('edit-name')).hitTestable(), findsOneWidget);
   });
 
@@ -494,5 +505,33 @@ void main() {
     await openEdit(tester);
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('S42 changes the avatar and shows it', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final uploader = FakeMediaUploader();
+    await tester.pumpWidget(
+      await _app(
+        auth: auth,
+        users: users,
+        prefs: prefs,
+        picker: FakeImagePicker([
+          [const PickedImage(path: '/tmp/a.jpg', name: 'a.jpg')],
+        ]),
+        uploader: uploader,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('change-avatar')));
+    await tester.pumpAndSettle();
+    expect(find.text('Đã đổi ảnh đại diện.'), findsOneWidget);
+    expect(
+      tester.widget<AppAvatar>(find.byType(AppAvatar)).url,
+      'https://storage.test/${uploader.uploaded.single}',
+    );
   });
 }
