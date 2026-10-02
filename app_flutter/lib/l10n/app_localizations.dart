@@ -2367,6 +2367,138 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bỏ lưu'**
   String get photoUnsave;
+
+  /// No description provided for @photoBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt gói này'**
+  String get photoBook;
+
+  /// No description provided for @photoViewProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ'**
+  String get photoViewProfile;
+
+  /// No description provided for @photoFollow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi'**
+  String get photoFollow;
+
+  /// No description provided for @photoFollowing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get photoFollowing;
+
+  /// No description provided for @photoRealShootBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name} · gói {service}'**
+  String photoRealShootBy(String name, String service);
+
+  /// No description provided for @photoRemovedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài đăng không còn'**
+  String get photoRemovedTitle;
+
+  /// No description provided for @photoRemovedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài đăng này đã bị gỡ hoặc không tồn tại.'**
+  String get photoRemovedBody;
+
+  /// No description provided for @photoBackHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get photoBackHome;
+
+  /// No description provided for @photoMoreOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm của {name}'**
+  String photoMoreOf(String name);
+
+  /// No description provided for @photoMoreProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get photoMoreProfile;
+
+  /// No description provided for @photoItemLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {i}'**
+  String photoItemLabel(int i);
+
+  /// No description provided for @photoOtherPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem các gói khác'**
+  String get photoOtherPackages;
+
+  /// No description provided for @photoServiceInactive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói này đã ngừng'**
+  String get photoServiceInactive;
+
+  /// No description provided for @photoLike.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thích'**
+  String get photoLike;
+
+  /// No description provided for @photoUnlike.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thích'**
+  String get photoUnlike;
+
+  /// No description provided for @photoPageOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {n} trên {total}'**
+  String photoPageOf(int n, int total);
+
+  /// No description provided for @photoLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài đăng. Kiểm tra mạng rồi thử lại.'**
+  String get photoLoadError;
+
+  /// No description provided for @servicePhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh'**
+  String servicePhotos(int n);
+
+  /// No description provided for @serviceDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'giao sau {days} ngày'**
+  String serviceDelivery(int days);
+
+  /// No description provided for @serviceDurationMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{m} phút'**
+  String serviceDurationMinutes(int m);
+
+  /// No description provided for @serviceDurationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{h} giờ'**
+  String serviceDurationHours(int h);
+
+  /// No description provided for @serviceDurationHoursMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{h} giờ {m} phút'**
+  String serviceDurationHoursMinutes(int h, int m);
 }
 
 class _AppLocalizationsDelegate

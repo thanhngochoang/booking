@@ -1304,4 +1304,89 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get photoUnsave => 'Bỏ lưu';
+
+  @override
+  String get photoBook => 'Đặt gói này';
+
+  @override
+  String get photoViewProfile => 'Xem hồ sơ';
+
+  @override
+  String get photoFollow => 'Theo dõi';
+
+  @override
+  String get photoFollowing => 'Đang theo dõi';
+
+  @override
+  String photoRealShootBy(String name, String service) {
+    return 'Chụp bởi $name · gói $service';
+  }
+
+  @override
+  String get photoRemovedTitle => 'Bài đăng không còn';
+
+  @override
+  String get photoRemovedBody => 'Bài đăng này đã bị gỡ hoặc không tồn tại.';
+
+  @override
+  String get photoBackHome => 'Về trang chủ';
+
+  @override
+  String photoMoreOf(String name) {
+    return 'Thêm của $name';
+  }
+
+  @override
+  String get photoMoreProfile => 'Hồ sơ';
+
+  @override
+  String photoItemLabel(int i) {
+    return 'Ảnh $i';
+  }
+
+  @override
+  String get photoOtherPackages => 'Xem các gói khác';
+
+  @override
+  String get photoServiceInactive => 'Gói này đã ngừng';
+
+  @override
+  String get photoLike => 'Thích';
+
+  @override
+  String get photoUnlike => 'Bỏ thích';
+
+  @override
+  String photoPageOf(int n, int total) {
+    return 'Ảnh $n trên $total';
+  }
+
+  @override
+  String get photoLoadError =>
+      'Không tải được bài đăng. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String servicePhotos(int n) {
+    return '$n ảnh';
+  }
+
+  @override
+  String serviceDelivery(int days) {
+    return 'giao sau $days ngày';
+  }
+
+  @override
+  String serviceDurationMinutes(int m) {
+    return '$m phút';
+  }
+
+  @override
+  String serviceDurationHours(int h) {
+    return '$h giờ';
+  }
+
+  @override
+  String serviceDurationHoursMinutes(int h, int m) {
+    return '$h giờ $m phút';
+  }
 }

@@ -73,3 +73,15 @@ String formatRating(double rating) {
 String? priceFromLabel(int? vnd, AppLocalizations l) => vnd == null || vnd <= 0
     ? null
     : l.priceFromValue(formatMoney(vnd, short: true));
+
+/// `45 phút`, `2 giờ`, `1 giờ 30 phút`.
+String formatDuration(int minutes, AppLocalizations l) {
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) {
+    return l.serviceDurationMinutes(m);
+  }
+  return m == 0
+      ? l.serviceDurationHours(h)
+      : l.serviceDurationHoursMinutes(h, m);
+}

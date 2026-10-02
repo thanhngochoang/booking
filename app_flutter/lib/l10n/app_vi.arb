@@ -536,5 +536,75 @@
   "homeEmptyAction": "Khám phá nhiếp ảnh gia",
   "homeLoadError": "Không tải được ảnh. Kiểm tra mạng rồi thử lại.",
   "photoSave": "Lưu ảnh",
-  "photoUnsave": "Bỏ lưu"
+  "photoUnsave": "Bỏ lưu",
+  "photoBook": "Đặt gói này",
+  "photoViewProfile": "Xem hồ sơ",
+  "photoFollow": "Theo dõi",
+  "photoFollowing": "Đang theo dõi",
+  "photoRealShootBy": "Chụp bởi {name} · gói {service}",
+  "@photoRealShootBy": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "service": {"type": "String"}
+    }
+  },
+  "photoRemovedTitle": "Bài đăng không còn",
+  "photoRemovedBody": "Bài đăng này đã bị gỡ hoặc không tồn tại.",
+  "photoBackHome": "Về trang chủ",
+  "photoMoreOf": "Thêm của {name}",
+  "@photoMoreOf": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "photoMoreProfile": "Hồ sơ",
+  "photoItemLabel": "Ảnh {i}",
+  "@photoItemLabel": {
+    "placeholders": {
+      "i": {"type": "int"}
+    }
+  },
+  "photoOtherPackages": "Xem các gói khác",
+  "photoServiceInactive": "Gói này đã ngừng",
+  "photoLike": "Thích",
+  "photoUnlike": "Bỏ thích",
+  "photoPageOf": "Ảnh {n} trên {total}",
+  "@photoPageOf": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "photoLoadError": "Không tải được bài đăng. Kiểm tra mạng rồi thử lại.",
+  "servicePhotos": "{n} ảnh",
+  "@servicePhotos": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "serviceDelivery": "giao sau {days} ngày",
+  "@serviceDelivery": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "serviceDurationMinutes": "{m} phút",
+  "@serviceDurationMinutes": {
+    "placeholders": {
+      "m": {"type": "int"}
+    }
+  },
+  "serviceDurationHours": "{h} giờ",
+  "@serviceDurationHours": {
+    "placeholders": {
+      "h": {"type": "int"}
+    }
+  },
+  "serviceDurationHoursMinutes": "{h} giờ {m} phút",
+  "@serviceDurationHoursMinutes": {
+    "placeholders": {
+      "h": {"type": "int"},
+      "m": {"type": "int"}
+    }
+  }
 }
