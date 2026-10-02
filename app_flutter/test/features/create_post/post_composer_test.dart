@@ -1,4 +1,5 @@
 // test/features/create_post/post_composer_test.dart
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,29 @@ import '../../support/content_fixtures.dart';
 
 PickedImage img(int i) =>
     PickedImage(path: '/tmp/$i.jpg', name: '$i.jpg', sizeBytes: 1000);
+
+/// Uploads that stay in flight until [release] is called.
+class _GatedUploader extends FakeMediaUploader {
+  final Completer<void> gate = Completer<void>();
+  void release() => gate.complete();
+
+  @override
+  Stream<UploadEvent> upload(
+    PickedImage image, {
+    required String storagePath,
+  }) async* {
+    uploadCalls++;
+    yield const UploadEvent.progress(0.3);
+    await gate.future;
+    uploaded.add(storagePath);
+    yield UploadEvent.done(
+      UploadedMedia(
+        url: 'https://storage.test/$storagePath',
+        storagePath: storagePath,
+      ),
+    );
+  }
+}
 
 class _Env {
   _Env(
@@ -465,6 +489,160 @@ void main() {
       );
       addTearDown(c.dispose);
       expect(c.read(postComposerProvider).caption, isEmpty);
+    });
+  });
+
+  group('user switch, in-flight uploads, empty draft', () {
+    test('another user never sees the previous user\'s form', () async {
+      SharedPreferences.setMockInitialValues({
+        'postDraft:fake-2': jsonEncode({'caption': 'của B', 'serviceId': 's9'}),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final auth = FakeAuthRepository();
+      final a = (await auth.registerWithEmail('a@b.vn', 'password1', 'A')).uid;
+      final c = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authRepositoryProvider.overrideWithValue(auth),
+          imagePickerProvider.overrideWithValue(
+            FakeImagePicker([
+              [img(1)],
+            ]),
+          ),
+          mediaUploaderProvider.overrideWithValue(FakeMediaUploader()),
+          postPublisherProvider.overrideWithValue(
+            FakePostPublisher(posts: FakePostRepository()),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      final sub = c.listen(postComposerProvider, (_, _) {});
+      addTearDown(sub.close);
+      await Future<void>.delayed(Duration.zero);
+      final ctl = c.read(postComposerProvider.notifier);
+      await ctl.pickImages();
+      ctl.setCaption('của A');
+      ctl.setService(fixtureService('s1'));
+      final draftA = c.read(postComposerProvider).draftId;
+      expect(prefs.containsKey('postDraft:$a'), isTrue);
+
+      await auth.signOut();
+      await Future<void>.delayed(Duration.zero);
+      var s = c.read(postComposerProvider);
+      expect(s.images, isEmpty);
+      expect(s.caption, isEmpty);
+      expect(s.draftId, isNot(draftA));
+
+      final b = await auth.registerWithEmail('b@b.vn', 'password1', 'B');
+      expect(b.uid, 'fake-2');
+      await Future<void>.delayed(Duration.zero);
+      s = c.read(postComposerProvider);
+      expect(s.images, isEmpty);
+      expect(s.caption, 'của B');
+      expect(s.serviceId, 's9');
+      c.read(postComposerProvider.notifier).setCaption('B sửa');
+      final stored = jsonDecode(prefs.getString('postDraft:$a')!) as Map;
+      expect(stored['caption'], 'của A', reason: 'A\'s draft is untouched');
+    });
+
+    test(
+      'publish while a retry is uploading is not ready, one upload at a time',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final auth = FakeAuthRepository();
+        await auth.registerWithEmail('a@b.vn', 'password1', 'A');
+        final plain = FakeMediaUploader()..failNames.add('0.jpg');
+        MediaUploader current = plain;
+        final gated = _GatedUploader();
+        final c = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            authRepositoryProvider.overrideWithValue(auth),
+            imagePickerProvider.overrideWithValue(
+              FakeImagePicker([
+                [img(0)],
+              ]),
+            ),
+            mediaUploaderProvider.overrideWith((ref) => current),
+            postPublisherProvider.overrideWithValue(
+              FakePostPublisher(posts: FakePostRepository()),
+            ),
+          ],
+        );
+        addTearDown(c.dispose);
+        final ctl = c.read(postComposerProvider.notifier);
+        await ctl.pickImages();
+        ctl.setService(fixtureService('s1'));
+        expect((await ctl.publish()).outcome, PublishOutcome.imageFailed);
+
+        current = gated;
+        c.invalidate(mediaUploaderProvider);
+        final key = c.read(postComposerProvider).images.single.key;
+        final retry = ctl.retryImage(key);
+        await Future<void>.delayed(Duration.zero);
+        var s = c.read(postComposerProvider);
+        expect(s.images.single.status, ComposerImageStatus.uploading);
+        expect(s.canPublish, isFalse);
+        expect((await ctl.publish()).outcome, PublishOutcome.notReady);
+        expect(gated.uploadCalls, 1);
+        gated.release();
+        await retry;
+        s = c.read(postComposerProvider);
+        expect(s.images.single.status, ComposerImageStatus.uploaded);
+        expect((await ctl.publish()).outcome, PublishOutcome.published);
+        expect(gated.uploadCalls, 1);
+      },
+    );
+
+    test('a photo cannot be removed while it uploads', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final auth = FakeAuthRepository();
+      await auth.registerWithEmail('a@b.vn', 'password1', 'A');
+      final gated = _GatedUploader();
+      final c = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authRepositoryProvider.overrideWithValue(auth),
+          imagePickerProvider.overrideWithValue(
+            FakeImagePicker([
+              [img(0)],
+            ]),
+          ),
+          mediaUploaderProvider.overrideWithValue(gated),
+          postPublisherProvider.overrideWithValue(
+            FakePostPublisher(posts: FakePostRepository()),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      final ctl = c.read(postComposerProvider.notifier);
+      await ctl.pickImages();
+      ctl.setService(fixtureService('s1'));
+      final run = ctl.publish();
+      await Future<void>.delayed(Duration.zero);
+      ctl.removeImage(c.read(postComposerProvider).images.single.key);
+      expect(c.read(postComposerProvider).images, hasLength(1));
+      gated.release();
+      expect((await run).outcome, PublishOutcome.published);
+      expect(gated.deleted, isEmpty);
+    });
+
+    test('setters are ignored while publishing', () async {
+      final e = await _ready();
+      final run = e.ctl.publish();
+      e.ctl.setCaption('muộn');
+      expect(e.state.caption, isEmpty);
+      await run;
+    });
+
+    test('the portfolio switch alone makes a draft', () async {
+      final e = await _env();
+      e.ctl.setInPortfolio(false);
+      expect(e.prefs.containsKey('postDraft:${e.uid}'), isTrue);
+      e.ctl.setInPortfolio(true);
+      expect(e.prefs.containsKey('postDraft:${e.uid}'), isFalse);
     });
   });
 }

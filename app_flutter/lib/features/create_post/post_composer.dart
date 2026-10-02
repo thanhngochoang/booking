@@ -78,6 +78,7 @@ class ComposerState {
       images.isNotEmpty &&
       serviceId != null &&
       !publishing &&
+      !images.any((i) => i.status == ComposerImageStatus.uploading) &&
       caption.length <= PostComposerController.maxCaption;
 
   ComposerState copyWith({
@@ -149,13 +150,35 @@ class PostComposerController extends Notifier<ComposerState> {
 
   final _busy = <String>{};
 
+  /// The user this form belongs to, and a counter that changes whenever the
+  /// form is rebuilt (sign-out, account switch). Work that started before a
+  /// rebuild must not touch the new form.
+  String? _owner;
+  int _gen = 0;
+
   String? get _uid => ref.read(authRepositoryProvider).currentUser?.uid;
+
+  /// The signed-in user, but only while the form still belongs to them.
+  String? get _activeUid {
+    final uid = _uid;
+    return uid != null && uid == _owner ? uid : null;
+  }
+
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
   String _draftKey(String uid) => 'postDraft:$uid';
 
   @override
   ComposerState build() {
     final uid = _uid;
+    _owner = uid;
+    _gen++;
+    _busy.clear();
+    ref.listen(authStateProvider, (_, next) {
+      final now = next.value?.uid;
+      if (!next.isLoading && now != _owner) {
+        ref.invalidateSelf();
+      }
+    });
     return (uid == null ? null : _restore(uid)) ??
         ComposerState(draftId: newUlid());
   }
@@ -184,7 +207,7 @@ class PostComposerController extends Notifier<ComposerState> {
   /// Text fields only: the picker's temporary photo files may be gone by the
   /// next session, so photos are not part of the draft.
   void _persist() {
-    final uid = _uid;
+    final uid = _activeUid;
     if (uid == null) {
       return;
     }
@@ -193,7 +216,8 @@ class PostComposerController extends Notifier<ComposerState> {
         s.caption.isEmpty &&
         s.serviceId == null &&
         s.locationName == null &&
-        s.styleId == null;
+        s.styleId == null &&
+        s.inPortfolio;
     if (empty) {
       unawaited(_prefs.remove(_draftKey(uid)));
       return;
@@ -218,14 +242,19 @@ class PostComposerController extends Notifier<ComposerState> {
     if (room <= 0 || state.publishing) {
       return;
     }
+    final gen = _gen;
     final picked = await ref.read(imagePickerProvider).pickImages(max: room);
-    if (!ref.mounted || picked.isEmpty) {
+    if (!ref.mounted || gen != _gen || picked.isEmpty || state.publishing) {
+      return;
+    }
+    final left = maxImages - state.images.length;
+    if (left <= 0) {
       return;
     }
     state = state.copyWith(
       images: [
         ...state.images,
-        for (final p in picked.take(room))
+        for (final p in picked.take(left))
           ComposerImage(key: newUlid(), picked: p),
       ],
     );
@@ -236,7 +265,7 @@ class PostComposerController extends Notifier<ComposerState> {
       return;
     }
     final i = state.images.indexWhere((e) => e.key == key);
-    if (i < 0) {
+    if (i < 0 || state.images[i].status == ComposerImageStatus.uploading) {
       return;
     }
     final media = state.images[i].media;
@@ -269,27 +298,42 @@ class PostComposerController extends Notifier<ComposerState> {
   }
 
   void setCaption(String v) {
+    if (state.publishing) {
+      return;
+    }
     state = state.copyWith(caption: v);
     _persist();
   }
 
   void setService(ServiceSummary? s) {
+    if (state.publishing) {
+      return;
+    }
     state = state.withService(s?.id, s?.specialtyId);
     _persist();
   }
 
   void setLocation(String? v) {
+    if (state.publishing) {
+      return;
+    }
     final t = v?.trim();
     state = state.withLocation(t == null || t.isEmpty ? null : t);
     _persist();
   }
 
   void setStyle(String? id) {
+    if (state.publishing) {
+      return;
+    }
     state = state.withStyle(id);
     _persist();
   }
 
   void setInPortfolio(bool v) {
+    if (state.publishing) {
+      return;
+    }
     state = state.copyWith(inPortfolio: v);
     _persist();
   }
@@ -321,6 +365,7 @@ class PostComposerController extends Notifier<ComposerState> {
       key,
       (i) => i.copyWith(status: ComposerImageStatus.uploading, progress: 0),
     );
+    final gen = _gen;
     final path = 'posts/$uid/${state.draftId}/$key.jpg';
     try {
       await for (final e
@@ -329,6 +374,11 @@ class PostComposerController extends Notifier<ComposerState> {
               .upload(img.picked, storagePath: path)) {
         final media = e.media;
         if (media != null) {
+          if (gen != _gen || !ref.mounted || _image(key) == null) {
+            // The photo was dropped (or the user changed) while it uploaded.
+            unawaited(_deleteQuietly(media.storagePath));
+            return false;
+          }
           _update(
             key,
             (i) => i.copyWith(
@@ -350,9 +400,13 @@ class PostComposerController extends Notifier<ComposerState> {
 
   /// Uploads one photo again (the "thử lại" on a failed tile).
   Future<void> retryImage(String key) async {
-    final uid = _uid;
+    final uid = _activeUid;
     final img = _image(key);
-    if (uid == null || img == null || state.publishing || !_busy.add(key)) {
+    if (uid == null ||
+        img == null ||
+        img.status != ComposerImageStatus.failed ||
+        state.publishing ||
+        !_busy.add(key)) {
       return;
     }
     try {
@@ -363,10 +417,13 @@ class PostComposerController extends Notifier<ComposerState> {
   }
 
   Future<PostPublishResult> publish() async {
-    final uid = _uid;
+    final uid = _activeUid;
     if (uid == null || !state.canPublish) {
       return const PostPublishResult(PublishOutcome.notReady);
     }
+    final gen = _gen;
+    final prefs = _prefs;
+    final publisher = ref.read(postPublisherProvider);
     state = state.copyWith(publishing: true);
     for (final key in [for (final i in state.images) i.key]) {
       final img = _image(key);
@@ -374,39 +431,37 @@ class PostComposerController extends Notifier<ComposerState> {
         continue;
       }
       if (!await _upload(key, uid)) {
-        if (ref.mounted) {
+        if (ref.mounted && gen == _gen) {
           state = state.copyWith(publishing: false);
         }
         return const PostPublishResult(PublishOutcome.imageFailed);
       }
     }
-    if (!ref.mounted) {
+    if (!ref.mounted || gen != _gen) {
       return const PostPublishResult(PublishOutcome.notReady);
     }
     final s = state;
     try {
-      final post = await ref
-          .read(postPublisherProvider)
-          .publish(
-            PostDraft(
-              id: s.draftId,
-              photographerId: uid,
-              serviceId: s.serviceId!,
-              specialtyId: s.specialtyId,
-              images: [for (final i in s.images) PostImage(url: i.media!.url)],
-              caption: s.caption.trim(),
-              locationName: s.locationName,
-              styleId: s.styleId,
-              inPortfolio: s.inPortfolio,
-            ),
-          );
-      await _prefs.remove(_draftKey(uid));
-      if (ref.mounted) {
+      final post = await publisher.publish(
+        PostDraft(
+          id: s.draftId,
+          photographerId: uid,
+          serviceId: s.serviceId!,
+          specialtyId: s.specialtyId,
+          images: [for (final i in s.images) PostImage(url: i.media!.url)],
+          caption: s.caption.trim(),
+          locationName: s.locationName,
+          styleId: s.styleId,
+          inPortfolio: s.inPortfolio,
+        ),
+      );
+      await prefs.remove(_draftKey(uid));
+      if (ref.mounted && gen == _gen) {
         state = ComposerState(draftId: newUlid(), inPortfolio: s.inPortfolio);
       }
       return PostPublishResult(PublishOutcome.published, post.id);
     } catch (_) {
-      if (ref.mounted) {
+      if (ref.mounted && gen == _gen) {
         state = state.copyWith(publishing: false);
       }
       return const PostPublishResult(PublishOutcome.publishFailed);
