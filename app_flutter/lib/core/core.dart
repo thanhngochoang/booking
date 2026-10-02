@@ -8,6 +8,7 @@ export 'package:photobooking/core/calendar_days.dart';
 export 'package:photobooking/core/contact_channel.dart';
 export 'package:photobooking/core/format.dart';
 export 'package:photobooking/core/geo.dart';
+export 'package:photobooking/core/hashtags.dart';
 export 'package:photobooking/core/l10n_ext.dart';
 export 'package:photobooking/core/package_meta.dart';
 export 'package:photobooking/core/phone.dart';
