@@ -1,5 +1,7 @@
 # Mock parity 1: make the built screens match the UI mock
 
+> **Battery/performance (2026-10-02, user):** this plan has no battery, idle, blur-budget or performance task or test steps. All of that runs once at the end in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Skip any such step inside a task (e.g. `expectIdle`, `expectBlurBudget`, listener counters, profiling); keep the functional tests.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
 **Goal:** The screens and shared widgets built so far (tab bar, S13, S35, S36, S33, S34, S42, S31, S30, core widgets) look and read like the committed mock `docs/design/ui-mock.html` (published artifact LptNpoqnt5KjQ5tUaPjYDM). User requirement, 2026-10-02: "giao diện phải giống artifact đã commit".
@@ -86,6 +88,6 @@ Files as listed in audit group 11 and `docs/design/ui-mock.html`. Audit group 11
 - [ ] App-bar title sizes/centring for sub-screens, S35 pin colour, ContactDial radius 16/14 with the visible "Gọi" label, PhotoCard small-card radius 16, AppAvatar default 40dp in cards, lock icons (match the mock).
 - [ ] Mock updates where the spec is newer (no app change): S34 city + radius chips (C5), the in-app-only fourth card and privacy line (C8, C11), S35 radius chips 10/25/50 (N3), S36 "Dùng vị trí của tôi" row and search (A3); captions recording the two user rulings. Bump the mock header version comment. The controller republishes the artifact.
 
-### Task 12: Battery and performance check
-Files: `test/battery/mock_parity_battery_test.dart`, `docs/testing/battery-and-performance.md`.
-- [ ] Idle check (`expectIdle`) and blur budget (`expectBlurBudget(max: 4)`) for S13, S35, S36, S34, S42 after the changes; `AppOptionTile` and the new button sizes add no BackdropFilter or ticker. Append a short section to the guide ("device profiling pending").
+### Task 12: Battery and performance check (moved)
+
+Moved to `docs/superpowers/plans/2026-10-02-final-battery-performance.md` (section "2026-10-02-mock-parity-1.md"). Nothing to do here.

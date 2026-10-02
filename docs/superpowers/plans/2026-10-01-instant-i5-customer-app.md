@@ -1,5 +1,7 @@
 # Instant I5: "Chụp ngay" Customer App (S47–S51, S55) Implementation Plan
 
+> **Battery/performance (2026-10-02, user):** this plan has no battery, idle, blur-budget or performance task or test steps. All of that runs once at the end in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Skip any such step inside a task (e.g. `expectIdle`, `expectBlurBudget`, listener counters, profiling); keep the functional tests.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A customer taps "Chụp ngay" on Home or Find, picks a package and a kind of shoot, pins the meet point on a Goong map (current location, drag, or address search), pays the fixed price, watches the search (S48), follows the photographer on the map with an ETA and contact unlocked (S49), sees the shoot timer and confirms completion (S50), gets an automatic refund when nobody accepts and can retry or book normally (S51), and can cancel at any step after seeing the refund from a dry run (S55).
@@ -5623,40 +5625,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 14: Align the specs and the battery guide
+### Task 14: Align the specs and the battery guide (moved)
 
-**Files:**
-- Modify: `docs/superpowers/specs/2026-10-01-instant-booking-design.md`, `docs/superpowers/specs/components/shared-components.md`, `docs/testing/battery-and-performance.md`
+Moved to `docs/superpowers/plans/2026-10-02-final-battery-performance.md` (section "2026-10-01-instant-i5-customer-app.md"). Nothing to do here.
 
-**Interfaces:** none (documentation).
-
-- [ ] **Step 1: Edit**
-
-1. `2026-10-01-instant-booking-design.md`:
-   - §2.1 step 2, after "Goong Autocomplete", add: "(bản đồ nhỏ ở S47 có ghim cố định giữa màn; kéo bản đồ dưới ghim để chọn điểm, tên điểm lấy bằng Goong Geocode)".
-   - §2.1 step 4, replace "(dùng chung luồng thanh toán của bước 4; trước khi bước 4 xong dùng cổng giả như kế hoạch sự kiện)" with "(cổng `PaymentLauncher`: bản debug mở `fake://pay/<id>` ngay trong app bằng `POST /v1/dev/payments/{id}/succeed`; cổng thật MoMo/VNPay ở kế hoạch I6; kết quả chỉ tin bản sao Firestore, không tin redirect)".
-   - §5 FCM paragraph (added by I4 Task 15): append "`type=assigned` có thể kèm `photographerName`, `etaMinutes` để app khách hiện 'Minh Trí đã nhận · đến trong khoảng 9 phút' khi app ở nền; `type=status` với `arrived`, `no_match` cũng hiện thông báo."
-   - §8, under the screen table, add: "S47 cũng có bản đồ (mock S47); bản đồ chỉ dựng ở S47, S49, S54. S48 lấy giờ bắt đầu tìm từ `searchEndsAt − 10 phút`. S49 tính 'trễ quá 15 phút' từ ETA đầu tiên app thấy (máy chủ vẫn quyết định quy tắc huỷ qua `dryRun`). S50 lấy số ảnh của gói từ bảng giá đã xem ở S47."
-   - §9, in the "Khách" row: "một lần ở S47 (`LocationAccuracy.medium`, hạn 10 giây), dùng lại qua bản nháp khi quay lại từ S33/S51".
-2. `components/shared-components.md`: add under section 4 "### SearchPulse · Mới" ("`SearchPulse({required bool active, double size = 200, String? semanticsLabel})`: ba vòng toả quanh `ApertureLoader`; chạy chỉ khi `active`, màn đang hiện và không giảm chuyển động; một nhãn đọc 'Đang tìm'. S48.").
-3. `docs/testing/battery-and-performance.md`, section "Đo tay Chụp ngay" (I4 Task 15): add rows
-
-   ```markdown
-   | D. Khách: S47 → S48 → S49 | Mở S47 (cho phép vị trí), trả bằng cổng giả, để S48 chạy 5 phút, rồi S49 30 phút khi nhiếp ảnh gia đang đến. | GPS chỉ bật một lần ở S47 (≤ 15 s); S48 khi giảm chuyển động ≤ 5 khung hình / 30 s; S49 đứng yên (nhiếp ảnh gia không đổi vị trí) ≤ 5 khung hình / 30 s; S49 30 phút ≤ 4 % pin (đề xuất, chốt sau lần đo đầu) |
-   | E. Khách rời màn | Từ S49 về Trang chủ, để yên 5 phút. | Không còn listener `instant_tracks`/`instant_requests` (Firestore usage), không khung hình |
-   ```
-4. Run `git diff --stat ../docs` and read each hunk once.
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add ../docs/superpowers/specs ../docs/testing/battery-and-performance.md
-git commit -m "docs(instant): customer flow details, payment port, SearchPulse and customer battery scenarios
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
-```
-
----
 
 ### Task 15: Battery and performance check
 

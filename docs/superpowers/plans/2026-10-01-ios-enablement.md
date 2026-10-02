@@ -1,5 +1,7 @@
 # iOS Enablement Implementation Plan
 
+> **Battery/performance (2026-10-02, user):** this plan has no battery, idle, blur-budget or performance task or test steps. All of that runs once at the end in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Skip any such step inside a task (e.g. `expectIdle`, `expectBlurBudget`, listener counters, profiling); keep the functional tests.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The Flutter app builds and runs on the iOS Simulator and on an iPhone, with Firebase, email, Google and Facebook sign-in working, CI building iOS on every push, and an iOS section in the battery and performance guide.
@@ -444,64 +446,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: iOS section in the battery and performance guide
+### Task 4: iOS section in the battery and performance guide (moved)
 
-**Files:**
-- Modify: `docs/testing/battery-and-performance.md` (repo root `docs/`)
+Moved to `docs/superpowers/plans/2026-10-02-final-battery-performance.md` (section "2026-10-01-ios-enablement.md"). Nothing to do here.
 
-**Interfaces:**
-- Produces: an iOS procedure with commands and thresholds, and an `OS` column in the result table. Every plan's manual battery step then covers both platforms.
-
-- [ ] **Step 1: Edit the guide**
-
-Add after the Android section "Đo tay (thiết bị Android thật, bản profile)":
-
-```markdown
-## Đo tay trên iOS (iPhone thật, bản profile)
-
-Chạy bản profile lên máy (cần Task 5–8 của kế hoạch bật iOS):
-
-```bash
-flutter run --profile -d <iphone-udid>
-```
-
-1. **Khung hình và CPU khi đứng yên.** Trong Xcode: Debug Navigator (⌘7) khi app đang chạy từ Xcode, hoặc dùng Instruments:
-   ```bash
-   xcrun xctrace record --template 'Time Profiler' --device <iphone-udid> --attach Runner --time-limit 30s --output idle.trace
-   ```
-   Mở `idle.trace`, xem luồng `io.flutter.1.ui` và `io.flutter.1.raster`. Ngưỡng: **CPU trung bình < 3%** khi màn đứng yên, không có khối hoạt động lặp lại.
-2. **Năng lượng.** Instruments mẫu **Energy Log** (chỉ trên máy thật) hoặc đồng hồ "Energy Impact" trong Debug Navigator. Ngưỡng: **"Low" hoặc "None"** khi đứng yên; không có "Location" khi đã rời màn Khám phá; mũi tên vị trí trên thanh trạng thái tắt ngay sau khi lấy được vị trí.
-3. **Cuộn.** Instruments mẫu **Animation Hitches**:
-   ```bash
-   xcrun xctrace record --template 'Animation Hitches' --device <iphone-udid> --attach Runner --time-limit 30s --output scroll.trace
-   ```
-   Cuộn hết danh sách 3 lần trong 30 giây. Ngưỡng: **hitch time ratio < 5 ms/s**. Máy ProMotion chạy 120 Hz (`CADisableMinimumFrameDurationOnPhone` đang bật), nên mỗi khung chỉ có 8,3 ms.
-4. **Bộ nhớ.** Debug Navigator > Memory sau khi lướt hết các màn của kế hoạch. Ngưỡng: **< 250 MB**.
-
-Simulator dùng được cho bước 1 và 3 (đo tương đối), không dùng để kết luận về pin.
-```
-
-Then change the result-table header to add `OS` as the first data column:
-
-```markdown
-| Màn / kịch bản | OS | Khung hình đứng yên (30 s) | Janky % / hitch ms/s | p90 (ms) | CPU đứng yên | Wake lock / Energy | GPS (s) | Bộ nhớ (MB) | Thiết bị |
-|---|---|---|---|---|---|---|---|---|---|
-| S… | Android | | | | | | | | |
-| S… | iOS | | | | | | | | |
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add ../docs/testing/battery-and-performance.md
-git commit -m "docs(testing): iOS energy, CPU and hitch measurements
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
-```
-
-If the screen-codes plan has not run yet (the guide does not exist), do this task right after that plan's Task 6.
-
----
 
 ### Task 5: Mac toolchain **[người dùng]** and `scripts/ios-doctor.sh`
 
