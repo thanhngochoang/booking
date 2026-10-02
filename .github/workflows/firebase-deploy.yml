@@ -1,6 +1,9 @@
 name: firebase-deploy
 # Deploys Firestore rules + indexes from app_flutter/firebase/ after the emulator
-# rules tests pass. Storage rules deploy only on manual run.
+# rules tests pass, and the Cloud Functions after the domain/functions tests pass
+# (separate job: a functions failure never blocks the rules). Storage rules deploy
+# only on manual run. Functions need the Blaze plan, the APIs and IAM roles of
+# docs/FIREBASE-SETUP.md section 11.
 #   push to flutter-rewrite/develop -> GitHub environment "dev"
 #   push to main                    -> GitHub environment "production"
 # Each environment holds its own variable FIREBASE_PROJECT_ID and secret
@@ -9,7 +12,7 @@ name: firebase-deploy
 on:
   push:
     branches: [flutter-rewrite, develop, main]
-    paths: ['app_flutter/firebase/**', '.github/workflows/firebase-deploy.yml']
+    paths: ['app_flutter/firebase/**', 'app_flutter/firebase/functions/**', 'packages/**', '.github/workflows/firebase-deploy.yml']
   workflow_dispatch:
     inputs:
       target:
@@ -39,6 +42,21 @@ jobs:
       - run: npm ci
       - name: Firestore rules tests (emulator)
         run: npm test
+
+  functions-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Domain package (pure TypeScript)
+        working-directory: packages/domain
+        run: npm ci && npm run typecheck && npm run lint && npm test
+      - name: Cloud Functions (lint, typecheck, unit, emulator integration)
+        working-directory: app_flutter/firebase/functions
+        run: npm ci && npm run lint && npm run typecheck && npm test && npm run test:integration
 
   deploy:
     needs: test
@@ -74,3 +92,37 @@ jobs:
         run: >
           npx firebase deploy --config ../firebase.json --non-interactive
           --project "$PROJECT_ID" --only storage
+
+  deploy-functions:
+    needs: [test, functions-test]
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'main' && 'production' || 'dev') }}
+    env:
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+    defaults:
+      run:
+        working-directory: app_flutter/firebase/functions
+    steps:
+      - name: Skip when the environment has no project
+        if: ${{ env.PROJECT_ID == '' }}
+        working-directory: .
+        run: echo "::warning::FIREBASE_PROJECT_ID is not set for this environment; Cloud Functions not deployed."
+      - uses: actions/checkout@v4
+        if: ${{ env.PROJECT_ID != '' }}
+      - uses: actions/setup-node@v4
+        if: ${{ env.PROJECT_ID != '' }}
+        with: { node-version: '22' }
+      - run: npm ci
+        if: ${{ env.PROJECT_ID != '' }}
+      - uses: google-github-actions/auth@v2
+        if: ${{ env.PROJECT_ID != '' }}
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      # predeploy (firebase.json) runs `npm run build`: typecheck + esbuild bundle with packages/domain.
+      # --force lets the CLI set the Artifact Registry cleanup policy on the first deploy and remove
+      # functions that are no longer in src/index.ts, without an interactive prompt.
+      - name: Deploy Cloud Functions
+        if: ${{ env.PROJECT_ID != '' }}
+        run: >
+          npx firebase deploy --config ../firebase.json --non-interactive --force
+          --project "$PROJECT_ID" --only functions

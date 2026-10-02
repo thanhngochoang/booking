@@ -461,7 +461,7 @@ Thanh tab dưới dùng `TabBadge` (bong bóng đỏ, chữ trắng, "9+" từ m
 | Kinh nghiệm | Số năm (0–50) | Một số |
 | Minh chứng (`evidencePostIds`) | 1–3 bài đăng của chính họ cho mỗi thể loại | Chỉ chọn trong bài đã đăng |
 
-- **Độ khớp hồ sơ** (`skills.completeness`, 0–100): 25 điểm thể loại (≥ 1) + 20 mức độ đã đặt cho mọi thể loại + 20 minh chứng cho mọi thể loại mức 3 + 10 phong cách + 10 ngôn ngữ + 10 khách phù hợp + 5 kỹ năng thêm. Do Function tính, chỉ để nhắc nhiếp ảnh gia; không hiện cho khách.
+- **Độ khớp hồ sơ** (`skills.completeness`, 0–100): 25 điểm thể loại (≥ 1) + 20 mức độ đã đặt cho mọi thể loại + 20 minh chứng cho mọi thể loại mức 3 + 10 phong cách + 10 ngôn ngữ + 10 khách phù hợp + 5 kỹ năng thêm. Do Function `onPhotographerWrite` tính (app không tính), lưu cùng `completenessNext` (mã bước còn thiếu đầu tiên: `specialties | levels | evidence | styles | languages | audiences | extras`, `null` khi đủ 100) và `completenessNextAfter` (điểm sau khi làm bước đó); chỉ để nhắc nhiếp ảnh gia; không hiện cho khách.
 - Danh mục lấy từ `taxonomy/skills` (Firestore, bản sao Remote Config), thêm kỹ năng mới không cần phát hành lại ứng dụng. Mỗi mục có `id`, `group`, `labels.vi`, `order`, `active`. Mục bị gỡ (`active: false`) vẫn hiện ở hồ sơ cũ nhưng không chọn mới được. Id chỉ duy nhất **trong một nhóm**: `couple` vừa là thể loại vừa là khách phù hợp, nên mọi tra cứu dùng cặp (`group`, `id`).
 - Vào từ bước 3/4 của thiết lập hồ sơ (S38) hoặc từ Hồ sơ → "Kỹ năng" (sửa lúc nào cũng được). Lưu mỗi lần đổi bước hoặc thoát; thoát giữa chừng hỏi lưu nháp.
 
@@ -477,6 +477,9 @@ photographers/{uid}.skills
   audiences: ["couple", "shy_subjects"]
   yearsExperience: 6
   completeness: 72            # Function tính
+  completenessNext: "audiences"  # Function ghi; null khi đủ 100
+  completenessNextAfter: 85   # Function ghi: điểm sau khi làm bước kế tiếp
+  evidenceRemovedAt           # Function ghi khi gỡ minh chứng không hợp lệ
   updatedAt
 
 taxonomy/skills/items/{id}
@@ -484,9 +487,9 @@ taxonomy/skills/items/{id}
   labels: {vi}, order, active
 ```
 
-- Công khai (đọc bởi mọi người đã đăng nhập), chỉ chủ ghi `skills` (trừ `completeness`, `updatedAt` do Function ghi). Rules hiện kiểm: id nằm trong danh sách cố định của từng nhóm, đúng giới hạn số lượng, mức 3 cần ≥ 1 minh chứng, client không ghi các trường do server sở hữu (`completeness`, `skills.updatedAt`).
-- Cách kiểm hiện tại: rules so id với danh sách cố định trong `firestore.rules` (sao từ danh mục tích hợp; test `rules_catalogue_sync_test.dart` giữ hai bên trùng nhau, nên thêm mục danh mục cần deploy rules), kiểm giới hạn, mức 3 cần ≥ 1 minh chứng, không cho client đổi `completeness`/`skills.updatedAt`. Việc `evidencePostIds` thuộc bài của chính họ **không** kiểm trong rules (cần một lần đọc cho mỗi bài, vượt giới hạn 10 lần đọc); hiện chỉ sheet S40 giới hạn việc chọn trong bài của mình. Kiểm quyền sở hữu minh chứng và tính `completeness` sẽ do Function `onPhotographerWrite` làm (đang thiết kế, **chưa xây**); đến lúc đó app hiện điểm tính trên máy cùng công thức.
-- Function `onPhotographerWrite` (chưa xây) sẽ kiểm tra lược đồ, kiểm `evidencePostIds` thuộc bài của chính họ, tính `completeness`, rồi báo dịch vụ gợi ý cập nhật chỉ mục (3e.4).
+- Công khai (đọc bởi mọi người đã đăng nhập), chỉ chủ ghi `skills` (trừ `completeness`, `completenessNext`, `completenessNextAfter`, `updatedAt`, `evidenceRemovedAt` do Function ghi). Rules hiện kiểm: id nằm trong danh sách cố định của từng nhóm, đúng giới hạn số lượng, mức 3 cần ≥ 1 minh chứng, client không ghi các trường do server sở hữu (`completeness`, `completenessNext`, `completenessNextAfter`, `skills.updatedAt`, `evidenceRemovedAt`).
+- Cách kiểm hiện tại: rules so id với danh sách cố định trong `firestore.rules` (sao từ danh mục tích hợp; test `rules_catalogue_sync_test.dart` giữ hai bên trùng nhau, nên thêm mục danh mục cần deploy rules), kiểm giới hạn, mức 3 cần ≥ 1 minh chứng, không cho client đổi `completeness`/`skills.updatedAt`. Việc `evidencePostIds` thuộc bài của chính họ **không** kiểm trong rules (cần một lần đọc cho mỗi bài, vượt giới hạn 10 lần đọc); hiện chỉ sheet S40 giới hạn việc chọn trong bài của mình. Function `onPhotographerWrite` kiểm quyền sở hữu minh chứng (gỡ id không phải bài còn sống của chính họ, hạ "Chuyên sâu" không còn minh chứng xuống "Thành thạo", ghi `evidenceRemovedAt`) và tính `completeness`; app không tính điểm (spec `2026-10-02-photographer-write-function-design.md`).
+- Function `onPhotographerWrite` (Firestore trigger `photographers/{uid}`, `asia-southeast1`; backend phase 1, Task 10–14) đọc lược đồ bằng `parseSkills` (`packages/domain`), kiểm `evidencePostIds` bằng một lần `getAll`, tính `completeness`/`completenessNext`/`completenessNextAfter`, ghi một lần với precondition `lastUpdateTime`; bỏ qua lần ghi chỉ đổi trường server. Báo dịch vụ gợi ý cập nhật chỉ mục (3e.4) để plan recommender.
 
 ### 3e.4 Dịch vụ gợi ý chạy riêng
 
@@ -776,7 +779,7 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S22 | Empty "Buổi chụp tiếp theo bắt đầu từ đây" + một hành động nuôi vòng lặp | Chọn câu và hành động theo số ảnh portfolio hiện có. | Nút dẫn tới S21. |
 | S23 | Lý do (radio, bắt buộc), thông báo hoàn cọc, Quay lại / Từ chối | Nút đỏ chỉ sáng sau khi chọn lý do. | `declined` + hoàn cọc 100%; khách nhận push kèm lý do. |
 | S24 | `StepProgress` bước 1 (giới thiệu) và 2 (gói: danh sách gói, form thêm gói) | Cần ≥ 1 gói mới sang bước 3 (kỹ năng). Chưa xong thì không đổi được vai trò (chặn ở nút "Chuyển qua chế độ nhiếp ảnh" của S31). | Sang S38. |
-| S38 | `StepProgress` 3/4; thể loại (chip, tối đa 6), mức độ từng thể loại (`LevelSelector`), thanh độ khớp, dòng minh chứng | Mức "Chuyên sâu" tối đa 3 và cần ≥ 1 ảnh minh chứng (S40). Lưu nháp tự động. Thoát giữa chừng hỏi lưu nháp. | Ít nhất 1 thể loại mới sang S34; `skills.completeness` cập nhật sau khi lưu. |
+| S38 | `StepProgress` 3/4; thể loại (chip, tối đa 6), mức độ từng thể loại (`LevelSelector`), thanh độ khớp, dòng minh chứng | Mức "Chuyên sâu" tối đa 3 và cần ≥ 1 ảnh minh chứng (S40). Lưu nháp tự động. Thoát giữa chừng hỏi lưu nháp. | Ít nhất 1 thể loại mới sang S34; `skills.completeness` do Function tính sau khi lưu; S38 hiện số đó ở lần mở sau. |
 | S39 | Cùng màn S38, phần cuộn: phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp, số năm kinh nghiệm | Giới hạn theo mục 3e.2; ít nhất 1 ngôn ngữ. | Giá trị lưu đúng id trong `taxonomy`. |
 | S40 | Sheet chọn 1–3 ảnh portfolio làm minh chứng cho một thể loại, bộ đếm "n / 3" | Chỉ hiện bài của chính mình; chưa có bài nào → empty nêu "Đăng bài trước" kèm nút tới S21. | Lưu `evidencePostIds`; ảnh minh chứng hiện huy hiệu nhỏ trên thẻ ở S03. |
 | S34 | `StepProgress` 4/4; khu vực phục vụ, SĐT bắt buộc, ba công tắc kênh (Gọi, Zalo, WhatsApp kèm số riêng) | Cần ≥ 1 SĐT hợp lệ; WhatsApp bật mà để trống thì dùng SĐT chính nếu hợp lệ quốc tế, không thì báo lỗi. | Hoàn tất → `onboardingComplete = true`, ghi `photographers/{uid}.contact`. |

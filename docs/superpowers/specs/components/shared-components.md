@@ -130,7 +130,7 @@ Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nh�
 `CapacityBar({required int used, required int total, String? label})`. Thanh gradient 6dp trên nền ô nhập; chữ "{used} / {total} đã đăng ký" luôn kèm; `Semantics(value)` theo chữ. Dùng ở S16, S27 và tiến độ huy hiệu (S37).
 
 ### CompletenessMeter · Mới
-`CompletenessMeter({required int percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. Dùng ở S38, S31, S22.
+`CompletenessMeter({required int? percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. `percent` là số server ghi (`skills.completeness`); `null` (chưa tính) hiện "Chưa có điểm" và thanh rỗng. Dùng ở S38, S31, S22.
 
 ### AvailabilityCalendar · Mới
 Lưới tháng 7 cột (T2…CN). `AvailabilityCalendar({required DateTime month, required Map<DateTime, DayState> states, DateTime? selected, ValueChanged<DateTime>? onSelect, bool editable = false, ValueChanged<DateTime>? onMonthChanged, DateTime? minDate})`. `DayState`: `free` (mặc định), `pending` (viền đứt primary), `booked` (gạch ngang), `off` (nền mờ). Ngày chọn tô gradient; `pending/booked/off` không chọn được ở chế độ đặt (`editable: false`), `editable: true` cho NAG đổi `free ⇄ off`. Mỗi ô ≥ 44dp; ô có `Semantics` "12 tháng 10, rảnh". Điều hướng tháng bằng nút và vuốt; hỗ trợ chọn dải bằng nhấn lần lượt (thay thế cho kéo). Giờ không nằm trong lưới. Dùng ở S04 (chọn ngày), S06, S20, S03 (tab Lịch).

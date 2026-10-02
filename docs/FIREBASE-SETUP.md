@@ -207,13 +207,14 @@ Kiểm tra ở **Storage → Rules**: nội dung phải giống `storage.rules`.
 
 ## 10. Deploy tự động bằng GitHub Actions
 
-Workflow `.github/workflows/firebase-deploy.yml` có 2 job: `test` chạy `npm test` trên emulator, `deploy` chỉ chạy khi test pass.
+Workflow `.github/workflows/firebase-deploy.yml` có 4 job: `test` chạy test rules trên emulator, `deploy` (rules và indexes) chỉ chạy khi `test` pass; `functions-test` chạy test của `packages/domain` và Cloud Functions (cả test emulator), `deploy-functions` chỉ chạy khi `test` và `functions-test` pass (điều kiện riêng ở mục 11). Hai job deploy độc lập: functions lỗi không chặn deploy rules.
 
 | Khi nào | Environment | Deploy |
 |---------|-------------|--------|
 | Push vào `flutter-rewrite` hoặc `develop` có thay đổi trong `app_flutter/firebase/**` | `dev` | Firestore rules và indexes |
 | Push vào `main` có thay đổi tương tự | `production` | Firestore rules và indexes |
 | Chạy tay (**Actions → firebase-deploy → Run workflow**) | chọn `dev` hoặc `production` | Như trên. Tích **Also deploy Storage rules** để deploy thêm Storage. |
+| Push hoặc chạy tay như trên, khi có thay đổi trong `app_flutter/firebase/**` hoặc `packages/**` | như trên | Cloud Functions (`getContactLink`, `onPhotographerWrite`), job `deploy-functions` |
 
 Project id không ghi trong workflow. Mỗi GitHub environment có biến `FIREBASE_PROJECT_ID` và secret `FIREBASE_SERVICE_ACCOUNT` riêng. Environment chưa có `FIREBASE_PROJECT_ID` thì job `deploy` chỉ in cảnh báo và không deploy gì. Nhờ vậy `production` an toàn khi chưa có project.
 
@@ -272,6 +273,33 @@ Lưu ý:
 | `Failed to get Firebase project ...` | Project id sai, hoặc service account chưa được gán role nào trong project đó. |
 | Storage: `Firebase Storage has not been set up` | Chưa làm bước 9 (bucket chưa tạo hoặc chưa lên Blaze). |
 
+## 11. Cloud Functions (deploy qua CI)
+
+Job `deploy-functions` deploy codebase `app_flutter/firebase/functions` (region `asia-southeast1`: `getContactLink`, `onPhotographerWrite`) bằng `firebase deploy --only functions`. Không deploy từ máy. Làm các bước dưới đây một lần cho mỗi project: **dev** ngay, **production** khi đã có project.
+
+1. **Gói Blaze.** Firebase Console → ⚙ → **Usage and billing** → **Details & settings** → **Modify plan** → **Blaze**. Cloud Functions không chạy trên gói Spark. Nên đặt budget alert (ví dụ 5 USD) trong Google Cloud Billing.
+2. **Bật API** tại `https://console.cloud.google.com/apis/library?project=<project-id>`: Cloud Functions API, Cloud Build API, Artifact Registry API, Eventarc API, Cloud Run Admin API. Service account của CI không có quyền bật API, nên bật trước bằng tay.
+3. **Thêm role cho service account CI** (`github-firebase-deploy`, mục 10.1) ở trang IAM `https://console.cloud.google.com/iam-admin/iam?project=<project-id>`:
+
+   | Role | Để làm gì |
+   |------|-----------|
+   | Cloud Functions Developer (`roles/cloudfunctions.developer`) | Tạo và cập nhật function |
+   | Service Account User (`roles/iam.serviceAccountUser`) | Cho function chạy bằng service account mặc định |
+   | Artifact Registry Writer (`roles/artifactregistry.writer`) | Lưu image build của function |
+   | Cloud Run Admin (`roles/run.admin`) | Function thế hệ 2 chạy trên Cloud Run |
+   | Eventarc Admin (`roles/eventarc.admin`) | Tạo trigger Firestore của `onPhotographerWrite` |
+
+4. **Chạy thử**: **Run workflow** như 10.3. Kiểm tra: job `deploy-functions` xanh; Console → **Functions** có `getContactLink` và `onPhotographerWrite` ở `asia-southeast1`. Trong app, sửa kỹ năng ở S38 rồi lưu, mở lại S38: "Độ khớp hồ sơ" hiện số do server ghi (trước lần lưu đầu tiên là "Chưa có điểm").
+
+Workflow chạy với `--force` để Firebase CLI tự đặt chính sách dọn image cũ trong Artifact Registry ở lần deploy đầu và xoá function không còn trong `src/index.ts`. Thiếu điều kiện nào thì chỉ job `deploy-functions` đỏ, kèm thông báo của Firebase CLI; job `deploy` (rules) không bị ảnh hưởng.
+
+| Lỗi trong log | Cách sửa |
+|---------------|----------|
+| `must be on the Blaze (pay-as-you-go) plan` | Bước 1. |
+| `... API has not been used in project ... or it is disabled` | Bật API được nêu (bước 2), chờ vài phút rồi chạy lại. |
+| `Permission 'cloudfunctions.functions.create' denied`, `iam.serviceAccounts.actAs`, `artifactregistry...`, `run.services...`, `eventarc.triggers...` | Thiếu role tương ứng (bước 3). |
+| `Since this is your first time using 2nd gen functions, we need a little bit longer to finish setting everything up` | Lần đầu dùng Eventarc: chờ vài phút rồi chạy lại. |
+
 ## Sự cố thường gặp
 
 | Triệu chứng | Nguyên nhân và cách sửa |
@@ -294,4 +322,4 @@ source scripts/env.sh
 cd app_flutter/firebase/rules-test && npm install && npm test
 ```
 
-CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR.
+CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR, cùng job `functions` (test của `packages/domain` và Cloud Functions, kể cả test trên emulator). Test emulator chỉ chạy trên CI.

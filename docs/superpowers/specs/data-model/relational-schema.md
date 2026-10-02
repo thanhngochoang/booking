@@ -110,6 +110,9 @@ create table photographers (
   starting_price       bigint,
   next_free_date       date,
   skills_completeness  smallint not null default 0 check (skills_completeness between 0 and 100),
+  skills_completeness_next text check (skills_completeness_next in ('specialties', 'levels', 'evidence', 'styles', 'languages', 'audiences', 'extras')),
+  skills_completeness_next_after smallint check (skills_completeness_next_after between 0 and 100),
+  skills_evidence_removed_at timestamptz,
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
@@ -647,7 +650,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 |---------------------|------|----------------|
 | `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl`→`avatar_file_id` (tạo `files`); `fcmTokens[]`→`devices` |
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
-| `photographers/{uid}` | `photographers` + `photographer_contact_channels` | `stats.*`→cột dẫn xuất; `serviceArea.*`→`service_*`; `skills.completeness`→`skills_completeness` |
+| `photographers/{uid}` | `photographers` + `photographer_contact_channels` | `stats.*`→cột dẫn xuất; `serviceArea.*`→`service_*`; `skills.completeness`→`skills_completeness`; `skills.completenessNext`→`skills_completeness_next`; `skills.completenessNextAfter`→`skills_completeness_next_after`; `skills.evidenceRemovedAt`→`skills_evidence_removed_at` |
 | `photographers/{uid}/private/contact` | `photographer_contact_numbers` | |
 | `photographers/{uid}.skills.specialties[]` | `photographer_specialties`, `photographer_specialty_evidence` | `evidencePostIds[]` → bảng bằng chứng |
 | `photographers/{uid}.skills.{styles,extras,languages,audiences}[]` | `photographer_skill_tags` | `grp` = nhóm |

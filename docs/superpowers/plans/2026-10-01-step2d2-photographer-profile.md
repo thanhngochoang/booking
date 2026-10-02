@@ -8,7 +8,7 @@
 
 **Goal:** Anyone signed in opens `/u/:uid` and sees in one scroll what a photographer shoots, how trustworthy they are and what they cost: a photo hero blurred into the page, avatar, name with the blue check, stats, bio, skills, and the tabs Portfolio / Gói / Lịch / Đánh giá, with a fixed bar "Nhắn tin hỏi trước" + "Đặt lịch · từ {giá}" (no phone, Zalo or WhatsApp before booking). The owner sees "Chỉnh sửa hồ sơ" instead. The profile tab (S30) gains the rows "Số điện thoại", "Kỹ năng" (with the completeness meter) and "Xem hồ sơ công khai"; "Sửa hồ sơ" (S42) and setup step 1 (S24) can change the avatar, and the avatar-style main button follows the new photo at once.
 
-**Architecture:** One new core widget, `ImageBackdrop` (an `ImageFiltered` on a small decode of the photo inside its own `RepaintBoundary`, never a `BackdropFilter`). A one-shot public read model `PhotographerProfile` (= plan 3b1's `PhotographerSummary` + plan 2d1's `PhotographerIntro`) behind `PublicProfileRepository` (fake + Firestore adapter reusing 3b1's `photographerSummaryFrom`). S03 lives in `lib/features/photographer_profile/`: a `CustomScrollView` whose tab body is a `ValueListenableBuilder` of slivers, so switching tabs or calendar months rebuilds only that part; the portfolio is a lazy `SliverGrid` of `NetworkPhoto`s (decoded at tile size) paged by an `AsyncNotifier`. It reuses, without redefining: 3b1/3b3/3b4 read models and helpers (`ServiceRepository.activeFor`, `PostRepository.byPhotographer`, `RecommendationRepository.similar`, `startBooking`, `followProvider`), 2b's `PhotographerContactAction` (locked = inquiry only), 2c's `photographerSkillsProvider`/`skillCatalogProvider`/`skillsCompleteness`/`CompletenessMeter`, and 2d1's `AvailabilityCalendar` and `availabilityMonthProvider`. The avatar goes through 3c's `ImagePickerPort` and `MediaUploader` to `avatars/{uid}/{ulid}.jpg`; `users/{uid}` stores `avatarUrl` and the storage key `avatarPath` so the previous upload can be deleted.
+**Architecture:** One new core widget, `ImageBackdrop` (an `ImageFiltered` on a small decode of the photo inside its own `RepaintBoundary`, never a `BackdropFilter`). A one-shot public read model `PhotographerProfile` (= plan 3b1's `PhotographerSummary` + plan 2d1's `PhotographerIntro`) behind `PublicProfileRepository` (fake + Firestore adapter reusing 3b1's `photographerSummaryFrom`). S03 lives in `lib/features/photographer_profile/`: a `CustomScrollView` whose tab body is a `ValueListenableBuilder` of slivers, so switching tabs or calendar months rebuilds only that part; the portfolio is a lazy `SliverGrid` of `NetworkPhoto`s (decoded at tile size) paged by an `AsyncNotifier`. It reuses, without redefining: 3b1/3b3/3b4 read models and helpers (`ServiceRepository.activeFor`, `PostRepository.byPhotographer`, `RecommendationRepository.similar`, `startBooking`, `followProvider`), 2b's `PhotographerContactAction` (locked = inquiry only), 2c's `photographerSkillsProvider`/`skillCatalogProvider`/`photographerSkillsSnapshotProvider`/`CompletenessMeter`, and 2d1's `AvailabilityCalendar` and `availabilityMonthProvider`. The avatar goes through 3c's `ImagePickerPort` and `MediaUploader` to `avatars/{uid}/{ulid}.jpg`; `users/{uid}` stores `avatarUrl` and the storage key `avatarPath` so the previous upload can be deleted.
 
 **Tech Stack:** Flutter, Riverpod 3, go_router, `cloud_firestore` (adapters only), Firebase Storage through plan 3c's `MediaUploader`, Firestore and Storage rules + `@firebase/rules-unit-testing` (Node), `flutter_test`, `flutter gen-l10n`.
 
@@ -26,7 +26,7 @@
 - 3b3: `recommendationRepositoryProvider`, `RecommendationRepository.similar(String photographerId, {int limit = 8})`, `RecommendationPage`, `RecommendedPhotographer`.
 - 3b4: `startBooking(BuildContext, WidgetRef, {required String photographerId, String? serviceId, DateTime? date})` and `bookingPath` (`lib/features/discovery/book_entry.dart`), `followProvider` / `FollowController.load` / `.toggle` (`lib/features/discovery/engagement_controller.dart`), l10n `engagementError`, `DiscoveryWorld` and `discoveryPhotographers()` / `discoveryServices()` / `discoveryPosts()` (`test/support/discovery_world.dart`).
 - 3c: `ImagePickerPort.pickImages({required int max})`, `PickedImage`, `FakeImagePicker`, `MediaUploader.upload(PickedImage, {required String storagePath})` / `.delete`, `UploadEvent`, `UploadedMedia`, `FakeMediaUploader`, `imagePickerProvider`, `mediaUploaderProvider` (`lib/features/create_post/create_post_providers.dart`), `newUlid`, `firebase/storage.rules` and its tests.
-- 2c: `PhotographerSkills` (`specialties`, `specialtyIds`, `evidencePostIds`, `yearsExperience`, `empty`), `SpecialtySkill` (`id`, `level`), `SkillLevels`, `SkillGroup`, `skillCatalogProvider` (`TaxonomyCatalog.label(SkillGroup, String)`), `photographerSkillsProvider` (`FutureProvider.autoDispose.family<PhotographerSkills, String>`), `skillsRepositoryProvider`, `FakeSkillsRepository`, `skillsCompleteness(PhotographerSkills).percent`, `CompletenessMeter({required int percent, String? nextHint})`, l10n `skillsLevelBasic` / `skillsLevelGood` / `skillsLevelExpert`; routes `/profile/skills`, `/setup/3`. **Years of experience are read from `PhotographerSkills.yearsExperience`** (one source of truth, edited on S39).
+- 2c: `PhotographerSkills` (`specialties`, `specialtyIds`, `evidencePostIds`, `yearsExperience`, `empty`), `SpecialtySkill` (`id`, `level`), `SkillLevels`, `SkillGroup`, `skillCatalogProvider` (`TaxonomyCatalog.label(SkillGroup, String)`), `photographerSkillsProvider` (`FutureProvider.autoDispose.family<PhotographerSkills, String>`), `skillsRepositoryProvider`, `FakeSkillsRepository`, `photographerSkillsSnapshotProvider` → `SkillsSnapshot.server.completeness` (backend phase 1 Task 13), `CompletenessMeter({required int? percent, String? nextHint})`, l10n `skillsLevelBasic` / `skillsLevelGood` / `skillsLevelExpert`; routes `/profile/skills`, `/setup/3`. **Years of experience are read from `PhotographerSkills.yearsExperience`** (one source of truth, edited on S39).
 - 2d1: `AvailabilityCalendar`, `AvailabilityLegend`, `availabilityMonthProvider`, `availabilityRepositoryProvider`, `FakeAvailabilityRepository`, `calendarTodayProvider`, `calendarDay`/`monthOf`/`addMonths`/`lastDayOfMonth`, `PhotographerIntro`, `introFromFirestore`, `packageMeta`, `SetupIntroScreen`, `PhotographerWorld`, `myIntroProvider`, `photographerIntroRepositoryProvider`, the 2d1 `ProfileTab` changes (setup card, post-switch redirect); routes `/setup`, `/setup/1`, `/setup/2`.
 
 **Routes:** this plan owns `/u/:uid` (with `?tab=portfolio|services|calendar|reviews`, which 3b4 already links to). It links by path only to `/u/:uid/book` (step 4, S05; built by `bookingPath`) and `/u/:uid/ask` (step 4: open or create the `inquiry` chat with this photographer, then replace it with `/chat/:chatId`; contract defined here), `/p/:postId` (S02, 3b4), `/profile/skills` (2c), `/setup/1`, `/setup/2` (2d1), `/setup/4` (2b), `/settings/profile` (S42), `/profile/phone` (2a).
@@ -1137,7 +1137,6 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
-import 'package:photobooking/data/skills/skills_completeness.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -1156,6 +1155,7 @@ class ProfileHeader extends ConsumerWidget {
     final theme = Theme.of(context);
     final s = profile.summary;
     final skills = ref.watch(photographerSkillsProvider(s.id)).value ?? PhotographerSkills.empty;
+    final skillsScore = ref.watch(photographerSkillsSnapshotProvider(s.id)).value?.server.completeness;
     final catalog = ref.watch(skillCatalogProvider);
     final genres = skills.specialtyIds.isNotEmpty ? skills.specialtyIds : s.specialtyIds;
     final meta = [
@@ -1267,7 +1267,7 @@ class ProfileHeader extends ConsumerWidget {
               ],
               if (owner) ...[
                 const SizedBox(height: AppSpace.s4),
-                CompletenessMeter(percent: skillsCompleteness(skills).percent),
+                CompletenessMeter(percent: skillsScore),
               ],
               const SizedBox(height: AppSpace.s4),
             ],
@@ -1806,7 +1806,7 @@ class _PhotographerProfileScreenState extends ConsumerState<PhotographerProfileS
     ref
       ..invalidate(photographerProfileProvider(widget.uid))
       ..invalidate(profilePackagesProvider(widget.uid))
-      ..invalidate(photographerSkillsProvider(widget.uid));
+      ..invalidate(photographerSkillsSnapshotProvider(widget.uid));
   }
 
   @override
@@ -2477,9 +2477,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `lib/features/shell/placeholder_tabs.dart`, `lib/l10n/app_vi.arb`, `test/features/shell/placeholder_tabs_test.dart`, `test/features/responsive_test.dart`, `test/features/screen_codes_applied_test.dart` (if it exists)
 
 **Interfaces:**
-- Consumes: `photographerSkillsProvider`, `skillsCompleteness`, `CompletenessMeter`, `skillsRepositoryProvider`, `FakeSkillsRepository`, `PhotographerSkills`, `SpecialtySkill` (2c); `AppAvatar` (3b2); `myIntroProvider`, `_openSetupIfUnfinished` and the setup card (2d1); `AppTab.profile.path`.
+- Consumes: `photographerSkillsProvider`, `photographerSkillsSnapshotProvider` (server score, backend phase 1 Task 13), `CompletenessMeter`, `skillsRepositoryProvider`, `FakeSkillsRepository`, `PhotographerSkills`, `SpecialtySkill` (2c); `AppAvatar` (3b2); `myIntroProvider`, `_openSetupIfUnfinished` and the setup card (2d1); `AppTab.profile.path`.
 - Produces (spec S30 "Bố cục bổ sung"):
-  - Rows in one `GlassCard(highlight: false)` under the role card: "Số điện thoại" (key `profile-phone`) → `/profile/phone?returnTo=%2Fprofile` (S33, for both roles); for photographers "Kỹ năng" (key `profile-skills`) with `CompletenessMeter` (device-computed `skillsCompleteness`) → `/profile/skills`, reloading the skills on return; and "Xem hồ sơ công khai" (key `profile-public`) → `/u/{uid}`.
+  - Rows in one `GlassCard(highlight: false)` under the role card: "Số điện thoại" (key `profile-phone`) → `/profile/phone?returnTo=%2Fprofile` (S33, for both roles); for photographers "Kỹ năng" (key `profile-skills`) with `CompletenessMeter` (server `skills.completeness`; "Chưa có điểm" until the Function has scored) → `/profile/skills`, reloading the skills on return; and "Xem hồ sơ công khai" (key `profile-public`) → `/u/{uid}`.
   - The header avatar becomes `AppAvatar` (lg) instead of the raw `CircleAvatar` (spec AppAvatar). The column moves from `LayoutBuilder` + `IntrinsicHeight` to `CustomScrollView` + `SliverFillRemaining(hasScrollBody: false)`: sign-out still sits at the bottom when there is room, and widgets without intrinsic sizes (the meter) are allowed.
   - l10n: `profilePhoneRow` "Số điện thoại", `profilePhoneBody` "Thêm hoặc đổi số dùng khi đặt lịch", `profileSkillsRow` "Kỹ năng", `profileSkillsBody` "Thể loại, mức độ và phong cách", `profilePublicRow` "Xem hồ sơ công khai", `profilePublicBody` "Hồ sơ như khách nhìn thấy".
 
@@ -2540,7 +2540,7 @@ Expected: the two new tests FAIL (no rows).
 
 Add the six strings to `lib/l10n/app_vi.arb`, run `flutter gen-l10n`.
 
-In `lib/features/shell/placeholder_tabs.dart` add the imports `package:photobooking/app/tabs.dart`, `package:photobooking/data/skills/skills_completeness.dart`, `package:photobooking/data/skills/skills_providers.dart`, add these two widgets:
+In `lib/features/shell/placeholder_tabs.dart` add the imports `package:photobooking/app/tabs.dart`, `package:photobooking/data/skills/skills_providers.dart`, add these two widgets:
 
 ```dart
 /// S30 rows: phone for everyone; skills and the public profile for
@@ -2591,7 +2591,7 @@ class _SkillsTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final skills = ref.watch(photographerSkillsProvider(uid)).value;
+    final skills = ref.watch(photographerSkillsSnapshotProvider(uid)).value;
     return ListTile(
       key: const Key('profile-skills'),
       leading: const Icon(Icons.auto_awesome_outlined),
@@ -2600,13 +2600,13 @@ class _SkillsTile extends ConsumerWidget {
           ? Text(l.profileSkillsBody)
           : Padding(
               padding: const EdgeInsets.only(top: AppSpace.s1),
-              child: CompletenessMeter(percent: skillsCompleteness(skills).percent),
+              child: CompletenessMeter(percent: skills.server.completeness),
             ),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () async {
         await context.push('/profile/skills');
         if (context.mounted) {
-          ref.invalidate(photographerSkillsProvider(uid));
+          ref.invalidate(photographerSkillsSnapshotProvider(uid));
         }
       },
     );

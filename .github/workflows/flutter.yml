@@ -40,11 +40,25 @@ jobs:
       - name: Firestore rules tests (emulator)
         working-directory: app_flutter/firebase/rules-test
         run: npm ci && npm test
+      # Android build needs google-services.json; enable once it is stored as a secret:
+      #   echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json && flutter build apk --debug
+
+  # Domain rules and Cloud Functions (spec 2026-10-02 §4). The emulator tests run here only,
+  # never while executing plans (rule 2026-10-02).
+  functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
       - name: Domain package (pure TypeScript)
         working-directory: packages/domain
         run: npm ci && npm run typecheck && npm run lint && npm test
-      - name: Cloud Functions (unit + emulator integration)
+      - name: Cloud Functions (lint, typecheck, unit)
         working-directory: app_flutter/firebase/functions
-        run: npm ci && npm run lint && npm test && npm run test:integration
-      # Android build needs google-services.json; enable once it is stored as a secret:
-      #   echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json && flutter build apk --debug
+        run: npm ci && npm run lint && npm run typecheck && npm test
+      - name: Cloud Functions (emulator integration)
+        working-directory: app_flutter/firebase/functions
+        run: npm run test:integration

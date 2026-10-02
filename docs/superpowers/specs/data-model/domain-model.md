@@ -41,7 +41,7 @@ Ký hiệu: **PK** khoá chính, **FK** khoá ngoại, `?` có thể rỗng, `�
 | Thực thể | Trường chính | Ghi chú |
 |----------|--------------|---------|
 | `Photographer` | `userId` PK/FK, `bio`, `yearsExperience`, `serviceArea: {city, center: GeoPoint, radiusKm}`, `cover: FileRef?`, `verified = false`, `verifiedAt?`, `onboardingComplete = false`, `acceptsInquiries = true`, `stats: PhotographerStats` | `stats` do dịch vụ tính |
-| `PhotographerStats` | `ratingAvg`, `reviewCount`, `completedCount`, `responseMinutesMedian?`, `startingPrice: Money?`, `nextFreeDate?`, `skillsCompleteness` | Giá trị dẫn xuất, ghi bởi use case. Bất biến: `stats.rating` luôn được ghi (0 khi chưa có đánh giá) mỗi khi `stats.nextFreeDate` được ghi; thợ ảnh thiếu `stats.rating` sẽ không xuất hiện trong `freeThisWeek` |
+| `PhotographerStats` | `ratingAvg`, `reviewCount`, `completedCount`, `responseMinutesMedian?`, `startingPrice: Money?`, `nextFreeDate?`, `skillsCompleteness`, `skillsCompletenessNext?` (mã bước còn thiếu đầu tiên), `skillsCompletenessNextAfter?` (điểm sau bước đó), `skillsEvidenceRemovedAt?` (lần Function gỡ minh chứng gần nhất) | Giá trị dẫn xuất, ghi bởi use case. Bất biến: `stats.rating` luôn được ghi (0 khi chưa có đánh giá) mỗi khi `stats.nextFreeDate` được ghi; thợ ảnh thiếu `stats.rating` sẽ không xuất hiện trong `freeThisWeek` |
 | `ContactChannels` | `photographerId` PK/FK, `call`, `zalo`, `whatsapp` | Công khai (cờ) |
 | `ContactNumbers` 🔒 | `photographerId` PK/FK, `phone`, `zaloPhone?`, `whatsappPhone?` | Không lộ ra khỏi use case `get_contact_link` |
 | `Service` (gói) | `id` PK, `photographerId` FK, `name`, `specialtyId?`, `durationMinutes`, `price: Money` (> 0), `photoCount`, `editedCount`, `deliveryDays`, `cover?`, `active` | |
