@@ -8,6 +8,7 @@ Standing rules (user, 2026-10-02):
 - No device build or Genymotion install after each plan; it happens once, in plan 16.
 - iOS-only steps are skipped in feature plans and appended to "Deferred iOS steps" in plan 15.
 - Every screen shows its code (`ScreenCode`) in debug builds.
+- Firestore/Storage rules tests on the emulator (`firebase/rules-test`) are not run while executing plans; rules and their tests are still written, CI runs them on push (banner at the top of each plan). Backend phase 1's own emulator-suite work is not affected.
 
 ## Done
 

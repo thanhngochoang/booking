@@ -1,5 +1,7 @@
 # Instant I4: "Chụp ngay" Photographer App (S52–S55) Implementation Plan
 
+> **Rules emulator tests (2026-10-02, user):** do not run the Firestore/Storage rules tests on the emulator (`app_flutter/firebase/rules-test`, `npm test`, `npm run test:*`) while executing this plan; the sandbox cannot run them. Still write or update the rules and their test files as the task says, but skip every step that runs them and every `Expected:` that depends on them; CI (`flutter.yml`, `firebase-deploy.yml`) runs them on push and blocks deploy on failure. Record the skip in the ledger.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A photographer can switch on "Sẵn sàng chụp ngay" (S52) after accepting the package price list, receive a 30-second offer full screen even when the app is in the background (S53), accept it, drive to the customer with live location sharing and an external "Chỉ đường" (S54), mark "Đã đến" / "Bắt đầu chụp" / "Hoàn thành", or cancel with the amount shown first (S55), and the phone stops using GPS as soon as it is not needed.
