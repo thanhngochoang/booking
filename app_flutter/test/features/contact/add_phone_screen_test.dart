@@ -233,6 +233,28 @@ void main() {
       expect(h.contacts.stored(h.auth.currentUser!.uid)?.phone, '+84903123456');
     });
 
+    testWidgets('a failed save shows the message inside the sheet', (
+      tester,
+    ) async {
+      final h = await _harness(location: '/gate', failSave: true);
+      final result = ValueNotifier<bool?>(null);
+      await tester.pumpWidget(gateApp(h, result));
+      await tester.tap(find.text('gate'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '0903123456');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('phone-save')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('app-sheet')),
+          matching: find.text('Không lưu được số điện thoại. Thử lại nhé.'),
+        ),
+        findsOneWidget,
+      );
+      expect(result.value, isNull);
+    });
+
     testWidgets('dismissing leaves no number', (tester) async {
       final h = await sheetHarness();
       final result = ValueNotifier<bool?>(null);

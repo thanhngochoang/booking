@@ -55,9 +55,7 @@ class AddPhoneScreen extends StatelessWidget {
           appBar: AppBar(),
           body: SafeArea(
             top: false,
-            child: SingleChildScrollView(
-              child: AddPhoneContent(onSaved: () => _done(context)),
-            ),
+            child: AddPhoneContent(onSaved: () => _done(context)),
           ),
         ),
       ),
@@ -80,6 +78,10 @@ class _AddPhoneContentState extends ConsumerState<AddPhoneContent> {
   bool _zalo = true;
   bool _whatsApp = false;
 
+  /// Shown inside the form, not as a SnackBar: in the sheet a SnackBar would
+  /// sit under the barrier, out of sight.
+  bool _saveFailed = false;
+
   @override
   void dispose() {
     _phone.dispose();
@@ -91,6 +93,7 @@ class _AddPhoneContentState extends ConsumerState<AddPhoneContent> {
   void _save() {
     final phone = _e164;
     if (phone == null) return;
+    setState(() => _saveFailed = false);
     ref
         .read(saveContactControllerProvider.notifier)
         .save(phone: phone, allowZalo: _zalo, allowWhatsApp: _whatsApp);
@@ -104,9 +107,7 @@ class _AddPhoneContentState extends ConsumerState<AddPhoneContent> {
     ref.listen(saveContactControllerProvider, (prev, next) {
       if (next.isLoading || !(prev?.isLoading ?? false)) return;
       if (next.hasError) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(l.phoneSaveError)));
+        setState(() => _saveFailed = true);
       } else if (next.value ?? false) {
         widget.onSaved();
       }
@@ -132,7 +133,7 @@ class _AddPhoneContentState extends ConsumerState<AddPhoneContent> {
             controller: _phone,
             enabled: !saving,
             autofocus: true,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() => _saveFailed = false),
           ),
           const SizedBox(height: AppSpace.s2),
           Text(l.addPhoneExample, style: theme.textTheme.bodySmall),
@@ -153,6 +154,19 @@ class _AddPhoneContentState extends ConsumerState<AddPhoneContent> {
           ),
           const SizedBox(height: AppSpace.s2),
           Text(l.phonePrivacy, style: theme.textTheme.bodySmall),
+          if (_saveFailed) ...[
+            const SizedBox(height: AppSpace.s3),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                l.phoneSaveError,
+                key: const Key('phone-save-error'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpace.s5),
           AppButton.primary(
             l.addPhoneSave,
