@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
+import 'package:photobooking/core/widgets/signature_loader.dart';
 
 enum _Kind { primary, outline, text }
 
@@ -138,14 +139,19 @@ class AppButton extends StatelessWidget {
                 alwaysIncludeSemantics: true,
                 child: Text(label),
               ),
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: onGradient
-                      ? Colors.white
-                      : style?.foregroundColor?.resolve(const {}),
+              SizedBox.square(
+                dimension: switch (size) {
+                  AppButtonSize.regular => 24,
+                  AppButtonSize.small => 20,
+                  AppButtonSize.xsmall => 18,
+                },
+                child: FittedBox(
+                  child: SignatureLoader(
+                    size: LoaderSize.inline,
+                    color: onGradient
+                        ? Colors.white
+                        : style?.foregroundColor?.resolve(const {}),
+                  ),
                 ),
               ),
             ],

@@ -11,7 +11,7 @@ void main() {
   ) async {
     await tester.pumpWidget(screenApp(home: const SplashScreen()));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byType(ApertureLoader), findsOneWidget);
+    expect(find.byType(SignatureLoader), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.bySemanticsLabel('Đang tải'), findsOneWidget);
   });
