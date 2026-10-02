@@ -82,7 +82,7 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S10 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S11 | Hội thoại | `/chat/:chatId` | cả hai | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S12 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ⬜ chưa có plan (đặt lịch / công việc) |
-| S13 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S13 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) |
 | S14 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | 🟡 khung tạm → chưa có plan (bước 4) |
 | S15 | Danh sách sự kiện | `/events` | cả hai | 3b | ⬜ chưa có plan (sự kiện) |
 | S16 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ⬜ chưa có plan (sự kiện) |
@@ -99,19 +99,19 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S27 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ⬜ chưa có plan (sự kiện) |
 | S28 | Đăng nhập | `/login` | — | 1 · **đã có** | ✅ đã làm |
 | S29 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm |
-| S30 | Hồ sơ cá nhân | `/profile` | cả hai | 1 · **đã có**, mở rộng ở 3 và 6 | 🟡 khung tạm (thẻ hồ sơ + đổi vai trò) · đang chỉnh theo mock |
-| S31 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S30 | Hồ sơ cá nhân | `/profile` | cả hai | 1 · **đã có**, mở rộng ở 3 và 6 | 🟡 khung tạm (thẻ hồ sơ + đổi vai trò) · khớp mock, chưa có huy hiệu (S37) |
+| S31 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút | ✅ đã làm · khớp mock (mock-parity-1) |
 | S32 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) |
-| S33 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
-| S34 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
-| S35 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
-| S36 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S33 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) |
+| S34 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · khớp mock (mock-parity-1) |
+| S35 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) |
+| S36 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) |
 | S37 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) |
 | S38 | Kỹ năng, phần 1 (thể loại, mức độ) · bước 3/4 | `/setup/3`, `/profile/skills` | NAG | 2 | 🔧 đang làm (plan 2c: dữ liệu, rules xong; màn hình Task 7–12) |
 | S39 | Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp) | cùng màn S38, cuộn xuống | NAG | 2 | 🔧 đang làm (plan 2c) |
 | S40 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | 🔧 đang làm (plan 2c) |
 | S41 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm |
-| S42 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S42 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) |
 | S43 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S44 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S45 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S16) | cả hai | 3b | ⬜ chưa có plan (sự kiện) |

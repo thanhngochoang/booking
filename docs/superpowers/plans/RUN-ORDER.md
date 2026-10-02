@@ -17,7 +17,7 @@ screen-codes · core-display-widgets · 2a · 2b · 3a1 · 3a2 · 3b1 · 3b2
 
 | # | Plan | State |
 |---|------|-------|
-| 1 | `2026-10-02-mock-parity-1.md` (built screens match the mock) | Tasks 1–5 done; next Task 6 (S33 sheet), then 7–11 |
+| 1 | `2026-10-02-mock-parity-1.md` (built screens match the mock) | done 2026-10-02 (a07dcb6); mock not edited by user decision; deferred minors in `handover/ledger-mock-parity-1.md` |
 | 2 | `2026-10-01-step2c-skills.md` (S38, S39, S40) | Tasks 1–6 done; next Task 7 |
 | 3 | `2026-10-01-step2d1-photographer-setup-calendar.md` (S24, S20) | not started |
 | 4 | `2026-10-01-step3b3-recommendations.md` | not started |

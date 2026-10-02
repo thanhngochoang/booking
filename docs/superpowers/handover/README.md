@@ -4,11 +4,7 @@ State of the Flutter rewrite (`app_flutter/`, branch `flutter-rewrite`) when thi
 
 ## Where to continue
 
-1. **Plan `2026-10-02-mock-parity-1.md`** (make built screens match `docs/design/ui-mock.html`).
-   - Done: Tasks 1–5 (AppButton sizes 48/38/30 and tokens; tab bar; chips, FreeTag, StatTile, PhotoPill; PhotographerCard small buttons; PhoneField two boxes).
-   - Task 6 (S33 as a bottom sheet): code from a parallel session is committed (`showAddPhoneSheet`, `AddPhoneContent`, tests) but it has not been reviewed against the plan or the mock yet. Review it, then finish the task (callers opening the sheet, deep-link fallback).
-   - Still to do: Tasks 7–11. Task 11 must **not** change the mock (the user does not want the agreed UI changed); only the app follows the mock. Items carried to Task 11 are listed in `ledger-mock-parity-1.md`.
-   - Deviations per screen with file:line: `mock-parity-audit.md` (here).
+1. **Plan `2026-10-02-mock-parity-1.md`**: done (Tasks 1–11 + final review fixes, a07dcb6). Rulings and 12 deferred minors: `ledger-mock-parity-1.md`. The mock was not edited (user decision); stale-mock items C5, C8, C11, N3, A3 stay app-ahead-of-mock.
 2. **Plan `2026-10-01-step2c-skills.md`**: Tasks 1–6 done (catalogue, model, validation, completeness, repository, Firestore rules; emulator 55/55). Continue at Task 7. Rulings and carried items: `ledger-step2c-skills.md`.
 3. Then the rest of `RUN-ORDER.md`.
 
