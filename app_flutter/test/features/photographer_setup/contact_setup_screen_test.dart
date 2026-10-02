@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
@@ -105,14 +106,75 @@ void main() {
     },
   );
 
-  testWidgets('step 4 of 4, with the title in the app bar', (tester) async {
+  testWidgets(
+    'flow title and "4 / 4" in the app bar, step heading in the body',
+    (tester) async {
+      await _open(tester);
+      final bar = find.byType(AppBar);
+      expect(
+        find.descendant(of: bar, matching: find.text('Hồ sơ nhiếp ảnh gia')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: bar, matching: find.text('4 / 4')),
+        findsOneWidget,
+      );
+      expect(find.text('4 / 4'), findsOneWidget, reason: 'count shown twice');
+    final heading = find.text('Khu vực và liên hệ');
+      expect(heading, findsOneWidget);
+      expect(find.descendant(of: bar, matching: heading), findsNothing);
+      expect(
+        tester.getSemantics(heading),
+        matchesSemantics(label: 'Khu vực và liên hệ', isHeader: true),
+      );
+      // The progress bar sits between the app bar and the scrolling body.
+      final segment = find.byKey(const Key('step-segment')).first;
+      expect(
+        find.ancestor(of: segment, matching: find.byType(Scrollable)),
+        findsNothing,
+      );
+      expect(
+        find.text('Chọn kênh khách được dùng để liên hệ bạn.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('back and finish sit in a sticky footer, back at 36%', (
+    tester,
+  ) async {
     await _open(tester);
-    expect(find.text('4 / 4'), findsOneWidget);
-    expect(find.text('Khu vực và liên hệ'), findsOneWidget);
-    expect(
-      find.text('Chọn kênh khách được dùng để liên hệ bạn.'),
-      findsOneWidget,
-    );
+    for (final k in ['setup-back', 'setup-finish']) {
+      expect(
+        find.ancestor(
+          of: find.byKey(Key(k)),
+          matching: find.byType(Scrollable),
+        ),
+        findsNothing,
+        reason: '$k scrolls with the form',
+      );
+    }
+    final back = tester.getSize(find.byKey(const Key('setup-back'))).width;
+    final finish = tester.getSize(find.byKey(const Key('setup-finish'))).width;
+    expect(back / (back + finish + 8), closeTo(0.36, 0.02));
+  });
+
+  testWidgets('fields and channel cards sit on the page, not in a card', (
+    tester,
+  ) async {
+    await _open(tester);
+    expect(find.byType(GlassCard), findsNothing);
+    expect(find.byType(ChoiceChip), findsNothing);
+    final chip = tester.widget<AppChip>(find.byKey(const Key('radius-20')));
+    expect(chip.kind, AppChipKind.context);
+    final icon = find.byKey(const Key('channel-icon-call'));
+    expect(tester.getSize(icon), const Size(36, 36));
+  });
+
+  testWidgets('channel hints read as in the mock', (tester) async {
+    await _open(tester);
+    expect(find.text('Dùng số trên'), findsNWidgets(2));
+    expect(find.text('Nhập số riêng nếu khác'), findsOneWidget);
   });
 
   testWidgets(
@@ -277,7 +339,7 @@ void main() {
     expect(_switchOn(tester, 'channel-zalo'), isTrue);
     expect(_switchOn(tester, 'channel-call'), isFalse);
     expect(
-      tester.widget<ChoiceChip>(find.byKey(const Key('radius-50'))).selected,
+      tester.widget<AppChip>(find.byKey(const Key('radius-50'))).selected,
       isTrue,
     );
   });

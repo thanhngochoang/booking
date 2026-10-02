@@ -916,6 +916,12 @@ abstract class AppLocalizations {
   /// **'Không mở được liên hệ. Thử lại nhé.'**
   String get contactOpenError;
 
+  /// No description provided for @setupFlowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ nhiếp ảnh gia'**
+  String get setupFlowTitle;
+
   /// No description provided for @setupContactTitle.
   ///
   /// In vi, this message translates to:
@@ -967,7 +973,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupChannelCallHint.
   ///
   /// In vi, this message translates to:
-  /// **'Dùng số điện thoại ở trên'**
+  /// **'Dùng số trên'**
   String get setupChannelCallHint;
 
   /// No description provided for @setupChannelZalo.
@@ -979,7 +985,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupChannelZaloHint.
   ///
   /// In vi, this message translates to:
-  /// **'Dùng số ở trên hoặc nhập số riêng'**
+  /// **'Dùng số trên'**
   String get setupChannelZaloHint;
 
   /// No description provided for @setupZaloOwn.
@@ -997,7 +1003,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupChannelWhatsAppHint.
   ///
   /// In vi, this message translates to:
-  /// **'Nhập số quốc tế riêng, hoặc dùng số ở trên'**
+  /// **'Nhập số riêng nếu khác'**
   String get setupChannelWhatsAppHint;
 
   /// No description provided for @setupWhatsAppOwn.

@@ -13,6 +13,7 @@ class StepProgress extends StatelessWidget {
     required this.current,
     required this.total,
     this.label,
+    this.showCount = true,
   });
 
   final int current;
@@ -20,6 +21,9 @@ class StepProgress extends StatelessWidget {
 
   /// Name of the current step, shown before the count.
   final String? label;
+
+  /// False when the count is shown elsewhere, e.g. in the app bar (S34).
+  final bool showCount;
 
   @override
   Widget build(BuildContext context) {
@@ -32,27 +36,30 @@ class StepProgress extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                if (label != null)
-                  Expanded(
-                    child: Text(
-                      label!,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+            if (label != null || showCount) ...[
+              Row(
+                children: [
+                  if (label != null)
+                    Expanded(
+                      child: Text(
+                        label!,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (showCount)
+                    Text(
+                      l.stepProgressCount(filled, total),
+                      style: const TextStyle(
+                        fontSize: AppText.sm,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
                     ),
-                  )
-                else
-                  const Spacer(),
-                Text(
-                  l.stepProgressCount(filled, total),
-                  style: const TextStyle(
-                    fontSize: AppText.sm,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.s2),
+                ],
+              ),
+              const SizedBox(height: AppSpace.s2),
+            ],
             Row(
               children: [
                 for (var i = 0; i < total; i++) ...[

@@ -446,6 +446,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get contactOpenError => 'Không mở được liên hệ. Thử lại nhé.';
 
   @override
+  String get setupFlowTitle => 'Hồ sơ nhiếp ảnh gia';
+
+  @override
   String get setupContactTitle => 'Khu vực và liên hệ';
 
   @override
@@ -473,13 +476,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get setupChannelCall => 'Gọi điện';
 
   @override
-  String get setupChannelCallHint => 'Dùng số điện thoại ở trên';
+  String get setupChannelCallHint => 'Dùng số trên';
 
   @override
   String get setupChannelZalo => 'Zalo';
 
   @override
-  String get setupChannelZaloHint => 'Dùng số ở trên hoặc nhập số riêng';
+  String get setupChannelZaloHint => 'Dùng số trên';
 
   @override
   String get setupZaloOwn => 'Số Zalo riêng (để trống nếu dùng số trên)';
@@ -488,8 +491,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get setupChannelWhatsApp => 'WhatsApp';
 
   @override
-  String get setupChannelWhatsAppHint =>
-      'Nhập số quốc tế riêng, hoặc dùng số ở trên';
+  String get setupChannelWhatsAppHint => 'Nhập số riêng nếu khác';
 
   @override
   String get setupWhatsAppOwn =>

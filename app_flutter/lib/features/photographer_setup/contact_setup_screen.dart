@@ -22,7 +22,24 @@ class ContactSetupScreen extends ConsumerWidget {
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(title: Text(l.setupContactTitle)),
+          appBar: AppBar(
+            title: Text(l.setupFlowTitle),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpace.s4),
+                child: Center(
+                  child: ExcludeSemantics(
+                    child: Text(
+                      l.stepProgressCount(4, 4),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           body: SafeArea(
             top: false,
             child: prefill.when(
@@ -140,10 +157,13 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
     Widget? extra,
   }) {
     final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+    final dark = theme.brightness == Brightness.dark;
+    return Material(
+      color: dark ? AppColorsDark.glass : AppColors.glass,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -192,192 +212,217 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
     String? err(ContactSetupField f) => _errorText(l, errors[f]);
     final channelsError = err(ContactSetupField.channels);
     void changed() => setState(() {});
-    Widget glyph(ContactChannel c) =>
-        ChannelGlyph(c, size: 24, color: theme.colorScheme.onSurface);
+    Widget glyph(ContactChannel c) => Container(
+      key: Key('channel-icon-${c.name}'),
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondary,
+        shape: BoxShape.circle,
+      ),
+      child: ChannelGlyph(c, size: 18, color: theme.colorScheme.onSurface),
+    );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpace.s5),
-      child: GlassCard(
-        highlight: false,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.s5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const StepProgress(current: 4, total: 4),
-              const SizedBox(height: AppSpace.s5),
-              Text(l.setupContactArea, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpace.s2),
-              TextFormField(
-                key: const Key('setup-city'),
-                controller: _city,
-                enabled: !saving,
-                textInputAction: TextInputAction.next,
-                textCapitalization: TextCapitalization.words,
-                autofillHints: const [AutofillHints.addressCity],
-                onChanged: (_) => changed(),
-                decoration: InputDecoration(
-                  labelText: l.setupContactCity,
-                  prefixIcon: const Icon(Icons.location_city_outlined),
-                  errorText: err(ContactSetupField.city),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpace.s5),
+          child: StepProgress(current: 4, total: 4, showCount: false),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpace.s5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(
+                    l.setupContactTitle,
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpace.s3),
-              Text(l.setupContactRadius, style: theme.textTheme.bodySmall),
-              const SizedBox(height: AppSpace.s2),
-              Wrap(
-                spacing: AppSpace.s2,
-                runSpacing: AppSpace.s2,
-                children: [
-                  for (final km in radiusOptionsKm)
-                    ChoiceChip(
-                      key: Key('radius-$km'),
-                      label: Text(l.setupRadiusValue(km)),
-                      selected: _radius == km,
-                      onSelected: saving
-                          ? null
-                          : (_) => setState(() => _radius = km),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpace.s5),
-              PhoneField(
-                key: const Key('setup-phone'),
-                controller: _phone,
-                label: l.setupContactPhone,
-                enabled: !saving,
-                errorText: err(ContactSetupField.phone),
-                onChanged: (_) => changed(),
-              ),
-              const SizedBox(height: AppSpace.s5),
-              Text(l.setupContactChannels, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: AppSpace.s3),
-              _channel(
-                key: const Key('channel-call'),
-                icon: glyph(ContactChannel.call),
-                title: l.setupChannelCall,
-                hint: l.setupChannelCallHint,
-                value: _call,
-                onChanged: saving
-                    ? null
-                    : (v) => setState(() {
-                        _call = v;
-                        if (v) _inAppOnly = false;
-                      }),
-              ),
-              const SizedBox(height: AppSpace.s3),
-              _channel(
-                key: const Key('channel-zalo'),
-                icon: glyph(ContactChannel.zalo),
-                title: l.setupChannelZalo,
-                hint: l.setupChannelZaloHint,
-                value: _zalo,
-                onChanged: saving
-                    ? null
-                    : (v) => setState(() {
-                        _zalo = v;
-                        if (v) _inAppOnly = false;
-                      }),
-                extra: PhoneField(
-                  key: const Key('zalo-own'),
-                  controller: _zaloOwn,
-                  label: l.setupZaloOwn,
+                const SizedBox(height: AppSpace.s4),
+                Text(l.setupContactArea, style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpace.s2),
+                TextFormField(
+                  key: const Key('setup-city'),
+                  controller: _city,
                   enabled: !saving,
-                  errorText: err(ContactSetupField.zalo),
-                  validator: (_) => null,
+                  textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.words,
+                  autofillHints: const [AutofillHints.addressCity],
+                  onChanged: (_) => changed(),
+                  decoration: InputDecoration(
+                    labelText: l.setupContactCity,
+                    prefixIcon: const Icon(Icons.location_city_outlined),
+                    errorText: err(ContactSetupField.city),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s3),
+                Text(l.setupContactRadius, style: theme.textTheme.bodySmall),
+                const SizedBox(height: AppSpace.s2),
+                Wrap(
+                  spacing: AppSpace.s2,
+                  runSpacing: AppSpace.s2,
+                  children: [
+                    for (final km in radiusOptionsKm)
+                      AppChip(
+                        key: Key('radius-$km'),
+                        kind: AppChipKind.context,
+                        label: l.setupRadiusValue(km),
+                        selected: _radius == km,
+                        onChanged: (_) {
+                          if (!saving) setState(() => _radius = km);
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpace.s5),
+                PhoneField(
+                  key: const Key('setup-phone'),
+                  controller: _phone,
+                  label: l.setupContactPhone,
+                  enabled: !saving,
+                  errorText: err(ContactSetupField.phone),
                   onChanged: (_) => changed(),
                 ),
-              ),
-              const SizedBox(height: AppSpace.s3),
-              _channel(
-                key: const Key('channel-whatsapp'),
-                icon: glyph(ContactChannel.whatsapp),
-                title: l.setupChannelWhatsApp,
-                hint: l.setupChannelWhatsAppHint,
-                value: _whatsapp,
-                onChanged: saving
-                    ? null
-                    : (v) => setState(() {
-                        _whatsapp = v;
-                        if (v) _inAppOnly = false;
-                      }),
-                extra: PhoneField(
-                  key: const Key('whatsapp-own'),
-                  controller: _whatsappOwn,
-                  label: l.setupWhatsAppOwn,
-                  international: true,
-                  enabled: !saving,
-                  errorText: err(ContactSetupField.whatsapp),
-                  validator: (_) => null,
-                  onChanged: (_) => changed(),
+                const SizedBox(height: AppSpace.s5),
+                Text(l.setupContactChannels, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: AppSpace.s3),
+                _channel(
+                  key: const Key('channel-call'),
+                  icon: glyph(ContactChannel.call),
+                  title: l.setupChannelCall,
+                  hint: l.setupChannelCallHint,
+                  value: _call,
+                  onChanged: saving
+                      ? null
+                      : (v) => setState(() {
+                          _call = v;
+                          if (v) _inAppOnly = false;
+                        }),
                 ),
-              ),
-              const SizedBox(height: AppSpace.s3),
-              _channel(
-                key: const Key('channel-inapp'),
-                icon: glyph(ContactChannel.inApp),
-                title: l.setupInAppOnly,
-                hint: l.setupInAppOnlyHint,
-                value: _inAppOnly,
-                onChanged: saving
-                    ? null
-                    : (v) => setState(() {
-                        _inAppOnly = v;
-                        if (v) _call = _zalo = _whatsapp = false;
-                      }),
-              ),
-              if (channelsError != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpace.s2),
-                  child: Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      channelsError,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
+                const SizedBox(height: AppSpace.s3),
+                _channel(
+                  key: const Key('channel-zalo'),
+                  icon: glyph(ContactChannel.zalo),
+                  title: l.setupChannelZalo,
+                  hint: l.setupChannelZaloHint,
+                  value: _zalo,
+                  onChanged: saving
+                      ? null
+                      : (v) => setState(() {
+                          _zalo = v;
+                          if (v) _inAppOnly = false;
+                        }),
+                  extra: PhoneField(
+                    key: const Key('zalo-own'),
+                    controller: _zaloOwn,
+                    label: l.setupZaloOwn,
+                    enabled: !saving,
+                    errorText: err(ContactSetupField.zalo),
+                    validator: (_) => null,
+                    onChanged: (_) => changed(),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s3),
+                _channel(
+                  key: const Key('channel-whatsapp'),
+                  icon: glyph(ContactChannel.whatsapp),
+                  title: l.setupChannelWhatsApp,
+                  hint: l.setupChannelWhatsAppHint,
+                  value: _whatsapp,
+                  onChanged: saving
+                      ? null
+                      : (v) => setState(() {
+                          _whatsapp = v;
+                          if (v) _inAppOnly = false;
+                        }),
+                  extra: PhoneField(
+                    key: const Key('whatsapp-own'),
+                    controller: _whatsappOwn,
+                    label: l.setupWhatsAppOwn,
+                    international: true,
+                    enabled: !saving,
+                    errorText: err(ContactSetupField.whatsapp),
+                    validator: (_) => null,
+                    onChanged: (_) => changed(),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s3),
+                _channel(
+                  key: const Key('channel-inapp'),
+                  icon: glyph(ContactChannel.inApp),
+                  title: l.setupInAppOnly,
+                  hint: l.setupInAppOnlyHint,
+                  value: _inAppOnly,
+                  onChanged: saving
+                      ? null
+                      : (v) => setState(() {
+                          _inAppOnly = v;
+                          if (v) _call = _zalo = _whatsapp = false;
+                        }),
+                ),
+                if (channelsError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpace.s2),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        channelsError,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
                       ),
                     ),
                   ),
+                const SizedBox(height: AppSpace.s4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.lock_outline_rounded, size: 16),
+                    const SizedBox(width: AppSpace.s2),
+                    Expanded(
+                      child: Text(
+                        l.setupContactPrivacy,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: AppSpace.s4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.lock_outline_rounded, size: 16),
-                  const SizedBox(width: AppSpace.s2),
-                  Expanded(
-                    child: Text(
-                      l.setupContactPrivacy,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpace.s5),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppButton.outline(
-                      l.setupContactBack,
-                      key: const Key('setup-back'),
-                      onPressed: saving ? null : _back,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpace.s3),
-                  Expanded(
-                    child: AppButton.primary(
-                      l.setupContactFinish,
-                      key: const Key('setup-finish'),
-                      loading: saving,
-                      onPressed: _finish,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
+        AppFooterBar(
+          child: LayoutBuilder(
+            builder: (context, box) => Row(
+              children: [
+                SizedBox(
+                  width: box.maxWidth * 0.36,
+                  child: AppButton.outline(
+                    l.setupContactBack,
+                    key: const Key('setup-back'),
+                    onPressed: saving ? null : _back,
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s2),
+                Expanded(
+                  child: AppButton.primary(
+                    l.setupContactFinish,
+                    key: const Key('setup-finish'),
+                    loading: saving,
+                    onPressed: _finish,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
