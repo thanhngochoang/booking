@@ -283,11 +283,15 @@ Job `deploy-functions` deploy codebase `app_flutter/firebase/functions` (region 
 
    | Role | Để làm gì |
    |------|-----------|
-   | Cloud Functions Developer (`roles/cloudfunctions.developer`) | Tạo và cập nhật function |
+   | Cloud Functions Admin (`roles/cloudfunctions.admin`) | Tạo, cập nhật, xoá function và đặt quyền gọi công khai cho callable `getContactLink` (Developer không đặt được IAM policy) |
    | Service Account User (`roles/iam.serviceAccountUser`) | Cho function chạy bằng service account mặc định |
-   | Artifact Registry Writer (`roles/artifactregistry.writer`) | Lưu image build của function |
+   | Artifact Registry Administrator (`roles/artifactregistry.admin`) | Lưu image build và đặt chính sách dọn image ở lần deploy đầu với `--force` (Writer không đặt được) |
    | Cloud Run Admin (`roles/run.admin`) | Function thế hệ 2 chạy trên Cloud Run |
    | Eventarc Admin (`roles/eventarc.admin`) | Tạo trigger Firestore của `onPhotographerWrite` |
+
+   **Project mới** (tạo từ 2024): service account mặc định không còn role Editor, nên bước build của Cloud Build có thể lỗi quyền. Thêm role **Cloud Build Service Account** (`roles/cloudbuild.builds.builder`) cho service account Compute mặc định `<project-number>-compute@developer.gserviceaccount.com` (và cho `<project-number>@cloudbuild.gserviceaccount.com` nếu project có). Số project ở Console → ⚙ **Project settings**.
+
+   > **Cảnh báo `--force`:** workflow deploy với `--force`, nên **mọi function đang chạy trong codebase mặc định mà `src/index.ts` không export sẽ bị xoá** (kể cả function tạo tay hay từ repo khác). Trước lần deploy đầu tiên, mở Console → **Functions** của project và kiểm tra danh sách; function nào cần giữ thì chuyển sang codebase khác hoặc export từ `src/index.ts` trước.
 
 4. **Chạy thử**: **Run workflow** như 10.3. Kiểm tra: job `deploy-functions` xanh; Console → **Functions** có `getContactLink` và `onPhotographerWrite` ở `asia-southeast1`. Trong app, sửa kỹ năng ở S38 rồi lưu, mở lại S38: "Độ khớp hồ sơ" hiện số do server ghi (trước lần lưu đầu tiên là "Chưa có điểm").
 
