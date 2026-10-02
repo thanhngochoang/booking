@@ -46,7 +46,7 @@ class PhotoCard extends StatelessWidget {
   /// and pill labels; pass one for cards that show no text.
   final String? semanticLabel;
 
-  static const _radius = AppRadius.lg + 8;
+  static const _radius = AppRadius.card;
 
   @override
   Widget build(BuildContext context) {

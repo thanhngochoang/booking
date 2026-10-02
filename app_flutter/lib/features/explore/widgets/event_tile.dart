@@ -40,7 +40,7 @@ class NearbyEventTile extends StatelessWidget {
           color: theme.colorScheme.secondary,
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg + 8),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             side: BorderSide(color: theme.colorScheme.outlineVariant),
           ),
           child: InkWell(

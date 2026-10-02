@@ -130,13 +130,19 @@ class AppRadius {
   static const double sm = 4.0;
   static const double md = 8.0;
   static const double lg = 12.0;
+  static const double control = 14.0;
+  static const double xl = 16.0;
+  static const double card = 20.0;
+  static const double sheet = 28.0;
   static const double full = 999.0;
 }
 
 class AppText {
   AppText._();
   static const double xs = 10.0;
+  static const double xs2 = 11.0;
   static const double sm = 12.0;
+  static const double base2 = 13.5;
   static const double base = 14.0;
   static const double md = 16.0;
   static const double lg = 20.0;

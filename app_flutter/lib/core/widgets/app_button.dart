@@ -55,31 +55,41 @@ class AppButton extends StatelessWidget {
 
   ButtonStyle? get _sizeStyle => switch (size) {
     AppButtonSize.regular => null,
-    AppButtonSize.small => _compact(38, wide: true),
-    AppButtonSize.xsmall => _compact(30, wide: false),
+    AppButtonSize.small => _compact(
+      38,
+      AppText.sm,
+      AppRadius.control,
+      wide: true,
+    ),
+    AppButtonSize.xsmall => _compact(
+      30,
+      AppText.xs2,
+      AppRadius.lg,
+      wide: false,
+    ),
   };
 
-  static ButtonStyle _compact(double height, {required bool wide}) =>
-      ButtonStyle(
-        minimumSize: WidgetStatePropertyAll(
-          wide ? Size.fromHeight(height) : Size(0, height),
-        ),
-        maximumSize: WidgetStatePropertyAll(Size.fromHeight(height)),
-        padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(horizontal: AppSpace.s3),
-        ),
-        // Mock 12 / 11 -> AppText.sm (no 11 token).
-        textStyle: const WidgetStatePropertyAll(
-          TextStyle(fontSize: AppText.sm, fontWeight: FontWeight.w600),
-        ),
-        // Mock 14 / 12 -> AppRadius.lg (no 14 token).
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-        ),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      );
+  static ButtonStyle _compact(
+    double height,
+    double font,
+    double radius, {
+    required bool wide,
+  }) => ButtonStyle(
+    minimumSize: WidgetStatePropertyAll(
+      wide ? Size.fromHeight(height) : Size(0, height),
+    ),
+    maximumSize: WidgetStatePropertyAll(Size.fromHeight(height)),
+    padding: const WidgetStatePropertyAll(
+      EdgeInsets.symmetric(horizontal: AppSpace.s3),
+    ),
+    textStyle: WidgetStatePropertyAll(
+      TextStyle(fontSize: font, fontWeight: FontWeight.w600),
+    ),
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+    ),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  );
 
   @override
   Widget build(BuildContext context) {

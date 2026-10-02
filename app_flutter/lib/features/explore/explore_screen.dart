@@ -512,9 +512,9 @@ class _CategoryTile extends StatelessWidget {
       onTap: onTap,
       child: Material(
         color: subtle,
-        borderRadius: BorderRadius.circular(AppRadius.lg + 8),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.lg + 8),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: onTap,
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 64),

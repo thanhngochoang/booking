@@ -140,7 +140,7 @@ void main() {
 
   for (final b in Brightness.values) {
     testWidgets(
-      'fits 320dp at 1.3x on ${b.name}; buttons stack and stay 52dp',
+      'fits 320dp at 1.3x on ${b.name}; buttons stack and stay 48dp',
       (tester) async {
         // The default 800x600 test view is shorter than the stacked card.
         tester.view.devicePixelRatio = 1;
@@ -164,8 +164,8 @@ void main() {
           find.byKey(const Key('card-profile-p1')),
         );
         final book = tester.getRect(find.byKey(const Key('card-book-p1')));
-        expect(profile.height, 52);
-        expect(book.height, 52);
+        expect(profile.height, 48);
+        expect(book.height, 48);
         expect(
           book.top,
           greaterThan(profile.bottom - 1),

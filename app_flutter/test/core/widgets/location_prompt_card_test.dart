@@ -109,8 +109,8 @@ void main() {
       expect(tester.takeException(), isNull);
       final allow = tester.getSize(find.byKey(const Key('location-allow')));
       final later = tester.getSize(find.byKey(const Key('location-later')));
-      expect(allow.height, 52);
-      expect(later.height, 52);
+      expect(allow.height, 48);
+      expect(later.height, 48);
     });
   }
 }

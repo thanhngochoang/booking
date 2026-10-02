@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Controls (buttons, inputs, chips) share the login card's rounder shape.
-const controlRadius = 16.0;
-const controlHeight = 52.0;
+const controlRadius = AppRadius.xl;
+const controlHeight = 48.0;
 
 /// Status bar icons that read on [theme]'s canvas, over a transparent bar.
 SystemUiOverlayStyle overlayStyleFor(ThemeData theme) =>
@@ -125,7 +125,7 @@ ThemeData _build({
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(controlHeight),
         shape: shape,
-        textStyle: body(AppText.md, w: FontWeight.w600),
+        textStyle: body(AppText.base2, w: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -134,7 +134,7 @@ ThemeData _build({
         side: BorderSide(color: borderStrong),
         foregroundColor: foreground,
         shape: shape,
-        textStyle: body(AppText.md, w: FontWeight.w600),
+        textStyle: body(AppText.base2, w: FontWeight.w600),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -162,7 +162,7 @@ ThemeData _build({
       color: surfaceMuted,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg + 8),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         side: BorderSide(color: border),
       ),
     ),

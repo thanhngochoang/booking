@@ -96,7 +96,7 @@ class PhotographerCard extends StatelessWidget {
       color: scheme.secondary,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg + 8),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         side: BorderSide(color: scheme.outlineVariant),
       ),
       child: Column(

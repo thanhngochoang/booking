@@ -225,8 +225,8 @@ void main() {
     await _open(tester, app);
     expect(tester.takeException(), isNull);
     final button = tester.getRect(find.byKey(const Key('area-use')));
-    // Material scales button padding with the text, so 52 is a floor.
-    expect(button.height, greaterThanOrEqualTo(52));
+    // Material scales button padding with the text, so 48 is a floor.
+    expect(button.height, greaterThanOrEqualTo(48));
     expect(button.bottom, lessThanOrEqualTo(568));
   });
 

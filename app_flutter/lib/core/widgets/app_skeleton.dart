@@ -4,7 +4,7 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 
 // Card skeletons are rounder than boxes (matches the 20dp card corner); kept
 // local instead of adding a token.
-const double _cardRadius = AppRadius.lg + 8;
+const double _cardRadius = AppRadius.card;
 
 const Duration _pulseDuration = Duration(milliseconds: 900);
 
