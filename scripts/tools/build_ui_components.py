@@ -70,8 +70,8 @@ GALLERY_CSS = '''
 .row3 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
 /* Skeleton: white only (no hues, dark theme included), white sweep; still under reduced motion. */
 :root{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:rgba(255,255,255,.7);--sk-edge:var(--line);--sk-shine:#fff}}
-:root[data-theme="light"]{--sk-fill:rgba(255,255,255,.7);--sk-edge:var(--line);--sk-shine:#fff}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:#E6E3DE;--sk-edge:transparent;--sk-shine:rgba(255,255,255,.85)}}
+:root[data-theme="light"]{--sk-fill:#E6E3DE;--sk-edge:transparent;--sk-shine:rgba(255,255,255,.85)}
 :root[data-theme="dark"]{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
 .sk{display:block;background:var(--sk-fill);box-shadow:inset 0 0 0 1px var(--sk-edge);position:relative;overflow:hidden;flex:none}
 .sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(110deg,transparent 35%,var(--sk-shine) 50%,transparent 65%)}
@@ -102,7 +102,7 @@ tile('signatureloader-vib', 'SignatureLoader · sóng rung',
 tile('asyncview', 'AsyncView',
      'AsyncView<T>({required AsyncValue<T> value, required data, skeleton, loaderSize, empty, isEmpty, onRetry, error})',
      'Mọi fetch. Có skeleton của component thì dựng skeleton; không thì SignatureLoader (sóng tròn). Lỗi → ErrorState; rỗng → EmptyState.',
-     '<div class="meta">Tải lại khi đã có dữ liệu: giữ dữ liệu, thêm loader inline ở góc.</div>' + loader('none', 'xs'),
+     loader('ripple') + '<div class="meta" style="text-align:center">Không có skeleton thì trạng thái tải chính là SignatureLoader, khung đúng bằng vòng sóng ngoài (150 / 96), không thêm hộp hay nền. Tải lại khi đã có dữ liệu: giữ dữ liệu, loader inline ở góc.</div>',
      sk('100%', '64px', '20px') + sk('100%', '64px', '20px') + sk('100%', '64px', '20px'))
 
 # --- Cards ---------------------------------------------------------------------------------------

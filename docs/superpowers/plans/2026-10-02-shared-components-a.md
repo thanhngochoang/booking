@@ -20,9 +20,9 @@
 
 ## Global Constraints
 
-- SignatureLoader (spec, verbatim): "lá khẩu của logo đóng mở ở giữa, quanh đó **một** loại sóng lăn ra, chọn bằng tham số (không bao giờ hiện cả hai cùng lúc)": **ripple** "3 vòng đồng tâm nở từ 38% tới 100% kích thước rồi mờ dần, lệch nhịp 0,8 s, màu `primary`" for loading data; **vibration** "2 vòng gợn hình sin, `r(θ) = R + a·sin(nθ)` (`n = 12, a = 2,4%` và `n = 9, a = 3,2%`), vừa nở ra vừa xoay qua lại ±4–6° như dây rung, màu cyan `focus` và hồng `#FF45D0`, lệch 1,2 s" for waiting on another party. Sizes `screen` 150, `block` 96, `inline` 56 (no waves). No colored background (user, 2026-10-02): no `CtaSurface` disc, gradient or shadow behind the aperture; blades stroked in `onSurface` on transparent with a thin `outline` ring; color only in the wave strokes. Aperture: 8 blades, 2.4 s cycle, close 0–45 %, hold to 55 %, open by 100 %, `Curves.easeInOutCubic`. Reduced motion: open aperture, one faint still ring, no waves.
-- Skeletons (spec, user 2026-10-02): **white only, no multiple colors, dark theme included** — blocks white at low alpha (dark: white 8 %; light: white 70 % with a thin `outline` border), a white sweep (dark: white 14 %; light: opaque white) moving diagonally over 1.6 s, one `AnimationController` per screen; no aurora gradient; "cùng radius, khoảng cách và chiều cao với component thật nên bố cục không nhảy"; reduced motion: still; one "Đang tải" semantics label per group, blocks excluded.
-- AsyncView (spec): no backdrop of its own (no card, gradient or glow behind loader, error or empty); first load → `skeleton` if given else `SignatureLoader(size: loaderSize)` (ripple); reload with data → keep data + inline loader at the top corner; error → `ErrorState(message: errorMessage(e, l10n), onRetry)`, with old data → keep data + one SnackBar; empty → `empty`.
+- SignatureLoader (spec, verbatim): "lá khẩu của logo đóng mở ở giữa, quanh đó **một** loại sóng lăn ra, chọn bằng tham số (không bao giờ hiện cả hai cùng lúc)": **ripple** "3 vòng đồng tâm nở từ 38% tới 100% kích thước rồi mờ dần, lệch nhịp 0,8 s, màu `primary`" for loading data; **vibration** "2 vòng gợn hình sin, `r(θ) = R + a·sin(nθ)` (`n = 12, a = 2,4%` và `n = 9, a = 3,2%`), vừa nở ra vừa xoay qua lại ±4–6° như dây rung, màu cyan `focus` và hồng `#FF45D0`, lệch 1,2 s" for waiting on another party. Sizes `screen` 150, `block` 96, `inline` 56 (no waves). No colored background (user, 2026-10-02): no `CtaSurface` disc, gradient or shadow behind the aperture; blades and a thin ring stroked in **the wave's color** (ripple: `primary`; vibration: cyan `focus`) on transparent. Aperture: 8 blades, 2.4 s cycle, close 0–45 %, hold to 55 %, open by 100 %, `Curves.easeInOutCubic`. Reduced motion: open aperture, one faint still ring, no waves.
+- Skeletons (spec, user 2026-10-02): **white only, no multiple colors, dark theme included** — blocks white at low alpha in dark (white 8 %), light neutral grey `#E6E3DE` in light (user: "ở nền sáng thì skeleton xám một chút"), a white sweep (dark: white 14 %; light: white 85 %) moving diagonally over 1.6 s, one `AnimationController` per screen; no aurora gradient; "cùng radius, khoảng cách và chiều cao với component thật nên bố cục không nhảy"; reduced motion: still; one "Đang tải" semantics label per group, blocks excluded.
+- AsyncView (spec): reuses `SignatureLoader` itself for loading without a skeleton; the loader area is exactly the outer wave circle (150 or 96 per `loaderSize`), centred, with no box, card, border or gradient around it; error and empty also sit on the bare screen; first load → `skeleton` if given else `SignatureLoader(size: loaderSize)` (ripple); reload with data → keep data + inline loader at the top corner; error → `ErrorState(message: errorMessage(e, l10n), onRetry)`, with old data → keep data + one SnackBar; empty → `empty`.
 - No `CircularProgressIndicator` anywhere in `lib/` after this plan (buttons and `ContactDial` use `SignatureLoader(size: inline)`); no hand-written `.when(loading:` in `lib/features/**`.
 - CLAUDE.md: tokens only (`AppColors`, `AppSpace`, `AppRadius`, `AppText`); strings in `app_vi.arb`; `package:photobooking/...` imports; widgets in `lib/core/widgets/` exported from `core/core.dart`; one primary action per screen; cancel/decline is a red button inside a confirmation sheet (→ `ConfirmSheet`).
 - Each widget: widget tests (states, semantics, 320 dp and 1.3× text in light and dark without overflow), and for each `.skeleton()`: **same size as the real widget** at 390 and 320 dp (`tester.getSize` equal).
@@ -100,7 +100,7 @@ for (final w in const [(n: 12, a: 0.024, phase: 0.17, swing: 5.0), (n: 9, a: 0.0
 }
 ```
 
-- [ ] **Step 1: Failing tests:** "ripple draws three circles and no wavy ring" (inspect the painter through a `paint` recording / golden at t = 0.5); "vibration draws two wavy rings and no circles"; "inline size draws no waves"; "no filled disc or gradient behind the aperture (only strokes)"; "one ticker while active; none when active is false"; "reduced motion: open aperture, one still ring, no waves, no ticker"; "semantics label is read"; goldens 3 frames × 2 waves × light/dark; "AsyncView paints no background of its own (no DecoratedBox/Container color around the loader)"; "AppButton loading shows the inline loader and no CircularProgressIndicator"; "ContactDial busy shows the inline loader".
+- [ ] **Step 1: Failing tests:** "ripple draws three circles and no wavy ring" (inspect the painter through a `paint` recording / golden at t = 0.5); "vibration draws two wavy rings and no circles"; "inline size draws no waves"; "no filled disc or gradient behind the aperture; blade color equals the wave color (primary for ripple, focus for vibration)"; "one ticker while active; none when active is false"; "reduced motion: open aperture, one still ring, no waves, no ticker"; "semantics label is read"; goldens 3 frames × 2 waves × light/dark; "AsyncView first load without skeleton is a SignatureLoader whose size equals the outer wave circle, with no DecoratedBox/colored Container around it"; "AppButton loading shows the inline loader and no CircularProgressIndicator"; "ContactDial busy shows the inline loader".
 - [ ] **Step 2: Run** → FAIL. **Step 3: Implement**; replace every `ApertureLoader(` call (S04.04/S01.01 use `wave: vibration` only where the spec says "chờ một bên khác"; splash uses ripple). **Step 4: Run** → PASS; analyze clean.
 - [ ] **Step 5: Commit** `feat(core): SignatureLoader with ripple or vibration waves; no more spinners`.
 
@@ -133,7 +133,7 @@ CompletenessMeter.skeleton();
 AppOptionTile.skeleton({bool withThumb = false});
 ```
 
-- [ ] **Step 1: Failing tests:** "the sweep is one controller for many blocks under a scope"; "blocks and sweep are white in light and dark (no hue: r == g == b)"; "reduced motion: still blocks, no ticker"; "a group reads 'Đang tải' once and hides block semantics"; for each widget: "skeleton has the same size as the real widget at 390 and 320 dp" (pump both in identical constraints, compare `tester.getSize`); goldens light/dark.
+- [ ] **Step 1: Failing tests:** "the sweep is one controller for many blocks under a scope"; "no hue in blocks or sweep (r == g == b): white in dark, light grey in light"; "reduced motion: still blocks, no ticker"; "a group reads 'Đang tải' once and hides block semantics"; for each widget: "skeleton has the same size as the real widget at 390 and 320 dp" (pump both in identical constraints, compare `tester.getSize`); goldens light/dark.
 - [ ] **Step 2–4:** implement (ARB `loadingLabel` "Đang tải" — reuse if present); run → PASS.
 - [ ] **Step 5: Commit** `feat(core): aurora skeleton sweep and a skeleton for each data widget`.
 
@@ -212,7 +212,8 @@ class PolicyTable extends StatelessWidget { const PolicyTable({required List<Pol
 
 ```dart
 Future<bool> showConfirmSheet(BuildContext context, {required String title, String? body, Widget? content,
-    required String confirmLabel, required String keepLabel, bool danger = true, Future<void> Function()? onConfirm}) {
+    required String confirmLabel, required String keepLabel, bool danger = true, Future<void> Function()? onConfirm,
+    ValueListenable<bool>? confirmEnabled /* e.g. S06.03: disabled until a valid reason is chosen */}) {
   return showAppSheet<bool>(context, isDismissible: () => !running, builder: (_) => _ConfirmBody(...))
       .then((v) => v ?? false);
 }
@@ -225,24 +226,25 @@ Future<bool> showConfirmSheet(BuildContext context, {required String title, Stri
 
 `ProviderPicker` needs `PaymentProviderCode`; it is defined by plan 4b — **define it here** in `lib/core/payments.dart` (`enum PaymentProviderCode { momo, vnpay }` with `code`) and plan 4b imports it from core.
 
-- [ ] **Step 1: Failing tests:** ReasonPicker chips and radio; "Lý do khác" field with min/max length; ProviderPicker single choice; ConfirmSheet "keep pops false without calling onConfirm"; "double tap runs onConfirm once; sheet locked while running" (drag/back ignored); "error keeps the sheet open with a SnackBar"; "danger uses the red button, never the gradient"; 320 dp/1.3×.
+- [ ] **Step 1: Failing tests:** ReasonPicker chips and radio; "Lý do khác" field with min/max length; ProviderPicker single choice; ConfirmSheet "keep pops false without calling onConfirm"; "double tap runs onConfirm once; sheet locked while running" (drag/back ignored); "error keeps the sheet open with a SnackBar"; "danger uses the red button, never the gradient"; "confirmEnabled false disables confirm and updates when it flips"; 320 dp/1.3×.
 - [ ] **Step 2–4.** **Step 5: Commit** `feat(core): ReasonPicker, ProviderPicker and ConfirmSheet`.
 - [ ] **Step 6:** replace the existing hand-made confirmation sheets that match (sign-out on S09.02, discard draft on S10.01, …) with `showConfirmSheet`; tests updated. Commit `refactor(features): confirmation sheets use ConfirmSheet`.
 
 ---
 
-### Task 7: `CountdownRing` and `CountdownText`
+### Task 7: `CountdownRing`, `CountdownText` and `UploadProgressRing`
 
 **Interfaces:**
 
 ```dart
 class CountdownRing extends StatefulWidget { const CountdownRing({required DateTime deadline, required Duration total, double size = 96, VoidCallback? onExpired}); }
+class UploadProgressRing extends StatelessWidget { const UploadProgressRing({required double fraction, double size = 28}); }   // determinate ring for uploads (S05.05 share grid, S10.01), primary stroke on transparent; replaces any determinate CircularProgressIndicator
 class CountdownText extends StatefulWidget { const CountdownText({required DateTime deadline, required Widget Function(BuildContext, Duration left) builder, VoidCallback? onExpired}); }
 // Both read "now" from a `DateTime Function() now` parameter defaulting to DateTime.now (tests pass a fake clock),
 // tick every second when left < 1 h, else every minute, stop at zero and call onExpired once.
 ```
 
-- [ ] **Step 1: Failing tests:** "ticks every minute above an hour and every second below"; "stops at zero and calls onExpired once"; "semantics timer reads 'Còn 47 giây'"; "reduced motion: ring jumps per second, no interpolation"; "no ticker after expiry".
+- [ ] **Step 1: Failing tests:** "ticks every minute above an hour and every second below"; "stops at zero and calls onExpired once"; "semantics timer reads 'Còn 47 giây'"; "reduced motion: ring jumps per second, no interpolation"; "no ticker after expiry"; UploadProgressRing "draws fraction 0..1 clamped, semantics value '{n}%'".
 - [ ] **Step 2–4.** **Step 5: Commit** `feat(core): CountdownRing and CountdownText`.
 
 ---
@@ -259,7 +261,7 @@ enum BookingCardSize { normal, compact }
 class BookingCard extends StatelessWidget { const BookingCard({required BookingSummary data, BookingCardSize size = BookingCardSize.normal,
     Widget? actions, bool highlight = false, VoidCallback? onTap}); static Widget skeleton({BookingCardSize size = BookingCardSize.normal}); }
 // lib/data/booking/booking_summary.dart
-BookingSummary bookingSummaryOf(Booking b, {required String photographerName, String? thumbUrl});
+BookingSummary bookingSummaryOf(Booking b, {required String photographerName, String? thumbUrl, String? statusLabel /* e.g. "Chờ cọc" on S04.04 */});
 // lib/core/widgets/status_timeline.dart
 enum TimelineStepState { done, current, upcoming, stopped }
 @immutable class TimelineStep { const TimelineStep({required this.title, this.subtitle, required this.state}); }
@@ -286,12 +288,13 @@ final class SystemContent extends ChatBubbleContent { const SystemContent(this.t
 enum BubbleSendState { sent, sending, failed }
 class ChatBubble extends StatelessWidget { const ChatBubble({required ChatBubbleContent content, required bool mine,
     BubbleSendState state = BubbleSendState.sent, String? senderName, VoidCallback? onRetry}); static Widget skeleton({bool mine = false}); }
-class ChatComposer extends StatefulWidget { const ChatComposer({required ValueChanged<String> onSend, VoidCallback? onPickImage, bool enabled = true, String? disabledReason}); }
+class ChatComposer extends StatefulWidget { const ChatComposer({required ValueChanged<String> onSend, VoidCallback? onPickImage, bool enabled = true, String? disabledReason,
+    bool busy = false /* image upload in flight: image button shows the inline SignatureLoader */}); }
 class ConversationRow extends StatelessWidget { const ConversationRow({required String name, String? avatarUrl, required String preview,
     required String timeLabel, int unread = 0, Widget? badge, VoidCallback? onTap}); static Widget skeleton(); }
 ```
 
-- [ ] **Step 1: Failing tests:** mine/theirs alignment and colors; image and location bubbles; system bubble centred with actions; sending dims with a clock; failed shows "Gửi lại" and calls onRetry; composer does not send empty/whitespace, clears after send, shows `disabledReason`; ConversationRow unread badge read as "{n} tin chưa đọc"; skeleton sizes; 320 dp/1.3×.
+- [ ] **Step 1: Failing tests:** mine/theirs alignment and colors; image and location bubbles; system bubble centred with actions; sending dims with a clock; failed shows "Gửi lại" and calls onRetry; composer does not send empty/whitespace, clears after send, shows `disabledReason`; busy shows the inline loader on the image button and blocks a second pick; ConversationRow unread badge read as "{n} tin chưa đọc"; skeleton sizes; 320 dp/1.3×.
 - [ ] **Step 2–4.** **Step 5: Commit** `feat(core): chat bubble, composer and conversation row`.
 
 ---

@@ -26,7 +26,8 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 6 | `2026-10-01-step3b4-home-detail-find.md` (S02.01, S02.02, S02.06) | done 2026-10-02; /u/:id and /u/:id/book routes come with 2d2 and step 4 (taps there hit the router error page until then) |
 | 7 | `2026-10-01-step3c-create-post.md` (S10.01) | done 2026-10-02 |
 | 8 | `2026-10-01-step2d2-photographer-profile.md` (S03.01) | done 2026-10-02; S09.01 rows (phone, skills, public profile) went to S09.02 per the new mock; /u/:uid/book and /ask come with step 4 |
-| 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | not started; needs 8a |
+| 8a2 | `2026-10-02-shared-components-a.md` (SignatureLoader, white skeletons, AsyncView, migration of existing screens, money/decision/countdown/booking/chat widgets) | not started; needs 8a; runs before every screen plan (user 2026-10-02: components first, screens after) |
+| 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | not started; needs 8a2 |
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S05.02, S05.03, S05.01, S06.01, S06.02, S06.03) | not started; needs 8b; fixes 4a's missing read rule for `bookings/{id}/events` |
 | 8d | `2026-10-02-step4d-chat.md` (S07.01, S07.02 chat list, reschedule) | not started; needs 8c; adds new screen code S07.02 (mock section for the user to review) |
 | 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | not started; needs 8d |

@@ -14,9 +14,9 @@
 
 **Tech Stack:** Flutter, Riverpod 3, go_router 18, url_launcher (already a dependency), existing core widgets.
 
-**Spec:** `docs/superpowers/specs/screens/booking.md` (§ S04.01–S04.03 "Quy tắc chung", S04.01, S04.02, Bước 3, S04.03, S04.04); `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` §7 (slots), §8 (deposit, never trust the redirect), §10 (`day_taken`, network); `docs/superpowers/specs/2026-10-01-remaining-screens.md` §3b.1 (phone gate before booking), §3g.6 (`EscrowNotice` text); `docs/superpowers/specs/components/shared-components.md` (`BookingCard`, `StepProgress`, `AvailabilityCalendar`, `PhoneField`, `ApertureLoader`); mock `docs/design/ui-mock.html` `data-code="S04.01"`, `"S04.02"`, `"S04.03"`, `"S04.04"` (layout authority).
+**Spec:** `docs/superpowers/specs/screens/booking.md` (§ S04.01–S04.03 "Quy tắc chung", S04.01, S04.02, Bước 3, S04.03, S04.04); `docs/superpowers/specs/2026-09-30-photography-marketplace-design.md` §7 (slots), §8 (deposit, never trust the redirect), §10 (`day_taken`, network); `docs/superpowers/specs/2026-10-01-remaining-screens.md` §3b.1 (phone gate before booking), §3g.6 (`EscrowNotice` text); `docs/superpowers/specs/components/shared-components.md` (`BookingCard`, `StepProgress`, `AvailabilityCalendar`, `PhoneField`, `SignatureLoader`, `AsyncView`, `AppSkeleton`, `MoneyBreakdown`, `EscrowNotice`, `ProviderPicker`, `ConfirmSheet`); mock `docs/design/ui-mock.html` `data-code="S04.01"`, `"S04.02"`, `"S04.03"`, `"S04.04"` (layout authority).
 
-**Prerequisite:** plan 4a (`docs/superpowers/plans/2026-10-02-step4a-booking-backend.md`) merged into `flutter-rewrite`, plus every plan marked done in `RUN-ORDER.md`.
+**Prerequisite:** plan 4a (`docs/superpowers/plans/2026-10-02-step4a-booking-backend.md`) merged into `flutter-rewrite`, plan `2026-10-02-shared-components-a.md` done (RUN-ORDER row 8a2: `SignatureLoader`, `AsyncView`, component skeletons, `BookingCard`, `EscrowNotice`, `MoneyBreakdown`, `ProviderPicker` + `PaymentProviderCode`, `showConfirmSheet`), plus every plan marked done in `RUN-ORDER.md`.
 
 ## Contract with plan 4a (merged code, 2026-10-02)
 
@@ -84,7 +84,8 @@ const kNoteMaxLength = 300; const kPlaceMinLength = 3; const kPlaceMaxLength = 1
 ({int deposit, int remaining}) depositFor(int price) => BookingRules.computeDeposit(price);
 
 // booking_repository.dart
-enum PaymentProviderCode { momo, vnpay } // .code: 'momo' | 'vnpay' — passed as `provider:`
+// PaymentProviderCode is NOT defined here: it comes from core (`lib/core/payments.dart`, exported by
+// `core/core.dart`, built by shared-components-a); `.code` ('momo' | 'vnpay') is passed as `provider:`.
 enum BookingErrorCode { dayTaken, phoneRequired, priceChanged, notEligible, deadlinePassed, conflict,
   permissionDenied, notFound, invalidArgument, network, unknown }
 BookingErrorCode bookingErrorOf(Object error);          // BookingException.code → enum; FirebaseFunctionsException 'unavailable'/'deadline-exceeded' and SocketException → network
@@ -105,7 +106,9 @@ void remove(String id);              // deletes and emits null on watchBooking (
 
 Field names used below map to the real model: package price → `serviceSnapshot.price`, duration → `serviceSnapshot.durationMinutes`, deposit → `deposit`, remaining → `remaining`, place name → `place.name`; `createBooking(place: BookingPlace(name: …))`; `createDeposit(provider: provider.code)`; `confirmFakePayment(paymentId:)`; `checkDeposit(bookingId:)` returns `paid`.
 
-Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/features/discovery/book_entry.dart`), `profilePackagesProvider` (`lib/features/photographer_profile/profile_providers.dart`, `ServiceSummary` with `id`, `name`, `priceVnd`, `durationMinutes`, `coverUrl`), `availabilityMonthProvider` and `calendarTodayProvider` (`lib/data/photographer/availability_providers.dart`), `currentContactProvider`, `userContactRepositoryProvider` (`lib/data/user/user_contact_providers.dart`), `safeReturnTo` (`lib/features/contact/return_to.dart`), `photographerProfileProvider` (`lib/data/photographer/public_profile_providers.dart`, for name and avatar), `externalLauncherProvider` (`lib/data/contact/contact_providers.dart`), `clockProvider`, core widgets `showAppSheet`, `StepProgress`, `AvailabilityCalendar`, `AvailabilityLegend`, `PhoneField`, `AppButton`, `AppChip`, `AppOptionTile`, `StatusBadge`, `ApertureLoader`, `GlassCard`, `NetworkPhoto`, `ScreenCode`, `ScreenCodes.bookService` (S04.01), `ScreenCodes.bookDateTime` (S04.02), `ScreenCodes.bookReview` (S04.03), `ScreenCodes.awaitingPayment` (S04.04) in `lib/core/screen_codes.dart`.
+Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/features/discovery/book_entry.dart`), `profilePackagesProvider` (`lib/features/photographer_profile/profile_providers.dart`, `ServiceSummary` with `id`, `name`, `priceVnd`, `durationMinutes`, `coverUrl`), `availabilityMonthProvider` and `calendarTodayProvider` (`lib/data/photographer/availability_providers.dart`), `currentContactProvider`, `userContactRepositoryProvider` (`lib/data/user/user_contact_providers.dart`), `safeReturnTo` (`lib/features/contact/return_to.dart`), `photographerProfileProvider` (`lib/data/photographer/public_profile_providers.dart`, for name and avatar), `externalLauncherProvider` (`lib/data/contact/contact_providers.dart`), `clockProvider`, core widgets `showAppSheet`, `StepProgress`, `AvailabilityCalendar`, `AvailabilityLegend`, `PhoneField`, `AppButton`, `AppChip`, `AppOptionTile`, `StatusBadge`, `GlassCard`, `NetworkPhoto`, `ScreenCode`, `ScreenCodes.bookService` (S04.01), `ScreenCodes.bookDateTime` (S04.02), `ScreenCodes.bookReview` (S04.03), `ScreenCodes.awaitingPayment` (S04.04) in `lib/core/screen_codes.dart`.
+
+Core widgets built by `2026-10-02-shared-components-a.md` (use them, never recreate or restyle them): `SignatureLoader` (`LoaderSize`, `LoaderWave`), `AsyncView`, `AppSkeleton` + the `.skeleton()` of each component (`AppOptionTile.skeleton`, `AvailabilityCalendar.skeleton`, `BookingCard.skeleton`, `MoneyBreakdown.skeleton`), `ErrorState`, `BookingCard` + `BookingSummary` (core) and `bookingSummaryOf` (`lib/data/booking/booking_summary.dart`), `EscrowNotice`, `MoneyBreakdown` + `MoneyLine`/`MoneyLineStyle`, `ProviderPicker` + `PaymentProviderCode` (`lib/core/payments.dart`), `showConfirmSheet`.
 
 ## Global Constraints
 
@@ -118,6 +121,8 @@ Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/fea
 - S04.03: "đang gọi cổng → nút loading và vô hiệu mọi điều khiển; lỗi `day_taken` → quay S04.02 với ngày đó gạch và báo; lỗi `phone_required` → S04.05; lỗi mạng → giữ nguyên, "Thử lại""; "ghi chú tối đa 300 ký tự có đếm; SĐT kiểm tra định dạng khi rời ô"; "không gọi cổng khi SĐT sai hoặc thiếu; client không tin kết quả redirect, chỉ tin `bookings.status`".
 - S04.04: "lắng nghe `bookings/{id}`; "Kiểm tra lại" gọi Function hỏi cổng"; "`paid` → chuyển; sau 30 phút `draft` bị dọn → báo "Yêu cầu đã hết hạn" và về S04.01"; "không tạo thanh toán thứ hai khi "Kiểm tra lại"; vòng chờ dừng khi giảm chuyển động bật (thay bằng biểu tượng tĩnh)".
 - Strings (spec keys → ARB keys in `lib/l10n/app_vi.arb`, camelCase, Vietnamese with full diacritics, then `flutter gen-l10n`): `s05_title` "Chọn gói" → `bookChoosePackage`; `s05_with` "Đặt với {name}" → `bookWith`; `s05_continue` "Tiếp tục · {price}" → `bookContinuePrice`; `s06_legendFree` "Rảnh", `s06_legendBooked` "Đã đặt", `s06_legendPending` "Chờ" → reuse the existing `AvailabilityLegend` strings if present, else `bookLegendFree/Booked/Pending`; `s06_waiting` "{n} người đang chờ" → `bookWaiting`; `s06_endsAt` "{start}–{end}" → `bookEndsAt`; `s07_title` "Xem lại" → `bookReview`; `s07_note` "Ghi chú" → `bookNote`; `s07_phone` "SĐT của bạn" → `bookYourPhone`; `s07_deposit` "Đặt cọc hôm nay (30%)" → `bookDepositToday`; `s07_remaining` "Còn lại trả tại buổi chụp" → `bookRemaining`; `s07_policy` "Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc." → `bookPolicy`; `s07_escrow` "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành." → `escrowNoticeDeposit`; `s07_pay` "Đặt cọc {amount}" → `bookPay`; `s08_title` "Đang chờ xác nhận thanh toán" → `payPendingTitle`; `s08_body` "Cổng thanh toán chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ." → `payPendingBody`; `s08_check` "Kiểm tra lại" → `payCheckAgain`; `s08_changeProvider` "Đổi cổng thanh toán" → `payChangeProvider`. Other strings this plan adds are listed in the task that needs them.
+- Loading (shared-components-a): every `AsyncValue` renders through `AsyncView` with the skeleton of the component that will appear; no `CircularProgressIndicator`, no hand-written `.when(loading:`. Screen-level waits use `SignatureLoader` (ripple by default); S04.04's wait for the payment gateway uses `SignatureLoader(wave: LoaderWave.vibration)`. Buttons in flight use `AppButton(loading: true)` (inline loader).
+- Skeletons are white only (no aurora or other color, dark theme included); loaders and `AsyncView` have no colored backdrop. Both are owned by core: screens must not restyle, tint or wrap them in a colored container.
 - Money is shown with the app's existing VND formatter (`formatMoney(int vnd)` in `lib/core/format.dart`) — never hand-built.
 - CLAUDE.md: one primary action per screen (`AppButton.primary`); tokens only (`AppColors`, `AppSpace`, `AppRadius`); imports `package:photobooking/...`, features import `core/core.dart`; no `cloud_firestore`/`cloud_functions` in `lib/features/**`; every screen state wrapped in `ScreenCode`; a customer needs a phone number to book.
 - Tests: phone-sized view (390 × 844, dpr 1, reset in `tearDown`) in the pump helper, plus the explicit 320 dp / text 1.3× layout tests the tasks name; every test `ProviderContainer`/`ProviderScope` gets `retry: (_, _) => null`; `AppButton` height is 48.
@@ -130,8 +135,8 @@ Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/fea
 3. **After `paid`.** S05.02 is built by plan 4c. Until then S04.04's paid state shows a success panel ("Đã gửi yêu cầu", the deposit and "{name} sẽ trả lời trong 24 giờ", the mock's S05.02 toast) with one primary button "Xem lịch đặt" → `/bookings`. Plan 4c replaces this panel with `context.go('/b/$id')`; the hook is `BookingPaidPanel` (Task 7), which 4c deletes.
 4. **Place step.** No map in v1 of this sheet (no map package yet; the spec's "Bản đồ nhỏ" waits for the map work of plan I5). The step has a text field and up to three suggestion chips: the photographer's service-area city (`photographerProfileProvider` → `serviceArea.city` or equivalent field) and, when the customer came from S02.06, the area filter label passed as `area` in the query string (`bookingPath` gains an optional `area`). Record this as a deviation for the user.
 5. **Phone on S04.03.** The field starts with the customer's saved number. If the customer edits it to another valid number, "Đặt cọc" first saves it with `userContactRepositoryProvider.save(...)` (the same call S04.05 uses), then creates the booking; the server reads the number from `users/{uid}/private/contact`, never from the booking payload.
-6. **Provider choice** is two outline chips "MoMo" / "VNPay" as in the mock (single choice, MoMo selected by default), not radio tiles.
-7. **Closing.** Back or the drag handle on step 1 with nothing chosen closes at once; with any choice made it asks "Bỏ yêu cầu đặt lịch?" ("Bỏ" in red inside the confirmation sheet, "Tiếp tục đặt" outline). Back on steps 2–4 goes to the previous step.
+6. **Provider choice** is core's `ProviderPicker` (two small outline buttons "MoMo" / "VNPay" as in the mock, single choice, MoMo selected by default), not radio tiles.
+7. **Closing.** Back or the drag handle on step 1 with nothing chosen closes at once; with any choice made it asks "Bỏ yêu cầu đặt lịch?" through core's `showConfirmSheet(title: l10n.bookDiscardTitle, confirmLabel: l10n.bookDiscard, keepLabel: l10n.bookKeepGoing, danger: true)` ("Bỏ" in red inside the confirmation sheet, "Tiếp tục đặt" outline). Back on steps 2–4 goes to the previous step.
 
 ## Review Focus
 
@@ -147,10 +152,8 @@ Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/fea
 
 | File | Responsibility |
 |---|---|
-| `lib/core/widgets/app_bottom_sheet.dart` (modify) | make the frame public as `AppSheetFrame` (used by the sheet route) |
-| `lib/core/widgets/booking_card.dart` (create) | `BookingCard` + `BookingSummary` (shared component; S04.03, S04.04 now; S05.02, S07.01, S05.01, S06.01 later) |
-| `lib/core/widgets/escrow_notice.dart` (create) | `EscrowNotice` (S04.03 now; S05.02, S11.03, S11.04 later) |
-| `lib/core/core.dart` (modify) | exports |
+| `lib/core/widgets/app_bottom_sheet.dart` (modify) | make the frame public as `AppSheetFrame` (used by the sheet route; not built by shared-components-a) |
+| `lib/core/core.dart` (modify) | export `AppSheetFrame` |
 | `lib/data/booking/payments_mode.dart` (create) | `realPaymentsProvider` |
 | `lib/features/booking/booking_flow_state.dart` (create) | `BookingStep`, `BookingFlowState`, `BookingFlowArgs` |
 | `lib/features/booking/booking_flow_controller.dart` (create) | `bookingFlowControllerProvider`, all choices, submit |
@@ -162,42 +165,34 @@ Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/fea
 | `lib/app/router.dart` (modify) | `/u/:uid/book`, `/b/:id/pay` |
 | `lib/l10n/app_vi.arb` (+ generated) | strings |
 | `test/support/booking_world.dart` (create) | pump helper with fakes (booking, availability, contact, profile, packages, launcher, clock) |
-| `test/core/widgets/booking_card_test.dart`, `escrow_notice_test.dart` | shared widgets |
+| `test/core/widgets/app_bottom_sheet_test.dart` | `AppSheetFrame` |
 | `test/features/booking/*_test.dart` | per task |
 | `docs/design/ui-mock.html`, `docs/superpowers/specs/2026-10-01-remaining-screens.md` (modify, Task 8) | code table status; mock left as is unless the user asks |
 
 ---
 
-### Task 1: Contract check, shared widgets (`AppSheetFrame`, `BookingCard`, `EscrowNotice`), payments mode
+### Task 1: Contract check, `AppSheetFrame`, payments mode
 
 **Files:**
 - Modify: `lib/core/widgets/app_bottom_sheet.dart`, `lib/core/core.dart`, `lib/l10n/app_vi.arb`, the 4a files named in "Additions this plan makes in Task 1", `packages/domain/src/booking_requests.ts`, `packages/domain/src/create_booking.ts`, `app_flutter/firebase/functions/src/callables/booking.ts` (expectedPrice)
-- Create: `lib/core/widgets/booking_card.dart`, `lib/core/widgets/escrow_notice.dart`, `lib/data/booking/payments_mode.dart`
-- Test: `test/core/widgets/booking_card_test.dart`, `test/core/widgets/escrow_notice_test.dart`, `test/core/widgets/app_bottom_sheet_test.dart` (extend if it exists)
+- Create: `lib/data/booking/payments_mode.dart`
+- Test: `test/core/widgets/app_bottom_sheet_test.dart` (extend if it exists)
+
+`BookingCard`/`BookingSummary`/`bookingSummaryOf`, `EscrowNotice` and `PaymentProviderCode` already exist (shared-components-a); this task does not create or change them.
 
 **Interfaces:**
-- Consumes: 4a's `Booking`, `BookingStatus` (`StatusBadge`).
+- Consumes: 4a's `Booking`; core `PaymentProviderCode` (`lib/core/payments.dart`).
 - Produces:
   - `class AppSheetFrame extends StatelessWidget { const AppSheetFrame({required Widget child}); }` — exactly today's private `_SheetFrame` (key `app-sheet`, 88 % max height, radius 28, blur, `AppColors.overlay` barrier stays in `showAppSheet`). `showAppSheet` uses it.
-  - `@immutable class BookingSummary { const BookingSummary({required String photographerName, required String serviceName, String? thumbUrl, required String day, required String start, required String end, required String placeName, BookingStatus? status, String? statusLabel}); factory BookingSummary.fromBooking(Booking b, {required String photographerName, String? thumbUrl}); }` — `day` is `yyyy-MM-dd`; the card formats "T7 12/10 · 15:30–17:30" with the `weekdayLabel` + `formatDayMonth` (`lib/core/format.dart`).
-  - `enum BookingCardSize { normal, compact }`; `class BookingCard extends StatelessWidget { const BookingCard({required BookingSummary data, BookingCardSize size = BookingCardSize.normal, Widget? actions, bool highlight = false, VoidCallback? onTap}); }` — spec layout: thumb 56 (`compact`) / 64 (`normal`), radius 12, title "{photographer} · {service}", date line with `FontFeature.tabularFigures()`, place line (hidden in `compact`), `StatusBadge` right when `status != null`, `statusLabel` overrides the badge text (S04.04 "Chờ cọc"), `GlassCard(highlight:)`, `actions` row under the card.
-  - `class EscrowNotice extends StatelessWidget { const EscrowNotice({required String text}); }` — lock icon + text in a `GlassCard`, `Semantics(container: true)`; callers pass `l10n.escrowNoticeDeposit` (S04.03) or the S05.02 variants later.
   - `final realPaymentsProvider = Provider<bool>((ref) => const bool.fromEnvironment('REAL_PAYMENTS'));`
 
 - [ ] **Step 1: Add the 4a additions** (including the `expectedPrice` server change and its domain + Functions tests: `(cd packages/domain && npm test)`, `(cd app_flutter/firebase/functions && npm test && npm run typecheck)`) listed under "Additions this plan makes in Task 1", with tests in `test/data/booking/booking_rules_test.dart` ("daySlots: 120 minutes → 06:00 … 18:00, 25 slots; 480 → last 12:00; 900 → empty"; "endTimeFor 15:30 + 120 → 17:30"; "depositFor matches the shared fixture `packages/domain/test/fixtures/booking_policy.json`"; "bookingErrorOf maps every server code and network errors") and `test/data/booking/fake_booking_repository_test.dart` ("nextError throws once"; "remove emits null"; "calls are recorded"). Run `../scripts/bin/flutter test --no-pub test/data/booking` → PASS.
 - [ ] **Step 2: Write the failing widget tests.**
-  - `booking_card_test.dart`:
-    - "normal card shows photographer · service, the Vietnamese date line, the place and the status badge" — `BookingSummary(day: '2026-10-12', start: '15:30', end: '17:30', …, status: requested)` → texts "Minh Trí · Chân dung 2 giờ", "T7 12/10 · 15:30–17:30", "Bến Bạch Đằng, Quận 1", one `StatusBadge`.
-    - "compact card hides the place and uses the 56 thumb" — `size: compact` → no place text; thumb `SizedBox` 56×56.
-    - "statusLabel overrides the badge text" — `statusLabel: 'Chờ cọc'` → finds "Chờ cọc".
-    - "actions render under the card and onTap fires" — tap card → callback count 1; actions row found below (`tester.getTopLeft` y greater).
-    - "320 dp and text 1.3× do not overflow" — light and dark, no exceptions.
-  - `escrow_notice_test.dart`: "shows the text with a lock icon and reads as one container" (semantics label contains the text).
-  - `app_bottom_sheet_test.dart`: "showAppSheet still draws the frame (key app-sheet)" and "AppSheetFrame caps at 88 % of the height".
-- [ ] **Step 3: Run them** → FAIL (missing classes).
-- [ ] **Step 4: Implement** the three widgets and the provider; add ARB key `escrowNoticeDeposit`; `flutter gen-l10n`; export from `core.dart`.
-- [ ] **Step 5: Run** `../scripts/bin/flutter test --no-pub test/core/widgets` → PASS; `flutter analyze --no-pub` → no issues.
-- [ ] **Step 6: Commit** `feat(core): BookingCard, EscrowNotice and a public AppSheetFrame`.
+  - `app_bottom_sheet_test.dart`: "showAppSheet still draws the frame (key app-sheet)" and "AppSheetFrame caps at 88 % of the height". (If shared-components-a added a `canDismiss` hook to `showAppSheet` for `ConfirmSheet`, keep it working: "showAppSheet with canDismiss false ignores the barrier tap" stays green.)
+- [ ] **Step 3: Run them** → FAIL (missing class).
+- [ ] **Step 4: Implement** `AppSheetFrame` and the provider; add ARB key `escrowNoticeDeposit` (the text callers pass to core's `EscrowNotice`; reuse if shared-components-a already added it); `flutter gen-l10n`; export `AppSheetFrame` from `core.dart`.
+- [ ] **Step 5: Run** `../scripts/bin/flutter test --no-pub test/core/widgets test/data/booking` → PASS; `flutter analyze --no-pub` → no issues.
+- [ ] **Step 6: Commit** `feat(booking): booking rule mirrors, expectedPrice, payments mode and a public AppSheetFrame`.
 
 ---
 
@@ -233,7 +228,7 @@ class BookingFlowState {
     this.day, this.start,
     this.placeName = '', this.note = '',
     this.phone,                    // E.164 or null; starts from the saved contact
-    this.provider = PaymentProviderCode.momo,
+    this.provider = PaymentProviderCode.momo,   // core (lib/core/payments.dart)
     this.phase = SubmitPhase.idle,
     this.error,                    // BookingErrorCode? of the last submit
     this.takenDays = const {},     // days refused with day_taken in this flow
@@ -337,9 +332,9 @@ class BookingSheetPage extends Page<void> {
 }
 ```
 
-  - `class BookingSheet extends ConsumerStatefulWidget` — `Align(bottomCenter)` + `AppSheetFrame` + `PopScope(canPop: false, onPopInvokedWithResult: …)` that calls `controller.back()`; when it returns false and `state.hasChoices`, shows the close confirmation (`showAppSheet`, red "Bỏ", outline "Tiếp tục đặt"), else pops. Header row per step: avatar 28 + "Đặt với {name}" (S04.01) or "{service} · {name}" (S04.02), `StepProgress(current: step.index + 1, total: 4, showCount: true)`. Body switches on `state.step`. Holds `ref.keepAlive()` link on the flow provider while a pushed route (S04.05) is on top (`RouteAware` or `ModalRoute.of(context)!.isCurrent` check), closes it in `dispose`.
-  - Entry guard: on first build, if `currentContactProvider` resolves to null → `context.replace('/profile/phone?returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}')`. A loading contact shows the sheet with a skeleton; an error is treated as no phone (fail closed, like `startBooking`).
-  - S04.01 `ServiceStep`: header per mock; title `bookChoosePackage`; one `AppOptionTile`-style row per package (thumb 48 via `NetworkPhoto(coverUrl)`, name, short line "{editedCount} ảnh · …" from `ServiceSummary` fields that exist, price right); primary `AppButton.primary(label: l10n.bookContinuePrice(formatMoney(price)))` disabled until chosen; loading → skeleton rows; error → `ErrorState` with retry (`ref.invalidate(profilePackagesProvider(uid))`); empty → `EmptyState` "Nhiếp ảnh gia chưa đăng gói" (`bookNoPackages`) with "Đóng". `priceChanged` → inline banner `bookPriceChanged` "Giá gói đã đổi" above the list. Wrapped in `ScreenCode(ScreenCodes.bookService)`.
+  - `class BookingSheet extends ConsumerStatefulWidget` — `Align(bottomCenter)` + `AppSheetFrame` + `PopScope(canPop: false, onPopInvokedWithResult: …)` that calls `controller.back()`; when it returns false and `state.hasChoices`, shows the close confirmation with core's `showConfirmSheet(context, title: l10n.bookDiscardTitle, confirmLabel: l10n.bookDiscard, keepLabel: l10n.bookKeepGoing, danger: true)` (red "Bỏ", outline "Tiếp tục đặt"; no custom sheet) and pops when it returns `true`, else pops. Header row per step: avatar 28 + "Đặt với {name}" (S04.01) or "{service} · {name}" (S04.02), `StepProgress(current: step.index + 1, total: 4, showCount: true)`. Body switches on `state.step`. Holds `ref.keepAlive()` link on the flow provider while a pushed route (S04.05) is on top (`RouteAware` or `ModalRoute.of(context)!.isCurrent` check), closes it in `dispose`.
+  - Entry guard: on first build, if `currentContactProvider` resolves to null → `context.replace('/profile/phone?returnTo=${Uri.encodeComponent(GoRouterState.of(context).uri.toString())}')`. A loading contact shows the sheet with the current step's component skeleton (S04.01: `AppOptionTile.skeleton(withThumb: true)` ×3); an error is treated as no phone (fail closed, like `startBooking`).
+  - S04.01 `ServiceStep`: header per mock; title `bookChoosePackage`; one `AppOptionTile`-style row per package (thumb 48 via `NetworkPhoto(coverUrl)`, name, short line "{editedCount} ảnh · …" from `ServiceSummary` fields that exist, price right); primary `AppButton.primary(label: l10n.bookContinuePrice(formatMoney(price)))` disabled until chosen; the list renders through `AsyncView(value: profilePackagesProvider(uid), skeleton: (_) => Column(children: [for (var i = 0; i < 3; i++) AppOptionTile.skeleton(withThumb: true)]), onRetry: () => ref.invalidate(profilePackagesProvider(uid)), isEmpty: (l) => l.isEmpty, empty: …)` — first load shows the skeleton rows, error shows core's `ErrorState` with retry, empty shows `EmptyState` "Nhiếp ảnh gia chưa đăng gói" (`bookNoPackages`) with "Đóng". `priceChanged` → inline banner `bookPriceChanged` "Giá gói đã đổi" above the list. Wrapped in `ScreenCode(ScreenCodes.bookService)`.
 - `test/support/booking_world.dart`: `Future<void> pumpBookingRoute(WidgetTester t, {String path = '/u/p1/book', FakeBookingRepository? bookings, List<ServiceSummary> packages = …, Map<DateTime, AvailabilityDay> days = const {}, UserContact? contact = const UserContact(phone: '+84903123456'), DateTime? now})` — builds the real router (`screenRouterApp` from `test/support/screen_host.dart` if it fits, else a `GoRouter` with the real routes) with overrides for `bookingRepositoryProvider`, `availabilityRepositoryProvider` (`FakeAvailabilityRepository`), `userContactRepositoryProvider` (fake), `profilePackagesProvider`, `photographerProfileProvider`, `externalLauncherProvider` (recording fake), `clockProvider`, `calendarTodayProvider`, `realPaymentsProvider`; phone-sized view; returns handles for assertions.
 
 - [ ] **Step 1: Write the failing tests:**
@@ -355,11 +350,12 @@ class BookingSheetPage extends Page<void> {
     - "the button shows the total and is disabled until a package is chosen".
     - "a single package is preselected and the button is enabled".
     - "no packages shows Nhiếp ảnh gia chưa đăng gói and Đóng closes".
+    - "first load shows AppOptionTile.skeleton" (three skeleton rows, no `CircularProgressIndicator`).
     - "load error shows retry; retry reloads".
     - "Giá gói đã đổi banner appears when priceChanged".
     - "320 dp and 1.3× text, light and dark: no overflow; the button stays on screen".
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement** route, page, sheet, S04.01, world helper, ARB keys `bookChoosePackage`, `bookWith`, `bookContinuePrice`, `bookNoPackages`, `bookPriceChanged`, `bookDiscardTitle` "Bỏ yêu cầu đặt lịch?", `bookDiscard` "Bỏ", `bookKeepGoing` "Tiếp tục đặt", `bookClose` "Đóng"; `flutter gen-l10n`.
+- [ ] **Step 3: Implement** route, page, sheet, S04.01, world helper, ARB keys `bookChoosePackage`, `bookWith`, `bookContinuePrice`, `bookNoPackages`, `bookPriceChanged`, `bookDiscardTitle` "Bỏ yêu cầu đặt lịch?", `bookDiscard` "Bỏ", `bookKeepGoing` "Tiếp tục đặt" (the three `showConfirmSheet` labels), `bookClose` "Đóng"; `flutter gen-l10n`.
 - [ ] **Step 4: Run** the three test files and `test/app` → PASS; analyze clean.
 - [ ] **Step 5: Commit** `feat(booking): /u/:uid/book sheet route and S04.01 package step`.
 
@@ -381,7 +377,7 @@ Behaviour:
 - `AvailabilityCalendar(month:, states:, selected:, onSelect:, onMonthChanged:, minDate: today, maxDate: today + 365 days, today:)` where `states` maps the month's `AvailabilityDay`s to `DayState`, and days in `state.takenDays` are forced to `DayState.booked`. Tapping a `pending` day does not select it and shows the inline line `bookWaiting(1)` "1 người đang chờ" under the calendar; `off`/`booked`/past days are not tappable (the calendar already handles `editable: false`; check its API and pass what it needs).
 - Below: "{Thứ 7, 12/10} · khung {2 giờ}" (`bookDayLine`, duration with `formatDuration(minutes, l10n)`), chips for `daySlots(duration)` (`AppChip` filter kind, selected = `state.start`), then `bookEndsAt(start, end)`. A day with no slots (duration > 14 h) shows `bookNoSlots` "Hôm đó đã hết giờ".
 - Live calendar: when the month stream says the selected day became non-free, call `controller.clearDay(day, taken: false)` and show a SnackBar `bookDayGone` "Hôm đó vừa có người đặt, chọn ngày khác".
-- Loading → calendar skeleton; stream error → `ErrorState` with retry (`ref.invalidate(availabilityMonthProvider(key))`).
+- The calendar renders through `AsyncView(value: availabilityMonthProvider(key), skeleton: (_) => AvailabilityCalendar.skeleton(), onRetry: () => ref.invalidate(availabilityMonthProvider(key)))`: first load shows the calendar skeleton, a stream error shows core's `ErrorState` with retry; a month change reloads with the previous month kept and the inline loader (AsyncView's reload rule).
 - Primary "Tiếp tục · {price}" enabled only with day + start. `ScreenCode(ScreenCodes.bookDateTime)`.
 
 - [ ] **Step 1: Write the failing tests** (world helper; seed days through `FakeAvailabilityRepository.seed`):
@@ -393,6 +389,7 @@ Behaviour:
   - "moving to next month loads that month" (repository `watchRange` called with the next month's range).
   - "a chosen day that becomes pending is cleared with Hôm đó vừa có người đặt" (seed after selection → start cleared, button disabled, SnackBar).
   - "days refused with day_taken are crossed" (controller `takenDays` → the cell shows booked state).
+  - "first load shows AvailabilityCalendar.skeleton".
   - "calendar error shows retry; retry resubscribes".
   - "320 dp, 1.3× text, light and dark: chips wrap, nothing overflows".
 - [ ] **Step 2: Run** → FAIL.
@@ -410,26 +407,27 @@ Behaviour:
 - Test: `test/features/booking/place_step_test.dart`, `test/features/booking/review_step_test.dart`
 
 **Interfaces:**
-- Consumes: controller `setPlace`, `setNote`, `setPhone`, `setProvider`, `next`; `BookingCard`, `EscrowNotice`, `PhoneField`, `normalizePhone` (`lib/core/phone.dart`), `depositFor`.
+- Consumes: controller `setPlace`, `setNote`, `setPhone`, `setProvider`, `next`; core `BookingCard`/`BookingSummary`, `EscrowNotice`, `MoneyBreakdown`/`MoneyLine`, `ProviderPicker`, `AsyncView` (all from shared-components-a), `PhoneField`, `normalizePhone` (`lib/core/phone.dart`), `depositFor`.
 - Produces: `PlaceStep`, `ReviewStep` widgets; `ReviewStep` calls `controller.submit()` (Task 6) from its primary button.
 
 Place step: title `bookPlaceTitle` "Địa điểm", text field (max 120 graphemes, error `bookPlaceTooShort` "Nhập ít nhất 3 ký tự" shown after the first edit), suggestion chips (Decision 4) that fill the field, primary "Tiếp tục · {price}". Same layout family as S04.01.
 
-S04.03 per mock and spec, top to bottom: title `bookReview` + "4 / 4"; `BookingCard(BookingSummary(...))` with thumb from the package cover; one row with two fields of equal height (`IntrinsicHeight`): note (`TextField`, counter "{n}/300", 3 lines) and phone (`PhoneField`, starts with the saved number formatted, validated on focus loss: error `phoneInvalid` existing key); the money table (package price; `bookDepositToday` bold with the deposit; `bookRemaining` with the remaining; numbers `tabularFigures`); `EscrowNotice(text: l10n.escrowNoticeDeposit)`; policy line `bookPolicy`; provider chips "MoMo"/"VNPay"; primary `AppButton.primary(label: l10n.bookPay(formatMoney(deposit)), loading: state.busy)`. While `busy`, every control is disabled (`AbsorbPointer` over the form + the button's own loading state). `ScreenCode(ScreenCodes.bookReview)`.
+S04.03 per mock and spec, top to bottom: title `bookReview` + "4 / 4"; core `BookingCard(data: BookingSummary(...))` built from the flow state (no booking exists yet, so the summary is constructed directly, not with `bookingSummaryOf`) with thumb from the package cover and the photographer name from `photographerProfileProvider` — that read goes through `AsyncView` with `skeleton: (_) => Column(children: [BookingCard.skeleton(), MoneyBreakdown.skeleton(lines: 3)])`; one row with two fields of equal height (`IntrinsicHeight`): note (`TextField`, counter "{n}/300", 3 lines) and phone (`PhoneField`, starts with the saved number formatted, validated on focus loss: error `phoneInvalid` existing key); the money table as core `MoneyBreakdown(lines: [MoneyLine(label: l10n.bookPackageLine(name), vnd: price), MoneyLine(label: l10n.bookDepositToday, vnd: deposit, style: MoneyLineStyle.strong), MoneyLine(label: l10n.bookRemaining, vnd: remaining, style: MoneyLineStyle.muted)])` (formatting and tabular figures are the widget's job); core `EscrowNotice(text: l10n.escrowNoticeDeposit)`; policy line `bookPolicy` (plain text per mock; `PolicyTable` is for S05.03); core `ProviderPicker(value: state.provider, onChanged: controller.setProvider)`; primary `AppButton.primary(label: l10n.bookPay(formatMoney(deposit)), loading: state.busy)` (inline loader). While `busy`, every control is disabled (`AbsorbPointer` over the form + the button's own loading state). `ScreenCode(ScreenCodes.bookReview)`.
 
 - [ ] **Step 1: Write the failing tests:**
   - place: "Tiếp tục stays disabled under 3 characters and shows the hint after editing"; "a suggestion chip fills the field and enables Tiếp tục"; "the S02.06 area is offered as a chip"; "the field stops at 120 characters".
   - review:
+    - "first load shows BookingCard.skeleton and MoneyBreakdown.skeleton" (profile still loading).
     - "shows the summary card, note and phone side by side, price, deposit 30 % and remaining" (price 1_500_000 → "450.000₫", "1.050.000₫" with the app formatter's exact output).
     - "deposit plus remaining equals the price for an odd price" (1_234_567 → 370_370 + 864_197).
     - "shows the escrow notice and the cancellation policy text".
     - "the note counter counts graphemes and stops at 300".
     - "an invalid phone shows the error on focus loss and disables Đặt cọc".
-    - "MoMo is selected by default; tapping VNPay selects it".
+    - "the ProviderPicker has MoMo selected by default; tapping VNPay selects it".
     - "while submitting the button shows loading and the form ignores taps" (controller phase `creating`).
     - "320 dp and 1.3× text, light and dark: the two fields keep equal height and nothing overflows".
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement**; ARB keys `bookPlaceTitle`, `bookPlaceTooShort`, `bookPlaceHint` "Tên địa điểm, ví dụ Bến Bạch Đằng", `bookReview`, `bookNote`, `bookNoteHint`, `bookYourPhone`, `bookPackageLine` "Gói {name}", `bookDepositToday`, `bookRemaining`, `bookPolicy`, `bookPay`, `providerMomo` "MoMo", `providerVnpay` "VNPay"; gen-l10n.
+- [ ] **Step 3: Implement**; ARB keys `bookPlaceTitle`, `bookPlaceTooShort`, `bookPlaceHint` "Tên địa điểm, ví dụ Bến Bạch Đằng", `bookReview`, `bookNote`, `bookNoteHint`, `bookYourPhone`, `bookPackageLine` "Gói {name}", `bookDepositToday`, `bookRemaining`, `bookPolicy`, `bookPay` (provider labels come from `ProviderPicker`; do not add `providerMomo`/`providerVnpay` unless shared-components-a left them to callers); gen-l10n.
 - [ ] **Step 4: Run** → PASS; analyze clean.
 - [ ] **Step 5: Commit** `feat(booking): place step and S04.03 review with money and policy`.
 
@@ -523,22 +521,24 @@ Sheet reaction to `GoToPayment`: if `realPaymentsProvider` is false, `showAppShe
 - Test: `test/features/booking/payment_pending_screen_test.dart`
 
 **Interfaces:**
-- Consumes: `bookingProvider(id)` (Task 1 addition), repository `checkDeposit`, `createDeposit`, `confirmFakePayment`, `realPaymentsProvider`, `BookingCard`, `ApertureLoader`.
+- Consumes: `bookingProvider(id)` (Task 1 addition), repository `checkDeposit`, `createDeposit`, `confirmFakePayment`, `realPaymentsProvider`; core `AsyncView`, `SignatureLoader`, `BookingCard` + `bookingSummaryOf` (`lib/data/booking/booking_summary.dart`), `ProviderPicker` (shared-components-a).
 - Produces: `GoRoute(path: '/b/:id/pay', builder: (_, s) => PaymentPendingScreen(bookingId: s.pathParameters['id']!))` (outside the shell, like `/p/:postId`); `class BookingPaidPanel extends StatelessWidget` (Decision 3 — plan 4c deletes it).
 
-States (each in its own `ScreenCode(ScreenCodes.awaitingPayment)`; the paid panel is part of S04.04 until 4c):
+States (each in its own `ScreenCode(ScreenCodes.awaitingPayment)`; the paid panel is part of S04.04 until 4c). The screen renders `AsyncView(value: bookingProvider(id), onRetry: () => ref.invalidate(bookingProvider(id)), data: …)`; the rows below are AsyncView's loading/error and the `data` builder's branches:
 
 | `bookingProvider(id)` | UI |
 |---|---|
-| loading | `ApertureLoader` only |
-| `draft` | per mock: app bar "Thanh toán"; `ApertureLoader` (running; static icon when `MediaQuery.disableAnimations`); `payPendingTitle`; `payPendingBody(providerName)`; `BookingCard(size: compact, statusLabel: l10n.payAwaitingDeposit /* "Chờ cọc" */)`; primary "Kiểm tra lại" → `checkDeposit(bookingId: id)` (button loading while in flight; SnackBar `payNotYet` "Chưa nhận được xác nhận, thử lại sau ít phút" when `paid == false`); outline small "Đổi cổng thanh toán" → a sheet with the two provider chips → `createDeposit(bookingId: id, provider: other.code)` → the same payment step as Task 6 (fake sheet or launcher), staying on S04.04 |
+| loading (first) | AsyncView's default screen loader (`SignatureLoader`, ripple: loading data) |
+| `draft` | per mock: app bar "Thanh toán"; `SignatureLoader(wave: LoaderWave.vibration)` (waiting on the gateway; its reduced-motion still state is core's, nothing extra here); `payPendingTitle`; `payPendingBody(providerName)`; `BookingCard(data: bookingSummaryOf(b, photographerName: name, statusLabel: l10n.payAwaitingDeposit /* "Chờ cọc" */), size: BookingCardSize.compact)` (name from `photographerProfileProvider`; group A's `bookingSummaryOf` takes no `statusLabel` — if it still lacks one, add the optional `String? statusLabel` parameter to it in this task, with a test, rather than building `BookingSummary` by hand); primary "Kiểm tra lại" → `checkDeposit(bookingId: id)` (`AppButton(loading: true)` while in flight; SnackBar `payNotYet` "Chưa nhận được xác nhận, thử lại sau ít phút" when `paid == false`); outline small "Đổi cổng thanh toán" → `showAppSheet` holding core's `ProviderPicker` (current provider preselected) → `createDeposit(bookingId: id, provider: other.code)` → the same payment step as Task 6 (fake sheet or launcher), staying on S04.04 |
 | status other than `draft` | `BookingPaidPanel`: check icon, "Đã gửi yêu cầu" (`payRequestSent`), "{name} sẽ trả lời trong 24 giờ" (`payReplyIn24h`), deposit line `escrowNoticeHeld(amount)` "Cọc {amount} đang được giữ an toàn", primary "Xem lịch đặt" → `context.go('/bookings')` |
 | `null` (draft deleted after 30 min) | `EmptyState` "Yêu cầu đã hết hạn" (`payExpiredTitle`) + body `payExpiredBody` "Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại." + primary "Đặt lại" → `context.go(bookingPath(photographerId: lastKnown.photographerId, serviceId: lastKnown.serviceId))` (keep the last non-null booking in state; when there never was one, "Về trang chủ" → `/home`) |
-| error | `ErrorState` with retry (`ref.invalidate(bookingProvider(id))`) |
+| error | AsyncView's `ErrorState` with retry (`onRetry` above) |
 
 The screen never calls `createDeposit` except from "Đổi cổng thanh toán", and never navigates on a payment page result: only the stream decides.
 
 - [ ] **Step 1: Write the failing tests:**
+  - "first load shows the screen SignatureLoader with ripple waves" (stream not yet emitted; no `CircularProgressIndicator`).
+  - "a draft shows SignatureLoader with vibration waves".
   - "a draft shows the waiting title, the body naming the gateway and the compact card with Chờ cọc".
   - "check again calls checkDeposit only" (no `createDeposit`, no `createBooking` recorded).
   - "check again with no payment yet shows the not-yet message".
@@ -547,7 +547,7 @@ The screen never calls `createDeposit` except from "Đổi cổng thanh toán", 
   - "change provider creates a deposit with the other gateway and stays on S04.04".
   - "a removed draft shows expired with Đặt lại" (`fake.remove('booking_1')` → expired copy; tap → location `/u/p1/book?serviceId=s1`).
   - "opening /b/unknown/pay with no booking shows expired with Về trang chủ".
-  - "reduced motion shows a static icon instead of the running loader".
+  - "reduced motion: the SignatureLoader is in its still state (no ticker)".
   - "320 dp and 1.3× text, light and dark: no overflow".
 - [ ] **Step 2: Run** → FAIL.
 - [ ] **Step 3: Implement**; ARB keys `payTitle` "Thanh toán", `payPendingTitle`, `payPendingBody` (with `{provider}`), `payProviderFake` "Cổng thử nghiệm", `payAwaitingDeposit`, `payCheckAgain`, `payNotYet`, `payChangeProvider`, `payRequestSent`, `payReplyIn24h`, `escrowNoticeHeld`, `payViewBookings` "Xem lịch đặt", `payExpiredTitle`, `payExpiredBody`, `payBookAgain` "Đặt lại", `payGoHome` "Về trang chủ"; gen-l10n.
@@ -574,7 +574,7 @@ The screen never calls `createDeposit` except from "Đổi cổng thanh toán", 
 
 ## Interfaces for plans 4c–4e
 
-- `BookingCard`, `BookingSummary`, `EscrowNotice` (core) — S05.02, S07.01, S05.01, S06.01 use them.
+- `BookingCard`, `BookingSummary`, `EscrowNotice`, `PaymentProviderCode` are core widgets/types from `2026-10-02-shared-components-a.md`, not from this plan. This plan adds `AppSheetFrame` (core), `escrowNoticeDeposit` (ARB) and, if missing, `bookingSummaryOf(statusLabel:)`.
 - `BookingPaidPanel` (`lib/features/booking/payment_pending_screen.dart`) — plan 4c deletes it and makes S04.04's non-draft state `context.go('/b/$id')`.
 - `bookingPath(photographerId:, serviceId:, date:, area:)` — S05.02 "Đặt lại" (4c) uses it.
 - `realPaymentsProvider` — plan I6 flips the default when the real gateway exists.

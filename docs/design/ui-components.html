@@ -360,7 +360,8 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
 .sig svg.vib{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:0}
 .sig svg.vib path{fill:none;stroke-width:1.6;vector-effect:non-scaling-stroke}
 .sig svg.vib.v1 path{stroke:var(--focus)}.sig svg.vib.v2 path{stroke:#FF45D0}
-.sig .core{position:absolute;inset:31%;border-radius:50%;background:transparent;border:1.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.sig .core{position:absolute;inset:31%;border-radius:50%;background:transparent;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.sig:has(.vib) .core{color:var(--focus)}
 .sig .core svg{width:60%;height:60%;fill:none;stroke:currentColor;stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
 @media (prefers-reduced-motion:no-preference){
   .sig .rip{animation:sigrip 2.4s cubic-bezier(.2,.6,.3,1) infinite}.sig .rip:nth-of-type(2){animation-delay:.8s}.sig .rip:nth-of-type(3){animation-delay:1.6s}
@@ -396,8 +397,8 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
 .row3 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
 /* Skeleton: white only (no hues, dark theme included), white sweep; still under reduced motion. */
 :root{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:rgba(255,255,255,.7);--sk-edge:var(--line);--sk-shine:#fff}}
-:root[data-theme="light"]{--sk-fill:rgba(255,255,255,.7);--sk-edge:var(--line);--sk-shine:#fff}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:#E6E3DE;--sk-edge:transparent;--sk-shine:rgba(255,255,255,.85)}}
+:root[data-theme="light"]{--sk-fill:#E6E3DE;--sk-edge:transparent;--sk-shine:rgba(255,255,255,.85)}
 :root[data-theme="dark"]{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
 .sk{display:block;background:var(--sk-fill);box-shadow:inset 0 0 0 1px var(--sk-edge);position:relative;overflow:hidden;flex:none}
 .sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(110deg,transparent 35%,var(--sk-shine) 50%,transparent 65%)}
@@ -468,7 +469,7 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       <h3>AsyncView</h3>
       <div class="api">AsyncView&lt;T&gt;({required AsyncValue&lt;T&gt; value, required data, skeleton, loaderSize, empty, isEmpty, onRetry, error})</div>
       <div class="use">Dùng ở: Mọi fetch. Có skeleton của component thì dựng skeleton; không thì SignatureLoader (sóng tròn). Lỗi → ErrorState; rỗng → EmptyState.</div>
-      <div class="pair"><div class="stage plain"><span class="lab">Thật</span><div class="meta">Tải lại khi đã có dữ liệu: giữ dữ liệu, thêm loader inline ở góc.</div><div class="sig xs" role="img" aria-label="Đang tải"><div class="core"><svg class="apt run" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42"/><path d="M50.00 40.00Q67.49 22.01 87.08 69.72" style="transform-origin:87.08px 69.72px"/><path d="M57.07 42.93Q82.15 42.58 62.28 90.16" style="transform-origin:62.28px 90.16px"/><path d="M60.00 50.00Q77.99 67.49 30.28 87.08" style="transform-origin:30.28px 87.08px"/><path d="M57.07 57.07Q57.42 82.15 9.84 62.28" style="transform-origin:9.84px 62.28px"/><path d="M50.00 60.00Q32.51 77.99 12.92 30.28" style="transform-origin:12.92px 30.28px"/><path d="M42.93 57.07Q17.85 57.42 37.72 9.84" style="transform-origin:37.72px 9.84px"/><path d="M40.00 50.00Q22.01 32.51 69.72 12.92" style="transform-origin:69.72px 12.92px"/><path d="M42.93 42.93Q42.58 17.85 90.16 37.72" style="transform-origin:90.16px 37.72px"/></svg></div></div></div><div class="stage plain"><span class="lab">Skeleton</span><span class="sk" style="width:100%;height:64px;border-radius:20px;"></span><span class="sk" style="width:100%;height:64px;border-radius:20px;"></span><span class="sk" style="width:100%;height:64px;border-radius:20px;"></span></div></div>
+      <div class="pair"><div class="stage plain"><span class="lab">Thật</span><div class="sig" role="img" aria-label="Đang tải"><span class="rip"></span><span class="rip"></span><span class="rip"></span><div class="core"><svg class="apt run" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42"/><path d="M50.00 40.00Q67.49 22.01 87.08 69.72" style="transform-origin:87.08px 69.72px"/><path d="M57.07 42.93Q82.15 42.58 62.28 90.16" style="transform-origin:62.28px 90.16px"/><path d="M60.00 50.00Q77.99 67.49 30.28 87.08" style="transform-origin:30.28px 87.08px"/><path d="M57.07 57.07Q57.42 82.15 9.84 62.28" style="transform-origin:9.84px 62.28px"/><path d="M50.00 60.00Q32.51 77.99 12.92 30.28" style="transform-origin:12.92px 30.28px"/><path d="M42.93 57.07Q17.85 57.42 37.72 9.84" style="transform-origin:37.72px 9.84px"/><path d="M40.00 50.00Q22.01 32.51 69.72 12.92" style="transform-origin:69.72px 12.92px"/><path d="M42.93 42.93Q42.58 17.85 90.16 37.72" style="transform-origin:90.16px 37.72px"/></svg></div></div><div class="meta" style="text-align:center">Không có skeleton thì trạng thái tải chính là SignatureLoader, khung đúng bằng vòng sóng ngoài (150 / 96), không thêm hộp hay nền. Tải lại khi đã có dữ liệu: giữ dữ liệu, loader inline ở góc.</div></div><div class="stage plain"><span class="lab">Skeleton</span><span class="sk" style="width:100%;height:64px;border-radius:20px;"></span><span class="sk" style="width:100%;height:64px;border-radius:20px;"></span><span class="sk" style="width:100%;height:64px;border-radius:20px;"></span></div></div>
     </section>
     <section class="tile" id="photocard">
       <h3>PhotoCard</h3>
