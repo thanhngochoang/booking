@@ -12,7 +12,7 @@ Standing rules (user, 2026-10-02):
 
 ## Done
 
-screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3b2
+screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3b2 · backend-phase1
 
 ## To run
 
@@ -20,7 +20,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 |---|------|-------|
 | 1 | `2026-10-02-mock-parity-1.md` (built screens match the mock) | done 2026-10-02 (a07dcb6); mock not edited by user decision; deferred minors in `handover/ledger-mock-parity-1.md` |
 | 2 | `2026-10-01-step2c-skills.md` (S38, S39, S40) | done 2026-10-02; entry links to /setup/3 and /profile/skills come with plan 3 (2d1) and the S30/S42 links |
-| 3 | `2026-10-01-backend-phase1-firebase-local.md` | not started; includes onPhotographerWrite (Tasks 10–14); moved up 2026-10-02 to run right after 2c |
+| 3 | `2026-10-01-backend-phase1-firebase-local.md` | done 2026-10-02 (c97514c); CI not yet run (push needs gh workflow scope) |
 | 4 | `2026-10-01-step2d1-photographer-setup-calendar.md` (S24, S20) | not started |
 | 5 | `2026-10-01-step3b3-recommendations.md` | not started |
 | 6 | `2026-10-01-step3b4-home-detail-find.md` (S01, S02, S04) | not started |
