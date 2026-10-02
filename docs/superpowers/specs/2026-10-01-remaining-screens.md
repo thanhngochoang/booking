@@ -141,7 +141,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | ⬜ plan I5 | S51 |
 | S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 | ⬜ plan I4 · I5 | S55 |
 | **S14** | **Chụp ngay (nhiếp ảnh gia)** | | | | | |
-| S14.01 | Sẵn sàng chụp ngay (công tắc, bảng giá) | `/work/instant` | NAG | I4 | ⬜ plan I4 | S52 |
+| S14.01 | Live Shutter (công tắc, bảng giá) | `/work/instant` | NAG | I4 | ⬜ plan I4 | S52 |
 | S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | ⬜ plan I4 | S53 |
 | S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | ⬜ plan I4 | S54 |
 | **S15** | **Đăng việc (khách)** | | | | | |
@@ -706,11 +706,11 @@ devices/{uid}_{installId}                    # token FCM (kế hoạch I4)
 
 ### 3h.5 Giờ yên lặng
 
-Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng (không âm, không rung), vẫn vào hộp thư. Ngoại lệ, vẫn phát âm: **giao dịch quan trọng** là lời mời Chụp ngay khi NAG đang bật "Sẵn sàng chụp ngay", thanh toán, và huỷ lịch. Nhắc buổi chụp trước 24 giờ và 2 giờ bật/tắt riêng.
+Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng (không âm, không rung), vẫn vào hộp thư. Ngoại lệ, vẫn phát âm: **giao dịch quan trọng** là lời mời Chụp ngay khi NAG đang bật "Live Shutter", thanh toán, và huỷ lịch. Nhắc buổi chụp trước 24 giờ và 2 giờ bật/tắt riêng.
 
 ### 3h.6 Thời điểm xin quyền (S17.03)
 
-- Chỉ hỏi **sau một hành động có ý nghĩa**, không bao giờ khi mở app lần đầu. Khách: sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"). NAG: khi bật "Sẵn sàng chụp ngay" hoặc khi nhận booking đầu tiên.
+- Chỉ hỏi **sau một hành động có ý nghĩa**, không bao giờ khi mở app lần đầu. Khách: sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"). NAG: khi bật "Live Shutter" hoặc khi nhận booking đầu tiên.
 - Sheet nêu lợi ích, nút chính "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" lưu thời điểm và hỏi lại sau **7 ngày**, tại một hành động có ý nghĩa kế tiếp. Nếu OS đã từ chối vĩnh viễn thì không hỏi lại mà dùng banner của S17.02 ("Mở Cài đặt").
 - Android 13+ cần `POST_NOTIFICATIONS`; iOS xin `UNAuthorizationOptions`.
 

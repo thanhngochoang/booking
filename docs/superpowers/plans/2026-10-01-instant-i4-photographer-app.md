@@ -4,7 +4,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A photographer can switch on "Sẵn sàng chụp ngay" (S14.01) after accepting the package price list, receive a 30-second offer full screen even when the app is in the background (S14.02), accept it, drive to the customer with live location sharing and an external "Chỉ đường" (S14.03), mark "Đã đến" / "Bắt đầu chụp" / "Hoàn thành", or cancel with the amount shown first (S13.08), and the phone stops using GPS as soon as it is not needed.
+**Goal:** A photographer can switch on "Live Shutter" (S14.01) after accepting the package price list, receive a 30-second offer full screen even when the app is in the background (S14.02), accept it, drive to the customer with live location sharing and an external "Chỉ đường" (S14.03), mark "Đã đến" / "Bắt đầu chụp" / "Hoàn thành", or cancel with the amount shown first (S13.08), and the phone stops using GPS as soon as it is not needed.
 
 **Architecture:** Everything the app sends goes over HTTPS to the dispatch service (`services/dispatch/api/openapi.yaml`) through the existing `ApiClient` + `IdTokenSource` of backend phase 2 (a second `ApiClient` instance pointed at `DISPATCH_URL`, no second HTTP client class). Two ports, `PresenceRepository` and `InstantJobRepository`, have an HTTP adapter and an in-memory fake. Realtime state is read only from the Firestore mirror (`instant_offers/{uid}`, `instant_requests/{id}`, `instant_tracks/{id}`) behind a read-only `InstantMirror` port. A keep-alive `InstantSessionController` owns presence (one medium-accuracy fix, then a 300 m distance-filtered stream and a 5-minute network heartbeat that reuses the last fix), the Android foreground service with the "Tắt" action, the offer listener, the 30-minute auto-off prompt and the low-battery prompt. A keep-alive `InstantJobController` owns one accepted job: a high-accuracy route stream throttled to one post every 10–15 s while `assigned`/`en_route`, stopped the moment the job is `arrived`, finished, cancelled or the photographer goes offline. Platform plugins (geolocator, flutter_foreground_task, flutter_local_notifications, firebase_messaging, battery_plus, maplibre_gl) each sit behind a small port with a fake, so every behaviour, including battery properties, is unit-tested.
 
@@ -5755,9 +5755,9 @@ Strings (`lib/l10n/app_vi.arb`, then `flutter gen-l10n`):
   "instantForegroundTitle": "Đang nhận việc chụp ngay",
   "instantForegroundText": "Vị trí chỉ được chia sẻ khi bạn sẵn sàng hoặc đang đến.",
   "instantStillAvailableTitle": "Vẫn muốn nhận việc?",
-  "instantStillAvailableBody": "Bạn đã bật Sẵn sàng chụp ngay 30 phút mà chưa mở app. Không trả lời trong 5 phút thì sẽ tự tắt.",
+  "instantStillAvailableBody": "Bạn đã bật Live Shutter 30 phút mà chưa mở app. Không trả lời trong 5 phút thì sẽ tự tắt.",
   "instantLowBatteryTitle": "Pin yếu",
-  "instantLowBatteryBody": "Pin dưới 15%. Tắt Sẵn sàng chụp ngay để tiết kiệm pin?",
+  "instantLowBatteryBody": "Pin dưới 15%. Tắt Live Shutter để tiết kiệm pin?",
 ```
 
 ```dart
@@ -5933,7 +5933,7 @@ class InstantSessionState {
   );
 }
 
-/// Owns "Sẵn sàng chụp ngay" for the whole app lifetime (keep-alive): the
+/// Owns "Live Shutter" for the whole app lifetime (keep-alive): the
 /// screens only show it. Every location stream, timer and listener it starts
 /// is cancelled in [goOffline] and [jobStarted].
 class InstantSessionController extends Notifier<InstantSessionState> {
@@ -7384,7 +7384,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 12: S14.01 "Sẵn sàng chụp ngay", routes and the Công việc entry card
+### Task 12: S14.01 "Live Shutter", routes and the Công việc entry card
 
 **Files:**
 - Create: `lib/features/instant_work/photographer_only.dart`, `lib/features/instant_work/instant_availability_screen.dart`, `lib/features/instant_work/instant_work_card.dart`, `test/support/instant_screens.dart`, `test/features/instant_work/instant_availability_screen_test.dart`, `test/features/instant_work/instant_work_card_test.dart`
@@ -7400,7 +7400,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - Test support `instantScreenApp(InstantWorld w, {required String location, Brightness brightness, double textScale})` with stub routes `/profile/phone`, `/setup/1`, `/home`, `/chat/:chatId`.
   - l10n listed in Step 3.
 
-Layout (mock S14.01, top to bottom): app bar "Chụp ngay"; banners (still available, low battery, auto-off) when relevant; highlighted `GlassCard` "Sẵn sàng chụp ngay" + switch; when conditions are missing, the reasons with a "Sửa"/"Cho phép" action each; card "Sẵn sàng hỗ trợ" + switch (enabled once the price list is accepted); "Bảng giá gói" + "Bản 3 · đã đồng ý"; one row per package "1 giờ · 30 ảnh / Khách trả 690.000₫ / Bạn nhận 552.000₫"; the note about the 30-minute check and reliability. Bottom: the one primary "Đồng ý bảng giá bản {n}" while the current version is not accepted, otherwise (when on) the outline "Tắt khi xong việc hôm nay". One blur (the highlighted card).
+Layout (mock S14.01, top to bottom): app bar "Chụp ngay"; banners (still available, low battery, auto-off) when relevant; highlighted `GlassCard` "Live Shutter" + switch; when conditions are missing, the reasons with a "Sửa"/"Cho phép" action each; card "Sẵn sàng hỗ trợ" + switch (enabled once the price list is accepted); "Bảng giá gói" + "Bản 3 · đã đồng ý"; one row per package "1 giờ · 30 ảnh / Khách trả 690.000₫ / Bạn nhận 552.000₫"; the note about the 30-minute check and reliability. Bottom: the one primary "Đồng ý bảng giá bản {n}" while the current version is not accepted, otherwise (when on) the outline "Tắt khi xong việc hôm nay". One blur (the highlighted card).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -7475,7 +7475,7 @@ void main() {
   testWidgets('not accepted yet: the price list with payouts, one primary "Đồng ý bảng giá bản 3", switch disabled', (tester) async {
     await tester.pumpWidget(instantScreenApp(w, location: '/work/instant'));
     await tester.pumpAndSettle();
-    expect(find.text('Sẵn sàng chụp ngay'), findsOneWidget);
+    expect(find.text('Live Shutter'), findsOneWidget);
     expect(find.text('Bản 3 · chưa đồng ý'), findsOneWidget);
     expect(find.text('1 giờ · 30 ảnh'), findsOneWidget);
     expect(find.text('Khách trả 690.000₫'), findsOneWidget);
@@ -7612,7 +7612,7 @@ Strings (`lib/l10n/app_vi.arb`, then `flutter gen-l10n`):
 
 ```json
   "instantWorkTitle": "Chụp ngay",
-  "instantAvailableTitle": "Sẵn sàng chụp ngay",
+  "instantAvailableTitle": "Live Shutter",
   "instantAvailableBody": "Nhận lời mời ở gần bạn. Vị trí được dùng khi bật.",
   "instantHelpReadyTitle": "Sẵn sàng hỗ trợ",
   "instantHelpReadyBody": "Được ưu tiên mời cả việc gấp, xa hơn một chút.",
@@ -7637,7 +7637,7 @@ Strings (`lib/l10n/app_vi.arb`, then `flutter gen-l10n`):
   "instantReasonLocation": "Cho phép dùng vị trí khi dùng app",
   "instantFix": "Sửa",
   "instantAllow": "Cho phép",
-  "instantAutoOff": "Đã tự tắt Sẵn sàng chụp ngay vì bạn chưa trả lời.",
+  "instantAutoOff": "Đã tự tắt Live Shutter vì bạn chưa trả lời.",
   "instantWorkCardOn": "Đang bật · nhận lời mời gần bạn",
   "instantWorkCardOff": "Bật để nhận việc chụp ngay ở gần",
 ```
@@ -8316,7 +8316,7 @@ Strings (`lib/l10n/app_vi.arb`, then `flutter gen-l10n`):
   "@instantOfferNote": {"placeholders": {"note": {"type": "String"}}},
   "instantOfferAccept": "Nhận việc",
   "instantOfferDecline": "Từ chối",
-  "instantOfferExpiredBody": "Lời mời chỉ giữ 30 giây. Bạn vẫn đang bật Sẵn sàng chụp ngay.",
+  "instantOfferExpiredBody": "Lời mời chỉ giữ 30 giây. Bạn vẫn đang bật Live Shutter.",
   "instantBackToAvailability": "Về Chụp ngay",
   "instantDeclineTitle": "Từ chối lời mời?",
   "instantDeclineBody": "Lý do (không bắt buộc) giúp chúng tôi mời bạn đúng việc hơn.",
@@ -9278,7 +9278,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
    ```markdown
    ## Ngoại lệ có chủ đích: Chụp ngay
 
-   Theo spec `2026-10-01-instant-booking-design.md` §9; chỉ cho nhiếp ảnh gia đang bật "Sẵn sàng chụp ngay" hoặc đang đến điểm hẹn.
+   Theo spec `2026-10-01-instant-booking-design.md` §9; chỉ cho nhiếp ảnh gia đang bật "Live Shutter" hoặc đang đến điểm hẹn.
 
    | Trạng thái | Vị trí | Chạy nền | Mạng |
    |---|---|---|---|

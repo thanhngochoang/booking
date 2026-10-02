@@ -142,7 +142,7 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 - **Thông tin**: `/notifications/permission` (sheet) · cả hai · sub‑project N · Chưa có.
 - **Mục đích**: giải thích lợi ích rồi xin quyền thông báo của hệ điều hành đúng lúc có lý do.
-- **Điểm vào → ra**: chỉ hiện sau một hành động có ý nghĩa: khách sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"); NAG khi bật "Sẵn sàng chụp ngay" (S14.01) hoặc khi nhận booking đầu tiên. **Không bao giờ ở lúc mở app.** "Bật thông báo" → hộp thoại quyền OS → đóng sheet; "Để sau" → đóng, hỏi lại sau 7 ngày.
+- **Điểm vào → ra**: chỉ hiện sau một hành động có ý nghĩa: khách sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"); NAG khi bật "Live Shutter" (S14.01) hoặc khi nhận booking đầu tiên. **Không bao giờ ở lúc mở app.** "Bật thông báo" → hộp thoại quyền OS → đóng sheet; "Để sau" → đóng, hỏi lại sau 7 ngày.
 - **Bố cục**: `AppBottomSheet` trên nền S05.02‑like làm mờ (`BlurScrim`); biểu tượng chuông, tiêu đề theo ngữ cảnh, 2–3 dòng lợi ích (biết khi lịch được nhận, nhắc trước giờ chụp, tin nhắn mới), nút chính `AppButton.primary` "Bật thông báo", nút phụ "Để sau" (`AppButton.text`, không phải gradient). `PermissionPrimer`.
 - **Dữ liệu**: `NotificationPermissionPort` (trạng thái, yêu cầu); cục bộ `SharedPreferences` `notifPrimerLaterAt`; token FCM đăng ký vào `devices/{uid}_{installId}` sau khi được cấp quyền.
 - **Trạng thái**: đã được cấp quyền hoặc bị từ chối vĩnh viễn → không mở sheet (từ chối vĩnh viễn: để banner ở S17.02); đã bấm "Để sau" dưới 7 ngày → không mở; đang chờ hộp thoại OS → nút chính ở trạng thái đang tải.

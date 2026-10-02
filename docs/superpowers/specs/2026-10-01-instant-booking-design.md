@@ -2,7 +2,9 @@
 
 Ngày 2026-10-01, sửa ngày 2026-10-02. Bổ sung cho spec chính [`2026-10-01-remaining-screens.md`](2026-10-01-remaining-screens.md) (gọi là "spec chính"). Mục 3e.4 của spec chính ghi "ghép cặp tự động là sản phẩm khác, ngoài phạm vi v1"; spec này chính là sản phẩm đó và thay cho ghi chú ấy.
 
-**Sửa ngày 2026-10-02 (người dùng):** bỏ cách "gửi lần lượt từng người, khách không chọn" kiểu Uber. Thay bằng cách gần app hẹn hò: hệ thống giới thiệu 5 nhiếp ảnh gia phù hợp nhất, khách vuốt chọn một hoặc nhiều người trong 5 người đó, lời mời gửi **cùng lúc** cho những người được chọn, **ai nhận trước thì được** ("match"). Không ai nhận thì khách vuốt 5 người tiếp theo.
+**Sửa ngày 2026-10-02 (người dùng):** chưa tìm được người thì không tự hoàn tiền; tiền treo tới khi khách huỷ hẳn yêu cầu.
+
+**Sửa ngày 2026-10-02 (người dùng, trước đó):** bỏ cách "gửi lần lượt từng người, khách không chọn" kiểu Uber. Thay bằng cách gần app hẹn hò: hệ thống giới thiệu 5 nhiếp ảnh gia phù hợp nhất, khách vuốt chọn một hoặc nhiều người trong 5 người đó, lời mời gửi **cùng lúc** cho những người được chọn, **ai nhận trước thì được** ("match"). Không ai nhận thì khách vuốt 5 người tiếp theo.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -19,7 +21,8 @@ Luồng hiện có (tìm người → xem hồ sơ → đặt lịch S04.01–S0
 | Hạn một lời mời | 60 giây (trước là 30 giây; không còn chờ lần lượt) |
 | Giao diện chọn | Thẻ vuốt kiểu hẹn hò (♥ chọn, ✕ bỏ qua, có nút thay cho cử chỉ) |
 | Giá | Nền tảng đặt giá theo gói cố định (30 phút, 1 giờ, 2 giờ), có hệ số cao điểm theo thành phố; mọi người trong danh sách cùng một giá |
-| Thanh toán | Xem và chọn miễn phí; trả đủ khi gửi lời mời lần đầu; tiền giữ escrow; các lượt sau dùng khoản đã giữ; không có người nhận thì hoàn 100% tự động |
+| Thanh toán | Xem và chọn miễn phí; trả đủ khi gửi lời mời lần đầu; tiền giữ escrow; các lượt sau dùng khoản đã giữ; chưa tìm được người thì **không tự hoàn**: tiền vẫn treo cho tới khi có người nhận hoặc khách huỷ hẳn yêu cầu (huỷ khi chưa có người nhận → hoàn 100%) |
+| Tên tính năng phía nhiếp ảnh gia | **Live Shutter**: công tắc bật sẵn sàng nhận lời mời chụp ngay (S14.01). Giữ nguyên tên tiếng Anh trong giao diện |
 | Theo dõi | Bản đồ trực tiếp và ETA trong lúc nhiếp ảnh gia đang đến |
 | Ai được gợi ý | Nhóm ưu tiên trước (đạt chuẩn, đã chấp nhận bảng giá gói, bật "Sẵn sàng hỗ trợ"), nhóm mở rộng chỉ khi nhóm ưu tiên không đủ 5 người. Bỏ ô "Mở rộng tìm kiếm" của khách |
 | Huỷ | Theo mốc thời gian (mục 4) |
@@ -41,12 +44,12 @@ Luồng hiện có (tìm người → xem hồ sơ → đặt lịch S04.01–S0
 6. Có người nhận → **S13.04 · Đã match** (màn chuyển tiếp ~1,5 giây: hai avatar, "Đã match với {tên}") → **S13.05**: bản đồ với điểm của nhiếp ảnh gia, ETA, thẻ nhiếp ảnh gia, nút Nhắn tin và `ContactDial` (đã mở khoá liên hệ, spec chính 3b.1). Lời mời của những người còn lại tự rút.
 7. Không ai nhận (mọi lời mời từ chối/hết hạn) → yêu cầu về `choosing`, khách vuốt **5 người tiếp theo** (không gồm người đã từ chối, đã hết hạn hoặc khách đã bỏ qua) và gửi lời mời mới, không trả thêm.
 8. Nhiếp ảnh gia báo đã đến → S13.05 đổi sang "Đã đến"; bắt đầu chụp → **S13.06** (đồng hồ buổi chụp). Hết giờ gói hoặc nhiếp ảnh gia bấm "Hoàn thành" → khách xác nhận (hoặc tự xác nhận sau 2 giờ) → S05.05 Đánh giá.
-9. Hết 10 phút kể từ lúc trả tiền mà chưa match, hoặc hết ứng viên trong bán kính tối đa → **S13.07**: đã hoàn 100%, gợi ý "Thử lại" (mở lại S13.01 với lựa chọn cũ) hoặc "Đặt lịch thường" (S02.06).
+9. Hết 10 phút kể từ lúc trả tiền (hoặc kể từ lượt chọn gần nhất) mà chưa match, hoặc hết ứng viên trong bán kính tối đa → **S13.07** · `no_match`: **tiền vẫn treo**, không tự hoàn. Khách chọn "Chọn thêm người" (S13.02 với lượt mới, không trả thêm; danh sách có thể rỗng khi chưa ai sẵn sàng, khi đó báo và để khách thử lại sau), "Huỷ yêu cầu" (S13.08, hoàn 100%), hoặc sang "Đặt lịch thường" (S02.06; yêu cầu chụp ngay vẫn giữ tới khi khách huỷ).
 10. Huỷ ở bất kỳ bước nào → **S13.08** (sheet) hiện số tiền hoàn hoặc phí trước khi xác nhận. Huỷ trước khi trả tiền thì không có tiền nào liên quan.
 
 ### 2.2 Nhiếp ảnh gia
 
-1. **S14.01** (từ tab Công việc S06.01, thẻ đầu trang): đọc và chấp nhận **bảng giá gói** (lưu phiên bản đã chấp nhận), bật **"Sẵn sàng chụp ngay"**, tuỳ chọn bật **"Sẵn sàng hỗ trợ"**. Chỉ bật được khi: hoàn tất hồ sơ (S08.01, S08.05), có số điện thoại, đã chấp nhận bảng giá phiên bản hiện hành, đang ở trong một thành phố đã mở, đã cấp quyền vị trí.
+1. **S14.01** (từ tab Công việc S06.01, thẻ đầu trang): đọc và chấp nhận **bảng giá gói** (lưu phiên bản đã chấp nhận), bật **"Live Shutter"**, tuỳ chọn bật **"Sẵn sàng hỗ trợ"**. Chỉ bật được khi: hoàn tất hồ sơ (S08.01, S08.05), có số điện thoại, đã chấp nhận bảng giá phiên bản hiện hành, đang ở trong một thành phố đã mở, đã cấp quyền vị trí.
 2. Có lời mời → **S14.02**: toàn màn (kể cả khi app ở nền: thông báo ưu tiên cao kèm âm thanh), hiện gói, kiểu chụp, khoảng cách và thời gian đi, thu nhập của nhiếp ảnh gia, **điểm hẹn ở mức khu phố** (chưa có địa chỉ chính xác), ghi chú, đồng hồ đếm ngược **60 giây**, và dòng "Khách đã chọn bạn trong {n} người" (không nêu tên người khác). Có thể có **nhiều lời mời cùng lúc** (tối đa 3) từ nhiều khách: hiện thành chồng thẻ, mỗi thẻ đếm ngược riêng. "Nhận" hoặc "Từ chối" (lý do tuỳ chọn).
 3. Nhận thành công → **S13.04 · Đã match** (chuyển tiếp) → **S14.03**: địa chỉ chính xác, nút "Chỉ đường" (mở Goong/Google Maps/Apple Maps bên ngoài), các nút chuyển trạng thái **"Đã đến"** (chỉ bật khi cách điểm hẹn ≤ 200 m, hoặc sau xác nhận nếu GPS kém) → **"Bắt đầu chụp"** → **"Hoàn thành"**. Nhắn tin và liên hệ với khách. Các lời mời khác của người đó tự rút.
 4. Bấm Nhận nhưng khách đã match người khác trước → "Khách đã chọn được người khác" (`already_assigned`), thẻ biến mất.
@@ -62,13 +65,14 @@ choosing ──invite (lượt đầu)──▶ pending_payment ──paid──
    │  └─(khách bỏ, chưa trả)─▶ abandoned   payment_failed    │  └─hết lời mời─▶ choosing (lượt sau: invite ──▶ searching, không trả lại)
    │                                                         │
    └────────────── photographer_cancel (loại người đó) ───────┘                    cancelled_by_customer (mọi bước trước in_progress)
-                                          no_match (hết 10 phút sau khi trả, hoặc hết ứng viên)        no_show_customer · disputed
+                                          no_match (hết 10 phút, hoặc hết ứng viên; tiền vẫn treo) ──chọn lại──▶ choosing · ──huỷ──▶ cancelled_by_customer (hoàn 100%)        no_show_customer · disputed
 ```
 
 - Yêu cầu tạo ra ở `choosing` (chưa có tiền); bỏ dở quá 30 phút không gửi lời mời → `abandoned` (không có tiền nào liên quan).
 - `searching` = đang có ít nhất một lời mời chờ trả lời. Khi lời mời cuối cùng của lượt hết hạn hoặc bị từ chối mà chưa ai nhận → về `choosing`.
 - `assigned` chuyển ngay sang `en_route` khi app nhiếp ảnh gia bắt đầu gửi vị trí; tách hai trạng thái để biết người nhận đã thật sự lên đường.
 - Nhiếp ảnh gia huỷ sau khi nhận → yêu cầu về `choosing` (người đó bị loại), khách chọn lại không trả thêm; mốc 10 phút tính lại từ lúc huỷ.
+- `no_match` **không phải trạng thái kết thúc**: tiền vẫn `held`, không có bút toán hoàn. Từ `no_match` khách chọn lại (→ `choosing`, mốc 10 phút tính lại khi gửi lời mời mới) hoặc huỷ (→ `cancelled_by_customer`, hoàn 100%). Hệ thống không bao giờ tự hoàn khi chưa tìm được người.
 - `completed` được đặt khi khách xác nhận hoặc tự động 2 giờ sau "Hoàn thành" của nhiếp ảnh gia. Escrow thả tiền theo spec chính 3g.
 - Mỗi chuyển đổi chỉ do dịch vụ thực hiện (client gọi API, không ghi trạng thái).
 
@@ -94,7 +98,7 @@ choosing ──invite (lượt đầu)──▶ pending_payment ──paid──
 | Hạn một lời mời | 60 giây |
 | Lời mời đang chờ tối đa cho một nhiếp ảnh gia | 3 (từ nhiều khách khác nhau) |
 | Người được mời trong một lượt | 1–5, đúng những người khách chọn và vẫn còn sẵn sàng lúc gửi |
-| Tổng thời gian tìm | 10 phút kể từ lúc trả tiền (tính lại khi nhiếp ảnh gia huỷ sau khi nhận); quá thì `no_match` và hoàn 100% |
+| Thời gian tìm một đợt | 10 phút kể từ lúc trả tiền hoặc lượt chọn gần nhất (tính lại khi nhiếp ảnh gia huỷ sau khi nhận); quá thì `no_match`, tiền vẫn treo cho tới khi khách chọn lại hoặc huỷ |
 | Người thắng | Giao dịch "Nhận" đầu tiên thành công (khoá dòng yêu cầu `SELECT … FOR UPDATE`); mọi lời mời khác của yêu cầu và mọi lời mời khác của người thắng chuyển `withdrawn` |
 
 ## 4. Giá, thanh toán, huỷ
@@ -110,7 +114,7 @@ choosing ──invite (lượt đầu)──▶ pending_payment ──paid──
 | Khách huỷ khi đang đến (sau 2 phút) | 80% | 20% giá gói (phí đi lại) |
 | Nhiếp ảnh gia đã đến, chờ 15 phút khách không có mặt (`no_show_customer`) | 50% | 50% |
 | Nhiếp ảnh gia huỷ hoặc không đến (trễ quá 15 phút so với ETA ban đầu, khách huỷ) | 100% | 0, bị trừ điểm tin cậy |
-| `no_match` | 100% | — |
+| `no_match` rồi khách huỷ | 100% (chỉ khi khách huỷ; không tự hoàn) | — |
 
 - Tổng hoàn + tiền nhiếp ảnh gia + phí nền tảng luôn bằng số tiền đã thu, kiểm bằng test (không lệch 1 ₫).
 - Ghi vào sổ cái `ledger_entries` như spec chính 3g; tiền nhiếp ảnh gia vào trạng thái "Đang giữ" ở S06.05 cho tới khi thả.
@@ -184,7 +188,7 @@ Firestore (bản sao, chỉ dịch vụ ghi): `instant_requests/{id}` (`status`,
 | S13.05 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`, `en_route`, `arrived`) | khách |
 | S13.06 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`, chờ xác nhận) | khách |
 | S13.07 | Không tìm được người | `/instant/:id` (`no_match`) | khách |
-| S14.01 | Sẵn sàng chụp ngay (công tắc, bảng giá, "Sẵn sàng hỗ trợ") | `/work/instant` | NAG |
+| S14.01 | Live Shutter (công tắc, bảng giá, "Sẵn sàng hỗ trợ") | `/work/instant` | NAG |
 | S14.02 | Lời mời việc (toàn màn, chồng thẻ tới 3 lời mời, mỗi thẻ đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG |
 | S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG |
 | S13.08 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai |
@@ -193,9 +197,9 @@ Firestore (bản sao, chỉ dịch vụ ghi): `instant_requests/{id}` (`status`,
 
 Một route `/instant/:id` hiển thị S13.02, S13.03, S13.05, S13.06, S13.07 theo trạng thái nghe từ Firestore; mỗi trạng thái bọc `ScreenCode` riêng. Hai màn mới của lần sửa này là S13.02 (vuốt chọn) và S13.04 (đã match), theo quy tắc mã use case của spec chính mục 2.02, S13.04. Bảng mã ở spec chính mục 2, `ScreenCodes` và mock được cập nhật cùng lúc.
 
-**Chuỗi chính** (khoá ARB đặt khi viết plan): "Chụp ngay", "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút", "Xem nhiếp ảnh gia phù hợp", "Chọn người bạn thích", "Thanh toán {giá} và gửi lời mời", "Gửi lời mời", "Xem 5 người khác", "Hoàn tác", "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.", "Đang chờ trả lời", "{tên} đang xem lời mời", "{tên} vừa nhận việc khác", "Chưa ai nhận. Chọn thêm người nhé.", "Đã match với {tên}", "{tên} đến trong khoảng {n} phút", "Đã đến điểm hẹn", "Chưa tìm được nhiếp ảnh gia. Đã hoàn {số tiền}.", "Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn", "Sẵn sàng chụp ngay", "Sẵn sàng hỗ trợ", "Nhận việc trong {n} giây", "Khách đã chọn bạn trong {n} người", "Khách đã chọn được người khác", "Đang nhận việc chụp ngay" (thông báo bền Android).
+**Chuỗi chính** (khoá ARB đặt khi viết plan): "Chụp ngay", "Nhiếp ảnh gia tới chỗ bạn trong khoảng 30–90 phút", "Xem nhiếp ảnh gia phù hợp", "Chọn người bạn thích", "Thanh toán {giá} và gửi lời mời", "Gửi lời mời", "Xem 5 người khác", "Hoàn tác", "Tiền được giữ an toàn và hoàn 100% nếu không có người nhận.", "Đang chờ trả lời", "{tên} đang xem lời mời", "{tên} vừa nhận việc khác", "Chưa ai nhận. Chọn thêm người nhé.", "Đã match với {tên}", "{tên} đến trong khoảng {n} phút", "Đã đến điểm hẹn", "Chưa tìm được nhiếp ảnh gia", "{số tiền} vẫn được giữ an toàn cho yêu cầu này. Huỷ yêu cầu thì hoàn đủ.", "Chọn thêm người", "Huỷ yêu cầu và hoàn {số tiền}", "Hiện chưa có nhiếp ảnh gia sẵn sàng gần bạn", "Live Shutter", "Sẵn sàng hỗ trợ", "Nhận việc trong {n} giây", "Khách đã chọn bạn trong {n} người", "Khách đã chọn được người khác", "Đang nhận việc chụp ngay" (thông báo bền Android).
 
-**Quy ước UI** (theo spec chính và `shared-components.md`): một nút chính mỗi màn; nút Huỷ là chữ đỏ mở S13.08, xác nhận huỷ là nút đỏ trong sheet; số tiền hoàn luôn hiện bằng chữ trước khi xác nhận; **S13.02**: thẻ vuốt luôn có nút ♥ / ✕ / Hoàn tác (≥ 48dp, có nhãn đọc màn hình) để không phụ thuộc cử chỉ; khi giảm chuyển động bật, thẻ đổi tức thì thay vì bay đi; **S14.02** có vùng chạm lớn (Nhận ≥ 56dp), đếm ngược bằng số và vòng, không chỉ bằng màu; **S13.04** tự đi tiếp, có nút "Tiếp tục" cho người dùng trình đọc màn hình, giảm chuyển động thì không có hiệu ứng; bản đồ có nút "Về vị trí của tôi" và nhãn chữ cho mọi ghim.
+**Quy ước UI** (theo spec chính và `shared-components.md`): một nút chính mỗi màn; nút Huỷ là chữ đỏ mở S13.08, xác nhận huỷ là nút đỏ trong sheet; số tiền hoàn luôn hiện bằng chữ trước khi xác nhận; **S13.02**: thẻ vuốt luôn có nút ♥ / ✕ / Hoàn tác (≥ 48dp, có nhãn đọc màn hình) để không phụ thuộc cử chỉ; khi giảm chuyển động bật, thẻ đổi tức thì thay vì bay đi; **S14.02** có vùng chạm lớn (Nhận ≥ 56dp), đếm ngược bằng số và vòng, không chỉ bằng màu; **S13.04** có biểu tượng máy ảnh được vẽ dần theo nét (thân máy rồi ống kính, 1,4 giây; giảm chuyển động thì hiện ngay, đủ nét), tự đi tiếp, có nút "Tiếp tục" cho người dùng trình đọc màn hình, giảm chuyển động thì không có hiệu ứng; bản đồ có nút "Về vị trí của tôi" và nhãn chữ cho mọi ghim.
 
 ## 9. Vị trí, pin và riêng tư
 
@@ -225,7 +229,7 @@ Một route `/instant/:id` hiển thị S13.02, S13.03, S13.05, S13.06, S13.07 t
 | Lời mời hết hạn đúng lúc bấm Nhận | Dịch vụ là trọng tài theo thời gian server; quá hạn trả `offer_expired` |
 | Khách mất mạng khi đang chờ | Dịch vụ vẫn chạy lời mời; app nghe lại Firestore khi có mạng; nếu đã về `choosing`, S13.02 hiện lượt mới |
 | Khách bỏ S13.02 giữa chừng (chưa trả tiền) | Quá 30 phút → `abandoned`, không có tiền nào liên quan |
-| Khách bỏ S13.02 giữa chừng (đã trả, đang ở lượt sau) | Mốc 10 phút vẫn chạy; hết giờ → `no_match` và hoàn 100% |
+| Khách bỏ S13.02 giữa chừng (đã trả, đang ở lượt sau) | Mốc 10 phút vẫn chạy; hết giờ → `no_match`, tiền vẫn treo; app nhắc khách quay lại chọn tiếp hoặc huỷ |
 | FCM trễ hoặc mất | Lời mời vẫn hết hạn sau 60 giây; app nhiếp ảnh gia đang sẵn sàng nghe `instant_offers/{uid}/items` nên vẫn thấy nếu đang mở |
 | Nhiếp ảnh gia mất tín hiệu khi đang đến | Quá 3 phút không có vị trí: khách thấy "Đang chờ cập nhật vị trí"; trễ quá 15 phút so với ETA ban đầu: khách huỷ được với hoàn 100% |
 | Goong lỗi hoặc hết hạn mức | ETA ước tính (đường chim bay × 1,4, 20 km/h) và ghi "ước tính"; bản đồ hiện lỗi tải tile nhưng vẫn có ETA và nút liên hệ |
@@ -237,8 +241,8 @@ Một route `/instant/:id` hiển thị S13.02, S13.03, S13.05, S13.06, S13.07 t
 
 ## 11. Kiểm thử
 
-- **Domain (unit, không hạ tầng)**: mọi chuyển trạng thái hợp lệ và bị từ chối (gồm `choosing ↔ searching`, `abandoned`); luật gợi ý (đủ 5 người, nới bán kính, nhóm mở rộng chỉ lấp chỗ, loại người đã từ chối/hết hạn/bị bỏ qua/đang bận/đủ 3 lời mời); chấm điểm và lý do; luật lời mời (60 giây, người thắng đầu tiên, rút lời mời còn lại và lời mời khác của người thắng); mọi dòng bảng huỷ mục 4, tổng tiền không lệch 1 ₫; làm tròn giá với hệ số; mốc 10 phút tính lại khi nhiếp ảnh gia huỷ.
-- **Dịch vụ (Redis + PostgreSQL thật, Docker Compose của backend giai đoạn 2)**: 5 người cùng bấm Nhận một yêu cầu → đúng một người thắng, bốn lời mời `withdrawn`; một nhiếp ảnh gia nhận hai yêu cầu cùng lúc → chỉ một thành công; không ai có quá 3 lời mời đang chờ khi 50 khách cùng mời; hết 60 giây không ai nhận → về `choosing`; hết 10 phút `no_match` và bút toán hoàn; TTL vị trí làm người đó bị loại khỏi gợi ý; dịch vụ khởi động lại giữa chừng vẫn tiếp tục lời mời đang chờ.
+- **Domain (unit, không hạ tầng)**: mọi chuyển trạng thái hợp lệ và bị từ chối (gồm `choosing ↔ searching`, `abandoned`); luật gợi ý (đủ 5 người, nới bán kính, nhóm mở rộng chỉ lấp chỗ, loại người đã từ chối/hết hạn/bị bỏ qua/đang bận/đủ 3 lời mời); chấm điểm và lý do; luật lời mời (60 giây, người thắng đầu tiên, rút lời mời còn lại và lời mời khác của người thắng); mọi dòng bảng huỷ mục 4, tổng tiền không lệch 1 ₫; làm tròn giá với hệ số; mốc 10 phút tính lại khi nhiếp ảnh gia huỷ; `no_match` không tự hoàn, chỉ hoàn khi khách huỷ.
+- **Dịch vụ (Redis + PostgreSQL thật, Docker Compose của backend giai đoạn 2)**: 5 người cùng bấm Nhận một yêu cầu → đúng một người thắng, bốn lời mời `withdrawn`; một nhiếp ảnh gia nhận hai yêu cầu cùng lúc → chỉ một thành công; không ai có quá 3 lời mời đang chờ khi 50 khách cùng mời; hết 60 giây không ai nhận → về `choosing`; hết 10 phút → `no_match` **không có bút toán hoàn**, tiền vẫn `held`; huỷ từ `no_match` → bút toán hoàn 100%; TTL vị trí làm người đó bị loại khỏi gợi ý; dịch vụ khởi động lại giữa chừng vẫn tiếp tục lời mời đang chờ.
 - **Tải**: script sinh 2.000 nhiếp ảnh gia ở 3 thành phố và 100 yêu cầu/phút trong 10 phút, mỗi yêu cầu mời 3 người. Ngưỡng: tạo lượt gợi ý p95 < 300 ms; gửi lời mời tới FCM p95 < 2 giây; không ai thắng hai lần, không lời mời vượt giới hạn.
 - **App (widget)**: S13–S14 ở 320dp, chữ 1,3×, sáng và tối, `expectIdle`; S13.02 vuốt phải/trái và nút ♥/✕/Hoàn tác cho cùng kết quả, giảm chuyển động thì không có hiệu ứng bay; S13.03 cập nhật từng dòng trạng thái từ bản sao Firestore; S14.02 chồng 3 thẻ, mỗi thẻ đếm ngược đúng giây; S13.08 hiện đúng số tiền từ `dryRun`.
 - **App (integration, bản giả)**: luồng đầy đủ khách + nhiếp ảnh gia trên hai `ProviderScope`; khách chọn 3 người, người thứ hai nhận; không ai nhận → lượt 2 → match; nhiếp ảnh gia huỷ rồi khách chọn lại; khách huỷ ở từng mốc.
@@ -268,3 +272,4 @@ Các kế hoạch I2–I6 viết ngày 2026-10-01 theo cách mời lần lượt
 6. Chính sách khi khách báo nhiếp ảnh gia không đúng người trong hồ sơ (đối chiếu ảnh đại diện ở S13.05, nút báo cáo).
 7. Thẻ vuốt có cần nút "Xem hồ sơ đầy đủ" (mở S03.01 rồi quay lại S13.02 giữ nguyên vị trí) ngay ở v1 không? Spec này để v1 chỉ có thẻ.
 8. Nhiếp ảnh gia có nên thấy rằng khách đã mời cả người khác ("trong {n} người") không? Spec này đề xuất có, để họ hiểu vì sao cần nhận nhanh, nhưng không nêu tên.
+9. Tiền treo của yêu cầu ở `no_match` mà khách không quay lại: giữ vô thời hạn theo quyết định hiện tại. Có cần nhắc định kỳ (ví dụ sau 24 giờ, 7 ngày) hay một mốc tự huỷ và hoàn sau thời gian dài không? Liên quan pháp lý giữ tiền hộ (spec chính câu hỏi mở 19).

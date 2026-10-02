@@ -1974,7 +1974,7 @@ import { facts } from './support/facts.js';
 
 const CTX = { currentPriceListVersion: 3, inCity: true, hasLocation: true };
 
-describe('readiness (who may switch on "Sẵn sàng chụp ngay", spec §2.2)', () => {
+describe('readiness (who may switch on "Live Shutter", spec §2.2)', () => {
   test('a complete photographer is ready', () => {
     assert.deepEqual(readinessReasons(facts({ uid: 'p' }), CTX), []);
   });
@@ -2069,7 +2069,7 @@ export interface ReadinessContext {
 }
 
 /**
- * Why "Sẵn sàng chụp ngay" cannot be switched on (spec §2.2 step 1); empty = may go online.
+ * Why "Live Shutter" cannot be switched on (spec §2.2 step 1); empty = may go online.
  * Order follows the contract enum.
  */
 export function readinessReasons(f: PhotographerFacts, ctx: ReadinessContext): EligibilityReason[] {
