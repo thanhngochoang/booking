@@ -1,0 +1,76 @@
+name: firebase-deploy
+# Deploys Firestore rules + indexes from app_flutter/firebase/ after the emulator
+# rules tests pass. Storage rules deploy only on manual run.
+#   push to flutter-rewrite/develop -> GitHub environment "dev"
+#   push to main                    -> GitHub environment "production"
+# Each environment holds its own variable FIREBASE_PROJECT_ID and secret
+# FIREBASE_SERVICE_ACCOUNT. Deploy is skipped while FIREBASE_PROJECT_ID is unset.
+# Setup (once): docs/FIREBASE-SETUP.md section 10.
+on:
+  push:
+    branches: [flutter-rewrite, develop, main]
+    paths: ['app_flutter/firebase/**', '.github/workflows/firebase-deploy.yml']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Environment to deploy to'
+        type: choice
+        options: [dev, production]
+        default: dev
+      storage:
+        description: 'Also deploy Storage rules'
+        type: boolean
+        default: false
+concurrency:
+  group: firebase-deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_flutter/firebase/rules-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci
+      - name: Firestore rules tests (emulator)
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'main' && 'production' || 'dev') }}
+    env:
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+    defaults:
+      run:
+        working-directory: app_flutter/firebase/rules-test
+    steps:
+      - name: Skip when the environment has no project
+        if: ${{ env.PROJECT_ID == '' }}
+        run: echo "::warning::FIREBASE_PROJECT_ID is not set for this environment; nothing deployed."
+      - uses: actions/checkout@v4
+        if: ${{ env.PROJECT_ID != '' }}
+      - uses: actions/setup-node@v4
+        if: ${{ env.PROJECT_ID != '' }}
+        with: { node-version: '22' }
+      - run: npm ci
+        if: ${{ env.PROJECT_ID != '' }}
+      - uses: google-github-actions/auth@v2
+        if: ${{ env.PROJECT_ID != '' }}
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Deploy Firestore rules + indexes
+        if: ${{ env.PROJECT_ID != '' }}
+        run: >
+          npx firebase deploy --config ../firebase.json --non-interactive
+          --project "$PROJECT_ID" --only firestore:rules,firestore:indexes
+      - name: Deploy Storage rules
+        if: ${{ env.PROJECT_ID != '' && inputs.storage }}
+        run: >
+          npx firebase deploy --config ../firebase.json --non-interactive
+          --project "$PROJECT_ID" --only storage

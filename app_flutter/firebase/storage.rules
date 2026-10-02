@@ -1,0 +1,26 @@
+rules_version = '2';
+// Storage keys are opaque (only `storage_key` is stored, never a download
+// URL). Every file lives under its owner's uid so ownership is checkable
+// without a Firestore lookup; the `files` record holds metadata.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function validImage() {
+      return request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // users/{uid}/... : avatars, portfolio/album photos, chat images.
+    match /users/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid) && validImage();
+      allow delete: if isOwner(uid);
+    }
+
+    // Anything else is closed.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

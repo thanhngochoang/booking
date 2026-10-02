@@ -1,13 +1,14 @@
 # Setup Firebase cho app Flutter (Android)
 
-Tài liệu này hướng dẫn nối app `app_flutter/` với một Firebase project để chạy được đăng nhập bằng email, Google và Facebook, cùng Firestore. Bạn làm các bước 1–7 một lần cho mỗi project. Bước 8 làm lại trên mỗi máy dev.
+Tài liệu này hướng dẫn nối app `app_flutter/` với một Firebase project để chạy được đăng nhập bằng email, Google và Facebook, cùng Firestore. Bạn làm các bước 1–7 một lần cho mỗi project. Bước 8 làm lại trên mỗi máy dev. Bước 9 (Storage) và bước 10 (deploy tự động bằng GitHub Actions) làm khi cần.
 
 ## Thông số của repo
 
 | Mục | Giá trị |
 |-----|---------|
 | Android package (applicationId) | `com.thanhbk.photobooking` |
-| Firebase project đang dùng | `booking-c1922` (theo `app_flutter/android/app/google-services.json`) |
+| Firebase project dev | `booking-c1922` (alias `dev` trong `app_flutter/firebase/.firebaserc`) |
+| Firebase project production | Chưa tạo. Khi có, thêm alias `prod` (bước 6) và biến cho environment `production` (bước 10) |
 | Facebook App ID | `546233675712070` |
 | SHA‑1 debug (máy này, `.home/.android/debug.keystore`) | `D2:BC:10:FD:7C:AF:07:A5:29:9B:03:FF:F8:F2:B6:7E:AF:DB:0D:14` |
 | SHA‑256 debug | `59:A1:19:16:D9:3B:DC:50:66:8C:BC:93:DA:CF:80:D2:54:3F:1F:46:CE:05:AC:0E:F3:38:8B:53:8B:CA:87:D7` |
@@ -30,7 +31,7 @@ File keystore chỉ có sau lần build Android đầu tiên (`flutter build apk
 Mở https://console.firebase.google.com.
 
 - **Đã có project `booking-c1922`**: chọn nó. Đây là project mà `google-services.json` của app Flutter đang trỏ tới.
-- **Tạo project mới**: bấm nút tạo project, nhập tên, chấp nhận điều khoản, **Continue**, tắt Google Analytics nếu chưa cần, rồi **Create project**. Ở các bước sau, thay `booking-c1922` bằng id mới.
+- **Tạo project mới**: bấm nút tạo project, nhập tên, chấp nhận điều khoản, **Continue**, tắt Google Analytics nếu chưa cần, rồi **Create project**. Ở các bước sau, thay `booking-c1922` bằng id mới. Project production cũng tạo theo cách này: làm lại các bước 1–7 và 9 cho nó.
 
 Project cũ `time-96441` của app Java không dùng cho app Flutter (xem lưu ý ở bước 6).
 
@@ -62,7 +63,7 @@ Bỏ qua bước này thì mọi kiểu đăng nhập đều hỏng. API của F
 |----------|----------|
 | Email/Password | Enable. Không bật "Email link". |
 | Google | Enable, chọn support email, Save. Firebase tự tạo "Web client". App lấy client này qua `default_web_client_id` trong `google-services.json` để nhận `idToken`. |
-| Facebook | Enable, điền **App ID** `546233675712070` và **App secret** (lấy ở bước 5). Copy **OAuth redirect URI** mà Firebase hiển thị (dạng `https://booking-c1922.firebaseapp.com/__/auth/handler`) để dùng ở bước 5. |
+| Facebook | Enable, điền **App ID** `546233675712070` và **App secret** (lấy ở bước 5). Copy **OAuth redirect URI** mà Firebase hiển thị (dạng `https://<project-id>.firebaseapp.com/__/auth/handler`) để dùng ở bước 5. |
 
 Nên bật thêm ở **Security → Authentication → Settings → User actions**: "Email enumeration protection" (mặc định bật ở project mới). Khi bật, sai email và sai mật khẩu đều báo "Email hoặc mật khẩu không đúng.". App đã xử lý trường hợp này.
 
@@ -87,18 +88,43 @@ Không ghi token vào `strings.xml` hay bất kỳ file nào được commit. `.
    - Database ID: giữ `(default)`. App gọi `FirebaseFirestore.instance`, tức chỉ dùng database mặc định. Đặt id khác thì app không thấy database.
    - Location: `asia-southeast1 (Singapore)`, gần Việt Nam nhất → **Next**. Location không đổi được sau khi tạo.
    - Security rules: **Production mode** (rules của repo sẽ ghi đè ngay ở bước kế) → **Create**.
-2. Deploy rules và indexes từ repo. Firebase CLI đã có sẵn trong `app_flutter/firebase/rules-test/node_modules`, không cần cài global:
+2. Deploy rules và indexes từ repo. Firebase CLI đã có sẵn trong `rules-test/node_modules`, không cần cài global. Project được chọn qua alias trong `app_flutter/firebase/.firebaserc`:
+
+   | Alias | Project |
+   |-------|---------|
+   | `dev` | `booking-c1922` |
+   | `prod` | chưa có |
+
+   `.firebaserc` cố ý không có `default`, nên lệnh deploy nào cũng phải chỉ rõ project. Không dùng `firebase use` để đổi project: lệnh đó lưu project đang chọn trên máy, và rất dễ deploy nhầm sang production.
 
 ```bash
 source scripts/env.sh
-cd app_flutter/firebase
-npx --prefix rules-test firebase login          # mở trình duyệt, chỉ cần một lần
-npx --prefix rules-test firebase deploy --only firestore:rules,firestore:indexes --project booking-c1922
+cd app_flutter/firebase/rules-test
+npm install                 # lần đầu
+npx firebase login          # mở trình duyệt, chỉ cần một lần
+npm test                    # chạy test rules trên emulator trước khi deploy
+npm run deploy:rules:dev    # Firestore rules + indexes lên dev
+npm run deploy:rules:prod   # lên production, chỉ chạy được sau khi đã thêm alias prod
 ```
+
+Lệnh deploy đẩy đúng nội dung file trên đĩa, kể cả phần chưa commit. Nên commit và chạy `npm test` trước.
+
+Khi đã có project production, thêm alias `prod` vào `.firebaserc` rồi commit:
+
+```json
+{
+  "projects": {
+    "dev": "booking-c1922",
+    "prod": "<id-project-production>"
+  }
+}
+```
+
+Production nên deploy qua GitHub Actions (bước 10) để có bước duyệt. `deploy:rules:prod` từ máy chỉ dùng khi cần gấp.
 
 Trong Claude Code, chạy lệnh `firebase login` bằng tiền tố `!` vì nó cần tương tác. Sau khi deploy, vào **Databases & Storage → Firestore → Rules** để kiểm tra nội dung giống `app_flutter/firebase/firestore.rules`.
 
-Vì sao không dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `booking`, `albums`, `chat_room` mà không tuân theo rules mới (ví dụ có `mail_address`, `is_photographer`). Deploy rules mới sẽ chặn app cũ ghi tiếp. Vì vậy app Flutter dùng project riêng `booking-c1922`, dữ liệu cũ sẽ migrate sau.
+Vì sao không dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `booking`, `albums`, `chat_room` mà không tuân theo rules mới (ví dụ có `mail_address`, `is_photographer`). Deploy rules mới sẽ chặn app cũ ghi tiếp. Vì vậy app Flutter dùng project riêng (`booking-c1922` cho dev), dữ liệu cũ sẽ migrate sau.
 
 ## 7. Tải cấu hình về máy
 
@@ -109,7 +135,7 @@ Vì sao không dùng project cũ `time-96441`: app Java cũ ghi vào `users`, `b
    ```bash
    source scripts/env.sh && cd app_flutter
    dart pub global activate flutterfire_cli
-   dart pub global run flutterfire_cli:flutterfire configure --project=booking-c1922 --platforms=android --android-package-name=com.thanhbk.photobooking --yes
+   dart pub global run flutterfire_cli:flutterfire configure --project=<project-id> --platforms=android --android-package-name=com.thanhbk.photobooking --yes
    ```
 
    **Cách B, sinh từ `google-services.json`** (không cần login):
@@ -159,6 +185,93 @@ Kiểm tra lần lượt:
 | Đăng nhập Facebook | Thành công nếu đã điền client token và tài khoản có vai trò trong app Meta. |
 | Tắt app rồi mở lại | Hiện màn splash ngắn, rồi vào thẳng tab, không thấy form đăng nhập. |
 
+## 9. Storage rules (khi app bắt đầu upload ảnh)
+
+Rules nằm ở `app_flutter/firebase/storage.rules`. Bản hiện tại:
+
+- Chỉ mở `users/{uid}/**`: người đã đăng nhập được đọc; chỉ chủ (`uid`) được ghi, và chỉ ghi ảnh (`image/*`) dưới 15 MB.
+- Mọi đường dẫn khác bị chặn.
+
+Dữ liệu chỉ lưu khoá lưu trữ (`storage_key`), không lưu URL tải của Firebase. Khi chốt cấu trúc key, sửa rules cho khớp.
+
+1. **Gói Blaze**: từ 10/2024, bucket Storage mới bắt buộc gói Blaze. Bucket `*.appspot.com` trên gói Spark mất quyền truy cập từ 02/2026 ([thông báo](https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024)). Kiểm tra gói ở **Usage and billing**: `https://console.firebase.google.com/project/<project-id>/usage/details` (dev: https://console.firebase.google.com/project/booking-c1922/usage/details). Blaze vẫn có hạn mức miễn phí. Nên đặt **budget alert** trong Google Cloud Billing.
+2. Menu trái: **Databases & Storage → Storage** → **Get started**. Chọn location gần Firestore (`asia-southeast1`), chọn **Production mode**.
+3. Deploy:
+
+```bash
+cd app_flutter/firebase/rules-test
+npm run deploy:storage:dev    # hoặc deploy:storage:prod
+```
+
+Kiểm tra ở **Storage → Rules**: nội dung phải giống `storage.rules`. Project cũ `time-96441` của app Java không bị ảnh hưởng.
+
+## 10. Deploy tự động bằng GitHub Actions
+
+Workflow `.github/workflows/firebase-deploy.yml` có 2 job: `test` chạy `npm test` trên emulator, `deploy` chỉ chạy khi test pass.
+
+| Khi nào | Environment | Deploy |
+|---------|-------------|--------|
+| Push vào `flutter-rewrite` hoặc `develop` có thay đổi trong `app_flutter/firebase/**` | `dev` | Firestore rules và indexes |
+| Push vào `main` có thay đổi tương tự | `production` | Firestore rules và indexes |
+| Chạy tay (**Actions → firebase-deploy → Run workflow**) | chọn `dev` hoặc `production` | Như trên. Tích **Also deploy Storage rules** để deploy thêm Storage. |
+
+Project id không ghi trong workflow. Mỗi GitHub environment có biến `FIREBASE_PROJECT_ID` và secret `FIREBASE_SERVICE_ACCOUNT` riêng. Environment chưa có `FIREBASE_PROJECT_ID` thì job `deploy` chỉ in cảnh báo và không deploy gì. Nhờ vậy `production` an toàn khi chưa có project.
+
+IAM, service account và key đều miễn phí. GitHub Actions miễn phí cho repo public, repo private có quota phút miễn phí mỗi tháng.
+
+Làm 10.1–10.3 cho **dev** ngay bây giờ. Làm lại cho **production** khi đã có project, với project id và key của production. Mỗi project dùng một service account riêng: key của dev không deploy được lên production, và ngược lại.
+
+### 10.1 Tạo service account (trong từng project)
+
+1. Mở `https://console.cloud.google.com/iam-admin/serviceaccounts?project=<project-id>` (dev: https://console.cloud.google.com/iam-admin/serviceaccounts?project=booking-c1922) → **Create service account**.
+   - Name: `github-firebase-deploy` → **Create and continue**.
+2. **Grant this service account access to project**, thêm các role:
+
+   | Role | Để làm gì |
+   |------|-----------|
+   | Firebase Rules Admin | Deploy Firestore rules và Storage rules |
+   | Cloud Datastore Index Admin | Deploy Firestore indexes |
+   | Service Usage Consumer | Firebase CLI kiểm tra API đã bật chưa |
+
+   Bấm **Continue** → **Done**.
+3. Bấm vào service account vừa tạo → tab **Keys** → **Add key → Create new key** → **JSON** → **Create**. Trình duyệt tải về một file `.json`.
+
+Nếu deploy báo thiếu quyền (`The caller does not have permission`, `...permission denied`), log sẽ ghi tên permission còn thiếu. Thêm role chứa permission đó ở trang **IAM** của project (`https://console.cloud.google.com/iam-admin/iam?project=<project-id>`). Cách nhanh nhưng rộng quyền hơn: gán role **Firebase Admin**.
+
+Nếu không tạo được key vì policy của organization (`iam.disableServiceAccountKeyCreation`), dùng Workload Identity Federation thay cho key và sửa bước `google-github-actions/auth` trong workflow.
+
+### 10.2 Tạo environment và lưu cấu hình
+
+Mở https://github.com/thanhngochoang/booking/settings/environments → **New environment**.
+
+| | `dev` | `production` |
+|--|-------|--------------|
+| Tên environment | `dev` | `production` |
+| **Environment variables** → `FIREBASE_PROJECT_ID` | `booking-c1922` | id project production (để trống tới khi có) |
+| **Environment secrets** → `FIREBASE_SERVICE_ACCOUNT` | toàn bộ nội dung file JSON của dev | toàn bộ nội dung file JSON của production |
+| **Required reviewers** | không cần | bật, thêm chính bạn |
+| **Deployment branches and tags** | `flutter-rewrite`, `develop` | chỉ `main` |
+
+Lưu ý:
+
+- Secret phải đặt trong **environment**, không đặt ở **Repository secrets**. Đặt ở repository thì cả hai environment dùng chung một key.
+- Sau khi lưu secret, xoá file JSON trên máy. Không commit file này. Key bị lộ thì vào tab **Keys** của service account, xoá key cũ và tạo key mới.
+- Khi bật Required reviewers cho `production`, mỗi lần push vào `main` có đụng `app_flutter/firebase/**`, GitHub sẽ chờ bạn bấm **Approve**, kể cả lúc chưa có project id.
+
+### 10.3 Chạy thử
+
+1. Mở https://github.com/thanhngochoang/booking/actions/workflows/firebase-deploy.yml → **Run workflow** → branch `flutter-rewrite`, target `dev` → **Run workflow**. Nút này chỉ hiện khi workflow đã có trên branch mặc định của repo.
+2. Kiểm tra: cả hai job xanh, và trang **Firestore → Rules** của project dev có thời điểm publish mới.
+3. Với production: sau khi điền 10.2, chạy lại với branch `main`, target `production`, rồi duyệt.
+
+| Lỗi trong log | Cách sửa |
+|---------------|----------|
+| Cảnh báo `FIREBASE_PROJECT_ID is not set for this environment` | Chưa thêm biến cho environment đó (10.2). |
+| `the GitHub Action workflow must specify exactly one of "workload_identity_provider" or "credentials_json"` | Secret `FIREBASE_SERVICE_ACCOUNT` chưa có trong environment, hoặc sai tên (10.2). |
+| `Permission ... denied` hoặc `does not have permission` | Thiếu role (10.1), hoặc key thuộc project khác với `FIREBASE_PROJECT_ID`. |
+| `Failed to get Firebase project ...` | Project id sai, hoặc service account chưa được gán role nào trong project đó. |
+| Storage: `Firebase Storage has not been set up` | Chưa làm bước 9 (bucket chưa tạo hoặc chưa lên Blaze). |
+
 ## Sự cố thường gặp
 
 | Triệu chứng | Nguyên nhân và cách sửa |
@@ -180,3 +293,5 @@ Emulator chạy hoàn toàn local, không đụng project thật:
 source scripts/env.sh
 cd app_flutter/firebase/rules-test && npm install && npm test
 ```
+
+CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR.
