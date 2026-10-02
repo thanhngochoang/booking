@@ -719,3 +719,4 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 Appended by feature plans as they run (plan, task, what to add on iOS). Do them in this plan, then run the iOS build.
 
 - step3a1 (done before this rule): Info.plist `NSLocationWhenInUseUsageDescription` and `NSLocationDefaultAccuracyReduced` are already in; verify on device.
+- step3c Task 1: add to ios/Runner/Info.plist `<key>NSPhotoLibraryUsageDescription</key><string>Ứng dụng cần truy cập thư viện ảnh để bạn chọn ảnh đăng lên hồ sơ và bài đăng.</string>`; no camera, microphone, NSPhotoLibraryAddUsageDescription or location-always keys; add the iOS test 'iOS explains the photo library in Vietnamese and asks for nothing else' from step3c Task 1 to test/platform/media_platform_config_test.dart.

@@ -183,13 +183,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.';
 
   @override
-  String get emptyCreateTitle => 'Cho mọi người thấy bạn chụp gì';
-
-  @override
-  String get emptyCreateBody =>
-      'Mỗi bài đăng gắn một gói dịch vụ để khách đặt ngay.';
-
-  @override
   String get emptyBookingsTitle => 'Buổi chụp tiếp theo bắt đầu từ đây';
 
   @override
@@ -1212,6 +1205,90 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarPickDay => 'Chọn một ngày để xem chi tiết.';
+
+  @override
+  String get createAddPhotos => 'Thêm ảnh';
+
+  @override
+  String createPhotosCount(int n, int max) {
+    return '$n / $max ảnh';
+  }
+
+  @override
+  String get createCaptionLabel => 'Mô tả';
+
+  @override
+  String get createCaptionHint => 'Chiều muộn ở bến Bạch Đằng…';
+
+  @override
+  String get createServiceLabel => 'Gói dịch vụ · bắt buộc';
+
+  @override
+  String get createServicePick => 'Chọn gói';
+
+  @override
+  String get createServiceTitle => 'Chọn gói dịch vụ';
+
+  @override
+  String get createServiceRequired => 'Chọn gói dịch vụ cho bài đăng';
+
+  @override
+  String get createPhotosRequired => 'Thêm ít nhất một ảnh';
+
+  @override
+  String get createNoServices =>
+      'Bạn chưa có gói dịch vụ nào. Thêm gói để đăng bài.';
+
+  @override
+  String get createAddService => 'Thêm gói';
+
+  @override
+  String get createServicesError => 'Không tải được gói dịch vụ.';
+
+  @override
+  String get createLocationLabel => 'Địa điểm';
+
+  @override
+  String get createStyleLabel => 'Phong cách';
+
+  @override
+  String get createStyleNone => 'Không chọn';
+
+  @override
+  String get createStyleTitle => 'Phong cách';
+
+  @override
+  String get createPortfolio => 'Thêm vào portfolio';
+
+  @override
+  String get createPublish => 'Đăng';
+
+  @override
+  String get createRemove => 'Gỡ ảnh';
+
+  @override
+  String get createMoveUp => 'Đưa lên';
+
+  @override
+  String get createMoveDown => 'Đưa xuống';
+
+  @override
+  String get createRetryPhoto => 'Tải lại ảnh';
+
+  @override
+  String createUploading(int percent) {
+    return 'Đang tải $percent%';
+  }
+
+  @override
+  String get createUploadFailed => 'Không tải được ảnh. Thử lại nhé.';
+
+  @override
+  String get createPublishFailed =>
+      'Không đăng được bài. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get createPublished => 'Đã đăng bài';
 
   @override
   String reasonFreeOnDate(String day) {

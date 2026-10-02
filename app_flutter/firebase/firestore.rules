@@ -277,6 +277,33 @@ service cloud.firestore {
             || (resource != null && d.createdAt == resource.data.get('createdAt', null)));
     }
 
+    // posts/{id}: a photographer creates a "work" post for themself, with 1 to
+    // 10 photos and one of their own active packages. Counters start at zero
+    // and the time is the server's. Posts are not edited from the client.
+    function validPostCreate() {
+      let d = request.resource.data;
+      let uid = request.auth.uid;
+      return d.keys().hasOnly(['kind', 'authorId', 'photographerId', 'serviceId', 'specialty',
+                               'imageUrls', 'imageMeta', 'caption', 'location', 'style',
+                               'hashtags', 'inPortfolio', 'likeCount', 'saveCount', 'createdAt'])
+        && d.keys().hasAll(['kind', 'authorId', 'photographerId', 'serviceId', 'imageUrls',
+                            'caption', 'likeCount', 'saveCount', 'createdAt'])
+        && d.kind == 'work'
+        && d.authorId == uid
+        && d.photographerId == uid
+        && hasPhotographerRole(uid)
+        && d.serviceId is string
+        && get(/databases/$(database)/documents/photographers/$(uid)/services/$(d.serviceId))
+             .data.get('active', true) == true
+        && d.imageUrls is list && d.imageUrls.size() >= 1 && d.imageUrls.size() <= 10
+        && (!('imageMeta' in d) || (d.imageMeta is list && d.imageMeta.size() == d.imageUrls.size()))
+        && d.caption is string && d.caption.size() <= 2000
+        && (!('hashtags' in d) || (d.hashtags is list && d.hashtags.size() <= 30))
+        && (!('inPortfolio' in d) || d.inPortfolio is bool)
+        && d.likeCount == 0 && d.saveCount == 0
+        && d.createdAt == request.time;
+    }
+
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid) && validRole() && onlyKeys(userClientFields());
@@ -320,11 +347,12 @@ service cloud.firestore {
       allow write: if false; // only Cloud Functions (sub-project 4)
     }
 
-    // Posts are read by any signed-in user. Creation is added with the Create
-    // Post screen; counters are always written by Cloud Functions.
+    // Posts are read by any signed-in user. A photographer creates their own
+    // work post (S21); counters are always written by Cloud Functions.
     match /posts/{postId} {
       allow read: if signedIn();
-      allow write: if false;
+      allow create: if signedIn() && validPostCreate();
+      allow update, delete: if false;
     }
 
     match /likes/{docId} {

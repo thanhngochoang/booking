@@ -61,8 +61,6 @@
   "roleContinue": "Tiếp tục",
   "emptyExploreTitle": "Khám phá theo dịch vụ và địa điểm",
   "emptyExploreBody": "Chân dung, cưới, gia đình, kỷ yếu và hơn thế.",
-  "emptyCreateTitle": "Cho mọi người thấy bạn chụp gì",
-  "emptyCreateBody": "Mỗi bài đăng gắn một gói dịch vụ để khách đặt ngay.",
   "emptyBookingsTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
   "emptyBookingsBody": "Yêu cầu và lịch chụp của bạn sẽ hiện ở đây.",
   "emptyWorkTitle": "Chưa có yêu cầu nào",
@@ -475,6 +473,43 @@
   "calendarSaveError": "Không lưu được lịch. Thử lại nhé.",
   "calendarLoadError": "Không tải được lịch.",
   "calendarPickDay": "Chọn một ngày để xem chi tiết.",
+  "createAddPhotos": "Thêm ảnh",
+  "createPhotosCount": "{n} / {max} ảnh",
+  "@createPhotosCount": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "createCaptionLabel": "Mô tả",
+  "createCaptionHint": "Chiều muộn ở bến Bạch Đằng…",
+  "createServiceLabel": "Gói dịch vụ · bắt buộc",
+  "createServicePick": "Chọn gói",
+  "createServiceTitle": "Chọn gói dịch vụ",
+  "createServiceRequired": "Chọn gói dịch vụ cho bài đăng",
+  "createPhotosRequired": "Thêm ít nhất một ảnh",
+  "createNoServices": "Bạn chưa có gói dịch vụ nào. Thêm gói để đăng bài.",
+  "createAddService": "Thêm gói",
+  "createServicesError": "Không tải được gói dịch vụ.",
+  "createLocationLabel": "Địa điểm",
+  "createStyleLabel": "Phong cách",
+  "createStyleNone": "Không chọn",
+  "createStyleTitle": "Phong cách",
+  "createPortfolio": "Thêm vào portfolio",
+  "createPublish": "Đăng",
+  "createRemove": "Gỡ ảnh",
+  "createMoveUp": "Đưa lên",
+  "createMoveDown": "Đưa xuống",
+  "createRetryPhoto": "Tải lại ảnh",
+  "createUploading": "Đang tải {percent}%",
+  "@createUploading": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "createUploadFailed": "Không tải được ảnh. Thử lại nhé.",
+  "createPublishFailed": "Không đăng được bài. Kiểm tra mạng rồi thử lại.",
+  "createPublished": "Đã đăng bài",
   "reasonFreeOnDate": "Rảnh {day}",
   "@reasonFreeOnDate": {
     "placeholders": {

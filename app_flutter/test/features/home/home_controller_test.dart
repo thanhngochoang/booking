@@ -193,4 +193,85 @@ void main() {
     expect(s.category, isNull);
     expect(s.items, hasLength(5));
   });
+
+  test(
+    'pinToTop puts a post the ranking would put last at the front',
+    () async {
+      final (c, w, _) = await _make();
+      await c.read(homeFeedProvider.future);
+      w.posts.add(
+        fixturePost(
+          'late',
+          photographerId: 'p4',
+          age: const Duration(seconds: 1),
+        ),
+      );
+      await c.read(homeFeedProvider.notifier).pinToTop('late');
+      final s = c.read(homeFeedProvider).requireValue;
+      expect(s.items.first.post.id, 'late');
+      expect(s.items.where((e) => e.post.id == 'late'), hasLength(1));
+      expect(s.items.length, greaterThan(1));
+    },
+  );
+
+  test('pinToTop returns to "Dành cho bạn" and fetches a post the ranking did not include', () async {
+    final (c, w, _) = await _make();
+    await c.read(homeFeedProvider.future);
+    await c.read(homeFeedProvider.notifier).selectCategory('wedding');
+    w.posts.add(
+      fixturePost(
+        'mine',
+        photographerId: 'p1',
+        specialtyId: 'portrait',
+        age: const Duration(seconds: 1),
+      ),
+    );
+    await c.read(homeFeedProvider.notifier).pinToTop('mine');
+    final s = c.read(homeFeedProvider).requireValue;
+    expect(s.category, isNull);
+    expect(s.items.first.post.id, 'mine');
+  });
+
+  test('pinToTop with a post that cannot be found just refreshes', () async {
+    final (c, _, _) = await _make();
+    await c.read(homeFeedProvider.future);
+    await c.read(homeFeedProvider.notifier).pinToTop('ghost');
+    expect(c.read(homeFeedProvider).requireValue.items.map((e) => e.post.id), [
+      'a',
+      'b',
+      'c',
+      'e',
+      'd',
+    ]);
+  });
+
+  test(
+    'loadMore drops a post that pinToTop already put at the front',
+    () async {
+      final many = DiscoveryWorld(
+        posts: [
+          for (var i = 0; i < 45; i++)
+            fixturePost(
+              'm$i',
+              photographerId: 'p1',
+              age: Duration(minutes: i + 1),
+              specialtyId: 'portrait',
+            ),
+        ],
+      );
+      final (c, _, _) = await _make(world: many);
+      final n = c.read(homeFeedProvider.notifier);
+      await c.read(homeFeedProvider.future);
+      // m30 is on page 2 of the ranking.
+      await n.pinToTop('m30');
+      await n.loadMore();
+      final ids = c
+          .read(homeFeedProvider)
+          .requireValue
+          .items
+          .map((e) => e.post.id);
+      expect(ids.where((id) => id == 'm30'), hasLength(1));
+      expect(ids.toSet(), hasLength(ids.length));
+    },
+  );
 }

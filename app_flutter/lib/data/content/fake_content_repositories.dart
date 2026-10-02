@@ -22,6 +22,9 @@ class FakePostRepository implements PostRepository {
 
   void add(PostSummary post) => _posts.add(post);
 
+  /// Removes a post if present; used when a draft id is published again.
+  void removeById(String id) => _posts.removeWhere((p) => p.id == id);
+
   List<PostSummary> get _newestFirst {
     final list = List.of(_posts)
       ..sort((a, b) {

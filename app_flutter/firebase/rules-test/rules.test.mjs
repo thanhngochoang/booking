@@ -2,13 +2,15 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, query, where } from 'firebase/firestore';
+import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: 'demo-nag',
     firestore: { rules: readFileSync('../firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
+    storage: { rules: readFileSync('../storage.rules', 'utf8'), host: '127.0.0.1', port: 9199 },
   });
 });
 after(async () => env.cleanup());
@@ -744,4 +746,139 @@ test('the step 1 intro is length-checked', async () => {
   await assertFails(updateDoc(doc(db, 'photographers/in1'), { bio: 42 }));
   await assertFails(updateDoc(doc(db, 'photographers/in1'), { equipment: Array.from({ length: 9 }, (_, i) => `M${i}`) }));
   await assertFails(updateDoc(doc(db, 'photographers/in1'), { equipment: 'Sony' }));
+});
+
+// ---- Storage: post photos ----
+const photo = (n = 4) => new Uint8Array(n);
+const jpeg = { contentType: 'image/jpeg' };
+
+test('a user uploads, reads and deletes photos under their own post path', async () => {
+  const st = env.authenticatedContext('ph1').storage();
+  const r = ref(st, 'posts/ph1/post1/a.jpg');
+  await assertSucceeds(uploadBytes(r, photo(), jpeg));
+  await assertSucceeds(getBytes(r));
+  await assertSucceeds(deleteObject(r));
+});
+
+test('nobody uploads into or deletes from someone else\'s post path', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    uploadBytes(ref(c.storage(), 'posts/ph1/post1/b.jpg'), photo(), jpeg));
+  const other = env.authenticatedContext('ph2').storage();
+  await assertFails(uploadBytes(ref(other, 'posts/ph1/post1/c.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(other, 'posts/ph1/post1/b.jpg')));
+  await assertSucceeds(getBytes(ref(other, 'posts/ph1/post1/b.jpg'))); // reading is for every signed-in user
+  await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), 'posts/ph1/post1/b.jpg')));
+  await assertFails(uploadBytes(ref(env.unauthenticatedContext().storage(), 'posts/ph1/post1/d.jpg'), photo(), jpeg));
+});
+
+test('only images up to 8 MB are accepted', async () => {
+  const st = env.authenticatedContext('ph1').storage();
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/e.pdf'), photo(), { contentType: 'application/pdf' }));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/f.jpg'), photo(8 * 1024 * 1024 + 1), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, 'posts/ph1/post1/g.jpg'), photo(1024 * 1024), jpeg));
+});
+
+test('every other Storage path is closed, and the users/{uid} rule still works', async () => {
+  const st = env.authenticatedContext('ph1').storage();
+  await assertFails(uploadBytes(ref(st, 'avatars/ph1/a.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/a.jpg'), photo(), jpeg)); // missing the post folder
+  await assertFails(getBytes(ref(st, 'misc/x.jpg')));
+  await assertSucceeds(uploadBytes(ref(st, 'users/ph1/avatar.jpg'), photo(), jpeg));
+});
+
+// ---- creating posts ----
+const validPost = (uid, extra = {}) => ({
+  kind: 'work', authorId: uid, photographerId: uid, serviceId: 's1', specialty: 'portrait',
+  imageUrls: ['https://x/1.jpg'], imageMeta: [{ blurHash: null, w: null, h: null }],
+  caption: 'Chiều muộn #chandung', hashtags: ['chandung'], location: { name: 'Bến Bạch Đằng' },
+  style: 'film', inPortfolio: true, likeCount: 0, saveCount: 0, createdAt: serverTimestamp(), ...extra,
+});
+
+async function seedShooter(uid, { role = 'photographer', service = true, active = true } = {}) {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const db = c.firestore();
+    await setDoc(doc(db, `users/${uid}`), { displayName: uid, role });
+    if (service) {
+      await setDoc(doc(db, `photographers/${uid}/services/s1`), { name: 'Gói', price: 1500000, active });
+    }
+  });
+}
+
+test('a photographer creates a post for themself with their own package', async () => {
+  await seedShooter('c1');
+  const db = env.authenticatedContext('c1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-ok'), validPost('c1')));
+});
+
+test('the post and its portfolio entry can be written in one batch', async () => {
+  await seedShooter('c2');
+  const db = env.authenticatedContext('c2').firestore();
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'posts/post-batch'), validPost('c2'));
+  batch.set(doc(db, 'photographers/c2'), { portfolio: arrayUnion('post-batch'), updatedAt: serverTimestamp() }, { merge: true });
+  await assertSucceeds(batch.commit());
+});
+
+test('optional fields may be left out', async () => {
+  await seedShooter('c3');
+  const db = env.authenticatedContext('c3').firestore();
+  const bare = validPost('c3');
+  for (const k of ['specialty', 'imageMeta', 'location', 'style', 'hashtags', 'inPortfolio']) delete bare[k];
+  await assertSucceeds(setDoc(doc(db, 'posts/post-bare'), bare));
+});
+
+test('nobody posts as someone else, and customers cannot post', async () => {
+  await seedShooter('c4');
+  await seedShooter('cust', { role: 'customer' });
+  const db = env.authenticatedContext('c4').firestore();
+  await assertFails(setDoc(doc(db, 'posts/x1'), validPost('c5')));
+  await assertFails(setDoc(doc(db, 'posts/x2'), validPost('c4', { authorId: 'c5' })));
+  const customer = env.authenticatedContext('cust').firestore();
+  await assertFails(setDoc(doc(customer, 'posts/x3'), validPost('cust')));
+  await assertFails(setDoc(doc(env.unauthenticatedContext().firestore(), 'posts/x4'), validPost('c4')));
+});
+
+test('the package must exist, be yours and be active', async () => {
+  await seedShooter('c6', { service: false });
+  await seedShooter('c7', { active: false });
+  await seedShooter('c8');
+  await assertFails(setDoc(doc(env.authenticatedContext('c6').firestore(), 'posts/y1'), validPost('c6')));
+  await assertFails(setDoc(doc(env.authenticatedContext('c7').firestore(), 'posts/y2'), validPost('c7')));
+  // A package id is looked up under the poster's own packages only.
+  await assertFails(setDoc(doc(env.authenticatedContext('c8').firestore(), 'posts/y3'), validPost('c8', { serviceId: 'other' })));
+});
+
+test('one to ten photos', async () => {
+  await seedShooter('c9');
+  const db = env.authenticatedContext('c9').firestore();
+  await assertFails(setDoc(doc(db, 'posts/z1'), validPost('c9', { imageUrls: [], imageMeta: [] })));
+  const eleven = Array.from({ length: 11 }, (_, i) => `https://x/${i}.jpg`);
+  const tooMany = validPost('c9', { imageUrls: eleven });
+  delete tooMany.imageMeta;
+  await assertFails(setDoc(doc(db, 'posts/z2'), tooMany));
+  const ten = eleven.slice(0, 10);
+  await assertSucceeds(setDoc(doc(db, 'posts/z3'), validPost('c9', { imageUrls: ten, imageMeta: ten.map(() => ({ blurHash: null, w: null, h: null })) })));
+  await assertFails(setDoc(doc(db, 'posts/z4'), validPost('c9', { imageMeta: [] }))); // meta must match the photo count
+});
+
+test('counters, kind, time and extra fields cannot be forged', async () => {
+  await seedShooter('d1');
+  const db = env.authenticatedContext('d1').firestore();
+  await assertFails(setDoc(doc(db, 'posts/f1'), validPost('d1', { likeCount: 500 })));
+  await assertFails(setDoc(doc(db, 'posts/f2'), validPost('d1', { saveCount: 1 })));
+  await assertFails(setDoc(doc(db, 'posts/f3'), validPost('d1', { kind: 'real_shoot' })));
+  await assertFails(setDoc(doc(db, 'posts/f4'), validPost('d1', { createdAt: new Date('2020-01-01') })));
+  await assertFails(setDoc(doc(db, 'posts/f5'), validPost('d1', { bookingId: 'b1' })));
+  await assertFails(setDoc(doc(db, 'posts/f6'), validPost('d1', { caption: 'x'.repeat(2001) })));
+  await assertFails(setDoc(doc(db, 'posts/f7'), validPost('d1', { hashtags: Array.from({ length: 31 }, (_, i) => `t${i}`) })));
+  await assertSucceeds(setDoc(doc(db, 'posts/f8'), validPost('d1', { caption: 'x'.repeat(2000) })));
+});
+
+test('posts cannot be edited or deleted from the client yet', async () => {
+  await seedShooter('d2');
+  const db = env.authenticatedContext('d2').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/own'), validPost('d2')));
+  await assertFails(updateDoc(doc(db, 'posts/own'), { caption: 'đổi' }));
+  await assertFails(updateDoc(doc(db, 'posts/own'), { likeCount: 10 }));
+  await assertFails(deleteDoc(doc(db, 'posts/own')));
 });
