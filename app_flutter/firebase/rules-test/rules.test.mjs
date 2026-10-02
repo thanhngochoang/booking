@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, writeBatch, serverTimestamp, Timestamp, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, query, where } from 'firebase/firestore';
 
 let env;
 before(async () => {
@@ -524,13 +524,25 @@ test('unchanged legacy skills do not block other profile edits', async () => {
   await assertFails(writeSkills(db, 'k10', { schemaVersion: 1, specialties: [], styles: ['film'] }));
 });
 
-// Budget guard: the costliest valid profile (about 800 of the 1000 expressions a request may
-// evaluate, measured on the emulator) must stay accepted, as a fresh save and over stored values.
+// Budget guard: the costliest valid profile must stay accepted, as a fresh save and over stored
+// values, on a document whose stored serviceArea / contactChannels are re-validated by the merge.
+const fullProfileOwner = async (uid, skills) => {
+  const db = await skillsOwner(uid, {
+    serviceArea: { city: 'Hà Nội', radiusKm: 30, center: new GeoPoint(21.03, 105.85) },
+    contactChannels: { call: true, zalo: true, whatsapp: true, acceptInquiries: true },
+    ...(skills ? { skills } : {}),
+  });
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `photographers/${uid}/private/contact`),
+      { phone: '+84912345678', zaloPhone: '+84912345678', whatsappPhone: '+84912345678' }));
+  return db;
+};
 test('the largest valid skills profile stays within the rules evaluation budget', async () => {
   const largest = () => ({
     schemaVersion: 1,
     specialties: ['portrait', 'wedding', 'couple', 'family', 'graduation', 'event'].map((id, i) => ({
-      id, level: i < 3 ? 3 : 2, years: 50, evidencePostIds: [`a${i}`, `b${i}`, `c${i}`],
+      id, level: i < 3 ? 3 : 2, years: 50,
+      evidencePostIds: [`a${i}`.padEnd(64, 'x'), `b${i}`.padEnd(64, 'x'), `c${i}`.padEnd(64, 'x')],
     })),
     styles: ['natural_light', 'film', 'minimal', 'editorial'],
     extras: ['retouch', 'posing', 'video', 'drone', 'studio', 'kids', 'pets', 'low_light'],
@@ -538,9 +550,37 @@ test('the largest valid skills profile stays within the rules evaluation budget'
     audiences: ['couple', 'family_kids', 'business', 'foreigner'],
     yearsExperience: 50,
   });
-  const db = await skillsOwner('k12');
-  const ref = doc(db, 'photographers/k12');
-  await assertSucceeds(setDoc(ref, { skills: largest(), updatedAt: serverTimestamp() }, { merge: true }));
-  const db13 = await skillsOwner('k13', { skills: { ...goodSkills(), completeness: 70, updatedAt: Timestamp.fromMillis(3) } });
+  const db = await fullProfileOwner('k12');
+  await assertSucceeds(setDoc(doc(db, 'photographers/k12'), { skills: largest(), updatedAt: serverTimestamp() }, { merge: true }));
+  const db13 = await fullProfileOwner('k13', { ...goodSkills(), completeness: 70, updatedAt: Timestamp.fromMillis(3) });
   await assertSucceeds(setDoc(doc(db13, 'photographers/k13'), { skills: largest(), updatedAt: serverTimestamp() }, { merge: true }));
+});
+
+test('evidence ids holding separators cannot fake count, uniqueness or pattern', async () => {
+  const db = await skillsOwner('k14');
+  const one = (level, ev) => ({ ...goodSkills(), specialties: [genre('portrait', level, ev)] });
+  await assertFails(writeSkills(db, 'k14', one(2, ['a,b'])));
+  await assertFails(writeSkills(db, 'k14', one(3, ['a,a'])));
+  await assertFails(writeSkills(db, 'k14', one(2, ['a', 'b', 'c|1:n:d', 'e', 'f'])));
+  await assertFails(writeSkills(db, 'k14', one(2, Array.from({ length: 200 }, (_, i) => `x${i}|1:n:y${i}`))));
+  await assertFails(writeSkills(db, 'k14', one(2, ['a:b'])));
+  await assertFails(writeSkills(db, 'k14', one(2, [''])));
+  await assertFails(writeSkills(db, 'k14', one(3, [''])));
+  await assertFails(writeSkills(db, 'k14', one(2, ['x'.repeat(65)])));
+  await assertSucceeds(writeSkills(db, 'k14', one(2, ['x'.repeat(64)])));
+  await assertFails(writeSkills(db, 'k14', one(2, 'post1')));
+  await assertFails(writeSkills(db, 'k14', one(2, { a: 'post1' })));
+  await assertFails(writeSkills(db, 'k14', one(2, [1, 2])));
+  await assertFails(writeSkills(db, 'k14', one(3, [true])));
+  await assertFails(writeSkills(db, 'k14', one(2, [null])));
+  await assertFails(writeSkills(db, 'k14', one(2, ['a', 7])));
+});
+
+test('server skills fields stay absent when none is stored; skills cannot be deleted', async () => {
+  const db = await skillsOwner('k15');
+  await assertFails(writeSkills(db, 'k15', { ...goodSkills(), completeness: null }));
+  await assertFails(writeSkills(db, 'k15', { ...goodSkills(), updatedAt: null }));
+  await assertSucceeds(writeSkills(db, 'k15', goodSkills()));
+  await assertFails(updateDoc(doc(db, 'photographers/k15'), { skills: deleteField() }));
+  await assertFails(updateDoc(doc(db, 'photographers/k15'), { 'skills.completeness': null }));
 });

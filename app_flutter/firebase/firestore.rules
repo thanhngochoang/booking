@@ -67,22 +67,25 @@ service cloud.firestore {
     function uniqueTags(xs, allowed, maxSize) {
       return xs.size() <= maxSize && xs.toSet().size() == xs.size() && xs.hasOnly(allowed);
     }
-    // One genre as "level:years:evidence" ('n' when years is absent), or '!' when its keys, types
-    // or evidence uniqueness are wrong. gk is the allowed key list, built once by the caller.
-    // Post ids cannot contain ':', ',' or '|', so the joined form is unambiguous.
+    // One genre as "level:years:count:evidence" ('n' when years is absent), or '!' when its keys,
+    // types or evidence uniqueness are wrong. gk is the allowed key list, built once by the caller.
+    // The regex requires exactly `count` ids of [A-Za-z0-9_-]{1,64} joined by ',', so an id holding
+    // ',', '|', ':' or nothing cannot fake extra, fewer or empty entries.
+    // join() turns numbers and bools into text, so the split-back must give the same strings.
     function genreSig(s, gk) {
       let ev = s.get('evidencePostIds', []);
+      let joined = ev.join(',');
       return s.keys().hasOnly(gk) && s.level is int && s.get('years', 0) is int
-          && ev.toSet().size() == ev.size()
-        ? string(s.level) + ':' + string(s.get('years', 'n')) + ':' + ev.join(',')
+          && ev.toSet().size() == ev.size() && ev.removeAll(joined.split(',')).size() == 0
+        ? string(s.level) + ':' + string(s.get('years', 'n')) + ':' + string(ev.size()) + ':' + joined
         : '!';
     }
     // Every genre signature followed by '|'. Accepts levels 1–2 with 0–3 post ids and level 3 with
-    // 1–3 post ids, at most three level-3 genres, years 0–50 or absent, ids of 1–64 [A-Za-z0-9_-].
+    // 1–3 post ids, at most three level-3 genres, years 0–50 or absent.
     function genreSigsRe() {
-      return '^([12]:(n|[0-9]|[1-4][0-9]|50):([A-Za-z0-9_-]{1,64}(,[A-Za-z0-9_-]{1,64}){0,2})?\\|)*'
-        + '(3:(n|[0-9]|[1-4][0-9]|50):[A-Za-z0-9_-]{1,64}(,[A-Za-z0-9_-]{1,64}){0,2}\\|'
-        + '([12]:(n|[0-9]|[1-4][0-9]|50):([A-Za-z0-9_-]{1,64}(,[A-Za-z0-9_-]{1,64}){0,2})?\\|)*){0,3}$';
+      return '^([12]:(n|[0-9]|[1-4][0-9]|50):(0:|1:[A-Za-z0-9_-]{1,64}|2:[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64}|3:[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64})\\|)*'
+        + '(3:(n|[0-9]|[1-4][0-9]|50):(1:[A-Za-z0-9_-]{1,64}|2:[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64}|3:[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64})\\|'
+        + '([12]:(n|[0-9]|[1-4][0-9]|50):(0:|1:[A-Za-z0-9_-]{1,64}|2:[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64}|3:[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64},[A-Za-z0-9_-]{1,64})\\|)*){0,3}$';
     }
     // Rules cannot loop: lists of 1–6 genres are expanded by size (largest first, the costliest).
     function genreSigs(sp, gk) {
@@ -116,14 +119,13 @@ service cloud.firestore {
     // k: the skills map after the write (post-merge for set(merge: true), so it still holds the
     // stored server fields); before: the stored skills map ({} on create).
     // skills.completeness and skills.updatedAt are written by Cloud Functions only: each must equal
-    // the stored value (or stay absent).
+    // the stored value, and be absent (not even null) when none is stored.
     function validSkills(k, before) {
       return k is map
         && k.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
                              'audiences', 'yearsExperience', 'completeness', 'updatedAt'])
         && k.get('schemaVersion', 0) == 1
-        && k.get('completeness', null) == before.get('completeness', null)
-        && k.get('updatedAt', null) == before.get('updatedAt', null)
+        && !k.diff(before).affectedKeys().hasAny(['completeness', 'updatedAt'])
         && uniqueTags(k.get('styles', []), skillStyleIds(), 4)
         && uniqueTags(k.get('extras', []), skillExtraIds(), 8)
         && uniqueTags(k.get('audiences', []), skillAudienceIds(), 4)
@@ -133,13 +135,21 @@ service cloud.firestore {
             || (k.yearsExperience is int && k.yearsExperience >= 0 && k.yearsExperience <= 50))
         && validSpecialties(k.get('specialties', []), skillSpecialtyIds());
     }
-    // Validated only when the write touches skills, so other profile edits pay nothing and an
-    // old stored value never blocks them.
-    function skillsWriteOk() {
-      return resource == null
-        ? (!('skills' in request.resource.data) || validSkills(request.resource.data.skills, {}))
-        : (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['skills'])
-           || validSkills(request.resource.data.skills, resource.data.get('skills', {})));
+    // Field checks of photographers/{uid}. The changed-key set is computed once, and each field
+    // validator runs only when the write sets, changes or removes that field: an unchanged stored
+    // value was validated when it was written, and re-checking it on every merge would spend the
+    // 1000-expression budget a request may evaluate. Removing skills is refused (validSkills then
+    // fails on the missing value).
+    function photographerFieldsOk(uid) {
+      let changed = resource == null
+        ? request.resource.data.keys()
+        : request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(photographerClientFields())
+        && (!('serviceArea' in changed) || validServiceArea())
+        && (!('contactChannels' in changed) || validContactChannels(uid))
+        && (!('skills' in changed)
+            || validSkills(request.resource.data.skills,
+                           resource == null ? {} : resource.data.get('skills', {})));
     }
 
     // serviceArea: a city and a whole-number radius in km (centre point added with the location work).
@@ -250,10 +260,7 @@ service cloud.firestore {
       allow create, update: if isOwner(uid)
         && hasPhotographerRole(uid)
         && verifiedUntouched()
-        && onlyKeys(photographerClientFields())
-        && validServiceArea()
-        && validContactChannels(uid)
-        && skillsWriteOk();
+        && photographerFieldsOk(uid);
       allow delete: if false;
 
       match /services/{serviceId} {
