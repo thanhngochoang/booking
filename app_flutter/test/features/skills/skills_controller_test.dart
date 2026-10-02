@@ -1,4 +1,6 @@
 // test/features/skills/skills_controller_test.dart
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/content/post_summary.dart';
@@ -161,6 +163,21 @@ void main() {
     expect(_st(c).draft.specialtyIds, ['portrait']);
     await pumpEventQueue();
     expect(SkillsDraftStore(w.prefs).read(w.uid), isNotNull);
+  });
+
+  test('"Bỏ thay đổi" while a save is in flight changes nothing', () async {
+    final (w, c) = await _open();
+    _ctrl(c).toggleSpecialty('portrait');
+    final gate = Completer<void>();
+    w.skills.holdSave = gate.future;
+    final saving = _ctrl(c).submit();
+    expect(_st(c).saving, isTrue);
+    await _ctrl(c).discardDraft();
+    expect(_st(c).draft.specialtyIds, ['portrait'], reason: 'not discarded');
+    expect(SkillsDraftStore(w.prefs).read(w.uid), isNotNull);
+    gate.complete();
+    expect(await saving, SkillsSubmitResult.saved);
+    expect(w.skills.stored(w.uid)!.specialtyIds, ['portrait']);
   });
 
   test('a device draft is reopened, and can be thrown away', () async {

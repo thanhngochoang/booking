@@ -225,10 +225,12 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
   }
 
   /// "Bỏ thay đổi": forget the device draft and go back to the saved skills.
+  /// Does nothing while a save is in flight (that save wins).
   Future<void> discardDraft() async {
+    if (state.value?.saving ?? false) return;
     await _drafts.clear(_uid);
     final current = state.value;
-    if (current == null || !ref.mounted) return;
+    if (current == null || current.saving || !ref.mounted) return;
     final base = _baseline(current.saved);
     state = AsyncData(
       current.copyWith(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -327,6 +329,34 @@ void main() {
     expect(find.text('open skills'), findsOneWidget);
     expect(SkillsDraftStore(w.prefs).read(w.uid), isNull);
   });
+
+  testWidgets(
+    'Back during a save neither asks nor discards; leaving works after it',
+    (tester) async {
+      _tallPhone(tester);
+      final w = await _pump(tester, at: '/start');
+      await _tap(tester, find.text('open skills'));
+      await _tapKey(tester, 'specialty-wedding');
+      final gate = Completer<void>();
+      w.skills.holdSave = gate.future;
+      await tester.tap(find.byKey(const Key('skills-submit')));
+      await tester.pump();
+      await tester.tap(find.byType(BackButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Lưu bản nháp?'), findsNothing);
+      expect(find.text('open skills'), findsNothing, reason: 'still here');
+      final popped = await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(popped, isTrue);
+      expect(find.text('Lưu bản nháp?'), findsNothing);
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('open skills'), findsOneWidget);
+      expect(w.skills.stored(w.uid)!.specialtyIds, ['wedding']);
+      expect(SkillsDraftStore(w.prefs).read(w.uid), isNull);
+    },
+  );
 
   testWidgets('unticking a genre with evidence asks first', (tester) async {
     _tallPhone(tester);

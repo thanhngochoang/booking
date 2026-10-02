@@ -171,6 +171,8 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
 
   Future<void> _back() async {
     final s = ref.read(skillsControllerProvider).value;
+    // A save in flight decides where the screen goes; Back waits for it.
+    if (s != null && s.saving) return;
     if (s != null && s.dirty) {
       final l = context.l10n;
       final discard = await showAppSheet<bool>(
@@ -207,10 +209,11 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
     final theme = Theme.of(context);
     final async = ref.watch(skillsControllerProvider);
     final dirty = async.value?.dirty ?? false;
+    final saving = async.value?.saving ?? false;
     return ScreenCode(
       ScreenCodes.skillsPart1,
       child: PopScope(
-        canPop: _allowPop || !dirty,
+        canPop: _allowPop || !(dirty || saving),
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) _back();
         },

@@ -18,6 +18,9 @@ class FakeSkillsRepository implements SkillsRepository {
   Object? failLoadWith;
   Object? failSaveWith;
 
+  /// When set, [save] waits for it (a save still in flight).
+  Future<void>? holdSave;
+
   void seed(String uid, PhotographerSkills skills) => _stored[uid] = skills;
 
   PhotographerSkills? stored(String uid) => _stored[uid];
@@ -33,6 +36,8 @@ class FakeSkillsRepository implements SkillsRepository {
   @override
   Future<void> save(String uid, PhotographerSkills skills) async {
     saveCalls++;
+    final hold = holdSave;
+    if (hold != null) await hold;
     final failure = failSaveWith;
     if (failure != null) throw failure;
     _stored[uid] = skills;
