@@ -22,6 +22,7 @@
 
 - SignatureLoader (spec, verbatim): "lá khẩu của logo đóng mở ở giữa, quanh đó **một** loại sóng lăn ra, chọn bằng tham số (không bao giờ hiện cả hai cùng lúc)": **ripple** "3 vòng đồng tâm nở từ 38% tới 100% kích thước rồi mờ dần, lệch nhịp 0,8 s, màu `primary`" for loading data; **vibration** "2 vòng gợn hình sin, `r(θ) = R + a·sin(nθ)` (`n = 12, a = 2,4%` và `n = 9, a = 3,2%`), vừa nở ra vừa xoay qua lại ±4–6° như dây rung, màu cyan `focus` và hồng `#FF45D0`, lệch 1,2 s" for waiting on another party. Sizes `screen` 150, `block` 96, `inline` 56 (no waves). No colored background (user, 2026-10-02): no `CtaSurface` disc, gradient or shadow behind the aperture; blades and a thin ring stroked in **the wave's color** (ripple: `primary`; vibration: cyan `focus`) on transparent. Aperture: 8 blades, 2.4 s cycle, close 0–45 %, hold to 55 %, open by 100 %, `Curves.easeInOutCubic`. Reduced motion: open aperture, one faint still ring, no waves.
 - Skeletons (spec, user 2026-10-02): **white only, no multiple colors, dark theme included** — blocks white at low alpha in dark (white 8 %), light neutral grey `#E6E3DE` in light (user: "ở nền sáng thì skeleton xám một chút"), a white sweep (dark: white 14 %; light: white 85 %) moving diagonally over 1.6 s, one `AnimationController` per screen; no aurora gradient; "cùng radius, khoảng cách và chiều cao với component thật nên bố cục không nhảy"; reduced motion: still; one "Đang tải" semantics label per group, blocks excluded.
+- AsyncView anti-flash (UX review): first-load skeleton/loader appears only after 150 ms and, once shown, stays at least 400 ms.
 - AsyncView (spec): reuses `SignatureLoader` itself for loading without a skeleton; the loader area is exactly the outer wave circle (150 or 96 per `loaderSize`), centred, with no box, card, border or gradient around it; error and empty also sit on the bare screen; first load → `skeleton` if given else `SignatureLoader(size: loaderSize)` (ripple); reload with data → keep data + inline loader at the top corner; error → `ErrorState(message: errorMessage(e, l10n), onRetry)`, with old data → keep data + one SnackBar; empty → `empty`.
 - No `CircularProgressIndicator` anywhere in `lib/` after this plan (buttons and `ContactDial` use `SignatureLoader(size: inline)`); no hand-written `.when(loading:` in `lib/features/**`.
 - CLAUDE.md: tokens only (`AppColors`, `AppSpace`, `AppRadius`, `AppText`); strings in `app_vi.arb`; `package:photobooking/...` imports; widgets in `lib/core/widgets/` exported from `core/core.dart`; one primary action per screen; cancel/decline is a red button inside a confirmation sheet (→ `ConfirmSheet`).
@@ -169,7 +170,7 @@ test('features do not hand-write AsyncValue loading', () {
 });
 ```
 
-- [ ] **Step 1: Failing tests:** "first load shows the given skeleton"; "first load without skeleton shows the screen loader with ripple waves"; "reload keeps data and shows the inline loader"; "error shows ErrorState with retry calling onRetry"; "error with old data keeps the data and shows one SnackBar"; "empty shows the empty builder"; OfflineBanner text; SectionHeader action tap; source rules (expected to FAIL until Task 4 finishes — mark them `skip: 'enabled in Task 4'` here and remove the skip in Task 4).
+- [ ] **Step 1: Failing tests:** "first load shows the given skeleton"; "first load without skeleton shows the screen loader with ripple waves"; "reload keeps data and shows the inline loader"; "no flash: data within 150 ms shows no skeleton/loader at all; once shown, the skeleton stays at least 400 ms" (fake async + `tester.pump(Duration)`); "error shows ErrorState with retry calling onRetry"; "error with old data keeps the data and shows one SnackBar"; "empty shows the empty builder"; OfflineBanner text; SectionHeader action tap; source rules (expected to FAIL until Task 4 finishes — mark them `skip: 'enabled in Task 4'` here and remove the skip in Task 4).
 - [ ] **Step 2–4:** implement; run → PASS (source rules skipped).
 - [ ] **Step 5: Commit** `feat(core): AsyncView with skeleton or signature loading, error and empty states`.
 
@@ -242,9 +243,10 @@ class UploadProgressRing extends StatelessWidget { const UploadProgressRing({req
 class CountdownText extends StatefulWidget { const CountdownText({required DateTime deadline, required Widget Function(BuildContext, Duration left) builder, VoidCallback? onExpired}); }
 // Both read "now" from a `DateTime Function() now` parameter defaulting to DateTime.now (tests pass a fake clock),
 // tick every second when left < 1 h, else every minute, stop at zero and call onExpired once.
+// Screen readers: the label is readable on focus at any time; the live-region announcement fires only at 5 min, 1 min, 10 s and 0.
 ```
 
-- [ ] **Step 1: Failing tests:** "ticks every minute above an hour and every second below"; "stops at zero and calls onExpired once"; "semantics timer reads 'Còn 47 giây'"; "reduced motion: ring jumps per second, no interpolation"; "no ticker after expiry"; UploadProgressRing "draws fraction 0..1 clamped, semantics value '{n}%'".
+- [ ] **Step 1: Failing tests:** "ticks every minute above an hour and every second below"; "stops at zero and calls onExpired once"; "semantics timer reads 'Còn 47 giây'"; "announces (live region) only at 5 min, 1 min, 10 s and 0, never every tick"; "reduced motion: ring jumps per second, no interpolation"; "no ticker after expiry"; UploadProgressRing "draws fraction 0..1 clamped, semantics value '{n}%'".
 - [ ] **Step 2–4.** **Step 5: Commit** `feat(core): CountdownRing and CountdownText`.
 
 ---
