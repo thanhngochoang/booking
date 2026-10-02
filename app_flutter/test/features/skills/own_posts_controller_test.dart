@@ -113,10 +113,10 @@ void main() {
     expect(w.posts.byPhotographerCursors, [null, 'c29']);
   });
 
-  test('one call reads at most 5 pages looking for own posts', () async {
+  test('7 pages of customer posts only: own posts load in one call', () async {
     final w = await SkillsWorld.create(
       posts: (uid) => [
-        for (var i = 0; i < 200; i++)
+        for (var i = 0; i < 210; i++)
           fixturePost(
             'c$i',
             photographerId: uid,
@@ -136,14 +136,69 @@ void main() {
     addTearDown(c.dispose);
     c.listen(ownPostsProvider, (_, _) {});
     final first = await c.read(ownPostsProvider.future);
+    expect(first.posts.map((p) => p.id), ['m0', 'm1', 'm2']);
+    expect(first.hasMore, isFalse);
+    expect(w.posts.byPhotographerCursors, hasLength(8));
+  });
+
+  test(
+    'keeps fetching until 30 own posts are held, without scrolling',
+    () async {
+      final w = await SkillsWorld.create(
+        posts: (uid) => [
+          for (var i = 0; i < 2; i++)
+            fixturePost(
+              'a$i',
+              photographerId: uid,
+              age: Duration(minutes: i),
+            ),
+          for (var i = 0; i < 28; i++)
+            _customer('x$i', uid, Duration(hours: 1, minutes: i)),
+          fixturePost('b0', photographerId: uid, age: const Duration(hours: 5)),
+          for (var i = 0; i < 29; i++)
+            _customer('y$i', uid, Duration(hours: 6, minutes: i)),
+          for (var i = 0; i < 35; i++)
+            fixturePost(
+              'z$i',
+              photographerId: uid,
+              age: Duration(days: 1, minutes: i),
+            ),
+        ],
+      );
+      final c = w.container();
+      addTearDown(c.dispose);
+      c.listen(ownPostsProvider, (_, _) {});
+      final first = await c.read(ownPostsProvider.future);
+      expect(first.posts, hasLength(33));
+      expect(first.hasMore, isTrue);
+      expect(w.posts.byPhotographerCursors, hasLength(3));
+    },
+  );
+
+  test('one call stops after 20 pages without own posts', () async {
+    final w = await SkillsWorld.create(
+      posts: (uid) => [
+        for (var i = 0; i < 700; i++)
+          _customer('c$i', uid, Duration(minutes: i + 1)),
+        for (var i = 0; i < 3; i++)
+          fixturePost(
+            'm$i',
+            photographerId: uid,
+            age: Duration(days: 1, minutes: i),
+          ),
+      ],
+    );
+    final c = w.container();
+    addTearDown(c.dispose);
+    c.listen(ownPostsProvider, (_, _) {});
+    final first = await c.read(ownPostsProvider.future);
     expect(first.posts, isEmpty);
     expect(first.hasMore, isTrue);
-    expect(w.posts.byPhotographerCursors, hasLength(5));
+    expect(w.posts.byPhotographerCursors, hasLength(20));
     await c.read(ownPostsProvider.notifier).loadMore();
     final all = c.read(ownPostsProvider).requireValue;
     expect(all.posts.map((p) => p.id), ['m0', 'm1', 'm2']);
     expect(all.hasMore, isFalse);
-    expect(w.posts.byPhotographerCursors, hasLength(7));
   });
 
   test(
@@ -173,3 +228,11 @@ void main() {
     },
   );
 }
+
+PostSummary _customer(String id, String uid, Duration age) => fixturePost(
+  id,
+  photographerId: uid,
+  authorId: 'customer1',
+  kind: PostKind.realShoot,
+  age: age,
+);

@@ -1,4 +1,6 @@
 // test/features/skills/evidence_sheet_test.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -215,10 +217,9 @@ void main() {
     },
   );
 
-  testWidgets('a short grid that cannot scroll asks for the next page itself', (
+  testWidgets('own posts behind 6 customer pages show without any scroll', (
     tester,
   ) async {
-    // 5 pages of 30 hold only m0 and m1; m2–m4 are on page 6.
     final w = await SkillsWorld.create(
       posts: (uid) => [
         for (var i = 0; i < 2; i++)
@@ -227,7 +228,7 @@ void main() {
             photographerId: uid,
             age: Duration(minutes: i),
           ),
-        for (var i = 0; i < 148; i++)
+        for (var i = 0; i < 178; i++)
           _customerPost('c$i', uid, Duration(hours: 1, minutes: i)),
         for (var i = 2; i < 5; i++)
           fixturePost(
@@ -239,8 +240,67 @@ void main() {
     );
     await tester.pumpWidget(_app(w, _Probe()));
     await _open(tester);
-    expect(w.posts.byPhotographerCursors, hasLength(6));
+    expect(w.posts.byPhotographerCursors, hasLength(7));
     expect(find.byKey(const Key('evidence-m4')), findsOneWidget);
+  });
+
+  testWidgets('the skeleton grid shows while the first own posts load', (
+    tester,
+  ) async {
+    final w = await _world();
+    final gate = Completer<void>();
+    w.posts.holdByPhotographer = gate.future;
+    await tester.pumpWidget(_app(w, _Probe()));
+    await tester.tap(find.text('open'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(AppSkeleton), findsWidgets);
+    expect(find.byKey(const Key('evidence-m0')), findsNothing);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byType(AppSkeleton), findsNothing);
+    expect(find.byKey(const Key('evidence-m0')), findsOneWidget);
+  });
+
+  testWidgets('loading more below existing tiles shows a progress row', (
+    tester,
+  ) async {
+    final w = await _world(own: 35);
+    await tester.pumpWidget(_app(w, _Probe()));
+    await _open(tester);
+    final gate = Completer<void>();
+    w.posts.holdByPhotographer = gate.future;
+    await tester.drag(
+      find.byKey(const Key('evidence-grid')),
+      const Offset(0, -5000),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const Key('evidence-loading-more')), findsOneWidget);
+    expect(find.byKey(const Key('evidence-m0')), findsNothing);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('evidence-loading-more')), findsNothing);
+  });
+
+  testWidgets('past the 20-page bound with no own post it keeps loading', (
+    tester,
+  ) async {
+    final w = await SkillsWorld.create(
+      posts: (uid) => [
+        for (var i = 0; i < 700; i++)
+          _customerPost('c$i', uid, Duration(minutes: i + 1)),
+        for (var i = 0; i < 3; i++)
+          fixturePost(
+            'm$i',
+            photographerId: uid,
+            age: Duration(days: 2 + i),
+          ),
+      ],
+    );
+    await tester.pumpWidget(_app(w, _Probe()));
+    await _open(tester);
+    expect(find.text('Đăng bài trước'), findsNothing);
+    expect(find.byKey(const Key('evidence-m2')), findsOneWidget);
   });
 
   testWidgets('a failed next page shows a retry row that asks again', (

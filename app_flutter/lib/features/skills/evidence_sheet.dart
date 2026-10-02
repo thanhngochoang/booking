@@ -118,13 +118,20 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                   message: l.skillEvidenceLoadError,
                   onRetry: () => ref.invalidate(ownPostsProvider),
                 ),
-                data: (s) => s.posts.isEmpty && !s.hasMore
-                    ? EmptyState(
-                        title: l.skillEvidenceEmpty,
-                        body: l.skillEvidenceEmptyBody,
-                        actionLabel: l.skillEvidenceEmptyAction,
-                        onAction: _createPost,
-                      )
+                data: (s) => s.posts.isEmpty
+                    ? (s.hasMore
+                          ? _KeepLoading(
+                              failed: s.loadMoreFailed,
+                              onLoad: () => ref
+                                  .read(ownPostsProvider.notifier)
+                                  .loadMore(),
+                            )
+                          : EmptyState(
+                              title: l.skillEvidenceEmpty,
+                              body: l.skillEvidenceEmptyBody,
+                              actionLabel: l.skillEvidenceEmptyAction,
+                              onAction: _createPost,
+                            ))
                     : EvidencePicker(
                         posts: s.posts,
                         selected: _selected,
@@ -140,6 +147,19 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                       ),
               ),
             ),
+            if ((posts.value?.loadingMore ?? false) && hasPosts)
+              const SizedBox(
+                height: controlHeight,
+                child: Center(
+                  child: SizedBox.square(
+                    dimension: 24,
+                    child: CircularProgressIndicator(
+                      key: Key('evidence-loading-more'),
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ),
             if (posts.value?.loadMoreFailed ?? false)
               SizedBox(
                 height: controlHeight,
@@ -177,6 +197,42 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
       ),
     );
   }
+}
+
+/// No own post yet but pages remain (the call hit its page bound): shows
+/// the skeleton and asks for the next chunk until posts or the end arrive.
+class _KeepLoading extends StatefulWidget {
+  const _KeepLoading({required this.failed, required this.onLoad});
+
+  final bool failed;
+  final VoidCallback onLoad;
+
+  @override
+  State<_KeepLoading> createState() => _KeepLoadingState();
+}
+
+class _KeepLoadingState extends State<_KeepLoading> {
+  @override
+  void initState() {
+    super.initState();
+    _ask();
+  }
+
+  @override
+  void didUpdateWidget(_KeepLoading old) {
+    super.didUpdateWidget(old);
+    _ask();
+  }
+
+  void _ask() {
+    if (widget.failed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !widget.failed) widget.onLoad();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const _GridSkeleton();
 }
 
 class _GridSkeleton extends StatelessWidget {

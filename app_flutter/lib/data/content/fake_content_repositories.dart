@@ -17,6 +17,9 @@ class FakePostRepository implements PostRepository {
   /// The cursor of every [byPhotographer] call, in order (null = first page).
   final byPhotographerCursors = <String?>[];
 
+  /// When set, [byPhotographer] waits for it (keeps a read in flight).
+  Future<void>? holdByPhotographer;
+
   void add(PostSummary post) => _posts.add(post);
 
   List<PostSummary> get _newestFirst {
@@ -70,6 +73,7 @@ class FakePostRepository implements PostRepository {
     int limit = 20,
   }) async {
     byPhotographerCursors.add(cursor);
+    await holdByPhotographer;
     if (failWith != null) {
       throw failWith!;
     }

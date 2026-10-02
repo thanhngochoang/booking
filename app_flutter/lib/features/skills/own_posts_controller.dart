@@ -31,10 +31,11 @@ class OwnPostsState {
 /// `byPhotographer` also returns customers' real-shoot posts about the
 /// photographer, filtered out here; a page can therefore come back short or
 /// empty while more exist, so one call reads up to [maxPagesPerLoad] pages
-/// until it has [pageSize] own posts or runs out.
+/// (one after another) until it has [pageSize] own posts or runs out; the
+/// bound only guards against a runaway loop.
 class OwnPostsController extends AsyncNotifier<OwnPostsState> {
   static const pageSize = 30;
-  static const maxPagesPerLoad = 5;
+  static const maxPagesPerLoad = 20;
 
   late String _uid;
 
