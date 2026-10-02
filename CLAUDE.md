@@ -63,6 +63,10 @@ Everything above describes the legacy Java app, kept as reference. The rewrite i
 - **Recommender service contract**: `services/recommender/api/openapi.yaml`.
 - **Screen codes**: each `Sxx` is a use case (a complete user flow) and each screen in it is `Sxx.yy` (e.g. `S04.02` = date & time step of Đặt lịch); 23 use cases `S01`–`S23` (S13–S14 instant booking, `docs/superpowers/specs/2026-10-01-instant-booking-design.md`; S15–S16 job posts, in design; S17 notifications; S18–S23 added 2026-10-02 in main spec §3i: disputes & help, saved & following, report & block, verification, payments & account, staff operations — no mock yet). A new screen takes the next `.yy` in its use case, a new use case the next `Sxx`; never renumber inside a use case. The table with the old flat codes (`S01`–`S67`, used before 2026-10-02 in commits, ledgers and executed plans) is in the main spec §2; `scripts/tools/screen_code_map.py` converts. When the user names a code ("fix S04.03"), find it in the mock and in `specs/screens/*.md`. Keep mock, spec, `lib/core/screen_codes.dart` and the code table in sync when one changes.
 
+### Parallel work across machines
+
+Plans run in the order of `docs/superpowers/plans/RUN-ORDER.md`, several machines at once. `develop` is protected: each unit gets a branch `plan/<id>-<slug>` from `origin/develop` and a PR back into it. Who holds which unit lives on the `board` branch (`CLAIMS.md`), written only by `.claude/skills/run-next-plan/scripts/board.py`. Use the project skill `run-next-plan` (`.claude/skills/run-next-plan/SKILL.md`) to pick, claim, implement and hand in the next unit.
+
 ### Rules to follow
 
 - **Theme**: dark aurora is the default; tokens come from `design-system/tokens.json` → `dart run tool/gen_tokens.dart` → `lib/core/theme/tokens.g.dart` (never edit the generated file). Use `AppColors`/`AppSpace`/`AppRadius`, not raw hex or numbers.

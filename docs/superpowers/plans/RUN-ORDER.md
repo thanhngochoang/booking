@@ -14,7 +14,7 @@ Standing rules (user, 2026-10-02):
 
 Plans 8a2 and 8b–8e run on two machines at once. The split was made from a file-by-file map of every remaining plan. Each lane owns its files; the few files both lanes touch are append-only and listed at the end.
 
-**Branches:** lane 1 works on `lane/ui`, lane 2 on `lane/core`. Both start from `flutter-rewrite`, merge back into it at every gate (rebase onto `flutter-rewrite` first, then fast-forward), and rebase again before starting the next step. Never push to `main`.
+**Branches (updated 2026-10-03):** `develop` is the protected integration branch; changes land only through PRs into it. Each unit (a row below, or one lane step `<#>/<step>-L<lane>`) gets its own branch `plan/<id>-<slug>` from `origin/develop` and a PR back into `develop`. Which machine holds which unit is tracked on the `board` branch (`CLAIMS.md`), written only by `.claude/skills/run-next-plan/scripts/board.py`; the `run-next-plan` skill picks, claims and runs the next unit. The fixed `lane/ui` / `lane/core` branches from `flutter-rewrite` are retired; the ownership split below still applies. Never push to `main`.
 
 **Ledgers:** SDD ledgers get the lane in the name, `.superpowers/sdd/<plan>/progress-lane1.md` and `progress-lane2.md`, because the same plan can be executed by both lanes (A, 4b–4e).
 
@@ -56,7 +56,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 6 | `2026-10-01-step3b4-home-detail-find.md` (S02.01, S02.02, S02.06) | done 2026-10-02; /u/:id and /u/:id/book routes come with 2d2 and step 4 (taps there hit the router error page until then) |
 | 7 | `2026-10-01-step3c-create-post.md` (S10.01) | done 2026-10-02 |
 | 8 | `2026-10-01-step2d2-photographer-profile.md` (S03.01) | done 2026-10-02; S09.01 rows (phone, skills, public profile) went to S09.02 per the new mock; /u/:uid/book and /ask come with step 4 |
-| 8a2 | `2026-10-02-shared-components-a.md` (SignatureLoader, white skeletons, AsyncView, migration of existing screens, money/decision/countdown/booking/chat widgets) | not started; needs 8a; runs before every screen plan (user 2026-10-02: components first, screens after); split across lanes 1 and 2 (see "Two parallel lanes") |
+| 8a2 | `2026-10-02-shared-components-a.md` (SignatureLoader, white skeletons, AsyncView, migration of existing screens, money/decision/countdown/booking/chat widgets) | partly done 2026-10-03: A Tasks 1–3 (G1, PR #2) and 5, 7, 8 (PR #3) merged; remaining: Task 4 (lane 1 step 2), Task 6 Steps 1–5 + Task 9 (lane 2 step 2), Task 6 Step 6 (lane 1 step 3), Task 10 (lane 2 step 3); needs 8a; runs before every screen plan (user 2026-10-02: components first, screens after); split across lanes 1 and 2 (see "Two parallel lanes") |
 | 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | not started; needs 8a2 |
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S05.02, S05.03, S05.01, S06.01, S06.02, S06.03) | not started; needs 8b; fixes 4a's missing read rule for `bookings/{id}/events` |
 | 8d | `2026-10-02-step4d-chat.md` (S07.01, S07.02 chat list, reschedule) | not started; needs 8c; adds new screen code S07.02 (mock section for the user to review) |
