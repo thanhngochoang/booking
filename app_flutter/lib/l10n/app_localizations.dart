@@ -502,6 +502,18 @@ abstract class AppLocalizations {
   /// **'Chưa thêm'**
   String get settingsPhoneEmpty;
 
+  /// No description provided for @settingsPhoneAdded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm'**
+  String get settingsPhoneAdded;
+
+  /// No description provided for @settingsPhoneMasked.
+  ///
+  /// In vi, this message translates to:
+  /// **'•••• {last4}'**
+  String settingsPhoneMasked(String last4);
+
   /// No description provided for @settingsSkills.
   ///
   /// In vi, this message translates to:

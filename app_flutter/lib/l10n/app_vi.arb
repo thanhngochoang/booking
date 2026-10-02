@@ -73,6 +73,13 @@
   "settingsEditProfileBody": "Tên hiển thị",
   "settingsPhone": "Số điện thoại",
   "settingsPhoneEmpty": "Chưa thêm",
+  "settingsPhoneAdded": "Đã thêm",
+  "settingsPhoneMasked": "•••• {last4}",
+  "@settingsPhoneMasked": {
+    "placeholders": {
+      "last4": {"type": "String"}
+    }
+  },
   "settingsSkills": "Kỹ năng",
   "settingsSkillsBody": "Thể loại, mức độ và phong cách",
   "settingsPublicProfile": "Xem hồ sơ công khai",

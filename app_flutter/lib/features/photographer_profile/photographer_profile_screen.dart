@@ -85,7 +85,7 @@ class _PhotographerProfileScreenState
     return ScreenCode(
       ScreenCodes.photographerProfile,
       child: switch (profile) {
-        AsyncData(:final value?) when value.published || owner => _loaded(
+        AsyncValue(:final value?) when value.published || owner => _loaded(
           context,
           value,
           owner,

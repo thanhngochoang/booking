@@ -341,4 +341,18 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+    'a failed read shows "Thử lại" at once, with the default retry on',
+    (tester) async {
+      final w = await _world(tester);
+      w.profiles.failWith = StateError('offline');
+      await tester.pumpWidget(w.app('/u/p1', defaultRetry: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Không tải được hồ sơ.'), findsOneWidget);
+      expect(find.byKey(const Key('error-retry')), findsOneWidget);
+      expect(w.profiles.loads, 1, reason: 'no hidden retries');
+    },
+  );
 }

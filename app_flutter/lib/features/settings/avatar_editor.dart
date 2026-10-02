@@ -16,12 +16,13 @@ class AvatarEditor extends ConsumerWidget {
     final profile = ref.watch(currentProfileProvider).value;
     final busy = ref.watch(avatarControllerProvider).isLoading;
     ref.listen(avatarControllerProvider, (prev, next) {
-      if (next.isLoading || !(prev?.isLoading ?? false)) {
+      if (next.isLoading) {
         return;
       }
+      // An error counts even when the picker failed before the upload began.
       final text = next.hasError
           ? l.editProfileAvatarError
-          : (next.value ?? false)
+          : (prev?.isLoading ?? false) && (next.value ?? false)
           ? l.editProfileAvatarSaved
           : null;
       if (text != null) {

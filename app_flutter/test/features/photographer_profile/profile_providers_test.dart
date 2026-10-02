@@ -2,7 +2,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
+import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -37,6 +40,39 @@ class _Similar implements RecommendationRepository {
       algorithm: 'test',
       algorithmVersion: '1',
     );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _FailingServices implements ServiceRepository {
+  int calls = 0;
+
+  @override
+  Future<List<ServiceSummary>> activeFor(
+    String photographerId, {
+    int limit = 50,
+  }) async {
+    calls++;
+    throw StateError('offline');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _FailingPosts implements PostRepository {
+  int calls = 0;
+
+  @override
+  Future<PostPage> byPhotographer(
+    String photographerId, {
+    String? cursor,
+    int limit = 20,
+  }) async {
+    calls++;
+    throw StateError('offline');
   }
 
   @override
@@ -144,4 +180,24 @@ void main() {
       );
     },
   );
+
+  test('packages and portfolio fail at once, without a retry', () async {
+    final services = _FailingServices();
+    final posts = _FailingPosts();
+    final c = ProviderContainer(
+      overrides: [
+        serviceRepositoryProvider.overrideWithValue(services),
+        postRepositoryProvider.overrideWithValue(posts),
+      ],
+    );
+    addTearDown(c.dispose);
+    final a = c.listen(profilePackagesProvider('p1'), (_, _) {});
+    final b = c.listen(portfolioProvider('p1'), (_, _) {});
+    addTearDown(a.close);
+    addTearDown(b.close);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(c.read(profilePackagesProvider('p1')).hasError, isTrue);
+    expect(c.read(portfolioProvider('p1')).hasError, isTrue);
+    expect((services.calls, posts.calls), (1, 1));
+  });
 }

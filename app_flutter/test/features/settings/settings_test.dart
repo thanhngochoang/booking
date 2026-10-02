@@ -611,6 +611,17 @@ void main() {
       expect(find.textContaining('091234'), findsNothing);
     });
 
+    testWidgets('a phone of 4 digits or fewer is never shown, only "added"', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      final contacts = FakeUserContactRepository()
+        ..seed(auth.currentUser!.uid, const UserContact(phone: '1234'));
+      await open(tester, auth, users, contacts: contacts);
+      expect(find.text('Đã thêm'), findsOneWidget);
+      expect(find.textContaining('1234'), findsNothing);
+    });
+
     testWidgets('photographers see skills with the meter and public profile', (
       tester,
     ) async {
@@ -633,12 +644,16 @@ void main() {
         findsOneWidget,
       );
       final before = skills.loadCalls;
+      expect(before, 1);
       await tester.tap(find.byKey(const Key('profile-skills')));
       await tester.pumpAndSettle();
       expect(find.text('skills'), findsOneWidget);
+      expect(skills.loadCalls, before, reason: 'no reload while away');
 
-      await open(tester, auth, users, skills: skills);
-      expect(skills.loadCalls, greaterThanOrEqualTo(before));
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('profile-skills')), findsOneWidget);
+      expect(skills.loadCalls, before + 1, reason: 'reloaded on return');
       await tester.tap(find.byKey(const Key('profile-public')));
       await tester.pumpAndSettle();
       expect(find.text('public $uid'), findsOneWidget);

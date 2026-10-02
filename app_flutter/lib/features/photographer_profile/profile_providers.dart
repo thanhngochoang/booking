@@ -16,7 +16,7 @@ final profilePackagesProvider = FutureProvider.autoDispose
         for (final s in list)
           if (s.active) s,
       ]..sort((a, b) => a.priceVnd.compareTo(b.priceVnd));
-    });
+    }, retry: (_, _) => null);
 
 /// S03 "Thợ ảnh tương tự" (spec 3e.9). Never fails the screen: any error
 /// gives an empty list and the section hides.
@@ -85,6 +85,7 @@ class PortfolioController extends AsyncNotifier<PortfolioState> {
             cursor: current.cursor,
             limit: pageSize,
           );
+      if (!ref.mounted) return;
       state = AsyncData(
         PortfolioState(
           posts: [...current.posts, ...page.posts],
@@ -92,6 +93,7 @@ class PortfolioController extends AsyncNotifier<PortfolioState> {
         ),
       );
     } catch (_) {
+      if (!ref.mounted) return;
       state = AsyncData(current); // keep what is shown; the button stays
     }
   }
@@ -100,4 +102,5 @@ class PortfolioController extends AsyncNotifier<PortfolioState> {
 final portfolioProvider = AsyncNotifierProvider.autoDispose
     .family<PortfolioController, PortfolioState, String>(
       PortfolioController.new,
+      retry: (_, _) => null,
     );

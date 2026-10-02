@@ -211,12 +211,19 @@ class _PhoneTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final phone = ref.watch(currentContactProvider).value?.phone ?? '';
-    final tail = phone.length > 4 ? phone.substring(phone.length - 4) : phone;
+    // Under 5 digits there is nothing safe to show beyond "added".
+    final tail = phone.length > 4 ? phone.substring(phone.length - 4) : '';
     return ListTile(
       key: const Key('profile-phone'),
       leading: const Icon(Icons.phone_outlined),
       title: Text(l.settingsPhone),
-      subtitle: Text(tail.isEmpty ? l.settingsPhoneEmpty : '•••• $tail'),
+      subtitle: Text(
+        phone.isEmpty
+            ? l.settingsPhoneEmpty
+            : tail.isEmpty
+            ? l.settingsPhoneAdded
+            : l.settingsPhoneMasked(tail),
+      ),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () => context.push('/profile/phone'),
     );

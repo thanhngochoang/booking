@@ -103,6 +103,7 @@ class ProfileWorld {
     String location, {
     Brightness brightness = Brightness.dark,
     double textScale = 1.0,
+    bool defaultRetry = false,
   }) {
     Widget stub(BuildContext _, GoRouterState s) => Text('stub ${s.uri}');
     router = GoRouter(
@@ -139,6 +140,7 @@ class ProfileWorld {
       overrides: overrides,
       brightness: brightness,
       textScale: textScale,
+      defaultRetry: defaultRetry,
     );
   }
 }

@@ -12,4 +12,5 @@ final publicProfileRepositoryProvider = Provider<PublicProfileRepository>(
 final photographerProfileProvider = FutureProvider.autoDispose
     .family<PhotographerProfile?, String>(
       (ref, uid) => ref.watch(publicProfileRepositoryProvider).load(uid),
+      retry: (_, _) => null, // show the error state at once, with "Thử lại"
     );

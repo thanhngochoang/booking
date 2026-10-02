@@ -219,6 +219,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsPhoneEmpty => 'Chưa thêm';
 
   @override
+  String get settingsPhoneAdded => 'Đã thêm';
+
+  @override
+  String settingsPhoneMasked(String last4) {
+    return '•••• $last4';
+  }
+
+  @override
   String get settingsSkills => 'Kỹ năng';
 
   @override

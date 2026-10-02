@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
@@ -10,6 +11,8 @@ import 'package:photobooking/data/media/media_uploader.dart';
 /// `users/{uid}` at it, then delete the previous upload. A cancelled pick
 /// changes nothing. The value turns true after a change went through.
 class AvatarController extends AsyncNotifier<bool> {
+  bool _busy = false;
+
   @override
   bool build() => false;
 
@@ -18,12 +21,45 @@ class AvatarController extends AsyncNotifier<bool> {
     if (uid == null) {
       return;
     }
-    final picked = await ref.read(imagePickerProvider).pickImages(max: 1);
+    // Leaving S42 (Lưu, Back) must not drop the change halfway.
+    final link = ref.keepAlive();
+    try {
+      await _change(uid);
+    } finally {
+      link.close();
+    }
+  }
+
+  Future<void> _change(String uid) async {
+    if (_busy) {
+      return; // a second tap while the picker or upload is open
+    }
+    _busy = true;
+    try {
+      await _pickAndUpload(uid);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  Future<void> _pickAndUpload(String uid) async {
+    final List<PickedImage> picked;
+    try {
+      picked = await ref.read(imagePickerProvider).pickImages(max: 1);
+    } catch (e, st) {
+      if (ref.mounted) {
+        state = AsyncError(e, st);
+      }
+      return;
+    }
     if (picked.isEmpty) {
+      return; // cancelled: nothing changes
+    }
+    if (!ref.mounted) {
       return;
     }
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    final next = await AsyncValue.guard(() async {
       final path = 'avatars/$uid/${newUlid()}.jpg';
       UploadedMedia? media;
       await for (final e
@@ -52,6 +88,9 @@ class AvatarController extends AsyncNotifier<bool> {
       }
       return true;
     });
+    if (ref.mounted) {
+      state = next;
+    }
   }
 
   /// A leftover file is harmless; a failed clean-up must not fail the change.
