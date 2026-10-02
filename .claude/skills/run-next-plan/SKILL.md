@@ -1,6 +1,6 @@
 ---
 name: run-next-plan
-description: Pick up the next implementation plan from docs/superpowers/plans/RUN-ORDER.md and execute it on this machine while other machines work in parallel — claim it on the shared claim board (status "in progress" on the `board` branch, so no two computers take the same plan), create a branch from develop, implement it task by task following the plan and the specs, then open a PR into develop. Use this whenever the user says things like "làm task tiếp theo", "nhận plan tiếp", "chạy plan kế tiếp trong run order", "máy này làm gì tiếp", "start the next plan", "pick up work", "continue the plan in progress on this machine", "what's free in the run order", or names a run-order row ("làm 8b", "run plan 9"). Also use it to resume a plan this machine already claimed, to move a claim to "in review"/"done", or to release a claim.
+description: Pick up the next implementation plan from docs/superpowers/plans/RUN-ORDER.md and execute it on this machine while other machines work in parallel — claim it on the shared claim board (status "in progress" on the `board` branch, so no two computers take the same plan), create a branch from develop, implement it task by task following the plan and the specs, then open a PR into develop; in continuous mode it also lands its own PR when the safety gates pass (CI green, up to date, no overlap with another machine's branch) and keeps taking units until the feature or lane is finished. Use this whenever the user says things like "làm task tiếp theo", "nhận plan tiếp", "chạy plan kế tiếp trong run order", "máy này làm gì tiếp", "start the next plan", "pick up work", "continue the plan in progress on this machine", "what's free in the run order", or names a run-order row ("làm 8b", "run plan 9"), or wants the machine to work on its own until done ("làm liên tục", "tự merge rồi làm tiếp", "làm hết lane 2", "chạy đến hết 8e", "keep going until the feature is done"). Also use it to resume a plan this machine already claimed, to move a claim to "in review"/"done", or to release a claim.
 ---
 
 # Run the next plan (parallel, many machines)
@@ -79,16 +79,85 @@ When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for l
 2. In the branch, update what the plan says to update: the "Trạng thái" cells of `remaining-screens.md` for the screens it built, a handover ledger `docs/superpowers/handover/ledger-<plan>.md` (rulings, deferred items), and **its own row** in RUN-ORDER.md's "To run" table: `done <date> (PR #n)` for a whole row, or the step's cell / a "remaining: …" note for a lane step. Touch only that row, so PRs from other machines don't conflict.
 3. Rebase onto the latest `origin/develop`, push, and open the PR:
    ```bash
-   gh pr create --base develop --head plan/8b-booking-sheet --title "<type>(<scope>): <plan summary> (<id>)" --body "…"
+   gh pr create --base develop --head plan/8b-booking-sheet --title "feat(booking): S04.01–S04.04 booking sheet [8b]" --body "…"
    ```
-   The body names the RUN-ORDER unit, the tasks done, test results, rulings, deferred items and any cross-lane requests, and ends with the Claude Code attribution line. If you only know the PR number after creating it, amend the row in a follow-up commit.
+   **PR title convention.** Every plan PR is titled `<type>(<scope>): <summary> [<unit-id>]`, because the title becomes the merge commit message on `develop`, and the `[id]` ties the history back to RUN-ORDER and the board.
+   - `type`: `feat` for new screens or behaviour, `fix`, `refactor` (e.g. migrating screens to AsyncView), `perf`, `test`, `docs`, `chore`, `build`, `ci`. Choose by what the PR mostly does.
+   - `scope`: one lowercase area, matching the commit scopes already in the log. Examples: `booking`, `chat`, `review`, `explore`, `profile`, `core`, `data`, `domain`, `functions`, `rules`, `api`, `l10n`. If the PR spans several areas, use the one the plan is named after.
+   - `summary`: English, imperative or noun phrase, no final period. Put the screen codes first when the plan builds screens (`S05.01–S05.03 booking detail and lists`).
+   - `[unit-id]`: exactly the board id, e.g. `[8b]`, `[9]`, `[8a2/2-L1]`.
+   - Keep it to about 90 characters. Examples:
+     - `refactor(core): move existing screens to AsyncView and component skeletons [8a2/2-L1]`
+     - `feat(core): ReasonPicker, ProviderPicker, ConfirmSheet and chat widgets [8a2/2-L2]`
+     - `feat(api): self-hosted API and PostgreSQL backend, phase 2 [9]`
+
+   `land.py` refuses a title that doesn't follow this (exit 6). Fix it with `gh pr edit <n> --title "…"` and land again.
+
+   The body uses these headings: **Unit** (RUN-ORDER row/step and plan file), **Tasks done**, **Tests** (commands and results), **Rulings** (mock vs spec decisions), **Deferred**, **Cross-lane requests**. It ends with the Claude Code attribution line. If you only know the PR number after creating it, amend the row in a follow-up commit.
 4. Move the claim to review:
    ```bash
    BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/board.py set 8b "in review" --pr 123
    ```
-   Merging is the user's call (or the reviewer's). After the merge, the next `show` on any machine marks it `done` (step 1.1).
+   In single mode, merging is the user's call: stop here. After the merge, the next `show` on any machine marks it `done` (step 1.1). In continuous mode, go on to step 6.
 
 Tell the user, in Vietnamese: the unit, the branch, the PR link, the test results, and anything left for them.
+
+## 6. Landing (continuous mode only)
+
+Merge your own PR only when nothing about it can hurt another machine's work. `scripts/land.py` checks this and does the merge. It refuses on its own if anything is off, so don't merge any other way and never use `gh pr merge --admin`.
+
+```bash
+BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/land.py 8b --pr 123
+```
+
+The gates, in order:
+1. the PR is yours: open, `plan/…` → `develop`, and the claim on the board belongs to this machine;
+2. the branch contains the latest `origin/develop`;
+3. no file it changes is also changed on another machine's active claim branch. RUN-ORDER.md, `app_vi.arb`, generated l10n and `pubspec.lock` are exempt, because they are append-only or regenerated;
+4. every CI check on the PR passed (it waits while they run);
+5. GitHub says it is mergeable and not blocked.
+
+Then it merges with a merge commit (the repo's style), deletes the branch, and marks the claim `done (PR #n)`.
+
+What each exit code means and what to do:
+- **2, behind or conflicting with develop**: `git fetch`, `git rebase origin/develop`, then resolve.
+  - Conflicts in your own RUN-ORDER row, or in another lane's block of `app_vi.arb`: keep both sides, then run `flutter gen-l10n`.
+  - Conflicts in real code that came from another lane's merged work: resolve them the way that lane's code now expects. If you can't do that without changing that lane's files, stop and ask.
+
+  Re-run `flutter analyze && flutter test`, `git push --force-with-lease` (your own branch only), and land again.
+- **3, CI failed**: read the log (`gh run view --log-failed`), fix it with a new commit, push, and land again. After three failed fixes, stop and report.
+- **4, overlap with another machine's branch**: don't merge, and don't edit their files. Usually the other unit has to land first.
+  1. Note the overlap in your PR and ledger.
+  2. Set the claim to `in review (PR #n)`.
+  3. Wait with `board.py watch` until that unit is done.
+  4. Rebase onto develop and land again.
+
+  If the overlap means the plans themselves collide (both really change the same logic), stop and ask the user.
+- **6, the title doesn't follow the convention**: run `gh pr edit <n> --title "<type>(<scope>): <summary> [<id>]"`, then land again.
+- **5, blocked by branch rules or the merge was refused** (e.g. a review is now required): stop. Tell the user the PR link and leave the claim `in review`.
+
+## Continuous mode: keep going until the feature is done
+
+Use this when the user asks for it: "làm liên tục", "chạy tự động đến hết", "tự merge rồi làm tiếp", "làm hết lane 2", "làm đến hết 8e", or similar. The user may give a scope, which can be a lane, a range of rows, or a feature like the booking flow 8a2–8e. With no scope, keep going until nothing runnable is left in the "To run" table. Rows that are stale, blocked on the user, or marked "last" (iOS 15, final battery 16) are never taken automatically.
+
+The loop:
+1. Run steps 1–5, then land the PR (step 6).
+2. Once it has merged, go back to step 1 on the fresh `develop`. Prefer the next unit in the same lane, so file ownership stays stable, then the next runnable row in the scope.
+3. **If nothing in scope is runnable yet but other machines still hold claims** (typically a lane-1 step waiting for a lane-2 gate): don't stop and don't take work out of order. Wait for the board or develop to change:
+   ```bash
+   BOARD_GH=1 python3 .claude/skills/run-next-plan/scripts/board.py watch --timeout 1800
+   ```
+   Run it in the background and act when it exits. On a timeout, check the board again. After about 3 hours with no change, stop and report who holds what.
+4. Stop and report when any of these happens:
+   - the scope is finished, or nothing is runnable and no other machine holds a claim;
+   - a plan needs something only the user can give (keys, a spec or mock decision, a device);
+   - the plan and the spec/mock disagree in a way CLAUDE.md does not settle;
+   - tests keep failing after three real attempts;
+   - a landing exits with 5.
+
+After each landed unit, post a short progress line in Vietnamese: unit, PR link, tests, and what comes next. When stopping, give a summary: what landed (with PR links), what is left and who holds it, and why you stopped.
+
+Keep each unit's work inside subagents (subagent-driven development) and keep the main thread to the board, git and short summaries. That lets one session carry many units without running out of context. Re-read RUN-ORDER.md from `origin/develop` at the start of every unit: other machines' PRs change it.
 
 ## Other board commands
 
