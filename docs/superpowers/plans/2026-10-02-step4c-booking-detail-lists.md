@@ -4,6 +4,8 @@
 
 > **Rules emulator tests (2026-10-02, user):** Task 1 changes `firestore.rules`. Write the rules and their tests in `app_flutter/firebase/rules-test/rules.test.mjs`, do not run them; CI runs them on push. Record the skip in the ledger.
 
+> **Lanes (2026-10-02):** Task 1 runs in lane 2 (`lane/core`); Tasks 2–7 run in lane 1 (`lane/ui`) after gate G4. See `RUN-ORDER.md` → "Two parallel lanes".
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Detail level (user, 2026-10-02):** interfaces are exact; each task lists its tests by name with the expected behaviour; sample code only where it is easy to get wrong. Write the rest in the style of the surrounding files.

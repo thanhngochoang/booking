@@ -4,6 +4,8 @@
 
 > **Rules emulator tests (2026-10-02, user):** this plan changes no rules. If a step ever needs the emulators (rules tests, Functions integration tests), write the test and skip running it; CI runs it.
 
+> **Lanes (2026-10-02):** Task 1 runs in lane 2 (`lane/core`); Tasks 2–8 run in lane 1 (`lane/ui`) after gate G3 (Task 1 merged). See `RUN-ORDER.md` → "Two parallel lanes".
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Detail level (user, 2026-10-02):** interfaces are exact; each task lists its tests by name with the expected behaviour; sample code is given only for the parts that are easy to get wrong. Write the remaining code in the style of the surrounding files.

@@ -4,6 +4,8 @@
 
 > **No emulator steps:** this plan changes no rules or Functions.
 
+> **Lanes (2026-10-02):** Tasks 1–4 and Task 6 Step 6 run in lane 1 (`lane/ui`); Tasks 5, 6 (Steps 1–5), 7–10 run in lane 2 (`lane/core`) after gate G1 (Tasks 1–3 merged). Task 6 Step 6 waits for G2. See `RUN-ORDER.md` → "Two parallel lanes".
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Detail level (user, 2026-10-02):** exact interfaces, tests listed by name with expected behaviour, sample code only where easy to get wrong.
