@@ -1261,4 +1261,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get back => 'Quay lại';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Chào $name';
+  }
+
+  @override
+  String get homeTitle => 'Hôm nay chụp gì?';
+
+  @override
+  String get homeForYou => 'Dành cho bạn';
+
+  @override
+  String get homeFreeThisWeek => 'Rảnh tuần này';
+
+  @override
+  String get homeRealShoots => 'Buổi chụp thật';
+
+  @override
+  String get homeFromCustomers => 'Từ khách hàng';
+
+  @override
+  String homeRealShootBy(String name) {
+    return 'Chụp bởi $name';
+  }
+
+  @override
+  String get homeEmptyTitle => 'Chưa có ảnh nào quanh bạn';
+
+  @override
+  String get homeEmptyBody => 'Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.';
+
+  @override
+  String get homeEmptyAction => 'Khám phá nhiếp ảnh gia';
+
+  @override
+  String get homeLoadError => 'Không tải được ảnh. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get photoSave => 'Lưu ảnh';
+
+  @override
+  String get photoUnsave => 'Bỏ lưu';
 }

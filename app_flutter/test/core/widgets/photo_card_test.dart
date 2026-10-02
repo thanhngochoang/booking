@@ -365,4 +365,37 @@ void main() {
     await tester.pump();
     expect(clip(), BorderRadius.circular(AppRadius.card));
   });
+
+  testWidgets('an overlay takes its own taps and the card keeps the rest', (
+    tester,
+  ) async {
+    var overlayTaps = 0;
+    var cardTaps = 0;
+    await tester.pumpWidget(
+      hostWidget(
+        testPhotoScope(
+          child: PhotoCard(
+            imageUrl: 'https://img.test/a.jpg',
+            aspect: 4 / 5,
+            overlay: InkWell(
+              key: const Key('ov'),
+              onTap: () => overlayTaps++,
+              child: const SizedBox(height: 48, child: Text('author')),
+            ),
+            onTap: () => cardTaps++,
+          ),
+        ),
+        width: 300,
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('ov')));
+    expect(overlayTaps, 1);
+    expect(cardTaps, 0);
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(PhotoCard)) + const Offset(150, 100),
+    );
+    expect(cardTaps, 1);
+    expect(find.byKey(const Key('photo-card-scrim')), findsOneWidget);
+  });
 }

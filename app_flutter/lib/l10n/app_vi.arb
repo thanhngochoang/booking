@@ -513,5 +513,28 @@
     }
   },
   "engagementError": "Chưa thực hiện được. Thử lại nhé.",
-  "back": "Quay lại"
+  "back": "Quay lại",
+  "homeGreeting": "Chào {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeTitle": "Hôm nay chụp gì?",
+  "homeForYou": "Dành cho bạn",
+  "homeFreeThisWeek": "Rảnh tuần này",
+  "homeRealShoots": "Buổi chụp thật",
+  "homeFromCustomers": "Từ khách hàng",
+  "homeRealShootBy": "Chụp bởi {name}",
+  "@homeRealShootBy": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeEmptyTitle": "Chưa có ảnh nào quanh bạn",
+  "homeEmptyBody": "Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.",
+  "homeEmptyAction": "Khám phá nhiếp ảnh gia",
+  "homeLoadError": "Không tải được ảnh. Kiểm tra mạng rồi thử lại.",
+  "photoSave": "Lưu ảnh",
+  "photoUnsave": "Bỏ lưu"
 }

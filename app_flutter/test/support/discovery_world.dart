@@ -252,3 +252,43 @@ class DiscoveryWorld {
     ];
   }
 }
+
+/// Forwards to [inner]; tests subclass it to spy on one method.
+class DelegatingRecommender implements RecommendationRepository {
+  DelegatingRecommender(this.inner);
+  final RecommendationRepository inner;
+  @override
+  Future<RecommendationPage> recommendPhotographers(
+    RecommendationQuery query,
+  ) => inner.recommendPhotographers(query);
+  @override
+  Future<RecommendationPage> similar(String photographerId, {int limit = 8}) =>
+      inner.similar(photographerId, limit: limit);
+  @override
+  Future<PostRecommendationPage> recommendPosts(
+    PostRecommendationQuery query,
+  ) => inner.recommendPosts(query);
+  @override
+  Future<void> sendFeedback(List<RecommendationSignal> signals) =>
+      inner.sendFeedback(signals);
+}
+
+/// Stands in for a remote recommender that is down.
+class ThrowingRecommender implements RecommendationRepository {
+  @override
+  Future<RecommendationPage> recommendPhotographers(
+    RecommendationQuery query,
+  ) async => throw StateError('down');
+  @override
+  Future<RecommendationPage> similar(
+    String photographerId, {
+    int limit = 8,
+  }) async => throw StateError('down');
+  @override
+  Future<PostRecommendationPage> recommendPosts(
+    PostRecommendationQuery query,
+  ) async => throw StateError('down');
+  @override
+  Future<void> sendFeedback(List<RecommendationSignal> signals) async =>
+      throw StateError('down');
+}

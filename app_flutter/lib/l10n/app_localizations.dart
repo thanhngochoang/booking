@@ -2289,6 +2289,84 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Quay lại'**
   String get back;
+
+  /// No description provided for @homeGreeting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chào {name}'**
+  String homeGreeting(String name);
+
+  /// No description provided for @homeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay chụp gì?'**
+  String get homeTitle;
+
+  /// No description provided for @homeForYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dành cho bạn'**
+  String get homeForYou;
+
+  /// No description provided for @homeFreeThisWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh tuần này'**
+  String get homeFreeThisWeek;
+
+  /// No description provided for @homeRealShoots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp thật'**
+  String get homeRealShoots;
+
+  /// No description provided for @homeFromCustomers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ khách hàng'**
+  String get homeFromCustomers;
+
+  /// No description provided for @homeRealShootBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp bởi {name}'**
+  String homeRealShootBy(String name);
+
+  /// No description provided for @homeEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ảnh nào quanh bạn'**
+  String get homeEmptyTitle;
+
+  /// No description provided for @homeEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.'**
+  String get homeEmptyBody;
+
+  /// No description provided for @homeEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá nhiếp ảnh gia'**
+  String get homeEmptyAction;
+
+  /// No description provided for @homeLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ảnh. Kiểm tra mạng rồi thử lại.'**
+  String get homeLoadError;
+
+  /// No description provided for @photoSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu ảnh'**
+  String get photoSave;
+
+  /// No description provided for @photoUnsave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu'**
+  String get photoUnsave;
 }
 
 class _AppLocalizationsDelegate
