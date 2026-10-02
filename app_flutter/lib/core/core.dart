@@ -20,6 +20,7 @@ export 'package:photobooking/core/widgets/app_button.dart';
 export 'package:photobooking/core/widgets/app_chip.dart';
 export 'package:photobooking/core/widgets/app_footer_bar.dart';
 export 'package:photobooking/core/widgets/app_logo.dart';
+export 'package:photobooking/core/widgets/app_option_tile.dart';
 export 'package:photobooking/core/widgets/app_skeleton.dart';
 export 'package:photobooking/core/widgets/aurora_background.dart';
 export 'package:photobooking/core/widgets/aurora_hero.dart';

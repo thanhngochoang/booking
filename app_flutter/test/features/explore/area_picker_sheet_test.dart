@@ -375,4 +375,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  group('mock S36', () {
+    testWidgets('areas are bordered option tiles', (tester) async {
+      final (app, _, _) = await _app();
+      await _open(tester, app);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('area-hcm-q1')),
+          matching: find.byType(AppOptionTile),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('"Mở Cài đặt" is a small outline button under the list', (
+      tester,
+    ) async {
+      final (app, _, _) = await _app(
+        status: LocationPermissionStatus.deniedForever,
+      );
+      await _open(tester, app);
+      final settings = find.byKey(const Key('area-open-settings'));
+      expect(tester.widget<AppButton>(settings).size, AppButtonSize.small);
+      expect(
+        find.ancestor(of: settings, matching: find.byType(Scrollable)),
+        findsNothing,
+        reason: 'sits with the main button, after the list',
+      );
+      expect(
+        tester.getTopLeft(settings).dy,
+        lessThan(tester.getTopLeft(find.byKey(const Key('area-use'))).dy),
+      );
+    });
+
+    testWidgets('opened with location on, the body does not say it is off', (
+      tester,
+    ) async {
+      final (app, _, _) = await _app(status: LocationPermissionStatus.granted);
+      await _open(tester, app);
+      expect(find.textContaining('Vị trí đang tắt'), findsNothing);
+      expect(
+        find.text('Chọn khu vực để xem sự kiện quanh đó.'),
+        findsOneWidget,
+      );
+    });
+  });
 }

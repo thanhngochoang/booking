@@ -87,11 +87,20 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                         header: true,
                         child: Text(
                           l.areaPickerTitle,
-                          style: theme.textTheme.titleLarge,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 17,
+                          ),
                         ),
                       ),
                       const SizedBox(height: AppSpace.s1),
-                      Text(l.areaPickerBody, style: theme.textTheme.bodySmall),
+                      // "Vị trí đang tắt…" only fits when location is off
+                      // (S35 "Đổi" opens the sheet with it on).
+                      Text(
+                        location.permission == LocationPermissionStatus.granted
+                            ? l.areaPickerBodyOn
+                            : l.areaPickerBody,
+                        style: theme.textTheme.bodySmall,
+                      ),
                       if (areas.length > 8) ...[
                         const SizedBox(height: AppSpace.s3),
                         TextField(
@@ -108,25 +117,6 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                     ],
                   ),
                 ),
-                if (location.permission ==
-                    LocationPermissionStatus.deniedForever) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpace.s2,
-                      AppSpace.s1,
-                      AppSpace.s2,
-                      AppSpace.s2,
-                    ),
-                    child: AppButton.outline(
-                      l.areaPickerOpenSettings,
-                      key: const Key('area-open-settings'),
-                      icon: const Icon(Icons.settings_outlined),
-                      onPressed: () => ref
-                          .read(locationControllerProvider.notifier)
-                          .openSettings(),
-                    ),
-                  ),
-                ],
                 if (offersDevice && folded.isEmpty)
                   _AreaRow(
                     key: const Key('area-use-device'),
@@ -184,6 +174,19 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                         )
                       : const SizedBox.shrink(),
                 ),
+                // Mock S36: after the list, just above the main button.
+                if (location.permission ==
+                    LocationPermissionStatus.deniedForever) ...[
+                  AppButton.outline(
+                    l.areaPickerOpenSettings,
+                    key: const Key('area-open-settings'),
+                    size: AppButtonSize.small,
+                    onPressed: () => ref
+                        .read(locationControllerProvider.notifier)
+                        .openSettings(),
+                  ),
+                  const SizedBox(height: AppSpace.s2),
+                ],
                 AppButton.primary(
                   l.areaPickerUse,
                   key: const Key('area-use'),
@@ -257,46 +260,18 @@ class _AreaRow extends StatelessWidget {
   final IconData? icon;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      selected: selected,
-      inMutuallyExclusiveGroup: true,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpace.s2,
+      vertical: AppSpace.s1,
+    ),
+    child: AppOptionTile(
       label: label,
-      excludeSemantics: true,
+      selected: selected,
       onTap: onTap,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(controlRadius),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.s3,
-              vertical: AppSpace.s2,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  selected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  color: selected ? scheme.primary : scheme.outline,
-                ),
-                const SizedBox(width: AppSpace.s3),
-                if (icon != null) ...[
-                  Icon(icon, size: 18),
-                  const SizedBox(width: AppSpace.s2),
-                ],
-                Expanded(child: Text(label)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      leading: icon == null ? null : Icon(icon),
+    ),
+  );
 }
 
 class _AreaSkeletons extends StatelessWidget {

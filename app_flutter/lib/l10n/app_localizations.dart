@@ -1162,6 +1162,12 @@ abstract class AppLocalizations {
   /// **'Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.'**
   String get areaPickerBody;
 
+  /// No description provided for @areaPickerBodyOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực để xem sự kiện quanh đó.'**
+  String get areaPickerBodyOn;
+
   /// No description provided for @areaPickerOpenSettings.
   ///
   /// In vi, this message translates to:

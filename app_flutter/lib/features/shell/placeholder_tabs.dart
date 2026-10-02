@@ -118,14 +118,10 @@ class ProfileTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Center(
-                        child: CircleAvatar(
-                          radius: 32,
-                          backgroundImage: avatar == null
-                              ? null
-                              : NetworkImage(avatar),
-                          child: avatar == null
-                              ? const Icon(Icons.person)
-                              : null,
+                        child: AppAvatar(
+                          url: avatar,
+                          name: profile?.displayName ?? '',
+                          size: AppAvatarSize.lg,
                         ),
                       ),
                       const SizedBox(height: AppSpace.s3),
@@ -149,45 +145,30 @@ class ProfileTab extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    isPhotographer
-                                        ? Icons.camera_alt_outlined
-                                        : Icons.search,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: AppSpace.s3),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // The card offers the other mode, so
-                                        // its text names the mode you'd switch to.
-                                        Text(
-                                          isPhotographer
-                                              ? l.profileOfferCustomerTitle
-                                              : l.profileOfferPhotographerTitle,
-                                          style: theme.textTheme.titleMedium,
-                                        ),
-                                        Text(
-                                          isPhotographer
-                                              ? l.profileOfferCustomerBody
-                                              : l.profileOfferPhotographerBody,
-                                          style: theme.textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              // The card offers the other mode, so its text
+                              // names the mode you'd switch to.
+                              Text(
+                                isPhotographer
+                                    ? l.profileOfferCustomerTitle
+                                    : l.profileOfferPhotographerTitle,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontSize: 17,
+                                ),
                               ),
-                              const SizedBox(height: AppSpace.s4),
-                              AppButton.outline(
+                              const SizedBox(height: AppSpace.s2),
+                              Text(
+                                isPhotographer
+                                    ? l.profileOfferCustomerBody
+                                    : l.profileOfferPhotographerBody,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: AppSpace.s3),
+                              AppButton.primary(
                                 isPhotographer
                                     ? l.profileSwitchToCustomer
                                     : l.profileSwitchToPhotographer,
                                 key: const Key('switch-role'),
+                                size: AppButtonSize.small,
                                 icon: const Icon(Icons.swap_horiz_rounded),
                                 loading: switching,
                                 onPressed: profile == null

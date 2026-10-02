@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -26,6 +27,7 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
         userRepositoryProvider.overrideWithValue(users),
       ],
       child: MaterialApp(
+        theme: buildDarkTheme(),
         locale: const Locale('vi'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -113,4 +115,23 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('S30: switch is the small primary, shared avatar, h3 title', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.customer);
+    await tester.pumpWidget(_app(const ProfileTab(), auth, users));
+    await tester.pumpAndSettle();
+    final sw = find.byKey(const Key('switch-role'));
+    expect(tester.widget<AppButton>(sw).size, AppButtonSize.small);
+    expect(
+      find.descendant(of: sw, matching: find.byType(CtaSurface)),
+      findsOneWidget,
+    );
+    final avatar = tester.widget<AppAvatar>(find.byType(AppAvatar));
+    expect(avatar.size, AppAvatarSize.lg);
+    final title = tester.widget<Text>(find.text('Tôi là nhiếp ảnh gia'));
+    expect(title.style?.fontSize, 17);
+    expect(title.style?.fontFamily, AppFonts.display);
+  });
 }

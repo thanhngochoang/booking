@@ -585,6 +585,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.';
 
   @override
+  String get areaPickerBodyOn => 'Chọn khu vực để xem sự kiện quanh đó.';
+
+  @override
   String get areaPickerOpenSettings => 'Mở Cài đặt để bật vị trí';
 
   @override
