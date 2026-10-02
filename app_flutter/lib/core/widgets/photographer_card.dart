@@ -78,18 +78,15 @@ class PhotographerCard extends StatelessWidget {
       l.photographerCardProfile,
       key: Key('card-profile-${data.id}'),
       onPressed: onProfile,
+      size: AppButtonSize.small,
     );
     final bookButton = onBook == null
         ? null
-        : AppButton.outline(
+        : AppButton.primary(
             bookLabel ?? l.photographerCardBook,
             key: Key('card-book-${data.id}'),
             onPressed: onBook,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: scheme.primary,
-              backgroundColor: scheme.secondary,
-              side: BorderSide(color: scheme.primary),
-            ),
+            size: AppButtonSize.small,
           );
 
     return Material(
@@ -143,6 +140,7 @@ class PhotographerCard extends StatelessWidget {
                           AppAvatar(
                             url: data.avatarUrl,
                             name: data.displayName,
+                            size: AppAvatarSize.sm,
                             decorative: true,
                           ),
                           const SizedBox(width: AppSpace.s3),
@@ -205,10 +203,10 @@ class PhotographerCard extends StatelessWidget {
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpace.s3,
+              AppSpace.s2h,
               0,
-              AppSpace.s3,
-              AppSpace.s3,
+              AppSpace.s2h,
+              AppSpace.s2h,
             ),
             child: stack || bookButton == null
                 ? Column(

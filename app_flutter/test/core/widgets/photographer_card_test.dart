@@ -223,4 +223,52 @@ void main() {
     );
     expect(find.textContaining('★'), findsNothing);
   });
+
+  testWidgets('Hồ sơ is a small outline, Đặt a small gradient primary, 38dp', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card(onBook: () {}));
+    final profile = tester.widget<AppButton>(
+      find.byKey(const Key('card-profile-p1')),
+    );
+    final book = tester.widget<AppButton>(
+      find.byKey(const Key('card-book-p1')),
+    );
+    expect(profile.size, AppButtonSize.small);
+    expect(book.size, AppButtonSize.small);
+    final outline = find.descendant(
+      of: find.byKey(const Key('card-profile-p1')),
+      matching: find.byType(OutlinedButton),
+    );
+    final filled = find.descendant(
+      of: find.byKey(const Key('card-book-p1')),
+      matching: find.byType(FilledButton),
+    );
+    expect(outline, findsOneWidget);
+    expect(filled, findsOneWidget);
+    expect(tester.getSize(outline).height, 38);
+    expect(tester.getSize(filled).height, 38);
+    expect(
+      tester.getSize(find.byKey(const Key('card-book-p1'))).height,
+      48,
+      reason: 'hit area',
+    );
+  });
+
+  testWidgets('the avatar is 40dp', (tester) async {
+    await tester.pumpWidget(_card());
+    final avatar = tester.widget<AppAvatar>(find.byType(AppAvatar));
+    expect(avatar.size, AppAvatarSize.sm);
+    expect(avatar.size.dimension, 40);
+  });
+
+  testWidgets('one outer button node plus two button nodes', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(_card(onBook: () {}));
+    expect(
+      find.semantics.byPredicate((n) => n.flagsCollection.isButton),
+      findsNWidgets(3),
+    );
+    handle.dispose();
+  });
 }
