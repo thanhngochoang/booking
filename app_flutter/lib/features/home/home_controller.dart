@@ -183,7 +183,12 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
       );
       state = AsyncData(
         latest.copyWith(
-          items: [...latest.items, ...page.items],
+          items: [
+            ...latest.items,
+            ...page.items.where(
+              (e) => !latest.items.any((o) => o.post.id == e.post.id),
+            ),
+          ],
           cursor: page.nextCursor,
           clearCursor: page.nextCursor == null,
           loadingMore: false,

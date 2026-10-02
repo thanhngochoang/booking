@@ -244,4 +244,34 @@ void main() {
       'd',
     ]);
   });
+
+  test(
+    'loadMore drops a post that pinToTop already put at the front',
+    () async {
+      final many = DiscoveryWorld(
+        posts: [
+          for (var i = 0; i < 45; i++)
+            fixturePost(
+              'm$i',
+              photographerId: 'p1',
+              age: Duration(minutes: i + 1),
+              specialtyId: 'portrait',
+            ),
+        ],
+      );
+      final (c, _, _) = await _make(world: many);
+      final n = c.read(homeFeedProvider.notifier);
+      await c.read(homeFeedProvider.future);
+      // m30 is on page 2 of the ranking.
+      await n.pinToTop('m30');
+      await n.loadMore();
+      final ids = c
+          .read(homeFeedProvider)
+          .requireValue
+          .items
+          .map((e) => e.post.id);
+      expect(ids.where((id) => id == 'm30'), hasLength(1));
+      expect(ids.toSet(), hasLength(ids.length));
+    },
+  );
 }

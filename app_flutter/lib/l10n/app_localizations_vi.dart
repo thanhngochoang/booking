@@ -183,13 +183,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.';
 
   @override
-  String get emptyCreateTitle => 'Cho mọi người thấy bạn chụp gì';
-
-  @override
-  String get emptyCreateBody =>
-      'Mỗi bài đăng gắn một gói dịch vụ để khách đặt ngay.';
-
-  @override
   String get emptyBookingsTitle => 'Buổi chụp tiếp theo bắt đầu từ đây';
 
   @override

@@ -430,18 +430,6 @@ abstract class AppLocalizations {
   /// **'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.'**
   String get emptyExploreBody;
 
-  /// No description provided for @emptyCreateTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Cho mọi người thấy bạn chụp gì'**
-  String get emptyCreateTitle;
-
-  /// No description provided for @emptyCreateBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Mỗi bài đăng gắn một gói dịch vụ để khách đặt ngay.'**
-  String get emptyCreateBody;
-
   /// No description provided for @emptyBookingsTitle.
   ///
   /// In vi, this message translates to:

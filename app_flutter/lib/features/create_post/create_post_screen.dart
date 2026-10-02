@@ -153,6 +153,23 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         chosen = sv;
       }
     }
+    // A saved draft can name a package that was hidden or deleted since: drop
+    // it so the field asks for a package again instead of failing at publish.
+    final loaded = services.value;
+    if (loaded != null && s.serviceId != null && chosen == null) {
+      Future.microtask(() {
+        if (!mounted) {
+          return;
+        }
+        final now = ref.read(postComposerProvider);
+        final list = ref.read(myServicesProvider).value;
+        if (list != null &&
+            now.serviceId != null &&
+            !list.any((e) => e.id == now.serviceId)) {
+          ref.read(postComposerProvider.notifier).setService(null);
+        }
+      });
+    }
     final canAdd = s.images.length < PostComposerController.maxImages;
 
     final location = TextField(
@@ -253,7 +270,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 onTap: (list) => _pickService(list, s.serviceId),
                 onAddService: widget.onAddService,
                 onRetry: () => ref.invalidate(myServicesProvider),
-                showError: started && s.serviceId == null,
+                showError: started && chosen == null && loaded != null,
               ),
               const SizedBox(height: AppSpace.s3),
               if (stack) ...[
@@ -288,7 +305,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               l.createPublish,
               key: const Key('create-publish'),
               loading: s.publishing,
-              onPressed: s.canPublish ? _publish : null,
+              onPressed: s.canPublish && chosen != null ? _publish : null,
             ),
           ),
         ),

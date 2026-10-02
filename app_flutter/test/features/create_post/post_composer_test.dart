@@ -10,7 +10,8 @@ import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
-import 'package:photobooking/features/create_post/create_post_providers.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/create_post/post_composer.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -365,14 +366,25 @@ void main() {
 
     test('removing an uploaded photo deletes it from Storage', () async {
       final e = await _ready();
-      e.publisher.failWith = StateError('offline');
-      await e.ctl.publish();
+      e.uploader.failNames.add('1.jpg');
+      expect((await e.ctl.publish()).outcome, PublishOutcome.imageFailed);
       final victim = e.state.images.first;
+      expect(victim.status, ComposerImageStatus.uploaded);
       final path = victim.media!.storagePath;
       e.ctl.removeImage(victim.key);
       await Future<void>.delayed(Duration.zero);
       expect(e.uploader.deleted, [path]);
-      expect(e.uploader.uploaded, hasLength(1));
+    });
+
+    test('after a failed create, removing a photo keeps its Storage file '
+        '(the queued write may still land)', () async {
+      final e = await _ready();
+      e.publisher.failWith = StateError('timeout');
+      expect((await e.ctl.publish()).outcome, PublishOutcome.publishFailed);
+      e.ctl.removeImage(e.state.images.first.key);
+      await Future<void>.delayed(Duration.zero);
+      expect(e.state.images, hasLength(1));
+      expect(e.uploader.deleted, isEmpty);
     });
 
     test('a photo that was never uploaded is simply dropped', () async {
@@ -383,7 +395,7 @@ void main() {
 
     test('a failing delete does not break the form', () async {
       final e = await _ready();
-      e.publisher.failWith = StateError('offline');
+      e.uploader.failNames.add('1.jpg');
       await e.ctl.publish();
       e.uploader.deleteFailure = StateError('offline');
       e.ctl.removeImage(e.state.images.first.key);

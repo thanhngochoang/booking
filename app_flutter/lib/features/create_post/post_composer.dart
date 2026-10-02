@@ -8,12 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
-import 'package:photobooking/features/create_post/create_post_providers.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 enum ComposerImageStatus { local, uploading, uploaded, failed }
@@ -156,6 +157,11 @@ class PostComposerController extends Notifier<ComposerState> {
   String? _owner;
   int _gen = 0;
 
+  /// True once a publish of the current draftId failed at the publisher: its
+  /// Firestore write may still be queued and land later, so the photos it
+  /// points at must not be deleted from Storage.
+  bool _publishAttempted = false;
+
   String? get _uid => ref.read(authRepositoryProvider).currentUser?.uid;
 
   /// The signed-in user, but only while the form still belongs to them.
@@ -172,6 +178,7 @@ class PostComposerController extends Notifier<ComposerState> {
     final uid = _uid;
     _owner = uid;
     _gen++;
+    _publishAttempted = false;
     _busy.clear();
     ref.listen(authStateProvider, (_, next) {
       final now = next.value?.uid;
@@ -270,7 +277,7 @@ class PostComposerController extends Notifier<ComposerState> {
     }
     final media = state.images[i].media;
     state = state.copyWith(images: [...state.images]..removeAt(i));
-    if (media != null) {
+    if (media != null && !_publishAttempted) {
       unawaited(_deleteQuietly(media.storagePath));
     }
   }
@@ -457,11 +464,13 @@ class PostComposerController extends Notifier<ComposerState> {
       );
       await prefs.remove(_draftKey(uid));
       if (ref.mounted && gen == _gen) {
+        _publishAttempted = false;
         state = ComposerState(draftId: newUlid(), inPortfolio: s.inPortfolio);
       }
       return PostPublishResult(PublishOutcome.published, post.id);
     } catch (_) {
       if (ref.mounted && gen == _gen) {
+        _publishAttempted = true;
         state = state.copyWith(publishing: false);
       }
       return const PostPublishResult(PublishOutcome.publishFailed);

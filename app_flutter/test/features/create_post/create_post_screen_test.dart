@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
-import 'package:photobooking/features/create_post/create_post_providers.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/create_post/post_composer.dart';
 
@@ -425,6 +426,25 @@ void main() {
       },
     );
   }
+
+  testWidgets('a saved draft whose package is gone cannot be published and '
+      'asks for a package', (tester) async {
+    final c = _Create();
+    await c.init();
+    // The draft names s-gone; the photographer only has s1 now.
+    c.world.prefs.setString(
+      'postDraft:${c.world.uid}',
+      '{"caption":"Hello","serviceId":"s-gone","specialtyId":"portrait"}',
+    );
+    await tester.pumpWidget(
+      screenApp(home: c.screen(), overrides: c.overrides),
+    );
+    await tester.pumpAndSettle();
+    await _addPhotos(tester);
+    expect(_state(tester).serviceId, isNull);
+    expect(_enabled(tester, 'create-publish'), isFalse);
+    expect(find.text('Chọn gói dịch vụ cho bài đăng'), findsOneWidget);
+  });
 }
 
 /// An upload that stops at 40 percent until [finish] is called.
