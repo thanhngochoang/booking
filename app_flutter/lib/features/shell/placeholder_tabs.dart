@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
 
 UserRole _role(WidgetRef ref) =>
@@ -31,45 +32,38 @@ Future<void> _openSetupIfUnfinished(BuildContext context, WidgetRef ref) async {
   GoRouter.maybeOf(context)?.push('/setup');
 }
 
-class HomeTab extends ConsumerWidget {
-  const HomeTab({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    return ScreenCode(
-      ScreenCodes.home,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          centerTitle: false,
-          titleTextStyle: tabRootTitleStyle(context),
-          title: Text(l.tabHome),
-        ),
-        body: EmptyState(title: l.emptyHomeTitle, body: l.emptyHomeBody),
-      ),
-    );
-  }
-}
-
 class ActionTab extends ConsumerWidget {
-  const ActionTab({super.key});
+  const ActionTab({super.key, this.specialty, this.style, this.area});
+
+  /// Filters carried by the link `/action?specialty=…&style=…&area=…`.
+  final String? specialty;
+  final String? style;
+  final String? area;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(currentProfileProvider).value?.role;
+    if (role == null) {
+      return const SizedBox.shrink();
+    }
+    if (role == UserRole.customer) {
+      return FindPhotographerScreen(
+        initialSpecialty: specialty,
+        initialStyle: style,
+        initialArea: area,
+      );
+    }
     final l = context.l10n;
-    final photographer = _role(ref) == UserRole.photographer;
     return ScreenCode(
-      photographer ? ScreenCodes.createPost : ScreenCodes.findPhotographer,
+      ScreenCodes.createPost,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           centerTitle: false,
           titleTextStyle: tabRootTitleStyle(context),
-          title: Text(photographer ? l.tabCreate : l.tabFind),
+          title: Text(l.tabCreate),
         ),
-        body: EmptyState(
-          title: photographer ? l.emptyCreateTitle : l.emptyFindTitle,
-          body: photographer ? l.emptyCreateBody : l.emptyFindBody,
-        ),
+        body: EmptyState(title: l.emptyCreateTitle, body: l.emptyCreateBody),
       ),
     );
   }
