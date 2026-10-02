@@ -5,3 +5,5 @@ export * from './contact.js';
 export * from './ports.js';
 export * from './require_phone.js';
 export * from './get_contact_link.js';
+export * from './skills.js';
+export * from './score_skills.js';
