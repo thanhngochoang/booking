@@ -76,7 +76,7 @@ void main() {
     expect(_fill(tester), AppColors.primarySubtle);
   });
 
-  testWidgets('keeps a 48dp touch target around a 32dp pill', (tester) async {
+  testWidgets('keeps a 48dp touch target around a 34dp pill', (tester) async {
     await tester.pumpWidget(
       hostWidget(AppChip(label: 'A', selected: false, onChanged: (_) {})),
     );
@@ -90,7 +90,7 @@ void main() {
             ),
           )
           .height,
-      32,
+      34,
     );
   });
 

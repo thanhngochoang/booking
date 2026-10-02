@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/features/shell/tab_shell.dart';
 
 Widget _bar(ThemeData theme) => MaterialApp(
   theme: theme,
@@ -48,4 +49,35 @@ void main() {
     expect(_label(tester, 'A'), AppColors.primary);
     expect(_label(tester, 'B'), AppColors.foregroundMuted);
   });
+
+  for (final sel in [0, 1]) {
+    testWidgets(
+      'middle tab label: ink when active, muted otherwise (sel $sel)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildDarkTheme(),
+            home: Scaffold(
+              bottomNavigationBar: NavigationBar(
+                selectedIndex: sel,
+                destinations: const [
+                  MiddleTabDestination(icon: Icons.add, label: 'M'),
+                  NavigationDestination(icon: Icon(Icons.search), label: 'B'),
+                ],
+              ),
+            ),
+          ),
+        );
+        expect(
+          _label(tester, 'M'),
+          sel == 0 ? AppColorsDark.foreground : AppColorsDark.foregroundMuted,
+        );
+        // Lifted 3dp, hit area still at least 48dp tall.
+        final box = tester.getRect(find.byType(NavigationDestination).first);
+        final other = tester.getRect(find.byType(NavigationDestination).last);
+        expect(box.top, closeTo(other.top - 3, 0.5));
+        expect(box.height, greaterThanOrEqualTo(48));
+      },
+    );
+  }
 }

@@ -5,22 +5,8 @@ import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 ({Color fill, Color text}) _freeColors(Brightness b) => b == Brightness.dark
-    ? (
-        // Green at 20% over the dark canvas, with a lightened green for text.
-        fill: AppColors.success.withValues(alpha: 0.2),
-        text: Color.alphaBlend(
-          Colors.white.withValues(alpha: 0.45),
-          AppColors.success,
-        ),
-      )
-    : (
-        fill: AppColors.successSubtle,
-        // Success green darkened until it reads at 4.5:1 on the pale fill.
-        text: Color.alphaBlend(
-          Colors.black.withValues(alpha: 0.45),
-          AppColors.success,
-        ),
-      );
+    ? (fill: AppColorsDark.freeBg, text: AppColorsDark.freeInk)
+    : (fill: AppColors.freeBg, text: AppColors.freeInk);
 
 /// Where a free event would show "0₫" it shows this tag instead.
 class FreeTag extends StatelessWidget {
@@ -33,6 +19,8 @@ class FreeTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: c.fill,
         borderRadius: BorderRadius.circular(AppRadius.full),
+        // Mock .tag has a 1px (transparent here) border.
+        border: Border.all(color: Colors.transparent),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(

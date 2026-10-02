@@ -189,7 +189,7 @@ ThemeData _build({
       labelTextStyle: WidgetStateProperty.resolveWith((s) {
         final on = s.contains(WidgetState.selected);
         return body(
-          AppText.xs,
+          AppText.tab,
           w: on ? FontWeight.w600 : FontWeight.w500,
           c: on ? primary : foregroundMuted,
         );

@@ -22,7 +22,7 @@ class StatTile extends StatelessWidget {
         child: DecoratedBox(
           // Translucent fill, no blur: tiles sit on cards that already blur.
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondary,
+            color: dark ? AppColorsDark.glass : AppColors.glass,
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,

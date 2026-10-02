@@ -121,16 +121,16 @@ class PhotoCard extends StatelessWidget {
                     ),
                   if (leadingPill != null)
                     Positioned(
-                      left: AppSpace.s2,
-                      top: AppSpace.s2,
+                      left: AppSpace.s2h,
+                      top: AppSpace.s2h,
                       child: ExcludeSemantics(
                         child: IgnorePointer(child: leadingPill!),
                       ),
                     ),
                   if (trailingPill != null)
                     Positioned(
-                      right: AppSpace.s2,
-                      top: AppSpace.s2,
+                      right: AppSpace.s2h,
+                      top: AppSpace.s2h,
                       child: ExcludeSemantics(
                         child: IgnorePointer(child: trailingPill!),
                       ),

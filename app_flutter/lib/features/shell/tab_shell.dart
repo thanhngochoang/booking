@@ -44,44 +44,79 @@ class TabShell extends ConsumerWidget {
             },
             destinations: [
               for (final s in specs)
-                NavigationDestination(
-                  icon: s.emphasized
-                      // Mock `.tab.mid`: lifted 3dp with a purple glow.
-                      ? Transform.translate(
-                          offset: const Offset(0, -3),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.ctaMid.withValues(
-                                    alpha: 0.45,
-                                  ),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: CtaSurface(
-                                borderRadius: BorderRadius.circular(18),
-                                child: Center(
-                                  child: Icon(s.icon, color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : TabBadge(
-                          count: badges[s.tab] ?? 0,
-                          child: Icon(s.icon),
-                        ),
-                  label: s.label(l),
-                ),
+                if (s.emphasized)
+                  MiddleTabDestination(icon: s.icon, label: s.label(l))
+                else
+                  NavigationDestination(
+                    icon: TabBadge(
+                      count: badges[s.tab] ?? 0,
+                      child: Icon(s.icon),
+                    ),
+                    label: s.label(l),
+                  ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mock `.tab.mid`: a 36dp gradient disc with a purple glow, the whole
+/// destination lifted 3dp, and an ink (not accent) label when active. The
+/// hit area is the unchanged destination box, only painted 3dp higher.
+class MiddleTabDestination extends StatelessWidget {
+  const MiddleTabDestination({
+    super.key,
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final base = theme.navigationBarTheme;
+    return Theme(
+      data: theme.copyWith(
+        navigationBarTheme: base.copyWith(
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => base.labelTextStyle
+                ?.resolve(states)
+                ?.copyWith(
+                  color: states.contains(WidgetState.selected)
+                      ? theme.colorScheme.onSurface
+                      : null,
+                ),
+          ),
+        ),
+      ),
+      child: Transform.translate(
+        offset: const Offset(0, -3),
+        child: NavigationDestination(
+          icon: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.ctaMid.withValues(alpha: 0.45),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: CtaSurface(
+                borderRadius: BorderRadius.circular(18),
+                child: Center(child: Icon(icon, color: Colors.white)),
+              ),
+            ),
+          ),
+          label: label,
         ),
       ),
     );

@@ -12,7 +12,7 @@ enum AppChipKind {
   context,
 }
 
-/// Rounded choice pill: 32dp tall, 48dp touch area.
+/// Rounded choice pill: 34dp tall, 48dp touch area.
 class AppChip extends StatelessWidget {
   const AppChip({
     super.key,
@@ -37,11 +37,12 @@ class AppChip extends StatelessWidget {
     final scheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
     final subtle = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
+    final glass = dark ? AppColorsDark.glass : AppColors.glass;
     final secondaryInk = dark
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final (fill, text, edge) = !selected
-        ? (scheme.secondary, secondaryInk, scheme.outline)
+        ? (glass, secondaryInk, scheme.outline)
         : kind == AppChipKind.filter
         ? (scheme.primary, scheme.onPrimary, scheme.primary)
         : (subtle, scheme.primary, scheme.primary);
@@ -66,7 +67,7 @@ class AppChip extends StatelessWidget {
                 customBorder: const StadiumBorder(),
                 onTap: () => onChanged(!selected),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 32),
+                  constraints: const BoxConstraints(minHeight: 34),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s3,
@@ -88,7 +89,7 @@ class AppChip extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: text,
-                              fontSize: AppText.sm,
+                              fontSize: AppText.chip,
                               fontWeight: FontWeight.w500,
                             ),
                           ),

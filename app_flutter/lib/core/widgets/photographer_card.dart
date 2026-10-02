@@ -125,8 +125,8 @@ class PhotographerCard extends StatelessWidget {
                             ColoredBox(color: scheme.secondary),
                           if (availabilityLabel != null)
                             Positioned(
-                              left: AppSpace.s2,
-                              top: AppSpace.s2,
+                              left: AppSpace.s2h,
+                              top: AppSpace.s2h,
                               child: PhotoPill(
                                 label: availabilityLabel!,
                                 dot: PhotoPillDot.ok,

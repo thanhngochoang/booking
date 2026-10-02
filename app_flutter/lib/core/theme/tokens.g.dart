@@ -54,6 +54,9 @@ class AppColors {
   static const Color spectrumPink = Color(0xFFFF45D0);
   static const Color spectrumOrange = Color(0xFFFF8A4C);
   static const Color spectrumYellow = Color(0xFFFFD54A);
+  static const Color glass = Color(0xB8FFFFFF);
+  static const Color freeInk = Color(0xFF127001);
+  static const Color freeBg = Color(0xFFE3F5DF);
 }
 
 class AppColorsDark {
@@ -109,6 +112,9 @@ class AppColorsDark {
   static const Color spectrumPink = AppColors.spectrumPink;
   static const Color spectrumOrange = AppColors.spectrumOrange;
   static const Color spectrumYellow = AppColors.spectrumYellow;
+  static const Color glass = Color(0x14FFFFFF);
+  static const Color freeInk = Color(0xFF7BE070);
+  static const Color freeBg = Color(0x331A9F02);
 }
 
 class AppSpace {
@@ -116,6 +122,7 @@ class AppSpace {
   static const double s0 = 0.0;
   static const double s1 = 4.0;
   static const double s2 = 8.0;
+  static const double s2h = 10.0;
   static const double s3 = 12.0;
   static const double s4 = 16.0;
   static const double s5 = 20.0;
@@ -143,6 +150,7 @@ class AppText {
   AppText._();
   static const double xs = 10.0;
   static const double xs2 = 11.0;
+  static const double tab = 9.5;
   static const double sm = 12.0;
   static const double base2 = 13.5;
   static const double base = 14.0;
@@ -150,6 +158,7 @@ class AppText {
   static const double lg = 20.0;
   static const double xl = 24.0;
   static const double xxl = 35.0;
+  static const double chip = 11.5;
 }
 
 class AppFonts {
