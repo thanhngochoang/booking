@@ -72,7 +72,7 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 |----|----------|-------|---------|-------------|------------|
 | S01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) |
 | S02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) |
-| S03 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ⬜ plan 2d2 |
+| S03 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2) · lệch mock: không nút chia sẻ, lưới vuông thay masonry |
 | S04 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback |
 | S05 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S06 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |

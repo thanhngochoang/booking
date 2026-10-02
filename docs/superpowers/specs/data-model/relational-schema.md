@@ -648,7 +648,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 | Đường dẫn Firestore | Bảng | Ghi chú ánh xạ |
 |---------------------|------|----------------|
-| `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl`→`avatar_file_id` (tạo `files`); `fcmTokens[]`→`devices` |
+| `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`devices` |
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
 | `photographers/{uid}` | `photographers` + `photographer_contact_channels` | `stats.*`→cột dẫn xuất; `serviceArea.*`→`service_*`; `skills.completeness`→`skills_completeness`; `skills.completenessNext`→`skills_completeness_next`; `skills.completenessNextAfter`→`skills_completeness_next_after`; `skills.evidenceRemovedAt`→`skills_evidence_removed_at` |
 | `photographers/{uid}/private/contact` | `photographer_contact_numbers` | |
