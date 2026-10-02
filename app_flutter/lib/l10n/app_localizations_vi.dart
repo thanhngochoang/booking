@@ -1554,4 +1554,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String findRatingMin(String rating) {
     return '★ $rating+';
   }
+
+  @override
+  String profileResponseMinutes(int minutes) {
+    return '~$minutes phút';
+  }
+
+  @override
+  String profileResponseHours(int hours) {
+    return '~$hours giờ';
+  }
 }

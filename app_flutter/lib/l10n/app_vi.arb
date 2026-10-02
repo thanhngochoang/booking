@@ -697,5 +697,9 @@
     "placeholders": {
       "rating": {"type": "String"}
     }
-  }
+  },
+  "profileResponseMinutes": "~{minutes} phút",
+  "@profileResponseMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "profileResponseHours": "~{hours} giờ",
+  "@profileResponseHours": {"placeholders": {"hours": {"type": "int"}}}
 }

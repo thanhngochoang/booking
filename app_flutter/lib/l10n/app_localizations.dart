@@ -2793,6 +2793,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'★ {rating}+'**
   String findRatingMin(String rating);
+
+  /// No description provided for @profileResponseMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'~{minutes} phút'**
+  String profileResponseMinutes(int minutes);
+
+  /// No description provided for @profileResponseHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'~{hours} giờ'**
+  String profileResponseHours(int hours);
 }
 
 class _AppLocalizationsDelegate
