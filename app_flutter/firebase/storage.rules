@@ -11,7 +11,8 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
-    // users/{uid}/... : avatars, portfolio/album photos, chat images.
+    // users/{uid}/... : portfolio/album photos, chat images (avatars live
+    // under avatars/, below).
     match /users/{uid}/{allPaths=**} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid) && validImage();
@@ -24,6 +25,16 @@ service firebase.storage {
       allow read: if signedIn();
       allow create, update: if isOwner(uid)
         && request.resource.size < 8 * 1024 * 1024 + 1
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid);
+    }
+
+    // Avatars: avatars/{uid}/{ulid}.jpg. Signed-in users may look at them;
+    // only the owner adds, replaces or deletes, images up to 5 MB.
+    match /avatars/{uid}/{file} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.size < 5 * 1024 * 1024 + 1
         && request.resource.contentType.matches('image/.*');
       allow delete: if isOwner(uid);
     }

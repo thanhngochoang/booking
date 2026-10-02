@@ -1,5 +1,7 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 const _key = 'buttonStyle';
@@ -33,3 +35,12 @@ final buttonStyleProvider =
     NotifierProvider<ButtonStyleController, ButtonStyleMode>(
       ButtonStyleController.new,
     );
+
+/// What `CtaAvatarScope` paints behind main buttons: the viewer's photo when
+/// they chose the avatar style and have one, else null (gradient). It
+/// follows the profile stream, so a new avatar shows on the next frame.
+final ctaAvatarProvider = Provider<ImageProvider?>((ref) {
+  final url = ref.watch(currentProfileProvider).value?.avatarUrl;
+  final avatarStyle = ref.watch(buttonStyleProvider) == ButtonStyleMode.avatar;
+  return avatarStyle && url != null ? NetworkImage(url) : null;
+});

@@ -15,6 +15,8 @@ import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
 import 'package:photobooking/features/photo/photo_detail_screen.dart';
+import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
+import 'package:photobooking/features/photographer_profile/profile_section.dart';
 import 'package:photobooking/features/photographer_setup/contact_setup_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
@@ -187,6 +189,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/p/:postId',
         builder: (_, state) =>
             PhotoDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      GoRoute(
+        path: '/u/:uid',
+        builder: (_, state) => PhotographerProfileScreen(
+          uid: state.pathParameters['uid']!,
+          initialSection: profileSectionFromQuery(
+            state.uri.queryParameters['tab'],
+          ),
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => TabShell(shell),

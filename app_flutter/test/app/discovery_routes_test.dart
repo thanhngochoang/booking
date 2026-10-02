@@ -47,6 +47,7 @@ void main() {
       containsAll([
         for (final t in AppTab.values) t.path,
         '/p/:postId',
+        '/u/:uid',
         '/settings',
         '/login',
       ]),

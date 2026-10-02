@@ -6,9 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
@@ -18,12 +25,16 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 import '../../support/idle.dart';
+import '../../support/photo_scope.dart';
 
 Future<Widget> _app({
   required FakeAuthRepository auth,
   required FakeUserRepository users,
   required SharedPreferences prefs,
   FakeUserContactRepository? contacts,
+  FakeImagePicker? picker,
+  FakeMediaUploader? uploader,
+  FakeSkillsRepository? skills,
 }) async {
   final router = GoRouter(
     initialLocation: '/settings',
@@ -38,9 +49,19 @@ Future<Widget> _app({
           ),
         ],
       ),
+      GoRoute(
+        path: '/profile/phone',
+        builder: (_, s) => Text('phone ${s.uri}'),
+      ),
+      GoRoute(path: '/profile/skills', builder: (_, _) => const Text('skills')),
+      GoRoute(
+        path: '/u/:uid',
+        builder: (_, s) => Text('public ${s.pathParameters['uid']}'),
+      ),
     ],
   );
   return ProviderScope(
+    retry: (_, _) => null,
     overrides: [
       authRepositoryProvider.overrideWithValue(auth),
       userRepositoryProvider.overrideWithValue(users),
@@ -48,9 +69,15 @@ Future<Widget> _app({
         contacts ?? FakeUserContactRepository(),
       ),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      imagePickerProvider.overrideWithValue(picker ?? FakeImagePicker()),
+      mediaUploaderProvider.overrideWithValue(uploader ?? FakeMediaUploader()),
+      skillsRepositoryProvider.overrideWithValue(
+        skills ?? FakeSkillsRepository(),
+      ),
     ],
     child: MaterialApp.router(
       routerConfig: router,
+      builder: (context, child) => testPhotoScope(child: child!),
       locale: const Locale('vi'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -58,11 +85,14 @@ Future<Widget> _app({
   );
 }
 
-Future<(FakeAuthRepository, FakeUserRepository)> _signedIn() async {
+Future<(FakeAuthRepository, FakeUserRepository)> _signedIn([
+  UserRole? role,
+]) async {
   final auth = FakeAuthRepository();
   final users = FakeUserRepository();
   final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');
   await users.ensureProfile(u);
+  if (role != null) await users.setRole(u.uid, role);
   return (auth, users);
 }
 
@@ -197,6 +227,8 @@ void main() {
     await tester.pumpAndSettle();
     final row = find.byKey(const Key('show-screen-codes'));
     await tester.scrollUntilVisible(row, 200);
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(row).value, isTrue);
 
     await tester.tap(row);
@@ -362,7 +394,9 @@ void main() {
       await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
     );
     await tester.pumpAndSettle();
-    expect(contacts.watchers, 0);
+    // S31's phone row already holds the (autoDispose) contact stream; S42
+    // shares that one subscription instead of opening a second.
+    expect(contacts.watchers, 1);
 
     await tester.tap(find.byKey(const Key('settings-edit-profile')));
     await tester.pumpAndSettle();
@@ -370,6 +404,10 @@ void main() {
     await expectIdle(tester);
 
     await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 1);
+
+    await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
     expect(contacts.watchers, 0);
   });
@@ -435,9 +473,13 @@ void main() {
     testWidgets('S31: hairlines between rows, small preview button', (
       tester,
     ) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       await openSettings(tester);
-      // Three theme rows and two button-style rows: 2 + 1 dividers.
-      expect(find.byType(Divider), findsNWidgets(3));
+      // Account: 2 rows (edit profile, phone) + 1; three theme rows and two
+      // button-style rows: 2 + 1.
+      expect(find.byType(Divider), findsNWidgets(4));
       final preview = tester.widget<AppButton>(
         find.widgetWithText(AppButton, 'Xem trước nút'),
       );
@@ -482,6 +524,7 @@ void main() {
     await openEdit(tester);
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('edit-name')));
     expect(find.byKey(const Key('edit-name')).hitTestable(), findsOneWidget);
   });
 
@@ -494,5 +537,126 @@ void main() {
     await openEdit(tester);
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('S42 changes the avatar and shows it', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final uploader = FakeMediaUploader();
+    await tester.pumpWidget(
+      await _app(
+        auth: auth,
+        users: users,
+        prefs: prefs,
+        picker: FakeImagePicker([
+          [const PickedImage(path: '/tmp/a.jpg', name: 'a.jpg')],
+        ]),
+        uploader: uploader,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('change-avatar')));
+    await tester.pumpAndSettle();
+    expect(find.text('Đã đổi ảnh đại diện.'), findsOneWidget);
+    expect(
+      tester.widget<AppAvatar>(find.byType(AppAvatar)).url,
+      'https://storage.test/${uploader.uploaded.single}',
+    );
+  });
+
+  group('S31 account rows', () {
+    Future<void> open(
+      WidgetTester tester,
+      FakeAuthRepository auth,
+      FakeUserRepository users, {
+      FakeUserContactRepository? contacts,
+      FakeSkillsRepository? skills,
+    }) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await tester.pumpWidget(
+        await _app(
+          auth: auth,
+          users: users,
+          prefs: prefs,
+          contacts: contacts,
+          skills: skills,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('everyone can add a phone number; customers see no more', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+      expect(find.byKey(const Key('profile-skills')), findsNothing);
+      expect(find.byKey(const Key('profile-public')), findsNothing);
+      expect(find.text('Chưa thêm'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('profile-phone')));
+      await tester.pumpAndSettle();
+      expect(find.text('phone /profile/phone'), findsOneWidget);
+    });
+
+    testWidgets('the phone row shows only the last 4 digits', (tester) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      final contacts = FakeUserContactRepository()
+        ..seed(auth.currentUser!.uid, const UserContact(phone: '0912345678'));
+      await open(tester, auth, users, contacts: contacts);
+      expect(find.text('•••• 5678'), findsOneWidget);
+      expect(find.textContaining('091234'), findsNothing);
+    });
+
+    testWidgets('a phone of 4 digits or fewer is never shown, only "added"', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      final contacts = FakeUserContactRepository()
+        ..seed(auth.currentUser!.uid, const UserContact(phone: '1234'));
+      await open(tester, auth, users, contacts: contacts);
+      expect(find.text('Đã thêm'), findsOneWidget);
+      expect(find.textContaining('1234'), findsNothing);
+    });
+
+    testWidgets('photographers see skills with the meter and public profile', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.photographer);
+      final uid = auth.currentUser!.uid;
+      final skills = FakeSkillsRepository()
+        ..seed(
+          uid,
+          const PhotographerSkills(
+            specialties: [SpecialtySkill(id: 'portrait')],
+            languages: ['vi'],
+          ),
+        );
+      await open(tester, auth, users, skills: skills);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('profile-skills')),
+          matching: find.byType(CompletenessMeter),
+        ),
+        findsOneWidget,
+      );
+      final before = skills.loadCalls;
+      expect(before, 1);
+      await tester.tap(find.byKey(const Key('profile-skills')));
+      await tester.pumpAndSettle();
+      expect(find.text('skills'), findsOneWidget);
+      expect(skills.loadCalls, before, reason: 'no reload while away');
+
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('profile-skills')), findsOneWidget);
+      expect(skills.loadCalls, before + 1, reason: 'reloaded on return');
+      await tester.tap(find.byKey(const Key('profile-public')));
+      await tester.pumpAndSettle();
+      expect(find.text('public $uid'), findsOneWidget);
+    });
   });
 }

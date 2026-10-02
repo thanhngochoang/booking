@@ -41,9 +41,10 @@ Widget screenRouterApp({
   List<Override> overrides = const [],
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
+  bool defaultRetry = false,
 }) {
   return ProviderScope(
-    retry: (_, _) => null,
+    retry: defaultRetry ? null : (_, _) => null,
     overrides: overrides,
     child: MaterialApp.router(
       routerConfig: router,

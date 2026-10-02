@@ -6,6 +6,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/auth/auth_form_validators.dart';
+import 'package:photobooking/features/settings/avatar_editor.dart';
 import 'package:photobooking/features/settings/edit_profile_controller.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -101,6 +102,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        const AvatarEditor(),
+                        const SizedBox(height: AppSpace.s5),
                         TextFormField(
                           key: const Key('edit-name'),
                           controller: _name,

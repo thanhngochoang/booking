@@ -780,7 +780,7 @@ test('only images up to 8 MB are accepted', async () => {
 
 test('every other Storage path is closed, and the users/{uid} rule still works', async () => {
   const st = env.authenticatedContext('ph1').storage();
-  await assertFails(uploadBytes(ref(st, 'avatars/ph1/a.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'misc/ph1/a.jpg'), photo(), jpeg));
   await assertFails(uploadBytes(ref(st, 'posts/ph1/a.jpg'), photo(), jpeg)); // missing the post folder
   await assertFails(getBytes(ref(st, 'misc/x.jpg')));
   await assertSucceeds(uploadBytes(ref(st, 'users/ph1/avatar.jpg'), photo(), jpeg));
@@ -881,4 +881,33 @@ test('posts cannot be edited or deleted from the client yet', async () => {
   await assertFails(updateDoc(doc(db, 'posts/own'), { caption: 'đổi' }));
   await assertFails(updateDoc(doc(db, 'posts/own'), { likeCount: 10 }));
   await assertFails(deleteDoc(doc(db, 'posts/own')));
+});
+
+// ---- Plan 2d2: avatars ----
+const ulidJpg = '01JB0Z8K3V5N6Q7R8S9T0V1W2X.jpg';
+
+test('users keep the storage key of their own avatar only', async () => {
+  const db = env.authenticatedContext('av1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'users/av1'), { displayName: 'A' }));
+  await assertSucceeds(updateDoc(doc(db, 'users/av1'), {
+    avatarUrl: 'https://storage.test/a.jpg', avatarPath: `avatars/av1/${ulidJpg}`,
+  }));
+  await assertFails(updateDoc(doc(db, 'users/av1'), { avatarPath: `avatars/av2/${ulidJpg}` }));
+  await assertFails(updateDoc(doc(db, 'users/av1'), { avatarPath: 'posts/av1/p/a.jpg' }));
+  await assertFails(updateDoc(doc(db, 'users/av1'), { avatarPath: 'avatars/av1/a.jpg' }));
+  await assertFails(updateDoc(doc(db, 'users/av1'), { avatarPath: 42 }));
+});
+
+test('a user uploads, replaces and deletes only their own avatar, images up to 5 MB', async () => {
+  const st = env.authenticatedContext('av1').storage();
+  const own = ref(st, `avatars/av1/${ulidJpg}`);
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertSucceeds(uploadBytes(own, photo(8), jpeg));
+  await assertSucceeds(getBytes(ref(env.authenticatedContext('av2').storage(), `avatars/av1/${ulidJpg}`)));
+  await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), `avatars/av1/${ulidJpg}`)));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('av2').storage(), 'avatars/av1/b.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(env.authenticatedContext('av2').storage(), `avatars/av1/${ulidJpg}`)));
+  await assertFails(uploadBytes(ref(st, 'avatars/av1/c.pdf'), photo(), { contentType: 'application/pdf' }));
+  await assertFails(uploadBytes(ref(st, 'avatars/av1/d.jpg'), photo(5 * 1024 * 1024 + 1), jpeg));
+  await assertSucceeds(deleteObject(own));
 });

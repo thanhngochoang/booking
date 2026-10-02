@@ -23,4 +23,32 @@ void main() {
     final first = await repo.watch('u9').first;
     expect(first, isNull);
   });
+
+  test('setAvatar stores url and path and returns the previous path', () async {
+    final users = FakeUserRepository();
+    await users.ensureProfile(const AuthUser(uid: 'u1', displayName: 'Lan'));
+    expect(
+      await users.setAvatar(
+        'u1',
+        url: 'https://s/a.jpg',
+        storagePath: 'avatars/u1/A.jpg',
+      ),
+      isNull,
+    );
+    expect(
+      await users.setAvatar(
+        'u1',
+        url: 'https://s/b.jpg',
+        storagePath: 'avatars/u1/B.jpg',
+      ),
+      'avatars/u1/A.jpg',
+    );
+    expect((await users.watch('u1').first)!.avatarUrl, 'https://s/b.jpg');
+    expect(users.avatarPaths['u1'], 'avatars/u1/B.jpg');
+    users.failSetAvatar = true;
+    await expectLater(
+      users.setAvatar('u1', url: 'x', storagePath: 'y'),
+      throwsStateError,
+    );
+  });
 }

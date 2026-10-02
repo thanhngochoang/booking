@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
@@ -34,6 +37,8 @@ class PhotographerWorld {
   final availability = FakeAvailabilityRepository();
   final users = FakeUserRepository();
   final auth = FakeAuthRepository();
+  final picker = FakeImagePicker();
+  final uploader = FakeMediaUploader();
   DateTime today = worldToday;
   late SharedPreferences prefs;
   late String uid;
@@ -56,6 +61,8 @@ class PhotographerWorld {
     servicePackageRepositoryProvider.overrideWithValue(packages),
     availabilityRepositoryProvider.overrideWithValue(availability),
     calendarTodayProvider.overrideWithValue(today),
+    imagePickerProvider.overrideWithValue(picker),
+    mediaUploaderProvider.overrideWithValue(uploader),
   ];
 
   /// Destinations the screens of this plan link to, shown as their path.
