@@ -424,6 +424,44 @@ void main() {
     expect(find.text('30 nhiếp ảnh gia'), findsOneWidget);
   });
 
+  testWidgets(
+    'a rating-filtered first page that does not fill the screen loads the next',
+    (tester) async {
+      // Page one keeps a single photographer after the rating filter, so
+      // nothing scrolls; the next page must still be requested.
+      final w = DiscoveryWorld(
+        photographers: [
+          for (var i = 0; i < 19; i++)
+            fixturePhotographer(
+              'a${i.toString().padLeft(2, '0')}',
+              rating: 4.7,
+              reviews: 1000,
+              completed: 500,
+            ),
+          fixturePhotographer(
+            'b00',
+            rating: 4.85,
+            reviews: 500,
+            completed: 250,
+          ),
+          for (var i = 0; i < 20; i++)
+            fixturePhotographer(
+              'c${i.toString().padLeft(2, '0')}',
+              rating: 4.85,
+              reviews: 10,
+              completed: 5,
+            ),
+        ],
+      );
+      await _open(tester, w);
+      await _choose(tester, 'find-rating', '★ 4,8+');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('find-card-b00')), findsOneWidget);
+      expect(find.byKey(const Key('find-card-c00')), findsOneWidget);
+      expect(find.text('21 nhiếp ảnh gia'), findsOneWidget);
+    },
+  );
+
   testWidgets('a failing load shows the retry', (tester) async {
     final w = DiscoveryWorld();
     await w.init();

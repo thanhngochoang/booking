@@ -42,6 +42,10 @@ class _FindPhotographerScreenState
   final _scroll = ScrollController();
   String? _applied;
 
+  /// The cursor the viewport fill already asked for, so a failing page is not
+  /// retried in a loop.
+  String? _filledFor;
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +101,26 @@ class _FindPhotographerScreenState
         }
       }
     });
+  }
+
+  /// A page the rating filter shrank can leave the list shorter than the
+  /// viewport: nothing scrolls, so ask for the next page once per cursor
+  /// until the list fills or the pages run out.
+  void _fillViewport() {
+    if (!mounted || !_scroll.hasClients) {
+      return;
+    }
+    final data = ref.read(findResultsProvider).value;
+    final cursor = data?.cursor;
+    if (data == null ||
+        cursor == null ||
+        data.loadingMore ||
+        cursor == _filledFor ||
+        _scroll.position.extentAfter >= _loadMoreExtent) {
+      return;
+    }
+    _filledFor = cursor;
+    ref.read(findResultsProvider.notifier).loadMore();
   }
 
   DateTime _today() {
@@ -263,6 +287,7 @@ class _FindPhotographerScreenState
     final filterCtl = ref.read(findFiltersProvider.notifier);
     final results = ref.watch(findResultsProvider);
     final origin = ref.watch(exploreResolutionProvider.select((r) => r.origin));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fillViewport());
 
     return ScreenCode(
       ScreenCodes.findPhotographer,
