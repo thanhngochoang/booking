@@ -577,6 +577,121 @@ class AppLocalizationsVi extends AppLocalizations {
   String get introBioTooLong => 'Tối đa 300 ký tự';
 
   @override
+  String get setupServicesHeading => 'Gói dịch vụ';
+
+  @override
+  String get setupServiceHint =>
+      'Khách đặt theo gói. Cần ít nhất một gói để hồ sơ hiện trong Tìm thợ ảnh.';
+
+  @override
+  String get setupNoPackages => 'Chưa có gói nào. Thêm gói đầu tiên bên dưới.';
+
+  @override
+  String get setupNeedPackage => 'Thêm ít nhất một gói để tiếp tục.';
+
+  @override
+  String get setupPackagesLoadError => 'Không tải được danh sách gói.';
+
+  @override
+  String get packageEditHeading => 'Sửa gói';
+
+  @override
+  String get packageNameLabel => 'Tên gói';
+
+  @override
+  String get packageNameHint => 'Ví dụ: Chân dung 2 giờ';
+
+  @override
+  String get packagePriceLabel => 'Giá (₫)';
+
+  @override
+  String get packageDurationLabel => 'Thời lượng';
+
+  @override
+  String get packageDurationHint => 'Chọn';
+
+  @override
+  String durationHours(String hours) {
+    return '$hours giờ';
+  }
+
+  @override
+  String get packageEditedLabel => 'Số ảnh hậu kỳ';
+
+  @override
+  String get packageDeliveryLabel => 'Giao sau (ngày)';
+
+  @override
+  String packagePhotos(int count) {
+    return '$count ảnh';
+  }
+
+  @override
+  String packageDelivery(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'giao $days ngày',
+      zero: 'giao trong ngày',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get packageAdd => 'Thêm gói này';
+
+  @override
+  String get packageSave => 'Lưu gói';
+
+  @override
+  String get packageCancelEdit => 'Huỷ sửa';
+
+  @override
+  String packageHideTooltip(String name) {
+    return 'Ẩn gói $name';
+  }
+
+  @override
+  String get packageHideTitle => 'Ẩn gói này?';
+
+  @override
+  String get packageHideBody =>
+      'Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.';
+
+  @override
+  String get packageHideConfirm => 'Ẩn gói';
+
+  @override
+  String get packageKeep => 'Giữ lại';
+
+  @override
+  String get packageAdded => 'Đã thêm gói.';
+
+  @override
+  String get packageSaved => 'Đã lưu gói.';
+
+  @override
+  String get packageHidden => 'Đã ẩn gói.';
+
+  @override
+  String get packageNameLength => 'Nhập tên gói từ 2 đến 60 ký tự';
+
+  @override
+  String get packagePriceRequired => 'Nhập giá lớn hơn 0';
+
+  @override
+  String get packagePriceTooHigh => 'Giá tối đa 1.000.000.000₫';
+
+  @override
+  String get packageDurationRequired => 'Chọn thời lượng';
+
+  @override
+  String get packageCountInvalid => 'Nhập số từ 0 đến 2000';
+
+  @override
+  String get packageDaysInvalid => 'Nhập số ngày từ 0 đến 90';
+
+  @override
   String get locationPromptTitle => 'Sự kiện gần bạn';
 
   @override

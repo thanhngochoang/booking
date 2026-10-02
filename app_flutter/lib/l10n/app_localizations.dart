@@ -1150,6 +1150,204 @@ abstract class AppLocalizations {
   /// **'Tối đa 300 ký tự'**
   String get introBioTooLong;
 
+  /// No description provided for @setupServicesHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói dịch vụ'**
+  String get setupServicesHeading;
+
+  /// No description provided for @setupServiceHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đặt theo gói. Cần ít nhất một gói để hồ sơ hiện trong Tìm thợ ảnh.'**
+  String get setupServiceHint;
+
+  /// No description provided for @setupNoPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có gói nào. Thêm gói đầu tiên bên dưới.'**
+  String get setupNoPackages;
+
+  /// No description provided for @setupNeedPackage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ít nhất một gói để tiếp tục.'**
+  String get setupNeedPackage;
+
+  /// No description provided for @setupPackagesLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách gói.'**
+  String get setupPackagesLoadError;
+
+  /// No description provided for @packageEditHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa gói'**
+  String get packageEditHeading;
+
+  /// No description provided for @packageNameLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên gói'**
+  String get packageNameLabel;
+
+  /// No description provided for @packageNameHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: Chân dung 2 giờ'**
+  String get packageNameHint;
+
+  /// No description provided for @packagePriceLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá (₫)'**
+  String get packagePriceLabel;
+
+  /// No description provided for @packageDurationLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thời lượng'**
+  String get packageDurationLabel;
+
+  /// No description provided for @packageDurationHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn'**
+  String get packageDurationHint;
+
+  /// No description provided for @durationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{hours} giờ'**
+  String durationHours(String hours);
+
+  /// No description provided for @packageEditedLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh hậu kỳ'**
+  String get packageEditedLabel;
+
+  /// No description provided for @packageDeliveryLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao sau (ngày)'**
+  String get packageDeliveryLabel;
+
+  /// No description provided for @packagePhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ảnh'**
+  String packagePhotos(int count);
+
+  /// No description provided for @packageDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'{days, plural, =0{giao trong ngày} other{giao {days} ngày}}'**
+  String packageDelivery(int days);
+
+  /// No description provided for @packageAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói này'**
+  String get packageAdd;
+
+  /// No description provided for @packageSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu gói'**
+  String get packageSave;
+
+  /// No description provided for @packageCancelEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ sửa'**
+  String get packageCancelEdit;
+
+  /// No description provided for @packageHideTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn gói {name}'**
+  String packageHideTooltip(String name);
+
+  /// No description provided for @packageHideTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn gói này?'**
+  String get packageHideTitle;
+
+  /// No description provided for @packageHideBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.'**
+  String get packageHideBody;
+
+  /// No description provided for @packageHideConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn gói'**
+  String get packageHideConfirm;
+
+  /// No description provided for @packageKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get packageKeep;
+
+  /// No description provided for @packageAdded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm gói.'**
+  String get packageAdded;
+
+  /// No description provided for @packageSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu gói.'**
+  String get packageSaved;
+
+  /// No description provided for @packageHidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ẩn gói.'**
+  String get packageHidden;
+
+  /// No description provided for @packageNameLength.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên gói từ 2 đến 60 ký tự'**
+  String get packageNameLength;
+
+  /// No description provided for @packagePriceRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập giá lớn hơn 0'**
+  String get packagePriceRequired;
+
+  /// No description provided for @packagePriceTooHigh.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá tối đa 1.000.000.000₫'**
+  String get packagePriceTooHigh;
+
+  /// No description provided for @packageDurationRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thời lượng'**
+  String get packageDurationRequired;
+
+  /// No description provided for @packageCountInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số từ 0 đến 2000'**
+  String get packageCountInvalid;
+
+  /// No description provided for @packageDaysInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số ngày từ 0 đến 90'**
+  String get packageDaysInvalid;
+
   /// No description provided for @locationPromptTitle.
   ///
   /// In vi, this message translates to:

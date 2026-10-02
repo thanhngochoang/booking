@@ -9,6 +9,7 @@ export 'package:photobooking/core/contact_channel.dart';
 export 'package:photobooking/core/format.dart';
 export 'package:photobooking/core/geo.dart';
 export 'package:photobooking/core/l10n_ext.dart';
+export 'package:photobooking/core/package_meta.dart';
 export 'package:photobooking/core/phone.dart';
 export 'package:photobooking/core/screen_codes.dart';
 export 'package:photobooking/core/text_fold.dart';
