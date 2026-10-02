@@ -202,3 +202,4 @@ Rủi ro cần chuẩn bị từ đầu: (a) mật khẩu Firebase Auth không x
 5. **Đăng nhập**: giữ Firebase Auth riêng làm IdP (dễ nhất, vẫn "phụ thuộc Firebase" một phần) hay chuyển hẳn sang OIDC khác? Quyết định ảnh hưởng bậc 5.
 6. **Thời hạn lưu**: thời hạn giữ `messages`, `recommendation_logs`, `audit_log` (đề xuất 12/6/60 tháng).
 7. **Dữ liệu từ app Java cũ** (`booking`, `albums`, `users`): có đưa vào bảng mới không (đề xuất chỉ `users` và `albums → posts`, theo spec gốc mục 5 phần Migration).
+8. Mã danh mục trùng giữa hai nhóm: `couple` là thể loại và cũng là khách phù hợp (seed ở relational-schema.md §6), trong khi `taxonomy_items.id` là khoá chính và `taxonomy/skills/items/{id}` là id tài liệu. Ứng dụng đã tra theo (`group`, `id`). Trước khi di trú cần chọn: khoá chính (`grp`, `id`) và khoá ngoại hai cột, hoặc đổi mã khách thành `couples` (cần di trú dữ liệu `audiences`).

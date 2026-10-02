@@ -107,9 +107,9 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S35 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) |
 | S36 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) |
 | S37 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) |
-| S38 | Kỹ năng, phần 1 (thể loại, mức độ) · bước 3/4 | `/setup/3`, `/profile/skills` | NAG | 2 | 🔧 đang làm (plan 2c: dữ liệu, rules xong; màn hình Task 7–12) |
-| S39 | Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp) | cùng màn S38, cuộn xuống | NAG | 2 | 🔧 đang làm (plan 2c) |
-| S40 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | 🔧 đang làm (plan 2c) |
+| S38 | Kỹ năng, phần 1 (thể loại, mức độ) · bước 3/4 | `/setup/3`, `/profile/skills` | NAG | 2 | ✅ đã làm (2c) |
+| S39 | Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp) | cùng màn S38, cuộn xuống | NAG | 2 | ✅ đã làm (2c) |
+| S40 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | ✅ đã làm (2c) |
 | S41 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm |
 | S42 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) |
 | S43 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
@@ -462,7 +462,7 @@ Thanh tab dưới dùng `TabBadge` (bong bóng đỏ, chữ trắng, "9+" từ m
 | Minh chứng (`evidencePostIds`) | 1–3 bài đăng của chính họ cho mỗi thể loại | Chỉ chọn trong bài đã đăng |
 
 - **Độ khớp hồ sơ** (`skills.completeness`, 0–100): 25 điểm thể loại (≥ 1) + 20 mức độ đã đặt cho mọi thể loại + 20 minh chứng cho mọi thể loại mức 3 + 10 phong cách + 10 ngôn ngữ + 10 khách phù hợp + 5 kỹ năng thêm. Do Function tính, chỉ để nhắc nhiếp ảnh gia; không hiện cho khách.
-- Danh mục lấy từ `taxonomy/skills` (Firestore, bản sao Remote Config), thêm kỹ năng mới không cần phát hành lại ứng dụng. Mỗi mục có `id`, `group`, `labels.vi`, `order`, `active`. Mục bị gỡ (`active: false`) vẫn hiện ở hồ sơ cũ nhưng không chọn mới được.
+- Danh mục lấy từ `taxonomy/skills` (Firestore, bản sao Remote Config), thêm kỹ năng mới không cần phát hành lại ứng dụng. Mỗi mục có `id`, `group`, `labels.vi`, `order`, `active`. Mục bị gỡ (`active: false`) vẫn hiện ở hồ sơ cũ nhưng không chọn mới được. Id chỉ duy nhất **trong một nhóm**: `couple` vừa là thể loại vừa là khách phù hợp, nên mọi tra cứu dùng cặp (`group`, `id`).
 - Vào từ bước 3/4 của thiết lập hồ sơ (S38) hoặc từ Hồ sơ → "Kỹ năng" (sửa lúc nào cũng được). Lưu mỗi lần đổi bước hoặc thoát; thoát giữa chừng hỏi lưu nháp.
 
 ### 3e.3 Dữ liệu
@@ -485,6 +485,7 @@ taxonomy/skills/items/{id}
 ```
 
 - Công khai (đọc bởi mọi người đã đăng nhập), chỉ chủ ghi `skills` (trừ `completeness`, `updatedAt` do Function ghi). Rules kiểm: id phải có trong `taxonomy`, đúng giới hạn số lượng, `evidencePostIds` thuộc bài của chính họ.
+- Cách kiểm hiện tại: rules so id với danh sách cố định trong `firestore.rules` (sao từ danh mục tích hợp; test `rules_catalogue_sync_test.dart` giữ hai bên trùng nhau, nên thêm mục danh mục cần deploy rules), kiểm giới hạn, mức 3 cần ≥ 1 minh chứng, không cho client đổi `completeness`/`skills.updatedAt`. Việc `evidencePostIds` thuộc bài của chính họ **không** kiểm trong rules (cần một lần đọc cho mỗi bài, vượt giới hạn 10 lần đọc); sheet S40 chỉ cho chọn bài của mình và Function `onPhotographerWrite` kiểm lại.
 - Function `onPhotographerWrite` kiểm tra lược đồ, tính `completeness`, rồi báo dịch vụ gợi ý cập nhật chỉ mục (3e.4).
 
 ### 3e.4 Dịch vụ gợi ý chạy riêng

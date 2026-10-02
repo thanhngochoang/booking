@@ -103,10 +103,10 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 - **Mục đích**: thu thập dữ liệu có cấu trúc cho dịch vụ gợi ý (spec chính 3e).
 - **Điểm vào → ra**: bước 3/4 thiết lập hoặc Hồ sơ → "Kỹ năng"; "Ảnh minh chứng" → S40; "Tiếp tục" → S34 (hoặc lưu và quay lại nếu sửa).
 - **Bố cục**: `StepProgress` 3/4; mô tả ngắn "Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó."; `CompletenessMeter` "Độ khớp hồ sơ 72%" + gợi ý việc kế tiếp; "Thể loại chụp" (chip nhiều chọn, "n / 6"); "Mức độ": một hàng `LevelSelector` (Cơ bản / Thành thạo / Chuyên sâu) cho mỗi thể loại đã chọn, nhãn "Chuyên sâu tối đa 3"; dòng "Chân dung: 2 / 3 ảnh minh chứng" + "Chỉnh"; thanh dưới "Quay lại" + "Tiếp tục".
-- **Dữ liệu**: `skillsControllerProvider` giữ nháp; danh mục từ `taxonomy/skills`; lưu vào `photographers/{uid}.skills`; `completeness` do Function tính và trả về qua snapshot.
+- **Dữ liệu**: `skillsControllerProvider` giữ nháp; nháp tự lưu **trên máy** (`SharedPreferences`, khoá `skillsDraft.<uid>`) sau mỗi thay đổi, nên nháp được phép chưa hợp lệ; Firestore chỉ nhận kỹ năng hợp lệ khi bấm "Tiếp tục"/"Lưu thay đổi" (một lần ghi `photographers/{uid}.skills`, gộp với dữ liệu sẵn có). Danh mục là bản tích hợp (`builtInSkillCatalog`, khoá theo nhóm + id); đọc `taxonomy/skills` từ xa để sau. Độ khớp hồ sơ tính ngay trên máy bằng đúng công thức 3e.2 (`skillsCompleteness`); khi có Function `onPhotographerWrite` thì Function ghi `completeness` theo cùng công thức. Không dùng snapshot.
 - **Trạng thái**: chọn thể loại thứ 7 → báo "Tối đa 6 thể loại"; mức "Chuyên sâu" thứ 4 → báo, giữ mức cũ; mức 3 thiếu minh chứng → cảnh báo vàng ở dòng đó và chặn "Tiếp tục"; không chọn thể loại nào → nút vô hiệu; lỗi tải danh mục → dùng bản tích hợp sẵn.
-- **Tương tác**: chọn thể loại tự thêm một hàng mức mặc định "Thành thạo"; bỏ chọn xoá hàng mức và minh chứng (hỏi xác nhận nếu đã có minh chứng); lưu nháp mỗi lần đổi.
-- **Chuỗi**: `s38_title` "Kỹ năng", `s38_intro` "Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó.", `s38_fit` "Độ khớp hồ sơ", `s38_types` "Thể loại chụp", `s38_levels` "Mức độ", `s38_levelBasic` "Cơ bản", `s38_levelGood` "Thành thạo", `s38_levelExpert` "Chuyên sâu", `s38_maxExpert` "Chuyên sâu tối đa 3", `s38_evidence` "{name}: {n} / 3 ảnh minh chứng", `s38_tooMany` "Tối đa 6 thể loại".
+- **Tương tác**: chọn thể loại tự thêm một hàng mức mặc định "Thành thạo"; bỏ chọn xoá hàng mức và minh chứng (hỏi xác nhận nếu đã có minh chứng); lưu nháp mỗi lần đổi. Thoát khi có thay đổi: sheet "Lưu bản nháp?" với "Giữ bản nháp" (giữ nháp trên máy) và nút đỏ "Bỏ thay đổi". Chế độ sửa: nút chính "Lưu thay đổi" chỉ bật khi khác bản đã lưu.
+- **Chuỗi**: `s38_title` "Kỹ năng", `s38_intro` "Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó.", `s38_fit` "Độ khớp hồ sơ", `s38_types` "Thể loại chụp", `s38_levels` "Mức độ", `s38_levelBasic` "Cơ bản", `s38_levelGood` "Thành thạo", `s38_levelExpert` "Chuyên sâu", `s38_maxExpert` "Chuyên sâu tối đa 3", `s38_evidence` "{name}: {n} / 3 ảnh minh chứng", `s38_tooMany` "Tối đa 6 thể loại". Khoá arb dạng camelCase: `skills*`, `completeness*` (`lib/l10n/app_vi.arb`).
 - **Phân tích**: `skills_save{specialties, expert}`, `skills_step{n}`.
 - **Chấp nhận**: không lưu quá giới hạn (kiểm cả client lẫn rules); `LevelSelector` truy cập được bằng bàn phím và đọc to "Chân dung, mức Chuyên sâu"; id lưu đúng theo `taxonomy`.
 
@@ -125,11 +125,11 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 
 ## S40 · Minh chứng kỹ năng
 
-- **Thông tin**: `/profile/skills/evidence?skill=…` (sheet) · sub‑project 2 · Chưa có.
+- **Thông tin**: `/profile/skills/evidence?skill=…` (sheet mở từ dòng "Chỉnh" ở S38; link này mở S38 ở chế độ sửa rồi mở sheet cho thể loại `skill`) · sub‑project 2 · Chưa có.
 - **Mục đích**: gắn 1–3 ảnh thật của mình vào một thể loại để thuật toán tin cậy hơn.
 - **Bố cục**: tiêu đề "Minh chứng · {thể loại}" + "n / 3"; giải thích; lưới 3 cột ảnh portfolio (ô chọn có viền và dấu); nút "Xong".
-- **Dữ liệu**: `posts (photographerId)` của chính mình; ghi `evidencePostIds` của thể loại.
-- **Trạng thái**: chưa có bài nào → empty "Đăng bài trước" + nút tới S21; chọn quá 3 → báo, bỏ chọn một ảnh để chọn thêm; mức "Chuyên sâu" cần ≥ 1 ảnh mới đóng sheet bằng "Xong".
+- **Dữ liệu**: `posts (photographerId)` của chính mình; ghi `evidencePostIds` của thể loại. Chỉ bài có `authorId` là chính nhiếp ảnh gia (không gồm bài `real_shoot` của khách gắn vào trang), 30 bài mỗi trang.
+- **Trạng thái**: chưa có bài nào → empty "Đăng bài trước" + nút tới S21; chọn quá 3 → âm báo và dòng báo ngay trong sheet (SnackBar sẽ bị modal che), bỏ chọn một ảnh để chọn thêm; mức "Chuyên sâu" cần ≥ 1 ảnh mới đóng sheet bằng "Xong".
 - **Chuỗi**: `s40_title` "Minh chứng · {name}", `s40_body` "Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.", `s40_done` "Xong", `s40_empty` "Đăng bài trước".
 - **Phân tích**: `skill_evidence_set{skillId, count}`.
 - **Chấp nhận**: chỉ chọn được bài của chính mình; bài bị xoá thì gỡ khỏi minh chứng và hạ nhắc nhở ở S38.
