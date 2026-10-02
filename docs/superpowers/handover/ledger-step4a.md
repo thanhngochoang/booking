@@ -7,3 +7,6 @@ Ruling: workspace ledger updated task-by-task.
 
 Task 1: dispatched
 Task 1: complete (policy, errors, types, shared fixtures, 103 tests pass, typecheck and lint clean)
+
+Task 2: dispatched
+Task 2: complete (booking state machine, decideTransition, roleOf, 121 tests pass, typecheck and lint clean)

@@ -3,26 +3,33 @@
  * Follows data-model/domain-model.md §2.4, §4, §5.
  */
 
-export type BookingStatus =
-  | 'draft'
-  | 'requested'
-  | 'accepted'
-  | 'declined'
-  | 'expired'
-  | 'cancelled'
-  | 'upcoming'
-  | 'completed'
-  | 'reviewed';
+export const BOOKING_STATUSES = [
+  'draft',
+  'requested',
+  'accepted',
+  'declined',
+  'expired',
+  'cancelled',
+  'upcoming',
+  'completed',
+  'reviewed',
+] as const;
 
-export type EscrowStatus =
-  | 'held'
-  | 'released'
-  | 'paid_out'
-  | 'partially_refunded'
-  | 'refunded'
-  | 'disputed';
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
-export type PaymentProvider = 'momo' | 'vnpay' | 'fake';
+export const ESCROW_STATUSES = [
+  'held',
+  'released',
+  'paid_out',
+  'partially_refunded',
+  'refunded',
+  'disputed',
+] as const;
+
+export type EscrowStatus = (typeof ESCROW_STATUSES)[number];
+
+export const PAYMENT_PROVIDERS = ['momo', 'vnpay', 'fake'] as const;
+export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 
 export interface BookingServiceSnapshot {
   readonly name: string;

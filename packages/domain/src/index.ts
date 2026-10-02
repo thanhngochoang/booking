@@ -9,3 +9,4 @@ export * from './skills.js';
 export * from './score_skills.js';
 export * from './booking.js';
 export * from './booking_policy.js';
+export * from './booking_machine.js';
