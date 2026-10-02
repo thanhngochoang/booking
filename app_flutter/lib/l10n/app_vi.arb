@@ -478,5 +478,42 @@
   "calendarOpenEvent": "Quản lý sự kiện",
   "calendarSaveError": "Không lưu được lịch. Thử lại nhé.",
   "calendarLoadError": "Không tải được lịch.",
-  "calendarPickDay": "Chọn một ngày để xem chi tiết."
+  "calendarPickDay": "Chọn một ngày để xem chi tiết.",
+  "createAddPhotos": "Thêm ảnh",
+  "createPhotosCount": "{n} / {max} ảnh",
+  "@createPhotosCount": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "createCaptionLabel": "Mô tả",
+  "createCaptionHint": "Chiều muộn ở bến Bạch Đằng…",
+  "createServiceLabel": "Gói dịch vụ · bắt buộc",
+  "createServicePick": "Chọn gói",
+  "createServiceTitle": "Chọn gói dịch vụ",
+  "createServiceRequired": "Chọn gói dịch vụ cho bài đăng",
+  "createPhotosRequired": "Thêm ít nhất một ảnh",
+  "createNoServices": "Bạn chưa có gói dịch vụ nào. Thêm gói để đăng bài.",
+  "createAddService": "Thêm gói",
+  "createServicesError": "Không tải được gói dịch vụ.",
+  "createLocationLabel": "Địa điểm",
+  "createStyleLabel": "Phong cách",
+  "createStyleNone": "Không chọn",
+  "createStyleTitle": "Phong cách",
+  "createPortfolio": "Thêm vào portfolio",
+  "createPublish": "Đăng",
+  "createRemove": "Gỡ ảnh",
+  "createMoveUp": "Đưa lên",
+  "createMoveDown": "Đưa xuống",
+  "createRetryPhoto": "Tải lại ảnh",
+  "createUploading": "Đang tải {percent}%",
+  "@createUploading": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "createUploadFailed": "Không tải được ảnh. Thử lại nhé.",
+  "createPublishFailed": "Không đăng được bài. Kiểm tra mạng rồi thử lại.",
+  "createPublished": "Đã đăng bài"
 }

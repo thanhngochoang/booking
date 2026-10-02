@@ -2235,6 +2235,162 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn một ngày để xem chi tiết.'**
   String get calendarPickDay;
+
+  /// No description provided for @createAddPhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh'**
+  String get createAddPhotos;
+
+  /// No description provided for @createPhotosCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / {max} ảnh'**
+  String createPhotosCount(int n, int max);
+
+  /// No description provided for @createCaptionLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả'**
+  String get createCaptionLabel;
+
+  /// No description provided for @createCaptionHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chiều muộn ở bến Bạch Đằng…'**
+  String get createCaptionHint;
+
+  /// No description provided for @createServiceLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói dịch vụ · bắt buộc'**
+  String get createServiceLabel;
+
+  /// No description provided for @createServicePick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn gói'**
+  String get createServicePick;
+
+  /// No description provided for @createServiceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn gói dịch vụ'**
+  String get createServiceTitle;
+
+  /// No description provided for @createServiceRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn gói dịch vụ cho bài đăng'**
+  String get createServiceRequired;
+
+  /// No description provided for @createPhotosRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ít nhất một ảnh'**
+  String get createPhotosRequired;
+
+  /// No description provided for @createNoServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa có gói dịch vụ nào. Thêm gói để đăng bài.'**
+  String get createNoServices;
+
+  /// No description provided for @createAddService.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói'**
+  String get createAddService;
+
+  /// No description provided for @createServicesError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được gói dịch vụ.'**
+  String get createServicesError;
+
+  /// No description provided for @createLocationLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm'**
+  String get createLocationLabel;
+
+  /// No description provided for @createStyleLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phong cách'**
+  String get createStyleLabel;
+
+  /// No description provided for @createStyleNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không chọn'**
+  String get createStyleNone;
+
+  /// No description provided for @createStyleTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phong cách'**
+  String get createStyleTitle;
+
+  /// No description provided for @createPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm vào portfolio'**
+  String get createPortfolio;
+
+  /// No description provided for @createPublish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng'**
+  String get createPublish;
+
+  /// No description provided for @createRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ ảnh'**
+  String get createRemove;
+
+  /// No description provided for @createMoveUp.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa lên'**
+  String get createMoveUp;
+
+  /// No description provided for @createMoveDown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa xuống'**
+  String get createMoveDown;
+
+  /// No description provided for @createRetryPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải lại ảnh'**
+  String get createRetryPhoto;
+
+  /// No description provided for @createUploading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tải {percent}%'**
+  String createUploading(int percent);
+
+  /// No description provided for @createUploadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ảnh. Thử lại nhé.'**
+  String get createUploadFailed;
+
+  /// No description provided for @createPublishFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đăng được bài. Kiểm tra mạng rồi thử lại.'**
+  String get createPublishFailed;
+
+  /// No description provided for @createPublished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng bài'**
+  String get createPublished;
 }
 
 class _AppLocalizationsDelegate
