@@ -667,6 +667,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `taxonomy/skills/items/{id}`, `taxonomy/areas/…` | `taxonomy_items` | |
 | `payoutAccounts/{uid}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
+| `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
 | `config/{key}` | `app_config` | |
 | Custom claims (`role`, `staffRole`) | `users.role`, `users.staff_role` | Bảng là nguồn sự thật; claim chỉ là bản sao trong token |
 

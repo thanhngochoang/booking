@@ -584,3 +584,12 @@ test('server skills fields stay absent when none is stored; skills cannot be del
   await assertFails(updateDoc(doc(db, 'photographers/k15'), { skills: deleteField() }));
   await assertFails(updateDoc(doc(db, 'photographers/k15'), { 'skills.completeness': null }));
 });
+
+test('contact access log is server-only: no client reads or writes, not even the requester', async () => {
+  await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'contact_access_log/l1'), {
+    requesterId: 'u1', subjectType: 'booking', subjectId: 'b1', channel: 'call', granted: true,
+  }));
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(getDoc(doc(db, 'contact_access_log/l1')));
+  await assertFails(setDoc(doc(db, 'contact_access_log/l2'), { requesterId: 'u1' }));
+});

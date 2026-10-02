@@ -311,6 +311,12 @@ service cloud.firestore {
       allow delete: if ownMarkerName(docId) && ownMarkerDoc();
     }
 
+    // ContactAccessLog: written only by getContactLink through the Admin SDK (rules do not apply
+    // to it). No client may read or write it, not even the requester.
+    match /contact_access_log/{logId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
