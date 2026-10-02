@@ -24,7 +24,7 @@ State of the Flutter rewrite (`app_flutter/`, branch `flutter-rewrite`) when thi
 ## Things not to forget
 
 - The Genymotion device has an old `com.thanhbk.photobooking` signed with another key: installing the new APK needs an uninstall first (wipes its data; ask the user).
-- Commit `5c8f55e` (local history, not pushed) once contained `app_flutter/firebase/.certs/truststore.jks` and `local.properties`; they are untracked and ignored now, but still in history. Decide with the user before pushing whether to rewrite that history.
+- Commit `5c8f55e` (already on `origin/flutter-rewrite`) once contained `app_flutter/firebase/.certs/truststore.jks` and `local.properties`; they are untracked and ignored now, but remain in the remote history. If that truststore holds anything sensitive, rotate it; rewriting shared history is the user's call.
 - Firestore rules for `photographers/{uid}` are close to the 1000-expression limit (~880 for the largest skills profile). New validators on that document must run only when their own field changes (`photographerFieldsOk`).
 - Rules tests: `cd app_flutter/firebase/rules-test && npm test` (emulator; needs to run outside the sandbox).
 - Ledgers of the finished plans 3a1, 3a2, 3b1, 3b2 are here for their rulings and parked findings.
