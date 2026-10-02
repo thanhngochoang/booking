@@ -70,6 +70,7 @@ Everything above describes the legacy Java app, kept as reference. The rewrite i
 - **One primary action per screen**: `AppButton.primary` (filled by `CtaSurface`: theme gradient, or the user's blurred avatar). This means the screen's main CTA; a small primary button on each list card is allowed where the mock shows one (e.g. "Đặt" on `PhotographerCard`). Cancel/decline is a red button inside a confirmation sheet, never the gradient button.
 - **Imports**: `package:photobooking/...` only (enforced by lint), and features import `core/core.dart`, not files inside `core/`.
 - **Firebase isolation**: `cloud_firestore`/`firebase_*` may only appear in the data adapters, `firebase_options.dart` and `main.dart`; domain and features depend on repository interfaces. Follow the id, time, money and enum conventions in `data-model/README.md` (ULID/opaque ids, UTC instants, integer VND, string enum codes, no Firebase types in the domain).
+- **Server code**: Cloud Functions live in `app_flutter/firebase/functions` (thin adapters: callables, Firestore access, wiring; region `asia-southeast1`); business rules live in `packages/domain` (TypeScript, no Firebase or Node imports, enforced by lint and a test) so a self-hosted server can reuse them. Seed accounts for the emulators are listed in `app_flutter/firebase/functions/seed/README.md` (test values only).
 - **Strings** live in `lib/l10n/app_vi.arb` (run `flutter gen-l10n`); no hard-coded UI text. Free events show the tag "Không thu phí", never "0₫".
 - **Money and contact rules** (product decisions, do not weaken): deposits and ticket money are held in escrow until the shoot/event is completed; phone, Zalo and WhatsApp channels unlock only after booking/ticket payment (before that, only in-app "inquiry" chat); a customer needs a phone number to book; phone numbers never go in the public `users/{uid}` document.
 
@@ -81,6 +82,11 @@ export PATH="$PWD/../.flutter/bin:$PATH"
 flutter analyze && flutter test
 dart run tool/gen_tokens.dart      # after editing design-system/tokens.json
 flutter gen-l10n                   # after editing lib/l10n/app_vi.arb
+../scripts/backend-local.sh        # local backend: Auth/Firestore/Functions/Storage emulators + UI :4000, seed; --fresh, --seed, --lan
+flutter run --dart-define=USE_EMULATORS=true                                          # debug app → local backend (Android emulator 10.0.2.2, iOS Simulator 127.0.0.1)
+flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=10.0.3.2     # Genymotion (backend with --lan); real device: the Mac's LAN IP
+(cd ../packages/domain && npm test)                                                   # pure domain rules (TypeScript, no Firebase)
+(cd firebase/functions && npm test && npm run test:integration)                       # Cloud Functions unit + emulator tests (outside the Claude sandbox)
 ```
 
 Firebase rules/indexes live in `app_flutter/firebase/`. `.firebaserc` has aliases only, no default: `dev` = `booking-c1922`; `prod` is added once the production project exists (it is a separate project). From `app_flutter/firebase/rules-test/`: `npm test` (emulator; not run while executing plans, the sandbox cannot run it, CI runs it on push), `npm run deploy:rules:dev|prod`, `npm run deploy:storage:dev|prod`. CI (`.github/workflows/firebase-deploy.yml`) deploys Firestore to GitHub environment `dev` on push to `flutter-rewrite`/`develop` and to `production` on push to `main`; project id and key come from each environment (`FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT`), deploy is skipped while the id is unset; Storage only on manual run. Setup steps: `docs/FIREBASE-SETUP.md` (sections 6, 9, 10).

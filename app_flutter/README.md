@@ -43,6 +43,53 @@ flutter analyze && flutter test
 cd firebase/rules-test && npm install && npm test   # Firestore rules on the emulator (needs JDK 17+)
 ```
 
+## Local backend (Firebase Emulator Suite)
+
+One command from the repo root (Node 22+, JDK 17 via `scripts/env.sh`):
+
+```bash
+scripts/backend-local.sh            # start; reuses saved data, seeds on the first run
+scripts/backend-local.sh --fresh    # wipe saved data, then seed
+scripts/backend-local.sh --seed     # re-apply the seed on top of saved data
+scripts/backend-local.sh --lan      # listen on 0.0.0.0 (Genymotion, real devices)
+```
+
+| Service | Port | Notes |
+|---|---|---|
+| Emulator UI | 4000 | http://127.0.0.1:4000 |
+| Auth | 9099 | seed accounts: `firebase/functions/seed/README.md` (password `seed-password-1`) |
+| Firestore | 8080 | rules from `firebase/firestore.rules` |
+| Functions | 5001 | `asia-southeast1`, rebuilt by `node build.mjs --watch` |
+| Storage | 9199 | rules from `firebase/storage.rules` (deny all for now) |
+
+Data is saved to `firebase/.emulator-data/` (gitignored) on Ctrl-C. The emulator project id is the
+app's own (`android/app/google-services.json`), because Android initialises Firebase natively with it;
+override with `FIREBASE_PROJECT=…`.
+
+Run the debug app against it (from `app_flutter/`):
+
+| Target | Command | Backend flag |
+|---|---|---|
+| Android emulator | `flutter run --dart-define=USE_EMULATORS=true` (host `10.0.2.2`) | — |
+| iOS Simulator | `flutter run --dart-define=USE_EMULATORS=true` (host `127.0.0.1`); needs the iOS enablement plan first | — |
+| Genymotion | `flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=10.0.3.2` | `--lan` |
+| Real Android/iOS device | `--dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=$(ipconfig getifaddr en0)` (same Wi-Fi) | `--lan` |
+| Real Android via USB | `adb reverse tcp:9099 tcp:9099 && adb reverse tcp:8080 tcp:8080 && adb reverse tcp:5001 tcp:5001 && adb reverse tcp:9199 tcp:9199`, then `--dart-define=EMULATOR_HOST=127.0.0.1` | — |
+
+Only debug builds honour `USE_EMULATORS`; the app logs `Firebase: using local emulators at <host>`.
+When switching an installed app between the cloud and the emulators, clear its data first
+(`adb shell pm clear com.thanhbk.photobooking`) so a cloud sign-in is not reused. App Check is not
+enforced locally. Inside the Claude Code sandbox the Functions emulator cannot open its Unix socket;
+run the script and the emulator tests outside it.
+
+Backend tests:
+
+```bash
+(cd ../packages/domain && npm test)                                         # pure rules, no emulator
+(cd firebase/functions && npm test && npm run test:integration)              # unit + emulator integration
+(cd firebase/functions && npm run test:perf)                                 # local performance budgets
+```
+
 ## Layout
 
 | Folder | Holds |

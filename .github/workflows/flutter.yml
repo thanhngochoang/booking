@@ -3,7 +3,7 @@ on:
   push:
     branches: [flutter-rewrite, develop, main]
   pull_request:
-    paths: ['app_flutter/**', 'design-system/**', '.github/workflows/flutter.yml']
+    paths: ['app_flutter/**', 'design-system/**', 'packages/**', '.github/workflows/flutter.yml']
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -40,5 +40,11 @@ jobs:
       - name: Firestore rules tests (emulator)
         working-directory: app_flutter/firebase/rules-test
         run: npm ci && npm test
+      - name: Domain package (pure TypeScript)
+        working-directory: packages/domain
+        run: npm ci && npm run typecheck && npm run lint && npm test
+      - name: Cloud Functions (unit + emulator integration)
+        working-directory: app_flutter/firebase/functions
+        run: npm ci && npm run lint && npm test && npm run test:integration
       # Android build needs google-services.json; enable once it is stored as a secret:
       #   echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json && flutter build apk --debug
