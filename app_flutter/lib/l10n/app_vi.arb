@@ -326,6 +326,7 @@
   "skillEvidenceMax": "Tối đa 3 ảnh. Bỏ chọn một ảnh để chọn ảnh khác.",
   "skillEvidenceNeedOne": "Mức Chuyên sâu cần ít nhất 1 ảnh",
   "skillEvidenceLoadError": "Không tải được bài đăng của bạn.",
+  "skillEvidenceLoadMore": "Tải thêm",
   "skillEvidenceLoadMoreRetry": "Không tải thêm được. Thử lại",
   "skillsTitle": "Kỹ năng",
   "skillsIntro": "Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó.",

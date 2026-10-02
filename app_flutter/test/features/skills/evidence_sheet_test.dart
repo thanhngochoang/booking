@@ -303,6 +303,52 @@ void main() {
     expect(find.byKey(const Key('evidence-m2')), findsOneWidget);
   });
 
+  testWidgets('bound hit with a few own posts keeps loading without scroll', (
+    tester,
+  ) async {
+    final w = await SkillsWorld.create(
+      posts: (uid) => [
+        for (var i = 0; i < 5; i++)
+          fixturePost(
+            'm$i',
+            photographerId: uid,
+            age: Duration(minutes: i),
+          ),
+        for (var i = 0; i < 700; i++)
+          _customerPost('c$i', uid, Duration(hours: 1, minutes: i)),
+        for (var i = 5; i < 8; i++)
+          fixturePost(
+            'm$i',
+            photographerId: uid,
+            age: Duration(days: 2 + i),
+          ),
+      ],
+    );
+    await tester.pumpWidget(_app(w, _Probe()));
+    await _open(tester);
+    expect(w.posts.byPhotographerCursors, hasLength(24));
+    expect(find.byKey(const Key('evidence-m5')), findsOneWidget);
+  });
+
+  testWidgets(
+    '120 customer-only pages: 100 requested, then empty state and a manual row',
+    (tester) async {
+      final w = await SkillsWorld.create(
+        posts: (uid) => [
+          for (var i = 0; i < 4500; i++)
+            _customerPost('c$i', uid, Duration(minutes: i + 1)),
+        ],
+      );
+      await tester.pumpWidget(_app(w, _Probe()));
+      await _open(tester);
+      expect(w.posts.byPhotographerCursors, hasLength(100));
+      expect(find.text('Đăng bài trước'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('evidence-load-more')));
+      await tester.pumpAndSettle();
+      expect(w.posts.byPhotographerCursors, hasLength(120));
+    },
+  );
+
   testWidgets('a failed next page shows a retry row that asks again', (
     tester,
   ) async {

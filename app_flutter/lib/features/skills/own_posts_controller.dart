@@ -12,6 +12,7 @@ class OwnPostsState {
     this.nextCursor,
     this.loadingMore = false,
     this.loadMoreFailed = false,
+    this.capped = false,
   });
 
   final List<PostThumb> posts;
@@ -21,6 +22,10 @@ class OwnPostsState {
   /// The next page failed; scrolling no longer asks for it, the sheet offers
   /// a retry row ([OwnPostsController.retryLoadMore]).
   final bool loadMoreFailed;
+
+  /// The session read [OwnPostsController.maxPages] pages and stopped; more
+  /// exist, the sheet offers a manual "Tải thêm".
+  final bool capped;
 
   bool get hasMore => nextCursor != null;
 }
@@ -37,13 +42,18 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
   static const pageSize = 30;
   static const maxPagesPerLoad = 20;
 
+  /// Total pages one sheet session reads on its own.
+  static const maxPages = 100;
+
   late String _uid;
+  int _pages = 0;
 
   @override
   Future<OwnPostsState> build() async {
     final uid = ref.read(authRepositoryProvider).currentUser?.uid;
     if (uid == null) throw StateError('signed_out');
     _uid = uid;
+    _pages = 0;
     final chunk = await _fetch(null);
     if (chunk.posts.isEmpty && chunk.failed) {
       Error.throwWithStackTrace(chunk.error!, chunk.stackTrace!);
@@ -52,8 +62,11 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
       posts: chunk.posts,
       nextCursor: chunk.cursor,
       loadMoreFailed: chunk.failed,
+      capped: _capped(chunk.cursor),
     );
   }
+
+  bool _capped(String? cursor) => cursor != null && _pages >= maxPages;
 
   /// Only what the photographer posted themselves, with a photo.
   List<PostThumb> _thumbs(PostPage page) => [
@@ -69,13 +82,15 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
     final repo = ref.read(postRepositoryProvider);
     final posts = <PostThumb>[];
     var next = cursor;
-    for (var i = 0; i < maxPagesPerLoad; i++) {
+    for (var i = 0; i < maxPagesPerLoad && _pages < maxPages; i++) {
       final PostPage page;
       try {
         page = await repo.byPhotographer(_uid, cursor: next, limit: pageSize);
       } catch (e, st) {
         return _Chunk(posts, next, error: e, stackTrace: st);
       }
+      if (!ref.mounted) break;
+      _pages++;
       posts.addAll(_thumbs(page));
       next = page.nextCursor;
       if (next == null || posts.length >= pageSize) break;
@@ -88,6 +103,14 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
   Future<void> loadMore() async {
     final current = state.value;
     if (current == null || current.loadMoreFailed) return;
+    await _loadMore(current);
+  }
+
+  /// The "Tải thêm" row after the session cap: one more chunk.
+  Future<void> loadMoreManually() async {
+    final current = state.value;
+    if (current == null || !current.capped) return;
+    _pages = maxPages - maxPagesPerLoad;
     await _loadMore(current);
   }
 
@@ -115,6 +138,7 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
         posts: [...current.posts, ...chunk.posts],
         nextCursor: chunk.cursor,
         loadMoreFailed: chunk.failed,
+        capped: _capped(chunk.cursor),
       ),
     );
   }

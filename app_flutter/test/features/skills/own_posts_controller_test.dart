@@ -1,4 +1,6 @@
 // test/features/skills/own_posts_controller_test.dart
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/features/skills/own_posts_controller.dart';
@@ -199,6 +201,54 @@ void main() {
     final all = c.read(ownPostsProvider).requireValue;
     expect(all.posts.map((p) => p.id), ['m0', 'm1', 'm2']);
     expect(all.hasMore, isFalse);
+  });
+
+  test(
+    'a session reads at most 100 pages, then waits for a manual chunk',
+    () async {
+      final w = await SkillsWorld.create(
+        posts: (uid) => [
+          for (var i = 0; i < 4500; i++)
+            _customer('c$i', uid, Duration(minutes: i + 1)),
+        ],
+      );
+      final c = w.container();
+      addTearDown(c.dispose);
+      c.listen(ownPostsProvider, (_, _) {});
+      await c.read(ownPostsProvider.future);
+      final n = c.read(ownPostsProvider.notifier);
+      for (var i = 0; i < 10; i++) {
+        await n.loadMore();
+      }
+      expect(w.posts.byPhotographerCursors, hasLength(100));
+      final s = c.read(ownPostsProvider).requireValue;
+      expect(s.capped, isTrue);
+      expect(s.hasMore, isTrue);
+      await n.loadMoreManually();
+      expect(w.posts.byPhotographerCursors, hasLength(120));
+      expect(c.read(ownPostsProvider).requireValue.capped, isTrue);
+    },
+  );
+
+  test('closing the sheet stops the read chain', () async {
+    final w = await SkillsWorld.create(
+      posts: (uid) => [
+        for (var i = 0; i < 300; i++)
+          _customer('c$i', uid, Duration(minutes: i + 1)),
+      ],
+    );
+    final gate = Completer<void>();
+    w.posts.holdByPhotographer = gate.future;
+    final c = w.container();
+    addTearDown(c.dispose);
+    final sub = c.listen(ownPostsProvider, (_, _) {});
+    await Future<void>.delayed(Duration.zero);
+    expect(w.posts.byPhotographerCursors, hasLength(1));
+    sub.close();
+    await Future<void>.delayed(Duration.zero);
+    gate.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(w.posts.byPhotographerCursors, hasLength(1));
   });
 
   test(

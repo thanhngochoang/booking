@@ -54,6 +54,14 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
     widget.onCreatePost();
   }
 
+  /// Short of a page of own posts with pages left: the grid cannot scroll, so
+  /// the sheet keeps asking itself (not after a failure or the session cap).
+  bool _keepLoading(OwnPostsState s) =>
+      s.posts.length < OwnPostsController.pageSize &&
+      s.hasMore &&
+      !s.loadMoreFailed &&
+      !s.capped;
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -119,13 +127,10 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                   onRetry: () => ref.invalidate(ownPostsProvider),
                 ),
                 data: (s) => s.posts.isEmpty
-                    ? (s.hasMore
-                          ? _KeepLoading(
-                              failed: s.loadMoreFailed,
-                              onLoad: () => ref
-                                  .read(ownPostsProvider.notifier)
-                                  .loadMore(),
-                            )
+                    ? (_keepLoading(s)
+                          ? const _GridSkeleton()
+                          : s.hasMore && !s.capped
+                          ? const SizedBox.shrink()
                           : EmptyState(
                               title: l.skillEvidenceEmpty,
                               body: l.skillEvidenceEmptyBody,
@@ -147,6 +152,21 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                       ),
               ),
             ),
+            if (posts.value case final s? when _keepLoading(s))
+              _KeepLoading(
+                onLoad: () => ref.read(ownPostsProvider.notifier).loadMore(),
+              ),
+            if (posts.value case final s?
+                when s.capped && !s.loadingMore && !s.loadMoreFailed)
+              SizedBox(
+                height: controlHeight,
+                child: TextButton(
+                  key: const Key('evidence-load-more'),
+                  onPressed: () =>
+                      ref.read(ownPostsProvider.notifier).loadMoreManually(),
+                  child: Text(l.skillEvidenceLoadMore),
+                ),
+              ),
             if ((posts.value?.loadingMore ?? false) && hasPosts)
               const SizedBox(
                 height: controlHeight,
@@ -199,12 +219,11 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
   }
 }
 
-/// No own post yet but pages remain (the call hit its page bound): shows
-/// the skeleton and asks for the next chunk until posts or the end arrive.
+/// An invisible trigger: asks for the next chunk whenever it is built while
+/// the grid is short of a page (the controller ignores calls in flight).
 class _KeepLoading extends StatefulWidget {
-  const _KeepLoading({required this.failed, required this.onLoad});
+  const _KeepLoading({required this.onLoad});
 
-  final bool failed;
   final VoidCallback onLoad;
 
   @override
@@ -225,14 +244,13 @@ class _KeepLoadingState extends State<_KeepLoading> {
   }
 
   void _ask() {
-    if (widget.failed) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !widget.failed) widget.onLoad();
+      if (mounted) widget.onLoad();
     });
   }
 
   @override
-  Widget build(BuildContext context) => const _GridSkeleton();
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 class _GridSkeleton extends StatelessWidget {
