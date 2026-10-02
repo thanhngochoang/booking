@@ -31,3 +31,6 @@ Task 8: complete (Firestore security rules for bookings/private/contact & escrow
 
 Task 9: dispatched
 Task 9: complete (seed fixtures across requested/accepted/upcoming/completed states with payments, ledger entries, contact copy, availability, 58 functions unit tests pass, typecheck and lint clean)
+
+Task 10: dispatched
+Task 10: complete (Flutter booking domain models, mirror rules, repository port, firestore adapter, providers, fake repository, fixtures, 1405 tests pass, analyze clean)
