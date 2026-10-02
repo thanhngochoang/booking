@@ -713,4 +713,21 @@ class AppLocalizationsVi extends AppLocalizations {
   String completenessPercent(int percent) {
     return '$percent%';
   }
+
+  @override
+  String get skillsLevelBasic => 'Cơ bản';
+
+  @override
+  String get skillsLevelGood => 'Thành thạo';
+
+  @override
+  String get skillsLevelExpert => 'Chuyên sâu';
+
+  @override
+  String skillsLevelSemantics(String name, String level) {
+    return '$name, mức $level';
+  }
+
+  @override
+  String get skillsExpertFull => 'Đã đủ 3 mức Chuyên sâu';
 }

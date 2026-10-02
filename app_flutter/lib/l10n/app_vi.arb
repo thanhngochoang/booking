@@ -287,5 +287,16 @@
     "placeholders": {
       "percent": {"type": "int"}
     }
-  }
+  },
+  "skillsLevelBasic": "Cơ bản",
+  "skillsLevelGood": "Thành thạo",
+  "skillsLevelExpert": "Chuyên sâu",
+  "skillsLevelSemantics": "{name}, mức {level}",
+  "@skillsLevelSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "String"}
+    }
+  },
+  "skillsExpertFull": "Đã đủ 3 mức Chuyên sâu"
 }

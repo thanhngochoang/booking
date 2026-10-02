@@ -32,6 +32,7 @@ export 'package:photobooking/core/widgets/empty_state.dart';
 export 'package:photobooking/core/widgets/error_state.dart';
 export 'package:photobooking/core/widgets/free_tag.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
+export 'package:photobooking/core/widgets/level_selector.dart';
 export 'package:photobooking/core/widgets/location_prompt_card.dart';
 export 'package:photobooking/core/widgets/network_photo.dart';
 export 'package:photobooking/core/widgets/phone_field.dart';

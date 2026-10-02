@@ -1371,6 +1371,36 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{percent}%'**
   String completenessPercent(int percent);
+
+  /// No description provided for @skillsLevelBasic.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cơ bản'**
+  String get skillsLevelBasic;
+
+  /// No description provided for @skillsLevelGood.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành thạo'**
+  String get skillsLevelGood;
+
+  /// No description provided for @skillsLevelExpert.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyên sâu'**
+  String get skillsLevelExpert;
+
+  /// No description provided for @skillsLevelSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name}, mức {level}'**
+  String skillsLevelSemantics(String name, String level);
+
+  /// No description provided for @skillsExpertFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ 3 mức Chuyên sâu'**
+  String get skillsExpertFull;
 }
 
 class _AppLocalizationsDelegate
