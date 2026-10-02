@@ -6,6 +6,8 @@ Plan: `../docs/superpowers/plans/2026-09-30-flutter-foundation.md`.
 
 ## Setup (no admin rights)
 
+Step-by-step guide for a new machine (Vietnamese): `../docs/SETUP.md`.
+
 From the repo root, once per machine:
 
 ```bash

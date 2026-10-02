@@ -12,6 +12,9 @@ if [ ! -x "$ROOT/.jdk/Contents/Home/bin/java" ] && [ ! -x "$ROOT/.jdk/bin/java" 
   echo "  or download a JDK 17 .tar.gz (Temurin/Zulu, macOS, your CPU arch) and extract it so that .jdk/Contents/Home/bin/java exists."
   exit 1
 fi
+if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 22 ]; then
+  echo "   warning: Node.js 22+ not found (needed only for the local backend and Cloud Functions): brew install node@22"
+fi
 
 echo "== 2/5 Android SDK -> .android-sdk/"
 scripts/install-sdk.sh
@@ -27,5 +30,19 @@ echo "== 5/5 Environment (JAVA_HOME, ANDROID_HOME, truststore, PATH)"
 source scripts/env.sh
 yes | flutter doctor --android-licenses >/dev/null 2>&1 || true
 flutter doctor
-echo
-echo "Done. In every new shell run:  source scripts/env.sh"
+cat <<EOF
+
+Done. In every new shell run:  source scripts/env.sh
+
+VS Code finds adb and the emulator through your shell. Add this to ~/.zshrc (path of THIS machine),
+then quit VS Code completely (Cmd+Q) and reopen it; Reload Window is not enough:
+
+# booking repo (Android SDK + AVD inside the repo)
+BOOKING="$ROOT"
+export ANDROID_HOME="\$BOOKING/.android-sdk"
+export ANDROID_SDK_ROOT="\$ANDROID_HOME"
+export ANDROID_AVD_HOME="\$BOOKING/.home/.android/avd"
+export PATH="\$ANDROID_HOME/platform-tools:\$ANDROID_HOME/emulator:\$PATH"
+
+Next: scripts/install-emulator.sh (optional), then docs/SETUP.md from step 4.
+EOF

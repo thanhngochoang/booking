@@ -13,6 +13,8 @@
 
 ## Setup trên máy mới (không cần quyền admin)
 
+**Hướng dẫn từng bước cho máy mới (app Flutter, VS Code, emulator, lỗi thường gặp): `docs/SETUP.md`.** Phần dưới giải thích toolchain chi tiết.
+
 Mọi công cụ nằm **trong thư mục repo**, không cài vào hệ thống. Chỉ cần sẵn `git`, `curl`, `unzip`, `python3` (macOS có sẵn) và một JDK 17 do user sở hữu.
 
 ```bash
@@ -111,6 +113,7 @@ Bắt đầu: xem `app_flutter/README.md`. CI (`.github/workflows/flutter.yml`) 
 
 ## Tài liệu
 
+- `docs/SETUP.md` — setup máy mới từng bước: công cụ nền, SDK, `~/.zshrc`, emulator, cấu hình bí mật, chạy từ VS Code, lỗi thường gặp.
 - `CLAUDE.md` — kiến trúc, luồng dữ liệu, quy ước.
 - `docs/FIREBASE-SETUP.md` — từng bước nối app Flutter với Firebase (project, SHA‑1, Google/Facebook login, Firestore rules, firebase_options.dart).
 - `docs/DEVICE-TESTING.md` — biến điện thoại Samsung thành thiết bị test/debug (gỡ lỗi USB, Chặn tự động, Wi‑Fi, lỗi thường gặp).

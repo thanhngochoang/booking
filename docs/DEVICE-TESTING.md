@@ -1,6 +1,6 @@
 # Test app Flutter trên điện thoại Samsung
 
-Tài liệu này hướng dẫn biến một điện thoại Samsung Galaxy (One UI) thành thiết bị chạy và debug app `app_flutter/` qua cáp USB hoặc Wi‑Fi. Bước 0 làm một lần cho mỗi máy tính (và cũng là cách dùng emulator). Bước 1–4 làm một lần cho mỗi điện thoại. Bước 5 làm mỗi lần test. Máy tính phải đã chạy `scripts/setup.sh` (xem `README.md`) và nối Firebase theo `docs/FIREBASE-SETUP.md`.
+Tài liệu này hướng dẫn biến một điện thoại Samsung Galaxy (One UI) thành thiết bị chạy và debug app `app_flutter/` qua cáp USB hoặc Wi‑Fi. Bước 0 làm một lần cho mỗi máy tính (và cũng là cách dùng emulator). Bước 1–4 làm một lần cho mỗi điện thoại. Bước 5 làm mỗi lần test. Máy tính phải đã setup theo `docs/SETUP.md` và nối Firebase theo `docs/FIREBASE-SETUP.md`.
 
 Tên menu bên dưới lấy theo One UI 6–7 tiếng Việt, tên tiếng Anh để trong ngoặc. Máy đời cũ có thể đặt tên hơi khác; dùng ô tìm kiếm trong Cài đặt nếu không thấy.
 
