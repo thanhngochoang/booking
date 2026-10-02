@@ -1,0 +1,33 @@
+{
+  "name": "photobooking-functions",
+  "private": true,
+  "description": "Cloud Functions for photobooking: thin Firebase adapters around packages/domain.",
+  "type": "module",
+  "main": "lib/index.js",
+  "engines": { "node": "22" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "build": "npm run typecheck && node build.mjs",
+    "build:watch": "node build.mjs --watch",
+    "test": "node --import tsx --test \"test/unit/**/*.test.ts\"",
+    "test:integration": "npm run build && JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --project demo-nag --only auth,firestore,functions \"node --import tsx --test --test-concurrency=1 'test/integration/**/*.test.ts'\"",
+    "test:perf": "npm run build && JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --project demo-nag --only auth,firestore,functions \"node --import tsx --test --test-concurrency=1 'test/perf/**/*.test.ts'\"",
+    "seed": "node --import tsx seed/seed.ts",
+    "try:contact": "node --import tsx seed/try_contact_link.ts"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.6.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.20.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^9.39.0",
+    "firebase-tools": "^14.27.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.0"
+  }
+}
