@@ -26,3 +26,5 @@
 /app/google-services.json
 .claude/*
 packages/*
+!packages/domain
+!packages/domain/**

@@ -37,7 +37,7 @@ describe('seed fixtures', () => {
   });
 
   test('money follows the deposit rule: floor(30%) and the rest, integer VND', () => {
-    for (const d of seedDocuments(NOW).filter((x) => x.path.startsWith('bookings/'))) {
+    for (const d of seedDocuments(NOW).filter((x) => x.path.startsWith('bookings/') && !x.path.includes('/private/'))) {
       const data = d.data as { service: { price: number }; deposit: { amount: number }; remaining: number };
       assert.equal(data.deposit.amount, Math.floor(data.service.price * 0.3), d.path);
       assert.equal(data.deposit.amount + data.remaining, data.service.price, d.path);
@@ -52,10 +52,38 @@ describe('seed fixtures', () => {
       return bookingContactUnlocked({ status: b.status, completedAt }, NOW);
     };
     assert.equal(unlocked('seed-booking-accepted'), true);
+    assert.equal(unlocked('seed-booking-upcoming'), true);
     assert.equal(unlocked('seed-booking-requested-binh'), true);
     assert.equal(unlocked('seed-booking-completed-recent'), true);
     assert.equal(unlocked('seed-booking-cancelled'), false);
     assert.equal(unlocked('seed-booking-completed-old'), false);
+  });
+
+  test('seed payments, ledger entries, and availability days match booking state', () => {
+    const docs = seedDocuments(NOW);
+
+    // Payments exist for bookings
+    const acceptedPayment = docs.find((d) => d.path === 'payments/seed-payment-seed-booking-accepted');
+    assert.ok(acceptedPayment);
+    assert.equal((acceptedPayment.data as { escrowStatus: string }).escrowStatus, 'held');
+
+    const completedPayment = docs.find((d) => d.path === 'payments/seed-payment-seed-booking-completed-recent');
+    assert.ok(completedPayment);
+    assert.equal((completedPayment.data as { escrowStatus: string }).escrowStatus, 'released');
+
+    // Availability exists
+    const anBookedDay = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-20');
+    assert.ok(anBookedDay);
+    assert.equal((anBookedDay.data as { state: string }).state, 'booked');
+
+    const binhPendingDay = docs.find((d) => d.path === 'availability/seed-photographer-binh/days/2026-10-25');
+    assert.ok(binhPendingDay);
+    assert.equal((binhPendingDay.data as { state: string }).state, 'pending');
+
+    // Contact snapshot exists
+    const contactSnap = docs.find((d) => d.path === 'bookings/seed-booking-accepted/private/contact');
+    assert.ok(contactSnap);
+    assert.equal((contactSnap.data as { phone: string }).phone, '+84903000001');
   });
 
   test('deterministic for a given clock', () => {

@@ -1,5 +1,6 @@
 import type { DocumentOptions } from 'firebase-functions/v2/firestore';
 import type { CallableOptions } from 'firebase-functions/v2/https';
+import type { ScheduleOptions } from 'firebase-functions/v2/scheduler';
 
 /**
  * Every function runs in Singapore, the closest Cloud Functions region to Vietnam.
@@ -34,3 +35,17 @@ export const TRIGGER_OPTIONS = {
   minInstances: 0,
   retry: true,
 } as const satisfies Omit<DocumentOptions, 'document'>;
+
+/**
+ * Options for the scheduled sweep clock (runs every 15 minutes, Asia/Ho_Chi_Minh).
+ */
+export const SCHEDULE_OPTIONS = {
+  schedule: 'every 15 minutes',
+  timeZone: 'Asia/Ho_Chi_Minh',
+  region: REGION,
+  memory: '256MiB',
+  timeoutSeconds: 60,
+  maxInstances: 1,
+  minInstances: 0,
+  retryCount: 0,
+} as const satisfies ScheduleOptions;

@@ -1,0 +1,29 @@
+{
+  "constants": {
+    "depositPercent": 30,
+    "disputeWindowHours": 24,
+    "acceptDeadlineHours": 24,
+    "draftExpiryMinutes": 30,
+    "autoCompleteDelayHours": 24,
+    "escrowReleaseDelayHours": 24,
+    "bookingContactRetentionDays": 30
+  },
+  "depositCases": [
+    { "price": 1000000, "deposit": 300000, "remaining": 700000 },
+    { "price": 1250000, "deposit": 375000, "remaining": 875000 },
+    { "price": 999999, "deposit": 299999, "remaining": 700000 },
+    { "price": 500000, "deposit": 150000, "remaining": 350000 },
+    { "price": 1, "deposit": 0, "remaining": 1 },
+    { "price": 3, "deposit": 0, "remaining": 3 },
+    { "price": 4, "deposit": 1, "remaining": 3 }
+  ],
+  "refundCases": [
+    { "hoursBeforeStart": 72, "percent": 100 },
+    { "hoursBeforeStart": 48, "percent": 100 },
+    { "hoursBeforeStart": 47.9, "percent": 50 },
+    { "hoursBeforeStart": 24, "percent": 50 },
+    { "hoursBeforeStart": 23.9, "percent": 0 },
+    { "hoursBeforeStart": 0, "percent": 0 },
+    { "hoursBeforeStart": -2, "percent": 0 }
+  ]
+}

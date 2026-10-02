@@ -658,7 +658,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `availability/{uid}/days/{yyyy-mm-dd}` | `availability_days` | Id tài liệu = cột `day` |
 | `posts/{id}` | `posts` + `post_images` + `post_hashtags` | `imageUrls[]`→`post_images`/`files`; hashtag trích từ `caption` |
 | `likes/{uid}_{postId}`, `saves/…`, `follows/{uid}_{photographerId}` | `likes`, `saves`, `follows` | Khoá ghép thay id ghép chuỗi |
-| `bookings/{id}` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `customerContact`→`booking_contacts` |
+| `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử |
 | `reviews/{bookingId}` | `reviews` | |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột |

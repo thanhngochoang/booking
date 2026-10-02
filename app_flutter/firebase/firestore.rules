@@ -349,11 +349,44 @@ service cloud.firestore {
       }
     }
 
+    function isBookingContactUnlocked(b) {
+      return b.status in ['requested', 'accepted', 'upcoming']
+        || ((b.status in ['completed', 'reviewed'])
+            && ('completedAt' in b)
+            && b.completedAt != null
+            && request.time <= b.completedAt + duration.value(30, 'd'));
+    }
+
     match /bookings/{bookingId} {
       allow read: if signedIn()
         && (resource.data.customerId == request.auth.uid
             || resource.data.photographerId == request.auth.uid);
       allow write: if false; // only Cloud Functions (sub-project 4)
+
+      match /private/{docId} {
+        allow read: if signedIn()
+          && docId == 'contact'
+          && (
+            get(/databases/$(database)/documents/bookings/$(bookingId)).data.customerId == request.auth.uid
+            || (
+              get(/databases/$(database)/documents/bookings/$(bookingId)).data.photographerId == request.auth.uid
+              && isBookingContactUnlocked(get(/databases/$(database)/documents/bookings/$(bookingId)).data)
+            )
+          );
+        allow write: if false;
+      }
+    }
+
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
+
+    match /refunds/{refundId} {
+      allow read, write: if false;
+    }
+
+    match /ledger_entries/{entryId} {
+      allow read, write: if false;
     }
 
     // Posts are read by any signed-in user. A photographer creates their own

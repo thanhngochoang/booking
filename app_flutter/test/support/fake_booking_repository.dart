@@ -1,0 +1,235 @@
+import 'dart:async';
+
+import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
+
+class FakeBookingRepository implements BookingRepository {
+  FakeBookingRepository({this.customerId = 'c1'});
+
+  final String customerId;
+  final Map<String, Booking> bookings = {};
+  final Map<String, BookingContactSnapshot> contacts = {};
+
+  final _bookingChanges = StreamController<String>.broadcast();
+  final _contactChanges = StreamController<String>.broadcast();
+
+  void seedBooking(Booking booking) {
+    bookings[booking.id] = booking;
+    _bookingChanges.add(booking.id);
+  }
+
+  void seedContact(String bookingId, BookingContactSnapshot contact) {
+    contacts[bookingId] = contact;
+    _contactChanges.add(bookingId);
+  }
+
+  @override
+  Stream<Booking?> watchBooking(String id) {
+    return _bookingChanges.stream
+        .where((changedId) => changedId == id)
+        .map((_) => bookings[id])
+        .startWith(bookings[id]);
+  }
+
+  @override
+  Future<Booking?> getBooking(String id) async {
+    return bookings[id];
+  }
+
+  @override
+  Stream<List<Booking>> watchCustomerBookings(String customerId) {
+    List<Booking> list() => bookings.values
+        .where(
+          (b) => b.customerId == customerId && b.status != BookingStatus.draft,
+        )
+        .toList();
+
+    return _bookingChanges.stream.map((_) => list()).startWith(list());
+  }
+
+  @override
+  Stream<List<Booking>> watchPhotographerBookings(String photographerId) {
+    List<Booking> list() => bookings.values
+        .where(
+          (b) =>
+              b.photographerId == photographerId &&
+              b.status != BookingStatus.draft,
+        )
+        .toList();
+
+    return _bookingChanges.stream.map((_) => list()).startWith(list());
+  }
+
+  @override
+  Stream<BookingContactSnapshot?> watchBookingContact(String bookingId) {
+    return _contactChanges.stream
+        .where((changedId) => changedId == bookingId)
+        .map((_) => contacts[bookingId])
+        .startWith(contacts[bookingId]);
+  }
+
+  @override
+  Future<Booking> createBooking({
+    required String photographerId,
+    required String serviceId,
+    required String day,
+    required String start,
+    required BookingPlace place,
+    String? note,
+  }) async {
+    final id = 'booking_${bookings.length + 1}';
+    final now = DateTime.now().toUtc();
+    final booking = Booking(
+      id: id,
+      customerId: customerId,
+      photographerId: photographerId,
+      serviceId: serviceId,
+      serviceSnapshot: const BookingServiceSnapshot(
+        name: 'Gói chụp',
+        price: 1000000,
+        durationMinutes: 120,
+      ),
+      day: day,
+      start: start,
+      end: '11:00',
+      place: place,
+      note: note,
+      status: BookingStatus.draft,
+      deposit: 300000,
+      remaining: 700000,
+      createdAt: now,
+      updatedAt: now,
+    );
+    bookings[id] = booking;
+    _bookingChanges.add(id);
+    return booking;
+  }
+
+  @override
+  Future<CreateDepositResponse> createDeposit({
+    required String bookingId,
+    required String provider,
+    String? returnUrl,
+  }) async {
+    return CreateDepositResponse(
+      paymentId: 'pay_$bookingId',
+      payUrl: 'https://fake-pay.test/$bookingId',
+      provider: provider,
+    );
+  }
+
+  @override
+  Future<ConfirmPaymentResponse> confirmFakePayment({
+    required String paymentId,
+  }) async {
+    final bookingId = paymentId.replaceFirst('pay_', '');
+    final b = bookings[bookingId];
+    if (b != null) {
+      final updated = b.copyWith(
+        status: BookingStatus.requested,
+        escrowStatus: EscrowStatus.held,
+        depositPaidAt: DateTime.now().toUtc(),
+      );
+      bookings[bookingId] = updated;
+      _bookingChanges.add(bookingId);
+      return ConfirmPaymentResponse(
+        paymentId: paymentId,
+        status: 'paid',
+        booking: updated,
+      );
+    }
+    return ConfirmPaymentResponse(paymentId: paymentId, status: 'paid');
+  }
+
+  @override
+  Future<CheckDepositResponse> checkDeposit({required String bookingId}) async {
+    final b = bookings[bookingId];
+    return CheckDepositResponse(
+      paid: b?.status != BookingStatus.draft,
+      booking: b,
+    );
+  }
+
+  @override
+  Future<Booking> transitionBooking({
+    required String bookingId,
+    required String action,
+    String? reason,
+  }) async {
+    final b = bookings[bookingId];
+    if (b == null) throw StateError('Booking not found');
+
+    BookingStatus nextStatus;
+    switch (action) {
+      case 'accept':
+        nextStatus = BookingStatus.accepted;
+        break;
+      case 'decline':
+        nextStatus = BookingStatus.declined;
+        break;
+      case 'cancel':
+        nextStatus = BookingStatus.cancelled;
+        break;
+      case 'upcoming':
+        nextStatus = BookingStatus.upcoming;
+        break;
+      case 'complete':
+        nextStatus = BookingStatus.completed;
+        break;
+      default:
+        nextStatus = b.status;
+    }
+
+    final updated = b.copyWith(
+      status: nextStatus,
+      completedAt: nextStatus == BookingStatus.completed
+          ? DateTime.now().toUtc()
+          : b.completedAt,
+      updatedAt: DateTime.now().toUtc(),
+    );
+    bookings[bookingId] = updated;
+    _bookingChanges.add(bookingId);
+    return updated;
+  }
+
+  @override
+  Future<Booking> openDispute({
+    required String bookingId,
+    required String reason,
+  }) async {
+    final b = bookings[bookingId];
+    if (b == null) throw StateError('Booking not found');
+
+    final updated = b.copyWith(
+      escrowStatus: EscrowStatus.disputed,
+      updatedAt: DateTime.now().toUtc(),
+    );
+    bookings[bookingId] = updated;
+    _bookingChanges.add(bookingId);
+    return updated;
+  }
+}
+
+extension on Stream<Booking?> {
+  Stream<Booking?> startWith(Booking? initial) async* {
+    yield initial;
+    yield* this;
+  }
+}
+
+extension on Stream<List<Booking>> {
+  Stream<List<Booking>> startWith(List<Booking> initial) async* {
+    yield initial;
+    yield* this;
+  }
+}
+
+extension on Stream<BookingContactSnapshot?> {
+  Stream<BookingContactSnapshot?> startWith(
+    BookingContactSnapshot? initial,
+  ) async* {
+    yield initial;
+    yield* this;
+  }
+}
