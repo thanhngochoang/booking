@@ -136,7 +136,7 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     },
     note: d.note ?? undefined,
     status: status as BookingStatus,
-    deposit: d.deposit,
+    deposit: typeof d.deposit === 'number' ? d.deposit : typeof (d.deposit as { amount?: unknown })?.amount === 'number' ? (d.deposit as { amount: number }).amount : 0,
     remaining: d.remaining,
     escrowStatus: (d.escrowStatus as EscrowStatus) ?? undefined,
     depositRefunded: d.depositRefunded ?? undefined,

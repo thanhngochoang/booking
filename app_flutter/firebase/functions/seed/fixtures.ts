@@ -93,6 +93,7 @@ export interface SeedBooking {
 
 export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-accepted', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'accepted', date: '2026-10-20', start: '08:00', end: '10:00', place: 'Hồ Hoàn Kiếm, Hà Nội', completedDaysAgo: null },
+  { id: 'seed-booking-upcoming', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'upcoming', date: '2026-10-10', start: '08:00', end: '10:00', place: 'Công viên Thống Nhất, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-requested-binh', customerId: LAN, photographerId: BINH, serviceId: 'seed-service-family', status: 'requested', date: '2026-10-25', start: '16:00', end: '17:30', place: 'Biển Mỹ Khê, Đà Nẵng', completedDaysAgo: null },
   { id: 'seed-booking-cancelled', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'cancelled', date: '2026-10-22', start: '08:00', end: '10:00', place: 'Văn Miếu, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-completed-recent', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-27', start: '08:00', end: '10:00', place: 'Hồ Tây, Hà Nội', completedDaysAgo: 3 },
@@ -107,6 +108,7 @@ export interface SeedDocument {
 const TIMELINE: Readonly<Record<string, readonly string[]>> = {
   requested: ['requested'],
   accepted: ['requested', 'accepted'],
+  upcoming: ['requested', 'accepted', 'upcoming'],
   cancelled: ['requested', 'accepted', 'cancelled'],
   completed: ['requested', 'accepted', 'upcoming', 'completed'],
 };
@@ -121,22 +123,37 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
     : new Date(now.getTime() - b.completedDaysAgo * DAY_MS);
   const timeline = steps.map((status, i) => ({ status, at: new Date(last.getTime() - (steps.length - 1 - i) * HOUR_MS) }));
   const createdAt = timeline[0]?.at ?? last;
+  const completedAt = b.status === 'completed' ? last : null;
+  const escrowStatus = b.status === 'completed'
+    ? 'released'
+    : b.status === 'cancelled'
+      ? 'refunded'
+      : 'held';
+
   return {
     customerId: b.customerId,
     photographerId: b.photographerId,
     serviceId: b.serviceId,
     service: { name: service.name, price: service.price, durationMinutes: service.durationMinutes },
+    serviceSnapshot: { name: service.name, price: service.price, durationMinutes: service.durationMinutes },
     date: b.date,
+    day: b.date,
     start: b.start,
     end: b.end,
     location: { name: b.place },
+    place: { name: b.place },
     note: 'Seed booking',
     status: b.status,
-    deposit: { amount: deposit, provider: 'momo', paymentId: b.id.replace('seed-booking-', 'seed-payment-'), paidAt: createdAt },
+    deposit: { amount: deposit, provider: 'fake', paymentId: b.id.replace('seed-booking-', 'seed-payment-'), paidAt: createdAt },
     remaining: service.price - deposit,
+    depositProvider: 'fake',
+    depositPaidAt: createdAt,
+    escrowStatus,
+    completedAt,
     timeline,
     createdAt,
     updatedAt: last,
+    version: steps.length,
   };
 }
 
@@ -176,6 +193,122 @@ export function seedDocuments(now: Date): SeedDocument[] {
       data: { name: s.name, price: s.price, currency: 'VND', durationMinutes: s.durationMinutes, active: true, createdAt: at },
     });
   }
-  for (const b of SEED_BOOKINGS) docs.push({ path: `bookings/${b.id}`, data: bookingData(b, now) });
+  for (const b of SEED_BOOKINGS) {
+    const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
+    if (!service) continue;
+    const bData = bookingData(b, now);
+    const deposit = Math.floor(service.price * 0.3);
+    const createdAt = bData.createdAt as Date;
+    const updatedAt = bData.updatedAt as Date;
+
+    // Booking document
+    docs.push({ path: `bookings/${b.id}`, data: bData });
+
+    // Contact snapshot subdocument (except for cancelled bookings)
+    if (b.status !== 'cancelled') {
+      const isRedacted = b.status === 'completed' && b.completedDaysAgo !== null && b.completedDaysAgo > 30;
+      docs.push({
+        path: `bookings/${b.id}/private/contact`,
+        data: {
+          name: 'Lan (seed)',
+          phone: isRedacted ? null : (SEED_CUSTOMER_PHONES[b.customerId] ?? '+84903000001'),
+          allowZalo: true,
+          allowWhatsApp: false,
+          ...(isRedacted ? { redactedAt: updatedAt } : {}),
+        },
+      });
+    }
+
+    // Payment document
+    const paymentId = `seed-payment-${b.id}`;
+    const escrowStatus = b.status === 'completed' ? 'released' : b.status === 'cancelled' ? 'refunded' : 'held';
+    docs.push({
+      path: `payments/${paymentId}`,
+      data: {
+        subjectType: 'booking',
+        subjectId: b.id,
+        payerId: b.customerId,
+        payeeId: b.photographerId,
+        provider: 'fake',
+        amount: deposit,
+        status: b.status === 'cancelled' ? 'refunded' : 'paid',
+        escrowStatus,
+        idempotencyKey: `dep_${b.id}_fake`,
+        createdAt,
+        updatedAt,
+      },
+    });
+
+    // Ledger entry for deposit
+    docs.push({
+      path: `ledger_entries/seed-ledger-${b.id}-dep`,
+      data: {
+        type: 'deposit_received',
+        paymentId,
+        subjectType: 'booking',
+        subjectId: b.id,
+        accountOwnerId: 'platform_escrow',
+        amount: deposit,
+        note: `Seed deposit for ${b.id}`,
+        at: createdAt,
+      },
+    });
+
+    if (b.status === 'completed') {
+      docs.push({
+        path: `ledger_entries/seed-ledger-${b.id}-rel`,
+        data: {
+          type: 'escrow_released',
+          paymentId,
+          subjectType: 'booking',
+          subjectId: b.id,
+          accountOwnerId: b.photographerId,
+          amount: deposit,
+          note: `Seed release for ${b.id}`,
+          at: updatedAt,
+        },
+      });
+    } else if (b.status === 'cancelled') {
+      const refundId = `seed-refund-${b.id}`;
+      docs.push({
+        path: `refunds/${refundId}`,
+        data: {
+          paymentId,
+          amount: deposit,
+          percent: 100,
+          status: 'completed',
+          manual: false,
+          createdAt: updatedAt,
+          updatedAt,
+        },
+      });
+      docs.push({
+        path: `ledger_entries/seed-ledger-${b.id}-ref`,
+        data: {
+          type: 'refund_issued',
+          paymentId,
+          subjectType: 'booking',
+          subjectId: b.id,
+          accountOwnerId: b.customerId,
+          amount: -deposit,
+          note: `Seed refund for ${b.id}`,
+          at: updatedAt,
+        },
+      });
+    }
+
+    // Availability day
+    if (b.status === 'requested') {
+      docs.push({
+        path: `availability/${b.photographerId}/days/${b.date}`,
+        data: { state: 'pending', bookingId: b.id, updatedAt },
+      });
+    } else if (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed') {
+      docs.push({
+        path: `availability/${b.photographerId}/days/${b.date}`,
+        data: { state: 'booked', bookingId: b.id, updatedAt },
+      });
+    }
+  }
   return docs;
 }

@@ -28,3 +28,6 @@ Task 7: complete (booking callables, bookingClock scheduled function, env config
 
 Task 8: dispatched
 Task 8: complete (Firestore security rules for bookings/private/contact & escrow tables, composite indexes for sweeps & queries, specs updated)
+
+Task 9: dispatched
+Task 9: complete (seed fixtures across requested/accepted/upcoming/completed states with payments, ledger entries, contact copy, availability, 58 functions unit tests pass, typecheck and lint clean)

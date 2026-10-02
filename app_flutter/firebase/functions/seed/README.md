@@ -17,6 +17,7 @@ Password for every account: `seed-password-1`
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
 |---|---|---|---|
 | `seed-booking-accepted` | Lan ↔ An | accepted | unlocked (all three channels) |
+| `seed-booking-upcoming` | Lan ↔ An | upcoming | unlocked |
 | `seed-booking-requested-binh` | Lan ↔ Bình | requested | `call` only; `zalo`/`whatsapp` → `not_found` |
 | `seed-booking-cancelled` | Lan ↔ An | cancelled | `contact_locked` |
 | `seed-booking-completed-recent` | Lan ↔ An | completed 3 days before seeding | unlocked |
