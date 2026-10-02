@@ -95,6 +95,31 @@ abstract final class ScreenCodes {
   static const notifications = 'S17.01';
   static const notificationSettings = 'S17.02';
   static const notificationPermission = 'S17.03';
+  // S18 Khiếu nại & hỗ trợ.
+  static const openDispute = 'S18.01';
+  static const disputeDetail = 'S18.02';
+  static const help = 'S18.03';
+  // S19 Lưu & theo dõi.
+  static const saved = 'S19.01';
+  static const following = 'S19.02';
+  static const followers = 'S19.03';
+  // S20 Báo cáo & chặn.
+  static const report = 'S20.01';
+  static const blockedUsers = 'S20.02';
+  // S21 Xác minh.
+  static const verifyPhone = 'S21.01';
+  static const verifyPhotographer = 'S21.02';
+  // S22 Thanh toán & tài khoản.
+  static const paymentHistory = 'S22.01';
+  static const deleteAccount = 'S22.02';
+  static const privacy = 'S22.03';
+  // S23 Vận hành nội bộ (staff).
+  static const staffDisputes = 'S23.01';
+  static const staffPayouts = 'S23.02';
+  static const staffManualRefunds = 'S23.03';
+  static const staffVerifications = 'S23.04';
+  static const staffReports = 'S23.05';
+  static const staffSupportInbox = 'S23.06';
 
   static const all = <String>[
     splash,
@@ -167,5 +192,24 @@ abstract final class ScreenCodes {
     notifications,
     notificationSettings,
     notificationPermission,
+    openDispute,
+    disputeDetail,
+    help,
+    saved,
+    following,
+    followers,
+    report,
+    blockedUsers,
+    verifyPhone,
+    verifyPhotographer,
+    paymentHistory,
+    deleteAccount,
+    privacy,
+    staffDisputes,
+    staffPayouts,
+    staffManualRefunds,
+    staffVerifications,
+    staffReports,
+    staffSupportInbox,
   ];
 }
