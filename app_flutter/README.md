@@ -87,7 +87,6 @@ Backend tests:
 ```bash
 (cd ../packages/domain && npm test)                                         # pure rules, no emulator
 (cd firebase/functions && npm test && npm run test:integration)              # unit + emulator integration
-(cd firebase/functions && npm run test:perf)                                 # local performance budgets
 ```
 
 ## Layout

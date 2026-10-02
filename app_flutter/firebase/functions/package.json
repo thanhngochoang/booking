@@ -11,8 +11,7 @@
     "build": "npm run typecheck && node build.mjs",
     "build:watch": "node build.mjs --watch",
     "test": "node --import tsx --test \"test/unit/**/*.test.ts\"",
-    "test:integration": "npm run build && JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --project demo-nag --only auth,firestore,functions \"node --import tsx --test --test-concurrency=1 'test/integration/**/*.test.ts'\"",
-    "test:perf": "npm run build && JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --project demo-nag --only auth,firestore,functions \"node --import tsx --test --test-concurrency=1 'test/perf/**/*.test.ts'\"",
+    "test:integration": "npm run build && FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001 JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --project demo-nag --only auth,firestore,functions \"node --import tsx --test --test-concurrency=1 'test/integration/**/*.test.ts'\"",
     "seed": "node --import tsx seed/seed.ts",
     "try:contact": "node --import tsx seed/try_contact_link.ts"
   },

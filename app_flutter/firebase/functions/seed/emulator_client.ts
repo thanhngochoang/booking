@@ -1,5 +1,5 @@
 import { REGION } from '../src/config.js';
-import { assertLocalEmulators } from './local_guard.js';
+import { assertLocalEmulators, type LocalGuardOptions } from './local_guard.js';
 
 // Talks to the emulators over their REST endpoints, like the app does: Auth sign-in and the
 // callable protocol (POST {data} → {result} | {error}). Used by the integration tests and try_contact_link.ts.
@@ -9,8 +9,12 @@ const authHost = () => host('FIREBASE_AUTH_EMULATOR_HOST', '127.0.0.1:9099');
 const firestoreHost = () => host('FIRESTORE_EMULATOR_HOST', '127.0.0.1:8080');
 const functionsHost = () => host('FUNCTIONS_EMULATOR_HOST', '127.0.0.1:5001');
 
+/**
+ * Project id for the Firestore/Auth emulators (Admin SDK, resetEmulators). `firebase emulators:exec`
+ * never sets FUNCTIONS_EMULATOR_HOST, so only callCallable requires it.
+ */
 export function emulatorProject(): string {
-  return assertLocalEmulators({ functions: true });
+  return assertLocalEmulators();
 }
 
 /** Signs in on the Auth emulator and returns an ID token. */
@@ -32,11 +36,20 @@ export interface CallableResponse {
   readonly error?: { readonly message?: string; readonly status?: string; readonly details?: unknown };
 }
 
-/** Invokes a callable exactly like the Firebase client SDK does. */
-export async function callCallable(name: string, data: unknown, idToken?: string): Promise<CallableResponse> {
+/**
+ * Invokes a callable exactly like the Firebase client SDK does. Requires FUNCTIONS_EMULATOR_HOST
+ * (the test scripts set it); `guard.allowAnyProject` is for try_contact_link.ts only.
+ */
+export async function callCallable(
+  name: string,
+  data: unknown,
+  idToken?: string,
+  guard: LocalGuardOptions = {},
+): Promise<CallableResponse> {
+  const project = assertLocalEmulators({ ...guard, functions: true });
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (idToken !== undefined) headers.Authorization = `Bearer ${idToken}`;
-  const res = await fetch(`http://${functionsHost()}/${emulatorProject()}/${REGION}/${name}`, {
+  const res = await fetch(`http://${functionsHost()}/${project}/${REGION}/${name}`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ data }),

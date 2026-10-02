@@ -23,9 +23,12 @@ Password for every account: `seed-password-1`
 | `seed-booking-completed-old` | Lan ↔ An | completed 40 days before seeding | `contact_locked` |
 
 Try a call while the emulators run (from `app_flutter/firebase/functions`, with the project id
-`scripts/backend-local.sh` printed):
+`scripts/backend-local.sh` printed). The script refuses to run unless the three emulator hosts
+point at a local host, so export them first:
 
 ```bash
-GCLOUD_PROJECT=<project> npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
+  FUNCTIONS_EMULATOR_HOST=127.0.0.1:5001 GCLOUD_PROJECT=<project>
+npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
 # 200 {"result":{"url":"https://zalo.me/84912000002"}}
 ```
