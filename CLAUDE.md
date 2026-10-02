@@ -66,7 +66,8 @@ Everything above describes the legacy Java app, kept as reference. The rewrite i
 ### Rules to follow
 
 - **Theme**: dark aurora is the default; tokens come from `design-system/tokens.json` → `dart run tool/gen_tokens.dart` → `lib/core/theme/tokens.g.dart` (never edit the generated file). Use `AppColors`/`AppSpace`/`AppRadius`, not raw hex or numbers.
-- **One primary action per screen**: `AppButton.primary` (filled by `CtaSurface`: theme gradient, or the user's blurred avatar). Cancel/decline is a red button inside a confirmation sheet, never the gradient button.
+- **UI matches the mock**: `docs/design/ui-mock.html` (the committed artifact) is the authority for layout, section order, copy, component types and states; the specs stay the authority for behaviour. When they disagree, follow the mock (or update the mock if the spec is newer) and say so.
+- **One primary action per screen**: `AppButton.primary` (filled by `CtaSurface`: theme gradient, or the user's blurred avatar). This means the screen's main CTA; a small primary button on each list card is allowed where the mock shows one (e.g. "Đặt" on `PhotographerCard`). Cancel/decline is a red button inside a confirmation sheet, never the gradient button.
 - **Imports**: `package:photobooking/...` only (enforced by lint), and features import `core/core.dart`, not files inside `core/`.
 - **Firebase isolation**: `cloud_firestore`/`firebase_*` may only appear in the data adapters, `firebase_options.dart` and `main.dart`; domain and features depend on repository interfaces. Follow the id, time, money and enum conventions in `data-model/README.md` (ULID/opaque ids, UTC instants, integer VND, string enum codes, no Firebase types in the domain).
 - **Strings** live in `lib/l10n/app_vi.arb` (run `flutter gen-l10n`); no hard-coded UI text. Free events show the tag "Không thu phí", never "0₫".
@@ -81,3 +82,5 @@ flutter analyze && flutter test
 dart run tool/gen_tokens.dart      # after editing design-system/tokens.json
 flutter gen-l10n                   # after editing lib/l10n/app_vi.arb
 ```
+
+Firebase rules/indexes live in `app_flutter/firebase/` (project `booking-c1922` in `.firebaserc`). From `app_flutter/firebase/rules-test/`: `npm test` (emulator), `npm run deploy:rules` (Firestore rules + indexes), `npm run deploy:storage`. CI (`.github/workflows/firebase-deploy.yml`) deploys Firestore on push to `main`; Storage only on manual run.
