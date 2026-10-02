@@ -1,4 +1,5 @@
 // test/data/content/post_publisher_test.dart
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -196,6 +197,25 @@ void main() {
         (await db.collection('photographers').doc('p1').get()).exists,
         isFalse,
       );
+    });
+
+    test('a failed commit whose post already exists reports success', () async {
+      final db = FakeFirebaseFirestore();
+      await FirestorePostPublisher(db: db).publish(draft());
+      final retry = FirestorePostPublisher(
+        db: db,
+        commit: (_) async => throw TimeoutException('offline'),
+      );
+      final made = await retry.publish(draft());
+      expect(made.id, '01J9ZZZZZZZZZZZZZZZZZZZZZZ');
+    });
+
+    test('a failed commit with no post rethrows the commit error', () async {
+      final pub = FirestorePostPublisher(
+        db: FakeFirebaseFirestore(),
+        commit: (_) async => throw TimeoutException('offline'),
+      );
+      await expectLater(pub.publish(draft()), throwsA(isA<TimeoutException>()));
     });
 
     test(

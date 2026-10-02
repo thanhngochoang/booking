@@ -1,14 +1,20 @@
 // lib/data/content/firestore_post_publisher.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 
 class FirestorePostPublisher implements PostPublisher {
-  FirestorePostPublisher({FirebaseFirestore? db})
-    : _db = db ?? FirebaseFirestore.instance;
+  FirestorePostPublisher({
+    FirebaseFirestore? db,
+    @visibleForTesting Future<void> Function(WriteBatch batch)? commit,
+  }) : _db = db ?? FirebaseFirestore.instance,
+       _commit =
+           commit ?? ((b) => b.commit().timeout(const Duration(seconds: 20)));
   final FirebaseFirestore _db;
+  final Future<void> Function(WriteBatch batch) _commit;
 
   @override
   Future<PostSummary> publish(PostDraft d) async {
@@ -40,10 +46,18 @@ class FirestorePostPublisher implements PostPublisher {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
-    // Offline, a Firestore commit never completes until the server answers.
-    // The deadline turns that into an error the user can retry; the retry
-    // reuses the same post id, so the queued write is not duplicated.
-    await batch.commit().timeout(const Duration(seconds: 20));
+    // Offline, a Firestore commit never completes until the server answers;
+    // the 20 second deadline (see the default commit) turns that into an
+    // error the user can retry. The rules allow only create on posts, so a
+    // retry cannot overwrite: it is idempotent because a post that already
+    // landed is detected below and reported as success.
+    try {
+      await _commit(batch);
+    } catch (_) {
+      if (!await _alreadyLanded(d)) {
+        rethrow;
+      }
+    }
     return PostSummary(
       id: d.id,
       kind: PostKind.work,
@@ -59,5 +73,17 @@ class FirestorePostPublisher implements PostPublisher {
       inPortfolio: d.inPortfolio,
       createdAt: DateTime.now().toUtc(),
     );
+  }
+
+  Future<bool> _alreadyLanded(PostDraft d) async {
+    try {
+      final snap = await _db
+          .collection('posts')
+          .doc(d.id)
+          .get(const GetOptions(source: Source.server));
+      return snap.exists && snap.data()?['authorId'] == d.photographerId;
+    } catch (_) {
+      return false;
+    }
   }
 }
