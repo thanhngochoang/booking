@@ -1,5 +1,7 @@
 # iOS Enablement Implementation Plan
 
+> **Run order (2026-10-02, user):** this plan runs last, after every feature plan and just before `2026-10-02-final-battery-performance.md`. Feature plans skip their iOS-only steps (Info.plist keys, iOS build or test steps, iOS sections of guides); those steps are collected in "Deferred iOS steps" at the end of this file and done here.
+
 > **Battery/performance (2026-10-02, user):** this plan has no battery, idle, blur-budget or performance task or test steps. All of that runs once at the end in `docs/superpowers/plans/2026-10-02-final-battery-performance.md`. Skip any such step inside a task (e.g. `expectIdle`, `expectBlurBudget`, listener counters, profiling); keep the functional tests.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -708,3 +710,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - **Placeholders:** none; the zero values in `Secrets.xcconfig.example` are deliberate placeholders for a template file.
 - **Type/name consistency:** xcconfig variable names are identical in the example, `Info.plist`, the test and the doctor script.
 - **Risks:** the Facebook redirect through `FlutterSceneDelegate` (Task 7 Step 3 has the fallback); the system Ruby may be too old for CocoaPods 1.16 (Task 5 Step 3 says what to do); smoke-test keys may differ from the screens (Task 2 Step 2 checks them first).
+
+
+## Deferred iOS steps
+
+Appended by feature plans as they run (plan, task, what to add on iOS). Do them in this plan, then run the iOS build.
+
+- step3a1 (done before this rule): Info.plist `NSLocationWhenInUseUsageDescription` and `NSLocationDefaultAccuracyReduced` are already in; verify on device.

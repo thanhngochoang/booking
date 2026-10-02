@@ -4,7 +4,7 @@
 
 **Goal:** All battery, idle, blur-budget, image-memory, read-cost and performance checks that used to sit at the end of each plan, run once over the finished app, plus one device build and profiling run (Genymotion / real phone).
 
-**How to use:** each section below is the former last task of a plan, moved here unchanged (file paths and APIs may have moved since; adapt to the code as it is). Run them as tasks in this order, then Task Z.
+**How to use:** each section below is the former last task of a plan, moved here unchanged (file paths and APIs may have moved since; adapt to the code as it is). Run them as tasks in this order, then Task Z. This plan runs after the iOS enablement plan, which itself runs after all feature plans.
 
 ## From 2026-10-01-step2c-skills.md
 
