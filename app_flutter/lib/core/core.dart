@@ -68,5 +68,8 @@ export 'package:photobooking/core/widgets/policy_table.dart';
 export 'package:photobooking/core/widgets/provider_picker.dart';
 export 'package:photobooking/core/widgets/reason_picker.dart';
 export 'package:photobooking/core/widgets/status_timeline.dart';
+export 'package:photobooking/core/widgets/chat_bubble.dart';
+export 'package:photobooking/core/widgets/chat_composer.dart';
+export 'package:photobooking/core/widgets/conversation_row.dart';
 export 'package:photobooking/core/vn_time.dart';
 export 'package:photobooking/core/widgets/availability_calendar.dart';
