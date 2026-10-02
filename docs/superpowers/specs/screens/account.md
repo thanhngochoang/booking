@@ -41,27 +41,34 @@ Màn: S12, S28, S29, S30, S31, S37, S41, S42. Quy ước chung ở [README.md](R
 
 ---
 
-## S30 · Hồ sơ cá nhân (đã có, mở rộng)
+## S30 · Hồ sơ cá nhân (đã có, làm lại thành danh sách bài đăng)
 
-- **Thông tin**: `/profile` · cả hai · sub‑project 1 (mở rộng ở 2, 3, 6) · **Đã có** dạng cơ bản (`ProfileTab`).
-- **Mục đích**: xem hồ sơ của mình, đổi chế độ khách ⇄ nhiếp ảnh gia, vào Cài đặt, đăng xuất.
-- **Chuỗi**: `profileRoleCustomer` "Khách hàng", `profileRolePhotographer` "Nhiếp ảnh gia", `profileOfferPhotographerTitle`/`Body`, `profileOfferCustomerTitle`/`Body`, `profileSwitchToPhotographer`, `profileSwitchToCustomer`, `profileSwitchedTo*`, `profileSwitchError`, `signOut`.
-- **Hành vi hiện tại**: avatar, tên, nhãn vai trò; thẻ chuyển vai trò (khách ⇄ nhiếp ảnh gia) có loading và SnackBar. Thẻ nói việc người dùng làm ở chế độ kia: khách thấy tiêu đề **"Tôi là nhiếp ảnh gia"**, nút **"Chuyển qua chế độ nhiếp ảnh"**; nhiếp ảnh gia thấy **"Tôi cần đặt lịch"**, nút **"Chuyển qua chế độ đặt lịch"** (khóa `profileOffer*`, `profileSwitchTo*`, `profileSwitchedTo*`; **đã làm trong code**); nút đăng xuất ở đáy; biểu tượng Cài đặt.
-- **Bố cục bổ sung**: hàng **huy hiệu** (`BadgeChip` ≤ 3 + "Xem tất cả" → S37); hàng "Số điện thoại" (→ S33); với NAG thêm hàng "Kỹ năng" (→ S38, kèm `CompletenessMeter` nhỏ) và "Xem hồ sơ công khai" (→ S03 của chính mình); với khách thêm "Đã lưu", "Đang theo dõi", "Bài đã chia sẻ" (sub‑project 3 và 6).
-- **Trạng thái**: chuyển sang NAG khi hồ sơ chưa xong → mở S24 thay vì đổi ngay; avatar lỗi tải → biểu tượng người; offline cho xem, vô hiệu đổi vai trò.
-- **Chấp nhận**: chuyển vai trò không mất dữ liệu; huy hiệu và độ khớp hồ sơ đúng người dùng.
+- **Thông tin**: `/profile` · cả hai · sub‑project 1 (bài đăng ở 3, đã lưu và đang theo dõi ở 3 và 6) · **Đã có** dạng cơ bản (`ProfileTab`), cần làm lại theo mock.
+- **Mục đích**: xem các bài do chính mình đăng, dù đang ở chế độ khách hay nhiếp ảnh gia. Đổi chế độ và đăng xuất **không còn ở đây**, đã chuyển sang S31.
+- **Bố cục** (theo mock): thanh tiêu đề "Hồ sơ" + bánh răng (→ S31); hàng avatar, tên, nhãn vai trò và khu vực; hàng số **bài đăng · đang theo dõi · đã lưu** (hai số sau mở danh sách khi sub‑project 3 và 6 xong, trước đó ẩn); hàng huy hiệu (`BadgeChip` ≤ 3 + "Xem tất cả" → S37); hàng `AppChip` lọc theo loại bài; lưới 3 cột ảnh bìa bài đăng.
+- **Dữ liệu**: các `Post` có `authorId` = người dùng hiện tại, chưa xoá (`deletedAt` rỗng), mới nhất trước, phân trang theo con trỏ (20 bài/trang, cuộn tới cuối thì tải tiếp). Không lọc theo chế độ đang dùng: người vừa là khách vừa là nhiếp ảnh gia thấy mọi bài của mình.
+- **Chip lọc**: "Tất cả" và một chip cho mỗi loại người dùng có ít nhất một bài, kèm số: **Tác phẩm** (`work`), **Buổi chụp** (`real_shoot`, chia sẻ từ S12), **Sự kiện** (`event_share`). Chỉ có một loại thì ẩn hàng chip. Ô lưới có nhãn nhỏ "Sự kiện" hoặc "Buổi chụp" khi đang ở "Tất cả"; bài `work` không nhãn.
+- **Hành động**: chạm ô → S02 của bài đó. Không có nút chính trên màn này.
+- **Chuỗi**: giữ `profileRoleCustomer`, `profileRolePhotographer`; thêm `profilePostsCount`, `profileFollowingCount`, `profileSavedCount`, `profileFilterAll`, `profileFilterWork`, `profileFilterRealShoot`, `profileFilterEventShare`, `profileEmptyPhotographerTitle` "Chưa có bài đăng", `profileEmptyPhotographerAction` "Đăng bài đầu tiên", `profileEmptyCustomerTitle` "Chưa có ảnh nào", `profileEmptyCustomerBody` "Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây". Các khoá `profileOffer*`, `profileSwitch*`, `signOut` chuyển sang dùng ở S31.
+- **Trạng thái**: đang tải → lưới ô xương; trống → nhiếp ảnh gia thấy nút "Đăng bài đầu tiên" (→ S21), khách chỉ thấy dòng giải thích; lỗi tải → hàng "Thử lại" dưới lưới; avatar lỗi tải → biểu tượng người; offline → hiện bài đã có trong bộ nhớ đệm.
+- **Chấp nhận**: chỉ hiện bài của chính người dùng; đổi chế độ ở S31 rồi quay lại vẫn thấy cùng danh sách; xoá một bài ở S02 thì bài biến khỏi lưới; số trên chip khớp số ô khi chọn chip đó.
 
 ---
 
 ## S31 · Cài đặt (đã có, thêm mục)
 
 - **Thông tin**: `/settings` · cả hai · sub‑project 1 · **Đã có** (`SettingsScreen`).
-- **Mục đích**: đổi thông tin tài khoản, giao diện và kiểu nút chính.
-- **Chuỗi (đã có)**: `settingsTitle` "Cài đặt", `settingsAccount`, `settingsEditProfile`, `settingsEditProfileBody`, `settingsAppearance`, `themeDark`/`themeLight`/`themeSystem`, `settingsButtonStyle`, `buttonStyleGradient`, `buttonStyleAvatar`, `buttonStyleAvatarNeedsPhoto`, `settingsButtonPreview`.
-- **Hành vi hiện tại**: nhóm Tài khoản (Chỉnh sửa hồ sơ → S42); nhóm Giao diện (Tối / Sáng / Theo hệ thống, lưu `themeMode`); nhóm **Kiểu nút chính** (Gradient theo giao diện / Ảnh đại diện làm mờ, khóa kèm lời nhắc khi chưa có avatar, lưu `buttonStyle`) và nút xem trước.
-- **Thay đổi cần làm**: thêm công tắc "Hiện mã màn hình" (chỉ khi `kDebugMode`); thêm nhóm Quyền riêng tư (vị trí đã lưu, xoá khu vực), Thông báo, Trợ giúp & điều khoản (sub‑project sau).
-- **Chuỗi (đã có)**: `settingsTitle`, `settingsAppearance`, `themeDark`/`themeLight`/`themeSystem`, `settingsButtonStyle`, `buttonStyleGradient`, `buttonStyleAvatar`, `buttonStyleAvatarNeedsPhoto`, `settingsButtonPreview`.
-- **Chấp nhận**: đổi theme và kiểu nút có hiệu lực ngay, giữ sau khi mở lại app; nút xem trước đúng kiểu đã chọn; thanh tab dưới cao 64dp.
+- **Mục đích**: đổi thông tin tài khoản, **đổi chế độ khách ⇄ nhiếp ảnh gia**, giao diện, kiểu nút chính và **đăng xuất**.
+- **Bố cục** (theo mock, từ trên xuống):
+  - **Tài khoản**: Chỉnh sửa hồ sơ (→ S42), Số điện thoại (→ S33, hiện 4 số cuối hoặc "Chưa thêm"); nhiếp ảnh gia thêm "Kỹ năng" (→ S38, kèm `CompletenessMeter` nhỏ) và "Xem hồ sơ công khai" (→ S03 của chính mình). Staff thêm "Quản lý sự kiện" (→ S27).
+  - **Chế độ**: thẻ đổi vai trò chuyển từ S30 sang, giữ nguyên chữ và hành vi: khách thấy **"Tôi là nhiếp ảnh gia"**, nút **"Chuyển qua chế độ nhiếp ảnh"**; nhiếp ảnh gia thấy **"Tôi cần đặt lịch"**, nút **"Chuyển qua chế độ đặt lịch"**. Nút là `AppButton.outline` (nút chính của màn là "Xem trước nút"), có loading và SnackBar `profileSwitchedTo*`. Chuyển sang nhiếp ảnh gia khi hồ sơ chưa xong → mở S24 thay vì đổi ngay. Đổi xong về S30 ở chế độ mới.
+  - **Giao diện**: `SegmentedTabs` Tối / Sáng / Theo hệ thống (trước là ba hàng), lưu `themeMode`.
+  - **Kiểu nút chính**: `SegmentedTabs` Gradient / Ảnh đại diện làm mờ (trước là hai hàng), khoá kèm lời nhắc khi chưa có avatar, lưu `buttonStyle`; nút xem trước.
+  - **Đăng xuất**: nút chữ đỏ ở đáy. Chạm → sheet xác nhận "Đăng xuất khỏi thiết bị này?" với nút đỏ "Đăng xuất" và nút "Huỷ"; xác nhận → S28.
+- **Thay đổi cần làm**: các mục trên; công tắc "Hiện mã màn hình" (chỉ khi `kDebugMode`); nhóm Quyền riêng tư (vị trí đã lưu, xoá khu vực), Thông báo (→ S64), Trợ giúp & điều khoản (sub‑project sau), đặt giữa Kiểu nút chính và Đăng xuất.
+- **Chuỗi (đã có)**: `settingsTitle`, `settingsAccount`, `settingsEditProfile`, `settingsEditProfileBody`, `settingsAppearance`, `themeDark`/`themeLight`/`themeSystem`, `settingsButtonStyle`, `buttonStyleGradient`, `buttonStyleAvatar`, `buttonStyleAvatarNeedsPhoto`, `settingsButtonPreview`; chuyển từ S30: `profileOfferPhotographerTitle`/`Body`, `profileOfferCustomerTitle`/`Body`, `profileSwitchToPhotographer`, `profileSwitchToCustomer`, `profileSwitchedTo*`, `profileSwitchError`, `signOut`. **Thêm**: `settingsMode` "Chế độ", `settingsPhone`, `settingsPhoneEmpty` "Chưa thêm", `signOutConfirmTitle`, `signOutConfirmAction`, `cancel`.
+- **Trạng thái**: offline → vô hiệu nút đổi chế độ; đang đổi chế độ → vô hiệu cả màn tới khi xong.
+- **Chấp nhận**: đổi theme và kiểu nút có hiệu lực ngay, giữ sau khi mở lại app; nút xem trước đúng kiểu đã chọn; đổi chế độ không mất dữ liệu; đăng xuất chỉ sau khi xác nhận; thanh tab dưới cao 64dp.
 
 ---
 

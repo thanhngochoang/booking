@@ -52,7 +52,7 @@ Nhãn mã màn ở góc trên trái, chỉ ở chế độ debug. `ScreenCode(St
 `AppChip({required String label, required bool selected, required ValueChanged<bool> onChanged, AppChipKind kind = filter, Widget? leading})`. `kind: filter` đã chọn = nền primary đặc, chữ trên primary (bộ lọc: S04, S35; S15 lọc loại bằng hàng tag chữ `#workshop`, xem `screens/events.md`, chỉ chip “Không thu phí” dùng `AppChip`); `kind: context` đã chọn = nền `primarySubtle`, viền + chữ primary (danh mục ngữ cảnh/lựa chọn đơn: S01, S06, S25, S40). Cao 32 (vùng chạm 48), radius tròn, `Semantics(selected)`. Hàng chip dùng `Wrap` khi cần xuống dòng, cuộn ngang khi là bộ lọc.
 
 ### SegmentedTabs · Mới
-`SegmentedTabs<T>({required List<SegmentOption<T>> options, required T value, required ValueChanged<T> onChanged})`. Nền ô nhập, ô chọn nền `primarySubtle` + viền primary; chia đều chiều ngang, cao 40; nhãn một dòng thu nhỏ khi hẹp. `Semantics` kiểu tab. Dùng ở S03 (4), S14 (3 + 2), S18, S19, S21.
+`SegmentedTabs<T>({required List<SegmentOption<T>> options, required T value, required ValueChanged<T> onChanged})`. Nền ô nhập, ô chọn nền `primarySubtle` + viền primary; chia đều chiều ngang, cao 40; nhãn một dòng thu nhỏ khi hẹp. `Semantics` kiểu tab. Dùng ở S03 (4), S14 (3 + 2), S18, S19, S21, S31 (3 + 2).
 
 ### SkillChip · Mới
 Chọn nhiều từ danh mục. `SkillChip({required String label, required bool selected, required VoidCallback onTap, bool disabled = false})`; thực chất `AppChip(kind: context)` với trạng thái vô hiệu khi đạt giới hạn (kèm `Semantics.hint` "Đã đủ số lượng"). `disabled` chỉ làm mờ chip chưa chọn và đọc "Đã đủ số lượng"; chạm vẫn báo lên để màn nêu giới hạn. Dùng ở S38, S39.
@@ -130,7 +130,7 @@ Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nh�
 `CapacityBar({required int used, required int total, String? label})`. Thanh gradient 6dp trên nền ô nhập; chữ "{used} / {total} đã đăng ký" luôn kèm; `Semantics(value)` theo chữ. Dùng ở S16, S27 và tiến độ huy hiệu (S37).
 
 ### CompletenessMeter · Mới
-`CompletenessMeter({required int percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. Dùng ở S38, S30, S22.
+`CompletenessMeter({required int percent, String? nextHint})`. Hàng tiêu đề + phần trăm, thanh gradient, dòng gợi ý việc kế tiếp. Dùng ở S38, S31, S22.
 
 ### AvailabilityCalendar · Mới
 Lưới tháng 7 cột (T2…CN). `AvailabilityCalendar({required DateTime month, required Map<DateTime, DayState> states, DateTime? selected, ValueChanged<DateTime>? onSelect, bool editable = false, ValueChanged<DateTime>? onMonthChanged, DateTime? minDate})`. `DayState`: `free` (mặc định), `pending` (viền đứt primary), `booked` (gạch ngang), `off` (nền mờ). Ngày chọn tô gradient; `pending/booked/off` không chọn được ở chế độ đặt (`editable: false`), `editable: true` cho NAG đổi `free ⇄ off`. Mỗi ô ≥ 44dp; ô có `Semantics` "12 tháng 10, rảnh". Điều hướng tháng bằng nút và vuốt; hỗ trợ chọn dải bằng nhấn lần lượt (thay thế cho kéo). Giờ không nằm trong lưới. Dùng ở S04 (chọn ngày), S06, S20, S03 (tab Lịch).
@@ -213,7 +213,7 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | Widget | Màn |
 |--------|-----|
 | `CtaSurface`/`AppButton` | mọi màn có nút chính, đĩa tab giữa |
-| `AppChip`, `SegmentedTabs` | S01, S03, S04, S06, S14, S15, S18, S19, S21, S25, S35 |
+| `AppChip`, `SegmentedTabs` | S01, S03, S04, S06, S14, S15, S18, S19, S21, S25, S30, S31, S35 |
 | `PhotoCard` | S01, S03, S13, S21 |
 | `PhotographerCard`, `ReasonChips` | S01, S04 |
 | `BookingCard` | S07, S08, S09, S11, S14, S19 |
@@ -230,7 +230,7 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `PhoneField` | S07, S17, S33, S34, S42 |
 | `LocationPromptCard`, `LocationRepository` | S13, S35, S36 |
 | `VerifiedMark`, `BadgeChip`, `BadgeTile` | S02, S03, S04, S16, S27, S30, S37 |
-| `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S22, S30, S38, S39, S40 |
+| `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S22, S31, S38, S39, S40 |
 | `TabBadge` | thanh tab dưới |
 | `NotificationRow` | S63 |
 | `NotificationBell` | S01, S13, S19 |

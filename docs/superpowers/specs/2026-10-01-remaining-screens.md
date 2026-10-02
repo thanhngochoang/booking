@@ -99,8 +99,8 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 | S27 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ⬜ chưa có plan (sự kiện) |
 | S28 | Đăng nhập | `/login` | — | 1 · **đã có** | ✅ đã làm |
 | S29 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm |
-| S30 | Hồ sơ cá nhân | `/profile` | cả hai | 1 · **đã có**, mở rộng ở 3 và 6 | 🟡 khung tạm (thẻ hồ sơ + đổi vai trò) · khớp mock, chưa có huy hiệu (S37) |
-| S31 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút | ✅ đã làm · khớp mock (mock-parity-1) |
+| S30 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | 🟡 code cũ (thẻ hồ sơ + đổi vai trò) · **lệch mock**: mock mới là lưới bài đăng, đổi vai trò và đăng xuất đã sang S31 |
+| S31 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | 🟡 **lệch mock**: thiếu nhóm Chế độ, Số điện thoại, Đăng xuất; giao diện và kiểu nút đổi sang `SegmentedTabs` |
 | S32 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) |
 | S33 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) |
 | S34 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · khớp mock (mock-parity-1) |
@@ -256,7 +256,7 @@ Rules: client không ghi `status`, `registeredCount`, `heldCount`, `ticketCode`,
 | `admin` | Có, như `sales` | Mọi sự kiện |
 
 - `admin` và `sales` **không** nằm trong `users.role` và không chọn được ở S29. Chúng là custom claim `staffRole` do hàm `setStaffRole` đặt, chỉ `admin` gọi được và có nhật ký. Rules và Functions kiểm claim; client chỉ dùng claim để ẩn/hiện nút.
-- Màn tạo (S25, S26) và quản lý (S27) dùng chung cho cả ba vai trò. Chỉ staff thấy thêm ô **"Tổ chức bởi"** (Nền tảng hoặc chọn một nhiếp ảnh gia) ở S25. Nút "Tạo sự kiện" nằm ở S15 và, với staff, ở S30 (hàng "Quản lý sự kiện"); staff không có tab Đăng bài.
+- Màn tạo (S25, S26) và quản lý (S27) dùng chung cho cả ba vai trò. Chỉ staff thấy thêm ô **"Tổ chức bởi"** (Nền tảng hoặc chọn một nhiếp ảnh gia) ở S25. Nút "Tạo sự kiện" nằm ở S15 và, với staff, ở S31 (hàng "Quản lý sự kiện"); staff không có tab Đăng bài.
 - Sự kiện `host.type = "platform"`: S15/S16 hiện "Do ứng dụng tổ chức" thay hàng nhiếp ảnh gia; không có `availability` để đánh dấu; doanh thu thuộc nền tảng; liên hệ trước khi đăng ký đi vào chat hỏi trước của hộp thư hỗ trợ (câu hỏi mở 16).
 - Sự kiện tạo hộ cho nhiếp ảnh gia: chỉ đánh dấu `availability` ngày đó của nhiếp ảnh gia khi họ đồng ý (`hostConsent`); nhiếp ảnh gia nhận thông báo để chấp nhận hoặc từ chối trong 24 giờ, quá hạn thì sự kiện không đăng (câu hỏi mở 17).
 
@@ -775,7 +775,7 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S21 | `SegmentedTabs` **Bài đăng / Sự kiện**; Bài đăng: lưới ảnh (≤ 10), mô tả, gói (bắt buộc), địa điểm, phong cách, "Thêm vào portfolio". Sự kiện: chuyển sang S25 | Thiếu gói → nút Đăng vô hiệu và lỗi dưới trường. Nháp tự lưu cục bộ. | Đăng xong về S01 với bài mới ở đầu. |
 | S22 | Empty "Buổi chụp tiếp theo bắt đầu từ đây" + một hành động nuôi vòng lặp | Chọn câu và hành động theo số ảnh portfolio hiện có. | Nút dẫn tới S21. |
 | S23 | Lý do (radio, bắt buộc), thông báo hoàn cọc, Quay lại / Từ chối | Nút đỏ chỉ sáng sau khi chọn lý do. | `declined` + hoàn cọc 100%; khách nhận push kèm lý do. |
-| S24 | `StepProgress` bước 1 (giới thiệu) và 2 (gói: danh sách gói, form thêm gói) | Cần ≥ 1 gói mới sang bước 3 (kỹ năng). Chưa xong thì không đổi được vai trò (chặn ở nút "Chuyển sang nhiếp ảnh gia" của S30). | Sang S38. |
+| S24 | `StepProgress` bước 1 (giới thiệu) và 2 (gói: danh sách gói, form thêm gói) | Cần ≥ 1 gói mới sang bước 3 (kỹ năng). Chưa xong thì không đổi được vai trò (chặn ở nút "Chuyển qua chế độ nhiếp ảnh" của S31). | Sang S38. |
 | S38 | `StepProgress` 3/4; thể loại (chip, tối đa 6), mức độ từng thể loại (`LevelSelector`), thanh độ khớp, dòng minh chứng | Mức "Chuyên sâu" tối đa 3 và cần ≥ 1 ảnh minh chứng (S40). Lưu nháp tự động. Thoát giữa chừng hỏi lưu nháp. | Ít nhất 1 thể loại mới sang S34; `skills.completeness` cập nhật sau khi lưu. |
 | S39 | Cùng màn S38, phần cuộn: phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp, số năm kinh nghiệm | Giới hạn theo mục 3e.2; ít nhất 1 ngôn ngữ. | Giá trị lưu đúng id trong `taxonomy`. |
 | S40 | Sheet chọn 1–3 ảnh portfolio làm minh chứng cho một thể loại, bộ đếm "n / 3" | Chỉ hiện bài của chính mình; chưa có bài nào → empty nêu "Đăng bài trước" kèm nút tới S21. | Lưu `evidencePostIds`; ảnh minh chứng hiện huy hiệu nhỏ trên thẻ ở S03. |
@@ -792,7 +792,7 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 
 ### Đã có (S28–S31)
 
-Giữ hành vi. Thay đổi: S30 thêm Đã lưu, Đang theo dõi, Bài đã chia sẻ khi sub‑project 3 và 6 xong, **hàng huy hiệu** (→ S37) và hàng "Số điện thoại" mở S33; S31 thêm "Kiểu nút chính" (**đã làm**) và công tắc debug "Hiện mã màn hình" (mục 2.1). S42 Sửa hồ sơ thêm `PhoneField`; hồ sơ nhiếp ảnh gia có hàng "Kỹ năng" mở S38.
+Thay đổi: **S30 thành danh sách bài đăng của chính người dùng** (cả khách lẫn nhiếp ảnh gia: lưới 3 cột, chip lọc theo loại `work` / `real_shoot` / `event_share`, hàng số bài đăng · đang theo dõi · đã lưu, **hàng huy hiệu** → S37). **Đổi chế độ và đăng xuất chuyển sang S31**, cùng các hàng "Số điện thoại" (→ S33), "Kỹ năng" (→ S38) và "Xem hồ sơ công khai"; S31 có thêm "Kiểu nút chính" (**đã làm**), công tắc debug "Hiện mã màn hình" (mục 2.1), giao diện và kiểu nút dạng `SegmentedTabs`. S42 Sửa hồ sơ thêm `PhoneField`; hồ sơ nhiếp ảnh gia có hàng "Kỹ năng" mở S38.
 
 ## 6. Thứ tự triển khai
 

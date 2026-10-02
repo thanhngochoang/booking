@@ -75,7 +75,7 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 
 - **Thông tin**: `/setup/:step` (1: giới thiệu, 2: gói) · sub‑project 2 · Chưa có.
 - **Mục đích**: NAG hoàn thiện hồ sơ đủ để được đặt.
-- **Điểm vào → ra**: nút "Chuyển sang nhiếp ảnh gia" ở S30, hoặc nhắc từ S22. Xong bước 2 → S38. Bốn bước tổng cộng: 1 Giới thiệu → 2 Gói → 3 Kỹ năng (S38) → 4 Khu vực & liên hệ (S34).
+- **Điểm vào → ra**: nút "Chuyển qua chế độ nhiếp ảnh" ở S31 (Cài đặt → Chế độ), hoặc nhắc từ S22. Xong bước 2 → S38. Bốn bước tổng cộng: 1 Giới thiệu → 2 Gói → 3 Kỹ năng (S38) → 4 Khu vực & liên hệ (S34).
 - **Bố cục bước 1**: avatar, ảnh bìa, tên hiển thị, bio (≤ 300 ký tự). **Bước 2**: danh sách gói đã thêm (thumb, tên, mô tả ngắn, giá), form thêm gói (tên, giá ₫, thời lượng, số ảnh hậu kỳ, giao sau mấy ngày), nút "Thêm gói này"; thanh dưới "Quay lại" + "Tiếp tục". `StepProgress` n/4.
 - **Dữ liệu**: ghi `photographers/{uid}` và `services`; lưu nháp mỗi bước.
 - **Trạng thái**: cần ≥ 1 gói mới sang bước 3; giá phải > 0 và nguyên; thời lượng chọn từ danh sách (1, 2, 3, 4, 6, 8 giờ); thoát giữa chừng hỏi lưu nháp; chưa xong thì hồ sơ không công khai và không đổi được vai trò.

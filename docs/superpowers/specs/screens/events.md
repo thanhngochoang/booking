@@ -65,7 +65,7 @@ Màn: S15, S16, S17, S18, S25, S26, S27. Quy ước chung ở [README.md](README
 
 - **Thông tin**: `/events/new` (bước `info`) · NAG, admin hoặc sales · sub‑project 3b · Chưa có.
 - **Mục đích**: nhập nội dung sự kiện.
-- **Điểm vào → ra**: tab giữa → chuyển "Sự kiện" ở S21; hoặc nút "Tạo sự kiện" (S15, S19; staff: S30). Chỉ `admin`/`sales` thấy thêm ô "Tổ chức bởi" (xem dưới). "Tiếp tục" → S26.
+- **Điểm vào → ra**: tab giữa → chuyển "Sự kiện" ở S21; hoặc nút "Tạo sự kiện" (S15, S19; staff: S31 → "Quản lý sự kiện" → S27). Chỉ `admin`/`sales` thấy thêm ô "Tổ chức bởi" (xem dưới). "Tiếp tục" → S26.
 - **Bố cục**: `StepProgress` 1/2; ô ảnh bìa 16:10 (chọn từ thư viện, nén ≤ 2048px); ô "Tổ chức bởi" (chỉ staff: "Nền tảng" hoặc chọn một nhiếp ảnh gia, tìm theo tên); ô "Tên sự kiện" (bắt buộc, ≤ 80 ký tự); chip loại chọn đơn; ô mô tả (≤ 1000 ký tự); nút "Tiếp tục".
 - **Dữ liệu**: nháp lưu cục bộ mỗi lần đổi, và lên `events` với `draft` khi sang bước 2.
 - **Trạng thái**: thiếu tên/loại/bìa → nút vô hiệu và lỗi dưới ô; "Quay lại" có dữ liệu → hỏi "Lưu nháp?".

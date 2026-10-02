@@ -143,7 +143,7 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 - **Thông tin**: `/profile/phone?returnTo=…` (sheet; bản đầu là trang đầy đủ, chuyển vào `AppBottomSheet` khi widget đó có) · khách · sub‑project 2 · Chưa có.
 - **Mục đích**: có số điện thoại để đặt lịch (xác minh làm sau).
-- **Điểm vào → ra**: tự mở khi khách bấm đặt lịch/đăng ký mà hồ sơ thiếu số (S02, S03, S04, S16); S31/S30 cũng mở. Lưu xong → quay lại `returnTo`.
+- **Điểm vào → ra**: tự mở khi khách bấm đặt lịch/đăng ký mà hồ sơ thiếu số (S02, S03, S04, S16); hàng "Số điện thoại" ở S31 cũng mở. Lưu xong → quay lại `returnTo`.
 - **Bố cục**: tiêu đề "Thêm số điện thoại để đặt lịch", giải thích vì sao; `PhoneField` (tiền tố +84, định dạng `903 123 456`); ví dụ; hai công tắc "Cho phép liên hệ qua Zalo" (bật sẵn) và "WhatsApp" (tắt sẵn); ghi chú riêng tư "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc."; nút "Lưu và tiếp tục".
 - **Dữ liệu**: ghi `users/{uid}/private/contact` (`phone` E.164, `allowZalo`, `allowWhatsApp`, `phoneVerified:false`).
 - **Trạng thái**: sai định dạng → lỗi dưới ô ("Số cần 10 chữ số, bắt đầu bằng 0"); lưu lỗi → SnackBar, giữ sheet; đóng không lưu → huỷ luồng đặt, trở lại màn trước.
