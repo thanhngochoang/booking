@@ -38,6 +38,40 @@ class _Scored {
   final DayAvailability? day;
 }
 
+int _nullsLast<T extends num>(T? a, T? b) {
+  if (a == null && b == null) {
+    return 0;
+  }
+  if (a == null) {
+    return 1;
+  }
+  if (b == null) {
+    return -1;
+  }
+  return a.compareTo(b);
+}
+
+/// Comparator of the requested sort; [tie] orders what the sort leaves equal.
+/// The dated cut and the final ranking share this, differing only in [tie].
+int Function(_Scored, _Scored) _bySort(
+  RecommendationSort sort,
+  int Function(_Scored, _Scored) tie,
+) => switch (sort) {
+  RecommendationSort.best => tie,
+  RecommendationSort.near => (a, b) {
+    final c = _nullsLast<double>(a.distanceKm, b.distanceKm);
+    return c != 0 ? c : tie(a, b);
+  },
+  RecommendationSort.price => (a, b) {
+    final c = _nullsLast<int>(a.p.startingPriceVnd, b.p.startingPriceVnd);
+    return c != 0 ? c : tie(a, b);
+  },
+  RecommendationSort.rating => (a, b) {
+    final c = smoothedRating(b.p).compareTo(smoothedRating(a.p));
+    return c != 0 ? c : tie(a, b);
+  },
+};
+
 /// Ranks on the device with stars (smoothed), distance and availability. It is
 /// the safety net when the remote recommender is down, slow or offline, and it
 /// is what the app uses until the recommender service exists.
@@ -64,6 +98,9 @@ class LocalRecommender implements RecommendationRepository {
   static const candidatePool = 200;
   static const maxDatedCandidates = 60;
 
+  /// The API caps `similar` at 20 (services/recommender/api/openapi.yaml).
+  static const maxSimilar = 20;
+
   final PostRepository _posts;
   final PhotographerRepository _photographers;
   final AvailabilityLookup _availability;
@@ -72,8 +109,20 @@ class LocalRecommender implements RecommendationRepository {
 
   String _requestId() => 'local-${_now().microsecondsSinceEpoch}';
 
-  ({double lat, double lng})? _origin(String? geohash6) =>
-      geohash6 == null ? null : decodeGeohash(geohash6);
+  /// A missing or malformed geohash means an unknown origin, never a crash.
+  ({double lat, double lng})? _origin(String? geohash6) {
+    if (geohash6 == null || geohash6.isEmpty) {
+      return null;
+    }
+    try {
+      return decodeGeohash(geohash6);
+    } on Object {
+      return null;
+    }
+  }
+
+  double _geo(double? distanceKm) =>
+      distanceKm == null ? 0.5 : math.exp(-distanceKm / 8);
 
   double? _distance(({double lat, double lng})? from, PhotographerSummary p) =>
       from == null || !p.hasGeo
@@ -82,7 +131,7 @@ class LocalRecommender implements RecommendationRepository {
 
   bool _freeSoon(PhotographerSummary p, DateTime now, {int days = 7}) {
     final d = p.nextFreeDate;
-    if (d == null) {
+    if (d == null || p.nextFreeDay == null) {
       return false;
     }
     return d.compareTo(vnDateKey(now)) >= 0 &&
@@ -108,12 +157,15 @@ class LocalRecommender implements RecommendationRepository {
         );
       }
     } else if (_freeSoon(p, now)) {
-      out.add(
-        Reason(
-          code: ReasonCode.freeOnDate,
-          text: _l.reasonFreeOnDate(formatDay(p.nextFreeDay!)),
-        ),
-      );
+      final free = p.nextFreeDay;
+      if (free != null) {
+        out.add(
+          Reason(
+            code: ReasonCode.freeOnDate,
+            text: _l.reasonFreeOnDate(formatDay(free)),
+          ),
+        );
+      }
     }
     if (specialtyId != null && p.specialtyIds.contains(specialtyId)) {
       out.add(
@@ -152,6 +204,8 @@ class LocalRecommender implements RecommendationRepository {
 
   int _offset(String? cursor) => int.tryParse(cursor ?? '') ?? 0;
 
+  /// A failing availability lookup (only read when `q.date` is set)
+  /// propagates; the resilient wrapper or the screen handles it.
   @override
   Future<RecommendationPage> recommendPhotographers(
     RecommendationQuery q,
@@ -172,25 +226,32 @@ class LocalRecommender implements RecommendationRepository {
         )
         .toList();
 
+    final origin = _origin(q.geohash6);
     var day = const <String, DayAvailability>{};
     if (q.date != null) {
-      pool.sort((a, b) {
-        final byQuality = _quality(b).compareTo(_quality(a));
-        if (byQuality != 0) {
-          return byQuality;
+      // Before the day reads every free candidate has the same availability,
+      // so the cut uses the requested sort with the pre-availability key.
+      int byPreKey(_Scored a, _Scored b) {
+        final s = b.score.compareTo(a.score);
+        if (s != 0) {
+          return s;
         }
-        // Quality saturates at 1.0, so break ties by the evidence: the most
-        // reviewed are kept in the cut, then id for a stable order.
-        final byRating = smoothedRating(b).compareTo(smoothedRating(a));
+        final byRating = smoothedRating(b.p).compareTo(smoothedRating(a.p));
         if (byRating != 0) {
           return byRating;
         }
-        final byReviews = b.reviewCount.compareTo(a.reviewCount);
-        return byReviews != 0 ? byReviews : a.id.compareTo(b.id);
-      });
-      if (pool.length > maxDatedCandidates) {
-        pool = pool.sublist(0, maxDatedCandidates);
+        final byReviews = b.p.reviewCount.compareTo(a.p.reviewCount);
+        return byReviews != 0 ? byReviews : a.p.id.compareTo(b.p.id);
       }
+
+      final pre = [
+        for (final p in pool)
+          () {
+            final d = _distance(origin, p);
+            return _Scored(p, 0.5 * _quality(p) + 0.3 * _geo(d), d, null);
+          }(),
+      ]..sort(_bySort(q.sort, byPreKey));
+      pool = [for (final c in pre.take(maxDatedCandidates)) c.p];
       day = await _availability.on(dayKeyOf(q.date!), pool.map((p) => p.id));
       pool = pool
           .where(
@@ -201,11 +262,9 @@ class LocalRecommender implements RecommendationRepository {
           .toList();
     }
 
-    final origin = _origin(q.geohash6);
     final scored = <_Scored>[];
     for (final p in pool) {
       final d = _distance(origin, p);
-      final geo = d == null ? 0.5 : math.exp(-d / 8);
       final state = day[p.id];
       final availability = q.date != null
           ? (state == DayAvailability.pending ? 0.5 : 1.0)
@@ -213,46 +272,19 @@ class LocalRecommender implements RecommendationRepository {
       scored.add(
         _Scored(
           p,
-          0.5 * _quality(p) + 0.3 * geo + 0.2 * availability,
+          0.5 * _quality(p) + 0.3 * _geo(d) + 0.2 * availability,
           d,
           state,
         ),
       );
     }
 
-    int byScore(_Scored a, _Scored b) {
-      final s = b.score.compareTo(a.score);
-      return s != 0 ? s : a.p.id.compareTo(b.p.id);
-    }
-
-    int nullsLast<T extends num>(T? a, T? b) {
-      if (a == null && b == null) {
-        return 0;
-      }
-      if (a == null) {
-        return 1;
-      }
-      if (b == null) {
-        return -1;
-      }
-      return a.compareTo(b);
-    }
-
-    scored.sort(switch (q.sort) {
-      RecommendationSort.best => byScore,
-      RecommendationSort.near => (a, b) {
-        final c = nullsLast<double>(a.distanceKm, b.distanceKm);
-        return c != 0 ? c : byScore(a, b);
-      },
-      RecommendationSort.price => (a, b) {
-        final c = nullsLast<int>(a.p.startingPriceVnd, b.p.startingPriceVnd);
-        return c != 0 ? c : byScore(a, b);
-      },
-      RecommendationSort.rating => (a, b) {
-        final c = smoothedRating(b.p).compareTo(smoothedRating(a.p));
-        return c != 0 ? c : byScore(a, b);
-      },
-    });
+    scored.sort(
+      _bySort(q.sort, (a, b) {
+        final s = b.score.compareTo(a.score);
+        return s != 0 ? s : a.p.id.compareTo(b.p.id);
+      }),
+    );
 
     final start = math.min(_offset(q.cursor), scored.length);
     final limit = clampPageSize(q.limit);
@@ -327,7 +359,7 @@ class LocalRecommender implements RecommendationRepository {
       final s = b.$2.compareTo(a.$2);
       return s != 0 ? s : a.$1.id.compareTo(b.$1.id);
     });
-    final top = scored.take(clampPageSize(limit)).toList();
+    final top = scored.take(clampPageSize(limit, maxSimilar)).toList();
     return RecommendationPage(
       items: [
         for (var i = 0; i < top.length; i++)
@@ -357,6 +389,9 @@ class LocalRecommender implements RecommendationRepository {
     );
   }
 
+  /// Post ranks are 1-based within the returned page: the cursor belongs to the
+  /// post repository, so step 3r must add the page offset if feedback needs
+  /// global ranks.
   @override
   Future<PostRecommendationPage> recommendPosts(
     PostRecommendationQuery q,
@@ -390,7 +425,8 @@ class LocalRecommender implements RecommendationRepository {
             final author = authors[ordered[i].photographerId]!;
             final d = _distance(origin, author);
             final reasons = <Reason>[
-              if (_freeSoon(author, now, days: 14))
+              if (_freeSoon(author, now, days: 14) &&
+                  author.nextFreeDay != null)
                 Reason(
                   code: ReasonCode.freeOnDate,
                   text: _l.reasonFreeOnDate(formatDay(author.nextFreeDay!)),

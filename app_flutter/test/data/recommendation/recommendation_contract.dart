@@ -120,16 +120,6 @@ void recommendationRepositoryContract(
       },
     );
 
-    test('scores never increase down the list for the default order', () async {
-      final page = await repo.recommendPhotographers(
-        const RecommendationQuery(),
-      );
-      final scores = page.items.map((e) => e.score).toList();
-      for (var i = 1; i < scores.length; i++) {
-        expect(scores[i], lessThanOrEqualTo(scores[i - 1]));
-      }
-    });
-
     test('a specialty keeps only photographers who offer it', () async {
       final page = await repo.recommendPhotographers(
         const RecommendationQuery(specialtyId: 'portrait'),
@@ -196,7 +186,8 @@ void recommendationRepositoryContract(
       for (final item in page.items) {
         expect(item.reasons.length, lessThanOrEqualTo(3));
         for (final r in item.reasons) {
-          expect(ReasonCode.values, contains(r.code));
+          expect(r.code.code, isNotEmpty);
+          expect(ReasonCode.fromCode(r.code.code), r.code);
           expect(r.text.trim(), isNotEmpty);
         }
       }

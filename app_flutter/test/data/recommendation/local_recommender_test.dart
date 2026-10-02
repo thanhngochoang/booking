@@ -47,6 +47,16 @@ void main() {
   });
 
   group('ranking', () {
+    test('scores never increase down the list for the default order', () async {
+      final world = contractWorld();
+      final r = make(photographers: world.photographers, posts: world.posts);
+      final page = await r.recommendPhotographers(const RecommendationQuery());
+      final scores = page.items.map((e) => e.score).toList();
+      for (var i = 1; i < scores.length; i++) {
+        expect(scores[i], lessThanOrEqualTo(scores[i - 1]));
+      }
+    });
+
     test(
       'a well-reviewed photographer beats a perfect score from one review',
       () async {
@@ -269,6 +279,119 @@ void main() {
       },
     );
 
+    test(
+      'with a date the 60 kept follow the sort: a nearby one survives the cut',
+      () async {
+        final availability = FakeAvailabilityLookup();
+        final r = make(
+          photographers: [
+            for (var i = 0; i < 70; i++)
+              fixturePhotographer(
+                'far${i.toString().padLeft(2, '0')}',
+                lat: 21.0285,
+                lng: 105.8542,
+                rating: 4.9,
+                reviews: 100,
+              ),
+            fixturePhotographer(
+              'near',
+              lat: 10.7869,
+              lng: 106.7009,
+              rating: 4.0,
+              reviews: 5,
+            ),
+          ],
+          availability: availability,
+        );
+        final date = DateTime.utc(2026, 10, 12);
+        final best = await r.recommendPhotographers(
+          RecommendationQuery(date: date, geohash6: _hcm6),
+        );
+        expect(availability.requested.last, hasLength(60));
+        expect(availability.requested.last, contains('near'));
+        expect(ids(best), contains('near'));
+        final near = await r.recommendPhotographers(
+          RecommendationQuery(
+            date: date,
+            geohash6: _hcm6,
+            sort: RecommendationSort.near,
+          ),
+        );
+        expect(ids(near).first, 'near');
+      },
+    );
+
+    test(
+      'with a date and sort price, a cheap lower-quality one is kept and first',
+      () async {
+        final availability = FakeAvailabilityLookup();
+        final r = make(
+          photographers: [
+            for (var i = 0; i < 70; i++)
+              fixturePhotographer(
+                'dear${i.toString().padLeft(2, '0')}',
+                rating: 4.9,
+                reviews: 100,
+                startingPrice: 9000000,
+              ),
+            fixturePhotographer(
+              'cheap',
+              rating: 4.0,
+              reviews: 5,
+              startingPrice: 500000,
+            ),
+          ],
+          availability: availability,
+        );
+        final page = await r.recommendPhotographers(
+          RecommendationQuery(
+            date: DateTime.utc(2026, 10, 12),
+            sort: RecommendationSort.price,
+          ),
+        );
+        expect(availability.requested.last, hasLength(60));
+        expect(availability.requested.last, contains('cheap'));
+        expect(ids(page).first, 'cheap');
+      },
+    );
+
+    test('a failing availability lookup propagates', () async {
+      final r = make(
+        photographers: [fixturePhotographer('a')],
+        availability: FakeAvailabilityLookup()
+          ..failWith = StateError('offline'),
+      );
+      expect(
+        r.recommendPhotographers(
+          RecommendationQuery(date: DateTime.utc(2026, 10, 12)),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test(
+      'a malformed nextFreeDate gives no reason and does not throw',
+      () async {
+        final page = await make(
+          photographers: [
+            fixturePhotographer('x', nextFreeDate: '2026-10-03x'),
+          ],
+        ).recommendPhotographers(const RecommendationQuery());
+        expect(
+          page.items.single.reasons.map((e) => e.code),
+          isNot(contains(ReasonCode.freeOnDate)),
+        );
+      },
+    );
+
+    test('a malformed geohash6 means an unknown origin', () async {
+      final page = await make(photographers: [fixturePhotographer('x')])
+          .recommendPhotographers(
+            const RecommendationQuery(geohash6: 'not!valid'),
+          );
+      expect(page.items.single.distanceKm, isNull);
+    });
+
     test('no date means no availability reads', () async {
       final availability = FakeAvailabilityLookup();
       await make(
@@ -454,6 +577,15 @@ void main() {
         expect((await r.similar('p0', limit: 3)).items, hasLength(3));
       },
     );
+
+    test('the limit is capped at 20, as in the API', () async {
+      final r = make(
+        photographers: [
+          for (var i = 0; i < 30; i++) fixturePhotographer('p$i'),
+        ],
+      );
+      expect((await r.similar('p0', limit: 50)).items, hasLength(20));
+    });
   });
 
   group('recommendPosts', () {
