@@ -4,7 +4,7 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 import 'package:photobooking/core/widgets/signature_loader.dart';
 
-enum _Kind { primary, outline, text }
+enum _Kind { primary, outline, text, danger }
 
 /// Mock `.btn` (48, here [controlHeight]), `.btn.sm` (38) and `.btn.xs`
 /// (30, intrinsic width). The hit area stays at least 48dp at every size.
@@ -44,6 +44,17 @@ class AppButton extends StatelessWidget {
     this.size = AppButtonSize.regular,
     this.tapAlignment = Alignment.center,
   }) : _kind = _Kind.text;
+
+  const AppButton.danger(
+    this.label, {
+    super.key,
+    required this.onPressed,
+    this.loading = false,
+    this.icon,
+    this.style,
+    this.size = AppButtonSize.regular,
+    this.tapAlignment = Alignment.center,
+  }) : _kind = _Kind.danger;
 
   final String label;
   final VoidCallback? onPressed;
@@ -148,7 +159,7 @@ class AppButton extends StatelessWidget {
                 child: FittedBox(
                   child: SignatureLoader(
                     size: LoaderSize.inline,
-                    color: onGradient
+                    color: (onGradient || _kind == _Kind.danger)
                         ? Colors.white
                         : style?.foregroundColor?.resolve(const {}),
                   ),
@@ -205,6 +216,25 @@ class AppButton extends StatelessWidget {
       _Kind.text => TextButton(
         onPressed: cb,
         style: layered(themeText(theme.textButtonTheme.style) ?? filledText),
+        child: child,
+      ),
+      _Kind.danger => FilledButton(
+        onPressed: cb,
+        style: layered(
+          filledText,
+          FilledButton.styleFrom(
+            backgroundColor: AppColors.error,
+            disabledBackgroundColor: AppColors.error.withValues(alpha: 0.4),
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
+            shadowColor: Colors.transparent,
+            shape: _sizeRadius != null
+                ? RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(_sizeRadius!),
+                  )
+                : null,
+          ),
+        ),
         child: child,
       ),
     };
