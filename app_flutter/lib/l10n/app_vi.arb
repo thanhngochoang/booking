@@ -457,5 +457,21 @@
   "calendarDaySemantics": "{day} tháng {month}, {state}",
   "@calendarDaySemantics": {"placeholders": {"day": {"type": "String"}, "month": {"type": "String"}, "state": {"type": "String"}}},
   "calendarHasEvent": "có sự kiện",
-  "calendarToday": "hôm nay"
+  "calendarToday": "hôm nay",
+  "myCalendarTitle": "Lịch của tôi",
+  "calendarMarkOff": "Đánh dấu nghỉ",
+  "calendarClearOff": "Bỏ nghỉ",
+  "calendarUndo": "Hoàn tác",
+  "calendarHint": "Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.",
+  "calendarRangeHint": "Chạm ngày cuối để đánh dấu nghỉ cả khoảng.",
+  "calendarHasPlan": "Ngày này đã có lịch",
+  "calendarMarkedOff": "Đã đánh dấu nghỉ",
+  "calendarMarkedOffMany": "Đã đánh dấu nghỉ {count} ngày",
+  "@calendarMarkedOffMany": {"placeholders": {"count": {"type": "int"}}},
+  "calendarClearedOff": "Đã bỏ nghỉ",
+  "calendarOpenBooking": "Xem lịch hẹn",
+  "calendarOpenEvent": "Quản lý sự kiện",
+  "calendarSaveError": "Không lưu được lịch. Thử lại nhé.",
+  "calendarLoadError": "Không tải được lịch.",
+  "calendarPickDay": "Chọn một ngày để xem chi tiết."
 }

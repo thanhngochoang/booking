@@ -2091,6 +2091,96 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'hôm nay'**
   String get calendarToday;
+
+  /// No description provided for @myCalendarTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch của tôi'**
+  String get myCalendarTitle;
+
+  /// No description provided for @calendarMarkOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu nghỉ'**
+  String get calendarMarkOff;
+
+  /// No description provided for @calendarClearOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ nghỉ'**
+  String get calendarClearOff;
+
+  /// No description provided for @calendarUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get calendarUndo;
+
+  /// No description provided for @calendarHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.'**
+  String get calendarHint;
+
+  /// No description provided for @calendarRangeHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm ngày cuối để đánh dấu nghỉ cả khoảng.'**
+  String get calendarRangeHint;
+
+  /// No description provided for @calendarHasPlan.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày này đã có lịch'**
+  String get calendarHasPlan;
+
+  /// No description provided for @calendarMarkedOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đánh dấu nghỉ'**
+  String get calendarMarkedOff;
+
+  /// No description provided for @calendarMarkedOffMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đánh dấu nghỉ {count} ngày'**
+  String calendarMarkedOffMany(int count);
+
+  /// No description provided for @calendarClearedOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ nghỉ'**
+  String get calendarClearedOff;
+
+  /// No description provided for @calendarOpenBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lịch hẹn'**
+  String get calendarOpenBooking;
+
+  /// No description provided for @calendarOpenEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý sự kiện'**
+  String get calendarOpenEvent;
+
+  /// No description provided for @calendarSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được lịch. Thử lại nhé.'**
+  String get calendarSaveError;
+
+  /// No description provided for @calendarLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được lịch.'**
+  String get calendarLoadError;
+
+  /// No description provided for @calendarPickDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một ngày để xem chi tiết.'**
+  String get calendarPickDay;
 }
 
 class _AppLocalizationsDelegate

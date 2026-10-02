@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
@@ -158,6 +159,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/setup/2',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const SetupPackagesScreen(),
+      ),
+      GoRoute(
+        path: '/work/calendar',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const MyCalendarScreen(),
       ),
       GoRoute(
         path: '/setup/3',

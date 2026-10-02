@@ -1154,4 +1154,52 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarToday => 'hôm nay';
+
+  @override
+  String get myCalendarTitle => 'Lịch của tôi';
+
+  @override
+  String get calendarMarkOff => 'Đánh dấu nghỉ';
+
+  @override
+  String get calendarClearOff => 'Bỏ nghỉ';
+
+  @override
+  String get calendarUndo => 'Hoàn tác';
+
+  @override
+  String get calendarHint =>
+      'Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.';
+
+  @override
+  String get calendarRangeHint => 'Chạm ngày cuối để đánh dấu nghỉ cả khoảng.';
+
+  @override
+  String get calendarHasPlan => 'Ngày này đã có lịch';
+
+  @override
+  String get calendarMarkedOff => 'Đã đánh dấu nghỉ';
+
+  @override
+  String calendarMarkedOffMany(int count) {
+    return 'Đã đánh dấu nghỉ $count ngày';
+  }
+
+  @override
+  String get calendarClearedOff => 'Đã bỏ nghỉ';
+
+  @override
+  String get calendarOpenBooking => 'Xem lịch hẹn';
+
+  @override
+  String get calendarOpenEvent => 'Quản lý sự kiện';
+
+  @override
+  String get calendarSaveError => 'Không lưu được lịch. Thử lại nhé.';
+
+  @override
+  String get calendarLoadError => 'Không tải được lịch.';
+
+  @override
+  String get calendarPickDay => 'Chọn một ngày để xem chi tiết.';
 }
