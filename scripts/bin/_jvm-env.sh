@@ -3,6 +3,7 @@
 export HOME="$ROOT/.home" PUB_CACHE="$ROOT/.pub-cache"
 export ANDROID_HOME="$ROOT/.android-sdk" ANDROID_SDK_ROOT="$ROOT/.android-sdk"
 export ANDROID_USER_HOME="$ROOT/.home/.android" GRADLE_USER_HOME="$ROOT/.home/.gradle"
+export ANDROID_AVD_HOME="$ROOT/.home/.android/avd"
 export FLUTTER_SUPPRESS_ANALYTICS=true
 
 # Load secrets from the repo-root .env (gitignored; template: .env.example).
@@ -17,13 +18,14 @@ if [ -f "$ROOT/.env" ]; then
   done < "$ROOT/.env"
   unset _l _k _v _cur
 fi
-_write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && printf '%s' "$1" | base64 -d > "$2" && chmod 600 "$2"; }
+_write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && printf '%s' "$1" | base64 -d > "$2" && chmod 600 "$2" || true; }
 _write_b64 "${APP_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app/google-services.json"
 _write_b64 "${FLUTTER_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app_flutter/android/app/google-services.json"
-if [ -z "${JAVA_HOME:-}" ]; then
-  for j in "$ROOT/.jdk/Contents/Home" "$ROOT/.jdk" /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home; do
-    [ -x "$j/bin/java" ] && { export JAVA_HOME="$j"; break; }
+if [ -z "${JAVA_HOME:-}" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
+  for j in "$ROOT/.jdk/Contents/Home" "$ROOT/.jdk" /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home "$(/usr/libexec/java_home -v 17 2>/dev/null)"; do
+    [ -n "$j" ] && [ -x "$j/bin/java" ] && { export JAVA_HOME="$j"; break; }
   done
+  unset j
 fi
 mkdir -p "$ROOT/.home/tmp" "$GRADLE_USER_HOME"
 

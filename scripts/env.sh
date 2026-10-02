@@ -35,7 +35,7 @@ if [ -f "$ROOT/.env" ]; then
   done < "$ROOT/.env"
   unset _l _k _v _cur
 fi
-_write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && printf '%s' "$1" | base64 -d > "$2" && chmod 600 "$2"; }
+_write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && printf '%s' "$1" | base64 -d > "$2" && chmod 600 "$2" || true; }
 _write_b64 "${APP_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app/google-services.json"
 _write_b64 "${FLUTTER_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app_flutter/android/app/google-services.json"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
