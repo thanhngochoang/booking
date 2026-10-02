@@ -19,3 +19,6 @@ Task 4: complete (booking ports, in-memory reference store, fake gateway, create
 
 Task 5: dispatched
 Task 5: complete (commitTransition, transitionBooking, openDispute, runBookingSweeps, 148 tests pass, purity clean, typecheck and lint clean)
+
+Task 6: dispatched
+Task 6: complete (Firestore booking store, catalog reader, customer contact reader, live deps wiring, 48 functions unit tests pass, typecheck and lint clean)

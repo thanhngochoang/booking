@@ -12,6 +12,8 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   deadline_passed: 'failed-precondition',
   limit_exceeded: 'resource-exhausted',
   conflict: 'aborted',
+  price_changed: 'failed-precondition',
+  not_eligible: 'failed-precondition',
 };
 
 /**

@@ -24,6 +24,8 @@ describe('toHttpsError', () => {
       deadline_passed: 'failed-precondition',
       limit_exceeded: 'resource-exhausted',
       conflict: 'aborted',
+      price_changed: 'failed-precondition',
+      not_eligible: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });
