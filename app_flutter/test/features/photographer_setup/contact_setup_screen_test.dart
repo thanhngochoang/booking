@@ -405,4 +405,30 @@ void main() {
     await _open(tester);
     expect(find.byIcon(Icons.lock_outline_rounded), findsNothing);
   });
+
+  testWidgets('the footer reaches the bottom edge over the gesture bar', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+    await _open(tester);
+    final footer = tester.getRect(find.byType(AppFooterBar));
+    expect(footer.bottom, tester.view.physicalSize.height);
+  });
+
+  testWidgets('keyboard up at 320x568: footer and phone field reachable', (
+    tester,
+  ) async {
+    final h = await _harness();
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(h.widget);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('setup-finish')).hitTestable(), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('setup-phone')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('setup-phone')).hitTestable(), findsWidgets);
+  });
 }

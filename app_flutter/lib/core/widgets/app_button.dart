@@ -60,26 +60,25 @@ class AppButton extends StatelessWidget {
   final Alignment tapAlignment;
   final _Kind _kind;
 
-  ButtonStyle? get _sizeStyle => switch (size) {
+  /// Corner radius of a compact size; null for regular (theme shape).
+  double? get _sizeRadius => switch (size) {
     AppButtonSize.regular => null,
-    AppButtonSize.small => _compact(
-      38,
-      AppText.sm,
-      AppRadius.control,
-      wide: true,
-    ),
-    AppButtonSize.xsmall => _compact(
-      30,
-      AppText.xs2,
-      AppRadius.lg,
-      wide: false,
-    ),
+    AppButtonSize.small => AppRadius.control,
+    AppButtonSize.xsmall => AppRadius.lg,
   };
 
-  static ButtonStyle _compact(
+  /// [base] is the kind's theme text style: a button `textStyle` replaces the
+  /// theme's instead of merging, so the compact one keeps its family.
+  ButtonStyle? _sizeStyle(TextStyle? base) => switch (size) {
+    AppButtonSize.regular => null,
+    AppButtonSize.small => _compact(38, AppText.sm, base, wide: true),
+    AppButtonSize.xsmall => _compact(30, AppText.xs2, base, wide: false),
+  };
+
+  ButtonStyle _compact(
     double height,
     double font,
-    double radius, {
+    TextStyle? base, {
     required bool wide,
   }) => ButtonStyle(
     minimumSize: WidgetStatePropertyAll(
@@ -90,10 +89,13 @@ class AppButton extends StatelessWidget {
       EdgeInsets.symmetric(horizontal: AppSpace.s3),
     ),
     textStyle: WidgetStatePropertyAll(
-      TextStyle(fontSize: font, fontWeight: FontWeight.w600),
+      (base ?? const TextStyle()).copyWith(
+        fontSize: font,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     shape: WidgetStatePropertyAll(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(_sizeRadius!)),
     ),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
   );
@@ -159,29 +161,44 @@ class AppButton extends StatelessWidget {
             ],
           );
     final cb = loading ? null : onPressed;
+    final theme = Theme.of(context);
+    TextStyle? themeText(ButtonStyle? s) => s?.textStyle?.resolve(const {});
+    // `a.merge(b)` keeps a's values: caller style first, then size, then base.
+    ButtonStyle? layered(TextStyle? base, [ButtonStyle? kindBase]) {
+      final layers = [style, _sizeStyle(base), kindBase].nonNulls;
+      return layers.isEmpty ? null : layers.reduce((a, b) => a.merge(b));
+    }
+
+    final filledText = themeText(theme.filledButtonTheme.style);
     return switch (_kind) {
       _Kind.primary => _GradientFill(
         dimmed: cb == null && !loading,
+        radius: _sizeRadius,
         child: FilledButton(
           onPressed: cb,
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            disabledBackgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            disabledForegroundColor: Colors.white,
-            shadowColor: Colors.transparent,
-          ).merge(_sizeStyle).merge(style),
+          style: layered(
+            filledText,
+            FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              disabledBackgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+            ),
+          ),
           child: child,
         ),
       ),
       _Kind.outline => OutlinedButton(
         onPressed: cb,
-        style: _sizeStyle?.merge(style) ?? style,
+        style: layered(
+          themeText(theme.outlinedButtonTheme.style) ?? filledText,
+        ),
         child: child,
       ),
       _Kind.text => TextButton(
         onPressed: cb,
-        style: _sizeStyle?.merge(style) ?? style,
+        style: layered(themeText(theme.textButtonTheme.style) ?? filledText),
         child: child,
       ),
     };
@@ -189,16 +206,21 @@ class AppButton extends StatelessWidget {
 }
 
 class _GradientFill extends StatelessWidget {
-  const _GradientFill({required this.child, required this.dimmed});
+  const _GradientFill({required this.child, required this.dimmed, this.radius});
 
   final Widget child;
   final bool dimmed;
+
+  /// The compact size's radius; null uses the theme's filled-button shape.
+  final double? radius;
 
   @override
   Widget build(BuildContext context) {
     final shape = Theme.of(context).filledButtonTheme.style?.shape
         ?.resolve(const {});
-    final radius = shape is RoundedRectangleBorder
+    final radius = this.radius != null
+        ? BorderRadius.circular(this.radius!)
+        : shape is RoundedRectangleBorder
         ? shape.borderRadius.resolve(Directionality.of(context))
         : BorderRadius.circular(AppRadius.md);
     final dark = Theme.of(context).brightness == Brightness.dark;

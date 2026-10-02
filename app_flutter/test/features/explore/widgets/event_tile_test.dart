@@ -1,5 +1,6 @@
 // test/features/explore/widgets/event_tile_test.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/explore/widgets/event_tile.dart';
@@ -102,4 +103,24 @@ void main() {
     );
     expect(m.color, AppColors.glass);
   });
+
+  for (final scale in [1.0, 1.3]) {
+    testWidgets('"Không thu phí" stays on one line at 320dp x$scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        hostWidget(
+          NearbyEventTile(event: event('a', priceVnd: 0)),
+          width: 320,
+          textScale: scale,
+        ),
+      );
+      final tag = tester.renderObject<RenderParagraph>(
+        find.text('Không thu phí'),
+      );
+      final line = tag.text.style!.fontSize! * scale * 1.6;
+      expect(tag.size.height, lessThan(line));
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

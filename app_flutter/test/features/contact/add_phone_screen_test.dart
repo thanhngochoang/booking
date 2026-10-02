@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/core.dart';
 
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
@@ -253,6 +254,40 @@ void main() {
         findsOneWidget,
       );
       expect(result.value, isNull);
+    });
+
+    testWidgets('the sheet carries the S33 screen code', (tester) async {
+      final h = await sheetHarness();
+      await tester.pumpWidget(gateApp(h, ValueNotifier<bool?>(null)));
+      await tester.tap(find.text('gate'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('app-sheet')),
+          matching: find.byWidgetPredicate(
+            (w) => w is ScreenCode && w.code == ScreenCodes.addPhone,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('keyboard up at 320x568: field and save stay reachable', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+      addTearDown(tester.view.reset);
+      final h = await sheetHarness();
+      await tester.pumpWidget(gateApp(h, ValueNotifier<bool?>(null)));
+      await tester.tap(find.text('gate'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TextFormField).hitTestable(), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('phone-save')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('phone-save')).hitTestable(), findsOneWidget);
     });
 
     testWidgets('dismissing leaves no number', (tester) async {

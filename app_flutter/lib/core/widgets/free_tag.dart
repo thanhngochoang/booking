@@ -27,8 +27,12 @@ class FreeTag extends StatelessWidget {
           horizontal: AppSpace.s2,
           vertical: 3,
         ),
+        // A tag is one line; it never wraps into a two-line stadium.
         child: Text(
           context.l10n.freeTag,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: AppText.xs,
             fontWeight: FontWeight.w600,

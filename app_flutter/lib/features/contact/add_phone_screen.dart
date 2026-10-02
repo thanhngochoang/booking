@@ -14,14 +14,17 @@ import 'package:photobooking/features/contact/save_contact_controller.dart';
 Future<bool?> showAddPhoneSheet(BuildContext context, {String? returnTo}) {
   return showAppSheet<bool>(
     context,
-    builder: (sheetContext) => Material(
-      type: MaterialType.transparency,
-      child: AddPhoneContent(
-        onSaved: () {
-          Navigator.of(sheetContext).pop(true);
-          final to = safeReturnTo(returnTo);
-          if (to != null) context.go(to);
-        },
+    builder: (sheetContext) => ScreenCode(
+      ScreenCodes.addPhone,
+      child: Material(
+        type: MaterialType.transparency,
+        child: AddPhoneContent(
+          onSaved: () {
+            Navigator.of(sheetContext).pop(true);
+            final to = safeReturnTo(returnTo);
+            if (to != null) context.go(to);
+          },
+        ),
       ),
     ),
   );

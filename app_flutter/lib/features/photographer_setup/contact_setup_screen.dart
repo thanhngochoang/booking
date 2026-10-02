@@ -40,8 +40,10 @@ class ContactSetupScreen extends ConsumerWidget {
               ),
             ],
           ),
+          // The bottom inset belongs to the sticky AppFooterBar.
           body: SafeArea(
             top: false,
+            bottom: false,
             child: prefill.when(
               data: (draft) => _ContactSetupForm(draft: draft),
               loading: () =>

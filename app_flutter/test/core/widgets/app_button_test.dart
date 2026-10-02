@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 
@@ -126,4 +127,45 @@ void main() {
       );
     });
   }
+
+  group('compact text and shape follow the size', () {
+    TextStyle paint(WidgetTester tester, String label) =>
+        tester.renderObject<RenderParagraph>(find.text(label)).text.style!;
+
+    for (final (size, font, radius) in [
+      (AppButtonSize.small, AppText.sm, AppRadius.control),
+      (AppButtonSize.xsmall, AppText.xs2, AppRadius.lg),
+    ]) {
+      testWidgets('${size.name}: every kind uses the brand font at $font', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          hostWidget(
+            Column(
+              children: [
+                AppButton.primary('P', size: size, onPressed: () {}),
+                AppButton.outline('O', size: size, onPressed: () {}),
+                AppButton.text('T', size: size, onPressed: () {}),
+              ],
+            ),
+          ),
+        );
+        for (final l in ['P', 'O', 'T']) {
+          final st = paint(tester, l);
+          expect(st.fontSize, font, reason: l);
+          expect(st.fontFamily, AppFonts.body, reason: l);
+        }
+      });
+
+      testWidgets('${size.name}: the gradient has radius $radius', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          hostWidget(AppButton.primary('P', size: size, onPressed: () {})),
+        );
+        final cta = tester.widget<CtaSurface>(find.byType(CtaSurface));
+        expect(cta.borderRadius, BorderRadius.circular(radius));
+      });
+    }
+  });
 }

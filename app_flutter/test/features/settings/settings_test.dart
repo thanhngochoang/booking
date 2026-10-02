@@ -461,4 +461,38 @@ void main() {
       findsNothing,
     );
   });
+
+  Future<void> openEdit(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('S42 keyboard up at 320x568: name field and Lưu reachable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.reset);
+    await openEdit(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+    expect(find.byKey(const Key('edit-name')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('S42 fits 320x640 at 1.3x', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await openEdit(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+  });
 }

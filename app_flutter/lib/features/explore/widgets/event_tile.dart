@@ -134,7 +134,7 @@ class NearbyEventTile extends StatelessWidget {
                     // the seats left.
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: box.maxWidth * 0.32,
+                        maxWidth: box.maxWidth * 0.45,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
