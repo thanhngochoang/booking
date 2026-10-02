@@ -130,3 +130,201 @@ Where the specs are silent or an open question blocks a value, this plan takes t
 | `app_flutter/test/data/booking/*_test.dart` (create) | Task 10 tests |
 
 ---
+### Task 1: Error codes, policy, time & slot math, types and shared fixtures
+
+**Files:**
+- Modify: `packages/domain/src/errors.ts`, `packages/domain/src/index.ts`
+- Create: `packages/domain/src/booking_policy.ts`, `packages/domain/src/booking.ts`, `packages/domain/test/fixtures/booking_policy.json`, `packages/domain/test/booking_policy.test.ts`
+
+**Interfaces:**
+- Consumes: `packages/domain/src/errors.ts`
+- Produces:
+  - Error codes `price_changed`, `not_eligible` added to `ERROR_CODES`.
+  - Constants: `DEPOSIT_PERCENT = 30`, `DISPUTE_WINDOW_HOURS = 24`, `ACCEPT_DEADLINE_HOURS = 24`, `DRAFT_EXPIRY_MINUTES = 30`, `AUTO_COMPLETE_DELAY_HOURS = 24`, `ESCROW_RELEASE_DELAY_HOURS = 24`, `BOOKING_CONTACT_RETENTION_DAYS = 30`, `MAX_NOTE_LENGTH = 300`, `MAX_PLACE_LENGTH = 120`.
+  - Math & policy functions: `computeDeposit(price: number): { deposit: number; remaining: number }`, `refundPercent(hoursBeforeStart: number): number`, `computeRefund(deposit: number, percent: number): number`, `computeAcceptDeadline(paidAt: Date, startsAt: Date): Date`, `computeDaySlots(durationMinutes: number): string[]`, `isDateString(v: unknown): boolean`, `isTimeString(v: unknown): boolean`, `parseVnDateTime(date: string, time: string): Date`.
+  - Types: `BookingStatus`, `EscrowStatus`, `PaymentProvider`, `Booking`, `BookingContactSnapshot`, `BookingEventRecord`.
+
+- [ ] **Step 1: Write failing tests in `packages/domain/test/booking_policy.test.ts`**
+- [ ] **Step 2: Add new error codes to `packages/domain/src/errors.ts`**
+- [ ] **Step 3: Implement policy & math in `packages/domain/src/booking_policy.ts` and types in `packages/domain/src/booking.ts`**
+- [ ] **Step 4: Create shared fixture `packages/domain/test/fixtures/booking_policy.json`**
+- [ ] **Step 5: Export from `packages/domain/src/index.ts` and verify with `npm test`**
+
+---
+
+### Task 2: Booking state machine & transitions
+
+**Files:**
+- Create: `packages/domain/src/booking_machine.ts`, `packages/domain/test/booking_machine.test.ts`
+- Modify: `packages/domain/src/index.ts`
+
+**Interfaces:**
+- Consumes: `packages/domain/src/booking.ts`, `packages/domain/src/booking_policy.ts`
+- Produces:
+  - `roleOf(userId: string, booking: Pick<Booking, 'customerId' | 'photographerId'>): 'customer' | 'photographer' | 'system' | null`
+  - `type TransitionAction = 'accept' | 'decline' | 'cancel' | 'upcoming' | 'complete' | 'review' | 'expire'`
+  - `decideTransition(booking: Booking, action: TransitionAction, actor: { id?: string; role: 'customer' | 'photographer' | 'system' }, now: Date, reason?: string): { nextStatus: BookingStatus; refundPercent: number; cancelRecord?: Booking['cancel'] }`
+  - Transition matrix validation following domain-model §5.
+
+- [ ] **Step 1: Write failing state machine tests in `booking_machine.test.ts`**
+- [ ] **Step 2: Implement `roleOf` and `decideTransition` in `booking_machine.ts`**
+- [ ] **Step 3: Export from `index.ts` and verify `npm test`**
+
+---
+
+### Task 3: Escrow & ledger maths
+
+**Files:**
+- Create: `packages/domain/src/escrow.ts`, `packages/domain/test/escrow.test.ts`
+- Modify: `packages/domain/src/index.ts`
+
+**Interfaces:**
+- Consumes: `packages/domain/src/booking.ts`, `packages/domain/src/booking_policy.ts`
+- Produces:
+  - Types: `Payment`, `Refund`, `LedgerEntry`, `LedgerEntryType`.
+  - Invariants: Invariant 11 (`Payment.amount = sum(received) - refund_issued`), Invariant 12 (refunds only from `held`).
+  - Maths: `createDepositPayment(...)`, `applyRefundToPayment(...)`, `releaseEscrow(...)`, `disputeEscrow(...)`.
+
+- [ ] **Step 1: Write failing escrow tests in `escrow.test.ts`**
+- [ ] **Step 2: Implement escrow entities and ledger calculations in `escrow.ts`**
+- [ ] **Step 3: Export from `index.ts` and verify `npm test`**
+
+---
+
+### Task 4: Booking ports, memory store, fake gateway and createBooking / createDeposit / confirmFakePayment
+
+**Files:**
+- Create: `packages/domain/src/booking_ports.ts`, `packages/domain/src/booking_requests.ts`, `packages/domain/src/memory_booking_store.ts`, `packages/domain/src/fake_payment_gateway.ts`, `packages/domain/src/refunds.ts`, `packages/domain/src/create_booking.ts`, `packages/domain/src/create_deposit.ts`, `packages/domain/src/handle_payment.ts`
+- Create: `packages/domain/test/support/booking_fixtures.ts`, `packages/domain/test/support/booking_world.ts`, `packages/domain/test/create_booking.test.ts`, `packages/domain/test/deposit.test.ts`
+- Modify: `packages/domain/src/index.ts`
+
+**Interfaces:**
+- Consumes: Task 1–3 types, `requireCustomerPhone`, `newUlid`.
+- Produces:
+  - Ports: `BookingStore`, `BookingTx`, `ServiceCatalog`, `CustomerContactReader`, `PaymentGateway`, `BookingDeps`.
+  - Use cases: `createBookingDraft`, `createDeposit`, `confirmFakePayment`, `handlePaymentNotification`, `checkDeposit`.
+  - In-memory reference adapters: `MemoryBookingStore`, `FakePaymentGateway`.
+
+- [ ] **Step 1: Write failing tests in `create_booking.test.ts` and `deposit.test.ts`**
+- [ ] **Step 2: Implement ports, requests, and reference adapters**
+- [ ] **Step 3: Implement use cases `createBookingDraft`, `createDeposit`, `confirmFakePayment`, `handlePaymentNotification`**
+- [ ] **Step 4: Export from `index.ts` and verify `npm test`**
+
+---
+
+### Task 5: Transition use cases, disputes & scheduled sweeps
+
+**Files:**
+- Create: `packages/domain/src/commit_transition.ts`, `packages/domain/src/transition_booking.ts`, `packages/domain/src/open_dispute.ts`, `packages/domain/src/booking_sweeps.ts`
+- Create: `packages/domain/test/transition_booking.test.ts`, `packages/domain/test/booking_sweeps.test.ts`
+- Modify: `packages/domain/src/index.ts`
+
+**Interfaces:**
+- Consumes: Task 1–4 modules.
+- Produces:
+  - `transitionBooking(deps, input)`
+  - `openDispute(deps, input)`
+  - `runBookingSweeps(deps, clock)`:
+    - Sweep 1: Clean up drafts older than 30 minutes (freeing calendar day).
+    - Sweep 2: Expire unaccepted requests past `acceptDeadline` (refund 100%, delete calendar pending day).
+    - Sweep 3: Move `accepted` to `upcoming` at `startsAt - 24h`.
+    - Sweep 4: Auto-complete `upcoming` at `endsAt + 24h`.
+    - Sweep 5: Release held escrow at `completedAt + 24h` (or start + 24h for late cancel retained portion).
+
+- [ ] **Step 1: Write failing tests in `transition_booking.test.ts` and `booking_sweeps.test.ts`**
+- [ ] **Step 2: Implement `transitionBooking`, `openDispute`, and `runBookingSweeps`**
+- [ ] **Step 3: Verify with `npm test` and check purity with `purity.test.ts`**
+
+---
+
+### Task 6: Cloud Functions Firestore store, readers & live wiring
+
+**Files:**
+- Create: `app_flutter/firebase/functions/src/infra/booking_firestore.ts`, `app_flutter/firebase/functions/src/infra/booking_readers.ts`, `app_flutter/firebase/functions/src/infra/live_booking.ts`
+- Create: `app_flutter/firebase/functions/test/unit/booking_firestore.test.ts`
+
+**Interfaces:**
+- Consumes: `packages/domain` ports and use cases.
+- Produces:
+  - Firestore document mappers for `Booking`, `Payment`, `LedgerEntry`, `BookingContactSnapshot`, `AvailabilityDay`.
+  - Transactional `BookingStore` implementation over Firestore `runTransaction`.
+  - Live adapters: `FirestoreServiceCatalog`, `FirestoreCustomerContactReader`, `liveBookingDeps`.
+
+- [ ] **Step 1: Write failing unit tests in `booking_firestore.test.ts`**
+- [ ] **Step 2: Implement Firestore store, mappers, and readers**
+- [ ] **Step 3: Verify unit tests pass: `cd app_flutter/firebase/functions && npm test`**
+
+---
+
+### Task 7: Cloud Functions callables and scheduled clock
+
+**Files:**
+- Modify: `app_flutter/firebase/functions/src/callables/errors.ts`, `app_flutter/firebase/functions/src/config.ts`, `app_flutter/firebase/functions/src/index.ts`
+- Create: `app_flutter/firebase/functions/src/callables/booking.ts`, `app_flutter/firebase/functions/src/scheduled/booking_clock.ts`, `app_flutter/firebase/functions/.env.booking-c1922`, `app_flutter/firebase/functions/test/unit/booking_callables.test.ts`
+
+**Interfaces:**
+- Consumes: Task 6 live wiring.
+- Produces:
+  - Exported callables: `createBooking`, `createDeposit`, `confirmFakePayment`, `checkDeposit`, `transitionBooking`, `openDispute`.
+  - Exported scheduled function: `bookingClock` (every 15 minutes, Asia/Ho_Chi_Minh).
+  - Dev configuration `.env.booking-c1922` with `PAYMENTS_MODE=fake`.
+
+- [ ] **Step 1: Write failing unit tests for callables in `booking_callables.test.ts`**
+- [ ] **Step 2: Implement callables and `bookingClock`**
+- [ ] **Step 3: Verify `npm test`, `npm run typecheck`, `npm run lint` in `app_flutter/firebase/functions`**
+
+---
+
+### Task 8: Firestore security rules, indexes & specs sync
+
+**Files:**
+- Modify: `app_flutter/firebase/firestore.rules`, `app_flutter/firebase/firestore.indexes.json`, `app_flutter/firebase/rules-test/rules.test.mjs`
+- Modify: `docs/superpowers/specs/2026-10-01-remaining-screens.md`, `docs/superpowers/specs/data-model/domain-model.md`, `docs/superpowers/specs/data-model/relational-schema.md`
+
+**Interfaces:**
+- Produces:
+  - Rules: `bookings/{id}` read allowed only for `request.auth.uid in [resource.data.customerId, resource.data.photographerId]`; create/update/delete denied from client.
+  - Rules: `bookings/{id}/private/contact` readable by customer always, by photographer only while contact is unlocked; write denied from client.
+  - Rules: `payments`, `refunds`, `ledger_entries` denied to clients.
+  - Composite indexes for sweep queries.
+  - Spec documentation updated.
+
+- [ ] **Step 1: Add rules and rule tests (without running them locally per standing rules)**
+- [ ] **Step 2: Add composite indexes for booking queries**
+- [ ] **Step 3: Update spec files with contact copy location and fields**
+
+---
+
+### Task 9: Seed fixtures update
+
+**Files:**
+- Modify: `app_flutter/firebase/functions/seed/fixtures.ts`, `app_flutter/firebase/functions/seed/README.md`, `app_flutter/firebase/functions/test/unit/fixtures.test.ts`
+
+**Interfaces:**
+- Produces:
+  - Seed bookings across `requested`, `accepted`, `upcoming`, and `completed` states with payments, ledger entries, contact copy, and availability days.
+
+- [ ] **Step 1: Update `fixtures.ts` and `fixtures.test.ts`**
+- [ ] **Step 2: Verify `npm test` in `app_flutter/firebase/functions`**
+
+---
+
+### Task 10: Flutter app domain types, rules mirror, repository port, firestore adapter, providers, and test support
+
+**Files:**
+- Modify: `app_flutter/lib/data/booking/booking_status.dart`, `app_flutter/lib/data/photographer/availability_repository.dart`
+- Create: `app_flutter/lib/data/booking/booking.dart`, `app_flutter/lib/data/booking/booking_rules.dart`, `app_flutter/lib/data/booking/booking_repository.dart`, `app_flutter/lib/data/booking/firestore_booking_repository.dart`, `app_flutter/lib/data/booking/booking_providers.dart`
+- Create: `app_flutter/test/support/booking_fixtures.dart`, `app_flutter/test/support/fake_booking_repository.dart`, `app_flutter/test/data/booking/booking_rules_test.dart`, `app_flutter/test/data/booking/booking_repository_test.dart`
+
+**Interfaces:**
+- Produces:
+  - Freezed models for `Booking`, `BookingServiceSnapshot`, `BookingContactSnapshot`, `BookingCancel`, `BookingEventRecord`.
+  - Client-side mirror rules matching `booking_policy.json` (deposit calculation, refund %, S14 tab filtering).
+  - Port `BookingRepository` and implementations `FirestoreBookingRepository` + `FakeBookingRepository`.
+  - Riverpod providers (`bookingProvider`, `myBookingsProvider`, etc.).
+
+- [ ] **Step 1: Create domain models, run `dart run build_runner build`**
+- [ ] **Step 2: Implement client mirror rules and write `booking_rules_test.dart`**
+- [ ] **Step 3: Implement repository port and test fake, write `booking_repository_test.dart`**
+- [ ] **Step 4: Implement Firestore adapter and providers**
+- [ ] **Step 5: Format and verify: `dart format lib test` and `flutter test`**
