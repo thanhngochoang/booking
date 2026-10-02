@@ -70,10 +70,10 @@ Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; 
 
 | Mã | Màn hình | Route | Vai trò | Sub‑project | Trạng thái (2026-10-02) |
 |----|----------|-------|---------|-------------|------------|
-| S01 | Trang chủ | `/home` | cả hai | 3 | 🟡 khung tạm → plan 3b4 |
-| S02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ⬜ plan 3b4 |
+| S01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) |
+| S02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) |
 | S03 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ⬜ plan 2d2 |
-| S04 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | 🟡 khung tạm → plan 3b4 |
+| S04 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback |
 | S05 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S06 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
 | S07 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S05) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
