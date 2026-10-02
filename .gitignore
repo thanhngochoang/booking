@@ -25,6 +25,7 @@
 /.env
 /app/google-services.json
 .claude/*
+!.claude/skills/
 packages/*
 !packages/domain
 !packages/domain/**
