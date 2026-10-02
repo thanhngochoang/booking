@@ -670,6 +670,24 @@ abstract class AppLocalizations {
   /// **'Đã chuyển qua chế độ nhiếp ảnh.'**
   String get profileSwitchedToPhotographer;
 
+  /// No description provided for @profileSetupTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thiện hồ sơ nhiếp ảnh gia'**
+  String get profileSetupTitle;
+
+  /// No description provided for @profileSetupBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn vài bước nữa để khách tìm thấy và đặt lịch với bạn.'**
+  String get profileSetupBody;
+
+  /// No description provided for @profileSetupContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục thiết lập'**
+  String get profileSetupContinue;
+
   /// No description provided for @profileSwitchError.
   ///
   /// In vi, this message translates to:
@@ -1077,6 +1095,276 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'**
   String get setupSaveError;
+
+  /// No description provided for @setupIntroHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu bản thân'**
+  String get setupIntroHeading;
+
+  /// No description provided for @setupIntroHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đọc phần này trước khi đặt lịch. Viết ngắn, nói rõ bạn chụp kiểu gì.'**
+  String get setupIntroHint;
+
+  /// No description provided for @setupBioLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu ngắn'**
+  String get setupBioLabel;
+
+  /// No description provided for @setupBioHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ánh sáng tự nhiên, ít dàn dựng. Chuyên chân dung ngoài trời ở Sài Gòn.'**
+  String get setupBioHint;
+
+  /// No description provided for @setupEquipmentLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị (không bắt buộc)'**
+  String get setupEquipmentLabel;
+
+  /// No description provided for @setupEquipmentHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: Sony A7 IV'**
+  String get setupEquipmentHint;
+
+  /// No description provided for @setupEquipmentAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm thiết bị'**
+  String get setupEquipmentAdd;
+
+  /// No description provided for @setupEquipmentRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá {item}'**
+  String setupEquipmentRemove(String item);
+
+  /// No description provided for @setupEquipmentFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 8 thiết bị.'**
+  String get setupEquipmentFull;
+
+  /// No description provided for @setupNext.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get setupNext;
+
+  /// No description provided for @introBioRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết vài dòng giới thiệu'**
+  String get introBioRequired;
+
+  /// No description provided for @introBioTooLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 300 ký tự'**
+  String get introBioTooLong;
+
+  /// No description provided for @setupServicesHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói dịch vụ'**
+  String get setupServicesHeading;
+
+  /// No description provided for @setupServiceHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đặt theo gói. Cần ít nhất một gói để hồ sơ hiện trong Tìm thợ ảnh.'**
+  String get setupServiceHint;
+
+  /// No description provided for @setupNoPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có gói nào. Thêm gói đầu tiên bên dưới.'**
+  String get setupNoPackages;
+
+  /// No description provided for @setupNeedPackage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ít nhất một gói để tiếp tục.'**
+  String get setupNeedPackage;
+
+  /// No description provided for @setupPackagesLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách gói.'**
+  String get setupPackagesLoadError;
+
+  /// No description provided for @packageEditHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa gói'**
+  String get packageEditHeading;
+
+  /// No description provided for @packageNameLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên gói'**
+  String get packageNameLabel;
+
+  /// No description provided for @packageNameHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: Chân dung 2 giờ'**
+  String get packageNameHint;
+
+  /// No description provided for @packagePriceLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá (₫)'**
+  String get packagePriceLabel;
+
+  /// No description provided for @packageDurationLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thời lượng'**
+  String get packageDurationLabel;
+
+  /// No description provided for @packageDurationHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn'**
+  String get packageDurationHint;
+
+  /// No description provided for @durationHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{hours} giờ'**
+  String durationHours(String hours);
+
+  /// No description provided for @packageEditedLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số ảnh hậu kỳ'**
+  String get packageEditedLabel;
+
+  /// No description provided for @packageDeliveryLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao sau (ngày)'**
+  String get packageDeliveryLabel;
+
+  /// No description provided for @packagePhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ảnh'**
+  String packagePhotos(int count);
+
+  /// No description provided for @packageDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'{days, plural, =0{giao trong ngày} other{giao {days} ngày}}'**
+  String packageDelivery(int days);
+
+  /// No description provided for @packageAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói này'**
+  String get packageAdd;
+
+  /// No description provided for @packageSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu gói'**
+  String get packageSave;
+
+  /// No description provided for @packageCancelEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ sửa'**
+  String get packageCancelEdit;
+
+  /// No description provided for @packageHideTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn gói {name}'**
+  String packageHideTooltip(String name);
+
+  /// No description provided for @packageHideTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn gói này?'**
+  String get packageHideTitle;
+
+  /// No description provided for @packageHideBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.'**
+  String get packageHideBody;
+
+  /// No description provided for @packageHideConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn gói'**
+  String get packageHideConfirm;
+
+  /// No description provided for @packageKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get packageKeep;
+
+  /// No description provided for @packageAdded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm gói.'**
+  String get packageAdded;
+
+  /// No description provided for @packageSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu gói.'**
+  String get packageSaved;
+
+  /// No description provided for @packageHidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ẩn gói.'**
+  String get packageHidden;
+
+  /// No description provided for @packageNameLength.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên gói từ 2 đến 60 ký tự'**
+  String get packageNameLength;
+
+  /// No description provided for @packagePriceRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập giá lớn hơn 0'**
+  String get packagePriceRequired;
+
+  /// No description provided for @packagePriceTooHigh.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá tối đa 1.000.000.000₫'**
+  String get packagePriceTooHigh;
+
+  /// No description provided for @packageDurationRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn thời lượng'**
+  String get packageDurationRequired;
+
+  /// No description provided for @packageCountInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số từ 0 đến 2000'**
+  String get packageCountInvalid;
+
+  /// No description provided for @packageDaysInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số ngày từ 0 đến 90'**
+  String get packageDaysInvalid;
 
   /// No description provided for @locationPromptTitle.
   ///
@@ -1773,6 +2061,180 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bỏ thể loại'**
   String get skillsRemoveConfirm;
+
+  /// No description provided for @calendarMonthTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}, {year}'**
+  String calendarMonthTitle(String month, String year);
+
+  /// No description provided for @calendarMonthShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}'**
+  String calendarMonthShort(String month);
+
+  /// No description provided for @calendarPrevMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng trước'**
+  String get calendarPrevMonth;
+
+  /// No description provided for @calendarNextMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng sau'**
+  String get calendarNextMonth;
+
+  /// No description provided for @calendarWeekdayShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, mon{T2} tue{T3} wed{T4} thu{T5} fri{T6} sat{T7} other{CN}}'**
+  String calendarWeekdayShort(String weekday);
+
+  /// No description provided for @calendarWeekdayLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, mon{Thứ 2} tue{Thứ 3} wed{Thứ 4} thu{Thứ 5} fri{Thứ 6} sat{Thứ 7} other{Chủ nhật}}'**
+  String calendarWeekdayLong(String weekday);
+
+  /// No description provided for @calendarDayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday}, {day}/{month}'**
+  String calendarDayTitle(String weekday, String day, String month);
+
+  /// No description provided for @dayStateFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh'**
+  String get dayStateFree;
+
+  /// No description provided for @dayStatePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ nhận'**
+  String get dayStatePending;
+
+  /// No description provided for @dayStateBooked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đặt'**
+  String get dayStateBooked;
+
+  /// No description provided for @dayStateOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ'**
+  String get dayStateOff;
+
+  /// No description provided for @calendarDaySemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} tháng {month}, {state}'**
+  String calendarDaySemantics(String day, String month, String state);
+
+  /// No description provided for @calendarHasEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'có sự kiện'**
+  String get calendarHasEvent;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'hôm nay'**
+  String get calendarToday;
+
+  /// No description provided for @myCalendarTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch của tôi'**
+  String get myCalendarTitle;
+
+  /// No description provided for @calendarMarkOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu nghỉ'**
+  String get calendarMarkOff;
+
+  /// No description provided for @calendarClearOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ nghỉ'**
+  String get calendarClearOff;
+
+  /// No description provided for @calendarUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get calendarUndo;
+
+  /// No description provided for @calendarHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.'**
+  String get calendarHint;
+
+  /// No description provided for @calendarRangeHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm ngày cuối để đánh dấu nghỉ cả khoảng.'**
+  String get calendarRangeHint;
+
+  /// No description provided for @calendarHasPlan.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày này đã có lịch'**
+  String get calendarHasPlan;
+
+  /// No description provided for @calendarMarkedOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đánh dấu nghỉ'**
+  String get calendarMarkedOff;
+
+  /// No description provided for @calendarMarkedOffMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đánh dấu nghỉ {count} ngày'**
+  String calendarMarkedOffMany(int count);
+
+  /// No description provided for @calendarClearedOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ nghỉ'**
+  String get calendarClearedOff;
+
+  /// No description provided for @calendarOpenBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lịch hẹn'**
+  String get calendarOpenBooking;
+
+  /// No description provided for @calendarOpenEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý sự kiện'**
+  String get calendarOpenEvent;
+
+  /// No description provided for @calendarSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được lịch. Thử lại nhé.'**
+  String get calendarSaveError;
+
+  /// No description provided for @calendarLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được lịch.'**
+  String get calendarLoadError;
+
+  /// No description provided for @calendarPickDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn một ngày để xem chi tiết.'**
+  String get calendarPickDay;
 }
 
 class _AppLocalizationsDelegate

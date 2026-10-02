@@ -7,11 +7,13 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
 import 'package:photobooking/data/skills/skills_server_info.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_rules.dart';
+import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/skills/evidence_sheet.dart';
 import 'package:photobooking/features/skills/skills_analytics.dart';
 import 'package:photobooking/features/skills/skills_controller.dart';
@@ -163,6 +165,13 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
           return;
         }
         log('skills_step', {'n': 3});
+        // Step 4 is where `/setup` resumes from now on.
+        final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+        if (uid != null) {
+          final store = ref.read(setupDraftStoreProvider);
+          if (store.step(uid) < 4) await store.setStep(uid, 4);
+          if (!mounted) return;
+        }
         await context.push('/setup/4');
         if (!mounted) return;
       case SkillsSubmitResult.invalid:

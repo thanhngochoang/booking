@@ -4,11 +4,32 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
 
 UserRole _role(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
+
+/// After switching to photographer: open the setup while it is unfinished
+/// (spec S30). Without a router above (some widget tests) it does nothing.
+Future<void> _openSetupIfUnfinished(BuildContext context, WidgetRef ref) async {
+  final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+  if (uid == null) {
+    return;
+  }
+  PhotographerIntro? intro;
+  try {
+    intro = await ref.read(photographerIntroRepositoryProvider).get(uid);
+  } catch (_) {
+    return; // offline: the card on this tab still offers it
+  }
+  if (!context.mounted || (intro?.onboardingComplete ?? false)) {
+    return;
+  }
+  GoRouter.maybeOf(context)?.push('/setup');
+}
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -68,6 +89,15 @@ class BookingsTab extends ConsumerWidget {
           centerTitle: false,
           titleTextStyle: tabRootTitleStyle(context),
           title: Text(photographer ? l.tabWork : l.tabBookings),
+          actions: [
+            if (photographer)
+              IconButton(
+                key: const Key('open-calendar'),
+                tooltip: l.myCalendarTitle,
+                icon: const Icon(Icons.event_available_outlined),
+                onPressed: () => context.push('/work/calendar'),
+              ),
+          ],
         ),
         body: EmptyState(
           title: photographer ? l.emptyWorkTitle : l.emptyBookingsTitle,
@@ -86,6 +116,9 @@ class ProfileTab extends ConsumerWidget {
     final theme = Theme.of(context);
     final profile = ref.watch(currentProfileProvider).value;
     final isPhotographer = profile?.role == UserRole.photographer;
+    final setupOpen =
+        isPhotographer &&
+        !(ref.watch(myIntroProvider).value?.onboardingComplete ?? true);
     final switching = ref.watch(roleSwitchControllerProvider).isLoading;
     ref.listen(roleSwitchControllerProvider, (prev, next) {
       // Only a finished switch the user started: loading -> data/error.
@@ -98,6 +131,9 @@ class ProfileTab extends ConsumerWidget {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(message)));
+      if (!next.hasError && next.value == UserRole.photographer) {
+        _openSetupIfUnfinished(context, ref);
+      }
     });
     final avatar = profile?.avatarUrl;
     return ScreenCode(
@@ -151,6 +187,35 @@ class ProfileTab extends ConsumerWidget {
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center,
                       ),
+                      if (setupOpen) ...[
+                        const SizedBox(height: AppSpace.s6),
+                        GlassCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpace.s4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  l.profileSetupTitle,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: AppSpace.s1),
+                                Text(
+                                  l.profileSetupBody,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                const SizedBox(height: AppSpace.s4),
+                                AppButton.outline(
+                                  l.profileSetupContinue,
+                                  key: const Key('continue-setup'),
+                                  icon: const Icon(Icons.arrow_forward_rounded),
+                                  onPressed: () => context.push('/setup'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: AppSpace.s6),
                       GlassCard(
                         highlight: false,

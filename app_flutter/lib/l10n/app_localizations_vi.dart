@@ -309,6 +309,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSwitchedToPhotographer => 'Đã chuyển qua chế độ nhiếp ảnh.';
 
   @override
+  String get profileSetupTitle => 'Hoàn thiện hồ sơ nhiếp ảnh gia';
+
+  @override
+  String get profileSetupBody =>
+      'Còn vài bước nữa để khách tìm thấy và đặt lịch với bạn.';
+
+  @override
+  String get profileSetupContinue => 'Tiếp tục thiết lập';
+
+  @override
   String get profileSwitchError =>
       'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.';
 
@@ -535,6 +545,161 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get setupSaveError =>
       'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get setupIntroHeading => 'Giới thiệu bản thân';
+
+  @override
+  String get setupIntroHint =>
+      'Khách đọc phần này trước khi đặt lịch. Viết ngắn, nói rõ bạn chụp kiểu gì.';
+
+  @override
+  String get setupBioLabel => 'Giới thiệu ngắn';
+
+  @override
+  String get setupBioHint =>
+      'Ánh sáng tự nhiên, ít dàn dựng. Chuyên chân dung ngoài trời ở Sài Gòn.';
+
+  @override
+  String get setupEquipmentLabel => 'Thiết bị (không bắt buộc)';
+
+  @override
+  String get setupEquipmentHint => 'Ví dụ: Sony A7 IV';
+
+  @override
+  String get setupEquipmentAdd => 'Thêm thiết bị';
+
+  @override
+  String setupEquipmentRemove(String item) {
+    return 'Xoá $item';
+  }
+
+  @override
+  String get setupEquipmentFull => 'Tối đa 8 thiết bị.';
+
+  @override
+  String get setupNext => 'Tiếp tục';
+
+  @override
+  String get introBioRequired => 'Viết vài dòng giới thiệu';
+
+  @override
+  String get introBioTooLong => 'Tối đa 300 ký tự';
+
+  @override
+  String get setupServicesHeading => 'Gói dịch vụ';
+
+  @override
+  String get setupServiceHint =>
+      'Khách đặt theo gói. Cần ít nhất một gói để hồ sơ hiện trong Tìm thợ ảnh.';
+
+  @override
+  String get setupNoPackages => 'Chưa có gói nào. Thêm gói đầu tiên bên dưới.';
+
+  @override
+  String get setupNeedPackage => 'Thêm ít nhất một gói để tiếp tục.';
+
+  @override
+  String get setupPackagesLoadError => 'Không tải được danh sách gói.';
+
+  @override
+  String get packageEditHeading => 'Sửa gói';
+
+  @override
+  String get packageNameLabel => 'Tên gói';
+
+  @override
+  String get packageNameHint => 'Ví dụ: Chân dung 2 giờ';
+
+  @override
+  String get packagePriceLabel => 'Giá (₫)';
+
+  @override
+  String get packageDurationLabel => 'Thời lượng';
+
+  @override
+  String get packageDurationHint => 'Chọn';
+
+  @override
+  String durationHours(String hours) {
+    return '$hours giờ';
+  }
+
+  @override
+  String get packageEditedLabel => 'Số ảnh hậu kỳ';
+
+  @override
+  String get packageDeliveryLabel => 'Giao sau (ngày)';
+
+  @override
+  String packagePhotos(int count) {
+    return '$count ảnh';
+  }
+
+  @override
+  String packageDelivery(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'giao $days ngày',
+      zero: 'giao trong ngày',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get packageAdd => 'Thêm gói này';
+
+  @override
+  String get packageSave => 'Lưu gói';
+
+  @override
+  String get packageCancelEdit => 'Huỷ sửa';
+
+  @override
+  String packageHideTooltip(String name) {
+    return 'Ẩn gói $name';
+  }
+
+  @override
+  String get packageHideTitle => 'Ẩn gói này?';
+
+  @override
+  String get packageHideBody =>
+      'Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.';
+
+  @override
+  String get packageHideConfirm => 'Ẩn gói';
+
+  @override
+  String get packageKeep => 'Giữ lại';
+
+  @override
+  String get packageAdded => 'Đã thêm gói.';
+
+  @override
+  String get packageSaved => 'Đã lưu gói.';
+
+  @override
+  String get packageHidden => 'Đã ẩn gói.';
+
+  @override
+  String get packageNameLength => 'Nhập tên gói từ 2 đến 60 ký tự';
+
+  @override
+  String get packagePriceRequired => 'Nhập giá lớn hơn 0';
+
+  @override
+  String get packagePriceTooHigh => 'Giá tối đa 1.000.000.000₫';
+
+  @override
+  String get packageDurationRequired => 'Chọn thời lượng';
+
+  @override
+  String get packageCountInvalid => 'Nhập số từ 0 đến 2000';
+
+  @override
+  String get packageDaysInvalid => 'Nhập số ngày từ 0 đến 90';
 
   @override
   String get locationPromptTitle => 'Sự kiện gần bạn';
@@ -939,4 +1104,124 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get skillsRemoveConfirm => 'Bỏ thể loại';
+
+  @override
+  String calendarMonthTitle(String month, String year) {
+    return 'Tháng $month, $year';
+  }
+
+  @override
+  String calendarMonthShort(String month) {
+    return 'Tháng $month';
+  }
+
+  @override
+  String get calendarPrevMonth => 'Tháng trước';
+
+  @override
+  String get calendarNextMonth => 'Tháng sau';
+
+  @override
+  String calendarWeekdayShort(String weekday) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      'mon': 'T2',
+      'tue': 'T3',
+      'wed': 'T4',
+      'thu': 'T5',
+      'fri': 'T6',
+      'sat': 'T7',
+      'other': 'CN',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calendarWeekdayLong(String weekday) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      'mon': 'Thứ 2',
+      'tue': 'Thứ 3',
+      'wed': 'Thứ 4',
+      'thu': 'Thứ 5',
+      'fri': 'Thứ 6',
+      'sat': 'Thứ 7',
+      'other': 'Chủ nhật',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calendarDayTitle(String weekday, String day, String month) {
+    return '$weekday, $day/$month';
+  }
+
+  @override
+  String get dayStateFree => 'Rảnh';
+
+  @override
+  String get dayStatePending => 'Chờ nhận';
+
+  @override
+  String get dayStateBooked => 'Đã đặt';
+
+  @override
+  String get dayStateOff => 'Nghỉ';
+
+  @override
+  String calendarDaySemantics(String day, String month, String state) {
+    return '$day tháng $month, $state';
+  }
+
+  @override
+  String get calendarHasEvent => 'có sự kiện';
+
+  @override
+  String get calendarToday => 'hôm nay';
+
+  @override
+  String get myCalendarTitle => 'Lịch của tôi';
+
+  @override
+  String get calendarMarkOff => 'Đánh dấu nghỉ';
+
+  @override
+  String get calendarClearOff => 'Bỏ nghỉ';
+
+  @override
+  String get calendarUndo => 'Hoàn tác';
+
+  @override
+  String get calendarHint =>
+      'Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.';
+
+  @override
+  String get calendarRangeHint => 'Chạm ngày cuối để đánh dấu nghỉ cả khoảng.';
+
+  @override
+  String get calendarHasPlan => 'Ngày này đã có lịch';
+
+  @override
+  String get calendarMarkedOff => 'Đã đánh dấu nghỉ';
+
+  @override
+  String calendarMarkedOffMany(int count) {
+    return 'Đã đánh dấu nghỉ $count ngày';
+  }
+
+  @override
+  String get calendarClearedOff => 'Đã bỏ nghỉ';
+
+  @override
+  String get calendarOpenBooking => 'Xem lịch hẹn';
+
+  @override
+  String get calendarOpenEvent => 'Quản lý sự kiện';
+
+  @override
+  String get calendarSaveError => 'Không lưu được lịch. Thử lại nhé.';
+
+  @override
+  String get calendarLoadError => 'Không tải được lịch.';
+
+  @override
+  String get calendarPickDay => 'Chọn một ngày để xem chi tiết.';
 }

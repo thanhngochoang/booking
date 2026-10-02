@@ -23,13 +23,13 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 
 - **Thông tin**: `/work/calendar` · sub‑project 2 · Chưa có.
 - **Mục đích**: đánh dấu ngày nghỉ; thấy ngày đã đặt/chờ.
-- **Bố cục**: Back + "Lịch của tôi"; chọn tháng (3 tab); `AvailabilityCalendar` có thể chỉnh (ngày chọn tô gradient); chú giải; tiêu đề ngày chọn + "Đánh dấu nghỉ"; danh sách booking/sự kiện trong ngày (`BookingCard`/`EventCard`); ghi chú hướng dẫn.
-- **Dữ liệu**: `availability/{uid}/days`; ngày `booked`/`pending` sinh tự động từ booking/sự kiện, không sửa được.
+- **Bố cục**: Back + "Lịch của tôi"; chọn tháng (3 tab `SegmentedTabs`) phía trên lịch, lịch không có tiêu đề riêng; `AvailabilityCalendar` có thể chỉnh (ngày chọn tô gradient); chú giải (tên bốn trạng thái, mỗi tên tô kiểu như ô của nó); khung ngày đã chọn: tiêu đề ngày kèm nút chữ "Đánh dấu nghỉ"/"Bỏ nghỉ" (không dùng nút gradient), hoặc liên kết "Xem lịch hẹn" (`/b/{id}`) / "Quản lý sự kiện" (S27) và chữ "Ngày này đã có lịch" — danh sách `BookingCard` của ngày thêm ở bước 5 khi có dữ liệu booking; ghi chú hướng dẫn ở cuối.
+- **Dữ liệu**: tài liệu `availability/{uid}/days/{yyyy-MM-dd}` (không có = rảnh); nhiếp ảnh gia chỉ tạo/xoá `off`; `booked`/`pending` do máy chủ ghi tự động từ booking/sự kiện kèm `bookingId`/`eventId`, nhiếp ảnh gia không sửa được.
 - **Trạng thái**: ngày đã đặt/chờ → không đánh dấu nghỉ được (nhắn "Ngày này đã có lịch"); ngày quá khứ chỉ đọc.
-- **Tương tác**: chạm ngày trống → đặt `off` ngay (snackbar "Đã đánh dấu nghỉ" + Hoàn tác); chạm ngày `off` → bỏ nghỉ; chọn dải ngày bằng kéo hoặc nhấn giữ; chạm ngày có sự kiện → S27.
+- **Tương tác**: chạm ngày trống → đặt `off` ngay (snackbar "Đã đánh dấu nghỉ" + Hoàn tác); chạm ngày `off` → bỏ nghỉ; chọn dải ngày: nhấn giữ ngày đầu rồi chạm ngày cuối; chạm ngày có sự kiện → khung ngày có liên kết "Quản lý sự kiện" (S27); tháng xem được từ tháng này tới 12 tháng sau.
 - **Chuỗi**: `s20_title` "Lịch của tôi", `s20_markOff` "Đánh dấu nghỉ", `s20_undo` "Hoàn tác", `s20_hint` "Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.", `s20_hasPlan` "Ngày này đã có lịch".
 - **Phân tích**: `calendar_off{count}`.
-- **Chấp nhận**: khách thấy cùng trạng thái ở S06 ngay sau khi lưu; có cách thay thế cho thao tác kéo (nhấn chọn từng ngày).
+- **Chấp nhận**: khách thấy cùng trạng thái ở S06 ngay sau khi lưu; chọn dải không cần kéo (nhấn giữ ngày đầu rồi chạm ngày cuối), và từng ngày chọn được bằng một lần chạm.
 
 ---
 
@@ -76,9 +76,9 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 - **Thông tin**: `/setup/:step` (1: giới thiệu, 2: gói) · sub‑project 2 · Chưa có.
 - **Mục đích**: NAG hoàn thiện hồ sơ đủ để được đặt.
 - **Điểm vào → ra**: nút "Chuyển qua chế độ nhiếp ảnh" ở S31 (Cài đặt → Chế độ), hoặc nhắc từ S22. Xong bước 2 → S38. Bốn bước tổng cộng: 1 Giới thiệu → 2 Gói → 3 Kỹ năng (S38) → 4 Khu vực & liên hệ (S34).
-- **Bố cục bước 1**: avatar, ảnh bìa, tên hiển thị, bio (≤ 300 ký tự). **Bước 2**: danh sách gói đã thêm (thumb, tên, mô tả ngắn, giá), form thêm gói (tên, giá ₫, thời lượng, số ảnh hậu kỳ, giao sau mấy ngày), nút "Thêm gói này"; thanh dưới "Quay lại" + "Tiếp tục". `StepProgress` n/4.
-- **Dữ liệu**: ghi `photographers/{uid}` và `services`; lưu nháp mỗi bước.
-- **Trạng thái**: cần ≥ 1 gói mới sang bước 3; giá phải > 0 và nguyên; thời lượng chọn từ danh sách (1, 2, 3, 4, 6, 8 giờ); thoát giữa chừng hỏi lưu nháp; chưa xong thì hồ sơ không công khai và không đổi được vai trò.
+- **Bố cục bước 1**: avatar, ảnh bìa, tên hiển thị, bio (≤ 300 ký tự) (bản đầu: tên hiển thị, giới thiệu ≤ 300 ký tự, thiết bị ≤ 8; ảnh đại diện thêm ở kế hoạch 2d2; ảnh bìa để kế hoạch media sau; thể loại và số năm kinh nghiệm chọn ở S38/S39, lưu trong `skills`). **Bước 2**: danh sách gói đã thêm (thumb, tên, mô tả ngắn, giá), form thêm gói (tên, giá ₫, thời lượng, số ảnh hậu kỳ, giao sau mấy ngày), nút "Thêm gói này"; thời lượng chọn từ một sheet (1/2/3/4/6/8 giờ); thanh dưới "Quay lại" + "Tiếp tục". `StepProgress` n/4. Các bước nối `/setup/1` → `/setup/2` → `/setup/3` (S38) → `/setup/4` (S34).
+- **Dữ liệu**: ghi `photographers/{uid}` và `services`; lưu nháp mỗi bước. Gói không bị xoá mà ẩn (`active: false`) để bài đăng và booking cũ còn trỏ đúng gói; giá là số nguyên VND > 0, thời lượng 60/120/180/240/360/480 phút.
+- **Trạng thái**: cần ≥ 1 gói mới sang bước 3; giá phải > 0 và nguyên; thời lượng chọn từ danh sách (1, 2, 3, 4, 6, 8 giờ); thoát giữa chừng không mất dữ liệu: mọi thứ đã gõ được lưu nháp trên máy theo từng người dùng, dữ liệu đã lưu nằm trên Firestore; vào lại `/setup` tiếp tục đúng bước; chưa xong thì hồ sơ không công khai và không đổi được vai trò.
 - **Chuỗi**: `s24_title` "Hồ sơ nhiếp ảnh gia", `s24_bio` "Giới thiệu ngắn", `s24_services` "Gói dịch vụ", `s24_serviceHint` "Khách đặt theo gói. Cần ít nhất một gói để hồ sơ hiện trong Tìm thợ ảnh.", `s24_addService` "Thêm gói này".
 - **Chấp nhận**: gói thêm xong hiện ngay ở danh sách; `startingPrice` cập nhật bởi Function; thoát và quay lại tiếp tục đúng bước.
 

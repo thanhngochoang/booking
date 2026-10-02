@@ -649,3 +649,94 @@ test('contact access log is server-only: no client reads or writes, not even the
   await assertFails(getDoc(doc(db, 'contact_access_log/l1')));
   await assertFails(setDoc(doc(db, 'contact_access_log/l2'), { requesterId: 'u1' }));
 });
+
+// ---- Plan 2d1: days off, intro, packages ----
+const dayPath = (uid, day) => `availability/${uid}/days/${day}`;
+const asCustomer = (uid) => env.withSecurityRulesDisabled(async (c) =>
+  setDoc(doc(c.firestore(), `users/${uid}`), { displayName: uid, role: 'customer' }));
+
+test('a photographer marks a free day off and frees it again', async () => {
+  await asPhotographer('cal1');
+  const db = env.authenticatedContext('cal1').firestore();
+  const r = doc(db, dayPath('cal1', '2026-10-12'));
+  await assertSucceeds(setDoc(r, { state: 'off', updatedAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(r));
+  await assertSucceeds(deleteDoc(r));
+});
+
+test('booked and pending days belong to the server', async () => {
+  await asPhotographer('cal2');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), dayPath('cal2', '2026-10-13')), { state: 'booked', bookingId: 'b1' }));
+  const db = env.authenticatedContext('cal2').firestore();
+  await assertFails(setDoc(doc(db, dayPath('cal2', '2026-10-14')), { state: 'booked' }));
+  await assertFails(setDoc(doc(db, dayPath('cal2', '2026-10-14')), { state: 'pending' }));
+  await assertFails(deleteDoc(doc(db, dayPath('cal2', '2026-10-13'))));
+  await assertFails(setDoc(doc(db, dayPath('cal2', '2026-10-13')), { state: 'off' }), 'an overwrite is an update');
+  await assertFails(setDoc(doc(db, dayPath('cal2', '2026-10-15')), { state: 'off', bookingId: 'x' }));
+  await assertFails(setDoc(doc(db, dayPath('cal2', '12-10-2026')), { state: 'off' }));
+});
+
+test('only the photographer edits their calendar; every signed-in user reads it', async () => {
+  await asPhotographer('cal3');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), dayPath('cal3', '2026-10-16')), { state: 'off' }));
+  const other = env.authenticatedContext('cal4').firestore();
+  await assertSucceeds(getDoc(doc(other, dayPath('cal3', '2026-10-16'))));
+  await assertFails(setDoc(doc(other, dayPath('cal3', '2026-10-17')), { state: 'off' }));
+  await assertFails(deleteDoc(doc(other, dayPath('cal3', '2026-10-16'))));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), dayPath('cal3', '2026-10-16'))));
+  await asCustomer('cal5');
+  await assertFails(setDoc(doc(env.authenticatedContext('cal5').firestore(), dayPath('cal5', '2026-10-18')), { state: 'off' }));
+});
+
+const svcPath = (uid, id) => `photographers/${uid}/services/${id}`;
+const svc = (o = {}) => ({
+  name: 'Chân dung 2 giờ', price: 1500000, durationMinutes: 120,
+  deliverables: { editedCount: 40, deliveryDays: 3 }, active: true, ...o,
+});
+
+test('a photographer adds, edits and hides own packages, and never deletes them', async () => {
+  await asPhotographer('sv1');
+  const db = env.authenticatedContext('sv1').firestore();
+  const r = doc(db, svcPath('sv1', '01JB0Z8K3V5N6Q7R8S9T0V1W2X'));
+  await assertSucceeds(setDoc(r, { ...svc(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(r, { price: 1800000, updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(r, { active: false }));
+  await assertFails(deleteDoc(r));
+});
+
+test('package values are checked', async () => {
+  await asPhotographer('sv2');
+  const r = doc(env.authenticatedContext('sv2').firestore(), svcPath('sv2', 's1'));
+  for (const bad of [
+    svc({ price: 0 }), svc({ price: 1500.5 }), svc({ price: '1500000' }), svc({ price: 1000000001 }),
+    svc({ durationMinutes: 90 }), svc({ name: 'A' }), svc({ name: 'x'.repeat(61) }),
+    svc({ deliverables: { editedCount: -1 } }), svc({ deliverables: { deliveryDays: 91 } }),
+    svc({ deliverables: { extra: 1 } }), svc({ active: 'yes' }), svc({ note: 'x' }), svc({ startingPrice: 1 }),
+  ]) {
+    await assertFails(setDoc(r, bad));
+  }
+  await assertSucceeds(setDoc(r, svc({ deliverables: {} })));
+});
+
+test('nobody else, and no customer, writes packages; everyone signed in reads them', async () => {
+  await asPhotographer('sv3');
+  await assertFails(setDoc(doc(env.authenticatedContext('sv4').firestore(), svcPath('sv3', 's1')), svc()));
+  await asCustomer('sv5');
+  await assertFails(setDoc(doc(env.authenticatedContext('sv5').firestore(), svcPath('sv5', 's1')), svc()));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('sv4').firestore(), svcPath('sv3', 's1'))));
+});
+
+test('the step 1 intro is length-checked', async () => {
+  await asPhotographer('in1');
+  const db = env.authenticatedContext('in1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'photographers/in1'), { onboardingComplete: false, verified: false, specialties: [] }));
+  await assertSucceeds(updateDoc(doc(db, 'photographers/in1'), {
+    bio: 'Ánh sáng tự nhiên.', equipment: ['Sony A7 IV'], updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(doc(db, 'photographers/in1'), { bio: 'x'.repeat(301) }));
+  await assertFails(updateDoc(doc(db, 'photographers/in1'), { bio: 42 }));
+  await assertFails(updateDoc(doc(db, 'photographers/in1'), { equipment: Array.from({ length: 9 }, (_, i) => `M${i}`) }));
+  await assertFails(updateDoc(doc(db, 'photographers/in1'), { equipment: 'Sony' }));
+});

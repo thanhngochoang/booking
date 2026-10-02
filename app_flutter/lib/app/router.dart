@@ -4,14 +4,19 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
 import 'package:photobooking/features/photographer_setup/contact_setup_screen.dart';
+import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
+import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
+import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
@@ -68,6 +73,10 @@ String? computeRedirect({
   return null;
 }
 
+/// S20 and S24 are for photographers only (spec screens/README.md "Vai trò").
+String? photographerOnlyRedirect(UserRole? role) =>
+    role == UserRole.photographer ? null : AppTab.home.path;
+
 /// Rebuilds GoRouter's redirect when auth or profile changes.
 class RouterNotifier extends ChangeNotifier {
   RouterNotifier(this.ref) {
@@ -98,6 +107,8 @@ class RouterNotifier extends ChangeNotifier {
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = RouterNotifier(ref);
   ref.onDispose(notifier.dispose);
+  String? photographersOnly() =>
+      photographerOnlyRedirect(ref.read(currentProfileProvider).value?.role);
   return GoRouter(
     initialLocation: AppTab.home.path,
     refreshListenable: notifier,
@@ -125,6 +136,34 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/phone',
         builder: (_, state) =>
             AddPhoneScreen(returnTo: state.uri.queryParameters['returnTo']),
+      ),
+      GoRoute(
+        path: '/setup',
+        redirect: (_, _) {
+          final away = photographersOnly();
+          if (away != null) {
+            return away;
+          }
+          final uid = ref.read(authRepositoryProvider).currentUser?.uid;
+          return setupResumePath(
+            uid == null ? 1 : ref.read(setupDraftStoreProvider).step(uid),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/setup/1',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const SetupIntroScreen(),
+      ),
+      GoRoute(
+        path: '/setup/2',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const SetupPackagesScreen(),
+      ),
+      GoRoute(
+        path: '/work/calendar',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const MyCalendarScreen(),
       ),
       GoRoute(
         path: '/setup/3',

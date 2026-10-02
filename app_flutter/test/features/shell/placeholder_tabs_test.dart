@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
@@ -22,9 +25,13 @@ Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
 
 Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
     ProviderScope(
+      retry: (_, _) => null,
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         userRepositoryProvider.overrideWithValue(users),
+        photographerIntroRepositoryProvider.overrideWithValue(
+          FakePhotographerIntroRepository(),
+        ),
       ],
       child: MaterialApp(
         theme: buildDarkTheme(),
@@ -133,5 +140,113 @@ void main() {
     final title = tester.widget<Text>(find.text('Tôi là nhiếp ảnh gia'));
     expect(title.style?.fontSize, 17);
     expect(title.style?.fontFamily, AppFonts.display);
+  });
+
+  Widget routed(
+    FakeAuthRepository auth,
+    FakeUserRepository users,
+    FakePhotographerIntroRepository intro, {
+    String initial = '/profile',
+  }) {
+    final router = GoRouter(
+      initialLocation: initial,
+      routes: [
+        GoRoute(path: '/profile', builder: (_, _) => const ProfileTab()),
+        GoRoute(path: '/bookings', builder: (_, _) => const BookingsTab()),
+        GoRoute(path: '/setup', builder: (_, _) => const Text('setup')),
+        GoRoute(
+          path: '/work/calendar',
+          builder: (_, _) => const Text('calendar'),
+        ),
+      ],
+    );
+    return ProviderScope(
+      retry: (_, _) => null,
+      overrides: [
+        authRepositoryProvider.overrideWithValue(auth),
+        userRepositoryProvider.overrideWithValue(users),
+        photographerIntroRepositoryProvider.overrideWithValue(intro),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        locale: const Locale('vi'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    );
+  }
+
+  testWidgets(
+    'a photographer with unfinished setup is offered to continue it',
+    (tester) async {
+      final (auth, users) = await _signedIn(UserRole.photographer);
+      final intro = FakePhotographerIntroRepository()
+        ..seed(auth.currentUser!.uid, const PhotographerIntro());
+      await tester.pumpWidget(routed(auth, users, intro));
+      await tester.pumpAndSettle();
+      expect(find.text('Hoàn thiện hồ sơ nhiếp ảnh gia'), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('continue-setup')));
+      await tester.tap(find.byKey(const Key('continue-setup')));
+      await tester.pumpAndSettle();
+      expect(find.text('setup'), findsOneWidget);
+    },
+  );
+
+  testWidgets('the setup card is gone once setup is complete', (tester) async {
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    final intro = FakePhotographerIntroRepository()
+      ..seed(
+        auth.currentUser!.uid,
+        const PhotographerIntro(onboardingComplete: true),
+      );
+    await tester.pumpWidget(routed(auth, users, intro));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('continue-setup')), findsNothing);
+  });
+
+  testWidgets('switching to photographer opens setup while it is unfinished', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.customer);
+    await tester.pumpWidget(
+      routed(auth, users, FakePhotographerIntroRepository()),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('switch-role')));
+    await tester.tap(find.byKey(const Key('switch-role')));
+    await tester.pumpAndSettle();
+    expect(find.text('setup'), findsOneWidget);
+  });
+
+  testWidgets('photographers open their calendar from the work tab', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    await tester.pumpWidget(
+      routed(
+        auth,
+        users,
+        FakePhotographerIntroRepository(),
+        initial: '/bookings',
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('open-calendar')));
+    await tester.pumpAndSettle();
+    expect(find.text('calendar'), findsOneWidget);
+  });
+
+  testWidgets('customers have no calendar entry', (tester) async {
+    final (auth, users) = await _signedIn(UserRole.customer);
+    await tester.pumpWidget(
+      routed(
+        auth,
+        users,
+        FakePhotographerIntroRepository(),
+        initial: '/bookings',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('open-calendar')), findsNothing);
   });
 }
