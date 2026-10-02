@@ -1,0 +1,39 @@
+# Run order of the implementation plans
+
+Agreed with the user on 2026-10-02. Run the plans top to bottom with subagent-driven development; a plan starts only when every plan above it is done. Screen status lives in the code table of `docs/superpowers/specs/2026-10-01-remaining-screens.md` (column "Trạng thái"); update it when a plan finishes.
+
+Standing rules (user, 2026-10-02):
+- The UI matches the committed mock `docs/design/ui-mock.html`; the specs decide behaviour.
+- No battery/performance task or test steps inside feature plans; all of it runs once in plan 16.
+- No device build or Genymotion install after each plan; it happens once, in plan 16.
+- iOS-only steps are skipped in feature plans and appended to "Deferred iOS steps" in plan 15.
+- Every screen shows its code (`ScreenCode`) in debug builds.
+
+## Done
+
+screen-codes · core-display-widgets · 2a · 2b · 3a1 · 3a2 · 3b1 · 3b2
+
+## To run
+
+| # | Plan | State |
+|---|------|-------|
+| 1 | `2026-10-02-mock-parity-1.md` (built screens match the mock) | Tasks 1–5 done; next Task 6 (S33 sheet), then 7–11 |
+| 2 | `2026-10-01-step2c-skills.md` (S38, S39, S40) | Tasks 1–6 done; next Task 7 |
+| 3 | `2026-10-01-step2d1-photographer-setup-calendar.md` (S24, S20) | not started |
+| 4 | `2026-10-01-step3b3-recommendations.md` | not started |
+| 5 | `2026-10-01-step3b4-home-detail-find.md` (S01, S02, S04) | not started |
+| 6 | `2026-10-01-step3c-create-post.md` (S21) | not started |
+| 7 | `2026-10-01-step2d2-photographer-profile.md` (S03) | not started |
+| 8 | `2026-10-01-backend-phase1-firebase-local.md` | not started |
+| 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | not started |
+| 10 | `2026-10-01-instant-i2-dispatch-core.md` | not started |
+| 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
+| 12 | `2026-10-01-instant-i4-photographer-app.md` (S52–S55) | not started |
+| 13 | `2026-10-01-instant-i5-customer-app.md` (S47–S51, S55) | not started |
+| 14 | `2026-10-01-instant-i6-payments.md` | not started; needs the user's MoMo / VNPay sandbox keys before its Task 13; its dependency on iOS enablement Task 1 is deferred to plan 15 |
+| 15 | `2026-10-01-ios-enablement.md` + the deferred iOS steps | last feature work |
+| 16 | `2026-10-02-final-battery-performance.md` (all checks + device build and profiling) | very last |
+
+## Not planned yet
+
+Booking flow and work (S05–S12, S14, S19, S23, S43, S44), events (S15–S18, S25–S27, S45, S46), badges (S37), notifications (S63–S65), job posts "Đăng việc" (S56–S62, still in design).

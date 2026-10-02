@@ -68,73 +68,73 @@ Vì phép nhân chỉ làm tối, nút avatar không bao giờ sáng hơn gradie
 
 Mã tăng dần theo thứ tự thêm vào, không bao giờ đánh lại số; màn bị bỏ để lại chỗ trống và màn mới lấy số kế tiếp. Thứ tự trong bảng là thứ tự số, còn vị trí màn trong mock có thể theo nhóm chủ đề.
 
-| Mã | Màn hình | Route | Vai trò | Sub‑project |
-|----|----------|-------|---------|-------------|
-| S01 | Trang chủ | `/home` | cả hai | 3 |
-| S02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 |
-| S03 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 |
-| S04 | Tìm thợ ảnh | `/action` (khách) | khách | 3 |
-| S05 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 |
-| S06 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 |
-| S07 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S05) | khách | 4 |
-| S08 | Chờ thanh toán | `/b/:id/pay` | khách | 4 |
-| S09 | Chi tiết booking | `/b/:id` | cả hai | 4 |
-| S10 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 |
-| S11 | Hội thoại | `/chat/:chatId` | cả hai | 4 |
-| S12 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 |
-| S13 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 |
-| S14 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 |
-| S15 | Danh sách sự kiện | `/events` | cả hai | 3b |
-| S16 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b |
-| S17 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b |
-| S18 | Vé sự kiện | `/bookings?tab=events` | khách | 3b |
-| S19 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 |
-| S20 | Lịch của tôi | `/work/calendar` | NAG | 2 |
-| S21 | Đăng bài | `/action` (NAG) | NAG | 3 |
-| S22 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) |
-| S23 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 |
-| S24 | Thiết lập hồ sơ, bước 1–2 (giới thiệu, gói) | `/setup/:step` | NAG | 2 |
-| S25 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b |
-| S26 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b |
-| S27 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b |
-| S28 | Đăng nhập | `/login` | — | 1 · **đã có** |
-| S29 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** |
-| S30 | Hồ sơ cá nhân | `/profile` | cả hai | 1 · **đã có**, mở rộng ở 3 và 6 |
-| S31 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút |
-| S32 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 |
-| S33 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 |
-| S34 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 |
-| S35 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 |
-| S36 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 |
-| S37 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 |
-| S38 | Kỹ năng, phần 1 (thể loại, mức độ) · bước 3/4 | `/setup/3`, `/profile/skills` | NAG | 2 |
-| S39 | Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp) | cùng màn S38, cuộn xuống | NAG | 2 |
-| S40 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 |
-| S41 | Đăng ký | `/register` | — | 1 · **đã có** |
-| S42 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ |
-| S43 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 |
-| S44 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 |
-| S45 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S16) | cả hai | 3b |
-| S46 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b |
-| S47 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá | `/instant` | khách | I5 |
-| S48 | Đang tìm nhiếp ảnh gia | `/instant/:id` (`searching`) | khách | I5 |
-| S49 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 |
-| S50 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 |
-| S51 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 |
-| S52 | Sẵn sàng chụp ngay (công tắc, bảng giá) | `/work/instant` | NAG | I4 |
-| S53 | Lời mời việc (đếm ngược 30 giây) | `/work/instant/offer/:offerId` | NAG | I4 |
-| S54 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 |
-| S55 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 |
-| S56 | Đăng việc | — | khách | J (đang thiết kế) |
-| S57 | Việc của tôi / chi tiết việc | — | khách | J (đang thiết kế) |
-| S58 | Danh sách ứng tuyển | — | khách | J (đang thiết kế) |
-| S59 | Chi tiết đơn ứng tuyển | — | khách | J (đang thiết kế) |
-| S60 | Chi tiết việc (nhiếp ảnh gia) | — | NAG | J (đang thiết kế) |
-| S61 | Việc đang tuyển | — | NAG | J (đang thiết kế) |
-| S62 | Gửi báo giá (sheet) | — | NAG | J (đang thiết kế) |
-| S63 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N |
-| S64 | Cài đặt thông báo | `/settings/notifications` | cả hai | N |
-| S65 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N |
+| Mã | Màn hình | Route | Vai trò | Sub‑project | Trạng thái (2026-10-02) |
+|----|----------|-------|---------|-------------|------------|
+| S01 | Trang chủ | `/home` | cả hai | 3 | 🟡 khung tạm → plan 3b4 |
+| S02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ⬜ plan 3b4 |
+| S03 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ⬜ plan 2d2 |
+| S04 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | 🟡 khung tạm → plan 3b4 |
+| S05 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S06 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S07 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S05) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S08 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S09 | Chi tiết booking | `/b/:id` | cả hai | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S10 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S11 | Hội thoại | `/chat/:chatId` | cả hai | 4 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S12 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S13 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S14 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | 🟡 khung tạm → chưa có plan (bước 4) |
+| S15 | Danh sách sự kiện | `/events` | cả hai | 3b | ⬜ chưa có plan (sự kiện) |
+| S16 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ⬜ chưa có plan (sự kiện) |
+| S17 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ⬜ chưa có plan (sự kiện) |
+| S18 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ⬜ chưa có plan (sự kiện) |
+| S19 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S20 | Lịch của tôi | `/work/calendar` | NAG | 2 | ⬜ plan 2d1 |
+| S21 | Đăng bài | `/action` (NAG) | NAG | 3 | 🟡 khung tạm → plan 3c |
+| S22 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | 🟡 khung tạm (empty chung) |
+| S23 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S24 | Thiết lập hồ sơ, bước 1–2 (giới thiệu, gói) | `/setup/:step` | NAG | 2 | ⬜ plan 2d1 |
+| S25 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ⬜ chưa có plan (sự kiện) |
+| S26 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b | ⬜ chưa có plan (sự kiện) |
+| S27 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ⬜ chưa có plan (sự kiện) |
+| S28 | Đăng nhập | `/login` | — | 1 · **đã có** | ✅ đã làm |
+| S29 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm |
+| S30 | Hồ sơ cá nhân | `/profile` | cả hai | 1 · **đã có**, mở rộng ở 3 và 6 | 🟡 khung tạm (thẻ hồ sơ + đổi vai trò) · đang chỉnh theo mock |
+| S31 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S32 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) |
+| S33 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S34 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S35 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S36 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S37 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) |
+| S38 | Kỹ năng, phần 1 (thể loại, mức độ) · bước 3/4 | `/setup/3`, `/profile/skills` | NAG | 2 | 🔧 đang làm (plan 2c: dữ liệu, rules xong; màn hình Task 7–12) |
+| S39 | Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp) | cùng màn S38, cuộn xuống | NAG | 2 | 🔧 đang làm (plan 2c) |
+| S40 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | 🔧 đang làm (plan 2c) |
+| S41 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm |
+| S42 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · đang chỉnh cho khớp mock (mock-parity-1) |
+| S43 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S44 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) |
+| S45 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S16) | cả hai | 3b | ⬜ chưa có plan (sự kiện) |
+| S46 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b | ⬜ chưa có plan (sự kiện) |
+| S47 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá | `/instant` | khách | I5 | ⬜ plan I5 |
+| S48 | Đang tìm nhiếp ảnh gia | `/instant/:id` (`searching`) | khách | I5 | ⬜ plan I5 |
+| S49 | Đã có người nhận / đang đến (bản đồ, ETA) | `/instant/:id` (`assigned`…`arrived`) | khách | I5 | ⬜ plan I5 |
+| S50 | Đang chụp / chờ xác nhận hoàn thành | `/instant/:id` (`in_progress`) | khách | I5 | ⬜ plan I5 |
+| S51 | Không tìm được người | `/instant/:id` (`no_match`) | khách | I5 | ⬜ plan I5 |
+| S52 | Sẵn sàng chụp ngay (công tắc, bảng giá) | `/work/instant` | NAG | I4 | ⬜ plan I4 |
+| S53 | Lời mời việc (đếm ngược 30 giây) | `/work/instant/offer/:offerId` | NAG | I4 | ⬜ plan I4 |
+| S54 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | ⬜ plan I4 |
+| S55 | Huỷ chụp ngay (sheet) | `/instant/:id/cancel` | cả hai | I4 · I5 | ⬜ plan I4 · I5 |
+| S56 | Đăng việc | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S57 | Việc của tôi / chi tiết việc | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S58 | Danh sách ứng tuyển | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S59 | Chi tiết đơn ứng tuyển | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S60 | Chi tiết việc (nhiếp ảnh gia) | — | NAG | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S61 | Việc đang tuyển | — | NAG | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S62 | Gửi báo giá (sheet) | — | NAG | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) |
+| S63 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) |
+| S64 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) |
+| S65 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) |
 
 Splash và Lỗi phiên (đã có) không cần mã. Mã đánh liên tục `S01`–`S65`; màn mới lấy số kế tiếp, không đánh lại số. S56–S62 đã dành cho tính năng **Đăng việc** (đang thiết kế, chưa có mock); S63–S65 thuộc Thông báo (mục 3h). S47–S55 thuộc tính năng Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
