@@ -87,7 +87,7 @@ class PortfolioSliver extends ConsumerWidget {
           onRetry: () => ref.invalidate(portfolioProvider(photographerId)),
         ),
       ),
-      _ => const SliverToBoxAdapter(child: AppSkeleton.box(height: 180)),
+      _ => SliverToBoxAdapter(child: AppSkeleton.box(height: 180)),
     };
   }
 }
@@ -249,7 +249,7 @@ class ServicesSliver extends ConsumerWidget {
               ref.invalidate(profilePackagesProvider(photographerId)),
         ),
       ),
-      _ => const SliverToBoxAdapter(child: AppSkeleton.card(height: 72)),
+      _ => SliverToBoxAdapter(child: AppSkeleton.card(height: 72)),
     };
   }
 }

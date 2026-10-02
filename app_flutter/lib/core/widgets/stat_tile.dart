@@ -2,9 +2,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 
 /// A big number over a one-line label. Put two or three in a [StatTileRow].
 class StatTile extends StatelessWidget {
+  static Widget skeleton({Key? key}) => _StatTileSkeleton(key: key);
+
   const StatTile({super.key, required this.value, required this.label});
 
   final String value;
@@ -86,6 +89,37 @@ class StatTileRow extends StatelessWidget {
             Expanded(child: tiles[i]),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _StatTileSkeleton extends StatelessWidget {
+  const _StatTileSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSkeleton.box(width: 48, height: 30),
+            const SizedBox(height: 2),
+            AppSkeleton.box(width: 86, height: 16),
+          ],
+        ),
       ),
     );
   }

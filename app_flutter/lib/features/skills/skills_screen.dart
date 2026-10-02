@@ -829,17 +829,17 @@ class _SkillsSkeleton extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(AppSpace.s5),
     physics: const NeverScrollableScrollPhysics(),
-    children: const [
+    children: [
       AppSkeleton.card(height: 88),
-      SizedBox(height: AppSpace.s4),
+      const SizedBox(height: AppSpace.s4),
       AppSkeleton.line(width: 120),
-      SizedBox(height: AppSpace.s3),
+      const SizedBox(height: AppSpace.s3),
       AppSkeleton.box(height: 96),
-      SizedBox(height: AppSpace.s4),
+      const SizedBox(height: AppSpace.s4),
       AppSkeleton.line(width: 120),
-      SizedBox(height: AppSpace.s3),
+      const SizedBox(height: AppSpace.s3),
       AppSkeleton.box(height: 48),
-      SizedBox(height: AppSpace.s2),
+      const SizedBox(height: AppSpace.s2),
       AppSkeleton.box(height: 48),
     ],
   );

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 
 /// One choice of a single-choice list (mock `.opt`, S02.05; later S04.02, S13.01):
 /// a bordered glass card with a radio. Selected = accent border, accent-soft
 /// fill and a filled radio. No blur, so it is safe in long lists.
 class AppOptionTile extends StatelessWidget {
+  static Widget skeleton({Key? key, bool withThumb = false}) =>
+      _AppOptionTileSkeleton(key: key, withThumb: withThumb);
+
   const AppOptionTile({
     super.key,
     required this.label,
@@ -105,6 +109,58 @@ class _Radio extends StatelessWidget {
               decoration: BoxDecoration(color: edge, shape: BoxShape.circle),
             )
           : null,
+    );
+  }
+}
+
+class _AppOptionTileSkeleton extends StatelessWidget {
+  const _AppOptionTileSkeleton({super.key, this.withThumb = false});
+  final bool withThumb;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final fill = dark ? AppColorsDark.glass : AppColors.glass;
+    return Material(
+      type: MaterialType.transparency,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: fill,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            side: BorderSide(color: scheme.outlineVariant),
+          ),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s3,
+              vertical: AppSpace.s2h,
+            ),
+            child: Row(
+              children: [
+                AppSkeleton.circle(size: 18),
+                const SizedBox(width: AppSpace.s2h),
+                if (withThumb) ...[
+                  AppSkeleton.box(width: 18, height: 18, radius: AppRadius.sm),
+                  const SizedBox(width: AppSpace.s2),
+                ],
+                Expanded(
+                  child: SizedBox(
+                    height: 30,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AppSkeleton.line(height: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

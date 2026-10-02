@@ -285,8 +285,8 @@ class _AreaSkeletons extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < 4; i++)
-            const Padding(
-              padding: EdgeInsets.symmetric(
+            Padding(
+              padding: const EdgeInsets.symmetric(
                 horizontal: AppSpace.s3,
                 vertical: AppSpace.s4,
               ),

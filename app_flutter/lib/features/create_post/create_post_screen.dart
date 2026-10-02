@@ -499,7 +499,7 @@ class _ServiceField extends StatelessWidget {
       if (services.hasError) {
         return ErrorState(message: l.createServicesError, onRetry: onRetry);
       }
-      return const AppSkeleton.box(
+      return AppSkeleton.box(
         height: AppSpace.s12 + AppSpace.s2,
         radius: controlRadius,
       );

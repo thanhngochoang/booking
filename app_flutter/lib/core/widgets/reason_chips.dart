@@ -3,11 +3,26 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/data/content/reason.dart';
 
 /// Why this photographer is recommended: up to [max] short chips. Dropped
 /// reasons are not scrolled to; the card stays calm.
 class ReasonChips extends StatelessWidget {
+  static Widget skeleton({Key? key, int count = 2}) => Wrap(
+    key: key,
+    spacing: AppSpace.s1,
+    runSpacing: AppSpace.s1,
+    children: [
+      for (var i = 0; i < count; i++)
+        AppSkeleton.box(
+          width: 72,
+          height: 23,
+          radius: AppRadius.full,
+        ),
+    ],
+  );
+
   const ReasonChips({super.key, required this.reasons, this.max = 2});
 
   final List<Reason> reasons;
