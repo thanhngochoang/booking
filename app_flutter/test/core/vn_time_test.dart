@@ -52,4 +52,10 @@ void main() {
       expect(parseDayKey(bad), isNull, reason: bad);
     }
   });
+
+  test('dayKeyOf reads the calendar fields without converting time zones', () {
+    expect(dayKeyOf(DateTime.utc(2026, 10, 12)), '2026-10-12');
+    expect(dayKeyOf(DateTime(2026, 1, 5, 23, 59)), '2026-01-05');
+    expect(dayKeyOf(DateTime.utc(999, 3, 4)), '0999-03-04');
+  });
 }

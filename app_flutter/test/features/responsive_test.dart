@@ -22,7 +22,6 @@ final _screens = <String, Widget Function()>{
   'role': () => const RoleScreen(),
   'session-error': () => const SessionErrorScreen(),
   'profile': () => const ProfileTab(),
-  'home': () => const HomeTab(),
   'action': () => const ActionTab(),
 };
 

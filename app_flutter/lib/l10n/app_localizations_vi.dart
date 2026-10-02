@@ -176,23 +176,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get roleContinue => 'Tiếp tục';
 
   @override
-  String get emptyHomeTitle => 'Ảnh đẹp sẽ xuất hiện ở đây';
-
-  @override
-  String get emptyHomeBody => 'Theo dõi nhiếp ảnh gia bạn thích để bắt đầu.';
-
-  @override
   String get emptyExploreTitle => 'Khám phá theo dịch vụ và địa điểm';
 
   @override
   String get emptyExploreBody =>
       'Chân dung, cưới, gia đình, kỷ yếu và hơn thế.';
-
-  @override
-  String get emptyFindTitle => 'Tìm nhiếp ảnh gia rảnh đúng ngày bạn cần';
-
-  @override
-  String get emptyFindBody => 'Chọn địa điểm, ngày và dịch vụ để so sánh.';
 
   @override
   String get emptyCreateTitle => 'Cho mọi người thấy bạn chụp gì';
@@ -1308,4 +1296,269 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get createPublished => 'Đã đăng bài';
+
+  @override
+  String reasonFreeOnDate(String day) {
+    return 'Rảnh $day';
+  }
+
+  @override
+  String reasonSkillMatch(String specialty) {
+    return 'Chuyên $specialty';
+  }
+
+  @override
+  String reasonNear(String distance) {
+    return 'Cách $distance';
+  }
+
+  @override
+  String reasonTopRated(String rating, int count) {
+    return '★ $rating · $count đánh giá';
+  }
+
+  @override
+  String get reasonFastReply => 'Phản hồi nhanh';
+
+  @override
+  String get reasonNewTalent => 'Mới tham gia';
+
+  @override
+  String homePillFree(String day) {
+    return 'Rảnh $day này';
+  }
+
+  @override
+  String get engagementError => 'Chưa thực hiện được. Thử lại nhé.';
+
+  @override
+  String get back => 'Quay lại';
+
+  @override
+  String homeGreeting(String name) {
+    return 'Chào $name';
+  }
+
+  @override
+  String get homeTitle => 'Hôm nay chụp gì?';
+
+  @override
+  String get homeForYou => 'Dành cho bạn';
+
+  @override
+  String get homeFreeThisWeek => 'Rảnh tuần này';
+
+  @override
+  String get homeRealShoots => 'Buổi chụp thật';
+
+  @override
+  String get homeFromCustomers => 'Từ khách hàng';
+
+  @override
+  String homeRealShootBy(String name) {
+    return 'Chụp bởi $name';
+  }
+
+  @override
+  String get homeEmptyTitle => 'Chưa có ảnh nào quanh bạn';
+
+  @override
+  String get homeEmptyBody => 'Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.';
+
+  @override
+  String get homeEmptyAction => 'Khám phá nhiếp ảnh gia';
+
+  @override
+  String get homeLoadError => 'Không tải được ảnh. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get photoSave => 'Lưu ảnh';
+
+  @override
+  String get photoUnsave => 'Bỏ lưu';
+
+  @override
+  String get photoBook => 'Đặt gói này';
+
+  @override
+  String get photoViewProfile => 'Xem hồ sơ';
+
+  @override
+  String get photoFollow => 'Theo dõi';
+
+  @override
+  String get photoFollowing => 'Đang theo dõi';
+
+  @override
+  String photoRealShootBy(String name, String service) {
+    return 'Chụp bởi $name · gói $service';
+  }
+
+  @override
+  String photoRealShootByName(String name) {
+    return 'Chụp bởi $name';
+  }
+
+  @override
+  String get photoRemovedTitle => 'Bài đăng không còn';
+
+  @override
+  String get photoRemovedBody => 'Bài đăng này đã bị gỡ hoặc không tồn tại.';
+
+  @override
+  String get photoBackHome => 'Về trang chủ';
+
+  @override
+  String photoMoreOf(String name) {
+    return 'Thêm của $name';
+  }
+
+  @override
+  String get photoMoreProfile => 'Hồ sơ';
+
+  @override
+  String photoItemLabel(int i) {
+    return 'Ảnh $i';
+  }
+
+  @override
+  String get photoOtherPackages => 'Xem các gói khác';
+
+  @override
+  String get photoServiceInactive => 'Gói này đã ngừng';
+
+  @override
+  String get photoLike => 'Thích';
+
+  @override
+  String get photoUnlike => 'Bỏ thích';
+
+  @override
+  String photoPageOf(int n, int total) {
+    return 'Ảnh $n trên $total';
+  }
+
+  @override
+  String get photoLoadError =>
+      'Không tải được bài đăng. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String servicePhotos(int n) {
+    return '$n ảnh';
+  }
+
+  @override
+  String serviceDelivery(int days) {
+    return 'giao sau $days ngày';
+  }
+
+  @override
+  String serviceDurationMinutes(int m) {
+    return '$m phút';
+  }
+
+  @override
+  String serviceDurationHours(int h) {
+    return '$h giờ';
+  }
+
+  @override
+  String serviceDurationHoursMinutes(int h, int m) {
+    return '$h giờ $m phút';
+  }
+
+  @override
+  String get findDate => 'Ngày';
+
+  @override
+  String get findService => 'Dịch vụ';
+
+  @override
+  String get findPrice => 'Giá';
+
+  @override
+  String get findRating => 'Đánh giá';
+
+  @override
+  String get findNearMe => 'Quanh bạn';
+
+  @override
+  String findCount(String count) {
+    return '$count nhiếp ảnh gia';
+  }
+
+  @override
+  String findCountOnDay(String count, String day) {
+    return '$count nhiếp ảnh gia rảnh $day';
+  }
+
+  @override
+  String get findSortBest => 'Phù hợp nhất';
+
+  @override
+  String get findSortNear => 'Gần tôi';
+
+  @override
+  String get findSortPrice => 'Giá';
+
+  @override
+  String get findSortRating => 'Đánh giá';
+
+  @override
+  String get findNoResult => 'Chưa có ai khớp bộ lọc';
+
+  @override
+  String get findNoResultBody => 'Thử bỏ bớt bộ lọc hoặc chọn ngày khác.';
+
+  @override
+  String get findClear => 'Xoá bộ lọc';
+
+  @override
+  String get findFallbackNote => 'Đang xếp theo sao và khoảng cách';
+
+  @override
+  String get findLoadError =>
+      'Không tải được danh sách. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String findBookDay(String day) {
+    return 'Đặt $day';
+  }
+
+  @override
+  String get findDateTitle => 'Chọn ngày';
+
+  @override
+  String get findDateClear => 'Xoá ngày';
+
+  @override
+  String get findDateDone => 'Xong';
+
+  @override
+  String get findServiceTitle => 'Dịch vụ';
+
+  @override
+  String get findServiceAll => 'Tất cả dịch vụ';
+
+  @override
+  String get findPriceTitle => 'Ngân sách';
+
+  @override
+  String get findPriceAny => 'Mọi mức giá';
+
+  @override
+  String findPriceUnder(String price) {
+    return 'Dưới $price';
+  }
+
+  @override
+  String get findRatingTitle => 'Đánh giá tối thiểu';
+
+  @override
+  String get findRatingAny => 'Mọi đánh giá';
+
+  @override
+  String findRatingMin(String rating) {
+    return '★ $rating+';
+  }
 }

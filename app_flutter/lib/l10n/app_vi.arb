@@ -59,12 +59,8 @@
   "rolePhotographerTitle": "Nhận chụp",
   "rolePhotographerBody": "Đăng ảnh, nhận yêu cầu, quản lý lịch và doanh thu.",
   "roleContinue": "Tiếp tục",
-  "emptyHomeTitle": "Ảnh đẹp sẽ xuất hiện ở đây",
-  "emptyHomeBody": "Theo dõi nhiếp ảnh gia bạn thích để bắt đầu.",
   "emptyExploreTitle": "Khám phá theo dịch vụ và địa điểm",
   "emptyExploreBody": "Chân dung, cưới, gia đình, kỷ yếu và hơn thế.",
-  "emptyFindTitle": "Tìm nhiếp ảnh gia rảnh đúng ngày bạn cần",
-  "emptyFindBody": "Chọn địa điểm, ngày và dịch vụ để so sánh.",
   "emptyCreateTitle": "Cho mọi người thấy bạn chụp gì",
   "emptyCreateBody": "Mỗi bài đăng gắn một gói dịch vụ để khách đặt ngay.",
   "emptyBookingsTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
@@ -515,5 +511,193 @@
   },
   "createUploadFailed": "Không tải được ảnh. Thử lại nhé.",
   "createPublishFailed": "Không đăng được bài. Kiểm tra mạng rồi thử lại.",
-  "createPublished": "Đã đăng bài"
+  "createPublished": "Đã đăng bài",
+  "reasonFreeOnDate": "Rảnh {day}",
+  "@reasonFreeOnDate": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "reasonSkillMatch": "Chuyên {specialty}",
+  "@reasonSkillMatch": {
+    "placeholders": {
+      "specialty": {"type": "String"}
+    }
+  },
+  "reasonNear": "Cách {distance}",
+  "@reasonNear": {
+    "placeholders": {
+      "distance": {"type": "String"}
+    }
+  },
+  "reasonTopRated": "★ {rating} · {count} đánh giá",
+  "@reasonTopRated": {
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "reasonFastReply": "Phản hồi nhanh",
+  "reasonNewTalent": "Mới tham gia",
+  "homePillFree": "Rảnh {day} này",
+  "@homePillFree": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "engagementError": "Chưa thực hiện được. Thử lại nhé.",
+  "back": "Quay lại",
+  "homeGreeting": "Chào {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeTitle": "Hôm nay chụp gì?",
+  "homeForYou": "Dành cho bạn",
+  "homeFreeThisWeek": "Rảnh tuần này",
+  "homeRealShoots": "Buổi chụp thật",
+  "homeFromCustomers": "Từ khách hàng",
+  "homeRealShootBy": "Chụp bởi {name}",
+  "@homeRealShootBy": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeEmptyTitle": "Chưa có ảnh nào quanh bạn",
+  "homeEmptyBody": "Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.",
+  "homeEmptyAction": "Khám phá nhiếp ảnh gia",
+  "homeLoadError": "Không tải được ảnh. Kiểm tra mạng rồi thử lại.",
+  "photoSave": "Lưu ảnh",
+  "photoUnsave": "Bỏ lưu",
+  "photoBook": "Đặt gói này",
+  "photoViewProfile": "Xem hồ sơ",
+  "photoFollow": "Theo dõi",
+  "photoFollowing": "Đang theo dõi",
+  "photoRealShootBy": "Chụp bởi {name} · gói {service}",
+  "@photoRealShootBy": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "service": {"type": "String"}
+    }
+  },
+  "photoRealShootByName": "Chụp bởi {name}",
+  "@photoRealShootByName": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "photoRemovedTitle": "Bài đăng không còn",
+  "photoRemovedBody": "Bài đăng này đã bị gỡ hoặc không tồn tại.",
+  "photoBackHome": "Về trang chủ",
+  "photoMoreOf": "Thêm của {name}",
+  "@photoMoreOf": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "photoMoreProfile": "Hồ sơ",
+  "photoItemLabel": "Ảnh {i}",
+  "@photoItemLabel": {
+    "placeholders": {
+      "i": {"type": "int"}
+    }
+  },
+  "photoOtherPackages": "Xem các gói khác",
+  "photoServiceInactive": "Gói này đã ngừng",
+  "photoLike": "Thích",
+  "photoUnlike": "Bỏ thích",
+  "photoPageOf": "Ảnh {n} trên {total}",
+  "@photoPageOf": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "photoLoadError": "Không tải được bài đăng. Kiểm tra mạng rồi thử lại.",
+  "servicePhotos": "{n} ảnh",
+  "@servicePhotos": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "serviceDelivery": "giao sau {days} ngày",
+  "@serviceDelivery": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "serviceDurationMinutes": "{m} phút",
+  "@serviceDurationMinutes": {
+    "placeholders": {
+      "m": {"type": "int"}
+    }
+  },
+  "serviceDurationHours": "{h} giờ",
+  "@serviceDurationHours": {
+    "placeholders": {
+      "h": {"type": "int"}
+    }
+  },
+  "serviceDurationHoursMinutes": "{h} giờ {m} phút",
+  "@serviceDurationHoursMinutes": {
+    "placeholders": {
+      "h": {"type": "int"},
+      "m": {"type": "int"}
+    }
+  },
+  "findDate": "Ngày",
+  "findService": "Dịch vụ",
+  "findPrice": "Giá",
+  "findRating": "Đánh giá",
+  "findNearMe": "Quanh bạn",
+  "findCount": "{count} nhiếp ảnh gia",
+  "@findCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "findCountOnDay": "{count} nhiếp ảnh gia rảnh {day}",
+  "@findCountOnDay": {
+    "placeholders": {
+      "count": {"type": "String"},
+      "day": {"type": "String"}
+    }
+  },
+  "findSortBest": "Phù hợp nhất",
+  "findSortNear": "Gần tôi",
+  "findSortPrice": "Giá",
+  "findSortRating": "Đánh giá",
+  "findNoResult": "Chưa có ai khớp bộ lọc",
+  "findNoResultBody": "Thử bỏ bớt bộ lọc hoặc chọn ngày khác.",
+  "findClear": "Xoá bộ lọc",
+  "findFallbackNote": "Đang xếp theo sao và khoảng cách",
+  "findLoadError": "Không tải được danh sách. Kiểm tra mạng rồi thử lại.",
+  "findBookDay": "Đặt {day}",
+  "@findBookDay": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "findDateTitle": "Chọn ngày",
+  "findDateClear": "Xoá ngày",
+  "findDateDone": "Xong",
+  "findServiceTitle": "Dịch vụ",
+  "findServiceAll": "Tất cả dịch vụ",
+  "findPriceTitle": "Ngân sách",
+  "findPriceAny": "Mọi mức giá",
+  "findPriceUnder": "Dưới {price}",
+  "@findPriceUnder": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "findRatingTitle": "Đánh giá tối thiểu",
+  "findRatingAny": "Mọi đánh giá",
+  "findRatingMin": "★ {rating}+",
+  "@findRatingMin": {
+    "placeholders": {
+      "rating": {"type": "String"}
+    }
+  }
 }

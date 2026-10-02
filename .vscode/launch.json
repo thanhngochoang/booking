@@ -16,6 +16,33 @@
       "customToolReplacesArgs": 0
     },
     {
+      // Tự bật Android emulator (preLaunchTask) rồi chạy app trên đó; backend = Firebase dev.
+      "name": "Flutter: Android emulator",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/app_flutter",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "deviceId": "emulator-5554",
+      "preLaunchTask": "start-android-emulator",
+      "customTool": "${workspaceFolder}/scripts/bin/flutter",
+      "customToolReplacesArgs": 0
+    },
+    {
+      // Như trên nhưng trỏ vào backend local (chạy ../scripts/backend-local.sh trước).
+      "name": "Flutter: Android emulator + backend local",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/app_flutter",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "deviceId": "emulator-5554",
+      "preLaunchTask": "start-android-emulator",
+      "toolArgs": ["--dart-define=USE_EMULATORS=true"],
+      "customTool": "${workspaceFolder}/scripts/bin/flutter",
+      "customToolReplacesArgs": 0
+    },
+    {
       "name": "Flutter: (profile)",
       "type": "dart",
       "request": "launch",
