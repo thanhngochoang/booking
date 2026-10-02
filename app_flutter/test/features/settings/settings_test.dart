@@ -165,7 +165,7 @@ void main() {
   });
 
   test(
-    'screen codes are off by default and the choice is remembered',
+    'screen codes are on by default in debug and the choice is remembered',
     () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -173,15 +173,16 @@ void main() {
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
       addTearDown(c.dispose);
-      expect(c.read(showScreenCodesProvider), isFalse);
-      await c.read(showScreenCodesProvider.notifier).set(true);
-      expect(prefs.getBool('showScreenCodes'), isTrue);
+      // Tests run in debug mode, where the tags are shown by default.
+      expect(c.read(showScreenCodesProvider), isTrue);
+      await c.read(showScreenCodesProvider.notifier).set(false);
+      expect(prefs.getBool('showScreenCodes'), isFalse);
 
       final again = ProviderContainer(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
       addTearDown(again.dispose);
-      expect(again.read(showScreenCodesProvider), isTrue);
+      expect(again.read(showScreenCodesProvider), isFalse);
     },
   );
 
@@ -195,12 +196,12 @@ void main() {
     await tester.pumpAndSettle();
     final row = find.byKey(const Key('show-screen-codes'));
     await tester.scrollUntilVisible(row, 200);
-    expect(tester.widget<SwitchListTile>(row).value, isFalse);
+    expect(tester.widget<SwitchListTile>(row).value, isTrue);
 
     await tester.tap(row);
     await tester.pumpAndSettle();
-    expect(tester.widget<SwitchListTile>(row).value, isTrue);
-    expect(prefs.getBool('showScreenCodes'), isTrue);
+    expect(tester.widget<SwitchListTile>(row).value, isFalse);
+    expect(prefs.getBool('showScreenCodes'), isFalse);
   });
 
   testWidgets('settings with the screen-code switch on stays idle', (

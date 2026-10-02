@@ -15,10 +15,13 @@ class HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(l.tabHome)),
-      body: EmptyState(title: l.emptyHomeTitle, body: l.emptyHomeBody),
+    return ScreenCode(
+      ScreenCodes.home,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(l.tabHome)),
+        body: EmptyState(title: l.emptyHomeTitle, body: l.emptyHomeBody),
+      ),
     );
   }
 }
@@ -29,12 +32,15 @@ class ActionTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final photographer = _role(ref) == UserRole.photographer;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(photographer ? l.tabCreate : l.tabFind)),
-      body: EmptyState(
-        title: photographer ? l.emptyCreateTitle : l.emptyFindTitle,
-        body: photographer ? l.emptyCreateBody : l.emptyFindBody,
+    return ScreenCode(
+      photographer ? ScreenCodes.createPost : ScreenCodes.findPhotographer,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(photographer ? l.tabCreate : l.tabFind)),
+        body: EmptyState(
+          title: photographer ? l.emptyCreateTitle : l.emptyFindTitle,
+          body: photographer ? l.emptyCreateBody : l.emptyFindBody,
+        ),
       ),
     );
   }
@@ -46,12 +52,15 @@ class BookingsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final photographer = _role(ref) == UserRole.photographer;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(photographer ? l.tabWork : l.tabBookings)),
-      body: EmptyState(
-        title: photographer ? l.emptyWorkTitle : l.emptyBookingsTitle,
-        body: photographer ? l.emptyWorkBody : l.emptyBookingsBody,
+    return ScreenCode(
+      photographer ? ScreenCodes.workEmpty : ScreenCodes.bookings,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: Text(photographer ? l.tabWork : l.tabBookings)),
+        body: EmptyState(
+          title: photographer ? l.emptyWorkTitle : l.emptyBookingsTitle,
+          body: photographer ? l.emptyWorkBody : l.emptyBookingsBody,
+        ),
       ),
     );
   }
