@@ -14,6 +14,7 @@ Usage:
   board.py claim <id> --branch <b>      claim a unit (exit 3 if someone holds it)
   board.py set <id> <state> [--pr N]    change the state of a claim ("in review", "done")
   board.py release <id> [--note TEXT]   drop a claim (abandoned work)
+  board.py watch [--timeout S]          wait until the board or develop changes (exit 1 on timeout)
 
 <id> is the "#" of a row in the "To run" table (e.g. 8b, 9) or, for plans
 split into lanes, "<#>/<step>-L<lane>" (e.g. 8a2/2-L1).
@@ -222,15 +223,35 @@ def cmd_release(a):
     print(f"released {a.id}" if transact(mutate, f"release {a.id}") else f"{a.id} was not claimed")
 
 
+def cmd_watch(a):
+    """Block until origin/board or origin/<base> moves (exit 0) or the timeout passes (exit 1)."""
+    import time
+
+    def heads():
+        b = fetch()
+        return b, sh("git", "rev-parse", f"refs/remotes/{REMOTE}/{BASE}").stdout.strip()
+
+    start, deadline = heads(), time.time() + a.timeout
+    while time.time() < deadline:
+        time.sleep(a.every)
+        now = heads()
+        if now != start:
+            print(f"changed: board {start[0]} -> {now[0]}, {BASE} {start[1][:7]} -> {now[1][:7]}")
+            return
+    print(f"no change in {a.timeout}s")
+    sys.exit(1)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("show")
+    w = sub.add_parser("watch"); w.add_argument("--timeout", type=int, default=1800); w.add_argument("--every", type=int, default=60)
     c = sub.add_parser("claim"); c.add_argument("id"); c.add_argument("--branch", required=True)
     s = sub.add_parser("set"); s.add_argument("id"); s.add_argument("state"); s.add_argument("--pr"); s.add_argument("--force", action="store_true")
     r = sub.add_parser("release"); r.add_argument("id"); r.add_argument("--note"); r.add_argument("--force", action="store_true")
     a = p.parse_args()
-    {"show": cmd_show, "claim": cmd_claim, "set": cmd_set, "release": cmd_release}[a.cmd](a)
+    {"show": cmd_show, "watch": cmd_watch, "claim": cmd_claim, "set": cmd_set, "release": cmd_release}[a.cmd](a)
 
 
 if __name__ == "__main__":
