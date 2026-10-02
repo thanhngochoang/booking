@@ -1,0 +1,759 @@
+{
+  "@@locale": "vi",
+  "appName": "Cộng đồng nhiếp ảnh gia",
+  "loadingLabel": "Đang tải",
+  "tabBadgeCount": "{count} mục mới",
+  "@tabBadgeCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tabHome": "Trang chủ",
+  "tabExplore": "Khám phá",
+  "tabFind": "Tìm thợ ảnh",
+  "tabCreate": "Đăng bài",
+  "tabBookings": "Đặt lịch",
+  "tabWork": "Công việc",
+  "tabProfile": "Hồ sơ",
+  "loginTitle": "Đăng nhập",
+  "registerTitle": "Tạo tài khoản",
+  "emailLabel": "Email",
+  "passwordLabel": "Mật khẩu",
+  "passwordConfirmLabel": "Nhập lại mật khẩu",
+  "displayNameLabel": "Tên hiển thị",
+  "loginButton": "Đăng nhập",
+  "loginHeadlineLead": "Bắt trọn",
+  "loginHeadlineAccent": "mọi khoảnh khắc",
+  "loginTagline": "Tìm thợ ảnh hợp gu, đặt lịch chỉ vài chạm.",
+  "loginWelcome": "Chào bạn!",
+  "loginWelcomeBody": "Đăng nhập để tiếp tục",
+  "socialGoogle": "Google",
+  "socialFacebook": "Facebook",
+  "loginOrDivider": "hoặc",
+  "noAccountPrompt": "Chưa có tài khoản?",
+  "registerLink": "Đăng ký",
+  "showPassword": "Hiện mật khẩu",
+  "hidePassword": "Ẩn mật khẩu",
+  "registerButton": "Đăng ký",
+  "continueWithGoogle": "Tiếp tục với Google",
+  "continueWithFacebook": "Tiếp tục với Facebook",
+  "haveAccountPrompt": "Đã có tài khoản?",
+  "registerHeadlineLead": "Tham gia",
+  "registerHeadlineAccent": "cộng đồng ảnh",
+  "registerTagline": "Kết nối thợ ảnh, lưu giữ khoảnh khắc.",
+  "registerWelcomeBody": "Điền vài thông tin để bắt đầu",
+  "signOut": "Đăng xuất",
+  "errorEmailInvalid": "Email không hợp lệ.",
+  "errorPasswordShort": "Mật khẩu cần ít nhất 8 ký tự.",
+  "errorPasswordMismatch": "Mật khẩu nhập lại không khớp.",
+  "errorNameEmpty": "Vui lòng nhập tên hiển thị.",
+  "authErrorWrongPassword": "Email hoặc mật khẩu không đúng.",
+  "authErrorUserNotFound": "Không tìm thấy tài khoản với email này.",
+  "authErrorEmailInUse": "Email này đã được dùng. Hãy đăng nhập.",
+  "authErrorWeakPassword": "Mật khẩu quá yếu. Dùng ít nhất 8 ký tự.",
+  "authErrorNetwork": "Không có kết nối. Kiểm tra mạng rồi thử lại.",
+  "authErrorUnknown": "Đăng nhập không thành công. Thử lại sau.",
+  "roleTitle": "Bạn muốn làm gì?",
+  "roleCustomerTitle": "Thuê nhiếp ảnh gia",
+  "roleCustomerBody": "Khám phá ảnh đẹp, đặt lịch chụp trong vài chạm.",
+  "rolePhotographerTitle": "Nhận chụp",
+  "rolePhotographerBody": "Đăng ảnh, nhận yêu cầu, quản lý lịch và doanh thu.",
+  "roleContinue": "Tiếp tục",
+  "emptyExploreTitle": "Khám phá theo dịch vụ và địa điểm",
+  "emptyExploreBody": "Chân dung, cưới, gia đình, kỷ yếu và hơn thế.",
+  "emptyBookingsTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
+  "emptyBookingsBody": "Yêu cầu và lịch chụp của bạn sẽ hiện ở đây.",
+  "emptyWorkTitle": "Chưa có yêu cầu nào",
+  "emptyWorkBody": "Hoàn thiện hồ sơ và đăng ảnh để được tìm thấy.",
+  "profileRoleCustomer": "Khách hàng",
+  "profileRolePhotographer": "Nhiếp ảnh gia",
+  "settingsTitle": "Cài đặt",
+  "settingsAccount": "Tài khoản",
+  "settingsEditProfile": "Chỉnh sửa hồ sơ",
+  "settingsEditProfileBody": "Tên hiển thị",
+  "settingsPhone": "Số điện thoại",
+  "settingsPhoneEmpty": "Chưa thêm",
+  "settingsPhoneAdded": "Đã thêm",
+  "settingsPhoneMasked": "•••• {last4}",
+  "@settingsPhoneMasked": {
+    "placeholders": {
+      "last4": {"type": "String"}
+    }
+  },
+  "settingsSkills": "Kỹ năng",
+  "settingsSkillsBody": "Thể loại, mức độ và phong cách",
+  "settingsPublicProfile": "Xem hồ sơ công khai",
+  "settingsPublicProfileBody": "Hồ sơ như khách nhìn thấy",
+  "settingsAppearance": "Giao diện",
+  "themeDark": "Tối",
+  "themeLight": "Sáng",
+  "themeSystem": "Theo hệ thống",
+  "settingsButtonStyle": "Kiểu nút chính",
+  "buttonStyleGradient": "Gradient theo giao diện",
+  "buttonStyleAvatar": "Ảnh đại diện làm mờ",
+  "buttonStyleAvatarNeedsPhoto": "Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.",
+  "settingsButtonPreview": "Xem trước nút",
+  "settingsDeveloper": "Dành cho nhà phát triển",
+  "settingsShowScreenCodes": "Hiện mã màn hình",
+  "settingsShowScreenCodesBody": "Nhãn Sxx ở góc trên trái mỗi màn, để gọi tên màn khi cần chỉnh sửa.",
+  "editProfileTitle": "Chỉnh sửa hồ sơ",
+  "editProfileSave": "Lưu",
+  "editProfileSaved": "Đã lưu hồ sơ.",
+  "editProfileError": "Không lưu được hồ sơ. Kiểm tra mạng rồi thử lại.",
+  "editProfileChangeAvatar": "Đổi ảnh đại diện",
+  "editProfileAvatarSaved": "Đã đổi ảnh đại diện.",
+  "editProfileAvatarError": "Không đổi được ảnh. Thử lại nhé.",
+  "profileOfferPhotographerTitle": "Tôi là nhiếp ảnh gia",
+  "profileOfferPhotographerBody": "Đăng ảnh, nhận booking và quản lý lịch. Bạn vẫn đổi lại được bất cứ lúc nào.",
+  "profileOfferCustomerTitle": "Tôi cần đặt lịch",
+  "profileOfferCustomerBody": "Tìm nhiếp ảnh gia, đặt lịch và nhắn tin. Bạn vẫn đổi lại được bất cứ lúc nào.",
+  "profileSwitchToCustomer": "Chuyển qua chế độ đặt lịch",
+  "profileSwitchToPhotographer": "Chuyển qua chế độ nhiếp ảnh",
+  "profileSwitchedToCustomer": "Đã chuyển qua chế độ đặt lịch.",
+  "profileSwitchedToPhotographer": "Đã chuyển qua chế độ nhiếp ảnh.",
+  "profileSetupTitle": "Hoàn thiện hồ sơ nhiếp ảnh gia",
+  "profileSetupBody": "Còn vài bước nữa để khách tìm thấy và đặt lịch với bạn.",
+  "profileSetupContinue": "Tiếp tục thiết lập",
+  "profileSwitchError": "Không đổi được chế độ. Kiểm tra mạng rồi thử lại.",
+  "statusRequested": "Đã gửi",
+  "statusAccepted": "Đã nhận",
+  "statusDeclined": "Từ chối",
+  "statusExpired": "Hết hạn",
+  "statusCancelled": "Đã huỷ",
+  "statusUpcoming": "Sắp tới",
+  "statusCompleted": "Hoàn thành",
+  "statusReviewed": "Đã đánh giá",
+  "sessionErrorTitle": "Không tải được tài khoản",
+  "sessionErrorBody": "Kiểm tra kết nối mạng rồi thử lại. Nếu vẫn lỗi, hãy đăng xuất và đăng nhập lại.",
+  "retry": "Thử lại",
+  "roleSaveError": "Không lưu được lựa chọn. Kiểm tra mạng rồi thử lại.",
+  "verifiedLabel": "Đã xác minh",
+  "freeTag": "Không thu phí",
+  "freeBannerBody": "Đăng ký để giữ chỗ, không cần thanh toán",
+  "capacityUsed": "{used} / {total} đã đăng ký",
+  "@capacityUsed": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "stepProgressCount": "{current} / {total}",
+  "@stepProgressCount": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "stepProgressSemantics": "Bước {current} trên {total}",
+  "@stepProgressSemantics": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "phoneLabel": "Số điện thoại",
+  "phoneCodeLabel": "Mã",
+  "phoneCodeSemantics": "Mã +84",
+  "phoneRequired": "Nhập số điện thoại",
+  "phoneInvalid": "Số điện thoại chưa đúng. Ví dụ: 903 123 456",
+  "phoneInvalidInternational": "Nhập số có mã quốc gia, ví dụ: +1 415 555 2671",
+  "addPhoneTitle": "Thêm số điện thoại để đặt lịch",
+  "addPhoneBody": "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.",
+  "addPhoneExample": "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.",
+  "allowZaloLabel": "Cho phép liên hệ qua Zalo",
+  "allowWhatsAppLabel": "Cho phép liên hệ qua WhatsApp",
+  "phonePrivacy": "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
+  "editProfilePhoneHint": "Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
+  "addPhoneSave": "Lưu và tiếp tục",
+  "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé.",
+  "contactLabel": "Liên hệ",
+  "contactCall": "Gọi điện",
+  "contactCallShort": "Gọi",
+  "contactZalo": "Zalo",
+  "contactWhatsApp": "WhatsApp",
+  "contactInquiry": "Nhắn tin hỏi trước",
+  "contactOpening": "Đang mở liên hệ",
+  "contactLockedHint": "Liên hệ qua điện thoại mở sau khi bạn đặt lịch",
+  "contactOpenError": "Không mở được liên hệ. Thử lại nhé.",
+  "setupFlowTitle": "Hồ sơ nhiếp ảnh gia",
+  "setupContactTitle": "Khu vực và liên hệ",
+  "setupContactArea": "Khu vực phục vụ",
+  "setupContactCity": "Thành phố",
+  "setupContactRadius": "Bán kính phục vụ",
+  "setupRadiusValue": "{km} km",
+  "@setupRadiusValue": {
+    "placeholders": {
+      "km": {"type": "int"}
+    }
+  },
+  "setupContactPhone": "Số điện thoại · bắt buộc",
+  "setupContactChannels": "Chọn kênh khách được dùng để liên hệ bạn.",
+  "setupChannelCall": "Gọi điện",
+  "setupChannelCallHint": "Dùng số trên",
+  "setupChannelZalo": "Zalo",
+  "setupChannelZaloHint": "Dùng số trên",
+  "setupZaloOwn": "Số Zalo riêng (để trống nếu dùng số trên)",
+  "setupChannelWhatsApp": "WhatsApp",
+  "setupChannelWhatsAppHint": "Nhập số riêng nếu khác",
+  "setupWhatsAppOwn": "Số WhatsApp có mã quốc gia (để trống nếu dùng số trên)",
+  "setupInAppOnly": "Chỉ nhận tin nhắn trong app",
+  "setupInAppOnlyHint": "Khách chỉ nhắn được trong ứng dụng. Bạn có thể bật gọi, Zalo hay WhatsApp sau.",
+  "setupContactPrivacy": "Số của bạn không hiện công khai. Khách chỉ dùng được các kênh này sau khi đã đặt lịch.",
+  "setupContactBack": "Quay lại",
+  "setupContactFinish": "Hoàn tất",
+  "setupCityRequired": "Nhập thành phố bạn nhận việc",
+  "setupNoChannel": "Bật ít nhất một kênh, hoặc chọn \"Chỉ nhận tin nhắn trong app\".",
+  "setupWhatsAppNeedsNumber": "Nhập số WhatsApp có mã quốc gia, ví dụ +1 415 555 2671",
+  "setupSaveError": "Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.",
+  "setupIntroHeading": "Giới thiệu bản thân",
+  "setupIntroHint": "Khách đọc phần này trước khi đặt lịch. Viết ngắn, nói rõ bạn chụp kiểu gì.",
+  "setupBioLabel": "Giới thiệu ngắn",
+  "setupBioHint": "Ánh sáng tự nhiên, ít dàn dựng. Chuyên chân dung ngoài trời ở Sài Gòn.",
+  "setupEquipmentLabel": "Thiết bị (không bắt buộc)",
+  "setupEquipmentHint": "Ví dụ: Sony A7 IV",
+  "setupEquipmentAdd": "Thêm thiết bị",
+  "setupEquipmentRemove": "Xoá {item}",
+  "@setupEquipmentRemove": {
+    "placeholders": {
+      "item": {"type": "String"}
+    }
+  },
+  "setupEquipmentFull": "Tối đa 8 thiết bị.",
+  "setupNext": "Tiếp tục",
+  "introBioRequired": "Viết vài dòng giới thiệu",
+  "introBioTooLong": "Tối đa 300 ký tự",
+  "setupServicesHeading": "Gói dịch vụ",
+  "setupServiceHint": "Khách đặt theo gói. Cần ít nhất một gói để hồ sơ hiện trong Tìm thợ ảnh.",
+  "setupNoPackages": "Chưa có gói nào. Thêm gói đầu tiên bên dưới.",
+  "setupNeedPackage": "Thêm ít nhất một gói để tiếp tục.",
+  "setupPackagesLoadError": "Không tải được danh sách gói.",
+  "packageEditHeading": "Sửa gói",
+  "packageNameLabel": "Tên gói",
+  "packageNameHint": "Ví dụ: Chân dung 2 giờ",
+  "packagePriceLabel": "Giá (₫)",
+  "packageDurationLabel": "Thời lượng",
+  "packageDurationHint": "Chọn",
+  "durationHours": "{hours} giờ",
+  "@durationHours": {"placeholders": {"hours": {"type": "String"}}},
+  "packageEditedLabel": "Số ảnh hậu kỳ",
+  "packageDeliveryLabel": "Giao sau (ngày)",
+  "packagePhotos": "{count} ảnh",
+  "@packagePhotos": {"placeholders": {"count": {"type": "int"}}},
+  "packageDelivery": "{days, plural, =0{giao trong ngày} other{giao {days} ngày}}",
+  "@packageDelivery": {"placeholders": {"days": {"type": "int"}}},
+  "packageAdd": "Thêm gói này",
+  "packageSave": "Lưu gói",
+  "packageCancelEdit": "Huỷ sửa",
+  "packageHideTooltip": "Ẩn gói {name}",
+  "@packageHideTooltip": {"placeholders": {"name": {"type": "String"}}},
+  "packageHideTitle": "Ẩn gói này?",
+  "packageHideBody": "Khách sẽ không thấy và không đặt được gói này nữa. Bài đăng cũ vẫn giữ nguyên.",
+  "packageHideConfirm": "Ẩn gói",
+  "packageKeep": "Giữ lại",
+  "packageAdded": "Đã thêm gói.",
+  "packageSaved": "Đã lưu gói.",
+  "packageHidden": "Đã ẩn gói.",
+  "packageNameLength": "Nhập tên gói từ 2 đến 60 ký tự",
+  "packagePriceRequired": "Nhập giá lớn hơn 0",
+  "packagePriceTooHigh": "Giá tối đa 1.000.000.000₫",
+  "packageDurationRequired": "Chọn thời lượng",
+  "packageCountInvalid": "Nhập số từ 0 đến 2000",
+  "packageDaysInvalid": "Nhập số ngày từ 0 đến 90",
+  "locationPromptTitle": "Sự kiện gần bạn",
+  "locationPromptBody": "Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.",
+  "locationAllow": "Cho phép",
+  "locationLater": "Để sau",
+  "locationChooseArea": "Chọn khu vực",
+  "eventTypePhotoWalk": "Photo walk",
+  "eventTypeMiniSession": "Mini session",
+  "eventTypeWorkshop": "Workshop",
+  "eventTypeCosplay": "Cosplay",
+  "eventTypeOther": "Khác",
+  "eventSeatsLeft": "Còn {n} chỗ",
+  "@eventSeatsLeft": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "eventSoldOut": "Hết chỗ",
+  "eventMonthShort": "T{month}",
+  "@eventMonthShort": {
+    "placeholders": {
+      "month": {"type": "int"}
+    }
+  },
+  "areaPickerTitle": "Chọn khu vực của bạn",
+  "areaPickerBody": "Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.",
+  "areaPickerBodyOn": "Chọn khu vực để xem sự kiện quanh đó.",
+  "areaPickerOpenSettings": "Mở Cài đặt để bật vị trí",
+  "areaPickerUse": "Dùng khu vực này",
+  "areaPickerUseDevice": "Dùng vị trí của tôi",
+  "areaPickerSearch": "Tìm quận, thành phố",
+  "areaPickerNoMatch": "Không tìm thấy khu vực",
+  "areaDeviceFailed": "Không lấy được vị trí. Chọn một khu vực hoặc thử lại.",
+  "exploreAround": "Quanh {area} · vị trí gần đúng",
+  "@exploreAround": {
+    "placeholders": {
+      "area": {"type": "String"}
+    }
+  },
+  "exploreAroundMe": "Quanh bạn · vị trí gần đúng",
+  "exploreChange": "Đổi",
+  "exploreRadius": "{km} km",
+  "@exploreRadius": {
+    "placeholders": {
+      "km": {"type": "int"}
+    }
+  },
+  "exploreThisWeek": "Tuần này",
+  "exploreWeekend": "Cuối tuần",
+  "exploreNearbyTitle": "Sự kiện gần bạn",
+  "exploreEventsTitle": "Sự kiện chụp ảnh",
+  "exploreSeeAll": "Xem tất cả",
+  "exploreNoneNearby": "Chưa có sự kiện gần bạn",
+  "exploreWiden": "Tăng bán kính",
+  "exploreTabServices": "Dịch vụ",
+  "exploreTabPlaces": "Địa điểm",
+  "exploreTabStyles": "Phong cách",
+  "exploreTabPhotographers": "Thợ ảnh",
+  "explorePhotographersAll": "Xem tất cả nhiếp ảnh gia",
+  "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại.",
+  "eventDateSpoken": "{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}, ngày {day} tháng {month}",
+  "@eventDateSpoken": {
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "day": {"type": "int"},
+      "month": {"type": "int"}
+    }
+  },
+  "reasonsSemantics": "Gợi ý vì: {reasons}",
+  "@reasonsSemantics": {
+    "placeholders": {
+      "reasons": {"type": "String"}
+    }
+  },
+  "photographerSessions": "{n} buổi",
+  "@photographerSessions": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "priceFrom": "từ",
+  "priceFromValue": "từ {price}",
+  "@priceFromValue": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "photographerCardProfile": "Hồ sơ",
+  "photographerCardBook": "Đặt lịch",
+  "skillChipFull": "Đã đủ số lượng",
+  "completenessTitle": "Độ khớp hồ sơ",
+  "completenessNone": "Chưa có điểm",
+  "completenessPercent": "{percent}%",
+  "@completenessPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "skillsLevelBasic": "Cơ bản",
+  "skillsLevelGood": "Thành thạo",
+  "skillsLevelExpert": "Chuyên sâu",
+  "skillsLevelSemantics": "{name}, mức {level}",
+  "@skillsLevelSemantics": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "String"}
+    }
+  },
+  "skillsExpertFull": "Đã đủ 3 mức Chuyên sâu",
+  "skillEvidencePhoto": "Ảnh {index}",
+  "@skillEvidencePhoto": {
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "skillsCount": "{n} / {max}",
+  "@skillsCount": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "skillEvidenceTitle": "Minh chứng · {name}",
+  "@skillEvidenceTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "skillEvidenceBody": "Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.",
+  "skillEvidenceDone": "Xong",
+  "skillEvidenceEmpty": "Đăng bài trước",
+  "skillEvidenceEmptyBody": "Bạn chưa có bài đăng nào. Đăng ảnh vào portfolio rồi quay lại chọn ảnh minh chứng.",
+  "skillEvidenceEmptyAction": "Đăng bài",
+  "skillEvidenceMax": "Tối đa 3 ảnh. Bỏ chọn một ảnh để chọn ảnh khác.",
+  "skillEvidenceNeedOne": "Mức Chuyên sâu cần ít nhất 1 ảnh",
+  "skillEvidenceLoadError": "Không tải được bài đăng của bạn.",
+  "skillEvidenceLoadMore": "Tải thêm",
+  "skillEvidenceLoadMoreRetry": "Không tải thêm được. Thử lại",
+  "skillsTitle": "Kỹ năng",
+  "skillsIntro": "Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó.",
+  "skillsTypes": "Thể loại chụp",
+  "skillsLevels": "Mức độ",
+  "skillsMaxExpert": "Chuyên sâu tối đa 3",
+  "skillsEvidenceRow": "{name}: {n} / 3 ảnh minh chứng",
+  "@skillsEvidenceRow": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "n": {"type": "int"}
+    }
+  },
+  "skillsEvidenceEdit": "Chỉnh",
+  "skillsEvidenceNeeded": "Mức Chuyên sâu cần ít nhất 1 ảnh minh chứng",
+  "skillsTooMany": "Tối đa 6 thể loại",
+  "skillsTooManyExpert": "Chỉ chọn tối đa 3 thể loại mức Chuyên sâu",
+  "skillsTooManyStyles": "Tối đa 4 phong cách",
+  "skillsTooManyExtras": "Tối đa 8 kỹ năng thêm",
+  "skillsTooManyAudiences": "Tối đa 4 nhóm khách phù hợp",
+  "skillsStyles": "Phong cách",
+  "skillsExtras": "Kỹ năng thêm",
+  "skillsLanguages": "Ngôn ngữ",
+  "skillsAudiences": "Khách phù hợp",
+  "skillsYears": "Kinh nghiệm",
+  "skillsYearsSuffix": "năm",
+  "skillsYearsRange": "Từ 0 đến 50 năm",
+  "skillsNeedLang": "Chọn ít nhất 1 ngôn ngữ",
+  "skillsBack": "Quay lại",
+  "skillsContinue": "Tiếp tục",
+  "skillsSave": "Lưu thay đổi",
+  "skillsSaveError": "Không lưu được kỹ năng. Thử lại nhé.",
+  "skillsLoadError": "Không tải được kỹ năng.",
+  "skillsFixIssues": "Kiểm tra lại các mục được đánh dấu",
+  "skillsDraftRestored": "Đã mở lại bản nháp chưa lưu",
+  "skillsHintSpecialty": "Chọn ít nhất 1 thể loại",
+  "skillsHintEvidence": "Thêm ảnh minh chứng cho {name}",
+  "@skillsHintEvidence": {"placeholders": {"name": {"type": "String"}}},
+  "skillsHintEvidenceAny": "Thêm ảnh minh chứng cho thể loại Chuyên sâu",
+  "skillsHintStyles": "Chọn phong cách",
+  "skillsHintLanguages": "Chọn ngôn ngữ",
+  "skillsHintAudiences": "Chọn khách phù hợp",
+  "skillsHintExtras": "Chọn kỹ năng thêm",
+  "skillsHintDone": "Hồ sơ kỹ năng đã đầy đủ",
+  "skillsFitSaveToScore": "Lưu để tính độ khớp",
+  "skillsFitSaveToUpdate": "Lưu để cập nhật độ khớp",
+  "skillsHintTarget": "{hint} để lên {percent}%",
+  "@skillsHintTarget": {"placeholders": {"hint": {"type": "String"}, "percent": {"type": "int"}}},
+  "skillsEvidenceRemoved": "Một số minh chứng không hợp lệ đã được gỡ",
+  "skillsLeaveTitle": "Lưu bản nháp?",
+  "skillsLeaveBody": "Thay đổi chưa được lưu vào hồ sơ. Giữ bản nháp trên máy để làm tiếp lần sau nhé.",
+  "skillsLeaveKeep": "Giữ bản nháp",
+  "skillsLeaveDiscard": "Bỏ thay đổi",
+  "skillsRemoveTitle": "Bỏ thể loại {name}?",
+  "@skillsRemoveTitle": {"placeholders": {"name": {"type": "String"}}},
+  "skillsRemoveBody": "Ảnh minh chứng đã gắn cho thể loại này cũng sẽ bị gỡ.",
+  "skillsRemoveKeep": "Giữ lại",
+  "skillsRemoveConfirm": "Bỏ thể loại",
+  "calendarMonthTitle": "Tháng {month}, {year}",
+  "@calendarMonthTitle": {"placeholders": {"month": {"type": "String"}, "year": {"type": "String"}}},
+  "calendarMonthShort": "Tháng {month}",
+  "@calendarMonthShort": {"placeholders": {"month": {"type": "String"}}},
+  "calendarPrevMonth": "Tháng trước",
+  "calendarNextMonth": "Tháng sau",
+  "calendarWeekdayShort": "{weekday, select, mon{T2} tue{T3} wed{T4} thu{T5} fri{T6} sat{T7} other{CN}}",
+  "@calendarWeekdayShort": {"placeholders": {"weekday": {"type": "String"}}},
+  "calendarWeekdayLong": "{weekday, select, mon{Thứ 2} tue{Thứ 3} wed{Thứ 4} thu{Thứ 5} fri{Thứ 6} sat{Thứ 7} other{Chủ nhật}}",
+  "@calendarWeekdayLong": {"placeholders": {"weekday": {"type": "String"}}},
+  "calendarDayTitle": "{weekday}, {day}/{month}",
+  "@calendarDayTitle": {"placeholders": {"weekday": {"type": "String"}, "day": {"type": "String"}, "month": {"type": "String"}}},
+  "dayStateFree": "Rảnh",
+  "dayStatePending": "Chờ nhận",
+  "dayStateBooked": "Đã đặt",
+  "dayStateOff": "Nghỉ",
+  "calendarDaySemantics": "{day} tháng {month}, {state}",
+  "@calendarDaySemantics": {"placeholders": {"day": {"type": "String"}, "month": {"type": "String"}, "state": {"type": "String"}}},
+  "calendarHasEvent": "có sự kiện",
+  "calendarToday": "hôm nay",
+  "myCalendarTitle": "Lịch của tôi",
+  "calendarMarkOff": "Đánh dấu nghỉ",
+  "calendarClearOff": "Bỏ nghỉ",
+  "calendarUndo": "Hoàn tác",
+  "calendarHint": "Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.",
+  "calendarRangeHint": "Chạm ngày cuối để đánh dấu nghỉ cả khoảng.",
+  "calendarHasPlan": "Ngày này đã có lịch",
+  "calendarMarkedOff": "Đã đánh dấu nghỉ",
+  "calendarMarkedOffMany": "Đã đánh dấu nghỉ {count} ngày",
+  "@calendarMarkedOffMany": {"placeholders": {"count": {"type": "int"}}},
+  "calendarClearedOff": "Đã bỏ nghỉ",
+  "calendarOpenBooking": "Xem lịch hẹn",
+  "calendarOpenEvent": "Quản lý sự kiện",
+  "calendarSaveError": "Không lưu được lịch. Thử lại nhé.",
+  "calendarLoadError": "Không tải được lịch.",
+  "calendarPickDay": "Chọn một ngày để xem chi tiết.",
+  "createAddPhotos": "Thêm ảnh",
+  "createPhotosCount": "{n} / {max} ảnh",
+  "@createPhotosCount": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "createCaptionLabel": "Mô tả",
+  "createCaptionHint": "Chiều muộn ở bến Bạch Đằng…",
+  "createServiceLabel": "Gói dịch vụ · bắt buộc",
+  "createServicePick": "Chọn gói",
+  "createServiceTitle": "Chọn gói dịch vụ",
+  "createServiceRequired": "Chọn gói dịch vụ cho bài đăng",
+  "createPhotosRequired": "Thêm ít nhất một ảnh",
+  "createNoServices": "Bạn chưa có gói dịch vụ nào. Thêm gói để đăng bài.",
+  "createAddService": "Thêm gói",
+  "createServicesError": "Không tải được gói dịch vụ.",
+  "createLocationLabel": "Địa điểm",
+  "createStyleLabel": "Phong cách",
+  "createStyleNone": "Không chọn",
+  "createStyleTitle": "Phong cách",
+  "createPortfolio": "Thêm vào portfolio",
+  "createPublish": "Đăng",
+  "createRemove": "Gỡ ảnh",
+  "createMoveUp": "Đưa lên",
+  "createMoveDown": "Đưa xuống",
+  "createRetryPhoto": "Tải lại ảnh",
+  "createUploading": "Đang tải {percent}%",
+  "@createUploading": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "createUploadFailed": "Không tải được ảnh. Thử lại nhé.",
+  "createPublishFailed": "Không đăng được bài. Kiểm tra mạng rồi thử lại.",
+  "createPublished": "Đã đăng bài",
+  "reasonFreeOnDate": "Rảnh {day}",
+  "@reasonFreeOnDate": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "reasonSkillMatch": "Chuyên {specialty}",
+  "@reasonSkillMatch": {
+    "placeholders": {
+      "specialty": {"type": "String"}
+    }
+  },
+  "reasonNear": "Cách {distance}",
+  "@reasonNear": {
+    "placeholders": {
+      "distance": {"type": "String"}
+    }
+  },
+  "reasonTopRated": "★ {rating} · {count} đánh giá",
+  "@reasonTopRated": {
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "reasonFastReply": "Phản hồi nhanh",
+  "reasonNewTalent": "Mới tham gia",
+  "homePillFree": "Rảnh {day} này",
+  "@homePillFree": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "engagementError": "Chưa thực hiện được. Thử lại nhé.",
+  "back": "Quay lại",
+  "homeGreeting": "Chào {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeTitle": "Hôm nay chụp gì?",
+  "homeForYou": "Dành cho bạn",
+  "homeFreeThisWeek": "Rảnh tuần này",
+  "homeRealShoots": "Buổi chụp thật",
+  "homeFromCustomers": "Từ khách hàng",
+  "homeRealShootBy": "Chụp bởi {name}",
+  "@homeRealShootBy": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeEmptyTitle": "Chưa có ảnh nào quanh bạn",
+  "homeEmptyBody": "Khám phá nhiếp ảnh gia để thấy ảnh đẹp ở đây.",
+  "homeEmptyAction": "Khám phá nhiếp ảnh gia",
+  "homeLoadError": "Không tải được ảnh. Kiểm tra mạng rồi thử lại.",
+  "photoSave": "Lưu ảnh",
+  "photoUnsave": "Bỏ lưu",
+  "photoBook": "Đặt gói này",
+  "photoViewProfile": "Xem hồ sơ",
+  "photoFollow": "Theo dõi",
+  "photoFollowing": "Đang theo dõi",
+  "photoRealShootBy": "Chụp bởi {name} · gói {service}",
+  "@photoRealShootBy": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "service": {"type": "String"}
+    }
+  },
+  "photoRealShootByName": "Chụp bởi {name}",
+  "@photoRealShootByName": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "photoRemovedTitle": "Bài đăng không còn",
+  "photoRemovedBody": "Bài đăng này đã bị gỡ hoặc không tồn tại.",
+  "photoBackHome": "Về trang chủ",
+  "photoMoreOf": "Thêm của {name}",
+  "@photoMoreOf": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "photoMoreProfile": "Hồ sơ",
+  "photoItemLabel": "Ảnh {i}",
+  "@photoItemLabel": {
+    "placeholders": {
+      "i": {"type": "int"}
+    }
+  },
+  "photoOtherPackages": "Xem các gói khác",
+  "photoServiceInactive": "Gói này đã ngừng",
+  "photoLike": "Thích",
+  "photoUnlike": "Bỏ thích",
+  "photoPageOf": "Ảnh {n} trên {total}",
+  "@photoPageOf": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "photoLoadError": "Không tải được bài đăng. Kiểm tra mạng rồi thử lại.",
+  "servicePhotos": "{n} ảnh",
+  "@servicePhotos": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "serviceDelivery": "giao sau {days} ngày",
+  "@serviceDelivery": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "serviceDurationMinutes": "{m} phút",
+  "@serviceDurationMinutes": {
+    "placeholders": {
+      "m": {"type": "int"}
+    }
+  },
+  "serviceDurationHours": "{h} giờ",
+  "@serviceDurationHours": {
+    "placeholders": {
+      "h": {"type": "int"}
+    }
+  },
+  "serviceDurationHoursMinutes": "{h} giờ {m} phút",
+  "@serviceDurationHoursMinutes": {
+    "placeholders": {
+      "h": {"type": "int"},
+      "m": {"type": "int"}
+    }
+  },
+  "findDate": "Ngày",
+  "findService": "Dịch vụ",
+  "findPrice": "Giá",
+  "findRating": "Đánh giá",
+  "findNearMe": "Quanh bạn",
+  "findCount": "{count} nhiếp ảnh gia",
+  "@findCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "findCountOnDay": "{count} nhiếp ảnh gia rảnh {day}",
+  "@findCountOnDay": {
+    "placeholders": {
+      "count": {"type": "String"},
+      "day": {"type": "String"}
+    }
+  },
+  "findSortBest": "Phù hợp nhất",
+  "findSortNear": "Gần tôi",
+  "findSortPrice": "Giá",
+  "findSortRating": "Đánh giá",
+  "findNoResult": "Chưa có ai khớp bộ lọc",
+  "findNoResultBody": "Thử bỏ bớt bộ lọc hoặc chọn ngày khác.",
+  "findClear": "Xoá bộ lọc",
+  "findFallbackNote": "Đang xếp theo sao và khoảng cách",
+  "findLoadError": "Không tải được danh sách. Kiểm tra mạng rồi thử lại.",
+  "findBookDay": "Đặt {day}",
+  "@findBookDay": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "findDateTitle": "Chọn ngày",
+  "findDateClear": "Xoá ngày",
+  "findDateDone": "Xong",
+  "findServiceTitle": "Dịch vụ",
+  "findServiceAll": "Tất cả dịch vụ",
+  "findPriceTitle": "Ngân sách",
+  "findPriceAny": "Mọi mức giá",
+  "findPriceUnder": "Dưới {price}",
+  "@findPriceUnder": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "findRatingTitle": "Đánh giá tối thiểu",
+  "findRatingAny": "Mọi đánh giá",
+  "findRatingMin": "★ {rating}+",
+  "@findRatingMin": {
+    "placeholders": {
+      "rating": {"type": "String"}
+    }
+  },
+  "profileResponseMinutes": "~{minutes} phút",
+  "@profileResponseMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "profileResponseHours": "~{hours} giờ",
+  "@profileResponseHours": {"placeholders": {"hours": {"type": "int"}}},
+  "profileTabPortfolio": "Portfolio",
+  "profileTabServices": "Gói",
+  "profileTabCalendar": "Lịch",
+  "profileTabReviews": "Đánh giá",
+  "profileBook": "Đặt lịch",
+  "profileBookFrom": "Đặt lịch · từ {price}",
+  "@profileBookFrom": {"placeholders": {"price": {"type": "String"}}},
+  "profileNoServices": "Nhiếp ảnh gia chưa đăng gói",
+  "profileFollow": "Theo dõi",
+  "profileFollowing": "Đang theo dõi",
+  "profileStatReviews": "{count} đánh giá",
+  "@profileStatReviews": {"placeholders": {"count": {"type": "int"}}},
+  "profileStatNoReviews": "đánh giá",
+  "profileStatShoots": "buổi chụp",
+  "profileStatResponse": "phản hồi",
+  "profileStatYears": "kinh nghiệm",
+  "profileYearsValue": "{years} năm",
+  "@profileYearsValue": {"placeholders": {"years": {"type": "int"}}},
+  "profileEquipment": "Thiết bị: {list}",
+  "@profileEquipment": {"placeholders": {"list": {"type": "String"}}},
+  "profileNoPortfolio": "Chưa có ảnh nào",
+  "profileMorePhotos": "Xem thêm ảnh",
+  "profileSimilar": "Thợ ảnh tương tự",
+  "profilePhoto": "Ảnh portfolio",
+  "profileEvidenceBadge": "Ảnh minh chứng kỹ năng",
+  "profileNoReviewsTitle": "Chưa có đánh giá",
+  "profileNoReviewsBody": "Đánh giá hiện ở đây sau những buổi chụp đầu tiên.",
+  "profileNotFound": "Không tìm thấy hồ sơ.",
+  "profileNotReadyTitle": "Hồ sơ này chưa sẵn sàng",
+  "profileNotReadyBody": "Nhiếp ảnh gia đang hoàn thiện hồ sơ. Quay lại sau nhé.",
+  "profileLoadError": "Không tải được hồ sơ.",
+  "profileEdit": "Chỉnh sửa hồ sơ",
+  "profileEditIntro": "Giới thiệu",
+  "profileEditPackages": "Gói dịch vụ",
+  "profileEditSkills": "Kỹ năng",
+  "profileEditPhoto": "Ảnh đại diện và tên",
+  "profileEditContact": "Khu vực và liên hệ",
+  "offlineBanner": "Đang xem dữ liệu đã lưu"
+}

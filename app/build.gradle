@@ -4,6 +4,18 @@ plugins {
 }
 apply plugin: 'realm-android'
 
+// Secrets come from the environment or the repo-root .env (gitignored); never from source.
+def secret = { String name ->
+    def v = System.getenv(name)
+    if (v) return v
+    def f = rootProject.file('.env')
+    if (f.exists()) {
+        def line = f.readLines().find { it.trim().startsWith(name + '=') }
+        if (line) return line.substring(line.indexOf('=') + 1).trim().replaceAll(/^["']|["']$/, '')
+    }
+    return ''
+}
+
 android {
     namespace 'com.paditech.mvpbase'
     compileSdk 34
@@ -16,6 +28,12 @@ android {
         versionName "1.1"
         multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        resValue "string", "google_place_api_key", secret('GOOGLE_PLACES_API_KEY')
+        resValue "string", "facebook_client_token", secret('FACEBOOK_CLIENT_TOKEN')
+    }
+
+    buildFeatures {
+        resValues true
     }
 
     buildTypes {

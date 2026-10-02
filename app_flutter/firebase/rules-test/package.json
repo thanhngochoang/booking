@@ -1,0 +1,17 @@
+{
+  "name": "rules-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --only firestore,storage --project demo-nag 'node --test rules.test.mjs'",
+    "deploy:rules:dev": "firebase deploy --config ../firebase.json --only firestore:rules,firestore:indexes --project dev",
+    "deploy:rules:prod": "firebase deploy --config ../firebase.json --only firestore:rules,firestore:indexes --project prod",
+    "deploy:storage:dev": "firebase deploy --config ../firebase.json --only storage --project dev",
+    "deploy:storage:prod": "firebase deploy --config ../firebase.json --only storage --project prod"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.0",
+    "firebase-tools": "^14.0.0",
+    "firebase": "^11.0.0"
+  }
+}

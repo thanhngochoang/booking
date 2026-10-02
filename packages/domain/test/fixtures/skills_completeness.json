@@ -1,0 +1,236 @@
+{
+  "about": "Profile score cases (spec 3e.2). Ported from app_flutter/test/data/skills/skills_completeness_test.dart, which Task 13 deletes. Skills are stored maps as the app writes them.",
+  "cases": [
+    {
+      "name": "nothing chosen: 0, first step is choosing a genre",
+      "skills": {
+        "schemaVersion": 1
+      },
+      "percent": 0,
+      "next": "specialties",
+      "nextAfter": 65
+    },
+    {
+      "name": "a new photographer with Vietnamese ticked starts at 10",
+      "skills": {
+        "schemaVersion": 1,
+        "languages": [
+          "vi"
+        ]
+      },
+      "percent": 10,
+      "next": "specialties",
+      "nextAfter": 75
+    },
+    {
+      "name": "one genre at Thành thạo earns genre, level and evidence points",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 2,
+            "evidencePostIds": []
+          }
+        ],
+        "languages": [
+          "vi"
+        ]
+      },
+      "percent": 75,
+      "next": "styles",
+      "nextAfter": 85
+    },
+    {
+      "name": "a Chuyên sâu genre without evidence: evidence is next",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "couple",
+            "level": 2,
+            "evidencePostIds": []
+          },
+          {
+            "id": "portrait",
+            "level": 3,
+            "evidencePostIds": []
+          }
+        ],
+        "styles": [
+          "film"
+        ],
+        "extras": [
+          "retouch"
+        ],
+        "languages": [
+          "vi",
+          "en"
+        ],
+        "audiences": [
+          "couple"
+        ]
+      },
+      "percent": 80,
+      "next": "evidence",
+      "nextAfter": 100
+    },
+    {
+      "name": "a complete profile is 100 with no next step",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 3,
+            "evidencePostIds": [
+              "a"
+            ]
+          }
+        ],
+        "styles": [
+          "film"
+        ],
+        "extras": [
+          "retouch"
+        ],
+        "languages": [
+          "vi"
+        ],
+        "audiences": [
+          "couple"
+        ]
+      },
+      "percent": 100,
+      "next": null,
+      "nextAfter": null
+    },
+    {
+      "name": "a level outside 1..3 counts as Thành thạo",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 7
+          }
+        ],
+        "styles": [
+          "film"
+        ],
+        "languages": [
+          "vi"
+        ]
+      },
+      "percent": 85,
+      "next": "audiences",
+      "nextAfter": 95
+    },
+    {
+      "name": "tags without a genre",
+      "skills": {
+        "schemaVersion": 1,
+        "styles": [
+          "film"
+        ],
+        "extras": [
+          "retouch"
+        ],
+        "languages": [
+          "vi"
+        ],
+        "audiences": [
+          "couple"
+        ]
+      },
+      "percent": 35,
+      "next": "specialties",
+      "nextAfter": 100
+    },
+    {
+      "name": "a duplicate genre counts once, the first entry wins",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 3,
+            "evidencePostIds": [
+              "a"
+            ]
+          },
+          {
+            "id": "portrait",
+            "level": 1,
+            "evidencePostIds": []
+          }
+        ],
+        "languages": [
+          "vi",
+          "vi"
+        ]
+      },
+      "percent": 75,
+      "next": "styles",
+      "nextAfter": 85
+    },
+    {
+      "name": "only extras missing",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 1,
+            "evidencePostIds": []
+          }
+        ],
+        "styles": [
+          "film"
+        ],
+        "languages": [
+          "vi"
+        ],
+        "audiences": [
+          "couple"
+        ]
+      },
+      "percent": 95,
+      "next": "extras",
+      "nextAfter": 100
+    },
+    {
+      "name": "two Chuyên sâu genres without evidence: the step completes both",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 3,
+            "evidencePostIds": []
+          },
+          {
+            "id": "wedding",
+            "level": 3,
+            "evidencePostIds": []
+          }
+        ],
+        "styles": [
+          "film"
+        ],
+        "extras": [
+          "retouch"
+        ],
+        "languages": [
+          "vi"
+        ],
+        "audiences": [
+          "couple"
+        ]
+      },
+      "percent": 80,
+      "next": "evidence",
+      "nextAfter": 100
+    }
+  ]
+}

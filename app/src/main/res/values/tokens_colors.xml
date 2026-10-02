@@ -10,16 +10,16 @@
     <!-- "white" is already declared in colors.xml (#fff) and is reused here. -->
     <color name="black">#000000</color>
 
-    <color name="brand_50">#E6F3F8</color>
-    <color name="brand_100">#C2E2EE</color>
-    <color name="brand_200">#8FC9DE</color>
-    <color name="brand_300">#5BAFCC</color>
-    <color name="brand_400">#2E92B7</color>
-    <color name="brand_500">#05749F</color>
-    <color name="brand_600">#056487</color>
-    <color name="brand_700">#084D68</color>
-    <color name="brand_800">#063A4F</color>
-    <color name="brand_900">#042837</color>
+    <color name="brand_50">#F4EEFF</color>
+    <color name="brand_100">#E6D9FF</color>
+    <color name="brand_200">#CDB4FF</color>
+    <color name="brand_300">#B08AFF</color>
+    <color name="brand_400">#9A63FD</color>
+    <color name="brand_500">#8338F5</color>
+    <color name="brand_600">#702BDB</color>
+    <color name="brand_700">#5B21B6</color>
+    <color name="brand_800">#43188A</color>
+    <color name="brand_900">#2C0F5C</color>
 
     <color name="gray_50">#F7F7F7</color>
     <color name="gray_100">#EFEFEF</color>

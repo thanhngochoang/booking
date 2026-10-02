@@ -16,3 +16,15 @@
 /graphify-out/*
 # graphify knowledge graph output (regenerate with /graphify)
 /graphify-out
+/.flutter
+/.pub-cache
+/.home
+/.flutter-config
+
+# Secrets: local only (see .env.example)
+/.env
+/app/google-services.json
+.claude/*
+packages/*
+!packages/domain
+!packages/domain/**

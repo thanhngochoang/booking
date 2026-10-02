@@ -15,11 +15,32 @@ elif [ -x "$ROOT/.jdk/bin/java" ]; then
   export JAVA_HOME="$ROOT/.jdk"
 elif [ -d /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]; then
   export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+elif [ -d /opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home ]; then
+  # Gradle 9.x (app_flutter) runs on JDK 23 too.
+  export JAVA_HOME=/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home
 fi
 
 export ANDROID_HOME="$ROOT/.android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
+
+# Load secrets from the repo-root .env (gitignored; template: .env.example).
+# A variable already set in the environment wins over .env (portable: bash and zsh).
+if [ -f "$ROOT/.env" ]; then
+  while IFS= read -r _l || [ -n "$_l" ]; do
+    case "$_l" in ''|'#'*|*[!A-Za-z0-9_]*=*) [ -z "${_l%%[A-Za-z_]*=*}" ] || continue ;; esac
+    _k="${_l%%=*}"; _v="${_l#*=}"; _v="${_v%\"}"; _v="${_v#\"}"
+    case "$_k" in ''|*[!A-Za-z0-9_]*) continue ;; esac
+    eval "_cur=\${$_k:-}"
+    [ -n "$_cur" ] || export "$_k=$_v"
+  done < "$ROOT/.env"
+  unset _l _k _v _cur
+fi
+_write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && printf '%s' "$1" | base64 -d > "$2" && chmod 600 "$2" || true; }
+_write_b64 "${APP_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app/google-services.json"
+_write_b64 "${FLUTTER_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app_flutter/android/app/google-services.json"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$ROOT/scripts/bin:$ROOT/.flutter/bin:$PATH"
+export PUB_CACHE="$ROOT/.pub-cache"
 unset JAVA_TOOL_OPTIONS
 
 # --- TLS: this machine sits behind a Cloudflare Zero Trust gateway that re-signs HTTPS.
@@ -48,3 +69,13 @@ fi
 
 echo "JAVA_HOME=$JAVA_HOME"
 echo "ANDROID_HOME=$ANDROID_HOME"
+
+# Node (npm, Firebase CLI) also needs the corporate CA
+[ -f "$ROOT/.certs/keychain.pem" ] || { security find-certificate -a -p /Library/Keychains/System.keychain > "$ROOT/.certs/keychain.pem" 2>/dev/null; security find-certificate -a -p "$HOME/Library/Keychains/login.keychain-db" >> "$ROOT/.certs/keychain.pem" 2>/dev/null; }
+# Keep a CA the user already configured (e.g. Cloudflare Zero Trust root) and add it to Java too.
+if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -f "$NODE_EXTRA_CA_CERTS" ] && [ "$NODE_EXTRA_CA_CERTS" != "$ROOT/.certs/keychain.pem" ]; then
+  /usr/bin/grep -q "$(sed -n 2p "$NODE_EXTRA_CA_CERTS")" "$ROOT/.certs/keychain.pem" 2>/dev/null || cat "$NODE_EXTRA_CA_CERTS" >> "$ROOT/.certs/keychain.pem"
+  keytool -list -keystore "$TS" -storepass changeit -alias user-extra-ca >/dev/null 2>&1 || \
+    keytool -importcert -noprompt -trustcacerts -keystore "$TS" -storepass changeit -alias user-extra-ca -file "$NODE_EXTRA_CA_CERTS" >/dev/null 2>&1
+fi
+export NODE_EXTRA_CA_CERTS="$ROOT/.certs/keychain.pem"

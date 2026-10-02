@@ -1,0 +1,7 @@
+{
+  "java.configuration.updateBuildConfiguration": "interactive",
+  // SDK Flutter cục bộ của project (đường dẫn tương đối được tính từ thư mục workspace).
+  // ANDROID_HOME và ANDROID_AVD_HOME không đặt ở đây: Dart-Code không thay ${workspaceFolder}
+  // trong dart.env. VS Code lấy chúng từ shell (~/.zshrc), xem docs/DEVICE-TESTING.md.
+  "dart.flutterSdkPath": ".flutter"
+}

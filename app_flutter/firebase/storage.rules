@@ -1,0 +1,47 @@
+rules_version = '2';
+// Storage keys are opaque (only `storage_key` is stored, never a download
+// URL). Every file lives under its owner's uid so ownership is checkable
+// without a Firestore lookup; the `files` record holds metadata.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function validImage() {
+      return request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // users/{uid}/... : portfolio/album photos, chat images (avatars live
+    // under avatars/, below).
+    match /users/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid) && validImage();
+      allow delete: if isOwner(uid);
+    }
+
+    // posts/{uid}/{postId}/{file} : post photos. Anyone signed in may look at
+    // them; only the owner may add, replace or delete, images up to 8 MB.
+    match /posts/{uid}/{postId}/{file} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.size < 8 * 1024 * 1024 + 1
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid);
+    }
+
+    // Avatars: avatars/{uid}/{ulid}.jpg. Signed-in users may look at them;
+    // only the owner adds, replaces or deletes, images up to 5 MB.
+    match /avatars/{uid}/{file} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.size < 5 * 1024 * 1024 + 1
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid);
+    }
+
+    // Anything else is closed.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

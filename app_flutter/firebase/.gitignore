@@ -1,0 +1,8 @@
+# Emulator data saved by scripts/backend-local.sh, and its --lan copy of firebase.json
+.emulator-data/
+.firebase.lan.json
+# Cloud Functions dependencies and bundle
+functions/node_modules/
+functions/lib/
+# Emulator logs (firestore-debug.log, firebase-debug.log, ui-debug.log …)
+*-debug.log

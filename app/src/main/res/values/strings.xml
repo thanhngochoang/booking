@@ -1,10 +1,7 @@
 <resources>
     <string name="app_name">Cộng đồng\nnhiếp ảnh gia</string>
-    <string name="FlickrApiKey">e05291485785b3da730a67cf424d334c</string>
-    <!-- Facebook SDK >= 13 requires a client token (Meta developer console > Settings > Advanced). -->
     <string name="facebook_app_id">546233675712070</string>
-    <string name="facebook_client_token" translatable="false"></string>
-    <string name="google_place_api_key">AIzaSyC2neqfe60-WSK5uGKOj3-PSXUISmhhFyo</string>
+    <!-- facebook_client_token and google_place_api_key are injected by app/build.gradle from .env -->
 
     <!--permission-->
     <string name="mess_permission_storage">Bạn có muốn cho phép ứng dụng này sử dụng bộ nhớ không?</string>
