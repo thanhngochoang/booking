@@ -76,6 +76,14 @@ Future<SkillsWorld> _world({int own = 6}) => SkillsWorld.create(
   ],
 );
 
+PostSummary _customerPost(String id, String uid, Duration age) => fixturePost(
+  id,
+  photographerId: uid,
+  authorId: 'customer1',
+  kind: PostKind.realShoot,
+  age: age,
+);
+
 Future<void> _open(WidgetTester tester) async {
   await tester.tap(find.text('open'));
   await tester.pumpAndSettle();
@@ -181,6 +189,91 @@ void main() {
     await tester.tap(find.byKey(const Key('error-retry')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('evidence-m0')), findsOneWidget);
+  });
+
+  testWidgets(
+    'a first page of customer posts only: own posts from page 2, no empty state',
+    (tester) async {
+      final w = await SkillsWorld.create(
+        posts: (uid) => [
+          for (var i = 0; i < 30; i++)
+            _customerPost('c$i', uid, Duration(minutes: i + 1)),
+          for (var i = 0; i < 4; i++)
+            fixturePost(
+              'm$i',
+              photographerId: uid,
+              age: Duration(hours: 2, minutes: i),
+            ),
+        ],
+      );
+      await tester.pumpWidget(_app(w, _Probe()));
+      await _open(tester);
+      expect(find.text('Đăng bài trước'), findsNothing);
+      expect(find.byKey(const Key('evidence-m0')), findsOneWidget);
+      expect(find.byKey(const Key('evidence-m3')), findsOneWidget);
+      expect(find.byKey(const Key('evidence-c0')), findsNothing);
+    },
+  );
+
+  testWidgets('a short grid that cannot scroll asks for the next page itself', (
+    tester,
+  ) async {
+    // 5 pages of 30 hold only m0 and m1; m2–m4 are on page 6.
+    final w = await SkillsWorld.create(
+      posts: (uid) => [
+        for (var i = 0; i < 2; i++)
+          fixturePost(
+            'm$i',
+            photographerId: uid,
+            age: Duration(minutes: i),
+          ),
+        for (var i = 0; i < 148; i++)
+          _customerPost('c$i', uid, Duration(hours: 1, minutes: i)),
+        for (var i = 2; i < 5; i++)
+          fixturePost(
+            'm$i',
+            photographerId: uid,
+            age: Duration(days: 1 + i),
+          ),
+      ],
+    );
+    await tester.pumpWidget(_app(w, _Probe()));
+    await _open(tester);
+    expect(w.posts.byPhotographerCursors, hasLength(6));
+    expect(find.byKey(const Key('evidence-m4')), findsOneWidget);
+  });
+
+  testWidgets('a failed next page shows a retry row that asks again', (
+    tester,
+  ) async {
+    final w = await _world(own: 35);
+    await tester.pumpWidget(_app(w, _Probe()));
+    await _open(tester);
+    w.posts.failWith = StateError('offline');
+    await tester.drag(
+      find.byKey(const Key('evidence-grid')),
+      const Offset(0, -5000),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Không tải thêm được. Thử lại'), findsOneWidget);
+    expect(
+      w.posts.byPhotographerCursors.where((c) => c == 'm29'),
+      hasLength(1),
+    );
+    w.posts.failWith = null;
+    await tester.tap(find.byKey(const Key('evidence-retry')));
+    await tester.pumpAndSettle();
+    expect(
+      w.posts.byPhotographerCursors.where((c) => c == 'm29'),
+      hasLength(2),
+    );
+    expect(find.byKey(const Key('evidence-retry')), findsNothing);
+    await tester.drag(
+      find.byKey(const Key('evidence-grid')),
+      const Offset(0, -5000),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('evidence-m34')), findsOneWidget);
   });
 
   testWidgets('dismissing returns null and changes nothing', (tester) async {

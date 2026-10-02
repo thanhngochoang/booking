@@ -774,6 +774,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get skillEvidenceLoadError => 'Không tải được bài đăng của bạn.';
 
   @override
+  String get skillEvidenceLoadMoreRetry => 'Không tải thêm được. Thử lại';
+
+  @override
   String get skillsTitle => 'Kỹ năng';
 
   @override

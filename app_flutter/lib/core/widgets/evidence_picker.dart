@@ -37,7 +37,8 @@ class EvidencePicker extends StatelessWidget {
   /// A pick beyond [max] was refused.
   final VoidCallback? onMaxReached;
 
-  /// The grid was scrolled near its end; load the next page.
+  /// The grid was scrolled near its end, or is too short to scroll; load
+  /// the next page.
   final VoidCallback? onEndReached;
 
   void _toggle(String id) {
@@ -61,9 +62,18 @@ class EvidencePicker extends StatelessWidget {
     final l = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final radius = BorderRadius.circular(AppRadius.sm);
-    return NotificationListener<ScrollNotification>(
+    // ScrollMetricsNotification also arrives after layout, so a grid too
+    // short to scroll (extentAfter 0) still asks for the next page.
+    return NotificationListener<Notification>(
       onNotification: (n) {
-        if (onEndReached != null && n.metrics.extentAfter < 300) {
+        final metrics = switch (n) {
+          ScrollNotification(:final metrics) => metrics,
+          ScrollMetricsNotification(:final metrics) => metrics,
+          _ => null,
+        };
+        if (onEndReached != null &&
+            metrics != null &&
+            metrics.extentAfter < 300) {
           onEndReached!();
         }
         return false;

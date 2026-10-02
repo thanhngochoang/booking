@@ -118,7 +118,7 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                   message: l.skillEvidenceLoadError,
                   onRetry: () => ref.invalidate(ownPostsProvider),
                 ),
-                data: (s) => s.posts.isEmpty
+                data: (s) => s.posts.isEmpty && !s.hasMore
                     ? EmptyState(
                         title: l.skillEvidenceEmpty,
                         body: l.skillEvidenceEmptyBody,
@@ -133,13 +133,24 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                           _maxed = false;
                         }),
                         onMaxReached: () => setState(() => _maxed = true),
-                        onEndReached: s.hasMore
+                        onEndReached: s.hasMore && !s.loadMoreFailed
                             ? () =>
                                   ref.read(ownPostsProvider.notifier).loadMore()
                             : null,
                       ),
               ),
             ),
+            if (posts.value?.loadMoreFailed ?? false)
+              SizedBox(
+                height: controlHeight,
+                child: TextButton.icon(
+                  key: const Key('evidence-retry'),
+                  onPressed: () =>
+                      ref.read(ownPostsProvider.notifier).retryLoadMore(),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(l.skillEvidenceLoadMoreRetry),
+                ),
+              ),
             if (hasPosts) ...[
               const SizedBox(height: AppSpace.s3),
               if (blocked)

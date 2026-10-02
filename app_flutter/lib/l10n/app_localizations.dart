@@ -1468,6 +1468,12 @@ abstract class AppLocalizations {
   /// **'Không tải được bài đăng của bạn.'**
   String get skillEvidenceLoadError;
 
+  /// No description provided for @skillEvidenceLoadMoreRetry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải thêm được. Thử lại'**
+  String get skillEvidenceLoadMoreRetry;
+
   /// No description provided for @skillsTitle.
   ///
   /// In vi, this message translates to:
