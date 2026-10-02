@@ -3069,6 +3069,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Khu vực và liên hệ'**
   String get profileEditContact;
+
+  /// No description provided for @offlineBanner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xem dữ liệu đã lưu'**
+  String get offlineBanner;
 }
 
 class _AppLocalizationsDelegate

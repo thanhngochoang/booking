@@ -754,5 +754,6 @@
   "profileEditPackages": "Gói dịch vụ",
   "profileEditSkills": "Kỹ năng",
   "profileEditPhoto": "Ảnh đại diện và tên",
-  "profileEditContact": "Khu vực và liên hệ"
+  "profileEditContact": "Khu vực và liên hệ",
+  "offlineBanner": "Đang xem dữ liệu đã lưu"
 }

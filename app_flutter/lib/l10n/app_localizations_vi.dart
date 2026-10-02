@@ -1708,4 +1708,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileEditContact => 'Khu vực và liên hệ';
+
+  @override
+  String get offlineBanner => 'Đang xem dữ liệu đã lưu';
 }
