@@ -35,20 +35,28 @@ export function isStaleWriteError(e: unknown): boolean {
 }
 
 /**
- * Writes only if `photographers/{uid}` still has the update time of the snapshot the trigger got.
- * A newer save fails the precondition: `stale`, no retry (that save's own trigger scores it).
+ * Writes only if `photographers/{uid}` still has the update time last seen (the trigger's snapshot,
+ * then the last `reread`). A newer save fails the precondition: `stale`; the use case then calls
+ * `reread` once and scores what is stored now (bounded: one reread per event).
  */
 export function firestoreSkillsScoreWriter(db: Firestore, uid: string, lastUpdateTime: Timestamp | undefined): SkillsScoreWriter {
+  const ref = () => db.collection('photographers').doc(uid);
+  let seen = lastUpdateTime;
   return {
     async write(update) {
-      if (lastUpdateTime === undefined) return 'stale';
+      if (seen === undefined) return 'stale';
       try {
-        await db.collection('photographers').doc(uid).update(skillsUpdateFields(update), { lastUpdateTime });
+        await ref().update(skillsUpdateFields(update), { lastUpdateTime: seen });
         return 'written';
       } catch (e) {
         if (isStaleWriteError(e)) return 'stale';
         throw e;
       }
+    },
+    async reread() {
+      const snap = await ref().get();
+      seen = snap.exists ? snap.updateTime : undefined;
+      return snap.exists ? { skills: snap.get('skills') as unknown } : null;
     },
   };
 }
