@@ -68,6 +68,11 @@ void main() {
       final s = c.read(ownPostsProvider).requireValue;
       expect(s.posts, hasLength(30));
       expect(s.loadingMore, isFalse);
+      expect(
+        w.posts.byPhotographerCursors.where((c) => c == 'm29'),
+        hasLength(1),
+        reason: 'the failing page is requested once, not on every scroll',
+      );
     },
   );
 
@@ -91,6 +96,10 @@ void main() {
       final n = c.read(ownPostsProvider.notifier);
       await Future.wait([n.loadMore(), n.loadMore(), n.loadMore()]);
       expect(c.read(ownPostsProvider).requireValue.posts, hasLength(35));
+      expect(w.posts.byPhotographerCursors, [
+        null,
+        'm29',
+      ], reason: 'page 2 is requested exactly once');
     },
   );
 }
