@@ -44,8 +44,13 @@ class _MyCalendarScreenState extends ConsumerState<MyCalendarScreen> {
     });
   }
 
-  void _toast(String text, {String? action, VoidCallback? onAction}) {
-    ScaffoldMessenger.of(context)
+  static void _show(
+    ScaffoldMessengerState messenger,
+    String text, {
+    String? action,
+    VoidCallback? onAction,
+  }) {
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
@@ -57,23 +62,23 @@ class _MyCalendarScreenState extends ConsumerState<MyCalendarScreen> {
       );
   }
 
-  Future<void> _mark(
-    List<DateTime> days, {
-    required bool off,
-    bool undoable = true,
-  }) async {
+  /// A write is in flight: day taps wait, so writes never overlap.
+  bool get _busy => ref.read(calendarEditControllerProvider).isLoading;
+
+  Future<void> _mark(List<DateTime> days, {required bool off}) async {
+    if (_busy) {
+      return;
+    }
+    // Captured before the await: the undo action lives on the app-level
+    // ScaffoldMessenger and may run after this screen is gone.
     final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(availabilityRepositoryProvider);
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid;
     final edit = ref.read(calendarEditControllerProvider.notifier);
     final ok = off ? await edit.markOff(days) : await edit.clearOff(days);
-    if (!mounted) {
-      return;
-    }
-    if (!ok) {
-      _toast(l.calendarSaveError);
-      return;
-    }
-    if (!undoable) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (!ok || uid == null) {
+      _show(messenger, l.calendarSaveError);
       return;
     }
     final text = !off
@@ -81,14 +86,24 @@ class _MyCalendarScreenState extends ConsumerState<MyCalendarScreen> {
         : days.length == 1
         ? l.calendarMarkedOff
         : l.calendarMarkedOffMany(days.length);
-    _toast(
+    _show(
+      messenger,
       text,
       action: l.calendarUndo,
-      onAction: () => _mark(days, off: !off, undoable: false),
+      onAction: () async {
+        final undone = await writeDaysOff(repo, uid, days, off: !off);
+        messenger.hideCurrentSnackBar();
+        if (!undone) {
+          _show(messenger, l.calendarSaveError);
+        }
+      },
     );
   }
 
   void _onDay(DateTime day, Map<DateTime, AvailabilityDay> known) {
+    if (_busy) {
+      return;
+    }
     final start = _rangeStart;
     setState(() {
       _selected = day;
@@ -123,7 +138,7 @@ class _MyCalendarScreenState extends ConsumerState<MyCalendarScreen> {
   }
 
   void _onLongPress(DateTime day, Map<DateTime, AvailabilityDay> known) {
-    if (day.isBefore(_today) || known.containsKey(day)) {
+    if (_busy || day.isBefore(_today) || known.containsKey(day)) {
       return;
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();

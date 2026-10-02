@@ -78,9 +78,12 @@ abstract class AvailabilityRepository {
 }
 
 class FakeAvailabilityRepository implements AvailabilityRepository {
-  FakeAvailabilityRepository({this.failWrites = false});
+  FakeAvailabilityRepository({this.failWrites = false, this.failWatch = false});
 
   bool failWrites;
+
+  /// New [watchRange] streams emit an error instead of days.
+  bool failWatch;
 
   /// Open [watchRange] subscriptions, so tests can prove screens stop listening.
   int watchers = 0;
@@ -118,6 +121,10 @@ class FakeAvailabilityRepository implements AvailabilityRepository {
     out = StreamController<Map<DateTime, AvailabilityDay>>(
       onListen: () {
         watchers++;
+        if (failWatch) {
+          out.addError(StateError('unavailable'));
+          return;
+        }
         out.add(_slice(uid, from, to));
         inner = _changes.stream
             .where((u) => u == uid)

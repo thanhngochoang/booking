@@ -33,6 +33,23 @@ List<DateTime> monthWindow(
   return [start, addMonths(start, 1), addMonths(start, 2)];
 }
 
+/// Marks [days] off ([off]) or frees them for [uid]; true when saved. Used
+/// by [CalendarEditController] and by S20's undo, which must still work
+/// after the screen (and so the controller) is gone.
+Future<bool> writeDaysOff(
+  AvailabilityRepository repo,
+  String uid,
+  List<DateTime> days, {
+  required bool off,
+}) async {
+  try {
+    await (off ? repo.markOff(uid, days) : repo.clearOff(uid, days));
+    return true;
+  } on Object {
+    return false;
+  }
+}
+
 /// Marks days off / frees them for the signed-in photographer (S20).
 class CalendarEditController extends AsyncNotifier<void> {
   @override
@@ -53,11 +70,14 @@ class CalendarEditController extends AsyncNotifier<void> {
     if (uid == null) {
       return false;
     }
+    final repo = ref.read(availabilityRepositoryProvider);
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => write(ref.read(availabilityRepositoryProvider), uid),
-    );
-    return !state.hasError;
+    final result = await AsyncValue.guard(() => write(repo, uid));
+    // The screen may have closed while the write was in flight.
+    if (ref.mounted) {
+      state = result;
+    }
+    return !result.hasError;
   }
 }
 

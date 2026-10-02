@@ -234,6 +234,63 @@ void main() {
     h.dispose();
   });
 
+  testWidgets('"Hoàn tác" still frees the day after leaving the screen', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    final w = await _world();
+    await tester.pumpWidget(
+      w.app(
+        location: '/home',
+        routes: [
+          ..._routes,
+          GoRoute(
+            path: '/home',
+            builder: (_, _) => const Scaffold(body: Text('home')),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    w.router.push('/work/calendar');
+    await tester.pumpAndSettle();
+    await tester.tap(_day('13 tháng 10, rảnh'));
+    await tester.pumpAndSettle();
+    expect(w.availability.stored(w.uid)[_d(13)]!.state, DayState.off);
+    w.router.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('home'), findsOneWidget);
+    expect(find.byType(MyCalendarScreen), findsNothing);
+    await tester.tap(find.text('Hoàn tác'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(w.availability.stored(w.uid)[_d(13)], isNull);
+    h.dispose();
+  });
+
+  testWidgets('a failed load says so, ignores taps and retries', (
+    tester,
+  ) async {
+    final h = tester.ensureSemantics();
+    final w = await _world();
+    w.availability.failWatch = true;
+    await tester.pumpWidget(w.app(location: '/work/calendar', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.text('Không tải được lịch.'), findsOneWidget);
+    await tester.tap(_day('13 tháng 10, rảnh'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(w.availability.writes, 0);
+    w.availability.failWatch = false;
+    await tester.tap(find.byKey(const Key('calendar-retry')));
+    await tester.pumpAndSettle();
+    expect(find.text('Không tải được lịch.'), findsNothing);
+    expect(_day('10 tháng 10, đã đặt'), findsOneWidget);
+    await tester.tap(_day('13 tháng 10, rảnh'));
+    await tester.pumpAndSettle();
+    expect(w.availability.stored(w.uid)[_d(13)]!.state, DayState.off);
+    h.dispose();
+  });
+
   for (final b in Brightness.values) {
     testWidgets('fits 320dp at 1.3x text (${b.name})', (tester) async {
       usePhone(tester, width: 320, height: 640);

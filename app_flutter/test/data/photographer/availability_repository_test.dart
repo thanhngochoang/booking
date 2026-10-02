@@ -102,5 +102,18 @@ void main() {
       await sub.cancel();
       expect(repo.watchers, 0);
     });
+
+    test('fails new watches on request', () async {
+      final repo = FakeAvailabilityRepository(failWatch: true);
+      await expectLater(
+        repo.watchRange('p1', from: _d(1), to: _d(31)),
+        emitsError(isStateError),
+      );
+      repo.failWatch = false;
+      await expectLater(
+        repo.watchRange('p1', from: _d(1), to: _d(31)),
+        emits(isEmpty),
+      );
+    });
   });
 }
