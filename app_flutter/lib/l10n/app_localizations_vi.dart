@@ -1389,4 +1389,99 @@ class AppLocalizationsVi extends AppLocalizations {
   String serviceDurationHoursMinutes(int h, int m) {
     return '$h giờ $m phút';
   }
+
+  @override
+  String get findDate => 'Ngày';
+
+  @override
+  String get findService => 'Dịch vụ';
+
+  @override
+  String get findPrice => 'Giá';
+
+  @override
+  String get findRating => 'Đánh giá';
+
+  @override
+  String get findNearMe => 'Quanh bạn';
+
+  @override
+  String findCount(String count) {
+    return '$count nhiếp ảnh gia';
+  }
+
+  @override
+  String findCountOnDay(String count, String day) {
+    return '$count nhiếp ảnh gia rảnh $day';
+  }
+
+  @override
+  String get findSortBest => 'Phù hợp nhất';
+
+  @override
+  String get findSortNear => 'Gần tôi';
+
+  @override
+  String get findSortPrice => 'Giá';
+
+  @override
+  String get findSortRating => 'Đánh giá';
+
+  @override
+  String get findNoResult => 'Chưa có ai khớp bộ lọc';
+
+  @override
+  String get findNoResultBody => 'Thử bỏ bớt bộ lọc hoặc chọn ngày khác.';
+
+  @override
+  String get findClear => 'Xoá bộ lọc';
+
+  @override
+  String get findFallbackNote => 'Đang xếp theo sao và khoảng cách';
+
+  @override
+  String get findLoadError =>
+      'Không tải được danh sách. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String findBookDay(String day) {
+    return 'Đặt $day';
+  }
+
+  @override
+  String get findDateTitle => 'Chọn ngày';
+
+  @override
+  String get findDateClear => 'Xoá ngày';
+
+  @override
+  String get findDateDone => 'Xong';
+
+  @override
+  String get findServiceTitle => 'Dịch vụ';
+
+  @override
+  String get findServiceAll => 'Tất cả dịch vụ';
+
+  @override
+  String get findPriceTitle => 'Ngân sách';
+
+  @override
+  String get findPriceAny => 'Mọi mức giá';
+
+  @override
+  String findPriceUnder(String price) {
+    return 'Dưới $price';
+  }
+
+  @override
+  String get findRatingTitle => 'Đánh giá tối thiểu';
+
+  @override
+  String get findRatingAny => 'Mọi đánh giá';
+
+  @override
+  String findRatingMin(String rating) {
+    return '★ $rating+';
+  }
 }

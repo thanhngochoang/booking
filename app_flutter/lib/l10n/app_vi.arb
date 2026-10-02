@@ -606,5 +606,59 @@
       "h": {"type": "int"},
       "m": {"type": "int"}
     }
+  },
+  "findDate": "Ngày",
+  "findService": "Dịch vụ",
+  "findPrice": "Giá",
+  "findRating": "Đánh giá",
+  "findNearMe": "Quanh bạn",
+  "findCount": "{count} nhiếp ảnh gia",
+  "@findCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "findCountOnDay": "{count} nhiếp ảnh gia rảnh {day}",
+  "@findCountOnDay": {
+    "placeholders": {
+      "count": {"type": "String"},
+      "day": {"type": "String"}
+    }
+  },
+  "findSortBest": "Phù hợp nhất",
+  "findSortNear": "Gần tôi",
+  "findSortPrice": "Giá",
+  "findSortRating": "Đánh giá",
+  "findNoResult": "Chưa có ai khớp bộ lọc",
+  "findNoResultBody": "Thử bỏ bớt bộ lọc hoặc chọn ngày khác.",
+  "findClear": "Xoá bộ lọc",
+  "findFallbackNote": "Đang xếp theo sao và khoảng cách",
+  "findLoadError": "Không tải được danh sách. Kiểm tra mạng rồi thử lại.",
+  "findBookDay": "Đặt {day}",
+  "@findBookDay": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "findDateTitle": "Chọn ngày",
+  "findDateClear": "Xoá ngày",
+  "findDateDone": "Xong",
+  "findServiceTitle": "Dịch vụ",
+  "findServiceAll": "Tất cả dịch vụ",
+  "findPriceTitle": "Ngân sách",
+  "findPriceAny": "Mọi mức giá",
+  "findPriceUnder": "Dưới {price}",
+  "@findPriceUnder": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "findRatingTitle": "Đánh giá tối thiểu",
+  "findRatingAny": "Mọi đánh giá",
+  "findRatingMin": "★ {rating}+",
+  "@findRatingMin": {
+    "placeholders": {
+      "rating": {"type": "String"}
+    }
   }
 }

@@ -2499,6 +2499,174 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{h} giờ {m} phút'**
   String serviceDurationHoursMinutes(int h, int m);
+
+  /// No description provided for @findDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày'**
+  String get findDate;
+
+  /// No description provided for @findService.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get findService;
+
+  /// No description provided for @findPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá'**
+  String get findPrice;
+
+  /// No description provided for @findRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get findRating;
+
+  /// No description provided for @findNearMe.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quanh bạn'**
+  String get findNearMe;
+
+  /// No description provided for @findCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} nhiếp ảnh gia'**
+  String findCount(String count);
+
+  /// No description provided for @findCountOnDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} nhiếp ảnh gia rảnh {day}'**
+  String findCountOnDay(String count, String day);
+
+  /// No description provided for @findSortBest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phù hợp nhất'**
+  String get findSortBest;
+
+  /// No description provided for @findSortNear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần tôi'**
+  String get findSortNear;
+
+  /// No description provided for @findSortPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá'**
+  String get findSortPrice;
+
+  /// No description provided for @findSortRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get findSortRating;
+
+  /// No description provided for @findNoResult.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ai khớp bộ lọc'**
+  String get findNoResult;
+
+  /// No description provided for @findNoResultBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử bỏ bớt bộ lọc hoặc chọn ngày khác.'**
+  String get findNoResultBody;
+
+  /// No description provided for @findClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá bộ lọc'**
+  String get findClear;
+
+  /// No description provided for @findFallbackNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xếp theo sao và khoảng cách'**
+  String get findFallbackNote;
+
+  /// No description provided for @findLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách. Kiểm tra mạng rồi thử lại.'**
+  String get findLoadError;
+
+  /// No description provided for @findBookDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt {day}'**
+  String findBookDay(String day);
+
+  /// No description provided for @findDateTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get findDateTitle;
+
+  /// No description provided for @findDateClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá ngày'**
+  String get findDateClear;
+
+  /// No description provided for @findDateDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get findDateDone;
+
+  /// No description provided for @findServiceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get findServiceTitle;
+
+  /// No description provided for @findServiceAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả dịch vụ'**
+  String get findServiceAll;
+
+  /// No description provided for @findPriceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân sách'**
+  String get findPriceTitle;
+
+  /// No description provided for @findPriceAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi mức giá'**
+  String get findPriceAny;
+
+  /// No description provided for @findPriceUnder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dưới {price}'**
+  String findPriceUnder(String price);
+
+  /// No description provided for @findRatingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá tối thiểu'**
+  String get findRatingTitle;
+
+  /// No description provided for @findRatingAny.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi đánh giá'**
+  String get findRatingAny;
+
+  /// No description provided for @findRatingMin.
+  ///
+  /// In vi, this message translates to:
+  /// **'★ {rating}+'**
+  String findRatingMin(String rating);
 }
 
 class _AppLocalizationsDelegate
