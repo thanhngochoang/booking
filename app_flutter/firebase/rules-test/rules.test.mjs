@@ -690,6 +690,11 @@ test('only the photographer edits their calendar; every signed-in user reads it'
   await assertFails(setDoc(doc(env.authenticatedContext('cal5').firestore(), dayPath('cal5', '2026-10-18')), { state: 'off' }));
 });
 
+test('a signed-in user can read a day nobody has written (a free day)', async () => {
+  const db = env.authenticatedContext('viewer').firestore();
+  await assertSucceeds(getDoc(doc(db, dayPath('cal6', '2026-10-13'))));
+});
+
 const svcPath = (uid, id) => `photographers/${uid}/services/${id}`;
 const svc = (o = {}) => ({
   name: 'Chân dung 2 giờ', price: 1500000, durationMinutes: 120,
