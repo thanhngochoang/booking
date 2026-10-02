@@ -25,34 +25,63 @@ class TabShell extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: shell,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: shell.currentIndex,
-          onDestinationSelected: (i) {
-            if (specs[i].tab == AppTab.explore) {
-              ref.read(exploreSeenAtProvider.notifier).markSeen();
-              // A fix older than 30 minutes is refreshed on entering.
-              ref.read(locationControllerProvider.notifier).refresh();
-            }
-            shell.goBranch(i, initialLocation: i == shell.currentIndex);
-          },
-          destinations: [
-            for (final s in specs)
-              NavigationDestination(
-                icon: s.emphasized
-                    ? SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CtaSurface(
-                          borderRadius: BorderRadius.circular(18),
-                          child: Center(
-                            child: Icon(s.icon, color: Colors.white),
+        bottomNavigationBar: DecoratedBox(
+          // Mock `.tabs`: 1px hairline above the bar.
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+          ),
+          child: NavigationBar(
+            selectedIndex: shell.currentIndex,
+            onDestinationSelected: (i) {
+              if (specs[i].tab == AppTab.explore) {
+                ref.read(exploreSeenAtProvider.notifier).markSeen();
+                // A fix older than 30 minutes is refreshed on entering.
+                ref.read(locationControllerProvider.notifier).refresh();
+              }
+              shell.goBranch(i, initialLocation: i == shell.currentIndex);
+            },
+            destinations: [
+              for (final s in specs)
+                NavigationDestination(
+                  icon: s.emphasized
+                      // Mock `.tab.mid`: lifted 3dp with a purple glow.
+                      ? Transform.translate(
+                          offset: const Offset(0, -3),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.ctaMid.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: CtaSurface(
+                                borderRadius: BorderRadius.circular(18),
+                                child: Center(
+                                  child: Icon(s.icon, color: Colors.white),
+                                ),
+                              ),
+                            ),
                           ),
+                        )
+                      : TabBadge(
+                          count: badges[s.tab] ?? 0,
+                          child: Icon(s.icon),
                         ),
-                      )
-                    : TabBadge(count: badges[s.tab] ?? 0, child: Icon(s.icon)),
-                label: s.label(l),
-              ),
-          ],
+                  label: s.label(l),
+                ),
+            ],
+          ),
         ),
       ),
     );

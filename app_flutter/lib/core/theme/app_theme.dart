@@ -23,6 +23,7 @@ ThemeData buildLightTheme() => _build(
   surfaceMuted: AppColors.surfaceMuted,
   foreground: AppColors.foreground,
   foregroundSecondary: AppColors.foregroundSecondary,
+  foregroundMuted: AppColors.foregroundMuted,
   border: AppColors.border,
   borderStrong: AppColors.borderStrong,
   focusRing: AppColors.focusRing,
@@ -39,6 +40,7 @@ ThemeData buildDarkTheme() => _build(
   surfaceMuted: AppColorsDark.surfaceMuted,
   foreground: AppColorsDark.foreground,
   foregroundSecondary: AppColorsDark.foregroundSecondary,
+  foregroundMuted: AppColorsDark.foregroundMuted,
   border: AppColorsDark.border,
   borderStrong: AppColorsDark.borderStrong,
   focusRing: AppColorsDark.focusRing,
@@ -54,6 +56,7 @@ ThemeData _build({
   required Color surfaceMuted,
   required Color foreground,
   required Color foregroundSecondary,
+  required Color foregroundMuted,
   required Color border,
   required Color borderStrong,
   required Color focusRing,
@@ -176,14 +179,21 @@ ThemeData _build({
       height: 64,
       backgroundColor: surface,
       indicatorColor: Colors.transparent,
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (s) => body(
-          AppText.xs,
-          w: s.contains(WidgetState.selected)
-              ? FontWeight.w600
-              : FontWeight.w500,
+      // Mock `.tab` / `.tab.on`: selected in the accent colour at 600,
+      // unselected in the tertiary grey at 500.
+      iconTheme: WidgetStateProperty.resolveWith(
+        (s) => IconThemeData(
+          color: s.contains(WidgetState.selected) ? primary : foregroundMuted,
         ),
       ),
+      labelTextStyle: WidgetStateProperty.resolveWith((s) {
+        final on = s.contains(WidgetState.selected);
+        return body(
+          AppText.xs,
+          w: on ? FontWeight.w600 : FontWeight.w500,
+          c: on ? primary : foregroundMuted,
+        );
+      }),
     ),
     dividerColor: border,
     dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
