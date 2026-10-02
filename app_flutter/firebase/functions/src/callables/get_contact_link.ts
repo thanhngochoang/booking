@@ -21,8 +21,22 @@ export async function handleGetContactLink(request: CallableInput, deps: GetCont
     return await getContactLink(uid, request.data, deps);
   } catch (e) {
     const error = toHttpsError(e);
-    // Codes only: never the request, the URL or a number.
-    logger.info('getContactLink refused', { code: error.message });
+    // Codes only: never the request, the URL, a number or the error's message/data.
+    if (error.code === 'internal') {
+      logger.error('getContactLink failed', { code: error.message, ...errorKind(e) });
+    } else {
+      logger.info('getContactLink refused', { code: error.message });
+    }
     throw error;
   }
+}
+
+/** `name` and `code` of an unexpected error, for diagnosis; nothing that could carry data. */
+function errorKind(e: unknown): { name?: string; errorCode?: string | number } {
+  if (typeof e !== 'object' || e === null) return {};
+  const { name, code } = e as { name?: unknown; code?: unknown };
+  return {
+    ...(typeof name === 'string' ? { name } : {}),
+    ...(typeof code === 'string' || typeof code === 'number' ? { errorCode: code } : {}),
+  };
 }

@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import { HttpsError } from 'firebase-functions/v2/https';
 import type { BookingRecord, ContactAccessLogEntry, GetContactLinkDeps } from '@photobooking/domain';
@@ -56,5 +56,28 @@ describe('handleGetContactLink', () => {
       handleGetContactLink({ auth: { uid: 'c1' }, data: { bookingId: 'b1', channel: 'whatsapp' } }, deps),
       httpsError('not-found', 'not_found'),
     );
+  });
+
+  test('an internal error logs its name and code only (never the message or data)', async (t: TestContext) => {
+    const { deps } = fakes([accepted]);
+    const failing: GetContactLinkDeps = {
+      ...deps,
+      bookings: { get: () => Promise.reject(Object.assign(new TypeError('number +84912000001 leaked'), { code: 14 })) },
+    };
+    const lines: string[] = [];
+    t.mock.method(process.stderr, 'write', (chunk: unknown) => {
+      lines.push(String(chunk));
+      return true;
+    });
+    await assert.rejects(
+      handleGetContactLink({ auth: { uid: 'c1' }, data: { bookingId: 'b1', channel: 'call' } }, failing),
+      httpsError('internal', 'internal'),
+    );
+    t.mock.restoreAll();
+    assert.equal(lines.length, 1);
+    const entry = JSON.parse(lines[0] ?? '{}') as Record<string, unknown>;
+    assert.equal(entry.name, 'TypeError');
+    assert.equal(entry.errorCode, 14);
+    assert.doesNotMatch(lines[0] ?? '', /\+84|leaked|b1/);
   });
 });
