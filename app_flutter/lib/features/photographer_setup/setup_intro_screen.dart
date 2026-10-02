@@ -120,6 +120,10 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
   }
 
   void _next() {
+    // Text typed in the equipment field but not added yet is kept.
+    if (_equipmentField.text.trim().isNotEmpty) {
+      _addEquipment();
+    }
     final r = validateIntro(
       IntroInput(
         displayName: _name.text,

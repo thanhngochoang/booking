@@ -34,6 +34,10 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
   Map<PackageField, PackageError> _errors = const {};
   String? _uid;
 
+  /// "Tiếp tục" is being handled (until step 3 is popped): a second tap
+  /// does nothing, so `/setup/3` is pushed once.
+  bool _going = false;
+
   @override
   void initState() {
     super.initState();
@@ -180,15 +184,20 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
 
   Future<void> _next() async {
     final uid = _uid;
-    if (uid == null) {
+    if (uid == null || _going) {
       return;
     }
+    setState(() => _going = true);
     final store = ref.read(setupDraftStoreProvider);
     if (store.step(uid) < 3) {
       await store.setStep(uid, 3);
     }
+    if (!mounted) {
+      return;
+    }
+    await context.push('/setup/3');
     if (mounted) {
-      context.push('/setup/3');
+      setState(() => _going = false);
     }
   }
 
@@ -467,7 +476,9 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
                           child: AppButton.primary(
                             l.setupNext,
                             key: const Key('setup-next'),
-                            onPressed: active.isEmpty || saving ? null : _next,
+                            onPressed: active.isEmpty || saving || _going
+                                ? null
+                                : _next,
                           ),
                         ),
                       ],

@@ -307,7 +307,7 @@ class _DaySection extends StatelessWidget {
           padding: const EdgeInsets.only(top: AppSpace.s4),
           child: ConstrainedBox(
             // Same row height with or without the 48dp action.
-            constraints: const BoxConstraints(minHeight: 48),
+            constraints: const BoxConstraints(minHeight: AppSpace.s12),
             child: Row(
               children: [
                 Expanded(
@@ -319,7 +319,7 @@ class _DaySection extends StatelessWidget {
                         '${d.day}',
                         '${d.month}',
                       ),
-                      style: theme.textTheme.titleLarge?.copyWith(fontSize: 17),
+                      style: theme.appBarTheme.titleTextStyle,
                     ),
                   ),
                 ),

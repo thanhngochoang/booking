@@ -181,6 +181,23 @@ void main() {
     },
   );
 
+  testWidgets('a double tap on "Tiếp tục" opens step 3 once', (tester) async {
+    final w = await _world(seed: const [_portrait]);
+    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
+    await tester.pumpAndSettle();
+    // Two taps before a frame: the second lands while the first is saving.
+    await tester.tap(_key('setup-next'));
+    await tester.tap(_key('setup-next'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('stub /setup/3'), findsOneWidget);
+
+    w.router.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('stub /setup/3'), findsNothing);
+    expect(find.text('2 / 4'), findsOneWidget, reason: 'one pop, back on 2');
+    expect(_enabled(tester, 'setup-next'), isTrue);
+  });
+
   testWidgets('a half-filled form comes back after leaving', (tester) async {
     final w = await _world();
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));

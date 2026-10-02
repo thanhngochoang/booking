@@ -86,6 +86,23 @@ void main() {
     expect(find.text('step 2'), findsOneWidget);
   });
 
+  testWidgets('equipment typed but not added is saved with the rest', (
+    tester,
+  ) async {
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await tester.enterText(_key('setup-bio'), 'Chân dung ngoài trời');
+    await tester.enterText(_key('setup-equipment-field'), 'Sony A7 IV');
+    await tester.tap(_key('setup-equipment-add'));
+    await tester.pump();
+    await tester.enterText(_key('setup-equipment-field'), '  Godox V1 ');
+    await tester.tap(_key('setup-next'));
+    await tester.pumpAndSettle();
+    expect(w.intro.stored(w.uid)!.equipment, ['Sony A7 IV', 'Godox V1']);
+    expect(find.text('step 2'), findsOneWidget);
+  });
+
   testWidgets('typing is kept as a draft and comes back after leaving', (
     tester,
   ) async {
