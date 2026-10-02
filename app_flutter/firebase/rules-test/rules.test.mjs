@@ -523,3 +523,24 @@ test('unchanged legacy skills do not block other profile edits', async () => {
   await assertSucceeds(updateDoc(doc(db, 'photographers/k10'), { bio: 'Chân dung' }));
   await assertFails(writeSkills(db, 'k10', { schemaVersion: 1, specialties: [], styles: ['film'] }));
 });
+
+// Budget guard: the costliest valid profile (about 800 of the 1000 expressions a request may
+// evaluate, measured on the emulator) must stay accepted, as a fresh save and over stored values.
+test('the largest valid skills profile stays within the rules evaluation budget', async () => {
+  const largest = () => ({
+    schemaVersion: 1,
+    specialties: ['portrait', 'wedding', 'couple', 'family', 'graduation', 'event'].map((id, i) => ({
+      id, level: i < 3 ? 3 : 2, years: 50, evidencePostIds: [`a${i}`, `b${i}`, `c${i}`],
+    })),
+    styles: ['natural_light', 'film', 'minimal', 'editorial'],
+    extras: ['retouch', 'posing', 'video', 'drone', 'studio', 'kids', 'pets', 'low_light'],
+    languages: ['vi', 'en', 'zh', 'ko', 'ja'],
+    audiences: ['couple', 'family_kids', 'business', 'foreigner'],
+    yearsExperience: 50,
+  });
+  const db = await skillsOwner('k12');
+  const ref = doc(db, 'photographers/k12');
+  await assertSucceeds(setDoc(ref, { skills: largest(), updatedAt: serverTimestamp() }, { merge: true }));
+  const db13 = await skillsOwner('k13', { skills: { ...goodSkills(), completeness: 70, updatedAt: Timestamp.fromMillis(3) } });
+  await assertSucceeds(setDoc(doc(db13, 'photographers/k13'), { skills: largest(), updatedAt: serverTimestamp() }, { merge: true }));
+});

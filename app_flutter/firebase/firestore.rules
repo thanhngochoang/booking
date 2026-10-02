@@ -60,72 +60,86 @@ service cloud.firestore {
     function skillLanguageIds() { return ['vi', 'en', 'zh', 'ko', 'ja']; }
     function skillAudienceIds() { return ['couple', 'family_kids', 'business', 'foreigner', 'shy_subjects']; }
 
+    // Cost matters: a request may evaluate at most 1000 expressions (every name, literal, call
+    // and operator counts), so each catalogue list is built once and passed in, and per-genre
+    // work is folded into one regex over a joined string.
+    // A non-list value fails on toSet() (an evaluation error denies the write).
     function uniqueTags(xs, allowed, maxSize) {
-      return xs is list && xs.size() <= maxSize && xs.hasOnly(allowed) && xs.toSet().size() == xs.size();
+      return xs.size() <= maxSize && xs.toSet().size() == xs.size() && xs.hasOnly(allowed);
     }
-    function validPostId(v) { return v is string && v.matches('^[A-Za-z0-9_-]{1,64}$'); }
-    function validEvidence(ev) {
-      return ev is list && ev.size() <= 3 && ev.toSet().size() == ev.size()
-        && (ev.size() < 1 || validPostId(ev[0]))
-        && (ev.size() < 2 || validPostId(ev[1]))
-        && (ev.size() < 3 || validPostId(ev[2]));
+    // One genre as "level:years:evidence" ('n' when years is absent), or '!' when its keys, types
+    // or evidence uniqueness are wrong. gk is the allowed key list, built once by the caller.
+    // Post ids cannot contain ':', ',' or '|', so the joined form is unambiguous.
+    function genreSig(s, gk) {
+      let ev = s.get('evidencePostIds', []);
+      return s.keys().hasOnly(gk) && s.level is int && s.get('years', 0) is int
+          && ev.toSet().size() == ev.size()
+        ? string(s.level) + ':' + string(s.get('years', 'n')) + ':' + ev.join(',')
+        : '!';
     }
-    function validSpecialty(s) {
-      return s is map
-        && s.keys().hasAll(['id', 'level'])
-        && s.keys().hasOnly(['id', 'level', 'years', 'evidencePostIds'])
-        && s.id in skillSpecialtyIds()
-        && s.level is int && s.level >= 1 && s.level <= 3
-        && (!('years' in s) || (s.years is int && s.years >= 0 && s.years <= 50))
-        && validEvidence(s.get('evidencePostIds', []))
-        && (s.level != 3 || s.get('evidencePostIds', []).size() >= 1);
+    // Every genre signature followed by '|'. Accepts levels 1–2 with 0–3 post ids and level 3 with
+    // 1–3 post ids, at most three level-3 genres, years 0–50 or absent, ids of 1–64 [A-Za-z0-9_-].
+    function genreSigsRe() {
+      return '^([12]:(n|[0-9]|[1-4][0-9]|50):([A-Za-z0-9_-]{1,64}(,[A-Za-z0-9_-]{1,64}){0,2})?\\|)*'
+        + '(3:(n|[0-9]|[1-4][0-9]|50):[A-Za-z0-9_-]{1,64}(,[A-Za-z0-9_-]{1,64}){0,2}\\|'
+        + '([12]:(n|[0-9]|[1-4][0-9]|50):([A-Za-z0-9_-]{1,64}(,[A-Za-z0-9_-]{1,64}){0,2})?\\|)*){0,3}$';
     }
-    // Rules cannot loop: the six possible genre slots are checked one by one.
-    function specialtySlotOk(sp, i) { return sp.size() <= i || validSpecialty(sp[i]); }
-    function expertAt(sp, i) { return (sp.size() > i && sp[i].level == 3) ? 1 : 0; }
-    function specialtyIdList(sp) {
-      return sp.size() == 1 ? [sp[0].id]
-        : sp.size() == 2 ? [sp[0].id, sp[1].id]
-        : sp.size() == 3 ? [sp[0].id, sp[1].id, sp[2].id]
-        : sp.size() == 4 ? [sp[0].id, sp[1].id, sp[2].id, sp[3].id]
+    // Rules cannot loop: lists of 1–6 genres are expanded by size (largest first, the costliest).
+    function genreSigs(sp, gk) {
+      return sp.size() == 6
+          ? [genreSig(sp[0], gk), genreSig(sp[1], gk), genreSig(sp[2], gk),
+             genreSig(sp[3], gk), genreSig(sp[4], gk), genreSig(sp[5], gk)]
+        : sp.size() == 5
+          ? [genreSig(sp[0], gk), genreSig(sp[1], gk), genreSig(sp[2], gk),
+             genreSig(sp[3], gk), genreSig(sp[4], gk)]
+        : sp.size() == 4
+          ? [genreSig(sp[0], gk), genreSig(sp[1], gk), genreSig(sp[2], gk), genreSig(sp[3], gk)]
+        : sp.size() == 3 ? [genreSig(sp[0], gk), genreSig(sp[1], gk), genreSig(sp[2], gk)]
+        : sp.size() == 2 ? [genreSig(sp[0], gk), genreSig(sp[1], gk)]
+        : [genreSig(sp[0], gk)];
+    }
+    function genreIds(sp) {
+      return sp.size() == 6 ? [sp[0].id, sp[1].id, sp[2].id, sp[3].id, sp[4].id, sp[5].id]
         : sp.size() == 5 ? [sp[0].id, sp[1].id, sp[2].id, sp[3].id, sp[4].id]
-        : [sp[0].id, sp[1].id, sp[2].id, sp[3].id, sp[4].id, sp[5].id];
+        : sp.size() == 4 ? [sp[0].id, sp[1].id, sp[2].id, sp[3].id]
+        : sp.size() == 3 ? [sp[0].id, sp[1].id, sp[2].id]
+        : sp.size() == 2 ? [sp[0].id, sp[1].id]
+        : [sp[0].id];
     }
-    function validSpecialties(sp) {
-      return sp is list && sp.size() >= 1 && sp.size() <= 6
-        && specialtySlotOk(sp, 0) && specialtySlotOk(sp, 1) && specialtySlotOk(sp, 2)
-        && specialtySlotOk(sp, 3) && specialtySlotOk(sp, 4) && specialtySlotOk(sp, 5)
-        && specialtyIdList(sp).toSet().size() == sp.size()
-        && expertAt(sp, 0) + expertAt(sp, 1) + expertAt(sp, 2)
-           + expertAt(sp, 3) + expertAt(sp, 4) + expertAt(sp, 5) <= 3;
+    // 1–6 genres with unique catalogue ids; each genre's shape via genreSig + genreSigsRe.
+    function validSpecialties(sp, ids) {
+      let gid = sp.size() >= 1 && sp.size() <= 6 ? genreIds(sp) : ['!'];
+      return gid.hasOnly(ids) && gid.toSet().size() == sp.size()
+        && (genreSigs(sp, ['id', 'level', 'years', 'evidencePostIds']).join('|') + '|')
+             .matches(genreSigsRe());
     }
-    // skills.completeness and skills.updatedAt are written by Cloud Functions only. The app saves
-    // with set(merge: true), so request.resource.data.skills is the post-merge map and still holds
-    // the stored server values: each must equal the stored one (or stay absent).
-    function skillsServerFieldsUntouched(after) {
-      let before = resource == null ? {} : resource.data.get('skills', {});
-      return after.get('completeness', null) == before.get('completeness', null)
-        && after.get('updatedAt', null) == before.get('updatedAt', null);
+    // k: the skills map after the write (post-merge for set(merge: true), so it still holds the
+    // stored server fields); before: the stored skills map ({} on create).
+    // skills.completeness and skills.updatedAt are written by Cloud Functions only: each must equal
+    // the stored value (or stay absent).
+    function validSkills(k, before) {
+      return k is map
+        && k.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
+                             'audiences', 'yearsExperience', 'completeness', 'updatedAt'])
+        && k.get('schemaVersion', 0) == 1
+        && k.get('completeness', null) == before.get('completeness', null)
+        && k.get('updatedAt', null) == before.get('updatedAt', null)
+        && uniqueTags(k.get('styles', []), skillStyleIds(), 4)
+        && uniqueTags(k.get('extras', []), skillExtraIds(), 8)
+        && uniqueTags(k.get('audiences', []), skillAudienceIds(), 4)
+        && uniqueTags(k.get('languages', []), skillLanguageIds(), 5)
+        && k.get('languages', []).size() >= 1
+        && (k.get('yearsExperience', null) == null
+            || (k.yearsExperience is int && k.yearsExperience >= 0 && k.yearsExperience <= 50))
+        && validSpecialties(k.get('specialties', []), skillSpecialtyIds());
     }
-    // Checked only when the client changes skills, so an old document never blocks other edits.
-    function validSkills() {
-      let d = request.resource.data;
-      return !('skills' in d)
-        || (resource != null && resource.data.get('skills', null) == d.skills)
-        || (d.skills is map
-            && d.skills.keys().hasOnly(['schemaVersion', 'specialties', 'styles', 'extras', 'languages',
-                                        'audiences', 'yearsExperience', 'completeness', 'updatedAt'])
-            && d.skills.get('schemaVersion', 0) == 1
-            && validSpecialties(d.skills.get('specialties', []))
-            && uniqueTags(d.skills.get('styles', []), skillStyleIds(), 4)
-            && uniqueTags(d.skills.get('extras', []), skillExtraIds(), 8)
-            && uniqueTags(d.skills.get('languages', []), skillLanguageIds(), 5)
-            && d.skills.get('languages', []).size() >= 1
-            && uniqueTags(d.skills.get('audiences', []), skillAudienceIds(), 4)
-            && (d.skills.get('yearsExperience', null) == null
-                || (d.skills.yearsExperience is int
-                    && d.skills.yearsExperience >= 0 && d.skills.yearsExperience <= 50))
-            && skillsServerFieldsUntouched(d.skills));
+    // Validated only when the write touches skills, so other profile edits pay nothing and an
+    // old stored value never blocks them.
+    function skillsWriteOk() {
+      return resource == null
+        ? (!('skills' in request.resource.data) || validSkills(request.resource.data.skills, {}))
+        : (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['skills'])
+           || validSkills(request.resource.data.skills, resource.data.get('skills', {})));
     }
 
     // serviceArea: a city and a whole-number radius in km (centre point added with the location work).
@@ -239,7 +253,7 @@ service cloud.firestore {
         && onlyKeys(photographerClientFields())
         && validServiceArea()
         && validContactChannels(uid)
-        && validSkills();
+        && skillsWriteOk();
       allow delete: if false;
 
       match /services/{serviceId} {
