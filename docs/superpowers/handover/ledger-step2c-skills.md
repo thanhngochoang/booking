@@ -92,3 +92,8 @@ Final review: opus, 0 Critical, 4 Important (S40 paging, discard during save, sp
 Final: fix wave a0b7e5c..cfd034b — re-review: 2,3,4 ADDRESSED; 1 partly (a,b,d done; c open)
 Final: parked — S40 stall: when a load adds no own thumbs (or only same-row tiles) and hasMore stays true, no ScrollMetricsNotification fires, so loading stops with a blank/short grid — Ruling: real, user-visible, not load-bearing for other tasks; no second fix wave per process → surfaced to user with a proposed follow-up (controller keeps fetching while < pageSize own thumbs and a cursor remains, or post-frame re-check) — cost if wrong: photographers whose recent pages are mostly customer posts cannot pick evidence
 Final: minor (deferred): S40 retry row not in mock (spec updated; mock not edited per user); blank grid with no spinner while paging; retry row disappears during retry with no indicator
+Final: follow-up S40 stall fix approved by user ('làm hết'); dispatched (FIX_BASE 36ffa42)
+Final: S40 follow-up round 1 ac76913 — empty/same-row stall fixed; open: bound hit with 1–29 own + hasMore, uncapped keep-loading chain, reads after close, skeleton beside retry. Round 2 dispatched. Ruling: server-side authorId query would be the real fix — deferred (needs index + adapter change in PostRepository, plan 3b1 area) — cost if wrong: extra reads for photographers with many customer posts
+Final: S40 follow-up round 2 91c635a — all 4 addressed (suite 973)
+Final: minor (deferred): loadMore has no capped guard (progress/"Tải thêm" rows flicker on scroll when capped); manual load with empty list shows no progress; progress and "Tải thêm" rows not in mock; failed-with-empty-list case has no widget test
+Plan step2c-skills: DONE
