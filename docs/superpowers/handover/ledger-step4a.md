@@ -22,3 +22,6 @@ Task 5: complete (commitTransition, transitionBooking, openDispute, runBookingSw
 
 Task 6: dispatched
 Task 6: complete (Firestore booking store, catalog reader, customer contact reader, live deps wiring, 48 functions unit tests pass, typecheck and lint clean)
+
+Task 7: dispatched
+Task 7: complete (booking callables, bookingClock scheduled function, env config, 57 functions unit tests pass, typecheck and lint clean)
