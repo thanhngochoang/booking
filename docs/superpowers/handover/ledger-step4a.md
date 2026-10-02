@@ -25,3 +25,6 @@ Task 6: complete (Firestore booking store, catalog reader, customer contact read
 
 Task 7: dispatched
 Task 7: complete (booking callables, bookingClock scheduled function, env config, 57 functions unit tests pass, typecheck and lint clean)
+
+Task 8: dispatched
+Task 8: complete (Firestore security rules for bookings/private/contact & escrow tables, composite indexes for sweeps & queries, specs updated)

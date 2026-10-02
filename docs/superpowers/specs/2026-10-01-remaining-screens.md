@@ -316,14 +316,14 @@ photographers/{uid}/private/contact    # chỉ chủ đọc/ghi
 
 chats/{chatId}.kind: "inquiry" | "booking"   # inquiry: chưa có bookingId
 
-bookings/{id}.customerContact          # chụp lại lúc yêu cầu, chỉ hai bên đọc
+bookings/{id}/private/contact          # chụp lại lúc tạo draft, khách luôn đọc được, thợ chỉ đọc khi contact_unlocked
   name, phone, allowZalo, allowWhatsApp
 ```
 
-- `transitionBooking(requested)` và `registerEvent` đọc `users/{uid}/private/contact`, từ chối với `phone_required` nếu thiếu hoặc sai định dạng (ép ở server, không chỉ ở UI), rồi sao chụp vào `bookings.customerContact` / `registrations.phone`.
-- Đề xuất: Function xoá `phone` khỏi `customerContact` 30 ngày sau `completed` (câu hỏi mở 4).
+- `createBookingDraft` và `registerEvent` đọc `users/{uid}/private/contact`, từ chối với `phone_required` nếu thiếu hoặc sai định dạng (ép ở server, không chỉ ở UI), rồi sao chụp vào `bookings/{id}/private/contact` / `registrations.phone`.
+- Function xoá tài liệu snapshot `bookings/{id}/private/contact` ngay khi `declined`/`expired`/`cancelled`, và 30 ngày sau `completed` (câu hỏi mở 4).
 - **Số của nhiếp ảnh gia không bao giờ nằm trong tài liệu đọc được công khai.** Ứng dụng nhận đường dẫn gọi qua hàm callable `getContactLink({bookingId | registrationId, channel})`: Function kiểm tra điều kiện "mở khoá liên hệ" (mục 3b.1) rồi trả đúng một URL (`tel:`, `https://zalo.me/…`, `https://wa.me/…`); chưa đủ điều kiện thì trả lỗi `contact_locked`. Client không lưu số.
-- Rules: `users/{uid}/private/contact` và `photographers/{uid}/private/contact` chỉ chủ đọc/ghi; `photographers/{uid}.contactChannels` chỉ chủ ghi; `customerContact` chỉ ghi qua Function; client không tạo được `chats` kind `booking`.
+- Rules: `users/{uid}/private/contact` và `photographers/{uid}/private/contact` chỉ chủ đọc/ghi; `photographers/{uid}.contactChannels` chỉ chủ ghi; `bookings/{id}/private/contact` chỉ ghi qua Function, khách đọc luôn được, thợ đọc chỉ khi mở khoá liên hệ; client không tạo được `chats` kind `booking`.
 
 ### 3b.3 Định dạng và chuẩn hoá
 

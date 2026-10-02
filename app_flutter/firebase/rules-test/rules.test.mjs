@@ -911,3 +911,49 @@ test('a user uploads, replaces and deletes only their own avatar, images up to 5
   await assertFails(uploadBytes(ref(st, 'avatars/av1/d.jpg'), photo(5 * 1024 * 1024 + 1), jpeg));
   await assertSucceeds(deleteObject(own));
 });
+
+// ---- Plan 4a: bookings, contact copy and escrow rules ----
+test('bookings/private/contact is readable by customer always, photographer only when unlocked', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'bookings/b_req'), { customerId: 'c1', photographerId: 'p1', status: 'requested' });
+    await setDoc(doc(f, 'bookings/b_req/private/contact'), { name: 'Customer C1', phone: '+84903123456' });
+
+    await setDoc(doc(f, 'bookings/b_draft'), { customerId: 'c1', photographerId: 'p1', status: 'draft' });
+    await setDoc(doc(f, 'bookings/b_draft/private/contact'), { name: 'Customer C1', phone: '+84903123456' });
+
+    await setDoc(doc(f, 'bookings/b_canc'), { customerId: 'c1', photographerId: 'p1', status: 'cancelled' });
+    await setDoc(doc(f, 'bookings/b_canc/private/contact'), { name: 'Customer C1', phone: '+84903123456' });
+  });
+
+  const cDb = env.authenticatedContext('c1').firestore();
+  const pDb = env.authenticatedContext('p1').firestore();
+  const strangerDb = env.authenticatedContext('stranger').firestore();
+
+  // Customer reads all their booking contacts
+  await assertSucceeds(getDoc(doc(cDb, 'bookings/b_req/private/contact')));
+  await assertSucceeds(getDoc(doc(cDb, 'bookings/b_draft/private/contact')));
+  await assertSucceeds(getDoc(doc(cDb, 'bookings/b_canc/private/contact')));
+
+  // Photographer reads unlocked contact, but not locked/draft/cancelled
+  await assertSucceeds(getDoc(doc(pDb, 'bookings/b_req/private/contact')));
+  await assertFails(getDoc(doc(pDb, 'bookings/b_draft/private/contact')));
+  await assertFails(getDoc(doc(pDb, 'bookings/b_canc/private/contact')));
+
+  // Stranger cannot read
+  await assertFails(getDoc(doc(strangerDb, 'bookings/b_req/private/contact')));
+
+  // Writes denied to all clients
+  await assertFails(setDoc(doc(cDb, 'bookings/b_req/private/contact'), { name: 'Hacked' }));
+  await assertFails(setDoc(doc(pDb, 'bookings/b_req/private/contact'), { name: 'Hacked' }));
+});
+
+test('payments, refunds, and ledger_entries are denied to clients', async () => {
+  const db = env.authenticatedContext('c1').firestore();
+  await assertFails(getDoc(doc(db, 'payments/pay1')));
+  await assertFails(setDoc(doc(db, 'payments/pay1'), { amount: 100 }));
+  await assertFails(getDoc(doc(db, 'refunds/ref1')));
+  await assertFails(setDoc(doc(db, 'refunds/ref1'), { amount: 100 }));
+  await assertFails(getDoc(doc(db, 'ledger_entries/le1')));
+  await assertFails(setDoc(doc(db, 'ledger_entries/le1'), { amount: 100 }));
+});
