@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
@@ -44,9 +46,13 @@ void main() {
           MediaQuery(
             data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
             child: ProviderScope(
+              retry: (_, _) => null,
               overrides: [
                 authRepositoryProvider.overrideWithValue(auth),
                 userRepositoryProvider.overrideWithValue(users),
+                photographerIntroRepositoryProvider.overrideWithValue(
+                  FakePhotographerIntroRepository(),
+                ),
               ],
               child: MaterialApp(
                 locale: const Locale('vi'),

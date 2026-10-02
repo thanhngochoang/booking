@@ -670,6 +670,24 @@ abstract class AppLocalizations {
   /// **'Đã chuyển qua chế độ nhiếp ảnh.'**
   String get profileSwitchedToPhotographer;
 
+  /// No description provided for @profileSetupTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thiện hồ sơ nhiếp ảnh gia'**
+  String get profileSetupTitle;
+
+  /// No description provided for @profileSetupBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn vài bước nữa để khách tìm thấy và đặt lịch với bạn.'**
+  String get profileSetupBody;
+
+  /// No description provided for @profileSetupContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục thiết lập'**
+  String get profileSetupContinue;
+
   /// No description provided for @profileSwitchError.
   ///
   /// In vi, this message translates to:

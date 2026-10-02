@@ -309,6 +309,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSwitchedToPhotographer => 'Đã chuyển qua chế độ nhiếp ảnh.';
 
   @override
+  String get profileSetupTitle => 'Hoàn thiện hồ sơ nhiếp ảnh gia';
+
+  @override
+  String get profileSetupBody =>
+      'Còn vài bước nữa để khách tìm thấy và đặt lịch với bạn.';
+
+  @override
+  String get profileSetupContinue => 'Tiếp tục thiết lập';
+
+  @override
   String get profileSwitchError =>
       'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.';
 
