@@ -70,7 +70,9 @@ abstract class AvailabilityRepository {
     required DateTime to,
   });
 
-  /// Marks [days] off. Days that already have a record are left alone.
+  /// Marks [days] off. Callers pass free days only: the Firestore adapter
+  /// writes every given day and the rules refuse the whole batch if any of
+  /// them already has a record; the fake skips days that have a record.
   Future<void> markOff(String uid, Iterable<DateTime> days);
 
   /// Frees [days] that are off; booked and pending days stay.

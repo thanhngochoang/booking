@@ -24,12 +24,12 @@ Màn: S19, S20, S21, S22, S23, S24, S34, S38, S39, S40. Quy ước chung ở [RE
 - **Thông tin**: `/work/calendar` · sub‑project 2 · Chưa có.
 - **Mục đích**: đánh dấu ngày nghỉ; thấy ngày đã đặt/chờ.
 - **Bố cục**: Back + "Lịch của tôi"; chọn tháng (3 tab `SegmentedTabs`) phía trên lịch, lịch không có tiêu đề riêng; `AvailabilityCalendar` có thể chỉnh (ngày chọn tô gradient); chú giải (tên bốn trạng thái, mỗi tên tô kiểu như ô của nó); khung ngày đã chọn: tiêu đề ngày kèm nút chữ "Đánh dấu nghỉ"/"Bỏ nghỉ" (không dùng nút gradient), hoặc liên kết "Xem lịch hẹn" (`/b/{id}`) / "Quản lý sự kiện" (S27) và chữ "Ngày này đã có lịch" — danh sách `BookingCard` của ngày thêm ở bước 5 khi có dữ liệu booking; ghi chú hướng dẫn ở cuối.
-- **Dữ liệu**: `availability/{uid}/days`; ngày `booked`/`pending` sinh tự động từ booking/sự kiện, không sửa được. Tài liệu `availability/{uid}/days/{yyyy-MM-dd}` (không có = rảnh); nhiếp ảnh gia chỉ tạo/xoá `off`; `booked`/`pending` do máy chủ ghi kèm `bookingId`/`eventId`.
+- **Dữ liệu**: tài liệu `availability/{uid}/days/{yyyy-MM-dd}` (không có = rảnh); nhiếp ảnh gia chỉ tạo/xoá `off`; `booked`/`pending` do máy chủ ghi tự động từ booking/sự kiện kèm `bookingId`/`eventId`, nhiếp ảnh gia không sửa được.
 - **Trạng thái**: ngày đã đặt/chờ → không đánh dấu nghỉ được (nhắn "Ngày này đã có lịch"); ngày quá khứ chỉ đọc.
-- **Tương tác**: chạm ngày trống → đặt `off` ngay (snackbar "Đã đánh dấu nghỉ" + Hoàn tác); chạm ngày `off` → bỏ nghỉ; chọn dải ngày bằng kéo hoặc nhấn giữ; chạm ngày có sự kiện → S27. Chọn khoảng: nhấn giữ ngày đầu rồi chạm ngày cuối (thay cho kéo); tháng xem được từ tháng này tới 12 tháng sau.
+- **Tương tác**: chạm ngày trống → đặt `off` ngay (snackbar "Đã đánh dấu nghỉ" + Hoàn tác); chạm ngày `off` → bỏ nghỉ; chọn dải ngày: nhấn giữ ngày đầu rồi chạm ngày cuối; chạm ngày có sự kiện → khung ngày có liên kết "Quản lý sự kiện" (S27); tháng xem được từ tháng này tới 12 tháng sau.
 - **Chuỗi**: `s20_title` "Lịch của tôi", `s20_markOff` "Đánh dấu nghỉ", `s20_undo` "Hoàn tác", `s20_hint` "Chạm ngày trống để đánh dấu Nghỉ. Khách sẽ không đặt được ngày đó.", `s20_hasPlan` "Ngày này đã có lịch".
 - **Phân tích**: `calendar_off{count}`.
-- **Chấp nhận**: khách thấy cùng trạng thái ở S06 ngay sau khi lưu; có cách thay thế cho thao tác kéo (nhấn chọn từng ngày).
+- **Chấp nhận**: khách thấy cùng trạng thái ở S06 ngay sau khi lưu; chọn dải không cần kéo (nhấn giữ ngày đầu rồi chạm ngày cuối), và từng ngày chọn được bằng một lần chạm.
 
 ---
 
