@@ -172,4 +172,80 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  group('as a sheet', () {
+    Future<_Harness> sheetHarness() async {
+      final h = await _harness(location: '/gate');
+      return h;
+    }
+
+    Widget gateApp(_Harness h, ValueNotifier<bool?> result) {
+      final router = GoRouter(
+        initialLocation: '/gate',
+        routes: [
+          GoRoute(
+            path: '/gate',
+            builder: (_, _) => Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () async => result.value = await showAddPhoneSheet(
+                    context,
+                    returnTo: '/after',
+                  ),
+                  child: const Text('gate'),
+                ),
+              ),
+            ),
+          ),
+          GoRoute(path: '/after', builder: (_, _) => const Text('after')),
+        ],
+      );
+      final scope = h.widget as ProviderScope;
+      return ProviderScope(
+        overrides: scope.overrides,
+        child: MaterialApp.router(
+          routerConfig: router,
+          locale: const Locale('vi'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      );
+    }
+
+    testWidgets('opens over the gate, save closes it and continues', (
+      tester,
+    ) async {
+      final h = await sheetHarness();
+      final result = ValueNotifier<bool?>(null);
+      await tester.pumpWidget(gateApp(h, result));
+      await tester.tap(find.text('gate'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('app-sheet')), findsOneWidget);
+      expect(find.text('gate'), findsOneWidget);
+      expect(find.byIcon(Icons.lock_outline_rounded), findsNothing);
+      await tester.enterText(find.byType(TextFormField), '0903123456');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('phone-save')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('app-sheet')), findsNothing);
+      expect(result.value, isTrue);
+      expect(find.text('after'), findsOneWidget);
+      expect(h.contacts.stored(h.auth.currentUser!.uid)?.phone, '+84903123456');
+    });
+
+    testWidgets('dismissing leaves no number', (tester) async {
+      final h = await sheetHarness();
+      final result = ValueNotifier<bool?>(null);
+      await tester.pumpWidget(gateApp(h, result));
+      await tester.tap(find.text('gate'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '0903123456');
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('app-sheet')), findsNothing);
+      expect(result.value, isNull);
+      expect(h.contacts.stored(h.auth.currentUser!.uid), isNull);
+      expect(find.text('gate'), findsOneWidget);
+    });
+  });
 }

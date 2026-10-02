@@ -8,18 +8,74 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/contact/return_to.dart';
 import 'package:photobooking/features/contact/save_contact_controller.dart';
 
-/// S33: add the phone number needed to book. Saves to the private contact and
-/// goes back to [returnTo] (or the previous screen / home).
-class AddPhoneScreen extends ConsumerStatefulWidget {
+/// S33 as a bottom sheet over the screen the customer was booking from.
+/// Resolves to true once the number is saved; closing without saving resolves
+/// to null and leaves no number, so the booking gate stays closed.
+Future<bool?> showAddPhoneSheet(BuildContext context, {String? returnTo}) {
+  return showAppSheet<bool>(
+    context,
+    builder: (sheetContext) => Material(
+      type: MaterialType.transparency,
+      child: AddPhoneContent(
+        onSaved: () {
+          Navigator.of(sheetContext).pop(true);
+          final to = safeReturnTo(returnTo);
+          if (to != null) context.go(to);
+        },
+      ),
+    ),
+  );
+}
+
+/// Deep-link fallback for `/profile/phone?returnTo=`: the same content as the
+/// sheet on a plain page. Saves, then goes to [returnTo] (or back / home).
+class AddPhoneScreen extends StatelessWidget {
   const AddPhoneScreen({super.key, this.returnTo});
 
   final String? returnTo;
 
+  void _done(BuildContext context) {
+    final to = safeReturnTo(returnTo);
+    if (to != null) {
+      context.go(to);
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppTab.home.path);
+    }
+  }
+
   @override
-  ConsumerState<AddPhoneScreen> createState() => _AddPhoneScreenState();
+  Widget build(BuildContext context) {
+    return ScreenCode(
+      ScreenCodes.addPhone,
+      child: AuroraBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(),
+          body: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              child: AddPhoneContent(onSaved: () => _done(context)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _AddPhoneScreenState extends ConsumerState<AddPhoneScreen> {
+/// The S33 form: title, body, phone, example, Zalo/WhatsApp, privacy, save.
+class AddPhoneContent extends ConsumerStatefulWidget {
+  const AddPhoneContent({super.key, required this.onSaved});
+
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<AddPhoneContent> createState() => _AddPhoneContentState();
+}
+
+class _AddPhoneContentState extends ConsumerState<AddPhoneContent> {
   final _phone = TextEditingController();
   bool _zalo = true;
   bool _whatsApp = false;
@@ -31,17 +87,6 @@ class _AddPhoneScreenState extends ConsumerState<AddPhoneScreen> {
   }
 
   String? get _e164 => phoneFromField(_phone.text);
-
-  void _done() {
-    final to = safeReturnTo(widget.returnTo);
-    if (to != null) {
-      context.go(to);
-    } else if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go(AppTab.home.path);
-    }
-  }
 
   void _save() {
     final phone = _e164;
@@ -63,91 +108,59 @@ class _AddPhoneScreenState extends ConsumerState<AddPhoneScreen> {
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(l.phoneSaveError)));
       } else if (next.value ?? false) {
-        _done();
+        widget.onSaved();
       }
     });
-    return ScreenCode(
-      ScreenCodes.addPhone,
-      child: AuroraBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(),
-          body: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpace.s5),
-              child: GlassCard(
-                highlight: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpace.s5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          l.addPhoneTitle,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpace.s2),
-                      Text(l.addPhoneBody),
-                      const SizedBox(height: AppSpace.s5),
-                      PhoneField(
-                        controller: _phone,
-                        enabled: !saving,
-                        autofocus: true,
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: AppSpace.s2),
-                      Text(l.addPhoneExample, style: theme.textTheme.bodySmall),
-                      const SizedBox(height: AppSpace.s3),
-                      SwitchListTile(
-                        key: const Key('allow-zalo'),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l.allowZaloLabel),
-                        value: _zalo,
-                        onChanged: saving
-                            ? null
-                            : (v) => setState(() => _zalo = v),
-                      ),
-                      SwitchListTile(
-                        key: const Key('allow-whatsapp'),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l.allowWhatsAppLabel),
-                        value: _whatsApp,
-                        onChanged: saving
-                            ? null
-                            : (v) => setState(() => _whatsApp = v),
-                      ),
-                      const SizedBox(height: AppSpace.s2),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.lock_outline_rounded, size: 16),
-                          const SizedBox(width: AppSpace.s2),
-                          Expanded(
-                            child: Text(
-                              l.phonePrivacy,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpace.s5),
-                      AppButton.primary(
-                        l.addPhoneSave,
-                        key: const Key('phone-save'),
-                        loading: saving,
-                        onPressed: _e164 == null ? null : _save,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s5,
+        0,
+        AppSpace.s5,
+        AppSpace.s5,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(l.addPhoneTitle, style: theme.textTheme.titleLarge),
           ),
-        ),
+          const SizedBox(height: AppSpace.s2),
+          Text(l.addPhoneBody),
+          const SizedBox(height: AppSpace.s5),
+          PhoneField(
+            controller: _phone,
+            enabled: !saving,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: AppSpace.s2),
+          Text(l.addPhoneExample, style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpace.s3),
+          SwitchListTile(
+            key: const Key('allow-zalo'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.allowZaloLabel),
+            value: _zalo,
+            onChanged: saving ? null : (v) => setState(() => _zalo = v),
+          ),
+          SwitchListTile(
+            key: const Key('allow-whatsapp'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.allowWhatsAppLabel),
+            value: _whatsApp,
+            onChanged: saving ? null : (v) => setState(() => _whatsApp = v),
+          ),
+          const SizedBox(height: AppSpace.s2),
+          Text(l.phonePrivacy, style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpace.s5),
+          AppButton.primary(
+            l.addPhoneSave,
+            key: const Key('phone-save'),
+            loading: saving,
+            onPressed: _e164 == null ? null : _save,
+          ),
+        ],
       ),
     );
   }

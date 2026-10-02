@@ -13,6 +13,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get appName => 'Cộng đồng nhiếp ảnh gia';
 
   @override
+  String get loadingLabel => 'Đang tải';
+
+  @override
   String tabBadgeCount(int count) {
     return '$count mục mới';
   }
@@ -378,10 +381,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get phoneCodeLabel => 'Mã';
 
   @override
-  String get phoneRequired => 'Nhập số điện thoại';
+  String get phoneCodeSemantics => 'Mã +84';
 
   @override
-  String get phoneCodeSemantics => 'Mã +84';
+  String get phoneRequired => 'Nhập số điện thoại';
 
   @override
   String get phoneInvalid => 'Số điện thoại chưa đúng. Ví dụ: 903 123 456';

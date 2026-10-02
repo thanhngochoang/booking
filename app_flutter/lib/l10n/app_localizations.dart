@@ -100,6 +100,12 @@ abstract class AppLocalizations {
   /// **'Cộng đồng nhiếp ảnh gia'**
   String get appName;
 
+  /// No description provided for @loadingLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tải'**
+  String get loadingLabel;
+
   /// No description provided for @tabBadgeCount.
   ///
   /// In vi, this message translates to:
@@ -790,17 +796,17 @@ abstract class AppLocalizations {
   /// **'Mã'**
   String get phoneCodeLabel;
 
-  /// No description provided for @phoneRequired.
-  ///
-  /// In vi, this message translates to:
-  /// **'Nhập số điện thoại'**
-  String get phoneRequired;
-
   /// No description provided for @phoneCodeSemantics.
   ///
   /// In vi, this message translates to:
   /// **'Mã +84'**
   String get phoneCodeSemantics;
+
+  /// No description provided for @phoneRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số điện thoại'**
+  String get phoneRequired;
 
   /// No description provided for @phoneInvalid.
   ///

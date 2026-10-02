@@ -35,7 +35,8 @@ jobs:
           }
           DART
       - run: flutter analyze
-      - run: flutter test
+      # Goldens are rendered on macOS; Linux differs by a few pixels (dart_test.yaml).
+      - run: flutter test --exclude-tags golden
       - name: Firestore rules tests (emulator)
         working-directory: app_flutter/firebase/rules-test
         run: npm ci && npm test

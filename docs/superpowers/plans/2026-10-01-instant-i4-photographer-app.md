@@ -4960,6 +4960,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 8: `ApertureLoader` and `ApertureMark` (screen-level wait)
 
+> **Done ahead of this plan (2026-10-02)**, together with the splash and S34 loading states. Skip this task when executing I4; `ApertureLoader` is already exported from `core/core.dart`. Two fixes against the code below were applied: the hold uses `t <= 0.55` (at exactly 0.55 the eased curve gives 0.9999993 and failed the 1e-9 check), and `TickerMode.of` became `TickerMode.valuesOf(context).enabled` (deprecated since Flutter 3.35). CI runs `flutter test --exclude-tags golden`; the `golden` tag is declared in `dart_test.yaml`.
+
 **Files:**
 - Create: `lib/core/widgets/aperture_loader.dart`, `test/core/widgets/aperture_loader_test.dart`, `test/core/widgets/goldens/` (generated)
 - Modify: `lib/core/core.dart`
@@ -4973,7 +4975,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 Used by plan I4 for the S54 resume wait and by plan I5 (S48 centre, S47 while creating a request and opening payment). Buttons keep `AppButton.loading`; lists keep `AppSkeleton`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/core/widgets/aperture_loader_test.dart
@@ -5061,12 +5063,12 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run and see it fail**
+- [x] **Step 2: Run and see it fail**
 
 Run: `flutter test test/core/widgets/aperture_loader_test.dart`
 Expected: FAIL to compile, `ApertureLoader` undefined.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```dart
 // lib/core/widgets/aperture_loader.dart
@@ -5249,12 +5251,12 @@ class _ApertureLoaderState extends State<ApertureLoader> with SingleTickerProvid
 
 In `lib/core/core.dart` add `export 'package:photobooking/core/widgets/aperture_loader.dart';`.
 
-- [ ] **Step 4: Generate the goldens once, look at them, then run normally**
+- [x] **Step 4: Generate the goldens once, look at them, then run normally**
 
 Run: `flutter test --update-goldens --tags golden test/core/widgets/aperture_loader_test.dart`, open the six PNGs under `test/core/widgets/goldens/` and check against `design-system/brand/logo-mono.svg` (closure 0 must look identical to the SVG; 1 shows the blades turned towards the centre). Then `flutter test test/core/widgets/aperture_loader_test.dart && flutter analyze`.
 Expected: PASS (6 behaviour tests + 6 goldens). Goldens differ slightly between macOS and Linux font/AA stacks; there is no text in them, but if CI on Linux reports pixel diffs, regenerate them in CI's image and commit those, or run goldens only locally with `--exclude-tags golden` in CI (note which in the PR).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 dart format lib test

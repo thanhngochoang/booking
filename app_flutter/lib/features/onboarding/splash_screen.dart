@@ -24,7 +24,7 @@ class SplashScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpace.s5),
-                  const CircularProgressIndicator(),
+                  ApertureLoader(semanticsLabel: context.l10n.loadingLabel),
                 ],
               ),
             ),
