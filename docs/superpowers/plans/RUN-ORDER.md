@@ -28,7 +28,7 @@ Plans 8a2 and 8b–8e run on two machines at once. The split was made from a fil
 | 4 | 4b Tasks 2–8 (S04.01–S04.04; needs G3) | 4c Task 1 (events read rule, `booking_features.dart`, ticker) | **G4:** lane 2 merges 4c T1 |
 | 5 | 4c Tasks 2–7 (S05.01–S05.03, S06.01–S06.03; needs G4) | 4d Tasks 1–6 (chat domain, Functions, rules, indexes, `lib/data/chat`) | **G5:** lane 2 merges 4d T1–6 |
 | 6 | 4d Tasks 7–9 (S07.01, entry points, S07.02; needs G5) | 4e Tasks 1–3 (review domain, Functions, rules, `lib/data/review`) | **G6:** lane 2 merges 4e T1–3 |
-| 7 | 4e Tasks 4–5 (S05.05, reviews on S03.01; needs G6) | next lane-2 work: shared components group B (plan to write) or backend phase 2 (row 9) | — |
+| 7 | 4e Tasks 4–5 (S05.05, reviews on S03.01; needs G6) | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications; its Task 6 may edit `lib/features/explore/**`, untouched by lane 1 in steps 1–7) | — |
 
 **Ownership (who may edit what while both lanes run):**
 - Lane 1 only: `lib/app/router.dart`, `lib/core/screen_codes.dart`, `lib/features/**` except `booking/booking_features.dart` before G4, `test/features/**`, `test/support/booking_world.dart`, `docs/design/ui-mock.html`, the status cells of `remaining-screens.md`.
