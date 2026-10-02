@@ -9,10 +9,10 @@ Màn: S15, S16, S17, S18, S25, S26, S27. Quy ước chung ở [README.md](README
 - **Thông tin**: `/events` · cả hai · sub‑project 3b · Chưa có.
 - **Mục đích**: duyệt các sự kiện sắp diễn ra và lọc theo loại.
 - **Điểm vào → ra**: "Xem tất cả" ở S13/S35; link. Thẻ → S16; (NAG) nút "Tạo sự kiện" → S25.
-- **Bố cục**: AppBar "Sự kiện" + biểu tượng lịch; hàng chip loại (Tất cả, Photo walk, Mini session, Workshop, Cosplay…) và chip lọc “Không thu phí”; sắp xếp "Sớm nhất / Gần tôi"; thẻ nổi bật `EventCard` ảnh lớn (pill số chỗ); danh sách `EventCard` hàng gọn (khối ngày, tên, chủ, tag loại, giá (giá 0 → tag xanh “Không thu phí” thay cho “0₫”), số chỗ còn).
+- **Bố cục**: AppBar "Sự kiện" + biểu tượng lịch; hàng tag loại dạng chữ, cuộn ngang (“Tất cả”, `#photowalk`, `#minisession`, `#workshop`, `#cosplay`…; không viền, không nền; tag đang chọn = chữ primary đậm + gạch chân 2dp, còn lại `textSecondary`; vùng chạm ≥ 48dp, `Semantics(selected)`; nhãn = `#` + mã loại viết thường không dấu cách, đây là bộ lọc loại, không phải hashtag riêng của sự kiện ở S45) và chip lọc “Không thu phí”; sắp xếp "Sớm nhất / Gần tôi"; thẻ nổi bật `EventCard` ảnh lớn (pill số chỗ); danh sách `EventCard` hàng gọn (khối ngày, tên, chủ, tag loại dạng chữ `#workshop`, giá (giá 0 → tag xanh “Không thu phí” thay cho “0₫”), số chỗ còn).
 - **Dữ liệu**: `eventsListProvider(type, sort, area)`; chỉ `open` và `full`; "Gần tôi" dùng vị trí/khu vực (spec chính 3c); phân trang 20.
 - **Trạng thái**: hết chỗ vẫn hiện, ghi "Hết chỗ" bằng chữ; empty "Chưa có sự kiện" (+ NAG nút "Tạo sự kiện"); lỗi/offline theo quy ước.
-- **Tương tác**: chip loại giữ khi quay lại; kéo xuống làm mới.
+- **Tương tác**: tag loại đang chọn giữ khi quay lại; kéo xuống làm mới.
 - **Chuỗi**: `s15_title` "Sự kiện", `s15_all` "Tất cả", `s15_soldOut` "Hết chỗ", `s15_left` "Còn {n} chỗ", `s15_free` "Không thu phí", `s15_empty` "Chưa có sự kiện", `s15_create` "Tạo sự kiện".
 - **Phân tích**: `event_list_filter{type}`, `event_open{source:"list", rank}`.
 - **Chấp nhận**: 2 cột ≥ 600dp; thẻ hết chỗ không chạm vào đăng ký được nhưng xem chi tiết được; sắp "Gần tôi" khớp khoảng cách.
