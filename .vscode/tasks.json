@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Bật AVD photobooking_api35 nếu chưa có emulator nào chạy, chờ boot xong.
+      "label": "start-android-emulator",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/start-emulator.sh",
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}
