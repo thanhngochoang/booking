@@ -53,3 +53,4 @@ export 'package:photobooking/core/widgets/step_progress.dart';
 export 'package:photobooking/core/widgets/tab_badge.dart';
 export 'package:photobooking/core/widgets/verified_mark.dart';
 export 'package:photobooking/core/vn_time.dart';
+export 'package:photobooking/core/widgets/availability_calendar.dart';

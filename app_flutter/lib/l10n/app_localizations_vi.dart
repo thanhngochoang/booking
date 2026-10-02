@@ -927,4 +927,76 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get skillsRemoveConfirm => 'Bỏ thể loại';
+
+  @override
+  String calendarMonthTitle(String month, String year) {
+    return 'Tháng $month, $year';
+  }
+
+  @override
+  String calendarMonthShort(String month) {
+    return 'Tháng $month';
+  }
+
+  @override
+  String get calendarPrevMonth => 'Tháng trước';
+
+  @override
+  String get calendarNextMonth => 'Tháng sau';
+
+  @override
+  String calendarWeekdayShort(String weekday) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      'mon': 'T2',
+      'tue': 'T3',
+      'wed': 'T4',
+      'thu': 'T5',
+      'fri': 'T6',
+      'sat': 'T7',
+      'other': 'CN',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calendarWeekdayLong(String weekday) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      'mon': 'Thứ 2',
+      'tue': 'Thứ 3',
+      'wed': 'Thứ 4',
+      'thu': 'Thứ 5',
+      'fri': 'Thứ 6',
+      'sat': 'Thứ 7',
+      'other': 'Chủ nhật',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calendarDayTitle(String weekday, String day, String month) {
+    return '$weekday, $day/$month';
+  }
+
+  @override
+  String get dayStateFree => 'Rảnh';
+
+  @override
+  String get dayStatePending => 'Chờ nhận';
+
+  @override
+  String get dayStateBooked => 'Đã đặt';
+
+  @override
+  String get dayStateOff => 'Nghỉ';
+
+  @override
+  String calendarDaySemantics(String day, String month, String state) {
+    return '$day tháng $month, $state';
+  }
+
+  @override
+  String get calendarHasEvent => 'có sự kiện';
+
+  @override
+  String get calendarToday => 'hôm nay';
 }

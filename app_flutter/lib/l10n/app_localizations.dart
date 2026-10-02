@@ -1737,6 +1737,90 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bỏ thể loại'**
   String get skillsRemoveConfirm;
+
+  /// No description provided for @calendarMonthTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}, {year}'**
+  String calendarMonthTitle(String month, String year);
+
+  /// No description provided for @calendarMonthShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}'**
+  String calendarMonthShort(String month);
+
+  /// No description provided for @calendarPrevMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng trước'**
+  String get calendarPrevMonth;
+
+  /// No description provided for @calendarNextMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng sau'**
+  String get calendarNextMonth;
+
+  /// No description provided for @calendarWeekdayShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, mon{T2} tue{T3} wed{T4} thu{T5} fri{T6} sat{T7} other{CN}}'**
+  String calendarWeekdayShort(String weekday);
+
+  /// No description provided for @calendarWeekdayLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, mon{Thứ 2} tue{Thứ 3} wed{Thứ 4} thu{Thứ 5} fri{Thứ 6} sat{Thứ 7} other{Chủ nhật}}'**
+  String calendarWeekdayLong(String weekday);
+
+  /// No description provided for @calendarDayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday}, {day}/{month}'**
+  String calendarDayTitle(String weekday, String day, String month);
+
+  /// No description provided for @dayStateFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh'**
+  String get dayStateFree;
+
+  /// No description provided for @dayStatePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ nhận'**
+  String get dayStatePending;
+
+  /// No description provided for @dayStateBooked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đặt'**
+  String get dayStateBooked;
+
+  /// No description provided for @dayStateOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ'**
+  String get dayStateOff;
+
+  /// No description provided for @calendarDaySemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} tháng {month}, {state}'**
+  String calendarDaySemantics(String day, String month, String state);
+
+  /// No description provided for @calendarHasEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'có sự kiện'**
+  String get calendarHasEvent;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'hôm nay'**
+  String get calendarToday;
 }
 
 class _AppLocalizationsDelegate
