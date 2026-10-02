@@ -30,6 +30,7 @@ export 'package:photobooking/core/widgets/contact_dial.dart';
 export 'package:photobooking/core/widgets/cta_surface.dart';
 export 'package:photobooking/core/widgets/empty_state.dart';
 export 'package:photobooking/core/widgets/error_state.dart';
+export 'package:photobooking/core/widgets/evidence_picker.dart';
 export 'package:photobooking/core/widgets/free_tag.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
 export 'package:photobooking/core/widgets/level_selector.dart';

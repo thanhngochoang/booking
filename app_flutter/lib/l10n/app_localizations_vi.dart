@@ -730,4 +730,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get skillsExpertFull => 'Đã đủ 3 mức Chuyên sâu';
+
+  @override
+  String skillEvidencePhoto(int index) {
+    return 'Ảnh $index';
+  }
 }

@@ -298,5 +298,11 @@
       "level": {"type": "String"}
     }
   },
-  "skillsExpertFull": "Đã đủ 3 mức Chuyên sâu"
+  "skillsExpertFull": "Đã đủ 3 mức Chuyên sâu",
+  "skillEvidencePhoto": "Ảnh {index}",
+  "@skillEvidencePhoto": {
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  }
 }

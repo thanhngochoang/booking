@@ -1401,6 +1401,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã đủ 3 mức Chuyên sâu'**
   String get skillsExpertFull;
+
+  /// No description provided for @skillEvidencePhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {index}'**
+  String skillEvidencePhoto(int index);
 }
 
 class _AppLocalizationsDelegate
