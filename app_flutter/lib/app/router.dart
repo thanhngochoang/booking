@@ -16,6 +16,7 @@ import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
+import 'package:photobooking/features/skills/skills_screen.dart';
 
 const _authRoutes = {'/login', '/register'};
 const _onboardingRoute = '/onboarding/role';
@@ -124,6 +125,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/phone',
         builder: (_, state) =>
             AddPhoneScreen(returnTo: state.uri.queryParameters['returnTo']),
+      ),
+      GoRoute(
+        path: '/setup/3',
+        builder: (_, _) => const SkillsScreen(mode: SkillsMode.setup),
+      ),
+      GoRoute(
+        path: '/profile/skills',
+        builder: (_, _) => const SkillsScreen(mode: SkillsMode.edit),
+      ),
+      GoRoute(
+        path: '/profile/skills/evidence',
+        builder: (_, state) => SkillsScreen(
+          mode: SkillsMode.edit,
+          openEvidenceFor: state.uri.queryParameters['skill'],
+        ),
       ),
       GoRoute(path: '/setup/4', builder: (_, _) => const ContactSetupScreen()),
       StatefulShellRoute.indexedStack(

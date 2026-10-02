@@ -772,4 +772,153 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get skillEvidenceLoadError => 'Không tải được bài đăng của bạn.';
+
+  @override
+  String get skillsTitle => 'Kỹ năng';
+
+  @override
+  String get skillsIntro =>
+      'Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó.';
+
+  @override
+  String get skillsTypes => 'Thể loại chụp';
+
+  @override
+  String get skillsLevels => 'Mức độ';
+
+  @override
+  String get skillsMaxExpert => 'Chuyên sâu tối đa 3';
+
+  @override
+  String skillsEvidenceRow(String name, int n) {
+    return '$name: $n / 3 ảnh minh chứng';
+  }
+
+  @override
+  String get skillsEvidenceEdit => 'Chỉnh';
+
+  @override
+  String get skillsEvidenceNeeded =>
+      'Mức Chuyên sâu cần ít nhất 1 ảnh minh chứng';
+
+  @override
+  String get skillsTooMany => 'Tối đa 6 thể loại';
+
+  @override
+  String get skillsTooManyExpert => 'Chỉ chọn tối đa 3 thể loại mức Chuyên sâu';
+
+  @override
+  String get skillsTooManyStyles => 'Tối đa 4 phong cách';
+
+  @override
+  String get skillsTooManyExtras => 'Tối đa 8 kỹ năng thêm';
+
+  @override
+  String get skillsTooManyAudiences => 'Tối đa 4 nhóm khách phù hợp';
+
+  @override
+  String get skillsStyles => 'Phong cách';
+
+  @override
+  String get skillsExtras => 'Kỹ năng thêm';
+
+  @override
+  String get skillsLanguages => 'Ngôn ngữ';
+
+  @override
+  String get skillsAudiences => 'Khách phù hợp';
+
+  @override
+  String get skillsYears => 'Kinh nghiệm';
+
+  @override
+  String get skillsYearsSuffix => 'năm';
+
+  @override
+  String get skillsYearsRange => 'Từ 0 đến 50 năm';
+
+  @override
+  String get skillsNeedLang => 'Chọn ít nhất 1 ngôn ngữ';
+
+  @override
+  String get skillsBack => 'Quay lại';
+
+  @override
+  String get skillsContinue => 'Tiếp tục';
+
+  @override
+  String get skillsSave => 'Lưu thay đổi';
+
+  @override
+  String get skillsSaveError => 'Không lưu được kỹ năng. Thử lại nhé.';
+
+  @override
+  String get skillsLoadError => 'Không tải được kỹ năng.';
+
+  @override
+  String get skillsFixIssues => 'Kiểm tra lại các mục được đánh dấu';
+
+  @override
+  String get skillsDraftRestored => 'Đã mở lại bản nháp chưa lưu';
+
+  @override
+  String skillsHintSpecialty(int percent) {
+    return 'Chọn ít nhất 1 thể loại để lên $percent%';
+  }
+
+  @override
+  String skillsHintEvidence(String name, int percent) {
+    return 'Thêm ảnh minh chứng cho $name để lên $percent%';
+  }
+
+  @override
+  String skillsHintStyles(int percent) {
+    return 'Chọn phong cách để lên $percent%';
+  }
+
+  @override
+  String skillsHintLanguages(int percent) {
+    return 'Chọn ngôn ngữ để lên $percent%';
+  }
+
+  @override
+  String skillsHintAudiences(int percent) {
+    return 'Chọn khách phù hợp để lên $percent%';
+  }
+
+  @override
+  String skillsHintExtras(int percent) {
+    return 'Chọn kỹ năng thêm để lên $percent%';
+  }
+
+  @override
+  String get skillsHintDone => 'Hồ sơ kỹ năng đã đầy đủ';
+
+  @override
+  String get skillsLeaveTitle => 'Lưu bản nháp?';
+
+  @override
+  String get skillsLeaveBody =>
+      'Thay đổi chưa được lưu vào hồ sơ. Giữ bản nháp trên máy để làm tiếp lần sau nhé.';
+
+  @override
+  String get skillsLeaveKeep => 'Giữ bản nháp';
+
+  @override
+  String get skillsLeaveDiscard => 'Bỏ thay đổi';
+
+  @override
+  String skillsRemoveTitle(String name) {
+    return 'Bỏ thể loại $name?';
+  }
+
+  @override
+  String get skillsRemoveBody =>
+      'Ảnh minh chứng đã gắn cho thể loại này cũng sẽ bị gỡ.';
+
+  @override
+  String get skillsRemoveKeep => 'Giữ lại';
+
+  @override
+  String get skillsRemoveConfirm => 'Bỏ thể loại';
 }

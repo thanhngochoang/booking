@@ -1467,6 +1467,264 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không tải được bài đăng của bạn.'**
   String get skillEvidenceLoadError;
+
+  /// No description provided for @skillsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỹ năng'**
+  String get skillsTitle;
+
+  /// No description provided for @skillsIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn đúng thể loại và mức độ để được gợi ý cho khách cần đúng việc đó.'**
+  String get skillsIntro;
+
+  /// No description provided for @skillsTypes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thể loại chụp'**
+  String get skillsTypes;
+
+  /// No description provided for @skillsLevels.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mức độ'**
+  String get skillsLevels;
+
+  /// No description provided for @skillsMaxExpert.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyên sâu tối đa 3'**
+  String get skillsMaxExpert;
+
+  /// No description provided for @skillsEvidenceRow.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name}: {n} / 3 ảnh minh chứng'**
+  String skillsEvidenceRow(String name, int n);
+
+  /// No description provided for @skillsEvidenceEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh'**
+  String get skillsEvidenceEdit;
+
+  /// No description provided for @skillsEvidenceNeeded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mức Chuyên sâu cần ít nhất 1 ảnh minh chứng'**
+  String get skillsEvidenceNeeded;
+
+  /// No description provided for @skillsTooMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 6 thể loại'**
+  String get skillsTooMany;
+
+  /// No description provided for @skillsTooManyExpert.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chọn tối đa 3 thể loại mức Chuyên sâu'**
+  String get skillsTooManyExpert;
+
+  /// No description provided for @skillsTooManyStyles.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 4 phong cách'**
+  String get skillsTooManyStyles;
+
+  /// No description provided for @skillsTooManyExtras.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 8 kỹ năng thêm'**
+  String get skillsTooManyExtras;
+
+  /// No description provided for @skillsTooManyAudiences.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 4 nhóm khách phù hợp'**
+  String get skillsTooManyAudiences;
+
+  /// No description provided for @skillsStyles.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phong cách'**
+  String get skillsStyles;
+
+  /// No description provided for @skillsExtras.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỹ năng thêm'**
+  String get skillsExtras;
+
+  /// No description provided for @skillsLanguages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngôn ngữ'**
+  String get skillsLanguages;
+
+  /// No description provided for @skillsAudiences.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách phù hợp'**
+  String get skillsAudiences;
+
+  /// No description provided for @skillsYears.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kinh nghiệm'**
+  String get skillsYears;
+
+  /// No description provided for @skillsYearsSuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'năm'**
+  String get skillsYearsSuffix;
+
+  /// No description provided for @skillsYearsRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ 0 đến 50 năm'**
+  String get skillsYearsRange;
+
+  /// No description provided for @skillsNeedLang.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất 1 ngôn ngữ'**
+  String get skillsNeedLang;
+
+  /// No description provided for @skillsBack.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get skillsBack;
+
+  /// No description provided for @skillsContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get skillsContinue;
+
+  /// No description provided for @skillsSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu thay đổi'**
+  String get skillsSave;
+
+  /// No description provided for @skillsSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được kỹ năng. Thử lại nhé.'**
+  String get skillsSaveError;
+
+  /// No description provided for @skillsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được kỹ năng.'**
+  String get skillsLoadError;
+
+  /// No description provided for @skillsFixIssues.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra lại các mục được đánh dấu'**
+  String get skillsFixIssues;
+
+  /// No description provided for @skillsDraftRestored.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mở lại bản nháp chưa lưu'**
+  String get skillsDraftRestored;
+
+  /// No description provided for @skillsHintSpecialty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất 1 thể loại để lên {percent}%'**
+  String skillsHintSpecialty(int percent);
+
+  /// No description provided for @skillsHintEvidence.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh minh chứng cho {name} để lên {percent}%'**
+  String skillsHintEvidence(String name, int percent);
+
+  /// No description provided for @skillsHintStyles.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn phong cách để lên {percent}%'**
+  String skillsHintStyles(int percent);
+
+  /// No description provided for @skillsHintLanguages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngôn ngữ để lên {percent}%'**
+  String skillsHintLanguages(int percent);
+
+  /// No description provided for @skillsHintAudiences.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khách phù hợp để lên {percent}%'**
+  String skillsHintAudiences(int percent);
+
+  /// No description provided for @skillsHintExtras.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn kỹ năng thêm để lên {percent}%'**
+  String skillsHintExtras(int percent);
+
+  /// No description provided for @skillsHintDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ kỹ năng đã đầy đủ'**
+  String get skillsHintDone;
+
+  /// No description provided for @skillsLeaveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu bản nháp?'**
+  String get skillsLeaveTitle;
+
+  /// No description provided for @skillsLeaveBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thay đổi chưa được lưu vào hồ sơ. Giữ bản nháp trên máy để làm tiếp lần sau nhé.'**
+  String get skillsLeaveBody;
+
+  /// No description provided for @skillsLeaveKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ bản nháp'**
+  String get skillsLeaveKeep;
+
+  /// No description provided for @skillsLeaveDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thay đổi'**
+  String get skillsLeaveDiscard;
+
+  /// No description provided for @skillsRemoveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thể loại {name}?'**
+  String skillsRemoveTitle(String name);
+
+  /// No description provided for @skillsRemoveBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh minh chứng đã gắn cho thể loại này cũng sẽ bị gỡ.'**
+  String get skillsRemoveBody;
+
+  /// No description provided for @skillsRemoveKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lại'**
+  String get skillsRemoveKeep;
+
+  /// No description provided for @skillsRemoveConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thể loại'**
+  String get skillsRemoveConfirm;
 }
 
 class _AppLocalizationsDelegate
