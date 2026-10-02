@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
+import 'package:photobooking/features/home/home_controller.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
 
 UserRole _role(WidgetRef ref) =>
@@ -53,18 +56,12 @@ class ActionTab extends ConsumerWidget {
         initialArea: area,
       );
     }
-    final l = context.l10n;
-    return ScreenCode(
-      ScreenCodes.createPost,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          centerTitle: false,
-          titleTextStyle: tabRootTitleStyle(context),
-          title: Text(l.tabCreate),
-        ),
-        body: EmptyState(title: l.emptyCreateTitle, body: l.emptyCreateBody),
-      ),
+    return CreatePostScreen(
+      onAddService: () => context.push('/setup/2'),
+      onPublished: (postId) {
+        ref.read(homeFeedProvider.notifier).pinToTop(postId);
+        context.go(AppTab.home.path);
+      },
     );
   }
 }

@@ -99,6 +99,57 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
     }
   }
 
+  /// Shows [postId] first, on "Dành cho bạn". The on-device ranking puts
+  /// photographers who are free soon first, so a post that was just published
+  /// would otherwise sit below them; the spec wants it on top.
+  Future<void> pinToTop(String postId) async {
+    final mine = ++_generation;
+    final fresh = await AsyncValue.guard(() => _loadFirst(null));
+    if (!ref.mounted || mine != _generation) {
+      return;
+    }
+    final data = fresh.value;
+    if (data == null) {
+      return;
+    }
+    RecommendedPost? pinned;
+    for (final item in data.items) {
+      if (item.post.id == postId) {
+        pinned = item;
+      }
+    }
+    if (pinned == null) {
+      try {
+        final post = await ref.read(postRepositoryProvider).byId(postId);
+        if (post != null) {
+          final authors = await ref
+              .read(photographerRepositoryProvider)
+              .summaries([post.photographerId]);
+          final author = authors[post.photographerId];
+          if (author != null) {
+            pinned = RecommendedPost(post: post, photographer: author, rank: 0);
+          }
+        }
+      } catch (_) {
+        // The feed without the pin is still correct.
+      }
+    }
+    if (!ref.mounted || mine != _generation) {
+      return;
+    }
+    final first = pinned;
+    if (first == null) {
+      state = fresh;
+      return;
+    }
+    state = AsyncData(
+      data.copyWith(
+        items: [first, ...data.items.where((e) => e.post.id != postId)],
+      ),
+    );
+    unawaited(ref.read(engagementProvider.notifier).seed([first.post]));
+  }
+
   Future<void> loadMore() async {
     final current = state.value;
     if (state.isLoading ||

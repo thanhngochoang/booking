@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
@@ -78,7 +79,7 @@ void main() {
     },
   );
 
-  testWidgets('a photographer\'s middle tab is still the create placeholder', (
+  testWidgets('a photographer\'s middle tab is the Create post screen', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -91,6 +92,6 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(FindPhotographerScreen), findsNothing);
-    expect(find.text('Cho mọi người thấy bạn chụp gì'), findsOneWidget);
+    expect(find.byType(CreatePostScreen), findsOneWidget);
   });
 }

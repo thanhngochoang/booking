@@ -193,4 +193,55 @@ void main() {
     expect(s.category, isNull);
     expect(s.items, hasLength(5));
   });
+
+  test(
+    'pinToTop puts a post the ranking would put last at the front',
+    () async {
+      final (c, w, _) = await _make();
+      await c.read(homeFeedProvider.future);
+      w.posts.add(
+        fixturePost(
+          'late',
+          photographerId: 'p4',
+          age: const Duration(seconds: 1),
+        ),
+      );
+      await c.read(homeFeedProvider.notifier).pinToTop('late');
+      final s = c.read(homeFeedProvider).requireValue;
+      expect(s.items.first.post.id, 'late');
+      expect(s.items.where((e) => e.post.id == 'late'), hasLength(1));
+      expect(s.items.length, greaterThan(1));
+    },
+  );
+
+  test('pinToTop returns to "Dành cho bạn" and fetches a post the ranking did not include', () async {
+    final (c, w, _) = await _make();
+    await c.read(homeFeedProvider.future);
+    await c.read(homeFeedProvider.notifier).selectCategory('wedding');
+    w.posts.add(
+      fixturePost(
+        'mine',
+        photographerId: 'p1',
+        specialtyId: 'portrait',
+        age: const Duration(seconds: 1),
+      ),
+    );
+    await c.read(homeFeedProvider.notifier).pinToTop('mine');
+    final s = c.read(homeFeedProvider).requireValue;
+    expect(s.category, isNull);
+    expect(s.items.first.post.id, 'mine');
+  });
+
+  test('pinToTop with a post that cannot be found just refreshes', () async {
+    final (c, _, _) = await _make();
+    await c.read(homeFeedProvider.future);
+    await c.read(homeFeedProvider.notifier).pinToTop('ghost');
+    expect(c.read(homeFeedProvider).requireValue.items.map((e) => e.post.id), [
+      'a',
+      'b',
+      'c',
+      'e',
+      'd',
+    ]);
+  });
 }
