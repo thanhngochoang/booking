@@ -16,3 +16,6 @@ Task 3: complete (escrow and ledger maths, payments, refunds, ledger entries, in
 
 Task 4: dispatched
 Task 4: complete (booking ports, in-memory reference store, fake gateway, createBookingDraft, createDeposit, confirmFakePayment, handlePaymentNotification, checkDeposit, 140 tests pass, typecheck and lint clean)
+
+Task 5: dispatched
+Task 5: complete (commitTransition, transitionBooking, openDispute, runBookingSweeps, 148 tests pass, purity clean, typecheck and lint clean)
