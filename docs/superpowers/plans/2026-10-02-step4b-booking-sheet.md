@@ -10,7 +10,7 @@
 
 **Goal:** A customer opens `/u/:uid/book` from S02, S03 or S04, picks a package (S05), a free day and a start time (S06), a place, reviews everything with the money and policy (S07), pays the 30 % deposit (fake gateway in this phase) and lands on S08, which waits for the server to confirm the payment and never trusts the redirect.
 
-**Architecture:** One `BookingFlowController` (Riverpod `Notifier`, auto-disposed, keyed by photographer) holds every choice, so going back never loses anything and nothing is written to the server before the customer taps "Đặt cọc" on S07. The route `/u/:uid/book` is a non-opaque page that draws the app's glass sheet over the previous screen; the four steps are one widget switching on `state.step`. Submitting calls plan 4a's `BookingRepository` (`createBooking` → `createDeposit` → fake confirm or external payment page) and then replaces the sheet with S08 (`/b/:id/pay`), which listens to `bookings/{id}` and only moves on when the server status leaves `draft`. Money, slots and the refund text come from plan 4a's client mirror (`booking_rules.dart`), never from local arithmetic in widgets.
+**Architecture:** One `BookingFlowController` (Riverpod `Notifier`, auto-disposed, keyed by photographer) holds every choice, so going back never loses anything and nothing is written to the server before the customer taps "Đặt cọc" on S07. The route `/u/:uid/book` is a non-opaque page that draws the app's glass sheet over the previous screen; the four steps are one widget switching on `state.step`. Submitting calls plan 4a's `BookingRepository` (`createBooking` → `createDeposit` → fake confirm or external payment page) and then replaces the sheet with S08 (`/b/:id/pay`), which listens to `bookings/{id}` and only moves on when the server status leaves `draft`. Money, slots and the refund text come from plan 4a's client mirror (`booking_rules.dart`, with the Task 1 additions), never from local arithmetic in widgets.
 
 **Tech Stack:** Flutter, Riverpod 3, go_router 18, url_launcher (already a dependency), existing core widgets.
 
@@ -18,58 +18,92 @@
 
 **Prerequisite:** plan 4a (`docs/superpowers/plans/2026-10-02-step4a-booking-backend.md`) merged into `flutter-rewrite`, plus every plan marked done in `RUN-ORDER.md`.
 
-## Contract with plan 4a
+## Contract with plan 4a (merged code, 2026-10-02)
 
-Plan 4a's text names its Flutter pieces but not their members. This plan relies on exactly the members below. **Task 1 Step 1 checks the merged 4a code against this list**; any member that is missing or named differently is added or adapted in 4a's files in that step (port, Firestore adapter and `FakeBookingRepository` together), and the difference is written in the ledger. Server facts (from 4a's merged code, `packages/domain` and `functions/src/callables/booking.ts`): the callable `createBooking` takes `{photographerId, serviceId, day, start, place: {name, point?}, note?}` and returns the booking; `createDeposit` takes `{bookingId, provider}` and returns `{paymentId, payUrl, provider}`; `confirmFakePayment` takes `{paymentId}`; `checkDeposit` takes `{bookingId}` and returns `{paid, booking}`; errors carry `details.code`.
+Plan 4a is merged (`9211592`, `5f218d0`). Its real Flutter API, which this plan uses:
 
 ```dart
-// lib/data/booking/booking.dart (4a) — fields this plan reads
-class Booking {
-  String id; String customerId; String photographerId; String serviceId;
-  BookingServiceSnapshot serviceSnapshot;      // name, priceVnd, durationMinutes
-  String day;                                   // yyyy-MM-dd (Vietnam)
-  String start; String end;                     // HH:mm
-  String placeName;
-  String? note;
-  BookingStatus status;
-  int depositVnd; int remainingVnd;
-  String? depositProvider;                      // 'momo' | 'vnpay' | 'fake'
-  DateTime? depositPaidAt; DateTime? acceptDeadline;
-  int version;
-}
+// lib/data/booking/booking.dart (freezed)
+Booking({required String id, customerId, photographerId, serviceId,
+  required BookingServiceSnapshot serviceSnapshot,   // name, int price, int durationMinutes
+  required String day, start, end,                    // 'yyyy-MM-dd', 'HH:mm'
+  required BookingPlace place,                        // name, double? lat, double? lng
+  String? note, required BookingStatus status,
+  required int deposit, required int remaining,
+  EscrowStatus? escrowStatus, int? depositRefunded, String? depositProvider,
+  DateTime? depositPaidAt, depositRefundedAt, acceptDeadline,
+  BookingCancel? cancel, DateTime? completedAt, reviewedAt, String? chatId,
+  required DateTime createdAt, updatedAt, /* version */});
 
-// lib/data/booking/booking_repository.dart (4a)
-enum BookingErrorCode { dayTaken, phoneRequired, priceChanged, notEligible,
-  deadlinePassed, conflict, permissionDenied, notFound, invalidArgument, network, unknown }
-class BookingException implements Exception { final BookingErrorCode code; }
-typedef CreateBookingRequest = ({String photographerId, String serviceId,
-  String day, String start, String placeName, String? note});
-typedef DepositCheckout = ({String paymentId, Uri payUrl, String provider});
+// lib/data/booking/booking_repository.dart
 abstract class BookingRepository {
-  Stream<Booking?> watchBooking(String id);        // null when deleted (draft cleaned up)
-  Future<Booking> createBooking(CreateBookingRequest r);
-  Future<DepositCheckout> createDeposit(String bookingId, PaymentProviderCode provider);
-  Future<void> confirmFakePayment(String paymentId);
-  Future<({bool paid})> checkDeposit(String bookingId);
+  Stream<Booking?> watchBooking(String id);
+  Future<Booking?> getBooking(String id);
+  Stream<List<Booking>> watchCustomerBookings(String customerId);
+  Stream<List<Booking>> watchPhotographerBookings(String photographerId);
+  Stream<BookingContactSnapshot?> watchBookingContact(String bookingId);
+  Future<Booking> createBooking({required String photographerId, required String serviceId,
+      required String day, required String start, required BookingPlace place, String? note});
+  Future<CreateDepositResponse> createDeposit({required String bookingId, required String provider, String? returnUrl});
+  Future<ConfirmPaymentResponse> confirmFakePayment({required String paymentId});
+  Future<CheckDepositResponse> checkDeposit({required String bookingId});   // {bool paid, Booking? booking}
+  Future<Booking> transitionBooking({required String bookingId, required String action, String? reason});
+  Future<Booking> openDispute({required String bookingId, required String reason});
 }
-enum PaymentProviderCode { momo, vnpay }          // wire codes 'momo', 'vnpay'
+class CreateDepositResponse { String paymentId; String payUrl; String provider; }
+// errors: BookingException(String code) in lib/data/booking/firestore_booking_repository.dart
 
-// lib/data/booking/booking_rules.dart (4a mirror of booking_policy.json)
-({int deposit, int remaining}) depositFor(int priceVnd);
-List<String> daySlots(int durationMinutes);        // 'HH:mm', 06:00..20:00 - duration, step 30
-String endTimeFor(String start, int durationMinutes);
-const kNoteMaxLength = 300; const kPlaceMinLength = 3; const kPlaceMaxLength = 120;
-
-// lib/data/booking/booking_providers.dart (4a)
-final bookingRepositoryProvider = Provider<BookingRepository>(...);
-final bookingProvider = StreamProvider.autoDispose.family<Booking?, String>(...); // watchBooking
-// test/support/fake_booking_repository.dart (4a)
-class FakeBookingRepository implements BookingRepository {
-  // seeds, records calls (`created`, `deposits`, `fakeConfirms`, `checks`),
-  // `nextError` to throw a BookingException once, `confirm(paymentId)` moves the
-  // booking draft → requested and emits on watchBooking, `remove(id)` emits null.
+// lib/data/booking/booking_rules.dart
+class BookingRules {
+  static const depositPercent = 30, draftExpiryMinutes = 30, maxBookingDaysAhead = 365;
+  static ({int deposit, int remaining}) computeDeposit(int price);
+  static DateTime parseBookingDateTime(String day, String time);          // Vietnam wall time → UTC instant
+  static int computeRefundPercent({required DateTime startsAt, required DateTime cancelledAt, required String actorRole});
+  static BookingTab? tabForBooking(Booking b); static Map<BookingTab, List<Booking>> groupBookingsByTab(List<Booking> l);
+  static bool canCustomerCancel(Booking b); canPhotographerAccept(b); canPhotographerDecline(b);
+  static bool canPhotographerComplete(Booking b, DateTime now); canCustomerDispute(Booking b, DateTime now);
 }
+
+// lib/data/booking/booking_providers.dart
+bookingRepositoryProvider; bookingStreamProvider (family, not auto-disposed);
+customerBookingsStreamProvider; photographerBookingsStreamProvider; bookingContactStreamProvider;
+groupedCustomerBookingsProvider.
+
+// test/support/fake_booking_repository.dart
+FakeBookingRepository({String customerId = 'c1'}) — bookings / contacts maps, seedBooking, seedContact;
+createBooking ids 'booking_<n>'; createDeposit paymentId 'pay_<bookingId>'; confirmFakePayment moves draft → requested.
 ```
+
+**Additions this plan makes in Task 1** (the rest of the plan uses these names; add them to 4a's files, with tests):
+
+```dart
+// booking_rules.dart (top-level functions next to BookingRules)
+List<String> daySlots(int durationMinutes);            // mirror of the server's computeDaySlots: 06:00 … 20:00 − duration, step 30
+String endTimeFor(String start, int durationMinutes);  // mirror of addMinutesToTime
+const kNoteMaxLength = 300; const kPlaceMinLength = 3; const kPlaceMaxLength = 120;
+({int deposit, int remaining}) depositFor(int price) => BookingRules.computeDeposit(price);
+
+// booking_repository.dart
+enum PaymentProviderCode { momo, vnpay } // .code: 'momo' | 'vnpay' — passed as `provider:`
+enum BookingErrorCode { dayTaken, phoneRequired, priceChanged, notEligible, deadlinePassed, conflict,
+  permissionDenied, notFound, invalidArgument, network, unknown }
+BookingErrorCode bookingErrorOf(Object error);          // BookingException.code → enum; FirebaseFunctionsException 'unavailable'/'deadline-exceeded' and SocketException → network
+
+// booking_providers.dart
+final bookingProvider = StreamProvider.autoDispose.family<Booking?, String>(
+    (ref, id) => ref.watch(bookingRepositoryProvider).watchBooking(id));   // screens use this one
+
+// fake_booking_repository.dart (test support)
+BookingErrorCode? nextError;        // the next write call throws BookingException(<server code>) once
+final createCalls = <({String photographerId, String serviceId, String day, String start, String placeName, String? note})>[];
+final depositCalls = <({String bookingId, String provider})>[];
+final fakeConfirms = <String>[]; final checkCalls = <String>[];
+void remove(String id);              // deletes and emits null on watchBooking (draft cleaned up)
+```
+
+**Server gap closed in Task 1:** 4a's `createBookingDraft` does not compare the price the customer saw with the current package price, so `price_changed` can never reach the app (Review Focus 5). Task 1 adds an optional `expectedPrice` (integer VND) to the callable payload and to `validateCreateBookingDraftInput` in `packages/domain`; when present and different from the service's current price, `createBookingDraft` throws `DomainError('price_changed')` before any write (domain test "a changed price is refused with price_changed and nothing is written"; Functions unit test that the callable passes it through). The app always sends it (`createBooking(..., expectedPrice: price)` — add the named parameter to the port, adapter and fake).
+
+Field names used below map to the real model: package price → `serviceSnapshot.price`, duration → `serviceSnapshot.durationMinutes`, deposit → `deposit`, remaining → `remaining`, place name → `place.name`; `createBooking(place: BookingPlace(name: …))`; `createDeposit(provider: provider.code)`; `confirmFakePayment(paymentId:)`; `checkDeposit(bookingId:)` returns `paid`.
 
 Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/features/discovery/book_entry.dart`), `profilePackagesProvider` (`lib/features/photographer_profile/profile_providers.dart`, `ServiceSummary` with `id`, `name`, `priceVnd`, `durationMinutes`, `coverUrl`), `availabilityMonthProvider` and `calendarTodayProvider` (`lib/data/photographer/availability_providers.dart`), `currentContactProvider`, `userContactRepositoryProvider` (`lib/data/user/user_contact_providers.dart`), `safeReturnTo` (`lib/features/contact/return_to.dart`), `photographerProfileProvider` (`lib/data/photographer/public_profile_providers.dart`, for name and avatar), `externalLauncherProvider` (`lib/data/contact/contact_providers.dart`), `clockProvider`, core widgets `showAppSheet`, `StepProgress`, `AvailabilityCalendar`, `AvailabilityLegend`, `PhoneField`, `AppButton`, `AppChip`, `AppOptionTile`, `StatusBadge`, `ApertureLoader`, `GlassCard`, `NetworkPhoto`, `ScreenCode`, `ScreenCodes.bookService` (S05), `ScreenCodes.bookDateTime` (S06), `ScreenCodes.bookReview` (S07), `ScreenCodes.awaitingPayment` (S08) in `lib/core/screen_codes.dart`.
 
@@ -137,7 +171,7 @@ Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/fea
 ### Task 1: Contract check, shared widgets (`AppSheetFrame`, `BookingCard`, `EscrowNotice`), payments mode
 
 **Files:**
-- Modify: `lib/core/widgets/app_bottom_sheet.dart`, `lib/core/core.dart`, `lib/l10n/app_vi.arb`; plan 4a files only if Step 1 finds a gap
+- Modify: `lib/core/widgets/app_bottom_sheet.dart`, `lib/core/core.dart`, `lib/l10n/app_vi.arb`, the 4a files named in "Additions this plan makes in Task 1", `packages/domain/src/booking_requests.ts`, `packages/domain/src/create_booking.ts`, `app_flutter/firebase/functions/src/callables/booking.ts` (expectedPrice)
 - Create: `lib/core/widgets/booking_card.dart`, `lib/core/widgets/escrow_notice.dart`, `lib/data/booking/payments_mode.dart`
 - Test: `test/core/widgets/booking_card_test.dart`, `test/core/widgets/escrow_notice_test.dart`, `test/core/widgets/app_bottom_sheet_test.dart` (extend if it exists)
 
@@ -150,7 +184,7 @@ Existing app pieces used as they are: `bookingPath` and `startBooking` (`lib/fea
   - `class EscrowNotice extends StatelessWidget { const EscrowNotice({required String text}); }` — lock icon + text in a `GlassCard`, `Semantics(container: true)`; callers pass `l10n.escrowNoticeDeposit` (S07) or the S09 variants later.
   - `final realPaymentsProvider = Provider<bool>((ref) => const bool.fromEnvironment('REAL_PAYMENTS'));`
 
-- [ ] **Step 1: Check the 4a contract.** Read the merged `lib/data/booking/*.dart` and `test/support/fake_booking_repository.dart`. For every member in "Contract with plan 4a" that is missing or differs, adapt (rename in this plan's code, or add the member to the port, the Firestore adapter and the fake). Record each difference in the ledger as `Ruling:`. Run `../scripts/bin/flutter test --no-pub test/data/booking` → PASS.
+- [ ] **Step 1: Add the 4a additions** (including the `expectedPrice` server change and its domain + Functions tests: `(cd packages/domain && npm test)`, `(cd app_flutter/firebase/functions && npm test && npm run typecheck)`) listed under "Additions this plan makes in Task 1", with tests in `test/data/booking/booking_rules_test.dart` ("daySlots: 120 minutes → 06:00 … 18:00, 25 slots; 480 → last 12:00; 900 → empty"; "endTimeFor 15:30 + 120 → 17:30"; "depositFor matches the shared fixture `packages/domain/test/fixtures/booking_policy.json`"; "bookingErrorOf maps every server code and network errors") and `test/data/booking/fake_booking_repository_test.dart` ("nextError throws once"; "remove emits null"; "calls are recorded"). Run `../scripts/bin/flutter test --no-pub test/data/booking` → PASS.
 - [ ] **Step 2: Write the failing widget tests.**
   - `booking_card_test.dart`:
     - "normal card shows photographer · service, the Vietnamese date line, the place and the status badge" — `BookingSummary(day: '2026-10-12', start: '15:30', end: '17:30', …, status: requested)` → texts "Minh Trí · Chân dung 2 giờ", "T7 12/10 · 15:30–17:30", "Bến Bạch Đằng, Quận 1", one `StatusBadge`.
@@ -434,16 +468,17 @@ Future<void> submit() async {
     if (s.phone != null && s.phone != saved) {
       await ref.read(userContactRepositoryProvider).save(/* phone: s.phone, keep other fields */);
     }
-    final bookingId = s.bookingId ?? (await _repo.createBooking((
-      photographerId: args.photographerId, serviceId: s.serviceId!, day: s.day!,
-      start: s.start!, placeName: s.placeName.trim(), note: s.note.trim().isEmpty ? null : s.note.trim(),
-    ))).id;
+    final bookingId = s.bookingId ?? (await _repo.createBooking(
+      photographerId: args.photographerId, serviceId: s.serviceId!, day: s.day!, start: s.start!,
+      place: BookingPlace(name: s.placeName.trim()), note: s.note.trim().isEmpty ? null : s.note.trim(),
+      expectedPrice: s.priceVnd!,
+    )).id;
     state = state.copyWith(bookingId: bookingId, phase: SubmitPhase.paying);
-    final checkout = await _repo.createDeposit(bookingId, s.provider);
+    final checkout = await _repo.createDeposit(bookingId: bookingId, provider: s.provider.code);
     state = state.copyWith(paymentId: checkout.paymentId, phase: SubmitPhase.done);
-    _outcomes.add(GoToPayment(bookingId: bookingId, paymentId: checkout.paymentId, payUrl: checkout.payUrl));
-  } on BookingException catch (e) {
-    state = _onError(e.code);                          // see table
+    _outcomes.add(GoToPayment(bookingId: bookingId, paymentId: checkout.paymentId, payUrl: Uri.parse(checkout.payUrl)));
+  } catch (e) {
+    state = _onError(bookingErrorOf(e));               // see table
   }
 }
 ```
@@ -462,9 +497,9 @@ A retry after a network error **reuses** `bookingId` (no second draft); the serv
 Sheet reaction to `GoToPayment`: if `realPaymentsProvider` is false, `showAppSheet` with `FakePaymentSheet` ("Cổng thanh toán giả (chỉ để thử)", amount, primary "Thanh toán thành công" → `confirmFakePayment(paymentId)`, outline "Huỷ"); else `externalLauncherProvider.launch(payUrl)`. In every case afterwards: `context.replace('/b/$bookingId/pay')` (the sheet is gone; S08 owns the wait). A `confirmFakePayment` error is ignored here: S08 shows the real status.
 
 - [ ] **Step 1: Write the failing tests** (world helper; drive the real S07 UI):
-  - "Đặt cọc creates the booking with the chosen values, then the deposit with the chosen provider" (fake records `createBooking` payload `{photographerId: 'p1', serviceId: 's1', day: '2026-10-12', start: '15:30', placeName: 'Bến Bạch Đằng', note: null}` and `createDeposit('b1', vnpay)`).
+  - "Đặt cọc creates the booking with the chosen values, then the deposit with the chosen provider" (fake records  `{photographerId: 'p1', serviceId: 's1', day: '2026-10-12', start: '15:30', placeName: 'Bến Bạch Đằng', note: null}` and `createDeposit('b1', vnpay)`).
   - "double tap creates one booking and one deposit".
-  - "fake mode: the fake gateway sheet confirms and S08 opens" (tap "Thanh toán thành công" → `confirmFakePayment('pay1')` recorded, location `/b/b1/pay`).
+  - "fake mode: the fake gateway sheet confirms and S08 opens" (tap "Thanh toán thành công" → `fakeConfirms` contains `pay_booking_1`, location `/b/booking_1/pay`).
   - "fake mode: Huỷ on the fake sheet still opens S08 without confirming".
   - "real mode opens payUrl with the external launcher and opens S08".
   - "a changed phone is saved before the booking is created" (call order on the fakes: contact save, then createBooking).
@@ -488,7 +523,7 @@ Sheet reaction to `GoToPayment`: if `realPaymentsProvider` is false, `showAppShe
 - Test: `test/features/booking/payment_pending_screen_test.dart`
 
 **Interfaces:**
-- Consumes: `bookingProvider(id)`, repository `checkDeposit`, `createDeposit`, `confirmFakePayment`, `realPaymentsProvider`, `BookingCard`, `ApertureLoader`.
+- Consumes: `bookingProvider(id)` (Task 1 addition), repository `checkDeposit`, `createDeposit`, `confirmFakePayment`, `realPaymentsProvider`, `BookingCard`, `ApertureLoader`.
 - Produces: `GoRoute(path: '/b/:id/pay', builder: (_, s) => PaymentPendingScreen(bookingId: s.pathParameters['id']!))` (outside the shell, like `/p/:postId`); `class BookingPaidPanel extends StatelessWidget` (Decision 3 — plan 4c deletes it).
 
 States (each in its own `ScreenCode(ScreenCodes.awaitingPayment)`; the paid panel is part of S08 until 4c):
@@ -496,7 +531,7 @@ States (each in its own `ScreenCode(ScreenCodes.awaitingPayment)`; the paid pane
 | `bookingProvider(id)` | UI |
 |---|---|
 | loading | `ApertureLoader` only |
-| `draft` | per mock: app bar "Thanh toán"; `ApertureLoader` (running; static icon when `MediaQuery.disableAnimations`); `payPendingTitle`; `payPendingBody(providerName)`; `BookingCard(size: compact, statusLabel: l10n.payAwaitingDeposit /* "Chờ cọc" */)`; primary "Kiểm tra lại" → `checkDeposit(id)` (button loading while in flight; SnackBar `payNotYet` "Chưa nhận được xác nhận, thử lại sau ít phút" when `paid == false`); outline small "Đổi cổng thanh toán" → a sheet with the two provider chips → `createDeposit(id, other)` → the same payment step as Task 6 (fake sheet or launcher), staying on S08 |
+| `draft` | per mock: app bar "Thanh toán"; `ApertureLoader` (running; static icon when `MediaQuery.disableAnimations`); `payPendingTitle`; `payPendingBody(providerName)`; `BookingCard(size: compact, statusLabel: l10n.payAwaitingDeposit /* "Chờ cọc" */)`; primary "Kiểm tra lại" → `checkDeposit(bookingId: id)` (button loading while in flight; SnackBar `payNotYet` "Chưa nhận được xác nhận, thử lại sau ít phút" when `paid == false`); outline small "Đổi cổng thanh toán" → a sheet with the two provider chips → `createDeposit(bookingId: id, provider: other.code)` → the same payment step as Task 6 (fake sheet or launcher), staying on S08 |
 | status other than `draft` | `BookingPaidPanel`: check icon, "Đã gửi yêu cầu" (`payRequestSent`), "{name} sẽ trả lời trong 24 giờ" (`payReplyIn24h`), deposit line `escrowNoticeHeld(amount)` "Cọc {amount} đang được giữ an toàn", primary "Xem lịch đặt" → `context.go('/bookings')` |
 | `null` (draft deleted after 30 min) | `EmptyState` "Yêu cầu đã hết hạn" (`payExpiredTitle`) + body `payExpiredBody` "Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại." + primary "Đặt lại" → `context.go(bookingPath(photographerId: lastKnown.photographerId, serviceId: lastKnown.serviceId))` (keep the last non-null booking in state; when there never was one, "Về trang chủ" → `/home`) |
 | error | `ErrorState` with retry (`ref.invalidate(bookingProvider(id))`) |
@@ -507,10 +542,10 @@ The screen never calls `createDeposit` except from "Đổi cổng thanh toán", 
   - "a draft shows the waiting title, the body naming the gateway and the compact card with Chờ cọc".
   - "check again calls checkDeposit only" (no `createDeposit`, no `createBooking` recorded).
   - "check again with no payment yet shows the not-yet message".
-  - "the server confirming the payment switches to the paid panel without a tap" (`fake.confirm('pay1')` → "Đã gửi yêu cầu").
+  - "the server confirming the payment switches to the paid panel without a tap" (`fake.confirmFakePayment(paymentId: 'pay_booking_1')` → "Đã gửi yêu cầu").
   - "Xem lịch đặt goes to /bookings".
   - "change provider creates a deposit with the other gateway and stays on S08".
-  - "a removed draft shows expired with Đặt lại" (`fake.remove('b1')` → expired copy; tap → location `/u/p1/book?serviceId=s1`).
+  - "a removed draft shows expired with Đặt lại" (`fake.remove('booking_1')` → expired copy; tap → location `/u/p1/book?serviceId=s1`).
   - "opening /b/unknown/pay with no booking shows expired with Về trang chủ".
   - "reduced motion shows a static icon instead of the running loader".
   - "320 dp and 1.3× text, light and dark: no overflow".

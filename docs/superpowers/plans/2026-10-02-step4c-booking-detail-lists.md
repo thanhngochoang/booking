@@ -10,7 +10,7 @@
 
 **Goal:** Both parties can follow and act on a booking after the deposit: the customer sees every booking grouped in S14 and the full detail with a 7-step timeline in S09 (contact, directions, cancel with the exact refund in S10, book again); the photographer sees today's shoot, new requests with a live deadline countdown and money tiles in S19 (or S22's single next step when empty), accepts, declines with a reason in S23, completes after the shoot and cancels when needed.
 
-**Architecture:** All reads go through plan 4a's `BookingRepository` streams (`watchBooking`, `watchMine`, `watchEvents`, `watchContactCopy`), all writes through its `transition` call; screens never touch Firestore. Pure presentation rules live in `lib/features/booking/booking_view_rules.dart` (actions per status and role, timeline steps, booking code, S14 buckets, S19 dashboard numbers) and are unit-tested without widgets; widgets only render them. Time-dependent text (refund %, countdown) reads `clockProvider` through a small `nowTickerProvider` so tests control time. Chat ("Nhắn tin"), reschedule ("Đổi lịch") and review ("Đánh giá") are owned by plans 4d and 4e: this plan shows those buttons only when their feature flag says the target exists (`bookingFeaturesProvider`), so no button leads to a missing route.
+**Architecture:** All reads go through plan 4a's `BookingRepository` streams (`watchBooking`, `watchCustomerBookings`/`watchPhotographerBookings`, `watchBookingContact`, plus `watchEvents` added here), all writes through its `transitionBooking` call; screens never touch Firestore. Pure presentation rules live in `lib/features/booking/booking_view_rules.dart` (actions per status and role, timeline steps, booking code, S14 buckets, S19 dashboard numbers) and are unit-tested without widgets; widgets only render them. Time-dependent text (refund %, countdown) reads `clockProvider` through a small `nowTickerProvider` so tests control time. Chat ("Nhắn tin"), reschedule ("Đổi lịch") and review ("Đánh giá") are owned by plans 4d and 4e: this plan shows those buttons only when their feature flag says the target exists (`bookingFeaturesProvider`), so no button leads to a missing route.
 
 **Tech Stack:** Flutter, Riverpod 3, go_router 18, existing core widgets (`BookingCard`, `EscrowNotice`, `ContactDial`, `SegmentedTabs`, `StatTile`, `EmptyState`, `ErrorState`, `AppOptionTile`, `AppChip`, `showAppSheet`, `TabBadge`).
 
@@ -20,42 +20,34 @@
 
 ## Contract with plans 4a and 4b
 
-Members this plan relies on, in addition to those listed in plan 4b's "Contract with plan 4a". **Task 1 Step 1 checks the merged code against this list** and adds what is missing (port + Firestore adapter + fake together), recording each difference in the ledger as `Ruling:`.
+Plan 4a is merged; its real Flutter API is listed in plan 4b's "Contract with plan 4a (merged code, 2026-10-02)" together with the additions plan 4b makes (`bookingProvider`, `bookingErrorOf`, `BookingErrorCode`, `daySlots`, fake call records, `nextError`, `remove`). This plan uses them and **adds in Task 1** (port + Firestore adapter + fake together, with tests):
 
 ```dart
-// lib/data/booking/booking.dart (4a)
-class Booking { /* 4b's fields, plus: */
-  String? escrowStatus;           // 'held' | 'released' | 'partially_refunded' | 'refunded' | 'disputed' | …
-  int depositRefundedVnd;         // 0 when nothing refunded
-  BookingCancel? cancel;          // by: 'customer'|'photographer'|'system', reason, at, refundPercent
-  DateTime? completedAt; DateTime? reviewedAt; String? chatId;
-  DateTime createdAt; DateTime updatedAt;
-}
-class BookingEventRecord { String id; BookingStatus status; DateTime at; String? actorId; }
-class BookingContactSnapshot { String name; String? phone; bool allowZalo; bool allowWhatsApp; DateTime? redactedAt; }
-
-// lib/data/booking/booking_repository.dart (4a)
+// booking_repository.dart
 enum BookingRole { customer, photographer }
-enum BookingAction { accept, decline, cancel, complete }   // wire codes 'accept' … 'complete'
-abstract class BookingRepository {
-  // … 4b's members …
-  /// The signed-in user's bookings in [role], newest `createdAt` first, drafts
-  /// included (callers filter). Uses the 4a indexes (customerId|photographerId, createdAt desc).
-  Stream<List<Booking>> watchMine(BookingRole role, {int limit = 100});
-  /// `bookings/{id}/events`, oldest first.
-  Stream<List<BookingEventRecord>> watchEvents(String bookingId);
-  /// `bookings/{id}/private/contact`; emits null when missing or not readable (locked).
-  Stream<BookingContactSnapshot?> watchContactCopy(String bookingId);
-  /// Callable `transitionBooking({bookingId, action, reason?})`; returns the updated booking.
-  Future<Booking> transition(String bookingId, BookingAction action, {String? reason});
-}
+enum BookingAction { accept, decline, cancel, complete }          // .code = name; passed as `action:`
+/// `bookings/{id}/events`, oldest first (4a writes them; the read rule is added in Task 1).
+Stream<List<BookingEventRecord>> watchEvents(String bookingId);    // new port member
 
-// lib/data/booking/booking_rules.dart (4a mirror)
-int refundPercentAt(DateTime startsAt, DateTime now);   // 100 / 50 / 0; startsAt from day+start (Vietnam)
-DateTime startsAtOf(Booking b); DateTime endsAtOf(Booking b);
-enum BookingGroup { upcoming, pending, done }           // S14 buckets (4a Assumption 15)
-BookingGroup? groupOf(BookingStatus s);                 // null for draft
+// booking_providers.dart (auto-disposed variants for screens)
+final myBookingsProvider = StreamProvider.autoDispose.family<List<Booking>, BookingRole>((ref, role) {
+  final uid = ref.watch(authStateProvider).value?.uid;            // signed-in user
+  if (uid == null) return const Stream.empty();
+  final repo = ref.watch(bookingRepositoryProvider);
+  return role == BookingRole.customer ? repo.watchCustomerBookings(uid) : repo.watchPhotographerBookings(uid);
+});
+final bookingEventsProvider = StreamProvider.autoDispose.family<List<BookingEventRecord>, String>(…watchEvents);
+final bookingContactProvider = StreamProvider.autoDispose.family<BookingContactSnapshot?, String>(…watchBookingContact);
+
+// booking_rules.dart
+DateTime startsAtOf(Booking b) => BookingRules.parseBookingDateTime(b.day, b.start);
+DateTime endsAtOf(Booking b) => BookingRules.parseBookingDateTime(b.day, b.end);
+int refundPercentAt(Booking b, DateTime now) =>
+    BookingRules.computeRefundPercent(startsAt: startsAtOf(b), cancelledAt: now, actorRole: 'customer');
+int refundAmountAt(Booking b, DateTime now) => b.deposit * refundPercentAt(b, now) ~/ 100;
 ```
+
+Names used below map to the real model and API: list groups → `BookingTab` (`upcoming`, `pending`, `history`) and `BookingRules.groupBookingsByTab` (this plan's "Đã xong" tab is `BookingTab.history`); a transition → `transitionBooking(bookingId:, action: action.code, reason:)`; the contact copy → `watchBookingContact` / `bookingContactProvider`; refunded amount → `depositRefunded ?? 0`; deposit → `deposit`; price → `serviceSnapshot.price`; place → `place.name`; escrow → `escrowStatus` (enum `EscrowStatus`).
 
 From plan 4b: `BookingCard`, `BookingCardSize`, `BookingSummary(.fromBooking)`, `EscrowNotice`, `BookingPaidPanel`, `bookingPath`, `pumpBookingRoute` in `test/support/booking_world.dart`, ARB `escrowNoticeHeld`. From earlier plans: `ContactDial({required ContactAccess access, required ContactChannels channels, required ValueChanged<ContactChannel> onSelected, ContactDialStyle style, bool busy})` (`lib/core/widgets/contact_dial.dart`), `ContactChannel`, `ContactNumbers`, `contactUriFor` (`lib/data/contact/contact_link_repository.dart`), `externalLauncherProvider`, `contactLauncherProvider` (customer → photographer through `getContactLink`), `photographerProfileProvider`, `userRepositoryProvider` (`watch(uid)` → `displayName`, `avatarUrl`), `currentProfileProvider` (role), `tabBadgesProvider` (`lib/features/shell/tab_badges.dart`), `ScreenCodes.bookingDetail` (S09), `cancelBooking` (S10), `bookings` (S14), `work` (S19), `workEmpty` (S22), `declineRequest` (S23), `clockProvider`, `calendarTodayProvider`, `formatMoney`, `formatDayMonth`, `weekdayLabel`.
 
@@ -92,13 +84,13 @@ Known 4a gap fixed here (Task 1): 4a writes the timeline to `bookings/{id}/event
 3. **Directions** opens `https://www.google.com/maps/search/?api=1&query=<place name>` through `externalLauncherProvider` (no coordinates in v1; Google Maps opens on Android and iOS, and a browser otherwise). Shown on the booking day (Vietnam) and the day before for `accepted`/`upcoming`; S14 shows it on the nearest upcoming card.
 4. **Photographer contact to the customer** (S09, S19): `ContactDial` with channels from the contact copy (`call` when `phone != null`, `zalo` when `allowZalo`, `whatsapp` when `allowWhatsApp`), URL built locally with `contactUriFor` from the copy's number (the rules already let only this photographer read it, only while unlocked). When the copy is null (locked/redacted) the button is hidden.
 5. **Photographer cancel** reuses the S10 sheet in a photographer variant: title "Huỷ buổi chụp với {customer}?", no policy table, the line "{customer} được hoàn cọc {amount} (100%).", reason chips "Ốm/việc gấp", "Thiết bị gặp sự cố", "Lý do khác"; same two buttons.
-6. **"Tháng này"** = sum of `serviceSnapshot.priceVnd` of the photographer's bookings `completed`/`reviewed` with `completedAt` in the current Vietnamese month (payments are not readable by clients in 4a). **"Đang giữ"** = sum of `depositVnd − depositRefundedVnd` over bookings whose `escrowStatus` is `held`, `partially_refunded` or `disputed`. **"Buổi sắp tới"** = count of `accepted` + `upcoming`. Money tiles use `formatMoney(v, short: true)` ("12,4M"). Tapping "Đang giữ" does nothing until S43 exists (no dead route).
+6. **"Tháng này"** = sum of `serviceSnapshot.price` of the photographer's bookings `completed`/`reviewed` with `completedAt` in the current Vietnamese month (payments are not readable by clients in 4a). **"Đang giữ"** = sum of `deposit − (depositRefunded ?? 0)` over bookings whose `escrowStatus` is `held`, `partially_refunded` or `disputed`. **"Buổi sắp tới"** = count of `accepted` + `upcoming`. Money tiles use `formatMoney(v, short: true)` ("12,4M"). Tapping "Đang giữ" does nothing until S43 exists (no dead route).
 7. **Feature flags for later plans:** `final bookingFeaturesProvider = Provider<BookingFeatures>((_) => const BookingFeatures(chat: false, reschedule: false, review: false));`. "Nhắn tin" shows when `chat && booking.chatId != null`; "Đổi lịch" menu item when `reschedule`; "Đánh giá"/"Xem đánh giá" when `review`. Plans 4d and 4e flip their flag and add the routes.
 8. **S14 top level "Buổi chụp | Vé sự kiện"** is hidden until event tickets exist (S18, events plan); the hook is one boolean in the screen (`showTickets: false`).
 9. **S19 "Sự kiện của tôi"** section is hidden until events exist.
 10. **S08 after paid** (plan 4b Decision 3): this plan deletes `BookingPaidPanel` and makes S08's non-draft state `context.go('/b/$id')`; S09 shows the toast "Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ." once when opened with `?paid=1`.
 11. **Expired-request toast on S19** fires when a booking that was `requested` in the previous emission arrives as `expired` (customer name from the contact copy cached in the view model).
-12. **Accept** calls `transition(accept)` then stays on/opens S09 (the spec's "rồi mở chat" belongs to plan 4d, which changes the destination when `chat` is on).
+12. **Accept** calls `transitionBooking(action: 'accept')` then stays on/opens S09 (the spec's "rồi mở chat" belongs to plan 4d, which changes the destination when `chat` is on).
 
 ## Review Focus
 
@@ -170,7 +162,7 @@ match /events/{eventId} {
 }
 ```
 
-- [ ] **Step 1: Contract check** as described above; ledger every difference; `../scripts/bin/flutter test --no-pub test/data/booking` → PASS.
+- [ ] **Step 1: Add the Task 1 additions** listed under "Contract" with tests (`test/data/booking/booking_events_test.dart`: "watchEvents maps bookings/{id}/events oldest first" with `fake_cloud_firestore`; "myBookingsProvider follows the role and the signed-in user"; "refundPercentAt at 48 h, 47 h 59 min, 24 h, 23 h 59 min"); `../scripts/bin/flutter test --no-pub test/data/booking` → PASS.
 - [ ] **Step 2: Write rules tests** (do not run): "booking events are readable by both parties and nobody else"; "clients cannot write booking events".
 - [ ] **Step 3: Write failing widget/unit tests:**
   - `status_timeline_test.dart`: "done steps show a filled dot, the current step a ring, upcoming an empty dot"; "the stopped step renders its title in the danger color"; "semantics read 'Bước 2 trong 7, đang diễn ra'" (ARB `timelineStepSemantics` "Bước {n} trong {total}, {state}" with state words `timelineDone` "đã xong", `timelineCurrent` "đang diễn ra", `timelineUpcoming` "sắp tới"); "320 dp, 1.3×: long subtitles wrap".
@@ -202,7 +194,7 @@ List<TimelineStep> timelineSteps(Booking b, List<BookingEventRecord> events, Dat
     {required String photographerName});
 
 /// S14: bookings of one group, drafts removed, sorted per 4a Assumption 15.
-List<Booking> bucket(List<Booking> all, BookingGroup group);
+List<Booking> bucket(List<Booking> all, BookingTab tab);   // uses BookingRules.groupBookingsByTab, then sorts per 4a Assumption 15
 
 @immutable class WorkDashboard {
   final Booking? today;                 // accepted/upcoming on today's Vietnamese date, earliest start
@@ -238,10 +230,10 @@ Duration tickFor(DateTime deadline, DateTime now);
 - Test: `test/features/booking/booking_detail_screen_test.dart`, `test/features/booking/payment_pending_screen_test.dart` (update)
 
 **Interfaces:**
-- Consumes: `bookingProvider(id)`, repository `watchEvents`, `watchContactCopy`, `transition`; `photographerProfileProvider`, `userRepositoryProvider`, `currentProfileProvider` (role via `booking.customerId == uid`), `contactLauncherProvider`, `externalLauncherProvider`, `nowTickerProvider(const Duration(minutes: 1))`, Task 2 rules, `StatusTimeline`, `BookingCard`, `EscrowNotice`, `ContactDial`.
+- Consumes: `bookingProvider(id)`, `bookingEventsProvider`, `bookingContactProvider`, repository `transitionBooking`; `photographerProfileProvider`, `userRepositoryProvider`, `currentProfileProvider` (role via `booking.customerId == uid`), `contactLauncherProvider`, `externalLauncherProvider`, `nowTickerProvider(const Duration(minutes: 1))`, Task 2 rules, `StatusTimeline`, `BookingCard`, `EscrowNotice`, `ContactDial`.
 - Produces: `GoRoute(path: '/b/:id', builder: (_, s) => BookingDetailScreen(bookingId: s.pathParameters['id']!, justPaid: s.uri.queryParameters['paid'] == '1'))`, plus `/b/:id/cancel` and `/b/:id/decline` building the same screen with `openSheet: DetailSheet.cancel | DetailSheet.decline` (the sheet opens after the first frame). Routes sit outside the shell.
 
-Layout per mock: app bar Back + "Buổi chụp #{code}" + `…` menu (only when it has items: "Đổi lịch" when the flag is on); toast line (Decision 10, once); `EscrowNotice` while deposit is held (customer `escrowNoticeHeld(amount)`, photographer `escrowNoticeHeldPhotographer(amount)` "Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành"); `BookingCard` with `StatusBadge`; `StatusTimeline`; actions: the row "Nhắn tin" (outline, flag) + `ContactDial` "Liên hệ"; the primary button for `accept` ("Nhận · còn {time}"), `complete` ("Hoàn thành"), `bookAgain` ("Đặt lại" → `bookingPath`), `review` (flag); decline as outline "Từ chối" → S23; cancel as a red **text** button "Huỷ yêu cầu · hoàn cọc {pct}%" (customer, from `refundPercentAt`) or "Huỷ buổi chụp" (photographer) → S10. Every state in `ScreenCode(ScreenCodes.bookingDetail)`. Loading skeleton; not found / not a party → `EmptyState` "Không tìm thấy buổi chụp" with "Về trang chủ"; stream error → `ErrorState` retry. `transition` errors → SnackBar by code (`deadline_passed` "Yêu cầu đã hết hạn", `not_eligible` "Không còn thực hiện được thao tác này", `conflict` "Buổi chụp vừa thay đổi, đã tải lại", network "Không gửi được. Thử lại nhé.").
+Layout per mock: app bar Back + "Buổi chụp #{code}" + `…` menu (only when it has items: "Đổi lịch" when the flag is on); toast line (Decision 10, once); `EscrowNotice` while deposit is held (customer `escrowNoticeHeld(amount)`, photographer `escrowNoticeHeldPhotographer(amount)` "Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành"); `BookingCard` with `StatusBadge`; `StatusTimeline`; actions: the row "Nhắn tin" (outline, flag) + `ContactDial` "Liên hệ"; the primary button for `accept` ("Nhận · còn {time}"), `complete` ("Hoàn thành"), `bookAgain` ("Đặt lại" → `bookingPath`), `review` (flag); decline as outline "Từ chối" → S23; cancel as a red **text** button "Huỷ yêu cầu · hoàn cọc {pct}%" (customer, from `refundPercentAt`) or "Huỷ buổi chụp" (photographer) → S10. Every state in `ScreenCode(ScreenCodes.bookingDetail)`. Loading skeleton; not found / not a party → `EmptyState` "Không tìm thấy buổi chụp" with "Về trang chủ"; stream error → `ErrorState` retry. `transitionBooking` errors → SnackBar by code (`deadline_passed` "Yêu cầu đã hết hạn", `not_eligible` "Không còn thực hiện được thao tác này", `conflict` "Buổi chụp vừa thay đổi, đã tải lại", network "Không gửi được. Thử lại nhé.").
 
 S08 change: replace `BookingPaidPanel` with `context.go('/b/$id?paid=1')` on the first non-draft emission; delete the panel and its strings/tests that only it used.
 
@@ -250,10 +242,10 @@ S08 change: replace `BookingPaidPanel` with `context.go('/b/$id?paid=1')` on the
   - "cancel button percent updates when the clock passes 48 h" (advance the fake clock past `startsAt − 48 h` and pump the ticker → "50%").
   - "customer Liên hệ asks the server for the link (contactLauncher) and never shows a number".
   - "photographer, requested: Nhận with countdown is the only primary button; Từ chối opens S23" (S23 sheet content asserted in Task 6).
-  - "photographer accept calls transition(accept) and the screen follows the stream to accepted".
+  - "photographer accept calls transitionBooking(accept) and the screen follows the stream to accepted".
   - "photographer contact uses the contact copy channels and builds tel:/zalo.me locally" (copy with `allowZalo: true` → dial shows Gọi and Zalo; tap Gọi → launcher received `tel:+84903123456`).
   - "photographer contact hides when the copy becomes null" (fake emits null).
-  - "Hoàn thành appears for the photographer only after the end time and calls transition(complete)".
+  - "Hoàn thành appears for the photographer only after the end time and calls transitionBooking(complete)".
   - "Chỉ đường appears on the booking day and opens Google Maps search for the place".
   - "declined shows Đặt lại which opens the booking sheet for the same package".
   - "Nhắn tin and Đổi lịch stay hidden while their flags are off; appear when on (chatId present)".
@@ -275,10 +267,10 @@ S08 change: replace `BookingPaidPanel` with `context.go('/b/$id?paid=1')` on the
 - Test: `test/features/booking/cancel_sheet_test.dart`
 
 **Interfaces:**
-- Consumes: `refundPercentAt`, `startsAtOf`, repository `transition(cancel, reason:)`, `nowTickerProvider(const Duration(minutes: 1))`.
+- Consumes: `refundPercentAt`, `refundAmountAt`, `startsAtOf` (Task 1), repository `transitionBooking(action: 'cancel', reason:)`, `nowTickerProvider(const Duration(minutes: 1))`.
 - Produces: `Future<bool?> showCancelSheet(BuildContext context, {required Booking booking, required BookingRole role, required String counterpartName})` — returns true after a successful cancel; S09 then shows the toast `cancelDoneToast` "Đã huỷ. Hoàn {amount} trong 3–5 ngày" (customer) or `cancelDonePhotographer` "Đã huỷ. {name} được hoàn cọc 100%".
 
-Customer variant per mock: title; three option rows (not tappable; the applying row highlighted, its first line "Trước {dd/MM HH:mm} hơn 48 giờ" for the 100 % row as in the mock, then "Trong 24–48 giờ", "Dưới 24 giờ"; right side "Hoàn 100%" / "Hoàn 50%" / "Không hoàn"); "Bạn sẽ nhận lại {amount}" with `computeRefund`-equivalent from 4a's mirror (`depositVnd * pct ~/ 100`); reason chips single choice (optional; "Lý do khác" shows a short field ≤ 200); bottom row "Giữ lịch" (outline, left) + "Huỷ buổi chụp" (red `AppButton.danger` or the existing destructive style, right, loading while calling). Barrier tap and drag do not cancel (they only close). Photographer variant per Decision 5. Errors → SnackBar inside the sheet, sheet stays.
+Customer variant per mock: title; three option rows (not tappable; the applying row highlighted, its first line "Trước {dd/MM HH:mm} hơn 48 giờ" for the 100 % row as in the mock, then "Trong 24–48 giờ", "Dưới 24 giờ"; right side "Hoàn 100%" / "Hoàn 50%" / "Không hoàn"); "Bạn sẽ nhận lại {amount}" with `computeRefund`-equivalent from 4a's mirror (`refundAmountAt(booking, now)`); reason chips single choice (optional; "Lý do khác" shows a short field ≤ 200); bottom row "Giữ lịch" (outline, left) + "Huỷ buổi chụp" (red `AppButton.danger` or the existing destructive style, right, loading while calling). Barrier tap and drag do not cancel (they only close). Photographer variant per Decision 5. Errors → SnackBar inside the sheet, sheet stays.
 
 - [ ] **Step 1: Write the failing tests:**
   - "highlights the 100 % row more than 48 h before and shows the full deposit back".
@@ -286,7 +278,7 @@ Customer variant per mock: title; three option rows (not tappable; the applying 
   - "under 24 h highlights Không hoàn and shows 0₫ back".
   - "the refund line follows the clock across 48 h" (sheet open, advance clock → highlight and amount change).
   - "Giữ lịch closes without calling the server; tapping outside does not cancel".
-  - "Huỷ buổi chụp sends the chosen reason and closes with true" (fake records `transition('b1', cancel, reason: 'Đổi kế hoạch')`).
+  - "Huỷ buổi chụp sends the chosen reason and closes with true" (fake records a `transitionBooking(bookingId: 'b1', action: 'cancel', reason: 'Đổi kế hoạch')` call).
   - "Lý do khác sends the typed text, capped at 200".
   - "a server error keeps the sheet open with a SnackBar".
   - "photographer variant shows 100 % refund to the customer and its own reasons".
@@ -304,7 +296,7 @@ Customer variant per mock: title; three option rows (not tappable; the applying 
 - Test: `test/features/booking/my_bookings_screen_test.dart`, `test/features/shell/*` (update expectations that assumed the empty state)
 
 **Interfaces:**
-- Consumes: `watchMine(BookingRole.customer)` through `final myBookingsProvider = StreamProvider.autoDispose<List<Booking>>(…)` (define here if 4a did not), Task 2 `bucket`, `detailActions` for the nearest card's row, `BookingCard`, `SegmentedTabs`, `photographerProfileProvider` (names/avatars per card; watch per visible card).
+- Consumes: `myBookingsProvider(BookingRole.customer)` (Task 1), Task 2 `bucket`, `detailActions` for the nearest card's row, `BookingCard`, `SegmentedTabs`, `photographerProfileProvider` (names/avatars per card; watch per visible card).
 - Produces: `class MyBookingsScreen extends ConsumerStatefulWidget` (tab root: `centerTitle: false`, `tabRootTitleStyle`, title `bookingsTitle` "Đặt lịch", chat icon only when the chat flag is on).
 
 Per mock: segmented "Sắp tới / Đang chờ / Đã xong" (selected tab remembered in the widget state); list of `BookingCard`s; the first card of "Sắp tới" gets the row "Chỉ đường" (outline small) + "Nhắn tin" (flag); cards in "Đã xong" that are `completed` get "Đánh giá" (flag). Tap → `/b/:id`. Empty per group: "Sắp tới" → `EmptyState` "Chưa có buổi chụp sắp tới" + "Tìm nhiếp ảnh gia" (→ `/action`); "Đang chờ" → "Chưa có yêu cầu chờ"; "Đã xong" → "Chưa có buổi nào xong". Loading skeleton cards; error → `ErrorState` retry. `ScreenCode(ScreenCodes.bookings)`.
@@ -332,7 +324,7 @@ Per mock: segmented "Sắp tới / Đang chờ / Đã xong" (selected tab rememb
 - Test: `test/features/work/work_screen_test.dart`, `test/features/work/work_empty_test.dart`, `test/features/booking/decline_sheet_test.dart`, `test/features/shell/tab_badges_test.dart` (extend)
 
 **Interfaces:**
-- Consumes: `watchMine(BookingRole.photographer)`, Task 2 `workDashboard`, `countdownText`, `tickFor`, `transition`, `watchContactCopy` (names on request cards), `userRepositoryProvider` (customer avatar), S22 inputs: the photographer's portfolio size from `portfolioProvider(uid)` (`lib/features/photographer_profile/profile_providers.dart`, plan 2d2), `myPackagesProvider` (count of active packages), `SkillsServerInfo.completeness` (`lib/data/skills/skills_server_info.dart`; null = not scored yet, treat as < 70).
+- Consumes: `myBookingsProvider(BookingRole.photographer)`, Task 2 `workDashboard`, `countdownText`, `tickFor`, `transitionBooking`, `bookingContactProvider` (names on request cards), `userRepositoryProvider` (customer avatar), S22 inputs: the photographer's portfolio size from `portfolioProvider(uid)` (`lib/features/photographer_profile/profile_providers.dart`, plan 2d2), `myPackagesProvider` (count of active packages), `SkillsServerInfo.completeness` (`lib/data/skills/skills_server_info.dart`; null = not scored yet, treat as < 70).
 - Produces:
   - `final workDashboardProvider = Provider.autoDispose<AsyncValue<WorkDashboard>>(…)` combining the stream with `nowTickerProvider(const Duration(minutes: 1))`.
   - `class WorkScreen extends ConsumerWidget` (tab root; title "Công việc" with the date subtitle "Thứ 5, 10/10"; calendar icon → `/work/calendar`, the existing key `open-calendar`).
@@ -340,14 +332,14 @@ Per mock: segmented "Sắp tới / Đang chờ / Đã xong" (selected tab rememb
   - `Future<bool?> showDeclineSheet(BuildContext context, {required Booking booking, required String customerName})`.
   - `tabBadgesProvider` adds `AppTab.bookings: requests.length` for photographers when > 0.
 
-S19 per mock: today card (`BookingCard(size: normal, highlight: true)` with the photo overlay variant if `BookingCard` supports it; else highlight only) with "Nhắn tin" (flag) + "Chỉ đường"; section "Yêu cầu mới {n}"; request cards: avatar, customer name, "{service} · {T7 12/10 15:30} · {place}", price short ("1,5M"), quoted note excerpt (1 line) and "đã cọc {450K}", `ContactDial` from the copy, buttons "Từ chối" (outline small → S23) + "Nhận · còn {time}" (primary small; the per-card small primary is allowed like `PhotographerCard`'s "Đặt"), the countdown re-rendered on `tickFor`; tiles row (`IntrinsicHeight` + three `StatTile`s); "Không có yêu cầu mới" when the section is empty; whole dashboard empty → `WorkEmptyState`. Accept → `transition(accept)` → `context.push('/b/$id')` (Decision 12). Expired toast per Decision 11. Offline (Firestore `hasPendingWrites`/`isFromCache` is not visible through the port; use the app's existing connectivity signal if there is one, else skip the offline-disable rule and note it in the ledger).
+S19 per mock: today card (`BookingCard(size: normal, highlight: true)` with the photo overlay variant if `BookingCard` supports it; else highlight only) with "Nhắn tin" (flag) + "Chỉ đường"; section "Yêu cầu mới {n}"; request cards: avatar, customer name, "{service} · {T7 12/10 15:30} · {place}", price short ("1,5M"), quoted note excerpt (1 line) and "đã cọc {450K}", `ContactDial` from the copy, buttons "Từ chối" (outline small → S23) + "Nhận · còn {time}" (primary small; the per-card small primary is allowed like `PhotographerCard`'s "Đặt"), the countdown re-rendered on `tickFor`; tiles row (`IntrinsicHeight` + three `StatTile`s); "Không có yêu cầu mới" when the section is empty; whole dashboard empty → `WorkEmptyState`. Accept → `transitionBooking(action: 'accept')` → `context.push('/b/$id')` (Decision 12). Expired toast per Decision 11. Offline (Firestore `hasPendingWrites`/`isFromCache` is not visible through the port; use the app's existing connectivity signal if there is one, else skip the offline-disable rule and note it in the ledger).
 
 S22: `EmptyState` with the circular illustration, title `workEmptyTitle` "Buổi chụp tiếp theo bắt đầu từ đây", body and one button chosen by the spec rule (portfolio < 6 → body `workEmptyBodyPortfolio(n)` + "Thêm ảnh vào portfolio" → `/action`; no active package → "Thêm gói" → `/setup/2`; completeness < 70 → "Hoàn thiện kỹ năng" → `/profile/skills`; else "Chia sẻ hồ sơ" → system share of the public profile link if a share helper exists, else `/u/{uid}`). Segmented "Yêu cầu / Sắp tới / Đã xong" from the mock is shown above it only when there is something to show; with everything empty only the empty state shows (spec: "toàn bộ trống → S22").
 
 S23 per mock and spec: title, four `AppOptionTile` radio rows, "Lý do khác" reveals a short field (5–200 characters), the refund line, "Quay lại" (outline) + "Từ chối" (red, disabled until valid, loading while calling); success → close true, S19 toast `declineDoneToast` "Đã từ chối. {name} được hoàn cọc." and the card disappears through the stream. Sends the reason text (for the three fixed reasons, their label).
 
 - [ ] **Step 1: Write the failing tests:**
-  - work: "shows today's shoot card, the requests section with its count, and the three tiles"; "accept calls transition(accept) and opens S09"; "the countdown shows 22 giờ and switches to seconds in the last hour" (advance fake clock); "accept refused with deadline_passed shows the expired message and the card leaves" (fake: error then emits the booking as expired); "an expired request disappears with Yêu cầu {tên} đã hết hạn, đã hoàn cọc"; "no requests shows Không có yêu cầu mới"; "everything empty shows S22"; "320 dp 1.3×: tiles one row, equal height, labels on one line"; "request contact uses the copy channels".
+  - work: "shows today's shoot card, the requests section with its count, and the three tiles"; "accept calls transitionBooking(accept) and opens S09"; "the countdown shows 22 giờ and switches to seconds in the last hour" (advance fake clock); "accept refused with deadline_passed shows the expired message and the card leaves" (fake: error then emits the booking as expired); "an expired request disappears with Yêu cầu {tên} đã hết hạn, đã hoàn cọc"; "no requests shows Không có yêu cầu mới"; "everything empty shows S22"; "320 dp 1.3×: tiles one row, equal height, labels on one line"; "request contact uses the copy channels".
   - work_empty: one test per rule branch (2 photos → portfolio body with n=2 and Thêm ảnh; 8 photos no package → Thêm gói; 8 photos, package, completeness 50 → Hoàn thiện kỹ năng; all fine → Chia sẻ hồ sơ); "exactly one primary button".
   - decline: "Từ chối is disabled until a reason is chosen"; "Lý do khác needs at least 5 characters"; "sends the fixed reason label"; "shows the refund line with the full deposit"; "Quay lại closes without calling"; "server error keeps the sheet with a SnackBar".
   - tab badges: "the work tab shows the number of requests for photographers"; "customers get no bookings badge".

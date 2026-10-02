@@ -26,7 +26,6 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 6 | `2026-10-01-step3b4-home-detail-find.md` (S01, S02, S04) | done 2026-10-02; /u/:id and /u/:id/book routes come with 2d2 and step 4 (taps there hit the router error page until then) |
 | 7 | `2026-10-01-step3c-create-post.md` (S21) | done 2026-10-02 |
 | 8 | `2026-10-01-step2d2-photographer-profile.md` (S03) | done 2026-10-02; S30 rows (phone, skills, public profile) went to S31 per the new mock; /u/:uid/book and /ask come with step 4 |
-| 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, Functions, rules, app repository) | in progress on branch `plan-4a` (another session) |
 | 8b | `2026-10-02-step4b-booking-sheet.md` (S05–S08) | not started; needs 8a |
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S09, S10, S14, S19, S22, S23) | not started; needs 8b; fixes 4a's missing read rule for `bookings/{id}/events` |
 | 8d | `2026-10-02-step4d-chat.md` (S11, S68 chat list, reschedule) | not started; needs 8c; adds new screen code S68 (mock section for the user to review) |
