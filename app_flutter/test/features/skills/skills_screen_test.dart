@@ -11,6 +11,7 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/skills/evidence_sheet.dart';
 import 'package:photobooking/features/skills/skills_draft_store.dart';
 
@@ -212,6 +213,7 @@ void main() {
   ) async {
     _tallPhone(tester);
     final w = await _pump(tester);
+    await SetupDraftStore(w.prefs).setStep(w.uid, 3);
     await _tapKey(tester, 'specialty-portrait');
     await _tapKey(tester, 'style-film');
     await _tapKey(tester, 'extra-posing');
@@ -234,6 +236,11 @@ void main() {
     );
     expect(w.event('skills_step'), {'n': 3});
     expect(w.event('skills_save'), {'specialties': 1, 'expert': 0});
+    expect(
+      SetupDraftStore(w.prefs).step(w.uid),
+      4,
+      reason: '/setup resumes at step 4 from now on',
+    );
   });
 
   testWidgets('evidence: pick in S40, the row updates, saved with the skills', (
