@@ -34,7 +34,7 @@ void main() {
     expect(find.text('1,2 km · Công viên Bạch Đằng'), findsOneWidget);
     expect(find.text('250K'), findsOneWidget);
     expect(find.text('Còn 3 chỗ'), findsOneWidget);
-    expect(find.text('Photo walk'), findsOneWidget, reason: 'type tag');
+    expect(find.text('#photowalk'), findsOneWidget, reason: 'type tag');
   });
 
   testWidgets('a free event shows the tag and never 0₫', (tester) async {

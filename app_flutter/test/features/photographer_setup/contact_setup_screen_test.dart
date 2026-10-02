@@ -120,7 +120,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('4 / 4'), findsOneWidget, reason: 'count shown twice');
-    final heading = find.text('Khu vực và liên hệ');
+      final heading = find.text('Khu vực và liên hệ');
       expect(heading, findsOneWidget);
       expect(find.descendant(of: bar, matching: heading), findsNothing);
       expect(

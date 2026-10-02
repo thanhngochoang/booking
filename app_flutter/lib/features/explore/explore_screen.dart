@@ -168,7 +168,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           SliverToBoxAdapter(
             child: Row(
               children: [
-                const Icon(Icons.place_outlined, size: 18),
+                Icon(
+                  Icons.place_outlined,
+                  key: const Key('explore-pin'),
+                  size: 15,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: AppSpace.s2),
                 Expanded(
                   child: Text(
@@ -249,21 +254,50 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Mock `.sec`: serif 17 title, accent 12px link, baseline aligned.
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
         Expanded(
           child: Semantics(
             header: true,
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(fontSize: 17),
+            ),
           ),
         ),
         if (onSeeAll != null)
-          TextButton(
-            key: const Key('explore-see-all'),
-            onPressed: onSeeAll,
-            child: Text(context.l10n.exploreSeeAll),
-          ),
+          _SeeAllLink(key: const Key('explore-see-all'), onTap: onSeeAll!),
       ],
+    );
+  }
+}
+
+/// Accent "Xem tất cả" text link with a 48dp touch target.
+class _SeeAllLink extends StatelessWidget {
+  const _SeeAllLink({super.key, required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2),
+      ),
+      child: Text(
+        context.l10n.exploreSeeAll,
+        style: TextStyle(
+          fontSize: AppText.sm,
+          fontWeight: FontWeight.w500,
+          color: theme.colorScheme.primary,
+        ),
+      ),
     );
   }
 }
@@ -454,17 +488,16 @@ class _CategorySection {
           ),
         ),
         const _Gap(AppSpace.s3),
-        SliverAdaptiveRows(
-          itemCount: tiles.length,
-          itemBuilder: (_, i) => tiles[i],
+        SliverToBoxAdapter(
+          child: _CategoryGrid(key: ValueKey(tab), tiles: tiles),
         ),
         const _Gap(AppSpace.s5),
       ],
     );
   }
 
-  List<Widget> _tiles(BuildContext context, WidgetRef ref) {
-    Widget tile(String id, String title, String path) => _CategoryTile(
+  List<_CategoryTile> _tiles(BuildContext context, WidgetRef ref) {
+    _CategoryTile tile(String id, String title, String path) => _CategoryTile(
       key: Key('category-${tab.name}-$id'),
       title: title,
       onTap: tappable ? () => context.go(path) : null,
@@ -498,6 +531,79 @@ class _CategorySection {
   }
 }
 
+/// Mock S13 `.grid2`: the first four entries of the tab as short 21:9
+/// tiles, two per row on a phone and four from 600dp. "Xem tất cả" opens
+/// the rest of the tab in place.
+class _CategoryGrid extends StatefulWidget {
+  const _CategoryGrid({super.key, required this.tiles});
+  final List<_CategoryTile> tiles;
+
+  static const shown = 4;
+
+  @override
+  State<_CategoryGrid> createState() => _CategoryGridState();
+}
+
+class _CategoryGridState extends State<_CategoryGrid> {
+  bool _all = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = widget.tiles;
+    final more = !_all && tiles.length > _CategoryGrid.shown;
+    final visible = more ? tiles.take(_CategoryGrid.shown).toList() : tiles;
+    return LayoutBuilder(
+      builder: (context, box) {
+        const gap = AppSpace.s2;
+        final columns = box.maxWidth >= SliverAdaptiveRows.wideBreakpoint
+            ? 4
+            : 2;
+        final cell = (box.maxWidth - gap * (columns - 1)) / columns;
+        final rows = <Widget>[
+          for (var r = 0; r * columns < visible.length; r++)
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var k = 0; k < columns; k++) ...[
+                    if (k > 0) const SizedBox(width: gap),
+                    Expanded(
+                      child: r * columns + k < visible.length
+                          ? ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: cell * 9 / 21,
+                              ),
+                              child: visible[r * columns + k],
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < rows.length; i++) ...[
+              if (i > 0) const SizedBox(height: gap),
+              rows[i],
+            ],
+            if (more)
+              Align(
+                alignment: Alignment.centerRight,
+                child: _SeeAllLink(
+                  key: const Key('category-see-all'),
+                  onTap: () => setState(() => _all = true),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _CategoryTile extends StatelessWidget {
   const _CategoryTile({super.key, required this.title, this.onTap});
   final String title;
@@ -519,13 +625,15 @@ class _CategoryTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 64),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpace.s4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(title, style: theme.textTheme.titleLarge),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.s3),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

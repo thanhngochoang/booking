@@ -47,83 +47,77 @@ class LocationPromptCard extends StatelessWidget {
     final subtle = theme.brightness == Brightness.dark
         ? AppColorsDark.primarySubtle
         : AppColors.primarySubtle;
-    final allowButton = AppButton.primary(
-      l.locationAllow,
-      key: const Key('location-allow'),
-      loading: requesting,
-      onPressed: requesting ? null : onAllow,
+    final buttons = Wrap(
+      spacing: AppSpace.s2,
+      runSpacing: AppSpace.s2,
+      children: [
+        AppButton.primary(
+          l.locationAllow,
+          key: const Key('location-allow'),
+          size: AppButtonSize.xsmall,
+          tapAlignment: Alignment.topCenter,
+          loading: requesting,
+          onPressed: requesting ? null : onAllow,
+        ),
+        AppButton.outline(
+          l.locationLater,
+          key: const Key('location-later'),
+          size: AppButtonSize.xsmall,
+          tapAlignment: Alignment.topCenter,
+          onPressed: requesting ? null : onLater,
+        ),
+      ],
     );
-    final laterButton = AppButton.outline(
-      l.locationLater,
-      key: const Key('location-later'),
-      onPressed: requesting ? null : onLater,
-    );
+    // Mock S13 `.card.hi`: 36dp accent-soft icon, bold 13px title, body,
+    // then two compact buttons inside the text column.
     return GlassCard(
       highlight: !requesting,
       child: Padding(
-        padding: const EdgeInsets.all(AppSpace.s4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s3,
+          AppSpace.s3,
+          AppSpace.s3,
+          0,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: subtle,
-                    shape: BoxShape.circle,
+            DecoratedBox(
+              key: const Key('location-prompt-icon'),
+              decoration: BoxDecoration(color: subtle, shape: BoxShape.circle),
+              child: SizedBox.square(
+                dimension: 36,
+                child: ExcludeSemantics(
+                  child: Icon(
+                    Icons.place_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary,
                   ),
-                  child: SizedBox.square(
-                    dimension: 40,
-                    child: ExcludeSemantics(
-                      child: Icon(
-                        Icons.place_outlined,
-                        color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpace.s2h),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      l.locationPromptTitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpace.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          l.locationPromptTitle,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpace.s1),
-                      Text(
-                        l.locationPromptBody,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.s4),
-            // Side by side normally; stacked when large text would wrap a label.
-            if (MediaQuery.textScalerOf(context).scale(16) > 18.4)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  allowButton,
+                  const SizedBox(height: AppSpace.s1),
+                  Text(l.locationPromptBody, style: theme.textTheme.bodySmall),
                   const SizedBox(height: AppSpace.s2),
-                  laterButton,
-                ],
-              )
-            else
-              Row(
-                children: [
-                  Expanded(child: allowButton),
-                  const SizedBox(width: AppSpace.s2),
-                  Expanded(child: laterButton),
+                  buttons,
                 ],
               ),
+            ),
           ],
         ),
       ),

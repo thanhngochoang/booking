@@ -18,6 +18,10 @@ enum EventType {
 }
 
 extension EventTypeX on EventType {
+  /// Type tag as text, e.g. `#minisession`: `#` + the code in lower case
+  /// without separators (spec events.md, S15 filter row and event rows).
+  String get tag => '#${code.replaceAll('_', '')}';
+
   String label(AppLocalizations l) => switch (this) {
     EventType.photoWalk => l.eventTypePhotoWalk,
     EventType.miniSession => l.eventTypeMiniSession,
