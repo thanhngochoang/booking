@@ -75,6 +75,30 @@ void main() {
     );
   });
 
+  testWidgets('code box: semantics label, equal height, one-line +84', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester);
+    expect(find.bySemanticsLabel('Mã +84'), findsOneWidget);
+    final code = tester.getSize(find.byKey(const Key('phone-code-box')));
+    final number = tester.getSize(find.byType(TextFormField));
+    expect(code.height, number.height);
+    handle.dispose();
+  });
+
+  testWidgets('at 1.3x the +84 stays on one line', (tester) async {
+    final c = TextEditingController();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(
+      hostWidget(PhoneField(controller: c), width: 320, textScale: 1.3),
+    );
+    final code = tester.getSize(find.byKey(const Key('phone-code-box')));
+    final text = tester.getSize(find.text('+84'));
+    expect(text.height, lessThan(30), reason: 'single line');
+    expect(text.width, lessThanOrEqualTo(code.width - 32));
+  });
+
   testWidgets('letters are dropped and input stops at nine digits', (
     tester,
   ) async {

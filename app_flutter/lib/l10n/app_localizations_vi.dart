@@ -381,6 +381,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get phoneRequired => 'Nhập số điện thoại';
 
   @override
+  String get phoneCodeSemantics => 'Mã +84';
+
+  @override
   String get phoneInvalid => 'Số điện thoại chưa đúng. Ví dụ: 903 123 456';
 
   @override

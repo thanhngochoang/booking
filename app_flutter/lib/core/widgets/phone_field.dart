@@ -5,17 +5,18 @@ import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/phone.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
+const double _codeBoxWidth = 72;
+const String _dialCode = '+84';
+
 /// Phone number input. By default two boxes (mock S33): a read-only "Mã +84"
 /// box, then the number. In [international] mode the code box is hidden (the
-/// number carries its own `+` code). The text is the national form `903 123 456`; typing or pasting
-/// `0903…` or `+84…` is normalised. With [international] (WhatsApp) the field
+/// number carries its own `+` code). The text is the national form
+/// `903 123 456`; typing or pasting `0903…` or `+84…` is normalised. With [international] (WhatsApp) the field
 /// holds the whole number, `+` and digits, e.g. `+14155552671`.
 /// Read the number with [phoneFromField] (pass the same [international]).
 ///
 /// Note: only a paste (or a whole-text edit) can carry a "+84" into a national
 /// field; typing "+" digit by digit is read as national digits.
-const double _codeBoxWidth = 72;
-const String _dialCode = '+84';
 
 class PhoneField extends StatelessWidget {
   const PhoneField({
@@ -80,19 +81,29 @@ class PhoneField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ExcludeFocus(
-          child: SizedBox(
-            key: const Key('phone-code-box'),
-            width: _codeBoxWidth,
-            child: InputDecorator(
-              isEmpty: false,
-              decoration: InputDecoration(
-                labelText: l.phoneCodeLabel,
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                enabled: enabled,
-              ),
-              child: Text(
-                _dialCode,
-                style: Theme.of(context).textTheme.bodyLarge,
+          child: Semantics(
+            label: l.phoneCodeSemantics,
+            excludeSemantics: true,
+            child: SizedBox(
+              key: const Key('phone-code-box'),
+              width: _codeBoxWidth,
+              child: InputDecorator(
+                isEmpty: false,
+                decoration: InputDecoration(
+                  labelText: l.phoneCodeLabel,
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  enabled: enabled,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s3,
+                    vertical: AppSpace.s4,
+                  ),
+                ),
+                child: Text(
+                  _dialCode,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ),
             ),
           ),

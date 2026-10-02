@@ -79,6 +79,7 @@ class PhotographerCard extends StatelessWidget {
       key: Key('card-profile-${data.id}'),
       onPressed: onProfile,
       size: AppButtonSize.small,
+      tapAlignment: Alignment.topCenter,
     );
     final bookButton = onBook == null
         ? null
@@ -87,6 +88,7 @@ class PhotographerCard extends StatelessWidget {
             key: Key('card-book-${data.id}'),
             onPressed: onBook,
             size: AppButtonSize.small,
+            tapAlignment: Alignment.topCenter,
           );
 
     return Material(
@@ -133,7 +135,7 @@ class PhotographerCard extends StatelessWidget {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(AppSpace.s3),
+                      padding: const EdgeInsets.all(AppSpace.s2h),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -202,12 +204,9 @@ class PhotographerCard extends StatelessWidget {
               child: ReasonChips(reasons: reasons),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpace.s2h,
-              0,
-              AppSpace.s2h,
-              AppSpace.s2h,
-            ),
+            // No bottom padding: the buttons' 48dp tap boxes (visual on top)
+            // supply the mock's 10dp below the row.
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2h),
             child: stack || bookButton == null
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -796,6 +796,12 @@ abstract class AppLocalizations {
   /// **'Nhập số điện thoại'**
   String get phoneRequired;
 
+  /// No description provided for @phoneCodeSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã +84'**
+  String get phoneCodeSemantics;
+
   /// No description provided for @phoneInvalid.
   ///
   /// In vi, this message translates to:

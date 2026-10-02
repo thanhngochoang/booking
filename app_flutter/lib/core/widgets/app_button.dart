@@ -20,6 +20,7 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.style,
     this.size = AppButtonSize.regular,
+    this.tapAlignment = Alignment.center,
   }) : _kind = _Kind.primary;
 
   const AppButton.outline(
@@ -30,6 +31,7 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.style,
     this.size = AppButtonSize.regular,
+    this.tapAlignment = Alignment.center,
   }) : _kind = _Kind.outline;
   const AppButton.text(
     this.label, {
@@ -39,6 +41,7 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.style,
     this.size = AppButtonSize.regular,
+    this.tapAlignment = Alignment.center,
   }) : _kind = _Kind.text;
 
   final String label;
@@ -51,6 +54,10 @@ class AppButton extends StatelessWidget {
   /// Overrides on top of the theme, e.g. a provider's brand colours.
   final ButtonStyle? style;
   final AppButtonSize size;
+
+  /// Where the visual sits inside the 48dp tap box of a small or xsmall
+  /// button (e.g. top, so the slack below doubles as the caller's padding).
+  final Alignment tapAlignment;
   final _Kind _kind;
 
   ButtonStyle? get _sizeStyle => switch (size) {
@@ -108,6 +115,7 @@ class AppButton extends StatelessWidget {
           minWidth: AppSpace.s12,
         ),
         child: Align(
+          alignment: tapAlignment,
           widthFactor: size == AppButtonSize.xsmall ? 1 : null,
           heightFactor: 1,
           child: button,

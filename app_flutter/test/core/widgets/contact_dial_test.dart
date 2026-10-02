@@ -668,7 +668,8 @@ void main() {
     await _open(tester);
     expect(find.byKey(_tray), findsOneWidget);
     await expectIdle(tester);
-    await tester.tap(find.byKey(_button));
+    // The open tray's scrim covers the button and takes the tap.
+    await tester.tapAt(tester.getCenter(find.byKey(_button)));
     await expectIdle(tester);
     expect(find.byKey(_tray), findsNothing);
   });

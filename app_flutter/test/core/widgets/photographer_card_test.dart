@@ -271,4 +271,31 @@ void main() {
     );
     handle.dispose();
   });
+
+  testWidgets('button row matches the mock: info row, 38 visual, 10 below', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card(onBook: () {}, availability: null));
+    final info = tester.getRect(
+      find
+          .ancestor(of: find.byType(AppAvatar), matching: find.byType(Padding))
+          .first,
+    );
+    final box = tester.getRect(find.byKey(const Key('card-profile-p1')));
+    final visual = tester.getRect(
+      find.descendant(
+        of: find.byKey(const Key('card-profile-p1')),
+        matching: find.byType(OutlinedButton),
+      ),
+    );
+    expect(
+      visual.top,
+      info.bottom,
+      reason: 'row padding 10 is in the info row',
+    );
+    expect(box.bottom, info.bottom + 38 + 10, reason: 'card ends 10 below');
+    expect(info.height, greaterThanOrEqualTo(40 + 20));
+    final avatar = tester.getRect(find.byType(AppAvatar));
+    expect(avatar.top - info.top, 10, reason: 'info row padding 10');
+  });
 }
