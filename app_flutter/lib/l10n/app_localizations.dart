@@ -2271,6 +2271,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Mới tham gia'**
   String get reasonNewTalent;
+
+  /// No description provided for @homePillFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh {day} này'**
+  String homePillFree(String day);
+
+  /// No description provided for @engagementError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thực hiện được. Thử lại nhé.'**
+  String get engagementError;
+
+  /// No description provided for @back.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get back;
 }
 
 class _AppLocalizationsDelegate

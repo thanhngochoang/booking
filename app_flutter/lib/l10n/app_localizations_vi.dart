@@ -1250,4 +1250,15 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reasonNewTalent => 'Mới tham gia';
+
+  @override
+  String homePillFree(String day) {
+    return 'Rảnh $day này';
+  }
+
+  @override
+  String get engagementError => 'Chưa thực hiện được. Thử lại nhé.';
+
+  @override
+  String get back => 'Quay lại';
 }

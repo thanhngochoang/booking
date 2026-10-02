@@ -505,5 +505,13 @@
     }
   },
   "reasonFastReply": "Phản hồi nhanh",
-  "reasonNewTalent": "Mới tham gia"
+  "reasonNewTalent": "Mới tham gia",
+  "homePillFree": "Rảnh {day} này",
+  "@homePillFree": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "engagementError": "Chưa thực hiện được. Thử lại nhé.",
+  "back": "Quay lại"
 }
