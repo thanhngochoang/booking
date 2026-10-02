@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
 import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, query, where } from 'firebase/firestore';
+import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: 'demo-nag',
     firestore: { rules: readFileSync('../firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
+    storage: { rules: readFileSync('../storage.rules', 'utf8'), host: '127.0.0.1', port: 9199 },
   });
 });
 after(async () => env.cleanup());
@@ -739,4 +741,42 @@ test('the step 1 intro is length-checked', async () => {
   await assertFails(updateDoc(doc(db, 'photographers/in1'), { bio: 42 }));
   await assertFails(updateDoc(doc(db, 'photographers/in1'), { equipment: Array.from({ length: 9 }, (_, i) => `M${i}`) }));
   await assertFails(updateDoc(doc(db, 'photographers/in1'), { equipment: 'Sony' }));
+});
+
+// ---- Storage: post photos ----
+const photo = (n = 4) => new Uint8Array(n);
+const jpeg = { contentType: 'image/jpeg' };
+
+test('a user uploads, reads and deletes photos under their own post path', async () => {
+  const st = env.authenticatedContext('ph1').storage();
+  const r = ref(st, 'posts/ph1/post1/a.jpg');
+  await assertSucceeds(uploadBytes(r, photo(), jpeg));
+  await assertSucceeds(getBytes(r));
+  await assertSucceeds(deleteObject(r));
+});
+
+test('nobody uploads into or deletes from someone else\'s post path', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    uploadBytes(ref(c.storage(), 'posts/ph1/post1/b.jpg'), photo(), jpeg));
+  const other = env.authenticatedContext('ph2').storage();
+  await assertFails(uploadBytes(ref(other, 'posts/ph1/post1/c.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(other, 'posts/ph1/post1/b.jpg')));
+  await assertSucceeds(getBytes(ref(other, 'posts/ph1/post1/b.jpg'))); // reading is for every signed-in user
+  await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), 'posts/ph1/post1/b.jpg')));
+  await assertFails(uploadBytes(ref(env.unauthenticatedContext().storage(), 'posts/ph1/post1/d.jpg'), photo(), jpeg));
+});
+
+test('only images up to 8 MB are accepted', async () => {
+  const st = env.authenticatedContext('ph1').storage();
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/e.pdf'), photo(), { contentType: 'application/pdf' }));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/f.jpg'), photo(8 * 1024 * 1024 + 1), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, 'posts/ph1/post1/g.jpg'), photo(1024 * 1024), jpeg));
+});
+
+test('every other Storage path is closed, and the users/{uid} rule still works', async () => {
+  const st = env.authenticatedContext('ph1').storage();
+  await assertFails(uploadBytes(ref(st, 'avatars/ph1/a.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/a.jpg'), photo(), jpeg)); // missing the post folder
+  await assertFails(getBytes(ref(st, 'misc/x.jpg')));
+  await assertSucceeds(uploadBytes(ref(st, 'users/ph1/avatar.jpg'), photo(), jpeg));
 });

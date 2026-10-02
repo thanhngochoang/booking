@@ -18,6 +18,16 @@ service firebase.storage {
       allow delete: if isOwner(uid);
     }
 
+    // posts/{uid}/{postId}/{file} : post photos. Anyone signed in may look at
+    // them; only the owner may add, replace or delete, images up to 8 MB.
+    match /posts/{uid}/{postId}/{file} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.size < 8 * 1024 * 1024 + 1
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid);
+    }
+
     // Anything else is closed.
     match /{allPaths=**} {
       allow read, write: if false;
