@@ -339,11 +339,28 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
 .match .pair{display:flex;align-items:center}.match .pair .av{width:86px;height:86px;border-width:4px}.match .pair .av+.av{margin-left:-20px}
 .match .pair .hk{width:34px;height:34px;border-radius:50%;background:var(--cta);display:flex;align-items:center;justify-content:center;margin:0 -12px;z-index:1;box-shadow:var(--btn-shadow)}
 .match .pair .hk svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.4}
-.match .hk.cam{width:44px;height:44px;margin:0 -14px}
-.match .hk.cam svg{width:24px;height:24px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.match .hk.cam svg *{stroke-dasharray:60;stroke-dashoffset:0}
-@media (prefers-reduced-motion:no-preference){.match .hk.cam svg *{animation:camdraw 1.4s cubic-bezier(.65,0,.35,1) both}.match .hk.cam svg circle{animation-delay:.5s}}
-@keyframes camdraw{from{stroke-dashoffset:60}to{stroke-dashoffset:0}}
+/* MatchOverlay: one continuous line draws the camera, the shutter flashes, both avatars land in the lens. */
+.match .mcam{position:relative;width:min(240px,78%);aspect-ratio:420/250;flex:none}
+.match .mcam svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.match .mcam .ln{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:.92;stroke-dasharray:1;stroke-dashoffset:0}
+.match .mcam .ln.btn{stroke-width:3.5}
+.match .mcam .wash{fill:var(--accent);opacity:.16}
+.match .mcam .flash{fill:none;stroke:var(--accent);stroke-width:3;opacity:0;transform-box:fill-box;transform-origin:center}
+.match .mcam .av{position:absolute;top:56%;width:40px;height:40px;border-width:3px;transform:translate(-50%,-50%)}
+.match .mcam .av.me{left:44%}.match .mcam .av.they{left:56%}
+@media (prefers-reduced-motion:no-preference){
+  .match .mcam .ln.body{animation:mdraw 1.8s cubic-bezier(.65,0,.35,1) both}
+  .match .mcam .ln.btn{animation:mdraw .45s cubic-bezier(.65,0,.35,1) 1.5s both}
+  .match .mcam .wash{animation:mwash .9s ease-out 1.2s both}
+  .match .mcam .flash{animation:mflash .7s cubic-bezier(.2,.6,.3,1) 1.75s both}
+  .match .mcam .av{animation:mland .5s cubic-bezier(.34,1.56,.64,1) 1.85s both}.match .mcam .av.they{animation-delay:1.95s}
+  .match .mcam~b.big,.match .mcam~.meta{animation:mfade .4s ease-out 2.1s both}
+}
+@keyframes mdraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes mwash{from{opacity:0;transform:scale(.85)}to{opacity:.16;transform:scale(1)}}
+@keyframes mflash{0%{opacity:.9;transform:scale(.55)}100%{opacity:0;transform:scale(1.35)}}
+@keyframes mland{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes mfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .match b.big{font-family:var(--display);font-size:24px;font-weight:600}
 .irow2{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:12px}
 .irow2:first-child{border-top:0}.irow2 .grow b{display:block;font-size:12.5px}
@@ -1374,14 +1391,14 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
       <div class="body">
         <div class="match">
-          <div class="pair"><span class="av" style="background:var(--p5)"></span><span class="hk cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path pathLength="60" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle pathLength="60" cx="12" cy="13" r="3.5"/></svg></span><span class="av"></span></div>
+          <div class="mcam" role="img" aria-label="Đã match"><svg class="mline" viewBox="40 80 420 250" aria-hidden="true"><path class="wash" d="M180 220C140 160 320 140 340 220C360 300 200 280 180 220Z"/><path class="ln body" pathLength="1" d="M90 310C70 310 60 290 60 270L60 180C60 160 75 150 95 150L140 150C150 150 155 140 160 130L170 115C175 105 185 100 200 100L300 100C315 100 325 105 330 115L340 130C345 140 350 150 360 150L405 150C425 150 440 160 440 180L440 270C440 290 425 310 400 310L100 310C140 310 170 305 190 285C170 270 160 245 160 220C160 170 200 130 250 130C300 130 340 170 340 220C340 270 300 310 250 310C220 310 195 295 180 270C195 240 215 220 250 220C270 220 285 235 285 255C285 275 270 290 250 290C220 290 200 260 210 220C220 180 250 160 280 175C310 190 315 230 295 260C320 230 310 175 260 165C220 155 180 185 180 220C180 250 200 275 225 282C290 295 360 280 380 240C390 220 385 190 370 175C360 165 345 165 335 170C345 140 330 120 300 120L200 120C180 120 170 130 165 145C130 160 100 160 85 180C75 195 75 240 85 270C95 295 130 305 170 305"/><path class="ln btn" pathLength="1" d="M120 150C120 135 135 135 135 150M365 150C365 130 390 130 390 150"/><circle class="flash" cx="250" cy="220" r="92"/></svg><span class="av me" style="background:var(--p5)"></span><span class="av they"></span></div>
           <b class="big">Đã match với <span class="gt">Minh Trí</span></b>
           <div class="meta" style="max-width:30ch">Minh Trí đã nhận lời mời của bạn và đang chuẩn bị tới Công viên Tao Đàn, khoảng 9 phút.</div>
           <div class="btn pri sm" style="flex:none;padding:0 26px">Tiếp tục</div>
         </div>
       </div>
     </div></div>
-    <div class="cap"><span class="n new">Mới</span><span class="n">S13.04 · Đã match</span><b>Một khoảnh khắc ngắn cho cả hai bên</b><span>Biểu tượng máy ảnh giữa hai avatar được vẽ dần theo nét (thân máy rồi ống kính, 1,4 giây; giảm chuyển động thì hiện ngay, đủ nét). Lớp phủ khoảng 1,5 giây rồi tự sang S13.05 (khách) hoặc S14.03 (nhiếp ảnh gia). Nút "Tiếp tục" cho người dùng trình đọc màn hình hoặc muốn đi ngay. Giảm chuyển động: không hiệu ứng. Lời mời của những người còn lại tự rút.</span></div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S13.04 · Đã match</span><b>Một khoảnh khắc ngắn cho cả hai bên</b><span>Một nét liền vẽ ra chiếc máy ảnh (thân, ống kính xoáy vào tâm, 1,8 giây), nút chụp chấm cuối, ống kính "chớp" một vòng sáng, rồi hai avatar đáp vào giữa ống kính: hai người cùng lọt khung. Không trái tim, không icon tròn. Giảm chuyển động thì hiện ngay hình đủ nét. Lớp phủ đứng khoảng 3 giây (2,3 giây hiệu ứng + 0,7 giây) rồi tự sang S13.05 (khách) hoặc S14.03 (nhiếp ảnh gia). Nút "Tiếp tục" cho người dùng trình đọc màn hình hoặc muốn đi ngay. Giảm chuyển động: không hiệu ứng. Lời mời của những người còn lại tự rút.</span></div></div>
 
     <div class="step" id="S13.05"><div class="phone" data-code="S13.05"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
