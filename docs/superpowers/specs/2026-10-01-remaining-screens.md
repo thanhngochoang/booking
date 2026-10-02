@@ -5,7 +5,7 @@ Ngày: 2026-10-01 · Branch: `flutter-rewrite` · Trạng thái: chờ review
 Bổ sung cho `2026-09-30-photography-marketplace-design.md` (gọi tắt "spec gốc"). Spec này làm các việc:
 
 1. Chốt giao diện theo theme **dark aurora** đang chạy trong app, kèm hai kiểu nút chính (gradient theo theme, hoặc ảnh avatar làm mờ).
-2. Đánh **mã màn hình** `S01–S17` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
+2. Đánh **mã màn hình** `S01–S23` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
 3. Đặc tả mọi màn còn lại, kèm danh mục **Sự kiện** và luồng **tạo sự kiện chụp ảnh** (mới).
 4. Thêm **kênh liên hệ** (gọi điện, Zalo, WhatsApp) và điều kiện **khách phải có số điện thoại** để đặt lịch (xác minh số làm sau).
 5. Thêm **GPS ở Khám phá** để gợi ý sự kiện gần bạn.
@@ -157,8 +157,33 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S63 |
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S64 |
 | S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) | S65 |
+| **S18** | **Khiếu nại & hỗ trợ** | | | | | |
+| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| **S19** | **Lưu & theo dõi** | | | | | |
+| S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
+| **S20** | **Báo cáo & chặn** | | | | | |
+| S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | `/report` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| **S21** | **Xác minh** | | | | | |
+| S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S21.02 | Xin dấu tích xanh: điều kiện, giấy tờ/portfolio gửi duyệt, trạng thái (chờ / đã duyệt / cần bổ sung) | `/verify/photographer` | NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
+| **S22** | **Thanh toán & tài khoản** | | | | | |
+| S22.01 | Lịch sử thanh toán: cọc, vé, hoàn tiền, khoản đang giữ (kể cả Chụp ngay chưa tìm được người), trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| **S23** | **Vận hành nội bộ (staff)** | | | | | |
+| S23.01 | Hàng đợi khiếu nại: xem bằng chứng hai bên, quyết định thả / hoàn / chia | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.02 | Duyệt lô chi trả và đối soát cổng | nội bộ | admin · finance | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.03 | Hoàn tiền thủ công (cổng không hoàn tự động) | nội bộ | admin · finance | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.04 | Duyệt xác minh nhiếp ảnh gia (dấu tích xanh) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.05 | Kiểm duyệt báo cáo (người dùng, bài, tin nhắn, sự kiện) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · sales | mới | ⬜ đang thiết kế · chưa có mock | — |
 
-Use case S15, S16 (**Đăng việc**) đang thiết kế, chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
+Use case S15, S16 (**Đăng việc**) đang thiết kế, chưa có mock; S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 
@@ -718,6 +743,39 @@ Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng
 
 `notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, tăng `unreadCount`, gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
 
+## 3i. Use case bổ sung (2026-10-02)
+
+Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế thì thấy sáu luồng có thật nhưng chưa có màn: backend hoặc quy tắc đã nhắc tới (`openDispute`, `photographers.verified` "do admin duyệt", "Đã lưu, đang theo dõi" ở S09.01, nút báo cáo ở nhóm chat, hoàn tiền `manual` "tạo việc cho admin") nhưng người dùng chưa có chỗ để làm. Mã theo quy tắc mục 2 (use case mới lấy `Sxx` kế tiếp). Mỗi use case cần mock và đặc tả màn trước khi viết plan.
+
+### 3i.1 S18 · Khiếu nại & hỗ trợ
+- **Vì sao cần**: tiền treo (mục 3g) có trạng thái `disputed` và cửa sổ khiếu nại, S06.05 có "Đang khiếu nại", nhưng khách chưa có màn để mở khiếu nại hay xem kết quả.
+- **Luồng**: S05.02 / S11.04 hiện "Báo vấn đề" khi booking `completed` hoặc vé đã dùng và còn trong `dispute_window_hours` → S18.01 → `openDispute` (khoản tiền `held → disputed`, khoản chi trả `on_hold`) → S18.02 theo dõi; nhiếp ảnh gia nhận thông báo, xem S18.02 và gửi giải trình; staff xử lý ở S23.01 (`resolveDispute`: thả / hoàn / chia), hai bên nhận thông báo và tiền đi theo kết quả.
+- **Quy tắc**: một khiếu nại mở cho mỗi booking hoặc vé; quá cửa sổ thì nút ẩn và S18.03 giải thích; ảnh bằng chứng lưu riêng tư (chỉ hai bên và staff đọc); không có kênh liên hệ ngoài app mới nào được mở vì khiếu nại.
+- **S18.03 Trợ giúp**: câu hỏi thường gặp tĩnh (tiền treo, huỷ, hoàn, Chụp ngay) và "Liên hệ hỗ trợ" mở chat với hộp thư hỗ trợ (S23.06, câu hỏi mở 16).
+
+### 3i.2 S19 · Lưu & theo dõi
+- **Vì sao cần**: S09.01 có hàng số "đang theo dõi · đã lưu" đang ẩn vì chưa có danh sách; nút lưu ở S02.02 và tín hiệu "đã lưu" của gợi ý (mục 3e.7) cần nơi xem lại.
+- **Quy tắc**: lưu bài và lưu nhiếp ảnh gia là hai danh sách riêng; theo dõi chỉ áp dụng cho nhiếp ảnh gia; bài mới của người mình theo dõi ưu tiên trong feed "Dành cho bạn"; danh sách người theo dõi chỉ chủ hồ sơ xem; số đếm công khai.
+
+### 3i.3 S20 · Báo cáo & chặn
+- **Vì sao cần**: có chat 1‑1, nhóm chat sự kiện, timeline hashtag và bài công khai; spec đã nhắc "báo cáo tin nhắn" (mục 3.7) và câu hỏi mở 21, nhưng chưa có luồng chung. Cửa hàng ứng dụng cũng yêu cầu báo cáo và chặn cho nội dung do người dùng tạo.
+- **Luồng**: menu "…" trên hồ sơ, bài, tin nhắn (nhấn giữ), sự kiện → S20.01 (lý do cố định + mô tả, tuỳ chọn "Chặn người này") → hàng đợi S23.05.
+- **Chặn**: hai bên không thấy bài của nhau trong feed, không nhắn được, không đặt lịch được với nhau (booking đang có vẫn giữ để không mất tiền; liên hệ đi qua hỗ trợ); bỏ chặn ở S20.02.
+
+### 3i.4 S21 · Xác minh
+- **S21.01 SĐT** (câu hỏi mở 6): bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
+- **S21.02 Dấu tích xanh**: nhiếp ảnh gia đủ điều kiện (đề xuất: hồ sơ hoàn thiện ≥ 80%, ≥ 3 buổi `completed`, không khiếu nại thua trong 90 ngày) gửi yêu cầu kèm giấy tờ tuỳ thân và link portfolio; staff duyệt ở S23.04; kết quả ghi `photographers.verified` (chỉ server ghi). Giấy tờ lưu riêng tư, xoá sau khi duyệt xong 30 ngày.
+
+### 3i.5 S22 · Thanh toán & tài khoản
+- **S22.01**: khách xem mọi khoản đã trả và đang được giữ, kể cả tiền Chụp ngay đang treo khi chưa tìm được người (spec Chụp ngay), hoàn tiền đang xử lý và đã xong; mỗi dòng mở chi tiết booking/vé/yêu cầu. Nhiếp ảnh gia đã có S06.05 cho tiền nhận.
+- **S22.02 Xoá tài khoản** (bắt buộc với Google Play và App Store khi có đăng ký tài khoản): chặn khi còn booking chưa xong, vé chưa diễn ra, tiền đang giữ hoặc khiếu nại mở (liệt kê từng thứ kèm lối đi); xoá dữ liệu cá nhân, giữ bút toán sổ cái ẩn danh theo yêu cầu kế toán; bài công khai gỡ xuống.
+- **S22.03**: ẩn hồ sơ khỏi gợi ý và tìm kiếm (nhiếp ảnh gia vẫn nhận khách cũ), tải bản sao dữ liệu (gửi link qua email trong 48 giờ).
+
+### 3i.6 S23 · Vận hành nội bộ (staff)
+- **Vì sao cần**: `resolveDispute`, `executePayout`, hoàn tiền `manual`, duyệt dấu tích xanh, kiểm duyệt báo cáo và hộp thư hỗ trợ đều cần người của nền tảng thao tác (vai trò `admin`, `sales`, có thể `finance`, câu hỏi mở 18).
+- **Nền tảng chưa chốt** (câu hỏi mở 22): web nội bộ riêng hay chế độ staff trong app. Mã S23 vẫn đặt để mọi spec tham chiếu chung; route là "nội bộ" cho tới khi chốt.
+- **Quy tắc**: mọi quyết định của staff ghi nhật ký kiểm toán (ai, lúc nào, lý do); tiền chỉ di chuyển qua callable phía server, không sửa tay dữ liệu.
+
 ## 4. Thành phần dùng chung cần viết trước
 
 Đặc tả từng widget (API, biến thể, trạng thái, truy cập, test) ở [`components/shared-components.md`](components/shared-components.md); bảng dưới là danh sách tóm tắt.
@@ -866,4 +924,8 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 11. **Kỹ năng và gợi ý**: danh mục khởi đầu (3e.2) có đủ cho thị trường Việt Nam không, ai duy trì `taxonomy`? Có cho nhiếp ảnh gia tự đề xuất kỹ năng mới không (qua duyệt)?
 12. **Sở thích của khách**: có thêm câu hỏi khởi đầu "Bạn cần chụp gì?" (và ngân sách, phong cách) để bớt phụ thuộc tín hiệu ngầm không?
 13. **Hạ tầng gợi ý** (đề xuất, cần xác nhận): làm theo hai giai đoạn ở mục 3e.4, bắt đầu bằng `recommender-core` trong hàm `recommend`, tách Cloud Run khi chạm ngưỡng.
+22. **Công cụ vận hành (S23)**: web nội bộ riêng hay chế độ staff trong app? Ai được thấy giấy tờ xác minh và bằng chứng khiếu nại?
+23. **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
+24. **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
+25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)?
 14. Giữ nguyên các câu hỏi mở 1–4 của spec gốc (cổng thanh toán, admin, tỉ lệ cọc, tên/applicationId).

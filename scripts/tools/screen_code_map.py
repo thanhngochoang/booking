@@ -49,7 +49,8 @@ USE_CASES = {
     'S07': 'Hội thoại', 'S08': 'Thiết lập hồ sơ nhiếp ảnh gia', 'S09': 'Hồ sơ cá nhân & cài đặt',
     'S10': 'Đăng bài', 'S11': 'Tham gia sự kiện', 'S12': 'Tổ chức sự kiện', 'S13': 'Chụp ngay (khách)',
     'S14': 'Chụp ngay (nhiếp ảnh gia)', 'S15': 'Đăng việc (khách)', 'S16': 'Nhận việc đăng (nhiếp ảnh gia)',
-    'S17': 'Thông báo',
+    'S17': 'Thông báo', 'S18': 'Khiếu nại & hỗ trợ', 'S19': 'Lưu & theo dõi', 'S20': 'Báo cáo & chặn',
+    'S21': 'Xác minh', 'S22': 'Thanh toán & tài khoản', 'S23': 'Vận hành nội bộ (staff)',
 }
 
 SCREENS_OF = {}
