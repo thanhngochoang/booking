@@ -1353,6 +1353,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đặt lịch'**
   String get photographerCardBook;
+
+  /// No description provided for @skillChipFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đủ số lượng'**
+  String get skillChipFull;
+
+  /// No description provided for @completenessTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Độ khớp hồ sơ'**
+  String get completenessTitle;
+
+  /// No description provided for @completenessPercent.
+  ///
+  /// In vi, this message translates to:
+  /// **'{percent}%'**
+  String completenessPercent(int percent);
 }
 
 class _AppLocalizationsDelegate

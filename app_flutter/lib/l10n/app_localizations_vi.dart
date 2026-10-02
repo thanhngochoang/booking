@@ -702,4 +702,15 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get photographerCardBook => 'Đặt lịch';
+
+  @override
+  String get skillChipFull => 'Đã đủ số lượng';
+
+  @override
+  String get completenessTitle => 'Độ khớp hồ sơ';
+
+  @override
+  String completenessPercent(int percent) {
+    return '$percent%';
+  }
 }

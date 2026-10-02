@@ -279,5 +279,13 @@
     }
   },
   "photographerCardProfile": "Hồ sơ",
-  "photographerCardBook": "Đặt lịch"
+  "photographerCardBook": "Đặt lịch",
+  "skillChipFull": "Đã đủ số lượng",
+  "completenessTitle": "Độ khớp hồ sơ",
+  "completenessPercent": "{percent}%",
+  "@completenessPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  }
 }
