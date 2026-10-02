@@ -358,6 +358,26 @@ void main() {
     },
   );
 
+  testWidgets('a double tap on an unchanged "Tiếp tục" opens S34 once', (
+    tester,
+  ) async {
+    _tallPhone(tester);
+    final w = await _pump(tester, saved: _portraitWithEvidence);
+    final submit = find.byKey(const Key('skills-submit'));
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('S34', skipOffstage: false), findsOneWidget);
+    expect(w.events.where((e) => e.$1 == 'skills_step'), hasLength(1));
+    expect(find.text('Không lưu được kỹ năng. Thử lại nhé.'), findsNothing);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await _tap(tester, submit);
+    expect(find.text('S34'), findsOneWidget, reason: 'back from S34, again');
+  });
+
   testWidgets('unticking a genre with evidence asks first', (tester) async {
     _tallPhone(tester);
     await _pump(

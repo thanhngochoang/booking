@@ -46,6 +46,11 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
   bool _loaded = false;
   bool _allowPop = false;
 
+  /// A tap on the primary button is being handled (until S34 is popped in
+  /// setup mode, for good once leaving in edit mode): a second tap on the
+  /// still-visible button does nothing.
+  bool _submitting = false;
+
   bool get _setup => widget.mode == SkillsMode.setup;
 
   SkillsController get _ctrl => ref.read(skillsControllerProvider.notifier);
@@ -132,25 +137,31 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
+    _submitting = true;
     final l = context.l10n;
     final log = ref.read(skillsAnalyticsProvider);
     final result = await _ctrl.submit();
     if (!mounted) return;
     switch (result) {
       case SkillsSubmitResult.saved:
-        if (_setup) {
-          log('skills_step', {'n': 3});
-          context.push('/setup/4');
-        } else {
+        if (!_setup) {
           _leave();
+          return;
         }
+        log('skills_step', {'n': 3});
+        await context.push('/setup/4');
+        if (!mounted) return;
       case SkillsSubmitResult.invalid:
         final issues = ref.read(skillsControllerProvider).value?.issues;
         if (issues != null && issues.isNotEmpty) _scrollTo(issues.first);
         _snack(l.skillsFixIssues);
       case SkillsSubmitResult.failed:
         _snack(l.skillsSaveError);
+      case SkillsSubmitResult.busy:
+        break;
     }
+    _submitting = false;
   }
 
   void _scrollTo(SkillIssue issue) {

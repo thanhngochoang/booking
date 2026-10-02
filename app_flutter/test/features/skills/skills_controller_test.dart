@@ -180,6 +180,16 @@ void main() {
     expect(w.skills.stored(w.uid)!.specialtyIds, ['portrait']);
   });
 
+  test('an unchanged submit ignores a second tap until it is done', () async {
+    final (w, c) = await _open(saved: _wedding);
+    final first = _ctrl(c).submit();
+    expect(_st(c).saving, isTrue, reason: 'guarded before the first await');
+    expect(await _ctrl(c).submit(), SkillsSubmitResult.busy);
+    expect(await first, SkillsSubmitResult.saved);
+    expect(_st(c).saving, isFalse);
+    expect(w.skills.saveCalls, 0);
+  });
+
   test('a device draft is reopened, and can be thrown away', () async {
     const draft = PhotographerSkills(
       specialties: [SpecialtySkill(id: 'food')],

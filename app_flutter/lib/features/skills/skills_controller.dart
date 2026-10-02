@@ -13,7 +13,8 @@ import 'package:photobooking/data/skills/skills_rules.dart';
 import 'package:photobooking/features/skills/skills_analytics.dart';
 import 'package:photobooking/features/skills/skills_draft_store.dart';
 
-enum SkillsSubmitResult { saved, invalid, failed }
+/// [busy]: a submit is already running; this one did nothing.
+enum SkillsSubmitResult { saved, invalid, failed, busy }
 
 class SkillsEditorState {
   const SkillsEditorState({
@@ -173,7 +174,8 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
 
   Future<SkillsSubmitResult> submit() async {
     final current = state.value;
-    if (current == null || current.saving) return SkillsSubmitResult.failed;
+    if (current == null) return SkillsSubmitResult.failed;
+    if (current.saving) return SkillsSubmitResult.busy;
     final issues = validateSkills(
       current.draft,
       _catalog,
@@ -184,6 +186,8 @@ class SkillsController extends AsyncNotifier<SkillsEditorState> {
       return SkillsSubmitResult.invalid;
     }
     if (!current.unsaved) {
+      // Set before the first await so a second tap sees it (one push).
+      state = AsyncData(current.copyWith(saving: true));
       await _drafts.clear(_uid);
       if (ref.mounted) {
         state = AsyncData(
