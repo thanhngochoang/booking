@@ -1,3 +1,10 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    // Project-local Flutter SDK and Android SDK, so device discovery (Genymotion) uses the same adb.
+    "dart.flutterSdkPath": ".flutter",
+    "dart.env": {
+        "ANDROID_HOME": "/Users/macbook/Documents/Projects/MINE/booking/.android-sdk",
+        "ANDROID_SDK_ROOT": "/Users/macbook/Documents/Projects/MINE/booking/.android-sdk",
+        "PUB_CACHE": "/Users/macbook/Documents/Projects/MINE/booking/.pub-cache"
+    }
 }

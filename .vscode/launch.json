@@ -1,9 +1,43 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // F5 runs the Flutter app (app_flutter/) on the device picked in the status bar (e.g. Genymotion).
+    // The env mirrors scripts/env.sh. HOME points at .home so the build is signed with
+    // .home/.android/debug.keystore, whose SHA-1 is registered in Firebase (Google Sign-In).
     "version": "0.2.0",
     "configurations": [
+        {
+            "name": "Flutter (debug)",
+            "type": "dart",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/app_flutter",
+            "program": "lib/main.dart",
+            "flutterMode": "debug",
+            "env": {
+                "HOME": "${workspaceFolder}/.home",
+                "JAVA_HOME": "/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home",
+                "ANDROID_HOME": "${workspaceFolder}/.android-sdk",
+                "ANDROID_SDK_ROOT": "${workspaceFolder}/.android-sdk",
+                "PUB_CACHE": "${workspaceFolder}/.pub-cache",
+                "GRADLE_OPTS": "-Djavax.net.ssl.trustStore=${workspaceFolder}/.certs/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit",
+                "PATH": "${workspaceFolder}/.android-sdk/platform-tools:${workspaceFolder}/.flutter/bin:${env:PATH}"
+            }
+        },
+        {
+            "name": "Flutter (profile)",
+            "type": "dart",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/app_flutter",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "env": {
+                "HOME": "${workspaceFolder}/.home",
+                "JAVA_HOME": "/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home",
+                "ANDROID_HOME": "${workspaceFolder}/.android-sdk",
+                "ANDROID_SDK_ROOT": "${workspaceFolder}/.android-sdk",
+                "PUB_CACHE": "${workspaceFolder}/.pub-cache",
+                "GRADLE_OPTS": "-Djavax.net.ssl.trustStore=${workspaceFolder}/.certs/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit",
+                "PATH": "${workspaceFolder}/.android-sdk/platform-tools:${workspaceFolder}/.flutter/bin:${env:PATH}"
+            }
+        },
         {
             "type": "java",
             "name": "Current File",
