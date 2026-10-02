@@ -10,6 +10,8 @@ export const ERROR_CODES = [
   'permission_denied',
   'not_found',
   'conflict',
+  'price_changed',
+  'not_eligible',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
