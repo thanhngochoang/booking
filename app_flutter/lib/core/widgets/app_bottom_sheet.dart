@@ -11,7 +11,21 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 Future<T?> showAppSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
+  dynamic isDismissible = true,
+  dynamic enableDrag = true,
+  bool Function()? canDismiss,
 }) {
+  final dismissible =
+      (isDismissible is bool Function()
+          ? isDismissible()
+          : (isDismissible is bool ? isDismissible : true)) &&
+      (canDismiss == null || canDismiss());
+  final drag =
+      (enableDrag is bool Function()
+          ? enableDrag()
+          : (enableDrag is bool ? enableDrag : true)) &&
+      (canDismiss == null || canDismiss());
+
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
@@ -19,6 +33,8 @@ Future<T?> showAppSheet<T>(
     backgroundColor: Colors.transparent,
     elevation: 0,
     barrierColor: AppColors.overlay,
+    isDismissible: dismissible,
+    enableDrag: drag,
     builder: (sheetContext) => _SheetFrame(child: builder(sheetContext)),
   );
 }

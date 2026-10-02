@@ -247,7 +247,7 @@ class _BookingCardSkeleton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const FractionallySizedBox(
+                  FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: 0.7,
                     child: AppSkeleton.line(height: 12),
@@ -256,11 +256,11 @@ class _BookingCardSkeleton extends StatelessWidget {
                   FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: isNormal ? 0.5 : 0.45,
-                    child: const AppSkeleton.line(height: 10),
+                    child: AppSkeleton.line(height: 10),
                   ),
                   if (isNormal) ...[
                     const SizedBox(height: 4),
-                    const FractionallySizedBox(
+                    FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: 0.4,
                       child: AppSkeleton.line(height: 10),
@@ -270,7 +270,7 @@ class _BookingCardSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const AppSkeleton.box(width: 52, height: 18, radius: AppRadius.sm),
+            AppSkeleton.box(width: 52, height: 18, radius: AppRadius.sm),
           ],
         ),
       ),

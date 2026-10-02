@@ -226,7 +226,7 @@ class _StatusTimelineSkeleton extends StatelessWidget {
                     child: Column(
                       children: [
                         const SizedBox(height: 2),
-                        const AppSkeleton.box(
+                        AppSkeleton.box(
                           width: 14,
                           height: 14,
                           radius: AppRadius.full,
@@ -242,7 +242,7 @@ class _StatusTimelineSkeleton extends StatelessWidget {
                       padding: EdgeInsets.only(
                         bottom: i < stepsCount - 1 ? 12 : 0,
                       ),
-                      child: const Column(
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -251,7 +251,7 @@ class _StatusTimelineSkeleton extends StatelessWidget {
                             widthFactor: 0.55,
                             child: AppSkeleton.line(height: 14),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           FractionallySizedBox(
                             alignment: Alignment.centerLeft,
                             widthFactor: 0.35,
