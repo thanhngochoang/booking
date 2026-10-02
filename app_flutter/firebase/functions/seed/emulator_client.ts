@@ -1,4 +1,5 @@
 import { REGION } from '../src/config.js';
+import { assertLocalEmulators } from './local_guard.js';
 
 // Talks to the emulators over their REST endpoints, like the app does: Auth sign-in and the
 // callable protocol (POST {data} → {result} | {error}). Used by the integration tests and try_contact_link.ts.
@@ -9,9 +10,7 @@ const firestoreHost = () => host('FIRESTORE_EMULATOR_HOST', '127.0.0.1:8080');
 const functionsHost = () => host('FUNCTIONS_EMULATOR_HOST', '127.0.0.1:5001');
 
 export function emulatorProject(): string {
-  const project = process.env.GCLOUD_PROJECT;
-  if (project === undefined || project === '') throw new Error('GCLOUD_PROJECT is not set (run under firebase emulators:exec)');
-  return project;
+  return assertLocalEmulators({ functions: true });
 }
 
 /** Signs in on the Auth emulator and returns an ID token. */

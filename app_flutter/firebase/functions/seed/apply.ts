@@ -1,9 +1,11 @@
 import type { Auth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
+import { assertLocalEmulators, type LocalGuardOptions } from './local_guard.js';
 import { SEED_PASSWORD, SEED_USERS, seedDocuments } from './fixtures.js';
 
-/** Writes the seed into the emulators. Idempotent: fixed ids, documents replaced, users updated. */
-export async function applySeed(db: Firestore, auth: Auth, now: Date): Promise<void> {
+/** Writes the seed into the emulators. Refuses non-local emulators and, by default, non-`demo-` projects. Idempotent: fixed ids, documents replaced, users updated. */
+export async function applySeed(db: Firestore, auth: Auth, now: Date, guard: LocalGuardOptions = {}): Promise<void> {
+  assertLocalEmulators(guard);
   for (const u of SEED_USERS) {
     const props = { email: u.email, password: SEED_PASSWORD, displayName: u.displayName, emailVerified: true };
     try {
