@@ -123,6 +123,10 @@ ThemeData _build({
       foregroundColor: foreground,
       elevation: 0,
       scrolledUnderElevation: 0,
+      // Mock sub-screen `.bar`: back · centred serif 17 title · empty slot.
+      // Tab roots override this with [tabRootTitleStyle].
+      centerTitle: true,
+      titleTextStyle: display(17),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
@@ -199,3 +203,8 @@ ThemeData _build({
     dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
   );
 }
+
+/// Title of a tab root's app bar (mock `.bar .t`): serif 22, left-aligned
+/// (pass `centerTitle: false`). Sub-screens keep the theme's centred 17.
+TextStyle? tabRootTitleStyle(BuildContext context) =>
+    Theme.of(context).appBarTheme.titleTextStyle?.copyWith(fontSize: 22);

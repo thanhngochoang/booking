@@ -431,6 +431,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get contactCall => 'Gọi điện';
 
   @override
+  String get contactCallShort => 'Gọi';
+
+  @override
   String get contactZalo => 'Zalo';
 
   @override

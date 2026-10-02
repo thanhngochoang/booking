@@ -155,6 +155,7 @@
   "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé.",
   "contactLabel": "Liên hệ",
   "contactCall": "Gọi điện",
+  "contactCallShort": "Gọi",
   "contactZalo": "Zalo",
   "contactWhatsApp": "WhatsApp",
   "contactInquiry": "Nhắn tin hỏi trước",

@@ -41,6 +41,11 @@ extension ContactChannelUi on ContactChannel {
     ContactChannel.whatsapp => l.contactWhatsApp,
     ContactChannel.inApp => l.contactInquiry,
   };
+
+  /// Visible tray caption: "Gọi" for the call entry (mock); screen readers
+  /// still get [label].
+  String shortLabel(AppLocalizations l) =>
+      this == ContactChannel.call ? l.contactCallShort : label(l);
 }
 
 /// Compact contact button. Resting, it is one small button; the outside
@@ -267,22 +272,24 @@ class _ContactDialState extends State<ContactDial>
 
     final visual = widget.style == ContactDialStyle.icon
         ? Container(
+            key: const Key('contact-dial-visual'),
             width: 48,
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: scheme.secondary,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
               border: Border.all(color: borderColor),
             ),
             child: glyph(22),
           )
         : Container(
+            key: const Key('contact-dial-visual'),
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
             decoration: BoxDecoration(
               color: scheme.secondary,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderRadius: BorderRadius.circular(AppRadius.control),
               border: Border.all(color: borderColor),
             ),
             child: Row(
@@ -312,7 +319,11 @@ class _ContactDialState extends State<ContactDial>
         child: InkWell(
           key: const Key('contact-dial-button'),
           focusNode: _buttonFocus,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(
+            widget.style == ContactDialStyle.icon
+                ? AppRadius.xl
+                : AppRadius.control,
+          ),
           onTap: widget.busy ? null : () => _onButton(external),
           child: ConstrainedBox(
             constraints: const BoxConstraints(
@@ -585,7 +596,7 @@ class _TrayItemState extends State<_TrayItem> {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    widget.channel.label(context.l10n),
+                    widget.channel.shortLabel(context.l10n),
                     maxLines: 1,
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontSize: _labelSize,

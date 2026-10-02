@@ -115,7 +115,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       nearby ? ScreenCodes.exploreNearby : ScreenCodes.exploreNoLocation,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l.tabExplore)),
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: Text(l.tabExplore),
+        ),
         body: RefreshIndicator(
           onRefresh: () async {
             await controller.refreshLocation();

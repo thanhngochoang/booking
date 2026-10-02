@@ -371,6 +371,13 @@ void main() {
     // The header scrolls with the list, so the field is reachable.
     await tester.ensureVisible(find.byKey(const Key('area-search')));
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('area-search')).hitTestable(),
+      findsOneWidget,
+      reason: 'not hidden under the fixed footer',
+    );
+    // While typing, the settings shortcut steps aside for the list.
+    expect(find.byKey(const Key('area-open-settings')), findsNothing);
     await tester.tap(find.byKey(const Key('area-search')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);

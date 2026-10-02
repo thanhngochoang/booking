@@ -380,19 +380,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
                     ),
                   ),
                 const SizedBox(height: AppSpace.s4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.lock_outline_rounded, size: 16),
-                    const SizedBox(width: AppSpace.s2),
-                    Expanded(
-                      child: Text(
-                        l.setupContactPrivacy,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
+                Text(l.setupContactPrivacy, style: theme.textTheme.bodySmall),
               ],
             ),
           ),

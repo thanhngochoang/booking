@@ -1,6 +1,7 @@
 // test/features/explore/widgets/event_tile_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/explore/widgets/event_tile.dart';
 
 import '../../../core/widgets/widget_host.dart';
@@ -83,4 +84,22 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('the row uses the glass card fill', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        NearbyEventTile(event: event('a')),
+        brightness: Brightness.light,
+      ),
+    );
+    final m = tester.widget<Material>(
+      find
+          .descendant(
+            of: find.byType(NearbyEventTile),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(m.color, AppColors.glass);
+  });
 }

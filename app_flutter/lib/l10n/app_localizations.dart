@@ -886,6 +886,12 @@ abstract class AppLocalizations {
   /// **'Gọi điện'**
   String get contactCall;
 
+  /// No description provided for @contactCallShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi'**
+  String get contactCallShort;
+
   /// No description provided for @contactZalo.
   ///
   /// In vi, this message translates to:

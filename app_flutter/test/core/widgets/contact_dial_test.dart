@@ -224,7 +224,7 @@ void main() {
 
   group('expanding', () {
     testWidgets(
-      'tap shows Gọi điện, Zalo, WhatsApp left to right with text labels',
+      'tap shows Gọi, Zalo, WhatsApp left to right with text labels',
       (tester) async {
         await _pump(tester);
         await _open(tester);
@@ -235,7 +235,7 @@ void main() {
         ];
         expect(xs[0], lessThan(xs[1]));
         expect(xs[1], lessThan(xs[2]));
-        for (final t in ['Gọi điện', 'Zalo', 'WhatsApp']) {
+        for (final t in ['Gọi', 'Zalo', 'WhatsApp']) {
           expect(find.text(t), findsOneWidget);
         }
       },
@@ -704,5 +704,36 @@ void main() {
       ),
       findsNothing,
     );
+  });
+
+  group('mock polish', () {
+    BorderRadius radius(WidgetTester tester) =>
+        (tester
+                    .widget<Container>(
+                      find.byKey(const Key('contact-dial-visual')),
+                    )
+                    .decoration!
+                as BoxDecoration)
+            .borderRadius!
+            .resolve(TextDirection.ltr);
+
+    testWidgets('the square button has radius 16, the pill 14', (tester) async {
+      await _pump(tester);
+      expect(radius(tester), BorderRadius.circular(AppRadius.xl));
+      await _pump(tester, style: ContactDialStyle.labeled);
+      expect(radius(tester), BorderRadius.circular(AppRadius.control));
+    });
+
+    testWidgets('the tray shows "Gọi" and reads "Gọi điện"', (tester) async {
+      await _pump(tester);
+      await tester.tap(find.byKey(_button));
+      await tester.pumpAndSettle();
+      final call = find.byKey(const Key('contact-call'));
+      expect(
+        find.descendant(of: call, matching: find.text('Gọi')),
+        findsOneWidget,
+      );
+      expect(tester.getSemantics(call).label, 'Gọi điện');
+    });
   });
 }

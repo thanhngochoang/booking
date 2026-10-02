@@ -196,4 +196,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('explore-see-all')), findsNothing);
   });
+
+  testWidgets('a tab root keeps the 22px left-aligned title', (tester) async {
+    await _open(tester);
+    final bar = tester.widget<AppBar>(find.byType(AppBar));
+    expect(bar.centerTitle, isFalse);
+    expect(bar.titleTextStyle?.fontSize, 22);
+  });
 }

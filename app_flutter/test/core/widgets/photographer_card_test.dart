@@ -298,4 +298,31 @@ void main() {
     final avatar = tester.getRect(find.byType(AppAvatar));
     expect(avatar.top - info.top, 10, reason: 'info row padding 10');
   });
+
+  testWidgets('glass fill, and stacked buttons keep the mock gap', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _card(
+        onBook: () {},
+        textScale: 1.3,
+        width: 320,
+        brightness: Brightness.light,
+      ),
+    );
+    await tester.pump();
+    final card = tester.widget<Material>(
+      find
+          .descendant(
+            of: find.byType(PhotographerCard),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(card.color, AppColors.glass);
+    final profile = tester.getRect(find.widgetWithText(AppButton, 'Hồ sơ'));
+    final book = tester.getRect(find.widgetWithText(AppButton, 'Đặt T7'));
+    // 48dp tap boxes, visuals on top: 10dp between the visuals, as in the mock.
+    expect(book.top - profile.bottom, 0);
+  });
 }

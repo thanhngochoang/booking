@@ -46,7 +46,9 @@ class PhotoCard extends StatelessWidget {
   /// and pill labels; pass one for cards that show no text.
   final String? semanticLabel;
 
+  /// Mock: radius 20 (`--r3`) for the big feed card, 16 (`--r2`) for small.
   static const _radius = AppRadius.card;
+  static const _smallRadius = AppRadius.xl;
 
   @override
   Widget build(BuildContext context) {
@@ -68,12 +70,14 @@ class PhotoCard extends StatelessWidget {
       label: label.isEmpty ? null : label,
       child: AspectRatio(
         aspectRatio: aspect,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_radius),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final small = constraints.maxWidth < 200;
-              return Stack(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final small = constraints.maxWidth < 200;
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(
+                small ? _smallRadius : _radius,
+              ),
+              child: Stack(
                 fit: StackFit.expand,
                 children: [
                   // Flat fill under the photo: shown while it loads and after a
@@ -192,9 +196,9 @@ class PhotoCard extends StatelessWidget {
                       ),
                     ),
                 ],
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

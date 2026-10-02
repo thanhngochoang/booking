@@ -37,7 +37,7 @@ class NearbyEventTile extends StatelessWidget {
         // A list row never blurs (one BackdropFilter per row would make a
         // long list janky): translucent fill and a hairline instead.
         child: Material(
-          color: theme.colorScheme.secondary,
+          color: dark ? AppColorsDark.glass : AppColors.glass,
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.card),

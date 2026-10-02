@@ -91,8 +91,11 @@ class PhotographerCard extends StatelessWidget {
             tapAlignment: Alignment.topCenter,
           );
 
+    final glass = Theme.of(context).brightness == Brightness.dark
+        ? AppColorsDark.glass
+        : AppColors.glass;
     return Material(
-      color: scheme.secondary,
+      color: glass,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -211,11 +214,10 @@ class PhotographerCard extends StatelessWidget {
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // The 48dp tap boxes (visual on top) already leave the
+                      // mock's gap between the two visuals.
                       profileButton,
-                      if (bookButton != null) ...[
-                        const SizedBox(height: AppSpace.s2),
-                        bookButton,
-                      ],
+                      ?bookButton,
                     ],
                   )
                 : Row(

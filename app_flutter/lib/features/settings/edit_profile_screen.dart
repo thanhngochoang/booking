@@ -111,9 +111,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           onFieldSubmitted: (_) => save(),
                           decoration: InputDecoration(
                             labelText: l.displayNameLabel,
-                            prefixIcon: const Icon(
-                              Icons.person_outline_rounded,
-                            ),
                           ),
                           validator: (v) => validateName(v, l),
                         ),

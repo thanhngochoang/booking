@@ -400,4 +400,9 @@ void main() {
     await expectIdle(tester);
     expect(find.byType(BackdropFilter).evaluate().length, lessThanOrEqualTo(4));
   });
+
+  testWidgets('privacy line is plain text, as in the mock', (tester) async {
+    await _open(tester);
+    expect(find.byIcon(Icons.lock_outline_rounded), findsNothing);
+  });
 }

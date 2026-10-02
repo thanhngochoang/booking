@@ -19,7 +19,11 @@ class HomeTab extends ConsumerWidget {
       ScreenCodes.home,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l.tabHome)),
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: Text(l.tabHome),
+        ),
         body: EmptyState(title: l.emptyHomeTitle, body: l.emptyHomeBody),
       ),
     );
@@ -36,7 +40,11 @@ class ActionTab extends ConsumerWidget {
       photographer ? ScreenCodes.createPost : ScreenCodes.findPhotographer,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(photographer ? l.tabCreate : l.tabFind)),
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: Text(photographer ? l.tabCreate : l.tabFind),
+        ),
         body: EmptyState(
           title: photographer ? l.emptyCreateTitle : l.emptyFindTitle,
           body: photographer ? l.emptyCreateBody : l.emptyFindBody,
@@ -56,7 +64,11 @@ class BookingsTab extends ConsumerWidget {
       photographer ? ScreenCodes.workEmpty : ScreenCodes.bookings,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(photographer ? l.tabWork : l.tabBookings)),
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: Text(photographer ? l.tabWork : l.tabBookings),
+        ),
         body: EmptyState(
           title: photographer ? l.emptyWorkTitle : l.emptyBookingsTitle,
           body: photographer ? l.emptyWorkBody : l.emptyBookingsBody,
@@ -93,6 +105,8 @@ class ProfileTab extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
           title: Text(l.tabProfile),
           actions: [
             IconButton(

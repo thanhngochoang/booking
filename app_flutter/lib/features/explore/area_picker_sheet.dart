@@ -175,8 +175,10 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                       : const SizedBox.shrink(),
                 ),
                 // Mock S36: after the list, just above the main button.
+                // Hidden while the keyboard is up, so the list keeps room.
                 if (location.permission ==
-                    LocationPermissionStatus.deniedForever) ...[
+                        LocationPermissionStatus.deniedForever &&
+                    MediaQuery.viewInsetsOf(context).bottom == 0) ...[
                   AppButton.outline(
                     l.areaPickerOpenSettings,
                     key: const Key('area-open-settings'),

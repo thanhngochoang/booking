@@ -444,4 +444,21 @@ void main() {
       expect(preview.size, AppButtonSize.small);
     });
   });
+
+  testWidgets('S42 name field has no icon', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('edit-name')),
+        matching: find.byIcon(Icons.person_outline_rounded),
+      ),
+      findsNothing,
+    );
+  });
 }

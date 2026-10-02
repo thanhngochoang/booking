@@ -345,4 +345,24 @@ void main() {
       expect(await dotColor(PhotoPillDot.warn), AppColors.warning);
     });
   });
+
+  testWidgets('small cards have radius 16, large ones 20', (tester) async {
+    BorderRadius clip() => tester
+        .widget<ClipRRect>(
+          find
+              .descendant(
+                of: find.byType(PhotoCard),
+                matching: find.byType(ClipRRect),
+              )
+              .first,
+        )
+        .borderRadius
+        .resolve(TextDirection.ltr);
+    await tester.pumpWidget(_card(width: 160, title: null, subtitle: null));
+    await tester.pump();
+    expect(clip(), BorderRadius.circular(AppRadius.xl));
+    await tester.pumpWidget(_card(width: 300));
+    await tester.pump();
+    expect(clip(), BorderRadius.circular(AppRadius.card));
+  });
 }
