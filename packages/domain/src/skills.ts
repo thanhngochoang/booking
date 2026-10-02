@@ -170,10 +170,9 @@ function withStepDone(s: Skills, step: CompletenessStep): Skills {
     case 'specialties':
       return { ...s, specialties: [{ id: '_', level: 2, years: null, evidencePostIds: [] }] };
     case 'levels':
-      return s;
+      return s; // unreachable after parseSkills: levels are always 1..3
     case 'evidence': {
-      const i = s.specialties.findIndex((x) => x.level === 3 && x.evidencePostIds.length === 0);
-      return { ...s, specialties: s.specialties.map((x, j) => (j === i ? { ...x, evidencePostIds: ['_'] } : x)) };
+      return { ...s, specialties: s.specialties.map((x) => (x.level === 3 && x.evidencePostIds.length === 0 ? { ...x, evidencePostIds: ['_'] } : x)) };
     }
     case 'styles':
       return { ...s, styles: ['_'] };

@@ -198,6 +198,39 @@
       "percent": 95,
       "next": "extras",
       "nextAfter": 100
+    },
+    {
+      "name": "two Chuyên sâu genres without evidence: the step completes both",
+      "skills": {
+        "schemaVersion": 1,
+        "specialties": [
+          {
+            "id": "portrait",
+            "level": 3,
+            "evidencePostIds": []
+          },
+          {
+            "id": "wedding",
+            "level": 3,
+            "evidencePostIds": []
+          }
+        ],
+        "styles": [
+          "film"
+        ],
+        "extras": [
+          "retouch"
+        ],
+        "languages": [
+          "vi"
+        ],
+        "audiences": [
+          "couple"
+        ]
+      },
+      "percent": 80,
+      "next": "evidence",
+      "nextAfter": 100
     }
   ]
 }
