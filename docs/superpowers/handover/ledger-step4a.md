@@ -13,3 +13,6 @@ Task 2: complete (booking state machine, decideTransition, roleOf, 121 tests pas
 
 Task 3: dispatched
 Task 3: complete (escrow and ledger maths, payments, refunds, ledger entries, invariants 11 & 12, 130 tests pass, typecheck and lint clean)
+
+Task 4: dispatched
+Task 4: complete (booking ports, in-memory reference store, fake gateway, createBookingDraft, createDeposit, confirmFakePayment, handlePaymentNotification, checkDeposit, 140 tests pass, typecheck and lint clean)
