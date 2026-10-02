@@ -13,7 +13,8 @@ Data is saved to app_flutter/firebase/.emulator-data on Ctrl-C and loaded on the
 
   --fresh   delete the saved emulator data first (then seed)
   --seed    apply the seed again on top of the saved data
-  --lan     listen on 0.0.0.0 instead of 127.0.0.1 (Genymotion, real devices on the same Wi-Fi)
+  --lan     listen on 0.0.0.0 instead of 127.0.0.1 (Genymotion, real devices on the same Wi-Fi);
+            the Emulator UI and hub are then open to the whole network
   --help    show this text
 
 Project id: $FIREBASE_PROJECT, else project_info.project_id of
@@ -49,6 +50,9 @@ set -eu
 export HOME="$ROOT/.home"   # firebase-tools and npm write their caches inside the repo
 mkdir -p "$HOME"
 export JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true
+# A service-account key in the environment would let the Functions emulator's Admin SDK reach
+# real Google APIs (anything the emulators do not cover); local runs use no credentials.
+unset GOOGLE_APPLICATION_CREDENTIALS
 
 command -v node >/dev/null || { echo "Node.js 22 or newer is required (brew install node@22)." >&2; exit 1; }
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
@@ -76,6 +80,7 @@ if [ "$LAN" = 1 ]; then
     for (const v of Object.values(c.emulators)) if (v && typeof v === "object" && "host" in v) v.host = "0.0.0.0";
     fs.writeFileSync(dst, JSON.stringify(c, null, 2));
   ' "$FB/firebase.json" "$CONFIG"
+  echo "Warning: --lan exposes the Emulator UI, the hub and every emulator (no auth) to your local network." >&2
 fi
 
 if [ "$FRESH" = 1 ]; then rm -rf "$DATA"; fi
