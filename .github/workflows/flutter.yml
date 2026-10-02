@@ -4,6 +4,8 @@ on:
     branches: [flutter-rewrite, develop, main]
   pull_request:
     paths: ['app_flutter/**', 'design-system/**', 'packages/**', '.github/workflows/flutter.yml']
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest

@@ -24,6 +24,8 @@ on:
         description: 'Also deploy Storage rules'
         type: boolean
         default: false
+permissions:
+  contents: read
 concurrency:
   group: firebase-deploy-${{ github.ref_name }}
   cancel-in-progress: false
@@ -70,6 +72,7 @@ jobs:
     steps:
       - name: Skip when the environment has no project
         if: ${{ env.PROJECT_ID == '' }}
+        working-directory: .   # the job default does not exist before checkout
         run: echo "::warning::FIREBASE_PROJECT_ID is not set for this environment; nothing deployed."
       - uses: actions/checkout@v4
         if: ${{ env.PROJECT_ID != '' }}
@@ -121,6 +124,9 @@ jobs:
       # predeploy (firebase.json) runs `npm run build`: typecheck + esbuild bundle with packages/domain.
       # --force lets the CLI set the Artifact Registry cleanup policy on the first deploy and remove
       # functions that are no longer in src/index.ts, without an interactive prompt.
+      # WARNING: --force DELETES every deployed function of the default codebase that src/index.ts
+      # does not export (also ones created by hand or by another repo). Check the project's
+      # Console > Functions list before the first deploy (docs/FIREBASE-SETUP.md section 11).
       - name: Deploy Cloud Functions
         if: ${{ env.PROJECT_ID != '' }}
         run: >
