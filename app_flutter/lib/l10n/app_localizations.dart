@@ -784,6 +784,12 @@ abstract class AppLocalizations {
   /// **'Số điện thoại'**
   String get phoneLabel;
 
+  /// No description provided for @phoneCodeLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã'**
+  String get phoneCodeLabel;
+
   /// No description provided for @phoneRequired.
   ///
   /// In vi, this message translates to:

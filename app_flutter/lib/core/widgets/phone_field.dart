@@ -3,15 +3,20 @@ import 'package:flutter/services.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/phone.dart';
+import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// Phone number input. By default a Vietnamese number with a fixed "+84"
-/// prefix: the text is the national form `903 123 456`, and typing or pasting
+/// Phone number input. By default two boxes (mock S33): a read-only "Mã +84"
+/// box, then the number. In [international] mode the code box is hidden (the
+/// number carries its own `+` code). The text is the national form `903 123 456`; typing or pasting
 /// `0903…` or `+84…` is normalised. With [international] (WhatsApp) the field
 /// holds the whole number, `+` and digits, e.g. `+14155552671`.
 /// Read the number with [phoneFromField] (pass the same [international]).
 ///
 /// Note: only a paste (or a whole-text edit) can carry a "+84" into a national
 /// field; typing "+" digit by digit is read as national digits.
+const double _codeBoxWidth = 72;
+const String _dialCode = '+84';
+
 class PhoneField extends StatelessWidget {
   const PhoneField({
     super.key,
@@ -43,7 +48,7 @@ class PhoneField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return TextFormField(
+    final number = TextFormField(
       controller: controller,
       enabled: enabled,
       autofocus: autofocus,
@@ -66,10 +71,35 @@ class PhoneField extends StatelessWidget {
         labelText: label ?? l.phoneLabel,
         floatingLabelBehavior: FloatingLabelBehavior.always,
         hintText: international ? '+1 415 555 2671' : '903 123 456',
-        prefixText: international ? null : '+84 ',
-        prefixIcon: const Icon(Icons.phone_outlined),
         errorText: errorText,
       ),
+    );
+    if (international) return number;
+    // Mock S33/S34/S42: a fixed "Mã +84" box (72dp), then the number.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ExcludeFocus(
+          child: SizedBox(
+            key: const Key('phone-code-box'),
+            width: _codeBoxWidth,
+            child: InputDecorator(
+              isEmpty: false,
+              decoration: InputDecoration(
+                labelText: l.phoneCodeLabel,
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                enabled: enabled,
+              ),
+              child: Text(
+                _dialCode,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpace.s2),
+        Expanded(child: number),
+      ],
     );
   }
 }

@@ -375,6 +375,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get phoneLabel => 'Số điện thoại';
 
   @override
+  String get phoneCodeLabel => 'Mã';
+
+  @override
   String get phoneRequired => 'Nhập số điện thoại';
 
   @override

@@ -48,14 +48,30 @@ void main() {
     expect(c.text, '903 123 456');
   });
 
-  testWidgets('the +84 prefix is visible on an empty unfocused field', (
+  testWidgets('two boxes: a 72dp read-only "Mã +84", then the number', (
     tester,
   ) async {
     await pump(tester);
+    expect(find.text('Mã'), findsOneWidget);
+    expect(find.text('+84'), findsOneWidget);
+    expect(find.text('Số điện thoại'), findsOneWidget);
+    final box = find.byKey(const Key('phone-code-box'));
+    expect(tester.getSize(box).width, 72);
+    expect(find.byIcon(Icons.phone_outlined), findsNothing);
     final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration!.prefixText, isNull);
+    expect(field.decoration!.prefixIcon, isNull);
     expect(
-      field.decoration!.floatingLabelBehavior,
-      FloatingLabelBehavior.always,
+      find.descendant(of: box, matching: find.byType(TextField)),
+      findsNothing,
+    );
+    expect(
+      find.ancestor(of: box, matching: find.byType(ExcludeFocus)),
+      findsWidgets,
+    );
+    expect(
+      tester.getTopLeft(find.byType(TextField)).dx,
+      greaterThan(tester.getTopRight(box).dx),
     );
   });
 
@@ -152,6 +168,14 @@ void main() {
       );
       await tester.enterText(find.byType(TextFormField), '+14155552671');
       expect(form.currentState!.validate(), isTrue);
+    });
+
+    testWidgets('has no "Mã +84" box: the number carries its own code', (
+      tester,
+    ) async {
+      await pumpIntl(tester);
+      expect(find.byKey(const Key('phone-code-box')), findsNothing);
+      expect(find.text('Mã'), findsNothing);
     });
 
     testWidgets('a custom label replaces "Số điện thoại"', (tester) async {

@@ -138,6 +138,7 @@
     }
   },
   "phoneLabel": "Số điện thoại",
+  "phoneCodeLabel": "Mã",
   "phoneRequired": "Nhập số điện thoại",
   "phoneInvalid": "Số điện thoại chưa đúng. Ví dụ: 903 123 456",
   "phoneInvalidInternational": "Nhập số có mã quốc gia, ví dụ: +1 415 555 2671",
