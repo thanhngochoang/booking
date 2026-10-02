@@ -484,9 +484,9 @@ taxonomy/skills/items/{id}
   labels: {vi}, order, active
 ```
 
-- Công khai (đọc bởi mọi người đã đăng nhập), chỉ chủ ghi `skills` (trừ `completeness`, `updatedAt` do Function ghi). Rules kiểm: id phải có trong `taxonomy`, đúng giới hạn số lượng, `evidencePostIds` thuộc bài của chính họ.
-- Cách kiểm hiện tại: rules so id với danh sách cố định trong `firestore.rules` (sao từ danh mục tích hợp; test `rules_catalogue_sync_test.dart` giữ hai bên trùng nhau, nên thêm mục danh mục cần deploy rules), kiểm giới hạn, mức 3 cần ≥ 1 minh chứng, không cho client đổi `completeness`/`skills.updatedAt`. Việc `evidencePostIds` thuộc bài của chính họ **không** kiểm trong rules (cần một lần đọc cho mỗi bài, vượt giới hạn 10 lần đọc); sheet S40 chỉ cho chọn bài của mình và Function `onPhotographerWrite` kiểm lại.
-- Function `onPhotographerWrite` kiểm tra lược đồ, tính `completeness`, rồi báo dịch vụ gợi ý cập nhật chỉ mục (3e.4).
+- Công khai (đọc bởi mọi người đã đăng nhập), chỉ chủ ghi `skills` (trừ `completeness`, `updatedAt` do Function ghi). Rules hiện kiểm: id nằm trong danh sách cố định của từng nhóm, đúng giới hạn số lượng, mức 3 cần ≥ 1 minh chứng, client không ghi các trường do server sở hữu (`completeness`, `skills.updatedAt`).
+- Cách kiểm hiện tại: rules so id với danh sách cố định trong `firestore.rules` (sao từ danh mục tích hợp; test `rules_catalogue_sync_test.dart` giữ hai bên trùng nhau, nên thêm mục danh mục cần deploy rules), kiểm giới hạn, mức 3 cần ≥ 1 minh chứng, không cho client đổi `completeness`/`skills.updatedAt`. Việc `evidencePostIds` thuộc bài của chính họ **không** kiểm trong rules (cần một lần đọc cho mỗi bài, vượt giới hạn 10 lần đọc); hiện chỉ sheet S40 giới hạn việc chọn trong bài của mình. Kiểm quyền sở hữu minh chứng và tính `completeness` sẽ do Function `onPhotographerWrite` làm (đang thiết kế, **chưa xây**); đến lúc đó app hiện điểm tính trên máy cùng công thức.
+- Function `onPhotographerWrite` (chưa xây) sẽ kiểm tra lược đồ, kiểm `evidencePostIds` thuộc bài của chính họ, tính `completeness`, rồi báo dịch vụ gợi ý cập nhật chỉ mục (3e.4).
 
 ### 3e.4 Dịch vụ gợi ý chạy riêng
 
