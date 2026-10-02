@@ -1,3 +1,4 @@
+import type { DocumentOptions } from 'firebase-functions/v2/firestore';
 import type { CallableOptions } from 'firebase-functions/v2/https';
 
 /**
@@ -20,3 +21,16 @@ export const CALLABLE_OPTIONS = {
   minInstances: 0,
   enforceAppCheck: false,
 } as const satisfies CallableOptions;
+
+/**
+ * Options of every Firestore trigger (onPhotographerWrite, spec 2026-10-02 §2). `retry: true`:
+ * a failed read or write is retried; the use case is idempotent (precondition + loop guard).
+ */
+export const TRIGGER_OPTIONS = {
+  region: REGION,
+  memory: '256MiB',
+  timeoutSeconds: 30,
+  maxInstances: 10,
+  minInstances: 0,
+  retry: true,
+} as const satisfies Omit<DocumentOptions, 'document'>;
