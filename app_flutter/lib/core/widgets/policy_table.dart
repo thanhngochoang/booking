@@ -135,8 +135,8 @@ class _PolicyTableSkeleton extends StatelessWidget {
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 36),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -147,7 +147,7 @@ class _PolicyTableSkeleton extends StatelessWidget {
                         child: AppSkeleton.line(height: 12),
                       ),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     AppSkeleton.line(width: 64, height: 12),
                   ],
                 ),

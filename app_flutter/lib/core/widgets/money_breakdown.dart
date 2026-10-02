@@ -130,7 +130,7 @@ class _MoneyBreakdownSkeleton extends StatelessWidget {
           if (i > 0) const SizedBox(height: 4),
           ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 18),
-            child: const Row(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
@@ -140,7 +140,7 @@ class _MoneyBreakdownSkeleton extends StatelessWidget {
                     child: AppSkeleton.line(height: 12),
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 AppSkeleton.line(width: 80, height: 12),
               ],
             ),

@@ -75,27 +75,27 @@ class _EscrowNoticeSkeleton extends StatelessWidget {
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 52),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.only(top: 1.0),
+                padding: const EdgeInsets.only(top: 1.0),
                 child: AppSkeleton.box(
                   width: 16,
                   height: 16,
                   radius: AppRadius.full,
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppSkeleton.line(height: 11.5),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     FractionallySizedBox(
                       widthFactor: 0.7,
                       child: AppSkeleton.line(height: 11.5),
