@@ -16,7 +16,6 @@ import 'package:photobooking/features/find/find_sheets.dart';
 /// Items load when fewer than this many dp remain below the viewport.
 const _loadMoreExtent = 600.0;
 
-const _skeletonHeight = 280.0;
 const _noteIconSize = 14.0;
 
 /// S02.06: compare photographers by area, day, service, price and rating.
@@ -152,74 +151,233 @@ class _FindPhotographerScreenState
     ),
   );
 
-  List<Widget> _resultSlivers(
-    BuildContext context,
-    AsyncValue<FindResults> results,
-    FindFilters filters,
-  ) {
+
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final filters = ref.watch(findFiltersProvider);
+    final filterCtl = ref.read(findFiltersProvider.notifier);
+    final results = ref.watch(findResultsProvider);
+    final origin = ref.watch(exploreResolutionProvider.select((r) => r.origin));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fillViewport());
+
+    final chipRows = [
+      SliverToBoxAdapter(
+        child: _chipRow([
+          AppChip(
+            key: const Key('find-area-chip'),
+            label: origin == null
+                ? l.locationChooseArea
+                : (origin.areaName ?? l.findNearMe),
+            selected: origin != null,
+            onChanged: (_) => showAreaPicker(context),
+          ),
+          AppChip(
+            key: const Key('find-date'),
+            label: filters.date == null
+                ? l.findDate
+                : formatDay(filters.date!),
+            selected: filters.date != null,
+            onChanged: (_) => _pickDate(filters),
+          ),
+          AppChip(
+            key: const Key('find-service'),
+            label: filters.specialtyId == null
+                ? l.findService
+                : specialtyLabel(filters.specialtyId!),
+            selected: filters.specialtyId != null,
+            onChanged: (_) async {
+              final r = await pickSpecialty(
+                context,
+                current: filters.specialtyId,
+              );
+              if (r != null) {
+                filterCtl.setSpecialty(r.value);
+              }
+            },
+          ),
+          if (filters.styleId != null)
+            AppChip(
+              key: const Key('find-style'),
+              label: styleLabel(filters.styleId!),
+              selected: true,
+              onChanged: (_) => filterCtl.setStyle(null),
+            ),
+          AppChip(
+            key: const Key('find-price'),
+            label: filters.budgetMax == null
+                ? l.findPrice
+                : l.findPriceUnder(
+                    formatMoney(filters.budgetMax!, short: true),
+                  ),
+            selected: filters.budgetMax != null,
+            onChanged: (_) async {
+              final r = await pickBudget(
+                context,
+                current: filters.budgetMax,
+              );
+              if (r != null) {
+                filterCtl.setBudget(r.value);
+              }
+            },
+          ),
+          AppChip(
+            key: const Key('find-rating'),
+            label: filters.minRating == null
+                ? l.findRating
+                : l.findRatingMin(formatRating(filters.minRating!)),
+            selected: filters.minRating != null,
+            onChanged: (_) async {
+              final r = await pickMinRating(
+                context,
+                current: filters.minRating,
+              );
+              if (r != null) {
+                filterCtl.setMinRating(r.value);
+              }
+            },
+          ),
+        ]),
+      ),
+      SliverToBoxAdapter(
+        child: _chipRow([
+          for (final (key, sort, label) in [
+            ('find-sort-best', RecommendationSort.best, l.findSortBest),
+            ('find-sort-near', RecommendationSort.near, l.findSortNear),
+            (
+              'find-sort-price',
+              RecommendationSort.price,
+              l.findSortPrice,
+            ),
+            (
+              'find-sort-rating',
+              RecommendationSort.rating,
+              l.findSortRating,
+            ),
+          ])
+            AppChip(
+              key: Key(key),
+              kind: AppChipKind.context,
+              label: label,
+              selected: filters.sort == sort,
+              onChanged: (_) => filterCtl.setSort(sort),
+            ),
+        ]),
+      ),
+    ];
+
+    return ScreenCode(
+      ScreenCodes.findPhotographer,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: Text(l.tabFind),
+          actions: [
+            IconButton(
+              key: const Key('find-area'),
+              tooltip: l.locationChooseArea,
+              icon: const Icon(Icons.place_outlined),
+              onPressed: () => showAreaPicker(context),
+            ),
+          ],
+        ),
+        body: CustomScrollView(
+          controller: _scroll,
+          slivers: [
+            ...chipRows,
+            SliverToBoxAdapter(
+              child: AsyncView<FindResults>(
+                value: results,
+                onRetry: () => ref.invalidate(findResultsProvider),
+                skeleton: (_) => Padding(
+                  padding: const EdgeInsets.all(AppSpace.s4),
+                  child: Column(
+                    children: [
+                      PhotographerCard.skeleton(),
+                      const SizedBox(height: AppSpace.s3),
+                      PhotographerCard.skeleton(),
+                    ],
+                  ),
+                ),
+                isEmpty: (data) => data.items.isEmpty,
+                empty: (_) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+                  child: EmptyState(
+                    title: l.findNoResult,
+                    body: l.findNoResultBody,
+                    actionLabel: filters.hasAny ? l.findClear : null,
+                    onAction: filters.hasAny
+                        ? ref.read(findFiltersProvider.notifier).clear
+                        : null,
+                  ),
+                ),
+                error: (context, err, stack) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+                  child: Center(
+                    child: ErrorState(
+                      message: l.findLoadError,
+                      onRetry: () => ref.invalidate(findResultsProvider),
+                    ),
+                  ),
+                ),
+                data: (context, data) => _LoadedResultsBox(
+                  data: data,
+                  filters: filters,
+                  onProfile: (item) {
+                    ref.read(findResultsProvider.notifier).sendClick(item);
+                    context.push('/u/${item.photographer.id}');
+                  },
+                  onBook: (item) => startBooking(
+                    context,
+                    ref,
+                    photographerId: item.photographer.id,
+                    date: filters.date,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadedResultsBox extends StatelessWidget {
+  const _LoadedResultsBox({
+    required this.data,
+    required this.filters,
+    required this.onProfile,
+    required this.onBook,
+  });
+
+  final FindResults data;
+  final FindFilters filters;
+  final void Function(RecommendedPhotographer item) onProfile;
+  final void Function(RecommendedPhotographer item) onBook;
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final now = ref.watch(clockProvider)();
-    if (results.isLoading) {
-      return [
-        SliverPadding(
-          padding: const EdgeInsets.all(AppSpace.s4),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              children: [
-                AppSkeleton.card(height: _skeletonHeight),
-                const SizedBox(height: AppSpace.s3),
-                AppSkeleton.card(height: _skeletonHeight),
-              ],
-            ),
-          ),
-        ),
-      ];
-    }
-    if (!results.hasValue) {
-      return [
-        SliverToBoxAdapter(
-          child: ErrorState(
-            message: l.findLoadError,
-            onRetry: () => ref.invalidate(findResultsProvider),
-          ),
-        ),
-      ];
-    }
-    final data = results.requireValue;
-    if (data.items.isEmpty) {
-      return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              EmptyState(
-                title: l.findNoResult,
-                body: l.findNoResultBody,
-                actionLabel: filters.hasAny ? l.findClear : null,
-                onAction: filters.hasAny
-                    ? ref.read(findFiltersProvider.notifier).clear
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ];
-    }
     final count = '${data.items.length}${data.cursor != null ? '+' : ''}';
     final countText = filters.date == null
         ? l.findCount(count)
         : l.findCountOnDay(count, formatDay(filters.date!));
-    return [
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.s4,
-          AppSpace.s2,
-          AppSpace.s4,
-          AppSpace.s2,
-        ),
-        sliver: SliverToBoxAdapter(
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s4,
+            AppSpace.s2,
+            AppSpace.s4,
+            AppSpace.s2,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -243,182 +401,74 @@ class _FindPhotographerScreenState
             ],
           ),
         ),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
-        sliver: SliverAdaptiveRows(
-          itemCount: data.items.length,
-          itemBuilder: (context, i) {
-            final item = data.items[i];
-            final p = item.photographer;
-            final day = filters.date;
-            return PhotographerCard(
-              key: Key('find-card-${p.id}'),
-              data: p,
-              reasons: item.reasons,
-              distanceKm: item.distanceKm,
-              availabilityLabel: day != null
-                  ? l.reasonFreeOnDate(formatDayMonth(day))
-                  : freeThisWeekLabel(p, now, l),
-              bookLabel: day == null
-                  ? null
-                  : l.findBookDay(weekdayLabel(day.weekday)),
-              onProfile: () {
-                ref.read(findResultsProvider.notifier).sendClick(item);
-                context.push('/u/${p.id}');
-              },
-              onBook: () =>
-                  startBooking(context, ref, photographerId: p.id, date: day),
-            );
-          },
-        ),
-      ),
-      if (data.loadingMore)
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.all(AppSpace.s4),
-            child: Center(child: CircularProgressIndicator()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 600.0 ? 2 : 1;
+              final itemCount = data.items.length;
+              final rows = (itemCount / columns).ceil();
+              final day = filters.date;
+              return Column(
+                children: [
+                  for (var row = 0; row < rows; row++) ...[
+                    if (row > 0) const SizedBox(height: AppSpace.s3),
+                    if (columns == 1)
+                      _buildCard(context, data.items[row], day)
+                    else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var k = 0; k < columns; k++) ...[
+                            if (k > 0) const SizedBox(width: AppSpace.s3),
+                            Expanded(
+                              child: row * columns + k < itemCount
+                                  ? _buildCard(
+                                      context,
+                                      data.items[row * columns + k],
+                                      day,
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
-      const SliverToBoxAdapter(child: SizedBox(height: AppSpace.s8)),
-    ];
+        if (data.loadingMore)
+          const Padding(
+            padding: EdgeInsets.all(AppSpace.s4),
+            child: Center(
+              child: SignatureLoader(size: LoaderSize.inline),
+            ),
+          ),
+        const SizedBox(height: AppSpace.s8),
+      ],
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildCard(
+    BuildContext context,
+    RecommendedPhotographer item,
+    DateTime? day,
+  ) {
     final l = context.l10n;
-    final filters = ref.watch(findFiltersProvider);
-    final filterCtl = ref.read(findFiltersProvider.notifier);
-    final results = ref.watch(findResultsProvider);
-    final origin = ref.watch(exploreResolutionProvider.select((r) => r.origin));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fillViewport());
-
-    return ScreenCode(
-      ScreenCodes.findPhotographer,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          centerTitle: false,
-          titleTextStyle: tabRootTitleStyle(context),
-          title: Text(l.tabFind),
-          actions: [
-            IconButton(
-              key: const Key('find-area'),
-              tooltip: l.locationChooseArea,
-              icon: const Icon(Icons.place_outlined),
-              onPressed: () => showAreaPicker(context),
-            ),
-          ],
-        ),
-        body: CustomScrollView(
-          controller: _scroll,
-          slivers: [
-            SliverToBoxAdapter(
-              child: _chipRow([
-                AppChip(
-                  key: const Key('find-area-chip'),
-                  label: origin == null
-                      ? l.locationChooseArea
-                      : (origin.areaName ?? l.findNearMe),
-                  selected: origin != null,
-                  onChanged: (_) => showAreaPicker(context),
-                ),
-                AppChip(
-                  key: const Key('find-date'),
-                  label: filters.date == null
-                      ? l.findDate
-                      : formatDay(filters.date!),
-                  selected: filters.date != null,
-                  onChanged: (_) => _pickDate(filters),
-                ),
-                AppChip(
-                  key: const Key('find-service'),
-                  label: filters.specialtyId == null
-                      ? l.findService
-                      : specialtyLabel(filters.specialtyId!),
-                  selected: filters.specialtyId != null,
-                  onChanged: (_) async {
-                    final r = await pickSpecialty(
-                      context,
-                      current: filters.specialtyId,
-                    );
-                    if (r != null) {
-                      filterCtl.setSpecialty(r.value);
-                    }
-                  },
-                ),
-                if (filters.styleId != null)
-                  AppChip(
-                    key: const Key('find-style'),
-                    label: styleLabel(filters.styleId!),
-                    selected: true,
-                    onChanged: (_) => filterCtl.setStyle(null),
-                  ),
-                AppChip(
-                  key: const Key('find-price'),
-                  label: filters.budgetMax == null
-                      ? l.findPrice
-                      : l.findPriceUnder(
-                          formatMoney(filters.budgetMax!, short: true),
-                        ),
-                  selected: filters.budgetMax != null,
-                  onChanged: (_) async {
-                    final r = await pickBudget(
-                      context,
-                      current: filters.budgetMax,
-                    );
-                    if (r != null) {
-                      filterCtl.setBudget(r.value);
-                    }
-                  },
-                ),
-                AppChip(
-                  key: const Key('find-rating'),
-                  label: filters.minRating == null
-                      ? l.findRating
-                      : l.findRatingMin(formatRating(filters.minRating!)),
-                  selected: filters.minRating != null,
-                  onChanged: (_) async {
-                    final r = await pickMinRating(
-                      context,
-                      current: filters.minRating,
-                    );
-                    if (r != null) {
-                      filterCtl.setMinRating(r.value);
-                    }
-                  },
-                ),
-              ]),
-            ),
-            SliverToBoxAdapter(
-              child: _chipRow([
-                for (final (key, sort, label) in [
-                  ('find-sort-best', RecommendationSort.best, l.findSortBest),
-                  ('find-sort-near', RecommendationSort.near, l.findSortNear),
-                  (
-                    'find-sort-price',
-                    RecommendationSort.price,
-                    l.findSortPrice,
-                  ),
-                  (
-                    'find-sort-rating',
-                    RecommendationSort.rating,
-                    l.findSortRating,
-                  ),
-                ])
-                  AppChip(
-                    key: Key(key),
-                    kind: AppChipKind.context,
-                    label: label,
-                    selected: filters.sort == sort,
-                    onChanged: (_) => filterCtl.setSort(sort),
-                  ),
-              ]),
-            ),
-            ..._resultSlivers(context, results, filters),
-          ],
-        ),
-      ),
+    final p = item.photographer;
+    return PhotographerCard(
+      key: Key('find-card-${p.id}'),
+      data: p,
+      reasons: item.reasons,
+      distanceKm: item.distanceKm,
+      availabilityLabel: day != null
+          ? l.reasonFreeOnDate(formatDayMonth(day))
+          : freeThisWeekLabel(p, DateTime.now(), l),
+      bookLabel: day == null ? null : l.findBookDay(weekdayLabel(day.weekday)),
+      onProfile: () => onProfile(item),
+      onBook: () => onBook(item),
     );
   }
 }

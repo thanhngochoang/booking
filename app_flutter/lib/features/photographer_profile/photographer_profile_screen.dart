@@ -84,23 +84,29 @@ class _PhotographerProfileScreenState
         ref.read(authRepositoryProvider).currentUser?.uid == widget.uid;
     return ScreenCode(
       ScreenCodes.photographerProfile,
-      child: switch (profile) {
-        AsyncValue(:final value?) when value.published || owner => _loaded(
-          context,
-          value,
-          owner,
-        ),
-        AsyncData(:final value) => _Message(
-          title: value == null ? l.profileNotFound : l.profileNotReadyTitle,
-          body: value == null ? '' : l.profileNotReadyBody,
-        ),
-        AsyncError() => _Message(
+      child: AsyncView<PhotographerProfile?>(
+        value: profile,
+        onRetry: () =>
+            ref.invalidate(photographerProfileProvider(widget.uid)),
+        skeleton: (_) => const _ProfileSkeleton(),
+        error: (context, _, _) => _Message(
           title: l.profileLoadError,
           onRetry: () =>
               ref.invalidate(photographerProfileProvider(widget.uid)),
         ),
-        _ => const _Loading(),
-      },
+        data: (context, value) {
+          if (value == null) {
+            return _Message(title: l.profileNotFound);
+          }
+          if (!value.published && !owner) {
+            return _Message(
+              title: l.profileNotReadyTitle,
+              body: l.profileNotReadyBody,
+            );
+          }
+          return _loaded(context, value, owner);
+        },
+      ),
     );
   }
 
@@ -278,8 +284,8 @@ class _Message extends StatelessWidget {
   );
 }
 
-class _Loading extends StatelessWidget {
-  const _Loading();
+class _ProfileSkeleton extends StatelessWidget {
+  const _ProfileSkeleton();
 
   @override
   Widget build(BuildContext context) => AuroraBackground(
@@ -289,11 +295,21 @@ class _Loading extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpace.s4),
         children: [
-          AppSkeleton.box(height: 220),
+          Center(child: AppAvatar.skeleton(size: AppAvatarSize.lg)),
           const SizedBox(height: AppSpace.s4),
-          AppSkeleton.line(width: 180),
+          Center(child: AppSkeleton.line(width: 180)),
           const SizedBox(height: AppSpace.s2),
-          AppSkeleton.line(width: 240),
+          Center(child: AppSkeleton.line(width: 240)),
+          const SizedBox(height: AppSpace.s4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              StatTile.skeleton(),
+              StatTile.skeleton(),
+              StatTile.skeleton(),
+              StatTile.skeleton(),
+            ],
+          ),
           const SizedBox(height: AppSpace.s4),
           AppSkeleton.card(height: 90),
         ],

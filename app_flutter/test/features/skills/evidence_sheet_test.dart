@@ -253,6 +253,7 @@ void main() {
     await tester.pumpWidget(_app(w, _Probe()));
     await tester.tap(find.text('open'));
     await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.byType(AppSkeleton), findsWidgets);
     expect(find.byKey(const Key('evidence-m0')), findsNothing);
     gate.complete();
