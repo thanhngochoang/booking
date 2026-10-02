@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 import 'widget_host.dart';
 
@@ -38,4 +39,28 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  group('errorMessage', () {
+    testWidgets('maps network and timeout errors to authErrorNetwork', (
+      tester,
+    ) async {
+      late final AppLocalizations l;
+      await tester.pumpWidget(
+        hostWidget(
+          Builder(
+            builder: (context) {
+              l = AppLocalizations.of(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      expect(errorMessage(Exception('network error'), l), l.authErrorNetwork);
+      expect(errorMessage(Exception('offline'), l), l.authErrorNetwork);
+      expect(errorMessage(Exception('socket failure'), l), l.authErrorNetwork);
+      expect(errorMessage(Exception('something unknown'), l), l.authErrorUnknown);
+    });
+  });
 }
+

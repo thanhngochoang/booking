@@ -1,8 +1,44 @@
+import 'dart:async' show TimeoutException;
+import 'dart:io' show SocketException;
+
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
+
+/// Maps known error codes (FirebaseException, BookingException) and network
+/// errors to localized user-facing messages.
+String errorMessage(Object error, AppLocalizations l) {
+  if (error is FirebaseException) {
+    return switch (error.code) {
+      'unavailable' || 'network-request-failed' => l.authErrorNetwork,
+      _ => l.authErrorUnknown,
+    };
+  }
+  if (error is SocketException || error is TimeoutException) {
+    return l.authErrorNetwork;
+  }
+  final str = error.toString();
+  final lower = str.toLowerCase();
+  if (lower.contains('network') ||
+      lower.contains('socket') ||
+      lower.contains('timeout') ||
+      lower.contains('offline') ||
+      lower.contains('connection')) {
+    return l.authErrorNetwork;
+  }
+  if (str.startsWith('BookingException(')) {
+    final code = str.substring('BookingException('.length, str.length - 1);
+    return switch (code) {
+      'network' || 'unavailable' => l.authErrorNetwork,
+      _ => l.authErrorUnknown,
+    };
+  }
+  return l.authErrorUnknown;
+}
 
 /// A short Vietnamese message and, when there is something to retry, a
 /// "Thử lại" button.
