@@ -800,6 +800,79 @@
   "notificationMuteKind": "Tắt loại thông báo này",
   "notificationUnreadPrefix": "Chưa đọc",
   "primerEnableNotification": "Bật thông báo",
-  "primerLater": "Để sau"
+  "primerLater": "Để sau",
+  "bookChoosePackage": "Chọn gói",
+  "bookWith": "Đặt với {name}",
+  "@bookWith": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "bookContinuePrice": "Tiếp tục · {price}",
+  "@bookContinuePrice": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "bookNoPackages": "Nhiếp ảnh gia chưa đăng gói",
+  "bookPriceChanged": "Giá gói đã đổi",
+  "bookDiscardTitle": "Bỏ yêu cầu đặt lịch?",
+  "bookDiscard": "Bỏ",
+  "bookKeepGoing": "Tiếp tục đặt",
+  "bookClose": "Đóng",
+  "bookLegendFree": "Rảnh",
+  "bookLegendBooked": "Đã đặt",
+  "bookLegendPending": "Chờ",
+  "bookWaiting": "{n} người đang chờ",
+  "@bookWaiting": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "bookEndsAt": "{start}–{end}",
+  "@bookEndsAt": {
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
+  "bookDayTaken": "Hôm đó vừa có người đặt",
+  "bookDayNoSlots": "Hôm đó đã hết giờ",
+  "bookPlaceTitle": "Địa điểm chụp",
+  "bookPlaceHint": "Tên địa điểm hoặc khu vực (tối thiểu 3 ký tự)",
+  "bookReview": "Xem lại",
+  "bookNote": "Ghi chú",
+  "bookNoteHint": "Thêm ghi chú cho nhiếp ảnh gia (tuỳ chọn)",
+  "bookYourPhone": "SĐT của bạn",
+  "bookDepositToday": "Đặt cọc hôm nay (30%)",
+  "bookRemaining": "Còn lại trả tại buổi chụp",
+  "bookPolicy": "Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.",
+  "bookPay": "Đặt cọc {amount}",
+  "@bookPay": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "payPendingTitle": "Đang chờ xác nhận thanh toán",
+  "payPendingBody": "Cổng thanh toán {provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.",
+  "@payPendingBody": {
+    "placeholders": {
+      "provider": {"type": "String"}
+    }
+  },
+  "payCheckAgain": "Kiểm tra lại",
+  "payChangeProvider": "Đổi cổng thanh toán",
+  "fakePaymentTitle": "Cổng thanh toán giả (chỉ để thử)",
+  "fakePaymentSuccess": "Thanh toán thành công",
+  "fakePaymentCancel": "Huỷ",
+  "paySuccessTitle": "Đã gửi yêu cầu",
+  "paySuccessBody": "{name} sẽ trả lời trong 24 giờ",
+  "@paySuccessBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "payViewBookings": "Xem lịch đặt",
+  "payExpired": "Yêu cầu đã hết hạn",
+  "payRetry": "Đặt lại"
 }
-

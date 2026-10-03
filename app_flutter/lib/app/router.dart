@@ -7,6 +7,8 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/features/booking/booking_flow_state.dart';
+import 'package:photobooking/features/booking/booking_sheet_page.dart';
 import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
@@ -189,6 +191,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/p/:postId',
         builder: (_, state) =>
             PhotoDetailScreen(postId: state.pathParameters['postId']!),
+      ),
+      GoRoute(
+        path: '/u/:uid/book',
+        pageBuilder: (_, state) => BookingSheetPage(
+          args: BookingFlowArgs(
+            photographerId: state.pathParameters['uid']!,
+            serviceId: state.uri.queryParameters['serviceId'],
+            day: state.uri.queryParameters['day'] ??
+                state.uri.queryParameters['date'],
+            area: state.uri.queryParameters['area'],
+          ),
+        ),
       ),
       GoRoute(
         path: '/u/:uid',

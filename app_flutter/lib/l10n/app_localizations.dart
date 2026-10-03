@@ -3225,6 +3225,234 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Để sau'**
   String get primerLater;
+
+  /// No description provided for @bookChoosePackage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn gói'**
+  String get bookChoosePackage;
+
+  /// No description provided for @bookWith.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt với {name}'**
+  String bookWith(String name);
+
+  /// No description provided for @bookContinuePrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục · {price}'**
+  String bookContinuePrice(String price);
+
+  /// No description provided for @bookNoPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia chưa đăng gói'**
+  String get bookNoPackages;
+
+  /// No description provided for @bookPriceChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá gói đã đổi'**
+  String get bookPriceChanged;
+
+  /// No description provided for @bookDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ yêu cầu đặt lịch?'**
+  String get bookDiscardTitle;
+
+  /// No description provided for @bookDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ'**
+  String get bookDiscard;
+
+  /// No description provided for @bookKeepGoing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục đặt'**
+  String get bookKeepGoing;
+
+  /// No description provided for @bookClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get bookClose;
+
+  /// No description provided for @bookLegendFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rảnh'**
+  String get bookLegendFree;
+
+  /// No description provided for @bookLegendBooked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đặt'**
+  String get bookLegendBooked;
+
+  /// No description provided for @bookLegendPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ'**
+  String get bookLegendPending;
+
+  /// No description provided for @bookWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} người đang chờ'**
+  String bookWaiting(int n);
+
+  /// No description provided for @bookEndsAt.
+  ///
+  /// In vi, this message translates to:
+  /// **'{start}–{end}'**
+  String bookEndsAt(String start, String end);
+
+  /// No description provided for @bookDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm đó vừa có người đặt'**
+  String get bookDayTaken;
+
+  /// No description provided for @bookDayNoSlots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm đó đã hết giờ'**
+  String get bookDayNoSlots;
+
+  /// No description provided for @bookPlaceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm chụp'**
+  String get bookPlaceTitle;
+
+  /// No description provided for @bookPlaceHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên địa điểm hoặc khu vực (tối thiểu 3 ký tự)'**
+  String get bookPlaceHint;
+
+  /// No description provided for @bookReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lại'**
+  String get bookReview;
+
+  /// No description provided for @bookNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get bookNote;
+
+  /// No description provided for @bookNoteHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ghi chú cho nhiếp ảnh gia (tuỳ chọn)'**
+  String get bookNoteHint;
+
+  /// No description provided for @bookYourPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'SĐT của bạn'**
+  String get bookYourPhone;
+
+  /// No description provided for @bookDepositToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt cọc hôm nay (30%)'**
+  String get bookDepositToday;
+
+  /// No description provided for @bookRemaining.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn lại trả tại buổi chụp'**
+  String get bookRemaining;
+
+  /// No description provided for @bookPolicy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.'**
+  String get bookPolicy;
+
+  /// No description provided for @bookPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt cọc {amount}'**
+  String bookPay(String amount);
+
+  /// No description provided for @payPendingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ xác nhận thanh toán'**
+  String get payPendingTitle;
+
+  /// No description provided for @payPendingBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng thanh toán {provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.'**
+  String payPendingBody(String provider);
+
+  /// No description provided for @payCheckAgain.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra lại'**
+  String get payCheckAgain;
+
+  /// No description provided for @payChangeProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi cổng thanh toán'**
+  String get payChangeProvider;
+
+  /// No description provided for @fakePaymentTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng thanh toán giả (chỉ để thử)'**
+  String get fakePaymentTitle;
+
+  /// No description provided for @fakePaymentSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán thành công'**
+  String get fakePaymentSuccess;
+
+  /// No description provided for @fakePaymentCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get fakePaymentCancel;
+
+  /// No description provided for @paySuccessTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu'**
+  String get paySuccessTitle;
+
+  /// No description provided for @paySuccessBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} sẽ trả lời trong 24 giờ'**
+  String paySuccessBody(String name);
+
+  /// No description provided for @payViewBookings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lịch đặt'**
+  String get payViewBookings;
+
+  /// No description provided for @payExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn'**
+  String get payExpired;
+
+  /// No description provided for @payRetry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lại'**
+  String get payRetry;
 }
 
 class _AppLocalizationsDelegate
