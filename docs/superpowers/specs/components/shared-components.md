@@ -90,11 +90,13 @@ Thẻ xin vị trí đúng lúc. `LocationPromptCard({required LocationPromptSta
 ### VerifiedMark · Mới
 Dấu tích xanh Verified. `VerifiedMark({double size = 14})`: vòng tròn nền `ctaStart` (`3D63FF`), dấu ✓ trắng, không chữ, không viền. `Semantics(label: 'Đã xác minh')` + tooltip khi nhấn giữ. Đặt ngay sau tên và **nâng cao hơn tên một chút** (khoảng 3dp trên đường cơ sở, ngang chiều cao chữ hoa), cách tên 2dp; trong `Text.rich` dùng `WidgetSpan(alignment: PlaceholderAlignment.aboveBaseline)` kèm `Transform.translate(Offset(0, -2))`, trong `Row` bọc `Padding(bottom: 3)` hoặc `Align(alignment: Alignment.topCenter)` để không nằm giữa dòng. Chỉ cho `photographers.verified`. Dùng ở S02.02, S03.01, S02.06, S11.02, S12.03.
 
-### BadgeChip · Mới
-Huy hiệu dạng chip. `BadgeChip({required BadgeInfo badge, VoidCallback? onTap})`. Biểu tượng tròn 16dp tô `CtaSurface` + tên, nền kính, viền mảnh; một dòng, rộng theo nội dung. Hàng huy hiệu: tối đa 3 chip + "Tất cả" (`Wrap`, cuộn không cần). `Semantics(label: 'Huy hiệu {tên}')`. Khác `VerifiedMark` về màu (tím/gradient, không xanh dương). Dùng ở S03.01, S09.01, thẻ nhiếp ảnh gia (≤ 2).
+### BadgeChip · Đã có
+Huy hiệu dạng chip. `BadgeChip({required BadgeView badge, VoidCallback? onTap})`. Biểu tượng tròn 16dp tô `CtaSurface` (hoặc vòng tròn xám khi chưa đạt) + tên, nền kính, viền mảnh; một dòng, rộng theo nội dung. Có biến thể `BadgeChip.skeleton()`. Hàng huy hiệu dùng `BadgeRow({required List<BadgeView> badges, int max = 3, VoidCallback? onSeeAll})` và `BadgeRow.skeleton({int count = 3})`: tối đa `max` chip (thường là 3) + "Tất cả" (`Wrap`, cuộn không cần). `Semantics(label: 'Huy hiệu {tên}')`. Khác `VerifiedMark` về màu (tím/gradient, không xanh dương). Dùng ở S03.01, S09.01, thẻ nhiếp ảnh gia (≤ 2).  
+Lớp view-data: `BadgeView(code, name, condition, earned)`.
 
-### BadgeTile · Mới
-Ô huy hiệu lớn. `BadgeTile({required BadgeInfo badge, BadgeProgress? progress, bool isNew = false, VoidCallback? onTap})`. Biểu tượng 36dp tô `CtaSurface` (đã đạt) hoặc xám (chưa đạt), tên (12 semibold), điều kiện (10,5), `CapacityBar` + "3 / 5" khi chưa đạt và là của mình; chấm "Mới" khi `isNew`. Lưới 2 cột. Dùng ở S03.02.
+### BadgeTile · Đã có
+Ô huy hiệu lớn. `BadgeTile({required BadgeView badge, BadgeProgress? progress, bool isNew = false, VoidCallback? onTap})`. Biểu tượng 36dp tô `CtaSurface` (đã đạt) hoặc xám (chưa đạt), tên (12 semibold), điều kiện (10,5), `CapacityBar` + "3 / 5" khi chưa đạt và là của mình; chấm "Mới" khi `isNew`. Có biến thể `BadgeTile.skeleton()`. Lưới 2 cột. Dùng ở S03.02.  
+Lớp view-data: `BadgeView`, `BadgeProgress(current, total)`.
 
 ### StatusBadge · Đã có
 Nhãn trạng thái booking (chữ hoa 10, radius 4, màu theo `BookingStatus`). Trạng thái vàng "Sắp tới" dùng chữ tối (`onColor`). Luôn kèm chữ. Dùng ở mọi `BookingCard`, timeline.
@@ -111,11 +113,14 @@ Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Ch
 ### BookingCard · Đã có
 `BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
 
-### EventCard và DateBlock · Mới
-`EventCard({required EventSummary data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured`: ảnh bìa 16:9 với pill ("1,2 km · Còn 6 chỗ") và lớp phủ chữ. `size: compact` (hàng ngang S02.03) rộng 176dp. `DateBlock({required DateTime day})` ô 46dp nền `primarySubtle`, số ngày Fraunces 20, tháng "T10" chữ hoa 9,5. Dùng ở S02.03, S11.01, S12.02 (xem trước), S12.03, S02.04.
+### EventCard và DateBlock · Đã có
+`EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured`: ảnh bìa 16:9 với pill ("1,2 km · Còn 6 chỗ") và lớp phủ chữ. `size: compact` (hàng ngang S02.03) rộng 176dp. Có biến thể `EventCard.skeleton({EventCardSize size = row})`.  
+`DateBlock({required DateTime day, DateBlockSize size = regular, DateBlockFormat format = regular, VoidCallback? onTap})` ô nền `primarySubtle`, số ngày Fraunces, tháng "T10" chữ hoa; biến thể `DateBlock.skeleton()`. Dùng ở S02.03, S11.01, S12.02 (xem trước), S12.03, S02.04.  
+Lớp view-data: `EventCardData(id, title, hostName, placeName, category, day, priceVnd, spotsLeft, coverUrl, distanceKm)` và hàm chuyển đổi `eventCardDataOf(Event e, AppLocalizations l)`.
 
-### TicketCard · Mới
-`TicketCard({required TicketData ticket, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar})`. `GlassCard(highlight)` cho vé sắp diễn ra: tag loại, tên, ngày giờ · số vé, badge, **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M), mã vé chọn‑copy, hàng nút; vé đã qua mờ và không QR. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.
+### TicketCard · Đã có
+`TicketCard({required TicketCardData ticket, VoidCallback? onTap, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onShare})`. `GlassCard(highlight)` cho vé sắp diễn ra: tag loại, tên, ngày giờ · số vé, badge, **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M), mã vé chọn‑copy, hàng nút; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.  
+Lớp view-data: `TicketCardData(id, code, title, category, dateTime, ticketCount, state, qrData, locationName, coverUrl)`, `TicketState` (registered | attended | cancelled).
 
 ### StatusTimeline · Đã có
 Dòng thời gian 7 bước của booking. `StatusTimeline({required List<TimelineStep> steps})`. Bước đã xong chấm xanh, bước hiện tại viền primary + quầng, bước tới chấm trống; đường nối dọc; mỗi bước có tên + dòng phụ (thời điểm, hướng dẫn). `Semantics`: "Bước 2 trong 7, đang diễn ra". Dùng ở S05.02.
@@ -197,14 +202,16 @@ Mỗi component hiển thị dữ liệu có **biến thể skeleton riêng** đ
 - Quy tắc: danh sách, lưới và thẻ đang tải dùng skeleton của chính component đó (số khối bằng số mục thường thấy trên một màn, ví dụ 3 `BookingCard`); chờ cấp màn không có hình khối biết trước (splash, mở thanh toán, chờ nhiếp ảnh gia trả lời) dùng `SignatureLoader`. Không dùng `CircularProgressIndicator`.
 - Test mỗi skeleton: cùng kích thước với component thật ở 390dp và 320dp (so `tester.getSize`), golden sáng/tối, không ticker khi giảm chuyển động.
 
-### NotificationRow · Mới
-Dòng trong hộp thư S17.01. `NotificationRow({required NotificationItem item, required VoidCallback onTap, required VoidCallback onMore})`. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `type`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom (`groupKey`) hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S17.01.
+### NotificationRow · Đã có
+Dòng trong hộp thư S17.01. `NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, required VoidCallback onMuteKind})`. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `kind`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. Có biến thể `NotificationRow.skeleton()`. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S17.01.  
+Lớp view-data: `NotificationRowData(id, kind, title, body, timeLabel, unread, thumbUrl, groupAvatars)`, `NotificationKind` (booking, payment, chat, event, badge, system).
 
-### NotificationBell · Mới
+### NotificationBell · Đã có
 Biểu tượng chuông có chấm số cho thanh đầu trang S02.01, S02.03, S06.01. `NotificationBell({required int unread, required VoidCallback onTap})`: chuông 36dp (vùng chạm 48dp), chấm số đỏ, "9+" từ mười trở lên, ẩn khi 0. `Semantics.label` theo ngữ cảnh: 0 → "Thông báo", n → "{n} thông báo chưa đọc" (đọc cả cụm, không đọc số trần). `unread` đọc từ `users/{uid}.unreadCount` qua `unreadCountProvider` (không lắng nghe danh sách). Khác `TabBadge` ở chỗ nhãn ngữ nghĩa mang nội dung "thông báo".
 
-### PermissionPrimer · Mới
-Nội dung sheet S17.03, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required String benefit, required VoidCallback onEnable, required VoidCallback onLater})`. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app. Không chứa logic quyền (controller của S17.03 gọi `NotificationPermissionPort`).
+### PermissionPrimer · Đã có
+Nội dung sheet S17.03, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required String benefit, required VoidCallback onEnable, required VoidCallback onLater})`. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy(store, now, snoozeFor)` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app qua `PrimerStore`. Không chứa logic quyền (controller của S17.03 gọi `NotificationPermissionPort`).  
+Chính sách lưu hoãn: `PermissionPrimerPolicy`, `PrimerStore` (`lib/core/permission_primer_policy.dart`).
 
 ### TabBadge · Đã có
 Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget child})`: ẩn khi 0, "9+" từ mười trở lên, nền `error`, `Semantics.value` "{n} mục mới". Số lấy từ `tabBadgesProvider`. Dùng cho Công việc (yêu cầu chờ) và Khám phá (sự kiện mới).
@@ -286,7 +293,7 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `ContactDial`, `ContactLauncher` | S03.01, S05.02, S11.02, S06.01, S12.03 (S05.04) |
 | `PhoneField` | S04.03, S11.03, S04.05, S08.05, S09.03 |
 | `LocationPromptCard`, `LocationRepository` | S02.03, S02.04, S02.05 |
-| `VerifiedMark`, `BadgeChip`, `BadgeTile` | S02.02, S03.01, S02.06, S11.02, S12.03, S09.01, S03.02 |
+| `VerifiedMark`, `BadgeChip`, `BadgeRow`, `BadgeTile` | S02.02, S03.01, S02.06, S11.02, S12.03, S09.01, S03.02 |
 | `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S06.02, S09.02, S08.02, S08.03, S08.04 |
 | `TabBadge` | thanh tab dưới |
 | `NotificationRow` | S17.01 |
@@ -311,4 +318,5 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 Người dùng quyết định: phân tích UI, thiết kế và viết các shared component **trước** khi làm tiếp các màn, để các kế hoạch màn chỉ ghép component. Đã có trong code: mục 1–4 có nhãn "Đã có" và các widget trong `lib/core/widgets/`.
 
 1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, **đã xong**): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
-2. **Nhóm B** (trước sự kiện, Chụp ngay, thông báo; kế hoạch riêng khi tới lượt): `EventCard`/`DateBlock`, `TicketCard` (QR), `BadgeChip`/`BadgeTile`, `NotificationRow`, `NotificationBell`, `PermissionPrimer`, `SwipeDeck`, `MatchOverlay`, `OfferStack`, `MapPreview`.
+2. **Nhóm B1** (kế hoạch `2026-10-02-shared-components-b1.md`, **đã xong**): `DateBlock`, `EventCard` (row, featured, compact) + `eventCardDataOf`, `TicketCard` (với mã QR `qr_flutter`), `BadgeChip` + `BadgeRow` + `BadgeTile`, `NotificationRow` + `NotificationBell`, `PermissionPrimer` + `PermissionPrimerPolicy`. Chuyển màn Khám phá sang dùng `EventCard` và xoá `NearbyEventTile`.
+3. **Nhóm B2** (Chụp ngay & bản đồ, kế hoạch tiếp theo khi tới lượt): `SwipeDeck`, `MatchOverlay`, `OfferStack`, `MapPreview`.

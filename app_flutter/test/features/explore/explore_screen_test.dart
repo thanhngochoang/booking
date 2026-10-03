@@ -9,7 +9,7 @@ import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
-import 'package:photobooking/features/explore/widgets/event_tile.dart';
+import 'package:photobooking/core/core.dart';
 
 import '../../support/explore_world.dart';
 import '../../support/screen_host.dart';
@@ -98,7 +98,7 @@ void main() {
       expect(w.location.requestCalls, 1);
       expect(find.text('Quanh bạn · vị trí gần đúng'), findsOneWidget);
       expect(
-        find.byType(NearbyEventTile),
+        find.byType(EventCard),
         findsNWidgets(3),
         reason: 'default 25 km',
       );
@@ -110,7 +110,7 @@ void main() {
         _top(tester, 'Mini session mùa thu'),
         lessThan(_top(tester, 'Workshop ánh sáng')),
       );
-      expect(find.text('1,1 km · Công viên Bạch Đằng'), findsOneWidget);
+      expect(find.text('1,1 km · Quốc Bảo · Công viên Bạch Đằng'), findsOneWidget);
     });
 
     testWidgets('Để sau turns the card into a chip and it stays away', (
@@ -148,7 +148,7 @@ void main() {
         find.text('Quanh Quận 1, TP.HCM · vị trí gần đúng'),
         findsOneWidget,
       );
-      expect(find.byType(NearbyEventTile), findsWidgets);
+      expect(find.byType(EventCard), findsWidgets);
     });
 
     testWidgets('upcoming events are listed when there is no location', (
@@ -157,9 +157,9 @@ void main() {
       final w = ExploreWorld(status: LocationPermissionStatus.denied);
       await tester.pumpWidget(await _app(w));
       await tester.pumpAndSettle();
-      await _reveal(tester, find.byType(NearbyEventTile));
+      await _reveal(tester, find.byType(EventCard));
       expect(find.text('Sự kiện chụp ảnh'), findsOneWidget);
-      expect(find.byType(NearbyEventTile), findsWidgets);
+      expect(find.byType(EventCard), findsWidgets);
       expect(w.repo.upcomingCalls, 1);
     });
 
@@ -176,7 +176,7 @@ void main() {
       // look past the viewport and make sure the fetch really happened.
       expect(w.repo.upcomingCalls, 1);
       expect(find.text('Sự kiện chụp ảnh', skipOffstage: false), findsNothing);
-      expect(find.byType(NearbyEventTile, skipOffstage: false), findsNothing);
+      expect(find.byType(EventCard, skipOffstage: false), findsNothing);
     });
   });
 
@@ -264,17 +264,17 @@ void main() {
       'radius chips filter, and the empty state offers a wider radius',
       (tester) async {
         await nearby(tester);
-        expect(find.byType(NearbyEventTile), findsNWidgets(3));
+        expect(find.byType(EventCard), findsNWidgets(3));
         await tester.tap(find.byKey(const Key('filter-radius-10')));
         await tester.pumpAndSettle();
-        expect(find.byType(NearbyEventTile), findsNWidgets(2));
+        expect(find.byType(EventCard), findsNWidgets(2));
         await tester.tap(find.byKey(const Key('filter-free')));
         await tester.pumpAndSettle();
         expect(find.text('Chưa có sự kiện gần bạn'), findsOneWidget);
         await tester.tap(find.byKey(const Key('explore-widen')));
         await tester.pumpAndSettle();
         expect(
-          find.byType(NearbyEventTile),
+          find.byType(EventCard),
           findsNWidgets(1),
           reason: '25 km, free only',
         );
@@ -285,7 +285,7 @@ void main() {
       await nearby(tester);
       await tester.tap(find.byKey(const Key('filter-weekend')));
       await tester.pumpAndSettle();
-      expect(find.byType(NearbyEventTile), findsNWidgets(1));
+      expect(find.byType(EventCard), findsNWidgets(1));
       expect(find.text('Photo walk phố cổ'), findsOneWidget);
     });
 
@@ -343,9 +343,9 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('explore-see-all')), findsNothing);
-        await _reveal(tester, find.byType(NearbyEventTile));
-        final tile = tester.widget<NearbyEventTile>(
-          find.byType(NearbyEventTile).first,
+        await _reveal(tester, find.byType(EventCard));
+        final tile = tester.widget<EventCard>(
+          find.byType(EventCard).first,
         );
         expect(tile.onTap, isNull);
       },
@@ -475,8 +475,8 @@ void main() {
     await _reveal(tester, find.byKey(const Key('error-retry')));
     await tester.tap(find.byKey(const Key('error-retry')));
     await tester.pumpAndSettle();
-    await _reveal(tester, find.byType(NearbyEventTile));
-    expect(find.byType(NearbyEventTile), findsWidgets);
+    await _reveal(tester, find.byType(EventCard));
+    expect(find.byType(EventCard), findsWidgets);
   });
 
   for (final status in [
@@ -504,7 +504,7 @@ void main() {
       }
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.byType(NearbyEventTile), findsWidgets);
+      expect(find.byType(EventCard), findsWidgets);
     });
   }
 }

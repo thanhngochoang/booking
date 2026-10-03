@@ -28,7 +28,7 @@ Plans 8a2 and 8b–8e run on two machines at once. The split was made from a fil
 | 4 | 4b Tasks 2–8 (S04.01–S04.04; needs G3) | 4c Task 1 (events read rule, `booking_features.dart`, ticker) | **G4:** lane 2 merges 4c T1 |
 | 5 | 4c Tasks 2–7 (S05.01–S05.03, S06.01–S06.03; needs G4) | 4d Tasks 1–6 (chat domain, Functions, rules, indexes, `lib/data/chat`) | **G5:** lane 2 merges 4d T1–6 |
 | 6 | 4d Tasks 7–9 (S07.01, entry points, S07.02; needs G5) | 4e Tasks 1–3 (review domain, Functions, rules, `lib/data/review`) | **G6:** lane 2 merges 4e T1–3 |
-| 7 | 4e Tasks 4–5 (S05.05, reviews on S03.01; needs G6) | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications; its Task 6 may edit `lib/features/explore/**`, untouched by lane 1 in steps 1–7) | — |
+| 7 | 4e Tasks 4–5 (S05.05, reviews on S03.01; needs G6) | `2026-10-02-shared-components-b1.md` (done in b1/7-L2; EventCard, TicketCard, badges, notifications, explore uses EventCard) | — |
 
 **Ownership (who may edit what while both lanes run):**
 - Lane 1 only: `lib/app/router.dart`, `lib/core/screen_codes.dart`, `lib/features/**` except `booking/booking_features.dart` before G4, `test/features/**`, `test/support/booking_world.dart`, `docs/design/ui-mock.html`, the status cells of `remaining-screens.md`.
@@ -61,6 +61,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S05.02, S05.03, S05.01, S06.01, S06.02, S06.03) | partly done 2026-10-03: 4c Task 1 (events read rule, booking_features.dart, ticker) in 8c/4-L2 (reaches G4); remaining: Tasks 2–7 (lane 1 step 5; needs G4) |
 | 8d | `2026-10-02-step4d-chat.md` (S07.01, S07.02 chat list, reschedule) | partly done 2026-10-03: 4d Tasks 1–6 (chat domain, Functions, rules, indexes, lib/data/chat) in 8d/5-L2 (reaches G5); remaining: Tasks 7–9 (lane 1 step 6; needs G5) |
 | 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | partly done 2026-10-03: 4e Tasks 1–3 (review domain, Functions, rules, indexes, lib/data/review) in 8e/6-L2 (reaches G6); remaining: Tasks 4–5 (lane 1 step 7; needs G6) |
+| 8b1 | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications, explore uses EventCard) | done 2026-10-03 (b1/7-L2) |
 | 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
 | 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | not started; disjoint from 8a2–8e, can run as a third lane |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |

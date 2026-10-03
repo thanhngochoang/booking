@@ -758,6 +758,48 @@
   "offlineBanner": "Đang xem dữ liệu đã lưu",
   "escrowNoticeDeposit": "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.",
   "settingsSignOutConfirmBody": "Bạn có chắc chắn muốn đăng xuất không?",
-  "settingsSignOutKeep": "Ở lại"
+  "settingsSignOutKeep": "Ở lại",
+  "ticketUpcoming": "Đã đăng ký",
+  "ticketPendingPayment": "Chờ thanh toán",
+  "ticketPast": "Đã qua",
+  "ticketCancelled": "Đã huỷ",
+  "ticketCount": "{count} vé",
+  "@ticketCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ticketCodeSemantics": "Mã vé {code}",
+  "@ticketCodeSemantics": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "ticketDirections": "Chỉ đường",
+  "ticketAddToCalendar": "Thêm vào lịch",
+  "ticketCancel": "Huỷ vé",
+  "ticketPay": "Thanh toán",
+  "badgeChipSemantics": "Huy hiệu {name}",
+  "@badgeChipSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "badgeSeeAll": "Tất cả",
+  "badgeNotEarned": "Chưa đạt",
+  "badgeEarned": "Đã đạt",
+  "badgeNew": "Mới",
+  "notificationTitle": "Thông báo",
+  "notificationUnreadCount": "{count} thông báo chưa đọc",
+  "@notificationUnreadCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notificationMarkRead": "Đánh dấu đã đọc",
+  "notificationMuteKind": "Tắt loại thông báo này",
+  "notificationUnreadPrefix": "Chưa đọc",
+  "primerEnableNotification": "Bật thông báo",
+  "primerLater": "Để sau"
 }
 

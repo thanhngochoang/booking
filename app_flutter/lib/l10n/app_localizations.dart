@@ -3093,6 +3093,138 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ở lại'**
   String get settingsSignOutKeep;
+
+  /// No description provided for @ticketUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng ký'**
+  String get ticketUpcoming;
+
+  /// No description provided for @ticketPendingPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ thanh toán'**
+  String get ticketPendingPayment;
+
+  /// No description provided for @ticketPast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã qua'**
+  String get ticketPast;
+
+  /// No description provided for @ticketCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ'**
+  String get ticketCancelled;
+
+  /// No description provided for @ticketCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} vé'**
+  String ticketCount(int count);
+
+  /// No description provided for @ticketCodeSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã vé {code}'**
+  String ticketCodeSemantics(String code);
+
+  /// No description provided for @ticketDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get ticketDirections;
+
+  /// No description provided for @ticketAddToCalendar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm vào lịch'**
+  String get ticketAddToCalendar;
+
+  /// No description provided for @ticketCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé'**
+  String get ticketCancel;
+
+  /// No description provided for @ticketPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
+  String get ticketPay;
+
+  /// No description provided for @badgeChipSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu {name}'**
+  String badgeChipSemantics(String name);
+
+  /// No description provided for @badgeSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get badgeSeeAll;
+
+  /// No description provided for @badgeNotEarned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đạt'**
+  String get badgeNotEarned;
+
+  /// No description provided for @badgeEarned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đạt'**
+  String get badgeEarned;
+
+  /// No description provided for @badgeNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới'**
+  String get badgeNew;
+
+  /// No description provided for @notificationTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo'**
+  String get notificationTitle;
+
+  /// No description provided for @notificationUnreadCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} thông báo chưa đọc'**
+  String notificationUnreadCount(int count);
+
+  /// No description provided for @notificationMarkRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu đã đọc'**
+  String get notificationMarkRead;
+
+  /// No description provided for @notificationMuteKind.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt loại thông báo này'**
+  String get notificationMuteKind;
+
+  /// No description provided for @notificationUnreadPrefix.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đọc'**
+  String get notificationUnreadPrefix;
+
+  /// No description provided for @primerEnableNotification.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo'**
+  String get primerEnableNotification;
+
+  /// No description provided for @primerLater.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để sau'**
+  String get primerLater;
 }
 
 class _AppLocalizationsDelegate
