@@ -3915,6 +3915,102 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Từ chối'**
   String get declineConfirm;
+
+  /// No description provided for @cancelRow100.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trước {when} hơn 48 giờ'**
+  String cancelRow100(String when);
+
+  /// No description provided for @cancelRow50.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong 24–48 giờ'**
+  String get cancelRow50;
+
+  /// No description provided for @cancelRow0.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dưới 24 giờ'**
+  String get cancelRow0;
+
+  /// No description provided for @cancelRefund100.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn 100%'**
+  String get cancelRefund100;
+
+  /// No description provided for @cancelRefund50.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn 50%'**
+  String get cancelRefund50;
+
+  /// No description provided for @cancelRefund0.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không hoàn'**
+  String get cancelRefund0;
+
+  /// No description provided for @cancelYouGetBack.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ nhận lại'**
+  String get cancelYouGetBack;
+
+  /// No description provided for @cancelReasonPlans.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi kế hoạch'**
+  String get cancelReasonPlans;
+
+  /// No description provided for @cancelReasonFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm được thợ khác'**
+  String get cancelReasonFound;
+
+  /// No description provided for @cancelReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác'**
+  String get cancelReasonOther;
+
+  /// No description provided for @cancelRefundPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} được hoàn cọc 100%'**
+  String cancelRefundPhotographer(String name);
+
+  /// No description provided for @cancelReasonSick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ốm/việc gấp'**
+  String get cancelReasonSick;
+
+  /// No description provided for @cancelReasonGear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết bị gặp sự cố'**
+  String get cancelReasonGear;
+
+  /// No description provided for @cancelDoneToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ. Hoàn {amount} trong 3–5 ngày'**
+  String cancelDoneToast(String amount);
+
+  /// No description provided for @cancelDoneNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ buổi chụp'**
+  String get cancelDoneNoRefund;
+
+  /// No description provided for @cancelDonePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ. {name} được hoàn cọc 100%'**
+  String cancelDonePhotographer(String name);
 }
 
 class _AppLocalizationsDelegate

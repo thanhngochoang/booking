@@ -2202,4 +2202,60 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get declineConfirm => 'Từ chối';
+
+  @override
+  String cancelRow100(String when) {
+    return 'Trước $when hơn 48 giờ';
+  }
+
+  @override
+  String get cancelRow50 => 'Trong 24–48 giờ';
+
+  @override
+  String get cancelRow0 => 'Dưới 24 giờ';
+
+  @override
+  String get cancelRefund100 => 'Hoàn 100%';
+
+  @override
+  String get cancelRefund50 => 'Hoàn 50%';
+
+  @override
+  String get cancelRefund0 => 'Không hoàn';
+
+  @override
+  String get cancelYouGetBack => 'Bạn sẽ nhận lại';
+
+  @override
+  String get cancelReasonPlans => 'Đổi kế hoạch';
+
+  @override
+  String get cancelReasonFound => 'Tìm được thợ khác';
+
+  @override
+  String get cancelReasonOther => 'Lý do khác';
+
+  @override
+  String cancelRefundPhotographer(String name) {
+    return '$name được hoàn cọc 100%';
+  }
+
+  @override
+  String get cancelReasonSick => 'Ốm/việc gấp';
+
+  @override
+  String get cancelReasonGear => 'Thiết bị gặp sự cố';
+
+  @override
+  String cancelDoneToast(String amount) {
+    return 'Đã huỷ. Hoàn $amount trong 3–5 ngày';
+  }
+
+  @override
+  String get cancelDoneNoRefund => 'Đã huỷ buổi chụp';
+
+  @override
+  String cancelDonePhotographer(String name) {
+    return 'Đã huỷ. $name được hoàn cọc 100%';
+  }
 }

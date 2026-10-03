@@ -14,6 +14,7 @@ import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
@@ -97,14 +98,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           .transitionBooking(bookingId: b.id, action: action.code);
     } catch (e) {
       if (!mounted) return;
-      final code = bookingErrorOf(e);
-      _say(switch (code) {
-        BookingErrorCode.deadlinePassed => l10n.detailErrorExpired,
-        BookingErrorCode.notEligible => l10n.detailErrorNotEligible,
-        BookingErrorCode.conflict => l10n.detailErrorConflict,
-        _ => l10n.detailErrorNetwork,
-      });
-      if (code == BookingErrorCode.conflict) {
+      _say(bookingErrorText(e, l10n));
+      if (bookingErrorOf(e) == BookingErrorCode.conflict) {
         ref.invalidate(bookingProvider(widget.bookingId));
       }
     } finally {
@@ -140,11 +135,27 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           customerName: counterpartName,
         );
       case DetailAction.cancel:
-        await showCancelSheet(
+        final l10n = context.l10n;
+        final cancelled = await showCancelSheet(
           context,
           booking: b,
           role: role,
           counterpartName: counterpartName,
+        );
+        if (cancelled != true || !mounted) return;
+        if (role == BookingRole.photographer) {
+          _say(l10n.cancelDonePhotographer(counterpartName));
+          return;
+        }
+        // The server's refund when the stream already has it, else the
+        // policy at the moment of the cancel.
+        final refunded =
+            ref.read(bookingProvider(b.id)).value?.depositRefunded ??
+            refundAmountAt(b, ref.read(clockProvider)());
+        _say(
+          refunded > 0
+              ? l10n.cancelDoneToast(formatMoney(refunded))
+              : l10n.cancelDoneNoRefund,
         );
       case DetailAction.bookAgain:
         await context.push(

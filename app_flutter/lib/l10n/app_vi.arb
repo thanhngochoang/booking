@@ -1066,5 +1066,41 @@
     }
   },
   "declineBack": "Quay lại",
-  "declineConfirm": "Từ chối"
+  "declineConfirm": "Từ chối",
+  "cancelRow100": "Trước {when} hơn 48 giờ",
+  "@cancelRow100": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "cancelRow50": "Trong 24–48 giờ",
+  "cancelRow0": "Dưới 24 giờ",
+  "cancelRefund100": "Hoàn 100%",
+  "cancelRefund50": "Hoàn 50%",
+  "cancelRefund0": "Không hoàn",
+  "cancelYouGetBack": "Bạn sẽ nhận lại",
+  "cancelReasonPlans": "Đổi kế hoạch",
+  "cancelReasonFound": "Tìm được thợ khác",
+  "cancelReasonOther": "Lý do khác",
+  "cancelRefundPhotographer": "{name} được hoàn cọc 100%",
+  "@cancelRefundPhotographer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancelReasonSick": "Ốm/việc gấp",
+  "cancelReasonGear": "Thiết bị gặp sự cố",
+  "cancelDoneToast": "Đã huỷ. Hoàn {amount} trong 3–5 ngày",
+  "@cancelDoneToast": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "cancelDoneNoRefund": "Đã huỷ buổi chụp",
+  "cancelDonePhotographer": "Đã huỷ. {name} được hoàn cọc 100%",
+  "@cancelDonePhotographer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  }
 }
