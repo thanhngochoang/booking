@@ -88,7 +88,7 @@ flutter analyze && flutter test
 dart run tool/gen_tokens.dart      # after editing design-system/tokens.json
 flutter gen-l10n                   # after editing lib/l10n/app_vi.arb
 ../scripts/backend-local.sh        # local backend: Auth/Firestore/Functions/Storage emulators + UI :4000, seed; --fresh, --seed, --lan
-../scripts/adb-reverse.sh && flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=127.0.0.1   # debug app → local backend on any connected Android device (AVD, Genymotion, phone); VS Code: "Flutter: thiết bị đang chọn + backend local"
+../scripts/adb-reverse.sh && flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=127.0.0.1   # debug app → local backend on any connected Android device (AVD, Genymotion, phone); VS Code: "Flutter: (debug) + backend local"
 ../scripts/check-device.sh         # adb, connected devices, shared debug key: compare machines
 (cd ../packages/domain && npm test)                                                   # pure domain rules (TypeScript, no Firebase)
 (cd firebase/functions && npm test && npm run test:integration)                       # Cloud Functions unit + emulator tests (outside the Claude sandbox)

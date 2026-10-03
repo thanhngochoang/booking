@@ -15,7 +15,7 @@ scripts/setup.sh                                # 2. Android SDK, Flutter, font;
 scripts/install-emulator.sh                     # 4. emulator + AVD photobooking_api35 (~2,2 GB, không bắt buộc)
 cp .env.example .env                            # 5. điền key; đặt google-services.json + firebase_options.dart
 cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analyze && ../scripts/bin/flutter test   # 6. kiểm tra
-# 7. VS Code: Cmd+Q rồi mở lại thư mục gốc repo, chọn thiết bị ở góc phải dưới, "Flutter: thiết bị đang chọn", F5
+# 7. VS Code: Cmd+Q rồi mở lại thư mục gốc repo, chọn "Flutter: Android emulator" (hoặc "Flutter: (debug)" cho thiết bị đang chọn), F5
 ```
 
 ## 1. Công cụ nền
@@ -60,7 +60,7 @@ Kiểm tra trong terminal mới: `echo $ANDROID_HOME && ls "$ANDROID_HOME/platfo
 
 ```bash
 scripts/install-emulator.sh       # tải emulator + system image Android 35 (Google Play), tạo AVD photobooking_api35
-scripts/start-emulator.sh         # bật AVD và chờ boot xong, nếu chưa có thiết bị nào (VS Code: Run Task "Bật emulator dự án")
+scripts/start-emulator.sh         # bật AVD và chờ boot xong (VS Code tự gọi khi F5)
 ```
 
 AVD nằm ở `.home/.android/avd/`. ABI theo máy: `arm64-v8a` trên Mac Apple Silicon, `x86_64` trên Mac Intel; còn lại (Android 35, Google Play, 1080×2400) giống nhau trên mọi máy. Test trên điện thoại thật thì làm theo `docs/DEVICE-TESTING.md` bước 1–4.
@@ -91,17 +91,19 @@ Backend local (không bắt buộc, cần Node 22): `scripts/backend-local.sh`, 
 
 ## 7. Chạy app từ VS Code
 
-Mở **thư mục gốc repo** (`booking/`, không phải `app_flutter/`). App luôn chạy trên **thiết bị đang chọn**: bấm tên thiết bị ở thanh trạng thái (góc phải dưới) hoặc Cmd+Shift+P → **Flutter: Select Device** để xem danh sách thiết bị đang kết nối (điện thoại USB/Wi‑Fi, AVD, Genymotion). Thiết bị vừa cắm vào được chọn ngay; nếu chưa có thiết bị hợp lệ, F5 tự hiện danh sách. Không cấu hình nào cố định `deviceId`, nên máy nào cũng giống nhau.
+Mở **thư mục gốc repo** (`booking/`, không phải `app_flutter/`), tab Run and Debug, chọn cấu hình rồi nhấn F5. **Thiết bị đang chọn** là thiết bị hiện ở thanh trạng thái (góc phải dưới): bấm vào đó hoặc Cmd+Shift+P → **Flutter: Select Device** để xem danh sách thiết bị đang kết nối (điện thoại USB/Wi‑Fi, AVD, Genymotion). Thiết bị vừa cắm vào được chọn ngay; nếu chưa có thiết bị hợp lệ, F5 tự hiện danh sách.
 
-| Cấu hình (tab Run and Debug) | Backend |
-|---|---|
-| Flutter: thiết bị đang chọn | Firebase dev |
-| Flutter: thiết bị đang chọn + backend local | emulators local: chạy `scripts/backend-local.sh` trước (không cần `--lan`) |
-| Flutter: thiết bị đang chọn (profile) | Firebase dev, đo hiệu năng |
+| Cấu hình | Thiết bị | Backend |
+|---|---|---|
+| Flutter: (debug) | thiết bị đang chọn | Firebase dev |
+| Flutter: Android emulator | tự bật `photobooking_api35` (`scripts/start-emulator.sh`), tìm theo tên AVD nên không phụ thuộc cổng 5554 | Firebase dev |
+| Flutter: Android emulator + backend local | như trên | emulators local (chạy `scripts/backend-local.sh` trước) |
+| Flutter: (debug) + backend local | thiết bị đang chọn (điện thoại, AVD, Genymotion) | emulators local, qua `adb reverse` (dưới) |
+| Flutter: (profile) | thiết bị đang chọn | Firebase dev, đo hiệu năng |
 
-**Backend local trên mọi thiết bị như nhau:** cấu hình "+ backend local" chạy `scripts/adb-reverse.sh` trước khi build. Script `adb reverse` các cổng 9099, 8080, 5001, 9199 của mọi thiết bị đang kết nối về máy Mac, nên app luôn dùng `EMULATOR_HOST=127.0.0.1`: không còn nhớ `10.0.2.2` cho AVD, `10.0.3.2` cho Genymotion hay IP LAN cho điện thoại. Cắm thêm thiết bị trong lúc chạy thì chạy lại `scripts/adb-reverse.sh`.
+**Backend local trên mọi thiết bị như nhau:** "Flutter: (debug) + backend local" chạy `scripts/adb-reverse.sh` trước khi build. Script `adb reverse` các cổng 9099, 8080, 5001, 9199 của mọi thiết bị đang kết nối về máy Mac, nên app dùng `EMULATOR_HOST=127.0.0.1` cho mọi loại thiết bị: không cần nhớ `10.0.3.2` cho Genymotion hay IP LAN cho điện thoại, và `backend-local.sh` không cần `--lan`. Cắm thêm thiết bị trong lúc chạy thì chạy lại `scripts/adb-reverse.sh`.
 
-Các task (Terminal → Run Task): **Bật emulator dự án** (bật AVD nếu chưa có thiết bị nào), **Kiểm tra thiết bị debug** (`scripts/check-device.sh`).
+Task (Terminal → Run Task) **check-device**: in cấu hình debug của máy này (`scripts/check-device.sh`) để so giữa các máy.
 
 Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run` (hỏi thiết bị nếu có nhiều; `-d <id>` để chọn sẵn). Backend local: `../scripts/adb-reverse.sh && ../scripts/bin/flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=127.0.0.1`. Luôn dùng `../scripts/bin/flutter`, không dùng `flutter` của hệ thống.
 

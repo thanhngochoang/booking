@@ -68,10 +68,10 @@ Mở **Cài đặt → Bảo mật và quyền riêng tư → Chặn tự độn
 
 1. Mở thư mục gốc repo (`booking/`), không mở `app_flutter/`. Các file `.vscode/launch.json` và `.vscode/settings.json` nằm ở gốc.
 2. Chọn điện thoại ở thanh trạng thái (góc phải dưới), ví dụ `SM S918B (mobile)`.
-3. Chọn điện thoại ở thanh trạng thái (góc phải dưới), mở tab Run and Debug, chọn **Flutter: thiết bị đang chọn** rồi nhấn F5. Lần đầu build mất vài phút.
+3. Chọn điện thoại ở thanh trạng thái (góc phải dưới), mở tab Run and Debug, chọn **Flutter: (debug)** rồi nhấn F5. Lần đầu build mất vài phút.
 4. Lưu file là hot reload. Breakpoint, DevTools và log hoạt động như trên emulator.
 
-Cấu hình **Flutter: thiết bị đang chọn (profile)** dùng để đo hiệu năng thật (không có hot reload, gần giống bản release). Xem thêm `docs/testing/battery-and-performance.md`.
+Cấu hình **Flutter: (profile)** dùng để đo hiệu năng thật (không có hot reload, gần giống bản release). Xem thêm `docs/testing/battery-and-performance.md`.
 
 ### Terminal
 

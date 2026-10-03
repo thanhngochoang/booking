@@ -2,6 +2,14 @@
   "version": "2.0.0",
   "tasks": [
     {
+      // Bật AVD photobooking_api35 nếu chưa có emulator nào chạy, chờ boot xong.
+      "label": "start-android-emulator",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/start-emulator.sh",
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
       // Chuyển cổng backend local (9099, 8080, 5001, 9199) từ mọi thiết bị Android về máy Mac.
       "label": "adb-reverse-backend",
       "type": "shell",
@@ -10,16 +18,8 @@
       "problemMatcher": []
     },
     {
-      // Bật AVD photobooking_api35 khi chưa có thiết bị nào kết nối (Terminal > Run Task).
-      "label": "Bật emulator dự án",
-      "type": "shell",
-      "command": "${workspaceFolder}/scripts/start-emulator.sh",
-      "presentation": { "reveal": "silent", "panel": "dedicated" },
-      "problemMatcher": []
-    },
-    {
       // In cấu hình debug của máy này (adb, thiết bị, khoá ký) để so giữa các máy.
-      "label": "Kiểm tra thiết bị debug",
+      "label": "check-device",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/check-device.sh",
       "problemMatcher": []

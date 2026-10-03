@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Boots the project AVD if no Android device is connected (AVD, Genymotion or phone), then waits
-# until Android has booted. VS Code task "Bật emulator dự án". Usage: start-emulator.sh [avd]
+# Boots the project AVD if no Android emulator is running, then waits until Android has booted.
+# Used by the VS Code preLaunchTask so F5 works with no emulator open. Usage: start-emulator.sh [avd]
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$ROOT/scripts/env.sh" >/dev/null
 export HOME="$ROOT/.home"
 AVD="${1:-photobooking_api35}"
 
-if adb devices | tail -n +2 | grep -q '[[:space:]]device$'; then
-  echo "A device is already connected:"; adb devices | tail -n +2
+if adb devices | grep -q '^emulator-.*device$'; then
+  echo "Emulator already running."
   exit 0
 fi
 

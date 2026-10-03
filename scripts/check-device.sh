@@ -51,5 +51,5 @@ if [ -x "$ADB" ]; then
   done
 fi
 echo
-echo "Local backend from any device: scripts/backend-local.sh, then VS Code \"Flutter: thiết bị đang chọn + backend local\""
+echo "Local backend from any device: scripts/backend-local.sh, then VS Code \"Flutter: (debug) + backend local\""
 echo "(it runs scripts/adb-reverse.sh and uses EMULATOR_HOST=127.0.0.1)."
