@@ -28,6 +28,7 @@ import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
+import 'package:photobooking/features/booking/payment_pending_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -110,6 +111,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
   bool failProfile = false,
   bool realPayments = false,
   bool disableAnimations = false,
+  Size viewSize = const Size(390, 844),
   List<Override> extraOverrides = const [],
 }) async {
   final effectiveNow = now ?? worldBookingToday;
@@ -117,8 +119,8 @@ Future<BookingWorldHandles> pumpBookingRoute(
   final effectivePackages = failPackages
       ? null
       : (emptyPackages
-          ? <ServiceSummary>[]
-          : (packages ?? [bookingPackage1, bookingPackage2]));
+            ? <ServiceSummary>[]
+            : (packages ?? [bookingPackage1, bookingPackage2]));
   final availRepo = FakeAvailabilityRepository();
   for (final d in days.values) {
     availRepo.seed('p1', d);
@@ -134,12 +136,16 @@ Future<BookingWorldHandles> pumpBookingRoute(
   }
   final externalLauncher = FakeExternalLauncher();
 
-  tester.view.physicalSize = const Size(390, 844);
+  tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
   final authRepo = FakeAuthRepository();
-  final user = await authRepo.registerWithEmail('c1@test.vn', 'pass1234', 'Khách hàng');
+  final user = await authRepo.registerWithEmail(
+    'c1@test.vn',
+    'pass1234',
+    'Khách hàng',
+  );
   final userRepo = FakeUserRepository();
   await userRepo.ensureProfile(user);
 
@@ -154,7 +160,8 @@ Future<BookingWorldHandles> pumpBookingRoute(
           args: BookingFlowArgs(
             photographerId: state.pathParameters['uid']!,
             serviceId: state.uri.queryParameters['serviceId'],
-            day: state.uri.queryParameters['day'] ??
+            day:
+                state.uri.queryParameters['day'] ??
                 state.uri.queryParameters['date'],
             area: state.uri.queryParameters['area'],
           ),
@@ -164,87 +171,84 @@ Future<BookingWorldHandles> pumpBookingRoute(
         path: '/u/:uid',
         builder: (_, s) => PhotographerProfileScreen(
           uid: s.pathParameters['uid']!,
-          initialSection: profileSectionFromQuery(
-            s.uri.queryParameters['tab'],
-          ),
+          initialSection: profileSectionFromQuery(s.uri.queryParameters['tab']),
         ),
       ),
       GoRoute(
         path: '/b/:id/pay',
-        builder: stub,
+        builder: (_, s) =>
+            PaymentPendingScreen(bookingId: s.pathParameters['id']!),
       ),
-      for (final p in [
-        '/home',
-        '/profile/phone',
-        '/bookings',
-      ])
+      for (final p in ['/home', '/profile/phone', '/bookings'])
         GoRoute(path: p, builder: stub),
     ],
   );
 
-    final hasCustomPackages = extraOverrides.any((o) {
-      try {
-        final origin = (o as dynamic).origin;
-        return origin == profilePackagesProvider('p1') ||
-            origin?.toString() == profilePackagesProvider('p1').toString();
-      } catch (_) {
-        return false;
-      }
-    });
-    final hasCustomProfile = extraOverrides.any((o) {
-      try {
-        final origin = (o as dynamic).origin;
-        return origin == photographerProfileProvider('p1') ||
-            origin?.toString() == photographerProfileProvider('p1').toString();
-      } catch (_) {
-        return false;
-      }
-    });
+  final hasCustomPackages = extraOverrides.any((o) {
+    try {
+      final origin = (o as dynamic).origin;
+      return origin == profilePackagesProvider('p1') ||
+          origin?.toString() == profilePackagesProvider('p1').toString();
+    } catch (_) {
+      return false;
+    }
+  });
+  final hasCustomProfile = extraOverrides.any((o) {
+    try {
+      final origin = (o as dynamic).origin;
+      return origin == photographerProfileProvider('p1') ||
+          origin?.toString() == photographerProfileProvider('p1').toString();
+    } catch (_) {
+      return false;
+    }
+  });
 
-    final overrides = <Override>[
-      authRepositoryProvider.overrideWithValue(authRepo),
-      userRepositoryProvider.overrideWithValue(userRepo),
-      clockProvider.overrideWithValue(() => effectiveNow),
-      calendarTodayProvider.overrideWithValue(effectiveNow),
-      bookingRepositoryProvider.overrideWithValue(effectiveBookings),
-      availabilityRepositoryProvider.overrideWithValue(availRepo),
-      userContactRepositoryProvider.overrideWithValue(contactRepo),
-      currentContactProvider.overrideWithValue(
-        contact != null ? AsyncData(contact) : const AsyncData(null),
-      ),
-      if (failPackages)
-        profilePackagesProvider('p1').overrideWith(
-          (ref) => Future.error(Exception('Failed to load packages')),
-        )
-      else if (!hasCustomPackages)
-        profilePackagesProvider('p1').overrideWithValue(
-          AsyncData(effectivePackages!),
-        ),
-      if (failProfile)
-        photographerProfileProvider('p1').overrideWith(
-          (ref) => Future.error(Exception('Failed to load profile')),
-        )
-      else if (!hasCustomProfile)
-        photographerProfileProvider('p1').overrideWithValue(
-          const AsyncData(bookingProfile),
-        ),
-      externalLauncherProvider.overrideWithValue(externalLauncher),
-      contactLinkRepositoryProvider.overrideWithValue(FakeContactLinkRepository()),
-      photographerContactRepositoryProvider.overrideWithValue(FakePhotographerContactRepository()),
-      skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
-      publicProfileRepositoryProvider.overrideWithValue(
-        FakePublicProfileRepository([bookingProfile]),
-      ),
-      realPaymentsProvider.overrideWithValue(realPayments),
-      ...extraOverrides,
-    ];
+  final overrides = <Override>[
+    authRepositoryProvider.overrideWithValue(authRepo),
+    userRepositoryProvider.overrideWithValue(userRepo),
+    clockProvider.overrideWithValue(() => effectiveNow),
+    calendarTodayProvider.overrideWithValue(effectiveNow),
+    bookingRepositoryProvider.overrideWithValue(effectiveBookings),
+    availabilityRepositoryProvider.overrideWithValue(availRepo),
+    userContactRepositoryProvider.overrideWithValue(contactRepo),
+    currentContactProvider.overrideWithValue(
+      contact != null ? AsyncData(contact) : const AsyncData(null),
+    ),
+    if (failPackages)
+      profilePackagesProvider('p1').overrideWith(
+        (ref) => Future.error(Exception('Failed to load packages')),
+      )
+    else if (!hasCustomPackages)
+      profilePackagesProvider('p1')
+          .overrideWithValue(AsyncData(effectivePackages!)),
+    if (failProfile)
+      photographerProfileProvider(
+        'p1',
+      ).overrideWith((ref) => Future.error(Exception('Failed to load profile')))
+    else if (!hasCustomProfile)
+      photographerProfileProvider('p1')
+          .overrideWithValue(const AsyncData(bookingProfile)),
+    externalLauncherProvider.overrideWithValue(externalLauncher),
+    contactLinkRepositoryProvider.overrideWithValue(
+      FakeContactLinkRepository(),
+    ),
+    photographerContactRepositoryProvider.overrideWithValue(
+      FakePhotographerContactRepository(),
+    ),
+    skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
+    publicProfileRepositoryProvider.overrideWithValue(
+      FakePublicProfileRepository([bookingProfile]),
+    ),
+    realPaymentsProvider.overrideWithValue(realPayments),
+    ...extraOverrides,
+  ];
 
   await tester.pumpWidget(
     MediaQuery(
       data: MediaQueryData(
         disableAnimations: disableAnimations,
         textScaler: TextScaler.linear(textScale),
-        size: const Size(390, 844),
+        size: viewSize,
       ),
       child: screenRouterApp(
         router: router,

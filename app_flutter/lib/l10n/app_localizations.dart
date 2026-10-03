@@ -3382,6 +3382,12 @@ abstract class AppLocalizations {
   /// **'Đặt cọc {amount}'**
   String bookPay(String amount);
 
+  /// No description provided for @payTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
+  String get payTitle;
+
   /// No description provided for @payPendingTitle.
   ///
   /// In vi, this message translates to:
@@ -3391,14 +3397,44 @@ abstract class AppLocalizations {
   /// No description provided for @payPendingBody.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng thanh toán {provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.'**
+  /// **'{provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.'**
   String payPendingBody(String provider);
+
+  /// No description provided for @payProviderFake.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng thử nghiệm'**
+  String get payProviderFake;
+
+  /// No description provided for @payProviderNamed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng {name}'**
+  String payProviderNamed(String name);
+
+  /// No description provided for @payProviderGeneric.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng thanh toán'**
+  String get payProviderGeneric;
+
+  /// No description provided for @payAwaitingDeposit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ cọc'**
+  String get payAwaitingDeposit;
 
   /// No description provided for @payCheckAgain.
   ///
   /// In vi, this message translates to:
   /// **'Kiểm tra lại'**
   String get payCheckAgain;
+
+  /// No description provided for @payNotYet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận được xác nhận, thử lại sau ít phút'**
+  String get payNotYet;
 
   /// No description provided for @payChangeProvider.
   ///
@@ -3424,6 +3460,24 @@ abstract class AppLocalizations {
   /// **'Huỷ'**
   String get fakePaymentCancel;
 
+  /// No description provided for @payRequestSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu'**
+  String get payRequestSent;
+
+  /// No description provided for @payReplyIn24h.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} sẽ trả lời trong 24 giờ'**
+  String payReplyIn24h(String name);
+
+  /// No description provided for @escrowNoticeHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cọc {amount} đang được giữ an toàn'**
+  String escrowNoticeHeld(String amount);
+
   /// No description provided for @paySuccessTitle.
   ///
   /// In vi, this message translates to:
@@ -3448,11 +3502,35 @@ abstract class AppLocalizations {
   /// **'Yêu cầu đã hết hạn'**
   String get payExpired;
 
+  /// No description provided for @payExpiredTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn'**
+  String get payExpiredTitle;
+
+  /// No description provided for @payExpiredBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
+  String get payExpiredBody;
+
   /// No description provided for @payRetry.
   ///
   /// In vi, this message translates to:
   /// **'Đặt lại'**
   String get payRetry;
+
+  /// No description provided for @payBookAgain.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lại'**
+  String get payBookAgain;
+
+  /// No description provided for @payGoHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get payGoHome;
 
   /// No description provided for @bookMonth.
   ///

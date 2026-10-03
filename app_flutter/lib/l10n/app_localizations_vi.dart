@@ -1887,15 +1887,35 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get payTitle => 'Thanh toán';
+
+  @override
   String get payPendingTitle => 'Đang chờ xác nhận thanh toán';
 
   @override
   String payPendingBody(String provider) {
-    return 'Cổng thanh toán $provider chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.';
+    return '$provider chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.';
   }
 
   @override
+  String get payProviderFake => 'Cổng thử nghiệm';
+
+  @override
+  String payProviderNamed(String name) {
+    return 'Cổng $name';
+  }
+
+  @override
+  String get payProviderGeneric => 'Cổng thanh toán';
+
+  @override
+  String get payAwaitingDeposit => 'Chờ cọc';
+
+  @override
   String get payCheckAgain => 'Kiểm tra lại';
+
+  @override
+  String get payNotYet => 'Chưa nhận được xác nhận, thử lại sau ít phút';
 
   @override
   String get payChangeProvider => 'Đổi cổng thanh toán';
@@ -1908,6 +1928,19 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get fakePaymentCancel => 'Huỷ';
+
+  @override
+  String get payRequestSent => 'Đã gửi yêu cầu';
+
+  @override
+  String payReplyIn24h(String name) {
+    return '$name sẽ trả lời trong 24 giờ';
+  }
+
+  @override
+  String escrowNoticeHeld(String amount) {
+    return 'Cọc $amount đang được giữ an toàn';
+  }
 
   @override
   String get paySuccessTitle => 'Đã gửi yêu cầu';
@@ -1924,7 +1957,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get payExpired => 'Yêu cầu đã hết hạn';
 
   @override
+  String get payExpiredTitle => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get payExpiredBody =>
+      'Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
+
+  @override
   String get payRetry => 'Đặt lại';
+
+  @override
+  String get payBookAgain => 'Đặt lại';
+
+  @override
+  String get payGoHome => 'Về trang chủ';
 
   @override
   String bookMonth(int m) {

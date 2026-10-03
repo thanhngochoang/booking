@@ -16,12 +16,18 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 import '../../support/booking_world.dart';
 import '../../support/fake_booking_repository.dart';
 
+/// The real S04.04 waits on a draft with a looping SignatureLoader, so a test that
+/// lands there pumps a bounded second of frames instead of `pumpAndSettle`.
+Future<void> pumpWhileWaiting(WidgetTester tester) async {
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
 void main() {
   final now = DateTime.utc(2026, 10, 5);
   final day12 = DateTime.utc(2026, 10, 12);
-  final testDays = {
-    day12: AvailabilityDay(day: day12, state: DayState.free),
-  };
+  final testDays = {day12: AvailabilityDay(day: day12, state: DayState.free)};
 
   Future<BookingWorldHandles> navigateToReviewStep(
     WidgetTester tester, {
@@ -54,7 +60,10 @@ void main() {
     await tester.tap(slotChip);
     await tester.pumpAndSettle();
 
-    final continueBtn1 = find.widgetWithText(AppButton, 'Tiếp tục · 1.500.000₫');
+    final continueBtn1 = find.widgetWithText(
+      AppButton,
+      'Tiếp tục · 1.500.000₫',
+    );
     await tester.ensureVisible(continueBtn1);
     await tester.tap(continueBtn1);
     await tester.pumpAndSettle();
@@ -66,7 +75,10 @@ void main() {
     await tester.enterText(input, 'Bến Bạch Đằng');
     await tester.pumpAndSettle();
 
-    final continueBtn2 = find.widgetWithText(AppButton, 'Tiếp tục · 1.500.000₫');
+    final continueBtn2 = find.widgetWithText(
+      AppButton,
+      'Tiếp tục · 1.500.000₫',
+    );
     await tester.ensureVisible(continueBtn2);
     await tester.tap(continueBtn2);
     await tester.pumpAndSettle();
@@ -75,34 +87,37 @@ void main() {
     return handles;
   }
 
-  testWidgets('Đặt cọc creates the booking with the chosen values, then the deposit with the chosen provider', (tester) async {
-    final fakeRepo = FakeBookingRepository();
-    await navigateToReviewStep(tester, bookings: fakeRepo);
+  testWidgets(
+    'Đặt cọc creates the booking with the chosen values, then the deposit with the chosen provider',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    // Choose VNPay
-    await tester.tap(find.text('VNPay'));
-    await tester.pumpAndSettle();
+      // Choose VNPay
+      await tester.tap(find.text('VNPay'));
+      await tester.pumpAndSettle();
 
-    // Tap Đặt cọc
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
-    await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+      // Tap Đặt cọc
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      await tester.tap(payBtn);
+      await tester.pumpAndSettle();
 
-    expect(fakeRepo.createCalls.length, 1);
-    final call = fakeRepo.createCalls.single;
-    expect(call.photographerId, 'p1');
-    expect(call.serviceId, 's1');
-    expect(call.day, '2026-10-12');
-    expect(call.start, '15:30');
-    expect(call.placeName, 'Bến Bạch Đằng');
-    expect(call.note, isNull);
-    expect(call.expectedPrice, 1500000);
+      expect(fakeRepo.createCalls.length, 1);
+      final call = fakeRepo.createCalls.single;
+      expect(call.photographerId, 'p1');
+      expect(call.serviceId, 's1');
+      expect(call.day, '2026-10-12');
+      expect(call.start, '15:30');
+      expect(call.placeName, 'Bến Bạch Đằng');
+      expect(call.note, isNull);
+      expect(call.expectedPrice, 1500000);
 
-    expect(fakeRepo.depositCalls.length, 1);
-    final depCall = fakeRepo.depositCalls.single;
-    expect(depCall.bookingId, 'booking_1');
-    expect(depCall.provider, 'vnpay');
-  });
+      expect(fakeRepo.depositCalls.length, 1);
+      final depCall = fakeRepo.depositCalls.single;
+      expect(depCall.bookingId, 'booking_1');
+      expect(depCall.provider, 'vnpay');
+    },
+  );
 
   testWidgets('double tap creates one booking and one deposit', (tester) async {
     final fakeRepo = FakeBookingRepository();
@@ -117,9 +132,15 @@ void main() {
     expect(fakeRepo.depositCalls.length, 1);
   });
 
-  testWidgets('fake mode: the fake gateway sheet confirms and S04.04 opens', (tester) async {
+  testWidgets('fake mode: the fake gateway sheet confirms and S04.04 opens', (
+    tester,
+  ) async {
     final fakeRepo = FakeBookingRepository();
-    final handles = await navigateToReviewStep(tester, bookings: fakeRepo, realPayments: false);
+    final handles = await navigateToReviewStep(
+      tester,
+      bookings: fakeRepo,
+      realPayments: false,
+    );
 
     final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
     await tester.tap(payBtn);
@@ -138,38 +159,56 @@ void main() {
     expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
   });
 
-  testWidgets('fake mode: Huỷ on the fake sheet still opens S04.04 without confirming', (tester) async {
-    final fakeRepo = FakeBookingRepository();
-    final handles = await navigateToReviewStep(tester, bookings: fakeRepo, realPayments: false);
+  testWidgets(
+    'fake mode: Huỷ on the fake sheet still opens S04.04 without confirming',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      final handles = await navigateToReviewStep(
+        tester,
+        bookings: fakeRepo,
+        realPayments: false,
+      );
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
-    await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      await tester.tap(payBtn);
+      await tester.pumpAndSettle();
 
-    expect(find.byType(FakePaymentSheet), findsOneWidget);
+      expect(find.byType(FakePaymentSheet), findsOneWidget);
 
-    // Tap Huỷ
-    await tester.tap(find.widgetWithText(AppButton, 'Huỷ'));
-    await tester.pumpAndSettle();
+      // Tap Huỷ
+      await tester.tap(find.widgetWithText(AppButton, 'Huỷ'));
+      await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
-    expect(fakeRepo.fakeConfirms, isEmpty);
-    expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
-  });
+      expect(fakeRepo.fakeConfirms, isEmpty);
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+    },
+  );
 
-  testWidgets('real mode opens payUrl with the external launcher and opens S04.04', (tester) async {
-    final fakeRepo = FakeBookingRepository();
-    final handles = await navigateToReviewStep(tester, bookings: fakeRepo, realPayments: true);
+  testWidgets(
+    'real mode opens payUrl with the external launcher and opens S04.04',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      final handles = await navigateToReviewStep(
+        tester,
+        bookings: fakeRepo,
+        realPayments: true,
+      );
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
-    await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      await tester.tap(payBtn);
+      await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
-    expect(find.byType(FakePaymentSheet), findsNothing);
-    expect(handles.externalLauncher.opened, [Uri.parse('https://fake-pay.test/booking_1')]);
-    expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
-  });
+      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(handles.externalLauncher.opened, [
+        Uri.parse('https://fake-pay.test/booking_1'),
+      ]);
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+    },
+  );
 
-  testWidgets('a changed phone is saved before the booking is created', (tester) async {
+  testWidgets('a changed phone is saved before the booking is created', (
+    tester,
+  ) async {
     final fakeRepo = FakeBookingRepository();
     final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
 
@@ -187,7 +226,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify contact was saved with new phone +84987654321
-    final saved = handles.contactRepo.stored('fake-1') ?? handles.contactRepo.stored('c1');
+    final saved =
+        handles.contactRepo.stored('fake-1') ??
+        handles.contactRepo.stored('c1');
     expect(saved, isNotNull);
     expect(saved!.phone, '+84987654321');
     expect(fakeRepo.createCalls.length, 1);
@@ -208,25 +249,32 @@ void main() {
     expect(find.text('Hôm đó vừa có người đặt'), findsOneWidget);
   });
 
-  testWidgets('phone_required sends to S04.05 with returnTo of the current flow', (tester) async {
-    final fakeRepo = FakeBookingRepository();
-    fakeRepo.nextError = BookingErrorCode.phoneRequired;
+  testWidgets(
+    'phone_required sends to S04.05 with returnTo of the current flow',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      fakeRepo.nextError = BookingErrorCode.phoneRequired;
 
-    final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
+      final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
-    await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      await tester.tap(payBtn);
+      await tester.pumpAndSettle();
 
-    final location = handles.router.state.uri.toString();
-    expect(location, startsWith('/profile/phone?returnTo='));
-    final decoded = Uri.decodeComponent(handles.router.state.uri.queryParameters['returnTo']!);
-    expect(decoded, contains('/u/p1/book'));
-    expect(decoded, contains('serviceId=s1'));
-    expect(decoded, contains('2026-10-12'));
-  });
+      final location = handles.router.state.uri.toString();
+      expect(location, startsWith('/profile/phone?returnTo='));
+      final decoded = Uri.decodeComponent(
+        handles.router.state.uri.queryParameters['returnTo']!,
+      );
+      expect(decoded, contains('/u/p1/book'));
+      expect(decoded, contains('serviceId=s1'));
+      expect(decoded, contains('2026-10-12'));
+    },
+  );
 
-  testWidgets('price_changed refreshes the package and the total', (tester) async {
+  testWidgets('price_changed refreshes the package and the total', (
+    tester,
+  ) async {
     final fakeRepo = FakeBookingRepository();
     fakeRepo.nextError = BookingErrorCode.priceChanged;
 
@@ -247,7 +295,8 @@ void main() {
       tester,
       bookings: fakeRepo,
       extraOverrides: [
-        profilePackagesProvider('p1').overrideWith((ref) => Future.value(packageList)),
+        profilePackagesProvider('p1')
+            .overrideWith((ref) => Future.value(packageList)),
       ],
     );
 
@@ -261,36 +310,47 @@ void main() {
     // Step should be service
     expect(find.byType(ServiceStep), findsOneWidget);
     expect(find.text('Giá gói đã đổi'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Tiếp tục · 2.000.000₫'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Tiếp tục · 2.000.000₫'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('a network error keeps everything and Thử lại reuses the same draft', (tester) async {
-    final fakeRepo = FakeBookingRepository();
-    fakeRepo.nextDepositError = BookingErrorCode.network;
+  testWidgets(
+    'a network error keeps everything and Thử lại reuses the same draft',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      fakeRepo.nextDepositError = BookingErrorCode.network;
 
-    await navigateToReviewStep(tester, bookings: fakeRepo);
+      await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
-    await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      await tester.tap(payBtn);
+      await tester.pumpAndSettle();
 
-    expect(find.text('Không gửi được. Kiểm tra mạng rồi thử lại.'), findsOneWidget);
-    expect(find.text('Thử lại'), findsOneWidget);
+      expect(
+        find.text('Không gửi được. Kiểm tra mạng rồi thử lại.'),
+        findsOneWidget,
+      );
+      expect(find.text('Thử lại'), findsOneWidget);
 
-    // Draft was created on first call
-    expect(fakeRepo.createCalls.length, 1);
-    expect(fakeRepo.depositCalls, isEmpty);
+      // Draft was created on first call
+      expect(fakeRepo.createCalls.length, 1);
+      expect(fakeRepo.depositCalls, isEmpty);
 
-    // Tap Thử lại
-    await tester.tap(find.text('Thử lại'));
-    await tester.pumpAndSettle();
+      // Tap Thử lại
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
 
-    // Second attempt reuses draft booking_1: no second createBooking, but one deposit call
-    expect(fakeRepo.createCalls.length, 1);
-    expect(fakeRepo.depositCalls.length, 1);
-  });
+      // Second attempt reuses draft booking_1: no second createBooking, but one deposit call
+      expect(fakeRepo.createCalls.length, 1);
+      expect(fakeRepo.depositCalls.length, 1);
+    },
+  );
 
-  testWidgets('not_eligible shows Thanh toán chưa mở trên máy chủ này', (tester) async {
+  testWidgets('not_eligible shows Thanh toán chưa mở trên máy chủ này', (
+    tester,
+  ) async {
     final fakeRepo = FakeBookingRepository();
     fakeRepo.nextError = BookingErrorCode.notEligible;
 

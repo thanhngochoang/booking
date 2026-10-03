@@ -853,18 +853,42 @@
       "amount": {"type": "String"}
     }
   },
+  "payTitle": "Thanh toán",
   "payPendingTitle": "Đang chờ xác nhận thanh toán",
-  "payPendingBody": "Cổng thanh toán {provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.",
+  "payPendingBody": "{provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.",
   "@payPendingBody": {
     "placeholders": {
       "provider": {"type": "String"}
     }
   },
+  "payProviderFake": "Cổng thử nghiệm",
+  "payProviderNamed": "Cổng {name}",
+  "@payProviderNamed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "payProviderGeneric": "Cổng thanh toán",
+  "payAwaitingDeposit": "Chờ cọc",
   "payCheckAgain": "Kiểm tra lại",
+  "payNotYet": "Chưa nhận được xác nhận, thử lại sau ít phút",
   "payChangeProvider": "Đổi cổng thanh toán",
   "fakePaymentTitle": "Cổng thanh toán giả (chỉ để thử)",
   "fakePaymentSuccess": "Thanh toán thành công",
   "fakePaymentCancel": "Huỷ",
+  "payRequestSent": "Đã gửi yêu cầu",
+  "payReplyIn24h": "{name} sẽ trả lời trong 24 giờ",
+  "@payReplyIn24h": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "escrowNoticeHeld": "Cọc {amount} đang được giữ an toàn",
+  "@escrowNoticeHeld": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
   "paySuccessTitle": "Đã gửi yêu cầu",
   "paySuccessBody": "{name} sẽ trả lời trong 24 giờ",
   "@paySuccessBody": {
@@ -874,7 +898,11 @@
   },
   "payViewBookings": "Xem lịch đặt",
   "payExpired": "Yêu cầu đã hết hạn",
+  "payExpiredTitle": "Yêu cầu đã hết hạn",
+  "payExpiredBody": "Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.",
   "payRetry": "Đặt lại",
+  "payBookAgain": "Đặt lại",
+  "payGoHome": "Về trang chủ",
   "bookMonth": "Tháng {m}",
   "@bookMonth": {
     "placeholders": {

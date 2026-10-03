@@ -9,6 +9,7 @@ import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
+import 'package:photobooking/features/booking/payment_pending_screen.dart';
 import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
@@ -202,6 +203,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 state.uri.queryParameters['date'],
             area: state.uri.queryParameters['area'],
           ),
+        ),
+      ),
+      GoRoute(
+        path: '/b/:id/pay',
+        builder: (_, state) => PaymentPendingScreen(
+          bookingId: state.pathParameters['id']!,
         ),
       ),
       GoRoute(
