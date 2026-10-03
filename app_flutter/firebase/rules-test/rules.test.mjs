@@ -1127,3 +1127,60 @@ test('a member may only zero its own unread counter with lastReadAt = request.ti
   }));
 });
 
+test('reviews are readable by any signed-in user and writable by no client', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'reviews/rev_b1'), {
+      bookingId: 'rev_b1',
+      customerId: 'cust1',
+      photographerId: 'p1',
+      rating: 5,
+      text: 'Chụp rất đẹp',
+    });
+  });
+
+  const authDb = env.authenticatedContext('u_any').firestore();
+  const unauthDb = env.unauthenticatedContext().firestore();
+
+  // Any signed-in user can read reviews
+  await assertSucceeds(getDoc(doc(authDb, 'reviews/rev_b1')));
+
+  // Unauthenticated users cannot read
+  await assertFails(getDoc(doc(unauthDb, 'reviews/rev_b1')));
+
+  // No client can create, update, or delete reviews
+  await assertFails(setDoc(doc(authDb, 'reviews/rev_b2'), {
+    bookingId: 'rev_b2',
+    customerId: 'u_any',
+    photographerId: 'p1',
+    rating: 5,
+    text: 'Client write attempt',
+  }));
+  await assertFails(updateDoc(doc(authDb, 'reviews/rev_b1'), { text: 'Modified review' }));
+  await assertFails(deleteDoc(doc(authDb, 'reviews/rev_b1')));
+  await assertFails(setDoc(doc(unauthDb, 'reviews/rev_b3'), { rating: 5 }));
+});
+
+test('clients still cannot create real_shoot posts', async () => {
+  await seedShooter('p_rs');
+  const dbPhotographer = env.authenticatedContext('p_rs').firestore();
+  const dbCustomer = env.authenticatedContext('cust_rs').firestore();
+
+  // Photographer cannot create a real_shoot post
+  await assertFails(setDoc(doc(dbPhotographer, 'posts/rs_post_1'), validPost('p_rs', { kind: 'real_shoot' })));
+
+  // Customer cannot create a real_shoot post
+  await assertFails(setDoc(doc(dbCustomer, 'posts/rs_post_2'), {
+    kind: 'real_shoot',
+    authorId: 'cust_rs',
+    photographerId: 'p_rs',
+    serviceId: 's1',
+    bookingId: 'b1',
+    imageUrls: ['https://x/1.jpg'],
+    caption: 'Great shoot',
+    likeCount: 0,
+    saveCount: 0,
+    createdAt: serverTimestamp(),
+  }));
+});
+
+

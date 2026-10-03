@@ -24,6 +24,9 @@ import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
 import { handlePhotographerEvent } from './triggers/photographer_write.js';
 import { handleBookingWrite } from './triggers/booking_write.js';
+import { handleSubmitReview } from './callables/review.js';
+import { handleReviewWrite } from './triggers/review_write.js';
+import { liveReviewDeps, liveStatsStore } from './infra/live_review.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -100,3 +103,24 @@ export const onBookingWrite = onDocumentWritten(
     );
   },
 );
+
+/** Submit review and optionally share real shoot photos */
+export const submitReview = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitReview(request, liveReviewDeps()),
+);
+
+/** Fold review rating into photographer stats */
+export const onReviewWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'reviews/{bookingId}' },
+  async (event) => {
+    const bookingId = event.params.bookingId;
+    const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
+    const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
+    await handleReviewWrite(
+      { bookingId, before, after },
+      liveStatsStore(),
+      new Date(),
+    );
+  },
+);
+

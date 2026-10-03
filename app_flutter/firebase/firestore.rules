@@ -465,8 +465,17 @@ service cloud.firestore {
       allow delete: if isOwner(uid) && resource.data.state == 'off';
     }
 
+    // reviews/{bookingId}: customer review of completed shoot.
+    // Read: any signed-in user (public on profile).
+    // Client write: false (all reviews are submitted via submitReview Function).
+    match /reviews/{bookingId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
