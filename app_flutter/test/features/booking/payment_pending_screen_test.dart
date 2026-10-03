@@ -8,6 +8,7 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/fake_payment_sheet.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
 
@@ -221,38 +222,41 @@ void main() {
   );
 
   testWidgets(
-    'the server confirming the payment switches to the paid panel without a tap',
+    'the server confirming the payment opens S05.02 with the paid toast',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
       fakeRepo.seedBooking(_makeBooking());
 
-      await pumpBookingRoute(
+      final handles = await pumpBookingRoute(
         tester,
         path: '/b/booking_1/pay',
         bookings: fakeRepo,
+        signedInUid: 'c1',
       );
       await _settle(tester);
 
-      expect(find.byType(BookingPaidPanel), findsNothing);
+      expect(find.byType(BookingDetailScreen), findsNothing);
 
       // Confirm fake payment
       await fakeRepo.confirmFakePayment(paymentId: 'pay_booking_1');
       await _settle(tester);
 
-      expect(find.byType(BookingPaidPanel), findsOneWidget);
-      expect(find.text('Đã gửi yêu cầu'), findsOneWidget);
+      expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
+      expect(find.byType(PaymentPendingScreen), findsNothing);
+      expect(find.byType(BookingDetailScreen), findsOneWidget);
       expect(
-        find.textContaining('Minh Trí sẽ trả lời trong 24 giờ'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Cọc 450.000₫ đang được giữ an toàn'),
+        find.text(
+          'Cọc 450.000₫ đang được giữ an toàn. '
+          'Minh Trí sẽ trả lời trong 24 giờ.',
+        ),
         findsOneWidget,
       );
     },
   );
 
-  testWidgets('Xem lịch đặt goes to /bookings', (tester) async {
+  testWidgets('a booking that already left draft opens S05.02 at once', (
+    tester,
+  ) async {
     final fakeRepo = FakeBookingRepository();
     fakeRepo.seedBooking(_makeBooking(status: BookingStatus.requested));
 
@@ -260,16 +264,12 @@ void main() {
       tester,
       path: '/b/booking_1/pay',
       bookings: fakeRepo,
+      signedInUid: 'c1',
     );
     await _settle(tester);
 
-    expect(find.byType(BookingPaidPanel), findsOneWidget);
-
-    final viewBtn = find.widgetWithText(AppButton, 'Xem lịch đặt');
-    await tester.tap(viewBtn);
-    await _settle(tester);
-
-    expect(handles.router.state.uri.toString(), '/bookings');
+    expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
+    expect(find.byType(BookingDetailScreen), findsOneWidget);
   });
 
   testWidgets(
@@ -318,7 +318,7 @@ void main() {
   );
 
   testWidgets(
-    'change provider: confirming on the fake sheet confirms once and the stream shows the paid panel',
+    'change provider: confirming on the fake sheet confirms once and the stream opens S05.02',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
       fakeRepo.seedBooking(_makeBooking(depositProvider: 'momo'));
@@ -338,8 +338,8 @@ void main() {
       await _settle(tester);
 
       expect(fakeRepo.fakeConfirms, ['pay_booking_1']);
-      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
-      expect(find.byType(BookingPaidPanel), findsOneWidget);
+      expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
+      expect(find.byType(BookingDetailScreen), findsOneWidget);
     },
   );
 
@@ -475,6 +475,9 @@ void main() {
     tester,
   ) async {
     for (final brightness in [Brightness.light, Brightness.dark]) {
+      // A fresh ProviderScope: the previous round left S05.02 watching the
+      // old repository's booking.
+      await tester.pumpWidget(const SizedBox.shrink());
       final fakeRepo = FakeBookingRepository();
       fakeRepo.seedBooking(_makeBooking());
 
@@ -485,6 +488,7 @@ void main() {
         brightness: brightness,
         textScale: 1.3,
         viewSize: const Size(320, 600),
+        signedInUid: 'c1',
       );
       await _settle(tester);
 
@@ -493,11 +497,11 @@ void main() {
       expect(find.byType(SignatureLoader), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Kiểm tra lại'), findsOneWidget);
 
-      // The paid panel at the same size.
+      // S05.02 at the same size once paid.
       await fakeRepo.confirmFakePayment(paymentId: 'pay_booking_1');
       await _settle(tester);
       expect(tester.takeException(), isNull);
-      expect(find.byType(BookingPaidPanel), findsOneWidget);
+      expect(find.byType(BookingDetailScreen), findsOneWidget);
     }
   });
 }

@@ -90,18 +90,18 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
 | S04.03 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S07 |
-| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ đã làm (4b) · về S05.02 khi có plan 4c | S08 |
+| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ đã làm (4b) · về S05.02 (4c) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
-| S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | 🟡 khung tạm → chưa có plan (bước 4) | S14 |
-| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S09 |
-| S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S10 |
+| S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · ẩn tab Vé sự kiện tới khi có S11.04 | S14 |
+| S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e | S09 |
+| S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
 | S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ⬜ chưa có plan (đặt lịch / công việc) | S12 |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S19 |
-| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | 🟡 khung tạm (empty chung) | S22 |
-| S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S23 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · ẩn Sự kiện của tôi | S19 |
+| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ đã làm (4c) | S22 |
+| S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
 | S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S43 |
 | S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S44 |

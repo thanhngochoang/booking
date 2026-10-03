@@ -132,9 +132,8 @@ void main() {
     expect(fakeRepo.depositCalls.length, 1);
   });
 
-  testWidgets('fake mode: the fake gateway sheet confirms and S04.04 opens', (
-    tester,
-  ) async {
+  testWidgets('fake mode: the fake gateway sheet confirms and S04.04 hands '
+      'over to S05.02', (tester) async {
     final fakeRepo = FakeBookingRepository();
     final handles = await navigateToReviewStep(
       tester,
@@ -155,8 +154,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeRepo.fakeConfirms, contains('pay_booking_1'));
-    // Redirects to /b/booking_1/pay
-    expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+    // S04.04 (/b/booking_1/pay) sees the paid booking and opens S05.02.
+    expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
   });
 
   testWidgets(

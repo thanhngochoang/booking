@@ -2019,4 +2019,413 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get actionRetry => 'Thử lại';
+
+  @override
+  String get timelineSent => 'Đã gửi & đặt cọc';
+
+  @override
+  String timelineSentDetail(String when, String amount) {
+    return '$when · $amount';
+  }
+
+  @override
+  String timelineToday(String time) {
+    return 'Hôm nay $time';
+  }
+
+  @override
+  String timelineWaiting(String name) {
+    return 'Chờ $name nhận';
+  }
+
+  @override
+  String get timelineWaitingHint => 'Thường trong 1 giờ';
+
+  @override
+  String get timelineConfirmed => 'Đã xác nhận';
+
+  @override
+  String get timelineConfirmedHint => 'Nhắn tin để chốt chi tiết';
+
+  @override
+  String timelineUpcoming(String day) {
+    return 'Sắp tới · $day';
+  }
+
+  @override
+  String get timelineUpcomingHint => 'Nhắc trước 24 giờ';
+
+  @override
+  String get timelineShoot => 'Buổi chụp';
+
+  @override
+  String get timelineDone => 'Hoàn thành';
+
+  @override
+  String timelinePayAtShoot(String amount) {
+    return 'Trả $amount tại chỗ';
+  }
+
+  @override
+  String get timelineReview => 'Đánh giá & chia sẻ ảnh';
+
+  @override
+  String get timelineDeclined => 'Đã từ chối';
+
+  @override
+  String get timelineExpired => 'Hết hạn, đã hoàn cọc';
+
+  @override
+  String timelineCancelled(String amount) {
+    return 'Đã huỷ · hoàn $amount';
+  }
+
+  @override
+  String countdownHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String countdownMinutes(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String countdownSeconds(int n) {
+    return '$n giây';
+  }
+
+  @override
+  String detailTitle(String code) {
+    return 'Buổi chụp #$code';
+  }
+
+  @override
+  String detailPaidToast(String amount, String name) {
+    return 'Cọc $amount đang được giữ an toàn. $name sẽ trả lời trong 24 giờ.';
+  }
+
+  @override
+  String escrowNoticeHeldPhotographer(String amount) {
+    return 'Cọc $amount đang được giữ, chuyển cho bạn sau khi hoàn thành';
+  }
+
+  @override
+  String get detailMessage => 'Nhắn tin';
+
+  @override
+  String get detailMore => 'Thêm thao tác';
+
+  @override
+  String get detailReschedule => 'Đổi lịch';
+
+  @override
+  String get detailDirections => 'Chỉ đường';
+
+  @override
+  String detailCancelCustomer(int pct) {
+    return 'Huỷ yêu cầu · hoàn cọc $pct%';
+  }
+
+  @override
+  String get detailCancelPhotographer => 'Huỷ buổi chụp';
+
+  @override
+  String detailAccept(String time) {
+    return 'Nhận · còn $time';
+  }
+
+  @override
+  String get detailAcceptNow => 'Nhận';
+
+  @override
+  String get detailDecline => 'Từ chối';
+
+  @override
+  String get detailComplete => 'Hoàn thành';
+
+  @override
+  String get detailBookAgain => 'Đặt lại';
+
+  @override
+  String get detailReview => 'Đánh giá';
+
+  @override
+  String get detailViewReview => 'Xem đánh giá';
+
+  @override
+  String get detailNotFound => 'Không tìm thấy buổi chụp';
+
+  @override
+  String get detailNotFoundBody =>
+      'Buổi chụp này không còn hoặc không thuộc tài khoản của bạn.';
+
+  @override
+  String get detailGoHome => 'Về trang chủ';
+
+  @override
+  String get detailYou => 'bạn';
+
+  @override
+  String get detailErrorExpired => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get detailErrorNotEligible => 'Không còn thực hiện được thao tác này';
+
+  @override
+  String get detailErrorConflict => 'Buổi chụp vừa thay đổi, đã tải lại';
+
+  @override
+  String get detailErrorNetwork => 'Không gửi được. Thử lại nhé.';
+
+  @override
+  String get cancelTitle => 'Huỷ buổi chụp?';
+
+  @override
+  String cancelTitlePhotographer(String name) {
+    return 'Huỷ buổi chụp với $name?';
+  }
+
+  @override
+  String get cancelKeep => 'Giữ lịch';
+
+  @override
+  String get cancelConfirm => 'Huỷ buổi chụp';
+
+  @override
+  String declineTitle(String name) {
+    return 'Từ chối yêu cầu của $name?';
+  }
+
+  @override
+  String get declineBack => 'Quay lại';
+
+  @override
+  String get declineConfirm => 'Từ chối';
+
+  @override
+  String cancelRow100(String when) {
+    return 'Trước $when hơn 48 giờ';
+  }
+
+  @override
+  String get cancelRow50 => 'Trong 24–48 giờ';
+
+  @override
+  String get cancelRow0 => 'Dưới 24 giờ';
+
+  @override
+  String get cancelRefund100 => 'Hoàn 100%';
+
+  @override
+  String get cancelRefund50 => 'Hoàn 50%';
+
+  @override
+  String get cancelRefund0 => 'Không hoàn';
+
+  @override
+  String get cancelYouGetBack => 'Bạn sẽ nhận lại';
+
+  @override
+  String get cancelReasonPlans => 'Đổi kế hoạch';
+
+  @override
+  String get cancelReasonFound => 'Tìm được thợ khác';
+
+  @override
+  String get cancelReasonOther => 'Lý do khác';
+
+  @override
+  String cancelRefundPhotographer(String name) {
+    return '$name được hoàn cọc 100%';
+  }
+
+  @override
+  String get cancelReasonSick => 'Ốm/việc gấp';
+
+  @override
+  String get cancelReasonGear => 'Thiết bị gặp sự cố';
+
+  @override
+  String cancelDoneToast(String amount) {
+    return 'Đã huỷ. Hoàn $amount trong 3–5 ngày';
+  }
+
+  @override
+  String get cancelDoneNoRefund => 'Đã huỷ buổi chụp';
+
+  @override
+  String cancelDonePhotographer(String name) {
+    return 'Đã huỷ. $name được hoàn cọc 100%';
+  }
+
+  @override
+  String get bookingsTitle => 'Đặt lịch';
+
+  @override
+  String get bookingsUpcoming => 'Sắp tới';
+
+  @override
+  String get bookingsPending => 'Đang chờ';
+
+  @override
+  String get bookingsDone => 'Đã xong';
+
+  @override
+  String get bookingsReview => 'Đánh giá';
+
+  @override
+  String get bookingsDirections => 'Chỉ đường';
+
+  @override
+  String get bookingsMessage => 'Nhắn tin';
+
+  @override
+  String get bookingsChats => 'Tin nhắn';
+
+  @override
+  String get bookingsEmptyUpcoming => 'Chưa có buổi chụp sắp tới';
+
+  @override
+  String get bookingsEmptyUpcomingBody =>
+      'Buổi chụp đã được nhận sẽ hiện ở đây.';
+
+  @override
+  String get bookingsFindPhotographer => 'Tìm nhiếp ảnh gia';
+
+  @override
+  String get bookingsEmptyPending => 'Chưa có yêu cầu chờ';
+
+  @override
+  String get bookingsEmptyPendingBody =>
+      'Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.';
+
+  @override
+  String get bookingsEmptyDone => 'Chưa có buổi nào xong';
+
+  @override
+  String get bookingsEmptyDoneBody =>
+      'Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.';
+
+  @override
+  String get workTitle => 'Công việc';
+
+  @override
+  String workDateTitle(int weekday, String date) {
+    return 'Thứ $weekday, $date';
+  }
+
+  @override
+  String workDateTitleSunday(String date) {
+    return 'Chủ nhật, $date';
+  }
+
+  @override
+  String get workToday => 'Hôm nay';
+
+  @override
+  String get workRequests => 'Yêu cầu mới';
+
+  @override
+  String get workAccept => 'Nhận';
+
+  @override
+  String workAcceptIn(String time) {
+    return 'Nhận · còn $time';
+  }
+
+  @override
+  String get workDecline => 'Từ chối';
+
+  @override
+  String get workMessage => 'Nhắn tin';
+
+  @override
+  String get workDirections => 'Chỉ đường';
+
+  @override
+  String get workMonth => 'Tháng này';
+
+  @override
+  String get workHeld => 'Đang giữ';
+
+  @override
+  String get workUpcoming => 'Buổi sắp tới';
+
+  @override
+  String get workNoRequests => 'Không có yêu cầu mới';
+
+  @override
+  String workRequestMeta(String service, String when, String place) {
+    return '$service · $when · $place';
+  }
+
+  @override
+  String workDepositPaid(String amount) {
+    return 'đã cọc $amount';
+  }
+
+  @override
+  String workRequestNote(String note, String deposit) {
+    return '“$note” · $deposit';
+  }
+
+  @override
+  String workRequestExpired(String name) {
+    return 'Yêu cầu $name đã hết hạn, đã hoàn cọc';
+  }
+
+  @override
+  String get workEmptyTitle => 'Buổi chụp tiếp theo bắt đầu từ đây';
+
+  @override
+  String workEmptyBodyPortfolio(int n) {
+    return 'Hồ sơ có 6 ảnh và 1 gói được đặt nhiều gấp 3 lần. Bạn đang có $n ảnh.';
+  }
+
+  @override
+  String get workEmptyAddPhotos => 'Thêm ảnh vào portfolio';
+
+  @override
+  String get workEmptyBodyPackage =>
+      'Khách đặt lịch theo gói. Thêm một gói để nhận yêu cầu đầu tiên.';
+
+  @override
+  String get workEmptyAddPackage => 'Thêm gói';
+
+  @override
+  String get workEmptyBodySkills =>
+      'Kỹ năng càng đầy đủ, hồ sơ càng được gợi ý cho đúng khách.';
+
+  @override
+  String get workEmptySkills => 'Hoàn thiện kỹ năng';
+
+  @override
+  String get workEmptyBodyShare =>
+      'Hồ sơ đã sẵn sàng. Chia sẻ để khách quen tìm và đặt bạn.';
+
+  @override
+  String get workEmptyShare => 'Chia sẻ hồ sơ';
+
+  @override
+  String get declineReasonBusy => 'Kín lịch hôm đó';
+
+  @override
+  String get declineReasonArea => 'Ngoài khu vực phục vụ';
+
+  @override
+  String get declineReasonService => 'Gói không phù hợp nhu cầu';
+
+  @override
+  String get declineReasonOther => 'Lý do khác';
+
+  @override
+  String declineRefundNote(String name, String amount) {
+    return '$name được hoàn cọc $amount và nhận lý do này.';
+  }
+
+  @override
+  String declineDoneToast(String name) {
+    return 'Đã từ chối. $name được hoàn cọc.';
+  }
 }

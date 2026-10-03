@@ -9,6 +9,7 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/fake_payment_sheet.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
@@ -90,7 +91,7 @@ Future<void> _tapButton(WidgetTester tester, String label) async {
 
 void main() {
   testWidgets(
-    'S03.01 → S04.01–S04.03 → fake gateway → S04.04 paid → Xem lịch đặt',
+    'S03.01 → S04.01–S04.03 → fake gateway → S04.04 paid → S05.02',
     (tester) async {
       final day12 = DateTime.utc(2026, 10, 12);
       final repo = _OrderedBookingRepository();
@@ -99,6 +100,7 @@ void main() {
         path: '/u/p1',
         bookings: repo,
         days: {day12: AvailabilityDay(day: day12, state: DayState.free)},
+        signedInUid: 'c1',
       );
       await tester.pumpAndSettle();
 
@@ -145,15 +147,14 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
       await _pumpWhileWaiting(tester);
 
-      // S04.04: the server status left draft, so the paid panel shows.
-      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
-      expect(find.byType(PaymentPendingScreen), findsOneWidget);
-      expect(find.byType(BookingPaidPanel), findsOneWidget);
-      expect(find.text('Đã gửi yêu cầu'), findsOneWidget);
-
-      await _tapButton(tester, 'Xem lịch đặt');
-      await tester.pumpAndSettle();
-      expect(handles.router.state.uri.toString(), '/bookings');
+      // S04.04 saw the status leave draft and moved on to S05.02.
+      expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
+      expect(find.byType(PaymentPendingScreen), findsNothing);
+      expect(find.byType(BookingDetailScreen), findsOneWidget);
+      expect(
+        find.textContaining('Minh Trí sẽ trả lời trong 24 giờ'),
+        findsOneWidget,
+      );
 
       expect(repo.log, [
         'createBooking',

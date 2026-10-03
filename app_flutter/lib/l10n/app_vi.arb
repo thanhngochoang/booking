@@ -934,5 +934,276 @@
   "fakePayBody": "Bản dùng thử: không có tiền thật nào được trừ.",
   "fakePayConfirm": "Thanh toán thành công",
   "actionCancel": "Huỷ",
-  "actionRetry": "Thử lại"
+  "actionRetry": "Thử lại",
+  "timelineSent": "Đã gửi & đặt cọc",
+  "timelineSentDetail": "{when} · {amount}",
+  "@timelineSentDetail": {
+    "placeholders": {
+      "when": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "timelineToday": "Hôm nay {time}",
+  "@timelineToday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "timelineWaiting": "Chờ {name} nhận",
+  "@timelineWaiting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "timelineWaitingHint": "Thường trong 1 giờ",
+  "timelineConfirmed": "Đã xác nhận",
+  "timelineConfirmedHint": "Nhắn tin để chốt chi tiết",
+  "timelineUpcoming": "Sắp tới · {day}",
+  "@timelineUpcoming": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "timelineUpcomingHint": "Nhắc trước 24 giờ",
+  "timelineShoot": "Buổi chụp",
+  "timelineDone": "Hoàn thành",
+  "timelinePayAtShoot": "Trả {amount} tại chỗ",
+  "@timelinePayAtShoot": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "timelineReview": "Đánh giá & chia sẻ ảnh",
+  "timelineDeclined": "Đã từ chối",
+  "timelineExpired": "Hết hạn, đã hoàn cọc",
+  "timelineCancelled": "Đã huỷ · hoàn {amount}",
+  "@timelineCancelled": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "countdownHours": "{n} giờ",
+  "@countdownHours": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "countdownMinutes": "{n} phút",
+  "@countdownMinutes": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "countdownSeconds": "{n} giây",
+  "@countdownSeconds": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "detailTitle": "Buổi chụp #{code}",
+  "@detailTitle": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "detailPaidToast": "Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ.",
+  "@detailPaidToast": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "escrowNoticeHeldPhotographer": "Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành",
+  "@escrowNoticeHeldPhotographer": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "detailMessage": "Nhắn tin",
+  "detailMore": "Thêm thao tác",
+  "detailReschedule": "Đổi lịch",
+  "detailDirections": "Chỉ đường",
+  "detailCancelCustomer": "Huỷ yêu cầu · hoàn cọc {pct}%",
+  "@detailCancelCustomer": {
+    "placeholders": {
+      "pct": {"type": "int"}
+    }
+  },
+  "detailCancelPhotographer": "Huỷ buổi chụp",
+  "detailAccept": "Nhận · còn {time}",
+  "@detailAccept": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "detailAcceptNow": "Nhận",
+  "detailDecline": "Từ chối",
+  "detailComplete": "Hoàn thành",
+  "detailBookAgain": "Đặt lại",
+  "detailReview": "Đánh giá",
+  "detailViewReview": "Xem đánh giá",
+  "detailNotFound": "Không tìm thấy buổi chụp",
+  "detailNotFoundBody": "Buổi chụp này không còn hoặc không thuộc tài khoản của bạn.",
+  "detailGoHome": "Về trang chủ",
+  "detailYou": "bạn",
+  "detailErrorExpired": "Yêu cầu đã hết hạn",
+  "detailErrorNotEligible": "Không còn thực hiện được thao tác này",
+  "detailErrorConflict": "Buổi chụp vừa thay đổi, đã tải lại",
+  "detailErrorNetwork": "Không gửi được. Thử lại nhé.",
+  "cancelTitle": "Huỷ buổi chụp?",
+  "cancelTitlePhotographer": "Huỷ buổi chụp với {name}?",
+  "@cancelTitlePhotographer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancelKeep": "Giữ lịch",
+  "cancelConfirm": "Huỷ buổi chụp",
+  "declineTitle": "Từ chối yêu cầu của {name}?",
+  "@declineTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "declineBack": "Quay lại",
+  "declineConfirm": "Từ chối",
+  "cancelRow100": "Trước {when} hơn 48 giờ",
+  "@cancelRow100": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "cancelRow50": "Trong 24–48 giờ",
+  "cancelRow0": "Dưới 24 giờ",
+  "cancelRefund100": "Hoàn 100%",
+  "cancelRefund50": "Hoàn 50%",
+  "cancelRefund0": "Không hoàn",
+  "cancelYouGetBack": "Bạn sẽ nhận lại",
+  "cancelReasonPlans": "Đổi kế hoạch",
+  "cancelReasonFound": "Tìm được thợ khác",
+  "cancelReasonOther": "Lý do khác",
+  "cancelRefundPhotographer": "{name} được hoàn cọc 100%",
+  "@cancelRefundPhotographer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancelReasonSick": "Ốm/việc gấp",
+  "cancelReasonGear": "Thiết bị gặp sự cố",
+  "cancelDoneToast": "Đã huỷ. Hoàn {amount} trong 3–5 ngày",
+  "@cancelDoneToast": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "cancelDoneNoRefund": "Đã huỷ buổi chụp",
+  "cancelDonePhotographer": "Đã huỷ. {name} được hoàn cọc 100%",
+  "@cancelDonePhotographer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "bookingsTitle": "Đặt lịch",
+  "bookingsUpcoming": "Sắp tới",
+  "bookingsPending": "Đang chờ",
+  "bookingsDone": "Đã xong",
+  "bookingsReview": "Đánh giá",
+  "bookingsDirections": "Chỉ đường",
+  "bookingsMessage": "Nhắn tin",
+  "bookingsChats": "Tin nhắn",
+  "bookingsEmptyUpcoming": "Chưa có buổi chụp sắp tới",
+  "bookingsEmptyUpcomingBody": "Buổi chụp đã được nhận sẽ hiện ở đây.",
+  "bookingsFindPhotographer": "Tìm nhiếp ảnh gia",
+  "bookingsEmptyPending": "Chưa có yêu cầu chờ",
+  "bookingsEmptyPendingBody": "Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.",
+  "bookingsEmptyDone": "Chưa có buổi nào xong",
+  "bookingsEmptyDoneBody": "Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.",
+  "workTitle": "Công việc",
+  "workDateTitle": "Thứ {weekday}, {date}",
+  "@workDateTitle": {
+    "placeholders": {
+      "weekday": {"type": "int"},
+      "date": {"type": "String"}
+    }
+  },
+  "workDateTitleSunday": "Chủ nhật, {date}",
+  "@workDateTitleSunday": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "workToday": "Hôm nay",
+  "workRequests": "Yêu cầu mới",
+  "workAccept": "Nhận",
+  "workAcceptIn": "Nhận · còn {time}",
+  "@workAcceptIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "workDecline": "Từ chối",
+  "workMessage": "Nhắn tin",
+  "workDirections": "Chỉ đường",
+  "workMonth": "Tháng này",
+  "workHeld": "Đang giữ",
+  "workUpcoming": "Buổi sắp tới",
+  "workNoRequests": "Không có yêu cầu mới",
+  "workRequestMeta": "{service} · {when} · {place}",
+  "@workRequestMeta": {
+    "placeholders": {
+      "service": {"type": "String"},
+      "when": {"type": "String"},
+      "place": {"type": "String"}
+    }
+  },
+  "workDepositPaid": "đã cọc {amount}",
+  "@workDepositPaid": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "workRequestNote": "“{note}” · {deposit}",
+  "@workRequestNote": {
+    "placeholders": {
+      "note": {"type": "String"},
+      "deposit": {"type": "String"}
+    }
+  },
+  "workRequestExpired": "Yêu cầu {name} đã hết hạn, đã hoàn cọc",
+  "@workRequestExpired": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "workEmptyTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
+  "workEmptyBodyPortfolio": "Hồ sơ có 6 ảnh và 1 gói được đặt nhiều gấp 3 lần. Bạn đang có {n} ảnh.",
+  "@workEmptyBodyPortfolio": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "workEmptyAddPhotos": "Thêm ảnh vào portfolio",
+  "workEmptyBodyPackage": "Khách đặt lịch theo gói. Thêm một gói để nhận yêu cầu đầu tiên.",
+  "workEmptyAddPackage": "Thêm gói",
+  "workEmptyBodySkills": "Kỹ năng càng đầy đủ, hồ sơ càng được gợi ý cho đúng khách.",
+  "workEmptySkills": "Hoàn thiện kỹ năng",
+  "workEmptyBodyShare": "Hồ sơ đã sẵn sàng. Chia sẻ để khách quen tìm và đặt bạn.",
+  "workEmptyShare": "Chia sẻ hồ sơ",
+  "declineReasonBusy": "Kín lịch hôm đó",
+  "declineReasonArea": "Ngoài khu vực phục vụ",
+  "declineReasonService": "Gói không phù hợp nhu cầu",
+  "declineReasonOther": "Lý do khác",
+  "declineRefundNote": "{name} được hoàn cọc {amount} và nhận lý do này.",
+  "@declineRefundNote": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "declineDoneToast": "Đã từ chối. {name} được hoàn cọc.",
+  "@declineDoneToast": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  }
 }
