@@ -46,27 +46,36 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
     final maxDate = addMonths(monthOf(today), 12);
 
     final state = ref.watch(bookingFlowControllerProvider(widget.args));
-    final controller = ref.read(bookingFlowControllerProvider(widget.args).notifier);
+    final controller = ref.read(
+      bookingFlowControllerProvider(widget.args).notifier,
+    );
 
     final availabilityAsync = ref.watch(
-      availabilityMonthProvider((uid: widget.args.photographerId, month: _month)),
+      availabilityMonthProvider((
+        uid: widget.args.photographerId,
+        month: _month,
+      )),
     );
 
     // Live calendar updates: if the chosen day became non-free, unselect with SnackBar
     ref.listen<AsyncValue<Map<DateTime, AvailabilityDay>>>(
-      availabilityMonthProvider((uid: widget.args.photographerId, month: _month)),
+      availabilityMonthProvider((
+        uid: widget.args.photographerId,
+        month: _month,
+      )),
       (prev, next) {
         if (next.hasValue) {
-          final chosenDayStr = ref.read(bookingFlowControllerProvider(widget.args)).day;
+          final chosenDayStr = ref
+              .read(bookingFlowControllerProvider(widget.args))
+              .day;
           if (chosenDayStr != null) {
             final chosenDate = parseDayKey(chosenDayStr)!;
             final map = next.value!;
             final record = map[chosenDate];
             if (record != null && record.state != DayState.free) {
               controller.clearDay(chosenDayStr, taken: false);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.bookDayGone)),
-              );
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(l10n.bookDayGone)));
             }
           }
         }
@@ -91,34 +100,44 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
               horizontal: AppSpace.s4,
               vertical: AppSpace.s2,
             ),
-            child: Row(
+            // Month and legend share one line (mock S04.02); on a narrow or
+            // large-text screen the legend moves under the month instead of
+            // being squeezed into a sliver of width.
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpace.s2,
+              runSpacing: AppSpace.s1,
               children: [
-                Text(
-                  l10n.bookMonth(_month.month),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.bookMonth(_month.month),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s1),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: l10n.calendarPrevMonth,
+                      icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                      onPressed: canPrev
+                          ? () => _changeMonth(addMonths(_month, -1))
+                          : null,
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: l10n.calendarNextMonth,
+                      icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                      onPressed: canNext
+                          ? () => _changeMonth(addMonths(_month, 1))
+                          : null,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppSpace.s1),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: l10n.calendarPrevMonth,
-                  icon: const Icon(Icons.chevron_left_rounded, size: 20),
-                  onPressed: canPrev ? () => _changeMonth(addMonths(_month, -1)) : null,
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: l10n.calendarNextMonth,
-                  icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                  onPressed: canNext ? () => _changeMonth(addMonths(_month, 1)) : null,
-                ),
-                const SizedBox(width: AppSpace.s2),
-                const Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: AvailabilityLegend(),
-                  ),
-                ),
+                const AvailabilityLegend(),
               ],
             ),
           ),
@@ -131,9 +150,13 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                 children: [
                   AsyncView<Map<DateTime, AvailabilityDay>>(
                     value: availabilityAsync,
-                    skeleton: (_) => AvailabilityCalendar.skeleton(showHeader: false),
+                    skeleton: (_) =>
+                        AvailabilityCalendar.skeleton(showHeader: false),
                     onRetry: () => ref.invalidate(
-                      availabilityMonthProvider((uid: widget.args.photographerId, month: _month)),
+                      availabilityMonthProvider((
+                        uid: widget.args.photographerId,
+                        month: _month,
+                      )),
                     ),
                     data: (context, knownDays) {
                       final dayStates = <DateTime, DayState>{};
@@ -171,7 +194,9 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                   ),
                   if (_tappedPending)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpace.s2,
+                      ),
                       child: Text(
                         l10n.bookWaiting(1),
                         style: theme.textTheme.bodySmall?.copyWith(

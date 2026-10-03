@@ -203,58 +203,68 @@ void main() {
     expect(handles.availRepo.watchers, greaterThanOrEqualTo(1));
   });
 
-  testWidgets('a chosen day that becomes pending is cleared with Hôm đó vừa có người đặt', (
-    tester,
-  ) async {
-    final h = tester.ensureSemantics();
-    final handles = await pumpBookingRoute(
-      tester,
-      path: '/u/p1/book?serviceId=s1',
-      days: testDays,
-      now: now,
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'a chosen day that becomes pending is cleared with Hôm đó vừa có người đặt',
+    (tester) async {
+      final h = tester.ensureSemantics();
+      final handles = await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book?serviceId=s1',
+        days: testDays,
+        now: now,
+      );
+      await tester.pumpAndSettle();
 
-    // Select Oct 15
-    await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
-    await tester.pumpAndSettle();
+      // Select Oct 15
+      await tester.tap(find.bySemanticsLabel('15 tháng 10, rảnh'));
+      await tester.pumpAndSettle();
 
-    // Select 15:30
-    await tester.ensureVisible(find.text('15:30'));
-    await tester.tap(find.text('15:30'));
-    await tester.pumpAndSettle();
+      // Select 15:30
+      await tester.ensureVisible(find.text('15:30'));
+      await tester.tap(find.text('15:30'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('15:30–17:30'), findsOneWidget);
-    expect(tester.widget<AppButton>(find.byType(AppButton)).onPressed, isNotNull);
+      expect(find.text('15:30–17:30'), findsOneWidget);
+      expect(
+        tester.widget<AppButton>(find.byType(AppButton)).onPressed,
+        isNotNull,
+      );
 
-    // Now seed that Oct 15 became pending
-    handles.availRepo.seed(
-      'p1',
-      AvailabilityDay(day: freeDay, state: DayState.pending),
-    );
-    await tester.pumpAndSettle();
+      // Now seed that Oct 15 became pending
+      handles.availRepo.seed(
+        'p1',
+        AvailabilityDay(day: freeDay, state: DayState.pending),
+      );
+      await tester.pumpAndSettle();
 
-    // Start cleared, button disabled, SnackBar shown
-    expect(find.text('15:30–17:30'), findsNothing);
-    expect(tester.widget<AppButton>(find.byType(AppButton)).onPressed, isNull);
-    expect(find.text('Hôm đó vừa có người đặt, chọn ngày khác'), findsOneWidget);
+      // Start cleared, button disabled, SnackBar shown
+      expect(find.text('15:30–17:30'), findsNothing);
+      expect(
+        tester.widget<AppButton>(find.byType(AppButton)).onPressed,
+        isNull,
+      );
+      expect(
+        find.text('Hôm đó vừa có người đặt, chọn ngày khác'),
+        findsOneWidget,
+      );
 
-    h.dispose();
-  });
+      h.dispose();
+    },
+  );
 
   testWidgets('days refused with day_taken are crossed', (tester) async {
     final h = tester.ensureSemantics();
-    await pumpBookingRoute(
-      tester,
-      path: '/u/p1/book?serviceId=s1',
-      now: now,
-    );
+    await pumpBookingRoute(tester, path: '/u/p1/book?serviceId=s1', now: now);
     await tester.pumpAndSettle();
 
     // Mark Oct 15 as taken in controller
-    final container = ProviderScope.containerOf(tester.element(find.byType(DateTimeStep)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(DateTimeStep)),
+    );
     const args = BookingFlowArgs(photographerId: 'p1', serviceId: 's1');
-    container.read(bookingFlowControllerProvider(args).notifier).clearDay('2026-10-15', taken: true);
+    container
+        .read(bookingFlowControllerProvider(args).notifier)
+        .clearDay('2026-10-15', taken: true);
     await tester.pumpAndSettle();
 
     // Oct 15 is now DayState.booked in calendar states -> semantics label has "đã đặt"
@@ -269,16 +279,18 @@ void main() {
       tester,
       path: '/u/p1/book?serviceId=s1',
       extraOverrides: [
-        availabilityMonthProvider((uid: 'p1', month: DateTime.utc(2026, 10))).overrideWith(
-          (ref) => completer.future.asStream(),
-        ),
+        availabilityMonthProvider((uid: 'p1', month: DateTime.utc(2026, 10)))
+            .overrideWith((ref) => completer.future.asStream()),
       ],
       now: now,
     );
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.byType(AsyncView<Map<DateTime, AvailabilityDay>>), findsOneWidget);
+    expect(
+      find.byType(AsyncView<Map<DateTime, AvailabilityDay>>),
+      findsOneWidget,
+    );
   });
 
   testWidgets('calendar error shows retry; retry resubscribes', (tester) async {
@@ -287,14 +299,13 @@ void main() {
       tester,
       path: '/u/p1/book?serviceId=s1',
       extraOverrides: [
-        availabilityMonthProvider((uid: 'p1', month: DateTime.utc(2026, 10))).overrideWith(
-          (ref) {
-            if (shouldFail) {
-              return Stream.error(Exception('Calendar load failure'));
-            }
-            return Stream.value(testDays);
-          },
-        ),
+        availabilityMonthProvider((uid: 'p1', month: DateTime.utc(2026, 10)))
+            .overrideWith((ref) {
+              if (shouldFail) {
+                return Stream.error(Exception('Calendar load failure'));
+              }
+              return Stream.value(testDays);
+            }),
       ],
       now: now,
     );
@@ -309,25 +320,37 @@ void main() {
     expect(find.byType(AvailabilityCalendar), findsOneWidget);
   });
 
-  testWidgets('320 dp, 1.3× text, light and dark: chips wrap, nothing overflows', (
-    tester,
-  ) async {
-    for (final brightness in [Brightness.light, Brightness.dark]) {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1;
+  testWidgets(
+    '320 dp, 1.3× text, light and dark: chips wrap, nothing overflows',
+    (tester) async {
+      const size = Size(320, 640);
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        await tester.pumpWidget(
+          const SizedBox(),
+        ); // fresh ProviderScope per pass
+        await pumpBookingRoute(
+          tester,
+          path: '/u/p1/book?serviceId=s1&day=2026-10-15',
+          days: {
+            DateTime.utc(2026, 10, 15): AvailabilityDay(
+              day: DateTime.utc(2026, 10, 15),
+              state: DayState.free,
+            ),
+          },
+          brightness: brightness,
+          textScale: 1.3,
+          now: now,
+          viewSize: size,
+        );
+        await tester.pumpAndSettle();
 
-      await pumpBookingRoute(
-        tester,
-        path: '/u/p1/book?serviceId=s1',
-        brightness: brightness,
-        textScale: 1.3,
-        now: now,
-      );
-      await tester.pumpAndSettle();
-
-      final err = tester.takeException();
-      expect(err, isNull);
-      expect(find.byType(AppButton), findsOneWidget);
-    }
-  });
+        expect(tester.takeException(), isNull);
+        expect(tester.getSize(find.byKey(const Key('app-sheet'))).width, 320);
+        expect(find.byType(DateTimeStep), findsOneWidget);
+        // The day is preselected, so the slot chips are laid out and must wrap.
+        expect(find.widgetWithText(AppChip, '06:00'), findsOneWidget);
+        expect(find.byType(AppButton), findsOneWidget);
+      }
+    },
+  );
 }

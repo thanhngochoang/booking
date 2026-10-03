@@ -1,5 +1,6 @@
 // test/features/booking/service_step_test.dart
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,10 +33,7 @@ void main() {
       active: true,
     );
 
-    await pumpBookingRoute(
-      tester,
-      packages: [pExpensive, pCheap],
-    );
+    await pumpBookingRoute(tester, packages: [pExpensive, pCheap]);
     await tester.pumpAndSettle();
 
     expect(find.byType(ScreenCode), findsWidgets);
@@ -46,34 +44,32 @@ void main() {
     expect(find.text('5.000.000₫'), findsOneWidget);
   });
 
-  testWidgets('the button shows the total and is disabled until a package is chosen', (
-    tester,
-  ) async {
-    await pumpBookingRoute(tester);
-    await tester.pumpAndSettle();
+  testWidgets(
+    'the button shows the total and is disabled until a package is chosen',
+    (tester) async {
+      await pumpBookingRoute(tester);
+      await tester.pumpAndSettle();
 
-    final buttonFinder = find.byType(AppButton);
-    expect(buttonFinder, findsOneWidget);
+      final buttonFinder = find.byType(AppButton);
+      expect(buttonFinder, findsOneWidget);
 
-    final appButton = tester.widget<AppButton>(buttonFinder);
-    expect(appButton.onPressed, isNull);
-    expect(find.text('Tiếp tục · 0₫'), findsOneWidget);
+      final appButton = tester.widget<AppButton>(buttonFinder);
+      expect(appButton.onPressed, isNull);
+      expect(find.text('Tiếp tục · 0₫'), findsOneWidget);
 
-    await tester.tap(find.text('Gói Chân Dung'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Gói Chân Dung'));
+      await tester.pumpAndSettle();
 
-    final appButtonActive = tester.widget<AppButton>(buttonFinder);
-    expect(appButtonActive.onPressed, isNotNull);
-    expect(find.text('Tiếp tục · 1.500.000₫'), findsOneWidget);
-  });
+      final appButtonActive = tester.widget<AppButton>(buttonFinder);
+      expect(appButtonActive.onPressed, isNotNull);
+      expect(find.text('Tiếp tục · 1.500.000₫'), findsOneWidget);
+    },
+  );
 
   testWidgets('a single package is preselected and the button is enabled', (
     tester,
   ) async {
-    await pumpBookingRoute(
-      tester,
-      packages: [bookingPackage1],
-    );
+    await pumpBookingRoute(tester, packages: [bookingPackage1]);
     await tester.pumpAndSettle();
 
     final buttonFinder = find.byType(AppButton);
@@ -85,10 +81,7 @@ void main() {
   testWidgets('no packages shows Nhiếp ảnh gia chưa đăng gói and Đóng closes', (
     tester,
   ) async {
-    await pumpBookingRoute(
-      tester,
-      emptyPackages: true,
-    );
+    await pumpBookingRoute(tester, emptyPackages: true);
     await tester.pumpAndSettle();
 
     expect(find.text('Nhiếp ảnh gia chưa đăng gói'), findsOneWidget);
@@ -105,9 +98,7 @@ void main() {
     await pumpBookingRoute(
       tester,
       extraOverrides: [
-        profilePackagesProvider('p1').overrideWith(
-          (ref) => completer.future,
-        ),
+        profilePackagesProvider('p1').overrideWith((ref) => completer.future),
       ],
     );
     await tester.pump(const Duration(milliseconds: 200));
@@ -141,7 +132,9 @@ void main() {
     expect(find.text('Gói Chân Dung'), findsOneWidget);
   });
 
-  testWidgets('Giá gói đã đổi banner appears when priceChanged', (tester) async {
+  testWidgets('Giá gói đã đổi banner appears when priceChanged', (
+    tester,
+  ) async {
     await pumpBookingRoute(tester);
     await tester.pumpAndSettle();
 
@@ -150,7 +143,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Trigger price change on controller
-    final container = ProviderScope.containerOf(tester.element(find.byType(ServiceStep)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ServiceStep)),
+    );
     const args = BookingFlowArgs(photographerId: 'p1');
     final updatedPackage1 = ServiceSummary(
       id: bookingPackage1.id,
@@ -170,23 +165,29 @@ void main() {
     expect(find.text('Tiếp tục · 1.800.000₫'), findsOneWidget);
   });
 
-  testWidgets('320 dp and 1.3× text, light and dark: no overflow; the button stays on screen', (
-    tester,
-  ) async {
-    for (final brightness in [Brightness.light, Brightness.dark]) {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1;
+  testWidgets(
+    '320 dp and 1.3× text, light and dark: no overflow; the button stays on screen',
+    (tester) async {
+      const size = Size(320, 640);
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        await tester.pumpWidget(
+          const SizedBox(),
+        ); // fresh ProviderScope per pass
+        await pumpBookingRoute(
+          tester,
+          brightness: brightness,
+          textScale: 1.3,
+          viewSize: size,
+        );
+        await tester.pumpAndSettle();
 
-      await pumpBookingRoute(
-        tester,
-        brightness: brightness,
-        textScale: 1.3,
-      );
-      await tester.pumpAndSettle();
-
-      final err = tester.takeException();
-      expect(err, isNull);
-      expect(find.byType(AppButton), findsOneWidget);
-    }
-  });
+        expect(tester.takeException(), isNull);
+        expect(tester.getSize(find.byKey(const Key('app-sheet'))).width, 320);
+        expect(find.byType(ServiceStep), findsOneWidget);
+        final button = find.byType(AppButton);
+        expect(button, findsOneWidget);
+        expect(tester.getRect(button).bottom, lessThanOrEqualTo(size.height));
+      }
+    },
+  );
 }
