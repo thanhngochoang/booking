@@ -78,7 +78,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
   });
 
   const serviceCatalog: ServiceCatalog = {
-    getService: async (id) => services.get(id) ?? null,
+    getService: async (_photographerId, id) => services.get(id) ?? null,
   };
 
   const contactReader: CustomerContactReader = {
