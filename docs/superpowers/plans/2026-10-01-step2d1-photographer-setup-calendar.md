@@ -44,7 +44,7 @@ One helper belongs to a later plan: `newUlid` (plan 3c, Task 1). Task 1 adds it 
 - **Theme and UI:** `AuroraBackground` + transparent `Scaffold`; colours from `Theme`/`AppColors`/`AppColorsDark`, sizes from `AppSpace`/`AppRadius`/`AppText`; no raw hex. One `AppButton.primary` per screen ("Tiếp tục" on S24, "Đánh dấu nghỉ" on S20); hiding a package is a red button inside a confirmation sheet. At most 4 `BackdropFilter`s per screen, none nested, no blur on list rows. Touch targets ≥ 48dp (calendar cells 44dp tall, see Risks). No hard-coded UI text: Vietnamese strings with full diacritics in `lib/l10n/app_vi.arb`, then `flutter gen-l10n`.
 - **Tests:** every screen and the calendar widget are tested at 320dp width and 1.3× text in light and dark (`tester.takeException()` is null); widget tests use `ProviderScope(retry: (_, _) => null, …)` so a failing provider leaves no retry timer; every provider that reaches Firebase is overridden with a fake.
 - **Battery:** no `Timer`, `Stream.periodic` or `AnimationController` in this plan's code; Firestore listeners are `autoDispose` and live only while their screen is open (the own-profile intro stream used by S30 is the one allowed long-lived listener, per `docs/testing/battery-and-performance.md`); S20 keeps one month listener at a time.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 

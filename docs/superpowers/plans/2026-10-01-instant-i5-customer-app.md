@@ -41,7 +41,7 @@
 - **Location and battery:** the customer's location is read **once** per S13.01 visit (medium accuracy, with a deadline) and reused through the draft; no stream on the customer side; the map exists only on S13.01 and S13.05 (S14.03 in I4); the pulse and the aperture wait run only while searching / waiting and are still under reduced motion; `TickingBuilder` is the only per-second clock and runs only while it is on screen; every mirror listener is `autoDispose` and closes with its screen.
 - **Goong keys** come from `--dart-define=GOONG_API_KEY=…` / `GOONG_MAPTILES_KEY=…` (I4's `GoongConfig`), are restricted to the app's package name / bundle id in the Goong console, and never reach a log, an exception text or analytics.
 - Interactive controls have a 48dp touch target; meaning never rests on colour alone; every map pin has a text label; widget tests run at 390dp and at 320dp with text scale 1.3, dark and light.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 

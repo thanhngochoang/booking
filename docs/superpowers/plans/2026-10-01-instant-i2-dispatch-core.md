@@ -39,7 +39,7 @@
 - **Wire codes are the contract's:** every enum string equals `services/dispatch/api/openapi.yaml` (tested literally in Task 1). Money is integer VND; instants are `Date` (UTC); ratios are basis points; surge is hundredths.
 - **Invariant:** for every quote and settlement, `refundVnd + photographerVnd + platformVnd = collectedVnd`, all non-negative safe integers (property test over ~20,000 amounts per rule, Task 6).
 - **No business rule outside this package:** plan I3 imports these functions through `services/dispatch/src/domain/core.ts` only. A missing rule is added here with its test, never in the service.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 

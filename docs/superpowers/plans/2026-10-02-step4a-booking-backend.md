@@ -56,7 +56,7 @@ Values copied from the specs (verbatim where quoted):
 - Data conventions (data-model README §2): opaque ids `[A-Za-z0-9_-]{1,64}`, new ids ULID; instants UTC (`Timestamp` only inside adapters); calendar day `yyyy-MM-dd` and time `HH:mm` in Asia/Ho_Chi_Minh (UTC+7, no DST); enums are string codes; bookings carry `version` (optimistic lock) and money operations an `idempotencyKey`.
 - Layering (CLAUDE.md): `packages/domain/src` imports nothing outside itself (no Firebase, no `node:*`; lint + `purity.test.ts`); Functions are thin adapters, region `asia-southeast1`; in the app `cloud_firestore`/`cloud_functions` appear only in `lib/data/**` adapters; imports `package:photobooking/...`; no UI strings in this plan.
 - Commands: domain `(cd packages/domain && npm test)` from the repo root; Functions `(cd app_flutter/firebase/functions && npm test)` (unit) and `npm run typecheck`, `npm run lint`; Functions integration tests (`npm run test:integration`) and rules tests run **on CI only** (outside the sandbox); Flutter from `app_flutter/` with `../scripts/bin/flutter …` and `../scripts/bin/dart …`; run `../scripts/bin/dart format lib test` before each Flutter commit.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Never push.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`. Never push.
 
 ## Assumptions
 

@@ -63,7 +63,7 @@ In the order of data-model README §6 step 4 ("nội dung → hồ sơ → booki
 - Domain rules are imported only through `services/api/src/domain/index.ts`. `firebase-admin` appears only in `services/api/tools/firestore-import/`. The server verifies tokens with `jose`, not with a Firebase SDK.
 - Flutter: `package:photobooking/...` imports only; `cloud_firestore`/`firebase_*` and `package:http` only in `lib/data/**`, `lib/firebase_options.dart`, `lib/main.dart`. Domain/features keep depending on the repository interfaces of plans 2a/2b, unchanged.
 - `.env.example` holds test values only; real secrets never enter the repo (`services/api/.gitignore` ignores `.env`).
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 
