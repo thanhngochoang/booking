@@ -778,6 +778,16 @@
   "ticketDirections": "Chỉ đường",
   "ticketAddToCalendar": "Thêm vào lịch",
   "ticketCancel": "Huỷ vé",
-  "ticketPay": "Thanh toán"
+  "ticketPay": "Thanh toán",
+  "badgeChipSemantics": "Huy hiệu {name}",
+  "@badgeChipSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "badgeSeeAll": "Tất cả",
+  "badgeNotEarned": "Chưa đạt",
+  "badgeEarned": "Đã đạt",
+  "badgeNew": "Mới"
 }
 

@@ -3153,6 +3153,36 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thanh toán'**
   String get ticketPay;
+
+  /// No description provided for @badgeChipSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu {name}'**
+  String badgeChipSemantics(String name);
+
+  /// No description provided for @badgeSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get badgeSeeAll;
+
+  /// No description provided for @badgeNotEarned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đạt'**
+  String get badgeNotEarned;
+
+  /// No description provided for @badgeEarned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đạt'**
+  String get badgeEarned;
+
+  /// No description provided for @badgeNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới'**
+  String get badgeNew;
 }
 
 class _AppLocalizationsDelegate

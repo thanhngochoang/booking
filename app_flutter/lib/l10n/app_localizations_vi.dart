@@ -1756,4 +1756,21 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ticketPay => 'Thanh toán';
+
+  @override
+  String badgeChipSemantics(String name) {
+    return 'Huy hiệu $name';
+  }
+
+  @override
+  String get badgeSeeAll => 'Tất cả';
+
+  @override
+  String get badgeNotEarned => 'Chưa đạt';
+
+  @override
+  String get badgeEarned => 'Đã đạt';
+
+  @override
+  String get badgeNew => 'Mới';
 }
