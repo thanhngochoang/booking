@@ -31,6 +31,17 @@ class _PaymentPendingScreenState extends ConsumerState<PaymentPendingScreen> {
   bool _checking = false;
   bool _changing = false;
 
+  bool _leaving = false;
+
+  /// Replaces S04.04 with S05.02 once the deposit is confirmed.
+  void _openDetail(String id) {
+    if (_leaving) return;
+    _leaving = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.go('/b/$id?paid=1');
+    });
+  }
+
   void _showSnack(String text) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -170,15 +181,9 @@ class _PaymentPendingScreenState extends ConsumerState<PaymentPendingScreen> {
               }
 
               if (booking.status != BookingStatus.draft) {
-                final profileAsync = ref.watch(
-                  photographerProfileProvider(booking.photographerId),
-                );
-                final photographerName =
-                    profileAsync.value?.summary.displayName ?? '';
-                return BookingPaidPanel(
-                  photographerName: photographerName,
-                  deposit: booking.deposit,
-                );
+                // Paid: S05.02 takes over and shows the paid toast once.
+                _openDetail(booking.id);
+                return const Center(child: SignatureLoader());
               }
 
               // Draft status: show waiting UI
@@ -246,72 +251,6 @@ class _PaymentPendingScreenState extends ConsumerState<PaymentPendingScreen> {
             },
           ),
         ),
-      ),
-    );
-  }
-}
-
-class BookingPaidPanel extends StatelessWidget {
-  const BookingPaidPanel({
-    super.key,
-    required this.photographerName,
-    required this.deposit,
-  });
-
-  final String photographerName;
-  final int deposit;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s4,
-        vertical: AppSpace.s6,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: AppSpace.s16,
-              height: AppSpace.s16,
-              decoration: BoxDecoration(
-                color: dark
-                    ? AppColorsDark.successSubtle
-                    : AppColors.successSubtle,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_rounded,
-                size: AppSpace.s8,
-                color: dark ? AppColorsDark.success : AppColors.success,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpace.s6),
-          Text(
-            l10n.payRequestSent,
-            style: theme.textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpace.s2),
-          Text(
-            l10n.payReplyIn24h(photographerName),
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpace.s6),
-          EscrowNotice(text: l10n.escrowNoticeHeld(formatMoney(deposit))),
-          const SizedBox(height: AppSpace.s6),
-          AppButton.primary(
-            l10n.payViewBookings,
-            onPressed: () => context.go('/bookings'),
-          ),
-        ],
       ),
     );
   }

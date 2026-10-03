@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
@@ -211,6 +212,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           bookingId: state.pathParameters['id']!,
         ),
       ),
+      ...bookingDetailRoutes(),
       GoRoute(
         path: '/u/:uid',
         builder: (_, state) => PhotographerProfileScreen(

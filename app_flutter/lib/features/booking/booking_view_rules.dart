@@ -365,3 +365,38 @@ String? countdownLabel(Duration left, AppLocalizations l) {
   if (left.inMinutes >= 1) return l.countdownMinutes(left.inMinutes);
   return l.countdownSeconds(left.inSeconds);
 }
+
+/// The viewer's side of [b], or null when [uid] is not one of its parties.
+BookingRole? roleIn(Booking b, String? uid) {
+  if (uid == null) return null;
+  if (b.customerId == uid) return BookingRole.customer;
+  if (b.photographerId == uid) return BookingRole.photographer;
+  return null;
+}
+
+/// [BookingCard] data with the day as the mock writes it ("T2 12/10").
+/// [name] is the other party: the photographer for the customer and the
+/// customer for the photographer.
+BookingSummary bookingSummaryFor(
+  Booking b, {
+  required String name,
+  String? thumbUrl,
+}) {
+  final day = parseDayKey(b.day);
+  return BookingSummary(
+    photographerName: name,
+    serviceName: b.serviceSnapshot.name,
+    thumbUrl: thumbUrl,
+    day: day == null ? b.day : formatDay(day),
+    start: b.start,
+    end: b.end,
+    placeName: b.place.name,
+    status: b.status,
+  );
+}
+
+/// Google Maps search for the place (Decision 3: no coordinates in v1).
+Uri directionsUri(Booking b) => Uri.https('www.google.com', '/maps/search/', {
+  'api': '1',
+  'query': b.place.name,
+});

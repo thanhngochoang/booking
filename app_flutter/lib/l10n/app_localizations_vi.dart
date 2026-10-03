@@ -2094,4 +2094,112 @@ class AppLocalizationsVi extends AppLocalizations {
   String countdownSeconds(int n) {
     return '$n giây';
   }
+
+  @override
+  String detailTitle(String code) {
+    return 'Buổi chụp #$code';
+  }
+
+  @override
+  String detailPaidToast(String amount, String name) {
+    return 'Cọc $amount đang được giữ an toàn. $name sẽ trả lời trong 24 giờ.';
+  }
+
+  @override
+  String escrowNoticeHeldPhotographer(String amount) {
+    return 'Cọc $amount đang được giữ, chuyển cho bạn sau khi hoàn thành';
+  }
+
+  @override
+  String get detailMessage => 'Nhắn tin';
+
+  @override
+  String get detailMore => 'Thêm thao tác';
+
+  @override
+  String get detailReschedule => 'Đổi lịch';
+
+  @override
+  String get detailDirections => 'Chỉ đường';
+
+  @override
+  String detailCancelCustomer(int pct) {
+    return 'Huỷ yêu cầu · hoàn cọc $pct%';
+  }
+
+  @override
+  String get detailCancelPhotographer => 'Huỷ buổi chụp';
+
+  @override
+  String detailAccept(String time) {
+    return 'Nhận · còn $time';
+  }
+
+  @override
+  String get detailAcceptNow => 'Nhận';
+
+  @override
+  String get detailDecline => 'Từ chối';
+
+  @override
+  String get detailComplete => 'Hoàn thành';
+
+  @override
+  String get detailBookAgain => 'Đặt lại';
+
+  @override
+  String get detailReview => 'Đánh giá';
+
+  @override
+  String get detailViewReview => 'Xem đánh giá';
+
+  @override
+  String get detailNotFound => 'Không tìm thấy buổi chụp';
+
+  @override
+  String get detailNotFoundBody =>
+      'Buổi chụp này không còn hoặc không thuộc tài khoản của bạn.';
+
+  @override
+  String get detailGoHome => 'Về trang chủ';
+
+  @override
+  String get detailYou => 'bạn';
+
+  @override
+  String get detailErrorExpired => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get detailErrorNotEligible => 'Không còn thực hiện được thao tác này';
+
+  @override
+  String get detailErrorConflict => 'Buổi chụp vừa thay đổi, đã tải lại';
+
+  @override
+  String get detailErrorNetwork => 'Không gửi được. Thử lại nhé.';
+
+  @override
+  String get cancelTitle => 'Huỷ buổi chụp?';
+
+  @override
+  String cancelTitlePhotographer(String name) {
+    return 'Huỷ buổi chụp với $name?';
+  }
+
+  @override
+  String get cancelKeep => 'Giữ lịch';
+
+  @override
+  String get cancelConfirm => 'Huỷ buổi chụp';
+
+  @override
+  String declineTitle(String name) {
+    return 'Từ chối yêu cầu của $name?';
+  }
+
+  @override
+  String get declineBack => 'Quay lại';
+
+  @override
+  String get declineConfirm => 'Từ chối';
 }

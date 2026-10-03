@@ -3729,6 +3729,192 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{n} giây'**
   String countdownSeconds(int n);
+
+  /// No description provided for @detailTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp #{code}'**
+  String detailTitle(String code);
+
+  /// No description provided for @detailPaidToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ.'**
+  String detailPaidToast(String amount, String name);
+
+  /// No description provided for @escrowNoticeHeldPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành'**
+  String escrowNoticeHeldPhotographer(String amount);
+
+  /// No description provided for @detailMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin'**
+  String get detailMessage;
+
+  /// No description provided for @detailMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm thao tác'**
+  String get detailMore;
+
+  /// No description provided for @detailReschedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi lịch'**
+  String get detailReschedule;
+
+  /// No description provided for @detailDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get detailDirections;
+
+  /// No description provided for @detailCancelCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ yêu cầu · hoàn cọc {pct}%'**
+  String detailCancelCustomer(int pct);
+
+  /// No description provided for @detailCancelPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ buổi chụp'**
+  String get detailCancelPhotographer;
+
+  /// No description provided for @detailAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận · còn {time}'**
+  String detailAccept(String time);
+
+  /// No description provided for @detailAcceptNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get detailAcceptNow;
+
+  /// No description provided for @detailDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get detailDecline;
+
+  /// No description provided for @detailComplete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành'**
+  String get detailComplete;
+
+  /// No description provided for @detailBookAgain.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lại'**
+  String get detailBookAgain;
+
+  /// No description provided for @detailReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get detailReview;
+
+  /// No description provided for @detailViewReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem đánh giá'**
+  String get detailViewReview;
+
+  /// No description provided for @detailNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy buổi chụp'**
+  String get detailNotFound;
+
+  /// No description provided for @detailNotFoundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp này không còn hoặc không thuộc tài khoản của bạn.'**
+  String get detailNotFoundBody;
+
+  /// No description provided for @detailGoHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get detailGoHome;
+
+  /// No description provided for @detailYou.
+  ///
+  /// In vi, this message translates to:
+  /// **'bạn'**
+  String get detailYou;
+
+  /// No description provided for @detailErrorExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn'**
+  String get detailErrorExpired;
+
+  /// No description provided for @detailErrorNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không còn thực hiện được thao tác này'**
+  String get detailErrorNotEligible;
+
+  /// No description provided for @detailErrorConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp vừa thay đổi, đã tải lại'**
+  String get detailErrorConflict;
+
+  /// No description provided for @detailErrorNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gửi được. Thử lại nhé.'**
+  String get detailErrorNetwork;
+
+  /// No description provided for @cancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ buổi chụp?'**
+  String get cancelTitle;
+
+  /// No description provided for @cancelTitlePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ buổi chụp với {name}?'**
+  String cancelTitlePhotographer(String name);
+
+  /// No description provided for @cancelKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ lịch'**
+  String get cancelKeep;
+
+  /// No description provided for @cancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ buổi chụp'**
+  String get cancelConfirm;
+
+  /// No description provided for @declineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối yêu cầu của {name}?'**
+  String declineTitle(String name);
+
+  /// No description provided for @declineBack.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quay lại'**
+  String get declineBack;
+
+  /// No description provided for @declineConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get declineConfirm;
 }
 
 class _AppLocalizationsDelegate

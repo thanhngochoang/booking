@@ -999,5 +999,72 @@
     "placeholders": {
       "n": {"type": "int"}
     }
-  }
+  },
+  "detailTitle": "Buổi chụp #{code}",
+  "@detailTitle": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "detailPaidToast": "Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ.",
+  "@detailPaidToast": {
+    "placeholders": {
+      "amount": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "escrowNoticeHeldPhotographer": "Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành",
+  "@escrowNoticeHeldPhotographer": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "detailMessage": "Nhắn tin",
+  "detailMore": "Thêm thao tác",
+  "detailReschedule": "Đổi lịch",
+  "detailDirections": "Chỉ đường",
+  "detailCancelCustomer": "Huỷ yêu cầu · hoàn cọc {pct}%",
+  "@detailCancelCustomer": {
+    "placeholders": {
+      "pct": {"type": "int"}
+    }
+  },
+  "detailCancelPhotographer": "Huỷ buổi chụp",
+  "detailAccept": "Nhận · còn {time}",
+  "@detailAccept": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "detailAcceptNow": "Nhận",
+  "detailDecline": "Từ chối",
+  "detailComplete": "Hoàn thành",
+  "detailBookAgain": "Đặt lại",
+  "detailReview": "Đánh giá",
+  "detailViewReview": "Xem đánh giá",
+  "detailNotFound": "Không tìm thấy buổi chụp",
+  "detailNotFoundBody": "Buổi chụp này không còn hoặc không thuộc tài khoản của bạn.",
+  "detailGoHome": "Về trang chủ",
+  "detailYou": "bạn",
+  "detailErrorExpired": "Yêu cầu đã hết hạn",
+  "detailErrorNotEligible": "Không còn thực hiện được thao tác này",
+  "detailErrorConflict": "Buổi chụp vừa thay đổi, đã tải lại",
+  "detailErrorNetwork": "Không gửi được. Thử lại nhé.",
+  "cancelTitle": "Huỷ buổi chụp?",
+  "cancelTitlePhotographer": "Huỷ buổi chụp với {name}?",
+  "@cancelTitlePhotographer": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "cancelKeep": "Giữ lịch",
+  "cancelConfirm": "Huỷ buổi chụp",
+  "declineTitle": "Từ chối yêu cầu của {name}?",
+  "@declineTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "declineBack": "Quay lại",
+  "declineConfirm": "Từ chối"
 }
