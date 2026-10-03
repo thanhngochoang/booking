@@ -3075,6 +3075,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đang xem dữ liệu đã lưu'**
   String get offlineBanner;
+
+  /// No description provided for @escrowNoticeDeposit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.'**
+  String get escrowNoticeDeposit;
 }
 
 class _AppLocalizationsDelegate

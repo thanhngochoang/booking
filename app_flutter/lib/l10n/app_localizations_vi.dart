@@ -1711,4 +1711,8 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get offlineBanner => 'Đang xem dữ liệu đã lưu';
+
+  @override
+  String get escrowNoticeDeposit =>
+      'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.';
 }

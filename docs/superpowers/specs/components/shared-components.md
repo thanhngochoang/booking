@@ -108,7 +108,7 @@ Thẻ so sánh. `PhotographerCard({required PhotographerSummary data, List<Reaso
 ### ReasonChips · Mới
 Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Chip nhỏ nền kính, chữ 10,5, một dòng; dư thì bỏ bớt, không cuộn. `Semantics` đọc "Gợi ý vì: …". Mã lý do `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent`.
 
-### BookingCard · Mới
+### BookingCard · Đã có
 `BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
 
 ### EventCard và DateBlock · Mới
@@ -117,7 +117,7 @@ Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Ch
 ### TicketCard · Mới
 `TicketCard({required TicketData ticket, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar})`. `GlassCard(highlight)` cho vé sắp diễn ra: tag loại, tên, ngày giờ · số vé, badge, **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M), mã vé chọn‑copy, hàng nút; vé đã qua mờ và không QR. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.
 
-### StatusTimeline · Mới
+### StatusTimeline · Đã có
 Dòng thời gian 7 bước của booking. `StatusTimeline({required List<TimelineStep> steps})`. Bước đã xong chấm xanh, bước hiện tại viền primary + quầng, bước tới chấm trống; đường nối dọc; mỗi bước có tên + dòng phụ (thời điểm, hướng dẫn). `Semantics`: "Bước 2 trong 7, đang diễn ra". Dùng ở S05.02.
 
 ### StatTile · Mới
@@ -148,7 +148,7 @@ Hai lớp mờ ảnh của mục 1.2 spec chính.
 ### AppBottomSheet · Mới
 `showAppSheet<T>(context, {required WidgetBuilder builder, bool confirmDismiss = false, String? confirmTitle})`. Mặt kính `surface` ~92% đục + blur 24, nền sau là `BlurScrim` (không phải lớp tối phẳng), radius 28 trên, thanh kéo, cao tối đa 88%, cuộn bên trong khi dài, nút chính cố định ở đáy kèm tổng tiền, `SafeArea`. `confirmDismiss: true` hỏi "Bỏ dữ liệu đã nhập?" khi vuốt xuống/chạm ngoài mà có thay đổi. Nền sau là `BlurScrim` (đo độ tương phản trên mặt sheet). Mở từ nút nguồn (trượt lên + mờ), Back đóng. Dùng ở S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04.
 
-### SignatureLoader (loading đặc trưng) · Mới, thay ApertureLoader và AppSkeleton (quyết định 2026-10-02)
+### SignatureLoader (loading đặc trưng) · Đã có, thay ApertureLoader và AppSkeleton (quyết định 2026-10-02)
 Hiệu ứng chờ đặc trưng của app, dùng cho **chờ cấp màn và chờ một bên khác** (khi không có hình khối biết trước; danh sách và thẻ dùng skeleton của component, xem AppSkeleton): lá khẩu của logo đóng mở ở giữa, quanh đó **một** loại sóng lăn ra, chọn bằng tham số (không bao giờ hiện cả hai cùng lúc):
 - **Sóng tròn** (`LoaderWave.ripple`): 3 vòng đồng tâm nở từ 38% tới 100% kích thước rồi mờ dần, lệch nhịp 0,8 s, màu `primary`. Mặc định; dùng khi **tải dữ liệu** (mở màn, tải danh sách, tải lại).
 - **Sóng rung** (`LoaderWave.vibration`): 2 vòng gợn hình sin, `r(θ) = R + a·sin(nθ)` (`n = 12, a = 2,4%` và `n = 9, a = 3,2%`), vừa nở ra vừa xoay qua lại ±4–6° như dây rung, màu cyan `focus` và hồng `#FF45D0`, lệch 1,2 s. Dùng khi **chờ một bên khác**: cổng thanh toán (S04.04), nhiếp ảnh gia trả lời (S13.03), chờ xác nhận.
@@ -162,7 +162,7 @@ Trang gallery component: `docs/design/ui-components.html` (cả hai loại sóng
 - Dùng: mọi trạng thái loading qua `AsyncView` (dưới); chờ cấp màn (splash, S04.04, S13.03, đăng bài, tạo sự kiện) dùng cỡ `screen`; khối/thẻ đang tải trong một màn đã có nội dung dùng `block`; nút đang gửi (`AppButton.loading`) và hàng nhỏ dùng `inline`. Danh sách và thẻ đang tải dùng skeleton của component (xem AppSkeleton); không dùng `CircularProgressIndicator` ở bất kỳ màn nào.
 - Test: idle khi `active: false` và khi giảm chuyển động; đang chạy có đúng 1 ticker; mỗi loại sóng chỉ vẽ đúng loại của nó (ripple không có vòng gợn, vibration không có vòng tròn đều); golden 3 khung (đầu, giữa, cuối chu kỳ) ở sáng và tối cho hai loại sóng và ba cỡ; cỡ `inline` không vẽ sóng.
 
-### AsyncView · Mới (quyết định 2026-10-02)
+### AsyncView · Đã có (quyết định 2026-10-02)
 Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch; luôn dùng sóng tròn). `AsyncView<T>({required AsyncValue<T> value, required Widget Function(BuildContext, T) data, LoaderSize loaderSize = LoaderSize.screen, String? loadingLabel, bool Function(T)? isEmpty, Widget Function(BuildContext)? empty, VoidCallback? onRetry, Widget Function(BuildContext, Object)? error, Widget Function(BuildContext)? skeleton})`.
 - Lần tải đầu: nếu có `skeleton` (`Widget Function(BuildContext)? skeleton`, thường là skeleton của component sẽ hiện), dựng nó; nếu không, `SignatureLoader(size: loaderSize)` căn giữa vùng của nó. Tải lại khi đã có dữ liệu (`isRefreshing`/`isReloading`): giữ dữ liệu cũ, thêm `SignatureLoader(size: inline)` nhỏ ở góc trên (không che nội dung, không làm nhảy bố cục).
 - Không nền riêng (sửa 2026-10-02, người dùng): AsyncView **dùng lại chính `SignatureLoader`** cho trạng thái tải khi không có skeleton; vùng loader đúng bằng vòng sóng ngoài cùng (150 hoặc 96, theo `loaderSize`), căn giữa, không bọc thêm hộp, thẻ, viền hay gradient. Lỗi và rỗng cũng nằm thẳng trên nền màn.
@@ -181,16 +181,16 @@ Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch; luô
 ### AppFooterBar · Mới
 `AppFooterBar({required Widget child})`. Hàng nút dính đáy của màn biểu mẫu (mock `.foot`): nền `surface`, viền mảnh phía trên, đệm 10/16/12, có `SafeArea` dưới; đặt ngoài vùng cuộn. Màn nhiều bước: "Quay lại" `outline` rộng 36% + nút chính. Dùng ở S08.05, S09.03.
 
-### SectionHeader · Mới
+### SectionHeader · Đã có
 `SectionHeader({required String title, String? actionLabel, VoidCallback? onAction, String? trailing})`. Tiêu đề Fraunces 17 + hành động chữ primary 12 bên phải (≥ 48dp vùng chạm). `Semantics(header)`. Dùng khắp nơi cho "Xem tất cả", "Tất cả".
 
 ### EmptyState · Đã có
 Minh hoạ tròn, tiêu đề, mô tả, một nút `AppButton.primary` (tuỳ chọn). Mọi trạng thái trống có đúng một hành động nuôi vòng lặp (xem S06.02, S02.03…).
 
-### ErrorState và OfflineBanner · Mới
+### ErrorState và OfflineBanner · Đã có
 `ErrorState({required String message, VoidCallback? onRetry})` tiêu đề ngắn + "Thử lại". `OfflineBanner()` dải mảnh "Đang xem dữ liệu đã lưu" trên đầu danh sách khi offline. Thông điệp lấy từ ánh xạ mã lỗi → tiếng Việt (`errorMessage(Object, AppLocalizations)`). Dùng ở mọi màn có dữ liệu mạng.
 
-### AppSkeleton và skeleton của từng component · Mới (quyết định 2026-10-02)
+### AppSkeleton và skeleton của từng component · Đã có (quyết định 2026-10-02)
 Mỗi component hiển thị dữ liệu có **biến thể skeleton riêng** đúng hình khối của nó: `PhotoCard.skeleton()`, `PhotographerCard.skeleton()`, `BookingCard.skeleton({BookingCardSize size})`, `EventCard.skeleton()`, `TicketCard.skeleton()`, `ConversationRow.skeleton()`, `NotificationRow.skeleton()`, `StatTile.skeleton()`, `StatusTimeline.skeleton()`, `MoneyBreakdown.skeleton({int lines})`, `AvailabilityCalendar.skeleton()`, `AppAvatar.skeleton()`, `ReasonChips.skeleton()`, `BadgeChip.skeleton()`, `ChatBubble.skeleton({bool mine})`, `CapacityBar.skeleton()`, `CompletenessMeter.skeleton()`… Các khối dựng từ primitive `AppSkeleton.box({w, h, radius})`, `.line({w})`, `.circle({size})`, cùng radius, khoảng cách và chiều cao với component thật nên bố cục không nhảy khi dữ liệu về.
 - Nhận diện (sửa 2026-10-02, người dùng): **chỉ màu trắng, không nhiều màu, kể cả theme tối**. Khối trắng độ mờ thấp ở theme tối (trắng 8%); ở theme sáng khối **xám nhạt trung tính** `#E6E3DE` (không pha màu); dải sáng trắng (tối: trắng 14%; sáng: trắng 85%) quét chéo 1,6 s; không gradient aurora, không cyan/tím/hồng; chung một `AnimationController` cho cả màn (`SkeletonScope`); giảm chuyển động thì đứng yên, không quét.
 - Đọc màn hình: một nhãn "Đang tải" cho cả nhóm skeleton (`Semantics(liveRegion)`), từng khối `ExcludeSemantics`.
@@ -215,28 +215,28 @@ Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget
 
 Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa có đặc tả. Viết thành widget dùng chung trước khi làm màn (thứ tự ở mục 7).
 
-#### EscrowNotice · Mới
+#### EscrowNotice · Đã có
 `EscrowNotice({required String text})`: biểu tượng khoá + chữ trên nền `primarySubtle` (lớp `.esc` của mock), `Semantics(container)`. Chữ theo spec chính 3g.6: khách "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành."; nhiếp ảnh gia "Cọc {số tiền} đang được giữ, chuyển cho bạn sau khi hoàn thành". Dùng ở S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07.
 
-#### MoneyBreakdown · Mới
+#### MoneyBreakdown · Đã có
 `MoneyBreakdown({required List<MoneyLine> lines})`, `MoneyLine({required String label, required int vnd, MoneyLineStyle style = normal /*normal | strong | muted*/})`. Các hàng nhãn trái, số phải `tabularFigures`, định dạng `formatMoney`; hàng `strong` đậm (cọc hôm nay, tổng thanh toán), `muted` chữ phụ (còn lại trả tại buổi chụp). Dùng ở S04.03 (giá gói, cọc 30%, còn lại), S11.03 (số vé × giá, tổng), S06.05 (các khoản), S13.08 (hoàn, phí).
 
-#### PolicyTable · Mới
+#### PolicyTable · Đã có
 `PolicyTable({required List<PolicyRow> rows, required int activeIndex})`, `PolicyRow({required String when, required String outcome})`. Các hàng chọn đơn không bấm được, hàng đang áp dụng tô `AppOptionTile` đã chọn; đọc màn hình "Đang áp dụng: …". Dùng ở S05.03 (huỷ ≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%), S13.08 (mốc huỷ chụp ngay).
 
-#### ReasonPicker · Mới
+#### ReasonPicker · Đã có
 `ReasonPicker({required List<String> reasons, required int? selected, required ValueChanged<int> onSelected, ReasonPickerStyle style = chips /*chips | radio*/, String? otherLabel, ValueChanged<String>? onOtherText, int otherMinLength = 0, int otherMaxLength = 200})`. Kiểu `chips` (S05.03 huỷ, S13.08) hoặc `radio` (S06.03 từ chối) dùng `AppOptionTile`; chọn "Lý do khác" hiện ô nhập ngắn có đếm, kiểm độ dài tối thiểu.
 
-#### ProviderPicker · Mới
+#### ProviderPicker · Đã có
 `ProviderPicker({required PaymentProviderCode value, required ValueChanged<PaymentProviderCode> onChanged})`: hai nút viền nhỏ MoMo / VNPay chọn đơn (mock S04.03, S11.03). Một chỗ duy nhất đổi khi thêm cổng.
 
-#### ConfirmSheet · Mới
+#### ConfirmSheet · Đã có
 `Future<bool> showConfirmSheet(BuildContext, {required String title, String? body, Widget? content, required String confirmLabel, required String keepLabel, bool danger = true, Future<void> Function()? onConfirm})`: sheet xác nhận chuẩn, nút an toàn (viền) bên trái, nút xác nhận (đỏ khi `danger`) bên phải, đang chạy `onConfirm` thì nút xác nhận hiện `SignatureLoader(inline)` và khoá sheet; lỗi hiện SnackBar trong sheet. Quy tắc CLAUDE.md "huỷ/từ chối là nút đỏ trong sheet xác nhận" đi qua widget này. Dùng ở S05.03, S06.03, S12.03 (huỷ sự kiện), S13.08, S09.02 (đăng xuất), S04.01 (bỏ yêu cầu đặt lịch).
 
-#### CountdownRing và CountdownText · Mới
+#### CountdownRing và CountdownText · Đã có
 `CountdownRing({required DateTime deadline, required Duration total, double size = 96})`: vòng tiến độ + số lớn ở giữa và đơn vị nhỏ (mock `.cd`), cập nhật mỗi giây khi còn < 1 giờ, mỗi phút khi dài hơn; `Semantics(role: timer)` đọc "Còn {n} giây"; giảm chuyển động: vòng nhảy theo giây, không nội suy. `CountdownText` cùng logic cho chữ trong nút ("Nhận · còn 22 giờ"). Dùng ở S14.02 (60 giây), S13.03, S13.06 (thời gian buổi chụp), S06.01 (hạn nhận yêu cầu).
 
-#### ChatBubble, ChatComposer, ConversationRow · Mới
+#### ChatBubble, ChatComposer, ConversationRow · Đã có
 `ChatBubble({required ChatBubbleContent content, required bool mine, BubbleSendState state = sent, String? senderName, VoidCallback? onRetry})`: của mình gradient bên phải, người kia kính bên trái, ảnh, vị trí, tin hệ thống ở giữa; `sending` mờ + đồng hồ, `failed` có "Gửi lại". `ChatComposer({required ValueChanged<String> onSend, VoidCallback? onPickImage, bool enabled = true, String? disabledReason})`: nút ảnh, ô tin bo tròn, nút gửi gradient; không gửi tin rỗng. `ConversationRow({required String name, String? avatarUrl, required String preview, required String timeLabel, int unread = 0, Widget? badge, VoidCallback? onTap})` (mock S07.02). Dùng ở S07.01, S07.02, S11.06.
 
 #### SwipeDeck và MatchOverlay · Mới
@@ -310,5 +310,5 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 
 Người dùng quyết định: phân tích UI, thiết kế và viết các shared component **trước** khi làm tiếp các màn, để các kế hoạch màn chỉ ghép component. Đã có trong code: mục 1–4 có nhãn "Đã có" và các widget trong `lib/core/widgets/`.
 
-1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, chạy trước các kế hoạch 4b–4e): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
+1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, **đã xong**): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
 2. **Nhóm B** (trước sự kiện, Chụp ngay, thông báo; kế hoạch riêng khi tới lượt): `EventCard`/`DateBlock`, `TicketCard` (QR), `BadgeChip`/`BadgeTile`, `NotificationRow`, `NotificationBell`, `PermissionPrimer`, `SwipeDeck`, `MatchOverlay`, `OfferStack`, `MapPreview`.

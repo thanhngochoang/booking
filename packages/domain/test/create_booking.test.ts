@@ -146,4 +146,39 @@ describe('Task 4: createBookingDraft', () => {
       (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
     );
   });
+
+  it('Review Focus 5: a changed price is refused with price_changed and nothing is written', async () => {
+    const world = createBookingWorld();
+    // service srv_01 price is 1_000_000
+    await assert.rejects(
+      createBookingDraft(world.deps, {
+        customerId: 'c1',
+        photographerId: 'p1',
+        serviceId: 'srv_01',
+        day: '2026-10-15',
+        start: '14:00',
+        place: { name: 'Nhà thờ Lớn' },
+        expectedPrice: 900_000,
+      }),
+      (err: unknown) => err instanceof DomainError && err.code === 'price_changed',
+    );
+
+    // Verify nothing written: availability day is untouched
+    const dayRecord = await world.store.getAvailabilityDay('p1', '2026-10-15');
+    assert.equal(dayRecord, null);
+  });
+
+  it('accepts matching expectedPrice', async () => {
+    const world = createBookingWorld();
+    const booking = await createBookingDraft(world.deps, {
+      customerId: 'c1',
+      photographerId: 'p1',
+      serviceId: 'srv_01',
+      day: '2026-10-15',
+      start: '14:00',
+      place: { name: 'Nhà thờ Lớn' },
+      expectedPrice: 1_000_000,
+    });
+    assert.equal(booking.status, 'draft');
+  });
 });

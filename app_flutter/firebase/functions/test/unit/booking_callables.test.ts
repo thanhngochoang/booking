@@ -110,6 +110,44 @@ describe('Booking callables', () => {
     );
   });
 
+  test('handleCreateBooking passes expectedPrice and rejects price_changed', async () => {
+    const { deps } = createTestDeps();
+    // svc1 price is 1_000_000
+    await assert.rejects(
+      handleCreateBooking(
+        {
+          auth: { uid: 'c1' },
+          data: {
+            photographerId: 'p1',
+            serviceId: 'svc1',
+            day: '2026-10-15',
+            start: '09:00',
+            place: { name: 'Thảo Cầm Viên' },
+            expectedPrice: 900_000,
+          },
+        },
+        deps,
+      ),
+      httpsError('failed-precondition', 'price_changed'),
+    );
+
+    const ok = await handleCreateBooking(
+      {
+        auth: { uid: 'c1' },
+        data: {
+          photographerId: 'p1',
+          serviceId: 'svc1',
+          day: '2026-10-15',
+          start: '09:00',
+          place: { name: 'Thảo Cầm Viên' },
+          expectedPrice: 1_000_000,
+        },
+      },
+      deps,
+    );
+    assert.equal(ok.status, 'draft');
+  });
+
   test('handleCreateDeposit initiates payment intent for draft', async () => {
     const { deps } = createTestDeps();
     const draft = await handleCreateBooking(

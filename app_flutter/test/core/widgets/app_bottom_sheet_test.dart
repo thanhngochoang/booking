@@ -92,4 +92,56 @@ void main() {
     expect((excluder as ExcludeSemantics).excluding, isTrue);
     handle.dispose();
   });
+
+  testWidgets('AppSheetFrame caps at 88 % of the height', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      hostWidget(
+        const AppSheetFrame(
+          child: SizedBox(
+            height: 1000,
+            child: Text('Long content'),
+          ),
+        ),
+      ),
+    );
+    expect(
+      tester.getSize(find.byKey(const Key('app-sheet'))).height,
+      lessThanOrEqualTo(568 * 0.88 + 0.5),
+    );
+  });
+
+  testWidgets('showAppSheet with canDismiss false ignores the barrier tap', (
+    tester,
+  ) async {
+    final results = <Object?>[];
+    await tester.pumpWidget(
+      hostWidget(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              final r = await showAppSheet<String>(
+                context,
+                canDismiss: () => false,
+                builder: (c) => const Text('Locked sheet'),
+              );
+              results.add(r);
+            },
+            child: const Text('mở'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('mở'));
+    await tester.pumpAndSettle();
+    expect(find.text('Locked sheet'), findsOneWidget);
+
+    // Tap barrier outside sheet
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Locked sheet'), findsOneWidget);
+    expect(results, isEmpty);
+  });
 }

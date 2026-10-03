@@ -164,3 +164,40 @@ enum BookingTab {
   /// Đã xong: completed, reviewed, declined, expired, cancelled
   history,
 }
+
+/// Calculates time slots every 30 minutes from 06:00 to 20:00 minus durationMinutes.
+List<String> daySlots(int durationMinutes) {
+  const startMinute = 6 * 60; // 06:00 = 360
+  const endMinute = 20 * 60; // 20:00 = 1200
+  final latestStart = endMinute - durationMinutes;
+
+  final slots = <String>[];
+  for (var m = startMinute; m <= latestStart; m += 30) {
+    final hours = m ~/ 60;
+    final mins = m % 60;
+    slots.add(
+      '${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}',
+    );
+  }
+  return slots;
+}
+
+/// Adds durationMinutes to HH:mm string and returns HH:mm.
+String endTimeFor(String start, int durationMinutes) {
+  final parts = start.split(':');
+  if (parts.length != 2) throw ArgumentError('Invalid start time: $start');
+  final h = int.parse(parts[0]);
+  final m = int.parse(parts[1]);
+  final total = h * 60 + m + durationMinutes;
+  final newH = (total ~/ 60) % 24;
+  final newM = total % 60;
+  return '${newH.toString().padLeft(2, '0')}:${newM.toString().padLeft(2, '0')}';
+}
+
+const int kNoteMaxLength = 300;
+const int kPlaceMinLength = 3;
+const int kPlaceMaxLength = 120;
+
+/// Calculates deposit and remaining from price.
+({int deposit, int remaining}) depositFor(int price) =>
+    BookingRules.computeDeposit(price);

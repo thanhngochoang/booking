@@ -35,12 +35,14 @@ Future<T?> showAppSheet<T>(
     barrierColor: AppColors.overlay,
     isDismissible: dismissible,
     enableDrag: drag,
-    builder: (sheetContext) => _SheetFrame(child: builder(sheetContext)),
+    builder: (sheetContext) => AppSheetFrame(child: builder(sheetContext)),
   );
 }
 
-class _SheetFrame extends StatelessWidget {
-  const _SheetFrame({required this.child});
+/// App's glass bottom sheet frame with blur, rounded top corners and drag handle.
+/// Caps at 88% screen height.
+class AppSheetFrame extends StatelessWidget {
+  const AppSheetFrame({super.key, required this.child});
   final Widget child;
 
   static const _radius = BorderRadius.vertical(top: Radius.circular(28));

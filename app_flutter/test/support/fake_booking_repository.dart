@@ -14,6 +14,52 @@ class FakeBookingRepository implements BookingRepository {
   final _bookingChanges = StreamController<String>.broadcast();
   final _contactChanges = StreamController<String>.broadcast();
 
+  BookingErrorCode? nextError;
+  final createCalls =
+      <
+        ({
+          String photographerId,
+          String serviceId,
+          String day,
+          String start,
+          String placeName,
+          String? note,
+          int? expectedPrice,
+        })
+      >[];
+  final depositCalls = <({String bookingId, String provider})>[];
+  final fakeConfirms = <String>[];
+  final checkCalls = <String>[];
+
+  void remove(String id) {
+    bookings.remove(id);
+    _bookingChanges.add(id);
+  }
+
+  void _checkNextError() {
+    final err = nextError;
+    if (err != null) {
+      nextError = null;
+      throw BookingException(_serverCodeFor(err));
+    }
+  }
+
+  static String _serverCodeFor(BookingErrorCode err) {
+    return switch (err) {
+      BookingErrorCode.dayTaken => 'day_taken',
+      BookingErrorCode.phoneRequired => 'phone_required',
+      BookingErrorCode.priceChanged => 'price_changed',
+      BookingErrorCode.notEligible => 'not_eligible',
+      BookingErrorCode.deadlinePassed => 'deadline_passed',
+      BookingErrorCode.conflict => 'conflict',
+      BookingErrorCode.permissionDenied => 'permission_denied',
+      BookingErrorCode.notFound => 'not_found',
+      BookingErrorCode.invalidArgument => 'invalid_argument',
+      BookingErrorCode.network => 'unavailable',
+      BookingErrorCode.unknown => 'unknown',
+    };
+  }
+
   void seedBooking(Booking booking) {
     bookings[booking.id] = booking;
     _bookingChanges.add(booking.id);
@@ -77,7 +123,18 @@ class FakeBookingRepository implements BookingRepository {
     required String start,
     required BookingPlace place,
     String? note,
+    int? expectedPrice,
   }) async {
+    _checkNextError();
+    createCalls.add((
+      photographerId: photographerId,
+      serviceId: serviceId,
+      day: day,
+      start: start,
+      placeName: place.name,
+      note: note,
+      expectedPrice: expectedPrice,
+    ));
     final id = 'booking_${bookings.length + 1}';
     final now = DateTime.now().toUtc();
     final booking = Booking(
@@ -112,6 +169,8 @@ class FakeBookingRepository implements BookingRepository {
     required String provider,
     String? returnUrl,
   }) async {
+    _checkNextError();
+    depositCalls.add((bookingId: bookingId, provider: provider));
     return CreateDepositResponse(
       paymentId: 'pay_$bookingId',
       payUrl: 'https://fake-pay.test/$bookingId',
@@ -123,6 +182,8 @@ class FakeBookingRepository implements BookingRepository {
   Future<ConfirmPaymentResponse> confirmFakePayment({
     required String paymentId,
   }) async {
+    _checkNextError();
+    fakeConfirms.add(paymentId);
     final bookingId = paymentId.replaceFirst('pay_', '');
     final b = bookings[bookingId];
     if (b != null) {
@@ -144,6 +205,8 @@ class FakeBookingRepository implements BookingRepository {
 
   @override
   Future<CheckDepositResponse> checkDeposit({required String bookingId}) async {
+    _checkNextError();
+    checkCalls.add(bookingId);
     final b = bookings[bookingId];
     return CheckDepositResponse(
       paid: b?.status != BookingStatus.draft,
@@ -157,6 +220,7 @@ class FakeBookingRepository implements BookingRepository {
     required String action,
     String? reason,
   }) async {
+    _checkNextError();
     final b = bookings[bookingId];
     if (b == null) throw StateError('Booking not found');
 
@@ -198,6 +262,7 @@ class FakeBookingRepository implements BookingRepository {
     required String bookingId,
     required String reason,
   }) async {
+    _checkNextError();
     final b = bookings[bookingId];
     if (b == null) throw StateError('Booking not found');
 

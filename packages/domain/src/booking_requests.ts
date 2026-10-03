@@ -30,6 +30,7 @@ export interface CreateBookingDraftInput {
   readonly start: string;
   readonly place: { readonly name: string; readonly point?: { readonly lat: number; readonly lng: number } };
   readonly note?: string;
+  readonly expectedPrice?: number;
 }
 
 export function validateCreateBookingDraftInput(
@@ -40,7 +41,7 @@ export function validateCreateBookingDraftInput(
     throw new DomainError('invalid_argument');
   }
 
-  const { customerId, photographerId, serviceId, day, start, place, note } = raw as Record<string, unknown>;
+  const { customerId, photographerId, serviceId, day, start, place, note, expectedPrice } = raw as Record<string, unknown>;
 
   if (!isId(customerId) || !isId(photographerId) || !isId(serviceId)) {
     throw new DomainError('invalid_argument');
@@ -100,6 +101,14 @@ export function validateCreateBookingDraftInput(
     }
   }
 
+  let validatedExpectedPrice: number | undefined;
+  if (expectedPrice !== undefined && expectedPrice !== null) {
+    if (typeof expectedPrice !== 'number' || !Number.isInteger(expectedPrice) || expectedPrice < 0) {
+      throw new DomainError('invalid_argument');
+    }
+    validatedExpectedPrice = expectedPrice;
+  }
+
   return {
     customerId,
     photographerId,
@@ -108,5 +117,6 @@ export function validateCreateBookingDraftInput(
     start,
     place: { name: placeTrimmed, point: validatedPoint },
     note: noteTrimmed,
+    expectedPrice: validatedExpectedPrice,
   };
 }
