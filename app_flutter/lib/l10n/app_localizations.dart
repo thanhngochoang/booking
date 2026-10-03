@@ -3093,6 +3093,66 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ở lại'**
   String get settingsSignOutKeep;
+
+  /// No description provided for @ticketUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng ký'**
+  String get ticketUpcoming;
+
+  /// No description provided for @ticketPendingPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ thanh toán'**
+  String get ticketPendingPayment;
+
+  /// No description provided for @ticketPast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã qua'**
+  String get ticketPast;
+
+  /// No description provided for @ticketCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ'**
+  String get ticketCancelled;
+
+  /// No description provided for @ticketCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} vé'**
+  String ticketCount(int count);
+
+  /// No description provided for @ticketCodeSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã vé {code}'**
+  String ticketCodeSemantics(String code);
+
+  /// No description provided for @ticketDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get ticketDirections;
+
+  /// No description provided for @ticketAddToCalendar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm vào lịch'**
+  String get ticketAddToCalendar;
+
+  /// No description provided for @ticketCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé'**
+  String get ticketCancel;
+
+  /// No description provided for @ticketPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
+  String get ticketPay;
 }
 
 class _AppLocalizationsDelegate

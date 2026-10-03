@@ -1722,4 +1722,38 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsSignOutKeep => 'Ở lại';
+
+  @override
+  String get ticketUpcoming => 'Đã đăng ký';
+
+  @override
+  String get ticketPendingPayment => 'Chờ thanh toán';
+
+  @override
+  String get ticketPast => 'Đã qua';
+
+  @override
+  String get ticketCancelled => 'Đã huỷ';
+
+  @override
+  String ticketCount(int count) {
+    return '$count vé';
+  }
+
+  @override
+  String ticketCodeSemantics(String code) {
+    return 'Mã vé $code';
+  }
+
+  @override
+  String get ticketDirections => 'Chỉ đường';
+
+  @override
+  String get ticketAddToCalendar => 'Thêm vào lịch';
+
+  @override
+  String get ticketCancel => 'Huỷ vé';
+
+  @override
+  String get ticketPay => 'Thanh toán';
 }
