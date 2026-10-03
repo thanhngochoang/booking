@@ -29,3 +29,23 @@ Target: `develop`
 ### Gate Status
 - Reaches Gate G2 for Lane 2.
 - Unblocks Lane 1 Step 3 (Task 6 Step 6: migrating feature confirmation sheets to `showConfirmSheet`).
+
+## Lane 1 Step 3 (8a2/3-L1): Feature Confirmation Sheets Migration
+
+Branch: `plan/8a2-3-L1-confirm-sheet-migration`
+Target: `develop`
+
+### Scope Completed
+1. **Task 6 Step 6: Feature Confirmation Sheets (`showConfirmSheet`)**:
+   - `setup_packages_screen.dart`: Replaced custom `_HideSheet` with `showConfirmSheet`, deleted `_HideSheet` class.
+   - `skills_screen.dart`: Migrated specialty removal confirmation (`_toggleSpecialty`) to `showConfirmSheet`.
+   - `settings_screen.dart` (S09.02): Added red text button "Đăng xuất" with `showConfirmSheet` confirmation sheet (title "Đăng xuất", body "Bạn có chắc chắn muốn đăng xuất không?", safe "Ở lại", danger confirm "Đăng xuất"), executing `ref.read(authRepositoryProvider).signOut()`.
+   - `app_vi.arb`: Appended `settingsSignOutConfirmBody` and `settingsSignOutKeep`.
+   - Updated tests in `setup_packages_screen_test.dart`, `skills_screen_test.dart`, and `settings_test.dart`.
+
+### Verification
+- `flutter analyze`: 0 issues found.
+- `flutter test`: 1511 passed (0 failed).
+
+### Status
+- Completes Plan 8a2 (`2026-10-02-shared-components-a.md`) entirely across both lanes.

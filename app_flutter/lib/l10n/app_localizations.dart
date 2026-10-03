@@ -3081,6 +3081,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.'**
   String get escrowNoticeDeposit;
+
+  /// No description provided for @settingsSignOutConfirmBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có chắc chắn muốn đăng xuất không?'**
+  String get settingsSignOutConfirmBody;
+
+  /// No description provided for @settingsSignOutKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ở lại'**
+  String get settingsSignOutKeep;
 }
 
 class _AppLocalizationsDelegate

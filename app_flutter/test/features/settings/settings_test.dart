@@ -658,5 +658,51 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('public $uid'), findsOneWidget);
     });
+
+    testWidgets('sign-out button opens confirmation sheet; keep cancels', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn();
+      await open(tester, auth, users);
+      final btn = find.byKey(const Key('settings-sign-out'));
+      await tester.scrollUntilVisible(btn, 100);
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Bạn có chắc chắn muốn đăng xuất không?'),
+        findsOneWidget,
+      );
+      expect(find.text('Ở lại'), findsOneWidget);
+
+      await tester.tap(find.text('Ở lại'));
+      await tester.pumpAndSettle();
+
+      expect(auth.currentUser, isNotNull);
+      expect(find.text('Bạn có chắc chắn muốn đăng xuất không?'), findsNothing);
+    });
+
+    testWidgets('confirming sign-out signs the user out', (tester) async {
+      final (auth, users) = await _signedIn();
+      await open(tester, auth, users);
+      final btn = find.byKey(const Key('settings-sign-out'));
+      await tester.scrollUntilVisible(btn, 100);
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppButton),
+          matching: find.text('Đăng xuất'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(auth.currentUser, isNull);
+    });
   });
 }
