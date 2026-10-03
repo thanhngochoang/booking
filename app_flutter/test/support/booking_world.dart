@@ -15,6 +15,8 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
@@ -24,9 +26,12 @@ import 'package:photobooking/data/photographer/photographer_contact_providers.da
 import 'package:photobooking/data/photographer/photographer_contact_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/skills/skills_server_info.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -42,6 +47,7 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
+import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
 import 'screen_host.dart';
 
@@ -445,18 +451,34 @@ Future<BookingDetailHandles> pumpBookingDetail(
 }
 
 class BookingsTabHandles {
-  const BookingsTabHandles({required this.router, required this.clock});
+  const BookingsTabHandles({
+    required this.router,
+    required this.clock,
+    required this.launcher,
+  });
 
   final GoRouter router;
   final TestClock clock;
+  final FakeExternalLauncher launcher;
 
   /// Location of the top-most route, pushed ones included.
   String get location => router.state.uri.toString();
 }
 
-/// Hosts the `/bookings` tab (S05.01 for customers, the work tab for
+/// An active package of the signed-in photographer (S06.02 inputs).
+const workPackage = ServicePackage(
+  id: 's1',
+  name: 'Chân dung 2h',
+  priceVnd: 1500000,
+  durationMinutes: 120,
+);
+
+/// Hosts the `/bookings` tab (S05.01 for customers, S06.01/S06.02 for
 /// photographers) signed in as [uid] with [role], with stub routes for
 /// every place it can lead to.
+///
+/// S06.02 reads [portfolioPhotos] (one image per post), [packages] and the
+/// server's skills [completeness] (null = not scored yet).
 Future<BookingsTabHandles> pumpBookingsTab(
   WidgetTester tester, {
   String uid = detailCustomerUid,
@@ -469,6 +491,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
     reschedule: false,
     review: false,
   ),
+  int portfolioPhotos = 0,
+  List<ServicePackage> packages = const [],
+  int? completeness,
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
@@ -482,6 +507,18 @@ Future<BookingsTabHandles> pumpBookingsTab(
   final userRepo = FakeUserRepository();
   await userRepo.ensureProfile(AuthUser(uid: uid, displayName: 'Lan Anh'));
   await userRepo.setRole(uid, role);
+  if (uid != detailCustomerUid) {
+    await userRepo.ensureProfile(
+      const AuthUser(uid: detailCustomerUid, displayName: 'Lan Anh'),
+    );
+  }
+  final launcher = FakeExternalLauncher();
+  final skills = FakeSkillsRepository()
+    ..seedServer(uid, SkillsServerInfo(completeness: completeness));
+  final posts = FakePostRepository([
+    for (var i = 0; i < portfolioPhotos; i++)
+      fixturePost('w$i', photographerId: uid),
+  ]);
 
   Widget stub(BuildContext _, GoRouterState s) =>
       Scaffold(body: Text('stub ${s.uri}'));
@@ -497,6 +534,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
         '/b/:id',
         '/b/:id/review',
         '/work/calendar',
+        '/setup/2',
+        '/profile/skills',
+        '/u/:uid',
       ])
         GoRoute(path: p, builder: stub),
     ],
@@ -514,6 +554,10 @@ Future<BookingsTabHandles> pumpBookingsTab(
     publicProfileRepositoryProvider.overrideWithValue(
       FakePublicProfileRepository([bookingProfile]),
     ),
+    externalLauncherProvider.overrideWithValue(launcher),
+    postRepositoryProvider.overrideWithValue(posts),
+    myPackagesProvider.overrideWith((ref) => Stream.value(packages)),
+    skillsRepositoryProvider.overrideWithValue(skills),
     ...extraOverrides,
   ];
 
@@ -529,5 +573,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
   );
   await tester.pump();
 
-  return BookingsTabHandles(router: router, clock: effectiveClock);
+  return BookingsTabHandles(
+    router: router,
+    clock: effectiveClock,
+    launcher: launcher,
+  );
 }

@@ -13,6 +13,7 @@ import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/home/home_controller.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
+import 'package:photobooking/features/work/work_screen.dart';
 
 UserRole _role(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
@@ -71,33 +72,13 @@ class BookingsTab extends ConsumerWidget {
   const BookingsTab({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
     // Nothing until the role is known, so neither side flashes the other's tab.
     if (!ref.watch(currentProfileProvider).hasValue) {
       return const SizedBox.shrink();
     }
-    if (_role(ref) == UserRole.customer) return const MyBookingsScreen();
-    // Photographers: the work tab (S06.01) replaces this in plan 4c Task 6.
-    return ScreenCode(
-      ScreenCodes.workEmpty,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          centerTitle: false,
-          titleTextStyle: tabRootTitleStyle(context),
-          title: Text(l.tabWork),
-          actions: [
-            IconButton(
-              key: const Key('open-calendar'),
-              tooltip: l.myCalendarTitle,
-              icon: const Icon(Icons.event_available_outlined),
-              onPressed: () => context.push('/work/calendar'),
-            ),
-          ],
-        ),
-        body: EmptyState(title: l.emptyWorkTitle, body: l.emptyWorkBody),
-      ),
-    );
+    return _role(ref) == UserRole.customer
+        ? const MyBookingsScreen()
+        : const WorkScreen();
   }
 }
 

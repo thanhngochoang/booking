@@ -1117,5 +1117,93 @@
   "bookingsEmptyPending": "Chưa có yêu cầu chờ",
   "bookingsEmptyPendingBody": "Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.",
   "bookingsEmptyDone": "Chưa có buổi nào xong",
-  "bookingsEmptyDoneBody": "Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây."
+  "bookingsEmptyDoneBody": "Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.",
+  "workTitle": "Công việc",
+  "workDateTitle": "Thứ {weekday}, {date}",
+  "@workDateTitle": {
+    "placeholders": {
+      "weekday": {"type": "int"},
+      "date": {"type": "String"}
+    }
+  },
+  "workDateTitleSunday": "Chủ nhật, {date}",
+  "@workDateTitleSunday": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "workToday": "Hôm nay",
+  "workRequests": "Yêu cầu mới",
+  "workAccept": "Nhận",
+  "workAcceptIn": "Nhận · còn {time}",
+  "@workAcceptIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "workDecline": "Từ chối",
+  "workMessage": "Nhắn tin",
+  "workDirections": "Chỉ đường",
+  "workMonth": "Tháng này",
+  "workHeld": "Đang giữ",
+  "workUpcoming": "Buổi sắp tới",
+  "workNoRequests": "Không có yêu cầu mới",
+  "workRequestMeta": "{service} · {when} · {place}",
+  "@workRequestMeta": {
+    "placeholders": {
+      "service": {"type": "String"},
+      "when": {"type": "String"},
+      "place": {"type": "String"}
+    }
+  },
+  "workDepositPaid": "đã cọc {amount}",
+  "@workDepositPaid": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "workRequestNote": "“{note}” · {deposit}",
+  "@workRequestNote": {
+    "placeholders": {
+      "note": {"type": "String"},
+      "deposit": {"type": "String"}
+    }
+  },
+  "workRequestExpired": "Yêu cầu {name} đã hết hạn, đã hoàn cọc",
+  "@workRequestExpired": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "workEmptyTitle": "Buổi chụp tiếp theo bắt đầu từ đây",
+  "workEmptyBodyPortfolio": "Hồ sơ có 6 ảnh và 1 gói được đặt nhiều gấp 3 lần. Bạn đang có {n} ảnh.",
+  "@workEmptyBodyPortfolio": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "workEmptyAddPhotos": "Thêm ảnh vào portfolio",
+  "workEmptyBodyPackage": "Khách đặt lịch theo gói. Thêm một gói để nhận yêu cầu đầu tiên.",
+  "workEmptyAddPackage": "Thêm gói",
+  "workEmptyBodySkills": "Kỹ năng càng đầy đủ, hồ sơ càng được gợi ý cho đúng khách.",
+  "workEmptySkills": "Hoàn thiện kỹ năng",
+  "workEmptyBodyShare": "Hồ sơ đã sẵn sàng. Chia sẻ để khách quen tìm và đặt bạn.",
+  "workEmptyShare": "Chia sẻ hồ sơ",
+  "declineReasonBusy": "Kín lịch hôm đó",
+  "declineReasonArea": "Ngoài khu vực phục vụ",
+  "declineReasonService": "Gói không phù hợp nhu cầu",
+  "declineReasonOther": "Lý do khác",
+  "declineRefundNote": "{name} được hoàn cọc {amount} và nhận lý do này.",
+  "@declineRefundNote": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "declineDoneToast": "Đã từ chối. {name} được hoàn cọc.",
+  "@declineDoneToast": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  }
 }

@@ -129,11 +129,15 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       case DetailAction.complete:
         await _transition(b, a, BookingAction.complete);
       case DetailAction.decline:
-        await showDeclineSheet(
+        final l10n = context.l10n;
+        final declined = await showDeclineSheet(
           context,
           booking: b,
           customerName: counterpartName,
         );
+        if (declined == true && mounted) {
+          _say(l10n.declineDoneToast(counterpartName));
+        }
       case DetailAction.cancel:
         final l10n = context.l10n;
         final cancelled = await showCancelSheet(
@@ -175,6 +179,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   ) {
     final sheet = widget.openSheet;
     if (sheet == null || _sheetHandled) return;
+    // The sheet's title names the other party: wait for the name while it
+    // is still loading (this build watches it, so it runs again).
+    if (counterpartName.isEmpty && _nameLoading(b, role)) return;
     _sheetHandled = true;
     final wanted = sheet == DetailSheet.cancel
         ? DetailAction.cancel
@@ -263,6 +270,15 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
       ),
     );
+  }
+
+  bool _nameLoading(Booking b, BookingRole role) {
+    if (role == BookingRole.customer) {
+      return ref.read(photographerProfileProvider(b.photographerId)).isLoading;
+    }
+    // The profile is only watched once the copy turned out to have no name.
+    if (ref.read(bookingContactProvider(b.id)).isLoading) return true;
+    return ref.read(partyProfileProvider(b.customerId)).isLoading;
   }
 
   String _counterpartName(Booking b, BookingRole role) {

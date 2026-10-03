@@ -2306,4 +2306,126 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get bookingsEmptyDoneBody =>
       'Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.';
+
+  @override
+  String get workTitle => 'Công việc';
+
+  @override
+  String workDateTitle(int weekday, String date) {
+    return 'Thứ $weekday, $date';
+  }
+
+  @override
+  String workDateTitleSunday(String date) {
+    return 'Chủ nhật, $date';
+  }
+
+  @override
+  String get workToday => 'Hôm nay';
+
+  @override
+  String get workRequests => 'Yêu cầu mới';
+
+  @override
+  String get workAccept => 'Nhận';
+
+  @override
+  String workAcceptIn(String time) {
+    return 'Nhận · còn $time';
+  }
+
+  @override
+  String get workDecline => 'Từ chối';
+
+  @override
+  String get workMessage => 'Nhắn tin';
+
+  @override
+  String get workDirections => 'Chỉ đường';
+
+  @override
+  String get workMonth => 'Tháng này';
+
+  @override
+  String get workHeld => 'Đang giữ';
+
+  @override
+  String get workUpcoming => 'Buổi sắp tới';
+
+  @override
+  String get workNoRequests => 'Không có yêu cầu mới';
+
+  @override
+  String workRequestMeta(String service, String when, String place) {
+    return '$service · $when · $place';
+  }
+
+  @override
+  String workDepositPaid(String amount) {
+    return 'đã cọc $amount';
+  }
+
+  @override
+  String workRequestNote(String note, String deposit) {
+    return '“$note” · $deposit';
+  }
+
+  @override
+  String workRequestExpired(String name) {
+    return 'Yêu cầu $name đã hết hạn, đã hoàn cọc';
+  }
+
+  @override
+  String get workEmptyTitle => 'Buổi chụp tiếp theo bắt đầu từ đây';
+
+  @override
+  String workEmptyBodyPortfolio(int n) {
+    return 'Hồ sơ có 6 ảnh và 1 gói được đặt nhiều gấp 3 lần. Bạn đang có $n ảnh.';
+  }
+
+  @override
+  String get workEmptyAddPhotos => 'Thêm ảnh vào portfolio';
+
+  @override
+  String get workEmptyBodyPackage =>
+      'Khách đặt lịch theo gói. Thêm một gói để nhận yêu cầu đầu tiên.';
+
+  @override
+  String get workEmptyAddPackage => 'Thêm gói';
+
+  @override
+  String get workEmptyBodySkills =>
+      'Kỹ năng càng đầy đủ, hồ sơ càng được gợi ý cho đúng khách.';
+
+  @override
+  String get workEmptySkills => 'Hoàn thiện kỹ năng';
+
+  @override
+  String get workEmptyBodyShare =>
+      'Hồ sơ đã sẵn sàng. Chia sẻ để khách quen tìm và đặt bạn.';
+
+  @override
+  String get workEmptyShare => 'Chia sẻ hồ sơ';
+
+  @override
+  String get declineReasonBusy => 'Kín lịch hôm đó';
+
+  @override
+  String get declineReasonArea => 'Ngoài khu vực phục vụ';
+
+  @override
+  String get declineReasonService => 'Gói không phù hợp nhu cầu';
+
+  @override
+  String get declineReasonOther => 'Lý do khác';
+
+  @override
+  String declineRefundNote(String name, String amount) {
+    return '$name được hoàn cọc $amount và nhận lý do này.';
+  }
+
+  @override
+  String declineDoneToast(String name) {
+    return 'Đã từ chối. $name được hoàn cọc.';
+  }
 }

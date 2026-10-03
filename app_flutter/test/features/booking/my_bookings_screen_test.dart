@@ -8,11 +8,10 @@ import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
-import 'package:photobooking/data/contact/contact_providers.dart';
-import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/my_bookings_screen.dart';
+import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
@@ -186,12 +185,10 @@ void main() {
 
   testWidgets('the nearest upcoming card has Chỉ đường; Nhắn tin only with '
       'the chat flag', (tester) async {
-    final launcher = FakeExternalLauncher();
     final handles = await pumpBookingsTab(
       tester,
       now: _now,
       bookings: _repo(_mixed(nearestChatId: 'chat1')),
-      extraOverrides: [externalLauncherProvider.overrideWithValue(launcher)],
     );
     await _settle(tester);
 
@@ -206,7 +203,7 @@ void main() {
 
     await tester.tap(directions);
     await _settle(tester);
-    expect(launcher.opened.single.host, 'www.google.com');
+    expect(handles.launcher.opened.single.host, 'www.google.com');
     expect(handles.location, '/bookings', reason: 'the card did not open');
 
     await pumpBookingsTab(
@@ -305,7 +302,7 @@ void main() {
     expect(_ids(tester), ['r3', 'r1']);
   });
 
-  testWidgets('photographers still see the work tab content, not S05.01', (
+  testWidgets('photographers see the work tab (S06.01), not S05.01', (
     tester,
   ) async {
     await pumpBookingsTab(
@@ -319,6 +316,7 @@ void main() {
 
     expect(_codeFinder(ScreenCodes.bookings), findsNothing);
     expect(find.byType(MyBookingsScreen), findsNothing);
+    expect(find.byType(WorkScreen), findsOneWidget);
   });
 
   testWidgets('320 dp, 1.3×: segmented control and cards fit', (tester) async {

@@ -4101,6 +4101,204 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.'**
   String get bookingsEmptyDoneBody;
+
+  /// No description provided for @workTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Công việc'**
+  String get workTitle;
+
+  /// No description provided for @workDateTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ {weekday}, {date}'**
+  String workDateTitle(int weekday, String date);
+
+  /// No description provided for @workDateTitleSunday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ nhật, {date}'**
+  String workDateTitleSunday(String date);
+
+  /// No description provided for @workToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get workToday;
+
+  /// No description provided for @workRequests.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu mới'**
+  String get workRequests;
+
+  /// No description provided for @workAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận'**
+  String get workAccept;
+
+  /// No description provided for @workAcceptIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận · còn {time}'**
+  String workAcceptIn(String time);
+
+  /// No description provided for @workDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get workDecline;
+
+  /// No description provided for @workMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin'**
+  String get workMessage;
+
+  /// No description provided for @workDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get workDirections;
+
+  /// No description provided for @workMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng này'**
+  String get workMonth;
+
+  /// No description provided for @workHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get workHeld;
+
+  /// No description provided for @workUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi sắp tới'**
+  String get workUpcoming;
+
+  /// No description provided for @workNoRequests.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có yêu cầu mới'**
+  String get workNoRequests;
+
+  /// No description provided for @workRequestMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{service} · {when} · {place}'**
+  String workRequestMeta(String service, String when, String place);
+
+  /// No description provided for @workDepositPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'đã cọc {amount}'**
+  String workDepositPaid(String amount);
+
+  /// No description provided for @workRequestNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'“{note}” · {deposit}'**
+  String workRequestNote(String note, String deposit);
+
+  /// No description provided for @workRequestExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu {name} đã hết hạn, đã hoàn cọc'**
+  String workRequestExpired(String name);
+
+  /// No description provided for @workEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp tiếp theo bắt đầu từ đây'**
+  String get workEmptyTitle;
+
+  /// No description provided for @workEmptyBodyPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ có 6 ảnh và 1 gói được đặt nhiều gấp 3 lần. Bạn đang có {n} ảnh.'**
+  String workEmptyBodyPortfolio(int n);
+
+  /// No description provided for @workEmptyAddPhotos.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh vào portfolio'**
+  String get workEmptyAddPhotos;
+
+  /// No description provided for @workEmptyBodyPackage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đặt lịch theo gói. Thêm một gói để nhận yêu cầu đầu tiên.'**
+  String get workEmptyBodyPackage;
+
+  /// No description provided for @workEmptyAddPackage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm gói'**
+  String get workEmptyAddPackage;
+
+  /// No description provided for @workEmptyBodySkills.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỹ năng càng đầy đủ, hồ sơ càng được gợi ý cho đúng khách.'**
+  String get workEmptyBodySkills;
+
+  /// No description provided for @workEmptySkills.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thiện kỹ năng'**
+  String get workEmptySkills;
+
+  /// No description provided for @workEmptyBodyShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ đã sẵn sàng. Chia sẻ để khách quen tìm và đặt bạn.'**
+  String get workEmptyBodyShare;
+
+  /// No description provided for @workEmptyShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ hồ sơ'**
+  String get workEmptyShare;
+
+  /// No description provided for @declineReasonBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kín lịch hôm đó'**
+  String get declineReasonBusy;
+
+  /// No description provided for @declineReasonArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngoài khu vực phục vụ'**
+  String get declineReasonArea;
+
+  /// No description provided for @declineReasonService.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói không phù hợp nhu cầu'**
+  String get declineReasonService;
+
+  /// No description provided for @declineReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác'**
+  String get declineReasonOther;
+
+  /// No description provided for @declineRefundNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} được hoàn cọc {amount} và nhận lý do này.'**
+  String declineRefundNote(String name, String amount);
+
+  /// No description provided for @declineDoneToast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối. {name} được hoàn cọc.'**
+  String declineDoneToast(String name);
 }
 
 class _AppLocalizationsDelegate
