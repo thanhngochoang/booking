@@ -4,10 +4,14 @@ on:
     branches: [flutter-rewrite, develop, main]
   pull_request:
     paths: ['app_flutter/**', 'design-system/**', 'packages/**', '.github/workflows/flutter.yml']
+
 permissions:
   contents: read
+  checks: write          # needed by test-reporter to post annotations
+
 jobs:
-  test:
+  # ── 1. Static analysis (runs once) ────────────────────────────────
+  analyze:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -16,8 +20,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
-      - uses: actions/setup-node@v4
-        with: { node-version: '22' }
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
       - run: flutter pub get
@@ -37,16 +39,99 @@ jobs:
           }
           DART
       - run: flutter analyze
-      # Goldens are rendered on macOS; Linux differs by a few pixels (dart_test.yaml).
-      - run: flutter test --exclude-tags golden
+
+  # ── 2. Unit / widget tests — 4 shards in parallel ─────────────────
+  test:
+    runs-on: ubuntu-latest
+    needs: analyze
+    strategy:
+      fail-fast: false                       # let every shard finish for full report
+      matrix:
+        shard: [0, 1, 2, 3]
+    defaults:
+      run:
+        working-directory: app_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - run: flutter pub get
+      - name: Generate code (tokens, freezed, l10n)
+        run: |
+          dart run tool/gen_tokens.dart
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+      - name: Stub Firebase options (real file is gitignored)
+        run: |
+          cat > lib/firebase_options.dart <<'DART'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => android;
+            static const FirebaseOptions android = FirebaseOptions(apiKey: 'ci', appId: '1:1:android:1', messagingSenderId: '1', projectId: 'demo-nag');
+          }
+          DART
+
+      - name: Install junitreport
+        run: dart pub global activate junitreport
+
+      - name: Run tests (shard ${{ matrix.shard }}/4)
+        run: |
+          mkdir -p test-results
+          flutter test \
+            --exclude-tags golden \
+            --concurrency=4 \
+            --total-shards=4 \
+            --shard-index=${{ matrix.shard }} \
+            --reporter=json \
+          | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml \
+          || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-shard-${{ matrix.shard }}
+          path: app_flutter/test-results/
+          retention-days: 14
+
+  # ── 3. Firestore rules tests (emulator — runs in parallel) ────────
+  firestore-rules:
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
       - name: Firestore rules tests (emulator)
         working-directory: app_flutter/firebase/rules-test
         run: npm ci && npm test
-      # Android build needs google-services.json; enable once it is stored as a secret:
-      #   echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json && flutter build apk --debug
 
-  # Domain rules and Cloud Functions (spec 2026-10-02 §4). The emulator tests run here only,
-  # never while executing plans (rule 2026-10-02).
+  # ── 4. Publish test report (merge all shards) ────────────────────
+  report:
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    steps:
+      - name: Download all shard results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-shard-*
+          merge-multiple: true
+          path: test-results
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        with:
+          name: '🧪 Flutter Test Report'
+          path: test-results/**/*.xml
+          reporter: java-junit
+          fail-on-error: true
+
+  # ── 5. Domain & Cloud Functions ───────────────────────────────────
   functions:
     runs-on: ubuntu-latest
     steps:
