@@ -39,7 +39,7 @@ If one of these plans has not run, stop and run it first; do not re-create its f
 - All UI strings in `lib/l10n/app_vi.arb` (Vietnamese, full diacritics, camelCase keys `skills*` / `skillEvidence*` / `completeness*`), then `flutter gen-l10n`. Colours, spacing and radii from `AppColors`/`AppColorsDark`/`AppSpace`/`AppRadius`/`AppText`; no raw hex. No deprecated Flutter API.
 - Touch targets ≥ 48dp; state never rests on colour alone; layouts are tested at width 320 and text scale 1.3, in light and dark.
 - No analytics layer exists yet: events go through the `skillsAnalyticsProvider` callback (default no-op): `screen_view{code}`, `skills_save{specialties, expert}`, `skills_step{n}`, `skill_evidence_set{skillId, count}`. No post ids or personal data in parameters.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## Interfaces for other plans
 

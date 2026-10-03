@@ -23,7 +23,7 @@
 - Fonts: Be Vietnam Pro (body) and Fraunces (display) bundled in `assets/fonts/`.
 - Minimum SDKs: Android 23, iOS 13.
 - Responsive: every screen renders without overflow at 320, 360, 390 and 430 logical px wide and on tablets ≥ 600 (use `LayoutBuilder`; two columns for lists on tablets in later sub-projects). System text scale up to 1.3 must not clip. Sibling boxes in one `Row` (kpi tiles, fields, buttons) use `IntrinsicHeight` + `Expanded` so they grow with content and share one height. Long text wraps; no `TextOverflow.ellipsis` on primary content. Widget tests for screens run at `Size(320, 640)` and `Size(430, 932)` with `textScaler` 1.3.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## Review Focus
 
@@ -150,7 +150,7 @@ Expected: `All tests passed!` (1 test).
 git add scripts/install-flutter.sh scripts/env.sh .gitignore app_flutter
 git commit -m "chore(flutter): scaffold app_flutter with project-local Flutter SDK
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -374,7 +374,7 @@ Expected: PASS; `No issues found!`.
 git add app_flutter
 git commit -m "feat(flutter): dependencies, lints, Vietnamese l10n and app bootstrap
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -714,7 +714,7 @@ Expected: PASS (6 tests), no issues.
 git add design-system app_flutter scripts/fetch-fonts.sh
 git commit -m "feat(flutter): generate theme from design tokens, bundle fonts
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -941,7 +941,7 @@ Expected: PASS (4 tests).
 git add app_flutter
 git commit -m "feat(flutter): core widgets EmptyState, StatusBadge, AppButton and BookingStatus
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1104,7 +1104,7 @@ Expected: PASS (4 tests).
 git add app_flutter
 git commit -m "feat(flutter): UserProfile model with role and role-aware tab specs
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1235,7 +1235,7 @@ Expected: `✓ Built build/app/outputs/flutter-apk/app-debug.apk`. If Gradle rep
 git add app_flutter
 git commit -m "chore(flutter): Firebase, Google and Facebook sign-in platform config
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1686,7 +1686,7 @@ Expected: PASS (6 tests).
 git add app_flutter
 git commit -m "feat(flutter): auth and user repositories with Firebase and fake implementations
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2036,7 +2036,7 @@ Expected: PASS (5 tests).
 git add app_flutter
 git commit -m "feat(flutter): login and register screens with typed auth errors
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2393,7 +2393,7 @@ Expected: PASS (7 tests).
 git add app_flutter
 git commit -m "feat(flutter): router with auth/role redirects, onboarding role screen, tab shell
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2594,7 +2594,7 @@ Run: `flutter run -d <device>` (or `flutter build apk --debug`) and manually: re
 git add app_flutter
 git commit -m "feat(flutter): role-aware empty-state tabs and profile sign-out
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2732,7 +2732,7 @@ Expected: 4 passing. (Requires Java for the emulator: `source scripts/env.sh` fi
 git add app_flutter/firebase
 git commit -m "feat(firebase): Firestore rules for users, photographers and bookings with emulator tests
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 Add `app_flutter/firebase/rules-test/node_modules` to `.gitignore` before committing.
 
@@ -2814,7 +2814,7 @@ Under the "Viết lại bằng Flutter" section add: "Bắt đầu: xem `app_flu
 git add .github/workflows/flutter.yml app_flutter/README.md README.md
 git commit -m "ci(flutter): analyze, test and rules tests on push; developer README
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---

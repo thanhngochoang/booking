@@ -51,7 +51,7 @@
 - **Privacy:** the exact meet point leaves the server only to the assigned photographer (`AcceptResponse`, mirror `meetPoint` from `assigned` on); offers carry the neighbourhood only; the photographer's live position is one overwritten document deleted at arrival or end; no location history is stored; phone numbers never appear in this service's responses, mirror documents or logs; the Goong key is never logged; logs never carry tokens or fix coordinates.
 - **Money:** every settlement satisfies `refund + photographer + platform = amount` (dispatch-core), and every ledger write happens in the same transaction as the status change.
 - `.env.example` holds test values only; real secrets (Goong key, Firebase credentials, provider keys) come from the environment.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 

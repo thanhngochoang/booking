@@ -58,7 +58,7 @@
 - **Never trust the redirect:** only a verified IPN or a status query answer moves money state; the return page and the app's link handler ignore every provider query parameter.
 - **Money:** integer VND (VNPay amounts ×100 only at the boundary), every settlement and resolution keeps `refunds + photographer + platform = collected`; ledger append-only; refunds only from what is held; a payment already released is never refunded here (spec main §3g.3, adjustment on a later payout).
 - **App rules (CLAUDE.md):** `package:photobooking/...` imports, features import `core/core.dart`; strings in `app_vi.arb`; one primary action per screen (S13.03 has none); cancel is a red text button and the confirmation a red `AppButton.danger`; no Firebase import outside adapters; phone numbers untouched.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## Signature reference (from the providers' documentation)
 

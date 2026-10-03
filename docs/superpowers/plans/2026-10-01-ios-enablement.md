@@ -34,7 +34,7 @@
 - Location permission on iOS is "When In Use" only; no background modes are added by this plan.
 - UI strings that iOS shows (display name, permission prompts) are Vietnamese with full diacritics.
 - `firebase_*` / `cloud_firestore` imports stay limited to the data adapters, `firebase_options.dart` and `main.dart`.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 

@@ -40,7 +40,7 @@
 - **Location and battery (spec §9, a deliberate exception to the "no background service" rule of `docs/testing/battery-and-performance.md`, documented there in Task 15):** location runs only while the photographer is available or en route; idle presence uses medium accuracy (≈100 m), a 300 m distance filter and a 5-minute heartbeat that re-sends the last fix without a new GPS fix; en route uses high accuracy, posted every 10–15 s (never faster than the service's 1 per 5 s); GPS stops on `arrived`, on finish/cancel and when going offline. Android: foreground service type `location` with the persistent notification "Đang nhận việc chụp ngay" and a "Tắt" action, `ACCESS_FINE_LOCATION` + `FOREGROUND_SERVICE_LOCATION`, **never** `ACCESS_BACKGROUND_LOCATION`, no wake lock. iOS: "When In Use" only, `allowsBackgroundLocationUpdates` + `showsBackgroundLocationIndicator` while sharing, `UIBackgroundModes` = `location` only, **never** `NSLocationAlways*`.
 - Interactive controls have a 48dp touch target (S14.02 "Nhận việc" is at least 56dp); meaning never rests on colour alone; every map pin has a text label; animations honour `MediaQuery.disableAnimationsOf`. Widget tests run at 390dp and at 320dp with text scale 1.3, in dark and light themes.
 - The Goong map key comes from `--dart-define=GOONG_MAPTILES_KEY=…` (restricted by package name / bundle id in the Goong console), is never logged and never appears in an exception text.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## Packages (added with `flutter pub add`, each behind one adapter)
 

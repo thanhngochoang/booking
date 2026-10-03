@@ -41,7 +41,7 @@
 - **Theme and UI:** one `AppButton.primary` per screen ("Đặt lịch · từ …" for visitors, "Chỉnh sửa hồ sơ" for the owner on S03; "Lưu" stays the primary on S42, so "Đổi ảnh đại diện" is an outline button). The blue check only when `verified`. Card fills are translucent (no blur) except one `GlassCard` per group; at most 4 `BackdropFilter`s per screen, none nested; `ImageBackdrop` uses none. No raw hex; Vietnamese strings with full diacritics in `lib/l10n/app_vi.arb`, then `flutter gen-l10n`.
 - **Tests:** every screen tested at 320dp and 1.3× text, light and dark; `ProviderScope(retry: (_, _) => null, …)`; every provider that reaches Firebase, Storage, the gallery or `url_launcher` is overridden with a fake; network images go through the test photo scope.
 - **Battery:** no `Timer`, `Stream.periodic` or `AnimationController` in this plan's code; S03 has no Firestore listener except the availability month while the "Lịch" tab is shown (`autoDispose`); the portfolio builds only visible tiles; the hero blur is computed on a small decode, once.
-- Commits use Conventional Commits and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commits use Conventional Commits and end with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>`.
 
 ## File Structure
 
