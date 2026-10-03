@@ -22,7 +22,7 @@ jobs:
       run:
         working-directory: app_flutter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
       - uses: subosito/flutter-action@v2
@@ -52,7 +52,7 @@ jobs:
       test-scope: ${{ steps.detect.outputs.scope }}
       test-files: ${{ steps.detect.outputs.files }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Detect affected tests
@@ -97,7 +97,7 @@ jobs:
       run:
         working-directory: app_flutter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
       - run: flutter pub get
@@ -174,7 +174,7 @@ jobs:
   firestore-rules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
       - uses: actions/setup-node@v4
@@ -189,7 +189,7 @@ jobs:
     needs: test
     if: always() && needs.test.result != 'skipped'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download all shard results
         uses: actions/download-artifact@v4
         with:
@@ -209,7 +209,7 @@ jobs:
   functions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
       - uses: actions/setup-node@v4
