@@ -6,7 +6,7 @@ One line per unit: id · state · branch · machine · last update.
 
 ## Active
 - `8d/5-L2` · in progress · `plan/8d-5-L2-chat-core-data` · MAC-JM4RLWTXXR · 2026-10-03
-- `8a2/3-L1` · in progress · `plan/8a2-3-L1-confirm-sheet-migration` · MacBook-Pro-2 · 2026-10-03
+- `8a2/3-L1` · in review (PR #13) · `plan/8a2-3-L1-confirm-sheet-migration` · MacBook-Pro-2 · 2026-10-03
 
 ## Finished
 - `8a2/2-L1` · done · `plan/8a2-2-L1-asyncview-migration` · MacBook-Pro-2 · 2026-10-03
