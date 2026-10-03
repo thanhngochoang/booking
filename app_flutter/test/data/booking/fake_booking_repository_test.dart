@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 
 import '../../support/fake_booking_repository.dart';
 
@@ -95,6 +96,39 @@ void main() {
 
       await repo.checkDeposit(bookingId: 'b1');
       expect(repo.checkCalls, ['b1']);
+    });
+
+    test('watchEvents emits seeded and added events', () async {
+      final repo = FakeBookingRepository();
+      final ev1 = BookingEventRecord(
+        id: 'ev1',
+        bookingId: 'b1',
+        status: BookingStatus.requested,
+        at: DateTime.utc(2026, 10, 1, 10, 0),
+        actorId: 'c1',
+      );
+      repo.seedEvents('b1', [ev1]);
+
+      final emissions = <List<BookingEventRecord>>[];
+      final sub = repo.watchEvents('b1').listen(emissions.add);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions.last.length, 1);
+      expect(emissions.last.first.id, 'ev1');
+
+      final ev2 = BookingEventRecord(
+        id: 'ev2',
+        bookingId: 'b1',
+        status: BookingStatus.accepted,
+        at: DateTime.utc(2026, 10, 1, 11, 0),
+        actorId: 'p1',
+      );
+      repo.addEvent(ev2);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions.last.length, 2);
+      expect(emissions.last[1].id, 'ev2');
+      await sub.cancel();
     });
   });
 }

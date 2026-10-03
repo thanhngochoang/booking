@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
@@ -53,3 +54,26 @@ final groupedCustomerBookingsProvider =
       final asyncList = ref.watch(customerBookingsStreamProvider(customerId));
       return asyncList.whenData(BookingRules.groupBookingsByTab);
     });
+
+/// Auto-disposed user bookings stream provider for S05.01 / S06.01.
+final myBookingsProvider =
+    StreamProvider.autoDispose.family<List<Booking>, BookingRole>((ref, role) {
+      final uid = ref.watch(authStateProvider).value?.uid;
+      if (uid == null) return const Stream.empty();
+      final repo = ref.watch(bookingRepositoryProvider);
+      return role == BookingRole.customer
+          ? repo.watchCustomerBookings(uid)
+          : repo.watchPhotographerBookings(uid);
+    });
+
+/// Auto-disposed events stream provider for S05.02.
+final bookingEventsProvider =
+    StreamProvider.autoDispose.family<List<BookingEventRecord>, String>(
+      (ref, id) => ref.watch(bookingRepositoryProvider).watchEvents(id),
+    );
+
+/// Auto-disposed contact stream provider for S05.02.
+final bookingContactProvider =
+    StreamProvider.autoDispose.family<BookingContactSnapshot?, String>(
+      (ref, id) => ref.watch(bookingRepositoryProvider).watchBookingContact(id),
+    );

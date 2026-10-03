@@ -957,3 +957,52 @@ test('payments, refunds, and ledger_entries are denied to clients', async () => 
   await assertFails(getDoc(doc(db, 'ledger_entries/le1')));
   await assertFails(setDoc(doc(db, 'ledger_entries/le1'), { amount: 100 }));
 });
+
+test('booking events are readable by both parties and nobody else', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'bookings/b_ev1'), { customerId: 'c1', photographerId: 'p1', status: 'requested' });
+    await setDoc(doc(f, 'bookings/b_ev1/events/ev1'), { status: 'requested', actorId: 'c1' });
+  });
+
+  const cDb = env.authenticatedContext('c1').firestore();
+  const pDb = env.authenticatedContext('p1').firestore();
+  const otherDb = env.authenticatedContext('other').firestore();
+  const unauthDb = env.unauthenticatedContext().firestore();
+
+  // Both parties can read
+  await assertSucceeds(getDoc(doc(cDb, 'bookings/b_ev1/events/ev1')));
+  await assertSucceeds(getDoc(doc(pDb, 'bookings/b_ev1/events/ev1')));
+
+  // Strangers and unauthenticated cannot read
+  await assertFails(getDoc(doc(otherDb, 'bookings/b_ev1/events/ev1')));
+  await assertFails(getDoc(doc(unauthDb, 'bookings/b_ev1/events/ev1')));
+});
+
+test('clients cannot write booking events', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'bookings/b_ev2'), { customerId: 'c1', photographerId: 'p1', status: 'requested' });
+    await setDoc(doc(f, 'bookings/b_ev2/events/ev1'), { status: 'requested', actorId: 'c1' });
+  });
+
+  const cDb = env.authenticatedContext('c1').firestore();
+  const pDb = env.authenticatedContext('p1').firestore();
+  const otherDb = env.authenticatedContext('other').firestore();
+
+  // Customer cannot create, update, or delete events
+  await assertFails(setDoc(doc(cDb, 'bookings/b_ev2/events/ev2'), { status: 'accepted', actorId: 'c1' }));
+  await assertFails(updateDoc(doc(cDb, 'bookings/b_ev2/events/ev1'), { status: 'cancelled' }));
+  await assertFails(deleteDoc(doc(cDb, 'bookings/b_ev2/events/ev1')));
+
+  // Photographer cannot create, update, or delete events
+  await assertFails(setDoc(doc(pDb, 'bookings/b_ev2/events/ev2'), { status: 'accepted', actorId: 'p1' }));
+  await assertFails(updateDoc(doc(pDb, 'bookings/b_ev2/events/ev1'), { status: 'cancelled' }));
+  await assertFails(deleteDoc(doc(pDb, 'bookings/b_ev2/events/ev1')));
+
+  // Strangers cannot create, update, or delete events
+  await assertFails(setDoc(doc(otherDb, 'bookings/b_ev2/events/ev2'), { status: 'accepted', actorId: 'other' }));
+  await assertFails(updateDoc(doc(otherDb, 'bookings/b_ev2/events/ev1'), { status: 'cancelled' }));
+  await assertFails(deleteDoc(doc(otherDb, 'bookings/b_ev2/events/ev1')));
+});
+

@@ -252,3 +252,37 @@ BookingContactSnapshot? bookingContactFromFirestore(
     redactedAt: toDateTime(data['redactedAt']),
   );
 }
+
+/// Converts Firestore document snapshot to [BookingEventRecord].
+BookingEventRecord? bookingEventRecordFromFirestore(
+  String id,
+  String bookingId,
+  Map<String, dynamic>? data,
+) {
+  if (data == null) return null;
+
+  DateTime? toDateTime(Object? val) {
+    if (val is Timestamp) return val.toDate().toUtc();
+    if (val is DateTime) return val.toUtc();
+    if (val is String) return DateTime.tryParse(val)?.toUtc();
+    return null;
+  }
+
+  final at = toDateTime(data['at']);
+  if (at == null) return null;
+
+  final statusStr = data['status'] as String? ?? '';
+  final status = BookingStatus.values.firstWhere(
+    (s) => s.name == statusStr,
+    orElse: () => BookingStatus.draft,
+  );
+
+  return BookingEventRecord(
+    id: id,
+    bookingId: bookingId,
+    status: status,
+    at: at,
+    actorId: data['actorId'] as String?,
+  );
+}
+

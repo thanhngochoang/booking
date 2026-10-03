@@ -201,3 +201,19 @@ const int kPlaceMaxLength = 120;
 /// Calculates deposit and remaining from price.
 ({int deposit, int remaining}) depositFor(int price) =>
     BookingRules.computeDeposit(price);
+
+DateTime startsAtOf(Booking b) =>
+    BookingRules.parseBookingDateTime(b.day, b.start);
+
+DateTime endsAtOf(Booking b) =>
+    BookingRules.parseBookingDateTime(b.day, b.end);
+
+int refundPercentAt(Booking b, DateTime now) =>
+    BookingRules.computeRefundPercent(
+      startsAt: startsAtOf(b),
+      cancelledAt: now,
+      actorRole: 'customer',
+    );
+
+int refundAmountAt(Booking b, DateTime now) =>
+    b.deposit * refundPercentAt(b, now) ~/ 100;

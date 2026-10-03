@@ -10,11 +10,14 @@ class FirestoreBookingRepository implements BookingRepository {
     FirebaseFirestore? firestore,
     FirebaseFunctions? functions,
   }) : _db = firestore ?? FirebaseFirestore.instance,
-       _functions =
-           functions ?? FirebaseFunctions.instanceFor(region: functionsRegion);
+       _customFunctions = functions;
 
   final FirebaseFirestore _db;
-  final FirebaseFunctions _functions;
+  final FirebaseFunctions? _customFunctions;
+
+  FirebaseFunctions get _functions =>
+      _customFunctions ??
+      FirebaseFunctions.instanceFor(region: functionsRegion);
 
   CollectionReference<Map<String, dynamic>> get _bookingsCol =>
       _db.collection('bookings');
@@ -72,6 +75,21 @@ class FirestoreBookingRepository implements BookingRepository {
         .doc('contact')
         .snapshots()
         .map((snap) => bookingContactFromFirestore(snap.data()));
+  }
+
+  @override
+  Stream<List<BookingEventRecord>> watchEvents(String bookingId) {
+    return _bookingsCol
+        .doc(bookingId)
+        .collection('events')
+        .orderBy('at')
+        .snapshots()
+        .map(
+          (qs) => qs.docs
+              .map((d) => bookingEventRecordFromFirestore(d.id, bookingId, d.data()))
+              .whereType<BookingEventRecord>()
+              .toList(),
+        );
   }
 
   Future<T> _call<T>(
