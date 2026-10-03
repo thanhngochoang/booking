@@ -2,10 +2,8 @@
   "java.configuration.updateBuildConfiguration": "interactive",
   // SDK Flutter cục bộ của project (đường dẫn tương đối được tính từ thư mục workspace).
   // ANDROID_HOME và ANDROID_AVD_HOME không đặt ở đây: Dart-Code không thay ${workspaceFolder}
-  // trong dart.env. VS Code lấy chúng từ shell (~/.zshrc), xem docs/DEVICE-TESTING.md.
-  "dart.flutterSdkPath": ".flutter",
-  // Thiết bị vừa kết nối được chọn ngay; không nhớ thiết bị cũ giữa các lần mở, để F5 luôn chạy
-  // trên thiết bị đang kết nối.
-  "dart.flutterSelectDeviceWhenConnected": true,
-  "dart.flutterRememberSelectedDevice": false
+  // trong dart.env. scripts/machine-env.sh ghi chúng vào ~/.zshrc của từng máy (setup.sh tự gọi).
+  // Thiết bị đã chọn được VS Code nhớ riêng trên mỗi máy (dart.flutterRememberSelectedDevice,
+  // mặc định bật), nên launch.json không cần deviceId.
+  "dart.flutterSdkPath": ".flutter"
 }

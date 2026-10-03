@@ -23,10 +23,11 @@ for pid in $(pgrep -f 'adb.*fork-server' || true); do
 done
 
 echo
-echo "== VS Code (Dart-Code reads ANDROID_HOME from the shell, see docs/SETUP.md step 3)"
+echo "== VS Code (reads ANDROID_HOME from the shell profile written by scripts/machine-env.sh)"
 # _jvm-env.sh moved HOME into the repo; read the real one from the user database.
 REAL_HOME=$(dscl . -read "/Users/$(id -un)" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
-if grep -q "$ROOT" "${REAL_HOME:-/nonexistent}/.zshrc" 2>/dev/null; then echo "~/.zshrc points at this repo"; else echo "WARNING ~/.zshrc does not mention this repo (VS Code will not see the devices)"; fi
+MAIN="$(git -C "$ROOT" worktree list --porcelain | sed -n '1s/^worktree //p')"   # main checkout, also from a worktree
+if grep -qF "BOOKING=\"$MAIN\"" "${REAL_HOME:-/nonexistent}/.zshrc" "${REAL_HOME:-/nonexistent}/.bash_profile" 2>/dev/null; then echo "~/.zshrc points at this repo"; else echo "WARNING ~/.zshrc does not point at this repo: run scripts/machine-env.sh, then Cmd+Q VS Code"; fi
 
 echo
 echo "== Debug signing key (app_flutter/android/app/debug.keystore, shared by the team)"

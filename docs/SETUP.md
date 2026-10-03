@@ -10,8 +10,7 @@ Chi tiết sâu hơn: `README.md` (toolchain, `.env`), `docs/FIREBASE-SETUP.md` 
 brew install openjdk@17 node@22                 # 1. công cụ nền (hoặc cách khác, xem bước 1)
 git clone https://github.com/thanhngochoang/booking.git && cd booking
 git checkout flutter-rewrite
-scripts/setup.sh                                # 2. Android SDK, Flutter, font; in ra đoạn ~/.zshrc
-# 3. dán đoạn ~/.zshrc mà setup.sh in ra, rồi mở terminal mới
+scripts/setup.sh                                # 2. Android SDK, Flutter, font; 3. tự ghi biến môi trường vào ~/.zshrc (scripts/machine-env.sh)
 scripts/install-emulator.sh                     # 4. emulator + AVD photobooking_api35 (~2,2 GB, không bắt buộc)
 cp .env.example .env                            # 5. điền key; đặt google-services.json + firebase_options.dart
 cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analyze && ../scripts/bin/flutter test   # 6. kiểm tra
@@ -37,24 +36,22 @@ Script tải Android SDK vào `.android-sdk/`, Flutter stable vào `.flutter/`, 
 
 Không gọi `flutter`/`dart` của hệ thống. Dùng `scripts/bin/flutter` và `scripts/bin/dart` (đặt `HOME=.home/`, SDK, JDK và truststore của repo), hoặc `source scripts/env.sh` trong mỗi shell mới để `PATH` trỏ tới chúng.
 
-## 3. Biến môi trường cho VS Code (`~/.zshrc`)
+## 3. Biến môi trường cho VS Code (`~/.zshrc`, tự động)
 
-Dart-Code (extension Flutter của VS Code) tìm `adb` và emulator qua `ANDROID_HOME` của shell. Cuối bước 2, `scripts/setup.sh` in ra đúng đoạn cần dán, với đường dẫn repo **trên máy này**:
+Dart-Code (extension Flutter của VS Code) tìm `adb` và emulator qua `ANDROID_HOME` của shell. `scripts/setup.sh` gọi `scripts/machine-env.sh`, script này **tự ghi** vào `~/.zshrc` (hoặc `~/.bash_profile` nếu dùng bash) một khối có đánh dấu, với đường dẫn repo **trên máy này**:
 
 ```bash
-# booking repo (Android SDK + AVD inside the repo)
-BOOKING="/đường/dẫn/tới/booking"
+# >>> booking repo (scripts/machine-env.sh) >>>
+export BOOKING="/đường/dẫn/tới/booking"
 export ANDROID_HOME="$BOOKING/.android-sdk"
-export ANDROID_SDK_ROOT="$ANDROID_HOME"
-export ANDROID_AVD_HOME="$BOOKING/.home/.android/avd"
-export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+...
+# <<< booking repo <<<
 ```
 
-- Đừng chép đường dẫn từ máy khác. Nếu `ANDROID_HOME` trỏ vào thư mục không tồn tại, VS Code không thấy thiết bị nào.
-- Không đặt các biến này trong `.vscode/settings.json` (`dart.env`): đường dẫn tuyệt đối ở đó sẽ sai trên máy khác, và Dart-Code không hiểu `${workspaceFolder}`.
-- Sau khi sửa `~/.zshrc`: **thoát hẳn VS Code (Cmd+Q) rồi mở lại**. Reload Window không đủ, vì VS Code chỉ đọc môi trường shell lúc khởi động.
-
-Kiểm tra trong terminal mới: `echo $ANDROID_HOME && ls "$ANDROID_HOME/platform-tools/adb"`.
+- Chạy lại `scripts/machine-env.sh` bất cứ lúc nào (chuyển repo sang thư mục khác, hoặc `scripts/check-device.sh` báo `~/.zshrc does not point at this repo`): khối cũ được thay, không bị lặp. Khối dán tay kiểu cũ cũng được thay luôn.
+- Mọi worktree (`scripts/worktree.sh`) dùng chung SDK và AVD của checkout chính, nên chỉ cần một khối cho mỗi máy.
+- Không đặt các biến này trong `.vscode/settings.json` (`dart.env`): đường dẫn tuyệt đối ở đó sẽ sai trên máy khác, và Dart-Code không hiểu `${workspaceFolder}`. Thứ gì riêng của máy (đường dẫn, thiết bị đã chọn) nằm ở môi trường máy và trạng thái VS Code của máy đó; project trong git giống hệt nhau trên mọi máy.
+- Sau đó: **thoát hẳn VS Code (Cmd+Q) rồi mở lại**. Reload Window không đủ, vì VS Code chỉ đọc môi trường shell lúc khởi động.
 
 ## 4. Android emulator (không bắt buộc)
 
@@ -93,10 +90,12 @@ Backend local (không bắt buộc, cần Node 22): `scripts/backend-local.sh`, 
 
 Mở **thư mục gốc repo** (`booking/`, không phải `app_flutter/`), tab Run and Debug, chọn cấu hình rồi nhấn F5. **Thiết bị đang chọn** là thiết bị hiện ở thanh trạng thái (góc phải dưới): bấm vào đó hoặc Cmd+Shift+P → **Flutter: Select Device** để xem danh sách thiết bị đang kết nối (điện thoại USB/Wi‑Fi, AVD, Genymotion). Thiết bị vừa cắm vào được chọn ngay; nếu chưa có thiết bị hợp lệ, F5 tự hiện danh sách.
 
+Thiết bị đã chọn được VS Code **nhớ riêng trên từng máy** (không ghi vào `launch.json`): lần đầu chọn trong danh sách, những lần sau F5 chạy luôn trên thiết bị đó nếu nó đang kết nối.
+
 | Cấu hình | Thiết bị | Backend |
 |---|---|---|
 | Flutter: (debug) | thiết bị đang chọn | Firebase dev |
-| Flutter: Android emulator | tự bật `photobooking_api35` (`scripts/start-emulator.sh`), chạy trên `emulator-5554` | Firebase dev |
+| Flutter: Android emulator | tự bật `photobooking_api35` nếu chưa có emulator (`scripts/start-emulator.sh`), chạy trên thiết bị đang chọn | Firebase dev |
 | Flutter: Android emulator + backend local | như trên | emulators local (chạy `scripts/backend-local.sh` trước) |
 | Flutter: (debug) + backend local | thiết bị đang chọn (điện thoại, AVD, Genymotion) | emulators local, qua `adb reverse` (dưới) |
 | Flutter: (profile) | thiết bị đang chọn | Firebase dev, đo hiệu năng |
@@ -111,7 +110,7 @@ Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run` (hỏi
 
 | Hiện tượng | Nguyên nhân và cách sửa |
 |---|---|
-| F5 báo **device not found** / VS Code không thấy emulator, trong khi `scripts/bin/flutter devices` vẫn thấy | Daemon Flutter của VS Code đang chạy với `ANDROID_HOME` sai hoặc cũ (chép từ máy khác, hoặc VS Code mở trước khi sửa `~/.zshrc`). Sửa `~/.zshrc` theo bước 3, **Cmd+Q** VS Code rồi mở lại. Kiểm tra: `ps -Eo command= -p $(pgrep -f "flutter_tools.snapshot daemon") \| tr ' ' '\n' \| grep ANDROID_HOME` phải ra đường dẫn của máy này. |
+| F5 báo **device not found** / VS Code không thấy emulator, trong khi `scripts/bin/flutter devices` vẫn thấy | Daemon Flutter của VS Code đang chạy với `ANDROID_HOME` sai hoặc cũ (chép từ máy khác, hoặc VS Code mở trước khi sửa `~/.zshrc`). Chạy `scripts/machine-env.sh`, **Cmd+Q** VS Code rồi mở lại. Kiểm tra: `ps -Eo command= -p $(pgrep -f "flutter_tools.snapshot daemon") \| tr ' ' '\n' \| grep ANDROID_HOME` phải ra đường dẫn của máy này. |
 | Emulator bật lên rồi tắt ngay khi F5 (log `.home/emulator.log`: "emulator ran for just 6xx ms") | Bản cũ của `scripts/start-emulator.sh` để emulator dính vào terminal của task, terminal đóng thì emulator tắt theo. Pull bản mới (emulator chạy trong session riêng). |
 | `adb devices` thấy emulator là `unauthorized` hoặc `offline` | `adb kill-server`, rồi chạy lại `scripts/start-emulator.sh`. |
 | Gradle báo `PKIX path building failed` | Mạng công ty ký lại HTTPS. Chạy `source scripts/env.sh` một lần để tạo `.certs/truststore.jks`; nếu vẫn lỗi, xoá `.certs/` rồi chạy lại. |
@@ -122,3 +121,12 @@ Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run` (hỏi
 | `[core/duplicate-app]` khi mở app | `firebase_options.dart` và `google-services.json` khác project. Sinh lại `firebase_options.dart` (bước 5). |
 
 Thiết bị thật (Samsung, Wi‑Fi debug, Chặn tự động): bảng lỗi đầy đủ trong `docs/DEVICE-TESTING.md`.
+
+## Worktree (làm nhiều nhánh cùng lúc)
+
+```bash
+scripts/worktree.sh <branch> [tên]     # tạo .worktrees/<tên> (nhánh có sẵn, hoặc nhánh mới từ origin/develop)
+code .worktrees/<tên>                  # mở riêng trong VS Code, F5 như checkout chính
+```
+
+Toolchain (`.flutter`, `.android-sdk`, `.home`, `.pub-cache`, `.certs`) và cấu hình bí mật (`.env`, `google-services.json`, `firebase_options.dart`) không có trong git, nên script tạo symlink từ checkout chính thay vì tải lại. AVD, cache Gradle và khoá ký debug dùng chung. Xoá: `git worktree remove .worktrees/<tên>`.

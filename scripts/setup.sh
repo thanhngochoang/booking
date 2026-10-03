@@ -30,19 +30,13 @@ echo "== 5/5 Environment (JAVA_HOME, ANDROID_HOME, truststore, PATH)"
 source scripts/env.sh
 yes | flutter doctor --android-licenses >/dev/null 2>&1 || true
 flutter doctor
+scripts/machine-env.sh
 cat <<EOF
 
 Done. In every new shell run:  source scripts/env.sh
 
-VS Code finds adb and the emulator through your shell. Add this to ~/.zshrc (path of THIS machine),
-then quit VS Code completely (Cmd+Q) and reopen it; Reload Window is not enough:
-
-# booking repo (Android SDK + AVD inside the repo)
-BOOKING="$ROOT"
-export ANDROID_HOME="\$BOOKING/.android-sdk"
-export ANDROID_SDK_ROOT="\$ANDROID_HOME"
-export ANDROID_AVD_HOME="\$BOOKING/.home/.android/avd"
-export PATH="\$ANDROID_HOME/platform-tools:\$ANDROID_HOME/emulator:\$PATH"
+VS Code finds adb and the emulator through your shell. scripts/machine-env.sh wrote this machine's
+paths into your shell profile; quit VS Code completely (Cmd+Q) and reopen it (Reload Window is not enough).
 
 Next: scripts/install-emulator.sh (optional), then docs/SETUP.md from step 4.
 EOF
