@@ -798,6 +798,8 @@
   },
   "notificationMarkRead": "Đánh dấu đã đọc",
   "notificationMuteKind": "Tắt loại thông báo này",
-  "notificationUnreadPrefix": "Chưa đọc"
+  "notificationUnreadPrefix": "Chưa đọc",
+  "primerEnableNotification": "Bật thông báo",
+  "primerLater": "Để sau"
 }
 

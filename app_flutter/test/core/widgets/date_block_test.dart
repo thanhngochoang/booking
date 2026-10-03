@@ -54,7 +54,7 @@ void main() {
         ),
       );
       final skeletonSize = tester.getSize(
-        find.byKey(const ValueKey('date_block_skeleton_box')),
+        find.byType(DateBlock.skeleton().runtimeType),
       );
 
       expect(skeletonSize.width, realSize.width);

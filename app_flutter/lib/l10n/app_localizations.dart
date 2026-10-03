@@ -3213,6 +3213,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa đọc'**
   String get notificationUnreadPrefix;
+
+  /// No description provided for @primerEnableNotification.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo'**
+  String get primerEnableNotification;
+
+  /// No description provided for @primerLater.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để sau'**
+  String get primerLater;
 }
 
 class _AppLocalizationsDelegate

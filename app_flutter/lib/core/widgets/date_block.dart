@@ -17,8 +17,8 @@ class DateBlock extends StatelessWidget {
   final DateTime day;
   final double size;
 
-  static Widget skeleton({double size = 46}) =>
-      _DateBlockSkeleton(size: size);
+  static Widget skeleton({Key? key, double size = 46}) =>
+      _DateBlockSkeleton(key: key, size: size);
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +81,7 @@ class DateBlock extends StatelessWidget {
 }
 
 class _DateBlockSkeleton extends StatelessWidget {
-  const _DateBlockSkeleton({required this.size})
-      : super(key: const ValueKey('date_block_skeleton'));
+  const _DateBlockSkeleton({super.key, required this.size});
 
   final double size;
 
@@ -91,7 +90,6 @@ class _DateBlockSkeleton extends StatelessWidget {
     // Natural height of AppSpace.s2 * 2 + 20pt day + 9.5pt month is 57.0dp.
     const height = 57.0;
     return AppSkeleton.box(
-      key: const ValueKey('date_block_skeleton_box'),
       width: size,
       height: height,
       radius: AppRadius.lg,

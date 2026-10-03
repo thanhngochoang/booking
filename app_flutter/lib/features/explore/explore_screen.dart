@@ -14,7 +14,7 @@ import 'package:photobooking/features/explore/event_routes.dart';
 import 'package:photobooking/features/explore/explore_links.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/explore/nearby_events.dart';
-import 'package:photobooking/features/explore/widgets/event_tile.dart';
+import 'package:photobooking/data/events/event_card_data_of.dart';
 
 enum ExploreCategoryTab { services, places, styles, photographers }
 
@@ -318,11 +318,12 @@ class _EventsSection {
     VoidCallback? tapFor(EventSummary e) =>
         routesReady ? () => context.push(eventPath(e.id)) : null;
 
-    Widget tile(EventSummary e, [double? km]) => NearbyEventTile(
+    Widget tile(EventSummary e, [double? km]) => EventCard(
       key: Key('event-tile-${e.id}'),
-      event: e,
+      data: eventCardDataOf(e, l),
       distanceLabel: km == null ? null : formatDistance(km),
       onTap: tapFor(e),
+      size: EventCardSize.row,
     );
 
     final title = nearby ? l.exploreNearbyTitle : l.exploreEventsTitle;
@@ -340,9 +341,9 @@ class _EventsSection {
 
     Widget loadingWidget() => Column(
       children: [
-        AppSkeleton.card(height: 88),
+        EventCard.skeleton(size: EventCardSize.row),
         const SizedBox(height: AppSpace.s3),
-        AppSkeleton.card(height: 88),
+        EventCard.skeleton(size: EventCardSize.row),
       ],
     );
 

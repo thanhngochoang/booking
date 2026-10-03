@@ -55,11 +55,11 @@ class EventCard extends StatelessWidget {
   final String? distanceLabel;
   final VoidCallback? onTap;
 
-  static Widget skeleton({EventCardSize size = EventCardSize.row}) {
+  static Widget skeleton({Key? key, EventCardSize size = EventCardSize.row}) {
     return switch (size) {
-      EventCardSize.row => const _EventCardRowSkeleton(),
-      EventCardSize.featured => const _EventCardFeaturedSkeleton(),
-      EventCardSize.compact => const _EventCardCompactSkeleton(),
+      EventCardSize.row => _EventCardRowSkeleton(key: key),
+      EventCardSize.featured => _EventCardFeaturedSkeleton(key: key),
+      EventCardSize.compact => _EventCardCompactSkeleton(key: key),
     };
   }
 
@@ -150,6 +150,7 @@ class EventCard extends StatelessWidget {
                   children: [
                     Text(
                       data.title,
+                      key: const Key('event-title'),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -207,6 +208,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     isSoldOut ? l.eventSoldOut : l.eventSeatsLeft(data.seatsLeft),
+                    key: const Key('event-seats'),
                     style: TextStyle(
                       fontSize: 11,
                       color: isSoldOut ? theme.colorScheme.error : fgSec,
@@ -444,7 +446,7 @@ class EventCard extends StatelessWidget {
 }
 
 class _EventCardRowSkeleton extends StatelessWidget {
-  const _EventCardRowSkeleton() : super(key: const ValueKey('event_card_row_skeleton'));
+  const _EventCardRowSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -496,8 +498,7 @@ class _EventCardRowSkeleton extends StatelessWidget {
 }
 
 class _EventCardFeaturedSkeleton extends StatelessWidget {
-  const _EventCardFeaturedSkeleton()
-      : super(key: const ValueKey('event_card_featured_skeleton'));
+  const _EventCardFeaturedSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -524,8 +525,7 @@ class _EventCardFeaturedSkeleton extends StatelessWidget {
 }
 
 class _EventCardCompactSkeleton extends StatelessWidget {
-  const _EventCardCompactSkeleton()
-      : super(key: const ValueKey('event_card_compact_skeleton'));
+  const _EventCardCompactSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {

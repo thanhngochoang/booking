@@ -1790,4 +1790,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get notificationUnreadPrefix => 'Chưa đọc';
+
+  @override
+  String get primerEnableNotification => 'Bật thông báo';
+
+  @override
+  String get primerLater => 'Để sau';
 }

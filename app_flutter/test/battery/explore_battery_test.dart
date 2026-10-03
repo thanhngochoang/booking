@@ -9,7 +9,7 @@ import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
-import 'package:photobooking/features/explore/widgets/event_tile.dart';
+import 'package:photobooking/core/core.dart';
 
 import '../data/events/nearby_events_repository_test.dart' show event;
 import '../support/blur.dart';
@@ -64,7 +64,7 @@ void main() {
       );
       await tester.pumpWidget(await _screen(w));
       await expectIdle(tester);
-      expect(find.byType(NearbyEventTile), findsWidgets);
+      expect(find.byType(EventCard), findsWidgets);
       expectBlurBudget(max: 0); // rows never blur
     });
 
@@ -186,7 +186,7 @@ void main() {
     );
     await tester.pumpWidget(await _screen(w));
     await tester.pumpAndSettle();
-    expect(find.byType(NearbyEventTile).evaluate().length, lessThan(25));
+    expect(find.byType(EventCard).evaluate().length, lessThan(25));
   });
 
   group('source audit of what this plan added', () {
@@ -226,7 +226,7 @@ void main() {
     test(
       'Explore shows no network images, so there is nothing to decode oversize',
       () {
-        for (final name in ['explore_screen.dart', 'widgets/event_tile.dart']) {
+        for (final name in ['explore_screen.dart']) {
           final src = File('lib/features/explore/$name').readAsStringSync();
           expect(src, isNot(contains('Image.network')), reason: name);
           expect(src, isNot(contains('NetworkImage')), reason: name);

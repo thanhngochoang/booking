@@ -80,3 +80,5 @@ export 'package:photobooking/core/widgets/badge_chip.dart';
 export 'package:photobooking/core/widgets/badge_tile.dart';
 export 'package:photobooking/core/widgets/notification_row.dart';
 export 'package:photobooking/core/widgets/notification_bell.dart';
+export 'package:photobooking/core/widgets/permission_primer.dart';
+export 'package:photobooking/core/permission_primer_policy.dart';
