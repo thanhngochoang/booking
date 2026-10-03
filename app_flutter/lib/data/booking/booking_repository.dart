@@ -1,4 +1,87 @@
+import 'dart:io' show SocketException;
+
 import 'package:photobooking/data/booking/booking.dart';
+
+class BookingException implements Exception {
+  const BookingException(this.code);
+  final String code;
+
+  @override
+  String toString() => 'BookingException($code)';
+}
+
+enum BookingErrorCode {
+  dayTaken,
+  phoneRequired,
+  priceChanged,
+  notEligible,
+  deadlinePassed,
+  conflict,
+  permissionDenied,
+  notFound,
+  invalidArgument,
+  network,
+  unknown,
+}
+
+BookingErrorCode bookingErrorOf(Object error) {
+  if (error is SocketException) {
+    return BookingErrorCode.network;
+  }
+  if (error is BookingException) {
+    return _codeToBookingError(error.code);
+  }
+  final errType = error.runtimeType.toString();
+  if (errType.contains('FunctionsException')) {
+    dynamic dyn = error;
+    try {
+      final code = dyn.code;
+      if (code == 'unavailable' || code == 'deadline-exceeded') {
+        return BookingErrorCode.network;
+      }
+      final details = dyn.details;
+      if (details is Map && details['code'] is String) {
+        return _codeToBookingError(details['code'] as String);
+      }
+      if (dyn.message is String) {
+        return _codeToBookingError(dyn.message as String);
+      }
+    } catch (_) {}
+  }
+  return BookingErrorCode.unknown;
+}
+
+BookingErrorCode _codeToBookingError(String code) {
+  switch (code) {
+    case 'day_taken':
+      return BookingErrorCode.dayTaken;
+    case 'phone_required':
+      return BookingErrorCode.phoneRequired;
+    case 'price_changed':
+      return BookingErrorCode.priceChanged;
+    case 'not_eligible':
+      return BookingErrorCode.notEligible;
+    case 'deadline_passed':
+      return BookingErrorCode.deadlinePassed;
+    case 'conflict':
+      return BookingErrorCode.conflict;
+    case 'permission_denied':
+    case 'permission-denied':
+      return BookingErrorCode.permissionDenied;
+    case 'not_found':
+    case 'not-found':
+      return BookingErrorCode.notFound;
+    case 'invalid_argument':
+    case 'invalid-argument':
+      return BookingErrorCode.invalidArgument;
+    case 'unavailable':
+    case 'deadline-exceeded':
+    case 'network':
+      return BookingErrorCode.network;
+    default:
+      return BookingErrorCode.unknown;
+  }
+}
 
 class CreateDepositResponse {
   const CreateDepositResponse({
@@ -55,6 +138,7 @@ abstract class BookingRepository {
     required String start,
     required BookingPlace place,
     String? note,
+    int? expectedPrice,
   });
 
   /// Initiates deposit payment intent.

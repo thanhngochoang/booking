@@ -755,5 +755,6 @@
   "profileEditSkills": "Kỹ năng",
   "profileEditPhoto": "Ảnh đại diện và tên",
   "profileEditContact": "Khu vực và liên hệ",
-  "offlineBanner": "Đang xem dữ liệu đã lưu"
+  "offlineBanner": "Đang xem dữ liệu đã lưu",
+  "escrowNoticeDeposit": "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành."
 }

@@ -23,6 +23,10 @@ export async function createBookingDraft(
     throw new DomainError('not_found');
   }
 
+  if (input.expectedPrice !== undefined && input.expectedPrice !== service.price) {
+    throw new DomainError('price_changed');
+  }
+
   // 2. Phone requirement check (server enforced)
   const phone = await requireCustomerPhone(deps.contacts, input.customerId);
   const contactRecord = await deps.contacts.get(input.customerId);

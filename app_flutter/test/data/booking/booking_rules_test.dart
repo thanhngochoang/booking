@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
@@ -212,6 +216,63 @@ void main() {
         expect(grouped[BookingTab.pending]?[0].id, 'b3');
 
         expect(grouped[BookingTab.history]?.length, 0);
+      });
+    });
+
+    group('Task 1 Additions', () {
+      test('daySlots: 120 minutes → 06:00 … 18:00, 25 slots; 480 → last 12:00; 900 → empty', () {
+        final slots120 = daySlots(120);
+        expect(slots120.length, 25);
+        expect(slots120.first, '06:00');
+        expect(slots120.last, '18:00');
+
+        final slots480 = daySlots(480);
+        expect(slots480.last, '12:00');
+
+        final slots900 = daySlots(900);
+        expect(slots900, isEmpty);
+      });
+
+      test('endTimeFor 15:30 + 120 → 17:30', () {
+        expect(endTimeFor('15:30', 120), '17:30');
+      });
+
+      test('depositFor matches the shared fixture packages/domain/test/fixtures/booking_policy.json', () {
+        // Read booking_policy.json
+        final file = File('../packages/domain/test/fixtures/booking_policy.json');
+        final jsonMap = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        final depositCases = jsonMap['depositCases'] as List<dynamic>;
+
+        for (final item in depositCases) {
+          final c = item as Map<String, dynamic>;
+          final price = c['price'] as int;
+          final expectedDeposit = c['deposit'] as int;
+          final expectedRemaining = c['remaining'] as int;
+
+          final res = depositFor(price);
+          expect(res.deposit, expectedDeposit, reason: 'Failed deposit for price $price');
+          expect(res.remaining, expectedRemaining, reason: 'Failed remaining for price $price');
+        }
+      });
+
+      test('bookingErrorOf maps every server code and network errors', () {
+        expect(bookingErrorOf(const BookingException('day_taken')), BookingErrorCode.dayTaken);
+        expect(bookingErrorOf(const BookingException('phone_required')), BookingErrorCode.phoneRequired);
+        expect(bookingErrorOf(const BookingException('price_changed')), BookingErrorCode.priceChanged);
+        expect(bookingErrorOf(const BookingException('not_eligible')), BookingErrorCode.notEligible);
+        expect(bookingErrorOf(const BookingException('deadline_passed')), BookingErrorCode.deadlinePassed);
+        expect(bookingErrorOf(const BookingException('conflict')), BookingErrorCode.conflict);
+        expect(bookingErrorOf(const BookingException('permission_denied')), BookingErrorCode.permissionDenied);
+        expect(bookingErrorOf(const BookingException('permission-denied')), BookingErrorCode.permissionDenied);
+        expect(bookingErrorOf(const BookingException('not_found')), BookingErrorCode.notFound);
+        expect(bookingErrorOf(const BookingException('not-found')), BookingErrorCode.notFound);
+        expect(bookingErrorOf(const BookingException('invalid_argument')), BookingErrorCode.invalidArgument);
+        expect(bookingErrorOf(const BookingException('invalid-argument')), BookingErrorCode.invalidArgument);
+        expect(bookingErrorOf(const BookingException('unavailable')), BookingErrorCode.network);
+        expect(bookingErrorOf(const BookingException('network')), BookingErrorCode.network);
+        expect(bookingErrorOf(const SocketException('Connection refused')), BookingErrorCode.network);
+        expect(bookingErrorOf(const BookingException('unknown_code_foo')), BookingErrorCode.unknown);
+        expect(bookingErrorOf(Exception('Random exception')), BookingErrorCode.unknown);
       });
     });
   });

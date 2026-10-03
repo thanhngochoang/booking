@@ -18,6 +18,11 @@ final bookingStreamProvider = StreamProvider.family<Booking?, String>((
   return repo.watchBooking(bookingId);
 });
 
+/// Auto-disposed booking stream provider for screens.
+final bookingProvider = StreamProvider.autoDispose.family<Booking?, String>(
+  (ref, id) => ref.watch(bookingRepositoryProvider).watchBooking(id),
+);
+
 /// Watches all active bookings for a customer by [customerId].
 final customerBookingsStreamProvider =
     StreamProvider.family<List<Booking>, String>((ref, customerId) {

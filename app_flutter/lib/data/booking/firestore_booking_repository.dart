@@ -5,14 +5,6 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
-class BookingException implements Exception {
-  const BookingException(this.code);
-  final String code;
-
-  @override
-  String toString() => 'BookingException($code)';
-}
-
 class FirestoreBookingRepository implements BookingRepository {
   FirestoreBookingRepository({
     FirebaseFirestore? firestore,
@@ -112,6 +104,7 @@ class FirestoreBookingRepository implements BookingRepository {
     required String start,
     required BookingPlace place,
     String? note,
+    int? expectedPrice,
   }) async {
     return _call(
       'createBooking',
@@ -126,6 +119,7 @@ class FirestoreBookingRepository implements BookingRepository {
             'point': {'lat': place.lat, 'lng': place.lng},
         },
         'note': ?note,
+        'expectedPrice': ?expectedPrice,
       },
       (raw) {
         final map = (raw as Map).cast<String, dynamic>();
