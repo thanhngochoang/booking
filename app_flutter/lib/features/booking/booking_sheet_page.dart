@@ -154,13 +154,17 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         if (didPop) return;
         _handleBack();
       },
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: AppSheetFrame(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Align(
+          alignment: Alignment.bottomCenter,
+          child: AppSheetFrame(
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpace.s4,
@@ -209,6 +213,8 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

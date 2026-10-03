@@ -1,6 +1,7 @@
 // test/features/booking/booking_sheet_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 
 import '../../support/booking_world.dart';
@@ -115,7 +116,7 @@ void main() {
       await tester.tap(find.text('Tiếp tục · 1.500.000₫'));
       await tester.pumpAndSettle();
 
-      expect(find.text('DateTimeStep'), findsOneWidget);
+      expect(find.byType(DateTimeStep), findsOneWidget);
 
       // Back from step 2
       await tester.binding.handlePopRoute();

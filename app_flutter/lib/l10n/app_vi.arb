@@ -874,5 +874,20 @@
   },
   "payViewBookings": "Xem lịch đặt",
   "payExpired": "Yêu cầu đã hết hạn",
-  "payRetry": "Đặt lại"
+  "payRetry": "Đặt lại",
+  "bookMonth": "Tháng {m}",
+  "@bookMonth": {
+    "placeholders": {
+      "m": {"type": "int"}
+    }
+  },
+  "bookDayLine": "{day} · khung {duration}",
+  "@bookDayLine": {
+    "placeholders": {
+      "day": {"type": "String"},
+      "duration": {"type": "String"}
+    }
+  },
+  "bookNoSlots": "Hôm đó đã hết giờ",
+  "bookDayGone": "Hôm đó vừa có người đặt, chọn ngày khác"
 }

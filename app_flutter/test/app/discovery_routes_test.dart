@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/find/find_screen.dart';
@@ -129,6 +130,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('app-sheet')), findsOneWidget);
-    expect(find.text('DateTimeStep'), findsOneWidget);
+    expect(find.byType(DateTimeStep), findsOneWidget);
   });
 }

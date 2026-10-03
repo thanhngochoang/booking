@@ -1925,4 +1925,20 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payRetry => 'Đặt lại';
+
+  @override
+  String bookMonth(int m) {
+    return 'Tháng $m';
+  }
+
+  @override
+  String bookDayLine(String day, String duration) {
+    return '$day · khung $duration';
+  }
+
+  @override
+  String get bookNoSlots => 'Hôm đó đã hết giờ';
+
+  @override
+  String get bookDayGone => 'Hôm đó vừa có người đặt, chọn ngày khác';
 }

@@ -3453,6 +3453,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đặt lại'**
   String get payRetry;
+
+  /// No description provided for @bookMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {m}'**
+  String bookMonth(int m);
+
+  /// No description provided for @bookDayLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{day} · khung {duration}'**
+  String bookDayLine(String day, String duration);
+
+  /// No description provided for @bookNoSlots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm đó đã hết giờ'**
+  String get bookNoSlots;
+
+  /// No description provided for @bookDayGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm đó vừa có người đặt, chọn ngày khác'**
+  String get bookDayGone;
 }
 
 class _AppLocalizationsDelegate
