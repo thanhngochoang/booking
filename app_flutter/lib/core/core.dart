@@ -73,3 +73,4 @@ export 'package:photobooking/core/widgets/chat_composer.dart';
 export 'package:photobooking/core/widgets/conversation_row.dart';
 export 'package:photobooking/core/vn_time.dart';
 export 'package:photobooking/core/widgets/availability_calendar.dart';
+export 'package:photobooking/core/widgets/date_block.dart';
