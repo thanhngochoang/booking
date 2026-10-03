@@ -2,4 +2,4 @@
 # Runs flutter with a project-local HOME/toolchain (see _jvm-env.sh). No admin rights needed.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 . "$ROOT/scripts/bin/_jvm-env.sh"
-exec "$ROOT/.flutter/bin/flutter" "$@"
+exec "$TOOLS/.flutter/bin/flutter" "$@"

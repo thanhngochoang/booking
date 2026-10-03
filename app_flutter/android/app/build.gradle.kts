@@ -46,6 +46,17 @@ android {
         resValue("string", "facebook_client_token", secret("FACEBOOK_CLIENT_TOKEN"))
     }
 
+    // One debug key for the whole team (app/debug.keystore, committed; not a secret), so a debug APK
+    // built on any machine, from VS Code or a terminal, installs over another one on the same device.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

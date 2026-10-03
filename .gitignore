@@ -29,3 +29,5 @@
 packages/*
 !packages/domain
 !packages/domain/**
+# Extra checkouts made by scripts/worktree.sh
+/.worktrees

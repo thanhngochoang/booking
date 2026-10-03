@@ -14,7 +14,7 @@ Tài liệu này hướng dẫn nối app `app_flutter/` với một Firebase pr
 | SHA‑256 debug | `59:A1:19:16:D9:3B:DC:50:66:8C:BC:93:DA:CF:80:D2:54:3F:1F:46:CE:05:AC:0E:F3:38:8B:53:8B:CA:87:D7` |
 | Facebook key hash debug | `0rwQ/XyvB6UpmwP/+PK2fq/bDRQ=` |
 
-Mỗi máy và mỗi keystore có SHA‑1 riêng. App Flutter dùng package `com.thanhbk.photobooking`, khác app Java cũ, nên phải thêm nó như một app Android mới trong Firebase (bước 2) và tải `google-services.json` mới (bước 7). File cũ `app/google-services.json` không dùng được cho app Flutter: Gradle sẽ báo `No matching client found for package name 'com.thanhbk.photobooking'`.
+Bản debug của app Flutter ký bằng khoá dùng chung `app_flutter/android/app/debug.keystore` (có trong git), nên cả team chỉ cần thêm một SHA‑1/SHA‑256 debug (xem bằng `scripts/check-device.sh`); bản release dùng khoá riêng, thêm sau. App Java cũ vẫn theo từng máy: mỗi máy và mỗi keystore có SHA‑1 riêng. App Flutter dùng package `com.thanhbk.photobooking`, khác app Java cũ, nên phải thêm nó như một app Android mới trong Firebase (bước 2) và tải `google-services.json` mới (bước 7). File cũ `app/google-services.json` không dùng được cho app Flutter: Gradle sẽ báo `No matching client found for package name 'com.thanhbk.photobooking'`.
 
 Lấy lại các giá trị này trên máy khác:
 

@@ -1,9 +1,13 @@
 # Sourced by scripts/bin/flutter and scripts/bin/dart. Requires ROOT (repo root).
 # Keeps Dart, Flutter, Gradle and Android writing only inside the repo (no admin rights).
-export HOME="$ROOT/.home" PUB_CACHE="$ROOT/.pub-cache"
-export ANDROID_HOME="$ROOT/.android-sdk" ANDROID_SDK_ROOT="$ROOT/.android-sdk"
-export ANDROID_USER_HOME="$ROOT/.home/.android" GRADLE_USER_HOME="$ROOT/.home/.gradle"
-export ANDROID_AVD_HOME="$ROOT/.home/.android/avd"
+# In a worktree made by scripts/worktree.sh the toolchain folders are symlinks to the main checkout.
+# Use their real paths: CMake (native plugin builds) and Gradle break on symlinked paths.
+TOOLS="$ROOT"
+{ [ -L "$ROOT/.home" ] || [ -L "$ROOT/.pub-cache" ]; } && TOOLS="$(cd -P "$ROOT/.home/.." && pwd)"
+export HOME="$TOOLS/.home" PUB_CACHE="$TOOLS/.pub-cache"
+export ANDROID_HOME="$TOOLS/.android-sdk" ANDROID_SDK_ROOT="$TOOLS/.android-sdk"
+export ANDROID_USER_HOME="$TOOLS/.home/.android" GRADLE_USER_HOME="$TOOLS/.home/.gradle"
+export ANDROID_AVD_HOME="$TOOLS/.home/.android/avd"
 export FLUTTER_SUPPRESS_ANALYTICS=true
 
 # Load secrets from the repo-root .env (gitignored; template: .env.example).
@@ -22,15 +26,15 @@ _write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && pri
 _write_b64 "${APP_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app/google-services.json"
 _write_b64 "${FLUTTER_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app_flutter/android/app/google-services.json"
 if [ -z "${JAVA_HOME:-}" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
-  for j in "$ROOT/.jdk/Contents/Home" "$ROOT/.jdk" /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home "$(/usr/libexec/java_home -v 17 2>/dev/null)"; do
+  for j in "$TOOLS/.jdk/Contents/Home" "$TOOLS/.jdk" /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home "$(/usr/libexec/java_home -v 17 2>/dev/null)"; do
     [ -n "$j" ] && [ -x "$j/bin/java" ] && { export JAVA_HOME="$j"; break; }
   done
   unset j
 fi
-mkdir -p "$ROOT/.home/tmp" "$GRADLE_USER_HOME"
+mkdir -p "$TOOLS/.home/tmp" "$GRADLE_USER_HOME"
 
 JOPTS=""
-[ -f "$ROOT/.certs/truststore.jks" ] && JOPTS="-Djavax.net.ssl.trustStore=$ROOT/.certs/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+[ -f "$TOOLS/.certs/truststore.jks" ] && JOPTS="-Djavax.net.ssl.trustStore=$TOOLS/.certs/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
 
 # Proxy: host and port go to every JVM (Java ignores HTTPS_PROXY). Credentials go ONLY to
 # $GRADLE_USER_HOME/gradle.properties (mode 600): JAVA_TOOL_OPTIONS is echoed by every JVM
@@ -45,7 +49,7 @@ if [ -n "$P" ]; then
   JOPTS="$JOPTS -Dhttp.proxyHost=$HOST -Dhttp.proxyPort=$PORT -Dhttps.proxyHost=$HOST -Dhttps.proxyPort=$PORT"
   JOPTS="$JOPTS -Dhttp.nonProxyHosts=localhost|127.0.0.1 -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes="
   touch "$PROPS"; chmod 600 "$PROPS"
-  TMPP="$(mktemp "$ROOT/.home/tmp/props.XXXXXX")"
+  TMPP="$(mktemp "$TOOLS/.home/tmp/props.XXXXXX")"
   /usr/bin/grep -vE '^systemProp\.https?\.proxy(User|Password)=' "$PROPS" > "$TMPP" || true
   if [ -n "$AUTH" ]; then
     _dec() { printf '%b' "$(printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g')"; }
@@ -55,5 +59,5 @@ if [ -n "$P" ]; then
   fi
   cat "$TMPP" > "$PROPS"; rm -f "$TMPP"
 fi
-export JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true -Duser.home=$ROOT/.home -Djava.io.tmpdir=$ROOT/.home/tmp $JOPTS"
+export JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true -Duser.home=$TOOLS/.home -Djava.io.tmpdir=$TOOLS/.home/tmp $JOPTS"
 unset JOPTS P AUTH HOSTPORT HOST PORT PROPS

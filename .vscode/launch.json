@@ -1,8 +1,9 @@
 {
-  // Debug app_flutter trên thiết bị thật (USB, bật USB debugging).
-  // Chọn thiết bị ở thanh trạng thái VS Code (góc phải dưới) rồi nhấn F5.
-  // customTool chạy flutter qua scripts/bin/flutter để dùng SDK, HOME, truststore
-  // và .env của project thay vì cấu hình của máy.
+  // Debug app_flutter. "(debug)" và "(profile)" chạy trên thiết bị đang chọn: bấm tên thiết bị ở thanh
+  // trạng thái (góc phải dưới) hoặc Cmd+Shift+P > "Flutter: Select Device" để xem danh sách thiết bị
+  // đang kết nối (điện thoại USB/Wi-Fi, AVD, Genymotion). Không cấu hình nào ghi deviceId: thiết bị đã
+  // chọn được VS Code nhớ riêng trên từng máy, nên project giống hệt nhau trên mọi máy.
+  // customTool chạy flutter qua scripts/bin/flutter để dùng SDK, HOME, khoá ký debug và .env của repo.
   "version": "0.2.0",
   "configurations": [
     {
@@ -16,14 +17,14 @@
       "customToolReplacesArgs": 0
     },
     {
-      // Tự bật Android emulator (preLaunchTask) rồi chạy app trên đó; backend = Firebase dev.
+      // Tự bật AVD photobooking_api35 nếu chưa có emulator (preLaunchTask), chạy trên thiết bị đang chọn
+      // (lần đầu chọn emulator trong danh sách, VS Code nhớ cho máy này); backend = Firebase dev.
       "name": "Flutter: Android emulator",
       "type": "dart",
       "request": "launch",
       "cwd": "${workspaceFolder}/app_flutter",
       "program": "lib/main.dart",
       "flutterMode": "debug",
-      "deviceId": "emulator-5554",
       "preLaunchTask": "start-android-emulator",
       "customTool": "${workspaceFolder}/scripts/bin/flutter",
       "customToolReplacesArgs": 0
@@ -36,9 +37,22 @@
       "cwd": "${workspaceFolder}/app_flutter",
       "program": "lib/main.dart",
       "flutterMode": "debug",
-      "deviceId": "emulator-5554",
       "preLaunchTask": "start-android-emulator",
       "toolArgs": ["--dart-define=USE_EMULATORS=true"],
+      "customTool": "${workspaceFolder}/scripts/bin/flutter",
+      "customToolReplacesArgs": 0
+    },
+    {
+      // Thiết bị đang chọn (điện thoại, AVD, Genymotion) + backend local (chạy ../scripts/backend-local.sh
+      // trước, không cần --lan). preLaunchTask bật adb reverse cho mọi thiết bị, nên 127.0.0.1 đúng ở mọi nơi.
+      "name": "Flutter: (debug) + backend local",
+      "type": "dart",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/app_flutter",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "preLaunchTask": "adb-reverse-backend",
+      "toolArgs": ["--dart-define=USE_EMULATORS=true", "--dart-define=EMULATOR_HOST=127.0.0.1"],
       "customTool": "${workspaceFolder}/scripts/bin/flutter",
       "customToolReplacesArgs": 0
     },
