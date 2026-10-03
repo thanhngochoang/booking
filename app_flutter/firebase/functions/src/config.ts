@@ -49,3 +49,40 @@ export const SCHEDULE_OPTIONS = {
   minInstances: 0,
   retryCount: 0,
 } as const satisfies ScheduleOptions;
+
+/**
+ * Storage URL prefixes allowed for photo uploads in reviews.
+ */
+export function storageUrlPrefixes(): string[] {
+  let projectId = process.env.GCLOUD_PROJECT;
+  if (!projectId && process.env.FIREBASE_CONFIG) {
+    try {
+      const cfg = JSON.parse(process.env.FIREBASE_CONFIG) as { projectId?: string };
+      projectId = cfg.projectId;
+    } catch {
+      // Ignore JSON parse error
+    }
+  }
+
+  const bucket =
+    process.env.STORAGE_BUCKET ||
+    (projectId ? `${projectId}.firebasestorage.app` : 'demo-photobooking.appspot.com');
+
+  const prefixes = [
+    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/`,
+  ];
+  if (projectId) {
+    prefixes.push(`https://firebasestorage.googleapis.com/v0/b/${projectId}.appspot.com/o/`);
+  }
+
+  if (process.env.FUNCTIONS_EMULATOR === 'true' || process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+    const host = process.env.FIREBASE_STORAGE_EMULATOR_HOST || '127.0.0.1:9199';
+    prefixes.push(`http://${host}/v0/b/${bucket}/o/`);
+    if (projectId) {
+      prefixes.push(`http://${host}/v0/b/${projectId}.appspot.com/o/`);
+    }
+  }
+
+  return prefixes;
+}
+

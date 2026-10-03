@@ -60,7 +60,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | partly done 2026-10-03: 4b Task 1 in 8a2/3-L2 (merged); remaining: Tasks 2–8 (lane 1 step 4; needs G3) |
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S05.02, S05.03, S05.01, S06.01, S06.02, S06.03) | partly done 2026-10-03: 4c Task 1 (events read rule, booking_features.dart, ticker) in 8c/4-L2 (reaches G4); remaining: Tasks 2–7 (lane 1 step 5; needs G4) |
 | 8d | `2026-10-02-step4d-chat.md` (S07.01, S07.02 chat list, reschedule) | partly done 2026-10-03: 4d Tasks 1–6 (chat domain, Functions, rules, indexes, lib/data/chat) in 8d/5-L2 (reaches G5); remaining: Tasks 7–9 (lane 1 step 6; needs G5) |
-| 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | not started; needs 8d |
+| 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | partly done 2026-10-03: 4e Tasks 1–3 (review domain, Functions, rules, indexes, lib/data/review) in 8e/6-L2 (reaches G6); remaining: Tasks 4–5 (lane 1 step 7; needs G6) |
 | 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
 | 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | not started; disjoint from 8a2–8e, can run as a third lane |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |
