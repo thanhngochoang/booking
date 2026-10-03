@@ -197,6 +197,32 @@ void main() {
     });
   });
 
+  group('currentPosition', () {
+    test('returns null when permission is not granted', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.raw = RawPermission.denied;
+      final pos = await repo.currentPosition();
+      expect(pos, isNull);
+    });
+
+    test('returns coordinates when permission is granted', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.raw = RawPermission.granted;
+      final pos = await repo.currentPosition();
+      expect(pos, isNotNull);
+      expect(pos!.lat, 10.7769);
+      expect(pos.lng, 106.7009);
+    });
+
+    test('returns null when gateway throws', () async {
+      final (repo, gateway, _) = await _make();
+      gateway.raw = RawPermission.granted;
+      gateway.positionError = Exception('device GPS failed');
+      final pos = await repo.currentPosition();
+      expect(pos, isNull);
+    });
+  });
+
   test('the repository stores no coordinates', () async {
     final (repo, _, prefs) = await _make();
     await repo.request();

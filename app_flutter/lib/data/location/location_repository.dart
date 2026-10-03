@@ -55,6 +55,12 @@ abstract class LocationRepository {
     Duration timeout = const Duration(seconds: 8),
   });
 
+  /// One-shot GPS / device position for chat sharing, or null when permission
+  /// denied or unavailable.
+  Future<({double lat, double lng})?> currentPosition({
+    Duration timeout = const Duration(seconds: 10),
+  });
+
   /// Opens the OS settings page of this app.
   Future<void> openSettings();
 }
@@ -64,6 +70,7 @@ class FakeLocationRepository implements LocationRepository {
     this.status = LocationPermissionStatus.notAsked,
     this.statusAfterRequest = LocationPermissionStatus.granted,
     this.location,
+    this.position,
   });
 
   LocationPermissionStatus status;
@@ -71,10 +78,12 @@ class FakeLocationRepository implements LocationRepository {
   /// What `request()` leaves behind when it is allowed to ask.
   LocationPermissionStatus statusAfterRequest;
   ApproxLocation? location;
+  ({double lat, double lng})? position;
 
   int statusCalls = 0;
   int requestCalls = 0;
   int locationCalls = 0;
+  int positionCalls = 0;
   int openSettingsCalls = 0;
 
   @override
@@ -99,6 +108,17 @@ class FakeLocationRepository implements LocationRepository {
   }) async {
     locationCalls++;
     return location;
+  }
+
+  @override
+  Future<({double lat, double lng})?> currentPosition({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    positionCalls++;
+    if (status != LocationPermissionStatus.granted) {
+      return null;
+    }
+    return position;
   }
 
   @override
