@@ -29,6 +29,7 @@ import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
+import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -172,6 +173,13 @@ Future<BookingWorldHandles> pumpBookingRoute(
         builder: (_, s) => PhotographerProfileScreen(
           uid: s.pathParameters['uid']!,
           initialSection: profileSectionFromQuery(s.uri.queryParameters['tab']),
+        ),
+      ),
+      GoRoute(
+        path: '/action', // S02.06; its providers come from extraOverrides
+        builder: (_, s) => FindPhotographerScreen(
+          initialSpecialty: s.uri.queryParameters['specialty'],
+          initialArea: s.uri.queryParameters['area'],
         ),
       ),
       GoRoute(
