@@ -1006,3 +1006,124 @@ test('clients cannot write booking events', async () => {
   await assertFails(deleteDoc(doc(otherDb, 'bookings/b_ev2/events/ev1')));
 });
 
+// ---- Plan 4d: chat and messaging rules ----
+test('members read the chat and its messages, others cannot', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'chats/chat1'), {
+      members: ['userA', 'userB'],
+      bookingId: 'b1',
+      lastMessageText: 'Hello',
+    });
+    await setDoc(doc(f, 'chats/chat1/messages/msg1'), {
+      senderId: 'userA',
+      text: 'Hello from A',
+    });
+  });
+
+  const dbA = env.authenticatedContext('userA').firestore();
+  const dbB = env.authenticatedContext('userB').firestore();
+  const dbC = env.authenticatedContext('userC').firestore();
+  const dbAnon = env.unauthenticatedContext().firestore();
+
+  // Chat document read: members succeed, non-member and unauth fail
+  await assertSucceeds(getDoc(doc(dbA, 'chats/chat1')));
+  await assertSucceeds(getDoc(doc(dbB, 'chats/chat1')));
+  await assertFails(getDoc(doc(dbC, 'chats/chat1')));
+  await assertFails(getDoc(doc(dbAnon, 'chats/chat1')));
+
+  // Messages subcollection read: members succeed, non-member and unauth fail
+  await assertSucceeds(getDoc(doc(dbA, 'chats/chat1/messages/msg1')));
+  await assertSucceeds(getDoc(doc(dbB, 'chats/chat1/messages/msg1')));
+  await assertFails(getDoc(doc(dbC, 'chats/chat1/messages/msg1')));
+  await assertFails(getDoc(doc(dbAnon, 'chats/chat1/messages/msg1')));
+});
+
+test('nobody writes chats or messages from the client', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'chats/chat2'), {
+      members: ['userA', 'userB'],
+      bookingId: 'b2',
+    });
+    await setDoc(doc(f, 'chats/chat2/messages/msg1'), {
+      senderId: 'userA',
+      text: 'Initial message',
+    });
+  });
+
+  const dbA = env.authenticatedContext('userA').firestore();
+  const dbC = env.authenticatedContext('userC').firestore();
+
+  // Create/update/delete chats doc is forbidden to all clients
+  await assertFails(setDoc(doc(dbA, 'chats/newChat'), { members: ['userA', 'userB'] }));
+  await assertFails(updateDoc(doc(dbA, 'chats/chat2'), { lastMessageText: 'Updated' }));
+  await assertFails(deleteDoc(doc(dbA, 'chats/chat2')));
+  await assertFails(setDoc(doc(dbC, 'chats/newChat2'), { members: ['userC'] }));
+
+  // Create/update/delete messages doc is forbidden to all clients
+  await assertFails(setDoc(doc(dbA, 'chats/chat2/messages/msg2'), { senderId: 'userA', text: 'Spam' }));
+  await assertFails(updateDoc(doc(dbA, 'chats/chat2/messages/msg1'), { text: 'Edited' }));
+  await assertFails(deleteDoc(doc(dbA, 'chats/chat2/messages/msg1')));
+  await assertFails(setDoc(doc(dbC, 'chats/chat2/messages/msg3'), { senderId: 'userC', text: 'Intruder' }));
+});
+
+test('a member may only zero its own unread counter with lastReadAt = request.time', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'chats/chat3'), { members: ['userA', 'userB'] });
+    await setDoc(doc(f, 'chats/chat3/members/userA'), {
+      unreadCount: 5,
+      lastReadAt: Timestamp.fromDate(new Date('2026-01-01')),
+    });
+    await setDoc(doc(f, 'chats/chat3/members/userB'), {
+      unreadCount: 2,
+      lastReadAt: Timestamp.fromDate(new Date('2026-01-01')),
+    });
+  });
+
+  const dbA = env.authenticatedContext('userA').firestore();
+  const dbB = env.authenticatedContext('userB').firestore();
+  const dbC = env.authenticatedContext('userC').firestore();
+
+  // Member can read own member doc, but not other's
+  await assertSucceeds(getDoc(doc(dbA, 'chats/chat3/members/userA')));
+  await assertFails(getDoc(doc(dbB, 'chats/chat3/members/userA')));
+  await assertFails(getDoc(doc(dbC, 'chats/chat3/members/userA')));
+
+  // Create / delete is denied
+  await assertFails(setDoc(doc(dbA, 'chats/chat3/members/userNew'), { unreadCount: 0 }));
+  await assertFails(deleteDoc(doc(dbA, 'chats/chat3/members/userA')));
+
+  // Cannot update someone else's member doc
+  await assertFails(updateDoc(doc(dbA, 'chats/chat3/members/userB'), {
+    unreadCount: 0,
+    lastReadAt: serverTimestamp(),
+  }));
+
+  // Cannot set unreadCount to non-zero
+  await assertFails(updateDoc(doc(dbA, 'chats/chat3/members/userA'), {
+    unreadCount: 1,
+    lastReadAt: serverTimestamp(),
+  }));
+
+  // Cannot set lastReadAt to non-server timestamp
+  await assertFails(updateDoc(doc(dbA, 'chats/chat3/members/userA'), {
+    unreadCount: 0,
+    lastReadAt: Timestamp.fromDate(new Date('2026-02-01')),
+  }));
+
+  // Cannot add extra keys
+  await assertFails(updateDoc(doc(dbA, 'chats/chat3/members/userA'), {
+    unreadCount: 0,
+    lastReadAt: serverTimestamp(),
+    extraKey: 'forbidden',
+  }));
+
+  // Valid update succeeds
+  await assertSucceeds(updateDoc(doc(dbA, 'chats/chat3/members/userA'), {
+    unreadCount: 0,
+    lastReadAt: serverTimestamp(),
+  }));
+});
+

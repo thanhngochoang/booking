@@ -10,12 +10,20 @@ import {
   handleTransitionBooking,
   handleOpenDispute,
 } from './callables/booking.js';
+import {
+  handleOpenInquiry,
+  handleSendMessage,
+  handleProposeReschedule,
+  handleAnswerReschedule,
+} from './callables/chat.js';
 import { CALLABLE_OPTIONS, SCHEDULE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
 import { liveContactDeps } from './infra/live.js';
 import { liveSkillsDeps } from './infra/live_skills.js';
 import { liveBookingDeps } from './infra/live_booking.js';
+import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
 import { handlePhotographerEvent } from './triggers/photographer_write.js';
+import { handleBookingWrite } from './triggers/booking_write.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -58,3 +66,37 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
     liveSkillsDeps(uid, live?.updateTime),
   );
 });
+
+/** Open chat inquiry between customer and photographer */
+export const openInquiry = onCall(CALLABLE_OPTIONS, (request) =>
+  handleOpenInquiry(request, liveChatDeps()),
+);
+
+/** Send chat message (text, image, location) */
+export const sendMessage = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSendMessage(request, liveChatDeps()),
+);
+
+/** Propose reschedule for an accepted or upcoming booking */
+export const proposeReschedule = onCall(CALLABLE_OPTIONS, (request) =>
+  handleProposeReschedule(request, liveChatDeps()),
+);
+
+/** Answer reschedule proposal (accept or decline) */
+export const answerReschedule = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAnswerReschedule(request, liveChatDeps()),
+);
+
+/** Sync chat status and read-only windows with booking writes */
+export const onBookingWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'bookings/{bookingId}' },
+  async (event) => {
+    const bookingId = event.params.bookingId;
+    const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
+    const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
+    await handleBookingWrite(
+      { id: bookingId, before, after },
+      liveChatDeps(),
+    );
+  },
+);

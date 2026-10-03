@@ -113,6 +113,21 @@ class GeolocatorLocationRepository implements LocationRepository {
   }
 
   @override
+  Future<({double lat, double lng})?> currentPosition({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    try {
+      final status = await permissionStatus();
+      if (status != LocationPermissionStatus.granted) {
+        return null;
+      }
+      return await _gateway.lowAccuracyPosition(timeout).timeout(timeout);
+    } on Exception catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Future<void> openSettings() async {
     await _gateway.openAppSettings();
   }

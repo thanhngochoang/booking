@@ -396,6 +396,28 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // chats/{chatId}: inquiry and booking conversations.
+    // Read: members only.
+    // Client write: false (all messages and status updates go through Functions).
+    match /chats/{chatId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow write: if false;
+
+      match /messages/{messageId} {
+        allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+        allow write: if false;
+      }
+
+      match /members/{uid} {
+        allow read: if isOwner(uid);
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCount', 'lastReadAt'])
+          && request.resource.data.unreadCount == 0
+          && request.resource.data.lastReadAt == request.time;
+        allow create, delete: if false;
+      }
+    }
+
     // Posts are read by any signed-in user. A photographer creates their own
     // work post (S21); counters are always written by Cloud Functions.
     match /posts/{postId} {
