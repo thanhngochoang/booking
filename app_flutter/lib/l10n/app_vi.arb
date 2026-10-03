@@ -1102,5 +1102,20 @@
     "placeholders": {
       "name": {"type": "String"}
     }
-  }
+  },
+  "bookingsTitle": "Đặt lịch",
+  "bookingsUpcoming": "Sắp tới",
+  "bookingsPending": "Đang chờ",
+  "bookingsDone": "Đã xong",
+  "bookingsReview": "Đánh giá",
+  "bookingsDirections": "Chỉ đường",
+  "bookingsMessage": "Nhắn tin",
+  "bookingsChats": "Tin nhắn",
+  "bookingsEmptyUpcoming": "Chưa có buổi chụp sắp tới",
+  "bookingsEmptyUpcomingBody": "Buổi chụp đã được nhận sẽ hiện ở đây.",
+  "bookingsFindPhotographer": "Tìm nhiếp ảnh gia",
+  "bookingsEmptyPending": "Chưa có yêu cầu chờ",
+  "bookingsEmptyPendingBody": "Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.",
+  "bookingsEmptyDone": "Chưa có buổi nào xong",
+  "bookingsEmptyDoneBody": "Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây."
 }

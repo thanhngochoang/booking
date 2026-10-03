@@ -29,6 +29,7 @@ import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
@@ -39,6 +40,7 @@ import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
+import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
 import 'fake_booking_repository.dart';
 import 'screen_host.dart';
@@ -440,4 +442,92 @@ Future<BookingDetailHandles> pumpBookingDetail(
     links: links,
     clock: effectiveClock,
   );
+}
+
+class BookingsTabHandles {
+  const BookingsTabHandles({required this.router, required this.clock});
+
+  final GoRouter router;
+  final TestClock clock;
+
+  /// Location of the top-most route, pushed ones included.
+  String get location => router.state.uri.toString();
+}
+
+/// Hosts the `/bookings` tab (S05.01 for customers, the work tab for
+/// photographers) signed in as [uid] with [role], with stub routes for
+/// every place it can lead to.
+Future<BookingsTabHandles> pumpBookingsTab(
+  WidgetTester tester, {
+  String uid = detailCustomerUid,
+  UserRole role = UserRole.customer,
+  FakeBookingRepository? bookings,
+  DateTime? now,
+  TestClock? clock,
+  BookingFeatures features = const BookingFeatures(
+    chat: false,
+    reschedule: false,
+    review: false,
+  ),
+  Brightness brightness = Brightness.dark,
+  double textScale = 1.0,
+  Size viewSize = const Size(390, 844),
+  List<Override> extraOverrides = const [],
+}) async {
+  final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
+  tester.view.physicalSize = viewSize;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  final userRepo = FakeUserRepository();
+  await userRepo.ensureProfile(AuthUser(uid: uid, displayName: 'Lan Anh'));
+  await userRepo.setRole(uid, role);
+
+  Widget stub(BuildContext _, GoRouterState s) =>
+      Scaffold(body: Text('stub ${s.uri}'));
+
+  final router = GoRouter(
+    initialLocation: '/bookings',
+    routes: [
+      GoRoute(path: '/bookings', builder: (_, _) => const BookingsTab()),
+      for (final p in [
+        '/action',
+        '/chats',
+        '/chat/:id',
+        '/b/:id',
+        '/b/:id/review',
+        '/work/calendar',
+      ])
+        GoRoute(path: p, builder: stub),
+    ],
+  );
+
+  final overrides = <Override>[
+    authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
+    userRepositoryProvider.overrideWithValue(userRepo),
+    clockProvider.overrideWithValue(() => effectiveClock.now),
+    calendarTodayProvider.overrideWithValue(effectiveClock.now),
+    bookingRepositoryProvider.overrideWithValue(
+      bookings ?? FakeBookingRepository(),
+    ),
+    bookingFeaturesProvider.overrideWithValue(features),
+    publicProfileRepositoryProvider.overrideWithValue(
+      FakePublicProfileRepository([bookingProfile]),
+    ),
+    ...extraOverrides,
+  ];
+
+  // A fresh ProviderScope each time: a test may pump several worlds.
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pumpWidget(
+    screenRouterApp(
+      router: router,
+      overrides: overrides,
+      brightness: brightness,
+      textScale: textScale,
+    ),
+  );
+  await tester.pump();
+
+  return BookingsTabHandles(router: router, clock: effectiveClock);
 }

@@ -2258,4 +2258,52 @@ class AppLocalizationsVi extends AppLocalizations {
   String cancelDonePhotographer(String name) {
     return 'Đã huỷ. $name được hoàn cọc 100%';
   }
+
+  @override
+  String get bookingsTitle => 'Đặt lịch';
+
+  @override
+  String get bookingsUpcoming => 'Sắp tới';
+
+  @override
+  String get bookingsPending => 'Đang chờ';
+
+  @override
+  String get bookingsDone => 'Đã xong';
+
+  @override
+  String get bookingsReview => 'Đánh giá';
+
+  @override
+  String get bookingsDirections => 'Chỉ đường';
+
+  @override
+  String get bookingsMessage => 'Nhắn tin';
+
+  @override
+  String get bookingsChats => 'Tin nhắn';
+
+  @override
+  String get bookingsEmptyUpcoming => 'Chưa có buổi chụp sắp tới';
+
+  @override
+  String get bookingsEmptyUpcomingBody =>
+      'Buổi chụp đã được nhận sẽ hiện ở đây.';
+
+  @override
+  String get bookingsFindPhotographer => 'Tìm nhiếp ảnh gia';
+
+  @override
+  String get bookingsEmptyPending => 'Chưa có yêu cầu chờ';
+
+  @override
+  String get bookingsEmptyPendingBody =>
+      'Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.';
+
+  @override
+  String get bookingsEmptyDone => 'Chưa có buổi nào xong';
+
+  @override
+  String get bookingsEmptyDoneBody =>
+      'Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.';
 }

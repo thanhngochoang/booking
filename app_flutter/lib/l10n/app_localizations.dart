@@ -4011,6 +4011,96 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã huỷ. {name} được hoàn cọc 100%'**
   String cancelDonePhotographer(String name);
+
+  /// No description provided for @bookingsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get bookingsTitle;
+
+  /// No description provided for @bookingsUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp tới'**
+  String get bookingsUpcoming;
+
+  /// No description provided for @bookingsPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ'**
+  String get bookingsPending;
+
+  /// No description provided for @bookingsDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong'**
+  String get bookingsDone;
+
+  /// No description provided for @bookingsReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get bookingsReview;
+
+  /// No description provided for @bookingsDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get bookingsDirections;
+
+  /// No description provided for @bookingsMessage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin'**
+  String get bookingsMessage;
+
+  /// No description provided for @bookingsChats.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn'**
+  String get bookingsChats;
+
+  /// No description provided for @bookingsEmptyUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có buổi chụp sắp tới'**
+  String get bookingsEmptyUpcoming;
+
+  /// No description provided for @bookingsEmptyUpcomingBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp đã được nhận sẽ hiện ở đây.'**
+  String get bookingsEmptyUpcomingBody;
+
+  /// No description provided for @bookingsFindPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm nhiếp ảnh gia'**
+  String get bookingsFindPhotographer;
+
+  /// No description provided for @bookingsEmptyPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có yêu cầu chờ'**
+  String get bookingsEmptyPending;
+
+  /// No description provided for @bookingsEmptyPendingBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.'**
+  String get bookingsEmptyPendingBody;
+
+  /// No description provided for @bookingsEmptyDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có buổi nào xong'**
+  String get bookingsEmptyDone;
+
+  /// No description provided for @bookingsEmptyDoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.'**
+  String get bookingsEmptyDoneBody;
 }
 
 class _AppLocalizationsDelegate

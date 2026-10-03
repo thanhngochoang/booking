@@ -5,12 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
+
+import '../../support/fake_booking_repository.dart';
 
 Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
   UserRole role,
@@ -32,6 +36,7 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
         photographerIntroRepositoryProvider.overrideWithValue(
           FakePhotographerIntroRepository(),
         ),
+        bookingRepositoryProvider.overrideWithValue(FakeBookingRepository()),
       ],
       child: MaterialApp(
         theme: buildDarkTheme(),
@@ -51,13 +56,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Chưa có yêu cầu nào'), findsOneWidget);
   });
-  testWidgets('bookings tab shows customer empty state for customers', (
-    tester,
-  ) async {
+  testWidgets('bookings tab shows S05.01 for customers', (tester) async {
     final (auth, users) = await _signedIn(UserRole.customer);
     await tester.pumpWidget(_app(const BookingsTab(), auth, users));
     await tester.pumpAndSettle();
-    expect(find.text('Buổi chụp tiếp theo bắt đầu từ đây'), findsOneWidget);
+    expect(find.byType(MyBookingsScreen), findsOneWidget);
+    expect(find.text('Chưa có buổi chụp sắp tới'), findsOneWidget);
   });
   testWidgets('profile tab signs out', (tester) async {
     final (auth, users) = await _signedIn(UserRole.customer);
@@ -166,6 +170,7 @@ void main() {
         authRepositoryProvider.overrideWithValue(auth),
         userRepositoryProvider.overrideWithValue(users),
         photographerIntroRepositoryProvider.overrideWithValue(intro),
+        bookingRepositoryProvider.overrideWithValue(FakeBookingRepository()),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -247,6 +252,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.byType(MyBookingsScreen), findsOneWidget);
     expect(find.byKey(const Key('open-calendar')), findsNothing);
   });
 }

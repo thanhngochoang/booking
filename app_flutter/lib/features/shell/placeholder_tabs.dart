@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/home/home_controller.dart';
@@ -71,29 +72,30 @@ class BookingsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final photographer = _role(ref) == UserRole.photographer;
+    // Nothing until the role is known, so neither side flashes the other's tab.
+    if (!ref.watch(currentProfileProvider).hasValue) {
+      return const SizedBox.shrink();
+    }
+    if (_role(ref) == UserRole.customer) return const MyBookingsScreen();
+    // Photographers: the work tab (S06.01) replaces this in plan 4c Task 6.
     return ScreenCode(
-      photographer ? ScreenCodes.workEmpty : ScreenCodes.bookings,
+      ScreenCodes.workEmpty,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           centerTitle: false,
           titleTextStyle: tabRootTitleStyle(context),
-          title: Text(photographer ? l.tabWork : l.tabBookings),
+          title: Text(l.tabWork),
           actions: [
-            if (photographer)
-              IconButton(
-                key: const Key('open-calendar'),
-                tooltip: l.myCalendarTitle,
-                icon: const Icon(Icons.event_available_outlined),
-                onPressed: () => context.push('/work/calendar'),
-              ),
+            IconButton(
+              key: const Key('open-calendar'),
+              tooltip: l.myCalendarTitle,
+              icon: const Icon(Icons.event_available_outlined),
+              onPressed: () => context.push('/work/calendar'),
+            ),
           ],
         ),
-        body: EmptyState(
-          title: photographer ? l.emptyWorkTitle : l.emptyBookingsTitle,
-          body: photographer ? l.emptyWorkBody : l.emptyBookingsBody,
-        ),
+        body: EmptyState(title: l.emptyWorkTitle, body: l.emptyWorkBody),
       ),
     );
   }
