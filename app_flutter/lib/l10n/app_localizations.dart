@@ -3477,6 +3477,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Hôm đó vừa có người đặt, chọn ngày khác'**
   String get bookDayGone;
+
+  /// No description provided for @bookPlaceTooShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập ít nhất 3 ký tự'**
+  String get bookPlaceTooShort;
+
+  /// No description provided for @bookPackageLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói {name}'**
+  String bookPackageLine(String name);
 }
 
 class _AppLocalizationsDelegate

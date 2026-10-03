@@ -889,5 +889,14 @@
     }
   },
   "bookNoSlots": "Hôm đó đã hết giờ",
-  "bookDayGone": "Hôm đó vừa có người đặt, chọn ngày khác"
+  "bookDayGone": "Hôm đó vừa có người đặt, chọn ngày khác",
+  "bookPlaceTooShort": "Nhập ít nhất 3 ký tự",
+  "bookPackageLine": "Gói {name}",
+  "@bookPackageLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

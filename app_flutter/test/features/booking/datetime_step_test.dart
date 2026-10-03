@@ -171,7 +171,6 @@ void main() {
   testWidgets('the day from S02.06 is preselected and its month shown', (
     tester,
   ) async {
-    final futureDay = DateTime.utc(2026, 11, 20);
     await pumpBookingRoute(
       tester,
       path: '/u/p1/book?serviceId=s1&date=2026-11-20',

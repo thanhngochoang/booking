@@ -1941,4 +1941,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get bookDayGone => 'Hôm đó vừa có người đặt, chọn ngày khác';
+
+  @override
+  String get bookPlaceTooShort => 'Nhập ít nhất 3 ký tự';
+
+  @override
+  String bookPackageLine(String name) {
+    return 'Gói $name';
+  }
 }
