@@ -1773,4 +1773,21 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get badgeNew => 'Mới';
+
+  @override
+  String get notificationTitle => 'Thông báo';
+
+  @override
+  String notificationUnreadCount(int count) {
+    return '$count thông báo chưa đọc';
+  }
+
+  @override
+  String get notificationMarkRead => 'Đánh dấu đã đọc';
+
+  @override
+  String get notificationMuteKind => 'Tắt loại thông báo này';
+
+  @override
+  String get notificationUnreadPrefix => 'Chưa đọc';
 }

@@ -788,6 +788,16 @@
   "badgeSeeAll": "Tất cả",
   "badgeNotEarned": "Chưa đạt",
   "badgeEarned": "Đã đạt",
-  "badgeNew": "Mới"
+  "badgeNew": "Mới",
+  "notificationTitle": "Thông báo",
+  "notificationUnreadCount": "{count} thông báo chưa đọc",
+  "@notificationUnreadCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "notificationMarkRead": "Đánh dấu đã đọc",
+  "notificationMuteKind": "Tắt loại thông báo này",
+  "notificationUnreadPrefix": "Chưa đọc"
 }
 

@@ -3183,6 +3183,36 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Mới'**
   String get badgeNew;
+
+  /// No description provided for @notificationTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo'**
+  String get notificationTitle;
+
+  /// No description provided for @notificationUnreadCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} thông báo chưa đọc'**
+  String notificationUnreadCount(int count);
+
+  /// No description provided for @notificationMarkRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu đã đọc'**
+  String get notificationMarkRead;
+
+  /// No description provided for @notificationMuteKind.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt loại thông báo này'**
+  String get notificationMuteKind;
+
+  /// No description provided for @notificationUnreadPrefix.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đọc'**
+  String get notificationUnreadPrefix;
 }
 
 class _AppLocalizationsDelegate

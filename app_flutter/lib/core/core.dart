@@ -78,3 +78,5 @@ export 'package:photobooking/core/widgets/event_card.dart';
 export 'package:photobooking/core/widgets/ticket_card.dart';
 export 'package:photobooking/core/widgets/badge_chip.dart';
 export 'package:photobooking/core/widgets/badge_tile.dart';
+export 'package:photobooking/core/widgets/notification_row.dart';
+export 'package:photobooking/core/widgets/notification_bell.dart';
