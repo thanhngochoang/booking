@@ -6,6 +6,7 @@ One line per unit: id · state · branch · machine · last update.
 
 ## Active
 - `b1/7-L2` · in progress · `plan/b1-7-L2-shared-components` · MAC-JM4RLWTXXR · 2026-10-03
+- `8b/4-L1` · in progress · `plan/8b-4-L1-booking-sheet` · MacBook-Pro-2 · 2026-10-03
 
 ## Finished
 - `8e/6-L2` · done (PR #15) · `plan/8e-6-L2-review-core-data` · MAC-JM4RLWTXXR · 2026-10-03
