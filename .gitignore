@@ -31,3 +31,5 @@ packages/*
 !packages/domain/**
 # Extra checkouts made by scripts/worktree.sh
 /.worktrees
+__pycache__/
+*.pyc
