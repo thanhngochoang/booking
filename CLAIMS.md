@@ -5,10 +5,10 @@ Written only by `.claude/skills/run-next-plan/scripts/board.py`; do not edit by 
 One line per unit: id · state · branch · machine · last update.
 
 ## Active
-- `b1/7-L2` · in progress · `plan/b1-7-L2-shared-components` · MAC-JM4RLWTXXR · 2026-10-03
 - `8b/4-L1` · in progress · `plan/8b-4-L1-booking-sheet` · MacBook-Pro-2 · 2026-10-03
 
 ## Finished
+- `b1/7-L2` · done (PR #17) · `plan/b1-7-L2-shared-components` · MAC-JM4RLWTXXR · 2026-10-03
 - `8e/6-L2` · done (PR #15) · `plan/8e-6-L2-review-core-data` · MAC-JM4RLWTXXR · 2026-10-03
 - `8d/5-L2` · done (PR #14) · `plan/8d-5-L2-chat-core-data` · MAC-JM4RLWTXXR · 2026-10-03
 - `8a2/3-L1` · done (PR #13) · `plan/8a2-3-L1-confirm-sheet-migration` · MacBook-Pro-2 · 2026-10-03
