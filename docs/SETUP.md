@@ -15,7 +15,7 @@ scripts/setup.sh                                # 2. Android SDK, Flutter, font;
 scripts/install-emulator.sh                     # 4. emulator + AVD photobooking_api35 (~2,2 GB, không bắt buộc)
 cp .env.example .env                            # 5. điền key; đặt google-services.json + firebase_options.dart
 cd app_flutter && ../scripts/bin/flutter pub get && ../scripts/bin/flutter analyze && ../scripts/bin/flutter test   # 6. kiểm tra
-# 7. VS Code: Cmd+Q rồi mở lại thư mục gốc repo, chọn "Flutter: Android emulator", F5
+# 7. VS Code: Cmd+Q rồi mở lại thư mục gốc repo, chọn thiết bị ở góc phải dưới, "Flutter: thiết bị đang chọn", F5
 ```
 
 ## 1. Công cụ nền
@@ -60,10 +60,12 @@ Kiểm tra trong terminal mới: `echo $ANDROID_HOME && ls "$ANDROID_HOME/platfo
 
 ```bash
 scripts/install-emulator.sh       # tải emulator + system image Android 35 (Google Play), tạo AVD photobooking_api35
-scripts/start-emulator.sh         # bật AVD và chờ boot xong (VS Code tự gọi khi F5)
+scripts/start-emulator.sh         # bật AVD và chờ boot xong, nếu chưa có thiết bị nào (VS Code: Run Task "Bật emulator dự án")
 ```
 
-AVD nằm ở `.home/.android/avd/`. Test trên điện thoại thật thì làm theo `docs/DEVICE-TESTING.md` bước 1–4.
+AVD nằm ở `.home/.android/avd/`. ABI theo máy: `arm64-v8a` trên Mac Apple Silicon, `x86_64` trên Mac Intel; còn lại (Android 35, Google Play, 1080×2400) giống nhau trên mọi máy. Test trên điện thoại thật thì làm theo `docs/DEVICE-TESTING.md` bước 1–4.
+
+**Genymotion** (nếu dùng): Settings → ADB → "Use custom Android SDK tools" → chọn thư mục `.android-sdk` của repo. Nếu để adb riêng của Genymotion, hai adb server tranh nhau và thiết bị lúc thấy lúc không (`adb server version doesn't match`).
 
 ## 5. Cấu hình bí mật (không có trong git)
 
@@ -73,7 +75,7 @@ AVD nằm ở `.home/.android/avd/`. Test trên điện thoại thật thì làm
 | `app_flutter/android/app/google-services.json` | Firebase console → Project settings → app Android `com.thanhbk.photobooking`. Hoặc đặt `FLUTTER_GOOGLE_SERVICES_JSON_B64` trong `.env`, `scripts/env.sh` sẽ ghi ra file. |
 | `app_flutter/lib/firebase_options.dart` | Sinh từ `google-services.json`: `docs/FIREBASE-SETUP.md` bước 7, cách B (không cần login). |
 
-**Google Sign-In** cần SHA‑1 của debug keystore trên máy này (`.home/.android/debug.keystore`, tạo ở lần build đầu). Lấy SHA‑1 bằng `cd app_flutter/android && ./gradlew signingReport` (sau `source scripts/env.sh`), thêm vào Firebase theo `docs/FIREBASE-SETUP.md` bước 3. Chưa thêm thì đăng nhập Google báo `ApiException: 10`.
+**Khoá ký debug dùng chung**: mọi bản debug ký bằng `app_flutter/android/app/debug.keystore` (có trong git, mật khẩu chuẩn `android`, không phải bí mật), dù build từ VS Code hay terminal, trên máy nào. Nhờ vậy bản build của người này cài đè được lên bản của người khác trên cùng thiết bị. **Google Sign-In** cần SHA‑1 của khoá này trong Firebase (chỉ thêm một lần cho cả team, `docs/FIREBASE-SETUP.md` bước 3); xem SHA‑1 bằng `scripts/check-device.sh`. Chưa thêm thì đăng nhập Google báo `ApiException: 10`.
 
 ## 6. Kiểm tra
 
@@ -81,23 +83,27 @@ AVD nằm ở `.home/.android/avd/`. Test trên điện thoại thật thì làm
 cd app_flutter
 ../scripts/bin/flutter pub get
 ../scripts/bin/flutter analyze && ../scripts/bin/flutter test
-../scripts/bin/flutter devices          # phải thấy emulator-5554 (nếu emulator đang chạy) hoặc điện thoại
+../scripts/bin/flutter devices          # phải thấy thiết bị đang kết nối (AVD, Genymotion hoặc điện thoại)
+../scripts/check-device.sh              # adb, thiết bị, khoá ký: so sánh giữa các máy khi có lỗi
 ```
 
 Backend local (không bắt buộc, cần Node 22): `scripts/backend-local.sh`, Emulator UI ở http://127.0.0.1:4000, tài khoản seed trong `app_flutter/firebase/functions/seed/README.md`.
 
 ## 7. Chạy app từ VS Code
 
-Mở **thư mục gốc repo** (`booking/`, không phải `app_flutter/`), tab Run and Debug, chọn cấu hình rồi nhấn F5:
+Mở **thư mục gốc repo** (`booking/`, không phải `app_flutter/`). App luôn chạy trên **thiết bị đang chọn**: bấm tên thiết bị ở thanh trạng thái (góc phải dưới) hoặc Cmd+Shift+P → **Flutter: Select Device** để xem danh sách thiết bị đang kết nối (điện thoại USB/Wi‑Fi, AVD, Genymotion). Thiết bị vừa cắm vào được chọn ngay; nếu chưa có thiết bị hợp lệ, F5 tự hiện danh sách. Không cấu hình nào cố định `deviceId`, nên máy nào cũng giống nhau.
 
-| Cấu hình | Thiết bị | Backend |
-|---|---|---|
-| Flutter: (debug) | thiết bị đang chọn ở thanh trạng thái (góc phải dưới) | Firebase dev |
-| Flutter: Android emulator | tự bật `photobooking_api35` (`scripts/start-emulator.sh`) | Firebase dev |
-| Flutter: Android emulator + backend local | như trên | emulators local (chạy `scripts/backend-local.sh` trước) |
-| Flutter: (profile) | thiết bị đang chọn | Firebase dev, đo hiệu năng |
+| Cấu hình (tab Run and Debug) | Backend |
+|---|---|
+| Flutter: thiết bị đang chọn | Firebase dev |
+| Flutter: thiết bị đang chọn + backend local | emulators local: chạy `scripts/backend-local.sh` trước (không cần `--lan`) |
+| Flutter: thiết bị đang chọn (profile) | Firebase dev, đo hiệu năng |
 
-Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run -d emulator-5554` (thêm `--dart-define=USE_EMULATORS=true` để dùng backend local).
+**Backend local trên mọi thiết bị như nhau:** cấu hình "+ backend local" chạy `scripts/adb-reverse.sh` trước khi build. Script `adb reverse` các cổng 9099, 8080, 5001, 9199 của mọi thiết bị đang kết nối về máy Mac, nên app luôn dùng `EMULATOR_HOST=127.0.0.1`: không còn nhớ `10.0.2.2` cho AVD, `10.0.3.2` cho Genymotion hay IP LAN cho điện thoại. Cắm thêm thiết bị trong lúc chạy thì chạy lại `scripts/adb-reverse.sh`.
+
+Các task (Terminal → Run Task): **Bật emulator dự án** (bật AVD nếu chưa có thiết bị nào), **Kiểm tra thiết bị debug** (`scripts/check-device.sh`).
+
+Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run` (hỏi thiết bị nếu có nhiều; `-d <id>` để chọn sẵn). Backend local: `../scripts/adb-reverse.sh && ../scripts/bin/flutter run --dart-define=USE_EMULATORS=true --dart-define=EMULATOR_HOST=127.0.0.1`. Luôn dùng `../scripts/bin/flutter`, không dùng `flutter` của hệ thống.
 
 ## Xử lý lỗi thường gặp
 
@@ -108,7 +114,9 @@ Terminal thay cho VS Code: `cd app_flutter && ../scripts/bin/flutter run -d emul
 | `adb devices` thấy emulator là `unauthorized` hoặc `offline` | `adb kill-server`, rồi chạy lại `scripts/start-emulator.sh`. |
 | Gradle báo `PKIX path building failed` | Mạng công ty ký lại HTTPS. Chạy `source scripts/env.sh` một lần để tạo `.certs/truststore.jks`; nếu vẫn lỗi, xoá `.certs/` rồi chạy lại. |
 | `JDK 17 not found` khi chạy `setup.sh` | Cài theo bước 1. |
-| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | App trên thiết bị do máy khác cài (keystore khác): `adb uninstall com.thanhbk.photobooking`. |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | App trên thiết bị được ký bằng khoá khác (bản cài trước khi có khoá debug dùng chung, hoặc build bằng `flutter` của hệ thống). Gỡ một lần: `adb uninstall com.thanhbk.photobooking` (mất dữ liệu app trên thiết bị đó). |
+| App chạy nhưng không kết nối backend local | Chưa chạy `scripts/backend-local.sh`, hoặc thiết bị cắm sau khi F5: chạy `scripts/adb-reverse.sh`. `scripts/check-device.sh` cho biết `adb-reverse:on/off` của từng thiết bị. |
+| Thiết bị lúc thấy lúc không, `adb server version doesn't match` | Hai adb server chạy cùng lúc (thường là của Genymotion). Trỏ Genymotion vào `.android-sdk` của repo (bước 4), rồi `adb kill-server`. |
 | `[core/duplicate-app]` khi mở app | `firebase_options.dart` và `google-services.json` khác project. Sinh lại `firebase_options.dart` (bước 5). |
 
 Thiết bị thật (Samsung, Wi‑Fi debug, Chặn tự động): bảng lỗi đầy đủ trong `docs/DEVICE-TESTING.md`.
