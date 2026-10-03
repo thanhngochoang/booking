@@ -2019,4 +2019,79 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get actionRetry => 'Thử lại';
+
+  @override
+  String get timelineSent => 'Đã gửi & đặt cọc';
+
+  @override
+  String timelineSentDetail(String when, String amount) {
+    return '$when · $amount';
+  }
+
+  @override
+  String timelineToday(String time) {
+    return 'Hôm nay $time';
+  }
+
+  @override
+  String timelineWaiting(String name) {
+    return 'Chờ $name nhận';
+  }
+
+  @override
+  String get timelineWaitingHint => 'Thường trong 1 giờ';
+
+  @override
+  String get timelineConfirmed => 'Đã xác nhận';
+
+  @override
+  String get timelineConfirmedHint => 'Nhắn tin để chốt chi tiết';
+
+  @override
+  String timelineUpcoming(String day) {
+    return 'Sắp tới · $day';
+  }
+
+  @override
+  String get timelineUpcomingHint => 'Nhắc trước 24 giờ';
+
+  @override
+  String get timelineShoot => 'Buổi chụp';
+
+  @override
+  String get timelineDone => 'Hoàn thành';
+
+  @override
+  String timelinePayAtShoot(String amount) {
+    return 'Trả $amount tại chỗ';
+  }
+
+  @override
+  String get timelineReview => 'Đánh giá & chia sẻ ảnh';
+
+  @override
+  String get timelineDeclined => 'Đã từ chối';
+
+  @override
+  String get timelineExpired => 'Hết hạn, đã hoàn cọc';
+
+  @override
+  String timelineCancelled(String amount) {
+    return 'Đã huỷ · hoàn $amount';
+  }
+
+  @override
+  String countdownHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String countdownMinutes(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String countdownSeconds(int n) {
+    return '$n giây';
+  }
 }

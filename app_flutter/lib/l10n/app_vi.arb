@@ -934,5 +934,70 @@
   "fakePayBody": "Bản dùng thử: không có tiền thật nào được trừ.",
   "fakePayConfirm": "Thanh toán thành công",
   "actionCancel": "Huỷ",
-  "actionRetry": "Thử lại"
+  "actionRetry": "Thử lại",
+  "timelineSent": "Đã gửi & đặt cọc",
+  "timelineSentDetail": "{when} · {amount}",
+  "@timelineSentDetail": {
+    "placeholders": {
+      "when": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "timelineToday": "Hôm nay {time}",
+  "@timelineToday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "timelineWaiting": "Chờ {name} nhận",
+  "@timelineWaiting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "timelineWaitingHint": "Thường trong 1 giờ",
+  "timelineConfirmed": "Đã xác nhận",
+  "timelineConfirmedHint": "Nhắn tin để chốt chi tiết",
+  "timelineUpcoming": "Sắp tới · {day}",
+  "@timelineUpcoming": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "timelineUpcomingHint": "Nhắc trước 24 giờ",
+  "timelineShoot": "Buổi chụp",
+  "timelineDone": "Hoàn thành",
+  "timelinePayAtShoot": "Trả {amount} tại chỗ",
+  "@timelinePayAtShoot": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "timelineReview": "Đánh giá & chia sẻ ảnh",
+  "timelineDeclined": "Đã từ chối",
+  "timelineExpired": "Hết hạn, đã hoàn cọc",
+  "timelineCancelled": "Đã huỷ · hoàn {amount}",
+  "@timelineCancelled": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "countdownHours": "{n} giờ",
+  "@countdownHours": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "countdownMinutes": "{n} phút",
+  "@countdownMinutes": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "countdownSeconds": "{n} giây",
+  "@countdownSeconds": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  }
 }

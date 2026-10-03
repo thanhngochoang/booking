@@ -3615,6 +3615,120 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thử lại'**
   String get actionRetry;
+
+  /// No description provided for @timelineSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi & đặt cọc'**
+  String get timelineSent;
+
+  /// No description provided for @timelineSentDetail.
+  ///
+  /// In vi, this message translates to:
+  /// **'{when} · {amount}'**
+  String timelineSentDetail(String when, String amount);
+
+  /// No description provided for @timelineToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay {time}'**
+  String timelineToday(String time);
+
+  /// No description provided for @timelineWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ {name} nhận'**
+  String timelineWaiting(String name);
+
+  /// No description provided for @timelineWaitingHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thường trong 1 giờ'**
+  String get timelineWaitingHint;
+
+  /// No description provided for @timelineConfirmed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác nhận'**
+  String get timelineConfirmed;
+
+  /// No description provided for @timelineConfirmedHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn tin để chốt chi tiết'**
+  String get timelineConfirmedHint;
+
+  /// No description provided for @timelineUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp tới · {day}'**
+  String timelineUpcoming(String day);
+
+  /// No description provided for @timelineUpcomingHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắc trước 24 giờ'**
+  String get timelineUpcomingHint;
+
+  /// No description provided for @timelineShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp'**
+  String get timelineShoot;
+
+  /// No description provided for @timelineDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành'**
+  String get timelineDone;
+
+  /// No description provided for @timelinePayAtShoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả {amount} tại chỗ'**
+  String timelinePayAtShoot(String amount);
+
+  /// No description provided for @timelineReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá & chia sẻ ảnh'**
+  String get timelineReview;
+
+  /// No description provided for @timelineDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối'**
+  String get timelineDeclined;
+
+  /// No description provided for @timelineExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn, đã hoàn cọc'**
+  String get timelineExpired;
+
+  /// No description provided for @timelineCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ · hoàn {amount}'**
+  String timelineCancelled(String amount);
+
+  /// No description provided for @countdownHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String countdownHours(int n);
+
+  /// No description provided for @countdownMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String countdownMinutes(int n);
+
+  /// No description provided for @countdownSeconds.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giây'**
+  String countdownSeconds(int n);
 }
 
 class _AppLocalizationsDelegate
