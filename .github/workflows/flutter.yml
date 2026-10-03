@@ -3,7 +3,7 @@ on:
   push:
     branches: [flutter-rewrite, develop, main]
   pull_request:
-    paths: ['app_flutter/**', 'design-system/**', 'packages/**', '.github/workflows/flutter.yml']
+    paths: ['app_flutter/**', 'design-system/**', 'packages/**', '.github/workflows/flutter.yml', 'scripts/ci-affected-tests.py']
 
 permissions:
   contents: read
@@ -64,11 +64,12 @@ jobs:
             echo "🔄 Push event → running ALL tests"
           else
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            RESULT=$(bash scripts/ci-affected-tests.sh "$BASE_SHA")
+            # Any error in the detector means "unsure" → run everything.
+            RESULT=$(python3 scripts/ci-affected-tests.py "$BASE_SHA") || RESULT=ALL
             if [ "$RESULT" = "ALL" ]; then
               echo "scope=ALL" >> "$GITHUB_OUTPUT"
               echo "files=" >> "$GITHUB_OUTPUT"
-              echo "🔄 Core/config changed → running ALL tests"
+              echo "🔄 Shared code/config changed → running ALL tests"
             elif [ "$RESULT" = "NONE" ]; then
               echo "scope=NONE" >> "$GITHUB_OUTPUT"
               echo "files=" >> "$GITHUB_OUTPUT"
@@ -78,7 +79,7 @@ jobs:
               FILES=$(echo "$RESULT" | tr '\n' ' ')
               echo "files=$FILES" >> "$GITHUB_OUTPUT"
               COUNT=$(echo "$RESULT" | wc -l | tr -d ' ')
-              echo "🎯 Running $COUNT affected test files (out of 172 total)"
+              echo "🎯 Running $COUNT affected test files"
               echo "$RESULT"
             fi
           fi
@@ -123,6 +124,8 @@ jobs:
           TEST_SCOPE: ${{ needs.affected.outputs.test-scope }}
           TEST_FILES: ${{ needs.affected.outputs.test-files }}
         run: |
+          # A failing test must fail this shard (default shell has no pipefail).
+          set -o pipefail
           mkdir -p test-results
 
           if [ "$TEST_SCOPE" = "ALL" ]; then
@@ -133,8 +136,7 @@ jobs:
               --total-shards=4 \
               --shard-index=${{ matrix.shard }} \
               --reporter=json \
-            | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml \
-            || true
+            | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml
           else
             echo "🎯 Running AFFECTED tests only (shard ${{ matrix.shard }}/4)"
             ALL_FILES=($TEST_FILES)
@@ -156,8 +158,7 @@ jobs:
                 --concurrency=4 \
                 --reporter=json \
                 "${SHARD_FILES[@]}" \
-              | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml \
-              || true
+              | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml
             fi
           fi
 
