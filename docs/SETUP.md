@@ -96,7 +96,7 @@ Mở **thư mục gốc repo** (`booking/`, không phải `app_flutter/`), tab R
 | Cấu hình | Thiết bị | Backend |
 |---|---|---|
 | Flutter: (debug) | thiết bị đang chọn | Firebase dev |
-| Flutter: Android emulator | tự bật `photobooking_api35` (`scripts/start-emulator.sh`), tìm theo tên AVD nên không phụ thuộc cổng 5554 | Firebase dev |
+| Flutter: Android emulator | tự bật `photobooking_api35` (`scripts/start-emulator.sh`), chạy trên `emulator-5554` | Firebase dev |
 | Flutter: Android emulator + backend local | như trên | emulators local (chạy `scripts/backend-local.sh` trước) |
 | Flutter: (debug) + backend local | thiết bị đang chọn (điện thoại, AVD, Genymotion) | emulators local, qua `adb reverse` (dưới) |
 | Flutter: (profile) | thiết bị đang chọn | Firebase dev, đo hiệu năng |

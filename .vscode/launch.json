@@ -16,15 +16,14 @@
       "customToolReplacesArgs": 0
     },
     {
-      // Tự bật AVD photobooking_api35 (preLaunchTask) rồi chạy app trên đó; backend = Firebase dev.
-      // Tìm emulator theo tên AVD, không theo cổng, nên chạy được cả khi emulator ở cổng khác 5554.
+      // Tự bật Android emulator (preLaunchTask) rồi chạy app trên đó; backend = Firebase dev.
       "name": "Flutter: Android emulator",
       "type": "dart",
       "request": "launch",
       "cwd": "${workspaceFolder}/app_flutter",
       "program": "lib/main.dart",
       "flutterMode": "debug",
-      "emulatorId": "photobooking_api35",
+      "deviceId": "emulator-5554",
       "preLaunchTask": "start-android-emulator",
       "customTool": "${workspaceFolder}/scripts/bin/flutter",
       "customToolReplacesArgs": 0
@@ -37,7 +36,7 @@
       "cwd": "${workspaceFolder}/app_flutter",
       "program": "lib/main.dart",
       "flutterMode": "debug",
-      "emulatorId": "photobooking_api35",
+      "deviceId": "emulator-5554",
       "preLaunchTask": "start-android-emulator",
       "toolArgs": ["--dart-define=USE_EMULATORS=true"],
       "customTool": "${workspaceFolder}/scripts/bin/flutter",
