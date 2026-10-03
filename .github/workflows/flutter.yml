@@ -136,7 +136,7 @@ jobs:
               --total-shards=4 \
               --shard-index=${{ matrix.shard }} \
               --reporter=json \
-            | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml
+            | dart pub global run junitreport:tojunit --output test-results/shard-${{ matrix.shard }}.xml
           else
             echo "🎯 Running AFFECTED tests only (shard ${{ matrix.shard }}/4)"
             ALL_FILES=($TEST_FILES)
@@ -158,7 +158,7 @@ jobs:
                 --concurrency=4 \
                 --reporter=json \
                 "${SHARD_FILES[@]}" \
-              | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml
+              | dart pub global run junitreport:tojunit --output test-results/shard-${{ matrix.shard }}.xml
             fi
           fi
 
