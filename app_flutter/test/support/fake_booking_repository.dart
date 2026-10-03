@@ -10,9 +10,11 @@ class FakeBookingRepository implements BookingRepository {
   final String customerId;
   final Map<String, Booking> bookings = {};
   final Map<String, BookingContactSnapshot> contacts = {};
+  final Map<String, List<BookingEventRecord>> events = {};
 
   final _bookingChanges = StreamController<String>.broadcast();
   final _contactChanges = StreamController<String>.broadcast();
+  final _eventChanges = StreamController<String>.broadcast();
 
   BookingErrorCode? nextError;
   final createCalls =
@@ -70,6 +72,17 @@ class FakeBookingRepository implements BookingRepository {
     _contactChanges.add(bookingId);
   }
 
+  void seedEvents(String bookingId, List<BookingEventRecord> list) {
+    events[bookingId] = List.of(list);
+    _eventChanges.add(bookingId);
+  }
+
+  void addEvent(BookingEventRecord event) {
+    final list = events.putIfAbsent(event.bookingId, () => []);
+    list.add(event);
+    _eventChanges.add(event.bookingId);
+  }
+
   @override
   Stream<Booking?> watchBooking(String id) {
     return _bookingChanges.stream
@@ -113,6 +126,16 @@ class FakeBookingRepository implements BookingRepository {
         .where((changedId) => changedId == bookingId)
         .map((_) => contacts[bookingId])
         .startWith(contacts[bookingId]);
+  }
+
+  @override
+  Stream<List<BookingEventRecord>> watchEvents(String bookingId) {
+    List<BookingEventRecord> list() =>
+        List.unmodifiable(events[bookingId] ?? const []);
+    return _eventChanges.stream
+        .where((id) => id == bookingId)
+        .map((_) => list())
+        .startWith(list());
   }
 
   @override
@@ -276,25 +299,10 @@ class FakeBookingRepository implements BookingRepository {
   }
 }
 
-extension on Stream<Booking?> {
-  Stream<Booking?> startWith(Booking? initial) async* {
+extension _StreamStartWith<T> on Stream<T> {
+  Stream<T> startWith(T initial) async* {
     yield initial;
     yield* this;
   }
 }
 
-extension on Stream<List<Booking>> {
-  Stream<List<Booking>> startWith(List<Booking> initial) async* {
-    yield initial;
-    yield* this;
-  }
-}
-
-extension on Stream<BookingContactSnapshot?> {
-  Stream<BookingContactSnapshot?> startWith(
-    BookingContactSnapshot? initial,
-  ) async* {
-    yield initial;
-    yield* this;
-  }
-}

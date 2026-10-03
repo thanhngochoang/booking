@@ -114,6 +114,17 @@ class CheckDepositResponse {
   final Booking? booking;
 }
 
+enum BookingRole { customer, photographer }
+
+enum BookingAction {
+  accept,
+  decline,
+  cancel,
+  complete;
+
+  String get code => name;
+}
+
 abstract class BookingRepository {
   /// Watches a single booking by id.
   Stream<Booking?> watchBooking(String id);
@@ -129,6 +140,9 @@ abstract class BookingRepository {
 
   /// Watches the private contact snapshot for a booking.
   Stream<BookingContactSnapshot?> watchBookingContact(String bookingId);
+
+  /// `bookings/{id}/events`, oldest first (4a writes them; the read rule is added in Task 1).
+  Stream<List<BookingEventRecord>> watchEvents(String bookingId);
 
   /// Creates a draft booking.
   Future<Booking> createBooking({
