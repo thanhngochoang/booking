@@ -120,13 +120,15 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
             ],
             const SizedBox(height: AppSpace.s3),
             Flexible(
-              child: posts.when(
-                loading: () => const _GridSkeleton(),
-                error: (_, _) => ErrorState(
+              child: AsyncView<OwnPostsState>(
+                value: posts,
+                onRetry: () => ref.invalidate(ownPostsProvider),
+                skeleton: (_) => const _GridSkeleton(),
+                error: (context, err, stack) => ErrorState(
                   message: l.skillEvidenceLoadError,
                   onRetry: () => ref.invalidate(ownPostsProvider),
                 ),
-                data: (s) => s.posts.isEmpty
+                data: (context, s) => s.posts.isEmpty
                     ? (_keepLoading(s)
                           ? const _GridSkeleton()
                           : s.hasMore && !s.capped
@@ -171,12 +173,9 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
               const SizedBox(
                 height: controlHeight,
                 child: Center(
-                  child: SizedBox.square(
-                    dimension: 24,
-                    child: CircularProgressIndicator(
-                      key: Key('evidence-loading-more'),
-                      strokeWidth: 2,
-                    ),
+                  child: SignatureLoader(
+                    key: Key('evidence-loading-more'),
+                    size: LoaderSize.inline,
                   ),
                 ),
               ),

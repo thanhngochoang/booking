@@ -287,10 +287,10 @@ class _AreaSkeletons extends StatelessWidget {
           for (var i = 0; i < 4; i++)
             Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.s3,
-                vertical: AppSpace.s4,
+                horizontal: AppSpace.s2,
+                vertical: AppSpace.s1,
               ),
-              child: AppSkeleton.line(),
+              child: AppOptionTile.skeleton(),
             ),
         ],
       ),

@@ -8,6 +8,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -110,79 +111,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final profile = ref.watch(currentProfileProvider).value;
     final customer = profile?.role != UserRole.photographer;
 
-    List<Widget> body() {
-      if (feed.isLoading) {
-        return [
-          SliverPadding(
-            padding: const EdgeInsets.all(AppSpace.s4),
-            sliver: SliverToBoxAdapter(child: AppSkeleton.card(height: 360)),
-          ),
-        ];
-      }
-      if (!feed.hasValue) {
-        return [
-          SliverToBoxAdapter(
-            child: ErrorState(
-              message: l.homeLoadError,
-              onRetry: () =>
-                  ref.read(homeFeedProvider.notifier).selectCategory(_selected),
-            ),
-          ),
-        ];
-      }
-      final data = feed.requireValue;
-      if (data.items.isEmpty) {
-        return [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: EmptyState(
-              title: l.homeEmptyTitle,
-              body: l.homeEmptyBody,
-              actionLabel: l.homeEmptyAction,
-              onAction: () => context.go(AppTab.explore.path),
-            ),
-          ),
-        ];
-      }
-      final items = data.items;
-      return [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
-          sliver: SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _heroMaxWidth),
-                child: _PostBlock(item: items.first),
-              ),
-            ),
-          ),
-        ),
-        _FreeThisWeekSection(customer: customer),
-        const _RealShootsSection(),
-        if (items.length > 1)
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpace.s4,
-              AppSpace.s5,
-              AppSpace.s4,
-              0,
-            ),
-            sliver: SliverAdaptiveRows(
-              itemCount: items.length - 1,
-              itemBuilder: (_, i) => _PostBlock(item: items[i + 1]),
-            ),
-          ),
-        if (data.loadingMore)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpace.s4),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          ),
-        const SliverToBoxAdapter(child: SizedBox(height: AppSpace.s8)),
-      ];
-    }
-
     // The greeting and the chips stay put; only the feed scrolls, so a chip is
     // always reachable and each keeps its own scroll position.
     return ScreenCode(
@@ -244,13 +172,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: AppSpace.s2),
               Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _refresh,
-                  child: CustomScrollView(
-                    controller: _scroll,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: body(),
+                child: AsyncView<HomeFeedState>(
+                  value: feed,
+                  onRetry: () => ref
+                      .read(homeFeedProvider.notifier)
+                      .selectCategory(_selected),
+                  skeleton: (_) => const _HomeFeedSkeleton(),
+                  isEmpty: (data) => data.items.isEmpty,
+                  empty: (_) => EmptyState(
+                    title: l.homeEmptyTitle,
+                    body: l.homeEmptyBody,
+                    actionLabel: l.homeEmptyAction,
+                    onAction: () => context.go(AppTab.explore.path),
                   ),
+                  error: (context, err, stack) => Center(
+                    child: ErrorState(
+                      message: l.homeLoadError,
+                      onRetry: () => ref
+                          .read(homeFeedProvider.notifier)
+                          .selectCategory(_selected),
+                    ),
+                  ),
+                  data: (context, data) {
+                    final items = data.items;
+                    return RefreshIndicator(
+                      onRefresh: _refresh,
+                      child: CustomScrollView(
+                        controller: _scroll,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s4,
+                            ),
+                            sliver: SliverToBoxAdapter(
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: _heroMaxWidth,
+                                  ),
+                                  child: _PostBlock(item: items.first),
+                                ),
+                              ),
+                            ),
+                          ),
+                          _FreeThisWeekSection(customer: customer),
+                          const _RealShootsSection(),
+                          if (items.length > 1)
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpace.s4,
+                                AppSpace.s5,
+                                AppSpace.s4,
+                                0,
+                              ),
+                              sliver: SliverAdaptiveRows(
+                                itemCount: items.length - 1,
+                                itemBuilder: (_, i) =>
+                                    _PostBlock(item: items[i + 1]),
+                              ),
+                            ),
+                          if (data.loadingMore)
+                            const SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.all(AppSpace.s4),
+                                child: Center(
+                                  child: SignatureLoader(
+                                    size: LoaderSize.inline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: AppSpace.s8),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -394,6 +393,38 @@ class _PostBlock extends ConsumerWidget {
   }
 }
 
+class _HomeFeedSkeleton extends StatelessWidget {
+  const _HomeFeedSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+      child: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _heroMaxWidth),
+              child: PhotoCard.skeleton(aspect: 4 / 5),
+            ),
+          ),
+          const SizedBox(height: AppSpace.s4),
+          Row(
+            children: [
+              Expanded(child: PhotoCard.skeleton(aspect: 3 / 4)),
+              const SizedBox(width: AppSpace.s2),
+              Expanded(child: PhotoCard.skeleton(aspect: 3 / 4)),
+              const SizedBox(width: AppSpace.s2),
+              Expanded(child: PhotoCard.skeleton(aspect: 3 / 4)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _FreeThisWeekSection extends ConsumerWidget {
   const _FreeThisWeekSection({required this.customer});
   final bool customer;
@@ -401,68 +432,65 @@ class _FreeThisWeekSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    return ref
-        .watch(freeThisWeekProvider)
-        .when(
-          loading: () => const SliverToBoxAdapter(),
-          error: (_, _) => const SliverToBoxAdapter(),
-          data: (list) {
-            final shown = list.where((p) => p.heroUrl != null).toList();
-            if (shown.isEmpty) {
-              return const SliverToBoxAdapter();
-            }
-            return SliverMainAxisGroup(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _SectionTitle(
-                    title: l.homeFreeThisWeek,
-                    trailing: customer
-                        ? TextButton(
-                            onPressed: () => context.go(AppTab.action.path),
-                            child: Text(l.exploreSeeAll),
-                          )
-                        : null,
+    return SliverToBoxAdapter(
+      child: AsyncView<List<PhotographerSummary>>(
+        value: ref.watch(freeThisWeekProvider),
+        skeleton: (_) => const SizedBox.shrink(),
+        empty: (_) => const SizedBox.shrink(),
+        error: (context, _, _) => const SizedBox.shrink(),
+        isEmpty: (list) => list.where((p) => p.heroUrl != null).isEmpty,
+        data: (context, list) {
+          final shown = list.where((p) => p.heroUrl != null).toList();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SectionTitle(
+                title: l.homeFreeThisWeek,
+                trailing: customer
+                    ? TextButton(
+                        onPressed: () => context.go(AppTab.action.path),
+                        child: Text(l.exploreSeeAll),
+                      )
+                    : null,
+              ),
+              SizedBox(
+                height: _freeCardWidth / _freeCardAspect,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s4,
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: _freeCardWidth / _freeCardAspect,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s4,
+                  itemCount: shown.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: AppSpace.s2),
+                  itemBuilder: (context, i) {
+                    final p = shown[i];
+                    final specialty = p.specialtyIds.isEmpty
+                        ? null
+                        : specialtyLabel(p.specialtyIds.first);
+                    final from = [
+                      ?specialty,
+                      ?priceFromLabel(p.startingPriceVnd, l),
+                    ].join(' · ');
+                    return SizedBox(
+                      width: _freeCardWidth,
+                      child: PhotoCard(
+                        key: Key('free-${p.id}'),
+                        imageUrl: p.heroUrl!,
+                        aspect: _freeCardAspect,
+                        title: p.displayName,
+                        subtitle: from.isEmpty ? null : from,
+                        onTap: () => context.push('/u/${p.id}'),
                       ),
-                      itemCount: shown.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(width: AppSpace.s2),
-                      itemBuilder: (context, i) {
-                        final p = shown[i];
-                        final specialty = p.specialtyIds.isEmpty
-                            ? null
-                            : specialtyLabel(p.specialtyIds.first);
-                        final from = [
-                          ?specialty,
-                          ?priceFromLabel(p.startingPriceVnd, l),
-                        ].join(' · ');
-                        return SizedBox(
-                          width: _freeCardWidth,
-                          child: PhotoCard(
-                            key: Key('free-${p.id}'),
-                            imageUrl: p.heroUrl!,
-                            aspect: _freeCardAspect,
-                            title: p.displayName,
-                            subtitle: from.isEmpty ? null : from,
-                            onTap: () => context.push('/u/${p.id}'),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ],
-            );
-          },
-        );
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -472,52 +500,53 @@ class _RealShootsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    return ref
-        .watch(realShootsProvider)
-        .when(
-          loading: () => const SliverToBoxAdapter(),
-          error: (_, _) => const SliverToBoxAdapter(),
-          data: (list) {
-            if (list.isEmpty) {
-              return const SliverToBoxAdapter();
-            }
-            return SliverMainAxisGroup(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _SectionTitle(
-                    title: l.homeRealShoots,
-                    trailing: Text(
-                      l.homeFromCustomers,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
+    return SliverToBoxAdapter(
+      child: AsyncView<List<FeedPost>>(
+        value: ref.watch(realShootsProvider),
+        skeleton: (_) => const SizedBox.shrink(),
+        empty: (_) => const SizedBox.shrink(),
+        error: (context, _, _) => const SizedBox.shrink(),
+        isEmpty: (list) => list.isEmpty,
+        data: (context, list) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SectionTitle(
+                title: l.homeRealShoots,
+                trailing: Text(
+                  l.homeFromCustomers,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
-                  sliver: SliverGrid.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: _realShootColumns,
-                          mainAxisSpacing: AppSpace.s2,
-                          crossAxisSpacing: AppSpace.s2,
-                          childAspectRatio: _realShootAspect,
-                        ),
-                    itemCount: list.length,
-                    itemBuilder: (context, i) {
-                      final f = list[i];
-                      return PhotoCard(
-                        key: Key('real-${f.post.id}'),
-                        imageUrl: f.post.cover.url,
-                        aspect: 4 / 5,
-                        title: l.homeRealShootBy(f.photographer.displayName),
-                        onTap: () => context.push('/p/${f.post.id}'),
-                      );
-                    },
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: _realShootColumns,
+                        mainAxisSpacing: AppSpace.s2,
+                        crossAxisSpacing: AppSpace.s2,
+                        childAspectRatio: _realShootAspect,
+                      ),
+                  itemCount: list.length,
+                  itemBuilder: (context, i) {
+                    final f = list[i];
+                    return PhotoCard(
+                      key: Key('real-${f.post.id}'),
+                      imageUrl: f.post.cover.url,
+                      aspect: 4 / 5,
+                      title: l.homeRealShootBy(f.photographer.displayName),
+                      onTap: () => context.push('/p/${f.post.id}'),
+                    );
+                  },
                 ),
-              ],
-            );
-          },
-        );
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

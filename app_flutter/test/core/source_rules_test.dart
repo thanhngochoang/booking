@@ -8,9 +8,16 @@ void main() {
     final libDir = Directory('lib');
     for (final file in libDir.listSync(recursive: true)) {
       if (file is File && file.path.endsWith('.dart')) {
-        final content = file.readAsStringSync();
-        if (content.contains('CircularProgressIndicator')) {
-          offenders.add(file.path);
+        final lines = file.readAsLinesSync();
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+            continue;
+          }
+          if (line.contains('CircularProgressIndicator')) {
+            offenders.add(file.path);
+            break;
+          }
         }
       }
     }
@@ -19,7 +26,7 @@ void main() {
       isEmpty,
       reason: 'CircularProgressIndicator found in: ${offenders.join(', ')}',
     );
-  }, skip: 'enabled in Task 4');
+  });
 
   test('features do not hand-write AsyncValue loading', () {
     final offenders = <String>[];
@@ -39,5 +46,5 @@ void main() {
       isEmpty,
       reason: 'Hand-written AsyncValue loading in: ${offenders.join(', ')}',
     );
-  }, skip: 'enabled in Task 4');
+  });
 }

@@ -494,18 +494,17 @@ class _ServiceField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final list = services.value;
-    if (list == null) {
-      if (services.hasError) {
-        return ErrorState(message: l.createServicesError, onRetry: onRetry);
-      }
-      return AppSkeleton.box(
+    return AsyncView<List<ServiceSummary>>(
+      value: services,
+      onRetry: onRetry,
+      skeleton: (_) => AppSkeleton.box(
         height: AppSpace.s12 + AppSpace.s2,
         radius: controlRadius,
-      );
-    }
-    if (list.isEmpty) {
-      return Column(
+      ),
+      error: (context, _, _) =>
+          ErrorState(message: l.createServicesError, onRetry: onRetry),
+      isEmpty: (list) => list.isEmpty,
+      empty: (_) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
@@ -519,23 +518,25 @@ class _ServiceField extends StatelessWidget {
             onPressed: onAddService,
           ),
         ],
-      );
-    }
-    final c = chosen;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _PickField(
-          key: const Key('create-service'),
-          label: l.createServiceLabel,
-          value: c == null ? null : '${c.name} · ${formatMoney(c.priceVnd)}',
-          placeholder: l.createServicePick,
-          accent: true,
-          error: showError,
-          onTap: enabled ? () => onTap(list) : null,
-        ),
-        if (showError) _FieldError(l.createServiceRequired),
-      ],
+      ),
+      data: (context, list) {
+        final c = chosen;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _PickField(
+              key: const Key('create-service'),
+              label: l.createServiceLabel,
+              value: c == null ? null : '${c.name} · ${formatMoney(c.priceVnd)}',
+              placeholder: l.createServicePick,
+              accent: true,
+              error: showError,
+              onTap: enabled ? () => onTap(list) : null,
+            ),
+            if (showError) _FieldError(l.createServiceRequired),
+          ],
+        );
+      },
     );
   }
 }

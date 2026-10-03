@@ -277,15 +277,17 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
             body: SafeArea(
               top: false,
               bottom: false,
-              child: async.when(
-                loading: () => const _SkillsSkeleton(),
-                error: (_, _) => Center(
+              child: AsyncView<SkillsEditorState>(
+                value: async,
+                onRetry: () => ref.invalidate(skillsControllerProvider),
+                skeleton: (_) => const _SkillsSkeleton(),
+                error: (context, _, _) => Center(
                   child: ErrorState(
                     message: l.skillsLoadError,
                     onRetry: () => ref.invalidate(skillsControllerProvider),
                   ),
                 ),
-                data: _content,
+                data: (context, s) => _content(s),
               ),
             ),
           ),

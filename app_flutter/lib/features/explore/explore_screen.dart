@@ -335,22 +335,21 @@ class _EventsSection {
     const gap = _Gap(AppSpace.s3);
     const tail = _Gap(AppSpace.s5);
 
-    Widget errorSliver(VoidCallback retry) => SliverToBoxAdapter(
-      child: ErrorState(message: l.exploreLoadError, onRetry: retry),
-    );
+    Widget errorWidget(VoidCallback retry) =>
+        ErrorState(message: l.exploreLoadError, onRetry: retry);
 
-    Widget loadingSliver() => SliverToBoxAdapter(
-      child: Column(
-        children: [
-          AppSkeleton.card(height: 88),
-          const SizedBox(height: AppSpace.s3),
-          AppSkeleton.card(height: 88),
-        ],
-      ),
+    Widget loadingWidget() => Column(
+      children: [
+        AppSkeleton.card(height: 88),
+        const SizedBox(height: AppSpace.s3),
+        AppSkeleton.card(height: 88),
+      ],
     );
 
     if (resolving) {
-      return SliverMainAxisGroup(slivers: [header, gap, loadingSliver(), tail]);
+      return SliverMainAxisGroup(
+        slivers: [header, gap, SliverToBoxAdapter(child: loadingWidget()), tail],
+      );
     }
     if (nearby) {
       final async = ref.watch(nearbyEventsProvider);
@@ -358,63 +357,52 @@ class _EventsSection {
         slivers: [
           header,
           gap,
-          ...async.when(
-            loading: () => [loadingSliver()],
-            error: (_, _) => [
-              errorSliver(() => ref.invalidate(nearbyEventsProvider)),
-            ],
-            data: (items) {
-              if (items.isEmpty) {
-                return [
-                  _EmptyNearby(
-                    onWiden: () =>
-                        ref.read(nearbyFiltersProvider.notifier).widen(),
-                  ),
-                ];
-              }
-              return [
-                SliverAdaptiveRows(
-                  itemCount: items.length,
-                  itemBuilder: (_, i) =>
-                      tile(items[i].event, items[i].distanceKm),
+          if (async.isLoading && !async.hasValue)
+            SliverToBoxAdapter(child: loadingWidget())
+          else if (async.hasError && !async.hasValue)
+            SliverToBoxAdapter(
+              child: errorWidget(() => ref.invalidate(nearbyEventsProvider)),
+            )
+          else if (async.hasValue)
+            if (async.value!.isEmpty)
+              SliverToBoxAdapter(
+                child: _EmptyNearby(
+                  onWiden: () =>
+                      ref.read(nearbyFiltersProvider.notifier).widen(),
                 ),
-              ];
-            },
-          ),
+              )
+            else
+              SliverAdaptiveRows(
+                itemCount: async.value!.length,
+                itemBuilder: (_, i) =>
+                    tile(async.value![i].event, async.value![i].distanceKm),
+              ),
           tail,
         ],
       );
     }
 
     final async = ref.watch(upcomingEventsProvider);
-    return async.when(
-      loading: () =>
-          SliverMainAxisGroup(slivers: [header, gap, loadingSliver(), tail]),
-      error: (_, _) => SliverMainAxisGroup(
-        slivers: [
-          header,
-          gap,
-          errorSliver(() => ref.invalidate(upcomingEventsProvider)),
-          tail,
-        ],
-      ),
-      data: (items) {
-        if (items.isEmpty) {
-          return const SliverToBoxAdapter(child: SizedBox.shrink());
-        }
-        final shown = items.take(5).toList();
-        return SliverMainAxisGroup(
-          slivers: [
-            header,
-            gap,
-            SliverAdaptiveRows(
-              itemCount: shown.length,
-              itemBuilder: (_, i) => tile(shown[i]),
-            ),
-            tail,
-          ],
-        );
-      },
+    if (async.hasValue && async.value!.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return SliverMainAxisGroup(
+      slivers: [
+        header,
+        gap,
+        if (async.isLoading && !async.hasValue)
+          SliverToBoxAdapter(child: loadingWidget())
+        else if (async.hasError && !async.hasValue)
+          SliverToBoxAdapter(
+            child: errorWidget(() => ref.invalidate(upcomingEventsProvider)),
+          )
+        else if (async.hasValue)
+          SliverAdaptiveRows(
+            itemCount: async.value!.take(5).length,
+            itemBuilder: (_, i) => tile(async.value![i]),
+          ),
+        tail,
+      ],
     );
   }
 }
@@ -428,25 +416,23 @@ class _EmptyNearby extends ConsumerWidget {
     final l = context.l10n;
     final canWiden =
         ref.watch(nearbyFiltersProvider).radiusKm < kRadiusOptionsKm.last;
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l.exploreNoneNearby,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l.exploreNoneNearby,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        if (canWiden) ...[
+          const SizedBox(height: AppSpace.s3),
+          AppButton.primary(
+            l.exploreWiden,
+            key: const Key('explore-widen'),
+            onPressed: onWiden,
           ),
-          if (canWiden) ...[
-            const SizedBox(height: AppSpace.s3),
-            AppButton.primary(
-              l.exploreWiden,
-              key: const Key('explore-widen'),
-              onPressed: onWiden,
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 }

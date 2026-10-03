@@ -44,14 +44,13 @@ class ContactSetupScreen extends ConsumerWidget {
           body: SafeArea(
             top: false,
             bottom: false,
-            child: prefill.when(
-              data: (draft) => _ContactSetupForm(draft: draft),
-              loading: () => Center(
-                child: SignatureLoader(semanticsLabel: l.loadingLabel),
-              ),
+            child: AsyncView<ContactSetupDraft>(
+              value: prefill,
+              loadingLabel: l.loadingLabel,
               // A failed prefill must not block a first-time setup.
-              error: (_, _) =>
+              error: (context, _, _) =>
                   const _ContactSetupForm(draft: ContactSetupDraft()),
+              data: (context, draft) => _ContactSetupForm(draft: draft),
             ),
           ),
         ),

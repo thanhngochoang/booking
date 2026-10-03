@@ -228,12 +228,20 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
     final editing = _editingId != null;
     final duration = _duration;
 
-    final list = packages.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpace.s4),
-        child: LinearProgressIndicator(),
+    final list = AsyncView<List<ServicePackage>>(
+      value: packages,
+      onRetry: () => ref.invalidate(myPackagesProvider),
+      skeleton: (_) => const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _PackageSkeleton(),
+          SizedBox(height: AppSpace.s2),
+          _PackageSkeleton(),
+          SizedBox(height: AppSpace.s2),
+          _PackageSkeleton(),
+        ],
       ),
-      error: (_, _) => Column(
+      error: (context, _, _) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(l.setupPackagesLoadError),
@@ -247,7 +255,7 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
           ),
         ],
       ),
-      data: (_) => active.isEmpty
+      data: (context, _) => active.isEmpty
           ? Text(
               l.setupNoPackages,
               style: theme.textTheme.bodySmall?.copyWith(color: muted),
@@ -724,3 +732,11 @@ class _HideSheet extends StatelessWidget {
     );
   }
 }
+
+class _PackageSkeleton extends StatelessWidget {
+  const _PackageSkeleton();
+
+  @override
+  Widget build(BuildContext context) => AppSkeleton.card(height: 64);
+}
+

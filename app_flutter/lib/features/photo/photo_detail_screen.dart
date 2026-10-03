@@ -108,19 +108,19 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
           fit: StackFit.expand,
           children: [
             Positioned.fill(
-              child: detail.when(
-                loading: () => Padding(
-                  padding: const EdgeInsets.all(AppSpace.s4),
-                  child: AppSkeleton.card(height: 400),
-                ),
-                error: (_, _) => Center(
+              child: AsyncView<PostDetail?>(
+                value: detail,
+                onRetry: () =>
+                    ref.invalidate(postDetailProvider(widget.postId)),
+                skeleton: (_) => const _DetailSkeleton(),
+                error: (context, _, _) => Center(
                   child: ErrorState(
                     message: l.photoLoadError,
                     onRetry: () =>
                         ref.invalidate(postDetailProvider(widget.postId)),
                   ),
                 ),
-                data: (d) => d == null
+                data: (context, d) => d == null
                     ? EmptyState(
                         title: l.photoRemovedTitle,
                         body: l.photoRemovedBody,
@@ -623,3 +623,44 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
+
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: EdgeInsets.zero,
+    physics: const NeverScrollableScrollPhysics(),
+    children: [
+      AspectRatio(
+        aspectRatio: _galleryAspect,
+        child: LayoutBuilder(
+          builder: (context, constraints) => AppSkeleton.box(
+            height: constraints.maxHeight,
+            radius: 0,
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(AppSpace.s4),
+        child: Row(
+          children: [
+            AppAvatar.skeleton(),
+            const SizedBox(width: AppSpace.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppSkeleton.line(width: 140),
+                  const SizedBox(height: AppSpace.s2),
+                  AppSkeleton.line(width: 90),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
