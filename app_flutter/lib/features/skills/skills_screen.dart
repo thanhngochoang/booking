@@ -121,16 +121,15 @@ class _SkillsScreenState extends ConsumerState<SkillsScreen> {
       final name = ref
           .read(skillCatalogProvider)
           .label(SkillGroup.specialty, id);
-      final remove = await showAppSheet<bool>(
+      final remove = await showConfirmSheet(
         context,
-        builder: (_) => _ConfirmSheet(
-          title: l.skillsRemoveTitle(name),
-          body: l.skillsRemoveBody,
-          keepLabel: l.skillsRemoveKeep,
-          discardLabel: l.skillsRemoveConfirm,
-        ),
+        title: l.skillsRemoveTitle(name),
+        body: l.skillsRemoveBody,
+        keepLabel: l.skillsRemoveKeep,
+        confirmLabel: l.skillsRemoveConfirm,
+        danger: true,
       );
-      if (remove != true || !mounted) return;
+      if (!remove || !mounted) return;
     }
     _report(_ctrl.toggleSpecialty(id));
   }

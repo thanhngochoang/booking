@@ -162,11 +162,41 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: AppSpace.s6),
+                Center(
+                  child: TextButton(
+                    key: const Key('settings-sign-out'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      minimumSize: const Size.fromHeight(36),
+                    ),
+                    onPressed: () => _confirmSignOut(context, ref),
+                    child: Text(
+                      l.signOut,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    await showConfirmSheet(
+      context,
+      title: l.signOut,
+      body: l.settingsSignOutConfirmBody,
+      confirmLabel: l.signOut,
+      keepLabel: l.settingsSignOutKeep,
+      danger: true,
+      onConfirm: () async {
+        await ref.read(authRepositoryProvider).signOut();
+      },
     );
   }
 }

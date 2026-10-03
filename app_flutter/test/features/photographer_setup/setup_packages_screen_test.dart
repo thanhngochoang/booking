@@ -148,13 +148,13 @@ void main() {
     await tester.tap(_key('package-hide-a'));
     await tester.pumpAndSettle();
     expect(find.text('Ẩn gói này?'), findsOneWidget);
-    await tester.tap(_key('package-hide-keep'));
+    await tester.tap(find.text('Giữ lại'));
     await tester.pumpAndSettle();
     expect(w.packages.stored(w.uid).single.active, isTrue);
 
     await tester.tap(_key('package-hide-a'));
     await tester.pumpAndSettle();
-    await tester.tap(_key('package-hide-confirm'));
+    await tester.tap(find.text('Ẩn gói'));
     await tester.pumpAndSettle();
     expect(w.packages.stored(w.uid).single.active, isFalse);
     expect(_key('package-a'), findsNothing);

@@ -163,23 +163,26 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
 
   Future<void> _confirmHide(ServicePackage p) async {
     final l = context.l10n;
-    final yes = await showAppSheet<bool>(
+    await showConfirmSheet(
       context,
-      builder: (_) => const _HideSheet(),
+      title: l.packageHideTitle,
+      body: l.packageHideBody,
+      confirmLabel: l.packageHideConfirm,
+      keepLabel: l.packageKeep,
+      danger: true,
+      onConfirm: () async {
+        final ok = await ref
+            .read(setupPackagesControllerProvider.notifier)
+            .hide(p.id);
+        if (!mounted) {
+          return;
+        }
+        _snack(ok ? l.packageHidden : l.setupSaveError);
+        if (ok && _editingId == p.id) {
+          _clearForm();
+        }
+      },
     );
-    if (yes != true || !mounted) {
-      return;
-    }
-    final ok = await ref
-        .read(setupPackagesControllerProvider.notifier)
-        .hide(p.id);
-    if (!mounted) {
-      return;
-    }
-    _snack(ok ? l.packageHidden : l.setupSaveError);
-    if (ok && _editingId == p.id) {
-      _clearForm();
-    }
   }
 
   Future<void> _next() async {
@@ -682,56 +685,6 @@ class _PackageCard extends StatelessWidget {
   }
 }
 
-/// Confirmation before hiding a package; the red button lives only here.
-class _HideSheet extends StatelessWidget {
-  const _HideSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.s5,
-        AppSpace.s1,
-        AppSpace.s5,
-        AppSpace.s5,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l.packageHideTitle, style: theme.textTheme.titleLarge),
-          const SizedBox(height: AppSpace.s2),
-          Text(l.packageHideBody),
-          const SizedBox(height: AppSpace.s5),
-          SizedBox(
-            height: controlHeight,
-            child: FilledButton(
-              key: const Key('package-hide-confirm'),
-              style: FilledButton.styleFrom(
-                backgroundColor: scheme.error,
-                foregroundColor: scheme.onError,
-              ),
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(l.packageHideConfirm),
-            ),
-          ),
-          const SizedBox(height: AppSpace.s2),
-          SizedBox(
-            height: controlHeight,
-            child: AppButton.outline(
-              l.packageKeep,
-              key: const Key('package-hide-keep'),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _PackageSkeleton extends StatelessWidget {
   const _PackageSkeleton();

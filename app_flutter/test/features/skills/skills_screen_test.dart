@@ -399,10 +399,10 @@ void main() {
     );
     await _tapKey(tester, 'specialty-portrait');
     expect(find.text('Bỏ thể loại Chân dung?'), findsOneWidget);
-    await _tapKey(tester, 'confirm-keep');
+    await _tap(tester, find.text('Giữ lại'));
     expect(find.byKey(const Key('level-portrait')), findsOneWidget);
     await _tapKey(tester, 'specialty-portrait');
-    await _tapKey(tester, 'confirm-discard');
+    await _tap(tester, find.text('Bỏ thể loại'));
     expect(find.byKey(const Key('level-portrait')), findsNothing);
   });
 

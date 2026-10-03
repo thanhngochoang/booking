@@ -1715,4 +1715,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get escrowNoticeDeposit =>
       'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.';
+
+  @override
+  String get settingsSignOutConfirmBody =>
+      'Bạn có chắc chắn muốn đăng xuất không?';
+
+  @override
+  String get settingsSignOutKeep => 'Ở lại';
 }
