@@ -8,11 +8,15 @@
 # Fallback JDK: Homebrew openjdk@17 (user-owned, no sudo).
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# In a worktree made by scripts/worktree.sh the toolchain folders are symlinks to the main checkout.
+# Use their real paths: CMake (native plugin builds) and Gradle break on symlinked paths.
+TOOLS="$ROOT"
+{ [ -L "$ROOT/.home" ] || [ -L "$ROOT/.pub-cache" ]; } && TOOLS="$(cd -P "$ROOT/.home/.." && pwd)"
 
-if [ -x "$ROOT/.jdk/Contents/Home/bin/java" ]; then
-  export JAVA_HOME="$ROOT/.jdk/Contents/Home"
-elif [ -x "$ROOT/.jdk/bin/java" ]; then
-  export JAVA_HOME="$ROOT/.jdk"
+if [ -x "$TOOLS/.jdk/Contents/Home/bin/java" ]; then
+  export JAVA_HOME="$TOOLS/.jdk/Contents/Home"
+elif [ -x "$TOOLS/.jdk/bin/java" ]; then
+  export JAVA_HOME="$TOOLS/.jdk"
 elif [ -d /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]; then
   export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 elif [ -d /opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home ]; then
@@ -20,7 +24,7 @@ elif [ -d /opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home ]; then
   export JAVA_HOME=/opt/homebrew/opt/openjdk@23/libexec/openjdk.jdk/Contents/Home
 fi
 
-export ANDROID_HOME="$ROOT/.android-sdk"
+export ANDROID_HOME="$TOOLS/.android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 
 # Load secrets from the repo-root .env (gitignored; template: .env.example).
@@ -39,21 +43,21 @@ _write_b64() { [ -n "$1" ] && [ ! -f "$2" ] && mkdir -p "$(dirname "$2")" && pri
 _write_b64 "${APP_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app/google-services.json"
 _write_b64 "${FLUTTER_GOOGLE_SERVICES_JSON_B64:-}" "$ROOT/app_flutter/android/app/google-services.json"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
-export PATH="$ROOT/scripts/bin:$ROOT/.flutter/bin:$PATH"
-export PUB_CACHE="$ROOT/.pub-cache"
+export PATH="$ROOT/scripts/bin:$TOOLS/.flutter/bin:$PATH"
+export PUB_CACHE="$TOOLS/.pub-cache"
 unset JAVA_TOOL_OPTIONS
 
 # --- TLS: this machine sits behind a Cloudflare Zero Trust gateway that re-signs HTTPS.
 # The JDK's own cacerts does not contain that CA, so Gradle/Maven downloads fail with
 # "PKIX path building failed". Build a truststore = JDK cacerts + macOS keychain certs.
-TS="$ROOT/.certs/truststore.jks"
+TS="$TOOLS/.certs/truststore.jks"
 if [ ! -f "$TS" ]; then
-  mkdir -p "$ROOT/.certs"
+  mkdir -p "$TOOLS/.certs"
   cp "$JAVA_HOME/lib/security/cacerts" "$TS"
-  PEM="$ROOT/.certs/keychain.pem"
+  PEM="$TOOLS/.certs/keychain.pem"
   security find-certificate -a -p /Library/Keychains/System.keychain > "$PEM" 2>/dev/null
   security find-certificate -a -p "$HOME/Library/Keychains/login.keychain-db" >> "$PEM" 2>/dev/null
-  ( cd "$ROOT/.certs" && awk '/BEGIN CERT/{n++; f="kc"n".pem"} {print > f}' keychain.pem
+  ( cd "$TOOLS/.certs" && awk '/BEGIN CERT/{n++; f="kc"n".pem"} {print > f}' keychain.pem
     i=0; for c in kc*.pem; do i=$((i+1)); keytool -importcert -noprompt -trustcacerts \
       -keystore truststore.jks -storepass changeit -alias "keychain$i" -file "$c" >/dev/null 2>&1; done
     rm -f kc*.pem keychain.pem )
@@ -71,11 +75,11 @@ echo "JAVA_HOME=$JAVA_HOME"
 echo "ANDROID_HOME=$ANDROID_HOME"
 
 # Node (npm, Firebase CLI) also needs the corporate CA
-[ -f "$ROOT/.certs/keychain.pem" ] || { security find-certificate -a -p /Library/Keychains/System.keychain > "$ROOT/.certs/keychain.pem" 2>/dev/null; security find-certificate -a -p "$HOME/Library/Keychains/login.keychain-db" >> "$ROOT/.certs/keychain.pem" 2>/dev/null; }
+[ -f "$TOOLS/.certs/keychain.pem" ] || { security find-certificate -a -p /Library/Keychains/System.keychain > "$TOOLS/.certs/keychain.pem" 2>/dev/null; security find-certificate -a -p "$HOME/Library/Keychains/login.keychain-db" >> "$TOOLS/.certs/keychain.pem" 2>/dev/null; }
 # Keep a CA the user already configured (e.g. Cloudflare Zero Trust root) and add it to Java too.
-if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -f "$NODE_EXTRA_CA_CERTS" ] && [ "$NODE_EXTRA_CA_CERTS" != "$ROOT/.certs/keychain.pem" ]; then
-  /usr/bin/grep -q "$(sed -n 2p "$NODE_EXTRA_CA_CERTS")" "$ROOT/.certs/keychain.pem" 2>/dev/null || cat "$NODE_EXTRA_CA_CERTS" >> "$ROOT/.certs/keychain.pem"
+if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -f "$NODE_EXTRA_CA_CERTS" ] && [ "$NODE_EXTRA_CA_CERTS" != "$TOOLS/.certs/keychain.pem" ]; then
+  /usr/bin/grep -q "$(sed -n 2p "$NODE_EXTRA_CA_CERTS")" "$TOOLS/.certs/keychain.pem" 2>/dev/null || cat "$NODE_EXTRA_CA_CERTS" >> "$TOOLS/.certs/keychain.pem"
   keytool -list -keystore "$TS" -storepass changeit -alias user-extra-ca >/dev/null 2>&1 || \
     keytool -importcert -noprompt -trustcacerts -keystore "$TS" -storepass changeit -alias user-extra-ca -file "$NODE_EXTRA_CA_CERTS" >/dev/null 2>&1
 fi
-export NODE_EXTRA_CA_CERTS="$ROOT/.certs/keychain.pem"
+export NODE_EXTRA_CA_CERTS="$TOOLS/.certs/keychain.pem"
