@@ -9,10 +9,14 @@ permissions:
   contents: read
   checks: write          # needed by test-reporter to post annotations
 
+# ──────────────────────────────────────────────────────────────────────
+# All top-level jobs (analyze, test, firestore-rules, functions) start
+# immediately in parallel.  No sequential prepare stage needed.
+# ──────────────────────────────────────────────────────────────────────
+
 jobs:
-  # ── 1. Prepare: checkout + codegen + upload workspace ─────────────
-  #    Runs once, then analyze / test / firestore-rules all run in parallel.
-  prepare:
+  # ── 1. Static analysis ────────────────────────────────────────────
+  analyze:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,45 +43,51 @@ jobs:
             static const FirebaseOptions android = FirebaseOptions(apiKey: 'ci', appId: '1:1:android:1', messagingSenderId: '1', projectId: 'demo-nag');
           }
           DART
-      - name: Upload prepared workspace
-        uses: actions/upload-artifact@v4
-        with:
-          name: prepared-workspace
-          path: |
-            app_flutter/lib/
-            app_flutter/test/
-            app_flutter/pubspec.yaml
-            app_flutter/pubspec.lock
-            app_flutter/analysis_options.yaml
-            app_flutter/l10n.yaml
-            app_flutter/dart_test.yaml
-            app_flutter/assets/
-            app_flutter/tool/
-          retention-days: 1
+      - run: flutter analyze
 
-  # ── 2. Static analysis (parallel with test + firestore-rules) ─────
-  analyze:
+  # ── 2. Detect affected tests (fast — just git diff) ───────────────
+  affected:
     runs-on: ubuntu-latest
-    needs: prepare
-    defaults:
-      run:
-        working-directory: app_flutter
+    outputs:
+      test-scope: ${{ steps.detect.outputs.scope }}
+      test-files: ${{ steps.detect.outputs.files }}
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
-      - name: Download prepared workspace
-        uses: actions/download-artifact@v4
         with:
-          name: prepared-workspace
-          path: .
-      - run: flutter pub get
-      - run: flutter analyze
+          fetch-depth: 0
+      - name: Detect affected tests
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "scope=ALL" >> "$GITHUB_OUTPUT"
+            echo "files=" >> "$GITHUB_OUTPUT"
+            echo "🔄 Push event → running ALL tests"
+          else
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            RESULT=$(bash scripts/ci-affected-tests.sh "$BASE_SHA")
+            if [ "$RESULT" = "ALL" ]; then
+              echo "scope=ALL" >> "$GITHUB_OUTPUT"
+              echo "files=" >> "$GITHUB_OUTPUT"
+              echo "🔄 Core/config changed → running ALL tests"
+            elif [ "$RESULT" = "NONE" ]; then
+              echo "scope=NONE" >> "$GITHUB_OUTPUT"
+              echo "files=" >> "$GITHUB_OUTPUT"
+              echo "⏭️ No test-relevant changes → skipping tests"
+            else
+              echo "scope=AFFECTED" >> "$GITHUB_OUTPUT"
+              FILES=$(echo "$RESULT" | tr '\n' ' ')
+              echo "files=$FILES" >> "$GITHUB_OUTPUT"
+              COUNT=$(echo "$RESULT" | wc -l | tr -d ' ')
+              echo "🎯 Running $COUNT affected test files (out of 172 total)"
+              echo "$RESULT"
+            fi
+          fi
 
   # ── 3. Unit / widget tests — 4 shards in parallel ─────────────────
   test:
     runs-on: ubuntu-latest
-    needs: prepare                           # no longer waits for analyze
+    needs: affected
+    if: needs.affected.outputs.test-scope != 'NONE'
     strategy:
       fail-fast: false
       matrix:
@@ -89,27 +99,67 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
-      - name: Download prepared workspace
-        uses: actions/download-artifact@v4
-        with:
-          name: prepared-workspace
-          path: .
       - run: flutter pub get
+      - name: Generate code
+        run: |
+          dart run tool/gen_tokens.dart
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+      - name: Stub Firebase options
+        run: |
+          cat > lib/firebase_options.dart <<'DART'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => android;
+            static const FirebaseOptions android = FirebaseOptions(apiKey: 'ci', appId: '1:1:android:1', messagingSenderId: '1', projectId: 'demo-nag');
+          }
+          DART
 
       - name: Install junitreport
         run: dart pub global activate junitreport
 
       - name: Run tests (shard ${{ matrix.shard }}/4)
+        env:
+          TEST_SCOPE: ${{ needs.affected.outputs.test-scope }}
+          TEST_FILES: ${{ needs.affected.outputs.test-files }}
         run: |
           mkdir -p test-results
-          flutter test \
-            --exclude-tags golden \
-            --concurrency=4 \
-            --total-shards=4 \
-            --shard-index=${{ matrix.shard }} \
-            --reporter=json \
-          | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml \
-          || true
+
+          if [ "$TEST_SCOPE" = "ALL" ]; then
+            echo "🔄 Running ALL tests (shard ${{ matrix.shard }}/4)"
+            flutter test \
+              --exclude-tags golden \
+              --concurrency=4 \
+              --total-shards=4 \
+              --shard-index=${{ matrix.shard }} \
+              --reporter=json \
+            | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml \
+            || true
+          else
+            echo "🎯 Running AFFECTED tests only (shard ${{ matrix.shard }}/4)"
+            ALL_FILES=($TEST_FILES)
+            TOTAL=${#ALL_FILES[@]}
+
+            SHARD_FILES=()
+            for (( i=${{ matrix.shard }}; i<TOTAL; i+=4 )); do
+              SHARD_FILES+=("${ALL_FILES[$i]}")
+            done
+
+            if [ ${#SHARD_FILES[@]} -eq 0 ]; then
+              echo "⏭️ No files for this shard"
+              echo '<?xml version="1.0" encoding="UTF-8"?><testsuites><testsuite name="shard-${{ matrix.shard }}" tests="0"/></testsuites>' \
+                > test-results/shard-${{ matrix.shard }}.xml
+            else
+              echo "Running ${#SHARD_FILES[@]} test files: ${SHARD_FILES[*]}"
+              flutter test \
+                --exclude-tags golden \
+                --concurrency=4 \
+                --reporter=json \
+                "${SHARD_FILES[@]}" \
+              | dart pub global run junitreport --output test-results/shard-${{ matrix.shard }}.xml \
+              || true
+            fi
+          fi
 
       - name: Upload test results
         if: always()
@@ -119,10 +169,9 @@ jobs:
           path: app_flutter/test-results/
           retention-days: 14
 
-  # ── 4. Firestore rules tests (parallel with analyze + test) ───────
+  # ── 4. Firestore rules tests (parallel with everything) ───────────
   firestore-rules:
     runs-on: ubuntu-latest
-    needs: prepare                           # no longer waits for analyze
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -133,13 +182,13 @@ jobs:
         working-directory: app_flutter/firebase/rules-test
         run: npm ci && npm test
 
-  # ── 5. Publish test report (merge all shards) ────────────────────
+  # ── 5. Publish test report ────────────────────────────────────────
   report:
     runs-on: ubuntu-latest
     needs: test
-    if: always()
+    if: always() && needs.test.result != 'skipped'
     steps:
-      - uses: actions/checkout@v4            # needed by dorny/test-reporter for git context
+      - uses: actions/checkout@v4
       - name: Download all shard results
         uses: actions/download-artifact@v4
         with:
