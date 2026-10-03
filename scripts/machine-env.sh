@@ -39,4 +39,12 @@ awk -v b="$BEGIN" -v e="$END" '
 printf '%s\n\n%s\n' "$(cat "$TMP")" "$BLOCK" > "$PROFILE"
 rm -f "$TMP"
 echo "Updated $PROFILE (ANDROID_HOME=$MAIN/.android-sdk)."
-echo "Quit VS Code completely (Cmd+Q) and reopen it: it reads the shell environment only at start."
+
+# Also store the SDK in this machine's Flutter settings (~/.config/flutter), which the VS Code
+# Flutter daemon reads on every start: devices show up even in a VS Code that was opened before the
+# profile changed (Reload Window is enough) or launched without the shell environment.
+if [ -x "$MAIN/.flutter/bin/flutter" ]; then
+  HOME="$REAL_HOME" FLUTTER_SUPPRESS_ANALYTICS=true "$MAIN/.flutter/bin/flutter" config --android-sdk "$MAIN/.android-sdk" >/dev/null \
+    && echo "Flutter settings: android-sdk = $MAIN/.android-sdk"
+fi
+echo "VS Code: Cmd+Shift+P > Developer: Reload Window (devices); Cmd+Q and reopen to pick up the new shell variables too."

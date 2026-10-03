@@ -51,7 +51,7 @@ export ANDROID_HOME="$BOOKING/.android-sdk"
 - Chạy lại `scripts/machine-env.sh` bất cứ lúc nào (chuyển repo sang thư mục khác, hoặc `scripts/check-device.sh` báo `~/.zshrc does not point at this repo`): khối cũ được thay, không bị lặp. Khối dán tay kiểu cũ cũng được thay luôn.
 - Mọi worktree (`scripts/worktree.sh`) dùng chung SDK và AVD của checkout chính, nên chỉ cần một khối cho mỗi máy.
 - Không đặt các biến này trong `.vscode/settings.json` (`dart.env`): đường dẫn tuyệt đối ở đó sẽ sai trên máy khác, và Dart-Code không hiểu `${workspaceFolder}`. Thứ gì riêng của máy (đường dẫn, thiết bị đã chọn) nằm ở môi trường máy và trạng thái VS Code của máy đó; project trong git giống hệt nhau trên mọi máy.
-- Sau đó: **thoát hẳn VS Code (Cmd+Q) rồi mở lại**. Reload Window không đủ, vì VS Code chỉ đọc môi trường shell lúc khởi động.
+- Script cũng ghi đường dẫn SDK vào cấu hình Flutter của máy (`~/.config/flutter/settings`, `flutter config --android-sdk`). Daemon Flutter của VS Code đọc file này mỗi lần khởi động, nên VS Code thấy thiết bị ngay sau **Cmd+Shift+P → Developer: Reload Window**, kể cả khi VS Code mở từ trước hoặc mở không qua shell. Biến trong `~/.zshrc` dùng cho terminal và emulator; muốn VS Code nhận chúng thì Cmd+Q rồi mở lại.
 
 ## 4. Android emulator (không bắt buộc)
 
