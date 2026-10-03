@@ -57,7 +57,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 7 | `2026-10-01-step3c-create-post.md` (S10.01) | done 2026-10-02 |
 | 8 | `2026-10-01-step2d2-photographer-profile.md` (S03.01) | done 2026-10-02; S09.01 rows (phone, skills, public profile) went to S09.02 per the new mock; /u/:uid/book and /ask come with step 4 |
 | 8a2 | `2026-10-02-shared-components-a.md` (SignatureLoader, white skeletons, AsyncView, migration of existing screens, money/decision/countdown/booking/chat widgets) | done 2026-10-03; Tasks 1–3 (G1, PR #2), 5, 7, 8 (PR #3), 6.1–5, 9 (G2, PR #5), Task 4 (PR #7), Task 10 + 4b Task 1 (G3, PR #10), Task 6.6 (lane 1 step 3) done |
-| 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | partly done 2026-10-03: 4b Task 1 in 8a2/3-L2 (merged); remaining: Tasks 2–8 (lane 1 step 4; needs G3) |
+| 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | done 2026-10-03: 4b Task 1 in 8a2/3-L2 (merged); Tasks 2–8 in 8b/4-L1; deferred items in `handover/ledger-step4b-8b-4-L1.md` |
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S05.02, S05.03, S05.01, S06.01, S06.02, S06.03) | partly done 2026-10-03: 4c Task 1 (events read rule, booking_features.dart, ticker) in 8c/4-L2 (reaches G4); remaining: Tasks 2–7 (lane 1 step 5; needs G4) |
 | 8d | `2026-10-02-step4d-chat.md` (S07.01, S07.02 chat list, reschedule) | partly done 2026-10-03: 4d Tasks 1–6 (chat domain, Functions, rules, indexes, lib/data/chat) in 8d/5-L2 (reaches G5); remaining: Tasks 7–9 (lane 1 step 6; needs G5) |
 | 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | partly done 2026-10-03: 4e Tasks 1–3 (review domain, Functions, rules, indexes, lib/data/review) in 8e/6-L2 (reaches G6); remaining: Tasks 4–5 (lane 1 step 7; needs G6) |

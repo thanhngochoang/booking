@@ -17,6 +17,7 @@ class FakeBookingRepository implements BookingRepository {
   final _eventChanges = StreamController<String>.broadcast();
 
   BookingErrorCode? nextError;
+  BookingErrorCode? nextDepositError;
   final createCalls =
       <
         ({
@@ -193,6 +194,11 @@ class FakeBookingRepository implements BookingRepository {
     String? returnUrl,
   }) async {
     _checkNextError();
+    final depErr = nextDepositError;
+    if (depErr != null) {
+      nextDepositError = null;
+      throw BookingException(_serverCodeFor(depErr));
+    }
     depositCalls.add((bookingId: bookingId, provider: provider));
     return CreateDepositResponse(
       paymentId: 'pay_$bookingId',

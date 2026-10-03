@@ -1796,4 +1796,227 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get primerLater => 'Để sau';
+
+  @override
+  String get bookChoosePackage => 'Chọn gói';
+
+  @override
+  String bookWith(String name) {
+    return 'Đặt với $name';
+  }
+
+  @override
+  String bookContinuePrice(String price) {
+    return 'Tiếp tục · $price';
+  }
+
+  @override
+  String get bookNoPackages => 'Nhiếp ảnh gia chưa đăng gói';
+
+  @override
+  String get bookPriceChanged => 'Giá gói đã đổi';
+
+  @override
+  String get bookDiscardTitle => 'Bỏ yêu cầu đặt lịch?';
+
+  @override
+  String get bookDiscard => 'Bỏ';
+
+  @override
+  String get bookKeepGoing => 'Tiếp tục đặt';
+
+  @override
+  String get bookClose => 'Đóng';
+
+  @override
+  String get bookLegendFree => 'Rảnh';
+
+  @override
+  String get bookLegendBooked => 'Đã đặt';
+
+  @override
+  String get bookLegendPending => 'Chờ';
+
+  @override
+  String bookWaiting(int n) {
+    return '$n người đang chờ';
+  }
+
+  @override
+  String bookEndsAt(String start, String end) {
+    return '$start–$end';
+  }
+
+  @override
+  String get bookDayTaken => 'Hôm đó vừa có người đặt';
+
+  @override
+  String get bookDayNoSlots => 'Hôm đó đã hết giờ';
+
+  @override
+  String get bookPlaceTitle => 'Địa điểm chụp';
+
+  @override
+  String get bookPlaceHint => 'Tên địa điểm hoặc khu vực (tối thiểu 3 ký tự)';
+
+  @override
+  String get bookReview => 'Xem lại';
+
+  @override
+  String get bookNote => 'Ghi chú';
+
+  @override
+  String get bookNoteHint => 'Thêm ghi chú cho nhiếp ảnh gia (tuỳ chọn)';
+
+  @override
+  String get bookYourPhone => 'SĐT của bạn';
+
+  @override
+  String get bookDepositToday => 'Đặt cọc hôm nay (30%)';
+
+  @override
+  String get bookRemaining => 'Còn lại trả tại buổi chụp';
+
+  @override
+  String get bookPolicy =>
+      'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.';
+
+  @override
+  String bookPay(String amount) {
+    return 'Đặt cọc $amount';
+  }
+
+  @override
+  String get payTitle => 'Thanh toán';
+
+  @override
+  String get payPendingTitle => 'Đang chờ xác nhận thanh toán';
+
+  @override
+  String payPendingBody(String provider) {
+    return '$provider chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.';
+  }
+
+  @override
+  String get payProviderFake => 'Cổng thử nghiệm';
+
+  @override
+  String payProviderNamed(String name) {
+    return 'Cổng $name';
+  }
+
+  @override
+  String get payProviderGeneric => 'Cổng thanh toán';
+
+  @override
+  String get payAwaitingDeposit => 'Chờ cọc';
+
+  @override
+  String get payCheckAgain => 'Kiểm tra lại';
+
+  @override
+  String get payNotYet => 'Chưa nhận được xác nhận, thử lại sau ít phút';
+
+  @override
+  String get payChangeProvider => 'Đổi cổng thanh toán';
+
+  @override
+  String get fakePaymentTitle => 'Cổng thanh toán giả (chỉ để thử)';
+
+  @override
+  String get fakePaymentSuccess => 'Thanh toán thành công';
+
+  @override
+  String get fakePaymentCancel => 'Huỷ';
+
+  @override
+  String get payRequestSent => 'Đã gửi yêu cầu';
+
+  @override
+  String payReplyIn24h(String name) {
+    return '$name sẽ trả lời trong 24 giờ';
+  }
+
+  @override
+  String escrowNoticeHeld(String amount) {
+    return 'Cọc $amount đang được giữ an toàn';
+  }
+
+  @override
+  String get paySuccessTitle => 'Đã gửi yêu cầu';
+
+  @override
+  String paySuccessBody(String name) {
+    return '$name sẽ trả lời trong 24 giờ';
+  }
+
+  @override
+  String get payViewBookings => 'Xem lịch đặt';
+
+  @override
+  String get payExpired => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get payExpiredTitle => 'Yêu cầu đã hết hạn';
+
+  @override
+  String get payExpiredBody =>
+      'Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
+
+  @override
+  String get payRetry => 'Đặt lại';
+
+  @override
+  String get payBookAgain => 'Đặt lại';
+
+  @override
+  String get payGoHome => 'Về trang chủ';
+
+  @override
+  String bookMonth(int m) {
+    return 'Tháng $m';
+  }
+
+  @override
+  String bookDayLine(String day, String duration) {
+    return '$day · khung $duration';
+  }
+
+  @override
+  String get bookNoSlots => 'Hôm đó đã hết giờ';
+
+  @override
+  String get bookDayGone => 'Hôm đó vừa có người đặt, chọn ngày khác';
+
+  @override
+  String get bookPlaceTooShort => 'Nhập ít nhất 3 ký tự';
+
+  @override
+  String bookPackageLine(String name) {
+    return 'Gói $name';
+  }
+
+  @override
+  String get bookTryAgain => 'Yêu cầu đã hết hạn, thử lại nhé.';
+
+  @override
+  String get bookPaymentsOff => 'Thanh toán chưa mở trên máy chủ này.';
+
+  @override
+  String get bookNetworkError => 'Không gửi được. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get fakePayTitle => 'Cổng thanh toán giả (chỉ để thử)';
+
+  @override
+  String get fakePayBody => 'Bản dùng thử: không có tiền thật nào được trừ.';
+
+  @override
+  String get fakePayConfirm => 'Thanh toán thành công';
+
+  @override
+  String get actionCancel => 'Huỷ';
+
+  @override
+  String get actionRetry => 'Thử lại';
 }

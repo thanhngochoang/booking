@@ -87,10 +87,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2) · lệch mock: không nút chia sẻ, lưới vuông thay masonry | S03 |
 | S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
-| S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S05 |
-| S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S06 |
-| S04.03 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S07 |
-| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S08 |
+| S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
+| S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
+| S04.03 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S07 |
+| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ đã làm (4b) · về S05.02 khi có plan 4c | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | 🟡 khung tạm → chưa có plan (bước 4) | S14 |
