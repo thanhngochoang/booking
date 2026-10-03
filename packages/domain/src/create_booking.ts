@@ -18,7 +18,7 @@ export async function createBookingDraft(
   const input = validateCreateBookingDraftInput(rawInput, now);
 
   // 1. Service check
-  const service = await deps.services.getService(input.serviceId);
+  const service = await deps.services.getService(input.photographerId, input.serviceId);
   if (!service || !service.active || service.photographerId !== input.photographerId) {
     throw new DomainError('not_found');
   }

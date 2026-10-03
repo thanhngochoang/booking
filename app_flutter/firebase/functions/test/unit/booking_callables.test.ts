@@ -35,7 +35,7 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
   const deps: BookingDeps = {
     store,
     services: {
-      getService: async (id) => servicesMap.get(id) ?? null,
+      getService: async (_photographerId, id) => servicesMap.get(id) ?? null,
     },
     contacts: {
       get: async (uid) => contactsMap.get(uid) ?? null,

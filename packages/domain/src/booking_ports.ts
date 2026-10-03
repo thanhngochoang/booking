@@ -16,7 +16,7 @@ export interface ServiceRecord {
 }
 
 export interface ServiceCatalog {
-  getService(serviceId: string): Promise<ServiceRecord | null>;
+  getService(photographerId: string, serviceId: string): Promise<ServiceRecord | null>;
 }
 
 export interface CustomerContactRecord extends UserContactRecord {
