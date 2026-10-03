@@ -3489,6 +3489,54 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Gói {name}'**
   String bookPackageLine(String name);
+
+  /// No description provided for @bookTryAgain.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn, thử lại nhé.'**
+  String get bookTryAgain;
+
+  /// No description provided for @bookPaymentsOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán chưa mở trên máy chủ này.'**
+  String get bookPaymentsOff;
+
+  /// No description provided for @bookNetworkError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gửi được. Kiểm tra mạng rồi thử lại.'**
+  String get bookNetworkError;
+
+  /// No description provided for @fakePayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng thanh toán giả (chỉ để thử)'**
+  String get fakePayTitle;
+
+  /// No description provided for @fakePayBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản dùng thử: không có tiền thật nào được trừ.'**
+  String get fakePayBody;
+
+  /// No description provided for @fakePayConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán thành công'**
+  String get fakePayConfirm;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get actionCancel;
+
+  /// No description provided for @actionRetry.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử lại'**
+  String get actionRetry;
 }
 
 class _AppLocalizationsDelegate

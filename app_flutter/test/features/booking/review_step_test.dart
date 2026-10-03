@@ -273,7 +273,17 @@ void main() {
   });
 
   testWidgets('320 dp and 1.3× text, light and dark: the two fields keep equal height and nothing overflows', (tester) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.platformDispatcher.clearPlatformBrightnessTestValue();
+    });
     for (final brightness in [Brightness.light, Brightness.dark]) {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+
       await navigateToReviewStep(
         tester,
         extraOverrides: [],

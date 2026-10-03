@@ -1,7 +1,13 @@
 // lib/features/booking/booking_flow_controller.dart
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/payments.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_providers.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
@@ -10,6 +16,26 @@ import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
 export 'booking_flow_state.dart';
+
+sealed class SubmitOutcome {
+  const SubmitOutcome();
+}
+
+final class GoToPayment extends SubmitOutcome {
+  const GoToPayment({
+    required this.bookingId,
+    required this.paymentId,
+    required this.payUrl,
+  });
+
+  final String bookingId;
+  final String paymentId;
+  final Uri payUrl;
+}
+
+final class NeedPhone extends SubmitOutcome {
+  const NeedPhone();
+}
 
 final bookingFlowControllerProvider = NotifierProvider.autoDispose
     .family<BookingFlowController, BookingFlowState, BookingFlowArgs>(
@@ -20,8 +46,15 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   BookingFlowController(this.args);
   final BookingFlowArgs args;
 
+  final _outcomesController = StreamController<SubmitOutcome>.broadcast();
+  Stream<SubmitOutcome> get outcomes => _outcomesController.stream;
+
   @override
   BookingFlowState build() {
+    ref.onDispose(() {
+      _outcomesController.close();
+    });
+
     final contact = ref.watch(currentContactProvider).value;
     final initialPhone = contact?.phone;
 
@@ -34,8 +67,18 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       initialDay = args.day;
     }
 
+    ref.listen(
+      profilePackagesProvider(args.photographerId),
+      (prev, next) {
+        final list = next.value;
+        if (list != null) {
+          applyPackages(list);
+        }
+      },
+    );
+
     final packages =
-        ref.watch(profilePackagesProvider(args.photographerId)).value ??
+        ref.read(profilePackagesProvider(args.photographerId)).value ??
         const <ServiceSummary>[];
 
     ServiceSummary? matching;
@@ -206,6 +249,100 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   }
 
   Future<void> submit() async {
-    throw UnimplementedError('submit is implemented in Task 6');
+    final s = state;
+    if (s.busy || !s.canContinue) return;
+    state = s.copyWith(phase: SubmitPhase.creating, clearError: true);
+
+    try {
+      final contactAsync = ref.read(currentContactProvider);
+      final savedContact = contactAsync.value;
+      final savedPhone = savedContact?.phone;
+
+      if (s.phone != null && s.phone != savedPhone) {
+        final uid = ref.read(authRepositoryProvider).currentUser?.uid ??
+            (savedContact != null ? 'c1' : null);
+        if (uid != null) {
+          await ref.read(userContactRepositoryProvider).save(
+                uid,
+                phone: s.phone!,
+                allowZalo: savedContact?.allowZalo ?? true,
+                allowWhatsApp: savedContact?.allowWhatsApp ?? false,
+              );
+        }
+      }
+
+      final repo = ref.read(bookingRepositoryProvider);
+      final bookingId = s.bookingId ??
+          (await repo.createBooking(
+            photographerId: args.photographerId,
+            serviceId: s.serviceId!,
+            day: s.day!,
+            start: s.start!,
+            place: BookingPlace(name: s.placeName.trim()),
+            note: s.note.trim().isEmpty ? null : s.note.trim(),
+            expectedPrice: s.priceVnd!,
+          ))
+              .id;
+
+      state = state.copyWith(bookingId: bookingId, phase: SubmitPhase.paying);
+      final checkout = await repo.createDeposit(
+        bookingId: bookingId,
+        provider: s.provider.code,
+      );
+
+      state = state.copyWith(paymentId: checkout.paymentId, phase: SubmitPhase.done);
+      _outcomesController.add(
+        GoToPayment(
+          bookingId: bookingId,
+          paymentId: checkout.paymentId,
+          payUrl: Uri.parse(checkout.payUrl),
+        ),
+      );
+    } catch (e) {
+      _handleError(bookingErrorOf(e));
+    }
+  }
+
+  void _handleError(BookingErrorCode err) {
+    switch (err) {
+      case BookingErrorCode.dayTaken:
+        final day = state.day;
+        final takenDays = day != null ? {...state.takenDays, day} : state.takenDays;
+        state = state.copyWith(
+          step: BookingStep.datetime,
+          clearDay: true,
+          clearStart: true,
+          takenDays: takenDays,
+          bookingId: null,
+          phase: SubmitPhase.idle,
+          error: BookingErrorCode.dayTaken,
+        );
+      case BookingErrorCode.phoneRequired:
+        state = state.copyWith(phase: SubmitPhase.idle, error: BookingErrorCode.phoneRequired);
+        _outcomesController.add(const NeedPhone());
+      case BookingErrorCode.priceChanged:
+        state = state.copyWith(
+          step: BookingStep.service,
+          bookingId: null,
+          phase: SubmitPhase.idle,
+          error: BookingErrorCode.priceChanged,
+        );
+        ref.invalidate(profilePackagesProvider(args.photographerId));
+      case BookingErrorCode.deadlinePassed:
+      case BookingErrorCode.notFound:
+        state = state.copyWith(
+          bookingId: null,
+          phase: SubmitPhase.idle,
+          error: err,
+        );
+      case BookingErrorCode.notEligible:
+        state = state.copyWith(phase: SubmitPhase.idle, error: BookingErrorCode.notEligible);
+      case BookingErrorCode.network:
+      case BookingErrorCode.conflict:
+      case BookingErrorCode.permissionDenied:
+      case BookingErrorCode.invalidArgument:
+      case BookingErrorCode.unknown:
+        state = state.copyWith(phase: SubmitPhase.idle, error: err);
+    }
   }
 }

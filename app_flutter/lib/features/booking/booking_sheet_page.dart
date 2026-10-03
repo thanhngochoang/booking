@@ -1,15 +1,21 @@
-// lib/features/booking/booking_sheet_page.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
+import 'package:photobooking/data/booking/payments_mode.dart';
+import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
+import 'package:photobooking/features/booking/fake_payment_sheet.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
 import 'package:photobooking/features/booking/steps/service_step.dart';
+import 'package:photobooking/features/discovery/book_entry.dart';
 
 class BookingSheetPage extends Page<void> {
   const BookingSheetPage({required this.args, super.key});
@@ -47,21 +53,107 @@ class BookingSheet extends ConsumerStatefulWidget {
 
 class _BookingSheetState extends ConsumerState<BookingSheet> {
   ProviderSubscription<BookingFlowState>? _flowSub;
+  StreamSubscription<SubmitOutcome>? _outcomeSub;
   bool _canPop = false;
 
   @override
   void initState() {
     super.initState();
+    final controller = ref.read(
+      bookingFlowControllerProvider(widget.args).notifier,
+    );
+    _outcomeSub = controller.outcomes.listen(_handleOutcome);
+
     _flowSub = ref.listenManual(
       bookingFlowControllerProvider(widget.args),
-      (_, _) {},
+      (prev, next) {
+        if (next.error != null && next.error != prev?.error) {
+          _handleError(next.error!);
+        }
+      },
     );
   }
 
   @override
   void dispose() {
+    _outcomeSub?.cancel();
     _flowSub?.close();
     super.dispose();
+  }
+
+  void _handleOutcome(SubmitOutcome outcome) {
+    if (!mounted) return;
+    switch (outcome) {
+      case GoToPayment(:final bookingId, :final paymentId, :final payUrl):
+        final realPayments = ref.read(realPaymentsProvider);
+        if (!realPayments) {
+          final state = ref.read(bookingFlowControllerProvider(widget.args));
+          final deposit = state.depositVnd ?? 0;
+          showAppSheet<void>(
+            context,
+            builder: (_) => FakePaymentSheet(
+              paymentId: paymentId,
+              amountVnd: deposit,
+            ),
+          ).then((_) {
+            if (!mounted) return;
+            context.replace('/b/$bookingId/pay');
+          });
+        } else {
+          ref.read(externalLauncherProvider).open(payUrl);
+          context.replace('/b/$bookingId/pay');
+        }
+      case NeedPhone():
+        final state = ref.read(bookingFlowControllerProvider(widget.args));
+        final date = state.day != null ? parseDayKey(state.day!) : null;
+        final returnTo = bookingPath(
+          photographerId: widget.args.photographerId,
+          serviceId: state.serviceId,
+          date: date,
+          area: widget.args.area,
+        );
+        context.push('/profile/phone?returnTo=${Uri.encodeComponent(returnTo)}');
+    }
+  }
+
+  void _handleError(BookingErrorCode err) {
+    if (!mounted) return;
+    final l10n = context.l10n;
+    switch (err) {
+      case BookingErrorCode.dayTaken:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookDayTaken)),
+        );
+      case BookingErrorCode.deadlinePassed:
+      case BookingErrorCode.notFound:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookTryAgain)),
+        );
+      case BookingErrorCode.notEligible:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookPaymentsOff)),
+        );
+      case BookingErrorCode.network:
+      case BookingErrorCode.conflict:
+      case BookingErrorCode.permissionDenied:
+      case BookingErrorCode.invalidArgument:
+      case BookingErrorCode.unknown:
+        final controller = ref.read(
+          bookingFlowControllerProvider(widget.args).notifier,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.bookNetworkError),
+            action: SnackBarAction(
+              label: l10n.actionRetry,
+              onPressed: controller.submit,
+            ),
+          ),
+        );
+      case BookingErrorCode.phoneRequired:
+      case BookingErrorCode.priceChanged:
+        break;
+    }
   }
 
   void _dismiss() {

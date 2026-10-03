@@ -1949,4 +1949,28 @@ class AppLocalizationsVi extends AppLocalizations {
   String bookPackageLine(String name) {
     return 'Gói $name';
   }
+
+  @override
+  String get bookTryAgain => 'Yêu cầu đã hết hạn, thử lại nhé.';
+
+  @override
+  String get bookPaymentsOff => 'Thanh toán chưa mở trên máy chủ này.';
+
+  @override
+  String get bookNetworkError => 'Không gửi được. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get fakePayTitle => 'Cổng thanh toán giả (chỉ để thử)';
+
+  @override
+  String get fakePayBody => 'Bản dùng thử: không có tiền thật nào được trừ.';
+
+  @override
+  String get fakePayConfirm => 'Thanh toán thành công';
+
+  @override
+  String get actionCancel => 'Huỷ';
+
+  @override
+  String get actionRetry => 'Thử lại';
 }
