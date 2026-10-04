@@ -213,3 +213,8 @@ export function createDb(databaseUrl: string, max: number): Kysely<Database> {
     }),
   });
 }
+
+/** Postgres foreign_key_violation (SQLSTATE 23503). */
+export function isForeignKeyViolation(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { code?: unknown }).code === '23503';
+}

@@ -1,9 +1,10 @@
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 
 import { authProviderCode, type Principal } from '../auth/identity.js';
-import type { Database, UserRole } from '../db/database.js';
+import { isForeignKeyViolation, type Database, type UserRole } from '../db/database.js';
 import { ApiError } from '../errors.js';
 import { newId } from '../ids.js';
+import { iso } from '../wire.js';
 
 /** users/{uid} as everyone may see it: never a phone, never an email. */
 export interface PublicProfile {
@@ -83,4 +84,100 @@ export async function ensureProfile(
     if (!profile) throw new ApiError('permission_denied', 'this account was deleted');
     return { profile, created };
   });
+}
+
+export async function updateDisplayName(db: Kysely<Database>, id: string, displayName: string): Promise<PublicProfile | null> {
+  const r = await db
+    .updateTable('users')
+    .set({ display_name: displayName })
+    .where('id', '=', id)
+    .where('deleted_at', 'is', null)
+    .returning('id')
+    .executeTakeFirst();
+  return r ? findProfile(db, id) : null;
+}
+
+/** Use case set_role. The first switch to photographer creates the photographer row. */
+export async function setRole(db: Kysely<Database>, id: string, role: UserRole): Promise<PublicProfile | null> {
+  return db.transaction().execute(async (trx) => {
+    const r = await trx
+      .updateTable('users')
+      .set({ role })
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .returning('id')
+      .executeTakeFirst();
+    if (!r) return null;
+    if (role === 'photographer') {
+      await trx.insertInto('photographers').values({ user_id: id }).onConflict((oc) => oc.column('user_id').doNothing()).execute();
+    }
+    return findProfile(trx, id);
+  });
+}
+
+export interface UserContactDto {
+  phone: string;
+  phoneVerified: boolean;
+  allowZalo: boolean;
+  allowWhatsApp: boolean;
+  updatedAt: string;
+}
+
+export const contactQuery = (db: Kysely<Database>, userId: string) =>
+  db
+    .selectFrom('user_contacts')
+    .select(['phone_e164', 'phone_verified', 'allow_zalo', 'allow_whatsapp', 'updated_at'])
+    .where('user_id', '=', userId);
+
+const toContact = (r: {
+  phone_e164: string;
+  phone_verified: boolean;
+  allow_zalo: boolean;
+  allow_whatsapp: boolean;
+  updated_at: Date;
+}): UserContactDto => ({
+  phone: r.phone_e164,
+  phoneVerified: r.phone_verified,
+  allowZalo: r.allow_zalo,
+  allowWhatsApp: r.allow_whatsapp,
+  updatedAt: iso(r.updated_at),
+});
+
+export async function findContact(db: Kysely<Database>, userId: string): Promise<UserContactDto | null> {
+  const r = await contactQuery(db, userId).executeTakeFirst();
+  return r ? toContact(r) : null;
+}
+
+/** One statement: a changed number is unverified, a toggle keeps the server's flag. */
+export async function saveContact(
+  db: Kysely<Database>,
+  userId: string,
+  input: { phone: string; allowZalo: boolean; allowWhatsApp: boolean },
+): Promise<UserContactDto> {
+  try {
+    const r = await db
+      .insertInto('user_contacts')
+      .values({
+        user_id: userId,
+        phone_e164: input.phone,
+        phone_verified: false,
+        allow_zalo: input.allowZalo,
+        allow_whatsapp: input.allowWhatsApp,
+      })
+      .onConflict((oc) =>
+        oc.column('user_id').doUpdateSet((eb) => ({
+          phone_e164: eb.ref('excluded.phone_e164'),
+          allow_zalo: eb.ref('excluded.allow_zalo'),
+          allow_whatsapp: eb.ref('excluded.allow_whatsapp'),
+          phone_verified: sql<boolean>`case when user_contacts.phone_e164 = excluded.phone_e164
+            then user_contacts.phone_verified else false end`,
+        })),
+      )
+      .returning(['phone_e164', 'phone_verified', 'allow_zalo', 'allow_whatsapp', 'updated_at'])
+      .executeTakeFirstOrThrow();
+    return toContact(r);
+  } catch (e) {
+    if (isForeignKeyViolation(e)) throw new ApiError('not_found', 'create the profile first (POST /v1/me)');
+    throw e;
+  }
 }
