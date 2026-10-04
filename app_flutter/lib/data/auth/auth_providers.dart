@@ -1,15 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/backend_config.dart';
+import 'package:photobooking/data/http/api_providers.dart';
+import 'package:photobooking/data/user/http_user_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => FirebaseAuthRepository(),
 );
-final userRepositoryProvider = Provider<UserRepository>(
-  (ref) => FirestoreUserRepository(),
-);
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  if (ref.watch(backendConfigProvider).uses(SelfhostedRepo.users)) {
+    final repo = HttpUserRepository(api: ref.watch(apiClientProvider));
+    ref.onDispose(repo.dispose);
+    return repo;
+  }
+  return FirestoreUserRepository();
+});
 
 final authStateProvider = StreamProvider<AuthUser?>(
   (ref) => ref.watch(authRepositoryProvider).authStateChanges(),
