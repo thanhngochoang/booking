@@ -26,24 +26,25 @@ void main() {
     expect(find.text('Custom Skeleton'), findsOneWidget);
   });
 
-  testWidgets('first load without skeleton shows the screen loader with ripple waves', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      hostWidget(
-        AsyncView<String>(
-          value: const AsyncValue<String>.loading(),
-          data: (context, val) => Text(val),
+  testWidgets(
+    'first load without skeleton shows the screen dot ring',
+    (tester) async {
+      await tester.pumpWidget(
+        hostWidget(
+          AsyncView<String>(
+            value: const AsyncValue<String>.loading(),
+            data: (context, val) => Text(val),
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.pump(const Duration(milliseconds: 150));
-    expect(find.byType(SignatureLoader), findsOneWidget);
-    final loader = tester.widget<SignatureLoader>(find.byType(SignatureLoader));
-    expect(loader.size, LoaderSize.screen);
-    expect(loader.wave, LoaderWave.ripple);
-  });
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byType(DotRingLoader), findsOneWidget);
+      expect(find.byType(SignatureLoader), findsNothing);
+      final loader = tester.widget<DotRingLoader>(find.byType(DotRingLoader));
+      expect(loader.size, LoaderSize.screen);
+    },
+  );
 
   testWidgets('reload keeps data and shows the inline loader', (tester) async {
     final valueNotifier = ValueNotifier<AsyncValue<String>>(
@@ -63,7 +64,7 @@ void main() {
     );
 
     expect(find.text('DATA: initial data'), findsOneWidget);
-    expect(find.byType(SignatureLoader), findsNothing);
+    expect(find.byType(DotRingLoader), findsNothing);
 
     // Transition to loading with previous value preserved
     valueNotifier.value = const AsyncLoading<String>().copyWithPrevious(
@@ -76,7 +77,7 @@ void main() {
 
     // Shows the inline loader
     final loaderFinder = find.byWidgetPredicate(
-      (w) => w is SignatureLoader && w.size == LoaderSize.inline,
+      (w) => w is DotRingLoader && w.size == LoaderSize.inline,
     );
     expect(loaderFinder, findsOneWidget);
   });
@@ -139,7 +140,9 @@ void main() {
     },
   );
 
-  testWidgets('error shows ErrorState with retry calling onRetry', (tester) async {
+  testWidgets('error shows ErrorState with retry calling onRetry', (
+    tester,
+  ) async {
     var retried = false;
     await tester.pumpWidget(
       hostWidget(

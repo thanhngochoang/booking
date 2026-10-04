@@ -101,17 +101,31 @@ void main() {
   });
 
   testWidgets(
-    'AppButton loading shows the inline loader and no CircularProgressIndicator',
+    'AppButton loading shows a dot ring as tall as the button, no spinner',
     (tester) async {
       await tester.pumpWidget(
-        hostWidget(AppButton.primary('Đặt', loading: true, onPressed: () {})),
+        hostWidget(
+          Column(
+            children: [
+              for (final s in AppButtonSize.values)
+                AppButton.primary(
+                  'Đặt',
+                  size: s,
+                  loading: true,
+                  onPressed: () {},
+                ),
+            ],
+          ),
+        ),
       );
-      expect(find.byType(SignatureLoader), findsOneWidget);
-      expect(
-        tester.widget<SignatureLoader>(find.byType(SignatureLoader)).size,
-        LoaderSize.inline,
-      );
+      final rings = tester
+          .widgetList<DotRingLoader>(find.byType(DotRingLoader))
+          .toList();
+      expect(rings.map((r) => r.dimension), [36, 28, 22]);
+      expect(rings.every((r) => r.color == Colors.white), isTrue);
+      expect(find.byType(SignatureLoader), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.bySemanticsLabel('Đặt'), findsNWidgets(3));
     },
   );
 

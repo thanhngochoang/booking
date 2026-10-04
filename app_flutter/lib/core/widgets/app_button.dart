@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
-import 'package:photobooking/core/widgets/signature_loader.dart';
+import 'package:photobooking/core/widgets/dot_ring_loader.dart';
 
 enum _Kind { primary, outline, text, danger }
 
@@ -144,25 +144,30 @@ class AppButton extends StatelessWidget {
         ? Stack(
             alignment: Alignment.center,
             children: [
-              // Keeps the width and the accessible name while the spinner shows.
+              // Keeps the width and the accessible name while the ring shows.
               Opacity(
                 opacity: 0,
                 alwaysIncludeSemantics: true,
                 child: Text(label),
               ),
-              SizedBox.square(
-                dimension: switch (size) {
-                  AppButtonSize.regular => 24,
-                  AppButtonSize.small => 20,
-                  AppButtonSize.xsmall => 18,
-                },
-                child: FittedBox(
-                  child: SignatureLoader(
-                    size: LoaderSize.inline,
-                    color: (onGradient || _kind == _Kind.danger)
-                        ? Colors.white
-                        : style?.foregroundColor?.resolve(const {}),
-                  ),
+              // A dot ring as tall as the inside of the button, in the label
+              // colour (spec AppButton `loading`).
+              Builder(
+                builder: (context) => DotRingLoader(
+                  dimension: switch (size) {
+                    AppButtonSize.regular => 36,
+                    AppButtonSize.small => 28,
+                    AppButtonSize.xsmall => 22,
+                  },
+                  dotSize: switch (size) {
+                    AppButtonSize.regular => 5,
+                    AppButtonSize.small => 4,
+                    AppButtonSize.xsmall => 3,
+                  },
+                  color: (onGradient || _kind == _Kind.danger)
+                      ? Colors.white
+                      : style?.foregroundColor?.resolve(const {}) ??
+                            DefaultTextStyle.of(context).style.color,
                 ),
               ),
             ],
