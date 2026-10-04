@@ -44,7 +44,7 @@ Nhãn mã màn ở góc trên trái, chỉ ở chế độ debug. `ScreenCode(St
 `CtaSurface({required Widget child, required BorderRadius borderRadius})` tô nền nút chính: gradient theo theme (tối đủ dải, sáng cùng tông tím `8338F5 → 702BDB`) hoặc, khi `CtaAvatarScope.avatar != null`, ảnh avatar nâng sáng 55–100%, blur σ12, nhân với gradient (`BlendMode.modulate`) đặt trên nền gradient dự phòng. `CtaAvatarScope(avatar: ImageProvider?, child)` đặt một lần trên `MaterialApp.builder`. `ctaGradientFor(Brightness)`. Dùng bởi `AppButton.primary` và đĩa tab giữa. Test: gradient 2/3 màu theo theme, có `ShaderMask`+`ImageFiltered` khi có avatar, gradient nằm dưới.
 
 ### AppButton · Đã có
-`AppButton.primary / .outline / .text(label, {onPressed, loading, icon, style})`. Cao 52, radius 16. `primary` là nút chính duy nhất của màn (qua `CtaSurface`, bóng theo theme). `loading` thay nhãn bằng vòng quay và vô hiệu nút; `onPressed: null` làm mờ 50%. Nút huỷ/từ chối không dùng `primary`.
+`AppButton.primary / .outline / .text(label, {onPressed, loading, icon, style})`. Cao 52, radius 16. `primary` là nút chính duy nhất của màn (qua `CtaSurface`, bóng theo theme). `loading` khoá nút (không mờ) và thay nhãn bằng **vòng chấm bi xoay tròn** (`DotRingLoader`, xem dưới; sửa 2026-10-04, người dùng: lá khẩu `inline` trong nút rối và quá nhỏ): nhãn vẫn dựng với độ mờ 0 để giữ bề rộng và tên đọc; vòng nằm giữa nút, cao bằng lòng nút (đường kính 36/28/22, chấm 5/4/3 theo cỡ regular/small/xsmall), màu = màu chữ của nút (trắng trên gradient và nút danger); `Semantics` đọc nhãn kèm trạng thái bận; `onPressed: null` làm mờ 50%. Nút huỷ/từ chối không dùng `primary`.
 
 **Chiều cao cố định**: nút chính luôn cao đúng `controlHeight` (52dp) ở mọi vị trí (thanh dưới, sheet, thẻ). Không đặt nút trong `Expanded`/`Flexible` theo trục dọc và không để nút co theo nội dung; trong `Column` của sheet bọc `SizedBox(height: controlHeight)` hoặc dùng `BottomActionBar`. Nút "thấp" (38dp) chỉ dùng trong hàng nút phụ của thẻ. Mọi `AppBottomSheet` và màn có thanh dưới (S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04…) phải qua golden test kiểm chiều cao nút bằng nhau.
 
@@ -159,22 +159,29 @@ Hiệu ứng chờ đặc trưng của app, dùng cho **chờ cấp màn và ch�
 - **Sóng rung** (`LoaderWave.vibration`): 2 vòng gợn hình sin, `r(θ) = R + a·sin(nθ)` (`n = 12, a = 2,4%` và `n = 9, a = 3,2%`), vừa nở ra vừa xoay qua lại ±4–6° như dây rung, màu cyan `focus` và hồng `#FF45D0`, lệch 1,2 s. Dùng khi **chờ một bên khác**: cổng thanh toán (S04.04), nhiếp ảnh gia trả lời (S13.03), chờ xác nhận.
 
 Trang gallery component: `docs/design/ui-components.html` (cả hai loại sóng, ba cỡ).
-- API: `SignatureLoader({LoaderSize size = LoaderSize.screen, LoaderWave wave = LoaderWave.ripple, bool active = true, String? semanticsLabel})`; `enum LoaderSize { screen /*150*/, block /*96*/, inline /*56, không sóng; trong nút và hàng nhỏ*/ }`; `enum LoaderWave { ripple, vibration }`. `ApertureMark({double size, double closure, Color? color})` giữ nguyên là phần vẽ lá khẩu tĩnh.
+- API: `SignatureLoader({LoaderSize size = LoaderSize.screen, LoaderWave wave = LoaderWave.ripple, bool active = true, String? semanticsLabel})`; `enum LoaderSize { screen /*150*/, block /*96*/, inline /*56, không sóng; hàng nhỏ*/ }`; `enum LoaderWave { ripple, vibration }`. `ApertureMark({double size, double closure, Color? color})` giữ nguyên là phần vẽ lá khẩu tĩnh.
 - Lá khẩu: như cũ (logo đơn sắc `design-system/brand/logo-mono.svg`, 8 lá xoay quanh điểm neo trên vành, chu kỳ 2,4 s mở → khép, giữ khép 45–55%, `Curves.easeInOutCubic`). **Không nền màu** (sửa 2026-10-02, người dùng): không đĩa `CtaSurface`, không gradient, không bóng; lá khẩu và vòng viền mảnh **cùng màu với sóng** (sóng tròn: `primary`; sóng rung: cyan `focus`), trên nền trong suốt. Hình học hộp 100: vòng tròn bán kính 42; lá k, `t = k·45° − 90°`: điểm đầu = tâm + 10·hướng(t), điểm điều khiển = tâm + 33·hướng(t + 32°), điểm cuối = tâm + 42·hướng(t + 118°).
 - Một `AnimationController` 2,4 s điều khiển lá khẩu và loại sóng đã chọn (một `CustomPainter`, `RepaintBoundary`, không blur). Chỉ chạy khi `active` và màn hiển thị (`TickerMode`); `active: false` dừng hẳn ticker.
 - Sóng rung (chờ một bên khác) luôn đi kèm một dòng chữ nói đang chờ ai/cái gì và một lối thoát ("Kiểm tra lại", "Đổi cổng", "Huỷ"); không để màn chờ dài không giải thích (rà UX 2026-10-02).
 - Giảm chuyển động (`MediaQuery.disableAnimations`): lá khẩu mở, một vòng tròn tĩnh mờ, không sóng; đọc `semanticsLabel` ("Đang tải", "Đang tìm", "Đang chờ thanh toán").
-- Dùng: mọi trạng thái loading qua `AsyncView` (dưới); chờ cấp màn (splash, S04.04, S13.03, đăng bài, tạo sự kiện) dùng cỡ `screen`; khối/thẻ đang tải trong một màn đã có nội dung dùng `block`; nút đang gửi (`AppButton.loading`) và hàng nhỏ dùng `inline`. Danh sách và thẻ đang tải dùng skeleton của component (xem AppSkeleton); không dùng `CircularProgressIndicator` ở bất kỳ màn nào.
+- Dùng (sửa 2026-10-04: trạng thái tải của `AsyncView` và nút đang gửi chuyển sang `DotRingLoader`): chờ cấp màn (splash, S04.04, S13.03, đăng bài, tạo sự kiện) dùng cỡ `screen`; khối/thẻ đang tải trong một màn đã có nội dung dùng `block`; hàng nhỏ dùng `inline`; nút đang gửi (`AppButton.loading`) dùng `DotRingLoader`. Danh sách và thẻ đang tải dùng skeleton của component (xem AppSkeleton); không dùng `CircularProgressIndicator` ở bất kỳ màn nào.
 - Test: idle khi `active: false` và khi giảm chuyển động; đang chạy có đúng 1 ticker; mỗi loại sóng chỉ vẽ đúng loại của nó (ripple không có vòng gợn, vibration không có vòng tròn đều); golden 3 khung (đầu, giữa, cuối chu kỳ) ở sáng và tối cho hai loại sóng và ba cỡ; cỡ `inline` không vẽ sóng.
 
+### DotRingLoader (vòng chấm bi) · Mới (quyết định 2026-10-04, người dùng)
+Loader của `AsyncView` (khi không có skeleton) và của `AppButton.loading`. `DotRingLoader({LoaderSize size = LoaderSize.screen, Color? color, String? semanticsLabel})`: `screen` đường kính 96, chấm 11; `block` 64, chấm 8; `inline` 24, chấm 4 (tải lại ở góc); trong nút, AppButton tự đặt cỡ theo chiều cao nút (36/28/22).
+- Hình: 12 chấm tròn trên một vòng, chấm k (0–11) lùi k·30° sau chấm đầu, cỡ ×(1 − 0,06k), độ mờ 1 − 0,075k (đuôi nhỏ và mờ dần). Cả vòng quay theo chiều kim đồng hồ, chu kỳ 2 s: một vòng trong 1,5 s đầu (`Curves.easeInOutCubic`), rồi đứng yên 0,5 s (sửa 2026-10-04, người dùng: quay đều 1,1 s nhanh quá, cần nghỉ sau mỗi lượt). Xoay tròn, không xoắn hay cuộn ngang.
+- Màu: mặc định `primary` (accent); trong nút là màu chữ của nút. Không nền, không viền.
+- Một `AnimationController` + một `CustomPainter` (`RepaintBoundary`); dừng khi màn ẩn (`TickerMode`). Giảm chuyển động: vòng đứng yên, giữ nguyên đuôi. Đọc `semanticsLabel` ("Đang tải").
+- Test: giảm chuyển động không có ticker; golden ở ba cỡ, sáng và tối.
+
 ### AsyncView · Đã có (quyết định 2026-10-02)
-Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch; luôn dùng sóng tròn). `AsyncView<T>({required AsyncValue<T> value, required Widget Function(BuildContext, T) data, LoaderSize loaderSize = LoaderSize.screen, String? loadingLabel, bool Function(T)? isEmpty, Widget Function(BuildContext)? empty, VoidCallback? onRetry, Widget Function(BuildContext, Object)? error, Widget Function(BuildContext)? skeleton})`.
-- Lần tải đầu: nếu có `skeleton` (`Widget Function(BuildContext)? skeleton`, thường là skeleton của component sẽ hiện), dựng nó; nếu không, `SignatureLoader(size: loaderSize)` căn giữa vùng của nó. Tải lại khi đã có dữ liệu (`isRefreshing`/`isReloading`): giữ dữ liệu cũ, thêm `SignatureLoader(size: inline)` nhỏ ở góc trên (không che nội dung, không làm nhảy bố cục).
-- Không nền riêng (sửa 2026-10-02, người dùng): AsyncView **dùng lại chính `SignatureLoader`** cho trạng thái tải khi không có skeleton; vùng loader đúng bằng vòng sóng ngoài cùng (150 hoặc 96, theo `loaderSize`), căn giữa, không bọc thêm hộp, thẻ, viền hay gradient. Lỗi và rỗng cũng nằm thẳng trên nền màn.
+Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch). `AsyncView<T>({required AsyncValue<T> value, required Widget Function(BuildContext, T) data, LoaderSize loaderSize = LoaderSize.screen, String? loadingLabel, bool Function(T)? isEmpty, Widget Function(BuildContext)? empty, VoidCallback? onRetry, Widget Function(BuildContext, Object)? error, Widget Function(BuildContext)? skeleton})`.
+- Lần tải đầu: nếu có `skeleton` (`Widget Function(BuildContext)? skeleton`, thường là skeleton của component sẽ hiện), dựng nó; nếu không, `DotRingLoader(size: loaderSize)` căn giữa vùng của nó. Tải lại khi đã có dữ liệu (`isRefreshing`/`isReloading`): giữ dữ liệu cũ, thêm `DotRingLoader(size: inline)` nhỏ ở góc trên (không che nội dung, không làm nhảy bố cục).
+- Không nền riêng (sửa 2026-10-02, người dùng; loader đổi 2026-10-04, người dùng: vòng chấm bi xoay tròn thay lá khẩu + sóng): AsyncView dùng `DotRingLoader` cho trạng thái tải khi không có skeleton; vùng loader đúng bằng vòng chấm (96 hoặc 64, theo `loaderSize`), căn giữa, không bọc thêm hộp, thẻ, viền hay gradient. Lỗi và rỗng cũng nằm thẳng trên nền màn.
 - Không nháy (rà UX 2026-10-02): lần tải đầu chờ 150 ms mới hiện skeleton/loader (dữ liệu từ cache về nhanh hơn thì hiện thẳng dữ liệu, vùng giữ nguyên kích thước); đã hiện thì giữ tối thiểu 400 ms rồi mới đổi sang dữ liệu, để không chớp.
 - Lỗi: `ErrorState(message: errorMessage(e, l10n), onRetry: onRetry)`; có dữ liệu cũ thì giữ dữ liệu và hiện SnackBar lỗi một lần.
 - Rỗng (`isEmpty` trả true): `empty` (thường là `EmptyState` có một hành động nuôi vòng lặp).
-- Lint của repo (test kiểm mã nguồn `lib/features/**`): không có `CircularProgressIndicator` hay `.when(loading:` tự viết; màn dùng `AsyncView` (skeleton của component hoặc `SignatureLoader`).
+- Lint của repo (test kiểm mã nguồn `lib/features/**`): không có `CircularProgressIndicator` hay `.when(loading:` tự viết; màn dùng `AsyncView` (skeleton của component hoặc `DotRingLoader`).
 - Test: bốn trạng thái; tải lại giữ dữ liệu; lỗi có dữ liệu cũ hiện SnackBar; `loaderSize` truyền đúng.
 
 ### StepProgress · Mới
@@ -299,7 +306,7 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `NotificationRow` | S17.01 |
 | `NotificationBell` | S02.01, S02.03, S06.01 |
 | `PermissionPrimer` | S17.03 |
-| `SignatureLoader`, `AsyncView` | mọi màn có tải dữ liệu |
+| `SignatureLoader`, `AsyncView`, `DotRingLoader` | mọi màn có tải dữ liệu |
 | `EscrowNotice` | S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
 | `MoneyBreakdown` | S04.03, S11.03, S06.05, S13.08 |
 | `PolicyTable` | S05.03, S13.08 |
