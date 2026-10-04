@@ -2,3 +2,7 @@ tags:
   # Pixel comparisons; rendering differs between macOS and Linux, so CI
   # runs with --exclude-tags golden and goldens are checked locally.
   golden:
+
+  selfhosted:
+    # Talks to services/api over the network: allow slower runs.
+    timeout: 2x
