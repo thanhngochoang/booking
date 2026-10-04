@@ -1,10 +1,15 @@
 import { buildApp } from './app.js';
+import { EmulatorVerifier, firebaseVerifier } from './auth/identity.js';
 import { loadConfig } from './config.js';
 import { createDb } from './db/database.js';
 
 const config = loadConfig();
 const db = createDb(config.databaseUrl, config.dbPoolMax);
-const app = await buildApp({ db, logLevel: config.logLevel });
+const verifier =
+  config.authMode === 'firebase'
+    ? firebaseVerifier(config.firebaseProjectId)
+    : new EmulatorVerifier({ projectId: config.firebaseProjectId });
+const app = await buildApp({ db, verifier, logLevel: config.logLevel });
 
 async function shutdown(): Promise<void> {
   await app.close();

@@ -6,7 +6,7 @@ import { testApp, testDb } from './helpers.js';
 
 /** Operations whose routes arrive in later tasks. Task 7 empties this set. */
 const PENDING = new Set<string>([
-  'ensureProfile', 'getUser', 'updateUser', 'setRole', 'getUserContact', 'saveUserContact',
+  'getUser', 'updateUser', 'setRole', 'getUserContact', 'saveUserContact',
   'getContactChannels', 'getContactNumbers', 'getServiceArea', 'completeContactSetup', 'getContactLink',
 ]);
 
