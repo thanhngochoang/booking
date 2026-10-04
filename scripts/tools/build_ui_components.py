@@ -43,6 +43,21 @@ def loader(wave, size='', label='Đang tải'):
     return f'<div class="{cls}" role="img" aria-label="{label}">{waves}<div class="core">{APT}</div></div>'
 
 
+def dring(size='', label='Đang tải', hidden=False):
+    """DotRingLoader: 12 dots on a circle, the whole ring spins; head dot largest, the rest fade into a tail."""
+    dots = ''.join(f'<i style="--k:{k}"></i>' for k in range(12))
+    cls = f'dring{(" " + size) if size else ""}'
+    a11y = 'aria-hidden="true"' if hidden else f'role="img" aria-label="{label}"'
+    return f'<div class="{cls}" {a11y}><span class="rot">{dots}</span></div>'
+
+
+def busy(label, cls='pri', block=False):
+    """AppButton with loading: label hidden but kept (width, accessible name), dot ring as tall as the button."""
+    style = ' style="flex:none"' if block else ''
+    return (f'<div class="btn {cls} busy"{style} aria-busy="true" aria-disabled="true">'
+            f'<span class="lbl">{label}</span>{dring(hidden=True)}</div>')
+
+
 def sk(w='100%', h='12px', r='8px', extra=''):
     return f'<span class="sk" style="width:{w};height:{h};border-radius:{r};{extra}"></span>'
 
@@ -92,17 +107,17 @@ def tile(anchor, name, api, use, real, skel):
 tile('signatureloader', 'SignatureLoader · sóng tròn',
      'SignatureLoader({LoaderSize size = screen, LoaderWave wave = ripple, bool active = true, String? semanticsLabel})',
      'Tải dữ liệu cấp màn (splash, mở màn chưa biết hình khối). Một loại sóng mỗi lần.',
-     f'<div class="row3"><figure>{loader("ripple")}screen 150</figure><figure>{loader("ripple","sm")}block 96</figure><figure>{loader("none","xs")}inline 56</figure></div>',
+     f'<div class="row3"><figure>{loader("ripple")}screen 150</figure><figure>{loader("ripple","sm")}block 96</figure><figure>{loader("none","xs")}inline 56 · hàng nhỏ</figure></div>',
      '<div class="meta">Loader không có skeleton. Giảm chuyển động: lá khẩu mở, một vòng tĩnh, không sóng.</div>')
 tile('signatureloader-vib', 'SignatureLoader · sóng rung',
      'SignatureLoader(wave: LoaderWave.vibration)',
      'Chờ một bên khác: cổng thanh toán (S04.04), nhiếp ảnh gia trả lời (S13.03).',
      f'<div class="row3"><figure>{loader("vibration",label="Đang chờ")}screen 150</figure><figure>{loader("vibration","sm",label="Đang chờ")}block 96</figure></div>',
      '<div class="meta">Không hiện cùng sóng tròn. Màu sóng: cyan và hồng của dải logo.</div>')
-tile('asyncview', 'AsyncView',
-     'AsyncView<T>({required AsyncValue<T> value, required data, skeleton, loaderSize, empty, isEmpty, onRetry, error})',
-     'Mọi fetch. Có skeleton của component thì dựng skeleton; không thì SignatureLoader (sóng tròn). Lỗi → ErrorState; rỗng → EmptyState.',
-     loader('ripple') + '<div class="meta" style="text-align:center">Không có skeleton thì trạng thái tải chính là SignatureLoader, khung đúng bằng vòng sóng ngoài (150 / 96), không thêm hộp hay nền. Tải lại khi đã có dữ liệu: giữ dữ liệu, loader inline ở góc.</div>',
+tile('asyncview', 'AsyncView · DotRingLoader',
+     'AsyncView<T>({required AsyncValue<T> value, required data, skeleton, loaderSize, empty, isEmpty, onRetry, error}) · DotRingLoader({LoaderSize size = screen, Color? color, String? semanticsLabel})',
+     'Mọi fetch. Có skeleton của component thì dựng skeleton; không thì vòng chấm bi xoay tròn. Lỗi → ErrorState; rỗng → EmptyState.',
+     f'<div class="row3"><figure>{dring()}screen 96</figure><figure>{dring("sm")}block 64</figure></div><div class="meta" style="text-align:center">Không có skeleton thì trạng thái tải là vòng chấm bi: 12 chấm trên một vòng tròn, quay một vòng trong 1,5 s rồi nghỉ 0,5 s, chấm đầu to và rõ, các chấm sau nhỏ dần thành đuôi. Không hộp, không nền. Tải lại khi đã có dữ liệu: giữ dữ liệu, vòng chấm nhỏ ở góc. Giảm chuyển động: vòng đứng yên.</div>',
      sk('100%', '64px', '20px') + sk('100%', '64px', '20px') + sk('100%', '64px', '20px'))
 
 # --- Cards ---------------------------------------------------------------------------------------
@@ -155,8 +170,8 @@ tile('badges', 'BadgeChip · BadgeRow · BadgeTile',
 
 # --- Controls --------------------------------------------------------------------------------------
 tile('buttons', 'AppButton', 'AppButton.primary|outline|secondary|danger|text({label, onPressed, loading, size = regular|small|xsmall})', 'Mọi màn (một nút chính mỗi màn)',
-     f'<div class="btn pri" style="flex:none">Đặt cọc 450.000₫</div><div class="row"><div class="btn out sm">Giữ lịch</div><div class="btn dng sm">Huỷ buổi chụp</div></div><div class="btn pri" style="flex:none;opacity:.9">{loader("none","xs")}</div>',
-     '<div class="meta">Nút không có skeleton (không chờ dữ liệu). Đang gửi: loader inline trong nút, khoá nút.</div>')
+     f'<div class="btn pri" style="flex:none">Đặt cọc 450.000₫</div><div class="row"><div class="btn out sm">Giữ lịch</div><div class="btn dng sm">Huỷ buổi chụp</div></div>{busy("Đặt cọc 450.000₫", block=True)}<div class="row">{busy("Giữ lịch", "out sm")}{busy("Huỷ buổi chụp", "dng sm")}</div>',
+     '<div class="meta">Nút không có skeleton (không chờ dữ liệu). Đang gửi (<code>loading</code>): nhãn ẩn nhưng giữ bề rộng và tên đọc, vòng chấm bi xoay tròn cao bằng lòng nút, màu theo chữ của nút; nút khoá nhưng không mờ. Giảm chuyển động: vòng chấm đứng yên.</div>')
 tile('chips', 'AppChip · SegmentedTabs · AppOptionTile', 'AppChip({label, selected, onChanged, kind}) · SegmentedTabs<T>({options, value, onChanged}) · AppOptionTile({title, subtitle, selected, onTap})', 'S02.01, S02.06, S05.01, S04.01, S02.05',
      '<div class="chips"><span class="chip on">Dành cho bạn</span><span class="chip">Chân dung</span><span class="chip ac">T7 12/10</span></div><div class="seg"><span class="on">Sắp tới</span><span>Đang chờ</span><span>Đã xong</span></div><div class="opt on"><div class="th ph p3"></div><div class="grow"><b>Chân dung 2 giờ</b><span class="meta">40 ảnh · 1 địa điểm</span></div><span class="pr">1.500.000₫</span></div>',
      f'<div class="row" style="gap:6px">{sk("96px","30px","999px")}{sk("80px","30px","999px")}{sk("72px","30px","999px")}</div>{sk("100%","36px","16px")}<div class="opt">{sk("48px","48px","10px")}<div class="grow" style="display:flex;flex-direction:column;gap:6px">{sk("60%")}{sk("45%","9px")}</div>{sk("70px")}</div>')

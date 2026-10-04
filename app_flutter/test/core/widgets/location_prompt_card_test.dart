@@ -60,7 +60,7 @@ void main() {
     await tester.pumpWidget(
       _card(LocationPromptState.requesting, onAllow: () => allow++),
     );
-    expect(find.byType(SignatureLoader), findsOneWidget);
+    expect(find.byType(DotRingLoader), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     final handle = tester.ensureSemantics();
     await tester.pump();

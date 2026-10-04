@@ -391,6 +391,18 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
   .sig svg.vib.v1{animation:sigvib 2.4s ease-out .4s infinite}.sig svg.vib.v2{animation:sigvib2 2.4s ease-out 1.6s infinite}
 }
 @media (prefers-reduced-motion:reduce){.sig .rip:nth-of-type(1){opacity:.45;inset:14%}}
+/* Vòng chấm bi (DotRingLoader): 12 chấm xếp trên một vòng tròn, cả vòng quay một vòng trong 1,5 s (nhanh dần rồi chậm dần) rồi nghỉ 0,5 s; chấm đầu to và rõ, các chấm sau nhỏ và mờ dần thành đuôi. Trạng thái tải của AsyncView (96 màn / 64 khối) và của nút đang gửi (cao bằng lòng nút). */
+.dring{position:relative;width:96px;height:96px;margin:4px auto 0;flex:none;color:var(--accent);--ds:11px;--r:42px}
+.dring.sm{width:64px;height:64px;--ds:8px;--r:28px}
+.dring .rot{position:absolute;inset:0}
+.dring i{position:absolute;left:50%;top:50%;width:var(--ds);height:var(--ds);margin:calc(var(--ds) / -2) 0 0 calc(var(--ds) / -2);border-radius:50%;background:currentColor;transform:rotate(calc(var(--k) * -30deg)) translateY(calc(var(--r) * -1)) scale(calc(1 - var(--k) * .06));opacity:calc(1 - var(--k) * .075)}
+@media (prefers-reduced-motion:no-preference){.dring .rot{animation:dspin 2s infinite}}
+@keyframes dspin{0%{transform:rotate(0);animation-timing-function:cubic-bezier(.65,0,.35,1)}75%,100%{transform:rotate(360deg)}}
+/* Nút đang gửi (AppButton.loading): nhãn ẩn (vẫn giữ bề rộng và tên đọc), vòng chấm bi màu chữ của nút, cao bằng lòng nút, nằm giữa; nút khoá nhưng không mờ. */
+.btn.busy{position:relative;pointer-events:none;cursor:progress}
+.btn.busy>.lbl{opacity:0}
+.btn.busy .dring{position:absolute;inset:0;margin:auto;width:36px;height:36px;--ds:5px;--r:15px;color:inherit}
+.btn.busy.sm .dring{width:28px;height:28px;--ds:4px;--r:12px}.btn.busy.xs .dring{width:22px;height:22px;--ds:3px;--r:9px}
 @keyframes sigrip{0%{transform:scale(.38);opacity:.9}100%{transform:scale(1);opacity:0}}
 @keyframes sigvib{0%{transform:scale(.4) rotate(0);opacity:.95}20%{transform:scale(.52) rotate(5deg)}40%{transform:scale(.64) rotate(-4deg)}60%{transform:scale(.78) rotate(4deg)}80%{transform:scale(.9) rotate(-3deg);opacity:.35}100%{transform:scale(1.04) rotate(2deg);opacity:0}}
 @keyframes sigvib2{0%{transform:scale(.4) rotate(0);opacity:.85}25%{transform:scale(.55) rotate(-6deg)}50%{transform:scale(.7) rotate(5deg)}75%{transform:scale(.86) rotate(-4deg);opacity:.3}100%{transform:scale(1.02) rotate(3deg);opacity:0}}

@@ -5,13 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/dot_ring_loader.dart';
 import 'package:photobooking/core/widgets/error_state.dart';
-import 'package:photobooking/core/widgets/signature_loader.dart';
+import 'package:photobooking/core/widgets/signature_loader.dart'
+    show LoaderSize;
 
 /// Single standard way to render an [AsyncValue] in the app:
-/// - First load: shows [skeleton] if provided, else centered [SignatureLoader] with ripple waves.
+/// - First load: shows [skeleton] if provided, else a centered [DotRingLoader].
 /// - Anti-flash: data arriving within 150ms shows no loader/skeleton; once shown, it stays at least 400ms.
-/// - Reload with data: keeps rendering data and shows an inline [SignatureLoader] in the top corner.
+/// - Reload with data: keeps rendering data and shows an inline [DotRingLoader] in the top corner.
 /// - Error with data: keeps rendering data and shows a single [SnackBar].
 /// - Error without data: shows [ErrorState] with retry.
 /// - Empty: shows [empty] builder when [isEmpty] returns true.
@@ -108,9 +110,7 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
           final messenger = ScaffoldMessenger.maybeOf(context);
           if (messenger != null) {
             messenger.showSnackBar(
-              SnackBar(
-                content: Text(errorMessage(err, context.l10n)),
-              ),
+              SnackBar(content: Text(errorMessage(err, context.l10n))),
             );
           }
         });
@@ -130,9 +130,8 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
       return widget.skeleton!(context);
     }
     return Center(
-      child: SignatureLoader(
+      child: DotRingLoader(
         size: widget.loaderSize,
-        wave: LoaderWave.ripple,
         semanticsLabel: widget.loadingLabel,
       ),
     );
@@ -162,12 +161,7 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
             const PositionedDirectional(
               top: AppSpace.s2,
               end: AppSpace.s2,
-              child: SafeArea(
-                child: SignatureLoader(
-                  size: LoaderSize.inline,
-                  wave: LoaderWave.ripple,
-                ),
-              ),
+              child: SafeArea(child: DotRingLoader(size: LoaderSize.inline)),
             ),
           ],
         );

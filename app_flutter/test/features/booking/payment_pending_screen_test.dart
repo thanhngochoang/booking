@@ -57,7 +57,7 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('first load shows the screen SignatureLoader with ripple waves', (
+  testWidgets('first load shows the screen dot ring of AsyncView', (
     tester,
   ) async {
     final completer = Completer<Booking?>();
@@ -74,10 +74,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    final loaderFinder = find.byType(SignatureLoader);
+    final loaderFinder = find.byType(DotRingLoader);
     expect(loaderFinder, findsOneWidget);
-    final loader = tester.widget<SignatureLoader>(loaderFinder);
-    expect(loader.wave, LoaderWave.ripple);
+    expect(tester.widget<DotRingLoader>(loaderFinder).size, LoaderSize.screen);
+    expect(find.byType(SignatureLoader), findsNothing);
   });
 
   testWidgets('a draft shows SignatureLoader with vibration waves', (
