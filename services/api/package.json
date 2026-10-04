@@ -6,7 +6,8 @@
   "engines": { "node": ">=22.11.0" },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "esbuild src/server.ts --bundle --platform=node --target=node22 --format=esm --packages=external --sourcemap --outdir=dist",
+    "build": "esbuild src/server.ts src/db/migrate-cli.ts --bundle --platform=node --target=node22 --format=esm --packages=external --sourcemap --outdir=dist",
+    "migrate": "tsx src/db/migrate-cli.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

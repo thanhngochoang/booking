@@ -12,6 +12,8 @@ ENV NODE_ENV=production
 COPY services/api/package.json services/api/package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /repo/services/api/dist ./dist
+COPY services/api/migrations ./migrations
+ENV MIGRATIONS_DIR=/app/migrations
 USER node
 EXPOSE 8787
 CMD ["node", "dist/server.js"]
