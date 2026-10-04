@@ -1,0 +1,58 @@
+name: nag-api
+
+x-api-build: &api-build
+  context: ../..
+  dockerfile: services/api/Dockerfile
+
+x-api-env: &api-env
+  DATABASE_URL: postgres://${POSTGRES_USER:-nag}:${POSTGRES_PASSWORD:-nag_local_only}@db:5432/${POSTGRES_DB:-nag}
+  NODE_ENV: ${NODE_ENV:-development}
+  PORT: "8787"
+  HOST: 0.0.0.0
+  DB_POOL_MAX: ${DB_POOL_MAX:-10}
+  AUTH_MODE: ${AUTH_MODE:-firebase-emulator}
+  FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-demo-nag}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  db:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nag_local_only}
+      POSTGRES_DB: ${POSTGRES_DB:-nag}
+      TZ: UTC
+    ports: ["${POSTGRES_PORT:-5433}:5432"]
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: *api-build
+    image: nag-api:local
+    environment: *api-env
+    ports: ["${API_PORT:-8787}:8787"]
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8787/v1/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  adminer:
+    image: adminer:4.8.1
+    profiles: [tools]
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports: ["${ADMINER_PORT:-8081}:8080"]
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  db-data:
