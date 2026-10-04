@@ -20,7 +20,8 @@
 /.pub-cache
 /.home
 /.flutter-config
-
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md
 # Secrets: local only (see .env.example)
 /.env
 /app/google-services.json

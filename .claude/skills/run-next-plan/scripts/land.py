@@ -165,6 +165,8 @@ def cmd_land(a):
         print(f"all gates passed for PR {a.pr} ({st['mergeStateStatus']}); dry run, not merging")
         return
     r = board.sh("gh", "pr", "merge", a.pr, "--merge", "--delete-branch", check=False)
+    if r.returncode != 0 and "Merge commits are not allowed" in r.stderr:
+        r = board.sh("gh", "pr", "merge", a.pr, "--squash", "--delete-branch", check=False)
     if r.returncode != 0:
         print(f"merge refused: {r.stderr.strip()}")
         sys.exit(5)
