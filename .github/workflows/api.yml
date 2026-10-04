@@ -21,6 +21,8 @@ jobs:
           cache: npm
           cache-dependency-path: services/api/package-lock.json
       - run: npm ci
+      - name: Generated types match the contract
+        run: npm run gen:types && git diff --exit-code src/generated/api.ts
       - run: npm run typecheck
       - run: npm run build
       - run: npm test

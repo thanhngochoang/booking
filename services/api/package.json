@@ -10,6 +10,7 @@
     "migrate": "tsx src/db/migrate-cli.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "gen:types": "openapi-typescript api/openapi.yaml -o src/generated/api.ts",
     "test": "vitest run"
   },
   "dependencies": {
