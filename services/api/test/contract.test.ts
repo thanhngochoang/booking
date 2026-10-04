@@ -6,7 +6,7 @@ import { testApp, testDb } from './helpers.js';
 
 /** Operations whose routes arrive in later tasks. Task 7 empties this set. */
 const PENDING = new Set<string>([
-  'getContactChannels', 'getContactNumbers', 'getServiceArea', 'completeContactSetup', 'getContactLink',
+  'getContactLink',
 ]);
 
 const contract = loadContract();

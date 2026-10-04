@@ -10,6 +10,7 @@ import { systemClock, type Clock, type RouteDeps } from './deps.js';
 import { installErrorHandling } from './errors.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerMeRoutes } from './routes/me.js';
+import { registerPhotographerRoutes } from './routes/photographers.js';
 import { registerUserRoutes } from './routes/users.js';
 
 export interface AppDeps {
@@ -48,5 +49,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerHealthRoutes(app, routeDeps);
   registerMeRoutes(app, routeDeps);
   registerUserRoutes(app, routeDeps);
+  registerPhotographerRoutes(app, routeDeps);
   return app;
 }
