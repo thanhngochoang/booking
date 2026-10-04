@@ -6,6 +6,7 @@ One line per unit: id · state · branch · machine · last update.
 
 ## Active
 - `8d` · in progress · `plan/8d-6-L1-chat` · MacBook-Pro-2 · 2026-10-04
+- `9` · in progress · `plan/9-backend-phase2` · MAC-JM4RLWTXXR · 2026-10-04
 
 ## Finished
 - `8d/6-L1` · released: Released: MAC-JM4RLWTXXR is Lane 2, Lane 1 is handled by MacBook-Pro-2 · `plan/8d-6-L1-chat-ui` · MAC-JM4RLWTXXR · 2026-10-04
