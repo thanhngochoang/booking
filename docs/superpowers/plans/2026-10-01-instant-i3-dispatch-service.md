@@ -259,7 +259,7 @@ Expected: `17`, `8`, `0`, one line. (Task 2's contract loader parses the file; T
 git add services/dispatch/api/openapi.yaml docs/superpowers/specs/data-model
 git commit -m "docs(dispatch): contract and schema fixes (limit_exceeded, 404s, VNPay GET IPN, radius range, photographers FK, indexes, fake provider)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -981,7 +981,7 @@ Expected: typecheck clean (it also type-checks `packages/dispatch-core` through 
 git add services/dispatch
 git commit -m "feat(dispatch): scaffold dispatch service with config, error envelope, ULIDs, contract loader and test containers
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1415,7 +1415,7 @@ Expected: clean; `Test Files  2 passed (2)`, `Tests  13 passed (13)`.
 git add services/dispatch
 git commit -m "feat(dispatch): PaymentGateway port with fake provider, registry and a shared gateway contract suite for I6
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1779,7 +1779,7 @@ Expected: clean; `Test Files  2 passed | 1 skipped (3)`, `Tests  13 passed | 3 s
 git add services/dispatch app_flutter/firebase/firestore.rules app_flutter/firebase/rules-test
 git commit -m "feat(dispatch): Firestore mirror writer and read-only instant_* rules with emulator tests
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2313,7 +2313,7 @@ Expected: clean; `Test Files  4 passed | 1 skipped (5)`, `Tests  22 passed | 3 s
 git add services/dispatch
 git commit -m "feat(dispatch): FCM sender, Goong ETA and area with estimate fallback, BullMQ and manual schedulers, metrics
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3521,7 +3521,7 @@ Expected: `{"ok":true,"redis":true,"postgres":true}`, then `{"code":"not_found",
 git add services/dispatch services/api/docker-compose.yml services/api/.env.example .github/workflows/dispatch.yml
 git commit -m "feat(dispatch): app factory, Firebase token auth, wiring, test harness and compose services (PostGIS, Redis, dispatch)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3966,7 +3966,7 @@ Expected: the last log line is `dispatch migrations up: done`.
 git add services/dispatch services/api/migrations services/api/test/migrations.test.ts
 git commit -m "feat(dispatch): dispatch schema (relational-schema 2.8) and shared money tables (2.4) migrations with column-for-column tests
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4277,7 +4277,7 @@ Expected: clean; `Test Files  9 passed | 1 skipped (10)`, `Tests  40 passed | 3 
 git add services/dispatch
 git commit -m "feat(dispatch): cities, surge-priced packages and typical match time (GET /v1/packages)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4669,7 +4669,7 @@ Expected: clean; `Test Files  10 passed | 1 skipped (11)`, `Tests  49 passed | 3
 git add services/dispatch
 git commit -m "feat(dispatch): instant settings, readiness and Redis GEO presence with a 10-minute TTL
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5549,7 +5549,7 @@ Expected: clean; `Test Files  11 passed | 1 skipped (12)`, `Tests  57 passed | 3
 git add services/dispatch
 git commit -m "feat(dispatch): instant requests with locked price, fake-gateway payments, webhooks, ledger capture and refunds, request mirror
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5976,7 +5976,7 @@ Expected: clean; `Test Files  12 passed | 1 skipped (13)`, `Tests  63 passed | 3
 git add services/dispatch
 git commit -m "feat(dispatch): matcher with GEOSEARCH, offer locks, radius and round policy, no-match refund
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6337,7 +6337,7 @@ Expected: clean; `Test Files  13 passed | 1 skipped (14)`, `Tests  70 passed | 3
 git add services/dispatch
 git commit -m "feat(dispatch): accept as one locked transaction, decline and server-clock offer expiry
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6771,7 +6771,7 @@ Expected: clean; `Test Files  14 passed | 1 skipped (15)`, `Tests  80 passed | 3
 git add services/dispatch
 git commit -m "feat(dispatch): live tracking with rate limit and Goong ETA, arrival rule, shoot, completion with escrow settlement
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -7134,7 +7134,7 @@ Expected: clean; `Test Files  15 passed | 1 skipped (16)`, `Tests  88 passed | 3
 git add services/dispatch
 git commit -m "feat(dispatch): cancellation quotes and settlement for customers and photographers, re-search after a photographer cancels
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -7490,7 +7490,7 @@ Expected: clean; `Test Files  17 passed | 1 skipped (18)`, `Tests  93 passed | 3
 git add services/dispatch
 git commit -m "test(dispatch): no double offers under 50 concurrent requests, one accept winner, BullMQ timers and restart reconciliation
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---

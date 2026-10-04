@@ -1363,7 +1363,7 @@ dart format lib test
 git add lib/core/lat_lng.dart lib/core/core.dart lib/data/instant lib/data/http/api_client.dart test/core/lat_lng_test.dart test/data/instant test/data/http/api_client_test.dart pubspec.yaml pubspec.lock
 git commit -m "feat(instant): dispatch wire format checked against the openapi contract
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1993,7 +1993,7 @@ dart format lib test
 git add lib/data/instant test/data/instant
 git commit -m "feat(instant): presence and job repositories over the dispatch API, with fakes
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2321,7 +2321,7 @@ dart format lib test
 git add lib/data/instant test/data/instant firebase/firestore.rules firebase/rules-test/rules.test.mjs
 git commit -m "feat(instant): read-only Firestore mirror listeners and their rules
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2839,7 +2839,7 @@ dart format lib test
 git add lib/data/instant lib/features/instant_work test android/app/src/main/AndroidManifest.xml ios/Runner/Info.plist ../docs/superpowers/plans/2026-10-01-ios-enablement.md
 git commit -m "feat(instant): presence and route location with send rules; precise in-use location and iOS background location only
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3190,7 +3190,7 @@ dart format lib test
 git add pubspec.yaml pubspec.lock lib/data/instant lib/main.dart android/app/src/main/AndroidManifest.xml test/data/instant test/platform
 git commit -m "feat(instant): location foreground service with a Tắt action, battery level port
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3985,7 +3985,7 @@ dart format lib test
 git add pubspec.yaml pubspec.lock lib/data/instant lib/main.dart lib/l10n android ios test
 git commit -m "feat(instant): full-screen and time-sensitive offer notifications, FCM parsing, device tokens
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4955,7 +4955,7 @@ dart format lib test
 git add pubspec.yaml pubspec.lock lib/core lib/main.dart lib/l10n test/core test/support/fake_map_engine.dart
 git commit -m "feat(core): TickingBuilder, CountdownRing, AppButton.danger and AppMap over MapLibre + Goong
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5265,7 +5265,7 @@ dart format lib test
 git add lib/core/widgets/aperture_loader.dart lib/core/core.dart test/core/widgets/aperture_loader_test.dart test/core/widgets/goldens
 git commit -m "feat(core): ApertureLoader, the brand aperture wait
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6319,7 +6319,7 @@ dart format lib test
 git add pubspec.yaml pubspec.lock lib/features/instant_common lib/features/instant_work lib/data/instant/instant_providers.dart lib/main.dart lib/l10n test/support/instant_world.dart test/features
 git commit -m "feat(instant): availability session with presence heartbeat, foreground service, offers, auto-off and low-battery prompt
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6817,7 +6817,7 @@ dart format lib test
 git add lib/features/instant_work test/features/instant_work
 git commit -m "feat(instant): job controller with throttled route sharing that stops on arrival
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -7379,7 +7379,7 @@ dart format lib test
 git add lib/features/instant_common lib/l10n test/features/instant_common
 git commit -m "feat(instant): S13.08 cancel sheet with dry-run amounts and a red confirmation
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -8057,7 +8057,7 @@ dart format lib test
 git add lib/features/instant_work lib/features/shell lib/app/router.dart lib/l10n test/support test/features/instant_work
 git commit -m "feat(instant): S14.01 availability with price list and the Công việc entry card
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -8697,7 +8697,7 @@ dart format lib test
 git add lib/features/instant_work lib/app/router.dart lib/l10n test
 git commit -m "feat(instant): S14.02 offer with a 30-second countdown and offer navigation from notifications
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -9251,7 +9251,7 @@ dart format lib test
 git add lib/features/instant_work lib/data/contact lib/l10n test
 git commit -m "feat(instant): S14.03 job screen with directions, milestones, arrive within 200 m and the cancel sheet
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -9307,7 +9307,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git add ../docs/superpowers/specs ../docs/testing/battery-and-performance.md
 git commit -m "docs(instant): FCM payload, device tokens, contact subject and the Chụp ngay battery exception
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -9544,7 +9544,7 @@ dart format test
 git add test/battery/instant_photographer_battery_test.dart
 git commit -m "test(instant): battery gate for availability, offers and en-route tracking
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---

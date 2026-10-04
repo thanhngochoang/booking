@@ -65,7 +65,7 @@ Everything above describes the legacy Java app, kept as reference. The rewrite i
 
 ### Parallel work across machines
 
-Plans run in the order of `docs/superpowers/plans/RUN-ORDER.md`, several machines at once. `develop` is protected: each unit gets a branch `plan/<id>-<slug>` from `origin/develop` and a PR back into it. Who holds which unit lives on the `board` branch (`CLAIMS.md`), written only by `.claude/skills/run-next-plan/scripts/board.py`. Use the project skill `run-next-plan` (`.claude/skills/run-next-plan/SKILL.md`) to pick, claim, implement and hand in the next unit.
+Plans run in the order of `docs/superpowers/plans/RUN-ORDER.md`, several machines at once. `develop` is protected: each unit gets a branch `plan/<id>-<slug>` from `origin/develop` and a PR back into it. Who holds which unit lives on the `board` branch (`CLAIMS.md`), written only by `.claude/skills/run-next-plan/scripts/board.py`. Use the project skill `run-next-plan` (`.claude/skills/run-next-plan/SKILL.md`) to pick, claim, implement and hand in the next unit; it runs each plan with subagent-driven development and says which Dart/Firebase skills each implementer loads. Those skills are installed in `.agents/skills/` (`skills-lock.json`); the ones that fit this project are symlinked into `.claude/skills/` so Claude Code sees them.
 
 ### Rules to follow
 

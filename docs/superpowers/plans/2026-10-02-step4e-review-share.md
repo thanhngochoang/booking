@@ -4,7 +4,7 @@
 
 > **Rules emulator tests (2026-10-02, user):** this plan changes `firestore.rules` and adds Functions. Write the rules tests and the Functions integration tests; do not run them, CI runs them. Record the skips in the ledger.
 
-> **Lanes (2026-10-02):** Tasks 1–3 (domain, Functions, rules, data) run in lane 2 (`lane/core`); Tasks 4–5 run in lane 1 (`lane/ui`) after gate G6. See `RUN-ORDER.md` → "Two parallel lanes".
+> **Lanes (2026-10-02):** Tasks 1–3 (domain, Functions, rules, data) run in lane 2; Tasks 4–5 run in lane 1 after gate G6. Each lane step is its own unit on a `plan/…` branch from `develop`, claimed and run with the `run-next-plan` skill; the lane table in `RUN-ORDER.md` → "Two parallel lanes" sets which files each lane owns.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

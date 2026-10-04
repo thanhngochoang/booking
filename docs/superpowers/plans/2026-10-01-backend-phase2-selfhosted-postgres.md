@@ -691,7 +691,7 @@ Expected: `{"status":"ok","db":"ok"}`.
 git add services/api .github/workflows/api.yml
 git commit -m "feat(api): scaffold self-hosted API with health endpoint, compose stack and CI
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1454,7 +1454,7 @@ Expected: the last log line is `migrations up: done`.
 git add services/api
 git commit -m "feat(api): slice migrations from the relational schema with rollback tests
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2492,7 +2492,7 @@ Expected: `{"status":"ok","db":"ok"}` then `{"code":"not_found","message":"no su
 git add services/api .github/workflows/api.yml docs/superpowers/specs/data-model/domain-model.md
 git commit -m "feat(api): OpenAPI contract, error envelope, ULIDs and reuse of the phase 1 domain module
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3068,7 +3068,7 @@ Expected: typecheck clean; `Tests  49 passed (49)` (35 + auth 9 + me 5).
 git add services/api
 git commit -m "feat(api): verify Firebase ID tokens and add POST /v1/me with auth identities
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3404,7 +3404,7 @@ Expected: typecheck clean; `Tests  72 passed (72)` (49 + matrix 15 + behaviour 8
 git add services/api
 git commit -m "feat(api): public profile, set_role and owner-only private contact with authorization matrix tests
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3769,7 +3769,7 @@ Expected: typecheck clean; `Tests  92 passed (92)` (72 + matrix 12 + setup 8).
 git add services/api
 git commit -m "feat(api): photographer contact channels, private numbers, service area and S34 setup
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4316,7 +4316,7 @@ Expected: `contract world seeded`, then `{"url":"https://zalo.me/84912345678"}`,
 git add services/api
 git commit -m "feat(api): get_contact_link with contact access log and a shared contract world
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5604,7 +5604,7 @@ Expected: analyze clean; every test passes, among them the 22 new ones (config 4
 git add pubspec.yaml pubspec.lock lib/data test/data android/app/src/debug/AndroidManifest.xml
 git commit -m "feat(data): HTTP adapters for the self-hosted slice behind the existing ports
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6217,7 +6217,7 @@ Expected: `contract world seeded`, then `+42: All tests passed!`. A failing `ctr
 git add pubspec.yaml pubspec.lock dart_test.yaml test/data/contracts test/data/http/openapi_drift_test.dart
 git commit -m "test(data): shared repository contracts for Fake, Firestore and HTTP adapters, contract drift check
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -7096,7 +7096,7 @@ Expected: the export prints a table of row counts and `rejected: N`; the dry run
 git add services/api
 git commit -m "feat(api): idempotent Firestore to PostgreSQL import for the slice with dry run and count checks
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
