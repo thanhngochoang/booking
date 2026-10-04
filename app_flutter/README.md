@@ -42,8 +42,11 @@ Meta developer console → Settings → Advanced → Client token). Gradle injec
 
 ```bash
 flutter analyze && flutter test
+dart run tool/affected_test.dart origin/develop --run   # only the tests this branch can affect
 cd firebase/rules-test && npm install && npm test   # Firestore rules on the emulator (needs JDK 17+)
 ```
+
+On pull requests CI runs only the affected tests and falls back to all of them when unsure: [docs/testing/affected-tests.md](../docs/testing/affected-tests.md).
 
 ## Local backend (Firebase Emulator Suite)
 

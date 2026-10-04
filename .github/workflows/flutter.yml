@@ -3,7 +3,10 @@ on:
   push:
     branches: [flutter-rewrite, develop, main]
   pull_request:
-    paths: ['app_flutter/**', 'design-system/**', 'packages/**', '.github/workflows/flutter.yml', 'scripts/ci-affected-tests.py']
+    # Also every file a test reads from outside app_flutter/ (the main spec
+    # for screen_codes_test, domain fixtures, the API contract under
+    # services/): test/tool/affected checks it.
+    paths: ['app_flutter/**', 'design-system/**', 'packages/**', 'services/**', 'docs/superpowers/specs/**', '.github/workflows/flutter.yml']
 
 permissions:
   contents: read
@@ -45,44 +48,45 @@ jobs:
           DART
       - run: flutter analyze
 
-  # ── 2. Detect affected tests (fast — just git diff) ───────────────
+  # ── 2. Detect affected tests (import graph + git diff, ~1 s) ─────
+  # app_flutter/tool/affected_test.dart, see docs/testing/affected-tests.md.
+  # Push events run everything; when the tool is unsure it answers ALL.
   affected:
     runs-on: ubuntu-latest
     outputs:
       test-scope: ${{ steps.detect.outputs.scope }}
       test-files: ${{ steps.detect.outputs.files }}
+    defaults:
+      run:
+        working-directory: app_flutter
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        if: github.event_name == 'pull_request'
+        with: { channel: stable, cache: true }
       - name: Detect affected tests
         id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # Repo variable: skip (default) or all when no test is affected.
+          AFFECTED_ON_NONE: ${{ vars.AFFECTED_ON_NONE }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [ "$EVENT" != "pull_request" ]; then
             echo "scope=ALL" >> "$GITHUB_OUTPUT"
             echo "files=" >> "$GITHUB_OUTPUT"
-            echo "🔄 Push event → running ALL tests"
-          else
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            # Any error in the detector means "unsure" → run everything.
-            RESULT=$(python3 scripts/ci-affected-tests.py "$BASE_SHA") || RESULT=ALL
-            if [ "$RESULT" = "ALL" ]; then
-              echo "scope=ALL" >> "$GITHUB_OUTPUT"
-              echo "files=" >> "$GITHUB_OUTPUT"
-              echo "🔄 Shared code/config changed → running ALL tests"
-            elif [ "$RESULT" = "NONE" ]; then
-              echo "scope=NONE" >> "$GITHUB_OUTPUT"
-              echo "files=" >> "$GITHUB_OUTPUT"
-              echo "⏭️ No test-relevant changes → skipping tests"
-            else
-              echo "scope=AFFECTED" >> "$GITHUB_OUTPUT"
-              FILES=$(echo "$RESULT" | tr '\n' ' ')
-              echo "files=$FILES" >> "$GITHUB_OUTPUT"
-              COUNT=$(echo "$RESULT" | wc -l | tr -d ' ')
-              echo "🎯 Running $COUNT affected test files"
-              echo "$RESULT"
-            fi
+            echo "🔄 $EVENT event → running ALL tests"
+            exit 0
           fi
+          # The tool imports dart: libraries only; an empty package config
+          # lets it start without `flutter pub get`.
+          echo '{"configVersion":2,"packages":[]}' > "$RUNNER_TEMP/no-packages.json"
+          dart --packages="$RUNNER_TEMP/no-packages.json" tool/affected_test.dart \
+              "$BASE_SHA" --github-output --verbose \
+            || { echo "::warning title=Affected tests::detector failed, running ALL tests"
+                 echo "scope=ALL" >> "$GITHUB_OUTPUT"; echo "files=" >> "$GITHUB_OUTPUT"; }
 
   # ── 3. Unit / widget tests — 4 shards in parallel ─────────────────
   test:
