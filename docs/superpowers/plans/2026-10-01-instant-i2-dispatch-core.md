@@ -534,7 +534,7 @@ Expected: typecheck and lint print nothing after their headers; `ℹ tests 12`, 
 git add packages/dispatch-core .github/workflows/dispatch-core.yml
 git commit -m "feat(dispatch-core): pure package with contract codes, errors, injected clock and rng, purity test
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -907,7 +907,7 @@ Expected: clean; `ℹ tests 30`, `ℹ pass 30`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): dispatch configuration with v1 defaults, validation and per-city overrides
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1263,7 +1263,7 @@ Expected: clean; `ℹ tests 206`, `ℹ pass 206`, `ℹ fail 0` (168 generated pa
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): instant request state machine with every allowed and refused transition tested
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1403,7 +1403,7 @@ Expected: clean; `ℹ tests 212`, `ℹ pass 212`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): haversine distance and the straight-line ETA estimate
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1578,7 +1578,7 @@ Expected: clean; `ℹ tests 221`, `ℹ pass 221`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): instant pricing with city surge, 1,000 VND rounding and payout rate
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1923,7 +1923,7 @@ Expected: clean; `ℹ tests 242`, `ℹ pass 242`, `ℹ fail 0` (the six property
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): cancellation and no-show money table with the no-dong-lost property test
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2143,7 +2143,7 @@ Expected: clean; `ℹ tests 251`, `ℹ pass 251`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): readiness reasons, quality bar with not-enough-data fallbacks, priority and expanded tiers
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2410,7 +2410,7 @@ Expected: clean; `ℹ tests 261`, `ℹ pass 261`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): dispatch-v1 scorer with explainable reasons in the shared Scorer shape
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2608,7 +2608,7 @@ Expected: clean; `ℹ tests 267`, `ℹ pass 267`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): pure matcher core ranking eligible, unexcluded photographers
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2828,7 +2828,7 @@ Expected: clean; `ℹ tests 277`, `ℹ pass 277`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): search policy with radius steps, optional round 2 and the 10-minute limit
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2988,7 +2988,7 @@ Expected: clean; `ℹ tests 284`, `ℹ pass 284`, `ℹ fail 0`.
 git add packages/dispatch-core
 git commit -m "feat(dispatch-core): arrival distance rule, typical match minutes and the location rate rule
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---

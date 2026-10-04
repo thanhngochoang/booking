@@ -438,7 +438,7 @@ dart format lib test
 git add lib/data/instant test/data/instant
 git commit -m "feat(instant): customer booking repository over the dispatch API, with a fake
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -626,7 +626,7 @@ dart format lib test
 git add lib/data/instant test/data/instant/payment_launcher_test.dart
 git commit -m "feat(instant): PaymentLauncher port with the debug fake gateway
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -961,7 +961,7 @@ dart format lib test
 git add lib/data/instant test/data/instant/goong_place_search_test.dart
 git commit -m "feat(instant): Goong address search and reverse geocoding that never leak the key
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1169,7 +1169,7 @@ dart format lib test
 git add lib/core lib/l10n test/core/widgets/search_pulse_test.dart
 git commit -m "feat(core): SearchPulse, rings around the aperture loader for S13.03
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1930,7 +1930,7 @@ dart format lib test
 git add lib/features/instant lib/l10n test/support test/features/instant
 git commit -m "feat(instant): customer draft, S13.01 controller with one location fix, phone gate and price change
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2846,7 +2846,7 @@ dart format lib test
 git add lib/features/instant lib/app/router.dart lib/l10n test/support test/features/instant
 git commit -m "feat(instant): S13.01 Chụp ngay with packages, meet-point map and Goong search
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3410,7 +3410,7 @@ dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
 git commit -m "feat(instant): /instant/:id status switch, S13.03 search with pulse and clock, customer cancel sheet
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3825,7 +3825,7 @@ dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
 git commit -m "feat(instant): S13.05 tracking with map, ETA, grace countdown, stale position and late free cancel
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4170,7 +4170,7 @@ dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
 git commit -m "feat(instant): S13.06 shoot clock with confirmation and the completed state
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4452,7 +4452,7 @@ dart format lib test
 git add lib/features/instant lib/l10n test/features/instant
 git commit -m "feat(instant): S13.07 no match with refund and retry, closed states
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4744,7 +4744,7 @@ dart format lib test
 git add lib/data/instant lib/features/instant_work/instant_navigation.dart lib/l10n test
 git commit -m "feat(instant): customer updates as notifications and navigation to the request
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5020,7 +5020,7 @@ dart format lib test
 git add lib/data/instant lib/features/instant lib/features/home lib/features/find lib/l10n test/features/instant
 git commit -m "feat(instant): Chụp ngay entry on Home and Find, hidden when the service or payment is unavailable
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5622,7 +5622,7 @@ dart format test
 git add test/support/fake_dispatch_server.dart test/integration/instant_two_party_test.dart
 git commit -m "test(instant): customer and photographer end to end on one fake dispatch service
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5778,7 +5778,7 @@ dart format test
 git add test/battery/instant_customer_battery_test.dart
 git commit -m "test(instant): battery gate for the customer screens
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---

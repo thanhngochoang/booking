@@ -155,7 +155,7 @@ Screens and scenario:
 git add test/battery/skills_battery_test.dart
 git commit -m "test(skills): battery guards for S08.02/S08.03/S08.04
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -342,7 +342,7 @@ dart format lib test
 git add test/battery/photographer_setup_battery_test.dart
 git commit -m "test(perf): idle, listener and rebuild guards for S08.01 and S06.04
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -511,7 +511,7 @@ dart format lib test
 git add test/battery/photographer_profile_battery_test.dart ../docs/superpowers/specs
 git commit -m "test(perf): S03.01 idle, blur, lazy grid and listener guards; align specs
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -647,7 +647,7 @@ Record the results in the PR description with the table template of the guide; a
 git add test/support test/battery
 git commit -m "test: privacy and cost checks for the recommendation layer
 
-Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -888,7 +888,7 @@ dart format lib test
 git add test/support test/battery
 git commit -m "test: idle, blur, decode-size and read-count checks for Home, Photo detail and Find
 
-Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1141,7 +1141,7 @@ dart format lib test
 git add test/support test/battery
 git commit -m "test: idle, upload-order, memory and permission checks for Create post
 
-Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1355,7 +1355,7 @@ Append to the "Local backend (Firebase Emulator Suite)" section of `app_flutter/
 git add app_flutter/firebase/functions/test/perf app_flutter/test/data/backend/backend_call_budget_test.dart app_flutter/README.md
 git commit -m "perf(functions): getContactLink read, write, payload, bundle and latency budgets
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1734,7 +1734,7 @@ Run the app against the stack (`AUTH_MODE=firebase FIREBASE_PROJECT_ID=<projectI
 git add services/api app_flutter/test/data/http/http_battery_test.dart
 git commit -m "perf(api): index-scan, payload, gzip and keep-alive checks, k6 latency budget, client battery tests
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1915,7 +1915,7 @@ Expected: clean; `ℹ tests 284`, `ℹ pass 284`, `ℹ fail 0`; six `✓` benchm
 git add packages/dispatch-core .github/workflows/dispatch-core.yml
 git commit -m "perf(dispatch-core): micro-benchmarks of the scorer, matcher core and money rules with CI thresholds
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2488,7 +2488,7 @@ Expected: `online: 2000/2000`; k6 prints `✓` for `http_req_failed`, `http_req_
 git add services/dispatch services/api/docker-compose.yml
 git commit -m "perf(dispatch): EXPLAIN, Redis and Firestore budgets, payload sizes, load harness and k6 scenario
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2558,7 +2558,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git add ../docs/superpowers/specs ../docs/testing/battery-and-performance.md
 git commit -m "docs(instant): customer flow details, payment port, SearchPulse and customer battery scenarios
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2790,7 +2790,7 @@ On one Android and one iOS device with the staging build of Task 13, run the sce
 git add services/dispatch/test app_flutter/test/battery
 git commit -m "perf(payments): webhook latency, reconciliation budget, money tick indexes, no timers or listeners behind the payment app
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2887,7 +2887,7 @@ Then change the result-table header to add `OS` as the first data column:
 git add ../docs/testing/battery-and-performance.md
 git commit -m "docs(testing): iOS energy, CPU and hitch measurements
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 If the screen-codes plan has not run yet (the guide does not exist), do this task right after that plan's Task 6.

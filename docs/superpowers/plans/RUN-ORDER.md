@@ -16,7 +16,7 @@ Plans 8a2 and 8b–8e run on two machines at once. The split was made from a fil
 
 **Branches (updated 2026-10-03):** `develop` is the protected integration branch; changes land only through PRs into it. Each unit (a row below, or one lane step `<#>/<step>-L<lane>`) gets its own branch `plan/<id>-<slug>` from `origin/develop` and a PR back into `develop`. Which machine holds which unit is tracked on the `board` branch (`CLAIMS.md`), written only by `.claude/skills/run-next-plan/scripts/board.py`; the `run-next-plan` skill picks, claims and runs the next unit. The fixed `lane/ui` / `lane/core` branches from `flutter-rewrite` are retired; the ownership split below still applies. Never push to `main`.
 
-**Ledgers:** SDD ledgers get the lane in the name, `.superpowers/sdd/<plan>/progress-lane1.md` and `progress-lane2.md`, because the same plan can be executed by both lanes (A, 4b–4e).
+**Ledgers:** SDD ledgers are named after the unit's branch, `.superpowers/sdd/<plan>/progress-<branch-with-dashes>.md`, because the same plan can be executed by several units (A, 4b–4e); see the `run-next-plan` skill. Ledgers from before 2026-10-03 use `progress-lane1.md` / `progress-lane2.md`.
 
 **Backend:** each machine runs its own `../scripts/backend-local.sh` (own emulators and seed).
 

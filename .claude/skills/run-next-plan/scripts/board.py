@@ -23,7 +23,8 @@ Env:
   BOARD_REMOTE   remote name (default origin)
   BOARD_BRANCH   board branch (default board)
   BOARD_BASE     branch holding RUN-ORDER.md (default develop)
-  BOARD_MACHINE  machine name (default: macOS LocalHostName or hostname)
+  BOARD_MACHINE  machine name (default: git config board.machine, else macOS
+                 LocalHostName, else hostname)
   BOARD_GH=1     fetch/push over HTTPS with gh's credential helper (use when
                  SSH to github.com is blocked, e.g. inside the Claude sandbox)
 """
@@ -62,11 +63,21 @@ def sh(*args, check=True, stdin=None):
 def machine():
     if os.environ.get("BOARD_MACHINE"):
         return os.environ["BOARD_MACHINE"]
+    r = sh("git", "config", "--get", "board.machine", check=False)
+    if r.returncode == 0 and r.stdout.strip():
+        return r.stdout.strip()
+    # Inside the Claude sandbox scutil cannot reach configd and prints
+    # "Unknown"; every sandboxed machine would then share one name.
     if shutil.which("scutil"):
         r = sh("scutil", "--get", "LocalHostName", check=False)
-        if r.returncode == 0 and r.stdout.strip():
-            return r.stdout.strip()
-    return socket.gethostname().split(".")[0]
+        name = r.stdout.strip()
+        if r.returncode == 0 and name and name != "Unknown":
+            return name
+    name = socket.gethostname().split(".")[0]
+    if not name or name in ("localhost", "Unknown"):
+        sys.exit("error: cannot tell this machine's name; set it once with "
+                 "git config board.machine <name> (or BOARD_MACHINE=<name>)")
+    return name
 
 
 def auth():

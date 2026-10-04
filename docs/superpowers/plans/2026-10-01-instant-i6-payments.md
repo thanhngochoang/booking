@@ -321,7 +321,7 @@ Expected: `18` (I3's 17 + `openDispute`); two lines (`    DisputeBody:` and `   
 git add services/dispatch/api/openapi.yaml services/dispatch/test/contract.test.ts docs/superpowers/specs/data-model
 git commit -m "docs(payments): dispute operation, mirror payment fields, reconciliation and dispute tables for live gateways
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -706,7 +706,7 @@ Expected: clean; `Test Files  3 passed (3)`, `Tests  24 passed (24)` (signatures
 git add services/dispatch
 git commit -m "feat(payments): MoMo and VNPay signature primitives, Vietnam time and self-generated test vectors
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1223,7 +1223,7 @@ Expected: clean; `Test Files  4 passed (4)`, `Tests  36 passed (36)` (MoMo: the 
 git add services/dispatch
 git commit -m "feat(payments): MoMo AIO v2 gateway (create, IPN, refund, query) on the I3 PaymentGateway port
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -1668,7 +1668,7 @@ Expected: clean; `Test Files  5 passed (5)`, `Tests  46 passed (46)` (VNPay: the
 git add services/dispatch
 git commit -m "feat(payments): VNPay 2.1.0 gateway (signed URL, GET IPN with RspCode, refund, querydr)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2101,7 +2101,7 @@ Expected: clean; `Test Files  7 passed (7)`, `Tests  55 passed (55)`. I3's `conf
 git add services/dispatch
 git commit -m "feat(payments): MoMo/VNPay configuration from the environment, live gateway registry, logs without secrets or query strings
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2396,7 +2396,7 @@ Expected: clean; `Tests  3 passed` and I3's dispatch migration tests still pass;
 git add services/api/migrations services/api/test/migrations.test.ts services/dispatch
 git commit -m "feat(payments): reconciliation and refund tracking columns, payment notifications and disputes tables
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -2931,7 +2931,7 @@ Expected: clean; `live-payments` 7 passed; I3's request, cancel and contract sui
 git add services/dispatch
 git commit -m "feat(payments): close the request when the gateway is down, capture and refund money after failure, IPN log, refund tracking, mirror payment fields
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3354,7 +3354,7 @@ Expected: clean; `reconcile` 8 passed; I3's BullMQ suite still passes (its worke
 git add services/dispatch
 git commit -m "feat(payments): reconciliation of unconfirmed payments and refund poller with backoff, resubmission and manual queue
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -3735,7 +3735,7 @@ Expected: clean; `escrow` 5 passed; I3's trip and cancel suites unchanged.
 git add services/dispatch
 git commit -m "feat(payments): release the photographer's share 24 h after completion and batch it into payout lines
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4072,7 +4072,7 @@ Expected: clean; `disputes` 7 passed; the contract suite passes with an empty `P
 git add services/dispatch
 git commit -m "feat(payments): customer disputes within 24 h freeze the release; ops release or refund with fee reversal
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4431,7 +4431,7 @@ Expected: clean; `payouts` 3 passed; `dist/tools/ops.js` built.
 git add services/dispatch
 git commit -m "feat(payments): ops CLI for the manual refund queue, attention list, disputes and the manual payout export
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4596,7 +4596,7 @@ Expected: clean; `app-links` 2 passed; the contract suite still passes (the new 
 git add services/dispatch
 git commit -m "feat(payments): payment return page, assetlinks.json and apple-app-site-association on the dispatch host
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -4758,7 +4758,7 @@ Append to `services/dispatch/README.md`:
 git add services/dispatch
 git commit -m "chore(payments): sandbox cross-check tool and go-live checklist for MoMo and VNPay
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5124,7 +5124,7 @@ dart format lib test
 git add lib/data/instant test/data/instant
 git commit -m "feat(instant): real MoMo/VNPay payment launcher, build gateway config and the mirror's payment fields
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -5509,7 +5509,7 @@ dart format lib test
 git add pubspec.yaml pubspec.lock lib test android/app/src/main/AndroidManifest.xml android/app/build.gradle.kts ios/Runner/Info.plist ios/Runner/Runner.entitlements ios/Flutter
 git commit -m "feat(instant): payment return through a verified App Link, a Universal Link or photobooking://instant
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6063,7 +6063,7 @@ dart format lib test
 git add lib test
 git commit -m "feat(instant): MoMo/VNPay choice on S13.01, payment wait on S13.03 without timers, mirror closed behind the payment app
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -6125,7 +6125,7 @@ Append:
 git add docs
 git commit -m "docs(instant): gateway choice in the mock, live payment edge cases, Chụp ngay release rule, payment battery checks
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---

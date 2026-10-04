@@ -12,7 +12,7 @@ Several computers implement this project at the same time. They coordinate throu
 - **What to do, in which order**: `docs/superpowers/plans/RUN-ORDER.md` on `origin/develop` (the "To run" table, its dependency notes, the lane split and the standing rules). `develop` is protected, so this file only changes through PRs.
 - **Who is doing what right now**: `CLAIMS.md` on the branch **`board`**, a branch that holds nothing else. A unit is claimed by pushing a commit to `board`; git rejects the second of two simultaneous pushes, so that rejection is the lock. This is why the board is only changed through `scripts/board.py` (never by hand, never from a plan branch).
 
-`board.py` lives next to this file: `python3 .claude/skills/run-next-plan/scripts/board.py <cmd>` from the repo root. It builds its commits with git plumbing and never touches your checkout. Inside the Claude sandbox SSH to github.com is blocked: prefix it with `BOARD_GH=1` (HTTPS through `gh auth git-credential`) and pass `allowed_domains: ["github.com", "api.github.com"]`. Other `git fetch`/`push` calls in this skill use the same trick: `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push https://github.com/thanhngochoang/booking.git <branch>`.
+`board.py` lives next to this file: `python3 .claude/skills/run-next-plan/scripts/board.py <cmd>` from the repo root. It builds its commits with git plumbing and never touches your checkout. It names the machine from `git config board.machine`, else macOS `LocalHostName`, else the hostname; `show` prints the name, and the name must stay the same inside and outside the sandbox (claims and landing are checked against it). If it prints something generic, set it once: `git config board.machine <name>`. Inside the Claude sandbox SSH to github.com is blocked: prefix it with `BOARD_GH=1` (HTTPS through `gh auth git-credential`) and pass `allowed_domains: ["github.com", "api.github.com"]`. Other `git fetch`/`push` calls in this skill use the same trick: `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push https://github.com/thanhngochoang/booking.git <branch>`.
 
 ## 1. Read the board
 
@@ -69,7 +69,34 @@ Read these before writing code, because they are what reviewers hold the work to
 - the specs the plan points to: `docs/superpowers/specs/2026-10-01-remaining-screens.md`, `specs/screens/`, `specs/components/shared-components.md`, `specs/data-model/`;
 - the ledgers in `docs/superpowers/handover/` for rulings earlier plans settled.
 
-Execute the plan with the **superpowers:subagent-driven-development** skill (the run order says plans run that way): one implementer subagent per task, a review after each, one commit per task with a Conventional Commit message ending in `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>` (the owner's rule for every commit in this repo, instead of the Claude co-author line). Keep the SDD ledger at `.superpowers/sdd/<plan-file-stem>/progress-<branch-with-dashes>.md` (one per branch, so two machines on the same plan never write the same ledger), update it after every task with the commit id, and push the branch after each task so work never lives on one laptop only.
+Execute the plan with the **superpowers:subagent-driven-development** skill (SDD; the run order says plans run that way): one implementer subagent per task, a review after each, one commit per task with a Conventional Commit message ending in `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>` (the owner's rule for every commit in this repo, instead of the Claude co-author line).
+
+SDD is generic; inside a unit these points of this skill replace its defaults:
+
+- **Workspace.** The `plan/…` branch from step 3 is the isolated workspace SDD's setup asks for; don't create another branch or worktree on top of it.
+- **Ledger.** SDD's `sdd-workspace <plan>` prints `.superpowers/sdd/<plan-file-stem>/`. Inside it, name the ledger `progress-<branch-with-dashes>.md` instead of SDD's `progress.md` (one per branch, so two units of the same plan never share a ledger), with SDD's identity first line. Update it after every task with the commit ids. At the end, never `rm -rf` the workspace: it can hold another unit's ledger. Delete only your own files once the PR is open, after the rulings are copied into the handover ledger and the PR.
+- **Unit scope.** For a lane step, SDD's task list is only the tasks that step names; the other tasks of the plan belong to another unit.
+- **Commit trailer.** Plan snippets that end a commit with a `Co-Authored-By: Claude …` line are wrong for this repo: tell every implementer to use the TonyH line instead.
+- **Pushing.** Pushing your own `plan/…` branch after each task is part of this skill, not a "push to a shared branch" that SDD stops for. Never push `develop`, `main` or `board` (except through `board.py`).
+- **Finish.** Step 5 below replaces `superpowers:finishing-a-development-branch`: don't offer its options (merge locally, keep, discard); the finish is always a PR into `develop`. SDD's "Rulings I made" list goes into the PR's **Rulings** section and the handover ledger.
+- **What each implementer gets.** Subagents don't read CLAUDE.md by themselves, so every dispatch carries: the task text, the env setup from CLAUDE.md (`source ../scripts/env.sh`, project-local `HOME` and `PATH`, run from `app_flutter/`), the rules it touches (imports `package:photobooking/...` and `core/core.dart`; Firebase only in data adapters; strings in `app_vi.arb` + `flutter gen-l10n`; tokens via `AppColors`/`AppSpace`/`AppRadius`; one primary action per screen), the RUN-ORDER standing rules (no rules-emulator runs, no device builds, no battery work, iOS steps deferred), the commit trailer, and the skills from the next section that fit the task.
+
+### Dart, Flutter and Firebase skills for implementers
+
+The Dart and Firebase skills are installed in `.agents/skills/` (`skills-lock.json`); those that fit this project are linked into `.claude/skills/`, so subagents can load them with the Skill tool. Name the relevant ones in each implementer and reviewer dispatch:
+
+| Task touches | Skill | Project rule that wins over the skill |
+|---|---|---|
+| any Dart/Flutter test | `dart-add-unit-test` | tests use `flutter_test`, `mocktail` and the fakes/worlds in `test/support/`; never add `mockito` or `build_runner` mocks |
+| `flutter analyze` findings | `dart-run-static-analysis` | `dart fix --apply` is fine; don't change `analysis_options.yaml` |
+| sealed types, JSON parsing, switch chains | `dart-use-pattern-matching` | — |
+| public API doc comments | `dart-write-documentation` | match the surrounding comment density |
+| `pub get` version conflicts | `dart-resolve-package-conflicts` | change `pubspec.yaml` only as the plan says; `pubspec.lock` is regenerated |
+| Firestore queries, indexes, data adapters | `firebase-firestore` | Firestore code only in `lib/data/**` adapters and `firebase/functions`; never create databases or run `firebase` CLI commands against a real project |
+| `firestore.rules` / `storage.rules` | `firestore-rules-creation`, then `firebase-security-rules-auditor` in the task review | write the rules tests, don't run them (CI does) |
+| iOS project files (plan 15 only) | `xcode-project-setup` | iOS work stays in plan 15 |
+
+Never deploy, log in to the Firebase CLI or create projects from a plan; CI deploys on merge. Not linked on purpose: `dart-generate-test-mocks` and `dart-migrate-to-checks-package` (they would rewrite the test style), `firebase-basics` and `firebase-auth-basics` (CLI login, project creation, `deploy --only auth`), `dart-fix-runtime-errors` (needs Dart MCP tools that aren't installed), and the FFI, CLI, Hosting, Data Connect, Crashlytics, Remote Config and AI Logic skills (not used by the app). Link one with `ln -s ../../.agents/skills/<name> .claude/skills/<name>` when a plan needs it.
 
 When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for layout/copy, spec for behaviour), record the ruling in the ledger and the PR. When a task needs a file that RUN-ORDER gives to another lane, or that a unit claimed by another machine is changing, don't edit it: write the request in the ledger and in the PR description.
 

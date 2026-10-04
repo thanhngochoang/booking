@@ -263,7 +263,7 @@ Expected: PASS, 8 tests; `plutil` prints `ios/Runner/Info.plist: OK` (`plutil` s
 git add ios/Flutter/Secrets.xcconfig.example ios/Flutter/Debug.xcconfig ios/Flutter/Release.xcconfig ios/Runner/Info.plist .gitignore test/platform/ios_config_test.dart
 git commit -m "feat(ios): Google/Facebook sign-in keys from a gitignored xcconfig
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -381,7 +381,7 @@ Expected: analyze clean; `flutter test` runs only `test/` (integration tests nee
 git add pubspec.yaml pubspec.lock integration_test lib/features
 git commit -m "test: device smoke test with fake repositories
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -443,7 +443,7 @@ Push, then `gh run list --workflow flutter.yml --limit 1` and `gh run view <id> 
 git add .github/workflows/flutter.yml
 git commit -m "ci: build iOS for the Simulator on macOS
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 (Steps 3 and 4 swap order in practice: commit, push, read the run, fix and commit again.)
@@ -540,7 +540,7 @@ Expected now: the first three lines `✓`; the secrets and Firebase lines `✗` 
 git add scripts/ios-doctor.sh app_flutter/ios/Gemfile app_flutter/ios/Gemfile.lock
 git commit -m "chore(ios): toolchain doctor script and pinned CocoaPods
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
@@ -645,7 +645,7 @@ Expected: all green.
 git add ios/Podfile ios/Podfile.lock ios/Runner.xcodeproj ios/Runner.xcworkspace ios/Runner/SceneDelegate.swift
 git commit -m "feat(ios): app runs on the Simulator with Firebase and social sign-in
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 `git status` before committing must not list `GoogleService-Info.plist`, `Secrets.xcconfig` or `firebase_options.dart`.
@@ -700,7 +700,7 @@ Expected: all green.
 git add ../CLAUDE.md
 git commit -m "docs: iOS commands and secrets rule
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>"
 ```
 
 ---
