@@ -6,8 +6,9 @@
   "engines": { "node": ">=22.11.0" },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "esbuild src/server.ts src/db/migrate-cli.ts --bundle --platform=node --target=node22 --format=esm --packages=external --sourcemap --outdir=dist",
+    "build": "esbuild src/server.ts src/db/migrate-cli.ts src/tools/seed-contract.ts --bundle --platform=node --target=node22 --format=esm --packages=external --sourcemap --outdir=dist",
     "migrate": "tsx src/db/migrate-cli.ts",
+    "seed:contract": "tsx src/tools/seed-contract.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "gen:types": "openapi-typescript api/openapi.yaml -o src/generated/api.ts",

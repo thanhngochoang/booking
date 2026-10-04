@@ -8,6 +8,7 @@ import { loadContract, registerContractSchemas, type Contract } from './contract
 import type { Database } from './db/database.js';
 import { systemClock, type Clock, type RouteDeps } from './deps.js';
 import { installErrorHandling } from './errors.js';
+import { registerContactLinkRoutes } from './routes/contact-links.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerPhotographerRoutes } from './routes/photographers.js';
@@ -50,5 +51,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerMeRoutes(app, routeDeps);
   registerUserRoutes(app, routeDeps);
   registerPhotographerRoutes(app, routeDeps);
+  registerContactLinkRoutes(app, routeDeps);
   return app;
 }

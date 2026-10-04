@@ -4,10 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadContract, operations, toFastifyUrl } from '../src/contract/openapi.js';
 import { testApp, testDb } from './helpers.js';
 
-/** Operations whose routes arrive in later tasks. Task 7 empties this set. */
-const PENDING = new Set<string>([
-  'getContactLink',
-]);
+/** Every operation is routed now; keep the set so a new contract operation must be listed until it lands. */
+const PENDING = new Set<string>();
 
 const contract = loadContract();
 const db = testDb();
@@ -23,6 +21,10 @@ afterAll(async () => {
 });
 
 describe('API contract', () => {
+  it('no operation is pending', () => {
+    expect([...PENDING]).toEqual([]);
+  });
+
   it('every contract operation is routed (or still pending)', () => {
     for (const op of operations(contract)) {
       const routed = app.hasRoute({ method: op.method, url: op.url });
