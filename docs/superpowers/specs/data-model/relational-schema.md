@@ -650,10 +650,13 @@ Theo `domain-model.md` mục 2.8. Bảng của phần hợp đồng (`booking_mi
 alter table photographers
   add column provider_type text not null default 'individual' check (provider_type in ('individual','artist','studio')),
   add column artist_since  timestamptz,
+  add column studio_district text,   -- công khai, sao từ studio_addresses.district (chỉ server ghi)
+  add column studio_city     text,   -- công khai, sao từ studio_addresses.city (chỉ server ghi)
   add column approved_award_count int not null default 0;
 create table studio_addresses (
   photographer_id text primary key references photographers(user_id) on delete cascade,
-  line text not null, ward text, district text not null, city text not null, lat double precision, lng double precision
+  line text not null, ward text, district text not null, city text not null, lat double precision, lng double precision,
+  updated_at timestamptz not null default now()   -- trigger set_updated_at như các bảng khác
 );
 
 create table awards (

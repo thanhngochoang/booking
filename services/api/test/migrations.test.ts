@@ -167,6 +167,16 @@ describe('constraints from relational-schema.md', () => {
     expect(after.updated_at.getTime()).toBeGreaterThan(before.updated_at.getTime());
   });
 
+  it('studio_addresses.updated_at is bumped by the trigger on update', async () => {
+    await graph();
+    await db.insertInto('studio_addresses').values({ photographer_id: 'p1', line: '12 Lê Lợi', district: 'Quận 1', city: 'TP.HCM' }).execute();
+    const before = await db.selectFrom('studio_addresses').select('updated_at').where('photographer_id', '=', 'p1').executeTakeFirstOrThrow();
+    await sql`select pg_sleep(0.01)`.execute(db);
+    await db.updateTable('studio_addresses').set({ district: 'Quận 3' }).where('photographer_id', '=', 'p1').execute();
+    const after = await db.selectFrom('studio_addresses').select('updated_at').where('photographer_id', '=', 'p1').executeTakeFirstOrThrow();
+    expect(after.updated_at.getTime()).toBeGreaterThan(before.updated_at.getTime());
+  });
+
   it('money comes back as a JS integer and a day as yyyy-MM-dd', async () => {
     await graph();
     await db.insertInto('bookings').values(booking('b1')).execute();

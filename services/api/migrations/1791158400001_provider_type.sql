@@ -19,7 +19,11 @@ create table studio_addresses (
   updated_at timestamptz not null default now()
 );
 
+create trigger trg_studio_addresses_updated_at before update on studio_addresses
+  for each row execute function set_updated_at();
+
 -- Down Migration
+drop trigger trg_studio_addresses_updated_at on studio_addresses;
 drop table studio_addresses;
 alter table photographers
   drop column approved_award_count,
