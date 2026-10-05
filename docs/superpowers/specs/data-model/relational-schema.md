@@ -642,6 +642,170 @@ create table dispatch.photographer_reliability (
 
 Tiền của chụp ngay đi qua `payments` và sổ cái (mục 2.4) với `subject_type = 'instant_request'`.
 
+### 2.9 Loại nhà cung cấp, album, giải thưởng, hợp đồng và Đăng việc (2026-10-05)
+
+Theo `domain-model.md` mục 2.8. Bảng của phần hợp đồng (`booking_milestones`, `booking_deliveries`, cột mới của `bookings`) là đề xuất, chỉ tạo khi chốt.
+
+```sql
+alter table photographers
+  add column provider_type text not null default 'individual' check (provider_type in ('individual','artist','studio')),
+  add column artist_since  timestamptz,
+  add column approved_award_count int not null default 0;
+create table studio_addresses (
+  photographer_id text primary key references photographers(user_id) on delete cascade,
+  line text not null, ward text, district text not null, city text not null, lat double precision, lng double precision
+);
+
+create table awards (
+  id              text primary key,
+  photographer_id text not null references photographers(user_id) on delete cascade,
+  competition     text not null,
+  year            smallint not null check (year between 1950 and 2100),
+  category        text,
+  result          text not null check (result in ('gold','silver','bronze','honorable','finalist','exhibited')),
+  work_post_id    text references posts(id) on delete set null,
+  status          text not null default 'pending' check (status in ('pending','needs_info','approved','rejected','revoked')),
+  review_note     text,
+  reviewed_by     text references users(id),
+  reviewed_at     timestamptz,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index ix_awards_photographer on awards (photographer_id, status);
+create table award_proofs (
+  award_id    text primary key references awards(id) on delete cascade,
+  links       text[] not null default '{}',
+  purge_after timestamptz
+);
+create table award_proof_files (
+  award_id text not null references award_proofs(award_id) on delete cascade,
+  position smallint not null,
+  file_id  text not null references files(id),
+  primary key (award_id, position)
+);
+
+create table albums (
+  id              text primary key,
+  photographer_id text not null references photographers(user_id) on delete cascade,
+  title           text not null check (char_length(title) between 1 and 40),
+  description     text check (char_length(description) <= 300),
+  cover_post_id   text,                      -- fk posts, đặt sau khi tạo posts.album_id
+  cover_position  smallint,
+  position        int not null,
+  post_count      int not null default 0,
+  media_count     int not null default 0,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  unique (photographer_id, position) deferrable initially deferred
+);
+create unique index ux_albums_title on albums (photographer_id, lower(title));
+alter table posts
+  add column album_id       text references albums(id) on delete set null,
+  add column album_position int,
+  add constraint ck_posts_album check ((album_id is null) = (album_position is null));
+create unique index ux_posts_album_position on posts (album_id, album_position) where album_id is not null and deleted_at is null;
+alter table albums add constraint fk_albums_cover foreign key (cover_post_id) references posts(id) on delete set null;
+alter table services add column revisions smallint not null default 1 check (revisions between 0 and 5);
+-- Khi bật video: post_images → post_media (kind text check (kind in ('image','video')), duration_ms int, poster_file_id text references files(id)).
+
+create table jobs (
+  id                text primary key,
+  customer_id       text not null references users(id),
+  specialty_id      text not null references taxonomy_items(id),
+  title             text not null check (char_length(title) between 10 and 60),
+  description       text not null default '' check (char_length(description) <= 1000),
+  schedule_kind     text not null check (schedule_kind in ('fixed','flexible')),
+  day date, start_time time, end_time time, from_day date, to_day date,
+  duration_minutes  int not null check (duration_minutes > 0),
+  city text not null, district text not null, geohash text not null,
+  budget_min        bigint check (budget_min > 0),
+  budget_max        bigint check (budget_max >= budget_min),
+  wants_edited_count int, wants_delivery_days int,
+  allowed_providers text not null default 'all' check (allowed_providers in ('all','artist','studio')),
+  quote_deadline    timestamptz not null,
+  extended          boolean not null default false,
+  status            text not null default 'draft' check (status in ('draft','open','awarded','expired','closed')),
+  quote_count       int not null default 0,
+  view_count        int not null default 0,
+  awarded_quote_id  text,                    -- fk quotes, đặt sau
+  booking_id        text references bookings(id),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  check ((schedule_kind = 'fixed' and day is not null) or (schedule_kind = 'flexible' and from_day is not null and to_day is not null))
+);
+create index ix_jobs_open on jobs (status, geohash, quote_deadline) where status = 'open';
+create index ix_jobs_customer on jobs (customer_id, created_at desc);
+create table job_references (
+  job_id   text not null references jobs(id) on delete cascade,
+  position smallint not null,
+  file_id  text not null references files(id),
+  primary key (job_id, position)
+);
+create table quotes (
+  id                  text primary key,
+  job_id              text not null references jobs(id) on delete cascade,
+  photographer_id     text not null references photographers(user_id),
+  based_on_service_id text references services(id) on delete set null,
+  price               bigint not null check (price > 0),
+  duration_minutes    int not null,
+  photo_count         int not null default 0,
+  edited_count        int not null,
+  delivery_days       int not null check (delivery_days between 1 and 60),
+  revisions           smallint not null check (revisions between 0 and 5),
+  milestones          jsonb not null,           -- [{kind, percent}], tổng 100
+  message             text not null check (char_length(message) between 20 and 500),
+  album_id            text references albums(id) on delete set null,
+  status              text not null default 'submitted' check (status in ('submitted','withdrawn','accepted','not_selected','declined')),
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now(),
+  unique (job_id, photographer_id)
+);
+alter table jobs add constraint fk_jobs_awarded_quote foreign key (awarded_quote_id) references quotes(id);
+create table job_invites (
+  job_id          text not null references jobs(id) on delete cascade,
+  photographer_id text not null references photographers(user_id) on delete cascade,
+  created_at      timestamptz not null default now(),
+  seen_at         timestamptz,
+  primary key (job_id, photographer_id)
+);
+
+-- Hợp đồng (đề xuất)
+alter table bookings
+  add column source          text not null default 'package' check (source in ('package','quote','instant')),
+  add column terms           jsonb,              -- BookingTerms; null với booking cũ (đọc service_snapshot)
+  add column job_id          text references jobs(id),
+  add column quote_id        text references quotes(id),
+  add column revisions_used  smallint not null default 0,
+  add column shot_at timestamptz, add column delivered_at timestamptz, add column approved_at timestamptz, add column auto_approve_at timestamptz;
+create table booking_milestones (
+  booking_id    text not null references bookings(id) on delete cascade,
+  kind          text not null check (kind in ('shoot','delivery')),
+  amount        bigint not null check (amount >= 0),
+  status        text not null default 'held' check (status in ('held','released','refunded','disputed')),
+  release_after timestamptz,
+  released_at   timestamptz,
+  primary key (booking_id, kind)
+);
+create table booking_deliveries (
+  id            text primary key,
+  booking_id    text not null references bookings(id) on delete cascade,
+  round         smallint not null,
+  link          text not null check (link like 'https://%'),
+  note          text,
+  submitted_at  timestamptz not null default now(),
+  decision      text check (decision in ('approve','request_revision')),
+  decision_note text,
+  decided_at    timestamptz,
+  unique (booking_id, round)
+);
+create table booking_delivery_previews (
+  delivery_id text not null references booking_deliveries(id) on delete cascade,
+  position    smallint not null,
+  file_id     text not null references files(id),
+  primary key (delivery_id, position)
+);
+```
+
 ## 3. Ánh xạ Firestore → bảng
 
 Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` → `timestamptz`; `GeoPoint` → `lat`+`lng`; mảng → bảng liên kết; tài liệu con (`map`) → cột phẳng có tiền tố; số đếm ghi bởi Functions → cột dẫn xuất.
@@ -658,6 +822,10 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `availability/{uid}/days/{yyyy-mm-dd}` | `availability_days` | Id tài liệu = cột `day` |
 | `posts/{id}` | `posts` + `post_images` + `post_hashtags` | `imageUrls[]`→`post_images`/`files`; hashtag trích từ `caption` |
 | `likes/{uid}_{postId}`, `saves/…`, `follows/{uid}_{photographerId}` | `likes`, `saves`, `follows` | Khoá ghép thay id ghép chuỗi |
+| `awards/{id}`, `awardProofs/{id}` | `awards`, `award_proofs` + `award_proof_files` | `proof.files[]`→`award_proof_files` |
+| `albums/{id}`; `posts/{id}.albumId/albumPosition` | `albums`; `posts.album_id`, `album_position` | `cover.{postId,position}`→`cover_post_id`, `cover_position` |
+| `jobs/{id}`, `jobs/{id}/quotes/{photographerId}`, `jobs/{id}/invites/{photographerId}` | `jobs` + `job_references`, `quotes`, `job_invites` | `schedule.*`, `area.*`, `budget.*`, `wants.*` → cột phẳng; id báo giá Firestore là uid, bảng dùng `id` riêng + `unique (job_id, photographer_id)` |
+| `bookings/{id}/milestones/{kind}`, `bookings/{id}/deliveries/{round}` | `booking_milestones`, `booking_deliveries` + `booking_delivery_previews` | Đề xuất (spec 10-05) |
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử |
 | `reviews/{bookingId}` | `reviews` | |

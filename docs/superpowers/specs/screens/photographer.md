@@ -6,6 +6,8 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 
 ## S06.01 · Công việc
 
+> **Đổi 2026-10-05**: thêm `SegmentedTabs` Hôm nay / Việc tuyển / Báo giá (nội dung hiện tại là tab "Hôm nay"; hai tab sau ở S16.02, [jobs.md](jobs.md)); bỏ chuông ở đầu trang, số thông báo nằm trên tab Hồ sơ (spec chính 3h.1).
+
 - **Thông tin**: `/bookings` (NAG) · sub‑project 5 · Chưa có (hiện là empty trong `BookingsTab`).
 - **Mục đích**: biết hôm nay làm gì, trả lời yêu cầu mới, thấy doanh thu.
 - **Điểm vào → ra**: tab Công việc (chấm số = số yêu cầu chờ). Thẻ hôm nay → S05.02; "Nhận"/"Từ chối" (→ S06.03); biểu tượng lịch → S06.04; "Sự kiện của tôi" → S12.03; `ContactDial` liên hệ khách.
@@ -34,6 +36,8 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 ---
 
 ## S10.01 · Đăng bài
+
+> **Đổi 2026-10-05**: công tắc "Thêm vào portfolio" thay bằng ô "Album · tuỳ chọn" mở S24.05 ([portfolio-awards.md](portfolio-awards.md)); `inPortfolio` thành giá trị dẫn xuất.
 
 - **Thông tin**: `/action` (NAG) · sub‑project 3 · Chưa có (hiện empty trong `ActionTab`).
 - **Mục đích**: đăng một lần cho cả portfolio và feed, luôn gắn gói.
@@ -72,6 +76,8 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 ---
 
 ## S08.01 · Thiết lập hồ sơ, bước 1–2
+
+> **Đổi 2026-10-05**: bước 1 thêm "Bạn nhận việc với tư cách" Cá nhân / Studio ([portfolio-awards.md](portfolio-awards.md)); Studio thêm địa chỉ cơ sở ở S08.05.
 
 - **Thông tin**: `/setup/:step` (1: giới thiệu, 2: gói) · sub‑project 2 · Chưa có.
 - **Mục đích**: NAG hoàn thiện hồ sơ đủ để được đặt.

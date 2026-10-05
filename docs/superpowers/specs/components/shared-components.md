@@ -263,6 +263,40 @@ Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa c�
 Bản đồ nhỏ có ghim nhãn chữ và nút "Về vị trí của tôi" (mock S13.01, S13.05, S14.03). Đặc tả chi tiết đi theo spec Chụp ngay mục 9; ở đây chỉ giữ chỗ để màn dùng chung một widget.
 
 
+### Component của spec 10-05 (loại nhà cung cấp, album, giải thưởng, Đăng việc) · Mới
+
+Đặc tả hành vi ở [`../2026-10-05-provider-types-portfolio-jobs-design.md`](../2026-10-05-provider-types-portfolio-jobs-design.md); hình ở mock (mục "Loại nhà cung cấp", S24, S25, S15, S16).
+
+#### ProviderMark · Mới (thay `VerifiedMark` khi viết)
+`ProviderMark({required ProviderMarkKind kind, double size = 14})`, `kind`: `verified` (tích xanh tròn, như `VerifiedMark`), `artist` (tích vàng tròn, nền gradient vàng `F7D774 → C9962B`, dấu ✓ tối), `studio` (con dấu viền răng cưa 12 múi tô gradient vàng, ✓ tối, cỡ 16). `providerMarkOf(photographer)` chọn: `artist` → artist; `studio` + đã xác minh → studio; `verified` → verified; còn lại không vẽ gì. Nâng cao như `VerifiedMark`. `Semantics.label`: "Đã xác minh" / "Nhiếp ảnh gia đã duyệt" / "Studio đã xác minh". Token vàng mới: `gold`, `goldInk`, `goldSoft`, `goldLine` (tối và sáng) thêm vào `design-system/tokens.json`.
+
+#### ProviderTag · Mới
+Nhãn chữ dạng viên thuốc nhỏ: `artist` "Nhiếp ảnh gia" (chữ, viền và nền vàng nhạt, biểu tượng giải), `studio` "Studio" (viền mảnh, biểu tượng cặp). Hậu tố tuỳ chọn ("· 7 giải", "· Hoàn Kiếm"). Không vẽ cho `individual`.
+
+#### AwardChip và AwardRow · Mới
+`AwardChip` (S03.01): thẻ 178dp, viền và nền vàng nhạt, đĩa biểu tượng giải vàng, kết quả (đậm) + "cuộc thi năm · hạng mục" một dòng. `AwardRow` (S25.01): đĩa biểu tượng (vàng khi `approved`, xám khi khác), tiêu đề "kết quả · cuộc thi năm", `StatusBadge` + dòng phụ (hạng mục hoặc lý do).
+
+#### PortfolioViewToggle · Mới
+Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), biểu tượng + chữ, `Semantics` vai trò tab có trạng thái chọn.
+
+#### AlbumTile · Mới
+Ảnh bìa vuông với hai lớp viền giả chồng phía trên (gợi xấp ảnh), tên 1–2 dòng, số ảnh; biến thể `featured` rộng hết hàng 16:7 có số ảnh phủ góc. Skeleton riêng.
+
+#### ReorderableRow · Mới
+Hàng có tay nắm ≡ (vùng chạm 48dp, nhấn giữ để kéo), ảnh, tên, phụ đề, menu "…" có Chuyển lên / Chuyển xuống / Lên đầu / Xuống cuối (đường thay thế không cần kéo). Đọc vị trí "n trên m"; trạng thái đang kéo: viền primary, nền accent nhạt, bóng.
+
+#### PostPickerGrid · Mới
+Lưới 3 cột chọn nhiều, ô chọn có số thứ tự (thứ tự chọn), nhãn góc dưới ("4 ảnh", tên album hiện tại). Giới hạn số ô chọn; ô vượt giới hạn vô hiệu.
+
+#### JobCard · Mới
+Biến thể `customer` (S15.02: tag thể loại, `StatusBadge`, tiêu đề, ngày · quận · ngân sách, hàng avatar người báo giá + "{n} báo giá · {m} mới", thời gian còn) và `photographer` (S16.02: tag + "Bạn được mời", `FitPill`, tiêu đề, ngày · giờ · quận · khoảng cách, ngân sách, "{n} báo giá · còn {m} ngày"; biến thể khoá mờ với dòng lý do). Không bao giờ hiện số điện thoại hay địa chỉ cụ thể.
+
+#### QuoteCard, DeliverableChips, FitPill · Mới
+`QuoteCard` (S15.03): người báo giá + `ProviderMark` (+ tag "Được mời"), dòng tin cậy, giá + so với ngân sách bằng chữ ("trong ngân sách" / "vượt {x}"), `DeliverableChips` (ảnh chỉnh, ngày giao, lần sửa, "Rảnh {ngày}" tô xanh), câu đầu lời nhắn một dòng, `FitPill` "Hợp {n}%", nút lưu, nút "Xem". `DeliverableChips` có biến thể `grid` 4 ô (S15.04: số lớn serif + nhãn).
+
+#### MilestoneTable · Mới
+Bảng mốc tiền: mỗi dòng đĩa số thứ tự, tên mốc + dòng phụ, số tiền tabular; dùng ở S15.04, S16.03 (dạng một dòng chữ) và S04.03 / S05.02 khi hợp đồng 100% được chốt. Mốc cuối nhận phần dư làm tròn.
+
 ## 5. Công cụ không phải widget
 
 ### Định dạng · Mới
@@ -302,9 +336,9 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `LocationPromptCard`, `LocationRepository` | S02.03, S02.04, S02.05 |
 | `VerifiedMark`, `BadgeChip`, `BadgeRow`, `BadgeTile` | S02.02, S03.01, S02.06, S11.02, S12.03, S09.01, S03.02 |
 | `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S06.02, S09.02, S08.02, S08.03, S08.04 |
-| `TabBadge` | thanh tab dưới |
+| `TabBadge` | thanh tab dưới (Công việc, Khám phá, Hồ sơ = thông báo chưa đọc) |
 | `NotificationRow` | S17.01 |
-| `NotificationBell` | S02.01, S02.03, S06.01 |
+| `NotificationBell` | không dùng nữa (2026-10-05: số chưa đọc là `TabBadge` của tab Hồ sơ; giữ widget cho tới khi plan thông báo gỡ) |
 | `PermissionPrimer` | S17.03 |
 | `SignatureLoader`, `AsyncView`, `DotRingLoader` | mọi màn có tải dữ liệu |
 | `EscrowNotice` | S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
@@ -318,6 +352,12 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `SwipeDeck`, `MatchOverlay` | S13.02, S13.04, S14.03 |
 | `OfferStack` | S14.02 |
 | `MapPreview` | S13.01, S13.05, S13.08, S14.03 |
+| `ProviderMark`, `ProviderTag` | S02.02, S02.06, S03.01, S15.02, S15.03, S15.04, S24.01 |
+| `AwardChip`, `AwardRow` | S03.01, S25.01 |
+| `PortfolioViewToggle`, `AlbumTile` | S03.01, S24.02 |
+| `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp) |
+| `JobCard` | S15.02, S16.02 |
+| `QuoteCard`, `DeliverableChips`, `FitPill`, `MilestoneTable` | S15.02, S15.03, S15.04, S16.01, S16.03 |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)

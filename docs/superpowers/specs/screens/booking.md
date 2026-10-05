@@ -125,6 +125,8 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 ## S05.01 · Danh sách đặt lịch
 
+> **Đổi 2026-10-05**: `SegmentedTabs` Buổi chụp / Vé sự kiện / Việc đăng (tab thứ ba ở S15.02, [jobs.md](jobs.md)). Nếu chốt hợp đồng 100% theo mốc (spec 10-05 mục 4), S04.03, S05.02 và chính sách huỷ đổi theo mục 4.4 của spec đó.
+
 - **Thông tin**: `/bookings` (khách) · khách · sub‑project 4 · Chưa có (hiện empty trong `BookingsTab`).
 - **Mục đích**: xem mọi buổi chụp của mình và làm việc cần làm ngay.
 - **Bố cục**: tiêu đề + biểu tượng chat; `SegmentedTabs` Sắp tới / Đang chờ / Đã xong **và** cấp trên cùng "Buổi chụp | Vé sự kiện" (vé: S11.04); danh sách `BookingCard` có hàng hành động dưới thẻ gần nhất (Chỉ đường, Nhắn tin) hoặc "Đánh giá" cho buổi chưa review.

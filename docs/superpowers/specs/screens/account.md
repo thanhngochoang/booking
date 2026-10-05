@@ -43,6 +43,8 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 ## S09.01 · Hồ sơ cá nhân (đã có, làm lại thành danh sách bài đăng)
 
+> **Đổi 2026-10-05**: dòng "Thông báo" dưới tên mở S17.01, số chưa đọc nằm trên tab Hồ sơ; thợ ảnh Cá nhân có dòng nhắc lên hạng NAG → S25.01 ([portfolio-awards.md](portfolio-awards.md)).
+
 - **Thông tin**: `/profile` · cả hai · sub‑project 1 (bài đăng ở 3, đã lưu và đang theo dõi ở 3 và 6) · **Đã có** dạng cơ bản (`ProfileTab`), cần làm lại theo mock.
 - **Mục đích**: xem các bài do chính mình đăng, dù đang ở chế độ khách hay nhiếp ảnh gia. Đổi chế độ và đăng xuất **không còn ở đây**, đã chuyển sang S09.02.
 - **Bố cục** (theo mock): thanh tiêu đề "Hồ sơ" + bánh răng (→ S09.02); hàng avatar, tên, nhãn vai trò và khu vực; hàng số **bài đăng · đang theo dõi · đã lưu** (hai số sau mở danh sách khi sub‑project 3 và 6 xong, trước đó ẩn); hàng huy hiệu (`BadgeChip` ≤ 3 + "Xem tất cả" → S03.02); hàng `AppChip` lọc theo loại bài; lưới 3 cột ảnh bìa bài đăng.
@@ -109,6 +111,8 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 ---
 
 ## S17.01 · Thông báo
+
+> **Đổi 2026-10-05**: không còn chuông ở đầu trang; mở từ dòng "Thông báo" ở S09.01 hoặc từ push; số chưa đọc là `TabBadge` của tab Hồ sơ (spec chính 3d.3, 3h.1).
 
 - **Thông tin**: `/notifications` · cả hai · sub‑project N · Chưa có. Mock: S17.01 trong mục "Thông báo". Đặc tả chung: spec chính mục 3h.
 - **Mục đích**: xem lại mọi thứ cần biết (lịch, báo giá, sự kiện, hệ thống) và đi thẳng tới việc cần làm.
