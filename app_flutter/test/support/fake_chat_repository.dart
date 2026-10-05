@@ -68,7 +68,7 @@ class FakeChatRepository implements ChatRepository {
     }
   }
 
-  void _notifyChats() {
+  List<ChatListItem> _buildChatList() {
     final items = threads.values.map((t) {
       final unread = unreadCounts[t.id] ?? 0;
       return ChatListItem(thread: t, unreadCount: unread);
@@ -78,7 +78,11 @@ class FakeChatRepository implements ChatRepository {
       final bTime = b.thread.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
-    _myChatsController.add(items);
+    return items;
+  }
+
+  void _notifyChats() {
+    _myChatsController.add(_buildChatList());
   }
 
   void _notifyTotalUnread() {
@@ -87,31 +91,25 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Stream<ChatThread?> watchThread(String chatId) {
-    _threadControllers.putIfAbsent(
+  Stream<ChatThread?> watchThread(String chatId) async* {
+    yield threads[chatId];
+    final ctrl = _threadControllers.putIfAbsent(
       chatId,
-      () => StreamController<ChatThread?>.broadcast(
-        onListen: () {
-          _threadControllers[chatId]?.add(threads[chatId]);
-        },
-      ),
+      () => StreamController<ChatThread?>.broadcast(),
     );
-    return _threadControllers[chatId]!.stream;
+    yield* ctrl.stream;
   }
 
   @override
-  Stream<List<ChatMessage>> watchMessages(String chatId, {int limit = 50}) {
-    _messageControllers.putIfAbsent(
+  Stream<List<ChatMessage>> watchMessages(String chatId, {int limit = 50}) async* {
+    final list = messages[chatId] ?? [];
+    final slice = list.length > limit ? list.sublist(list.length - limit) : list;
+    yield List.unmodifiable(slice);
+    final ctrl = _messageControllers.putIfAbsent(
       chatId,
-      () => StreamController<List<ChatMessage>>.broadcast(
-        onListen: () {
-          final list = messages[chatId] ?? [];
-          final slice = list.length > limit ? list.sublist(list.length - limit) : list;
-          _messageControllers[chatId]?.add(List.unmodifiable(slice));
-        },
-      ),
+      () => StreamController<List<ChatMessage>>.broadcast(),
     );
-    return _messageControllers[chatId]!.stream;
+    yield* ctrl.stream;
   }
 
   @override
@@ -130,15 +128,15 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Stream<List<ChatListItem>> watchMyChats({int limit = 50}) {
-    _notifyChats();
-    return _myChatsController.stream;
+  Stream<List<ChatListItem>> watchMyChats({int limit = 50}) async* {
+    yield _buildChatList();
+    yield* _myChatsController.stream;
   }
 
   @override
-  Stream<int> watchTotalUnread() {
-    _notifyTotalUnread();
-    return _totalUnreadController.stream;
+  Stream<int> watchTotalUnread() async* {
+    yield unreadCounts.values.fold<int>(0, (sum, count) => sum + count);
+    yield* _totalUnreadController.stream;
   }
 
   @override

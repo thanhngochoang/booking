@@ -4299,6 +4299,210 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã từ chối. {name} được hoàn cọc.'**
   String declineDoneToast(String name);
+
+  /// No description provided for @chatInput.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tin nhắn…'**
+  String get chatInput;
+
+  /// No description provided for @chatSendLocation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi vị trí'**
+  String get chatSendLocation;
+
+  /// No description provided for @chatSendRef.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi ảnh tham khảo'**
+  String get chatSendRef;
+
+  /// No description provided for @chatReschedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi lịch'**
+  String get chatReschedule;
+
+  /// No description provided for @chatConfirmPlace.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận địa điểm'**
+  String get chatConfirmPlace;
+
+  /// No description provided for @chatConfirmPlaceText.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chốt địa điểm: {place}'**
+  String chatConfirmPlaceText(String place);
+
+  /// No description provided for @chatSendFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại'**
+  String get chatSendFailed;
+
+  /// No description provided for @chatInquiryCap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã gửi 3 tin. Chờ {name} trả lời để nhắn tiếp.'**
+  String chatInquiryCap(String name);
+
+  /// No description provided for @chatReadOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuộc trò chuyện chỉ còn để đọc.'**
+  String get chatReadOnly;
+
+  /// No description provided for @chatClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'**
+  String get chatClosed;
+
+  /// No description provided for @chatOffline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có kết nối. Bạn vẫn xem được tin cũ.'**
+  String get chatOffline;
+
+  /// No description provided for @chatLocationOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí của {name}'**
+  String chatLocationOf(String name);
+
+  /// No description provided for @chatLocationDenied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể lấy vị trí. Vui lòng cấp quyền vị trí.'**
+  String get chatLocationDenied;
+
+  /// No description provided for @chatSysRequested.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.'**
+  String get chatSysRequested;
+
+  /// No description provided for @chatSysAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đã nhận buổi chụp.'**
+  String get chatSysAccepted;
+
+  /// No description provided for @chatSysDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đã từ chối yêu cầu.'**
+  String get chatSysDeclined;
+
+  /// No description provided for @chatSysExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đã hết hạn.'**
+  String get chatSysExpired;
+
+  /// No description provided for @chatSysCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp đã huỷ.'**
+  String get chatSysCancelled;
+
+  /// No description provided for @chatSysCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp đã hoàn thành.'**
+  String get chatSysCompleted;
+
+  /// No description provided for @chatRescheduleProposal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đề nghị đổi sang {day} {start}–{end}'**
+  String chatRescheduleProposal(String day, String start, String end);
+
+  /// No description provided for @chatRescheduleAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chấp nhận'**
+  String get chatRescheduleAccept;
+
+  /// No description provided for @chatRescheduleDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get chatRescheduleDecline;
+
+  /// No description provided for @chatRescheduleDeclineTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối đề nghị đổi lịch?'**
+  String get chatRescheduleDeclineTitle;
+
+  /// No description provided for @chatRescheduleAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đổi lịch thành công'**
+  String get chatRescheduleAccepted;
+
+  /// No description provided for @chatRescheduleDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối đổi lịch'**
+  String get chatRescheduleDeclined;
+
+  /// No description provided for @chatRescheduleExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đề nghị đổi lịch đã hết hạn'**
+  String get chatRescheduleExpired;
+
+  /// No description provided for @chatDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày này đã kín'**
+  String get chatDayTaken;
+
+  /// No description provided for @chatViewBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem buổi chụp'**
+  String get chatViewBooking;
+
+  /// No description provided for @chatPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh'**
+  String get chatPhoto;
+
+  /// No description provided for @chatLocation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí'**
+  String get chatLocation;
+
+  /// No description provided for @chatsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn'**
+  String get chatsTitle;
+
+  /// No description provided for @chatsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có cuộc trò chuyện nào'**
+  String get chatsEmptyTitle;
+
+  /// No description provided for @chatsEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm nhiếp ảnh gia'**
+  String get chatsEmptyAction;
+
+  /// No description provided for @inquiryNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} chưa nhận tin hỏi trước'**
+  String inquiryNotEligible(String name);
 }
 
 class _AppLocalizationsDelegate
