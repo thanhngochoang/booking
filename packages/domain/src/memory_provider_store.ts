@@ -11,7 +11,7 @@ export class MemoryProviderStore implements ProviderStore {
   readonly studioAddresses = new Map<string, StudioAddress>();
   /** Seed: number of requested | accepted | upcoming bookings per photographer. */
   readonly activeBookings = new Map<string, number>();
-  /** Seed: number of held | disputed payments per payee. */
+  /** Seed: number of held | partially_refunded | disputed payments per payee. */
   readonly heldPayments = new Map<string, number>();
   /** Committed write count. */
   writes = 0;

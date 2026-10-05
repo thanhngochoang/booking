@@ -11,10 +11,8 @@ import {
   type ProviderStore,
   type ProviderTx,
 } from '@photobooking/domain';
-import { BOOKINGS_COLLECTION } from './booking_firestore.js';
+import { BOOKINGS_COLLECTION, PAYMENTS_COLLECTION } from './booking_firestore.js';
 import { PHOTOGRAPHERS_COLLECTION } from './review_firestore.js';
-
-export const PAYMENTS_COLLECTION = 'payments';
 
 function toDate(v: unknown): Date | null {
   if (v instanceof Timestamp) return v.toDate();
@@ -63,7 +61,7 @@ export class FirestoreProviderStore implements ProviderStore {
             this.firestore
               .collection(PAYMENTS_COLLECTION)
               .where('payeeId', '==', uid)
-              .where('escrowStatus', 'in', ['held', 'disputed'])
+              .where('escrowStatus', 'in', ['held', 'partially_refunded', 'disputed'])
               .limit(1),
           );
           return snap.size;

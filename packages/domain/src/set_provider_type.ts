@@ -8,7 +8,7 @@ function parseChoice(raw: unknown): 'individual' | 'studio' {
   throw new DomainError('invalid_argument');
 }
 
-/** A provider picks individual or studio; after setup, only with no open work or held money. */
+/** A provider picks individual or studio; only with no open work or held money. */
 export async function setProviderType(
   deps: ProviderDeps,
   callerId: string,
@@ -22,13 +22,13 @@ export async function setProviderType(
     if (chosenTypeOf(p.providerType) === wanted) {
       return { changed: false, type: p.providerType };
     }
-    if (p.onboardingComplete) {
-      const [bookings, held] = await Promise.all([
-        tx.countActiveBookings(callerId),
-        tx.countHeldPayments(callerId),
-      ]);
-      if (bookings > 0 || held > 0) throw new DomainError('not_eligible');
-    }
+    // Always checked, whatever onboardingComplete says: a client could
+    // write it back to false to skip the check. A new profile has no work.
+    const [bookings, held] = await Promise.all([
+      tx.countActiveBookings(callerId),
+      tx.countHeldPayments(callerId),
+    ]);
+    if (bookings > 0 || held > 0) throw new DomainError('not_eligible');
     tx.setProviderType(callerId, wanted, deps.clock.now());
     return { changed: true, type: wanted as ProviderType };
   });

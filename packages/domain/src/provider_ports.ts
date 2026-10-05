@@ -23,7 +23,7 @@ export interface ProviderTx {
   getProfile(uid: string): Promise<ProviderProfile | null>;
   /** Bookings where photographerId = uid in requested | accepted | upcoming. */
   countActiveBookings(uid: string): Promise<number>;
-  /** Payments where payeeId = uid in escrowStatus held | disputed. */
+  /** Payments where payeeId = uid in escrowStatus held | partially_refunded | disputed. */
   countHeldPayments(uid: string): Promise<number>;
   /** Also clears artistSince when type != 'artist'. */
   setProviderType(uid: string, type: ProviderType, now: Date): void;

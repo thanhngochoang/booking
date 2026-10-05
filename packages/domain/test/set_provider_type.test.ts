@@ -42,12 +42,19 @@ describe('setProviderType', () => {
     };
   });
 
-  it('a new profile switches to studio without checks', async () => {
+  it('a new profile with no open work switches', async () => {
     store.seedProfile(profile({ onboardingComplete: false }));
-    store.activeBookings.set('p1', 2);
     const r = await setProviderType(deps, 'p1', { type: 'studio' });
     assert.deepEqual(r, { providerType: 'studio' });
     assert.equal(store.profiles.get('p1')?.providerType, 'studio');
+  });
+
+  it('un-finishing setup does not bypass the check', async () => {
+    store.seedProfile(profile({ onboardingComplete: false }));
+    store.activeBookings.set('p1', 1);
+    await refused(setProviderType(deps, 'p1', { type: 'studio' }), 'not_eligible');
+    assert.equal(store.profiles.get('p1')?.providerType, 'individual');
+    assert.equal(store.writes, 0);
   });
 
   it('the same choice is a no-op and writes nothing', async () => {
@@ -95,11 +102,15 @@ describe('setProviderType', () => {
     assert.equal(store.profiles.get('p1')?.providerType, 'individual');
   });
 
-  it('a completed booking does not block', async () => {
+  it('no active booking and no held money lets a finished profile switch', async () => {
+    // Which statuses count is the adapter's job (completed bookings are not
+    // counted; see the functions integration test). Here: zero counts switch.
     store.seedProfile(profile());
-    // completed bookings are not counted by countActiveBookings
+    store.activeBookings.set('p1', 0);
+    store.heldPayments.set('p1', 0);
     const r = await setProviderType(deps, 'p1', { type: 'studio' });
     assert.deepEqual(r, { providerType: 'studio' });
+    assert.equal(store.profiles.get('p1')?.providerType, 'studio');
   });
 
   it('switching to studio clears artistSince', async () => {

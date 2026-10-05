@@ -176,6 +176,15 @@ service cloud.firestore {
       return !changed.hasAny(['providerType', 'artistSince', 'studioDistrict', 'studioCity', 'approvedAwardCount']);
     }
 
+    // Setup, once finished, stays finished: an update may not move onboardingComplete from true
+    // to false or remove it (setProviderType checks open work regardless; this is belt and
+    // braces). A create may still write false (role selection does).
+    function onboardingNotUndone() {
+      return resource == null
+        || resource.data.get('onboardingComplete', false) != true
+        || request.resource.data.get('onboardingComplete', false) == true;
+    }
+
     // A studio finishes setup only once its private address exists.
     function studioFinishOk(uid) {
       let d = request.resource.data;
@@ -348,6 +357,7 @@ service cloud.firestore {
         && hasPhotographerRole(uid)
         && verifiedUntouched()
         && photographerServerFieldsUntouched()
+        && onboardingNotUndone()
         && studioFinishOk(uid)
         && photographerFieldsOk(uid);
       allow delete: if false;

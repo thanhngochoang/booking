@@ -1207,6 +1207,20 @@ test('owner cannot set studioDistrict', async () => {
   await assertFails(updateDoc(doc(db, 'photographers/pt3'), { studioDistrict: 'Quận 1' }));
   await assertFails(updateDoc(doc(db, 'photographers/pt3'), { studioCity: 'TP.HCM' }));
 });
+test('owner cannot set artistSince or approvedAwardCount', async () => {
+  await asPhotographer('pt3b');
+  const db = env.authenticatedContext('pt3b').firestore();
+  await assertSucceeds(setDoc(doc(db, 'photographers/pt3b'), { onboardingComplete: false }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt3b'), { artistSince: serverTimestamp() }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt3b'), { approvedAwardCount: 3 }));
+});
+test('a photographer doc cannot be created with studioDistrict', async () => {
+  await asPhotographer('pt3c');
+  const db = env.authenticatedContext('pt3c').firestore();
+  await assertFails(setDoc(doc(db, 'photographers/pt3c'), { onboardingComplete: false, studioDistrict: 'Quận 1' }));
+  await assertFails(setDoc(doc(db, 'photographers/pt3c'), { onboardingComplete: false, artistSince: serverTimestamp() }));
+  await assertFails(setDoc(doc(db, 'photographers/pt3c'), { onboardingComplete: false, approvedAwardCount: 0 }));
+});
 test('studio cannot finish setup without an address', async () => {
   await asPhotographer('pt4');
   await env.withSecurityRulesDisabled(async (c) =>
@@ -1230,6 +1244,17 @@ test('individual finishes setup as before', async () => {
   const db = env.authenticatedContext('pt6').firestore();
   await assertSucceeds(setDoc(doc(db, 'photographers/pt6'), { onboardingComplete: false }));
   await assertSucceeds(updateDoc(doc(db, 'photographers/pt6'), { onboardingComplete: true }));
+});
+test('owner cannot un-finish setup', async () => {
+  await asPhotographer('pt6b');
+  const db = env.authenticatedContext('pt6b').firestore();
+  await assertSucceeds(setDoc(doc(db, 'photographers/pt6b'), { onboardingComplete: false }));
+  await assertSucceeds(updateDoc(doc(db, 'photographers/pt6b'), { onboardingComplete: true }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt6b'), { onboardingComplete: false }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt6b'), { onboardingComplete: deleteField() }));
+  await assertFails(setDoc(doc(db, 'photographers/pt6b'), { onboardingComplete: false }));
+  // Other edits keep working once setup is finished.
+  await assertSucceeds(updateDoc(doc(db, 'photographers/pt6b'), { bio: 'Chân dung' }));
 });
 test('others cannot read private/studioAddress', async () => {
   await asPhotographer('pt7');
