@@ -12,6 +12,9 @@ import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
 import 'package:photobooking/features/calendar/my_calendar_screen.dart';
+import 'package:photobooking/features/chat/chat_list_screen.dart';
+import 'package:photobooking/features/chat/chat_screen.dart';
+import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
@@ -213,6 +216,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       ...bookingDetailRoutes(),
+      GoRoute(
+        path: '/chats',
+        builder: (_, _) => const ChatListScreen(),
+      ),
+      GoRoute(
+        path: '/chat/:chatId',
+        builder: (_, state) => ChatScreen(
+          chatId: state.pathParameters['chatId']!,
+          serviceId: state.uri.queryParameters['serviceId'],
+          initialReschedule: state.uri.queryParameters['reschedule'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: '/u/:uid/ask',
+        builder: (_, state) => InquiryEntry(
+          photographerId: state.pathParameters['uid']!,
+          serviceId: state.uri.queryParameters['serviceId'],
+        ),
+      ),
       GoRoute(
         path: '/u/:uid',
         builder: (_, state) => PhotographerProfileScreen(

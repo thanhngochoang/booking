@@ -67,7 +67,12 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           );
       if (!mounted) return;
       setState(() => _accepting = null);
-      await context.push('/b/${b.id}');
+      final chatId = b.chatId;
+      if (chatId != null) {
+        await context.push('/chat/$chatId');
+      } else {
+        await context.push('/b/${b.id}');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _accepting = null);

@@ -1,7 +1,7 @@
-// test/support/discovery_world.dart
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
@@ -23,6 +23,7 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'content_fixtures.dart';
+import 'fake_chat_repository.dart';
 
 /// p1 free Sat 3 Oct, p2 free Fri 2 Oct, p3 free Sun 4 Oct, p4 no free day.
 List<PhotographerSummary> discoveryPhotographers() => [
@@ -207,6 +208,7 @@ class DiscoveryWorld {
   final RecommendationRepository Function(DiscoveryWorld world)?
   recommenderFactory;
 
+  final chat = FakeChatRepository();
   late SharedPreferences prefs;
   late FakeAuthRepository auth;
   late String uid;
@@ -229,6 +231,7 @@ class DiscoveryWorld {
     await users.ensureProfile(u);
     await users.setRole(u.uid, role);
     uid = u.uid;
+    chat.currentUserId = uid;
     if (hasPhone) {
       contacts.seed(u.uid, const UserContact(phone: '+84903123456'));
     }
@@ -249,6 +252,7 @@ class DiscoveryWorld {
       serviceRepositoryProvider.overrideWithValue(services),
       availabilityLookupProvider.overrideWithValue(availability),
       recommendationRepositoryProvider.overrideWithValue(recommender),
+      chatRepositoryProvider.overrideWithValue(chat),
     ];
   }
 }

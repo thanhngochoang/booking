@@ -2428,4 +2428,118 @@ class AppLocalizationsVi extends AppLocalizations {
   String declineDoneToast(String name) {
     return 'Đã từ chối. $name được hoàn cọc.';
   }
+
+  @override
+  String get chatInput => 'Nhập tin nhắn…';
+
+  @override
+  String get chatSendLocation => 'Gửi vị trí';
+
+  @override
+  String get chatSendRef => 'Gửi ảnh tham khảo';
+
+  @override
+  String get chatReschedule => 'Đổi lịch';
+
+  @override
+  String get chatConfirmPlace => 'Xác nhận địa điểm';
+
+  @override
+  String chatConfirmPlaceText(String place) {
+    return 'Chốt địa điểm: $place';
+  }
+
+  @override
+  String get chatSendFailed => 'Gửi lại';
+
+  @override
+  String chatInquiryCap(String name) {
+    return 'Bạn đã gửi 3 tin. Chờ $name trả lời để nhắn tiếp.';
+  }
+
+  @override
+  String get chatReadOnly => 'Cuộc trò chuyện chỉ còn để đọc.';
+
+  @override
+  String get chatClosed => 'Cuộc trò chuyện đã đóng. Gửi tin để mở lại.';
+
+  @override
+  String get chatOffline => 'Không có kết nối. Bạn vẫn xem được tin cũ.';
+
+  @override
+  String chatLocationOf(String name) {
+    return 'Vị trí của $name';
+  }
+
+  @override
+  String get chatLocationDenied =>
+      'Không thể lấy vị trí. Vui lòng cấp quyền vị trí.';
+
+  @override
+  String get chatSysRequested =>
+      'Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.';
+
+  @override
+  String get chatSysAccepted => 'Nhiếp ảnh gia đã nhận buổi chụp.';
+
+  @override
+  String get chatSysDeclined => 'Nhiếp ảnh gia đã từ chối yêu cầu.';
+
+  @override
+  String get chatSysExpired => 'Yêu cầu đã hết hạn.';
+
+  @override
+  String get chatSysCancelled => 'Buổi chụp đã huỷ.';
+
+  @override
+  String get chatSysCompleted => 'Buổi chụp đã hoàn thành.';
+
+  @override
+  String chatRescheduleProposal(String day, String start, String end) {
+    return 'Đề nghị đổi sang $day $start–$end';
+  }
+
+  @override
+  String get chatRescheduleAccept => 'Chấp nhận';
+
+  @override
+  String get chatRescheduleDecline => 'Từ chối';
+
+  @override
+  String get chatRescheduleDeclineTitle => 'Từ chối đề nghị đổi lịch?';
+
+  @override
+  String get chatRescheduleAccepted => 'Đã đổi lịch thành công';
+
+  @override
+  String get chatRescheduleDeclined => 'Đã từ chối đổi lịch';
+
+  @override
+  String get chatRescheduleExpired => 'Đề nghị đổi lịch đã hết hạn';
+
+  @override
+  String get chatDayTaken => 'Ngày này đã kín';
+
+  @override
+  String get chatViewBooking => 'Xem buổi chụp';
+
+  @override
+  String get chatPhoto => 'Ảnh';
+
+  @override
+  String get chatLocation => 'Vị trí';
+
+  @override
+  String get chatsTitle => 'Tin nhắn';
+
+  @override
+  String get chatsEmptyTitle => 'Chưa có cuộc trò chuyện nào';
+
+  @override
+  String get chatsEmptyAction => 'Tìm nhiếp ảnh gia';
+
+  @override
+  String inquiryNotEligible(String name) {
+    return '$name chưa nhận tin hỏi trước';
+  }
 }

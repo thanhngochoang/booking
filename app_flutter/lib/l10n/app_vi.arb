@@ -1205,5 +1205,66 @@
     "placeholders": {
       "name": {"type": "String"}
     }
+  },
+  "chatInput": "Nhập tin nhắn…",
+  "chatSendLocation": "Gửi vị trí",
+  "chatSendRef": "Gửi ảnh tham khảo",
+  "chatReschedule": "Đổi lịch",
+  "chatConfirmPlace": "Xác nhận địa điểm",
+  "chatConfirmPlaceText": "Chốt địa điểm: {place}",
+  "@chatConfirmPlaceText": {
+    "placeholders": {
+      "place": {"type": "String"}
+    }
+  },
+  "chatSendFailed": "Gửi lại",
+  "chatInquiryCap": "Bạn đã gửi 3 tin. Chờ {name} trả lời để nhắn tiếp.",
+  "@chatInquiryCap": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "chatReadOnly": "Cuộc trò chuyện chỉ còn để đọc.",
+  "chatClosed": "Cuộc trò chuyện đã đóng. Gửi tin để mở lại.",
+  "chatOffline": "Không có kết nối. Bạn vẫn xem được tin cũ.",
+  "chatLocationOf": "Vị trí của {name}",
+  "@chatLocationOf": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "chatLocationDenied": "Không thể lấy vị trí. Vui lòng cấp quyền vị trí.",
+  "chatSysRequested": "Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.",
+  "chatSysAccepted": "Nhiếp ảnh gia đã nhận buổi chụp.",
+  "chatSysDeclined": "Nhiếp ảnh gia đã từ chối yêu cầu.",
+  "chatSysExpired": "Yêu cầu đã hết hạn.",
+  "chatSysCancelled": "Buổi chụp đã huỷ.",
+  "chatSysCompleted": "Buổi chụp đã hoàn thành.",
+  "chatRescheduleProposal": "Đề nghị đổi sang {day} {start}–{end}",
+  "@chatRescheduleProposal": {
+    "placeholders": {
+      "day": {"type": "String"},
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
+  "chatRescheduleAccept": "Chấp nhận",
+  "chatRescheduleDecline": "Từ chối",
+  "chatRescheduleDeclineTitle": "Từ chối đề nghị đổi lịch?",
+  "chatRescheduleAccepted": "Đã đổi lịch thành công",
+  "chatRescheduleDeclined": "Đã từ chối đổi lịch",
+  "chatRescheduleExpired": "Đề nghị đổi lịch đã hết hạn",
+  "chatDayTaken": "Ngày này đã kín",
+  "chatViewBooking": "Xem buổi chụp",
+  "chatPhoto": "Ảnh",
+  "chatLocation": "Vị trí",
+  "chatsTitle": "Tin nhắn",
+  "chatsEmptyTitle": "Chưa có cuộc trò chuyện nào",
+  "chatsEmptyAction": "Tìm nhiếp ảnh gia",
+  "inquiryNotEligible": "{name} chưa nhận tin hỏi trước",
+  "@inquiryNotEligible": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
   }
 }

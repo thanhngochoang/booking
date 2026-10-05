@@ -111,6 +111,18 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 ---
 
+## S07.02 · Danh sách hội thoại
+
+- **Thông tin**: `/chats` · cả hai · sub‑project 4d · ✅ Đã làm.
+- **Mục đích**: xem mọi cuộc trò chuyện ở một chỗ (hỏi trước và booking).
+- **Bố cục**: AppBar tiêu đề "Tin nhắn"; danh sách `ConversationRow` mới nhất lên đầu (`AsyncView` với skeleton 6 hàng); mỗi hàng gồm avatar, tên đối tác, tin nhắn xem trước, thời gian tương đối, số tin chưa đọc, và badge trạng thái "Đã đặt" cho cuộc trò chuyện gắn booking; chạm dòng → `/chat/:id`.
+- **Dữ liệu**: `myChatsProvider` (stream danh sách `ChatListItem`); profile đối tác qua `partyProfileProvider(counterpartId)` (hiện skeleton ở vị trí hàng khi đang tải).
+- **Trạng thái**: trống → `EmptyState` "Chưa có cuộc trò chuyện nào" + nút "Tìm nhiếp ảnh gia" (`/action`) cho khách, không có nút cho nhiếp ảnh gia; lỗi → `ErrorState` kèm nút thử lại.
+- **Chuỗi**: `chatsTitle` "Tin nhắn", `chatsEmptyTitle` "Chưa có cuộc trò chuyện nào", `chatsEmptyAction` "Tìm nhiếp ảnh gia".
+- **Chấp nhận**: danh sách sắp xếp mới nhất lên đầu; tin mới đến tự cập nhật thứ tự thời gian thực; badge số tin chưa đọc hiện đúng; chạm dòng mở đúng cuộc trò chuyện; chuyển đổi trạng thái rỗng đúng theo vai trò khách/nhiếp ảnh gia.
+
+---
+
 ## S05.01 · Danh sách đặt lịch
 
 - **Thông tin**: `/bookings` (khách) · khách · sub‑project 4 · Chưa có (hiện empty trong `BookingsTab`).

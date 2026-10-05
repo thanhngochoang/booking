@@ -68,7 +68,7 @@ class FakeChatRepository implements ChatRepository {
     }
   }
 
-  void _notifyChats() {
+  List<ChatListItem> _buildChatList() {
     final items = threads.values.map((t) {
       final unread = unreadCounts[t.id] ?? 0;
       return ChatListItem(thread: t, unreadCount: unread);
@@ -78,7 +78,11 @@ class FakeChatRepository implements ChatRepository {
       final bTime = b.thread.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
-    _myChatsController.add(items);
+    return items;
+  }
+
+  void _notifyChats() {
+    _myChatsController.add(_buildChatList());
   }
 
   void _notifyTotalUnread() {
@@ -130,15 +134,15 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Stream<List<ChatListItem>> watchMyChats({int limit = 50}) {
-    _notifyChats();
-    return _myChatsController.stream;
+  Stream<List<ChatListItem>> watchMyChats({int limit = 50}) async* {
+    yield _buildChatList();
+    yield* _myChatsController.stream;
   }
 
   @override
-  Stream<int> watchTotalUnread() {
-    _notifyTotalUnread();
-    return _totalUnreadController.stream;
+  Stream<int> watchTotalUnread() async* {
+    yield unreadCounts.values.fold<int>(0, (sum, count) => sum + count);
+    yield* _totalUnreadController.stream;
   }
 
   @override

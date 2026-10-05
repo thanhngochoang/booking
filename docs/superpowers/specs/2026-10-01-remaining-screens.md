@@ -66,7 +66,7 @@ Vì phép nhân chỉ làm tối, nút avatar không bao giờ sáng hơn gradie
 
 ## 2. Mã màn hình
 
-Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của người dùng); mỗi màn trong use case có mã `Sxx.yy` (ví dụ `S04.02` là bước Ngày & giờ của use case Đặt lịch). Sheet, trạng thái riêng của một route và popover cũng có mã riêng khi người dùng nhìn thấy như một màn. Màn mới lấy số `.yy` kế tiếp trong use case của nó; use case mới lấy `Sxx` kế tiếp. Không đánh lại số trong một use case; màn bị bỏ để lại chỗ trống. Cột "Mã cũ" là mã phẳng `S01`–`S67` dùng trước ngày 2026-10-02 (commit, ledger và plan đã chạy vẫn ghi mã cũ); công cụ đổi mã ở `scripts/tools/screen_code_map.py`.
+Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của người dùng); mỗi màn trong use case có mã `Sxx.yy` (ví dụ `S04.02` là bước Ngày & giờ của use case Đặt lịch). Sheet, trạng thái riêng của một route và popover cũng có mã riêng khi người dùng nhìn thấy như một màn. Màn mới lấy số `.yy` kế tiếp trong use case của nó; use case mới lấy `Sxx` kế tiếp. Không đánh lại số trong một use case; màn bị bỏ để lại chỗ trống. Mã đánh liên tục `S02.01`–`S07.02`. Cột "Mã cũ" là mã phẳng `S01`–`S67` dùng trước ngày 2026-10-02 (commit, ledger và plan đã chạy vẫn ghi mã cũ); công cụ đổi mã ở `scripts/tools/screen_code_map.py`.
 
 | Mã | Màn hình | Route | Vai trò | Sub‑project | Trạng thái (2026-10-02) | Mã cũ |
 |----|----------|-------|---------|-------------|------------|-------|
@@ -106,8 +106,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S43 |
 | S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S44 |
 | **S07** | **Hội thoại** | | | | | |
-| S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4 | ⬜ chưa có plan (đặt lịch / công việc) | S11 |
-| S07.02 | Danh sách hội thoại | `/chats` | cả hai | 4d | ⬜ plan 4d | — (mới) |
+| S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) | S11 |
+| S07.02 | Danh sách hội thoại | `/chats` | cả hai | 4d | ✅ đã làm (4d) | — (mới) |
 | **S08** | **Thiết lập hồ sơ nhiếp ảnh gia** | | | | | |
 | S08.01 | Thiết lập hồ sơ, bước 1–2 (giới thiệu, gói) | `/setup/:step` | NAG | 2 | ✅ đã làm (2d1) | S24 |
 | S08.02 | Kỹ năng, phần 1 (thể loại, mức độ) · bước 3/4 | `/setup/3`, `/profile/skills` | NAG | 2 | ✅ đã làm (2c) | S38 |
