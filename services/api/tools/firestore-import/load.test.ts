@@ -28,6 +28,7 @@ const EXPECTED = {
   photographers: { file: 1, inDb: 1 },
   photographer_contact_channels: { file: 1, inDb: 1 },
   photographer_contact_numbers: { file: 1, inDb: 1 },
+  studio_addresses: { file: 1, inDb: 1 },
 };
 
 describe('loadSlice', () => {
@@ -51,6 +52,10 @@ describe('loadSlice', () => {
     expect((await findProfile(db, 'u_lan'))?.avatarUrl).toBe('https://lh3.googleusercontent.com/a/lan.jpg');
     const numbers = await db.selectFrom('photographer_contact_numbers').selectAll().executeTakeFirstOrThrow();
     expect(numbers).toEqual({ photographer_id: 'p_minh', phone_e164: '+84912345678', zalo_phone_e164: '+84987654321', whatsapp_phone_e164: null });
+    const p = await db.selectFrom('photographers').select(['provider_type', 'studio_district', 'approved_award_count']).executeTakeFirstOrThrow();
+    expect(p).toEqual({ provider_type: 'studio', studio_district: 'Ba Đình', approved_award_count: 2 });
+    const studio = await db.selectFrom('studio_addresses').select(['photographer_id', 'line', 'lat']).executeTakeFirstOrThrow();
+    expect(studio).toEqual({ photographer_id: 'p_minh', line: '1 Kim Mã', lat: 21.03 });
   });
 
   it('a file that does not match its manifest stops the import before any write', async () => {

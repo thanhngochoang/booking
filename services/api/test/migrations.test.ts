@@ -28,12 +28,14 @@ const EXPECTED: Record<string, string[]> = {
     'user_id', 'bio', 'years_experience', 'service_city', 'service_lat', 'service_lng', 'service_radius_km',
     'cover_file_id', 'verified', 'verified_at', 'onboarding_complete', 'accepts_inquiries', 'rating_avg',
     'review_count', 'completed_count', 'response_minutes_median', 'starting_price', 'next_free_date',
-    'skills_completeness', 'created_at', 'updated_at',
+    'skills_completeness', 'created_at', 'updated_at', 'provider_type', 'artist_since', 'studio_district',
+    'studio_city', 'approved_award_count',
   ],
   services: [
     'id', 'photographer_id', 'name', 'specialty_id', 'duration_minutes', 'price', 'currency', 'photo_count',
     'edited_count', 'delivery_days', 'cover_file_id', 'active', 'created_at', 'updated_at',
   ],
+  studio_addresses: ['photographer_id', 'line', 'ward', 'district', 'city', 'lat', 'lng', 'updated_at'],
   taxonomy_items: ['id', 'grp', 'label_vi', 'parent_id', 'sort_order', 'active'],
   user_contacts: ['user_id', 'phone_e164', 'phone_verified', 'allow_zalo', 'allow_whatsapp', 'updated_at'],
   users: [

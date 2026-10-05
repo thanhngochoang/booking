@@ -6,7 +6,7 @@ import { sql, type Kysely, type Transaction } from 'kysely';
 
 import type { Database } from '../../src/db/database.js';
 import { SLICE_TABLES, type Manifest, type SliceTable } from './export.js';
-import type { ChannelsRow, FileRow, NumbersRow, PhotographerRow, UserContactRow, UserRow } from './map.js';
+import type { ChannelsRow, FileRow, NumbersRow, PhotographerRow, StudioAddressRow, UserContactRow, UserRow } from './map.js';
 import { readNdjson } from './ndjson.js';
 
 export class ImportCheckError extends Error {}
@@ -29,6 +29,7 @@ const PK: Record<SliceTable, string> = {
   photographers: 'user_id',
   photographer_contact_channels: 'photographer_id',
   photographer_contact_numbers: 'photographer_id',
+  studio_addresses: 'photographer_id',
 };
 
 const chunks = <T>(rows: T[], size = 500): T[][] =>
@@ -116,6 +117,8 @@ async function upsertPhotographers(trx: Trx, rows: PhotographerRow[]): Promise<v
         user_id: r.user_id, bio: r.bio, years_experience: r.years_experience, service_city: r.service_city,
         service_lat: r.service_lat, service_lng: r.service_lng, service_radius_km: r.service_radius_km,
         verified: r.verified, onboarding_complete: r.onboarding_complete, accepts_inquiries: r.accepts_inquiries,
+        provider_type: r.provider_type, artist_since: r.artist_since ? new Date(r.artist_since) : null, studio_district: r.studio_district,
+        studio_city: r.studio_city, approved_award_count: r.approved_award_count,
         ...stamps(r),
       })))
       .onConflict((oc) =>
@@ -131,13 +134,22 @@ async function upsertPhotographers(trx: Trx, rows: PhotographerRow[]): Promise<v
             verified: eb.ref('excluded.verified'),
             onboarding_complete: eb.ref('excluded.onboarding_complete'),
             accepts_inquiries: eb.ref('excluded.accepts_inquiries'),
+            provider_type: eb.ref('excluded.provider_type'),
+            artist_since: eb.ref('excluded.artist_since'),
+            studio_district: eb.ref('excluded.studio_district'),
+            studio_city: eb.ref('excluded.studio_city'),
+            approved_award_count: eb.ref('excluded.approved_award_count'),
           }))
           .where(sql<boolean>`(photographers.bio, photographers.years_experience, photographers.service_city,
               photographers.service_lat, photographers.service_lng, photographers.service_radius_km,
-              photographers.verified, photographers.onboarding_complete, photographers.accepts_inquiries)
+              photographers.verified, photographers.onboarding_complete, photographers.accepts_inquiries,
+              photographers.provider_type, photographers.artist_since, photographers.studio_district,
+              photographers.studio_city, photographers.approved_award_count)
             is distinct from (excluded.bio, excluded.years_experience, excluded.service_city,
               excluded.service_lat, excluded.service_lng, excluded.service_radius_km,
-              excluded.verified, excluded.onboarding_complete, excluded.accepts_inquiries)`),
+              excluded.verified, excluded.onboarding_complete, excluded.accepts_inquiries,
+              excluded.provider_type, excluded.artist_since, excluded.studio_district,
+              excluded.studio_city, excluded.approved_award_count)`),
       )
       .execute();
   }
@@ -185,6 +197,33 @@ async function upsertNumbers(trx: Trx, rows: NumbersRow[]): Promise<void> {
   }
 }
 
+async function upsertStudioAddresses(trx: Trx, rows: StudioAddressRow[]): Promise<void> {
+  for (const c of chunks(rows)) {
+    await trx
+      .insertInto('studio_addresses')
+      .values(c.map((r) => ({
+        photographer_id: r.photographer_id, line: r.line, ward: r.ward, district: r.district, city: r.city,
+        lat: r.lat, lng: r.lng, ...(r.updated_at ? { updated_at: r.updated_at } : {}),
+      })))
+      .onConflict((oc) =>
+        oc
+          .column('photographer_id')
+          .doUpdateSet((eb) => ({
+            line: eb.ref('excluded.line'),
+            ward: eb.ref('excluded.ward'),
+            district: eb.ref('excluded.district'),
+            city: eb.ref('excluded.city'),
+            lat: eb.ref('excluded.lat'),
+            lng: eb.ref('excluded.lng'),
+          }))
+          .where(sql<boolean>`(studio_addresses.line, studio_addresses.ward, studio_addresses.district,
+              studio_addresses.city, studio_addresses.lat, studio_addresses.lng)
+            is distinct from (excluded.line, excluded.ward, excluded.district, excluded.city, excluded.lat, excluded.lng)`),
+      )
+      .execute();
+  }
+}
+
 /**
  * Loads an export into PostgreSQL in one transaction (data-model README §6 step 2):
  * checksums and counts first, then upserts in FK order, then every exported id
@@ -211,6 +250,7 @@ export async function loadSlice(db: Kysely<Database>, dir: string, opts: { dryRu
       await upsertPhotographers(trx, data.photographers as unknown as PhotographerRow[]);
       await upsertChannels(trx, data.photographer_contact_channels as unknown as ChannelsRow[]);
       await upsertNumbers(trx, data.photographer_contact_numbers as unknown as NumbersRow[]);
+      await upsertStudioAddresses(trx, data.studio_addresses as unknown as StudioAddressRow[]);
 
       const tables = {} as LoadReport['tables'];
       for (const t of SLICE_TABLES) {

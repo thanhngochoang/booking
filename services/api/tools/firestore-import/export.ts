@@ -2,7 +2,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { mapPhotographer, mapPhotographerNumbers, mapUser, mapUserContact } from './map.js';
+import { mapPhotographer, mapPhotographerNumbers, mapStudioAddress, mapUser, mapUserContact } from './map.js';
 import { writeNdjson } from './ndjson.js';
 
 /** relational-schema.md §5 order, restricted to the slice. */
@@ -13,6 +13,7 @@ export const SLICE_TABLES = [
   'photographers',
   'photographer_contact_channels',
   'photographer_contact_numbers',
+  'studio_addresses',
 ] as const;
 export type SliceTable = (typeof SLICE_TABLES)[number];
 
@@ -41,7 +42,7 @@ interface Rejected {
 
 export async function exportSlice(src: DocSource, outDir: string, now: Date = new Date()): Promise<Manifest> {
   const rows: Record<SliceTable, object[]> = {
-    files: [], users: [], user_contacts: [], photographers: [], photographer_contact_channels: [], photographer_contact_numbers: [],
+    files: [], users: [], user_contacts: [], photographers: [], photographer_contact_channels: [], photographer_contact_numbers: [], studio_addresses: [],
   };
   const rejected: Rejected[] = [];
   const userIds = new Set<string>();
@@ -80,6 +81,12 @@ export async function exportSlice(src: DocSource, outDir: string, now: Date = ne
       const n = mapPhotographerNumbers(doc.id, numbers);
       if (n.ok) rows.photographer_contact_numbers.push(n.value);
       else rejected.push({ source: `photographers/${doc.id}/private/contact`, reason: n.reason });
+    }
+    const studio = await src.get(`photographers/${doc.id}/private/studioAddress`);
+    if (studio) {
+      const a = mapStudioAddress(doc.id, studio);
+      if (a.ok) rows.studio_addresses.push(a.value);
+      else rejected.push({ source: `photographers/${doc.id}/private/studioAddress`, reason: a.reason });
     }
   }
 
