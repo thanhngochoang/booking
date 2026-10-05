@@ -27,6 +27,8 @@ import { handleBookingWrite } from './triggers/booking_write.js';
 import { handleSubmitReview } from './callables/review.js';
 import { handleReviewWrite } from './triggers/review_write.js';
 import { liveReviewDeps, liveStatsStore } from './infra/live_review.js';
+import { handleSetProviderType, handleSetStudioAddress } from './callables/provider.js';
+import { liveProviderDeps } from './infra/live_provider.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -124,3 +126,13 @@ export const onReviewWrite = onDocumentWritten(
   },
 );
 
+
+/** Provider picks individual or studio (`{type}` → `{providerType}`); refused with open work or held money. */
+export const setProviderType = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSetProviderType(request, liveProviderDeps()),
+);
+
+/** Studio saves its private address; the district and city go public. */
+export const setStudioAddress = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSetStudioAddress(request, liveProviderDeps()),
+);

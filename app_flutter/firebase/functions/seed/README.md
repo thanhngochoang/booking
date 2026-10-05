@@ -13,6 +13,8 @@ Password for every account: `seed-password-1`
 | `minh.nophone@seed.test` | `seed-customer-minh` | customer | no phone: server answers `phone_required` |
 | `an.verified@seed.test` | `seed-photographer-an` | photographer | verified, Hà Nội; Gọi + Zalo + WhatsApp; `+84912000001`, Zalo `+84912000002`, WhatsApp `+14155550101` |
 | `binh.unverified@seed.test` | `seed-photographer-binh` | photographer | not verified, Đà Nẵng; Gọi only; `+84987000001` |
+| `cuc.studio@seed.test` | `seed-photographer-cuc` | photographer | studio (`providerType: studio`), TP.HCM; private studio address, public district Quận 1; Gọi only; `+84938000001` |
+| `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`), Huế; Gọi only; `+84905000001` |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
 |---|---|---|---|

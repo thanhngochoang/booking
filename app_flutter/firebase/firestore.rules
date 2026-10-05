@@ -168,6 +168,23 @@ service cloud.firestore {
                            resource == null ? {} : resource.data.get('skills', {})));
     }
 
+    // photographers/{uid}: server fields the client must never set, change or remove.
+    function photographerServerFieldsUntouched() {
+      let changed = resource == null
+        ? request.resource.data.keys()
+        : request.resource.data.diff(resource.data).affectedKeys();
+      return !changed.hasAny(['providerType', 'artistSince', 'studioDistrict', 'studioCity', 'approvedAwardCount']);
+    }
+
+    // A studio finishes setup only once its private address exists.
+    function studioFinishOk(uid) {
+      let d = request.resource.data;
+      return !(d.get('onboardingComplete', false) == true
+               && d.get('providerType', 'individual') == 'studio'
+               && (resource == null || resource.data.get('onboardingComplete', false) != true))
+        || exists(/databases/$(database)/documents/photographers/$(uid)/private/studioAddress);
+    }
+
     // photographers/{uid} fields of setup step 1 (S24). Runs only when the write changes bio or
     // equipment (see photographerFieldsOk).
     function validIntro() {
@@ -330,6 +347,8 @@ service cloud.firestore {
       allow create, update: if isOwner(uid)
         && hasPhotographerRole(uid)
         && verifiedUntouched()
+        && photographerServerFieldsUntouched()
+        && studioFinishOk(uid)
         && photographerFieldsOk(uid);
       allow delete: if false;
 

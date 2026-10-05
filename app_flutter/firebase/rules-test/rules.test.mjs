@@ -1184,3 +1184,60 @@ test('clients still cannot create real_shoot posts', async () => {
 });
 
 
+
+// Provider types (plan A1): server-only fields and the studio address.
+test('owner cannot set providerType', async () => {
+  await asPhotographer('pt1');
+  const db = env.authenticatedContext('pt1').firestore();
+  await assertFails(setDoc(doc(db, 'photographers/pt1'), { onboardingComplete: false, providerType: 'artist' }));
+  await assertSucceeds(setDoc(doc(db, 'photographers/pt1'), { onboardingComplete: false }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt1'), { providerType: 'studio' }));
+});
+test('owner cannot remove providerType', async () => {
+  await asPhotographer('pt2');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/pt2'), { onboardingComplete: false, providerType: 'studio' }));
+  const db = env.authenticatedContext('pt2').firestore();
+  await assertFails(updateDoc(doc(db, 'photographers/pt2'), { providerType: deleteField() }));
+});
+test('owner cannot set studioDistrict', async () => {
+  await asPhotographer('pt3');
+  const db = env.authenticatedContext('pt3').firestore();
+  await assertSucceeds(setDoc(doc(db, 'photographers/pt3'), { onboardingComplete: false }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt3'), { studioDistrict: 'Quận 1' }));
+  await assertFails(updateDoc(doc(db, 'photographers/pt3'), { studioCity: 'TP.HCM' }));
+});
+test('studio cannot finish setup without an address', async () => {
+  await asPhotographer('pt4');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/pt4'), { onboardingComplete: false, providerType: 'studio' }));
+  const db = env.authenticatedContext('pt4').firestore();
+  await assertFails(updateDoc(doc(db, 'photographers/pt4'), { onboardingComplete: true }));
+});
+test('studio with an address can finish setup', async () => {
+  await asPhotographer('pt5');
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'photographers/pt5'), { onboardingComplete: false, providerType: 'studio' });
+    await setDoc(doc(c.firestore(), 'photographers/pt5/private/studioAddress'), {
+      line: '12 Lê Lợi', ward: null, district: 'Quận 1', city: 'TP.HCM', lat: null, lng: null,
+    });
+  });
+  const db = env.authenticatedContext('pt5').firestore();
+  await assertSucceeds(updateDoc(doc(db, 'photographers/pt5'), { onboardingComplete: true }));
+});
+test('individual finishes setup as before', async () => {
+  await asPhotographer('pt6');
+  const db = env.authenticatedContext('pt6').firestore();
+  await assertSucceeds(setDoc(doc(db, 'photographers/pt6'), { onboardingComplete: false }));
+  await assertSucceeds(updateDoc(doc(db, 'photographers/pt6'), { onboardingComplete: true }));
+});
+test('others cannot read private/studioAddress', async () => {
+  await asPhotographer('pt7');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/pt7/private/studioAddress'), {
+      line: '12 Lê Lợi', ward: null, district: 'Quận 1', city: 'TP.HCM', lat: null, lng: null,
+    }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('pt7').firestore(), 'photographers/pt7/private/studioAddress')));
+  await assertFails(getDoc(doc(env.authenticatedContext('other').firestore(), 'photographers/pt7/private/studioAddress')));
+  await assertFails(setDoc(doc(env.authenticatedContext('pt7').firestore(), 'photographers/pt7/private/studioAddress'), { line: 'x' }));
+});
