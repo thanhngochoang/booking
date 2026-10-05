@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/content/firestore_photographer_repository.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
@@ -74,6 +75,31 @@ void main() {
       await seedService(db, s);
     }
     return FirestoreServiceRepository(db: db);
+  });
+
+  group('photographerSummaryFrom provider type', () {
+    PhotographerSummary from(Map<String, dynamic> d) =>
+        photographerSummaryFrom(id: 'p', photographer: d);
+
+    test('missing providerType reads as individual', () {
+      final p = from({});
+      expect(p.providerType, ProviderType.individual);
+      expect(p.approvedAwardCount, 0);
+      expect(p.studioDistrict, isNull);
+    });
+    test('unknown providerType reads as individual', () {
+      expect(from({'providerType': 'x'}).providerType, ProviderType.individual);
+    });
+    test('artist reads with its award count', () {
+      final p = from({'providerType': 'artist', 'approvedAwardCount': 3});
+      expect(p.providerType, ProviderType.artist);
+      expect(p.approvedAwardCount, 3);
+    });
+    test('studio reads its district', () {
+      final p = from({'providerType': 'studio', 'studioDistrict': 'Quận 1'});
+      expect(p.providerType, ProviderType.studio);
+      expect(p.studioDistrict, 'Quận 1');
+    });
   });
 
   group('photographerSummaryFrom', () {

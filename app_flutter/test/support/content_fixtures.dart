@@ -1,4 +1,5 @@
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
@@ -65,6 +66,9 @@ PhotographerSummary fixturePhotographer(
   String? areaLabel = 'Quận 1',
   String? avatarUrl,
   String? coverUrl,
+  ProviderType providerType = ProviderType.individual,
+  int approvedAwards = 0,
+  String? studioDistrict,
 }) => PhotographerSummary(
   id: id,
   displayName: name,
@@ -83,6 +87,9 @@ PhotographerSummary fixturePhotographer(
   startingPriceVnd: startingPrice,
   nextFreeDate: nextFreeDate,
   createdAt: fixtureNow.subtract(createdAgo),
+  providerType: providerType,
+  approvedAwardCount: approvedAwards,
+  studioDistrict: studioDistrict,
 );
 
 ServiceSummary fixtureService(
