@@ -64,6 +64,9 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 8b1 | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications, explore uses EventCard) | done 2026-10-03 (b1/7-L2) |
 | 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
 | 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | done 2026-10-05 (PR #23); deferred Task 11 performance check to plan 16 |
+| 9a | `2026-10-05-a1-provider-types.md` (provider types: marks and tags, S08.01 Cá nhân/Studio, studio address, switch in S09.02) | not started; lane 2 Tasks 1–5 (domain, Functions, rules, Postgres column, data, core widgets) then lane 1 Tasks 6–7 after gate GA1 |
+| 9b | `2026-10-05-c-portfolio-albums.md` (S24, S03.01 Album / Dòng thời gian, S10.01 album field) | not started; independent of 9a; lane 2 Tasks 1–4, then units C1 (Task 5), C2 (Task 6), C3 (Task 7) in parallel after gate GC1 |
+| 9c | `2026-10-05-b1-awards-artist-tier.md` (S25, NAG tier, S03.01 awards strip, staff CLI for S23.07) | not started; needs 9a Tasks 1–5; lane 2 Tasks 1–4, then lane 1 Tasks 5–6 after gate GB1 |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |
 | 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
 | 12 | `2026-10-01-instant-i4-photographer-app.md` (S13.08, S14) | not started |
@@ -74,4 +77,4 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 
 ## Not planned yet
 
-Booking flow and work UI (S04.01–S04.04, S05.02, S05.03, S05.05, S07.01, S05.01, S06.01, S06.03, S06.05, S06.06; backend and repository done in 4a), events (S11.01–S11.04, S12, S11.05, S11.06), badges (S03.02), notifications (S17), job posts "Đăng việc" (S15, S16, still in design).
+Booking flow and work UI (S04.01–S04.04, S05.02, S05.03, S05.05, S07.01, S05.01, S06.01, S06.03, S06.05, S06.06; backend and repository done in 4a), events (S11.01–S11.04, S12, S11.05, S11.06), badges (S03.02), notifications (S17; since 2026-10-05 there is no header bell: the unread count is a `TabBadge` on the Hồ sơ tab and S09.01 has a "Thông báo" row, spec 10-05 §8 — `NotificationBell` is not used by any screen yet), the freelancer-style contract and job posts "Đăng việc" (S15, S16; mock and spec done in `2026-10-05-provider-types-portfolio-jobs-design.md`, plans D1–D5 wait for the user's answers to open questions 3–6 of that spec: 100% via app, milestone split, delivery storage, commission).
