@@ -117,9 +117,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   ) async {
     switch (a) {
       case DetailAction.message:
-      case DetailAction.reschedule:
         final chatId = b.chatId;
         if (chatId != null) await context.push('/chat/$chatId');
+      case DetailAction.reschedule:
+        final chatId = b.chatId;
+        if (chatId != null) await context.push('/chat/$chatId?reschedule=1');
       case DetailAction.contact:
         break; // handled by the dial itself
       case DetailAction.directions:

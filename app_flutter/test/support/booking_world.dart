@@ -37,11 +37,13 @@ import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
+import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
 import 'package:photobooking/features/chat/chat_screen.dart';
+import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -50,6 +52,7 @@ import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
 import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
+import 'fake_chat_repository.dart';
 import 'screen_host.dart';
 
 final worldBookingToday = DateTime.utc(2026, 10, 3, 10, 0);
@@ -188,6 +191,13 @@ Future<BookingWorldHandles> pumpBookingRoute(
         ),
       ),
       GoRoute(
+        path: '/u/:uid/ask',
+        builder: (_, state) => InquiryEntry(
+          photographerId: state.pathParameters['uid']!,
+          serviceId: state.uri.queryParameters['serviceId'],
+        ),
+      ),
+      GoRoute(
         path: '/u/:uid',
         builder: (_, s) => PhotographerProfileScreen(
           uid: s.pathParameters['uid']!,
@@ -238,6 +248,15 @@ Future<BookingWorldHandles> pumpBookingRoute(
       return false;
     }
   });
+  final hasCustomChat = extraOverrides.any((o) {
+    try {
+      final origin = (o as dynamic).origin;
+      return origin == chatRepositoryProvider ||
+          origin?.toString() == chatRepositoryProvider.toString();
+    } catch (_) {
+      return false;
+    }
+  });
 
   final overrides = <Override>[
     authRepositoryProvider.overrideWithValue(authRepo),
@@ -251,6 +270,8 @@ Future<BookingWorldHandles> pumpBookingRoute(
     bookingRepositoryProvider.overrideWithValue(effectiveBookings),
     availabilityRepositoryProvider.overrideWithValue(availRepo),
     userContactRepositoryProvider.overrideWithValue(contactRepo),
+    if (!hasCustomChat)
+      chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
     currentContactProvider.overrideWithValue(
       contact != null ? AsyncData(contact) : const AsyncData(null),
     ),
@@ -421,6 +442,16 @@ Future<BookingDetailHandles> pumpBookingDetail(
     ],
   );
 
+  final hasCustomChat = extraOverrides.any((o) {
+    try {
+      final origin = (o as dynamic).origin;
+      return origin == chatRepositoryProvider ||
+          origin?.toString() == chatRepositoryProvider.toString();
+    } catch (_) {
+      return false;
+    }
+  });
+
   final overrides = <Override>[
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     userRepositoryProvider.overrideWithValue(userRepo),
@@ -435,6 +466,8 @@ Future<BookingDetailHandles> pumpBookingDetail(
     photographerContactRepositoryProvider.overrideWithValue(
       photographerContacts,
     ),
+    if (!hasCustomChat)
+      chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
     ...extraOverrides,
   ];
 

@@ -1,17 +1,17 @@
 # Graph Report - booking  (2026-10-05)
 
 ## Corpus Check
-- 1102 files · ~1,202,003 words
+- 1104 files · ~1,203,000 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 203 file(s) not represented in the graph (top: .xml 139, (none) 14, .xcconfig 8)
 
 ## Summary
-- 14068 nodes · 24530 edges · 486 communities (420 shown, 66 thin omitted)
+- 14090 nodes · 24592 edges · 482 communities (411 shown, 71 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 1211 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `de2acc37`
+- Built from commit: `019b8d32`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,44 +20,44 @@
 - android.view.View
 - MVPFragment
 - app_localizations.dart
-- AlbumFragment
+- Album
 - Override
 - app_localizations_vi.dart
 - ProfileFragment
 - FadeToolbarScrollView
-- .status
+- booking_ports.ts
 - payment_pending_screen.dart
 - android.content.Context
-- ImageUtil.java
+- package:go_router/go_router.dart
 - FragmentPresenter
 - 3. Thẻ và danh sách
 - UpdateProfileActivity.java
 - app module build.gradle
-- quick_actions.dart
+- contact_dial_test.dart
 - Booking
 - firebase_auth_repository_test.dart
 - GetImageManager
-- package:flutter/material.dart
+- package:photobooking/core/core.dart
 - androidx.fragment.app.FragmentManager
 - find_controller_test.dart
 - ChatRoom
-- package:go_router/go_router.dart
+- profile_world.dart
 - chat.dart
-- booking_flow_e2e_test.dart
-- LoginPresenter.java
+- package:flutter_test/flutter_test.dart
+- .getView
 - booking_world.dart
-- getContactLink
+- Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan
 - package:flutter_riverpod/flutter_riverpod.dart
 - MainActivity
 - ActivityPresenter
-- Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan
+- domain/src/index.ts
 - booking_firestore.ts
 - chat_repository.dart
 - tokens.g.dart
 - screen_codes.dart
 - core.dart
-- photographer_profile_screen_test.dart
-- static const
+- role_screen.dart
+- cta_surface.dart
 - ci-affected-tests.py
 - functions/src/index.ts
 - badge_chip.dart
@@ -67,14 +67,14 @@
 - photographer_profile_screen.dart
 - ExampleInstrumentedTest.java
 - env.sh
-- setup_resume_test.dart
-- explore_screen_test.dart
-- Three-layer design tokens
+- return
 - discovery_world.dart
+- Three-layer design tokens
+- explore_badge_test.dart
 - helpers.ts
 - BaseApplication (application class)
 - PaymentProvider
-- score_skills.test.ts
+- createDeposit
 - fake_chat_repository.dart
 - setup_packages_screen.dart
 - resilient_recommendation_repository_test.dart
@@ -83,19 +83,19 @@
 - StatelessWidget
 - contact_dial.dart
 - booking.dart
-- _
+- avatar_controller_test.dart
 - post_composer.dart
 - fake_review_repository.dart
 - booking_view_rules.dart
 - profile_sections.dart
 - @immutable
-- butterknife.OnClick
-- VoidCallback
+- FindPhotographerFragment
+- String?
 - dart:io
 - unit/photographer_write.test.ts
 - photo_detail_screen.dart
 - skills_screen.dart
-- contact_dial_test.dart
+- login_screen.dart
 - reason_picker.dart
 - photographer_skills.dart
 - User
@@ -104,7 +104,7 @@
 - skills.ts
 - phone_field.dart
 - AndroidManifest.xml
-- find_screen.dart
+- BadgeDrawerArrowDrawable
 - location_controller.dart
 - package:cloud_firestore/cloud_firestore.dart
 - local_recommender.dart
@@ -157,7 +157,7 @@
 - Camera body attribute icon (than may, white flat glyph)
 - Dark mode override block
 - Parallel ops track (secrets, rules, Crashlytics, R8, CI)
-- dart:async
+- package:photobooking/data/booking/booking.dart
 - contact_launcher_test.dart
 - find_controller.dart
 - home_screen.dart
@@ -192,29 +192,29 @@
 - app_button.dart
 - intro_logic.dart
 - package:photobooking/l10n/app_localizations.dart
-- skills
+- package:photobooking/data/photographer/photographer_contact.dart
 - domain/package.json
-- booking_sheet_page.dart
+- ConsumerState
 - Key Syntax Differences and Pitfalls
-- skills_screen_test.dart
+- dart:async
 - review.dart
 - user_contact_repository.dart
 - user_profile.dart
 - contact_setup_screen.dart
 - package_logic.dart
 - Building Dart CLI Applications
-- score_skills.ts
+- bool get
 - contact_action_test.dart
-- photographer_summary.dart
+- my_calendar_screen.dart
 - add_phone_screen.dart
 - explore_screen.dart
-- decline_sheet.dart
+- cancel_sheet.dart
 - board.py
 - @freezed
 - chat_bubble.dart
 - media_uploader.dart
 - post_publisher.dart
-- location_repository.dart
+- setup_intro_screen.dart
 - photographer_contact_repository.dart
 - area_picker_sheet.dart
 - mock_api.dart
@@ -226,24 +226,24 @@
 - gen_app_icon.py
 - Spec — Các màn hình còn lại, Sự kiện, liên hệ, vị trí và huy hiệu (Flutter)
 - int get
-- area.dart
+- notification_row_test.dart
 - photographer_intro.dart
 - photographer_contact.dart
 - skills_server_info.dart
-- http_photographer_contact_repository.dart
-- DomainError
-- File Structure
+- http_user_repository.dart
+- chat_firestore.ts
+- skills
 - screens/README.md
 - _jvm-env.sh
 - rules.test.mjs
 - format.dart
 - own_posts_controller.dart
-- return
+- phone.dart
 - notification_row.dart
 - Chụp ngay: đặt nhiếp ảnh gia tức thì, khách chọn kiểu "match"
 - compilerOptions
 - my_bookings_screen.dart
-- location_repository_test.dart
+- package:shared_preferences/shared_preferences.dart
 - int?
 - database.ts
 - 2. Quy chuẩn kiểu dữ liệu và đặt tên
@@ -254,10 +254,10 @@
 - Setup Firebase cho app Flutter (Android)
 - booking_lifecycle_e2e_test.dart
 - File Structure
-- 3e. Kỹ năng nhiếp ảnh gia và dịch vụ gợi ý
+- AddImageAdapter
 - MyProjectFragment
 - vn_time.dart
-- ApiError
+- Self-Review
 - contact_setup_controller.dart
 - GeneratedPluginRegistrant.swift
 - Compiling C Code into Code Assets with Native Assets Hooks
@@ -265,11 +265,11 @@
 - File Structure
 - package:firebase_auth/firebase_auth.dart
 - 4. Sheet, tiến độ, trạng thái
-- land.py
+- decline_sheet_test.dart
 - compilerOptions
 - ulid.dart
 - wire.dart
-- builtin_taxonomy.dart
+- chat_composer.dart
 - gen_tokens.dart
 - Test app Flutter trên điện thoại Samsung
 - File Structure
@@ -286,11 +286,11 @@
 - Nhiếp ảnh gia: công việc, lịch, đăng bài, thiết lập, kỹ năng
 - calendar_days.dart
 - _
-- contact-links.test.ts
-- 2. Bảng
+- domain-shim.test.ts
+- Lược đồ quan hệ (chuẩn đích) và ánh xạ từ Firestore
 - File Structure
 - File Structure
-- domain/src/index.ts
+- src/review.ts
 - Component rút ra từ mock (phân tích UI 2026-10-02)
 - Tài khoản, hồ sơ cá nhân, đánh giá, huy hiệu
 - UX audit và redesign — Cộng đồng nhiếp ảnh gia
@@ -300,9 +300,9 @@
 - Setup máy mới (app Flutter)
 - File Structure
 - File Structure
-- String?
+- package:flutter/material.dart
 - ios/RunnerTests/RunnerTests.swift
-- target
+- 3h. Thông báo (S17)
 - skills_draft_store.dart
 - File Structure
 - 2. Nút, chip, điều khiển
@@ -321,11 +321,11 @@
 - Đặt lịch, thanh toán, hội thoại, liên hệ
 - firestore_chat_repository.dart
 - recommender-service
-- cancel_sheet.dart
-- edit_profile_screen.dart
+- fake_payment_sheet.dart
+- chat_screen.dart
 - post_publisher_test.dart
 - dart:math
-- evidence_picker_test.dart
+- evidence_picker.dart
 - app_flutter
 - 2. Recommended package:path Idioms vs. String Anti-Patterns
 - Implementing Dart Patterns
@@ -345,7 +345,7 @@
 - SDD ledger — plan: docs/superpowers/plans/2026-10-01-step2d1-photographer-setup-calendar.md
 - Handover (2026-10-02)
 - Firebase Remote Config - Android Setup Guide (Kotlin)
-- profile_header.dart
+- package:flutter/foundation.dart
 - SDD ledger — plan: docs/superpowers/plans/2026-10-01-step3c-create-post.md
 - CC0 1.0 Universal
 - explore_links.dart
@@ -378,23 +378,23 @@
 - contract_world.dart
 - firebase-basics/SKILL.md
 - confirm_sheet.dart
-- File Structure
-- cancel_sheet_test.dart
+- MenuAdapter
+- PhotographerMenu
 - Operations Reference
 - 1. Vector Similarity Search (Semantic)
-- skills_controller_test.dart
+- file_system_context.dart
 - Firestore Web SDK Usage Guide
-- engagementProvider
+- ConsumerWidget
 - Implementing Dart and Flutter Test Coverage
 - profile_providers_test.dart
 - nearby_events_repository.dart
-- migrate
+- File Structure
 - Writing Dart API Documentation
 - Firebase Authentication Web SDK
 - ⛔️ CRITICAL RULE: NO INLINE INITIALIZATION ⛔️
 - Firestore Indexes Reference
 - ⛔️ CRITICAL RULES & ENVIRONMENT CHECKS
-- contact_link_repository_test.dart
+- package:photobooking/data/contact/contact_link_repository.dart
 - cross_platform_paths.dart
 - Step-by-Step Migration Execution
 - Firebase Android Setup Guide
@@ -405,7 +405,7 @@
 - Cloud Functions Integration Reference
 - firebase-data-connect/SKILL.md
 - Templates
-- skills_world.dart
+- package:photobooking/data/user/user_profile.dart
 - Testing and Mocking Dart Applications
 - json_patterns.dart
 - Firebase Authentication - Android Setup Guide (Kotlin)
@@ -422,9 +422,9 @@
 - Managing Dart Dependencies
 - Firebase AI Logic Basics
 - ⛔️ CRITICAL RULE: NO INLINE INITIALIZATION ⛔️
-- FindPhotographerFragment
-- WebViewActivity
-- package:photobooking/data/chat/chat.dart
+- profile_providers.dart
+- UserMenu
+- test/errors.test.ts
 - Analyzing and Fixing Dart Code
 - Admin Node SDK
 - main.swift
@@ -436,7 +436,7 @@
 - Document Data Model
 - Firestore Indexes Reference
 - Web SDK Usage (Enterprise Native Mode)
-- ConsumerWidget
+- DateAdapter
 - File Structure
 - Firebase AI Logic iOS Setup Guide
 - Firebase AI Logic on Android (Kotlin)
@@ -444,7 +444,7 @@
 - Firebase Auth & Google Sign-In for Flutter
 - Basic Checks
 - Alternative: Manual MCP Configuration (Project Scope)
-- _ExploreScreenState
+- 2. Bảng
 - Manual Initialization
 - Flutter Setup for Firebase AI Logic
 - Firebase AI Logic Basics
@@ -463,28 +463,24 @@
 - Firebase Web Setup Guide
 - Mutations
 - @JsonSerializable
-- parse
+- single_command_tool.dart
 - Handover ledger — 8c/5-L1 (Booking detail, lists, work dashboard)
 - Antigravity Setup
 - Recommended Method: Using Plugins
 - Cursor Setup
-- sliver_adaptive_rows.dart
+- 3i. Use case bổ sung (2026-10-02)
 - Khám phá và hồ sơ nhiếp ảnh gia
 - Android Studio Setup
 - BookingContactSnapshot?
 - BookingEventRecord
-- FakeBookingRepository
+- OnMenuSelectListener
 - fastify-augment.ts
 - build.mjs
 - Package.swift
 - photographer_meta.dart
 - api/README.md
 - 3. Danh mục Sự kiện (mới)
-- Function `onPhotographerWrite`: độ khớp hồ sơ và minh chứng tính ở server
-- postRepositoryProvider
-- booking_errors.dart
-- _EvidenceSheetState
-- idle.dart
+- OnAddImageListener
 
 ## God Nodes (most connected - your core abstractions)
 1. `User` - 89 edges
@@ -492,23 +488,23 @@
 3. `DomainError` - 65 edges
 4. `FragmentPresenter` - 63 edges
 5. `MVPFragment` - 62 edges
-6. `_` - 56 edges
+6. `_` - 57 edges
 7. `MainActivity` - 53 edges
 8. `MVPActivity` - 51 edges
 9. `Booking` - 48 edges
 10. `ChatRoom` - 46 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `HTTP / Callables` --references--> `auth()`  [INFERRED]
+  .agents/skills/extension-to-functions-codebase/references/signature-mapping.md → .claude/skills/run-next-plan/scripts/board.py
+- `3h.1 Hành vi` --references--> `target()`  [INFERRED]
+  docs/superpowers/specs/2026-10-01-remaining-screens.md → .claude/skills/run-next-plan/scripts/board.py
+- `3h.2 Các loại thông báo` --references--> `target()`  [INFERRED]
+  docs/superpowers/specs/2026-10-01-remaining-screens.md → .claude/skills/run-next-plan/scripts/board.py
+- `3h.4 Pin và dữ liệu mạng` --references--> `target()`  [INFERRED]
+  docs/superpowers/specs/2026-10-01-remaining-screens.md → .claude/skills/run-next-plan/scripts/board.py
 - `2.7 Huy hiệu, gợi ý, vận hành` --references--> `target()`  [INFERRED]
   docs/superpowers/specs/data-model/domain-model.md → .claude/skills/run-next-plan/scripts/board.py
-- `S17.01 · Thông báo` --references--> `target()`  [INFERRED]
-  docs/superpowers/specs/screens/account.md → .claude/skills/run-next-plan/scripts/board.py
-- `Global Constraints` --references--> `fetch()`  [INFERRED]
-  docs/superpowers/plans/2026-10-01-instant-i2-dispatch-core.md → .claude/skills/run-next-plan/scripts/board.py
-- `Task 2: `AvailabilityCalendar`, `DayState` and the legend` --references--> `today()`  [INFERRED]
-  docs/superpowers/plans/2026-10-01-step2d1-photographer-setup-calendar.md → .claude/skills/run-next-plan/scripts/board.py
-- `@ref Directive` --references--> `User`  [INFERRED]
-  .agents/skills/firebase-data-connect/reference/schema.md → app/src/main/java/com/paditech/mvpbase/common/model/User.java
 
 ## Import Cycles
 - None detected.
@@ -538,27 +534,27 @@
 - **Project-local SDK/JDK setup** — scripts_env, scripts_install_sdk, scripts_env_local_sdk, scripts_env_local_jdk17 [INFERRED 0.85]
 - **Corporate TLS workaround toolchain** — scripts_env_truststore, scripts_env_cloudflare_gateway, scripts_env_gradle_daemon_props, scripts_env_truststore_rationale [INFERRED 0.85]
 
-## Communities (486 total, 66 thin omitted)
+## Communities (482 total, 71 thin omitted)
 
 ### Community 0 - "APIClient.java"
 Cohesion: 0.06
 Nodes (5): APIClient, APIService, ICallBack, BaseResponse, REST API japa.paditech.com/api/apidoc
 
 ### Community 1 - "android.view.View"
-Cohesion: 0.05
-Nodes (13): TimePickerDialog, UploadAlbumSuccess, Constant, PlacePickerHelper, ImageUtil, StringUtil, AutoTopImageLayout, GrapherHolder (+5 more)
+Cohesion: 0.04
+Nodes (19): SelectItemDialog, OnTimePickerListener, TimePickerDialog, UploadAlbumSuccess, AnimUtils, Constant, PlacePickerHelper, ImageUtil (+11 more)
 
 ### Community 2 - "MVPFragment"
-Cohesion: 0.05
+Cohesion: 0.04
 Nodes (10): OnNegativeClickListener, OnPositiveClickListener, MessageDialog, MVPActivity, MVPFragment, PresenterFactory, GetFileListener, GetFileManager (+2 more)
 
 ### Community 3 - "app_localizations.dart"
 Cohesion: 0.00
 Nodes (743): actionCancel, actionRetry, addPhoneBody, addPhoneExample, addPhoneSave, addPhoneTitle, allowWhatsAppLabel, allowZaloLabel (+735 more)
 
-### Community 4 - "AlbumFragment"
-Cohesion: 0.06
-Nodes (9): AlbumFragment, DateAdapter, TextHolder, GalleryAdapter, ItemGalleryClickListener, HomeFragment, ImageAdapter, ImageHolder (+1 more)
+### Community 4 - "Album"
+Cohesion: 0.05
+Nodes (13): Album, AlbumContact, PresenterViewOps, ViewOps, AlbumFragment, GalleryAdapter, GalleryHolder, ItemGalleryClickListener (+5 more)
 
 ### Community 5 - "Override"
 Cohesion: 0.09
@@ -569,124 +565,124 @@ Cohesion: 0.00
 Nodes (735): actionCancel, actionRetry, addPhoneBody, addPhoneExample, addPhoneSave, addPhoneTitle, allowWhatsAppLabel, allowZaloLabel (+727 more)
 
 ### Community 7 - "ProfileFragment"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (9): Comment, ProfileAdapter, ProfileHolder, RatingHolder, PresenterViewOps, ProfileContact, ViewOps, ProfileFragment (+1 more)
 
 ### Community 8 - "FadeToolbarScrollView"
 Cohesion: 0.07
 Nodes (9): FadeToolbarScrollView, ObservableScrollViewCallbacks, SavedState, ScrollState, DOWN, UP, MyScroller, NonSwipeableViewPager (+1 more)
 
-### Community 9 - ".status"
-Cohesion: 0.04
-Nodes (74): 1. Task 1: Contract check, events read rule, flags and ticker, Gate Status, Handover ledger — 8c/4-L2 (Booking Events Read Rule, Features & Ticker), Scope Completed, Verification, Backend Phase 2: Self-hosted API + PostgreSQL (first vertical slice) Implementation Plan, Key decisions, Later plans (not in this slice) (+66 more)
+### Community 9 - "booking_ports.ts"
+Cohesion: 0.05
+Nodes (30): bookingClock, FirestoreCustomerContactReader, FirestoreServiceCatalog, getSharedFakeGateway(), liveBookingDeps(), handleBookingClock(), createTestDeps(), File Structure (+22 more)
 
 ### Community 10 - "payment_pending_screen.dart"
-Cohesion: 0.07
-Nodes (27): code, fromCode, PaymentProviderCode, bookingContactStreamProvider, bookingRepositoryProvider, bookingStreamProvider, customerBookingsStreamProvider, groupedCustomerBookingsProvider (+19 more)
+Cohesion: 0.05
+Nodes (37): bookingRepositoryProvider, bookingSummaryOf, photographerName, statusLabel, thumbUrl, realPaymentsProvider, _handleOutcome, bookingId (+29 more)
 
 ### Community 11 - "android.content.Context"
 Cohesion: 0.03
-Nodes (12): ToastPopup, ToastType, ALERT, ERROR, Device, CommonUtil, BadgeDrawerArrowDrawable, PriceEditText (+4 more)
+Nodes (14): WebViewActivity, ToastPopup, ToastType, ALERT, ERROR, Device, CommonUtil, PriceEditText (+6 more)
 
-### Community 12 - "ImageUtil.java"
-Cohesion: 0.05
-Nodes (9): GridPhotoAdapter, ImageHolder, SelectMultiActivity, PresenterViewOps, SelectMultiContact, ViewOps, SelectMultiPresenter, Glide image loader (+1 more)
+### Community 12 - "package:go_router/go_router.dart"
+Cohesion: 0.04
+Nodes (41): photographerSkillsSnapshotProvider, _confirmSignOut, _RowDivider, _SectionLabel, _SkillsTile, text, uid, _ (+33 more)
 
 ### Community 13 - "FragmentPresenter"
-Cohesion: 0.03
-Nodes (38): FirebaseHelper, Album, BookStatus, ACCEPTED, CLOSED, DENIED, OPENED, WAITING (+30 more)
+Cohesion: 0.04
+Nodes (36): BaseApplication, FirebaseHelper, BookStatus, ACCEPTED, CLOSED, DENIED, OPENED, WAITING (+28 more)
 
 ### Community 14 - "3. Thẻ và danh sách"
 Cohesion: 0.11
 Nodes (18): 3. Thẻ và danh sách, AppAvatar · Mới, AvailabilityCalendar · Mới, BadgeChip · Đã có, BadgeTile · Đã có, BookingCard · Đã có, CapacityBar · Mới, CompletenessMeter · Mới (+10 more)
 
 ### Community 15 - "UpdateProfileActivity.java"
-Cohesion: 0.04
-Nodes (3): FusedLocationProviderClient, Google Places Autocomplete overlay, Repositories google/mavenCentral/gradlePluginPortal
+Cohesion: 0.02
+Nodes (9): PresenterViewOps, SelectMultiContact, ViewOps, SelectMultiPresenter, FusedLocationProviderClient, Glide image loader, Android MediaStore / FileProvider camera, Google Places Autocomplete overlay (+1 more)
 
 ### Community 16 - "app module build.gradle"
 Cohesion: 0.10
 Nodes (29): AndroidX libs (appcompat, recyclerview, cardview, etc.), app module build.gradle, applicationId com.thanhbk.timnhay, ButterKnife 10.2.3, ButterKnife compiler, CircleImageView 3.1.0, EventBus 3.3.1, firebase-analytics (+21 more)
 
-### Community 17 - "quick_actions.dart"
-Cohesion: 0.06
-Nodes (29): AppChipKind, build, kind, label, leading, onChanged, selected, build (+21 more)
+### Community 17 - "contact_dial_test.dart"
+Cohesion: 0.04
+Nodes (47): AppChip, AppChipKind, build, kind, label, leading, onChanged, selected (+39 more)
 
 ### Community 18 - "Booking"
-Cohesion: 0.02
-Nodes (29): Booking, FragmentPresenterViewOps, FragmentViewOps, BookContact, PresenterViewOps, ViewOps, BookPresenter, CreateAlbumContact (+21 more)
+Cohesion: 0.03
+Nodes (30): Booking, FragmentPresenterViewOps, FragmentViewOps, BookContact, PresenterViewOps, ViewOps, BookPresenter, CreateAlbumContact (+22 more)
 
 ### Community 19 - "firebase_auth_repository_test.dart"
 Cohesion: 0.20
 Nodes (4): _Auth, _Fb, _Google, main
 
 ### Community 20 - "GetImageManager"
-Cohesion: 0.04
-Nodes (17): GetImageManager, OnGetImageListener, OnGetListPhotoSelectListener, SelectType, MULTIPLE, SINGLE, Firestore albums collection, AddImageAdapter (+9 more)
+Cohesion: 0.05
+Nodes (13): GetImageManager, OnGetImageListener, OnGetListPhotoSelectListener, SelectType, MULTIPLE, SINGLE, Firestore albums collection, CreateAlbumFragment (+5 more)
 
-### Community 21 - "package:flutter/material.dart"
-Cohesion: 0.01
-Nodes (149): AppChip, CtaSurface, GlassCard, ApertureMark, contactAccessForBooking, build, SplashScreen, _feed (+141 more)
+### Community 21 - "package:photobooking/core/core.dart"
+Cohesion: 0.02
+Nodes (103): main, main, main, main, _opener, _fill, main, box (+95 more)
 
 ### Community 22 - "androidx.fragment.app.FragmentManager"
 Cohesion: 0.04
 Nodes (12): BaseActivity, BaseBottomDialog, BaseDialog, BaseFragment, LoadingDialog, SelectImageDialog, SelectImageDialogListenner, OnReloadListener (+4 more)
 
 ### Community 23 - "find_controller_test.dart"
-Cohesion: 0.06
-Nodes (24): _app, build, _Button, date, init, main, router, screenRouterApp (+16 more)
+Cohesion: 0.08
+Nodes (20): c, _ids, init, main, queries, recommendPhotographers, sendFeedback, signals (+12 more)
 
 ### Community 24 - "ChatRoom"
 Cohesion: 0.03
-Nodes (24): OnUpdateMessagesEvent, GetTimeAndMessageChatRoomListener, ChatRoom, Message, Realm cached Booking records, ListMessengerAdapter, OnGoChatRoomListener, RoomHolder (+16 more)
+Nodes (20): OnUpdateMessagesEvent, GetTimeAndMessageChatRoomListener, ChatRoom, Message, ListMessengerAdapter, OnGoChatRoomListener, ListMessengerFragment, ChatMeHolder (+12 more)
 
-### Community 25 - "package:go_router/go_router.dart"
+### Community 25 - "profile_world.dart"
 Cohesion: 0.03
-Nodes (64): build, ctaAvatar, darkTheme, MyApp, router, showScreenCodes, theme, themeMode (+56 more)
+Nodes (48): PhotographerProfile, TaxonomyCatalog, owner, photographerId, profile, _Tag, text, full (+40 more)
 
 ### Community 26 - "chat.dart"
 Cohesion: 0.05
 Nodes (39): answer, answeredAt, answeredBy, body, bookingId, byRole, ChatKind, createdAt (+31 more)
 
-### Community 27 - "booking_flow_e2e_test.dart"
+### Community 27 - "package:flutter_test/flutter_test.dart"
 Cohesion: 0.03
-Nodes (70): AppAvatar, AppButton, uid, watch, _collect, main, _card, main (+62 more)
+Nodes (70): AppAvatar, AppButton, args, BookingSheetPage, _canPop, createRoute, createState, _dismiss (+62 more)
 
-### Community 28 - "LoginPresenter.java"
-Cohesion: 0.05
-Nodes (8): LoginPresenter, RegisterPresenter, UpdateProfilePresenter, Facebook auth, Google Sign-In auth, Firestore collection: users, Realtime DB: user_devices, Firebase Storage: avatars
+### Community 28 - ".getView"
+Cohesion: 0.08
+Nodes (5): LoginPresenter, RegisterPresenter, Facebook auth, Google Sign-In auth, Realtime DB: user_devices
 
 ### Community 29 - "booking_world.dart"
 Cohesion: 0.03
-Nodes (65): advance, authRepo, availRepo, BookingDetailHandles, bookingPackage1, bookingPackage2, bookingProfile, bookingProfileSummary (+57 more)
+Nodes (68): publicProfileRepositoryProvider, main, advance, authRepo, availRepo, BookingDetailHandles, bookingPackage1, bookingPackage2 (+60 more)
 
-### Community 30 - "getContactLink"
+### Community 30 - "Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan"
 Cohesion: 0.02
-Nodes (96): Seed data (local emulators only), bookingFromDoc(), channelsFromDoc(), CONTACT_ACCESS_LOG, firestoreBookingReader(), firestoreContactAccessLog(), firestorePhotographerContactReader(), firestoreUserContactReader() (+88 more)
+Nodes (123): Seed data (local emulators only), bookingFromDoc(), channelsFromDoc(), CONTACT_ACCESS_LOG, firestoreBookingReader(), firestoreContactAccessLog(), firestorePhotographerContactReader(), lastCompletedAt() (+115 more)
 
 ### Community 31 - "package:flutter_riverpod/flutter_riverpod.dart"
 Cohesion: 0.02
-Nodes (110): _, authLoading, _authRoutes, computeRedirect, _nonResumable, notifier, null, onAuth (+102 more)
+Nodes (79): _, authLoading, _authRoutes, computeRedirect, _nonResumable, notifier, null, onAuth (+71 more)
 
 ### Community 32 - "MainActivity"
-Cohesion: 0.03
-Nodes (32): OnUpdateCalendarEvent, CalendarContact, PresenterViewOps, ViewOps, CalendarFragment, onUpdateCalendar (OnUpdateCalendarEvent subscriber), MainActivity, MenuAdapter (+24 more)
+Cohesion: 0.04
+Nodes (10): OnUpdateCalendarEvent, GridPhotoAdapter, ImageHolder, SelectMultiActivity, CalendarContact, PresenterViewOps, ViewOps, CalendarFragment (+2 more)
 
 ### Community 33 - "ActivityPresenter"
 Cohesion: 0.03
-Nodes (32): ActivityPresenter, ActivityPresenterViewOps, ActivityViewOps, AnimUtils, LoginActivity, LoginContact, PresenterViewOps, ViewOps (+24 more)
+Nodes (29): ActivityPresenter, ActivityPresenterViewOps, ActivityViewOps, LoginActivity, LoginContact, PresenterViewOps, ViewOps, MainContact (+21 more)
 
-### Community 34 - "Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan"
-Cohesion: 0.04
-Nodes (106): handleCreateBooking(), createBooking, 1. 4b Task 1: Booking Contract & Data Layer, Cross-lane requests, Deferred / for later plans, Handover ledger — 8b/4-L1 (Booking sheet S04.01–S04.04), Rulings, Scope completed (+98 more)
+### Community 34 - "domain/src/index.ts"
+Cohesion: 0.05
+Nodes (96): 1. 4b Task 1: Booking Contract & Data Layer, 3. Task 3: Domain Reschedule Proposal & Answer (`packages/domain/src/`), 5. Task 5: Functions, Rules & Indexes, Task 2: Booking state machine & transitions, Task 5: Transition use cases, disputes & scheduled sweeps, Task 7: Cloud Functions callables and scheduled clock, Contract with plan 4a (merged code, 2026-10-02), Task 7: S04.04 payment wait `/b/:id/pay` (+88 more)
 
 ### Community 35 - "booking_firestore.ts"
-Cohesion: 0.04
-Nodes (33): AVAILABILITY_COLLECTION, bookingFromFirestore(), BOOKINGS_COLLECTION, bookingToFirestore(), FirestoreBookingStore, LEDGER_COLLECTION, ledgerEntryFromFirestore(), ledgerEntryToFirestore() (+25 more)
+Cohesion: 0.03
+Nodes (48): AVAILABILITY_COLLECTION, bookingFromFirestore(), BOOKINGS_COLLECTION, bookingToFirestore(), FirestoreBookingStore, LEDGER_COLLECTION, ledgerEntryFromFirestore(), ledgerEntryToFirestore() (+40 more)
 
 ### Community 36 - "chat_repository.dart"
-Cohesion: 0.10
-Nodes (19): answerReschedule, ChatErrorCode, ChatRepository, code, markRead, message, olderMessages, openInquiry (+11 more)
+Cohesion: 0.11
+Nodes (18): answerReschedule, ChatErrorCode, ChatRepository, code, markRead, message, olderMessages, openInquiry (+10 more)
 
 ### Community 37 - "tokens.g.dart"
 Cohesion: 0.02
@@ -698,23 +694,23 @@ Nodes (91): addPhone, all, applicationDetail, awaitingPayment, badges, blockedUs
 
 ### Community 39 - "core.dart"
 Cohesion: 0.03
-Nodes (36): actionLabel, body, build, EmptyState, illustration, onAction, title, build (+28 more)
+Nodes (27): availabilityLabel, bookLabel, build, data, distanceKm, _meta, onBook, onProfile (+19 more)
 
-### Community 40 - "photographer_profile_screen_test.dart"
-Cohesion: 0.05
-Nodes (34): AppTab, emphasized, icon, isPhotographer, label, labelKey, path, tab (+26 more)
+### Community 40 - "role_screen.dart"
+Cohesion: 0.09
+Nodes (21): AppTab, emphasized, icon, isPhotographer, label, labelKey, path, tab (+13 more)
 
-### Community 41 - "static const"
-Cohesion: 0.03
-Nodes (55): AppFooterBar, build, child, AppLogo, build, _drop, shadows, size (+47 more)
+### Community 41 - "cta_surface.dart"
+Cohesion: 0.04
+Nodes (45): AppSheetFrame, build, child, dismissible, drag, enableDrag, isDismissible, _radius (+37 more)
 
 ### Community 42 - "ci-affected-tests.py"
 Cohesion: 0.12
 Nodes (12): auth.token Fields, Available Bindings, CEL Expressions, Expression Examples, Using eq_expr in Filters, changed_files(), dart_files(), main() (+4 more)
 
 ### Community 43 - "functions/src/index.ts"
-Cohesion: 0.04
-Nodes (53): errorKind(), handleCallableError(), handleCheckDeposit(), handleConfirmFakePayment(), handleCreateDeposit(), handleOpenDispute(), handleTransitionBooking(), errorKind() (+45 more)
+Cohesion: 0.03
+Nodes (77): errorKind(), handleCallableError(), handleCheckDeposit(), handleConfirmFakePayment(), handleCreateBooking(), handleCreateDeposit(), handleOpenDispute(), handleTransitionBooking() (+69 more)
 
 ### Community 44 - "badge_chip.dart"
 Cohesion: 0.06
@@ -722,19 +718,19 @@ Nodes (29): badge, BadgeChip, _BadgeChipSkeleton, badgeIconOf, BadgeProgress, Ba
 
 ### Community 45 - "fixtures.ts"
 Cohesion: 0.07
-Nodes (47): applySeed(), authHost(), CallableResponse, callCallable(), emulatorProject(), firestoreHost(), functionsHost(), host() (+39 more)
+Nodes (48): applySeed(), authHost(), CallableResponse, callCallable(), emulatorProject(), firestoreHost(), functionsHost(), host() (+40 more)
 
 ### Community 46 - "app.ts"
-Cohesion: 0.14
-Nodes (28): Task 4: Authentication with Firebase ID tokens and `POST /v1/me`, kysely, AppDeps, buildApp(), Contract, ContractOperation, DEFAULT_CONTRACT_PATH, Json (+20 more)
+Cohesion: 0.09
+Nodes (53): Task 3: Domain reuse, error envelope, ids and the OpenAPI contract, Task 6: Photographer contact channels, numbers, service area and contact setup, Task 7: `get_contact_link` with `ContactAccessLog`, and the shared contract world, ExternalChannel, ERROR_CODES, fastify, buildApp(), fastify (+45 more)
 
 ### Community 47 - "photo_card.dart"
-Cohesion: 0.06
-Nodes (32): AppAvatarSize, avatarInitial, badge, build, decorative, dimension, letter, name (+24 more)
+Cohesion: 0.04
+Nodes (42): AppAvatarSize, avatarInitial, badge, build, decorative, dimension, letter, name (+34 more)
 
 ### Community 48 - "photographer_profile_screen.dart"
-Cohesion: 0.08
-Nodes (17): publicProfileRepositoryProvider, body, createState, dispose, _edit, _EditSheet, initialSection, _loaded (+9 more)
+Cohesion: 0.04
+Nodes (37): body, createState, dispose, _edit, _EditSheet, initialSection, _loaded, _Message (+29 more)
 
 ### Community 49 - "ExampleInstrumentedTest.java"
 Cohesion: 0.22
@@ -744,61 +740,61 @@ Nodes (4): AndroidX Test / Espresso, JUnit 4.13.2, ExampleInstrumentedTest, Exam
 Cohesion: 0.10
 Nodes (19): Java/JDK 17 compatibility, ANDROID_HOME, ANDROID_SDK_ROOT, Cloudflare Zero Trust TLS gateway, Rationale: Gradle daemon does not inherit GRADLE_OPTS, ~/.gradle/gradle.properties truststore registration, GRADLE_OPTS, Project-local JDK 17 (.jdk / Homebrew fallback) (+11 more)
 
-### Community 51 - "setup_resume_test.dart"
-Cohesion: 0.06
-Nodes (24): l10n, L10nX, bookingPath, contact, hold, path, query, startBooking (+16 more)
+### Community 51 - "return"
+Cohesion: 0.02
+Nodes (68): extractHashtags, out, seen, _tag, l10n, L10nX, safeReturnTo, value (+60 more)
 
-### Community 52 - "explore_screen_test.dart"
-Cohesion: 0.04
-Nodes (43): EventCard, _backgroundAndBack, init, main, _savedArea, _screen, screenApp, _tallPhone (+35 more)
+### Community 52 - "discovery_world.dart"
+Cohesion: 0.05
+Nodes (38): BookingFeatures, chat, reschedule, review, cells, exploreBadgeCountProvider, key, markSeen (+30 more)
 
 ### Community 53 - "Three-layer design tokens"
 Cohesion: 0.14
 Nodes (15): Component layer, Component specs (button, chip, badge...), WCAG AA contrast, Token naming conventions, Legacy resource migration table, Primitive layer, Semantic layer, 4dp spacing grid (+7 more)
 
-### Community 54 - "discovery_world.dart"
+### Community 54 - "explore_badge_test.dart"
 Cohesion: 0.02
-Nodes (105): FakeNearbyEventsRepository, cells, exploreBadgeCountProvider, exploreSeenAtProvider, key, markSeen, mode, origin (+97 more)
+Nodes (86): EventCard, FakeNearbyEventsRepository, count, explore, requests, icon, label, MiddleTabDestination (+78 more)
 
 ### Community 55 - "helpers.ts"
 Cohesion: 0.07
-Nodes (46): fastify, jose, vitest, createDb(), API_ERROR_CODES, ApiErrorCode, ErrorBody, HTTP_STATUS (+38 more)
+Nodes (44): jose, vitest, createDb(), db, Channel, CHANNELS, db, link() (+36 more)
 
 ### Community 56 - "BaseApplication (application class)"
 Cohesion: 0.15
 Nodes (14): Facebook Login SDK 17.0.0, Google Places SDK 3.5.0, BaseApplication (application class), LoginActivity (launcher), MainActivity, meta-data facebook ApplicationId, meta-data facebook ClientToken, meta-data Google geo API_KEY (+6 more)
 
 ### Community 57 - "PaymentProvider"
-Cohesion: 0.04
-Nodes (55): createTestDeps(), 6. Tạo Firestore và deploy rules, Task 1: Scaffold, contract codes, errors, clock and the purity test, File Structure, Global Constraints, Instant booking I3: dispatch service (`services/dispatch`) Implementation Plan, Key decisions, Task 10: Requests, payments, ledger and the request mirror (+47 more)
+Cohesion: 0.03
+Nodes (76): 1. Task 1: Contract check, events read rule, flags and ticker, Gate Status, Handover ledger — 8c/4-L2 (Booking Events Read Rule, Features & Ticker), Scope Completed, Verification, File Structure, Global Constraints, Instant booking I2: `packages/dispatch-core` (pure dispatch domain) Implementation Plan (+68 more)
 
-### Community 58 - "score_skills.test.ts"
-Cohesion: 0.13
-Nodes (9): isStaleWriteError(), POSTS, skillsUpdateFields(), Review Focus (Tasks 10–14), SkillsWriteEvent, EvidencePostRecord, isOwnEvidencePost(), fakes() (+1 more)
+### Community 58 - "createDeposit"
+Cohesion: 0.07
+Nodes (28): Cross-lane requests, Deferred / for later plans, Handover ledger — 8b/4-L1 (Booking sheet S04.01–S04.04), Rulings, Scope completed, Decisions (where the spec is silent), File Structure, Global Constraints (+20 more)
 
 ### Community 59 - "fake_chat_repository.dart"
 Cohesion: 0.06
 Nodes (32): _addMessage, answerReschedule, _buildChatList, _checkPreconditions, currentUserId, failNext, markRead, _messageControllers (+24 more)
 
 ### Community 60 - "setup_packages_screen.dart"
-Cohesion: 0.04
-Nodes (45): myPackagesProvider, uid, watch, setupPackagesControllerProvider, _back, build, _changed, _clearForm (+37 more)
+Cohesion: 0.05
+Nodes (40): myPackagesProvider, setupPackagesControllerProvider, _back, build, _changed, _clearForm, _confirmHide, createState (+32 more)
 
 ### Community 61 - "resilient_recommendation_repository_test.dart"
 Cohesion: 0.05
 Nodes (33): LocalRecommender, RecommendationRepository, availabilityLookupProvider, localRecommenderProvider, fallback, primary, recommendPhotographers, recommendPosts (+25 more)
 
 ### Community 62 - "authRepositoryProvider"
-Cohesion: 0.03
-Nodes (94): AuthError, authRepositoryProvider, currentProfileProvider, userRepositoryProvider, availabilityRepositoryProvider, AvailabilityDay, myIntroProvider, photographerIntroRepositoryProvider (+86 more)
+Cohesion: 0.08
+Nodes (39): AuthError, authRepositoryProvider, userRepositoryProvider, mediaUploaderProvider, availabilityRepositoryProvider, myIntroProvider, photographerIntroRepositoryProvider, servicePackageRepositoryProvider (+31 more)
 
 ### Community 63 - "../../support/content_fixtures.dart"
-Cohesion: 0.05
-Nodes (34): main, contractPhotographers, contractPosts, contractServices, engagementContract, fixturePostNewest, _interleaved, PhotographerRepoFactory (+26 more)
+Cohesion: 0.06
+Nodes (26): SkillsEventLogger, main, contractPhotographers, contractPosts, contractServices, engagementContract, fixturePostNewest, _interleaved (+18 more)
 
 ### Community 64 - "StatelessWidget"
 Cohesion: 0.03
-Nodes (70): build, DateBlock, _DateBlockSkeleton, day, size, skeleton, build, EscrowNotice (+62 more)
+Nodes (72): build, EscrowNotice, _EscrowNoticeSkeleton, skeleton, text, build, label, onChanged (+64 more)
 
 ### Community 65 - "contact_dial.dart"
 Cohesion: 0.03
@@ -808,9 +804,9 @@ Nodes (61): access, _anim, animation, _below, build, _buildOverlay, busy, _butto
 Cohesion: 0.06
 Nodes (31): at, bookingContactFromFirestore, bookingEventRecordFromFirestore, bookingFromFirestore, bookingId, fromJson, id, status (+23 more)
 
-### Community 67 - "_"
-Cohesion: 0.04
-Nodes (45): routerProvider, _combiningMarks, _fold, foldVietnamese, _groups, postEngagementRepositoryProvider, photographerSkillsSnapshotProvider, EngagementController (+37 more)
+### Community 67 - "avatar_controller_test.dart"
+Cohesion: 0.03
+Nodes (65): build, ctaAvatar, darkTheme, MyApp, router, showScreenCodes, theme, themeMode (+57 more)
 
 ### Community 68 - "post_composer.dart"
 Cohesion: 0.04
@@ -825,84 +821,80 @@ Cohesion: 0.04
 Nodes (52): acceptedAt, active, beforeStart, bookingCode, bookingSummaryFor, bucket, countdownLabel, countdownSeconds (+44 more)
 
 ### Community 71 - "profile_sections.dart"
-Cohesion: 0.05
-Nodes (41): active, coverUrl, deliveryDays, durationMinutes, editedCount, id, name, photoCount (+33 more)
+Cohesion: 0.06
+Nodes (35): AvailabilityMonth, availabilityMonthProvider, calendarTodayProvider, args, build, _changeMonth, createState, DateTimeStep (+27 more)
 
 ### Community 72 - "@immutable"
 Cohesion: 0.04
-Nodes (49): ChatListItem, ChatMessage, RescheduleProposal, SystemPayload, ServicePackage, algorithm, algorithmVersion, at (+41 more)
+Nodes (57): ChatListItem, ChatMessage, RescheduleProposal, SystemPayload, PhotographerSummary, PostSummary, ServiceSummary, ServicePackage (+49 more)
 
-### Community 73 - "butterknife.OnClick"
-Cohesion: 0.05
-Nodes (12): DatePickerDialog, OnDateTimePickerListener, EnterPriceDialog, OnSelectPriceListener, OnSelectRangePriceListener, SelectItemDialog, TextAdapter, TextHolder (+4 more)
-
-### Community 74 - "VoidCallback"
+### Community 73 - "FindPhotographerFragment"
 Cohesion: 0.04
-Nodes (46): build, errorMessage, ErrorState, lower, message, onRetry, str, build (+38 more)
+Nodes (19): DatePickerDialog, OnDateTimePickerListener, EnterPriceDialog, OnSelectPriceListener, OnSelectRangePriceListener, TextAdapter, TextHolder, PriceEnum (+11 more)
+
+### Community 74 - "String?"
+Cohesion: 0.03
+Nodes (61): actionLabel, body, build, EmptyState, illustration, onAction, title, build (+53 more)
 
 ### Community 75 - "dart:io"
-Cohesion: 0.10
-Nodes (11): main, main, _resolve, main, _idsOf, m, main, main (+3 more)
+Cohesion: 0.29
+Nodes (3): main, main, main
 
 ### Community 76 - "unit/photographer_write.test.ts"
-Cohesion: 0.11
-Nodes (18): CALLABLE_OPTIONS, REGION, SCHEDULE_OPTIONS, TRIGGER_OPTIONS, onPhotographerWrite, liveSkillsDeps(), firestoreOwnedPostsReader(), firestoreSkillsScoreWriter() (+10 more)
+Cohesion: 0.07
+Nodes (26): onPhotographerWrite, liveSkillsDeps(), firestoreOwnedPostsReader(), firestoreSkillsScoreWriter(), isStaleWriteError(), POSTS, skillsUpdateFields(), handlePhotographerEvent() (+18 more)
 
 ### Community 77 - "photo_detail_screen.dart"
 Cohesion: 0.05
-Nodes (34): _authorMeta, color, count, _CountButton, createState, detail, _DetailSkeleton, dispose (+26 more)
+Nodes (48): engagementProvider, followProvider, _loadFirst, postDetailProvider, _authorMeta, build, color, _Content (+40 more)
 
 ### Community 78 - "skills_screen.dart"
 Cohesion: 0.04
-Nodes (48): skillsControllerProvider, after, _allowPop, _back, body, build, _chips, _ConfirmSheet (+40 more)
+Nodes (47): skillsControllerProvider, after, _allowPop, _back, body, build, _chips, _ConfirmSheet (+39 more)
 
-### Community 79 - "contact_dial_test.dart"
-Cohesion: 0.02
-Nodes (83): body, _build, buildDarkTheme, buildLightTheme, controlHeight, controlRadius, display, overlayStyleFor (+75 more)
+### Community 79 - "login_screen.dart"
+Cohesion: 0.03
+Nodes (52): authControllerProvider, authErrorMessage, build, facebook, google, register, _run, signInEmail (+44 more)
 
 ### Community 80 - "reason_picker.dart"
-Cohesion: 0.06
-Nodes (31): build, busy, ChatComposer, _ChatComposerState, _controller, createState, disabledReason, dispose (+23 more)
+Cohesion: 0.11
+Nodes (18): build, _controller, createState, dispose, initState, _isOther, _isOtherSelected, onOtherText (+10 more)
 
 ### Community 81 - "photographer_skills.dart"
 Cohesion: 0.04
 Nodes (46): all, audiences, basic, copyWith, empty, evidencePostIds, expert, expertCount (+38 more)
 
 ### Community 82 - "User"
-Cohesion: 0.04
-Nodes (7): BaseApplication, GetListAttendListener, GetUserInfoListener, User, ListBookingPresenter, ListUserAdapter, UserHolder
+Cohesion: 0.03
+Nodes (8): GetListAttendListener, GetUserInfoListener, User, UploadFileService, BookFragment, ListBookingPresenter, ListUserAdapter, UserHolder
 
 ### Community 83 - "List"
 Cohesion: 0.04
-Nodes (43): build, _buildRow, label, lines, linesCount, MoneyBreakdown, _MoneyBreakdownSkeleton, MoneyLine (+35 more)
+Nodes (41): AppLogo, build, _drop, shadows, size, build, _buildRow, label (+33 more)
 
 ### Community 84 - "setup_packages_screen_test.dart"
-Cohesion: 0.06
-Nodes (24): _d, main, _d, _day, init, _routes, w, _world (+16 more)
+Cohesion: 0.08
+Nodes (19): _input, main, main, _enabled, ensureVisible, enterText, _fill, init (+11 more)
 
 ### Community 85 - "skills.ts"
-Cohesion: 0.09
-Nodes (18): clientPart(), Completeness, COMPLETENESS_POINTS, COMPLETENESS_STEPS, deepEqual(), integer(), isRecord(), MAX_EVIDENCE_READS (+10 more)
+Cohesion: 0.06
+Nodes (38): 3e.3 Dữ liệu, 1. Mục tiêu và quyết định của người dùng, 2. Function, 3. App (Flutter), 5. Test, 6. Tài liệu cần sửa khi làm, Function `onPhotographerWrite`: độ khớp hồ sơ và minh chứng tính ở server, OwnedPostsReader (+30 more)
 
 ### Community 86 - "phone_field.dart"
-Cohesion: 0.10
-Nodes (17): VndInputFormatter, autofocus, build, _codeBoxWidth, controller, _dialCode, enabled, errorText (+9 more)
+Cohesion: 0.05
+Nodes (38): body, _build, buildDarkTheme, buildLightTheme, controlHeight, controlRadius, display, overlayStyleFor (+30 more)
 
 ### Community 87 - "AndroidManifest.xml"
 Cohesion: 0.18
 Nodes (10): namespace com.paditech.mvpbase, OkHttp 4.12.0, play-services-auth 21.2.0, play-services-location 21.3.0, Permission ACCESS_COARSE_LOCATION, Permission ACCESS_FINE_LOCATION, Permission CAMERA, Permission GET_ACCOUNTS (+2 more)
 
-### Community 88 - "find_screen.dart"
-Cohesion: 0.09
-Nodes (28): exploreResolutionProvider, build, findFiltersProvider, findResultsProvider, loadMore, _applied, _applyInitial, build (+20 more)
-
 ### Community 89 - "location_controller.dart"
-Cohesion: 0.04
-Nodes (44): sendLocation, allow, area, areaKey, areaName, areaRepositoryProvider, cellPrefix, chooseArea (+36 more)
+Cohesion: 0.02
+Nodes (87): AreaOption, AreaRepository, BuiltInAreaRepository, builtInAreas, fromJson, geohash5, hashCode, id (+79 more)
 
 ### Community 90 - "package:cloud_firestore/cloud_firestore.dart"
 Cohesion: 0.06
-Nodes (28): _alreadyLanded, _db, publish, clearOff, _days, _db, markOff, _override (+20 more)
+Nodes (30): clearOff, _days, _db, markOff, _override, watchRange, _db, _doc (+22 more)
 
 ### Community 91 - "local_recommender.dart"
 Cohesion: 0.05
@@ -917,8 +909,8 @@ Cohesion: 0.22
 Nodes (8): compileSdk/targetSdk 34, minSdk 23, local.properties sdk.dir, build-tools 34.0.0, dl.google.com direct download, SDK platform android-34, platform-tools, Rationale: direct zip download works where sdkmanager cannot reach network, install-sdk.sh script
 
 ### Community 94 - "evidence_sheet.dart"
-Cohesion: 0.12
-Nodes (16): _ask, _createPost, createState, didUpdateWidget, _GridSkeleton, initial, initState, _KeepLoading (+8 more)
+Cohesion: 0.11
+Nodes (20): _ask, build, _createPost, createState, didUpdateWidget, EvidenceSheet, _EvidenceSheetState, _GridSkeleton (+12 more)
 
 ### Community 95 - "availability_calendar.dart"
 Cohesion: 0.05
@@ -977,12 +969,12 @@ Cohesion: 0.40
 Nodes (6): Registration terms (static HTML, placeholder Dieu 1-5), Custom MVP framework (Contact/Presenter/Fragment), MainActivity drawer navigation, PresenterFactory, Phase 4 Navigation Compose, remove MVP base, PresenterFactory problems
 
 ### Community 110 - "level_selector.dart"
-Cohesion: 0.06
-Nodes (30): AppSheetFrame, build, child, dismissible, drag, enableDrag, isDismissible, _radius (+22 more)
+Cohesion: 0.12
+Nodes (15): build, createState, _current, dispose, expertDisabled, _focus, _label, level (+7 more)
 
 ### Community 111 - "create_post_screen_test.dart"
 Cohesion: 0.02
-Nodes (118): delete, _storage, upload, FakeImagePicker, ImagePickerPort, imagePickerProvider, mediaUploaderProvider, PluginImagePicker (+110 more)
+Nodes (123): delete, _storage, upload, FakeImagePicker, ImagePickerPort, imagePickerProvider, PluginImagePicker, answerReschedule (+115 more)
 
 ### Community 112 - "File Structure"
 Cohesion: 0.05
@@ -1005,8 +997,8 @@ Cohesion: 0.06
 Nodes (28): GeolocatorLocationRepository, FakeLocationRepository, LocationRepository, _Clock, container, ctrl, currentApproxLocation, _Env (+20 more)
 
 ### Community 118 - "fake_booking_repository.dart"
-Cohesion: 0.06
-Nodes (33): addEvent, _bookingChanges, bookings, checkCalls, checkDeposit, _checkNextError, confirmFakePayment, _contactChanges (+25 more)
+Cohesion: 0.05
+Nodes (37): BookingRepository, FirestoreBookingRepository, _OrderedBookingRepository, addEvent, _bookingChanges, bookings, checkCalls, checkDeposit (+29 more)
 
 ### Community 119 - "Home Background Photo"
 Cohesion: 0.83
@@ -1028,37 +1020,37 @@ Nodes (3): Gray Star Icon (unselected), Yellow Star Icon (selected), Rating Star
 Cohesion: 0.67
 Nodes (3): Security and ops issues, Required config keys, Committed API keys issue
 
-### Community 143 - "dart:async"
+### Community 143 - "package:photobooking/data/booking/booking.dart"
 Cohesion: 0.03
-Nodes (72): BookingCard, BookingStatusX, out, sub, main, main, main, main (+64 more)
+Nodes (74): BookingCard, BookingStatusX, contactAccessForBooking, main, main, main, main, main (+66 more)
 
 ### Community 144 - "contact_launcher_test.dart"
 Cohesion: 0.08
 Nodes (21): canOpen, ContactLauncher, ContactOpenResult, launcher, links, open, _probes, ContactLinkRepository (+13 more)
 
 ### Community 145 - "find_controller.dart"
-Cohesion: 0.06
-Nodes (33): algorithmVersion, budgetMax, _byRating, clear, copyWith, cursor, date, _fetch (+25 more)
+Cohesion: 0.04
+Nodes (66): RecommendationSort, recommendationRepositoryProvider, exploreResolutionProvider, algorithmVersion, budgetMax, build, _byRating, clear (+58 more)
 
 ### Community 146 - "home_screen.dart"
 Cohesion: 0.07
-Nodes (33): RecommendedPost, freeThisWeekProvider, homeFeedProvider, realShootsProvider, build, _chipSpecialties, createState, customer (+25 more)
+Nodes (33): totalUnreadProvider, RecommendedPost, freeThisWeekProvider, homeFeedProvider, realShootsProvider, build, _chipSpecialties, createState (+25 more)
 
 ### Community 147 - "skills_controller.dart"
-Cohesion: 0.05
-Nodes (39): skillsRepositoryProvider, skillsAnalyticsProvider, SkillsEventLogger, _apply, _baseline, build, canSubmit, _catalog (+31 more)
+Cohesion: 0.06
+Nodes (30): _apply, _baseline, canSubmit, _catalog, copyWith, dirty, discardDraft, draft (+22 more)
 
 ### Community 148 - "booking_repository.dart"
-Cohesion: 0.06
-Nodes (29): booking, BookingAction, BookingErrorCode, bookingErrorOf, checkDeposit, CheckDepositResponse, code, _codeToBookingError (+21 more)
+Cohesion: 0.05
+Nodes (37): booking, BookingAction, BookingErrorCode, bookingErrorOf, BookingException, checkDeposit, CheckDepositResponse, code (+29 more)
 
 ### Community 149 - "network_photo.dart"
-Cohesion: 0.08
-Nodes (24): 1080, _attempt, build, builder, _CachedPhoto, cachedPhotoBuilder, _CachedPhotoState, cacheWidth (+16 more)
+Cohesion: 0.05
+Nodes (39): _SkeletonScopeData, CtaAvatarScope, 1080, _attempt, build, builder, _CachedPhoto, cachedPhotoBuilder (+31 more)
 
 ### Community 150 - "home_controller.dart"
-Cohesion: 0.04
-Nodes (44): PhotographerSummary, PostSummary, FirestorePublicProfileRepository, PhotographerIntro, add, failWith, FakePublicProfileRepository, id (+36 more)
+Cohesion: 0.10
+Nodes (20): authors, build, category, copyWith, cursor, FeedPost, _generation, _geohash6 (+12 more)
 
 ### Community 151 - "content_fixtures.dart"
 Cohesion: 0.06
@@ -1066,7 +1058,7 @@ Nodes (28): age, areaLabel, caption, completed, createdAgo, fixtureNow, fixtureP
 
 ### Community 152 - "signature_loader.dart"
 Cohesion: 0.03
-Nodes (63): _SkeletonPainter, _DashedOutline, _RingPainter, active, build, _c, color, createState (+55 more)
+Nodes (66): _SkeletonPainter, _DashedOutline, _RingPainter, CtaSurface, active, build, _c, color (+58 more)
 
 ### Community 153 - "firestore_photographer_repository.dart"
 Cohesion: 0.06
@@ -1118,11 +1110,11 @@ Nodes (15): build, _busy, copyWith, likeCount, liked, load, _plusMinus, _repo (+
 
 ### Community 165 - "async_view.dart"
 Cohesion: 0.04
-Nodes (48): AsyncView, _AsyncViewState, build, _buildData, _buildLoading, createState, _delayShowTimer, didUpdateWidget (+40 more)
+Nodes (49): AsyncView, _AsyncViewState, build, _buildData, _buildLoading, createState, _delayShowTimer, didUpdateWidget (+41 more)
 
 ### Community 166 - "firestore_booking_repository.dart"
-Cohesion: 0.11
-Nodes (16): _bookingsCol, checkDeposit, confirmFakePayment, createBooking, createDeposit, _customFunctions, _db, _functions (+8 more)
+Cohesion: 0.09
+Nodes (18): _bookingsCol, checkDeposit, confirmFakePayment, createBooking, createDeposit, _customFunctions, _db, _functions (+10 more)
 
 ### Community 167 - "firestore_post_repository.dart"
 Cohesion: 0.07
@@ -1130,11 +1122,11 @@ Nodes (27): byId, byPhotographer, createdAt, _db, _doc, engagementFor, feed, ima
 
 ### Community 168 - "availability_repository.dart"
 Cohesion: 0.07
-Nodes (28): AvailabilityMonth, availabilityDayFromFirestore, AvailabilityRepository, booking, bookingId, _changes, _check, clearOff (+20 more)
+Nodes (27): availabilityDayFromFirestore, AvailabilityRepository, booking, bookingId, _changes, _check, clearOff, day (+19 more)
 
 ### Community 169 - "nearby_events.dart"
 Cohesion: 0.07
-Nodes (27): build, cells, copyWith, distanceKm, event, events, filters, freeOnly (+19 more)
+Nodes (29): build, cells, copyWith, distanceKm, event, events, filters, freeOnly (+21 more)
 
 ### Community 170 - "contact_setup_logic.dart"
 Cohesion: 0.07
@@ -1142,51 +1134,51 @@ Nodes (27): acceptInquiries, area, call, channels, city, ContactSetupError, Cont
 
 ### Community 171 - "setup_draft_store.dart"
 Cohesion: 0.07
-Nodes (29): bio, clearIntro, clearPackage, delivery, displayName, durationMinutes, edited, equipment (+21 more)
+Nodes (28): bio, clearIntro, clearPackage, delivery, displayName, durationMinutes, edited, equipment (+20 more)
 
 ### Community 172 - "home_screen_test.dart"
-Cohesion: 0.13
-Nodes (12): _app, _feed, init, _left, _phone, _pump, pumpAndSettle, pumpWidget (+4 more)
+Cohesion: 0.11
+Nodes (14): _empty, _app, _feed, init, _left, main, _phone, _pump (+6 more)
 
 ### Community 173 - "find_screen_test.dart"
-Cohesion: 0.07
-Nodes (26): _Spy, chipKey, _choose, ensureVisible, init, main, _open, option (+18 more)
+Cohesion: 0.09
+Nodes (21): chipKey, _choose, ensureVisible, init, main, _open, option, _phone (+13 more)
 
 ### Community 174 - "contact_action.dart"
 Cohesion: 0.09
 Nodes (23): contactLauncherProvider, photographerChannelsProvider, access, _blocked, build, _busy, channels, ContactAction (+15 more)
 
 ### Community 175 - "app_button.dart"
-Cohesion: 0.08
+Cohesion: 0.07
 Nodes (22): AppButtonSize, build, _buildButton, child, _compact, danger, dimmed, _GradientFill (+14 more)
 
 ### Community 176 - "intro_logic.dart"
-Cohesion: 0.08
-Nodes (23): code, ContactAccess, ContactChannel, fromCode, isExternal, bio, cleanEquipment, displayName (+15 more)
+Cohesion: 0.11
+Nodes (18): bio, cleanEquipment, displayName, equipment, errors, IntroError, introErrorText, IntroField (+10 more)
 
 ### Community 177 - "package:photobooking/l10n/app_localizations.dart"
 Cohesion: 0.03
-Nodes (54): durationLabel, packageMeta, NotificationKind, TicketState, BookingStatus, color, label, onColor (+46 more)
+Nodes (42): durationLabel, packageMeta, BookingStatus, color, label, onColor, _email, validateConfirm (+34 more)
 
-### Community 178 - "skills"
-Cohesion: 0.12
-Nodes (18): Preflight, Preflight (resume, Tasks 7–13), SDD ledger — plan: docs/superpowers/plans/2026-10-01-step2c-skills.md, Task 10: Device draft, analytics hook and `SkillsController`, File Structure, Task 10: Battery and performance check (moved), Task 1: Calendar days, VND input, and the borrowed ULID helper, Task 2: `AvailabilityCalendar`, `DayState` and the legend (+10 more)
+### Community 178 - "package:photobooking/data/photographer/photographer_contact.dart"
+Cohesion: 0.10
+Nodes (15): api, completeContactSetup, dispose, _Setup, watchChannels, watchNumbers, watchServiceArea, _writes (+7 more)
 
 ### Community 179 - "domain/package.json"
 Cohesion: 0.08
 Nodes (25): description, devDependencies, eslint, @eslint/js, tsx, @types/node, typescript, typescript-eslint (+17 more)
 
-### Community 180 - "booking_sheet_page.dart"
+### Community 180 - "ConsumerState"
 Cohesion: 0.04
-Nodes (68): realPaymentsProvider, photographerProfileProvider, currentContactProvider, bookingFlowControllerProvider, BookingFlowArgs, args, BookingSheet, BookingSheetPage (+60 more)
+Nodes (70): photographerProfileProvider, currentContactProvider, userContactRepositoryProvider, LoginScreen, _LoginScreenState, BookingFlowController, bookingFlowControllerProvider, build (+62 more)
 
 ### Community 181 - "Key Syntax Differences and Pitfalls"
 Cohesion: 0.05
 Nodes (37): 10. Dynamic Map / JSON Lookup Casting, 1. Collection Equality Pitfall (`equals` vs `deepEquals`), 1. Dependency Setup, 1. Simple Custom Expectations (using `expect`), 1. Specific Error Matchers, 2. Identify and Plan Target Files, 2. Nested Property Extraction (using `nest` or `has`), 2. The `anything` Matcher (+29 more)
 
-### Community 182 - "skills_screen_test.dart"
-Cohesion: 0.05
-Nodes (31): main, _app, closed, createPost, _customerPost, main, _open, _Probe (+23 more)
+### Community 182 - "dart:async"
+Cohesion: 0.04
+Nodes (40): out, sub, main, _app, closed, createPost, _customerPost, main (+32 more)
 
 ### Community 183 - "review.dart"
 Cohesion: 0.08
@@ -1212,33 +1204,33 @@ Nodes (26): ServicePackageInput, delivery, deliveryText, duration, durationMinut
 Cohesion: 0.05
 Nodes (34): 1. The AOT SDK Discovery Trap, 2. The Solution: `package:cli_util` (`^0.6.0`), 3. Subprocess Spawning Invariants, Consequences of Naive Resolution:, Dart SDK Discovery and Subprocess Spawning in AOT & JIT, Potential Dart SDK Locations:, Why This Fails in Standalone AOT:, 1. Cross-Platform Signal Handling (+26 more)
 
-### Community 189 - "score_skills.ts"
-Cohesion: 0.20
-Nodes (15): Task 11: Firestore trigger `onPhotographerWrite` (adapters, wiring, emulator test), OwnedPostsReader, planSkillsScore(), scoreAndWrite(), scorePhotographerSkills(), ScoreSkillsOutcome, SkillsScorePlan, SkillsScoreUpdate (+7 more)
+### Community 189 - "bool get"
+Cohesion: 0.10
+Nodes (18): code, ContactAccess, ContactChannel, fromCode, isExternal, FirestorePublicProfileRepository, PhotographerIntro, add (+10 more)
 
 ### Community 190 - "contact_action_test.dart"
-Cohesion: 0.07
-Nodes (24): main, access, _all, _button, _channelList, channels, completer, events (+16 more)
-
-### Community 191 - "photographer_summary.dart"
 Cohesion: 0.09
-Nodes (21): areaLabel, avatarUrl, completedCount, coverUrl, createdAt, displayName, hasGeo, hasRating (+13 more)
+Nodes (21): access, _all, _button, _channelList, channels, completer, events, external (+13 more)
+
+### Community 191 - "my_calendar_screen.dart"
+Cohesion: 0.10
+Nodes (20): AvailabilityDay, calendarEditControllerProvider, build, _busy, createState, day, _DaySection, _first (+12 more)
 
 ### Community 192 - "add_phone_screen.dart"
 Cohesion: 0.09
-Nodes (18): AddPhoneContent, _AddPhoneContentState, AddPhoneScreen, build, createState, dispose, _done, _e164 (+10 more)
+Nodes (20): AddPhoneContent, _AddPhoneContentState, AddPhoneScreen, build, createState, dispose, _e164, onSaved (+12 more)
 
 ### Community 193 - "explore_screen.dart"
-Cohesion: 0.08
-Nodes (23): _all, _CategoryGrid, _CategoryGridState, _CategoryTile, createState, dispose, ExploreCategoryTab, _Gap (+15 more)
+Cohesion: 0.07
+Nodes (36): _confirm, eventRoutesReadyProvider, _all, build, _CategoryGrid, _CategoryGridState, _CategoryTile, createState (+28 more)
 
-### Community 194 - "decline_sheet.dart"
-Cohesion: 0.11
-Nodes (18): booking, build, createState, customerName, _DeclineContent, _DeclineContentState, declineReasonMaxLength, declineReasonMinLength (+10 more)
+### Community 194 - "cancel_sheet.dart"
+Cohesion: 0.06
+Nodes (34): BookingRole, booking, cancelReasonMaxLength, counterpartName, createState, l10n, _otherText, _publish (+26 more)
 
 ### Community 195 - "board.py"
-Cohesion: 0.22
-Nodes (13): cmd_claim(), mutate(), cmd_release(), cmd_set(), cmd_show(), cmd_watch(), heads(), fetch() (+5 more)
+Cohesion: 0.12
+Nodes (33): auth(), cmd_claim(), mutate(), cmd_release(), mutate(), cmd_set(), mutate(), cmd_show() (+25 more)
 
 ### Community 196 - "@freezed"
 Cohesion: 0.33
@@ -1256,9 +1248,9 @@ Nodes (24): FirebaseMediaUploader, delete, deleted, deleteFailure, done, failNam
 Cohesion: 0.10
 Nodes (21): PostRepository, FakePostRepository, FirestorePostPublisher, FirestorePostRepository, caption, failWith, FakePostPublisher, id (+13 more)
 
-### Community 200 - "location_repository.dart"
-Cohesion: 0.09
-Nodes (22): ApproxLocation, capturedAt, currentApproxLocation, geohash5, geohash6, isStale, lat, lng (+14 more)
+### Community 200 - "setup_intro_screen.dart"
+Cohesion: 0.11
+Nodes (17): setupIntroControllerProvider, _addEquipment, _apply, _bio, build, _changed, createState, dispose (+9 more)
 
 ### Community 201 - "photographer_contact_repository.dart"
 Cohesion: 0.09
@@ -1269,8 +1261,8 @@ Cohesion: 0.10
 Nodes (21): AreaPickerSheet, _AreaPickerSheetState, _AreaRow, _AreaSkeletons, build, createState, _deviceFailed, _deviceId (+13 more)
 
 ### Community 203 - "mock_api.dart"
-Cohesion: 0.07
-Nodes (25): auth, FirebaseIdTokenSource, IdTokenSource, StaticIdTokenSource, token, value, BackendConfig, apiClientProvider (+17 more)
+Cohesion: 0.08
+Nodes (20): BackendConfig, api, link, apiClientProvider, backendConfigProvider, base, client, idTokenSourceProvider (+12 more)
 
 ### Community 204 - "File Structure"
 Cohesion: 0.20
@@ -1281,8 +1273,8 @@ Cohesion: 0.10
 Nodes (18): active, builtInSkillCatalog, code, fromCode, _fromOptions, group, id, ids (+10 more)
 
 ### Community 206 - "event_card.dart"
-Cohesion: 0.06
-Nodes (28): build, _buildCompact, _buildFeatured, _buildRow, coverUrl, data, distanceLabel, _EventCardCompactSkeleton (+20 more)
+Cohesion: 0.05
+Nodes (34): build, DateBlock, _DateBlockSkeleton, day, size, skeleton, build, _buildCompact (+26 more)
 
 ### Community 207 - "user_repository.dart"
 Cohesion: 0.10
@@ -1293,20 +1285,20 @@ Cohesion: 0.10
 Nodes (19): customerId, day, deposit, end, escrowStatus, id, makeTestBooking, note (+11 more)
 
 ### Community 209 - "gen_app_icon.py"
-Cohesion: 0.16
-Nodes (13): aperture(), foreground(), full_icon(), gradient(), main(), place(), Global Constraints, Bước 3 · Địa điểm (cùng layout S04.01) (+5 more)
+Cohesion: 0.14
+Nodes (15): aperture(), foreground(), full_icon(), gradient(), main(), place(), 1.1 Hai kiểu nút chính, 1.2 Mờ ảnh cho modal và trang giới thiệu (+7 more)
 
 ### Community 210 - "Spec — Các màn hình còn lại, Sự kiện, liên hệ, vị trí và huy hiệu (Flutter)"
-Cohesion: 0.07
-Nodes (28): 1.1 Hai kiểu nút chính, 1.2 Mờ ảnh cho modal và trang giới thiệu, 1. Theme, 2.1 Hiển thị mã trong app (chế độ debug), 2. Mã màn hình, 3c.1 Hành vi, 3c.2 Quyền riêng tư và kỹ thuật, 3c. Vị trí và gợi ý "gần bạn" (+20 more)
+Cohesion: 0.06
+Nodes (33): 2.1 Hiển thị mã trong app (chế độ debug), 2. Mã màn hình, 3b.1 Quy tắc sản phẩm, 3b.3 Định dạng và chuẩn hoá, 3b.4 Mở ứng dụng ngoài, 3b.5 Nút liên hệ gọn (`ContactDial`), 3b.6 Biểu tượng Zalo và WhatsApp, 3b. Liên hệ và số điện thoại (+25 more)
 
 ### Community 211 - "int get"
 Cohesion: 0.10
 Nodes (17): authPort, EmulatorConfig, emulatorConfigFromEnvironment, firestorePort, functionsPort, functionsRegion, host, override (+9 more)
 
-### Community 212 - "area.dart"
+### Community 212 - "notification_row_test.dart"
 Cohesion: 0.11
-Nodes (19): AreaOption, AreaRepository, BuiltInAreaRepository, builtInAreas, fromJson, geohash5, hashCode, id (+11 more)
+Nodes (13): NotificationKind, main, body, groupAvatars, id, _item, kind, main (+5 more)
 
 ### Community 213 - "photographer_intro.dart"
 Cohesion: 0.11
@@ -1320,20 +1312,20 @@ Nodes (19): acceptInquiries, call, city, ContactChannels, ContactNumbers, copyWi
 Cohesion: 0.10
 Nodes (18): PhotographerSkills, completeness, CompletenessStepCode, evidenceRemovedAt, extras, fromCode, hashCode, next (+10 more)
 
-### Community 216 - "http_photographer_contact_repository.dart"
-Cohesion: 0.06
-Nodes (27): api, link, api, completeContactSetup, dispose, _Setup, watchChannels, watchNumbers (+19 more)
+### Community 216 - "http_user_repository.dart"
+Cohesion: 0.09
+Nodes (17): api, dispose, _get, save, watch, _writes, api, dispose (+9 more)
 
-### Community 217 - "DomainError"
-Cohesion: 0.04
-Nodes (63): fromFirestoreChat(), fromFirestoreMessage(), fromFirestoreSystem(), toFirestoreChat(), toFirestoreMessage(), toFirestoreSystem(), createTestDeps(), 1. Task 1: Chat Domain Model & Rules (`packages/domain/src/`) (+55 more)
+### Community 217 - "chat_firestore.ts"
+Cohesion: 0.05
+Nodes (44): fromFirestoreChat(), fromFirestoreMessage(), fromFirestoreSystem(), toFirestoreChat(), toFirestoreMessage(), toFirestoreSystem(), createTestDeps(), 1. Task 1: Chat Domain Model & Rules (`packages/domain/src/`) (+36 more)
 
-### Community 218 - "File Structure"
-Cohesion: 0.12
-Nodes (20): File Structure, Global Constraints, Interfaces for other plans, Step 2c: Photographer Skills (S38, S39, S40) Implementation Plan, Task 11: S40 evidence sheet over the photographer's own posts, Task 12: S38 + S39 screen and routes, Task 13: Align the specs with what was built, Task 14: Battery and performance check (moved) (+12 more)
+### Community 218 - "skills"
+Cohesion: 0.07
+Nodes (35): Preflight, Preflight (resume, Tasks 7–13), SDD ledger — plan: docs/superpowers/plans/2026-10-01-step2c-skills.md, File Structure, Global Constraints, Interfaces for other plans, Step 2c: Photographer Skills (S38, S39, S40) Implementation Plan, Task 10: Device draft, analytics hook and `SkillsController` (+27 more)
 
 ### Community 219 - "screens/README.md"
-Cohesion: 0.14
+Cohesion: 0.18
 Nodes (5): Kết quả mong đợi khi hoàn tất một màn, Mẫu cho mỗi màn, Mục lục, Quy ước chung (áp dụng cho mọi màn, không nhắc lại), Đặc tả từng màn hình
 
 ### Community 220 - "_jvm-env.sh"
@@ -1349,12 +1341,12 @@ Cohesion: 0.12
 Nodes (15): compact, formatDay, formatDayMonth, formatDistance, formatDuration, formatMoney, formatRating, grouped (+7 more)
 
 ### Community 223 - "own_posts_controller.dart"
-Cohesion: 0.09
-Nodes (21): build, capped, _Chunk, cursor, error, failed, hasMore, loadingMore (+13 more)
+Cohesion: 0.07
+Nodes (27): postRepositoryProvider, pinToTop, build, capped, _Chunk, cursor, error, failed (+19 more)
 
-### Community 224 - "return"
-Cohesion: 0.04
-Nodes (44): dir, fs, listSubdirectoryNames, main, pathContext, projectDir, subdirs, extractHashtags (+36 more)
+### Community 224 - "phone.dart"
+Cohesion: 0.11
+Nodes (18): b, _compact, d, digits, formatNational, _international, internationalInput, nationalDigits (+10 more)
 
 ### Community 225 - "notification_row.dart"
 Cohesion: 0.06
@@ -1370,67 +1362,67 @@ Nodes (17): compilerOptions, isolatedModules, lib, module, moduleResolution, noE
 
 ### Community 228 - "my_bookings_screen.dart"
 Cohesion: 0.04
-Nodes (43): BookingTab, actions, booking, _cardActions, createState, _empty, _list, _onDirections (+35 more)
+Nodes (42): BookingTab, actions, booking, _cardActions, createState, _list, _onDirections, _onMessage (+34 more)
 
-### Community 229 - "location_repository_test.dart"
-Cohesion: 0.07
-Nodes (29): askedKey, checkPermission, currentApproxLocation, _gateway, GeolocatorGateway, LocationGateway, _map, openAppSettings (+21 more)
+### Community 229 - "package:shared_preferences/shared_preferences.dart"
+Cohesion: 0.03
+Nodes (54): ApertureMark, askedKey, checkPermission, currentApproxLocation, _gateway, GeolocatorGateway, LocationGateway, _map (+46 more)
 
 ### Community 230 - "int?"
-Cohesion: 0.11
-Nodes (14): _answers, calls, name, path, PickedImage, pickImages, requestedMax, sizeBytes (+6 more)
+Cohesion: 0.10
+Nodes (17): active, coverUrl, deliveryDays, durationMinutes, editedCount, id, name, photoCount (+9 more)
 
 ### Community 231 - "database.ts"
-Cohesion: 0.12
-Nodes (25): Task 2: Slice migrations from `relational-schema.md`, ulidx, AuthIdentitiesTable, AuthProvider, BookingEventsTable, BookingsTable, ContactAccessLogTable, ContactChannelCode (+17 more)
+Cohesion: 0.09
+Nodes (33): Self-review notes, Task 2: Slice migrations from `relational-schema.md`, Task 4: Authentication with Firebase ID tokens and `POST /v1/me`, Task 6: Migration for live payments, `Database` types, test reset, kysely, AppDeps, AuthIdentitiesTable, AuthProvider (+25 more)
 
 ### Community 232 - "2. Quy chuẩn kiểu dữ liệu và đặt tên"
 Cohesion: 0.18
 Nodes (11): 2.10 Xoá và lưu giữ, 2.1 Định danh, 2.2 Thời gian, 2.3 Tiền tệ, 2.4 Enum, 2.5 Địa lý, 2.6 Tệp và ảnh, 2.7 Cấu trúc và mảng (+3 more)
 
 ### Community 233 - "File Structure"
-Cohesion: 0.11
-Nodes (17): File Structure, Flutter Foundation (Sub-project 1) Implementation Plan, Global Constraints, Review Focus, Self-review notes, Task 10: Role-aware empty-state tabs and profile sign-out, Task 11: Firestore security rules with emulator tests, Task 12: CI and developer docs (+9 more)
+Cohesion: 0.12
+Nodes (16): File Structure, Flutter Foundation (Sub-project 1) Implementation Plan, Global Constraints, Review Focus, Task 10: Role-aware empty-state tabs and profile sign-out, Task 11: Firestore security rules with emulator tests, Task 12: CI and developer docs, Task 1: Project-local Flutter SDK and project scaffold (+8 more)
 
 ### Community 234 - "File Structure"
-Cohesion: 0.12
-Nodes (15): File Structure, Global Constraints, Instant I5: "Chụp ngay" Customer App (S13) Implementation Plan, Self-Review, Task 13: Two-party integration test against one fake dispatch service, Task 14: Align the specs and the battery guide (moved), Task 15: Battery and performance check, Task 1: `InstantBookingRepository` (packages, create, cancel, confirm, health) (+7 more)
+Cohesion: 0.11
+Nodes (17): File Structure, Global Constraints, Instant I5: "Chụp ngay" Customer App (S13) Implementation Plan, Self-Review, Task 11: Customer notifications ("đã có người nhận") and navigation, Task 12: Entry points on S02.01 Home and S02.06 Find, Task 13: Two-party integration test against one fake dispatch service, Task 14: Align the specs and the battery guide (moved) (+9 more)
 
 ### Community 235 - "Spec — Cộng đồng nhiếp ảnh gia v1 (Flutter)"
-Cohesion: 0.13
-Nodes (14): 10. Xử lý lỗi và trạng thái, 11. Kiểm thử, 13. Câu hỏi mở (không chặn sub‑project 1), 1. Mục tiêu và ranh giới, 2. Kiến trúc sản phẩm, 3. Vai trò và điều hướng, 4. Bảy hành trình, 7. Lịch rảnh (+6 more)
+Cohesion: 0.12
+Nodes (15): 10. Xử lý lỗi và trạng thái, 11. Kiểm thử, 13. Câu hỏi mở (không chặn sub‑project 1), 1. Mục tiêu và ranh giới, 2. Kiến trúc sản phẩm, 3. Vai trò và điều hướng, 4. Bảy hành trình, 5. Mô hình dữ liệu (Firestore) (+7 more)
 
 ### Community 236 - "provider_selection_test.dart"
-Cohesion: 0.12
-Nodes (9): photographerContactRepositoryProvider, user, main, _contactJson, main, _profile, c, _container (+1 more)
+Cohesion: 0.11
+Nodes (12): ensureProfile, repo, user, photographerContactRepositoryProvider, user, main, _contactJson, main (+4 more)
 
 ### Community 237 - "Setup Firebase cho app Flutter (Android)"
 Cohesion: 0.10
-Nodes (18): MainActivity, 10.1 Tạo service account (trong từng project), 10.2 Tạo environment và lưu cấu hình, 10.3 Chạy thử, 10. Deploy tự động bằng GitHub Actions, 11. Cloud Functions (deploy qua CI), 1. Chọn project, 2. Thêm (hoặc kiểm tra) app Android (+10 more)
+Nodes (19): MainActivity, 10.1 Tạo service account (trong từng project), 10.2 Tạo environment và lưu cấu hình, 10.3 Chạy thử, 10. Deploy tự động bằng GitHub Actions, 11. Cloud Functions (deploy qua CI), 1. Chọn project, 2. Thêm (hoặc kiểm tra) app Android (+11 more)
 
 ### Community 238 - "booking_lifecycle_e2e_test.dart"
 Cohesion: 0.06
 Nodes (30): b, _badge, button, clock, confirmFakePayment, createBooking, _customerBooks, _day12 (+22 more)
 
 ### Community 239 - "File Structure"
-Cohesion: 0.11
-Nodes (17): Decisions, File Structure, Global Constraints, Interfaces for plans 4b–4e, Review Focus, Self-review notes, Shared components A: signature loading, skeletons, AsyncView and the widgets the booking screens reuse — Implementation Plan, Task 10: Gallery and spec in step (+9 more)
+Cohesion: 0.12
+Nodes (16): Decisions, File Structure, Global Constraints, Interfaces for plans 4b–4e, Review Focus, Self-review notes, Shared components A: signature loading, skeletons, AsyncView and the widgets the booking screens reuse — Implementation Plan, Task 10: Gallery and spec in step (+8 more)
 
-### Community 240 - "3e. Kỹ năng nhiếp ảnh gia và dịch vụ gợi ý"
+### Community 240 - "AddImageAdapter"
 Cohesion: 0.22
-Nodes (9): 3e.1 Nguyên tắc, 3e.2 Thu thập kỹ năng (S08.02–S08.04), 3e.4 Dịch vụ gợi ý chạy riêng, 3e.5 API tóm tắt, 3e.6 Thuật toán v1 (`rules-v1`, giải thích được), 3e.7 Tín hiệu và nhật ký, 3e.8 Đánh giá và nâng cấp, 3e.9 Điểm gắn trong ứng dụng (+1 more)
+Nodes (3): AddImageAdapter, AddImageHolder, PhotoHolder
 
 ### Community 241 - "MyProjectFragment"
-Cohesion: 0.16
+Cohesion: 0.14
 Nodes (6): MyProjectContact, PresenterViewOps, ViewOps, BookPageAdapter, MyProjectFragment, MyProjectPresenter
 
 ### Community 242 - "vn_time.dart"
-Cohesion: 0.11
-Nodes (18): add, d, date, dayKeyOf, daysToMonday, endOfVnWeek, isVnWeekend, m (+10 more)
+Cohesion: 0.06
+Nodes (32): add, d, date, dayKeyOf, daysToMonday, endOfVnWeek, isVnWeekend, m (+24 more)
 
-### Community 243 - "ApiError"
-Cohesion: 0.08
-Nodes (53): File Structure, Global Constraints, Task 11: Performance check (moved), Task 1: Scaffold `services/api`, health endpoint, Compose and CI, Task 3: Domain reuse, error envelope, ids and the OpenAPI contract, Task 5: Public profile and private customer contact, Task 6: Photographer contact channels, numbers, service area and contact setup, Task 7: `get_contact_link` with `ContactAccessLog`, and the shared contract world (+45 more)
+### Community 243 - "Self-Review"
+Cohesion: 0.14
+Nodes (26): Task 5: Public profile and private customer contact, Former task 11: Performance check, Self-Review, isForeignKeyViolation(), ApiErrorCode, bookingContactQuery(), AreaDto, ChannelsDto (+18 more)
 
 ### Community 244 - "contact_setup_controller.dart"
 Cohesion: 0.14
@@ -1460,9 +1452,9 @@ Nodes (6): AuthException, error, mapAuthException, toString, main, main
 Cohesion: 0.12
 Nodes (17): 4. Sheet, tiến độ, trạng thái, AppBottomSheet · Mới, AppFooterBar · Mới, AppOptionTile · Mới, AppSkeleton và skeleton của từng component · Đã có (quyết định 2026-10-02), AsyncView · Đã có (quyết định 2026-10-02), BlurScrim và ImageBackdrop · Mới, DotRingLoader (vòng chấm bi) · Mới (quyết định 2026-10-04, người dùng) (+9 more)
 
-### Community 251 - "land.py"
-Cohesion: 0.24
-Nodes (11): changed(), cmd_land(), cmd_overlap(), _done(), gh_json(), git(), main(), overlap() (+3 more)
+### Community 251 - "decline_sheet_test.dart"
+Cohesion: 0.13
+Nodes (13): _confirm, _confirmEnabled, _copy, handles, _inSheet, main, _now, _open (+5 more)
 
 ### Community 252 - "compilerOptions"
 Cohesion: 0.12
@@ -1476,9 +1468,9 @@ Nodes (9): _alphabet, fromMillisecondsSinceEpoch, join, ms, newUlid, out, rng, t
 Cohesion: 0.07
 Nodes (28): apiOperations, ApiPaths, areaFromJson, channelsFromJson, contactChannels, contactLinks, contactNumbers, contactSetup (+20 more)
 
-### Community 255 - "builtin_taxonomy.dart"
-Cohesion: 0.13
-Nodes (14): audienceLabel, extraLabel, id, kAudiences, kExtras, kLanguages, kSpecialties, kStyles (+6 more)
+### Community 255 - "chat_composer.dart"
+Cohesion: 0.15
+Nodes (13): build, busy, ChatComposer, _ChatComposerState, _controller, createState, disabledReason, dispose (+5 more)
 
 ### Community 256 - "gen_tokens.dart"
 Cohesion: 0.13
@@ -1498,7 +1490,7 @@ Nodes (14): Global Constraints, Mock parity 1: make the built screens match the 
 
 ### Community 260 - "booking_detail_screen.dart"
 Cohesion: 0.03
-Nodes (104): ContactDialStyle, bookingContactProvider, bookingEventsProvider, bookingProvider, myBookingsProvider, chatMessagesProvider, chatRepositoryProvider, chatThreadProvider (+96 more)
+Nodes (87): ContactDialStyle, bookingContactProvider, bookingContactStreamProvider, bookingEventsProvider, bookingProvider, bookingStreamProvider, customerBookingsStreamProvider, groupedCustomerBookingsProvider (+79 more)
 
 ### Community 261 - "Mock parity audit: built Flutter screens vs `docs/design/ui-mock.html`"
 Cohesion: 0.14
@@ -1506,11 +1498,11 @@ Nodes (13): Accepted, not defects, Mock parity audit: built Flutter screens vs `
 
 ### Community 262 - "selfhosted_contracts_test.dart"
 Cohesion: 0.09
-Nodes (14): main, main, _area, _channels, _numbers, photographerContactRepositoryContract, _api, _base (+6 more)
+Nodes (15): main, main, _area, _channels, _numbers, photographerContactRepositoryContract, _api, _base (+7 more)
 
 ### Community 263 - "Scope Completed"
-Cohesion: 0.20
-Nodes (9): 2. Task 2: `EventCard` & Data Mapper, 3. Task 3: `TicketCard` with QR, 4. Task 4: `BadgeChip`, `BadgeRow`, `BadgeTile`, 5. Task 5: `NotificationRow` and `NotificationBell`, 6. Task 6: `PermissionPrimer`, Snooze Policy & Explore Migration, 7. Task 7: Gallery and Spec Alignment, Handover ledger — b1/7-L2 (Shared Components B1), Scope Completed (+1 more)
+Cohesion: 0.18
+Nodes (10): 1. Task 1: `DateBlock`, 2. Task 2: `EventCard` & Data Mapper, 3. Task 3: `TicketCard` with QR, 4. Task 4: `BadgeChip`, `BadgeRow`, `BadgeTile`, 5. Task 5: `NotificationRow` and `NotificationBell`, 6. Task 6: `PermissionPrimer`, Snooze Policy & Explore Migration, 7. Task 7: Gallery and Spec Alignment, Handover ledger — b1/7-L2 (Shared Components B1) (+2 more)
 
 ### Community 264 - "File Structure"
 Cohesion: 0.13
@@ -1529,8 +1521,8 @@ Cohesion: 0.15
 Nodes (12): File Structure, Global Constraints, Self-Review, Step 3a2: Explore, Nearby Events and Area Picker (S13, S35, S36) Implementation Plan, Task 1: Clock, areas, saved area and built-in taxonomy, Task 2: `LocationController` and the Explore mode resolution, Task 3: Events read model, nearby port with a fake, selection logic, filters, Task 4: Explore tab badge and "seen" marker (+4 more)
 
 ### Community 268 - "booking_flow_state.dart"
-Cohesion: 0.07
-Nodes (28): area, bookingId, BookingStep, busy, copyWith, day, depositVnd, durationMinutes (+20 more)
+Cohesion: 0.06
+Nodes (31): code, fromCode, PaymentProviderCode, area, bookingId, BookingStep, busy, copyWith (+23 more)
 
 ### Community 269 - "Nhiếp ảnh gia: công việc, lịch, đăng bài, thiết lập, kỹ năng"
 Cohesion: 0.15
@@ -1544,13 +1536,13 @@ Nodes (11): addMonths, calendarDay, daysBetween, end, first, lastDayOfMonth, lea
 Cohesion: 0.10
 Nodes (19): _, Backend, baseUrl, code, firebase, fromEnvironment, parse, repos (+11 more)
 
-### Community 272 - "contact-links.test.ts"
-Cohesion: 0.11
-Nodes (19): ExternalChannel, ERROR_CODES, BookingStatus, ContactLinkBody, registerContactLinkRoutes(), contractWorld, seedContractWorld(), WorldBooking (+11 more)
+### Community 272 - "domain-shim.test.ts"
+Cohesion: 0.29
+Nodes (3): expected(), now, Status
 
-### Community 273 - "2. Bảng"
-Cohesion: 0.12
-Nodes (15): 1. Quy ước DDL, 2.1 Tài khoản, tệp, 2.2 Danh mục (taxonomy) và nhiếp ảnh gia, 2.3 Nội dung, 2.4 Đặt lịch, thanh toán, tiền treo, 2.5 Trò chuyện, thông báo, 2.6 Sự kiện, 2.7 Huy hiệu, gợi ý, vận hành (+7 more)
+### Community 273 - "Lược đồ quan hệ (chuẩn đích) và ánh xạ từ Firestore"
+Cohesion: 0.18
+Nodes (6): 1. Quy ước DDL, 3. Ánh xạ Firestore → bảng, 4. Dẫn xuất và đếm, 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại), 6. Dữ liệu mồi (seed), Lược đồ quan hệ (chuẩn đích) và ánh xạ từ Firestore
 
 ### Community 274 - "File Structure"
 Cohesion: 0.17
@@ -1560,9 +1552,9 @@ Nodes (11): File Structure, Global Constraints, Self-Review, Step 3b2: Feed Card
 Cohesion: 0.17
 Nodes (11): File Structure, Global Constraints, Step 3c: Create Post (S21), Image Upload and the Post Write Path Implementation Plan, Task 1: Ids, hashtags, the image picker port and the platform configuration, Task 2: `MediaUploader`, the Storage adapter and Storage rules, Task 3: `PostDraft`, `PostPublisher`, the Firestore write path, Task 4: Firestore rules for creating a post, Task 5: `PostComposerController` (+3 more)
 
-### Community 276 - "domain/src/index.ts"
-Cohesion: 0.04
-Nodes (62): storageUrlPrefixes(), onReviewWrite, liveStatsStore(), FirestoreReviewStore, FirestoreStatsStore, PHOTOGRAPHERS_COLLECTION, POSTS_COLLECTION, realShootPostToFirestore() (+54 more)
+### Community 276 - "src/review.ts"
+Cohesion: 0.08
+Nodes (33): 1. Task 1: Review Domain Model, Ports & `submitReview` (`packages/domain/src/`), 3. Task 3: App Data Layer (`app_flutter/lib/data/review/`), Gate Status, Handover ledger — 8e/6-L2 (Review Domain, Functions, Rules, Indexes & Data Layer), Scope Completed, Verification, Task 10: Flutter app domain types, rules mirror, repository port, firestore adapter, providers, and test support, File Structure (+25 more)
 
 ### Community 277 - "Component rút ra từ mock (phân tích UI 2026-10-02)"
 Cohesion: 0.17
@@ -1581,16 +1573,16 @@ Cohesion: 0.08
 Nodes (23): `cleanUrls` (Optional), Full Example, `headers` (Optional), Hosting Configuration (`firebase.json`), `ignore` (Optional), Key Attributes, `public` (Required), `redirects` (Optional) (+15 more)
 
 ### Community 281 - "Run the next plan (parallel, many machines)"
-Cohesion: 0.15
-Nodes (13): 1. Read the board, 2. Claim it, 3. Branch from develop, 4. Implement, following the plan and the specs, 5. Finish: PR into develop, 6. Landing (continuous mode only), Continuous mode: keep going until the feature is done, Dart, Flutter and Firebase skills for implementers (+5 more)
+Cohesion: 0.17
+Nodes (12): 1. Read the board, 2. Claim it, 3. Branch from develop, 4. Implement, following the plan and the specs, 5. Finish: PR into develop, 6. Landing (continuous mode only), Continuous mode: keep going until the feature is done, Dart, Flutter and Firebase skills for implementers (+4 more)
 
 ### Community 282 - "Đặc tả shared component"
 Cohesion: 0.22
 Nodes (9): 5. Công cụ không phải widget, 6. Bảng tra: widget ↔ màn, 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau), ContactLauncher · Mới, LocationRepository · Mới, Quy tắc chung, RecommendationRepository · Mới, Đặc tả shared component (+1 more)
 
 ### Community 283 - "Setup máy mới (app Flutter)"
-Cohesion: 0.18
-Nodes (10): 2. Cài SDK vào repo, 3. Biến môi trường cho VS Code (`~/.zshrc`, tự động), 4. Android emulator (không bắt buộc), 5. Cấu hình bí mật (không có trong git), 6. Kiểm tra, 7. Chạy app từ VS Code, Setup máy mới (app Flutter), Tóm tắt (+2 more)
+Cohesion: 0.17
+Nodes (11): 1. Công cụ nền, 2. Cài SDK vào repo, 3. Biến môi trường cho VS Code (`~/.zshrc`, tự động), 4. Android emulator (không bắt buộc), 5. Cấu hình bí mật (không có trong git), 6. Kiểm tra, 7. Chạy app từ VS Code, Setup máy mới (app Flutter) (+3 more)
 
 ### Community 284 - "File Structure"
 Cohesion: 0.18
@@ -1600,21 +1592,21 @@ Nodes (10): Core Display Widgets (Build step 1, part A) Implementation Plan, Fil
 Cohesion: 0.18
 Nodes (10): File Structure, Global Constraints, Screen Codes (Build step 0) Implementation Plan, Self-Review, Task 1: `ScreenCodes` constants, kept in sync with the spec, Task 2: `ScreenCode` widget and `ScreenCodeScope`, Task 3: Persisted switch and wiring into `MyApp`, Task 4: Switch row in Settings (debug builds only) (+2 more)
 
-### Community 286 - "String?"
-Cohesion: 0.05
-Nodes (35): accent, AuroraHero, build, lead, tagline, build, CapacityBar, _CapacityBarSkeleton (+27 more)
+### Community 286 - "package:flutter/material.dart"
+Cohesion: 0.04
+Nodes (42): accent, AuroraHero, build, lead, tagline, build, CapacityBar, _CapacityBarSkeleton (+34 more)
 
 ### Community 287 - "ios/RunnerTests/RunnerTests.swift"
 Cohesion: 0.22
 Nodes (5): SceneDelegate, RunnerTests, Flutter, UIKit, XCTest
 
-### Community 288 - "target"
-Cohesion: 0.28
-Nodes (9): target(), 3h.1 Hành vi, 3h.2 Các loại thông báo, 3h.3 Dữ liệu, 3h.4 Pin và dữ liệu mạng, 3h.5 Giờ yên lặng, 3h.6 Thời điểm xin quyền (S17.03), 3h.7 Cloud Functions (+1 more)
+### Community 288 - "3h. Thông báo (S17)"
+Cohesion: 0.25
+Nodes (8): 3h.1 Hành vi, 3h.2 Các loại thông báo, 3h.3 Dữ liệu, 3h.4 Pin và dữ liệu mạng, 3h.5 Giờ yên lặng, 3h.6 Thời điểm xin quyền (S17.03), 3h.7 Cloud Functions, 3h. Thông báo (S17)
 
 ### Community 289 - "skills_draft_store.dart"
-Cohesion: 0.20
-Nodes (9): clear, evidenceRemovedSeen, evidenceSeenKeyFor, keyFor, markEvidenceRemovedSeen, _prefs, read, SkillsDraftStore (+1 more)
+Cohesion: 0.11
+Nodes (19): photographerSkillsProvider, skillCatalogProvider, skillsRepositoryProvider, build, ProfileHeader, SkillsController, SkillsEditorState, submit (+11 more)
 
 ### Community 290 - "File Structure"
 Cohesion: 0.20
@@ -1637,8 +1629,8 @@ Cohesion: 0.08
 Nodes (24): Breaking Changes, CI/CD Integration, Cloud SQL Configuration, Configuration Reference, Connect from SDK, connector.yaml, Contents, dataconnect.yaml (+16 more)
 
 ### Community 295 - "ticket_card.dart"
-Cohesion: 0.11
-Nodes (18): build, eventTitle, onAddToCalendar, onCancel, onDirections, onPay, placeName, quantity (+10 more)
+Cohesion: 0.06
+Nodes (27): build, eventTitle, onAddToCalendar, onCancel, onDirections, onPay, placeName, quantity (+19 more)
 
 ### Community 296 - "Kiểm tra pin và hiệu năng"
 Cohesion: 0.22
@@ -1657,8 +1649,8 @@ Cohesion: 0.38
 Nodes (3): RunnerTests, Cocoa, FlutterMacOS
 
 ### Community 302 - "firestore_review_repository.dart"
-Cohesion: 0.12
-Nodes (12): PhotoRetryTile, mapFunctionsError, _functions, FunctionsContactLinkRepository, link, _customFunctions, _firestore, forPhotographer (+4 more)
+Cohesion: 0.15
+Nodes (9): _functions, FunctionsContactLinkRepository, link, _customFunctions, _firestore, forPhotographer, _functions, submit (+1 more)
 
 ### Community 303 - "3g. Tiền treo (escrow) và chi trả"
 Cohesion: 0.25
@@ -1666,35 +1658,35 @@ Nodes (8): 3g.1 Nguyên tắc (đã chốt), 3g.2 Khi nào thả tiền, 3g.3 Ho
 
 ### Community 304 - "load.ts"
 Cohesion: 0.06
-Nodes (55): t(), Task 10: Data migration for the slice: Firestore → NDJSON → PostgreSQL, root, sources(), [command, ...args], DocSource, exportSlice(), Manifest (+47 more)
+Nodes (56): t(), Task 10: Data migration for the slice: Firestore → NDJSON → PostgreSQL, Task 1: `SignatureLoader` with one wave kind, root, sources(), [command, ...args], DocSource, exportSlice() (+48 more)
 
 ### Community 305 - "Đặt lịch, thanh toán, hội thoại, liên hệ"
 Cohesion: 0.25
 Nodes (8): S04.04 · Chờ thanh toán, S04.05 · Thêm số điện thoại, S05.01 · Danh sách đặt lịch, S05.02 · Chi tiết booking, S05.03 · Huỷ booking, S05.04 · Liên hệ sau khi đã đặt (`ContactDial` đã bung), S07.01 · Hội thoại, Đặt lịch, thanh toán, hội thoại, liên hệ
 
 ### Community 306 - "firestore_chat_repository.dart"
-Cohesion: 0.11
-Nodes (17): answerReschedule, _auth, _customFunctions, _firestore, _functions, markRead, _mediaUploader, olderMessages (+9 more)
+Cohesion: 0.09
+Nodes (20): PhotoRetryTile, answerReschedule, _auth, _customFunctions, _firestore, _functions, mapFunctionsError, markRead (+12 more)
 
 ### Community 307 - "recommender-service"
 Cohesion: 0.25
 Nodes (7): Bộ xếp hạng cắm được, Có cần dịch vụ riêng ngay không?, Dự phòng, Kiến trúc, recommender-service, Việc cần làm khi bắt đầu viết mã, Vì sao tách riêng
 
-### Community 308 - "cancel_sheet.dart"
-Cohesion: 0.05
-Nodes (47): BookingRole, availabilityMonthProvider, calendarTodayProvider, build, booking, _CancelContent, _CancelContentState, cancelReasonMaxLength (+39 more)
+### Community 308 - "fake_payment_sheet.dart"
+Cohesion: 0.22
+Nodes (9): amountVnd, build, createState, FakePaymentSheet, _FakePaymentSheetState, _handleCancel, _handleConfirm, _loading (+1 more)
 
-### Community 309 - "edit_profile_screen.dart"
-Cohesion: 0.06
-Nodes (29): redirect, RouterNotifier, authStateProvider, build, editProfileControllerProvider, build, createState, dispose (+21 more)
+### Community 309 - "chat_screen.dart"
+Cohesion: 0.09
+Nodes (26): redirect, authStateProvider, chatMessagesProvider, chatRepositoryProvider, chatThreadProvider, myChatsProvider, build, bookingFeaturesProvider (+18 more)
 
 ### Community 310 - "post_publisher_test.dart"
-Cohesion: 0.13
-Nodes (7): photographerRepositoryProvider, serviceRepositoryProvider, main, draft, Env, main, postPublisherContract
+Cohesion: 0.07
+Nodes (20): photographerRepositoryProvider, postEngagementRepositoryProvider, serviceRepositoryProvider, _alreadyLanded, _db, publish, main, collection (+12 more)
 
-### Community 312 - "evidence_picker_test.dart"
-Cohesion: 0.09
-Nodes (17): brightness, count, height, _host, hostWidget, initial, main, photos (+9 more)
+### Community 312 - "evidence_picker.dart"
+Cohesion: 0.14
+Nodes (12): build, EvidencePicker, id, imageUrl, max, onChanged, onEndReached, onMaxReached (+4 more)
 
 ### Community 313 - "app_flutter"
 Cohesion: 0.29
@@ -1752,9 +1744,9 @@ Nodes (4): Handover (2026-10-02), Things not to forget, User decisions to keep, 
 Cohesion: 0.08
 Nodes (21): 1. Add dependencies to Gradle build files, 2. Set in-app defaults, 3. Fetch and activate values, Firebase Remote Config - Android Setup Guide (Kotlin), Prerequisites, Add Swift Package Dependencies, Fetch and Activate Values, Firebase Remote Config iOS Setup Guide (+13 more)
 
-### Community 333 - "profile_header.dart"
-Cohesion: 0.09
-Nodes (20): PhotographerProfile, _db, _doc, _instant, load, save, TaxonomyCatalog, photographerSkillsProvider (+12 more)
+### Community 333 - "package:flutter/foundation.dart"
+Cohesion: 0.15
+Nodes (10): _answers, calls, name, path, PickedImage, pickImages, requestedMax, sizeBytes (+2 more)
 
 ### Community 334 - "SDD ledger — plan: docs/superpowers/plans/2026-10-01-step3c-create-post.md"
 Cohesion: 0.50
@@ -1762,7 +1754,7 @@ Nodes (3): Pre-flight scan, SDD ledger — plan: docs/superpowers/plans/2026-10-
 
 ### Community 338 - "identity.ts"
 Cohesion: 0.15
-Nodes (15): Task 6: App, auth, wiring, test harness and the compose services, authProviderCode(), claimsToPrincipal(), EmulatorVerifier, FIREBASE_JWKS_URL, firebaseVerifier(), IdentityVerifier, issuerFor() (+7 more)
+Nodes (14): Task 6: App, auth, wiring, test harness and the compose services, authProviderCode(), claimsToPrincipal(), EmulatorVerifier, FIREBASE_JWKS_URL, firebaseVerifier(), IdentityVerifier, issuerFor() (+6 more)
 
 ### Community 350 - "App Hosting CLI Commands"
 Cohesion: 0.06
@@ -1785,12 +1777,12 @@ Cohesion: 0.10
 Nodes (20): @col, Contents, Core Directives, Customizing Tables, Data Types, @default, Defining Types, Enumerations (+12 more)
 
 ### Community 371 - "api_client.dart"
-Cohesion: 0.08
-Nodes (23): BookingException, ChatException, ApiClient, ApiException, baseUrl, close, code, errorCodeOf (+15 more)
+Cohesion: 0.07
+Nodes (26): auth, FirebaseIdTokenSource, IdTokenSource, StaticIdTokenSource, token, value, ApiClient, baseUrl (+18 more)
 
 ### Community 372 - "multi_command_runner.dart"
-Cohesion: 0.11
-Nodes (12): description, main, name, ProcessCommand, run, runCommand, runner, ToolCommandRunner (+4 more)
+Cohesion: 0.17
+Nodes (8): description, main, name, ProcessCommand, run, runCommand, runner, ToolCommandRunner
 
 ### Community 373 - "find_sheets.dart"
 Cohesion: 0.11
@@ -1808,13 +1800,9 @@ Nodes (11): Exploring Commands, Initialization, Refresh Android Studio Local Env
 Cohesion: 0.12
 Nodes (15): body, build, _ConfirmBody, _ConfirmBodyState, confirmEnabled, confirmLabel, content, createState (+7 more)
 
-### Community 377 - "File Structure"
-Cohesion: 0.12
-Nodes (15): File Structure, Global Constraints, Instant booking I2: `packages/dispatch-core` (pure dispatch domain) Implementation Plan, Key decisions, Task 10: Round and radius policy (30 s offers, 3 → 6 → 10 km, round 2, 10 minutes), Task 11: Arrival check, typical match time, location rate limit, Task 12: Performance check (moved), Task 2: Configuration with every tunable, per city (+7 more)
-
-### Community 378 - "cancel_sheet_test.dart"
-Cohesion: 0.11
-Nodes (18): _activeRow, _booking, ensureVisible, handles, _inSheet, main, open, _openCustomer (+10 more)
+### Community 378 - "PhotographerMenu"
+Cohesion: 0.17
+Nodes (11): PhotographerMenu, ABOUT, AlBUMS, CALENDAR, FIND_PROJECT, HELP, LOGOUT, MESSAGES (+3 more)
 
 ### Community 379 - "Operations Reference"
 Cohesion: 0.11
@@ -1824,17 +1812,17 @@ Nodes (18): Aliases, Basic Query, Contents, Embedded Queries, Expression Operato
 Cohesion: 0.11
 Nodes (17): 1. Query Formats (`queryFormat` argument), 1. Vector Similarity Search (Semantic), 2. Full-Text Search (Lexical), 2. Relevance Thresholding (`relevanceThreshold` and `_metadata.relevance`), A. Auto-Embedding Search, A. Generation on Insert, Automatic Embedding Generation (`_embed` server value), B. Custom Vector Search (+9 more)
 
-### Community 381 - "skills_controller_test.dart"
-Cohesion: 0.09
-Nodes (15): full, main, main, catalog, issue, main, sp, valid (+7 more)
+### Community 381 - "file_system_context.dart"
+Cohesion: 0.18
+Nodes (7): dir, fs, listSubdirectoryNames, main, pathContext, projectDir, subdirs
 
 ### Community 382 - "Firestore Web SDK Usage Guide"
 Cohesion: 0.12
 Nodes (16): Add a Document with Auto-ID (`addDoc`), Firestore Web SDK Usage Guide, Get a Single Document (`getDoc`), Get Multiple Documents (`getDocs`), Handle Changes (Added/Modified/Removed), Initialization, Listen to a Document/Query (`onSnapshot`), Order and Limit (+8 more)
 
-### Community 383 - "engagementProvider"
-Cohesion: 0.17
-Nodes (15): engagementProvider, followProvider, _loadFirst, _PostBlock, postDetailProvider, build, _Content, _follow (+7 more)
+### Community 383 - "ConsumerWidget"
+Cohesion: 0.11
+Nodes (21): RouterNotifier, routerProvider, currentProfileProvider, exploreSeenAtProvider, _PostBlock, avatarControllerProvider, AvatarEditor, build (+13 more)
 
 ### Community 384 - "Implementing Dart and Flutter Test Coverage"
 Cohesion: 0.12
@@ -1845,12 +1833,12 @@ Cohesion: 0.12
 Nodes (13): ServiceRepository, FakeServiceRepository, FirestoreServiceRepository, l, main, activeFor, byPhotographer, calls (+5 more)
 
 ### Community 386 - "nearby_events_repository.dart"
-Cohesion: 0.17
-Nodes (12): add, cellQueries, countCreatedSince, EmptyNearbyEventsRepository, _events, failWith, inCells, _isPublic (+4 more)
+Cohesion: 0.10
+Nodes (16): eventCardDataOf, soldOut, add, cellQueries, countCreatedSince, EmptyNearbyEventsRepository, _events, failWith (+8 more)
 
-### Community 387 - "migrate"
-Cohesion: 0.19
-Nodes (8): Task 7: Migrations: shared money tables and the `dispatch` schema, Task 6: Migration for live payments, `Database` types, test reset, node-pg-migrate, @testcontainers/postgresql, [direction, countArg], DEFAULT_MIGRATIONS_DIR, migrate(), setup()
+### Community 387 - "File Structure"
+Cohesion: 0.16
+Nodes (10): File Structure, Task 11: Performance check (moved), Task 1: Scaffold `services/api`, health endpoint, Compose and CI, Task 9: One contract suite per port, run against Fake, Firestore and HTTP; contract drift test, node-pg-migrate, @testcontainers/postgresql, [direction, countArg], DEFAULT_MIGRATIONS_DIR (+2 more)
 
 ### Community 388 - "Writing Dart API Documentation"
 Cohesion: 0.13
@@ -1872,7 +1860,7 @@ Nodes (15): 1. High Write Rates (Sequential Values), 2. Large String/Map/Array F
 Cohesion: 0.13
 Nodes (14): 1. The Anti-Ruby Mandate, 2. Modern Xcode Folder Synchronization, 3. Allowed Scripting Languages, 4. Toolchain Verification, 5. Mandatory Linker Flags for Static Frameworks (Firebase), **CRITICAL: Always Use Latest SDK Version**, ⛔️ CRITICAL RULES & ENVIRONMENT CHECKS, Empty Directory Workflow (+6 more)
 
-### Community 393 - "contact_link_repository_test.dart"
+### Community 393 - "package:photobooking/data/contact/contact_link_repository.dart"
 Cohesion: 0.18
 Nodes (8): ContactLinkException, main, own, vn, contactLinkRepositoryContract, _fails, outside, world
 
@@ -1916,9 +1904,9 @@ Nodes (12): 1. Local Prototyping: Data Seeding, 2. Production: Admin SDK Bulk Op
 Cohesion: 0.15
 Nodes (12): Basic CRUD Schema, Client Subscribe (Web), connector.yaml Template, dataconnect.yaml Template, Event-Driven Refresh, Firebase Init Commands, Many-to-Many Relationship, Realtime Query Templates (+4 more)
 
-### Community 404 - "skills_world.dart"
-Cohesion: 0.05
-Nodes (34): EngagementView, main, main, auth, c, main, pump, registerWithEmail (+26 more)
+### Community 404 - "package:photobooking/data/user/user_profile.dart"
+Cohesion: 0.02
+Nodes (92): EngagementView, RoleSwitchController, area, intro, _role, specialty, style, uid (+84 more)
 
 ### Community 405 - "Testing and Mocking Dart Applications"
 Cohesion: 0.17
@@ -1961,7 +1949,7 @@ Cohesion: 0.17
 Nodes (11): 1. Provision Firestore, 2. Add dependencies to Gradle build files, 3. Initialize Firestore, 4. Work with data, Add data, Cloud Firestore (Standard edition) - Android Setup Guide (Kotlin), Delete data, Jetpack Compose (Modern) (+3 more)
 
 ### Community 415 - "review_mapping_test.dart"
-Cohesion: 0.16
+Cohesion: 0.15
 Nodes (8): bookingReviewProvider, reviewRepositoryProvider, watch, ReviewException, main, firestore, main, makeDoc
 
 ### Community 417 - "Testing Dart and Flutter Applications"
@@ -1980,17 +1968,17 @@ Nodes (11): Advanced Features, Firebase AI Logic Basics, Initialization Code Ref
 Cohesion: 0.18
 Nodes (10): 1. Import and Initialize, 2. Type-Safe Data Models (Codable), 3. Writing Data (Modern Concurrency & Codable), 4. Reading Data (Modern Concurrency & Codable), 5. Realtime Listeners in SwiftUI (Lifecycle Best Practices), ⛔️ CRITICAL RULE: NO FirebaseFirestoreSwift ⛔️, ⛔️ CRITICAL RULE: NO INLINE INITIALIZATION ⛔️, Firebase Firestore iOS Setup Guide (+2 more)
 
-### Community 421 - "FindPhotographerFragment"
-Cohesion: 0.09
-Nodes (9): PriceEnum, PRICE_1, PRICE_2, PRICE_3, PRICE_4, PRICE_5, FindPhotographerFragment, OnBookClickListener (+1 more)
+### Community 421 - "profile_providers.dart"
+Cohesion: 0.20
+Nodes (10): build, cursor, hasMore, loadingMore, loadMore, pageSize, photographerId, PortfolioController (+2 more)
 
-### Community 422 - "WebViewActivity"
-Cohesion: 0.21
-Nodes (3): WebViewActivity, ProgressBarListener, ValueProgressBar
-
-### Community 423 - "package:photobooking/data/chat/chat.dart"
+### Community 422 - "UserMenu"
 Cohesion: 0.18
-Nodes (6): myChatsProvider, totalUnreadProvider, firestore, main, makeDoc, main
+Nodes (10): UserMenu, ABOUT, BECOME_PHOTOGRAPHER, CALENDAR, HELP, LOGOUT, MESSAGES, MY_PROJECT (+2 more)
+
+### Community 423 - "test/errors.test.ts"
+Cohesion: 0.27
+Nodes (9): ulidx, API_ERROR_CODES, HTTP_STATUS, ID_PATTERN, isValidId(), newId(), nextUlid, logContactAccess() (+1 more)
 
 ### Community 424 - "Analyzing and Fixing Dart Code"
 Cohesion: 0.20
@@ -2009,8 +1997,8 @@ Cohesion: 0.22
 Nodes (8): 1. The `{@example}` Directive, 2. Using Regions, 3. Hiding Setup Code, 4. Marker Filtering Rules, 5. Placement and Path Resolution, 6. Verification, Contents, Using Examples in Dartdoc
 
 ### Community 428 - "Firebase Functions V1 vs V2 Signature Mapping"
-Cohesion: 0.20
-Nodes (9): Auth (Blocking), Cloud Firestore, Cloud Pub/Sub, Cloud Storage, Cloud Tasks, Firebase Functions V1 vs V2 Signature Mapping, HTTP / Callables, Realtime Database (+1 more)
+Cohesion: 0.22
+Nodes (8): Auth (Blocking), Cloud Firestore, Cloud Pub/Sub, Cloud Storage, Cloud Tasks, Firebase Functions V1 vs V2 Signature Mapping, HTTP / Callables, Realtime Database
 
 ### Community 429 - "⛔️ CRITICAL RULE: NO INLINE INITIALIZATION ⛔️"
 Cohesion: 0.22
@@ -2035,10 +2023,6 @@ Nodes (9): CLI Commands, Config files, Firestore Indexes Reference, Index Densit
 ### Community 434 - "Web SDK Usage (Enterprise Native Mode)"
 Cohesion: 0.22
 Nodes (8): 1. Initialization, 2. Decision Framework: Pipelines vs. Standard Queries, 3. Pipeline Examples, 4. Real-Time Listener & Document Operations, Full-Text Search, Relational Joins Pattern, Rules & Accountability, Web SDK Usage (Enterprise Native Mode)
-
-### Community 435 - "ConsumerWidget"
-Cohesion: 0.11
-Nodes (13): bookingSummaryOf, photographerName, statusLabel, thumbUrl, ChatThread, _BookingTile, bookingId, ChatContextCard (+5 more)
 
 ### Community 436 - "File Structure"
 Cohesion: 0.22
@@ -2068,9 +2052,9 @@ Nodes (7): Authentication in Security Rules, Basic Checks, Check if user is sign
 Cohesion: 0.25
 Nodes (7): 1. Configure and Verify Firebase MCP Server, 1. Install and Verify Firebase Extension, 2. Restart and Verify Connection, 2. Restart and Verify Connection, Alternative: Manual MCP Configuration (Project Scope), Gemini CLI Setup, Recommended: Installing Extensions
 
-### Community 443 - "_ExploreScreenState"
+### Community 443 - "2. Bảng"
 Cohesion: 0.22
-Nodes (13): _confirm, eventRoutesReadyProvider, build, didChangeAppLifecycleState, _EmptyNearby, _EventsSection, ExploreScreen, _ExploreScreenState (+5 more)
+Nodes (9): 2.1 Tài khoản, tệp, 2.2 Danh mục (taxonomy) và nhiếp ảnh gia, 2.3 Nội dung, 2.4 Đặt lịch, thanh toán, tiền treo, 2.5 Trò chuyện, thông báo, 2.6 Sự kiện, 2.7 Huy hiệu, gợi ý, vận hành, 2.8 Chụp ngay (schema `dispatch`) (+1 more)
 
 ### Community 444 - "Manual Initialization"
 Cohesion: 0.25
@@ -2144,9 +2128,9 @@ Nodes (8): Create, Create with Server Values, Delete, Filtered Updates/Deletes (
 Cohesion: 0.33
 Nodes (4): _Booking, _BookingCancel, _BookingPlace, BookingCancelPatterns
 
-### Community 462 - "parse"
-Cohesion: 0.31
-Nodes (8): mutate(), mutate(), guard(), line(), parse(), render(), today(), Task 11: Customer notifications ("đã có người nhận") and navigation
+### Community 462 - "single_command_tool.dart"
+Cohesion: 0.25
+Nodes (4): inputPath, main, parser, _runTool
 
 ### Community 463 - "Handover ledger — 8c/5-L1 (Booking detail, lists, work dashboard)"
 Cohesion: 0.33
@@ -2164,9 +2148,9 @@ Nodes (4): 1. Install and Verify Plugins, 2. Restart and Verify Connection, Clau
 Cohesion: 0.40
 Nodes (4): 1. Install and Verify Firebase Skills, 2. Configure and Verify Firebase MCP Server, 3. Restart and Verify Connection, Cursor Setup
 
-### Community 467 - "sliver_adaptive_rows.dart"
-Cohesion: 0.25
-Nodes (6): build, gap, itemBuilder, itemCount, SliverAdaptiveRows, wideBreakpoint
+### Community 467 - "3i. Use case bổ sung (2026-10-02)"
+Cohesion: 0.29
+Nodes (7): 3i.1 S18 · Khiếu nại & hỗ trợ, 3i.2 S19 · Lưu & theo dõi, 3i.3 S20 · Báo cáo & chặn, 3i.4 S21 · Xác minh, 3i.5 S22 · Thanh toán & tài khoản, 3i.6 S23 · Vận hành nội bộ (staff), 3i. Use case bổ sung (2026-10-02)
 
 ### Community 468 - "Khám phá và hồ sơ nhiếp ảnh gia"
 Cohesion: 0.25
@@ -2184,10 +2168,6 @@ Nodes (3): BookingContactSnapshot, _BookingContactSnapshot, BookingContactSnapsh
 Cohesion: 0.50
 Nodes (3): BookingEventRecord, _BookingEventRecord, BookingEventRecordPatterns
 
-### Community 472 - "FakeBookingRepository"
-Cohesion: 0.50
-Nodes (4): BookingRepository, FirestoreBookingRepository, _OrderedBookingRepository, FakeBookingRepository
-
 ### Community 473 - "fastify-augment.ts"
 Cohesion: 0.50
 Nodes (3): fastify, FastifyContextConfig, FastifyInstance
@@ -2200,26 +2180,6 @@ Nodes (6): areaRatingMeta, day, freeThisWeekLabel, homePillFree, inWindow, key
 Cohesion: 0.29
 Nodes (7): 3.1 Khái niệm, 3.2 Điểm vào, 3.3 Dữ liệu (Firestore), 3.4 Trạng thái, 3.6 Quyền tạo và quản lý sự kiện, 3.7 Timeline và nhóm chat của sự kiện, 3. Danh mục Sự kiện (mới)
 
-### Community 481 - "Function `onPhotographerWrite`: độ khớp hồ sơ và minh chứng tính ở server"
-Cohesion: 0.29
-Nodes (6): 1. Mục tiêu và quyết định của người dùng, 2. Function, 3. App (Flutter), 5. Test, 6. Tài liệu cần sửa khi làm, Function `onPhotographerWrite`: độ khớp hồ sơ và minh chứng tính ở server
-
-### Community 482 - "postRepositoryProvider"
-Cohesion: 0.33
-Nodes (6): postRepositoryProvider, pinToTop, _fetch, OwnPostsController, OwnPostsState, _withoutDeletedEvidence
-
-### Community 483 - "booking_errors.dart"
-Cohesion: 0.40
-Nodes (4): bookingErrorText, message, toString, withBookingErrorText
-
-### Community 484 - "_EvidenceSheetState"
-Cohesion: 0.50
-Nodes (4): build, EvidenceSheet, _EvidenceSheetState, ownPostsProvider
-
-### Community 485 - "idle.dart"
-Cohesion: 0.50
-Nodes (3): expectIdle, pump, pumpAndSettle
-
 ## Ambiguous Edges - Review These
 - `MyProjectFragment.java` → `ProjectFragment.java`  [AMBIGUOUS]
   app/src/main/java/com/paditech/mvpbase/screen/project/ProjectFragment.java · relation: semantically_similar_to
@@ -2227,9 +2187,9 @@ Nodes (3): expectIdle, pump, pumpAndSettle
   app/src/main/assets/list_terms.html · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **8051 isolated node(s):** `runner`, `name`, `description`, `main`, `runCommand` (+8046 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 8881 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **66 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8063 isolated node(s):** `runner`, `name`, `description`, `main`, `runCommand` (+8058 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 8892 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **71 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -2238,13 +2198,13 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low._
 - **What is the exact relationship between `Registration terms (static HTML, placeholder Dieu 1-5)` and `Custom MVP framework (Contact/Presenter/Fragment)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `User` connect `User` to `android.view.View`, `ActivityPresenter`, `FindPhotographerFragment`, `ProfileFragment`, `File Structure`, `butterknife.OnClick`, `.status`, `android.content.Context`, `FragmentPresenter`, `UpdateProfileActivity.java`, `Schema Reference`, `Booking`, `UX audit và redesign — Cộng đồng nhiếp ảnh gia`, `ChatRoom`, `LoginPresenter.java`?**
-  _High betweenness centrality (0.185) - this node is a cross-community bridge._
-- **Why does `Backend Phase 2: Self-hosted API + PostgreSQL (first vertical slice) Implementation Plan` connect `.status` to `contact-links.test.ts`, `User`, `ApiError`, `DomainError`, `getContactLink`, `PaymentProvider`?**
-  _High betweenness centrality (0.107) - this node is a cross-community bridge._
-- **Why does `_` connect `package:flutter_riverpod/flutter_riverpod.dart` to `booking_flow_controller.dart`, `return`, `_`, `profile_header.dart`, `app.ts`, `dart:async`, `create_post_screen_test.dart`, `setup_packages_screen_test.dart`, `package:flutter/material.dart`, `edit_profile_screen.dart`, `discovery_world.dart`, `explore_screen_test.dart`, `package:go_router/go_router.dart`, `booking_flow_e2e_test.dart`, `authRepositoryProvider`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+- **Why does `User` connect `User` to `android.view.View`, `ActivityPresenter`, `booking_firestore.ts`, `ProfileFragment`, `File Structure`, `FindPhotographerFragment`, `android.content.Context`, `FragmentPresenter`, `UpdateProfileActivity.java`, `Schema Reference`, `Booking`, `UX audit và redesign — Cộng đồng nhiếp ảnh gia`, `ChatRoom`, `Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan`?**
+  _High betweenness centrality (0.170) - this node is a cross-community bridge._
+- **Why does `Backend Phase 2: Self-hosted API + PostgreSQL (first vertical slice) Implementation Plan` connect `Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan` to `User`, `File Structure`, `domain/src/index.ts`, `app.ts`?**
+  _High betweenness centrality (0.099) - this node is a cross-community bridge._
+- **Why does `_` connect `package:flutter_riverpod/flutter_riverpod.dart` to `booking_flow_controller.dart`, `avatar_controller_test.dart`, `package:go_router/go_router.dart`, `app.ts`, `package:photobooking/data/booking/booking.dart`, `create_post_screen_test.dart`, `photographer_profile_screen.dart`, `package:photobooking/l10n/app_localizations.dart`, `return`, `package:photobooking/data/user/user_profile.dart`, `chat_screen.dart`, `explore_badge_test.dart`, `setup_packages_screen_test.dart`, `package:photobooking/core/core.dart`, `package:flutter_test/flutter_test.dart`, `package:flutter/material.dart`, `ConsumerWidget`?**
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
 - **What connects `runner`, `name`, `description` to the rest of the system?**
-  _8051 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _8063 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `APIClient.java` be split into smaller, more focused modules?**
-  _Cohesion score 0.05654761904761905 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.057859703020993344 - nodes in this community are weakly interconnected._

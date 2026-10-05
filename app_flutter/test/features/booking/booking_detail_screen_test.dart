@@ -445,6 +445,37 @@ void main() {
     expect(handles.location, '/chat/chat1');
   });
 
+  testWidgets(
+    'S05.02 Nhắn tin opens the booking chat; Đổi lịch opens it with the date sheet',
+    (tester) async {
+      final booking = _booking(status: BookingStatus.accepted, chatId: 'chat1');
+      final handles = await pumpBookingDetail(
+        tester,
+        uid: detailCustomerUid,
+        bookings: _repo(booking),
+        features: const BookingFeatures(
+          chat: true,
+          reschedule: true,
+          review: false,
+        ),
+      );
+      await _settle(tester);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Nhắn tin'));
+      await _settle(tester);
+      expect(handles.location, '/chat/chat1');
+
+      handles.router.pop();
+      await _settle(tester);
+
+      await tester.tap(find.byKey(const Key('detail-more')));
+      await _settle(tester);
+      await tester.tap(find.text('Đổi lịch'));
+      await _settle(tester);
+      expect(handles.location, '/chat/chat1?reschedule=1');
+    },
+  );
+
   testWidgets('deadline_passed from accept shows Yêu cầu đã hết hạn', (
     tester,
   ) async {

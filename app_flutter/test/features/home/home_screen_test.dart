@@ -23,6 +23,7 @@ GoRouter _router() => GoRouter(
     ),
     GoRoute(path: '/action', builder: (_, _) => const Text('find')),
     GoRoute(path: '/explore', builder: (_, _) => const Text('explore')),
+    GoRoute(path: '/chats', builder: (_, _) => const Text('chats')),
   ],
 );
 
@@ -56,6 +57,7 @@ Future<void> _pump(
   await tester.pumpWidget(await _app(w, textScale: textScale));
   await tester.pumpAndSettle();
 }
+
 
 /// The vertical feed (the chip row scrolls sideways).
 final _feed = find
@@ -422,4 +424,22 @@ void main() {
     expect(b.dy, c.dy);
     expect(c.dx, greaterThan(b.dx));
   });
+
+  testWidgets(
+    'S02.01 shows the chat icon with the unread count and opens the list',
+    (tester) async {
+      final w = DiscoveryWorld();
+      w.chat.seedUnread('chat1', 3);
+      await _pump(tester, w);
+
+      final chatsBtn = find.byKey(const Key('home-chats-btn'));
+      expect(chatsBtn, findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+
+      await tester.tap(chatsBtn);
+      await tester.pumpAndSettle();
+      expect(find.text('chats'), findsOneWidget);
+    },
+  );
 }
+

@@ -250,6 +250,26 @@ void main() {
     expect(handles.location, '/b/r1');
   });
 
+  testWidgets('S06.01 accept opens the chat', (tester) async {
+    final booking = _b(
+      'r1',
+      BookingStatus.requested,
+      deadlineIn: const Duration(hours: 22),
+      chatId: 'c_r1',
+    );
+    final repo = _repo([booking]);
+    final handles = await _pump(tester, repo);
+    await _settle(tester);
+
+    await tester.tap(_acceptButton('Nhận · còn 22 giờ'));
+    await _settle(tester);
+
+    expect(repo.transitions, [
+      (bookingId: 'r1', action: 'accept', reason: null),
+    ]);
+    expect(handles.location, '/chat/c_r1');
+  });
+
   testWidgets('the countdown shows 22 giờ and switches to seconds in the '
       'last hour', (tester) async {
     final clock = TestClock(_now);

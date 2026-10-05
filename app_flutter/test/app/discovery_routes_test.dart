@@ -132,4 +132,17 @@ void main() {
     expect(find.byKey(const Key('app-sheet')), findsOneWidget);
     expect(find.byType(DateTimeStep), findsOneWidget);
   });
+
+  testWidgets('/u/p1/ask does not shadow /u/p1', (tester) async {
+    final handles = await pumpBookingRoute(tester, path: '/u/p1');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PhotographerProfileScreen), findsOneWidget);
+
+    handles.router.push('/u/p1/ask');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PhotographerProfileScreen), findsNothing);
+  });
 }
+

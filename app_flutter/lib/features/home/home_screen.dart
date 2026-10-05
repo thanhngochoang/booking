@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
@@ -110,6 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
     final profile = ref.watch(currentProfileProvider).value;
     final customer = profile?.role != UserRole.photographer;
+    final totalUnread = ref.watch(totalUnreadProvider).value ?? 0;
 
     // The greeting and the chips stay put; only the feed scrolls, so a chip is
     // always reachable and each keeps its own scroll position.
@@ -128,19 +130,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   AppSpace.s4,
                   AppSpace.s2,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      l.homeGreeting(profile?.displayName ?? ''),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        l.homeTitle,
-                        style: tabRootTitleStyle(context),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l.homeGreeting(profile?.displayName ?? ''),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          Semantics(
+                            header: true,
+                            child: Text(
+                              l.homeTitle,
+                              style: tabRootTitleStyle(context),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      key: const Key('home-chats-btn'),
+                      tooltip: l.chatsTitle,
+                      icon: TabBadge(
+                        count: totalUnread,
+                        child: const Icon(Icons.chat_bubble_outline_rounded),
+                      ),
+                      onPressed: () => context.push('/chats'),
                     ),
                   ],
                 ),
