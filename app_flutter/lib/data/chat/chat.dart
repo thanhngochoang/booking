@@ -177,6 +177,42 @@ class ChatThread {
     );
   }
 
+  ChatThread copyWith({
+    String? id,
+    ChatKind? kind,
+    String? customerId,
+    String? photographerId,
+    String? bookingId,
+    DateTime? photographerRepliedAt,
+    int? customerMessagesBeforeReply,
+    DateTime? lastMessageAt,
+    String? lastMessagePreview,
+    String? lastSenderId,
+    DateTime? readOnlyAt,
+    bool? rescheduleUsed,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return ChatThread(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      customerId: customerId ?? this.customerId,
+      photographerId: photographerId ?? this.photographerId,
+      bookingId: bookingId ?? this.bookingId,
+      photographerRepliedAt:
+          photographerRepliedAt ?? this.photographerRepliedAt,
+      customerMessagesBeforeReply:
+          customerMessagesBeforeReply ?? this.customerMessagesBeforeReply,
+      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
+      lastSenderId: lastSenderId ?? this.lastSenderId,
+      readOnlyAt: readOnlyAt ?? this.readOnlyAt,
+      rescheduleUsed: rescheduleUsed ?? this.rescheduleUsed,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

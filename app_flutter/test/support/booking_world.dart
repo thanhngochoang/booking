@@ -42,6 +42,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
 import 'package:photobooking/features/booking/payment_pending_screen.dart';
+import 'package:photobooking/features/chat/chat_list_screen.dart';
 import 'package:photobooking/features/chat/chat_screen.dart';
 import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/find/find_screen.dart';
@@ -224,8 +225,12 @@ Future<BookingWorldHandles> pumpBookingRoute(
           initialReschedule: s.uri.queryParameters['reschedule'] == '1',
         ),
       ),
+      GoRoute(
+        path: '/chats',
+        builder: (_, _) => const ChatListScreen(),
+      ),
       ...bookingDetailRoutes(),
-      for (final p in ['/home', '/profile/phone', '/bookings', '/chats'])
+      for (final p in ['/home', '/profile/phone', '/bookings'])
         GoRoute(path: p, builder: stub),
     ],
   );

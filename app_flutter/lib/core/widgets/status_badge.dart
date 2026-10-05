@@ -5,8 +5,9 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 class StatusBadge extends StatelessWidget {
-  const StatusBadge(this.status, {super.key});
+  const StatusBadge(this.status, {super.key, this.label});
   final BookingStatus status;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +22,7 @@ class StatusBadge extends StatelessWidget {
           vertical: AppSpace.s1,
         ),
         child: Text(
-          status.label(context.l10n).toUpperCase(),
+          label ?? status.label(context.l10n).toUpperCase(),
           style: TextStyle(
             fontSize: AppText.xs,
             fontWeight: FontWeight.w600,
