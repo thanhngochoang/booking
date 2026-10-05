@@ -22,6 +22,7 @@ import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/review/review_screen.dart';
 
 /// A sheet S05.02 opens over itself after its first frame (deep links
 /// `/b/:id/cancel`, `/b/:id/decline`).
@@ -48,6 +49,12 @@ List<RouteBase> bookingDetailRoutes() => [
     builder: (_, s) => BookingDetailScreen(
       bookingId: s.pathParameters['id']!,
       openSheet: DetailSheet.decline,
+    ),
+  ),
+  GoRoute(
+    path: '/b/:id/review',
+    builder: (_, s) => ReviewScreen(
+      bookingId: s.pathParameters['id']!,
     ),
   ),
 ];

@@ -1361,5 +1361,48 @@
       "subtitle": {"type": "String"},
       "status": {"type": "String"}
     }
-  }
+  },
+  "reviewTitle": "Buổi chụp thế nào?",
+  "reviewText": "Nhận xét",
+  "reviewTextHint": "Chia sẻ cảm nhận của bạn về buổi chụp...",
+  "reviewTextTooShort": "Viết ít nhất 10 ký tự",
+  "reviewShare": "Chia sẻ ảnh bạn thích",
+  "reviewOptional": "Tuỳ chọn",
+  "reviewShareHint": "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {name}, có tag nhiếp ảnh gia",
+  "@reviewShareHint": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "reviewOnly": "Chỉ đánh giá",
+  "reviewSubmitShare": "Gửi & chia sẻ {count} ảnh",
+  "@reviewSubmitShare": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reviewSubmit": "Gửi đánh giá",
+  "reviewNotYet": "Buổi chụp chưa hoàn thành nên chưa đánh giá được.",
+  "reviewThanks": "Cảm ơn bạn đã đánh giá!",
+  "reviewShared": "Đã chia sẻ {count} ảnh",
+  "@reviewShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reviewStarsSemantics": "{rating} trên 5 sao",
+  "@reviewStarsSemantics": {
+    "placeholders": {
+      "rating": {"type": "int"}
+    }
+  },
+  "reviewUploadFailed": "Tải ảnh lỗi. Thử lại",
+  "reviewsHeader": "{rating} · {count} đánh giá",
+  "@reviewsHeader": {
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "reviewsMore": "Xem thêm"
 }

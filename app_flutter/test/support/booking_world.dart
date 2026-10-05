@@ -114,6 +114,8 @@ class BookingWorldHandles {
   final FakeAvailabilityRepository availRepo;
   final FakeUserContactRepository contactRepo;
   final FakeExternalLauncher externalLauncher;
+
+  String get location => router.state.uri.toString();
 }
 
 Future<BookingWorldHandles> pumpBookingRoute(

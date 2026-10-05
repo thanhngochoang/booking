@@ -16,7 +16,7 @@ class BookingFeatures {
 }
 
 final bookingFeaturesProvider = Provider<BookingFeatures>(
-  (ref) => const BookingFeatures(chat: true, reschedule: true, review: false),
+  (ref) => const BookingFeatures(chat: true, reschedule: true, review: true),
 );
 
 /// "Now" that re-emits every [period]; widgets showing time-dependent text watch it.

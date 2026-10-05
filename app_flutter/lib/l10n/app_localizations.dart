@@ -4743,6 +4743,108 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Giải thưởng: {title}, {subtitle}, trạng thái {status}'**
   String awardRowSemantics(String title, String subtitle, String status);
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp thế nào?'**
+  String get reviewTitle;
+
+  /// No description provided for @reviewText.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận xét'**
+  String get reviewText;
+
+  /// No description provided for @reviewTextHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ cảm nhận của bạn về buổi chụp...'**
+  String get reviewTextHint;
+
+  /// No description provided for @reviewTextTooShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết ít nhất 10 ký tự'**
+  String get reviewTextTooShort;
+
+  /// No description provided for @reviewShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ ảnh bạn thích'**
+  String get reviewShare;
+
+  /// No description provided for @reviewOptional.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuỳ chọn'**
+  String get reviewOptional;
+
+  /// No description provided for @reviewShareHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh hiện trong \'Buổi chụp thật\' trên Trang chủ và hồ sơ {name}, có tag nhiếp ảnh gia'**
+  String reviewShareHint(String name);
+
+  /// No description provided for @reviewOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đánh giá'**
+  String get reviewOnly;
+
+  /// No description provided for @reviewSubmitShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi & chia sẻ {count} ảnh'**
+  String reviewSubmitShare(int count);
+
+  /// No description provided for @reviewSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi đánh giá'**
+  String get reviewSubmit;
+
+  /// No description provided for @reviewNotYet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp chưa hoàn thành nên chưa đánh giá được.'**
+  String get reviewNotYet;
+
+  /// No description provided for @reviewThanks.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảm ơn bạn đã đánh giá!'**
+  String get reviewThanks;
+
+  /// No description provided for @reviewShared.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chia sẻ {count} ảnh'**
+  String reviewShared(int count);
+
+  /// No description provided for @reviewStarsSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{rating} trên 5 sao'**
+  String reviewStarsSemantics(int rating);
+
+  /// No description provided for @reviewUploadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải ảnh lỗi. Thử lại'**
+  String get reviewUploadFailed;
+
+  /// No description provided for @reviewsHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'{rating} · {count} đánh giá'**
+  String reviewsHeader(String rating, int count);
+
+  /// No description provided for @reviewsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get reviewsMore;
 }
 
 class _AppLocalizationsDelegate
