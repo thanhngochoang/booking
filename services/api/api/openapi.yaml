@@ -1,0 +1,387 @@
+openapi: 3.0.3
+info:
+  title: NAG self-hosted API
+  version: 0.1.0
+  description: |
+    Phase 2 of the backend migration (docs/superpowers/specs/data-model/README.md §6), first
+    vertical slice: profile, private customer contact, photographer contact channels/numbers
+    and get_contact_link. Conventions (README §2): camelCase JSON, ISO-8601 UTC instants,
+    integer VND, string enum codes, opaque ids. Every error uses the Error schema; clients
+    branch on `code`, never on `message`. Phone numbers appear only in owner-only operations.
+    The server builds its routes and validators from this file.
+servers:
+  - url: http://localhost:8787
+    description: services/api/docker-compose.yml
+security:
+  - firebaseIdToken: []
+paths:
+  /v1/health:
+    get:
+      operationId: health
+      summary: Liveness and database reachability
+      security: []
+      responses:
+        '200':
+          description: Up
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: Database unreachable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /v1/me:
+    post:
+      operationId: ensureProfile
+      summary: Create the caller's profile when missing (never overwrites) and record the sign-in identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnsureProfileRequest' }
+      responses:
+        '200':
+          description: The existing profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      operationId: getUser
+      summary: Public profile (any signed-in user)
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateUser
+      summary: Change the owner's display name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserRequest' }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/users/{userId}/role:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      operationId: setRole
+      summary: Use case set_role; the first switch to photographer creates the photographer row
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetRoleRequest' }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/users/{userId}/contact:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      operationId: getUserContact
+      summary: The owner's private contact (owner only)
+      responses:
+        '200':
+          description: Contact
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserContact' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: saveUserContact
+      summary: Create or replace the owner's contact; a changed number becomes unverified
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveUserContactRequest' }
+      responses:
+        '200':
+          description: Stored contact
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserContact' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/photographers/{photographerId}/contact-channels:
+    parameters:
+      - $ref: '#/components/parameters/PhotographerId'
+    get:
+      operationId: getContactChannels
+      summary: Public channel flags (no numbers)
+      responses:
+        '200':
+          description: Flags
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContactChannels' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/photographers/{photographerId}/contact-numbers:
+    parameters:
+      - $ref: '#/components/parameters/PhotographerId'
+    get:
+      operationId: getContactNumbers
+      summary: The photographer's private numbers (owner only; others use getContactLink)
+      responses:
+        '200':
+          description: Numbers
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContactNumbers' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/photographers/{photographerId}/service-area:
+    parameters:
+      - $ref: '#/components/parameters/PhotographerId'
+    get:
+      operationId: getServiceArea
+      summary: City and radius (others see it once onboarding is complete)
+      responses:
+        '200':
+          description: Area
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceArea' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/photographers/{photographerId}/contact-setup:
+    parameters:
+      - $ref: '#/components/parameters/PhotographerId'
+    put:
+      operationId: completeContactSetup
+      summary: S34 "Hoàn tất" in one transaction (area, flags, numbers, onboardingComplete)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContactSetupRequest' }
+      responses:
+        '204':
+          description: Stored
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/contact-links:
+    post:
+      operationId: getContactLink
+      summary: Use case get_contact_link; one URL when contact is unlocked, logged in contact_access_log
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContactLinkRequest' }
+      responses:
+        '200':
+          description: The URL to open
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContactLinkResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: permission_denied (not the customer) or contact_locked (not unlocked yet)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    firebaseIdToken:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token (Auth emulator tokens when AUTH_MODE=firebase-emulator)
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    PhotographerId:
+      name: photographerId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+  responses:
+    BadRequest:
+      description: invalid_argument
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthenticated:
+      description: unauthenticated
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: permission_denied
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: not_found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Id:
+      type: string
+      pattern: '^[A-Za-z0-9_-]{1,64}$'
+    ErrorCode:
+      type: string
+      enum: [day_taken, phone_required, contact_locked, sold_out, deadline_passed, limit_exceeded,
+             invalid_argument, permission_denied, not_found, conflict, price_changed, not_eligible, unauthenticated, internal]
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        message: { type: string }
+        requestId: { type: string }
+    Health:
+      type: object
+      required: [status, db]
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        db: { type: string, enum: [ok, down] }
+    UserProfile:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, role, avatarUrl]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        displayName: { type: string }
+        role: { type: string, nullable: true, enum: [customer, photographer, null] }
+        avatarUrl: { type: string, nullable: true }
+    EnsureProfileRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        avatarUrl: { type: string, format: uri, maxLength: 2048 }
+    UpdateUserRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+    SetRoleRequest:
+      type: object
+      additionalProperties: false
+      required: [role]
+      properties:
+        role: { type: string, enum: [customer, photographer] }
+    VnPhone:
+      type: string
+      description: Vietnamese mobile number, E.164
+      pattern: '^\+84[35789][0-9]{8}$'
+    UserContact:
+      type: object
+      additionalProperties: false
+      required: [phone, phoneVerified, allowZalo, allowWhatsApp, updatedAt]
+      properties:
+        phone: { $ref: '#/components/schemas/VnPhone' }
+        phoneVerified: { type: boolean, description: Set only by a server process (verification is a later plan) }
+        allowZalo: { type: boolean }
+        allowWhatsApp: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+    SaveUserContactRequest:
+      type: object
+      additionalProperties: false
+      required: [phone, allowZalo, allowWhatsApp]
+      properties:
+        phone: { $ref: '#/components/schemas/VnPhone' }
+        allowZalo: { type: boolean }
+        allowWhatsApp: { type: boolean }
+    ContactChannels:
+      type: object
+      additionalProperties: false
+      required: [call, zalo, whatsapp, acceptInquiries]
+      properties:
+        call: { type: boolean }
+        zalo: { type: boolean }
+        whatsapp: { type: boolean }
+        acceptInquiries: { type: boolean }
+    ContactNumbers:
+      type: object
+      additionalProperties: false
+      required: [phone]
+      properties:
+        phone: { $ref: '#/components/schemas/VnPhone' }
+        zaloPhone: { type: string, nullable: true, pattern: '^\+84[35789][0-9]{8}$' }
+        whatsappPhone: { type: string, nullable: true, pattern: '^\+[0-9]{8,15}$' }
+    ServiceArea:
+      type: object
+      additionalProperties: false
+      required: [city, radiusKm]
+      properties:
+        city: { type: string, minLength: 2, maxLength: 80 }
+        radiusKm: { type: integer, minimum: 1, maximum: 200 }
+    ContactSetupRequest:
+      type: object
+      additionalProperties: false
+      required: [area, channels, numbers]
+      properties:
+        area: { $ref: '#/components/schemas/ServiceArea' }
+        channels: { $ref: '#/components/schemas/ContactChannels' }
+        numbers: { $ref: '#/components/schemas/ContactNumbers' }
+    ExternalChannel:
+      type: string
+      enum: [call, zalo, whatsapp]
+    ContactLinkRequest:
+      type: object
+      additionalProperties: false
+      required: [channel]
+      properties:
+        bookingId: { $ref: '#/components/schemas/Id' }
+        registrationId: { $ref: '#/components/schemas/Id' }
+        channel: { $ref: '#/components/schemas/ExternalChannel' }
+      oneOf:
+        - required: [bookingId]
+        - required: [registrationId]
+    ContactLinkResponse:
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url: { type: string, description: 'tel:+84…, https://zalo.me/84…, https://wa.me/<digits>' }

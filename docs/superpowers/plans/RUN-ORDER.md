@@ -63,7 +63,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | partly done 2026-10-03: 4e Tasks 1–3 (review domain, Functions, rules, indexes, lib/data/review) in 8e/6-L2 (reaches G6); remaining: Tasks 4–5 (lane 1 step 7; needs G6) |
 | 8b1 | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications, explore uses EventCard) | done 2026-10-03 (b1/7-L2) |
 | 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
-| 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | not started; disjoint from 8a2–8e, can run as a third lane |
+| 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | done 2026-10-05 (PR #23); deferred Task 11 performance check to plan 16 |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |
 | 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
 | 12 | `2026-10-01-instant-i4-photographer-app.md` (S13.08, S14) | not started |
