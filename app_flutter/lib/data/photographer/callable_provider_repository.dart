@@ -22,7 +22,12 @@ class CallableProviderRepository implements ProviderRepository {
 
   Future<Object?> _call(String name, Map<String, Object> data) async {
     try {
-      final r = await _functions.httpsCallable(name).call<Object?>(data);
+      final r = await _functions
+          .httpsCallable(
+            name,
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call<Object?>(data);
       return r.data;
     } on FirebaseFunctionsException catch (e) {
       final details = e.details;

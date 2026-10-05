@@ -20,11 +20,14 @@ void main() {
   late FakeFirebaseFirestore db;
   late CallableProviderRepository repo;
 
+  setUpAll(() => registerFallbackValue(HttpsCallableOptions()));
+
   setUp(() {
     functions = _MockFunctions();
     callable = _MockCallable();
     db = FakeFirebaseFirestore();
-    when(() => functions.httpsCallable(any())).thenReturn(callable);
+    when(() => functions.httpsCallable(any(), options: any(named: 'options')))
+        .thenReturn(callable);
     repo = CallableProviderRepository(functions: functions, db: db);
   });
 
@@ -36,7 +39,15 @@ void main() {
     final type = await repo.setType(ProviderChoice.individual);
 
     expect(type, ProviderType.artist);
-    verify(() => functions.httpsCallable('setProviderType')).called(1);
+    final options =
+        verify(
+              () => functions.httpsCallable(
+                'setProviderType',
+                options: captureAny(named: 'options'),
+              ),
+            ).captured.single
+            as HttpsCallableOptions;
+    expect(options.timeout, const Duration(seconds: 15));
     verify(() => callable.call<Object?>({'type': 'individual'})).called(1);
   });
 

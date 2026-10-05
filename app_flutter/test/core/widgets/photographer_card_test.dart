@@ -371,4 +371,82 @@ void main() {
       ProviderMarkKind.studio,
     );
   });
+  testWidgets('unverified studio announces Studio', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        name: 'Studio Mây',
+        verified: false,
+        type: ProviderType.studio,
+        district: 'Hoàn Kiếm',
+        distanceKm: null,
+        price: null,
+        availability: null,
+      ),
+    );
+    expect(find.byType(ProviderMark), findsNothing);
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Studio Mây, Studio · Hoàn Kiếm(, |$)')),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(
+      _card(
+        name: 'Studio Mây',
+        verified: false,
+        type: ProviderType.studio,
+        distanceKm: null,
+        price: null,
+        availability: null,
+      ),
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'^Studio Mây, Studio(, |$)')),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('verified studio and artist headers read as before', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        name: 'Studio Mây',
+        type: ProviderType.studio,
+        district: 'Hoàn Kiếm',
+        distanceKm: null,
+        price: null,
+        availability: null,
+      ),
+    );
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^Studio Mây, Studio đã xác minh, Hoàn Kiếm(, |$)'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp(r'Studio · ')), findsNothing);
+
+    await tester.pumpWidget(
+      _card(
+        name: 'Lê Hoàng Vũ',
+        type: ProviderType.artist,
+        awards: 7,
+        district: 'Hoàn Kiếm',
+        distanceKm: null,
+        price: null,
+        availability: null,
+      ),
+    );
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^Lê Hoàng Vũ, Nhiếp ảnh gia đã duyệt, 7 giải(, |$)'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp(r'Hoàn Kiếm')), findsNothing);
+    handle.dispose();
+  });
 }

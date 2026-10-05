@@ -77,6 +77,8 @@ class PhotographerCard extends StatelessWidget {
     final awards = data.providerType == ProviderType.artist
         ? data.approvedAwardCount
         : 0;
+    final studio = data.providerType == ProviderType.studio;
+    final district = data.studioDistrict ?? '';
     final header = [
       data.displayName,
       switch (mark) {
@@ -86,9 +88,14 @@ class PhotographerCard extends StatelessWidget {
         null => null,
       },
       if (awards > 0) l.providerAwardsCount(awards),
-      if (data.providerType == ProviderType.studio &&
-          (data.studioDistrict ?? '').isNotEmpty)
-        data.studioDistrict,
+      // A verified studio's mark already says Studio; an unverified one has
+      // no mark, so its tag text (Studio, or Studio · district) is read.
+      if (studio && mark == ProviderMarkKind.studio && district.isNotEmpty)
+        district,
+      if (studio && mark == null)
+        district.isEmpty
+            ? l.providerStudio
+            : l.providerStudioDistrict(district),
       meta,
       priceLabel,
       availabilityLabel,

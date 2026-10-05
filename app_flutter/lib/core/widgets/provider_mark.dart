@@ -204,29 +204,34 @@ class ProviderTag extends StatelessWidget {
         color: artist
             ? (dark ? AppColorsDark.goldSoft : AppColors.goldSoft)
             : null,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(color: border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 2, 8, 2),
+        // Mock `.ptag`: padding 2px 8px 2px 6px, gap 4px, 11px icon, 10px text.
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s1 * 1.5,
+          AppSpace.s1 / 2,
+          AppSpace.s2,
+          AppSpace.s1 / 2,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              artist
-                  ? Icons.workspace_premium_outlined
-                  : Icons.storefront_outlined,
-              size: 11,
+              // Studio: briefcase, as the mock's `#i-brief`.
+              artist ? Icons.workspace_premium_outlined : Icons.work_outline,
+              size: AppText.xs2,
               color: color,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpace.s1),
             Flexible(
               child: Text(
                 text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: AppText.xs,
                   fontWeight: FontWeight.w600,
                   height: 1.4,
                   color: color,
