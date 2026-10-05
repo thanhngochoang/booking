@@ -105,6 +105,28 @@ Ký hiệu: **PK** khoá chính, **FK** khoá ngoại, `?` có thể rỗng, `�
 | `AuditLog` | `id` PK, `actorId?`, `action`, `entityType`, `entityId`, `diff?: json`, `at` | Không xoá |
 | `AppConfig` | `key` PK, `value: json`, `version`, `updatedAt` | Trọng số gợi ý, cờ tính năng |
 
+### 2.8 Loại nhà cung cấp, album, giải thưởng, hợp đồng và Đăng việc (2026-10-05)
+
+Nguồn: [`../2026-10-05-provider-types-portfolio-jobs-design.md`](../2026-10-05-provider-types-portfolio-jobs-design.md) ("spec 10-05"). Phần hợp đồng (`Booking` đổi, `Milestone`, `Delivery`) là **đề xuất**, áp dụng khi câu hỏi mở 26 của spec chính được chốt; tới lúc đó `Booking` ở mục 2.4 vẫn là bản đang chạy.
+
+| Thực thể | Trường chính | Ghi chú |
+|----------|--------------|---------|
+| `Photographer` (thêm trường) | `providerType: ProviderType = individual`, `artistSince?: Instant`, `approvedAwardCount` (dẫn xuất) | `artist` chỉ server ghi (mục 2.3 spec 10-05) |
+| `StudioAddress` 🔒 | `photographerId` PK/FK, `line`, `ward?`, `district`, `city`, `point?` | Chỉ khi `studio`; công khai tới mức quận, đầy đủ sau khi đã đặt |
+| `Award` | `id` PK, `photographerId` FK, `competition`, `year`, `category?`, `result: AwardResult`, `workPostId?` FK, `status: AwardStatus`, `reviewNote?`, `reviewedBy?`, `reviewedAt?`, `createdAt`, `updatedAt` | Chỉ `approved` công khai |
+| `AwardProof` 🔒 | `awardId` PK/FK, `files: List<FileRef>` (≤ 3), `links: List<Url>` (≤ 2, https), `purgeAfter?` | Chủ hồ sơ và staff đọc; xoá 30 ngày sau trạng thái cuối |
+| `Album` | `id` PK, `photographerId` FK, `title` (1–40), `description?` (≤ 300), `cover?: {postId, position}`, `position`, `postCount`, `mediaCount` (dẫn xuất), `createdAt`, `updatedAt` | Tối đa 30/người; trống thì không công khai |
+| `Post` (thêm trường) | `albumId?` FK, `albumPosition?` | Tối đa một album; `inPortfolio` thành dẫn xuất |
+| `PostMedia` (thay `PostImage` khi bật video) | `postId`, `position`, `kind: MediaKind`, `file: FileRef`, `durationMs?`, `poster?: FileRef` | Bản đầu chỉ `image` |
+| `Service` (thêm trường) | `revisions = 1` (0–5) | |
+| `BookingTerms` (đối tượng giá trị) | `price: Money`, `durationMinutes`, `photoCount`, `editedCount`, `deliveryDays`, `revisions`, `milestones: List<{kind: MilestoneKind, percent}>` | Bản chụp khi tạo booking |
+| `Booking` (đổi, đề xuất) | thêm `source: BookingSource`, `terms: BookingTerms`, `jobId?`, `quoteId?`, `revisionsUsed`, `shotAt?`, `deliveredAt?`, `approvedAt?`, `autoApproveAt?`; `serviceId` chỉ bắt buộc khi `source = package`; bỏ `deposit`/`remaining` | `serviceSnapshot` giữ để đọc ngược |
+| `Milestone` | `bookingId` FK, `kind: MilestoneKind`, `amount: Money`, `status: MilestoneStatus`, `releaseAfter?`, `releasedAt?` | PK `(bookingId, kind)`; bút toán `escrow_released` trên cùng `Payment` |
+| `Delivery` | `id` PK, `bookingId` FK, `round`, `link` (https), `previews: List<FileRef>` (≤ 10), `note?`, `submittedAt`, `decision?: {kind: DeliveryDecision, note?, at}` | `round` = 1 + số lần sửa |
+| `JobPost` | `id` PK, `customerId` FK, `specialtyId`, `title` (10–60), `description` (≤ 1000), `references: List<FileRef>` (≤ 5), `schedule: {kind: ScheduleKind, day?, start?, end?, from?, to?, durationMinutes}`, `area: {city, district, geohash}`, `budget?: {min: Money, max: Money}`, `wants: {editedCount?, deliveryDays?}`, `allowedProviders: AllowedProviders`, `quoteDeadline: Instant`, `extended = false`, `status: JobStatus`, `quoteCount`, `viewCount`, `awardedQuoteId?`, `bookingId?`, `createdAt`, `updatedAt` | Không chứa địa chỉ cụ thể hay số điện thoại |
+| `Quote` | `id` PK, `jobId` FK, `photographerId` FK, `basedOnServiceId?`, `terms: BookingTerms`, `message` (20–500), `albumId?`, `status: QuoteStatus`, `createdAt`, `updatedAt` | Duy nhất `(jobId, photographerId)` |
+| `JobInvite` | `jobId`, `photographerId`, `createdAt`, `seenAt?` | PK ghép; tối đa 5 mỗi việc |
+
 ## 3. Quan hệ (ERD)
 
 ```mermaid
@@ -188,7 +210,7 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `EventPostSource` | `hashtag`, `explicit` | |
 | `EventPostStatus` | `visible`, `pending`, `hidden` | |
 | `MessageType` | `text`, `image`, `location`, `system` | |
-| `NotificationType` | `booking_requested`, `booking_accepted`, `booking_declined`, `booking_cancelled`, `booking_reminder`, `review_request`, `event_registered`, `event_cancelled`, `event_reminder`, `event_announcement`, `event_timeline_post`, `payout_paid`, `badge_awarded`, `message`, `system` | |
+| `NotificationType` | `booking_requested`, `booking_accepted`, `booking_declined`, `booking_cancelled`, `booking_reminder`, `review_request`, `event_registered`, `event_cancelled`, `event_reminder`, `event_announcement`, `event_timeline_post`, `payout_paid`, `badge_awarded`, `message`, `system`, `quote_new`, `job_match`, `job_invited`, `quote_accepted`, `quote_not_selected`, `quote_withdrawn`, `job_expiring`, `job_expired`, `award_reviewed`, `artist_granted`, `artist_revoked` | Mười một mã cuối: spec 10-05 và spec chính 3h.2 |
 | `EventType` | `photo_walk`, `mini_session`, `workshop`, `cosplay`, `other` | |
 | `EventStatus` | `draft`, `open`, `full`, `closed`, `cancelled`, `completed` | |
 | `HostType` | `photographer`, `platform` | |
@@ -200,6 +222,19 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `SignalType` | `impression`, `click`, `inquiry`, `booking` | |
 | `ContactChannel` | `in_app`, `call`, `zalo`, `whatsapp` | |
 | `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict`, `no_match`, `offer_expired`, `already_assigned`, `not_eligible`, `outside_service_area`, `price_changed` | Mã lỗi nghiệp vụ ổn định. Tầng HTTP của máy chủ riêng thêm hai mã giao vận `unauthenticated` (401) và `internal` (500); use case không dùng hai mã này; sáu mã cuối của Chụp ngay (`../2026-10-01-instant-booking-design.md` mục 6) |
+
+| `ProviderType` | `individual`, `artist`, `studio` | `artist` = hạng NAG, chỉ server ghi (spec 10-05) |
+| `AwardResult` | `gold`, `silver`, `bronze`, `honorable`, `finalist`, `exhibited` | |
+| `AwardStatus` | `pending`, `needs_info`, `approved`, `rejected`, `revoked` | |
+| `MediaKind` | `image`, `video` | Bản đầu chỉ `image` |
+| `BookingSource` | `package`, `quote`, `instant` | Đề xuất (spec 10-05 mục 4) |
+| `MilestoneKind` | `shoot`, `delivery` | |
+| `MilestoneStatus` | `held`, `released`, `refunded`, `disputed` | |
+| `DeliveryDecision` | `approve`, `request_revision` | |
+| `ScheduleKind` | `fixed`, `flexible` | |
+| `JobStatus` | `draft`, `open`, `awarded`, `expired`, `closed` | |
+| `QuoteStatus` | `submitted`, `withdrawn`, `accepted`, `not_selected`, `declined` | |
+| `AllowedProviders` | `all`, `artist`, `studio` | |
 
 ## 5. Máy trạng thái
 
@@ -244,10 +279,36 @@ Mỗi chuyển ghi `LedgerEntry` bất biến. `released` còn gọi là "sắp 
 
 `contact_unlocked(subject)` = booking ở `requested | accepted | upcoming | completed(≤30 ngày)` **hoặc** vé `paid` (≤7 ngày sau sự kiện). Use case `get_contact_link` kiểm điều kiện này, ghi `ContactAccessLog`, rồi trả URL.
 
+### Giải thưởng, hạng NAG (spec 10-05 mục 2)
+
+```
+Award: pending ─▶ approved | needs_info | rejected      needs_info ─(sửa)─▶ pending
+       approved ─(chủ sửa)─▶ pending                    approved ─(staff thu hồi)─▶ revoked
+Photographer.providerType: individual ─(≥ 3 Award approved)─▶ artist ─(< 3)─▶ individual     (studio không đổi)
+```
+
+### Booking theo hợp đồng (đề xuất, spec 10-05 mục 4.3)
+
+```
+draft ─(paid)─▶ requested ─(thợ nhận)─▶ accepted            (package)
+draft ─(paid)─▶ accepted                                     (quote)
+accepted ─▶ upcoming ─(đã chụp | end+24h)─▶ shot ─(nộp bàn giao)─▶ delivered ─(duyệt | +3 ngày)─▶ completed ─▶ reviewed
+delivered ─(yêu cầu sửa, còn lượt)─▶ revision_requested ─(nộp lại)─▶ delivered
+shot ─(quá deliveryDays, khách huỷ phần giao)─▶ completed (mốc delivery hoàn 100%)
+Milestone: held ─(điều kiện mốc + hết cửa sổ khiếu nại)─▶ released     held ─▶ refunded | disputed
+```
+
+### Việc đăng và báo giá (spec 10-05 mục 5.2)
+
+```
+JobPost: draft ─▶ open ─(chọn và trả)─▶ awarded      open ─(hết hạn)─▶ expired      open ─(khách đóng)─▶ closed
+Quote:   submitted ─▶ withdrawn | accepted | not_selected | declined
+```
+
 ## 6. Bất biến miền (kiểm trong use case và test)
 
 1. `Service.price > 0`; `Event.price ≥ 0`.
-2. `Booking.deposit + Booking.remaining = serviceSnapshot.price`.
+2. `Booking.deposit + Booking.remaining = serviceSnapshot.price` (thay bằng bất biến 18 khi hợp đồng 100% được chốt).
 3. Mỗi `(photographerId, day)` có tối đa một bản ghi `AvailabilityDay` và `booked` luôn tham chiếu một `Booking` hoặc `Event` hợp lệ.
 4. `Event.registeredCount + heldCount ≤ capacity`.
 5. `SpecialtySkill`: tối đa 6 thể loại, tối đa 3 mức 3, mức 3 có ≥ 1 minh chứng thuộc chính nhiếp ảnh gia.
@@ -261,3 +322,9 @@ Mỗi chuyển ghi `LedgerEntry` bất biến. `released` còn gọi là "sắp 
 13. `Event.hashtag` duy nhất và đổi được chỉ khi chưa có đăng ký lẫn `EventPost`.
 14. Mỗi `(userId, eventId)` chỉ có một `ChatMember` còn hiệu lực dù mua nhiều vé.
 15. `Payout.amount = Σ PayoutItem.amount`; một `Payment` chỉ nằm trong một lô trừ khi lô trước `failed`.
+16. `Photographer.providerType = artist` ⇔ trước đó là `individual` và số `Award` `approved` của người đó ≥ ngưỡng (3); `studio` không bao giờ thành `artist`.
+17. Mỗi `Post` thuộc tối đa một `Album`, cùng `photographerId`; `albumPosition` liên tục từ 1 trong mỗi album; `Album.postCount` = số bài còn trong album; mỗi người ≤ 30 album, mỗi album ≤ 200 bài.
+18. (Đề xuất) `Σ Milestone.amount = Booking.terms.price`; mốc cuối nhận phần dư làm tròn; mốc `delivery` chỉ `released` khi `Booking.status = completed`.
+19. Mỗi `(jobId, photographerId)` tối đa một `Quote`; chỉ `Quote` của `JobPost.status = open` mới `submitted`/sửa được; `JobPost.awardedQuoteId` trỏ tới đúng một `Quote` `accepted`.
+20. `JobPost`, `Quote.message` không chứa số điện thoại, email hay link ngoài (lọc ở use case).
+21. `Quote` chỉ gửi được khi `JobPost.allowedProviders` khớp `providerType` của người gửi và ngày chụp không có `AvailabilityDay` `booked`/`off`.

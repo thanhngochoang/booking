@@ -5,7 +5,7 @@ Ngày: 2026-10-01 · Branch: `flutter-rewrite` · Trạng thái: chờ review
 Bổ sung cho `2026-09-30-photography-marketplace-design.md` (gọi tắt "spec gốc"). Spec này làm các việc:
 
 1. Chốt giao diện theo theme **dark aurora** đang chạy trong app, kèm hai kiểu nút chính (gradient theo theme, hoặc ảnh avatar làm mờ).
-2. Đánh **mã màn hình** `S01–S23` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
+2. Đánh **mã màn hình** `S01–S25` để tham chiếu nhanh giữa mock, spec, code và báo lỗi.
 3. Đặc tả mọi màn còn lại, kèm danh mục **Sự kiện** và luồng **tạo sự kiện chụp ảnh** (mới).
 4. Thêm **kênh liên hệ** (gọi điện, Zalo, WhatsApp) và điều kiện **khách phải có số điện thoại** để đặt lịch (xác minh số làm sau).
 5. Thêm **GPS ở Khám phá** để gợi ý sự kiện gần bạn.
@@ -145,14 +145,14 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S14.02 | Lời mời việc (chồng tới 3 lời mời, đếm ngược 60 giây) | `/work/instant/offer/:offerId` | NAG | I4 | ⬜ plan I4 | S53 |
 | S14.03 | Đang đến / đã đến / đang chụp | `/work/instant/:id` | NAG | I4 | ⬜ plan I4 | S54 |
 | **S15** | **Đăng việc (khách)** | | | | | |
-| S15.01 | Đăng việc | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S56 |
-| S15.02 | Việc của tôi / chi tiết việc | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S57 |
-| S15.03 | Danh sách ứng tuyển | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S58 |
-| S15.04 | Chi tiết đơn ứng tuyển | — | khách | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S59 |
-| **S16** | **Nhận việc đăng (nhiếp ảnh gia)** | | | | | |
-| S16.01 | Chi tiết việc (nhiếp ảnh gia) | — | NAG | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S60 |
-| S16.02 | Việc đang tuyển | — | NAG | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S61 |
-| S16.03 | Gửi báo giá (sheet) | — | NAG | J (đang thiết kế) | ⬜ đang thiết kế (Đăng việc) | S62 |
+| S15.01 | Đăng việc (2 bước: việc gì; khi nào, ở đâu, ngân sách, ai được báo giá) | `/jobs/new` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S56 |
+| S15.02 | Việc của tôi (tab "Việc đăng" của S05.01) / chi tiết việc | `/bookings?tab=jobs`, `/jobs/:id` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S57 |
+| S15.03 | Danh sách báo giá | `/jobs/:id/applications` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S58 |
+| S15.04 | Chi tiết báo giá ("Chọn và thanh toán") | `/jobs/:id/applications/:quoteId` | khách | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S59 |
+| **S16** | **Nhận việc đăng (thợ ảnh)** | | | | | |
+| S16.01 | Chi tiết việc (thợ ảnh) | `/jobs/:id` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S60 |
+| S16.02 | Việc đang tuyển (tab trong Công việc) | `/work?tab=jobs` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
+| S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S62 |
 | **S17** | **Thông báo** | | | | | |
 | S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S63 |
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S64 |
@@ -182,8 +182,18 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.04 | Duyệt xác minh nhiếp ảnh gia (dấu tích xanh) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.05 | Kiểm duyệt báo cáo (người dùng, bài, tin nhắn, sự kiện) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · sales | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.07 | Duyệt giải thưởng (hạng NAG): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi, kèm xác minh danh tính khi cấp hạng | nội bộ | admin | B (spec 10-05) | ⬜ đang thiết kế · chưa có mock | — |
+| **S24** | **Portfolio album** | | | | | |
+| S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S24.03 | Tạo / sửa album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S24.04 | Thêm bài vào album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S24.05 | Chọn album khi đăng (sheet trên S10.01) | — (sheet) | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| **S25** | **Giải thưởng & hạng Nhiếp ảnh gia (NAG)** | | | | | |
+| S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
 
-Use case S15, S16 (**Đăng việc**) đang thiết kế, chưa có mock; S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
+Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 
@@ -480,6 +490,7 @@ Thanh tab dưới dùng `TabBadge` (bong bóng đỏ, chữ trắng, "9+" từ m
 |-----|-----------|-------------|
 | Công việc (nhiếp ảnh gia) | Số yêu cầu đang chờ nhận | Khi không còn yêu cầu chờ (không xoá khi chỉ mở tab) |
 | **Khám phá** | Số sự kiện mới trong khu vực của bạn kể từ lần mở Khám phá gần nhất (nếu chưa có vị trí/khu vực thì tính toàn bộ sự kiện mới) | Khi mở tab Khám phá; đếm lại từ 0 |
+| **Hồ sơ** | Số thông báo chưa đọc (`users/{uid}.unreadCount`, mục 3h); thay chuông ở đầu trang (quyết định 2026-10-05) | Khi thông báo được đọc (không xoá khi chỉ mở tab) |
 
 - Số lấy từ `tabBadgesProvider` (`Map<AppTab, int>`), mỗi feature ghi đè khi có dữ liệu; **đã có trong code** (`TabBadge`, `tabBadgesProvider`, `TabShell`, test `tab_badge_test.dart`), giá trị mặc định rỗng nên chưa có chấm nào hiện.
 - Trình đọc màn hình đọc "Khám phá, 3 mục mới" (`Semantics.value`). Chấm không phụ thuộc màu: luôn có số.
@@ -668,7 +679,7 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 
 ### 3h.1 Hành vi
 
-- **Điểm vào**: biểu tượng chuông ở S02.01, S02.03, S06.01 kèm chấm số `NotificationBell`; Cài đặt (S09.02) → "Thông báo" → S17.02; biểu tượng bánh răng ở S17.01 → S17.02.
+- **Điểm vào** (đổi 2026-10-05): **không có chuông ở đầu trang**. Số chưa đọc hiện bằng `TabBadge` trên tab **Hồ sơ** (mục 3d.3), giống chấm số của tab Khám phá; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01; push mở thẳng màn đích. Cài đặt (S09.02) → "Thông báo" → S17.02; biểu tượng bánh răng ở S17.01 → S17.02. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01.
 - **Chấm số**: đọc từ `users/{uid}.unreadCount`, "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
 - **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
 - **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới.
@@ -690,6 +701,13 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 | `booking_request` | NAG | `i-cal`, tông vàng | Công việc | `/work` (S06.01) | Còn 24 giờ để nhận |
 | `job_match` | NAG | `i-brief` | Công việc | `/jobs/:id` (S16.01) | |
 | `job_invited` | NAG | `i-brief` | Công việc | `/jobs/:id` (S16.01) | |
+| `quote_accepted` | thợ ảnh | `i-brief` | Công việc | `/b/:id` (S05.02) | Khách đã chọn và trả tiền (spec 10-05) |
+| `quote_not_selected` | thợ ảnh | `i-brief` | Công việc | `/jobs/:id` (S16.01) | Việc awarded / expired / closed, hoặc khách từ chối |
+| `quote_withdrawn` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S15.03) | Gồm rút tự động khi thợ kín lịch |
+| `job_expiring` | khách | `i-cal` | Đặt lịch | `/jobs/:id/applications` (S15.03) | 24 giờ trước hạn, khi có ≥ 1 báo giá |
+| `job_expired` | khách | `i-cal` | Đặt lịch | `/jobs/:id` (S15.02) | |
+| `award_reviewed` | thợ ảnh | `i-award` | Hệ thống | `/me/awards` (S25.01) | Duyệt / cần bổ sung / từ chối / thu hồi |
+| `artist_granted`, `artist_revoked` | thợ ảnh | `i-award` | Hệ thống | `/me/awards` (S25.01) | Lên / mất hạng Nhiếp ảnh gia |
 | `job_selected` | NAG | `i-check` | Công việc | `/work` | Bạn được chọn |
 | `payout_released` | NAG | `i-card` | Hệ thống | `/earnings` (S06.05) | |
 | `badge_new` | cả hai | `i-award` | Hệ thống | `/u/:uid/badges` (S03.02) | |
@@ -775,6 +793,17 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 - **Vì sao cần**: `resolveDispute`, `executePayout`, hoàn tiền `manual`, duyệt dấu tích xanh, kiểm duyệt báo cáo và hộp thư hỗ trợ đều cần người của nền tảng thao tác (vai trò `admin`, `sales`, có thể `finance`, câu hỏi mở 18).
 - **Nền tảng chưa chốt** (câu hỏi mở 22): web nội bộ riêng hay chế độ staff trong app. Mã S23 vẫn đặt để mọi spec tham chiếu chung; route là "nội bộ" cho tới khi chốt.
 - **Quy tắc**: mọi quyết định của staff ghi nhật ký kiểm toán (ai, lúc nào, lý do); tiền chỉ di chuyển qua callable phía server, không sửa tay dữ liệu.
+
+## 3j. Loại nhà cung cấp, portfolio album, giải thưởng, hợp đồng và Đăng việc (2026-10-05)
+
+Đặc tả đầy đủ ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) ("spec 10-05"); màn ở [`screens/portfolio-awards.md`](screens/portfolio-awards.md) và [`screens/jobs.md`](screens/jobs.md). Tóm tắt:
+
+- **Ba loại nhà cung cấp**: Photographer (cá nhân, `individual`), Nhiếp ảnh gia (NAG, `artist`, hạng nâng cấp do server cấp khi có ≥ 3 giải đã duyệt), Studio (`studio`). Chọn Cá nhân / Studio ở S08.01. Dấu: tích xanh tròn, tích vàng tròn, con dấu viền răng cưa tích vàng; NAG và Studio có nhãn chữ.
+- **Giải thưởng** (S25, duyệt ở S23.07): danh sách trên hồ sơ, không gắn từng bài; minh chứng riêng tư.
+- **Portfolio album** (S24): tab Portfolio có Album / Dòng thời gian; mỗi bài thuộc tối đa một album; S10.01 thay công tắc "Thêm vào portfolio" bằng ô "Album". Bản đầu chỉ ảnh, mô hình chừa `PostMedia` cho video.
+- **Hợp đồng đặt lịch kiểu freelancer** (đề xuất, câu hỏi mở 26): trả 100% qua app, thả theo 2 mốc (sau buổi chụp; khi khách duyệt bàn giao hoặc tự duyệt sau 3 ngày), có bàn giao, chỉnh sửa và trễ hạn. Thay "cọc 30% + 70% tại buổi chụp" ở mục 3g khi được chốt.
+- **Đăng việc** (S15–S16): khách đăng việc, thợ ảnh báo giá, khách chọn và trả tiền; báo giá thành booking `source = quote` ở `accepted`.
+- **Thông báo**: bỏ chuông ở đầu trang, số chưa đọc nằm trên tab Hồ sơ (mục 3d.3, 3h.1).
 
 ## 4. Thành phần dùng chung cần viết trước
 
@@ -928,4 +957,7 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 23. **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
 24. **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
 25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)?
+26. **Hợp đồng kiểu freelancer** (spec 10-05 mục 4): trả 100% qua app theo 2 mốc thay cho cọc 30%? Tỉ lệ mốc, số ngày tự duyệt, cách bàn giao (link ngoài hay lưu trên app), hoa hồng. Chi tiết ở câu hỏi mở 3–7 của spec 10-05.
+27. **Hạng NAG** (spec 10-05 mục 2.3): ngưỡng 3 giải đã duyệt, có tính trọng số theo kết quả hay cấp cuộc thi không?
+28. **Chip lọc "Loại"** ở S02.06 (Photographer / Nhiếp ảnh gia / Studio): có cần không?
 14. Giữ nguyên các câu hỏi mở 1–4 của spec gốc (cổng thanh toán, admin, tỉ lệ cọc, tên/applicationId).

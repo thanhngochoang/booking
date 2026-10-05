@@ -36,6 +36,8 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 
 ## S03.01 · Hồ sơ nhiếp ảnh gia
 
+> **Đổi 2026-10-05**: biến thể NAG (hàng giải thưởng, ô "giải thưởng"), dấu và nhãn loại nhà cung cấp, tab Portfolio có nút gạt Album / Dòng thời gian, "Mời báo giá" trong menu "…". Xem [portfolio-awards.md](portfolio-awards.md#s0301--hồ-sơ-biến-thể-nag-và-tab-portfolio) và [jobs.md](jobs.md). Phần mâu thuẫn bên dưới theo bản mới.
+
 - **Thông tin**: `/u/:uid` · cả hai · sub‑project 2 · Chưa có.
 - **Mục đích**: trả lời "người này chụp kiểu gì, đáng tin không, bao nhiêu, đặt thế nào".
 - **Điểm vào → ra**: S02.01, S02.02, S02.06, S02.03, tìm kiếm, link `/u/{uid}`. "Đặt lịch" → S04.01 (qua S04.05 nếu thiếu số); nút "Nhắn tin hỏi trước" → S07.01 (chat `inquiry`); huy hiệu "Tất cả" → S03.02; "Chỉnh sửa" (chủ hồ sơ) → S08.01/S08.02/S09.03.
@@ -50,6 +52,8 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 ---
 
 ## S02.06 · Tìm thợ ảnh
+
+> **Đổi 2026-10-05**: `PhotographerCard` có dấu và nhãn loại nhà cung cấp ([portfolio-awards.md](portfolio-awards.md)); không có kết quả thì hiện "Không tìm thấy? Đăng việc để thợ ảnh báo giá" → S15.01 ([jobs.md](jobs.md)).
 
 - **Thông tin**: `/action` (khách) · khách · sub‑project 3 · Chưa có (hiện là empty trong `ActionTab`).
 - **Mục đích**: so sánh nhiếp ảnh gia theo khu vực, ngày, dịch vụ, giá, sao.

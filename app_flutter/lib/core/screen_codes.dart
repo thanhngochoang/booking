@@ -120,6 +120,16 @@ abstract final class ScreenCodes {
   static const staffVerifications = 'S23.04';
   static const staffReports = 'S23.05';
   static const staffSupportInbox = 'S23.06';
+  static const staffAwardReviews = 'S23.07';
+  // S24 Portfolio album.
+  static const albumDetail = 'S24.01';
+  static const myAlbums = 'S24.02';
+  static const editAlbum = 'S24.03';
+  static const addPostsToAlbum = 'S24.04';
+  static const pickAlbum = 'S24.05';
+  // S25 Giải thưởng & hạng Nhiếp ảnh gia (NAG).
+  static const myAwards = 'S25.01';
+  static const editAward = 'S25.02';
 
   static const all = <String>[
     splash,
@@ -211,5 +221,13 @@ abstract final class ScreenCodes {
     staffVerifications,
     staffReports,
     staffSupportInbox,
+    staffAwardReviews,
+    albumDetail,
+    myAlbums,
+    editAlbum,
+    addPostsToAlbum,
+    pickAlbum,
+    myAwards,
+    editAward,
   ];
 }

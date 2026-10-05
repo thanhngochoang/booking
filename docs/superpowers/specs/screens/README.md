@@ -1,6 +1,6 @@
 # Đặc tả từng màn hình
 
-Chi tiết cho mọi màn `S01–S17` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
+Chi tiết cho mọi màn `S01–S17`, `S24`, `S25` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
 
 ## Mục lục
 
@@ -10,6 +10,8 @@ Chi tiết cho mọi màn `S01–S17` của spec `../2026-10-01-remaining-screen
 | [booking.md](booking.md) | S04.01–S04.03 Đặt lịch · S04.04 Chờ thanh toán · S05.02 Chi tiết booking · S05.03 Huỷ booking · S07.01 Hội thoại · S05.01 Danh sách đặt lịch · S05.04 Liên hệ · S04.05 Thêm số điện thoại |
 | [events.md](events.md) | S11.01 Danh sách sự kiện · S11.02 Chi tiết · S11.03 Đăng ký · S11.04 Vé · S12.01, S12.02 Tạo sự kiện · S12.03 Quản lý sự kiện |
 | [photographer.md](photographer.md) | S06.01 Công việc · S06.04 Lịch · S10.01 Đăng bài · S06.02 Empty Công việc · S06.03 Từ chối · S08.01 Thiết lập hồ sơ · S08.05 Khu vực & liên hệ · S08.02–S08.04 Kỹ năng |
+| [portfolio-awards.md](portfolio-awards.md) | Thay đổi ở S02.06, S03.01, S08.01, S09.01, S10.01 · S24.01–S24.05 Portfolio album · S25.01–S25.02 Giải thưởng & hạng NAG (spec 10-05) |
+| [jobs.md](jobs.md) | S15.01–S15.04 Đăng việc · S16.01–S16.03 Nhận việc đăng (spec 10-05) |
 | [account.md](account.md) | S05.05 Đánh giá & chia sẻ · S01.03 Đăng nhập · S01.05 Chọn vai trò · S09.01 Hồ sơ cá nhân · S09.02 Cài đặt · S03.02 Huy hiệu · S01.04 Đăng ký · S09.03 Sửa hồ sơ · S17.01 Thông báo · S17.02 Cài đặt thông báo · S17.03 Xin quyền thông báo |
 
 ## Mẫu cho mỗi màn
@@ -50,7 +52,7 @@ Mỗi màn có đúng các mục sau (bỏ mục không áp dụng và ghi "—"
 
 **Phân tích.** Mỗi màn gửi `screen_view{code}` khi hiện. Tên sự kiện `snake_case`, tham số không chứa số điện thoại, vị trí chính xác hay nội dung tin nhắn.
 
-**Vai trò.** Màn nói "khách" hay "NAG" là vai trò được vào; vai trò khác vào route thì chuyển về `/home`. Ngoài hai vai trò chọn ở S01.05 còn có quyền nhân viên `admin` và `sales` (custom claim `staffRole`, không tự chọn được); hiện chỉ dùng để tạo và quản lý sự kiện (spec chính mục 3.6).
+**Vai trò.** Màn nói "khách" hay "thợ ảnh" (spec cũ ghi "NAG", cùng nghĩa vai `photographer`) là vai trò được vào; từ 2026-10-05 "NAG" / "Nhiếp ảnh gia" chỉ hạng nghệ sĩ (`providerType = artist`, spec 10-05); vai trò khác vào route thì chuyển về `/home`. Ngoài hai vai trò chọn ở S01.05 còn có quyền nhân viên `admin` và `sales` (custom claim `staffRole`, không tự chọn được); hiện chỉ dùng để tạo và quản lý sự kiện (spec chính mục 3.6).
 
 **Chuỗi.** Mọi chuỗi trong `lib/l10n/app_vi.arb`, khóa `sNN_…` cho chuỗi riêng màn, khóa chung cho chuỗi dùng lại (`commonRetry`, `commonCancel`…). Không hard‑code.
 
