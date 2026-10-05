@@ -5,6 +5,7 @@ Written only by `.claude/skills/run-next-plan/scripts/board.py`; do not edit by 
 One line per unit: id · state · branch · machine · last update.
 
 ## Active
+- `8d/6-L1` · in progress · `plan/8d-6-L1-chat-ui` · MAC-JM4RLWTXXR · 2026-10-05
 
 ## Finished
 - `9` · done (PR #23) · `plan/9-backend-phase2` · MAC-JM4RLWTXXR · 2026-10-05
