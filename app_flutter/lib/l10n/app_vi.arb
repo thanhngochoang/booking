@@ -1266,5 +1266,27 @@
     "placeholders": {
       "name": {"type": "String"}
     }
+  },
+  "providerArtist": "Nhiếp ảnh gia",
+  "providerStudio": "Studio",
+  "providerArtistMark": "Nhiếp ảnh gia đã duyệt",
+  "providerStudioMark": "Studio đã xác minh",
+  "providerArtistAwards": "Nhiếp ảnh gia · {n} giải",
+  "@providerArtistAwards": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "providerAwardsCount": "{n} giải",
+  "@providerAwardsCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "providerStudioDistrict": "Studio · {district}",
+  "@providerStudioDistrict": {
+    "placeholders": {
+      "district": {"type": "String"}
+    }
   }
 }

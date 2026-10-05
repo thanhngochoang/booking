@@ -2542,4 +2542,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String inquiryNotEligible(String name) {
     return '$name chưa nhận tin hỏi trước';
   }
+
+  @override
+  String get providerArtist => 'Nhiếp ảnh gia';
+
+  @override
+  String get providerStudio => 'Studio';
+
+  @override
+  String get providerArtistMark => 'Nhiếp ảnh gia đã duyệt';
+
+  @override
+  String get providerStudioMark => 'Studio đã xác minh';
+
+  @override
+  String providerArtistAwards(int n) {
+    return 'Nhiếp ảnh gia · $n giải';
+  }
+
+  @override
+  String providerAwardsCount(int n) {
+    return '$n giải';
+  }
+
+  @override
+  String providerStudioDistrict(String district) {
+    return 'Studio · $district';
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/reason.dart';
 
 import '../../support/content_fixtures.dart';
@@ -21,6 +22,9 @@ Widget _card({
   double textScale = 1,
   Brightness brightness = Brightness.dark,
   List<PhotoRequest>? log,
+  ProviderType type = ProviderType.individual,
+  int awards = 0,
+  String? district,
 }) => hostWidget(
   testPhotoScope(
     log: log,
@@ -30,6 +34,9 @@ Widget _card({
         name: name,
         verified: verified,
         startingPrice: price,
+        providerType: type,
+        approvedAwards: awards,
+        studioDistrict: district,
       ),
       reasons: reasons,
       distanceKm: distanceKm,
@@ -324,5 +331,44 @@ void main() {
     final book = tester.getRect(find.widgetWithText(AppButton, 'Đặt T7'));
     // 48dp tap boxes, visuals on top: 10dp between the visuals, as in the mock.
     expect(book.top - profile.bottom, 0);
+  });
+
+  testWidgets('card reads type and awards to screen readers', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        name: 'Lê Hoàng Vũ',
+        type: ProviderType.artist,
+        awards: 7,
+        distanceKm: null,
+        price: null,
+        availability: null,
+      ),
+    );
+    expect(find.text('Nhiếp ảnh gia · 7 giải'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^Lê Hoàng Vũ, Nhiếp ảnh gia đã duyệt, 7 giải'),
+      ),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('studio card shows the seal and the district tag', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _card(
+        name: 'Studio Mây',
+        type: ProviderType.studio,
+        district: 'Hoàn Kiếm',
+      ),
+    );
+    expect(find.text('Studio · Hoàn Kiếm'), findsOneWidget);
+    expect(
+      tester.widget<ProviderMark>(find.byType(ProviderMark)).kind,
+      ProviderMarkKind.studio,
+    );
   });
 }

@@ -162,6 +162,12 @@ tile('calendar', 'AvailabilityCalendar', 'AvailabilityCalendar({month, states, s
 tile('identity', 'AppAvatar · VerifiedMark · ReasonChips', 'AppAvatar({url, name, size = md}) · VerifiedMark({size}) · ReasonChips({reasons, max = 2})', 'S02.02, S03.01, S02.06, S09.01',
      '<div class="row"><span class="av m"></span><b>Minh Trí</b> <span class="vf" role="img" aria-label="Đã xác minh"><svg><use href="#i-check"/></svg></span></div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="chip">Chuyên chân dung</span><span class="chip">Cách 1,2 km</span></div>',
      f'<div class="row">{skc(40)}{sk("90px")}</div><div class="row" style="gap:6px">{sk("96px","26px","999px")}{sk("80px","26px","999px")}</div>')
+tile('providermarks', 'ProviderMark · ProviderTag · ProviderName',
+     'ProviderMark(kind: verified | artist | studio, {size}) · ProviderTag({type, awards, district, showAwards}) · ProviderName(name, {mark, style}) · providerMarkOf({type, verified})',
+     'S02.01, S02.06, S03.01, S08.01',
+     '<div class="row" style="gap:10px;margin-bottom:8px;flex-wrap:wrap"><span><b style="font-family:var(--display);font-size:16px">Minh Trí</b><span class="vf" role="img" aria-label="Đã xác minh"><svg><use href="#i-check"/></svg></span></span><span><b style="font-family:var(--display);font-size:16px">Hoàng Vũ</b><span class="vf gold" role="img" aria-label="Nhiếp ảnh gia đã duyệt"><svg><use href="#i-check"/></svg></span></span><span><b style="font-family:var(--display);font-size:16px">Studio Mây</b><span class="vfs" role="img" aria-label="Studio đã xác minh"><svg><use href="#i-seal"/></svg></span></span></div>'
+     '<div class="row" style="gap:6px;flex-wrap:wrap"><span class="ptag nag"><svg><use href="#i-award"/></svg>Nhiếp ảnh gia · 7 giải</span><span class="ptag"><svg><use href="#i-brief"/></svg>Studio · Hoàn Kiếm</span></div>',
+     '<div class="meta">Không có skeleton (không phụ thuộc dữ liệu).</div>')
 tile('badges', 'BadgeChip · BadgeRow · BadgeTile',
      'BadgeChip({required BadgeView badge, onTap}) · BadgeRow({required List<BadgeView> badges, max = 3, onSeeAll}) · BadgeTile({required BadgeView badge, progress, isNew = false, onTap})',
      'S02.02, S03.01, S02.06, S03.02, S09.01',
