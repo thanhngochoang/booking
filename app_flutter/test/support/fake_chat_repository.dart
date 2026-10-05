@@ -91,25 +91,31 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Stream<ChatThread?> watchThread(String chatId) async* {
-    yield threads[chatId];
-    final ctrl = _threadControllers.putIfAbsent(
+  Stream<ChatThread?> watchThread(String chatId) {
+    _threadControllers.putIfAbsent(
       chatId,
-      () => StreamController<ChatThread?>.broadcast(),
+      () => StreamController<ChatThread?>.broadcast(
+        onListen: () {
+          _threadControllers[chatId]?.add(threads[chatId]);
+        },
+      ),
     );
-    yield* ctrl.stream;
+    return _threadControllers[chatId]!.stream;
   }
 
   @override
-  Stream<List<ChatMessage>> watchMessages(String chatId, {int limit = 50}) async* {
-    final list = messages[chatId] ?? [];
-    final slice = list.length > limit ? list.sublist(list.length - limit) : list;
-    yield List.unmodifiable(slice);
-    final ctrl = _messageControllers.putIfAbsent(
+  Stream<List<ChatMessage>> watchMessages(String chatId, {int limit = 50}) {
+    _messageControllers.putIfAbsent(
       chatId,
-      () => StreamController<List<ChatMessage>>.broadcast(),
+      () => StreamController<List<ChatMessage>>.broadcast(
+        onListen: () {
+          final list = messages[chatId] ?? [];
+          final slice = list.length > limit ? list.sublist(list.length - limit) : list;
+          _messageControllers[chatId]?.add(List.unmodifiable(slice));
+        },
+      ),
     );
-    yield* ctrl.stream;
+    return _messageControllers[chatId]!.stream;
   }
 
   @override

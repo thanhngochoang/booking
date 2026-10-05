@@ -133,8 +133,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScreenCodes.chat,
       child: Scaffold(
         appBar: _buildAppBar(context, threadAsync.value, currentUserId, l10n),
-        body: threadAsync.when(
-          loading: () => Column(
+        body: AsyncView<ChatThread?>(
+          value: threadAsync,
+          skeleton: (_) => Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -153,10 +154,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ],
           ),
-          error: (e, st) => Center(
-            child: Text(e.toString()),
-          ),
-          data: (thread) {
+          data: (context, thread) {
             if (thread == null) {
               return const Center(child: Text('Không tìm thấy cuộc trò chuyện'));
             }

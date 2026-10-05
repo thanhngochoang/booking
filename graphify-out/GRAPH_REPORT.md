@@ -1,7 +1,7 @@
 # Graph Report - booking  (2026-10-05)
 
 ## Corpus Check
-- 1106 files · ~1,204,499 words
+- 1106 files · ~1,204,494 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 203 file(s) not represented in the graph (top: .xml 139, (none) 14, .xcconfig 8)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0a58ebeb`
+- Built from commit: `b3c2fef2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -2165,11 +2165,11 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `Registration terms (static HTML, placeholder Dieu 1-5)` and `Custom MVP framework (Contact/Presenter/Fragment)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **Why does `User` connect `User` to `android.view.View`, `UpdateProfileActivity`, `File Structure`, `FindPhotographerFragment`, `FragmentPresenter`, `UpdateProfileActivity.java`, `2. Thực thể`, `Schema Reference`, `Booking`, `BookFragment`, `UX audit và redesign — Cộng đồng nhiếp ảnh gia`, `ChatRoom`, `Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan`?**
-  _High betweenness centrality (0.175) - this node is a cross-community bridge._
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
 - **Why does `Backend Phase 2: Self-hosted API + PostgreSQL (first vertical slice) Implementation Plan` connect `Step 4a: Booking Domain and Backend (fake payments, lifecycle, escrow, rules, app repository) Implementation Plan` to `File Structure`, `app.ts`, `User`, `DomainError`, `PaymentProvider`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
+  _High betweenness centrality (0.096) - this node is a cross-community bridge._
 - **Why does `_` connect `package:flutter_riverpod/flutter_riverpod.dart` to `booking_flow_controller.dart`, `package:go_router/go_router.dart`, `home_screen_test.dart`, `_`, `create_post_screen_test.dart`, `home_screen.dart`, `return`, `chat_screen_test.dart`, `chat_screen.dart`, `explore_screen_test.dart`, `package:flutter_test/flutter_test.dart`, `booking_sheet_page.dart`, `booking_detail_screen_test.dart`, `package:flutter/material.dart`?**
-  _High betweenness centrality (0.091) - this node is a cross-community bridge._
+  _High betweenness centrality (0.094) - this node is a cross-community bridge._
 - **What connects `runner`, `name`, `description` to the rest of the system?**
   _8082 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `APIClient.java` be split into smaller, more focused modules?**

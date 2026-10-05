@@ -117,7 +117,7 @@ void main() {
           chatRepositoryProvider.overrideWithValue(fakeChat),
         ],
       );
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.byWidgetPredicate((w) => w.runtimeType.toString() == '_BookingCardSkeleton'), findsOneWidget);

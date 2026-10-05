@@ -80420,7 +80420,7 @@
       "file_type": "code",
       "norm_label": "_buildappbar",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L377"
+      "source_location": "L375"
     },
     {
       "id": "app_flutter_lib_features_chat_inquiry_entry_build",
@@ -102428,7 +102428,7 @@
       "file_type": "code",
       "norm_label": "_buildsystemactions",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L434"
+      "source_location": "L432"
     },
     {
       "id": "app_flutter_lib_features_chat_chat_screen_chatid",
@@ -134626,7 +134626,7 @@
       "file_type": "code",
       "norm_label": "_addmessage",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L162"
+      "source_location": "L168"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_answerreschedule",
@@ -134637,7 +134637,7 @@
       "file_type": "code",
       "norm_label": "answerreschedule",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L343"
+      "source_location": "L349"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_buildchatlist",
@@ -134692,7 +134692,7 @@
       "file_type": "code",
       "norm_label": "markread",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L295"
+      "source_location": "L301"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_messagecontrollers",
@@ -134780,7 +134780,7 @@
       "file_type": "code",
       "norm_label": "oldermessages",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L116"
+      "source_location": "L122"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_online",
@@ -134802,7 +134802,7 @@
       "file_type": "code",
       "norm_label": "openinquiry",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L143"
+      "source_location": "L149"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_proposereschedule",
@@ -134813,7 +134813,7 @@
       "file_type": "code",
       "norm_label": "proposereschedule",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L302"
+      "source_location": "L308"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_seedmessages",
@@ -134857,7 +134857,7 @@
       "file_type": "code",
       "norm_label": "sendimage",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L260"
+      "source_location": "L266"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_sendlocation",
@@ -134868,7 +134868,7 @@
       "file_type": "code",
       "norm_label": "sendlocation",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L278"
+      "source_location": "L284"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_sendtext",
@@ -134879,7 +134879,7 @@
       "file_type": "code",
       "norm_label": "sendtext",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L243"
+      "source_location": "L249"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_threadcontrollers",
@@ -134934,7 +134934,7 @@
       "file_type": "code",
       "norm_label": "watchmessages",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L104"
+      "source_location": "L107"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_watchmychats",
@@ -134945,7 +134945,7 @@
       "file_type": "code",
       "norm_label": "watchmychats",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L131"
+      "source_location": "L137"
     },
     {
       "id": "app_flutter_test_support_fake_chat_repository_watchthread",
@@ -134967,7 +134967,7 @@
       "file_type": "code",
       "norm_label": "watchtotalunread",
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L137"
+      "source_location": "L143"
     },
     {
       "id": "app_flutter_lib_l10n_app_localizations_vi",
@@ -238418,7 +238418,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L167",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -238430,7 +238430,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L171",
+      "source_location": "L169",
       "weight": 1.0
     },
     {
@@ -238442,7 +238442,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L199",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -238454,7 +238454,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L391",
+      "source_location": "L389",
       "weight": 1.0
     },
     {
@@ -238538,7 +238538,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L167",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -238550,7 +238550,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L171",
+      "source_location": "L169",
       "weight": 1.0
     },
     {
@@ -238562,7 +238562,7 @@
       "confidence_score": 1.0,
       "context": "riverpod_reference",
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L391",
+      "source_location": "L389",
       "weight": 1.0
     },
     {
@@ -325784,7 +325784,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L377",
+      "source_location": "L375",
       "weight": 1.0
     },
     {
@@ -325839,7 +325839,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/lib/features/chat/chat_screen.dart",
-      "source_location": "L434",
+      "source_location": "L432",
       "weight": 1.0
     },
     {
@@ -369223,18 +369223,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L104",
-      "weight": 1.0
-    },
-    {
-      "source": "app_flutter_test_support_fake_chat_repository",
-      "target": "app_flutter_test_support_fake_chat_repository_oldermessages",
-      "relation": "defines",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L116",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -369246,6 +369235,17 @@
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
       "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "app_flutter_test_support_fake_chat_repository",
+      "target": "app_flutter_test_support_fake_chat_repository_oldermessages",
+      "relation": "defines",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app_flutter/test/support/fake_chat_repository.dart",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -369267,17 +369267,6 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L131",
-      "weight": 1.0
-    },
-    {
-      "source": "app_flutter_test_support_fake_chat_repository",
-      "target": "app_flutter_test_support_fake_chat_repository_watchtotalunread",
-      "relation": "defines",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app_flutter/test/support/fake_chat_repository.dart",
       "source_location": "L137",
       "weight": 1.0
     },
@@ -369294,13 +369283,24 @@
     },
     {
       "source": "app_flutter_test_support_fake_chat_repository",
-      "target": "app_flutter_test_support_fake_chat_repository_openinquiry",
+      "target": "app_flutter_test_support_fake_chat_repository_watchtotalunread",
       "relation": "defines",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
       "source_location": "L143",
+      "weight": 1.0
+    },
+    {
+      "source": "app_flutter_test_support_fake_chat_repository",
+      "target": "app_flutter_test_support_fake_chat_repository_openinquiry",
+      "relation": "defines",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app_flutter/test/support/fake_chat_repository.dart",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -369322,7 +369322,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L162",
+      "source_location": "L168",
       "weight": 1.0
     },
     {
@@ -369399,7 +369399,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L243",
+      "source_location": "L249",
       "weight": 1.0
     },
     {
@@ -369410,7 +369410,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L260",
+      "source_location": "L266",
       "weight": 1.0
     },
     {
@@ -369432,7 +369432,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L278",
+      "source_location": "L284",
       "weight": 1.0
     },
     {
@@ -369443,7 +369443,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L295",
+      "source_location": "L301",
       "weight": 1.0
     },
     {
@@ -369454,7 +369454,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L302",
+      "source_location": "L308",
       "weight": 1.0
     },
     {
@@ -369465,7 +369465,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app_flutter/test/support/fake_chat_repository.dart",
-      "source_location": "L343",
+      "source_location": "L349",
       "weight": 1.0
     },
     {
@@ -448366,5 +448366,5 @@
       "source_file": "scripts/env.sh"
     }
   ],
-  "built_at_commit": "0a58ebebffc9e3428e89faeccbc0c9669d4bc5b4"
+  "built_at_commit": "b3c2fef23f778380a540b0263d9136e508d09341"
 }
