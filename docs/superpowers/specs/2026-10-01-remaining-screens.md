@@ -732,7 +732,7 @@ users/{uid}/notifications/{id}
   thumbUrl?, count?
   createdAt, readAt?   # readAt null = chưa đọc
 
-users/{uid}/private/inbox                    # {unreadCount, lastReadAt}, chỉ chủ đọc, chỉ server ghi; Functions tính lại (đếm) mỗi khi một dòng đổi
+users/{uid}/private/inbox                    # {unreadCount, unreadCountAt}, chỉ chủ đọc, chỉ server ghi; Functions tính lại (đếm) mỗi khi một dòng đổi
 users/{uid}/private/notification_prefs       # S17.02, chỉ chủ đọc/ghi
   channels: {booking, jobs, instant, events, chat, badges, promo}: {push: bool, inApp: bool}
   quietHours: {enabled, from: "22:00", to: "07:00"}
@@ -762,7 +762,7 @@ Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng
 
 ### 3h.7 Cloud Functions
 
-`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, cập nhật `unreadCount` (trong `users/{uid}/private/inbox`), gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
+`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, cập nhật `unreadCount` và `unreadCountAt` (trong `users/{uid}/private/inbox`), gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
 
 ## 3i. Use case bổ sung (2026-10-02)
 
