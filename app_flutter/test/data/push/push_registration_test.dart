@@ -98,4 +98,17 @@ void main() {
     await reg.signOut();
     expect(devices.log, ['unregister', 'signOut']);
   });
+
+  test(
+    'signOut deletes the FCM token, and a failing delete does not block',
+    () async {
+      await reg.signOut();
+      expect(messaging.deleteCalls, 1);
+
+      messaging.failDelete = StateError('x');
+      devices.log.clear();
+      await reg.signOut();
+      expect(devices.log, ['unregister', 'signOut']);
+    },
+  );
 }

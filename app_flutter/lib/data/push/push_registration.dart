@@ -76,8 +76,8 @@ class PushRegistration {
     }
   }
 
-  /// Removes this install's record (best effort, short timeout), then signs
-  /// out. A failing or slow unregister never blocks the sign-out.
+  /// Removes this install's record and token (best effort, short timeout),
+  /// then signs out. A failing or slow unregister never blocks the sign-out.
   Future<void> signOut() async {
     final u = uid();
     if (u != null) {
@@ -85,6 +85,13 @@ class PushRegistration {
         await devices.unregister(u).timeout(unregisterTimeout);
       } on Object {
         // Offline: the server drops the stale token on its first failed send.
+      }
+      try {
+        // Stops the old account's pushes on this phone even when the record
+        // could not be removed; the next sign-in gets a fresh token.
+        await messaging.deleteToken().timeout(unregisterTimeout);
+      } on Object {
+        // Best effort.
       }
     }
     await signOutFromAuth();

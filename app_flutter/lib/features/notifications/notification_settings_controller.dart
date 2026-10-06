@@ -156,9 +156,13 @@ class NotificationSettingsController
     if (current == null) {
       return;
     }
-    final os = await ref.read(notificationPermissionProvider).status();
-    if (ref.mounted && state.value != null) {
-      state = AsyncData(state.value!.copyWith(os: os));
+    try {
+      final os = await ref.read(notificationPermissionProvider).status();
+      if (ref.mounted && state.value != null) {
+        state = AsyncData(state.value!.copyWith(os: os));
+      }
+    } on Object {
+      // Keeps the last known status; a platform error must not escape.
     }
   }
 
@@ -169,15 +173,19 @@ class NotificationSettingsController
 
   /// Asks the OS; a grant registers this device for push.
   Future<void> requestPermission() async {
-    final os = await ref.read(notificationPermissionProvider).request();
-    _log('notification_os_result', {
-      'granted': os == NotificationPermissionStatus.granted,
-    });
-    if (ref.mounted && state.value != null) {
-      state = AsyncData(state.value!.copyWith(os: os));
-    }
-    if (os == NotificationPermissionStatus.granted) {
-      await ref.read(pushRegistrationProvider).refresh();
+    try {
+      final os = await ref.read(notificationPermissionProvider).request();
+      _log('notification_os_result', {
+        'granted': os == NotificationPermissionStatus.granted,
+      });
+      if (ref.mounted && state.value != null) {
+        state = AsyncData(state.value!.copyWith(os: os));
+      }
+      if (os == NotificationPermissionStatus.granted) {
+        await ref.read(pushRegistrationProvider).refresh();
+      }
+    } on Object {
+      // The switch stays as it was; a platform error must not escape.
     }
   }
 }

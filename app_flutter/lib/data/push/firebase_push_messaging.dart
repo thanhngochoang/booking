@@ -28,6 +28,9 @@ class FirebasePushMessaging implements PushMessaging {
   }
 
   @override
+  Future<void> deleteToken() => _fm.deleteToken();
+
+  @override
   Stream<String> get tokenRefresh => _fm.onTokenRefresh;
 
   @override

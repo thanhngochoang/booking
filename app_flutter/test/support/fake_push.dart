@@ -18,6 +18,19 @@ class FakePushMessaging implements PushMessaging {
   /// How many times [token] was asked for.
   int tokenCalls = 0;
 
+  /// How many times [deleteToken] was called.
+  int deleteCalls = 0;
+  Object? failDelete;
+
+  @override
+  Future<void> deleteToken() async {
+    deleteCalls++;
+    final f = failDelete;
+    if (f != null) {
+      throw f;
+    }
+  }
+
   void emitRefresh(String token) => _refresh.add(token);
 
   void emitOpened(PushOpen open) => _opened.add(open);
@@ -55,11 +68,24 @@ class FakeNotificationPermission implements NotificationPermissionPort {
   int requests = 0;
   int settingsOpened = 0;
 
+  /// Makes [status] and [request] throw.
+  Object? failWith;
+
   @override
-  Future<NotificationPermissionStatus> status() async => current;
+  Future<NotificationPermissionStatus> status() async {
+    final f = failWith;
+    if (f != null) {
+      throw f;
+    }
+    return current;
+  }
 
   @override
   Future<NotificationPermissionStatus> request() async {
+    final f = failWith;
+    if (f != null) {
+      throw f;
+    }
     requests++;
     current = onRequest;
     return current;

@@ -15,6 +15,10 @@ abstract class PushMessaging {
   /// The device token, or null when none is available.
   Future<String?> token();
 
+  /// Drops this install's token so pushes of the previous account stop
+  /// (best effort; callers ignore failures).
+  Future<void> deleteToken();
+
   Stream<String> get tokenRefresh;
 
   /// Taps on a push while the app is in the background.

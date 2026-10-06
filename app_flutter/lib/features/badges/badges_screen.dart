@@ -160,7 +160,8 @@ class _BadgesScreenState extends ConsumerState<BadgesScreen> {
     void retry() {
       ref
         ..invalidate(badgeCatalogProvider)
-        ..invalidate(earnedBadgesProvider(widget.uid));
+        ..invalidate(earnedBadgesProvider(widget.uid))
+        ..invalidate(myBadgeProgressProvider);
     }
 
     return ScreenCode(
@@ -332,11 +333,11 @@ class _Skeleton extends StatelessWidget {
           child: Text(title, style: Theme.of(context).textTheme.titleMedium),
         ),
         GridView(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: AppSpace.s3,
             crossAxisSpacing: AppSpace.s3,
-            mainAxisExtent: 110,
+            mainAxisExtent: MediaQuery.textScalerOf(context).scale(172),
           ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

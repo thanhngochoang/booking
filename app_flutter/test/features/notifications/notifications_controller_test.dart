@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/notifications/app_notification.dart';
 import 'package:photobooking/data/notifications/notification_prefs.dart';
+import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/features/notifications/notifications_controller.dart';
 
 import '../../support/notifications_world.dart';
@@ -190,5 +191,46 @@ void main() {
     await pumpEventQueue();
     expect(world.fake.calls, contains('watchFirstPage:system'));
     expect(_ids(c), isEmpty);
+  });
+
+  test('mute refuses when the prefs come from the cache', () async {
+    final (world, c) = await _make(
+      (w) => [
+        w.note(
+          'ev',
+          type: 'event_soon',
+          tab: NotificationTab.events,
+          category: NotificationCategory.events,
+        ),
+      ],
+    );
+    world.prefs.fromCache = true;
+    final s = await _ready(c);
+    c.listen(notificationPrefsProvider, (_, _) {});
+    await c.read(notificationPrefsProvider.future);
+    expect(
+      () =>
+          c.read(notificationsControllerProvider.notifier).mute(s.items.first),
+      throwsA(isA<MuteUnavailable>()),
+    );
+    expect(world.prefs.saved, isEmpty);
+  });
+
+  test('a failed batch is retried one id at a time', () async {
+    final (world, c) = await _make((w) => [w.note('a'), w.note('b')]);
+    await _ready(c);
+    world.fake.failBatches = true;
+    final ctrl = c.read(notificationsControllerProvider.notifier)
+      ..markRead('a')
+      ..markRead('b');
+    await Future<void>.delayed(
+      notificationReadDebounce + const Duration(milliseconds: 100),
+    );
+    await pumpEventQueue();
+    expect(ctrl, isNotNull);
+    expect(world.fake.calls.where((e) => e.startsWith('markRead')).toList(), [
+      'markRead:a',
+      'markRead:b',
+    ]);
   });
 }

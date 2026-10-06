@@ -50,6 +50,9 @@ class FakeNotificationRepository implements NotificationRepository {
   /// Calls made, for assertions: `markRead:a,b`, `markAllRead`, ...
   final calls = <String>[];
 
+  /// Makes [markRead] fail for more than one id (a batch), not for one.
+  bool failBatches = false;
+
   /// Open [watchFirstPage] listeners.
   int listeners = 0;
 
@@ -140,6 +143,9 @@ class FakeNotificationRepository implements NotificationRepository {
     final failure = failWith;
     if (failure != null) {
       throw failure;
+    }
+    if (failBatches && ids.length > 1) {
+      throw StateError('batch failed');
     }
     final set = ids.toSet();
     calls.add('markRead:${set.join(',')}');

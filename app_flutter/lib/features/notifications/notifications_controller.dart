@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/notifications/app_notification.dart';
+import 'package:photobooking/data/notifications/notification_prefs.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/notifications/notification_repository.dart';
 
@@ -50,6 +51,12 @@ class NotificationsState {
     loadingMore: loadingMore ?? this.loadingMore,
     fromCache: fromCache ?? this.fromCache,
   );
+}
+
+/// The current prefs are unknown or only from the local cache (offline), so a
+/// mute would overwrite what the server holds.
+class MuteUnavailable implements Exception {
+  const MuteUnavailable();
 }
 
 /// Restores the prefs a mute replaced.
@@ -238,8 +245,18 @@ class NotificationsController extends AsyncNotifier<NotificationsState> {
     try {
       await repo.markRead(uid, ids);
     } on Object {
-      // The marks stay in the UI for this visit; the next open shows the
-      // server's truth and the user can tap again.
+      // One bad id must not drop the rest: retry one by one and ignore
+      // single failures. The marks stay in the UI for this visit; the next
+      // open shows the server's truth and the user can tap again.
+      if (ids.length > 1) {
+        for (final id in ids) {
+          try {
+            await repo.markRead(uid, [id]);
+          } on Object {
+            // Ignored.
+          }
+        }
+      }
     }
   }
 
@@ -267,7 +284,22 @@ class NotificationsController extends AsyncNotifier<NotificationsState> {
       return null;
     }
     final repo = ref.read(notificationPrefsRepositoryProvider);
-    final before = (await repo.watch(uid).first).prefs;
+    // The live provider's last value (S17.02 keeps it warm); held open while
+    // a cold read waits for its first event.
+    final sub = ref.listen(notificationPrefsProvider, (_, _) {});
+    PrefsSnapshot? snap;
+    try {
+      snap =
+          sub.read().value ?? await ref.read(notificationPrefsProvider.future);
+    } on Object {
+      snap = null;
+    } finally {
+      sub.close();
+    }
+    if (snap == null || snap.fromCache) {
+      throw const MuteUnavailable();
+    }
+    final before = snap.prefs;
     final muted = before.withChannel(n.category, push: false, inApp: false);
     await repo.save(uid, muted);
     return MuteUndo(() => repo.save(uid, before));

@@ -24,13 +24,16 @@ class FakeNotificationPrefsRepository implements NotificationPrefsRepository {
 
   Object? failWith;
 
+  /// Makes [watch] report the prefs as coming from the local cache.
+  bool fromCache = false;
+
   NotificationPrefs get current => _current;
 
   @override
   Stream<PrefsSnapshot> watch(String uid) async* {
-    yield PrefsSnapshot(_current);
+    yield PrefsSnapshot(_current, fromCache: fromCache);
     await for (final _ in _changes.stream) {
-      yield PrefsSnapshot(_current);
+      yield PrefsSnapshot(_current, fromCache: fromCache);
     }
   }
 

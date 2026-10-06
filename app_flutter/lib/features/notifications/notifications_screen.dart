@@ -111,6 +111,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           onPressed: () => undo.undo().catchError((_) {}),
         ),
       );
+    } on MuteUnavailable {
+      if (mounted) {
+        _say(l.notifSettingsSaveError);
+      }
     } on Object catch (e) {
       if (mounted) {
         _say(errorMessage(e, l));
