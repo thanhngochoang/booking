@@ -46,6 +46,7 @@ import 'package:photobooking/features/chat/chat_list_screen.dart';
 import 'package:photobooking/features/chat/chat_screen.dart';
 import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/find/find_screen.dart';
+import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -54,6 +55,7 @@ import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
 import 'fake_chat_repository.dart';
+import 'fake_review_repository.dart';
 import 'screen_host.dart';
 
 final worldBookingToday = DateTime.utc(2026, 10, 3, 10, 0);
@@ -107,6 +109,7 @@ class BookingWorldHandles {
     required this.availRepo,
     required this.contactRepo,
     required this.externalLauncher,
+    this.reviewRepo,
   });
 
   final GoRouter router;
@@ -114,6 +117,7 @@ class BookingWorldHandles {
   final FakeAvailabilityRepository availRepo;
   final FakeUserContactRepository contactRepo;
   final FakeExternalLauncher externalLauncher;
+  final FakeReviewRepository? reviewRepo;
 
   String get location => router.state.uri.toString();
 }
@@ -122,6 +126,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
   WidgetTester tester, {
   String path = '/u/p1/book',
   FakeBookingRepository? bookings,
+  FakeReviewRepository? reviews,
   List<ServiceSummary>? packages,
   Map<DateTime, AvailabilityDay> days = const {},
   UserContact? contact = const UserContact(phone: '+84903123456'),
@@ -265,6 +270,21 @@ Future<BookingWorldHandles> pumpBookingRoute(
     }
   });
 
+  final effectiveReviews =
+      reviews ?? FakeReviewRepository(currentUserId: signedInUid ?? 'c1');
+  effectiveReviews.bookingRepository ??= effectiveBookings;
+  effectiveReviews.bookingPhotographerIds['b1'] ??= 'p1';
+
+  final hasCustomReview = extraOverrides.any((o) {
+    try {
+      final origin = (o as dynamic).origin;
+      return origin == reviewRepositoryProvider ||
+          origin?.toString() == reviewRepositoryProvider.toString();
+    } catch (_) {
+      return false;
+    }
+  });
+
   final overrides = <Override>[
     authRepositoryProvider.overrideWithValue(authRepo),
     if (signedInUid != null)
@@ -279,6 +299,8 @@ Future<BookingWorldHandles> pumpBookingRoute(
     userContactRepositoryProvider.overrideWithValue(contactRepo),
     if (!hasCustomChat)
       chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
+    if (!hasCustomReview)
+      reviewRepositoryProvider.overrideWithValue(effectiveReviews),
     currentContactProvider.overrideWithValue(
       contact != null ? AsyncData(contact) : const AsyncData(null),
     ),
@@ -334,6 +356,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     availRepo: availRepo,
     contactRepo: contactRepo,
     externalLauncher: externalLauncher,
+    reviewRepo: effectiveReviews,
   );
 }
 

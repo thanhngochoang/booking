@@ -191,7 +191,9 @@ class _PhotographerProfileScreenState
                 ProfileSection.calendar => CalendarSliver(
                   photographerId: widget.uid,
                 ),
-                ProfileSection.reviews => const ReviewsSliver(),
+                ProfileSection.reviews => ReviewsSliver(
+                  photographerId: widget.uid,
+                ),
               },
             ),
           ),
