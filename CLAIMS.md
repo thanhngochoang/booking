@@ -6,6 +6,7 @@ One line per unit: id · state · branch · machine · last update.
 
 ## Active
 - `9d` · in progress · `plan/9d-icons-603010` · MacBook-Pro · 2026-10-06
+- `10a` · in progress · `plan/stack-2026-10` · MacBook-Pro · 2026-10-06
 
 ## Finished
 - `9c/2-L1` · done (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
