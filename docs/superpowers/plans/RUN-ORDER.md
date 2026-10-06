@@ -1,14 +1,22 @@
 # Run order of the implementation plans
 
-Agreed with the user on 2026-10-02. Run the plans top to bottom with subagent-driven development; a plan starts only when every plan above it is done, except plans 8a2–8e, which run in the two lanes below. Screen status lives in the code table of `docs/superpowers/specs/2026-10-01-remaining-screens.md` (column "Trạng thái"); update it when a plan finishes.
+> **Since 2026-10-06 the order and the claims live in GitHub Project 4**: https://github.com/users/thanhngochoang/projects/4 — one issue per unit, milestones Phase 1 / 1.5 / 2 / 3, priority = position on the board, dependencies = "Blocked by", runnable = Status Todo + label `plan-ready`. Machines use the skill `run-next-plan` (`.claude/skills/run-next-plan/scripts/project.py`). The tables below and the `board` branch are history only: do not update them. Every plan listed under "Done" has a closed issue in the project (parent "[Phase 1] Plan đã xong"); the open rows became issues too.
 
-Standing rules (user, 2026-10-02):
+Screen status still lives in the code table of `docs/superpowers/specs/2026-10-01-remaining-screens.md` (column "Trạng thái"); update it when a unit finishes.
+
+Standing rules (user, 2026-10-02; still in force):
 - The UI matches the committed mock `docs/design/ui-mock.html`; the specs decide behaviour.
-- No battery/performance task or test steps inside feature plans; all of it runs once in plan 16.
+- No battery/performance task or test steps inside feature plans; all of it runs once in the battery & performance issue (plan 16).
 - No device build or Genymotion install after each plan; it happens once, in plan 16.
 - iOS-only steps are skipped in feature plans and appended to "Deferred iOS steps" in plan 15.
 - Every screen shows its code (`ScreenCode`) in debug builds.
 - Firestore/Storage rules tests on the emulator (`firebase/rules-test`) are not run while executing plans; rules and their tests are still written, CI runs them on push (banner at the top of each plan). Backend phase 1's own emulator-suite work is not affected.
+
+---
+
+# History (before 2026-10-06)
+
+Agreed with the user on 2026-10-02. Run the plans top to bottom with subagent-driven development; a plan starts only when every plan above it is done, except plans 8a2–8e, which run in the two lanes below.
 
 ## Two parallel lanes (user, 2026-10-02)
 
