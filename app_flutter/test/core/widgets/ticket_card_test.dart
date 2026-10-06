@@ -45,24 +45,29 @@ TicketCardData _testTicket({
 }
 
 void main() {
-  testWidgets('upcoming shows QR encoding the ticket code and the selectable code', (tester) async {
-    await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket())));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'upcoming shows QR encoding the ticket code and the selectable code',
+    (tester) async {
+      await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket())));
+      await tester.pumpAndSettle();
 
-    final qrFinder = find.byType(QrImageView);
-    expect(qrFinder, findsOneWidget);
-    final qr = tester.widget<QrImageView>(qrFinder);
-    expect(qr.semanticsLabel, contains('TCK-2026-X1'));
+      final qrFinder = find.byType(QrImageView);
+      expect(qrFinder, findsOneWidget);
+      final qr = tester.widget<QrImageView>(qrFinder);
+      expect(qr.semanticsLabel, contains('TCK-2026-X1'));
 
-    final selectableFinder = find.byType(SelectableText);
-    expect(selectableFinder, findsOneWidget);
-    final selectable = tester.widget<SelectableText>(selectableFinder);
-    expect(selectable.data, 'TCK-2026-X1');
-  });
+      final selectableFinder = find.byType(SelectableText);
+      expect(selectableFinder, findsOneWidget);
+      final selectable = tester.widget<SelectableText>(selectableFinder);
+      expect(selectable.data, 'TCK-2026-X1');
+    },
+  );
 
   testWidgets("QR semantics reads 'Mã vé {code}'", (tester) async {
     final handle = tester.ensureSemantics();
-    await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket(code: 'TCK-999'))));
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(code: 'TCK-999'))),
+    );
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel('Mã vé TCK-999'), findsOneWidget);
@@ -71,106 +76,222 @@ void main() {
 
   testWidgets('past and cancelled are dimmed and have no QR', (tester) async {
     // Past
-    await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket(state: TicketState.past))));
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(state: TicketState.past))),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(QrImageView), findsNothing);
     final pastOpacity = tester.widget<Opacity>(find.byType(Opacity));
     expect(pastOpacity.opacity, 0.55);
 
     // Cancelled
-    await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket(state: TicketState.cancelled))));
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(state: TicketState.cancelled))),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(QrImageView), findsNothing);
     final cancelledOpacity = tester.widget<Opacity>(find.byType(Opacity));
     expect(cancelledOpacity.opacity, 0.55);
   });
 
-  testWidgets('pending payment shows Chờ thanh toán and the pay button, no QR', (tester) async {
-    var paid = false;
-    await tester.pumpWidget(_wrap(
-      TicketCard(
-        ticket: _testTicket(state: TicketState.pendingPayment),
-        onPay: () => paid = true,
-      ),
-    ));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(QrImageView), findsNothing);
-    expect(find.textContaining('CHỜ THANH TOÁN'), findsOneWidget);
-
-    final payButton = find.widgetWithText(AppButton, 'Thanh toán');
-    expect(payButton, findsOneWidget);
-    await tester.tap(payButton);
-    expect(paid, isTrue);
-  });
-
-  testWidgets('cancel is a danger text button that calls onCancel (no confirmation inside widget)', (tester) async {
-    var cancelled = false;
-    await tester.pumpWidget(_wrap(
-      TicketCard(
-        ticket: _testTicket(state: TicketState.upcoming),
-        onCancel: () => cancelled = true,
-      ),
-    ));
-    await tester.pumpAndSettle();
-
-    final cancelFinder = find.widgetWithText(TextButton, 'Huỷ vé');
-    expect(cancelFinder, findsOneWidget);
-
-    final textButton = tester.widget<TextButton>(cancelFinder);
-    final fgColor = textButton.style?.foregroundColor?.resolve({});
-    expect(fgColor, AppColors.error);
-
-    await tester.tap(cancelFinder);
-    expect(cancelled, isTrue);
-
-    // No dialog or bottom sheet opened by the card itself
-    expect(find.byType(Dialog), findsNothing);
-    expect(find.byType(BottomSheet), findsNothing);
-  });
-
-  testWidgets('320 dp and 1.3x text scale wraps without overflow', (tester) async {
-    await tester.pumpWidget(_wrap(
-      TicketCard(
-        ticket: _testTicket(
-          title: 'Workshop chụp chân dung ngoại cảnh mùa thu tại phố cổ Hà Nội rất dài',
-          placeName: 'Địa điểm tổ chức sự kiện đặc biệt dài tại số 1 Tràng Tiền Hoàn Kiếm Hà Nội',
+  testWidgets(
+    'pending payment shows Chờ thanh toán and the pay button, no QR',
+    (tester) async {
+      var paid = false;
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(state: TicketState.pendingPayment),
+            onPay: () => paid = true,
+          ),
         ),
-        onDirections: () {},
-        onAddToCalendar: () {},
-        onCancel: () {},
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QrImageView), findsNothing);
+      expect(find.textContaining('CHỜ THANH TOÁN'), findsOneWidget);
+
+      final payButton = find.widgetWithText(AppButton, 'Thanh toán');
+      expect(payButton, findsOneWidget);
+      await tester.tap(payButton);
+      expect(paid, isTrue);
+    },
+  );
+
+  testWidgets(
+    'cancel is a danger text button that calls onCancel (no confirmation inside widget)',
+    (tester) async {
+      var cancelled = false;
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(state: TicketState.upcoming),
+            onCancel: () => cancelled = true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cancelFinder = find.widgetWithText(TextButton, 'Huỷ vé');
+      expect(cancelFinder, findsOneWidget);
+
+      final textButton = tester.widget<TextButton>(cancelFinder);
+      final fgColor = textButton.style?.foregroundColor?.resolve({});
+      expect(fgColor, AppColors.error);
+
+      await tester.tap(cancelFinder);
+      expect(cancelled, isTrue);
+
+      // No dialog or bottom sheet opened by the card itself
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    },
+  );
+
+  testWidgets('320 dp and 1.3x text scale wraps without overflow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        TicketCard(
+          ticket: _testTicket(
+            title: 'Workshop chụp chân dung ngoại cảnh mùa thu tại phố cổ Hà Nội rất dài',
+            placeName: 'Địa điểm tổ chức sự kiện đặc biệt dài tại số 1 Tràng Tiền Hoàn Kiếm Hà Nội',
+          ),
+          onDirections: () {},
+          onAddToCalendar: () {},
+          onCancel: () {},
+        ),
+        width: 320,
+        textScale: 1.3,
       ),
-      width: 320,
-      textScale: 1.3,
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('skeleton size equal to real widget at 390 and 320 dp', (tester) async {
+  testWidgets('skeleton size equal to real widget at 390 and 320 dp', (
+    tester,
+  ) async {
     for (final width in [390.0, 320.0]) {
-      await tester.pumpWidget(_wrap(
-        TicketCard(
-          ticket: _testTicket(title: 'Workshop'),
-          onDirections: () {},
-          onAddToCalendar: () {},
-          onCancel: () {},
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(title: 'Workshop'),
+            onDirections: () {},
+            onAddToCalendar: () {},
+            onCancel: () {},
+          ),
+          width: width,
         ),
-        width: width,
-      ));
+      );
       await tester.pump();
       final realSize = tester.getSize(find.byType(TicketCard));
 
-      await tester.pumpWidget(_wrap(
-        AppSkeletonScope(child: TicketCard.skeleton()),
-        width: width,
-      ));
+      await tester.pumpWidget(
+        _wrap(AppSkeletonScope(child: TicketCard.skeleton()), width: width),
+      );
       await tester.pump();
-      final skeletonSize = tester.getSize(find.byKey(const ValueKey('ticket_card_skeleton')));
+      final skeletonSize = tester.getSize(
+        find.byKey(const ValueKey('ticket_card_skeleton')),
+      );
 
       expect(skeletonSize.width, realSize.width, reason: 'width at $width');
-      expect(skeletonSize.height, closeTo(realSize.height, 2.0), reason: 'height at $width');
+      expect(
+        skeletonSize.height,
+        closeTo(realSize.height, 2.0),
+        reason: 'height at $width',
+      );
     }
+  });
+
+  testWidgets('attended state is muted, says Đã tham gia and has no QR', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(state: TicketState.attended))),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(QrImageView), findsNothing);
+    expect(find.text('ĐÃ THAM GIA'), findsOneWidget);
+    expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 0.55);
+  });
+
+  testWidgets('statusLabel overrides the badge', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        TicketCard(
+          ticket: _testTicket(state: TicketState.cancelled),
+          statusLabel: 'Đã hoàn tiền',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ĐÃ HOÀN TIỀN'), findsOneWidget);
+    expect(find.text('ĐÃ HUỶ'), findsNothing);
+  });
+
+  testWidgets('cancelLabel replaces Huỷ vé', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        TicketCard(
+          ticket: _testTicket(),
+          cancelLabel: 'Huỷ vé · hoàn 100%',
+          onCancel: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Huỷ vé · hoàn 100%'), findsOneWidget);
+    expect(find.text('Huỷ vé'), findsNothing);
+  });
+
+  testWidgets('onOpenChat adds Vào nhóm chat; none without it', (tester) async {
+    var opened = false;
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(), onOpenChat: () => opened = true)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vào nhóm chat'));
+    expect(opened, isTrue);
+
+    await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket())));
+    await tester.pumpAndSettle();
+    expect(find.text('Vào nhóm chat'), findsNothing);
+  });
+
+  testWidgets('highlighted: false drops the bright border; QR stays', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(), highlighted: false)),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<GlassCard>(find.byType(GlassCard)).highlight, isFalse);
+    expect(find.byType(QrImageView), findsOneWidget);
+  });
+
+  testWidgets('the QR is tappable only with onQrTap', (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(), onQrTap: () => taps++)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('ticket-qr')));
+    expect(taps, 1);
+    await tester.pumpWidget(_wrap(TicketCard(ticket: _testTicket())));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('ticket-qr')), findsNothing);
+  });
+
+  testWidgets('pending payment shows no pay button without onPay', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(TicketCard(ticket: _testTicket(state: TicketState.pendingPayment))),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thanh toán'), findsNothing);
   });
 }

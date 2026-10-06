@@ -3957,4 +3957,112 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get eventsManage => 'Sự kiện của tôi';
+
+  @override
+  String get eventRegisterTitle => 'Đăng ký tham gia';
+
+  @override
+  String get registerTickets => 'Số vé';
+
+  @override
+  String registerTicketsHint(int n) {
+    return 'Tối đa 4 vé, còn $n chỗ';
+  }
+
+  @override
+  String get registerName => 'Họ tên người tham gia';
+
+  @override
+  String get registerNameError => 'Nhập họ tên, tối đa 60 ký tự';
+
+  @override
+  String get registerPhone => 'Số điện thoại';
+
+  @override
+  String get registerChangePhone => 'Đổi';
+
+  @override
+  String get registerFree => 'Xác nhận đăng ký';
+
+  @override
+  String get registerSoldOut => 'Hết chỗ';
+
+  @override
+  String get registerDone => 'Đã đăng ký';
+
+  @override
+  String get registerOpenChat => 'Vào nhóm chat';
+
+  @override
+  String get registerError => 'Chưa đăng ký được. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get registerLess => 'Bớt một vé';
+
+  @override
+  String get registerMore => 'Thêm một vé';
+
+  @override
+  String get ticketsTab => 'Vé sự kiện';
+
+  @override
+  String get bookingsTabShoots => 'Buổi chụp';
+
+  @override
+  String get ticketCode => 'Mã vé';
+
+  @override
+  String ticketCancelRefund(int pct) {
+    return 'Huỷ vé · hoàn $pct%';
+  }
+
+  @override
+  String get ticketCancelNoRefund => 'Huỷ vé · không hoàn tiền';
+
+  @override
+  String get ticketAttended => 'Đã tham gia';
+
+  @override
+  String get ticketRefunded => 'Đã hoàn tiền';
+
+  @override
+  String get ticketRefunding => 'Đang hoàn';
+
+  @override
+  String get ticketShowHint => 'Đưa mã này cho chủ sự kiện khi đến điểm hẹn.';
+
+  @override
+  String get ticketsEmpty => 'Chưa có vé sự kiện';
+
+  @override
+  String get ticketsBrowse => 'Xem sự kiện';
+
+  @override
+  String ticketCancelConfirmTitle(String event) {
+    return 'Huỷ vé $event?';
+  }
+
+  @override
+  String get ticketCancelFreeBody => 'Chỗ của bạn sẽ được nhả cho người khác.';
+
+  @override
+  String ticketCancelRefundBody(int pct) {
+    return 'Bạn được hoàn $pct% tiền vé.';
+  }
+
+  @override
+  String get ticketCancelNoRefundBody =>
+      'Còn dưới 48 giờ nên không được hoàn tiền vé. Tiền vé được giữ tới khi sự kiện kết thúc.';
+
+  @override
+  String get ticketKeep => 'Giữ vé';
+
+  @override
+  String get ticketCancelDone => 'Đã huỷ vé';
+
+  @override
+  String get ticketCancelUsed => 'Vé đã dùng, không huỷ được';
+
+  @override
+  String get ticketQrClose => 'Đóng';
 }

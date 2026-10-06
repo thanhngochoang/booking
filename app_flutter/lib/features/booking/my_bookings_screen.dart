@@ -13,14 +13,25 @@ import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
+import 'package:photobooking/features/events/tickets_tab.dart';
 
 /// Tab root of `/bookings` for customers.
 class MyBookingsScreen extends ConsumerStatefulWidget {
-  const MyBookingsScreen({super.key, this.showTickets = false});
+  const MyBookingsScreen({
+    super.key,
+    this.showTickets = false,
+    this.initialTab,
+    this.highlightTicketId,
+  });
 
-  /// The top level "Buổi chụp | Vé sự kiện" (Decision 8): off until event
-  /// tickets (S11.04) exist.
+  /// The top level "Buổi chụp | Vé sự kiện" (Decision 8).
   final bool showTickets;
+
+  /// `events` opens "Vé sự kiện" (`/bookings?tab=events`).
+  final String? initialTab;
+
+  /// The ticket just bought, emphasised in "Vé sự kiện".
+  final String? highlightTicketId;
 
   @override
   ConsumerState<MyBookingsScreen> createState() => _MyBookingsScreenState();
@@ -30,6 +41,16 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   static const _tick = Duration(minutes: 1);
 
   BookingTab _tab = BookingTab.upcoming;
+  late bool _tickets = widget.showTickets && widget.initialTab == 'events';
+
+  @override
+  void didUpdateWidget(MyBookingsScreen old) {
+    super.didUpdateWidget(old);
+    // The shell keeps this screen alive: a new `?tab=` link must still work.
+    if (widget.initialTab != old.initialTab && widget.showTickets) {
+      _tickets = widget.initialTab == 'events';
+    }
+  }
 
   void _open(Booking b) => context.push('/b/${b.id}');
 
@@ -104,43 +125,66 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpace.s4,
-                AppSpace.s2,
-                AppSpace.s4,
-                0,
+            if (widget.showTickets)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s4,
+                  AppSpace.s2,
+                  AppSpace.s4,
+                  0,
+                ),
+                child: SegmentedTabs<bool>(
+                  options: [
+                    SegmentOption(value: false, label: l10n.bookingsTabShoots),
+                    SegmentOption(value: true, label: l10n.ticketsTab),
+                  ],
+                  value: _tickets,
+                  onChanged: (v) => setState(() => _tickets = v),
+                ),
               ),
-              child: SegmentedTabs<BookingTab>(
-                options: [
-                  SegmentOption(
-                    value: BookingTab.upcoming,
-                    label: l10n.bookingsUpcoming,
-                  ),
-                  SegmentOption(
-                    value: BookingTab.pending,
-                    label: l10n.bookingsPending,
-                  ),
-                  SegmentOption(
-                    value: BookingTab.history,
-                    label: l10n.bookingsDone,
-                  ),
-                ],
-                value: _tab,
-                onChanged: (t) => setState(() => _tab = t),
+            if (_tickets)
+              Expanded(
+                child: EventTicketsTab(highlightId: widget.highlightTicketId),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s4,
+                  AppSpace.s2,
+                  AppSpace.s4,
+                  0,
+                ),
+                child: SegmentedTabs<BookingTab>(
+                  options: [
+                    SegmentOption(
+                      value: BookingTab.upcoming,
+                      label: l10n.bookingsUpcoming,
+                    ),
+                    SegmentOption(
+                      value: BookingTab.pending,
+                      label: l10n.bookingsPending,
+                    ),
+                    SegmentOption(
+                      value: BookingTab.history,
+                      label: l10n.bookingsDone,
+                    ),
+                  ],
+                  value: _tab,
+                  onChanged: (t) => setState(() => _tab = t),
+                ),
               ),
-            ),
-            Expanded(
-              child: AsyncView<List<Booking>>(
-                value: bookings,
-                skeleton: (_) => _skeleton(),
-                onRetry: () =>
-                    ref.invalidate(myBookingsProvider(BookingRole.customer)),
-                isEmpty: (all) => bucket(all, _tab).isEmpty,
-                empty: _empty,
-                data: (_, all) => _list(bucket(all, _tab), now, features),
+              Expanded(
+                child: AsyncView<List<Booking>>(
+                  value: bookings,
+                  skeleton: (_) => _skeleton(),
+                  onRetry: () =>
+                      ref.invalidate(myBookingsProvider(BookingRole.customer)),
+                  isEmpty: (all) => bucket(all, _tab).isEmpty,
+                  empty: _empty,
+                  data: (_, all) => _list(bucket(all, _tab), now, features),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

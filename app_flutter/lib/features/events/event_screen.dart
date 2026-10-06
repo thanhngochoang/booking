@@ -14,6 +14,7 @@ import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/events/event_info_tab.dart';
 import 'package:photobooking/features/events/event_join_bar.dart';
 import 'package:photobooking/features/events/event_links.dart';
+import 'package:photobooking/features/events/register_sheet.dart';
 
 /// The three tabs of an event (Decision 26): `/e/:id` opens "Thông tin",
 /// `/e/:id/timeline` opens "Timeline".
@@ -91,7 +92,8 @@ class _EventScreenState extends ConsumerState<EventScreen> {
     await _openRegister(event);
   }
 
-  Future<void> _openRegister(EventDetail event) async {}
+  Future<void> _openRegister(EventDetail event) =>
+      showRegisterSheet(context, event: event);
 
   void _viewTicket(EventRegistration? r) {
     final highlight = r == null ? '' : '&highlight=${r.id}';

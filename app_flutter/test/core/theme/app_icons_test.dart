@@ -8,6 +8,7 @@ const _entries = <String, IconData>{
   'explore': AppIcons.explore,
   'search': AppIcons.search,
   'add': AppIcons.add,
+  'remove': AppIcons.remove,
   'calendar': AppIcons.calendar,
   'calendarCheck': AppIcons.calendarCheck,
   'calendarRepeat': AppIcons.calendarRepeat,

@@ -6939,6 +6939,204 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Sự kiện của tôi'**
   String get eventsManage;
+
+  /// No description provided for @eventRegisterTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký tham gia'**
+  String get eventRegisterTitle;
+
+  /// No description provided for @registerTickets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số vé'**
+  String get registerTickets;
+
+  /// No description provided for @registerTicketsHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 4 vé, còn {n} chỗ'**
+  String registerTicketsHint(int n);
+
+  /// No description provided for @registerName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Họ tên người tham gia'**
+  String get registerName;
+
+  /// No description provided for @registerNameError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập họ tên, tối đa 60 ký tự'**
+  String get registerNameError;
+
+  /// No description provided for @registerPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get registerPhone;
+
+  /// No description provided for @registerChangePhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi'**
+  String get registerChangePhone;
+
+  /// No description provided for @registerFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đăng ký'**
+  String get registerFree;
+
+  /// No description provided for @registerSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết chỗ'**
+  String get registerSoldOut;
+
+  /// No description provided for @registerDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng ký'**
+  String get registerDone;
+
+  /// No description provided for @registerOpenChat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào nhóm chat'**
+  String get registerOpenChat;
+
+  /// No description provided for @registerError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đăng ký được. Kiểm tra mạng rồi thử lại.'**
+  String get registerError;
+
+  /// No description provided for @registerLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt một vé'**
+  String get registerLess;
+
+  /// No description provided for @registerMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm một vé'**
+  String get registerMore;
+
+  /// No description provided for @ticketsTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé sự kiện'**
+  String get ticketsTab;
+
+  /// No description provided for @bookingsTabShoots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp'**
+  String get bookingsTabShoots;
+
+  /// No description provided for @ticketCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã vé'**
+  String get ticketCode;
+
+  /// No description provided for @ticketCancelRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé · hoàn {pct}%'**
+  String ticketCancelRefund(int pct);
+
+  /// No description provided for @ticketCancelNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé · không hoàn tiền'**
+  String get ticketCancelNoRefund;
+
+  /// No description provided for @ticketAttended.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã tham gia'**
+  String get ticketAttended;
+
+  /// No description provided for @ticketRefunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn tiền'**
+  String get ticketRefunded;
+
+  /// No description provided for @ticketRefunding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoàn'**
+  String get ticketRefunding;
+
+  /// No description provided for @ticketShowHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa mã này cho chủ sự kiện khi đến điểm hẹn.'**
+  String get ticketShowHint;
+
+  /// No description provided for @ticketsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có vé sự kiện'**
+  String get ticketsEmpty;
+
+  /// No description provided for @ticketsBrowse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem sự kiện'**
+  String get ticketsBrowse;
+
+  /// No description provided for @ticketCancelConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé {event}?'**
+  String ticketCancelConfirmTitle(String event);
+
+  /// No description provided for @ticketCancelFreeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỗ của bạn sẽ được nhả cho người khác.'**
+  String get ticketCancelFreeBody;
+
+  /// No description provided for @ticketCancelRefundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được hoàn {pct}% tiền vé.'**
+  String ticketCancelRefundBody(int pct);
+
+  /// No description provided for @ticketCancelNoRefundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn dưới 48 giờ nên không được hoàn tiền vé. Tiền vé được giữ tới khi sự kiện kết thúc.'**
+  String get ticketCancelNoRefundBody;
+
+  /// No description provided for @ticketKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ vé'**
+  String get ticketKeep;
+
+  /// No description provided for @ticketCancelDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ vé'**
+  String get ticketCancelDone;
+
+  /// No description provided for @ticketCancelUsed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé đã dùng, không huỷ được'**
+  String get ticketCancelUsed;
+
+  /// No description provided for @ticketQrClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get ticketQrClose;
 }
 
 class _AppLocalizationsDelegate

@@ -352,7 +352,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppTab.bookings.path,
-                builder: (_, _) => const BookingsTab(),
+                builder: (_, state) => BookingsTab(
+                  tab: state.uri.queryParameters['tab'],
+                  highlight: state.uri.queryParameters['highlight'],
+                ),
               ),
             ],
           ),

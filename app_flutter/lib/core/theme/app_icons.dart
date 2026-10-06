@@ -13,6 +13,7 @@ abstract final class AppIcons {
   static const IconData explore = Symbols.explore_rounded;
   static const IconData search = Symbols.search_rounded;
   static const IconData add = Symbols.add_rounded;
+  static const IconData remove = Symbols.remove_rounded;
   static const IconData calendar = Symbols.calendar_today_rounded;
   static const IconData calendarCheck = Symbols.event_available_rounded;
   static const IconData calendarRepeat = Symbols.event_repeat_rounded;

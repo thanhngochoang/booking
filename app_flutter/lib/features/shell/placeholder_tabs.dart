@@ -73,7 +73,14 @@ class ActionTab extends ConsumerWidget {
 }
 
 class BookingsTab extends ConsumerWidget {
-  const BookingsTab({super.key});
+  const BookingsTab({super.key, this.tab, this.highlight});
+
+  /// `events` opens the customer's "Vé sự kiện" (`/bookings?tab=events`).
+  final String? tab;
+
+  /// The ticket to emphasise (`&highlight=<registrationId>`).
+  final String? highlight;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Nothing until the role is known, so neither side flashes the other's tab.
@@ -81,7 +88,11 @@ class BookingsTab extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     return _role(ref) == UserRole.customer
-        ? const MyBookingsScreen()
+        ? MyBookingsScreen(
+            showTickets: true,
+            initialTab: tab,
+            highlightTicketId: highlight,
+          )
         : const WorkScreen();
   }
 }

@@ -5,9 +5,10 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/glass_card.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-enum TicketState { upcoming, pendingPayment, past, cancelled }
+enum TicketState { upcoming, pendingPayment, past, attended, cancelled }
 
 @immutable
 class TicketCardData {
@@ -38,6 +39,12 @@ class TicketCard extends StatelessWidget {
     this.onDirections,
     this.onAddToCalendar,
     this.onPay,
+    this.onOpenChat,
+    this.onQrTap,
+    this.qrHeroTag,
+    this.highlighted,
+    this.statusLabel,
+    this.cancelLabel,
   });
 
   final TicketCardData ticket;
@@ -46,7 +53,51 @@ class TicketCard extends StatelessWidget {
   final VoidCallback? onAddToCalendar;
   final VoidCallback? onPay;
 
+  /// "Vào nhóm chat" under the buttons of an upcoming ticket; hidden when null.
+  final VoidCallback? onOpenChat;
+
+  /// Tapping the QR (to show it full screen); the QR is not tappable when null.
+  final VoidCallback? onQrTap;
+
+  /// `Hero` tag shared with the full-screen QR.
+  final Object? qrHeroTag;
+
+  /// The bright border; defaults to true for an upcoming ticket. Pass false
+  /// for all but the soonest ticket of a list.
+  final bool? highlighted;
+
+  /// Replaces the badge text (e.g. "Đã hoàn tiền" on a cancelled ticket).
+  final String? statusLabel;
+
+  /// Replaces "Huỷ vé" (e.g. "Huỷ vé · hoàn 100%").
+  final String? cancelLabel;
+
   static Widget skeleton() => const _TicketCardSkeleton();
+
+  Widget _qr(AppLocalizations l) {
+    final qr = ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: QrImageView(
+        data: ticket.ticketCode,
+        size: 112,
+        version: QrVersions.auto,
+        errorCorrectionLevel: QrErrorCorrectLevel.M,
+        semanticsLabel: l.ticketCodeSemantics(ticket.ticketCode),
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.all(AppSpace.s2),
+      ),
+    );
+    final hero = qrHeroTag == null ? qr : Hero(tag: qrHeroTag!, child: qr);
+    if (onQrTap == null) {
+      return hero;
+    }
+    return InkWell(
+      key: const Key('ticket-qr'),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: onQrTap,
+      child: hero,
+    );
+  }
 
   String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -60,7 +111,7 @@ class TicketCard extends StatelessWidget {
         : AppColors.foregroundSecondary;
     final l = context.l10n;
 
-    final (statusBg, statusFg, statusLabel) = switch (ticket.state) {
+    final (statusBg, statusFg, defaultLabel) = switch (ticket.state) {
       TicketState.upcoming => (
         AppColors.bookingAccepted,
         AppColors.foregroundInverse,
@@ -76,6 +127,11 @@ class TicketCard extends StatelessWidget {
         AppColors.foregroundInverse,
         l.ticketPast,
       ),
+      TicketState.attended => (
+        AppColors.bookingClosed,
+        AppColors.foregroundInverse,
+        l.ticketAttended,
+      ),
       TicketState.cancelled => (
         AppColors.bookingDenied,
         AppColors.foregroundInverse,
@@ -85,11 +141,14 @@ class TicketCard extends StatelessWidget {
 
     final isUpcoming = ticket.state == TicketState.upcoming;
     final isPending = ticket.state == TicketState.pendingPayment;
+    final badgeLabel = statusLabel ?? defaultLabel;
     final isDimmed =
-        ticket.state == TicketState.past || ticket.state == TicketState.cancelled;
+        ticket.state == TicketState.past ||
+        ticket.state == TicketState.attended ||
+        ticket.state == TicketState.cancelled;
 
     Widget cardContent = GlassCard(
-      highlight: isUpcoming,
+      highlight: highlighted ?? isUpcoming,
       child: Padding(
         padding: const EdgeInsets.all(AppSpace.s4),
         child: Column(
@@ -100,31 +159,41 @@ class TicketCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '#${ticket.typeTag}',
-                  style: TextStyle(
-                    fontSize: AppText.xs,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                Flexible(
+                  child: Text(
+                    '#${ticket.typeTag}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppText.xs,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s2,
-                      vertical: AppSpace.s1,
+                const SizedBox(width: AppSpace.s2),
+                Flexible(
+                  flex: 2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
-                    child: Text(
-                      statusLabel.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: AppText.xs,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        color: statusFg,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s2,
+                        vertical: AppSpace.s1,
+                      ),
+                      child: Text(
+                        badgeLabel.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: AppText.xs,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: statusFg,
+                        ),
                       ),
                     ),
                   ),
@@ -150,10 +219,7 @@ class TicketCard extends StatelessWidget {
               '${formatDay(ticket.startsAt)} · ${_two(ticket.startsAt.hour)}:${_two(ticket.startsAt.minute)} · ${l.ticketCount(ticket.quantity)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: AppText.sm,
-                color: fgSec,
-              ),
+              style: TextStyle(fontSize: AppText.sm, color: fgSec),
             ),
             if (ticket.placeName != null && ticket.placeName!.isNotEmpty) ...[
               const SizedBox(height: AppSpace.s1),
@@ -161,35 +227,19 @@ class TicketCard extends StatelessWidget {
                 ticket.placeName!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: AppText.sm,
-                  color: fgSec,
-                ),
+                style: TextStyle(fontSize: AppText.sm, color: fgSec),
               ),
             ],
             if (isUpcoming) ...[
               const SizedBox(height: AppSpace.s4),
-              Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: QrImageView(
-                    data: ticket.ticketCode,
-                    size: 112,
-                    version: QrVersions.auto,
-                    errorCorrectionLevel: QrErrorCorrectLevel.M,
-                    semanticsLabel: l.ticketCodeSemantics(ticket.ticketCode),
-                    backgroundColor: Colors.white,
-                    padding: const EdgeInsets.all(AppSpace.s2),
-                  ),
-                ),
-              ),
+              Center(child: _qr(l)),
               const SizedBox(height: AppSpace.s2),
               Center(
                 child: SelectableText(
                   ticket.ticketCode,
                   style: TextStyle(
                     fontFamily: 'monospace',
-                  fontFeatures: const [FontFeature.tabularFigures()],
+                    fontFeatures: const [FontFeature.tabularFigures()],
                     fontSize: AppText.md,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.5,
@@ -214,8 +264,14 @@ class TicketCard extends StatelessWidget {
                     onPressed: onAddToCalendar,
                     size: AppButtonSize.small,
                   ),
+                  if (onOpenChat != null)
+                    AppButton.outline(
+                      l.registerOpenChat,
+                      onPressed: onOpenChat,
+                      size: AppButtonSize.small,
+                    ),
                   AppButton.text(
-                    l.ticketCancel,
+                    cancelLabel ?? l.ticketCancel,
                     onPressed: onCancel,
                     size: AppButtonSize.small,
                     style: TextButton.styleFrom(
@@ -224,7 +280,7 @@ class TicketCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ] else if (isPending) ...[
+            ] else if (isPending && onPay != null) ...[
               const SizedBox(height: AppSpace.s4),
               AppButton.primary(
                 l.ticketPay,
@@ -238,10 +294,7 @@ class TicketCard extends StatelessWidget {
     );
 
     if (isDimmed) {
-      return Opacity(
-        opacity: 0.55,
-        child: cardContent,
-      );
+      return Opacity(opacity: 0.55, child: cardContent);
     }
 
     return cardContent;
@@ -250,7 +303,7 @@ class TicketCard extends StatelessWidget {
 
 class _TicketCardSkeleton extends StatelessWidget {
   const _TicketCardSkeleton()
-      : super(key: const ValueKey('ticket_card_skeleton'));
+    : super(key: const ValueKey('ticket_card_skeleton'));
 
   @override
   Widget build(BuildContext context) {
@@ -284,9 +337,7 @@ class _TicketCardSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpace.s2),
-            Center(
-              child: AppSkeleton.line(width: 110, height: 23),
-            ),
+            Center(child: AppSkeleton.line(width: 110, height: 23)),
             const SizedBox(height: AppSpace.s4),
             Wrap(
               spacing: AppSpace.s2,
