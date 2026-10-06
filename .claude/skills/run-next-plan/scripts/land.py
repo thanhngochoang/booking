@@ -2,24 +2,26 @@
 """Land (merge) this machine's own plan PR into develop, but only when it is safe.
 
 Gates, in order (each failing gate exits with its own code and a reason):
-  1. the PR is open, targets develop, its head branch is the claimed branch,
-     and its title is '<type>(<scope>): <summary> [<unit-id>]'  (exit 6: fix the title)
+  1. the PR is open, targets develop, its head branch is the branch this
+     machine claimed the issue on, and its title is
+     '<type>(<scope>): <summary> [#<issue>]'                    (exit 6: fix the title)
   2. the branch contains the latest origin/develop          (exit 2: rebase first)
   3. no file it changes is also changed by another machine's
-     active claim branch, apart from the append-only files     (exit 4: wait / coordinate)
+     active unit (In Progress / In Review in the project),
+     apart from the append-only files                          (exit 4: wait / coordinate)
   4. every CI check on the PR passed (waits while pending)   (exit 3: fix the failure)
   5. GitHub reports the PR mergeable and not blocked         (exit 2 if behind/dirty,
                                                               exit 5 if blocked by rules)
-Then: merge with a merge commit (house style), delete the branch, and mark
-the claim done on the board.
+Then: merge with a merge commit (house style), delete the branch (not a shared
+stack branch), set the project item Done and close the issue.
 
 Usage:
-  land.py <unit-id> --pr <n>             run every gate, then merge
-  land.py <unit-id> --pr <n> --dry-run   run the gates, do not merge
-  land.py overlap --branch <b>           gate 3 only (no gh needed)
+  land.py <issue> --pr <n>               run every gate, then merge
+  land.py <issue> --pr <n> --dry-run     run the gates, do not merge
+  land.py overlap --branch <b>           gate 3 only
 
 Never merges another machine's PR, never uses --admin, never touches main.
-Env: same as board.py (BOARD_REMOTE, BOARD_BASE, BOARD_MACHINE, BOARD_GH=1).
+Env: same as project.py (BOARD_REMOTE, BOARD_BASE, BOARD_MACHINE, BOARD_GH=1).
 """
 import argparse
 import json
@@ -30,7 +32,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import board  # noqa: E402
+import project as board  # noqa: E402  (git/gh helpers and the work queue)
 
 # Files several units may touch by design (append-only or regenerated); a
 # rebase resolves them, so they never block a merge.
@@ -42,7 +44,7 @@ SHARED_OK = (
 )
 
 
-TITLE = re.compile(r"^(feat|fix|refactor|perf|test|docs|chore|build|ci)\([a-z0-9-]+\): \S.{2,}\S \[[A-Za-z0-9./-]+\]$")
+TITLE = re.compile(r"^(feat|fix|refactor|perf|test|docs|chore|build|ci)\([a-z0-9-]+\): \S.{2,}\S \[#\d+\]$")
 
 
 def git(*a, check=True):
@@ -68,20 +70,24 @@ def shared_ok(path):
 
 
 def overlap(branch):
-    """Files of `branch` also changed by other machines' active claim branches."""
-    board.fetch()
+    """Files of `branch` also changed by other machines' active units."""
+    board.fetch_base()
     board.sh("git", *board.auth(), "fetch", "-q", board.target(),
              f"+refs/heads/plan/*:refs/remotes/{board.REMOTE}/plan/*", check=False)
-    claims = board.parse(board.read_board(board.sh("git", "rev-parse", "-q", "--verify",
-                         f"refs/remotes/{board.REMOTE}/{board.BRANCH}", check=False).stdout.strip() or None))
+    _, _, items = board.project()
     mine = {p for p in changed(branch) if not shared_ok(p)}
-    hits = {}
-    for cid, c in claims.items():
-        if c["branch"] == branch or not c["state"].startswith(board.ACTIVE):
+    hits, seen = {}, set()
+    for it in items:
+        if it["status"] not in board.ACTIVE or it["state"] != "OPEN" or board.is_epic(it):
             continue
-        both = sorted(mine & changed(c["branch"]))
+        h = board.holder(it["number"]) or {}
+        other = h.get("branch")
+        if not other or other == branch or other in seen:
+            continue
+        seen.add(other)
+        both = sorted(mine & changed(other))
         if both:
-            hits[f"{cid} ({c['machine']}, {c['branch']})"] = both
+            hits[f"#{it['number']} ({h.get('machine', '?')}, {other})"] = both
     return hits
 
 
@@ -100,19 +106,18 @@ def cmd_overlap(a):
 
 def cmd_land(a):
     me = board.machine()
-    board.fetch()
-    claim = board.parse(board.read_board(board.sh("git", "rev-parse", "-q", "--verify",
-                        f"refs/remotes/{board.REMOTE}/{board.BRANCH}", check=False).stdout.strip() or None)).get(a.id)
-    if not claim or claim["machine"] != me:
-        sys.exit(f"error: {a.id} is not claimed by this machine ({me}); land only your own PR")
+    board.fetch_base()
+    claim = board.holder(a.issue)
+    if not claim or claim.get("machine") != me:
+        sys.exit(f"error: #{a.issue} is not claimed by this machine ({me}); land only your own PR")
     pr = gh_json("pr", "view", a.pr, "--json", "state,baseRefName,headRefName,url")
     if pr["state"] != "OPEN" or pr["baseRefName"] != board.BASE or pr["headRefName"] != claim["branch"]:
         sys.exit(f"error: PR {a.pr} is {pr['state']} {pr['headRefName']} -> {pr['baseRefName']}; "
                  f"expected open {claim['branch']} -> {board.BASE}")
     title = gh_json("pr", "view", a.pr, "--json", "title")["title"]
-    if not TITLE.match(title) or not title.endswith(f"[{a.id}]"):
+    if not TITLE.match(title) or not title.endswith(f"[#{a.issue}]"):
         print(f"title does not follow the convention: {title!r}\n"
-              f"expected '<type>(<scope>): <summary> [{a.id}]' (see SKILL.md 'PR title convention'); "
+              f"expected '<type>(<scope>): <summary> [#{a.issue}]' (see SKILL.md 'PR title convention'); "
               f"fix with gh pr edit {a.pr} --title ...")
         sys.exit(6)
     branch = claim["branch"]
@@ -164,23 +169,15 @@ def cmd_land(a):
     if a.dry_run:
         print(f"all gates passed for PR {a.pr} ({st['mergeStateStatus']}); dry run, not merging")
         return
-    r = board.sh("gh", "pr", "merge", a.pr, "--merge", "--delete-branch", check=False)
+    keep = ["--delete-branch"] if not claim.get("stack") else []  # a shared stack branch stays
+    r = board.sh("gh", "pr", "merge", a.pr, "--merge", *keep, check=False)
     if r.returncode != 0 and "Merge commits are not allowed" in r.stderr:
-        r = board.sh("gh", "pr", "merge", a.pr, "--squash", "--delete-branch", check=False)
+        r = board.sh("gh", "pr", "merge", a.pr, "--squash", *keep, check=False)
     if r.returncode != 0:
         print(f"merge refused: {r.stderr.strip()}")
         sys.exit(5)
-    board.transact(lambda text: _done(text, a.id, a.pr), f"{a.id}: done (PR #{a.pr})")
-    print(f"merged PR {a.pr} ({pr['url']}); {a.id} marked done")
-
-
-def _done(text, cid, pr):
-    claims = board.parse(text)
-    c = claims.get(cid)
-    if not c:
-        return None
-    c.update(state=f"done (PR #{pr})", date=board.today())
-    return board.render(text, {k: v for k, v in claims.items() if k != cid}, (cid, c))
+    board.cmd_set(argparse.Namespace(issue=a.issue, state="done", pr=a.pr, force=False))
+    print(f"merged PR {a.pr} ({pr['url']}); #{a.issue} done")
 
 
 def main():
@@ -188,7 +185,7 @@ def main():
         p = argparse.ArgumentParser(); p.add_argument("cmd"); p.add_argument("--branch", required=True)
         return cmd_overlap(p.parse_args())
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("id"); p.add_argument("--pr", required=True); p.add_argument("--dry-run", action="store_true")
+    p.add_argument("issue", type=int); p.add_argument("--pr", required=True); p.add_argument("--dry-run", action="store_true")
     cmd_land(p.parse_args())
 
 
