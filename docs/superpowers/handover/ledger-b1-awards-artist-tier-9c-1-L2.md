@@ -17,7 +17,7 @@ Unit: `9c/1-L2` (plan `docs/superpowers/plans/2026-10-05-b1-awards-artist-tier.m
 - Resubmission after rejection is allowed only when the content changes; an unchanged save is a no-op.
 - After commit, `recomputeTier` runs first; file deletes and notifications are best-effort.
 - `createAward` also requires `users/{uid}.role == 'photographer'`.
-- Proof images: raster only (jpeg/png/webp/heic/heif), create-only, fresh ULID file names (`proofPath(uid, awardId, fileId)`); plan B1 text updated.
+- Proof images: raster only (jpeg/png/webp/heic/heif), create-only, fresh ULID file names (`proofPath(uid, awardId, fileId)`); plan B1 text updated. The storage rule also requires `resource == null` on create: CI showed the Storage emulator reports an overwrite as a create.
 - `AwardResult.fromCode` is nullable so unknown results skip the doc; unknown status reads as pending.
 - Staff cannot review their own award.
 - Emulator integration and rules tests are real cases, run by CI only.
