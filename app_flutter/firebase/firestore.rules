@@ -336,7 +336,9 @@ service cloud.firestore {
         && (!('hashtags' in d) || (d.hashtags is list && d.hashtags.size() <= 30))
         && (!('inPortfolio' in d) || d.inPortfolio is bool)
         && (!('albumId' in d) || (d.albumId is string
-             && get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == uid))
+             && d.albumId.matches('[A-Za-z0-9_-]{1,64}')
+             && (!exists(/databases/$(database)/documents/albums/$(d.albumId))
+                 || get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == uid)))
         && d.likeCount == 0 && d.saveCount == 0
         && d.createdAt == request.time;
     }

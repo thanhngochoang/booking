@@ -81,7 +81,7 @@ describe('album trigger on the emulators', () => {
     const albumId = await newAlbum(AN, 'Trigger song song');
     const ids = await Promise.all([1, 2, 3, 4].map(() => addPost(AN, 1, { albumId })));
     await waitFor(async () => (await data(`albums/${albumId}`)).postCount === 4, 'four posts counted');
-    const positions = (await Promise.all(ids.map(async (id) => (await data(`posts/${id}`)).albumPosition as number))).sort();
+    const positions = (await Promise.all(ids.map(async (id) => (await data(`posts/${id}`)).albumPosition as number))).sort((a, b) => a - b);
     assert.deepEqual(positions, [1, 2, 3, 4]);
   });
 
@@ -98,7 +98,46 @@ describe('album trigger on the emulators', () => {
     assert.equal(album.mediaCount, 2);
   });
 
-  test('a post naming a missing album stays unsorted', async () => {
+  test('a post published by the client SDK path naming a deleted album succeeds and stays unsorted', async () => {
+    // Rules apply: Firestore REST with the photographer's ID token and a server-time createdAt,
+    // the same shape the app publishes.
+    const gone = await newAlbum(AN, 'Sắp xóa');
+    assert.equal((await call('deleteAlbum', AN, { albumId: gone })).status, 200);
+    const id = newUlid(Date.now());
+    const host = process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080';
+    const name = `projects/${emulatorProject()}/databases/(default)/documents/posts/${id}`;
+    const res = await fetch(`http://${host}/v1/projects/${emulatorProject()}/databases/(default)/documents:commit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokens.get(AN)}` },
+      body: JSON.stringify({
+        writes: [
+          {
+            update: {
+              name,
+              fields: {
+                kind: { stringValue: 'work' },
+                authorId: { stringValue: AN },
+                photographerId: { stringValue: AN },
+                serviceId: { stringValue: 'seed-service-portrait' },
+                imageUrls: { arrayValue: { values: [{ stringValue: 'https://seed.test/x.jpg' }] } },
+                caption: { stringValue: 'client' },
+                albumId: { stringValue: gone },
+                likeCount: { integerValue: '0' },
+                saveCount: { integerValue: '0' },
+              },
+            },
+            updateTransforms: [{ fieldPath: 'createdAt', setToServerValue: 'REQUEST_TIME' }],
+            currentDocument: { exists: false },
+          },
+        ],
+      }),
+    });
+    assert.equal(res.status, 200, await res.text());
+    await waitFor(async () => !('albumId' in (await data(`posts/${id}`))), 'albumId removed');
+    assert.equal('albumPosition' in (await data(`posts/${id}`)), false);
+  });
+
+  test('a post written by the Admin SDK naming a missing album stays unsorted', async () => {
     const id = await addPost(AN, 1, { albumId: 'seed-album-missing' });
     await waitFor(async () => !('albumId' in (await data(`posts/${id}`))), 'albumId removed');
     assert.equal('albumPosition' in (await data(`posts/${id}`)), false);
