@@ -11,7 +11,9 @@ import 'package:photobooking/data/album/album_providers.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/features/album/add_posts_sheet.dart';
 import 'package:photobooking/features/album/album_detail_controller.dart';
+import 'package:photobooking/features/album/edit_album_sheet.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
 
 /// S24.01 "Chi tiết album" at `/u/:uid/albums/:albumId`: an album read as a
@@ -31,7 +33,7 @@ class AlbumDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<AlbumDetailScreen> createState() => _AlbumDetailScreenState();
 }
 
-enum _Menu { arrange, delete }
+enum _Menu { edit, addPosts, arrange, delete }
 
 class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
   bool _arranging = false;
@@ -104,8 +106,19 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     }
   }
 
-  Future<void> _onMenu(_Menu item) async {
+  Future<void> _edit(AlbumSummary a) async {
+    await showEditAlbumSheet(context, album: a);
+    if (mounted) {
+      ref.invalidate(albumProvider(widget.albumId));
+    }
+  }
+
+  Future<void> _onMenu(_Menu item, AlbumSummary a) async {
     switch (item) {
+      case _Menu.edit:
+        await _edit(a);
+      case _Menu.addPosts:
+        await showAddPostsSheet(context, album: a);
       case _Menu.arrange:
         await _startArranging();
       case _Menu.delete:
@@ -200,8 +213,16 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                     key: const Key('album-menu'),
                     tooltip: l.albumDetailMenu,
                     icon: const Icon(Icons.more_horiz_rounded),
-                    onSelected: _onMenu,
+                    onSelected: (item) => _onMenu(item, a),
                     itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: _Menu.edit,
+                        child: Text(l.albumEditTitle),
+                      ),
+                      PopupMenuItem(
+                        value: _Menu.addPosts,
+                        child: Text(l.albumDetailAddPosts),
+                      ),
                       if (a.postCount > 1)
                         PopupMenuItem(
                           value: _Menu.arrange,
@@ -352,7 +373,7 @@ class _Body extends ConsumerWidget {
                   title: l.albumDetailEmptyOwner,
                   body: l.albumDetailEmptyOwnerBody,
                   actionLabel: l.albumDetailAddPosts,
-                  onAction: () => context.push('/me/albums'),
+                  onAction: () => showAddPostsSheet(context, album: album),
                 )
               : _Gone(uid: album.photographerId),
           data: (context, state) => arranging

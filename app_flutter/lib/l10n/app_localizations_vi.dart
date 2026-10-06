@@ -2859,9 +2859,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get albumPickNew => 'Album mới';
 
   @override
-  String get albumPickNewName => 'Tên album';
-
-  @override
   String get albumPickCreate => 'Tạo';
 
   @override
@@ -2952,4 +2949,184 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get albumDetailArrangeLoadFailed =>
       'Chưa tải hết bài để sắp xếp. Thử lại sau.';
+
+  @override
+  String get profileMyAlbums => 'Album của tôi';
+
+  @override
+  String get profileMyAlbumsSub =>
+      'Gom bài thành album, sắp xếp thứ tự trên hồ sơ';
+
+  @override
+  String get myAlbumsTitle => 'Album của tôi';
+
+  @override
+  String get myAlbumsHint =>
+      'Thứ tự dưới đây là thứ tự trên hồ sơ. Giữ ≡ rồi kéo, hoặc chạm … → Chuyển lên / xuống.';
+
+  @override
+  String get myAlbumsFeatured => 'hiện rộng';
+
+  @override
+  String get myAlbumsUnsorted => 'Chưa xếp album';
+
+  @override
+  String myAlbumsUnsortedSub(String n) {
+    return '$n bài · chỉ ở Dòng thời gian';
+  }
+
+  @override
+  String get myAlbumsEmptyTitle => 'Gom bài thành album để khách xem theo bộ';
+
+  @override
+  String get myAlbumsEmptyBody =>
+      'Bài chưa xếp album vẫn hiện ở Dòng thời gian.';
+
+  @override
+  String get myAlbumsOpen => 'Xem album';
+
+  @override
+  String get myAlbumsEdit => 'Sửa';
+
+  @override
+  String get myAlbumsSaving => 'Đang lưu thứ tự';
+
+  @override
+  String get albumEditNew => 'Album mới';
+
+  @override
+  String get albumEditTitle => 'Sửa album';
+
+  @override
+  String get albumEditClose => 'Đóng';
+
+  @override
+  String get albumEditName => 'Tên album · bắt buộc';
+
+  @override
+  String albumEditNameCount(int n, int max) {
+    return '$n / $max';
+  }
+
+  @override
+  String get albumEditNameRequired => 'Nhập tên album';
+
+  @override
+  String get albumEditDesc => 'Mô tả · tuỳ chọn';
+
+  @override
+  String get albumEditCover => 'Ảnh bìa';
+
+  @override
+  String get albumEditCoverAuto => 'Tự động: ảnh đầu tiên của album';
+
+  @override
+  String get albumEditCoverChosen => 'Đã chọn một ảnh làm bìa';
+
+  @override
+  String get albumEditCoverPick => 'Chọn ảnh';
+
+  @override
+  String get albumEditCoverTitle => 'Chọn ảnh bìa';
+
+  @override
+  String get albumEditCoverReset => 'Dùng ảnh tự động';
+
+  @override
+  String get albumEditCoverLoadError => 'Không tải được ảnh của album.';
+
+  @override
+  String albumEditCoverTile(int index, int count) {
+    return 'Ảnh $index trên $count';
+  }
+
+  @override
+  String get albumEditNote =>
+      'Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.';
+
+  @override
+  String get albumEditCreate => 'Tạo và thêm bài';
+
+  @override
+  String get albumEditSave => 'Lưu';
+
+  @override
+  String get albumEditSaveError => 'Chưa lưu được album. Thử lại sau.';
+
+  @override
+  String get albumEditDiscardTitle => 'Bỏ thay đổi?';
+
+  @override
+  String get albumEditDiscardBody => 'Những gì bạn vừa nhập sẽ mất.';
+
+  @override
+  String get albumEditDiscard => 'Bỏ';
+
+  @override
+  String get albumEditKeep => 'Tiếp tục sửa';
+
+  @override
+  String get addPostsTitle => 'Thêm bài vào album';
+
+  @override
+  String addPostsSelected(int n) {
+    return '$n đã chọn';
+  }
+
+  @override
+  String addPostsTabUnsorted(String n) {
+    return 'Chưa xếp · $n';
+  }
+
+  @override
+  String addPostsTabAll(String n) {
+    return 'Tất cả bài · $n';
+  }
+
+  @override
+  String addPostsMoveWarn(int n, String album) {
+    return '$n bài đang ở \"$album\" sẽ chuyển sang album này.';
+  }
+
+  @override
+  String addPostsMoveWarnMany(int n) {
+    return '$n bài đang ở album khác sẽ chuyển sang album này.';
+  }
+
+  @override
+  String addPostsAdd(int n) {
+    return 'Thêm $n bài';
+  }
+
+  @override
+  String get addPostsPick => 'Chọn bài để thêm';
+
+  @override
+  String get addPostsFull => 'Album đã đủ 200 bài';
+
+  @override
+  String get addPostsNoneTitle => 'Đăng bài trước';
+
+  @override
+  String get addPostsNoneBody => 'Bài bạn đăng sẽ hiện ở đây để xếp vào album.';
+
+  @override
+  String get addPostsNoneAction => 'Đăng bài';
+
+  @override
+  String get addPostsUnsortedEmpty => 'Mọi bài của bạn đã nằm trong album.';
+
+  @override
+  String get addPostsLoadError => 'Không tải được bài. Thử lại sau.';
+
+  @override
+  String get addPostsError => 'Chưa thêm được bài. Thử lại sau.';
+
+  @override
+  String addPostsPartial(int done, int left) {
+    return 'Đã thêm $done bài, còn $left bài chưa thêm được.';
+  }
+
+  @override
+  String get addPostsMore => 'Xem thêm bài';
 }

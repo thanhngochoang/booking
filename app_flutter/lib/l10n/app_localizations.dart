@@ -5056,12 +5056,6 @@ abstract class AppLocalizations {
   /// **'Album mới'**
   String get albumPickNew;
 
-  /// No description provided for @albumPickNewName.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tên album'**
-  String get albumPickNewName;
-
   /// No description provided for @albumPickCreate.
   ///
   /// In vi, this message translates to:
@@ -5229,6 +5223,318 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa tải hết bài để sắp xếp. Thử lại sau.'**
   String get albumDetailArrangeLoadFailed;
+
+  /// No description provided for @profileMyAlbums.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album của tôi'**
+  String get profileMyAlbums;
+
+  /// No description provided for @profileMyAlbumsSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gom bài thành album, sắp xếp thứ tự trên hồ sơ'**
+  String get profileMyAlbumsSub;
+
+  /// No description provided for @myAlbumsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album của tôi'**
+  String get myAlbumsTitle;
+
+  /// No description provided for @myAlbumsHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ tự dưới đây là thứ tự trên hồ sơ. Giữ ≡ rồi kéo, hoặc chạm … → Chuyển lên / xuống.'**
+  String get myAlbumsHint;
+
+  /// No description provided for @myAlbumsFeatured.
+  ///
+  /// In vi, this message translates to:
+  /// **'hiện rộng'**
+  String get myAlbumsFeatured;
+
+  /// No description provided for @myAlbumsUnsorted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xếp album'**
+  String get myAlbumsUnsorted;
+
+  /// No description provided for @myAlbumsUnsortedSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài · chỉ ở Dòng thời gian'**
+  String myAlbumsUnsortedSub(String n);
+
+  /// No description provided for @myAlbumsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gom bài thành album để khách xem theo bộ'**
+  String get myAlbumsEmptyTitle;
+
+  /// No description provided for @myAlbumsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài chưa xếp album vẫn hiện ở Dòng thời gian.'**
+  String get myAlbumsEmptyBody;
+
+  /// No description provided for @myAlbumsOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem album'**
+  String get myAlbumsOpen;
+
+  /// No description provided for @myAlbumsEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get myAlbumsEdit;
+
+  /// No description provided for @myAlbumsSaving.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang lưu thứ tự'**
+  String get myAlbumsSaving;
+
+  /// No description provided for @albumEditNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album mới'**
+  String get albumEditNew;
+
+  /// No description provided for @albumEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa album'**
+  String get albumEditTitle;
+
+  /// No description provided for @albumEditClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get albumEditClose;
+
+  /// No description provided for @albumEditName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên album · bắt buộc'**
+  String get albumEditName;
+
+  /// No description provided for @albumEditNameCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / {max}'**
+  String albumEditNameCount(int n, int max);
+
+  /// No description provided for @albumEditNameRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên album'**
+  String get albumEditNameRequired;
+
+  /// No description provided for @albumEditDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả · tuỳ chọn'**
+  String get albumEditDesc;
+
+  /// No description provided for @albumEditCover.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh bìa'**
+  String get albumEditCover;
+
+  /// No description provided for @albumEditCoverAuto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tự động: ảnh đầu tiên của album'**
+  String get albumEditCoverAuto;
+
+  /// No description provided for @albumEditCoverChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn một ảnh làm bìa'**
+  String get albumEditCoverChosen;
+
+  /// No description provided for @albumEditCoverPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ảnh'**
+  String get albumEditCoverPick;
+
+  /// No description provided for @albumEditCoverTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ảnh bìa'**
+  String get albumEditCoverTitle;
+
+  /// No description provided for @albumEditCoverReset.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng ảnh tự động'**
+  String get albumEditCoverReset;
+
+  /// No description provided for @albumEditCoverLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ảnh của album.'**
+  String get albumEditCoverLoadError;
+
+  /// No description provided for @albumEditCoverTile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {index} trên {count}'**
+  String albumEditCoverTile(int index, int count);
+
+  /// No description provided for @albumEditNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.'**
+  String get albumEditNote;
+
+  /// No description provided for @albumEditCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo và thêm bài'**
+  String get albumEditCreate;
+
+  /// No description provided for @albumEditSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get albumEditSave;
+
+  /// No description provided for @albumEditSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được album. Thử lại sau.'**
+  String get albumEditSaveError;
+
+  /// No description provided for @albumEditDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thay đổi?'**
+  String get albumEditDiscardTitle;
+
+  /// No description provided for @albumEditDiscardBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Những gì bạn vừa nhập sẽ mất.'**
+  String get albumEditDiscardBody;
+
+  /// No description provided for @albumEditDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ'**
+  String get albumEditDiscard;
+
+  /// No description provided for @albumEditKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục sửa'**
+  String get albumEditKeep;
+
+  /// No description provided for @addPostsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm bài vào album'**
+  String get addPostsTitle;
+
+  /// No description provided for @addPostsSelected.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} đã chọn'**
+  String addPostsSelected(int n);
+
+  /// No description provided for @addPostsTabUnsorted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xếp · {n}'**
+  String addPostsTabUnsorted(String n);
+
+  /// No description provided for @addPostsTabAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả bài · {n}'**
+  String addPostsTabAll(String n);
+
+  /// No description provided for @addPostsMoveWarn.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài đang ở \"{album}\" sẽ chuyển sang album này.'**
+  String addPostsMoveWarn(int n, String album);
+
+  /// No description provided for @addPostsMoveWarnMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài đang ở album khác sẽ chuyển sang album này.'**
+  String addPostsMoveWarnMany(int n);
+
+  /// No description provided for @addPostsAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm {n} bài'**
+  String addPostsAdd(int n);
+
+  /// No description provided for @addPostsPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn bài để thêm'**
+  String get addPostsPick;
+
+  /// No description provided for @addPostsFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album đã đủ 200 bài'**
+  String get addPostsFull;
+
+  /// No description provided for @addPostsNoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài trước'**
+  String get addPostsNoneTitle;
+
+  /// No description provided for @addPostsNoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài bạn đăng sẽ hiện ở đây để xếp vào album.'**
+  String get addPostsNoneBody;
+
+  /// No description provided for @addPostsNoneAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài'**
+  String get addPostsNoneAction;
+
+  /// No description provided for @addPostsUnsortedEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi bài của bạn đã nằm trong album.'**
+  String get addPostsUnsortedEmpty;
+
+  /// No description provided for @addPostsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài. Thử lại sau.'**
+  String get addPostsLoadError;
+
+  /// No description provided for @addPostsError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thêm được bài. Thử lại sau.'**
+  String get addPostsError;
+
+  /// No description provided for @addPostsPartial.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm {done} bài, còn {left} bài chưa thêm được.'**
+  String addPostsPartial(int done, int left);
+
+  /// No description provided for @addPostsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm bài'**
+  String get addPostsMore;
 }
 
 class _AppLocalizationsDelegate

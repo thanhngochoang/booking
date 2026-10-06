@@ -128,22 +128,25 @@ void main() {
       tester
           .widget<FilledButton>(
             find.descendant(
-              of: find.byKey(const Key('album-new-create')),
+              of: find.byKey(const Key('album-edit-save')),
               matching: find.byType(FilledButton),
             ),
           )
           .onPressed,
       isNull,
     );
-    await tester.enterText(find.byKey(const Key('album-new-title')), '  Phố  ');
+    await tester.enterText(
+      find.byKey(const Key('album-edit-title')),
+      '  Phố  ',
+    );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('album-new-create')));
+    await tester.tap(find.byKey(const Key('album-edit-save')));
     await tester.pumpAndSettle();
     expect(find.text('Bạn đã có đủ 30 album.'), findsOneWidget);
     expect(results, isEmpty);
 
     w.albums.failWith = null;
-    await tester.tap(find.byKey(const Key('album-new-create')));
+    await tester.tap(find.byKey(const Key('album-edit-save')));
     await tester.pumpAndSettle();
     expect(w.albums.calls, ['create:Phố']);
     expect(results.single!.albumId, 'new1');

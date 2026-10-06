@@ -1446,7 +1446,6 @@
   },
   "albumPickRecent": "dùng gần nhất",
   "albumPickNew": "Album mới",
-  "albumPickNewName": "Tên album",
   "albumPickCreate": "Tạo",
   "albumPickDup": "Bạn đã có album tên này",
   "albumPickLimit": "Bạn đã có đủ 30 album.",
@@ -1485,5 +1484,111 @@
   "albumDetailReordered": "Đã đổi thứ tự",
   "albumDetailReorderFailed": "Chưa lưu được thứ tự",
   "albumDetailUndo": "Hoàn tác",
-  "albumDetailArrangeLoadFailed": "Chưa tải hết bài để sắp xếp. Thử lại sau."
+  "albumDetailArrangeLoadFailed": "Chưa tải hết bài để sắp xếp. Thử lại sau.",
+  "profileMyAlbums": "Album của tôi",
+  "profileMyAlbumsSub": "Gom bài thành album, sắp xếp thứ tự trên hồ sơ",
+  "myAlbumsTitle": "Album của tôi",
+  "myAlbumsHint": "Thứ tự dưới đây là thứ tự trên hồ sơ. Giữ ≡ rồi kéo, hoặc chạm … → Chuyển lên / xuống.",
+  "myAlbumsFeatured": "hiện rộng",
+  "myAlbumsUnsorted": "Chưa xếp album",
+  "myAlbumsUnsortedSub": "{n} bài · chỉ ở Dòng thời gian",
+  "@myAlbumsUnsortedSub": {
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "myAlbumsEmptyTitle": "Gom bài thành album để khách xem theo bộ",
+  "myAlbumsEmptyBody": "Bài chưa xếp album vẫn hiện ở Dòng thời gian.",
+  "myAlbumsOpen": "Xem album",
+  "myAlbumsEdit": "Sửa",
+  "myAlbumsSaving": "Đang lưu thứ tự",
+  "albumEditNew": "Album mới",
+  "albumEditTitle": "Sửa album",
+  "albumEditClose": "Đóng",
+  "albumEditName": "Tên album · bắt buộc",
+  "albumEditNameCount": "{n} / {max}",
+  "@albumEditNameCount": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "albumEditNameRequired": "Nhập tên album",
+  "albumEditDesc": "Mô tả · tuỳ chọn",
+  "albumEditCover": "Ảnh bìa",
+  "albumEditCoverAuto": "Tự động: ảnh đầu tiên của album",
+  "albumEditCoverChosen": "Đã chọn một ảnh làm bìa",
+  "albumEditCoverPick": "Chọn ảnh",
+  "albumEditCoverTitle": "Chọn ảnh bìa",
+  "albumEditCoverReset": "Dùng ảnh tự động",
+  "albumEditCoverLoadError": "Không tải được ảnh của album.",
+  "albumEditCoverTile": "Ảnh {index} trên {count}",
+  "@albumEditCoverTile": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
+  "albumEditNote": "Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.",
+  "albumEditCreate": "Tạo và thêm bài",
+  "albumEditSave": "Lưu",
+  "albumEditSaveError": "Chưa lưu được album. Thử lại sau.",
+  "albumEditDiscardTitle": "Bỏ thay đổi?",
+  "albumEditDiscardBody": "Những gì bạn vừa nhập sẽ mất.",
+  "albumEditDiscard": "Bỏ",
+  "albumEditKeep": "Tiếp tục sửa",
+  "addPostsTitle": "Thêm bài vào album",
+  "addPostsSelected": "{n} đã chọn",
+  "@addPostsSelected": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "addPostsTabUnsorted": "Chưa xếp · {n}",
+  "@addPostsTabUnsorted": {
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "addPostsTabAll": "Tất cả bài · {n}",
+  "@addPostsTabAll": {
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "addPostsMoveWarn": "{n} bài đang ở \"{album}\" sẽ chuyển sang album này.",
+  "@addPostsMoveWarn": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "album": {"type": "String"}
+    }
+  },
+  "addPostsMoveWarnMany": "{n} bài đang ở album khác sẽ chuyển sang album này.",
+  "@addPostsMoveWarnMany": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "addPostsAdd": "Thêm {n} bài",
+  "@addPostsAdd": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "addPostsPick": "Chọn bài để thêm",
+  "addPostsFull": "Album đã đủ 200 bài",
+  "addPostsNoneTitle": "Đăng bài trước",
+  "addPostsNoneBody": "Bài bạn đăng sẽ hiện ở đây để xếp vào album.",
+  "addPostsNoneAction": "Đăng bài",
+  "addPostsUnsortedEmpty": "Mọi bài của bạn đã nằm trong album.",
+  "addPostsLoadError": "Không tải được bài. Thử lại sau.",
+  "addPostsError": "Chưa thêm được bài. Thử lại sau.",
+  "addPostsPartial": "Đã thêm {done} bài, còn {left} bài chưa thêm được.",
+  "@addPostsPartial": {
+    "placeholders": {
+      "done": {"type": "int"},
+      "left": {"type": "int"}
+    }
+  },
+  "addPostsMore": "Xem thêm bài"
 }

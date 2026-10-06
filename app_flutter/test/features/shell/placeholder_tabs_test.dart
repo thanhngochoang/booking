@@ -172,6 +172,10 @@ void main() {
         GoRoute(path: '/bookings', builder: (_, _) => const BookingsTab()),
         GoRoute(path: '/setup', builder: (_, _) => const Text('setup')),
         GoRoute(
+          path: '/me/albums',
+          builder: (_, _) => const Text('stub /me/albums'),
+        ),
+        GoRoute(
           path: '/work/calendar',
           builder: (_, _) => const Text('calendar'),
         ),
@@ -199,6 +203,32 @@ void main() {
       ),
     );
   }
+
+  testWidgets('S09.01: photographers see Album của tôi, customers do not', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    final intro = FakePhotographerIntroRepository()
+      ..seed(
+        auth.currentUser!.uid,
+        const PhotographerIntro(onboardingComplete: true),
+      );
+    await tester.pumpWidget(routed(auth, users, intro));
+    await tester.pumpAndSettle();
+    expect(find.text('Album của tôi'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('open-my-albums')));
+    await tester.tap(find.byKey(const Key('open-my-albums')));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /me/albums'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    final (auth2, users2) = await _signedIn(UserRole.customer);
+    await tester.pumpWidget(
+      routed(auth2, users2, FakePhotographerIntroRepository()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Album của tôi'), findsNothing);
+  });
 
   testWidgets(
     'a photographer with unfinished setup is offered to continue it',

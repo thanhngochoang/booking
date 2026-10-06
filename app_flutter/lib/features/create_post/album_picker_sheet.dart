@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/album/album.dart';
 import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/features/album/edit_album_sheet.dart';
 import 'package:photobooking/features/create_post/create_post_providers.dart';
 
 /// What the album picker returns: "Không xếp album" or one album.
@@ -19,25 +20,32 @@ class AlbumPick {
 
 /// S24.05: choose the album a new post is filed in. Choosing closes the sheet;
 /// null means it was dismissed. [selected] marks the current choice (null =
-/// "Không xếp album").
-Future<AlbumPick?> showAlbumPicker(BuildContext context, {String? selected}) {
+/// "Không xếp album"). [allowNone] false hides that choice, for callers that
+/// need an album (S24.02 filing unsorted posts).
+Future<AlbumPick?> showAlbumPicker(
+  BuildContext context, {
+  String? selected,
+  bool allowNone = true,
+}) {
   return showAppSheet<AlbumPick>(
     context,
     builder: (sheet) => ScreenCode(
       ScreenCodes.pickAlbum,
-      child: _AlbumPickerBody(selected: selected),
+      child: _AlbumPickerBody(selected: selected, allowNone: allowNone),
     ),
   );
 }
 
 class _AlbumPickerBody extends ConsumerWidget {
-  const _AlbumPickerBody({required this.selected});
+  const _AlbumPickerBody({required this.selected, required this.allowNone});
   final String? selected;
+  final bool allowNone;
 
   static const double _thumb = 40;
 
   Future<void> _newAlbum(BuildContext context, WidgetRef ref) async {
-    final id = await promptNewAlbum(context, ref);
+    // S24.03 returns here with the new album chosen, not on to S24.04.
+    final id = await showEditAlbumSheet(context, addPostsAfterCreate: false);
     if (id != null && context.mounted) {
       Navigator.of(context).pop(AlbumPick.album(id));
     }
@@ -76,14 +84,15 @@ class _AlbumPickerBody extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                AppOptionTile(
-                  key: const Key('album-pick-none'),
-                  label: l.albumPickNone,
-                  description: l.albumPickNoneSub,
-                  selected: selected == null,
-                  onTap: () =>
-                      Navigator.of(context).pop(const AlbumPick.none()),
-                ),
+                if (allowNone)
+                  AppOptionTile(
+                    key: const Key('album-pick-none'),
+                    label: l.albumPickNone,
+                    description: l.albumPickNoneSub,
+                    selected: selected == null,
+                    onTap: () =>
+                        Navigator.of(context).pop(const AlbumPick.none()),
+                  ),
                 AsyncView<List<AlbumSummary>>(
                   value: albums,
                   onRetry: () => ref.invalidate(myAlbumsProvider),
@@ -154,115 +163,6 @@ class _Cover extends StatelessWidget {
         child: u == null
             ? ColoredBox(color: scheme.secondary)
             : NetworkPhoto(url: u, retry: false),
-      ),
-    );
-  }
-}
-
-/// The minimal "Album mới" prompt: a name field and "Tạo". Creates the album
-/// and returns its id, or null when closed. Isolated here so the full S24.03
-/// edit sheet (unit C3) can replace it by changing this one function.
-Future<String?> promptNewAlbum(BuildContext context, WidgetRef ref) {
-  return showAppSheet<String>(context, builder: (_) => const _NewAlbumPrompt());
-}
-
-class _NewAlbumPrompt extends ConsumerStatefulWidget {
-  const _NewAlbumPrompt();
-
-  @override
-  ConsumerState<_NewAlbumPrompt> createState() => _NewAlbumPromptState();
-}
-
-class _NewAlbumPromptState extends ConsumerState<_NewAlbumPrompt> {
-  static const maxTitle = 40;
-  final _title = TextEditingController();
-  bool _busy = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _title.dispose();
-    super.dispose();
-  }
-
-  Future<void> _create() async {
-    final l = context.l10n;
-    final name = _title.text.trim();
-    if (name.isEmpty || _busy) {
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final id = await ref.read(albumRepositoryProvider).create(title: name);
-      if (mounted) {
-        Navigator.of(context).pop(id);
-      }
-    } on AlbumError catch (e) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = switch (e.code) {
-            'conflict' => l.albumPickDup,
-            'limit_exceeded' => l.albumPickLimit,
-            _ => l.albumPickCreateError,
-          };
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = l.albumPickCreateError;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpace.s5,
-        0,
-        AppSpace.s5,
-        AppSpace.s5 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            header: true,
-            child: Text(l.albumPickNew, style: theme.textTheme.titleLarge),
-          ),
-          const SizedBox(height: AppSpace.s3),
-          TextField(
-            key: const Key('album-new-title'),
-            controller: _title,
-            enabled: !_busy,
-            autofocus: true,
-            maxLength: maxTitle,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) => setState(() => _error = null),
-            onSubmitted: (_) => _create(),
-            decoration: InputDecoration(
-              labelText: l.albumPickNewName,
-              errorText: _error,
-            ),
-          ),
-          const SizedBox(height: AppSpace.s2),
-          AppButton.primary(
-            l.albumPickCreate,
-            key: const Key('album-new-create'),
-            loading: _busy,
-            onPressed: _title.text.trim().isEmpty ? null : _create,
-          ),
-        ],
       ),
     );
   }

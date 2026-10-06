@@ -6,6 +6,7 @@ import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
+import 'package:photobooking/features/album/my_albums_screen.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -233,6 +234,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           serviceId: state.uri.queryParameters['serviceId'],
         ),
       ),
+      GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(
         path: '/u/:uid/albums/:albumId',
         builder: (_, state) => AlbumDetailScreen(

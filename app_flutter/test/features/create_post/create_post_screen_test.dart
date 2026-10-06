@@ -485,11 +485,11 @@ void main() {
       await tester.tap(find.byKey(const Key('album-pick-new')));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.byKey(const Key('album-new-title')),
+        find.byKey(const Key('album-edit-title')),
         'Phố cổ',
       );
       await tester.pump();
-      await tester.tap(find.byKey(const Key('album-new-create')));
+      await tester.tap(find.byKey(const Key('album-edit-save')));
       await tester.pumpAndSettle();
       expect(c.world.albums.calls, ['create:Phố cổ']);
       expect(find.text('Xếp vào album'), findsNothing);
@@ -506,9 +506,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('album-pick-new')));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byKey(const Key('album-new-title')), 'A');
+      await tester.enterText(find.byKey(const Key('album-edit-title')), 'A');
       await tester.pump();
-      await tester.tap(find.byKey(const Key('album-new-create')));
+      await tester.tap(find.byKey(const Key('album-edit-save')));
       await tester.pumpAndSettle();
       expect(find.text('Bạn đã có album tên này'), findsOneWidget);
       expect(_state(tester).albumId, isNull);

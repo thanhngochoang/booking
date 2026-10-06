@@ -172,7 +172,38 @@ void main() {
     expect(_key('profile-book'), findsNothing);
     await tester.tap(find.text('Thêm bài'));
     await tester.pumpAndSettle();
-    expect(find.text('stub /me/albums'), findsOneWidget);
+    // Opens the add-posts sheet (S24.04) instead of leaving the screen.
+    expect(find.text('Thêm bài vào album'), findsOneWidget);
+    expect(w.router.state.uri.path, '/u/${w.uid}/albums/al1');
+  });
+
+  testWidgets('the owner menu opens Sửa album and Thêm bài', (tester) async {
+    final w = await _world(tester, role: UserRole.photographer, mine: true);
+    w.discovery.posts.add(
+      fixturePost('free1', photographerId: w.uid, caption: 'Chưa xếp'),
+    );
+    await tester.pumpWidget(w.app('/u/${w.uid}/albums/al1'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_key('album-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sửa album'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tên album · bắt buộc'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(_key('album-edit-title')).controller!.text,
+      'Tác phẩm đạt giải',
+    );
+    await tester.tap(_key('album-edit-close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tên album · bắt buộc'), findsNothing);
+
+    await tester.tap(_key('album-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Thêm bài'));
+    await tester.pumpAndSettle();
+    expect(find.text('Thêm bài vào album'), findsOneWidget);
+    expect(_key('post-pick-free1'), findsOneWidget);
   });
 
   testWidgets('a missing album shows Album này không còn', (tester) async {

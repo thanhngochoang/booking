@@ -78,7 +78,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S01.05 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm | S29 |
 | **S02** | **Khám phá & tìm thợ** | | | | | |
 | S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) | S01 |
-| S02.02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) | S02 |
+| S02.02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) · vuốt trong phạm vi album hoãn (plan C, quyết định 9: S24.01 mở `/p/:id` như Dòng thời gian) | S02 |
 | S02.03 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S13 |
 | S02.04 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S35 |
 | S02.05 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S36 |
@@ -184,11 +184,11 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · sales | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.07 | Duyệt giải thưởng (hạng NAG): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi, kèm xác minh danh tính khi cấp hạng | nội bộ | admin | B (spec 10-05) | ⬜ đang thiết kế · chưa có mock | — |
 | **S24** | **Portfolio album** | | | | | |
-| S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
-| S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
-| S24.03 | Tạo / sửa album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
-| S24.04 | Thêm bài vào album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
-| S24.05 | Chọn album khi đăng (sheet trên S10.01) | — (sheet) | thợ ảnh | C (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ✅ đã làm (c2) · khớp mock | — |
+| S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
+| S24.03 | Tạo / sửa album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
+| S24.04 | Thêm bài vào album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
+| S24.05 | Chọn album khi đăng (sheet trên S10.01) | — (sheet) | thợ ảnh | C (spec 10-05) | ✅ đã làm (c1) · khớp mock | — |
 | **S25** | **Giải thưởng & hạng Nhiếp ảnh gia (NAG)** | | | | | |
 | S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
 | S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
