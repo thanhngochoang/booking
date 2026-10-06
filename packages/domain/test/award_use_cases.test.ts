@@ -181,6 +181,29 @@ describe('award use cases', () => {
     assert.equal(store.awards.get('a1')?.status, 'pending');
   });
 
+  it('a failing recompute does not fail a committed edit', async () => {
+    seed('a1', 'approved');
+    deps = { ...deps, tiers: { runTransaction: async () => { throw new Error('boom'); } } };
+    await updateAward(deps, 'u1', input({ proofFiles: [], proofLinks: ['https://a.vn/x'] }));
+    assert.equal(store.awards.get('a1')?.status, 'pending');
+    assert.deepEqual(deleted, [['awardProofs/u1/a1/0.jpg']]);
+  });
+
+  it('a failing recompute does not fail a committed delete; files are still deleted', async () => {
+    seed('a1', 'approved');
+    deps = { ...deps, tiers: { runTransaction: async () => { throw new Error('boom'); } } };
+    await deleteAward(deps, 'u1', { awardId: 'a1' });
+    assert.equal(store.awards.has('a1'), false);
+    assert.deepEqual(deleted, [['awardProofs/u1/a1/0.jpg']]);
+  });
+
+  it('an admin cannot review their own award', async () => {
+    seed('a1', 'pending');
+    await refused(reviewAward(deps, 'u1', true, { awardId: 'a1', action: 'approve' }), 'permission_denied');
+    assert.equal(store.awards.get('a1')?.status, 'pending');
+    assert.equal(store.audit.length, 0);
+  });
+
   it('needs_info without a note is invalid', async () => {
     seed('a1', 'pending');
     await refused(reviewAward(deps, 'adm', true, { awardId: 'a1', action: 'needs_info' }), 'invalid_argument');

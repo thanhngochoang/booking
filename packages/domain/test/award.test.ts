@@ -32,6 +32,11 @@ describe('award input', () => {
     assert.equal(validateAwardInput({ ...base, competition: ' ab ' }, 'u1', NOW).competition, 'ab');
     assert.equal(validateAwardInput({ ...base, competition: 'x'.repeat(120) }, 'u1', NOW).competition.length, 120);
   });
+  it('the year bound uses Vietnam time', () => {
+    const newYear = new Date('2026-12-31T17:30:00.000Z'); // 2027-01-01 00:30 +07
+    assert.equal(validateAwardInput({ ...base, year: 2027 }, 'u1', newYear).year, 2027);
+  });
+
   it('year before 1950 or after this year is invalid', () => {
     bad({ year: 1949 });
     bad({ year: 2027 });

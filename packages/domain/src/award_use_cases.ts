@@ -149,7 +149,7 @@ export async function updateAward(deps: AwardDeps, callerId: string, raw: unknow
       dropped: old.files.filter((f) => !kept.has(f)),
     };
   });
-  if (outcome.wasApproved) await recomputeTier(deps, callerId);
+  if (outcome.wasApproved) await quietly(async () => void (await recomputeTier(deps, callerId)));
   if (outcome.dropped.length > 0) await quietly(() => deps.files.delete(outcome.dropped));
 }
 
@@ -164,7 +164,7 @@ export async function deleteAward(deps: AwardDeps, callerId: string, raw: unknow
     tx.deleteProof(awardId);
     return { files: proof?.files ?? [], wasApproved: award.status === 'approved' };
   });
-  if (out.wasApproved) await recomputeTier(deps, callerId);
+  if (out.wasApproved) await quietly(async () => void (await recomputeTier(deps, callerId)));
   if (out.files.length > 0) await quietly(() => deps.files.delete(out.files));
 }
 
@@ -185,6 +185,7 @@ export async function reviewAward(
   const out = await deps.awards.runTransaction(async (tx) => {
     const award = await tx.getAward(awardId);
     if (award === null) throw new DomainError('not_found');
+    if (award.photographerId === actorId) throw new DomainError('permission_denied');
     const proof = await tx.getProof(awardId);
     const status = nextStatus(award.status, act);
     const now = deps.clock.now();

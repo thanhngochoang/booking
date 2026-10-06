@@ -107,7 +107,7 @@ export function validateAwardInput(raw: unknown, callerId: string, now: Date): A
     typeof year !== 'number' ||
     !Number.isInteger(year) ||
     year < FIRST_AWARD_YEAR ||
-    year > now.getUTCFullYear()
+    year > new Date(now.getTime() + 7 * 3600_000).getUTCFullYear() // Asia/Ho_Chi_Minh
   ) {
     throw new DomainError('invalid_argument');
   }
