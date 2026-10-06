@@ -89,7 +89,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
-| S04.03 | Đặt lịch 4/4 · Xem lại & cọc | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S07 |
+| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S07 |
 | S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ đã làm (4b) · về S05.02 (4c) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
@@ -173,16 +173,19 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
 | **S21** | **Xác minh** | | | | | |
 | S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S21.02 | Xin dấu tích xanh: điều kiện, giấy tờ/portfolio gửi duyệt, trạng thái (chờ / đã duyệt / cần bổ sung) | `/verify/photographer` | NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
+| S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
+| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
 | S22.01 | Lịch sử thanh toán: cọc, vé, hoàn tiền, khoản đang giữ (kể cả Chụp ngay chưa tìm được người), trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S22.03 | Quyền riêng tư & dữ liệu: ẩn hồ sơ khỏi gợi ý, tải bản sao dữ liệu | `/settings/privacy` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | ⬜ có mock, chưa có plan | — |
 | **S23** | **Vận hành nội bộ (staff)** | | | | | |
 | S23.01 | Hàng đợi khiếu nại: xem bằng chứng hai bên, quyết định thả / hoàn / chia | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.02 | Duyệt lô chi trả và đối soát cổng | nội bộ | admin · finance | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.03 | Hoàn tiền thủ công (cổng không hoàn tự động) | nội bộ | admin · finance | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.04 | Duyệt xác minh nhiếp ảnh gia (dấu tích xanh) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S23.04 | Duyệt xác minh (danh tính, doanh nghiệp; cấp dấu tích xanh và quyền nhận đơn) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.05 | Kiểm duyệt báo cáo (người dùng, bài, tin nhắn, sự kiện) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · sales | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.07 | Duyệt giải thưởng (hạng NAG): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi, kèm xác minh danh tính khi cấp hạng | nội bộ | admin | B (spec 10-05) | ⬜ chưa có mock · tạm duyệt bằng CLI (`npm run awards`, b1) | — |
@@ -457,6 +460,8 @@ Gói: `geolocator` (đã có trong kế hoạch spec gốc) và bộ tính geoha
 
 ### 3d.1 Dấu tích xanh (Verified)
 
+> **Đổi 2026-10-06**: dấu tích nghĩa là **đã xác minh danh tính và được staff duyệt để nhận đơn** (có phí); bỏ điều kiện ≥ 3 buổi. Xem [`2026-10-06-identity-verification-design.md`](2026-10-06-identity-verification-design.md).
+
 - Thay nhãn chữ "Verified" bằng **một dấu tích xanh nhỏ** (vòng tròn 14dp, dấu ✓ trắng, nền xanh `ctaStart` `3D63FF`) đặt ngay sau tên và nâng cao hơn tên một chút (khoảng 3dp, kiểu chỉ số trên). Không có chữ, không có viền; widget `VerifiedMark`.
 - Nghĩa vẫn là `photographers.verified` do admin duyệt (spec gốc). Dấu tích **không** thay cho huy hiệu và không có cấp độ.
 - Truy cập: `Semantics(label: 'Đã xác minh')`, tooltip khi nhấn giữ. Xuất hiện cạnh tên nhiếp ảnh gia ở S02.02, S03.01, S02.06, S11.02, S12.03 và danh sách người theo dõi. Không hiện cho khách.
@@ -632,6 +637,8 @@ Phản hồi: `requestId`, `algorithm`, `algorithmVersion`, `items[{photographer
 
 ## 3g. Tiền treo (escrow) và chi trả
 
+> **Đổi 2026-10-06**: khách trả 100% (không còn cọc 30%); tiền do tổ chức trung gian thanh toán có phép giữ (mô hình A1); VietQR + ví; chi tự động mỗi ngày; thuế khấu trừ; doanh thu nền tảng tách luồng. Xem [`2026-10-06-payments-payouts-design.md`](2026-10-06-payments-payouts-design.md); các mục dưới giữ cho nguyên tắc sổ cái và khiếu nại.
+
 Thay thế phần "cọc chuyển thẳng tới tài khoản nền tảng và trả hàng tuần" ở mục 8 của spec gốc.
 
 ### 3g.1 Nguyên tắc (đã chốt)
@@ -793,6 +800,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 
 ### 3i.4 S21 · Xác minh
 - **S21.01 SĐT** (câu hỏi mở 6): bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
+- **Đổi 2026-10-06**: S21.02–S21.04 thay bằng luồng "Bắt đầu nhận đơn" có phí trong [`2026-10-06-identity-verification-design.md`](2026-10-06-identity-verification-design.md); đoạn dưới là bản cũ.
 - **S21.02 Dấu tích xanh**: nhiếp ảnh gia đủ điều kiện (đề xuất: hồ sơ hoàn thiện ≥ 80%, ≥ 3 buổi `completed`, không khiếu nại thua trong 90 ngày) gửi yêu cầu kèm giấy tờ tuỳ thân và link portfolio; staff duyệt ở S23.04; kết quả ghi `photographers.verified` (chỉ server ghi). Giấy tờ lưu riêng tư, xoá sau khi duyệt xong 30 ngày.
 
 ### 3i.5 S22 · Thanh toán & tài khoản
@@ -959,13 +967,13 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 21. **Kiểm duyệt timeline và nhóm chat**: ai chịu trách nhiệm nội dung (chủ sự kiện, staff), có cần bộ lọc ảnh nhạy cảm tự động và nút báo cáo gửi về đâu? Bài của người ngoài chờ duyệt có làm chủ sự kiện quá tải không (đề xuất: bật tự duyệt theo người theo dõi)?
 17. **Tạo hộ nhiếp ảnh gia**: có bắt buộc nhiếp ảnh gia đồng ý (`hostConsent`) như đề xuất, hay sales được tạo thẳng khi đã thoả thuận ngoài ứng dụng?
 18. **Quản trị chi trả**: bảng điều khiển duyệt lô chi trả, khiếu nại và đối soát cổng nằm ở đâu (web nội bộ riêng, Firebase console + callable tạm thời)? Có cần vai trò `finance` ngoài `admin`/`sales`?
-19. **Pháp lý giữ tiền hộ**: tham vấn xem mô hình treo tiền có cần giấy phép trung gian thanh toán hay đi qua cổng có sản phẩm ký quỹ; quyết định trước khi bật cổng thật.
+19. **Đã chọn hướng 2026-10-06** (spec thanh toán §1, §11): mô hình A1, chờ luật sư xác nhận. Bản cũ: **Pháp lý giữ tiền hộ**: tham vấn xem mô hình treo tiền có cần giấy phép trung gian thanh toán hay đi qua cổng có sản phẩm ký quỹ; quyết định trước khi bật cổng thật.
 20. **Phần không hoàn khi huỷ muộn** (50% hoặc 100% giữ lại): giả định chuyển cho nhiếp ảnh gia như bồi thường; xác nhận hoặc cho nền tảng giữ một phần.
 11. **Kỹ năng và gợi ý**: danh mục khởi đầu (3e.2) có đủ cho thị trường Việt Nam không, ai duy trì `taxonomy`? Có cho nhiếp ảnh gia tự đề xuất kỹ năng mới không (qua duyệt)?
 12. **Sở thích của khách**: có thêm câu hỏi khởi đầu "Bạn cần chụp gì?" (và ngân sách, phong cách) để bớt phụ thuộc tín hiệu ngầm không?
 13. **Hạ tầng gợi ý** (đề xuất, cần xác nhận): làm theo hai giai đoạn ở mục 3e.4, bắt đầu bằng `recommender-core` trong hàm `recommend`, tách Cloud Run khi chạm ngưỡng.
 22. **Công cụ vận hành (S23)**: web nội bộ riêng hay chế độ staff trong app? Ai được thấy giấy tờ xác minh và bằng chứng khiếu nại?
-23. **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
+23. **Đã chốt 2026-10-06** (spec xác minh): có phí, bỏ ngưỡng thành tích. Bản cũ: **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
 24. **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
 25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)?
 26. **Hợp đồng kiểu freelancer** (spec 10-05 mục 4): trả 100% qua app theo 2 mốc thay cho cọc 30%? Tỉ lệ mốc, số ngày tự duyệt, cách bàn giao (link ngoài hay lưu trên app), hoa hồng. Chi tiết ở câu hỏi mở 3–7 của spec 10-05.

@@ -8,7 +8,7 @@ Trạng thái: **ĐK** = cần trong điều khoản, **FAQ** = cần trong tr�
 
 | # | Quy định | Nguồn | Dùng ở |
 |---|---|---|---|
-| P1 | Khách trả **100% giá khi đặt** (gói, báo giá, Chụp ngay). Tiền **được giữ trên app**, chưa chuyển cho thợ ảnh. | provider-types 2026-10-05 §4.1 | ĐK, FAQ |
+| P1 | Khách trả **100% giá khi đặt** (gói, báo giá, Chụp ngay) bằng chuyển khoản QR, MoMo hoặc ZaloPay. Tiền **được giữ bởi {tổ chức trung gian thanh toán}** (không nằm trong tài khoản của nền tảng), chưa chuyển cho thợ/studio. | thanh toán 2026-10-06 §1, §2 | ĐK, FAQ |
 | P2 | Tiền chuyển cho thợ/studio theo **2 mốc**, mặc định 50/50: mốc 1 sau buổi chụp (bấm "Đã chụp xong" hoặc tự động 24 giờ sau giờ kết thúc) và hết 24 giờ khiếu nại; mốc 2 sau khi khách **đồng ý ảnh** và hết **48 giờ kiểm tra** bộ ảnh gốc. | bàn giao 2026-10-06 §4 | ĐK, FAQ |
 | P3 | Bàn giao hai lớp: thợ/studio gửi **ảnh mẫu có watermark** (3–20 ảnh) trước; **link bộ ảnh gốc bị che** và chỉ mở khi khách bấm "Đồng ý ảnh". Khách im lặng **3 ngày** kể từ lần gửi ảnh mẫu gần nhất thì hệ thống tự đồng ý. | bàn giao §2, §4 | ĐK, FAQ |
 | P4 | Sau khi link mở, khách có **48 giờ** để kiểm tra bộ ảnh gốc (thiếu ảnh, khác ảnh mẫu, link hỏng) và bấm "Báo vấn đề"; khi đó tiền mốc 2 tiếp tục được giữ tới khi có kết quả khiếu nại. App chỉ che link trong app; nếu thợ/studio tự gửi link qua kênh khác trước khi khách đồng ý là lựa chọn của họ. | bàn giao §4, §7 | ĐK, FAQ |
@@ -17,6 +17,21 @@ Trạng thái: **ĐK** = cần trong điều khoản, **FAQ** = cần trong tr�
 | P7 | Huỷ trước buổi chụp: ≥ 48 giờ hoàn 100%, 24–48 giờ hoàn 50%, < 24 giờ không hoàn; tính trên toàn bộ tiền đã trả. Thợ huỷ: khách hoàn 100%. | provider-types §4.3 | ĐK, FAQ |
 | P8 | Khiếu nại mở được trong cửa sổ của từng mốc; trong lúc khiếu nại, tiền tiếp tục được giữ tới khi có kết quả (thả, hoàn hoặc chia). | spec chính S18; provider-types §4.1 | ĐK, FAQ |
 | P9 | Vì sao trả trước 100%: nửa sau tiền không đến tay thợ cho tới khi bạn đồng ý ảnh mẫu và kiểm xong bộ ảnh gốc; có lỗi thì được hoàn qua app. Thợ cũng yên tâm không bị quỵt, nên nhận lịch nhanh hơn. | quyết định 2026-10-06 (chọn giữ trả trước 100%, không dùng "cọc + trả nốt sau khi nhận ảnh") | FAQ |
+| P10 | Chuyển khoản QR: chuyển đúng số tiền và nội dung trong 15 phút. Chuyển thiếu, thừa hoặc sau khi QR hết hạn được **hoàn tự động** về tài khoản đã chuyển. | thanh toán §3.3 | ĐK, FAQ |
+| P11 | Hoàn tiền: ví hoàn về ví; chuyển khoản hoàn về tài khoản đã chuyển (khách xác nhận hoặc khai tài khoản khác). Thời gian nhận tiền hoàn theo từng phương thức (điền khi chọn đối tác). | thanh toán §5 | ĐK, FAQ |
+| P12 | Chi trả cho thợ/studio: tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu của mỗi tài khoản do nhân viên duyệt. Tên chủ tài khoản phải khớp tên đã xác minh; đổi tài khoản cần OTP và có hiệu lực sau 72 giờ. | thanh toán §6 | ĐK (điều khoản cho thợ), FAQ |
+| P13 | Thợ cá nhân: nền tảng **khấu trừ và nộp thay thuế** trên phần chi (tỉ lệ theo quy định hiện hành). | thanh toán §7 | ĐK, FAQ |
+| P14 | Phí của nền tảng: hiện chưa thu hoa hồng (0%); nếu áp dụng sẽ báo trước 30 ngày và chỉ tính cho booking tạo sau ngày hiệu lực. Phí cổng thanh toán và phí chi do nền tảng chịu. | thanh toán §8 | ĐK |
+
+## Xác minh để nhận đơn
+
+| # | Quy định | Nguồn | Dùng ở |
+|---|---|---|---|
+| V1 | Muốn nhận đơn phải xác minh: số điện thoại, **phí xác minh** (thợ 99.000đ, studio 299.000đ), danh tính bằng VNeID hoặc chip CCCD, đồng ý quy định nhận việc; nhân viên duyệt trong 24 giờ. Được duyệt thì có dấu tích xanh. | xác minh 2026-10-06 §2, §4 | ĐK, FAQ |
+| V2 | Phí xác minh **không hoàn** vì chi phí kiểm tra đã phát sinh; bị từ chối được sửa và gửi lại miễn phí 1 lần. Nền tảng xuất hoá đơn điện tử cho phí này. | xác minh §4 | ĐK, FAQ |
+| V3 | Dữ liệu thu khi xác minh: họ tên, ngày sinh, giới tính, số định danh (lưu mã hoá); **không lưu ảnh selfie**; dùng để xác minh, chống trùng tài khoản, khấu trừ thuế. Một người một tài khoản nhận đơn. | xác minh §3, §9 | ĐK (chính sách quyền riêng tư), FAQ |
+| V4 | Nhân viên có thể thu hồi xác minh khi phát hiện gian lận; khi đó tắt nhận đơn, booking đang chạy xử lý theo khiếu nại. | xác minh §4 | ĐK |
+| V5 | Studio: chủ studio xác minh danh tính là nhận đơn được (tối đa 3 thợ); xác minh doanh nghiệp bằng mã số thuế mở con dấu Studio, tới 30 thợ và tài khoản nhận tiền đứng tên doanh nghiệp, không thu thêm phí. | xác minh §5 | ĐK, FAQ |
 
 ## Liên hệ
 

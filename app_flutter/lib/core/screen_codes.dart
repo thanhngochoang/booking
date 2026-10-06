@@ -112,10 +112,13 @@ abstract final class ScreenCodes {
   // S21 Xác minh.
   static const verifyPhone = 'S21.01';
   static const verifyPhotographer = 'S21.02';
+  static const verifyIdentity = 'S21.03';
+  static const verifyBusiness = 'S21.04';
   // S22 Thanh toán & tài khoản.
   static const paymentHistory = 'S22.01';
   static const deleteAccount = 'S22.02';
   static const privacy = 'S22.03';
+  static const refundAccount = 'S22.04';
   // S23 Vận hành nội bộ (staff).
   static const staffDisputes = 'S23.01';
   static const staffPayouts = 'S23.02';
@@ -224,9 +227,12 @@ abstract final class ScreenCodes {
     blockedUsers,
     verifyPhone,
     verifyPhotographer,
+    verifyIdentity,
+    verifyBusiness,
     paymentHistory,
     deleteAccount,
     privacy,
+    refundAccount,
     staffDisputes,
     staffPayouts,
     staffManualRefunds,
