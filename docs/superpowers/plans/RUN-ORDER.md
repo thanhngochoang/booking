@@ -70,7 +70,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 9d | `2026-10-06-icons-color-603010.md` (Material Symbols Rounded everywhere, 60‑30‑10 palette: mock, gallery, tokens, app) | done 2026-10-06 on the stack branch plan/stack-2026-10 (not yet in develop); ledger `handover/ledger-icons-color-9d.md` |
 | 10a | `2026-10-06-10a-notifications-badges.md` (S17.01–S17.03 notifications, S03.02 badges) | in progress 2026-10-06 on plan/stack-2026-10 |
 | 10b | `2026-10-06-10b-earnings-payout.md` (S06.05 Thu nhập, S06.06 Tài khoản nhận tiền) | not started; needs secret `PAYOUT_ACCOUNT_KEY` before reaching develop |
-| 10c | `2026-10-06-10c-events.md` (S11 events, S12 create/manage events) | not started |
+| 10c | `2026-10-06-10c-events.md` (S11 events, S12 create/manage events) | not started; owner decisions O1–O4 in the plan |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |
 | 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
 | 12 | `2026-10-01-instant-i4-photographer-app.md` (S13.08, S14) | not started |
