@@ -8,10 +8,18 @@ import 'package:photobooking/core/widgets/app_skeleton.dart';
 class StatTile extends StatelessWidget {
   static Widget skeleton({Key? key}) => _StatTileSkeleton(key: key);
 
-  const StatTile({super.key, required this.value, required this.label});
+  const StatTile({
+    super.key,
+    required this.value,
+    required this.label,
+    this.onTap,
+  });
 
   final String value;
   final String label;
+
+  /// Makes the tile a button (S06.01 "Đang giữ" opens S06.05); null = static.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -19,53 +27,69 @@ class StatTile extends StatelessWidget {
     final secondary = dark
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
+    final radius = BorderRadius.circular(AppRadius.xl);
+    final content = Padding(
+      // Mock .kpi: padding 10 8 10 12, content pinned to the bottom.
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                fontFamily: AppFonts.display,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(fontSize: 10.5, color: secondary),
+            ),
+          ),
+        ],
+      ),
+    );
     return Semantics(
       label: '$value, $label',
+      button: onTap != null,
+      onTap: onTap,
       child: ExcludeSemantics(
         child: DecoratedBox(
           // Translucent fill, no blur: tiles sit on cards that already blur.
           decoration: BoxDecoration(
             color: dark ? AppColorsDark.glass : AppColors.glass,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: radius,
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
           ),
-          child: Padding(
-            // Mock .kpi: padding 10 8 10 12, content pinned to the bottom.
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    value,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontFamily: AppFonts.display,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      fontFeatures: [FontFeature.tabularFigures()],
+          child: onTap == null
+              ? content
+              : Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: radius,
+                    onTap: onTap,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: content,
                     ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    style: TextStyle(fontSize: 10.5, color: secondary),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -104,9 +128,7 @@ class _StatTileSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: dark ? AppColorsDark.glass : AppColors.glass,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),

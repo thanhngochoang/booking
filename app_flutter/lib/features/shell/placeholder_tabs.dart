@@ -203,6 +203,8 @@ class ProfileTab extends ConsumerWidget {
                       if (isPhotographer) ...[
                         const SizedBox(height: AppSpace.s4),
                         const _MyAlbumsRow(),
+                        const SizedBox(height: AppSpace.s2),
+                        const _EarningsRow(),
                         AwardNudgeRow(uid: profile!.uid),
                       ],
                       const SizedBox(height: AppSpace.s6),
@@ -305,38 +307,76 @@ class _MyAlbumsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    return _LinkRow(
+      key: const Key('open-my-albums'),
+      icon: AppIcons.album,
+      title: l.profileMyAlbums,
+      sub: l.profileMyAlbumsSub,
+      path: '/me/albums',
+    );
+  }
+}
+
+/// S09.01: photographers open S06.05 Thu nhập from here (the mock is silent;
+/// same card as "Album của tôi").
+class _EarningsRow extends StatelessWidget {
+  const _EarningsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return _LinkRow(
+      key: const Key('open-earnings'),
+      icon: AppIcons.wallet,
+      title: l.profileEarnings,
+      sub: l.profileEarningsSub,
+      path: '/work/earnings',
+    );
+  }
+}
+
+/// A glass card with an icon, a title and a sub line that opens [path].
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.sub,
+    required this.path,
+  });
+
+  final IconData icon;
+  final String title;
+  final String sub;
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return GlassCard(
       highlight: false,
       child: Semantics(
         button: true,
-        label: '${l.profileMyAlbums}. ${l.profileMyAlbumsSub}',
+        label: '$title. $sub',
         excludeSemantics: true,
-        onTap: () => context.push('/me/albums'),
+        onTap: () => context.push(path),
         child: InkWell(
-          key: const Key('open-my-albums'),
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: () => context.push('/me/albums'),
+          onTap: () => context.push(path),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: AppSpace.s12),
             child: Padding(
               padding: const EdgeInsets.all(AppSpace.s4),
               child: Row(
                 children: [
-                  const AppIcon(AppIcons.album),
+                  AppIcon(icon),
                   const SizedBox(width: AppSpace.s3),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l.profileMyAlbums,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        Text(
-                          l.profileMyAlbumsSub,
-                          style: theme.textTheme.bodySmall,
-                        ),
+                        Text(title, style: theme.textTheme.titleMedium),
+                        Text(sub, style: theme.textTheme.bodySmall),
                       ],
                     ),
                   ),

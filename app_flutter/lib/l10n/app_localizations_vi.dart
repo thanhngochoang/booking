@@ -3653,5 +3653,90 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get badgesRowSemantics => 'Huy hiệu, xem tất cả';
+  String get earningsTitle => 'Thu nhập';
+
+  @override
+  String get earningsNotice =>
+      'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.';
+
+  @override
+  String get earningsHeld => 'Đang giữ';
+
+  @override
+  String get earningsSoon => 'Sắp nhận';
+
+  @override
+  String get earningsReceived => 'Đã nhận';
+
+  @override
+  String get earningsStateHeld => 'Đang giữ';
+
+  @override
+  String get earningsStateReleased => 'Chờ chi trả';
+
+  @override
+  String earningsStatePaid(String date) {
+    return 'Đã chuyển $date';
+  }
+
+  @override
+  String get earningsStateDispute => 'Đang khiếu nại';
+
+  @override
+  String get earningsAddAccount => 'Thêm tài khoản để nhận tiền';
+
+  @override
+  String get earningsAddAccountSub => 'Cần có trước khi chuyển khoản';
+
+  @override
+  String get earningsItems => 'Các khoản';
+
+  @override
+  String earningsMonth(int month) {
+    return 'Tháng $month';
+  }
+
+  @override
+  String earningsMonthYear(int month, int year) {
+    return 'Tháng $month/$year';
+  }
+
+  @override
+  String get earningsPayoutFailed => 'Chuyển khoản lỗi, kiểm tra tài khoản';
+
+  @override
+  String earningsHoldReason(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String get earningsHoldDispute => 'Khách đã báo vấn đề, đang chờ xử lý';
+
+  @override
+  String get earningsHoldPayoutOnHold => 'Lô chi trả đang tạm giữ';
+
+  @override
+  String get earningsCustomerFallback => 'Khách';
+
+  @override
+  String get earningsEmptyTitle => 'Chưa có khoản thu nào';
+
+  @override
+  String get earningsEmptyBody =>
+      'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.';
+
+  @override
+  String get earningsMore => 'Xem thêm';
+
+  @override
+  String get earningsLoadError => 'Không tải được thu nhập';
+
+  @override
+  String get payoutAccountTitle => 'Tài khoản nhận tiền';
+
+  @override
+  String get profileEarnings => 'Thu nhập';
+
+  @override
+  String get profileEarningsSub => 'Tiền đang giữ, sắp nhận và đã nhận';
 }

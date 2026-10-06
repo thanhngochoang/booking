@@ -209,7 +209,7 @@ tile('ticketcard', 'TicketCard',
 tile('statustimeline', 'StatusTimeline', 'StatusTimeline({required List<TimelineStep> steps})  · TimelineStep(title, subtitle, state: done|current|upcoming|stopped)', 'S05.02',
      '<div style="display:flex;flex-direction:column"><div class="tl done"><i></i><div><b>Đã gửi & đặt cọc</b><span>Hôm nay 9:41 · 450.000₫</span></div></div><div class="tl now"><i></i><div><b>Chờ Minh Trí nhận</b><span>Thường trong 1 giờ</span></div></div><div class="tl"><i></i><div><b>Đã xác nhận</b></div></div></div>',
      ''.join(f'<div class="row" style="gap:10px">{skc(14)}<div class="grow" style="display:flex;flex-direction:column;gap:5px">{sk("55%")}{sk("35%","9px")}</div></div>' for _ in range(3)))
-tile('stattile', 'StatTile', 'StatTile({required String value, required String label})', 'S03.01, S06.01, S12.03',
+tile('stattile', 'StatTile', 'StatTile({required String value, required String label, VoidCallback? onTap}) · StatTile.skeleton()', 'S03.01, S06.01, S12.03, S06.05',
      '<div class="row" style="gap:8px"><div class="kpi"><b>12,4M</b><span>Tháng này</span></div><div class="kpi"><b>3,2M</b><span>Đang giữ</span></div><div class="kpi"><b>5</b><span>Buổi sắp tới</span></div></div>',
      f'<div class="row" style="gap:8px">' + ''.join(f'<div class="kpi" style="gap:6px">{sk("70%","20px")}{sk("80%","9px")}</div>' for _ in range(3)) + '</div>')
 tile('capacity', 'CapacityBar · CompletenessMeter', 'CapacityBar({registered, capacity}) · CompletenessMeter({int? percent, String? hint})', 'S11.02, S12.03, S08.02, S09.02',
@@ -253,6 +253,12 @@ tile('awards', 'AwardChip · AwardRow',
      'S03.01, S25.01',
      '<div class="row" style="gap:8px;overflow:hidden"><div class="awd"><div class="mi"><svg><use href="#i-award"/></svg></div><div style="min-width:0"><b>Huy chương Vàng</b><span>VIPA 2024 · Phong cảnh</span></div></div></div><div class="awl"><div class="aw-ic"><svg><use href="#i-award"/></svg></div><div class="t"><b>Huy chương Vàng · VIPA 2024</b><span class="badge b-ok">Đã duyệt</span> Phong cảnh</div></div><div class="awl"><div class="aw-ic mute"><svg><use href="#i-award"/></svg></div><div class="t"><b>Khuyến khích · Ảnh Đẹp VN 2022</b><span class="badge b-pen">Chờ duyệt</span> gửi 03/10</div></div>',
      f'<div class="awd" style="gap:8px">{skc(30)}<div style="flex:1;display:flex;flex-direction:column;gap:4px">{sk("80%","12px")}{sk("60%","10px")}</div></div><div class="awl">{skc(30)}<div class="t" style="display:flex;flex-direction:column;gap:6px">{sk("60%","13px")}{sk("40%","10px")}</div></div>')
+
+tile('earningrow', 'EarningRow',
+     'EarningRow({required title, required meta, required amount, required amountLabel, required badge, note, noteIcon, onTap}) · EarningRow.skeleton()',
+     'S06.05',
+     '<div class="card"><div class="t"><b>Lan Anh · Chân dung 2h</b><span class="meta">T7 12/10</span></div><div style="text-align:right"><b class="tn" style="font-size:13px">450K</b><div style="margin-top:3px"><span class="badge b-pen">Đang giữ</span></div></div></div><div class="card" style="flex-direction:column;align-items:stretch;gap:4px"><div class="row"><div class="t"><b>Thu Hà · Kỷ yếu</b><span class="meta">T5 10/10</span></div><div style="text-align:right"><b class="tn" style="font-size:13px">900K</b><div style="margin-top:3px"><span class="badge b-bad">Đang khiếu nại</span></div></div></div><span class="meta">Lý do: Khách đã báo vấn đề, đang chờ xử lý</span></div>',
+     f'<div class="card"><div class="t" style="display:flex;flex-direction:column;gap:6px">{sk("70%","13px")}{sk("30%","10px")}</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">{sk("40px","14px")}{sk("64px","18px")}</div></div>')
 
 # --- Controls --------------------------------------------------------------------------------------
 tile('buttons', 'AppButton', 'AppButton.primary|outline|secondary|danger|text({label, onPressed, loading, size = regular|small|xsmall})', 'Mọi màn (một nút chính mỗi màn)',

@@ -250,6 +250,18 @@ void main() {
     expect(handles.location, '/b/r1');
   });
 
+  testWidgets('the Đang giữ tile opens Thu nhập', (tester) async {
+    final repo = _repo(_busy());
+    final handles = await _pump(tester, repo);
+    await _settle(tester);
+
+    await tester.scrollUntilVisible(find.text('Tháng này'), 200);
+    await tester.tap(find.text('Đang giữ'));
+    await _settle(tester);
+
+    expect(handles.location, '/work/earnings');
+  });
+
   testWidgets('S06.01 accept opens the chat', (tester) async {
     final booking = _b(
       'r1',

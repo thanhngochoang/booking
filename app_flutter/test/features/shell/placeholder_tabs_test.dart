@@ -114,6 +114,8 @@ void main() {
     expect(find.text('Nhiếp ảnh gia'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing, reason: 'nothing switched yet');
 
+    // The Thu nhập row pushes the switch card below the fold.
+    await tester.ensureVisible(find.text('Chuyển qua chế độ đặt lịch'));
     await tester.tap(find.text('Chuyển qua chế độ đặt lịch'));
     await tester.pumpAndSettle();
     final uid = auth.currentUser!.uid;
@@ -201,6 +203,10 @@ void main() {
           builder: (_, _) => const Text('stub /me/awards'),
         ),
         GoRoute(
+          path: '/work/earnings',
+          builder: (_, _) => const Text('stub /work/earnings'),
+        ),
+        GoRoute(
           path: '/work/calendar',
           builder: (_, _) => const Text('calendar'),
         ),
@@ -257,6 +263,34 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Album của tôi'), findsNothing);
+  });
+
+  testWidgets('S09.01: photographers see Thu nhập and it opens S06.05', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    final intro = FakePhotographerIntroRepository()
+      ..seed(
+        auth.currentUser!.uid,
+        const PhotographerIntro(onboardingComplete: true),
+      );
+    await tester.pumpWidget(routed(auth, users, intro));
+    await tester.pumpAndSettle();
+    expect(find.text('Thu nhập'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('open-earnings')));
+    await tester.tap(find.byKey(const Key('open-earnings')));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /work/earnings'), findsOneWidget);
+  });
+
+  testWidgets('S09.01: customers do not see Thu nhập', (tester) async {
+    final (auth, users) = await _signedIn(UserRole.customer);
+    await tester.pumpWidget(
+      routed(auth, users, FakePhotographerIntroRepository()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thu nhập'), findsNothing);
+    expect(find.byKey(const Key('open-earnings')), findsNothing);
   });
 
   /// The signed-in photographer's public profile with [type].

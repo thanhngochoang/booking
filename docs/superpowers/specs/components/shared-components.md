@@ -126,7 +126,7 @@ Lớp view-data: `TicketCardData(id, code, title, category, dateTime, ticketCoun
 Dòng thời gian 7 bước của booking. `StatusTimeline({required List<TimelineStep> steps})`. Bước đã xong chấm xanh, bước hiện tại viền primary + quầng, bước tới chấm trống; đường nối dọc; mỗi bước có tên + dòng phụ (thời điểm, hướng dẫn). `Semantics`: "Bước 2 trong 7, đang diễn ra". Dùng ở S05.02.
 
 ### StatTile · Mới
-Ô số liệu. `StatTile({required String value, required String label})`. Số Fraunces 22 `tabularFigures` ở trên, nhãn 10,5 một dòng bên dưới (`FittedBox(scaleDown)`), nền trong mờ `surfaceMuted`, viền mảnh, không mờ nền (ô nằm trong thẻ đã mờ). Hàng ô dùng `IntrinsicHeight` + `Expanded` để cùng một hàng và cùng chiều cao. Dùng ở S03.01 (thống kê), S06.01, S12.03. Nhãn màu `foregroundSecondary` (≥ 4,5:1).
+Ô số liệu. `StatTile({required String value, required String label, VoidCallback? onTap})`. Có `onTap` thì ô là nút (`Semantics(button)`, `InkWell` theo radius ô, cao ≥ 48dp, đọc "giá trị, nhãn"); không có thì tĩnh. S06.01 "Đang giữ" mở S06.05. Số Fraunces 22 `tabularFigures` ở trên, nhãn 10,5 một dòng bên dưới (`FittedBox(scaleDown)`), nền trong mờ `surfaceMuted`, viền mảnh, không mờ nền (ô nằm trong thẻ đã mờ). Hàng ô dùng `IntrinsicHeight` + `Expanded` để cùng một hàng và cùng chiều cao. Dùng ở S03.01 (thống kê), S06.01, S12.03. Nhãn màu `foregroundSecondary` (≥ 4,5:1).
 
 ### FreeTag và FreeBanner · Mới
 Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nhạt (`successSubtle` ở sáng, xanh 20% ở tối), chữ xanh đậm (≥ 4,5:1), nhãn “Không thu phí”, đặt ở chỗ giá của `EventCard` (thay “0₫”). `FreeBanner({String? body})` là dải đầy chiều rộng dưới ảnh bìa ở S11.02: biểu tượng tích + “Không thu phí” (đậm) + dòng phụ “Đăng ký để giữ chỗ, không cần thanh toán”. Không chỉ dựa vào màu (luôn có chữ). Dùng ở S02.03, S11.01, S11.02, S12.02 (xem trước), S02.04; S11.03 và S12.03 xử lý riêng (bỏ cổng, doanh thu “—”).
@@ -276,6 +276,9 @@ Nhãn chữ dạng viên thuốc nhỏ: `artist` "Nhiếp ảnh gia" (chữ, vi�
 #### AwardChip và AwardRow · Mới
 `AwardChip` (S03.01): thẻ 178dp, viền và nền vàng nhạt, đĩa biểu tượng giải vàng, kết quả (đậm) + "cuộc thi năm · hạng mục" một dòng. `AwardRow` (S25.01): đĩa biểu tượng (vàng khi `approved`, xám khi khác), tiêu đề "kết quả · cuộc thi năm", `StatusBadge` + dòng phụ (hạng mục hoặc lý do).
 
+#### EarningRow · Mới
+Hàng khoản thu của S06.05 (mock `.card`): trái là tiêu đề đậm "Tên khách · gói" (tối đa 2 dòng) và ngày `T7 12/10`; phải là số tiền ngắn (`450K`, `tabularFigures`, màu chữ thường, không dùng màu nhấn cho tiền) và `StatusBadge` trạng thái; dòng ghi chú tuỳ chọn bên dưới với biểu tượng (lý do tạm giữ, chữ cố định theo mã, không phải lời khách). `Semantics`: "tiêu đề, ngày, số tiền đầy đủ, ghi chú" (nút khi có `onTap`); ≥ 48dp. `EarningRow.skeleton()` cùng hình khối. Dùng ở S06.05.
+
 #### PortfolioViewToggle · Mới
 Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), biểu tượng + chữ, `Semantics` vai trò tab có trạng thái chọn.
 
@@ -330,7 +333,8 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `AppOptionTile` | S02.05, S02.06 (sau: S04.02, S13.01) |
 | `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04 |
 | `StatusTimeline` | S05.02 |
-| `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02 |
+| `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
+| `EarningRow` | S06.05 |
 | `ContactDial`, `ContactLauncher` | S03.01, S05.02, S11.02, S06.01, S12.03 (S05.04) |
 | `PhoneField` | S04.03, S11.03, S04.05, S08.05, S09.03 |
 | `LocationPromptCard`, `LocationRepository` | S02.03, S02.04, S02.05 |

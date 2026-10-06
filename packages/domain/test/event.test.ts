@@ -7,7 +7,7 @@ import {
 import { START, T0, admin, cu1, eventRecord, ph1, ph2, rawEvent, sales1, sales2 } from './support/event_world.js';
 
 const publish = (over: Record<string, unknown> = {}, now = T0) =>
-  validateEventFields(rawEvent('ev1', 'ph1', over), 'publish', now, null);
+  validateEventFields(rawEvent('ev1_aaaaaaaaaaaaaaaaaaaa', 'ph1', over), 'publish', now, null);
 const draft = (raw: Record<string, unknown>) => validateEventFields(raw, 'draft', T0, null);
 const invalid = (fn: () => unknown) =>
   assert.throws(fn, (e) => e instanceof DomainError && e.code === 'invalid_argument');

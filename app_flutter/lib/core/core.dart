@@ -36,6 +36,7 @@ export 'package:photobooking/core/widgets/capacity_bar.dart';
 export 'package:photobooking/core/widgets/completeness_meter.dart';
 export 'package:photobooking/core/widgets/contact_dial.dart';
 export 'package:photobooking/core/widgets/cta_surface.dart';
+export 'package:photobooking/core/widgets/earning_row.dart';
 export 'package:photobooking/core/widgets/empty_state.dart';
 export 'package:photobooking/core/widgets/error_state.dart';
 export 'package:photobooking/core/widgets/evidence_picker.dart';

@@ -56,7 +56,7 @@ class FakePeople implements EventPeople {
 
 class FakeContacts implements UserContactReader {
   private readonly phones = new Map<string, string>([
-    ['cu1', '+84912000001'], ['cu2', '+84912000002'], ['cu3', '+84912000003'], ['cu4', '+84912000004'],
+    ['cu1', '+84912000001'], ['cu2', '+84912000002'], ['cu3', '+84912000003'], ['cu4', '+84912000004'], ['cu5', '+84912000005'],
   ]);
 
   async get(uid: string): Promise<UserContactRecord | null> {
@@ -112,7 +112,7 @@ export async function publishedEvent(
   w: EventWorld,
   over: Record<string, unknown> = {},
   caller: EventCaller = ph1,
-  id = 'ev1',
+  id = 'ev1_aaaaaaaaaaaaaaaaaaaa',
 ): Promise<string> {
   const { eventId } = await saveEventDraft(w.deps, caller, rawEvent(id, caller.uid, over));
   await publishEvent(w.deps, caller, { eventId });

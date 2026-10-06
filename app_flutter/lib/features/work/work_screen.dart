@@ -288,10 +288,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                 value: formatMoney(d.monthRevenueVnd, short: true),
                 label: l10n.workMonth,
               ),
-              // Tapping does nothing until S06.05 exists (no dead route).
               StatTile(
                 value: formatMoney(d.heldVnd, short: true),
                 label: l10n.workHeld,
+                onTap: () => context.push('/work/earnings'),
               ),
               StatTile(value: '${d.upcomingCount}', label: l10n.workUpcoming),
             ],

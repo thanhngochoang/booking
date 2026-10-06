@@ -12,14 +12,14 @@ const after = (d: Date, ms = 1000) => new Date(d.getTime() + ms);
 describe('runEventSweeps', () => {
   test('past deadline closes open and full events', async () => {
     const w = createEventWorld();
-    await publishedEvent(w, { capacity: 1 }, ph1, 'a');
-    await publishedEvent(w, {}, sales1, 'b');
-    await register(w, cu1, 'a'); // a is now full
-    assert.equal(w.store.events.get('a')?.status, 'full');
+    await publishedEvent(w, { capacity: 1 }, ph1, 'aaaaaaaaaaaaaaaaaaaaa');
+    await publishedEvent(w, {}, sales1, 'bbbbbbbbbbbbbbbbbbbbb');
+    await register(w, cu1, 'aaaaaaaaaaaaaaaaaaaaa'); // a is now full
+    assert.equal(w.store.events.get('aaaaaaaaaaaaaaaaaaaaa')?.status, 'full');
     w.clock.set(DEADLINE);
     assert.deepEqual(await runEventSweeps(w.deps), { closed: 2, completed: 0, consentExpired: 0 });
-    assert.equal(w.store.events.get('a')?.status, 'closed');
-    assert.equal(w.store.events.get('b')?.status, 'closed');
+    assert.equal(w.store.events.get('aaaaaaaaaaaaaaaaaaaaa')?.status, 'closed');
+    assert.equal(w.store.events.get('bbbbbbbbbbbbbbbbbbbbb')?.status, 'closed');
   });
 
   test('before the deadline nothing changes', async () => {
@@ -36,21 +36,21 @@ describe('runEventSweeps', () => {
     w.clock.set(now);
     const r = await runEventSweeps(w.deps);
     assert.equal(r.completed, 1);
-    const ev = w.store.events.get('ev1');
+    const ev = w.store.events.get('ev1_aaaaaaaaaaaaaaaaaaaa');
     assert.equal(ev?.status, 'completed');
     assert.equal(ev?.completedAt?.getTime(), now.getTime());
     // the group chat closes for writing 7 days later
-    assert.equal(w.store.chatReadOnlyAt.get('event_ev1')?.getTime(), now.getTime() + 7 * 86_400_000);
+    assert.equal(w.store.chatReadOnlyAt.get('event_ev1_aaaaaaaaaaaaaaaaaaaa')?.getTime(), now.getTime() + 7 * 86_400_000);
   });
 
   test('cancelled and draft events are left alone', async () => {
     const w = createEventWorld();
     w.store.seedEvent(eventRecord({ id: 'c', hashtagKey: 'c', status: 'cancelled' }));
-    await saveEventDraft(w.deps, ph1, rawEvent('d'));
+    await saveEventDraft(w.deps, ph1, rawEvent('ddddddddddddddddddddd'));
     w.clock.set(after(new Date(END), 86_400_000));
     assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0 });
     assert.equal(w.store.events.get('c')?.status, 'cancelled');
-    assert.equal(w.store.events.get('d')?.status, 'draft');
+    assert.equal(w.store.events.get('ddddddddddddddddddddd')?.status, 'draft');
   });
 
   test('a sweep run twice changes nothing more', async () => {
@@ -65,12 +65,12 @@ describe('runEventSweeps', () => {
 
   test('O1: an unanswered consent draft is cancelled after 24 hours', async () => {
     const w = createEventWorld();
-    await saveEventDraft(w.deps, sales1, rawEvent('ev1', 'sales1', { hostPhotographerId: 'ph1' }));
+    await saveEventDraft(w.deps, sales1, rawEvent('ev1_aaaaaaaaaaaaaaaaaaaa', 'sales1', { hostPhotographerId: 'ph1' }));
     w.clock.advance(24 * 3_600_000 - 1);
     assert.equal((await runEventSweeps(w.deps)).consentExpired, 0);
     w.clock.advance(1);
     assert.equal((await runEventSweeps(w.deps)).consentExpired, 1);
-    const ev = w.store.events.get('ev1');
+    const ev = w.store.events.get('ev1_aaaaaaaaaaaaaaaaaaaa');
     assert.deepEqual([ev?.hostConsent, ev?.status], ['expired', 'cancelled']);
     assert.equal(w.store.hashtags.size, 0);
     assert.equal((await runEventSweeps(w.deps)).consentExpired, 0);

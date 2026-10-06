@@ -15,6 +15,7 @@ import type { EventDeps, EventGroupChatSeed, EventTx } from './event_ports.js';
 import { isId } from './ids.js';
 
 const HOUR_MS = 3_600_000;
+const CLIENT_EVENT_ID = /^[A-Za-z0-9_-]{20,64}$/;
 
 function obj(raw: unknown): Record<string, unknown> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new DomainError('invalid_argument');
@@ -62,8 +63,11 @@ async function resolveHost(
 
 function checkCoverAndFaq(deps: EventDeps, caller: EventCaller, f: EventFields, host: EventHost, createdBy: string, eventId: string): void {
   if (f.touched.has('coverUrl') || f.touched.has('coverPath')) {
-    if (f.coverUrl !== null && f.coverPath !== null
-      && !deps.media.isOwnUpload(f.coverUrl, f.coverPath, createdBy, eventId)) {
+    // Uploaded by the creator (staff or photographer) or by the host photographer.
+    const uploaders = [createdBy, ...(host.type === 'photographer' && host.id !== null ? [host.id] : [])];
+    const url = f.coverUrl;
+    const path = f.coverPath;
+    if (url !== null && path !== null && !uploaders.some((u) => deps.media.isOwnUpload(url, path, u, eventId))) {
       throw new DomainError('invalid_argument');
     }
   }
@@ -72,6 +76,13 @@ function checkCoverAndFaq(deps: EventDeps, caller: EventCaller, f: EventFields, 
     if (caller.staffRole === null) throw new DomainError('permission_denied');
     if (host.type !== 'platform') throw new DomainError('invalid_argument');
   }
+}
+
+function materialChange(e: EventRecord, f: EventFields): boolean {
+  return f.title !== e.title || f.description !== e.description || f.type !== e.type
+    || f.coverUrl !== e.coverUrl || !sameInstant(f.startAt, e.startAt) || !sameInstant(f.endAt, e.endAt)
+    || JSON.stringify(f.location) !== JSON.stringify(e.location)
+    || f.price !== e.price || f.capacity !== e.capacity;
 }
 
 const hashtagLocked = (e: EventRecord): boolean =>
@@ -130,6 +141,10 @@ export async function saveEventDraft(
   return deps.events.runTransaction(async (tx) => {
     const now = deps.clock.now();
     const existing = await tx.getEvent(eventId);
+    // A client-chosen id must be unguessable (ULID-like), so nobody can squat a predictable one.
+    if (existing === null && r.eventId !== undefined && !CLIENT_EVENT_ID.test(eventId)) {
+      throw new DomainError('invalid_argument');
+    }
     if (existing !== null) {
       if (!isEventManager(existing, caller)) throw new DomainError('permission_denied');
       if (existing.status !== 'draft') throw new DomainError('conflict');
@@ -153,7 +168,15 @@ export async function saveEventDraft(
     };
     writeHashtag(tx, plan, eventId, existing === null);
     if (existing !== null) {
-      tx.putEvent({ ...existing, ...base, version: existing.version + 1 });
+      // O1: material edits by staff to a draft the photographer already accepted need a new answer.
+      const reset = caller.staffRole !== null && existing.hostConsent === 'accepted' && materialChange(existing, f);
+      tx.putEvent({
+        ...existing, ...base,
+        ...(reset
+          ? { hostConsent: 'pending' as const, hostConsentExpiresAt: new Date(now.getTime() + HOST_CONSENT_HOURS * HOUR_MS) }
+          : {}),
+        version: existing.version + 1,
+      });
     } else {
       const c = created as NonNullable<typeof created>;
       tx.putEvent({

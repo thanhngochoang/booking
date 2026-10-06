@@ -6406,11 +6406,161 @@ abstract class AppLocalizations {
   /// **'{cur} / {target}'**
   String badgesSheetProgress(int cur, int target);
 
-  /// No description provided for @badgesRowSemantics.
+  /// No description provided for @earningsTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Huy hiệu, xem tất cả'**
-  String get badgesRowSemantics;
+  /// **'Thu nhập'**
+  String get earningsTitle;
+
+  /// No description provided for @earningsNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.'**
+  String get earningsNotice;
+
+  /// No description provided for @earningsHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get earningsHeld;
+
+  /// No description provided for @earningsSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp nhận'**
+  String get earningsSoon;
+
+  /// No description provided for @earningsReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get earningsReceived;
+
+  /// No description provided for @earningsStateHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get earningsStateHeld;
+
+  /// No description provided for @earningsStateReleased.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ chi trả'**
+  String get earningsStateReleased;
+
+  /// No description provided for @earningsStatePaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển {date}'**
+  String earningsStatePaid(String date);
+
+  /// No description provided for @earningsStateDispute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang khiếu nại'**
+  String get earningsStateDispute;
+
+  /// No description provided for @earningsAddAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm tài khoản để nhận tiền'**
+  String get earningsAddAccount;
+
+  /// No description provided for @earningsAddAccountSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần có trước khi chuyển khoản'**
+  String get earningsAddAccountSub;
+
+  /// No description provided for @earningsItems.
+  ///
+  /// In vi, this message translates to:
+  /// **'Các khoản'**
+  String get earningsItems;
+
+  /// No description provided for @earningsMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}'**
+  String earningsMonth(int month);
+
+  /// No description provided for @earningsMonthYear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}/{year}'**
+  String earningsMonthYear(int month, int year);
+
+  /// No description provided for @earningsPayoutFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản lỗi, kiểm tra tài khoản'**
+  String get earningsPayoutFailed;
+
+  /// No description provided for @earningsHoldReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}'**
+  String earningsHoldReason(String reason);
+
+  /// No description provided for @earningsHoldDispute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã báo vấn đề, đang chờ xử lý'**
+  String get earningsHoldDispute;
+
+  /// No description provided for @earningsHoldPayoutOnHold.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lô chi trả đang tạm giữ'**
+  String get earningsHoldPayoutOnHold;
+
+  /// No description provided for @earningsCustomerFallback.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách'**
+  String get earningsCustomerFallback;
+
+  /// No description provided for @earningsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có khoản thu nào'**
+  String get earningsEmptyTitle;
+
+  /// No description provided for @earningsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.'**
+  String get earningsEmptyBody;
+
+  /// No description provided for @earningsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get earningsMore;
+
+  /// No description provided for @earningsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được thu nhập'**
+  String get earningsLoadError;
+
+  /// No description provided for @payoutAccountTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản nhận tiền'**
+  String get payoutAccountTitle;
+
+  /// No description provided for @profileEarnings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thu nhập'**
+  String get profileEarnings;
+
+  /// No description provided for @profileEarningsSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền đang giữ, sắp nhận và đã nhận'**
+  String get profileEarningsSub;
 }
 
 class _AppLocalizationsDelegate

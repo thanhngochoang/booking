@@ -610,6 +610,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
         '/b/:id',
         '/b/:id/review',
         '/work/calendar',
+        '/work/earnings',
         '/setup/2',
         '/profile/skills',
         '/u/:uid',

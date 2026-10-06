@@ -42,6 +42,7 @@ export const NOTIFICATION_TYPES = {
   instant_assigned: meta('instant', 'activity'),
   instant_missed: meta('instant', 'activity'),
   event_soon: meta('events', 'events'),
+  event_host_invited: meta('events', 'events', true),
   review_new: meta('badges', 'system'),
   badge_new: meta('badges', 'system'),
   award_reviewed: meta('badges', 'system'),

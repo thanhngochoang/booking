@@ -10,6 +10,7 @@ export type NotificationContent =
   | { type: 'booking_cancelled'; by: 'party' | 'system'; name: string; day: string; start: string; percent: number | null }
   | { type: 'refund_done'; amount: number; bookingId: string }
   | { type: 'shoot_reminder'; hours: 24 | 2; service: string; counterpart: string; day: string; start: string }
+  | { type: 'event_host_invited'; title: string }
   | { type: 'review_new'; customer: string; rating: number; text: string }
   | { type: 'badge_new'; name: string; description: string }
   | { type: 'award_reviewed'; status: 'approved' | 'needs_info' | 'rejected' | 'revoked' }
@@ -89,6 +90,11 @@ export function renderNotification(c: NotificationContent): { title: string; bod
       return {
         title: `Nhắc lịch: còn ${c.hours} giờ`,
         body: `${c.service} với ${c.counterpart}, ${c.day} lúc ${c.start}.`,
+      };
+    case 'event_host_invited':
+      return {
+        title: 'Bạn được mời làm chủ một sự kiện',
+        body: `“${truncateGraphemes(c.title, 60)}”. Trả lời trong 24 giờ để sự kiện được giữ lại.`,
       };
     case 'review_new':
       return {

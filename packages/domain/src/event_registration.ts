@@ -184,6 +184,7 @@ export async function checkInRegistration(
     const ev = await tx.getEvent(eventId);
     if (ev === null || ev.status === 'draft') throw new DomainError('not_found');
     if (!isEventManager(ev, caller)) throw new DomainError('permission_denied');
+    if (ev.status === 'cancelled') throw new DomainError('not_eligible');
     if (ev.dayKey === null || ev.endAt === null) throw new DomainError('not_found');
     const opens = parseVnDateTime(ev.dayKey, '00:00').getTime();
     const closes = ev.endAt.getTime() + CHECKIN_GRACE_HOURS * HOUR_MS;
