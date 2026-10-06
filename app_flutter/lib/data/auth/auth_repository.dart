@@ -5,6 +5,9 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:photobooking/data/auth/auth_error.dart';
+import 'package:photobooking/data/auth/staff_role.dart';
+
+export 'package:photobooking/data/auth/staff_role.dart';
 
 class AuthUser {
   const AuthUser({
@@ -48,6 +51,10 @@ abstract class AuthRepository {
   /// `auth_time`. Throws [AuthException] (cancelled, wrongPassword, network,
   /// unknown).
   Future<void> reauthenticate({String? password});
+
+  /// The staff role in the signed-in user's ID token claims; null when signed
+  /// out, no claim, an unknown value, or the token cannot be read.
+  Future<StaffRole?> staffRole();
 }
 
 class FirebaseAuthRepository implements AuthRepository {
@@ -231,6 +238,16 @@ class FirebaseAuthRepository implements AuthRepository {
       throw AuthException(mapAuthException(e));
     }
   }
+
+  @override
+  Future<StaffRole?> staffRole() async {
+    try {
+      final result = await _auth.currentUser?.getIdTokenResult();
+      return StaffRole.fromClaim(result?.claims?['staffRole']);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// In-memory implementation for tests and widget previews.
@@ -248,6 +265,9 @@ class FakeAuthRepository implements AuthRepository {
 
   /// How many times [reauthenticate] succeeded.
   int reauthentications = 0;
+
+  /// The role [staffRole] answers while signed in.
+  StaffRole? staff;
   final bool cancelSocial;
 
   /// Mimics Firebase: authStateChanges fires before updateDisplayName lands.
@@ -353,4 +373,7 @@ class FakeAuthRepository implements AuthRepository {
     }
     reauthentications++;
   }
+
+  @override
+  Future<StaffRole?> staffRole() async => _current == null ? null : staff;
 }

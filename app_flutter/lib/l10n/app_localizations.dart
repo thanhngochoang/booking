@@ -6705,6 +6705,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đang chuyển một lô tiền, thử lại sau ít phút'**
   String get payoutAccountBusy;
+
+  /// No description provided for @eventHostPlatform.
+  ///
+  /// In vi, this message translates to:
+  /// **'Do ứng dụng tổ chức'**
+  String get eventHostPlatform;
 }
 
 class _AppLocalizationsDelegate

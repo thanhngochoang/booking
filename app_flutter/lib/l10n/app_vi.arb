@@ -1825,5 +1825,6 @@
   "payoutAccountReauthWrong": "Mật khẩu chưa đúng",
   "payoutAccountSaved": "Đã lưu tài khoản nhận tiền",
   "payoutAccountSaveError": "Không lưu được. Thử lại",
-  "payoutAccountBusy": "Đang chuyển một lô tiền, thử lại sau ít phút"
+  "payoutAccountBusy": "Đang chuyển một lô tiền, thử lại sau ít phút",
+  "eventHostPlatform": "Do ứng dụng tổ chức"
 }

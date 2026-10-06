@@ -3819,4 +3819,7 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get payoutAccountBusy =>
       'Đang chuyển một lô tiền, thử lại sau ít phút';
+
+  @override
+  String get eventHostPlatform => 'Do ứng dụng tổ chức';
 }

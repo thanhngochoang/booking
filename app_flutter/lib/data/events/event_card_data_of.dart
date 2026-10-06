@@ -7,8 +7,8 @@ EventCardData eventCardDataOf(EventSummary e, AppLocalizations l) {
   return EventCardData(
     id: e.id,
     title: e.title,
-    hostName: e.hostName,
-    hostVerified: e.hostVerified,
+    hostName: e.isPlatformHosted ? l.eventHostPlatform : e.hostName,
+    hostVerified: !e.isPlatformHosted && e.hostVerified,
     typeTag: e.type.tag,
     typeLabel: e.type.label(l),
     startsAt: e.startsAt,
