@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/app_icons.dart';
+import 'package:photobooking/core/theme/app_theme.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/core/widgets/app_chip.dart';
@@ -92,7 +93,7 @@ class LocationPromptCard extends StatelessWidget {
                   child: AppIcon(
                     AppIcons.place,
                     size: 18,
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: context.mutedForeground,
                   ),
                 ),
               ),

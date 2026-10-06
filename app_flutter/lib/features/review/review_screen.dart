@@ -294,7 +294,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       Text(
                         l10n.reviewOptional,
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: context.mutedForeground,
                         ),
                       ),
                     ],

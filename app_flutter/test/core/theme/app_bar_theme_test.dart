@@ -29,3 +29,27 @@ void main() {
     });
   }
 }
+
+void mutedForegroundTests() {
+  for (final (theme, expected) in [
+    (buildDarkTheme(), AppColorsDark.foregroundMuted),
+    (buildLightTheme(), AppColors.foregroundMuted),
+  ]) {
+    testWidgets('mutedForeground (${theme.brightness.name})', (tester) async {
+      late Color c;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Builder(
+            builder: (context) {
+              c = context.mutedForeground;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      expect(c, expected);
+      expect(theme.colorScheme.onSurfaceVariant, isNot(expected));
+    });
+  }
+}

@@ -176,7 +176,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   AppIcons.place,
                   key: const Key('explore-pin'),
                   size: 15,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: context.mutedForeground,
                 ),
                 const SizedBox(width: AppSpace.s2),
                 Expanded(

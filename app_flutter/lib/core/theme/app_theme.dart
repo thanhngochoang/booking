@@ -8,6 +8,13 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 const controlRadius = AppRadius.xl;
 const controlHeight = 48.0;
 
+/// The muted foreground for idle glyphs (not for text: it is below AA on light).
+extension MutedForegroundX on BuildContext {
+  Color get mutedForeground => Theme.of(this).brightness == Brightness.dark
+      ? AppColorsDark.foregroundMuted
+      : AppColors.foregroundMuted;
+}
+
 /// Status bar icons that read on [theme]'s canvas, over a transparent bar.
 SystemUiOverlayStyle overlayStyleFor(ThemeData theme) =>
     (theme.brightness == Brightness.dark
@@ -73,8 +80,6 @@ ThemeData _build({
     onError: Colors.white,
     surface: surface,
     onSurface: foreground,
-    // Secondary/idle glyphs and captions: the muted foreground.
-    onSurfaceVariant: foregroundMuted,
     outline: borderStrong,
     outlineVariant: border,
   );

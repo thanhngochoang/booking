@@ -138,9 +138,7 @@ class _RoleCard extends StatelessWidget {
             AppIcon(
               icon,
               selected: selected,
-              color: selected
-                  ? scheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: selected ? scheme.primary : context.mutedForeground,
             ),
             const SizedBox(width: AppSpace.s3),
             Expanded(
