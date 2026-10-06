@@ -73,14 +73,14 @@ class FirestoreNotificationRepository implements NotificationRepository {
     String uid,
     NotificationTab? tab,
     int limit, {
-    DateTime? before,
+    DateTime? upTo,
   }) {
     Query<Map<String, dynamic>> q = _rows(uid);
     if (tab != null) {
       q = q.where('tab', isEqualTo: tab.name);
     }
-    if (before != null) {
-      q = q.where('createdAt', isLessThan: Timestamp.fromDate(before));
+    if (upTo != null) {
+      q = q.where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(upTo));
     }
     return q.orderBy('createdAt', descending: true).limit(limit);
   }
@@ -118,11 +118,45 @@ class FirestoreNotificationRepository implements NotificationRepository {
     required NotificationCursor after,
     int limit = 30,
   }) async {
-    // The cursor is the time only: two rows written in the same millisecond at
-    // a page boundary could be skipped (rows come from server events, so a tie
-    // there is vanishingly rare).
-    final snap = await _query(uid, tab, limit, before: after.createdAt).get();
-    return _toPage(snap, limit);
+    // Rows are ordered by (createdAt, id) both descending, the order Firestore
+    // gives ties. The query takes every row at or before the cursor time and
+    // over-fetches; rows of the cursor's own time that sort at or before the
+    // cursor id were already delivered. A window that may be cut inside its
+    // oldest tie group drops that group (it may be incomplete) and widens.
+    var fetch = limit * 2 + 2;
+    while (true) {
+      final snap = await _query(uid, tab, fetch, upTo: after.createdAt).get();
+      final rows =
+          [
+            for (final d in snap.docs)
+              if (_time(d.data()['createdAt']) case final t?) (t, d),
+          ]..sort((a, b) {
+            final c = b.$1.compareTo(a.$1);
+            return c != 0 ? c : b.$2.id.compareTo(a.$2.id);
+          });
+      final truncated = snap.docs.length >= fetch;
+      final oldest = rows.isEmpty ? null : rows.last.$1;
+      final fresh = [
+        for (final (t, d) in rows)
+          if ((t.isBefore(after.createdAt) || d.id.compareTo(after.id) < 0) &&
+              !(truncated && t == oldest))
+            (t, d),
+      ];
+      if (fresh.length >= limit || !truncated) {
+        final take = fresh.take(limit).toList();
+        final items = <AppNotification>[
+          for (final (_, d) in take) ?notificationFromFirestore(d.id, d.data()),
+        ];
+        return NotificationPage(
+          items: items,
+          next: take.length >= limit
+              ? NotificationCursor(createdAt: take.last.$1, id: take.last.$2.id)
+              : null,
+          fromCache: snap.metadata.isFromCache,
+        );
+      }
+      fetch *= 2;
+    }
   }
 
   @override

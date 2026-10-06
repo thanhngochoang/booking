@@ -127,6 +127,37 @@ void main() {
     expect(third.next, isNull);
   });
 
+  test('rows sharing a createdAt are returned once across pages', () async {
+    for (final (n, size) in [(3, 2), (5, 2), (5, 5), (4, 3)]) {
+      final d = FakeFirebaseFirestore();
+      final r = FirestoreNotificationRepository(db: d);
+      final col = d.collection('users').doc('u1').collection('notifications');
+      for (var i = 0; i < n; i++) {
+        await col.doc('t$i').set(row(10));
+      }
+      await col.doc('newer').set(row(1));
+      await col.doc('older').set(row(20));
+
+      final seen = <String>[];
+      // fake_cloud_firestore leaves ties unordered, so the first page also goes
+      // through page(), which sorts (createdAt, id) descending itself.
+      var page = await r.page(
+        'u1',
+        after: NotificationCursor(createdAt: _t0, id: '\uffff'),
+        limit: size,
+      );
+      seen.addAll(page.items.map((x) => x.id));
+      while (page.next != null) {
+        page = await r.page('u1', after: page.next!, limit: size);
+        seen.addAll(page.items.map((x) => x.id));
+      }
+      expect(seen.toSet(), hasLength(n + 2), reason: 'n=$n limit=$size');
+      expect(seen, hasLength(n + 2), reason: 'no duplicates n=$n limit=$size');
+      expect(seen.first, 'newer');
+      expect(seen.last, 'older');
+    }
+  });
+
   test('markRead writes one batch with readAt only', () async {
     await rows().doc('n1').set(row(3));
     await rows().doc('n2').set(row(2));

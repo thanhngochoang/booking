@@ -46,10 +46,11 @@ class NotificationRowData {
       dark ? AppColorsDark.successSubtle : AppColors.successSubtle,
       dark ? AppColorsDark.success : AppColors.success,
     ),
-    // Dark ink on the light yellow disc: the yellow itself is below AA there.
+    // Fixed dark ink on the pale yellow disc in both themes (the dark theme's
+    // own foreground is near-white, ~1.1:1 on this disc).
     NotificationTone.action => (
       dark ? AppColorsDark.warningSubtle : AppColors.warningSubtle,
-      dark ? AppColorsDark.foreground : AppColors.foreground,
+      AppColors.foreground,
     ),
     NotificationTone.danger => (
       dark ? AppColorsDark.errorSubtle : AppColors.errorSubtle,

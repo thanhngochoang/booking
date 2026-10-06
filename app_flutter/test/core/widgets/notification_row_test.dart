@@ -120,6 +120,28 @@ void main() {
         expect(icon.icon, AppIcons.award);
         expect(icon.color, e.value.$2, reason: '${e.key} glyph');
       }
+
+      // Dark theme: the action glyph stays the fixed dark ink.
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.dark),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
+          home: Scaffold(
+            body: NotificationRow(
+              item: _item(tone: NotificationTone.action),
+              onTap: () {},
+              onMarkRead: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<AppIcon>(find.byKey(const ValueKey('notification_icon'))).color,
+        AppColors.foreground,
+      );
     });
 
     testWidgets('null onMuteKind hides the menu item and the custom action', (tester) async {
