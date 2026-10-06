@@ -9,11 +9,11 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 - **Thông tin**: `/b/:id/review` · khách · sub‑project 6 · Chưa có.
 - **Mục đích**: khép vòng: đánh giá và chia sẻ ảnh thành "Buổi chụp thật".
 - **Điểm vào → ra**: push "Buổi chụp thế nào?" (sau `endTime` + 24 giờ hoặc khi NAG bấm "Đã giao ảnh"), S05.02, S05.01. Gửi xong → S05.02 (`reviewed`).
-- **Bố cục**: Back + "Buổi chụp thế nào?"; `BookingCard` thu gọn; 5 sao lớn (chạm chọn, giữ trượt chọn); ô nhận xét (bắt buộc, 10–1000 ký tự); section "Chia sẻ ảnh bạn thích" (tuỳ chọn, ≤ 10) với lưới ảnh chọn từ thư viện; nhắc "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {tên}, có tag nhiếp ảnh gia"; thanh dưới "Chỉ đánh giá" + "Gửi & chia sẻ {n} ảnh".
+- **Bố cục**: Back + "Buổi chụp thế nào?"; `BookingCard` thu gọn; `VerdictPad` cà chua/gạch (chạm liên tục 1–10 hit, gạch kèm chip lý do; chi tiết spec `2026-10-06-tomato-brick-reviews-design.md` §5); ô nhận xét (bắt buộc, 10–1000 ký tự); section "Chia sẻ ảnh bạn thích" (tuỳ chọn, ≤ 10) với lưới ảnh chọn từ thư viện; nhắc "Ảnh hiện trong 'Buổi chụp thật' trên Trang chủ và hồ sơ {tên}, có tag nhiếp ảnh gia"; thanh dưới "Chỉ đánh giá" + "Gửi & chia sẻ {n} ảnh".
 - **Dữ liệu**: ghi `reviews/{bookingId}` (một đánh giá/booking) và, nếu có ảnh, bài `posts` `kind=real_shoot` (`bookingId`, `serviceId`). Function `onReviewWrite` cập nhật `stats` và huy hiệu.
-- **Trạng thái**: chưa chọn sao hoặc nhận xét ngắn → nút vô hiệu; đang tải ảnh → tiến độ từng ảnh; booking chưa `completed` → chặn; đã đánh giá → chuyển sang xem lại, không sửa.
+- **Trạng thái**: chưa chọn phe, gạch chưa có lý do hoặc nhận xét ngắn → nút vô hiệu; đang tải ảnh → tiến độ từng ảnh; booking chưa `completed` → chặn; đã đánh giá → chuyển sang xem lại, không sửa.
 - **Chuỗi**: `s12_title` "Buổi chụp thế nào?", `s12_text` "Nhận xét", `s12_share` "Chia sẻ ảnh bạn thích", `s12_optional` "Tuỳ chọn", `s12_onlyReview` "Chỉ đánh giá", `s12_submitShare` "Gửi & chia sẻ {n} ảnh".
-- **Phân tích**: `review_submit{rating, shared}`.
+- **Phân tích**: `review_submit{verdict, hits, reasons, shared}`.
 - **Chấp nhận**: đánh giá lên hồ sơ NAG; bài chia sẻ mang nhãn "Buổi chụp thật" và link tới gói; một booking chỉ một đánh giá; toast huy hiệu nếu vừa đạt.
 
 ---

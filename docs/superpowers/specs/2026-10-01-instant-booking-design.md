@@ -88,7 +88,7 @@ choosing ──invite (lượt đầu)──▶ pending_payment ──paid──
 
 - **Nhóm ưu tiên**: nhiếp ảnh gia đang sẵn sàng, đã chấp nhận bảng giá hiện hành, và thoả **một** trong: đạt chuẩn (đã xác minh, đánh giá ≥ 4,5 với ≥ 5 đánh giá, tỉ lệ huỷ chụp ngay ≤ 10% khi có ≥ 10 yêu cầu; chưa đủ dữ liệu thì chỉ cần đã xác minh), hoặc bật "Sẵn sàng hỗ trợ".
 - **Nhóm mở rộng**: mọi nhiếp ảnh gia đang sẵn sàng đã hoàn tất hồ sơ và chấp nhận bảng giá.
-- **Điểm** trong một nhóm: `score = 0,45·eta + 0,25·genreMatch + 0,15·rating + 0,15·reliability` (mỗi thành phần chuẩn hoá về 0..1; `eta` càng nhỏ điểm càng cao; `genreMatch` từ kỹ năng S08.02 với kiểu chụp đã chọn; `reliability` từ tỉ lệ nhận và huỷ). Người bật "Sẵn sàng hỗ trợ" được cộng 0,05 trong nhóm ưu tiên. Module chấm điểm dùng chung với `recommender-core` (spec chính 3e) và trả về lý do; hai lý do đầu hiện thành chip trên thẻ.
+- **Điểm** trong một nhóm: `score = 0,45·eta + 0,25·genreMatch + 0,15·rating (từ 2026-10-06: `(score + 1)/2` của đánh giá cà chua/gạch) + 0,15·reliability` (mỗi thành phần chuẩn hoá về 0..1; `eta` càng nhỏ điểm càng cao; `genreMatch` từ kỹ năng S08.02 với kiểu chụp đã chọn; `reliability` từ tỉ lệ nhận và huỷ). Người bật "Sẵn sàng hỗ trợ" được cộng 0,05 trong nhóm ưu tiên. Module chấm điểm dùng chung với `recommender-core` (spec chính 3e) và trả về lý do; hai lý do đầu hiện thành chip trên thẻ.
 - **ETA khi chấm điểm**: khoảng cách đường chim bay × 1,4 chia vận tốc 20 km/h (không gọi API bản đồ cho mỗi ứng viên); ETA thật lấy từ Goong Distance Matrix chỉ cho người đã nhận.
 
 ### 3.3 Lời mời
