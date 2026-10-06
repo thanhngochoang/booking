@@ -100,7 +100,8 @@ class MyPostsState {
   bool get hasMore => cursor != null;
 
   /// "12" when the list is complete, "12+" while more may follow.
-  String get countLabel => hasMore ? '${posts.length}+' : '${posts.length}';
+  String get countLabel =>
+      posts.isEmpty && hasMore ? '…' : '${posts.length}${hasMore ? '+' : ''}';
 }
 
 /// The owner's own posts for S24.02 / S24.04: `work` posts newest first, pages

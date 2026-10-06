@@ -176,7 +176,7 @@ void main() {
     await tester.pumpWidget(w.app());
     await tester.pumpAndSettle();
     expect(w.posts.byPhotographerCursors.length, 3);
-    expect(find.text('0+ bài · chỉ ở Dòng thời gian'), findsOneWidget);
+    expect(find.text('Bài chưa xếp · chỉ ở Dòng thời gian'), findsOneWidget);
   });
 
   testWidgets('move up saves the new order', (tester) async {

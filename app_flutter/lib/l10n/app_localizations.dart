@@ -5535,6 +5535,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xem thêm bài'**
   String get addPostsMore;
+
+  /// No description provided for @myAlbumsUnsortedSubUnknown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài chưa xếp · chỉ ở Dòng thời gian'**
+  String get myAlbumsUnsortedSubUnknown;
 }
 
 class _AppLocalizationsDelegate

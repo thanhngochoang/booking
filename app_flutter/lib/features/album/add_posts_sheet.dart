@@ -262,7 +262,7 @@ class _AddPostsBodyState extends ConsumerState<_AddPostsBody> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (posts.isEmpty)
+                      if (posts.isEmpty && !state.hasMore)
                         Padding(
                           padding: const EdgeInsets.all(AppSpace.s5),
                           child: Text(
@@ -271,7 +271,7 @@ class _AddPostsBodyState extends ConsumerState<_AddPostsBody> {
                             style: theme.textTheme.bodyMedium,
                           ),
                         )
-                      else
+                      else if (posts.isNotEmpty)
                         PostPickerGrid(
                           items: [
                             for (final p in posts)

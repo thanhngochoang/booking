@@ -375,6 +375,9 @@ class _Body extends ConsumerWidget {
         const SizedBox(height: AppSpace.s2),
         _UnsortedRow(
           countLabel: unsorted.value?.countLabel ?? '…',
+          unknownCount:
+              unsorted.value?.posts.isEmpty == true &&
+              unsorted.value?.hasMore == true,
           onTap: onOpenUnsorted,
         ),
       ],
@@ -405,8 +408,15 @@ class _Cover extends StatelessWidget {
 
 /// The fixed last row: posts that are in no album. It cannot be dragged.
 class _UnsortedRow extends StatelessWidget {
-  const _UnsortedRow({required this.countLabel, required this.onTap});
+  const _UnsortedRow({
+    required this.countLabel,
+    required this.unknownCount,
+    required this.onTap,
+  });
   final String countLabel;
+
+  /// More posts exist but none unsorted was found yet: no number to show.
+  final bool unknownCount;
   final VoidCallback onTap;
 
   @override
@@ -421,7 +431,8 @@ class _UnsortedRow extends StatelessWidget {
     final radius = BorderRadius.circular(AppRadius.lg);
     return Semantics(
       button: true,
-      label: '${l.myAlbumsUnsorted}, ${l.myAlbumsUnsortedSub(countLabel)}',
+      label:
+          '${l.myAlbumsUnsorted}, ${(unknownCount ? l.myAlbumsUnsortedSubUnknown : l.myAlbumsUnsortedSub(countLabel))}',
       excludeSemantics: true,
       onTap: onTap,
       child: InkWell(
@@ -453,7 +464,9 @@ class _UnsortedRow extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          l.myAlbumsUnsortedSub(countLabel),
+                          (unknownCount
+                              ? l.myAlbumsUnsortedSubUnknown
+                              : l.myAlbumsUnsortedSub(countLabel)),
                           style: TextStyle(fontSize: AppText.xs2, color: muted),
                         ),
                       ],

@@ -3129,4 +3129,8 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addPostsMore => 'Xem thêm bài';
+
+  @override
+  String get myAlbumsUnsortedSubUnknown =>
+      'Bài chưa xếp · chỉ ở Dòng thời gian';
 }

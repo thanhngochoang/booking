@@ -341,6 +341,31 @@ void main() {
     expect(find.text('stub /action'), findsOneWidget);
   });
 
+  testWidgets('no empty text or 0+ while unsorted posts may still follow', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      seed: (w) {
+        for (var i = 0; i < 100; i++) {
+          w.posts.add(
+            fixturePost(
+              'p$i',
+              photographerId: w.uid,
+              albumId: 'old',
+              albumPosition: i + 1,
+              age: Duration(minutes: i),
+            ),
+          );
+        }
+      },
+    );
+    expect(find.text('Mọi bài của bạn đã nằm trong album.'), findsNothing);
+    expect(find.text('Chưa xếp · 0+'), findsNothing);
+    expect(find.text('Chưa xếp · …'), findsOneWidget);
+    expect(_key('add-posts-more'), findsOneWidget);
+  });
+
   testWidgets('everything already sorted says so on the unsorted tab', (
     tester,
   ) async {
