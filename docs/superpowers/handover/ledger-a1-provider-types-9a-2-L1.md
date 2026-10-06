@@ -17,3 +17,8 @@ Shipped in the batch branch `plan/9abc-L1-provider-portfolio-awards` together wi
 ## Deferred
 - The mark label switch in `home_screen.dart` duplicates `ProviderMark`'s semantics labels; move to a core helper when touched.
 - No test for the mark on the home hero-card author row, nor for "individual non-verified shows no tag".
+
+## Final review (whole branch)
+- Settings "Hình thức nhận việc" row, `ProviderTypeSheet` and the S09.01 award nudge read `liveProviderTypeProvider` (the live `myTierProvider` type when known, else the profile read; a missing profile reads as Cá nhân), so an artist promoted mid-session is asked before switching to Studio.
+- S08.01 asks the same red confirm when an artist picks Studio.
+- From Settings, S08.05 opens as `/setup/4?from=settings` and pops back on save; onboarding still lands on Đặt lịch.
