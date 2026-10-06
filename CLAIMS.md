@@ -9,7 +9,7 @@ One line per unit: id · state · branch · machine · last update.
 - `C1` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `C2` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `C3` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
-- `9c/2-L1` · in progress · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
+- `9c/2-L1` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 
 ## Finished
 - `8e/7-L1` · done (PR #30) · `plan/8e-7-L1-review-ui` · MacBook-Pro · 2026-10-06
