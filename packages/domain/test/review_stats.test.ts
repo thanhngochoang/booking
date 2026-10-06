@@ -4,6 +4,7 @@ import type { Review } from '../src/review.js';
 import {
   addRating,
   countReview,
+  mentionsPunctual,
   type StatsStore,
   type StatsTx,
 } from '../src/review_stats.js';
@@ -12,7 +13,7 @@ class MemoryStatsStore implements StatsStore {
   readonly reviews = new Map<string, Review>();
   readonly stats = new Map<
     string,
-    { ratingSum?: unknown; reviewCount?: unknown; rating?: unknown }
+    { ratingSum?: unknown; reviewCount?: unknown; rating?: unknown; punctualMentions?: unknown }
   >();
 
   async runTransaction<T>(fn: (tx: StatsTx) => Promise<T>): Promise<T> {
@@ -40,6 +41,7 @@ describe('addRating', () => {
       ratingSum: 5,
       reviewCount: 1,
       rating: 5,
+      punctualMentions: 0,
     });
   });
 
@@ -66,6 +68,7 @@ describe('addRating', () => {
         ratingSum: 4,
         reviewCount: 1,
         rating: 4,
+        punctualMentions: 0,
       });
     }
   });
@@ -101,6 +104,7 @@ describe('countReview', () => {
       ratingSum: 5,
       reviewCount: 1,
       rating: 5,
+      punctualMentions: 0,
     });
 
     const reviewAfterFirst = store.reviews.get('book1');
@@ -116,6 +120,43 @@ describe('countReview', () => {
       ratingSum: 5,
       reviewCount: 1,
       rating: 5,
+      punctualMentions: 0,
     });
+  });
+
+  const reviewWith = (bookingId: string, text: string): Review => ({
+    bookingId,
+    customerId: 'cust1',
+    photographerId: 'photo1',
+    serviceId: 'pkg1',
+    rating: 5,
+    text,
+    photoPostId: null,
+    createdAt: now,
+    countedAt: null,
+  });
+
+  it("a review praising 'Đúng giờ' bumps punctualMentions", async () => {
+    store.reviews.set('b1', reviewWith('b1', 'Anh Đúng giờ, chụp đẹp'));
+    store.reviews.set('b2', reviewWith('b2', 'Chụp đẹp lắm'));
+    await countReview(store, 'b1', now);
+    assert.equal(store.stats.get('photo1')?.punctualMentions, 1);
+    await countReview(store, 'b2', now);
+    assert.equal(store.stats.get('photo1')?.punctualMentions, 1);
+    assert.equal(store.stats.get('photo1')?.reviewCount, 2);
+  });
+
+  it("'dung gio' without diacritics also counts", () => {
+    assert.equal(mentionsPunctual('rat dung gio'), true);
+    assert.equal(mentionsPunctual('ĐÚNG GIỜ'), true);
+    assert.equal(mentionsPunctual('đúng  giờ'), false);
+    assert.equal(mentionsPunctual('trễ giờ'), false);
+  });
+
+  it('a counted review is not counted twice', async () => {
+    store.reviews.set('b1', reviewWith('b1', 'Đúng giờ'));
+    await countReview(store, 'b1', now);
+    assert.equal(await countReview(store, 'b1', now), 'already');
+    assert.equal(store.stats.get('photo1')?.punctualMentions, 1);
   });
 });
