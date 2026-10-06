@@ -44,3 +44,8 @@ export * from './album.js';
 export * from './album_ports.js';
 export * from './memory_album_store.js';
 export * from './album_use_cases.js';
+export * from './award.js';
+export * from './artist_tier.js';
+export * from './award_ports.js';
+export * from './memory_award_store.js';
+export * from './award_use_cases.js';
