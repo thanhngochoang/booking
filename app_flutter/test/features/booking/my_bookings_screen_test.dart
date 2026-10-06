@@ -359,6 +359,7 @@ void main() {
     Future<void> pumpTickets(
       WidgetTester tester, {
       String? initialTab,
+      String? highlight,
       bool showTickets = true,
     }) async {
       tester.view.physicalSize = const Size(390, 1000);
@@ -373,6 +374,7 @@ void main() {
           home: MyBookingsScreen(
             showTickets: showTickets,
             initialTab: initialTab,
+            highlightTicketId: highlight,
           ),
           overrides: [
             ...w.overrides,
@@ -406,6 +408,18 @@ void main() {
         expect(find.byType(EventTicketsTab), findsNothing);
       },
     );
+
+    testWidgets('?tab=events with a new highlight reopens the tickets tab', (
+      tester,
+    ) async {
+      await pumpTickets(tester, initialTab: 'events', highlight: 'r1');
+      await tester.tap(find.text('Buổi chụp'));
+      await _settle(tester);
+      expect(find.byType(EventTicketsTab), findsNothing);
+      // Registering again navigates to the same tab with another ticket.
+      await pumpTickets(tester, initialTab: 'events', highlight: 'r2');
+      expect(find.byType(EventTicketsTab), findsOneWidget);
+    });
 
     testWidgets('the top tabs are off when showTickets is false', (
       tester,

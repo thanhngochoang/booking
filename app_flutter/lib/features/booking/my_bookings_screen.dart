@@ -47,7 +47,12 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   void didUpdateWidget(MyBookingsScreen old) {
     super.didUpdateWidget(old);
     // The shell keeps this screen alive: a new `?tab=` link must still work.
-    if (widget.initialTab != old.initialTab && widget.showTickets) {
+    // A new ticket to highlight is a new request too: registering again while
+    // the shoots list was showing must bring the tickets back.
+    if (widget.showTickets &&
+        (widget.initialTab != old.initialTab ||
+            (widget.initialTab == 'events' &&
+                widget.highlightTicketId != old.highlightTicketId))) {
       _tickets = widget.initialTab == 'events';
     }
   }
