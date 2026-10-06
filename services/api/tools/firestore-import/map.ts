@@ -44,7 +44,22 @@ export interface PhotographerRow {
   verified: boolean;
   onboarding_complete: boolean;
   accepts_inquiries: boolean;
+  provider_type: 'individual' | 'artist' | 'studio';
+  artist_since: string | null;
+  studio_district: string | null;
+  studio_city: string | null;
+  approved_award_count: number;
   created_at: string | null;
+  updated_at: string | null;
+}
+export interface StudioAddressRow {
+  photographer_id: string;
+  line: string;
+  ward: string | null;
+  district: string;
+  city: string;
+  lat: number | null;
+  lng: number | null;
   updated_at: string | null;
 }
 export interface ChannelsRow {
@@ -129,6 +144,11 @@ export function mapPhotographer(uid: string, d: Doc): Mapped<{ photographer: Pho
       verified: d.verified === true,
       onboarding_complete: d.onboardingComplete === true,
       accepts_inquiries: channels?.acceptInquiries !== false,
+      provider_type: d.providerType === 'artist' || d.providerType === 'studio' ? d.providerType : 'individual',
+      artist_since: toIso(d.artistSince),
+      studio_district: typeof d.studioDistrict === 'string' ? d.studioDistrict : null,
+      studio_city: typeof d.studioCity === 'string' ? d.studioCity : null,
+      approved_award_count: intIn(d.approvedAwardCount, 0, 2_147_483_647) ?? 0,
       created_at: toIso(d.createdAt),
       updated_at: toIso(d.updatedAt),
     },
@@ -152,4 +172,21 @@ export function mapPhotographerNumbers(uid: string, d: Doc): Mapped<NumbersRow> 
   if (zalo === undefined) return fail('zaloPhone is not E.164');
   if (whatsapp === undefined) return fail('whatsappPhone is not E.164');
   return ok({ photographer_id: uid, phone_e164: d.phone, zalo_phone_e164: zalo, whatsapp_phone_e164: whatsapp });
+}
+
+export function mapStudioAddress(uid: string, d: Doc): Mapped<StudioAddressRow> {
+  const req = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
+  if (!req(d.line)) return fail('line is required');
+  if (!req(d.district)) return fail('district is required');
+  if (!req(d.city)) return fail('city is required');
+  return ok({
+    photographer_id: uid,
+    line: d.line,
+    ward: typeof d.ward === 'string' ? d.ward : null,
+    district: d.district,
+    city: d.city,
+    lat: num(d.lat),
+    lng: num(d.lng),
+    updated_at: toIso(d.updatedAt),
+  });
 }

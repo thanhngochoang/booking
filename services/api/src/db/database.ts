@@ -100,7 +100,23 @@ export interface PhotographersTable {
   starting_price: Opt<number>;
   next_free_date: Opt<string>;
   skills_completeness: Def<number>;
+  provider_type: Def<'individual' | 'artist' | 'studio'>;
+  artist_since: Opt<Date>;
+  studio_district: Opt<string>;
+  studio_city: Opt<string>;
+  approved_award_count: Def<number>;
   created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface StudioAddressesTable {
+  photographer_id: string;
+  line: string;
+  ward: Opt<string>;
+  district: string;
+  city: string;
+  lat: Opt<number>;
+  lng: Opt<number>;
   updated_at: UpdatedAt;
 }
 
@@ -193,6 +209,7 @@ export interface Database {
   auth_identities: AuthIdentitiesTable;
   taxonomy_items: TaxonomyItemsTable;
   photographers: PhotographersTable;
+  studio_addresses: StudioAddressesTable;
   photographer_contact_channels: PhotographerContactChannelsTable;
   photographer_contact_numbers: PhotographerContactNumbersTable;
   services: ServicesTable;

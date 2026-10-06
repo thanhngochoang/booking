@@ -14,7 +14,7 @@ describe('exportSlice', () => {
     const dir = await mkdtemp(join(tmpdir(), 'nag-export-'));
     const m = await exportSlice(memorySource(FIXTURE), dir, new Date('2026-10-01T00:00:00Z'));
     expect(Object.fromEntries(Object.entries(m.tables).map(([t, v]) => [t, v.rows]))).toEqual({
-      files: 1, users: 2, user_contacts: 1, photographers: 1, photographer_contact_channels: 1, photographer_contact_numbers: 1,
+      files: 1, users: 2, user_contacts: 1, photographers: 1, photographer_contact_channels: 1, photographer_contact_numbers: 1, studio_addresses: 1,
     });
     expect(m).toMatchObject({ schemaVersion: 1, source: 'firestore', exportedAt: '2026-10-01T00:00:00.000Z', rejected: 3 });
     for (const [table, meta] of Object.entries(m.tables)) {

@@ -8,9 +8,10 @@ import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 import 'package:photobooking/core/widgets/photo_card.dart';
+import 'package:photobooking/core/widgets/provider_mark.dart';
 import 'package:photobooking/core/widgets/reason_chips.dart';
-import 'package:photobooking/core/widgets/verified_mark.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/reason.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 
@@ -69,9 +70,32 @@ class PhotographerCard extends StatelessWidget {
     final price = priceLabel == null
         ? '—'
         : formatMoney(data.startingPriceVnd!, short: true);
+    final mark = providerMarkOf(
+      type: data.providerType,
+      verified: data.verified,
+    );
+    final awards = data.providerType == ProviderType.artist
+        ? data.approvedAwardCount
+        : 0;
+    final studio = data.providerType == ProviderType.studio;
+    final district = data.studioDistrict ?? '';
     final header = [
       data.displayName,
-      if (data.verified) l.verifiedLabel,
+      switch (mark) {
+        ProviderMarkKind.verified => l.verifiedLabel,
+        ProviderMarkKind.artist => l.providerArtistMark,
+        ProviderMarkKind.studio => l.providerStudioMark,
+        null => null,
+      },
+      if (awards > 0) l.providerAwardsCount(awards),
+      // A verified studio's mark already says Studio; an unverified one has
+      // no mark, so its tag text (Studio, or Studio · district) is read.
+      if (studio && mark == ProviderMarkKind.studio && district.isNotEmpty)
+        district,
+      if (studio && mark == null)
+        district.isEmpty
+            ? l.providerStudio
+            : l.providerStudioDistrict(district),
       meta,
       priceLabel,
       availabilityLabel,
@@ -156,15 +180,26 @@ class PhotographerCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                data.verified
-                                    ? VerifiedName(
-                                        data.displayName,
-                                        style: theme.textTheme.titleMedium,
-                                      )
-                                    : Text(
-                                        data.displayName,
-                                        style: theme.textTheme.titleMedium,
+                                ProviderName(
+                                  data.displayName,
+                                  mark: mark,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                                if (data.providerType !=
+                                    ProviderType.individual)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 3,
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: ProviderTag(
+                                        type: data.providerType,
+                                        awards: data.approvedAwardCount,
+                                        district: data.studioDistrict,
                                       ),
+                                    ),
+                                  ),
                                 if (meta.isNotEmpty)
                                   Text(meta, style: theme.textTheme.bodySmall),
                               ],
@@ -305,10 +340,7 @@ class _PhotographerCardSkeleton extends StatelessWidget {
               height: AppSpace.s12,
               child: Align(
                 alignment: Alignment.topCenter,
-                child: AppSkeleton.box(
-                  height: 38,
-                  radius: AppRadius.control,
-                ),
+                child: AppSkeleton.box(height: 38, radius: AppRadius.control),
               ),
             ),
           ),

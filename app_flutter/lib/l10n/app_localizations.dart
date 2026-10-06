@@ -4503,6 +4503,48 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{name} chưa nhận tin hỏi trước'**
   String inquiryNotEligible(String name);
+
+  /// No description provided for @providerArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia'**
+  String get providerArtist;
+
+  /// No description provided for @providerStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio'**
+  String get providerStudio;
+
+  /// No description provided for @providerArtistMark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đã duyệt'**
+  String get providerArtistMark;
+
+  /// No description provided for @providerStudioMark.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đã xác minh'**
+  String get providerStudioMark;
+
+  /// No description provided for @providerArtistAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia · {n} giải'**
+  String providerArtistAwards(int n);
+
+  /// No description provided for @providerAwardsCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giải'**
+  String providerAwardsCount(int n);
+
+  /// No description provided for @providerStudioDistrict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio · {district}'**
+  String providerStudioDistrict(String district);
 }
 
 class _AppLocalizationsDelegate

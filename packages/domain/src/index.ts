@@ -35,3 +35,8 @@ export * from './review_ports.js';
 export * from './review_stats.js';
 export * from './memory_review_store.js';
 export * from './submit_review.js';
+export * from './provider_type.js';
+export * from './provider_ports.js';
+export * from './memory_provider_store.js';
+export * from './set_provider_type.js';
+export * from './studio_address.js';

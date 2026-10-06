@@ -47,7 +47,7 @@ Task 1 Step 1 (lane 2) and Task 6 Step 1 (lane 1) check these exist; adapt and l
 ## Decisions (where the spec is silent)
 
 1. **Server-only field.** `providerType` is not in `photographerClientFields()`; a client write that sets, changes or removes it fails `hasOnly`. Absence means `individual` everywhere (rules, Functions, app, self-hosted import).
-2. **`setProviderType({type})`** accepts `individual` or `studio` only (`artist` → `invalid_argument`). Same effective type (including `artist` asking for `individual`) → no-op, returns the current type. During setup (`onboardingComplete != true`) no eligibility check. After setup the caller must have no booking as photographer in `requested | accepted | upcoming` and no payment with `payeeId = caller` in `escrowStatus held | disputed`; otherwise `not_eligible` and nothing changes. (Open quotes join this check in plan D3.) To `studio`: writes `providerType: 'studio'`, deletes `artistSince`. To `individual` from `studio`: writes `individual`, then calls `recomputeArtistTier(uid)` (no-op hook here; plan B1 fills it).
+2. **`setProviderType({type})`** accepts `individual` or `studio` only (`artist` → `invalid_argument`). Same effective type (including `artist` asking for `individual`) → no-op, returns the current type. The caller must have no booking as photographer in `requested | accepted | upcoming` and no payment with `payeeId = caller` in `escrowStatus held | partially_refunded | disputed` — checked on every switch, setup included (ruling 2026-10-06 in unit 9a/1-L2: `onboardingComplete` is client-writable, so skipping the check during setup was a bypass; rules also refuse `onboardingComplete` true → false); otherwise `not_eligible` and nothing changes. (Open quotes join this check in plan D3.) To `studio`: writes `providerType: 'studio'`, deletes `artistSince`. To `individual` from `studio`: writes `individual`, then calls `recomputeArtistTier(uid)` (no-op hook here; plan B1 fills it).
 3. **`setStudioAddress({line, ward?, district, city, lat?, lng?})`**: only when `providerType == 'studio'` (else `not_eligible`); `line` 5–120, `ward` ≤ 60, `district` and `city` 2–60 (trimmed), `lat`/`lng` both or neither, inside Vietnam's bounding box (lat 8–24, lng 102–110). Writes `photographers/{uid}/private/studioAddress` and public `studioDistrict`, `studioCity` on `photographers/{uid}`. Owner reads the private doc (existing match); the full address reaches customers later through the booking contact flow (not this plan).
 4. **Finishing setup as a studio.** Rules: setting `onboardingComplete` to `true` while `providerType == 'studio'` needs `exists(private/studioAddress)`. S08.05 shows the address field and blocks "Hoàn tất" without it.
 5. **Mark choice** `providerMarkOf(summary)`: `artist` → artist mark; `studio` and `verified` → studio seal; `verified` → blue tick; else no mark. A studio that is not verified shows only the tag.
@@ -146,10 +146,8 @@ const result = await deps.providers.runTransaction(async (tx) => {
   const p = await tx.getProfile(callerId);
   if (p === null) throw new DomainError('not_found');
   if (chosenTypeOf(p.providerType) === wanted) return { changed: false, type: p.providerType };
-  if (p.onboardingComplete) {
-    const [bookings, held] = await Promise.all([tx.countActiveBookings(callerId), tx.countHeldPayments(callerId)]);
-    if (bookings > 0 || held > 0) throw new DomainError('not_eligible');
-  }
+  const [bookings, held] = await Promise.all([tx.countActiveBookings(callerId), tx.countHeldPayments(callerId)]);
+  if (bookings > 0 || held > 0) throw new DomainError('not_eligible');   // always, setup included (Decision 2)
   tx.setProviderType(callerId, wanted, deps.clock.now());
   return { changed: true, type: wanted as ProviderType };
 });
@@ -160,7 +158,7 @@ return { providerType: result.type };
 - [ ] **Step 1: Contract check.** Confirm the names in "Contract with existing code" (domain part); ledger any difference and adapt the code below.
 - [ ] **Step 2: Write the failing tests** (`node:test`, in-memory store from `memory_provider_store.ts`, a fixed clock):
   - `provider_type.test.ts`: "missing or unknown type reads as individual"; "artist is chosen as individual".
-  - `set_provider_type.test.ts`: "a new profile switches to studio without checks"; "the same choice is a no-op and writes nothing"; "artist asking for individual is a no-op"; "artist is refused as a choice" (`invalid_argument`); "an accepted booking blocks the switch" (`not_eligible`, type unchanged); "a requested booking blocks the switch"; "held money blocks the switch"; "a completed booking does not block"; "switching to studio clears artistSince"; "studio back to individual calls recomputeArtistTier once, after the write"; "unknown caller is not_found".
+  - `set_provider_type.test.ts`: "a new profile with no open work switches"; "un-finishing setup does not bypass the check"; "the same choice is a no-op and writes nothing"; "artist asking for individual is a no-op"; "artist is refused as a choice" (`invalid_argument`); "an accepted booking blocks the switch" (`not_eligible`, type unchanged); "a requested booking blocks the switch"; "held money blocks the switch"; "a completed booking does not block"; "switching to studio clears artistSince"; "studio back to individual calls recomputeArtistTier once, after the write"; "unknown caller is not_found".
   - `studio_address.test.ts`: "a studio saves a trimmed address and the public district"; "an individual is not eligible"; "line shorter than 5 is invalid"; "lat without lng is invalid"; "a point outside Vietnam is invalid"; "ward is optional".
 - [ ] **Step 3: Run** `(cd packages/domain && npm test)` → the new tests fail (modules missing).
 - [ ] **Step 4: Implement** the five files and export them from `index.ts`. Keep `src/` free of Firebase and Node imports (`test/purity.test.ts`).

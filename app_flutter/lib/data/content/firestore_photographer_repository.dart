@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
 double _double(Object? v) => v is num ? v.toDouble() : 0;
@@ -58,6 +59,9 @@ PhotographerSummary photographerSummaryFrom({
     startingPriceVnd: _intOrNull(photographer['startingPrice']),
     nextFreeDate: _str(stats['nextFreeDate']),
     createdAt: created is Timestamp ? created.toDate().toUtc() : null,
+    providerType: ProviderType.fromCode(photographer['providerType']),
+    approvedAwardCount: _int(photographer['approvedAwardCount']),
+    studioDistrict: _str(photographer['studioDistrict']),
   );
 }
 

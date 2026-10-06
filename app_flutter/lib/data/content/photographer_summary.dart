@@ -1,4 +1,5 @@
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 
 /// What a card or a ranking needs to know about a photographer. Built from the
 /// public `users/{uid}` and `photographers/{uid}` documents.
@@ -21,6 +22,9 @@ class PhotographerSummary {
     this.startingPriceVnd,
     this.nextFreeDate,
     this.createdAt,
+    this.providerType = ProviderType.individual,
+    this.approvedAwardCount = 0,
+    this.studioDistrict,
   });
 
   final String id;
@@ -55,6 +59,13 @@ class PhotographerSummary {
   /// server into `stats.nextFreeDate`.
   final String? nextFreeDate;
   final DateTime? createdAt;
+
+  /// Individual (default), artist (NAG tier) or studio.
+  final ProviderType providerType;
+  final int approvedAwardCount;
+
+  /// Public district of a studio; the full address stays private.
+  final String? studioDistrict;
 
   bool get hasRating => reviewCount > 0;
   bool get hasGeo => lat != null && lng != null;

@@ -28,12 +28,14 @@ const EXPECTED: Record<string, string[]> = {
     'user_id', 'bio', 'years_experience', 'service_city', 'service_lat', 'service_lng', 'service_radius_km',
     'cover_file_id', 'verified', 'verified_at', 'onboarding_complete', 'accepts_inquiries', 'rating_avg',
     'review_count', 'completed_count', 'response_minutes_median', 'starting_price', 'next_free_date',
-    'skills_completeness', 'created_at', 'updated_at',
+    'skills_completeness', 'created_at', 'updated_at', 'provider_type', 'artist_since', 'studio_district',
+    'studio_city', 'approved_award_count',
   ],
   services: [
     'id', 'photographer_id', 'name', 'specialty_id', 'duration_minutes', 'price', 'currency', 'photo_count',
     'edited_count', 'delivery_days', 'cover_file_id', 'active', 'created_at', 'updated_at',
   ],
+  studio_addresses: ['photographer_id', 'line', 'ward', 'district', 'city', 'lat', 'lng', 'updated_at'],
   taxonomy_items: ['id', 'grp', 'label_vi', 'parent_id', 'sort_order', 'active'],
   user_contacts: ['user_id', 'phone_e164', 'phone_verified', 'allow_zalo', 'allow_whatsapp', 'updated_at'],
   users: [
@@ -162,6 +164,16 @@ describe('constraints from relational-schema.md', () => {
     await sql`select pg_sleep(0.01)`.execute(db);
     await db.updateTable('users').set({ display_name: 'Lan' }).where('id', '=', 'c1').execute();
     const after = await db.selectFrom('users').select('updated_at').where('id', '=', 'c1').executeTakeFirstOrThrow();
+    expect(after.updated_at.getTime()).toBeGreaterThan(before.updated_at.getTime());
+  });
+
+  it('studio_addresses.updated_at is bumped by the trigger on update', async () => {
+    await graph();
+    await db.insertInto('studio_addresses').values({ photographer_id: 'p1', line: '12 Lê Lợi', district: 'Quận 1', city: 'TP.HCM' }).execute();
+    const before = await db.selectFrom('studio_addresses').select('updated_at').where('photographer_id', '=', 'p1').executeTakeFirstOrThrow();
+    await sql`select pg_sleep(0.01)`.execute(db);
+    await db.updateTable('studio_addresses').set({ district: 'Quận 3' }).where('photographer_id', '=', 'p1').execute();
+    const after = await db.selectFrom('studio_addresses').select('updated_at').where('photographer_id', '=', 'p1').executeTakeFirstOrThrow();
     expect(after.updated_at.getTime()).toBeGreaterThan(before.updated_at.getTime());
   });
 

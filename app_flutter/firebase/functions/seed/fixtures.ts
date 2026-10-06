@@ -11,6 +11,8 @@ export const LAN = 'seed-customer-lan';
 export const MINH = 'seed-customer-minh';
 export const AN = 'seed-photographer-an';
 export const BINH = 'seed-photographer-binh';
+export const CUC = 'seed-photographer-cuc';
+export const DUNG = 'seed-photographer-dung';
 
 export interface SeedUser {
   readonly uid: string;
@@ -24,6 +26,8 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: MINH, email: 'minh.nophone@seed.test', displayName: 'Minh (seed, no phone)', role: 'customer' },
   { uid: AN, email: 'an.verified@seed.test', displayName: 'An Studio (seed)', role: 'photographer' },
   { uid: BINH, email: 'binh.unverified@seed.test', displayName: 'Bình (seed)', role: 'photographer' },
+  { uid: CUC, email: 'cuc.studio@seed.test', displayName: 'Cúc Studio (seed)', role: 'photographer' },
+  { uid: DUNG, email: 'dung.artist@seed.test', displayName: 'Dũng (seed, nghệ sĩ)', role: 'photographer' },
 ];
 
 /** Private customer numbers (`users/{uid}/private/contact`). Minh has none, for `phone_required`. */
@@ -38,6 +42,10 @@ export interface SeedPhotographer {
   readonly specialties: readonly string[];
   readonly channels: { readonly call: boolean; readonly zalo: boolean; readonly whatsapp: boolean; readonly acceptInquiries: boolean };
   readonly numbers: { readonly phone: string; readonly zaloPhone?: string; readonly whatsappPhone?: string };
+  /** Missing = individual. */
+  readonly providerType?: 'studio' | 'artist';
+  /** Studio only: private `studioAddress` doc; district and city also go on the public doc. */
+  readonly studioAddress?: { readonly line: string; readonly ward: string; readonly district: string; readonly city: string; readonly lat: number; readonly lng: number };
 }
 
 export const SEED_PHOTOGRAPHERS: readonly SeedPhotographer[] = [
@@ -60,6 +68,29 @@ export const SEED_PHOTOGRAPHERS: readonly SeedPhotographer[] = [
     specialties: ['family'],
     channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
     numbers: { phone: '+84987000001' },
+  },
+  {
+    uid: CUC,
+    verified: true,
+    bio: 'Studio ảnh cưới và gia đình, có phòng chụp.',
+    city: 'TP.HCM',
+    radiusKm: 30,
+    specialties: ['wedding', 'family'],
+    channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    numbers: { phone: '+84938000001' },
+    providerType: 'studio',
+    studioAddress: { line: '12 Lê Lợi', ward: 'Bến Nghé', district: 'Quận 1', city: 'TP.HCM', lat: 10.7769, lng: 106.7009 },
+  },
+  {
+    uid: DUNG,
+    verified: true,
+    bio: 'Nhiếp ảnh nghệ thuật, nhiều giải thưởng.',
+    city: 'Huế',
+    radiusKm: 25,
+    specialties: ['portrait'],
+    channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    numbers: { phone: '+84905000001' },
+    providerType: 'artist',
   },
 ];
 
@@ -181,11 +212,17 @@ export function seedDocuments(now: Date): SeedDocument[] {
         onboardingComplete: true,
         verified: p.verified,
         ...(p.verified ? { verifiedAt: at } : {}),
+        ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
+        ...(p.providerType === 'artist' ? { artistSince: at } : {}),
+        ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
         updatedAt: at,
       },
     });
     docs.push({ path: `photographers/${p.uid}/private/contact`, data: { ...p.numbers, updatedAt: at } });
+    if (p.studioAddress !== undefined) {
+      docs.push({ path: `photographers/${p.uid}/private/studioAddress`, data: { ...p.studioAddress, updatedAt: at } });
+    }
   }
   for (const s of SEED_SERVICES) {
     docs.push({

@@ -21,7 +21,7 @@ export function testDb(): Kysely<Database> {
 /** Empties every slice table (FK order handled by CASCADE). */
 export async function resetDb(db: Kysely<Database>): Promise<void> {
   await sql`truncate table contact_access_log, booking_events, bookings, services,
-    photographer_contact_numbers, photographer_contact_channels, photographers, taxonomy_items,
+    studio_addresses, photographer_contact_numbers, photographer_contact_channels, photographers, taxonomy_items,
     auth_identities, user_contacts, users, files restart identity cascade`.execute(db);
 }
 

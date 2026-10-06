@@ -54,6 +54,12 @@ class AppColors {
   static const Color spectrumPink = Color(0xFFFF45D0);
   static const Color spectrumOrange = Color(0xFFFF8A4C);
   static const Color spectrumYellow = Color(0xFFFFD54A);
+  static const Color gold = Color(0xFF8A6410);
+  static const Color goldSoft = Color(0xFFFBF3DC);
+  static const Color goldLine = Color(0xFFD9B45A);
+  static const Color goldInk = Color(0xFF3A2A05);
+  static const Color goldGradStart = Color(0xFFF7D774);
+  static const Color goldGradEnd = Color(0xFFC9962B);
   static const Color glass = Color(0xB8FFFFFF);
   static const Color freeInk = Color(0xFF127001);
   static const Color freeBg = Color(0xFFE3F5DF);
@@ -112,6 +118,12 @@ class AppColorsDark {
   static const Color spectrumPink = AppColors.spectrumPink;
   static const Color spectrumOrange = AppColors.spectrumOrange;
   static const Color spectrumYellow = AppColors.spectrumYellow;
+  static const Color gold = Color(0xFFE9C25A);
+  static const Color goldSoft = Color(0x1FE9C25A);
+  static const Color goldLine = Color(0x80E9C25A);
+  static const Color goldInk = AppColors.goldInk;
+  static const Color goldGradStart = AppColors.goldGradStart;
+  static const Color goldGradEnd = AppColors.goldGradEnd;
   static const Color glass = Color(0x14FFFFFF);
   static const Color freeInk = Color(0xFF7BE070);
   static const Color freeBg = Color(0x331A9F02);

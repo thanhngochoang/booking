@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/provider_mark.dart';
 
 /// Verified photographer: a small blue disc with a white check, no text.
 /// Not used for badges (those are purple); see spec 3d.1.
@@ -39,8 +40,10 @@ class VerifiedMark extends StatelessWidget {
   }
 }
 
-/// A name followed by [VerifiedMark], raised about 3dp above the baseline so
-/// it reads as a superscript to the name rather than sitting mid-line.
+/// A name followed by [VerifiedMark].
+///
+/// Thin wrapper over [ProviderName]; kept for one release.
+@Deprecated('Use ProviderName(name, mark: ProviderMarkKind.verified).')
 class VerifiedName extends StatelessWidget {
   const VerifiedName(this.name, {super.key, this.style});
 
@@ -48,25 +51,6 @@ class VerifiedName extends StatelessWidget {
   final TextStyle? style;
 
   @override
-  Widget build(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        text: name,
-        children: [
-          WidgetSpan(
-            alignment: PlaceholderAlignment.aboveBaseline,
-            baseline: TextBaseline.alphabetic,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 2),
-              child: Transform.translate(
-                offset: const Offset(0, -3),
-                child: const VerifiedMark(),
-              ),
-            ),
-          ),
-        ],
-      ),
-      style: style,
-    );
-  }
+  Widget build(BuildContext context) =>
+      ProviderName(name, mark: ProviderMarkKind.verified, style: style);
 }

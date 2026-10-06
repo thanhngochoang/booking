@@ -407,6 +407,93 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
 @media (prefers-reduced-motion:no-preference){.apt.run path{animation:iris 2.4s cubic-bezier(.45,0,.25,1) infinite}}
 @keyframes iris{0%,100%{transform:rotate(0)}45%,55%{transform:rotate(-18deg)}}
 .aptd{width:66px;height:66px;border-radius:50%;background:var(--cta);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:var(--btn-shadow);flex:none}
+/* --- 2026-10-05: loại nhà cung cấp, portfolio album (S24), giải thưởng (S25), Đăng việc (S15–S16) --- */
+/* ===== Đề xuất: loại nhà cung cấp, portfolio album, giải thưởng & hạng NAG ===== */
+:root{--gold:#E9C25A;--gold-ink:#3A2A05;--gold-soft:rgba(233,194,90,.12);--gold-line:rgba(233,194,90,.5);--gold-grad:linear-gradient(135deg,#F7D774,#C9962B)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--gold:#8A6410;--gold-soft:#FBF3DC;--gold-line:#D9B45A}}
+:root[data-theme="light"]{--gold:#8A6410;--gold-soft:#FBF3DC;--gold-line:#D9B45A}
+:root[data-theme="dark"]{--gold:#E9C25A;--gold-soft:rgba(233,194,90,.12);--gold-line:rgba(233,194,90,.5)}
+.vf.gold{background:var(--gold-grad)}
+.vf.gold svg{stroke:var(--gold-ink)}
+.ptag{font-size:10px;font-weight:600;padding:2px 8px 2px 6px;border-radius:999px;border:1px solid var(--line-2);color:var(--ink-2);white-space:nowrap;display:inline-flex;gap:4px;align-items:center;vertical-align:middle;line-height:1.4}
+.ptag svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ptag.nag{color:var(--gold);border-color:var(--gold-line);background:var(--gold-soft)}
+.awrow{display:flex;gap:8px;overflow:hidden;flex:none}
+.awd{flex:0 0 auto;width:178px;border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:var(--r2);padding:8px 10px;display:flex;gap:8px;align-items:center}
+.awd .mi,.aw-ic{width:30px;height:30px;border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;flex:none}
+.awd .mi svg,.aw-ic svg{width:16px;height:16px;stroke:var(--gold-ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.awd b{display:block;font-size:12px;line-height:1.25}.awd span{display:block;font-size:10.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vtg{display:inline-flex;background:var(--field);border-radius:999px;padding:2px;flex:none}
+.vtg span{font-size:11px;padding:5px 11px;border-radius:999px;color:var(--ink-2);display:flex;gap:4px;align-items:center;font-weight:500}
+.vtg span.on{background:var(--glass-hi);color:var(--ink);font-weight:600;box-shadow:0 1px 0 var(--line)}
+.vtg svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.albs{display:grid;grid-template-columns:1fr 1fr;gap:12px 8px}
+.alb .ph{aspect-ratio:1;box-shadow:0 -4px 0 -2px var(--line-2),0 -8px 0 -4px var(--line);margin-top:8px}
+.alb.feat{grid-column:1/-1}.alb.feat .ph{aspect-ratio:16/8}
+.alb b{display:block;font-size:12.5px;margin-top:6px;line-height:1.3}.alb span{font-size:10.5px;color:var(--ink-3)}
+.lrow{display:flex;gap:10px;align-items:center;padding:8px 6px 8px 4px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass);font-size:12px;flex:none}
+.lrow .th{width:50px;height:50px;border-radius:10px;flex:none;box-shadow:0 -3px 0 -1px var(--line-2)}
+.lrow .t{flex:1;min-width:0}.lrow .t b{display:block;font-size:13px}.lrow .t span{font-size:11px;color:var(--ink-3)}
+.lrow .grip{width:28px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);flex:none}
+.lrow .grip svg,.lrow .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.lrow.drag{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 10px 22px var(--shadow);transform:translateX(4px) rotate(-.6deg)}
+.lrow.unsorted{border-style:dashed;background:transparent}
+.lrow.unsorted .th{background:var(--field);box-shadow:none;display:flex;align-items:center;justify-content:center;color:var(--ink-3)}
+.ck{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.ck.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ph .mini{position:absolute;left:5px;bottom:5px;font-size:9.5px;font-weight:600;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;border-radius:999px}
+.ph.sel{outline:2px solid var(--accent);outline-offset:-2px}
+.pcnt{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;padding:3px 7px;border-radius:999px;display:flex;gap:3px;align-items:center}
+.pcnt svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2}
+.optc{display:flex;flex-direction:column;gap:8px}
+.opt .oi{width:40px;height:40px;border-radius:12px;background:var(--field);display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink)}
+.opt.on .oi{background:var(--accent);color:var(--accent-ink)}
+.opt .oi svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.opt .d{font-size:11px;color:var(--ink-2);line-height:1.4}
+.chev{width:16px;height:16px;stroke:var(--ink-3);fill:none;stroke-width:2;flex:none}
+.fieldrow{display:flex;align-items:center;gap:8px}.fieldrow .grow{display:flex;flex-direction:column}
+.pcard{border:1px solid var(--line);border-radius:var(--r3);background:var(--glass);display:flex;gap:10px;padding:10px;align-items:center;flex:none}
+.pcard .th{width:58px;height:58px;border-radius:12px;flex:none}
+.pcard .t{flex:1;min-width:0}.pcard .t b{font-size:13px}
+.awl{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass);flex:none}
+.awl .t{flex:1;min-width:0;font-size:11px;color:var(--ink-2)}.awl .t b{display:block;font-size:12.5px;color:var(--ink)}
+.awl .aw-ic.mute{background:var(--field)}.awl .aw-ic.mute svg{stroke:var(--ink-3)}
+.lockn{display:flex;gap:6px;align-items:flex-start;font-size:10.5px;color:var(--ink-3)}
+.lockn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;flex:none;margin-top:1px}
+.note2{border:1px solid var(--line);border-radius:var(--r2);background:var(--surface);padding:14px 16px;font-size:13.5px;color:var(--ink-2);max-width:80ch}
+.note2 b{color:var(--ink)}
+.note2 ul{margin:6px 0 0;padding-left:18px}.note2 li{margin:3px 0}
+.lrow .ic{width:28px}
+.lrow .th{width:44px;height:44px}
+.lrow .t b,.lrow .t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.lrow{padding:6px 4px 6px 2px}
+.awl .badge{margin:3px 4px 0 0;vertical-align:middle}
+.awl .t b{margin-bottom:1px}
+.vfs{display:inline-flex;width:16px;height:16px;vertical-align:baseline;position:relative;top:-3px;margin-left:2px;flex:none}
+.vfs svg{width:16px;height:16px}
+/* Đăng việc (S15–S16) */
+.jcard{border:1px solid var(--line);border-radius:var(--r3);background:var(--glass);padding:10px 12px;display:flex;flex-direction:column;gap:5px;flex:none}
+.jcard>b{font-size:13.5px;line-height:1.3}
+.avs{display:flex;align-items:center}.avs .av{margin-left:-6px}.avs .av:first-child{margin-left:0}
+.prow{display:flex;gap:10px;align-items:center;font-size:12px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r2);background:var(--glass);flex:none}
+.prow b{font-size:13px}
+.qcard{border:1px solid var(--line);border-radius:var(--r3);background:var(--glass);padding:10px 12px;display:flex;flex-direction:column;gap:7px;flex:none}
+.qcard .row b{font-size:13px}
+.dl{display:flex;flex-wrap:wrap;gap:4px}
+.dl span{font-size:10.5px;padding:3px 8px;border-radius:999px;background:var(--field);color:var(--ink-2);white-space:nowrap}
+.dl span.okc{background:var(--free-bg);color:var(--free-ink);font-weight:600}
+.dl.big{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dl.big span{border-radius:var(--r2);padding:8px 4px;text-align:center;font-size:10px;white-space:normal;line-height:1.25}
+.dl.big b{display:block;font-family:var(--display);font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.okn{font-size:10.5px;color:var(--free-ink);font-weight:600}
+.ovn{font-size:10.5px;color:var(--warn);font-weight:600}
+.fit{font-size:10.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:999px;white-space:nowrap}
+.tag.inv{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.qmsg{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.mrow{display:flex;gap:10px;align-items:center;font-size:12px;border-top:1px solid var(--line);padding-top:6px}
+.mrow small{display:block;font-size:10.5px;color:var(--ink-3)}
+.mrow .ms{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.nbadge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
 
 /* Gallery layout: one tile per component, real state beside its skeleton. */
 .gwrap{max-width:1240px;margin:0 auto;padding-block:32px 72px}
@@ -472,6 +559,13 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-album" viewBox="0 0 24 24"><rect x="3" y="7" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/></symbol>
+  <defs><linearGradient id="g-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7D774"/><stop offset="1" stop-color="#C9962B"/></linearGradient></defs>
+  <symbol id="i-seal" viewBox="0 0 24 24"><path d="M12.00 2.60Q15.21 0.02 16.70 3.86Q20.77 3.23 20.14 7.30Q23.98 8.79 21.40 12.00Q23.98 15.21 20.14 16.70Q20.77 20.77 16.70 20.14Q15.21 23.98 12.00 21.40Q8.79 23.98 7.30 20.14Q3.23 20.77 3.86 16.70Q0.02 15.21 2.60 12.00Q0.02 8.79 3.86 7.30Q3.23 3.23 7.30 3.86Q8.79 0.02 12.00 2.60Z" fill="url(#g-gold)"/><path d="m7.6 12.2 3 3 5.8-6.4" fill="none" stroke="#3A2A05" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="gwrap">
   <div class="top">
@@ -480,7 +574,7 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
   </div>
   <h1>Component <span class="gt">dùng chung</span></h1>
   <p>Mỗi ô là một widget trong <code>lib/core/widgets/</code>: tên, API, màn dùng nó, trạng thái thật và skeleton của nó. Danh sách và thẻ đang tải dùng skeleton của chính component; chờ cấp màn dùng SignatureLoader với một loại sóng (tròn khi tải dữ liệu, rung khi chờ một bên khác). Màn hình đầy đủ ở mock màn.</p>
-  <nav class="gnav" aria-label="Component"><a href="#signatureloader">SignatureLoader</a><a href="#signatureloader-vib">SignatureLoader</a><a href="#asyncview">AsyncView</a><a href="#photocard">PhotoCard</a><a href="#photographercard">PhotographerCard</a><a href="#bookingcard">BookingCard</a><a href="#dateblock">DateBlock</a><a href="#eventcard">EventCard</a><a href="#ticketcard">TicketCard</a><a href="#statustimeline">StatusTimeline</a><a href="#stattile">StatTile</a><a href="#capacity">CapacityBar</a><a href="#calendar">AvailabilityCalendar</a><a href="#identity">AppAvatar</a><a href="#badges">BadgeChip</a><a href="#buttons">AppButton</a><a href="#chips">AppChip</a><a href="#stepprogress">StepProgress</a><a href="#phonefield">PhoneField</a><a href="#contactdial">ContactDial</a><a href="#escrownotice">EscrowNotice</a><a href="#moneybreakdown">MoneyBreakdown</a><a href="#policytable">PolicyTable</a><a href="#reasonpicker">ReasonPicker</a><a href="#providerpicker">ProviderPicker</a><a href="#confirmsheet">ConfirmSheet</a><a href="#countdown">CountdownRing</a><a href="#chat">ChatBubble</a><a href="#conversationrow">ConversationRow</a><a href="#notificationrow">NotificationRow</a><a href="#permissionprimer">PermissionPrimer</a><a href="#swipedeck">SwipeDeck</a><a href="#matchoverlay">MatchOverlay</a><a href="#offerstack">OfferStack</a><a href="#states">EmptyState</a></nav>
+  <nav class="gnav" aria-label="Component"><a href="#signatureloader">SignatureLoader</a><a href="#signatureloader-vib">SignatureLoader</a><a href="#asyncview">AsyncView</a><a href="#photocard">PhotoCard</a><a href="#photographercard">PhotographerCard</a><a href="#bookingcard">BookingCard</a><a href="#dateblock">DateBlock</a><a href="#eventcard">EventCard</a><a href="#ticketcard">TicketCard</a><a href="#statustimeline">StatusTimeline</a><a href="#stattile">StatTile</a><a href="#capacity">CapacityBar</a><a href="#calendar">AvailabilityCalendar</a><a href="#identity">AppAvatar</a><a href="#providermarks">ProviderMark</a><a href="#badges">BadgeChip</a><a href="#buttons">AppButton</a><a href="#chips">AppChip</a><a href="#stepprogress">StepProgress</a><a href="#phonefield">PhoneField</a><a href="#contactdial">ContactDial</a><a href="#escrownotice">EscrowNotice</a><a href="#moneybreakdown">MoneyBreakdown</a><a href="#policytable">PolicyTable</a><a href="#reasonpicker">ReasonPicker</a><a href="#providerpicker">ProviderPicker</a><a href="#confirmsheet">ConfirmSheet</a><a href="#countdown">CountdownRing</a><a href="#chat">ChatBubble</a><a href="#conversationrow">ConversationRow</a><a href="#notificationrow">NotificationRow</a><a href="#permissionprimer">PermissionPrimer</a><a href="#swipedeck">SwipeDeck</a><a href="#matchoverlay">MatchOverlay</a><a href="#offerstack">OfferStack</a><a href="#states">EmptyState</a></nav>
   <div class="ggrid">
     <section class="tile" id="signatureloader">
       <h3>SignatureLoader · sóng tròn</h3>
@@ -565,6 +659,12 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       <div class="api">AppAvatar({url, name, size = md}) · VerifiedMark({size}) · ReasonChips({reasons, max = 2})</div>
       <div class="use">Dùng ở: S02.02, S03.01, S02.06, S09.01</div>
       <div class="pair"><div class="stage"><span class="lab">Thật</span><div class="row"><span class="av m"></span><b>Minh Trí</b> <span class="vf" role="img" aria-label="Đã xác minh"><svg><use href="#i-check"/></svg></span></div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="chip">Chuyên chân dung</span><span class="chip">Cách 1,2 km</span></div></div><div class="stage"><span class="lab">Skeleton</span><div class="row"><span class="sk" style="width:40px;height:40px;border-radius:50%;flex:none"></span><span class="sk" style="width:90px;height:12px;border-radius:8px;"></span></div><div class="row" style="gap:6px"><span class="sk" style="width:96px;height:26px;border-radius:999px;"></span><span class="sk" style="width:80px;height:26px;border-radius:999px;"></span></div></div></div>
+    </section>
+    <section class="tile" id="providermarks">
+      <h3>ProviderMark · ProviderTag · ProviderName</h3>
+      <div class="api">ProviderMark(kind: verified | artist | studio, {size}) · ProviderTag({type, awards, district, showAwards}) · ProviderName(name, {mark, style}) · providerMarkOf({type, verified})</div>
+      <div class="use">Dùng ở: S02.01, S02.06, S03.01, S08.01</div>
+      <div class="pair"><div class="stage"><span class="lab">Thật</span><div class="row" style="gap:10px;margin-bottom:8px;flex-wrap:wrap"><span><b style="font-family:var(--display);font-size:16px">Minh Trí</b><span class="vf" role="img" aria-label="Đã xác minh"><svg><use href="#i-check"/></svg></span></span><span><b style="font-family:var(--display);font-size:16px">Hoàng Vũ</b><span class="vf gold" role="img" aria-label="Nhiếp ảnh gia đã duyệt"><svg><use href="#i-check"/></svg></span></span><span><b style="font-family:var(--display);font-size:16px">Studio Mây</b><span class="vfs" role="img" aria-label="Studio đã xác minh"><svg><use href="#i-seal"/></svg></span></span></div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="ptag nag"><svg><use href="#i-award"/></svg>Nhiếp ảnh gia · 7 giải</span><span class="ptag"><svg><use href="#i-brief"/></svg>Studio · Hoàn Kiếm</span></div></div><div class="stage"><span class="lab">Skeleton</span><div class="meta">Không có skeleton (không phụ thuộc dữ liệu).</div></div></div>
     </section>
     <section class="tile" id="badges">
       <h3>BadgeChip · BadgeRow · BadgeTile</h3>
