@@ -44,7 +44,12 @@ String formatMoney(int vnd, {bool short = false, int decimals = 1}) {
     return '${grouped(vnd)}₫';
   }
   if (decimals >= 2 && vnd >= 100000) {
-    return compact(vnd / 1000000, 'M', 2);
+    // Truncate (never round up) so a total is not overstated.
+    final hundredths = vnd ~/ 10000;
+    final whole = hundredths ~/ 100;
+    final frac = (hundredths % 100).toString().padLeft(2, '0');
+    final trimmed = frac.replaceAll(RegExp(r'0+$'), '');
+    return '$whole${trimmed.isEmpty ? '' : ',$trimmed'}M';
   }
   if (vnd >= 1000000) {
     return compact(vnd / 1000000, 'M');

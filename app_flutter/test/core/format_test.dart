@@ -84,6 +84,9 @@ void main() {
       expect(f(450000), '0,45M');
       expect(f(12400000), '12,4M');
       expect(f(1000000), '1M');
+      expect(f(999999), '0,99M');
+      expect(f(3996000), '3,99M');
+      expect(f(12345678), '12,34M');
       expect(f(99000), '99K');
       expect(f(0), '0₫');
       // Other call sites keep one decimal.
