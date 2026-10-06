@@ -28,7 +28,7 @@ Thay bằng hai phe, mượn tiếng lóng mạng: **🍅 cà chua = hài lòng*
 
 ### 3.1 Một lượt đánh giá
 
-`reviews/{bookingId}` (Firestore) / bảng `reviews` (SQL). Vẫn một đánh giá cho mỗi booking, chỉ ghi qua callable `submitReview`; rules không đổi (client không được ghi).
+`reviews/{bookingId}` (Firestore) / bảng `reviews` (SQL). Một đánh giá cho **mỗi đối tượng** trong một booking (booking studio có hai: thợ và studio, xem `2026-10-06-studio-members-design.md` §6), chỉ ghi qua callable `submitReview`; rules không đổi (client không được ghi).
 
 | Trường | Kiểu | Quy tắc |
 |---|---|---|
@@ -99,7 +99,7 @@ Hằng số đặt trong `review.ts`: `REVIEW_HITS_MAX = 10`, `INTENSITY_FLOOR =
 
 ## 5. Màn S05.05 · Đánh giá và chia sẻ
 
-Mã màn, route `/b/:id/review`, điểm vào và ra giữ nguyên. Đánh giá mở khi booking `completed` (như spec 2026-10-05).
+Mã màn, route `/b/:id/review`, điểm vào và ra giữ nguyên. Đánh giá mở khi booking `approved`, tức lúc khách đồng ý ảnh mẫu và link ảnh gốc mở (`2026-10-06-delivery-preview-unlock-design.md`). Booking studio có hai khối đánh giá (spec Studio §6).
 
 ### 5.1 Bố cục (từ trên xuống)
 

@@ -98,6 +98,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
 | S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · huy hiệu chờ plan huy hiệu | S12 |
+| S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
+| S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
 | S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · ẩn Sự kiện của tôi | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ đã làm (4c) | S22 |
@@ -105,6 +107,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
 | S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S43 |
 | S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S44 |
+| S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) | S11 |
 | S07.02 | Danh sách hội thoại | `/chats` | cả hai | 4d | ✅ đã làm (4d) | — (mới) |
@@ -192,8 +195,16 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S25** | **Giải thưởng & hạng Nhiếp ảnh gia (NAG)** | | | | | |
 | S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · có mock | — |
 | S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · có mock | — |
+| **S26** | **Studio và thành viên** | | | | | |
+| S26.01 | Thành viên studio | `/studio/members` | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
+| S26.02 | Mời thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
+| S26.03 | Studio của tôi | `/me/studio` | thợ ảnh | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
+| S26.04 | Giao thợ (sheet) | — (sheet) | studio | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
+| S26.05 | Xin đổi thợ (sheet) | — (sheet) | khách | spec 10-06 Studio | ⬜ có mock, chưa có plan | — |
 
 Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
+
+Use case S26 (**Studio và thành viên**) đặc tả ở [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md); S05.06, S05.07, S06.07 (bàn giao hai lớp) ở [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đánh giá cà chua/gạch (S05.05) ở [`2026-10-06-tomato-brick-reviews-design.md`](2026-10-06-tomato-brick-reviews-design.md).
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 
