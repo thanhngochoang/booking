@@ -17,7 +17,6 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/review/review_repository.dart';
-import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_sections.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -420,7 +419,7 @@ void main() {
         routes: [
           GoRoute(
             path: '/u/:uid',
-            builder: (_, __) => const Scaffold(
+            builder: (_, _) => const Scaffold(
               body: CustomScrollView(
                 slivers: [
                   ReviewsSliver(photographerId: 'p1'),
