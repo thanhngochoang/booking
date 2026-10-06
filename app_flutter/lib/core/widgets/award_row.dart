@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/award_chip.dart';
+import 'package:photobooking/core/widgets/status_badge.dart';
 import 'package:photobooking/data/award/award.dart';
 
 /// Award list row (S25.01 and the read-only list): disc (gold only when
@@ -85,11 +86,7 @@ class AwardRow extends StatelessWidget {
                         Row(
                           children: [
                             if (label != null) ...[
-                              _StatusPill(
-                                key: const ValueKey('award_status_badge'),
-                                label: label,
-                                status: s!,
-                              ),
+                              _statusBadge(s!, label),
                               const SizedBox(width: AppSpace.s2),
                             ],
                             Expanded(
@@ -118,51 +115,28 @@ class AwardRow extends StatelessWidget {
   }
 }
 
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({super.key, required this.label, required this.status});
-
-  final String label;
-  final AwardStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final (bg, fg) = switch (status) {
-      AwardStatus.approved => (
-        dark ? AppColorsDark.goldSoft : AppColors.goldSoft,
-        dark ? AppColorsDark.gold : AppColors.gold,
-      ),
-      AwardStatus.rejected || AwardStatus.revoked => (
-        AppColors.errorSubtle,
-        AppColors.destructivePressed,
-      ),
-      AwardStatus.needsInfo => (AppColors.warningSubtle, AppColors.pillInk),
-      AwardStatus.pending => (
-        dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
-        dark
-            ? AppColorsDark.foregroundSecondary
-            : AppColors.foregroundSecondary,
-      ),
-    };
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s2,
-          vertical: AppSpace.s1 / 2,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: AppText.xs,
-            fontWeight: FontWeight.w600,
-            color: fg,
-          ),
-        ),
-      ),
-    );
-  }
+/// Badge colours follow the mock (.b-ok / .b-pen / .b-warn / .b-bad) and the
+/// booking badges.
+StatusBadge _statusBadge(AwardStatus status, String label) {
+  final (bg, on) = switch (status) {
+    AwardStatus.approved => (
+      AppColors.bookingAccepted,
+      AppColors.foregroundInverse,
+    ),
+    AwardStatus.pending => (
+      AppColors.bookingWaiting,
+      AppColors.foregroundInverse,
+    ),
+    AwardStatus.needsInfo => (AppColors.bookingOpened, AppColors.foreground),
+    AwardStatus.rejected || AwardStatus.revoked => (
+      AppColors.bookingDenied,
+      AppColors.foregroundInverse,
+    ),
+  };
+  return StatusBadge.custom(
+    key: const ValueKey('award_status_badge'),
+    label: label,
+    color: bg,
+    onColor: on,
+  );
 }

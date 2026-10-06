@@ -5,15 +5,32 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 class StatusBadge extends StatelessWidget {
-  const StatusBadge(this.status, {super.key, this.label});
-  final BookingStatus status;
+  // ignore_for_file: prefer_initializing_formals
+  const StatusBadge(this.status, {super.key, this.label})
+    : _color = null,
+      _onColor = null;
+
+  /// Same look as the booking badges for any other state (e.g. awards).
+  const StatusBadge.custom({
+    super.key,
+    required String this.label,
+    required Color color,
+    required Color onColor,
+  }) : status = null,
+       _color = color,
+       _onColor = onColor;
+
+  /// Null for [StatusBadge.custom].
+  final BookingStatus? status;
   final String? label;
+  final Color? _color;
+  final Color? _onColor;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: status.color,
+        color: _color ?? status!.color,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Padding(
@@ -22,12 +39,14 @@ class StatusBadge extends StatelessWidget {
           vertical: AppSpace.s1,
         ),
         child: Text(
-          label ?? status.label(context.l10n).toUpperCase(),
+          label == null
+              ? status!.label(context.l10n).toUpperCase()
+              : (_color == null ? label! : label!.toUpperCase()),
           style: TextStyle(
             fontSize: AppText.xs,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
-            color: status.onColor,
+            color: _onColor ?? status!.onColor,
           ),
         ),
       ),
