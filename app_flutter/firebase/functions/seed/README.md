@@ -25,6 +25,12 @@ Password for every account: `seed-password-1`
 | `seed-booking-completed-recent` | Lan ↔ An | completed 3 days before seeding | unlocked |
 | `seed-booking-completed-old` | Lan ↔ An | completed 40 days before seeding | `contact_locked` |
 
+| Post / album | Owner | Notes |
+|---|---|---|
+| `seed-post-an-1`, `-2` | An | `work` posts in album `seed-album-an-family` ("Gia đình", position 1; 5 photos) |
+| `seed-post-an-3` | An | `work` post in album `seed-album-an-street` ("Đường phố", position 2; 1 photo) |
+| `seed-post-an-4`, `-5` | An | `work` posts on the timeline only (no album) |
+
 Try a call while the emulators run (from `app_flutter/firebase/functions`, with the project id
 `scripts/backend-local.sh` printed). The script refuses to run unless the three emulator hosts
 point at a local host, so export them first:

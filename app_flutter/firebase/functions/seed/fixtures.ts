@@ -131,6 +131,27 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-completed-old', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-08-20', start: '08:00', end: '10:00', place: 'Phố cổ, Hà Nội', completedDaysAgo: 40 },
 ];
 
+export interface SeedPost {
+  readonly id: string;
+  readonly photographerId: string;
+  readonly images: number;
+  readonly caption: string;
+  /** Album the post sits in and its 1-based place there; null = timeline only. */
+  readonly album: { readonly id: string; readonly position: number } | null;
+}
+
+export const SEED_ALBUM_FAMILY = 'seed-album-an-family';
+export const SEED_ALBUM_STREET = 'seed-album-an-street';
+
+/** An's `work` posts: two in "Gia đình", one in "Đường phố", two only on the timeline. */
+export const SEED_POSTS: readonly SeedPost[] = [
+  { id: 'seed-post-an-1', photographerId: AN, images: 3, caption: 'Buổi chiều ở Hồ Tây', album: { id: SEED_ALBUM_FAMILY, position: 1 } },
+  { id: 'seed-post-an-2', photographerId: AN, images: 2, caption: 'Gia đình nhỏ', album: { id: SEED_ALBUM_FAMILY, position: 2 } },
+  { id: 'seed-post-an-3', photographerId: AN, images: 1, caption: 'Phố cổ sớm mai', album: { id: SEED_ALBUM_STREET, position: 1 } },
+  { id: 'seed-post-an-4', photographerId: AN, images: 4, caption: 'Chân dung ánh sáng tự nhiên', album: null },
+  { id: 'seed-post-an-5', photographerId: AN, images: 2, caption: 'Cưới ngoại cảnh', album: null },
+];
+
 export interface SeedDocument {
   readonly path: string;
   readonly data: Record<string, unknown>;
@@ -228,6 +249,46 @@ export function seedDocuments(now: Date): SeedDocument[] {
     docs.push({
       path: `photographers/${s.photographerId}/services/${s.id}`,
       data: { name: s.name, price: s.price, currency: 'VND', durationMinutes: s.durationMinutes, active: true, createdAt: at },
+    });
+  }
+  for (const p of SEED_POSTS) {
+    docs.push({
+      path: `posts/${p.id}`,
+      data: {
+        kind: 'work',
+        authorId: p.photographerId,
+        photographerId: p.photographerId,
+        serviceId: 'seed-service-portrait',
+        imageUrls: Array.from({ length: p.images }, (_, i) => `https://seed.test/${p.id}/${i + 1}.jpg`),
+        caption: p.caption,
+        likeCount: 0,
+        saveCount: 0,
+        ...(p.album !== null ? { albumId: p.album.id, albumPosition: p.album.position } : {}),
+        createdAt: at,
+      },
+    });
+  }
+  const albumSeeds = [
+    { id: SEED_ALBUM_FAMILY, title: 'Gia đình', position: 1 },
+    { id: SEED_ALBUM_STREET, title: 'Đường phố', position: 2 },
+  ];
+  for (const a of albumSeeds) {
+    const inAlbum = SEED_POSTS.filter((p) => p.album?.id === a.id);
+    docs.push({
+      path: `albums/${a.id}`,
+      data: {
+        photographerId: AN,
+        title: a.title,
+        titleKey: a.title.toLowerCase(),
+        description: '',
+        cover: null,
+        position: a.position,
+        postCount: inAlbum.length,
+        mediaCount: inAlbum.reduce((n, p) => n + p.images, 0),
+        visible: inAlbum.length > 0,
+        createdAt: at,
+        updatedAt: at,
+      },
     });
   }
   for (const b of SEED_BOOKINGS) {

@@ -1,4 +1,4 @@
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { handleGetContactLink } from './callables/get_contact_link.js';
@@ -29,6 +29,16 @@ import { handleReviewWrite } from './triggers/review_write.js';
 import { liveReviewDeps, liveStatsStore } from './infra/live_review.js';
 import { handleSetProviderType, handleSetStudioAddress } from './callables/provider.js';
 import { liveProviderDeps } from './infra/live_provider.js';
+import {
+  handleCreateAlbum,
+  handleDeleteAlbum,
+  handleMovePostsToAlbum,
+  handleReorderAlbumPosts,
+  handleReorderAlbums,
+  handleUpdateAlbum,
+} from './callables/album.js';
+import { handlePostCreated } from './triggers/post_created.js';
+import { liveAlbumDeps } from './infra/live_album.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -136,3 +146,32 @@ export const setProviderType = onCall(CALLABLE_OPTIONS, (request) =>
 export const setStudioAddress = onCall(CALLABLE_OPTIONS, (request) =>
   handleSetStudioAddress(request, liveProviderDeps()),
 );
+
+// ---- portfolio albums (plan C) ----
+
+/** `{title, description?}` → `{albumId}`; limit_exceeded at 30 albums, conflict on a duplicate title. */
+export const createAlbum = onCall(CALLABLE_OPTIONS, (request) => handleCreateAlbum(request, liveAlbumDeps()));
+
+/** `{albumId, title?, description?, cover?}` */
+export const updateAlbum = onCall(CALLABLE_OPTIONS, (request) => handleUpdateAlbum(request, liveAlbumDeps()));
+
+/** `{albumId}`: its posts go back to the timeline only. */
+export const deleteAlbum = onCall(CALLABLE_OPTIONS, (request) => handleDeleteAlbum(request, liveAlbumDeps()));
+
+/** `{albumIds}`: exactly the caller's albums, in the new order. */
+export const reorderAlbums = onCall(CALLABLE_OPTIONS, (request) => handleReorderAlbums(request, liveAlbumDeps()));
+
+/** `{albumId | null, postIds}`: moves 1–50 of the caller's work posts. */
+export const movePostsToAlbum = onCall(CALLABLE_OPTIONS, (request) =>
+  handleMovePostsToAlbum(request, liveAlbumDeps()),
+);
+
+/** `{albumId, postIds}`: exactly the album's posts, in the new order. */
+export const reorderAlbumPosts = onCall(CALLABLE_OPTIONS, (request) =>
+  handleReorderAlbumPosts(request, liveAlbumDeps()),
+);
+
+/** A new post that names an album lands last in it, or is detached when the album is not usable. */
+export const onPostCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'posts/{postId}' }, async (event) => {
+  await handlePostCreated(event.params.postId, liveAlbumDeps());
+});
