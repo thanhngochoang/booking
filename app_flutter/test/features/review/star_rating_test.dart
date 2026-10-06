@@ -104,8 +104,8 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('vi'),
-          home: const Scaffold(
+          locale: Locale('vi'),
+          home: Scaffold(
             body: StarRating(
               value: 4,
               onChanged: null,
