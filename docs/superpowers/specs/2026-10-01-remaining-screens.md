@@ -104,8 +104,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ đã làm (4c) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
-| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S43 |
-| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S44 |
+| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ✅ đã làm (10b) | S43 |
+| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ đã làm (10b) | S44 |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) | S11 |
 | S07.02 | Danh sách hội thoại | `/chats` | cả hai | 4d | ✅ đã làm (4d) | — (mới) |
@@ -659,6 +659,7 @@ Khách khiếu nại trong cửa sổ khiếu nại → khoản thành `disputed
 - Nhiếp ảnh gia khai **tài khoản nhận tiền** (ngân hàng) ở S06.06 trước khi nhận được tiền; thiếu thì khoản vẫn tích luỹ ở `released` và ứng dụng nhắc thêm tài khoản.
 - Giai đoạn đầu `admin` duyệt từng lô và chuyển khoản thủ công (xuất tệp đối soát); sau đó tự động qua API chi hộ của ngân hàng/cổng. Mỗi lô `Payout` gồm nhiều khoản `released`, trạng thái `pending → processing → paid` (hoặc `failed`, `on_hold`).
 - v1 không thu hoa hồng, nhưng sổ cái có sẵn bút toán `fee` để bật sau.
+- Chi trả chạy qua CLI của nhân viên (`npm run payouts`) với cổng giả cho tới khi có nhà cung cấp ngân hàng và S23; ứng dụng chỉ đọc kết quả ở S06.05.
 
 ### 3g.5 Sổ cái (ledger)
 

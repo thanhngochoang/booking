@@ -144,13 +144,14 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 
 ## S06.05 · Thu nhập
 
-- **Thông tin**: `/work/earnings` · NAG · sub‑project 5 · Chưa có.
+- **Thông tin**: `/work/earnings` · NAG · sub‑project 5 · Đã có (10b).
 - **Mục đích**: thấy tiền đang được giữ, sắp nhận và đã nhận; hiểu vì sao chưa nhận (tiền treo tới khi hoàn thành).
 - **Điểm vào → ra**: ô "Đang giữ" ở S06.01, Hồ sơ → "Thu nhập". "Tài khoản nhận tiền" → S06.06; chạm một khoản → S05.02 hoặc S12.03.
 - **Bố cục**: Back + "Thu nhập"; dải `EscrowNotice` "Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành."; hàng `StatTile` ×3 **Đang giữ · Sắp nhận · Đã nhận** (cùng một hàng, nhãn một dòng); dải nhắc thêm tài khoản (khi chưa có); danh sách khoản theo thời gian: dòng gồm tên khách/sự kiện, ngày, số tiền, nhãn trạng thái tiền (`Đang giữ` · `Chờ chi trả` · `Đã chuyển 12/10` · `Đang khiếu nại`), nút chữ "Tài khoản nhận tiền".
 - **Dữ liệu**: `earningsProvider` từ `payments` (escrow) và `payouts` của chính nhiếp ảnh gia: Đang giữ = tổng khoản `held`; Sắp nhận = `released` chưa vào lô đã trả và lô `pending/processing`; Đã nhận = tổng lô `paid`. Phân trang theo tháng.
 - **Trạng thái**: chưa có khoản nào → empty "Chưa có khoản thu nào" nêu cách có khoản đầu; khoản `disputed` hiện biểu tượng và lý do tạm giữ; lô `failed` → dải "Chuyển khoản lỗi, kiểm tra tài khoản" (→ S06.06); offline đọc cache.
 - **Chuỗi**: `s43_title` "Thu nhập", `s43_notice` "Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.", `s43_held` "Đang giữ", `s43_soon` "Sắp nhận", `s43_received` "Đã nhận", `s43_stateHeld` "Đang giữ", `s43_stateReleased` "Chờ chi trả", `s43_statePaid` "Đã chuyển {date}", `s43_stateDispute` "Đang khiếu nại", `s43_addAccount` "Thêm tài khoản để nhận tiền".
+- **Theo mock (10b)**: biểu tượng cài đặt ở thanh trên (nhãn "Tài khoản nhận tiền") thay nút chữ; khoản nhóm theo tháng (tháng đầu nằm bên phải "Các khoản", tháng sau có tiêu đề riêng; năm khác ghi "Tháng 10/2025"); lý do tạm giữ là nhãn cố định theo mã (khiếu nại, lô chi trả tạm giữ), không bao giờ là lời của khách; "Xem thêm" khi trang đầy.
 - **Phân tích**: `earnings_open`, `earnings_item_open{state}`.
 - **Chấp nhận**: các số khớp sổ cái; không bao giờ hiện số tài khoản đầy đủ; ba ô cùng một hàng ở 320dp và chữ 1,3×.
 
@@ -158,11 +159,12 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 
 ## S06.06 · Tài khoản nhận tiền
 
-- **Thông tin**: `/work/earnings/account` · NAG · sub‑project 5 · Chưa có.
+- **Thông tin**: `/work/earnings/account` · NAG · sub‑project 5 · Đã có (10b).
 - **Mục đích**: khai tài khoản ngân hàng để nhận chi trả.
 - **Bố cục**: Back + "Tài khoản nhận tiền"; chọn ngân hàng (tìm theo tên, danh mục ngân hàng VN có mã); ô số tài khoản (số, 6–20 chữ số); ô tên chủ tài khoản (viết hoa không dấu theo ngân hàng, tự điền nếu có tra cứu); ghi chú "Tên chủ tài khoản phải trùng tên bạn đã xác minh"; nút "Lưu tài khoản".
 - **Dữ liệu**: ghi `payout_accounts` (số tài khoản mã hoá, chỉ hiện 4 số cuối); mỗi nhiếp ảnh gia một tài khoản đang bật.
 - **Trạng thái**: tài khoản đã có → hiện che (`•••• 3456`) và "Đổi tài khoản"; đổi cần xác nhận lại (mật khẩu hoặc OTP khi có); lỗi định dạng dưới ô; lưu lỗi → SnackBar, giữ dữ liệu.
 - **Chuỗi**: `s44_title` "Tài khoản nhận tiền", `s44_bank` "Ngân hàng", `s44_number` "Số tài khoản", `s44_holder` "Tên chủ tài khoản", `s44_save` "Lưu tài khoản", `s44_hint` "Tên chủ tài khoản phải trùng tên bạn đã xác minh".
+- **Theo bản làm (10b)**: đổi tài khoản = xác nhận lại bằng đăng nhập gần đây (mật khẩu với email, luồng nhà cung cấp với Google/Facebook), thử lại một lần; tên chủ tài khoản chỉ là gợi ý (chưa so với tên đã xác minh); đổi hỏi xác nhận trước, mở biểu mẫu trống với ngân hàng chọn sẵn.
 - **Phân tích**: `payout_account_save`.
 - **Chấp nhận**: số tài khoản không có trong log và phân tích; chỉ chủ đọc/ghi; thay tài khoản không ảnh hưởng khoản đã chuyển.

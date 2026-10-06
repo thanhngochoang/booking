@@ -21,6 +21,7 @@ import 'package:photobooking/features/chat/chat_screen.dart';
 import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/earnings/earnings_screen.dart';
+import 'package:photobooking/features/earnings/payout_account_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
@@ -195,6 +196,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/work/earnings',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const EarningsScreen(),
+        routes: [
+          GoRoute(
+            path: 'account',
+            redirect: (_, _) => photographersOnly(),
+            builder: (_, _) => const PayoutAccountScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/setup/3',

@@ -3739,4 +3739,84 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileEarningsSub => 'Tiền đang giữ, sắp nhận và đã nhận';
+
+  @override
+  String get payoutAccountIntro =>
+      'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.';
+
+  @override
+  String get payoutAccountBank => 'Ngân hàng';
+
+  @override
+  String get payoutAccountBankPick => 'Chọn ngân hàng';
+
+  @override
+  String get payoutAccountBankSearch => 'Tìm ngân hàng';
+
+  @override
+  String get payoutAccountBankNone => 'Không tìm thấy ngân hàng';
+
+  @override
+  String get payoutAccountNumber => 'Số tài khoản';
+
+  @override
+  String get payoutAccountHolder => 'Tên chủ tài khoản';
+
+  @override
+  String get payoutAccountSave => 'Lưu tài khoản';
+
+  @override
+  String get payoutAccountHint =>
+      'Tên chủ tài khoản phải trùng tên bạn đã xác minh. Số tài khoản được mã hoá và chỉ hiện 4 số cuối.';
+
+  @override
+  String payoutAccountMasked(String last4) {
+    return '•••• $last4';
+  }
+
+  @override
+  String get payoutAccountChange => 'Đổi tài khoản';
+
+  @override
+  String get payoutAccountNumberError => 'Số tài khoản gồm 6–20 chữ số';
+
+  @override
+  String get payoutAccountHolderError =>
+      'Nhập họ tên viết hoa không dấu, 2–50 chữ cái';
+
+  @override
+  String get payoutAccountChangeTitle => 'Đổi tài khoản nhận tiền?';
+
+  @override
+  String get payoutAccountChangeBody =>
+      'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.';
+
+  @override
+  String get payoutAccountChangeConfirm => 'Đổi tài khoản';
+
+  @override
+  String get payoutAccountReauthTitle => 'Xác nhận lại để đổi tài khoản';
+
+  @override
+  String get payoutAccountReauthBody =>
+      'Vì an toàn, hãy đăng nhập lại trước khi đổi tài khoản nhận tiền.';
+
+  @override
+  String get payoutAccountReauthPassword => 'Mật khẩu';
+
+  @override
+  String get payoutAccountReauthGo => 'Xác nhận';
+
+  @override
+  String get payoutAccountReauthWrong => 'Mật khẩu chưa đúng';
+
+  @override
+  String get payoutAccountSaved => 'Đã lưu tài khoản nhận tiền';
+
+  @override
+  String get payoutAccountSaveError => 'Không lưu được. Thử lại';
+
+  @override
+  String get payoutAccountBusy =>
+      'Đang chuyển một lô tiền, thử lại sau ít phút';
 }
