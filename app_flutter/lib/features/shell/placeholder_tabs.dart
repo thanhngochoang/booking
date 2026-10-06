@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -162,6 +163,8 @@ class ProfileTab extends ConsumerWidget {
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: AppSpace.s4),
+                      const _NotificationsRow(),
                       if (setupOpen) ...[
                         const SizedBox(height: AppSpace.s6),
                         GlassCard(
@@ -310,6 +313,117 @@ class _MyAlbumsRow extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const AppIcon(AppIcons.chevron),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S09.01: the newest notification and the unread count; opens S17.01. Reads
+/// the count from the one `unreadCount` document and re-fetches the newest
+/// row when it changes; it never listens to the inbox itself.
+class _NotificationsRow extends ConsumerWidget {
+  const _NotificationsRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final unread = ref.watch(unreadCountProvider).value ?? 0;
+    final latest = ref.watch(latestNotificationProvider).value;
+    final summary = latest?.title ?? l.notifEmptyTitle;
+    final scheme = theme.colorScheme;
+    void open() => context.push('/notifications');
+    return GlassCard(
+      highlight: false,
+      child: Semantics(
+        button: true,
+        label: unread > 0
+            ? l.notifRowSemantics(unread, summary)
+            : l.notifRowSemanticsRead(summary),
+        excludeSemantics: true,
+        onTap: open,
+        child: InkWell(
+          key: const Key('open-notifications'),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: open,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSpace.s12),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpace.s4),
+              child: Row(
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: dark
+                          ? AppColorsDark.surfaceMuted
+                          : AppColors.surfaceMuted,
+                      shape: BoxShape.circle,
+                    ),
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Center(
+                        child: AppIcon(
+                          AppIcons.notifications,
+                          color: context.mutedForeground,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.notificationTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        Text(
+                          summary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (unread > 0) ...[
+                    const SizedBox(width: AppSpace.s2),
+                    DecoratedBox(
+                      key: const Key('notifications-count'),
+                      decoration: BoxDecoration(
+                        color: scheme.error,
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s2,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            unread > 9 ? '9+' : '$unread',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: AppText.xs2,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onError,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: AppSpace.s1),
                   const AppIcon(AppIcons.chevron),
                 ],
               ),

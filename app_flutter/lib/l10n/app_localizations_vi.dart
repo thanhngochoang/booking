@@ -3387,4 +3387,103 @@ class AppLocalizationsVi extends AppLocalizations {
   String profileAwardsMore(int n) {
     return 'Xem cả $n giải';
   }
+
+  @override
+  String get notifSettingsTooltip => 'Cài đặt thông báo';
+
+  @override
+  String get notifTabAll => 'Tất cả';
+
+  @override
+  String get notifTabBooking => 'Đặt lịch';
+
+  @override
+  String get notifTabWork => 'Công việc';
+
+  @override
+  String get notifTabEvents => 'Sự kiện';
+
+  @override
+  String get notifTabSystem => 'Hệ thống';
+
+  @override
+  String notifUnreadHeader(int n) {
+    return '$n chưa đọc';
+  }
+
+  @override
+  String get notifMarkAllRead => 'Đánh dấu tất cả đã đọc';
+
+  @override
+  String get notifSectionToday => 'Hôm nay';
+
+  @override
+  String get notifSectionWeek => '7 ngày qua';
+
+  @override
+  String get notifSectionEarlier => 'Trước đó';
+
+  @override
+  String get notifEmptyTitle => 'Chưa có thông báo nào';
+
+  @override
+  String get notifEmptyBody =>
+      'Lịch hẹn, tin nhắn và huy hiệu của bạn sẽ hiện ở đây.';
+
+  @override
+  String get notifEmptyCtaCustomer => 'Khám phá nhiếp ảnh gia';
+
+  @override
+  String get notifEmptyCtaPhotographer => 'Mở Công việc';
+
+  @override
+  String notifEmptyFiltered(String tab) {
+    return 'Chưa có thông báo nào trong mục $tab';
+  }
+
+  @override
+  String get notifEmptyFilteredBody => 'Chọn mục khác để xem thêm.';
+
+  @override
+  String get notifTargetGone => 'Nội dung này không còn';
+
+  @override
+  String get notifMuted => 'Đã tắt loại thông báo này';
+
+  @override
+  String get notifUndo => 'Hoàn tác';
+
+  @override
+  String get notifTimeNow => 'Vừa xong';
+
+  @override
+  String notifTimeMinutes(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String notifTimeHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String get notifTimeYesterday => 'Hôm qua';
+
+  @override
+  String notifTimeDays(int n) {
+    return '$n ngày';
+  }
+
+  @override
+  String notifRowSemantics(int n, String title) {
+    return 'Thông báo, $n thông báo chưa đọc, $title';
+  }
+
+  @override
+  String notifRowSemanticsRead(String title) {
+    return 'Thông báo, $title';
+  }
+
+  @override
+  String get notifLoadMoreError => 'Chưa tải thêm được. Kéo xuống để thử lại.';
 }

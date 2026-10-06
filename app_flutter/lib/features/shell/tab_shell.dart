@@ -9,6 +9,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/explore_badge.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/shell/tab_badges.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 class TabShell extends ConsumerWidget {
   const TabShell(this.shell, {super.key});
@@ -50,11 +51,13 @@ class TabShell extends ConsumerWidget {
                   NavigationDestination(
                     icon: TabBadge(
                       count: badges[s.tab] ?? 0,
+                      semanticsValue: _badgeSemantics(s.tab, badges, l),
                       child: AppIcon(s.icon),
                     ),
                     // Active tab: filled glyph; the theme colours it accent.
                     selectedIcon: TabBadge(
                       count: badges[s.tab] ?? 0,
+                      semanticsValue: _badgeSemantics(s.tab, badges, l),
                       child: AppIcon(s.icon, selected: true),
                     ),
                     label: s.label(l),
@@ -66,6 +69,16 @@ class TabShell extends ConsumerWidget {
     );
   }
 }
+
+/// The Hồ sơ badge counts unread notifications, so the screen reader says so
+/// instead of the generic "mục mới".
+String? _badgeSemantics(
+  AppTab tab,
+  Map<AppTab, int> badges,
+  AppLocalizations l,
+) => tab == AppTab.profile && (badges[tab] ?? 0) > 0
+    ? l.notificationUnreadCount(badges[tab]!)
+    : null;
 
 /// Mock `.tab.mid`: a 36dp gradient disc with a purple glow, the whole
 /// destination lifted 3dp, and an ink (not accent) label when active. The

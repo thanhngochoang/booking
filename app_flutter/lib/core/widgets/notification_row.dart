@@ -215,7 +215,8 @@ class NotificationRow extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 item.title,
-                                maxLines: 1,
+                                // Spec S17.01: the title wraps, only the body is capped.
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: AppText.base,

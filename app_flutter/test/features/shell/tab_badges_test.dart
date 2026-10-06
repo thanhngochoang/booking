@@ -7,6 +7,9 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/notifications/app_notification.dart';
+import 'package:photobooking/data/notifications/notification_providers.dart';
+import 'package:photobooking/data/notifications/notification_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/explore/explore_badge.dart';
@@ -24,8 +27,9 @@ Booking _request(String id, {required Duration deadlineIn}) => makeTestBooking(
 
 Future<(ProviderContainer, FakeBookingRepository)> _make(
   String uid,
-  UserRole role,
-) async {
+  UserRole role, {
+  FakeNotificationRepository? inbox,
+}) async {
   final users = FakeUserRepository();
   await users.ensureProfile(AuthUser(uid: uid, displayName: 'Minh'));
   await users.setRole(uid, role);
@@ -43,6 +47,9 @@ Future<(ProviderContainer, FakeBookingRepository)> _make(
       bookingRepositoryProvider.overrideWithValue(bookings),
       clockProvider.overrideWithValue(() => _now),
       exploreBadgeCountProvider.overrideWith((ref) async => 0),
+      notificationRepositoryProvider.overrideWithValue(
+        inbox ?? FakeNotificationRepository(),
+      ),
     ],
   );
   addTearDown(c.dispose);
@@ -66,4 +73,49 @@ void main() {
     final (c, _) = await _make('c1', UserRole.customer);
     expect(c.read(tabBadgesProvider), isEmpty);
   });
+
+  AppNotification note(String id, {bool read = false}) => AppNotification(
+    id: id,
+    type: 'booking_accepted',
+    tab: NotificationTab.activity,
+    category: NotificationCategory.booking,
+    title: 'Tiêu đề $id',
+    body: 'Nội dung',
+    target: '/b/$id',
+    createdAt: _now,
+    readAt: read ? _now : null,
+  );
+
+  test(
+    'the profile tab shows the unread notifications and clears them',
+    () async {
+      final inbox = FakeNotificationRepository([
+        note('a'),
+        note('b'),
+        note('c', read: true),
+      ]);
+      final (c, _) = await _make('c1', UserRole.customer, inbox: inbox);
+      expect(c.read(tabBadgesProvider), {AppTab.profile: 2});
+
+      await inbox.markRead('c1', ['a']);
+      await pumpEventQueue();
+      expect(c.read(tabBadgesProvider), {AppTab.profile: 1});
+
+      await inbox.markAllRead();
+      await pumpEventQueue();
+      expect(c.read(tabBadgesProvider), isEmpty);
+    },
+  );
+
+  test(
+    'photographers see requests on Work and unread on the profile',
+    () async {
+      final inbox = FakeNotificationRepository([note('a')]);
+      final (c, _) = await _make('p1', UserRole.photographer, inbox: inbox);
+      expect(c.read(tabBadgesProvider), {
+        AppTab.bookings: 2,
+        AppTab.profile: 1,
+      });
+    },
+  );
 }

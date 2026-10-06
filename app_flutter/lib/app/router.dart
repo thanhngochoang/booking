@@ -21,6 +21,7 @@ import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
+import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
@@ -145,6 +146,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const EditProfileScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsScreen(),
       ),
       GoRoute(
         path: '/profile/phone',

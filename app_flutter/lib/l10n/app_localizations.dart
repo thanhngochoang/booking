@@ -5955,6 +5955,174 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xem cả {n} giải'**
   String profileAwardsMore(int n);
+
+  /// No description provided for @notifSettingsTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cài đặt thông báo'**
+  String get notifSettingsTooltip;
+
+  /// No description provided for @notifTabAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get notifTabAll;
+
+  /// No description provided for @notifTabBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get notifTabBooking;
+
+  /// No description provided for @notifTabWork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Công việc'**
+  String get notifTabWork;
+
+  /// No description provided for @notifTabEvents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get notifTabEvents;
+
+  /// No description provided for @notifTabSystem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hệ thống'**
+  String get notifTabSystem;
+
+  /// No description provided for @notifUnreadHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} chưa đọc'**
+  String notifUnreadHeader(int n);
+
+  /// No description provided for @notifMarkAllRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu tất cả đã đọc'**
+  String get notifMarkAllRead;
+
+  /// No description provided for @notifSectionToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get notifSectionToday;
+
+  /// No description provided for @notifSectionWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'7 ngày qua'**
+  String get notifSectionWeek;
+
+  /// No description provided for @notifSectionEarlier.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trước đó'**
+  String get notifSectionEarlier;
+
+  /// No description provided for @notifEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thông báo nào'**
+  String get notifEmptyTitle;
+
+  /// No description provided for @notifEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch hẹn, tin nhắn và huy hiệu của bạn sẽ hiện ở đây.'**
+  String get notifEmptyBody;
+
+  /// No description provided for @notifEmptyCtaCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá nhiếp ảnh gia'**
+  String get notifEmptyCtaCustomer;
+
+  /// No description provided for @notifEmptyCtaPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở Công việc'**
+  String get notifEmptyCtaPhotographer;
+
+  /// No description provided for @notifEmptyFiltered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thông báo nào trong mục {tab}'**
+  String notifEmptyFiltered(String tab);
+
+  /// No description provided for @notifEmptyFilteredBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn mục khác để xem thêm.'**
+  String get notifEmptyFilteredBody;
+
+  /// No description provided for @notifTargetGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung này không còn'**
+  String get notifTargetGone;
+
+  /// No description provided for @notifMuted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã tắt loại thông báo này'**
+  String get notifMuted;
+
+  /// No description provided for @notifUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get notifUndo;
+
+  /// No description provided for @notifTimeNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vừa xong'**
+  String get notifTimeNow;
+
+  /// No description provided for @notifTimeMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String notifTimeMinutes(int n);
+
+  /// No description provided for @notifTimeHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String notifTimeHours(int n);
+
+  /// No description provided for @notifTimeYesterday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm qua'**
+  String get notifTimeYesterday;
+
+  /// No description provided for @notifTimeDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày'**
+  String notifTimeDays(int n);
+
+  /// No description provided for @notifRowSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo, {n} thông báo chưa đọc, {title}'**
+  String notifRowSemantics(int n, String title);
+
+  /// No description provided for @notifRowSemanticsRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo, {title}'**
+  String notifRowSemanticsRead(String title);
+
+  /// No description provided for @notifLoadMoreError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải thêm được. Kéo xuống để thử lại.'**
+  String get notifLoadMoreError;
 }
 
 class _AppLocalizationsDelegate
