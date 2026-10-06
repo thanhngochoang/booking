@@ -3486,4 +3486,125 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get notifLoadMoreError => 'Chưa tải thêm được. Kéo xuống để thử lại.';
+
+  @override
+  String get settingsNotificationsBody => 'Push, giờ yên lặng, nhắc buổi chụp';
+
+  @override
+  String get notifSettingsOsOffTitle => 'Thông báo đang tắt trên máy';
+
+  @override
+  String get notifSettingsOsOffBody =>
+      'Bạn sẽ không nhận push cho tới khi bật lại.';
+
+  @override
+  String get notifSettingsOpenSettings => 'Mở Cài đặt';
+
+  @override
+  String get notifSettingsColType => 'Loại';
+
+  @override
+  String get notifSettingsColPush => 'Push';
+
+  @override
+  String get notifSettingsColInApp => 'Trong app';
+
+  @override
+  String get notifSettingsPushOffOs => 'Đang tắt trên máy';
+
+  @override
+  String get notifSettingsCatBooking => 'Đặt lịch và thanh toán';
+
+  @override
+  String get notifSettingsCatJobs => 'Việc đăng tuyển';
+
+  @override
+  String get notifSettingsCatInstant => 'Chụp ngay';
+
+  @override
+  String get notifSettingsCatEvents => 'Sự kiện';
+
+  @override
+  String get notifSettingsCatChat => 'Tin nhắn';
+
+  @override
+  String get notifSettingsCatBadges => 'Huy hiệu và đánh giá';
+
+  @override
+  String get notifSettingsCatPromo => 'Khuyến mãi';
+
+  @override
+  String notifSwitchOn(String group, String channel) {
+    return '$group, $channel, bật';
+  }
+
+  @override
+  String notifSwitchOff(String group, String channel) {
+    return '$group, $channel, tắt';
+  }
+
+  @override
+  String notifSwitchLocked(String group, String channel) {
+    return '$group, $channel, luôn bật';
+  }
+
+  @override
+  String get notifSettingsQuietTitle => 'Giờ yên lặng';
+
+  @override
+  String notifSettingsQuietLine(String from, String to) {
+    return '$from–$to · chỉ thông báo quan trọng vẫn có âm';
+  }
+
+  @override
+  String get notifSettingsQuietSwitchOn => 'Giờ yên lặng, bật';
+
+  @override
+  String get notifSettingsQuietSwitchOff => 'Giờ yên lặng, tắt';
+
+  @override
+  String get notifSettingsPickFrom => 'Yên lặng từ';
+
+  @override
+  String get notifSettingsPickTo => 'Yên lặng đến';
+
+  @override
+  String get notifSettingsRemindersTitle => 'Nhắc buổi chụp';
+
+  @override
+  String get notifSettingsReminder24 => '24 giờ';
+
+  @override
+  String get notifSettingsReminder2 => '2 giờ';
+
+  @override
+  String get notifSettingsSaveError => 'Không lưu được, thử lại';
+
+  @override
+  String primerTitleCustomerBooking(String name) {
+    return 'Bật thông báo để biết khi $name nhận lịch';
+  }
+
+  @override
+  String get primerTitleCustomerInstant =>
+      'Bật thông báo để biết khi có người nhận chụp ngay';
+
+  @override
+  String get primerTitlePhotographer =>
+      'Bật thông báo để không bỏ lỡ lời mời việc';
+
+  @override
+  String get primerBenefit1 => 'Biết ngay khi lịch được nhận hoặc thay đổi';
+
+  @override
+  String get primerBenefit2 => 'Nhắc trước giờ chụp, không lỡ hẹn';
+
+  @override
+  String get primerBenefit3 => 'Tin nhắn mới khi app đang ở nền';
+
+  @override
+  String get primerNote => 'Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.';
+
+  @override
+  String get primerEnabled => 'Đã bật thông báo';
 }

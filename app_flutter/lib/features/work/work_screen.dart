@@ -15,6 +15,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
 
@@ -67,6 +68,9 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           );
       if (!mounted) return;
       setState(() => _accepting = null);
+      // Accepting is the reason to ask (S17.03); the chat opens after it.
+      await maybeAskForNotifications(context, ref, const PhotographerPrimer());
+      if (!mounted) return;
       final chatId = b.chatId;
       if (chatId != null) {
         await context.push('/chat/$chatId');

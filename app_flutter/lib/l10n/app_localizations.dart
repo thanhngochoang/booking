@@ -6123,6 +6123,222 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa tải thêm được. Kéo xuống để thử lại.'**
   String get notifLoadMoreError;
+
+  /// No description provided for @settingsNotificationsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Push, giờ yên lặng, nhắc buổi chụp'**
+  String get settingsNotificationsBody;
+
+  /// No description provided for @notifSettingsOsOffTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo đang tắt trên máy'**
+  String get notifSettingsOsOffTitle;
+
+  /// No description provided for @notifSettingsOsOffBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ không nhận push cho tới khi bật lại.'**
+  String get notifSettingsOsOffBody;
+
+  /// No description provided for @notifSettingsOpenSettings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở Cài đặt'**
+  String get notifSettingsOpenSettings;
+
+  /// No description provided for @notifSettingsColType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại'**
+  String get notifSettingsColType;
+
+  /// No description provided for @notifSettingsColPush.
+  ///
+  /// In vi, this message translates to:
+  /// **'Push'**
+  String get notifSettingsColPush;
+
+  /// No description provided for @notifSettingsColInApp.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong app'**
+  String get notifSettingsColInApp;
+
+  /// No description provided for @notifSettingsPushOffOs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tắt trên máy'**
+  String get notifSettingsPushOffOs;
+
+  /// No description provided for @notifSettingsCatBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch và thanh toán'**
+  String get notifSettingsCatBooking;
+
+  /// No description provided for @notifSettingsCatJobs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đăng tuyển'**
+  String get notifSettingsCatJobs;
+
+  /// No description provided for @notifSettingsCatInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay'**
+  String get notifSettingsCatInstant;
+
+  /// No description provided for @notifSettingsCatEvents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get notifSettingsCatEvents;
+
+  /// No description provided for @notifSettingsCatChat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn'**
+  String get notifSettingsCatChat;
+
+  /// No description provided for @notifSettingsCatBadges.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu và đánh giá'**
+  String get notifSettingsCatBadges;
+
+  /// No description provided for @notifSettingsCatPromo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khuyến mãi'**
+  String get notifSettingsCatPromo;
+
+  /// No description provided for @notifSwitchOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'{group}, {channel}, bật'**
+  String notifSwitchOn(String group, String channel);
+
+  /// No description provided for @notifSwitchOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'{group}, {channel}, tắt'**
+  String notifSwitchOff(String group, String channel);
+
+  /// No description provided for @notifSwitchLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'{group}, {channel}, luôn bật'**
+  String notifSwitchLocked(String group, String channel);
+
+  /// No description provided for @notifSettingsQuietTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ yên lặng'**
+  String get notifSettingsQuietTitle;
+
+  /// No description provided for @notifSettingsQuietLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from}–{to} · chỉ thông báo quan trọng vẫn có âm'**
+  String notifSettingsQuietLine(String from, String to);
+
+  /// No description provided for @notifSettingsQuietSwitchOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ yên lặng, bật'**
+  String get notifSettingsQuietSwitchOn;
+
+  /// No description provided for @notifSettingsQuietSwitchOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ yên lặng, tắt'**
+  String get notifSettingsQuietSwitchOff;
+
+  /// No description provided for @notifSettingsPickFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yên lặng từ'**
+  String get notifSettingsPickFrom;
+
+  /// No description provided for @notifSettingsPickTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yên lặng đến'**
+  String get notifSettingsPickTo;
+
+  /// No description provided for @notifSettingsRemindersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắc buổi chụp'**
+  String get notifSettingsRemindersTitle;
+
+  /// No description provided for @notifSettingsReminder24.
+  ///
+  /// In vi, this message translates to:
+  /// **'24 giờ'**
+  String get notifSettingsReminder24;
+
+  /// No description provided for @notifSettingsReminder2.
+  ///
+  /// In vi, this message translates to:
+  /// **'2 giờ'**
+  String get notifSettingsReminder2;
+
+  /// No description provided for @notifSettingsSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được, thử lại'**
+  String get notifSettingsSaveError;
+
+  /// No description provided for @primerTitleCustomerBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để biết khi {name} nhận lịch'**
+  String primerTitleCustomerBooking(String name);
+
+  /// No description provided for @primerTitleCustomerInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để biết khi có người nhận chụp ngay'**
+  String get primerTitleCustomerInstant;
+
+  /// No description provided for @primerTitlePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để không bỏ lỡ lời mời việc'**
+  String get primerTitlePhotographer;
+
+  /// No description provided for @primerBenefit1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Biết ngay khi lịch được nhận hoặc thay đổi'**
+  String get primerBenefit1;
+
+  /// No description provided for @primerBenefit2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắc trước giờ chụp, không lỡ hẹn'**
+  String get primerBenefit2;
+
+  /// No description provided for @primerBenefit3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn mới khi app đang ở nền'**
+  String get primerBenefit3;
+
+  /// No description provided for @primerNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.'**
+  String get primerNote;
+
+  /// No description provided for @primerEnabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bật thông báo'**
+  String get primerEnabled;
 }
 
 class _AppLocalizationsDelegate

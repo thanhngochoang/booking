@@ -5,6 +5,7 @@ import 'package:photobooking/data/notifications/app_notification.dart';
 import 'package:photobooking/data/notifications/notification_prefs.dart';
 import 'package:photobooking/data/notifications/notification_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 
 import '../../support/notifications_world.dart';
 
@@ -397,7 +398,7 @@ void main() {
     await _open(tester);
     await tester.tap(find.byTooltip('Cài đặt thông báo'));
     await tester.pumpAndSettle();
-    expect(find.text('stub /settings/notifications'), findsOneWidget);
+    expect(find.byType(NotificationSettingsScreen), findsOneWidget);
   });
 
   for (final brightness in Brightness.values) {

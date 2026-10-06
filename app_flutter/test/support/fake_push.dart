@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:photobooking/data/push/push_providers.dart';
+
 import 'package:photobooking/data/push/device_registry.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_messaging.dart';
@@ -98,4 +101,24 @@ class FakeDeviceRegistry implements DeviceRegistry {
       throw failure;
     }
   }
+}
+
+/// A permission that is already granted, so no screen under test shows the
+/// S17.03 primer — unless [extra] overrides the permission itself.
+List<Override> grantedNotificationPermissionUnless(List<Override> extra) {
+  final custom = extra.any((o) {
+    try {
+      final origin = (o as dynamic).origin;
+      return origin == notificationPermissionProvider ||
+          origin?.toString() == notificationPermissionProvider.toString();
+    } catch (_) {
+      return false;
+    }
+  });
+  return [
+    if (!custom)
+      notificationPermissionProvider.overrideWithValue(
+        FakeNotificationPermission(NotificationPermissionStatus.granted),
+      ),
+  ];
 }

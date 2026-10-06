@@ -52,6 +52,8 @@ import 'package:photobooking/features/photographer_profile/profile_providers.dar
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
+import 'fake_push.dart';
+
 import 'content_fixtures.dart';
 import 'fake_booking_repository.dart';
 import 'fake_chat_repository.dart';
@@ -235,10 +237,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
           initialReschedule: s.uri.queryParameters['reschedule'] == '1',
         ),
       ),
-      GoRoute(
-        path: '/chats',
-        builder: (_, _) => const ChatListScreen(),
-      ),
+      GoRoute(path: '/chats', builder: (_, _) => const ChatListScreen()),
       ...bookingDetailRoutes(),
       for (final p in ['/home', '/profile/phone', '/bookings'])
         GoRoute(path: p, builder: stub),
@@ -342,7 +341,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
         disableAnimations: disableAnimations,
         textScaler: TextScaler.linear(textScale),
         size: viewSize,
-          viewInsets: EdgeInsets.only(bottom: keyboardInset),
+        viewInsets: EdgeInsets.only(bottom: keyboardInset),
       ),
       child: screenRouterApp(
         router: router,
@@ -502,6 +501,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
     ),
     if (!hasCustomChat)
       chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
+    ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];
 
@@ -634,6 +634,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
     postRepositoryProvider.overrideWithValue(posts),
     myPackagesProvider.overrideWith((ref) => Stream.value(packages)),
     skillsRepositoryProvider.overrideWithValue(skills),
+    ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];
 

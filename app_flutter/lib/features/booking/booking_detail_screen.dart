@@ -1,4 +1,6 @@
 // S05.02: one screen for every state of a booking, for both parties.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +24,7 @@ import 'package:photobooking/features/booking/cancel_sheet.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
 import 'package:photobooking/features/contact/contact_action.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/review/review_screen.dart';
 
 /// A sheet S05.02 opens over itself after its first frame (deep links
@@ -81,6 +84,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   DetailAction? _busy;
   bool _sheetHandled = false;
 
+  /// The notification primer is offered once per visit, after the paid toast.
+  bool _primerAsked = false;
+
   static const _tick = Duration(minutes: 1);
 
   void _say(String text) {
@@ -101,6 +107,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       await ref
           .read(bookingRepositoryProvider)
           .transitionBooking(bookingId: b.id, action: action.code);
+      // A photographer who just accepted has a reason to hear back (S17.03).
+      if (action == BookingAction.accept && mounted) {
+        unawaited(
+          maybeAskForNotifications(context, ref, const PhotographerPrimer()),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       _say(bookingErrorText(e, l10n));
@@ -324,6 +336,18 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         widget.justPaid && customer && b.status == BookingStatus.requested;
 
     void run(DetailAction a) => _onAction(a, b, role, name);
+
+    if (paidToast && !_primerAsked && name.isNotEmpty) {
+      _primerAsked = true;
+      // After the toast is on screen: the deposit is the meaningful action.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(
+            maybeAskForNotifications(context, ref, CustomerBookingPrimer(name)),
+          );
+        }
+      });
+    }
 
     // Short, bounded content: a plain scroll view builds every action, so
     // the dial and the buttons exist even below the fold.

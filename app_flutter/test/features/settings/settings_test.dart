@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +11,8 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/push/notification_permission.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
@@ -24,6 +28,7 @@ import 'package:photobooking/features/settings/show_screen_codes_controller.dart
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import '../../support/fake_push.dart';
 import '../../support/idle.dart';
 import '../../support/photo_scope.dart';
 
@@ -35,6 +40,7 @@ Future<Widget> _app({
   FakeImagePicker? picker,
   FakeMediaUploader? uploader,
   FakeSkillsRepository? skills,
+  FakeDeviceRegistry? devices,
 }) async {
   final router = GoRouter(
     initialLocation: '/settings',
@@ -46,6 +52,10 @@ Future<Widget> _app({
           GoRoute(
             path: 'profile',
             builder: (_, _) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            path: 'notifications',
+            builder: (_, _) => const Text('notification settings'),
           ),
         ],
       ),
@@ -74,6 +84,12 @@ Future<Widget> _app({
       skillsRepositoryProvider.overrideWithValue(
         skills ?? FakeSkillsRepository(),
       ),
+      // Push ports: no plugin runs in tests.
+      pushMessagingProvider.overrideWithValue(FakePushMessaging()),
+      notificationPermissionProvider.overrideWithValue(
+        FakeNotificationPermission(NotificationPermissionStatus.denied),
+      ),
+      deviceRegistryProvider.overrideWithValue(devices ?? FakeDeviceRegistry()),
     ],
     child: MaterialApp.router(
       routerConfig: router,
@@ -574,6 +590,7 @@ void main() {
       FakeUserRepository users, {
       FakeUserContactRepository? contacts,
       FakeSkillsRepository? skills,
+      FakeDeviceRegistry? devices,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -584,6 +601,7 @@ void main() {
           prefs: prefs,
           contacts: contacts,
           skills: skills,
+          devices: devices,
         ),
       );
       await tester.pumpAndSettle();
@@ -702,6 +720,66 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(auth.currentUser, isNull);
+    });
+
+    testWidgets('the Thông báo row opens /settings/notifications', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+      final row = find.byKey(const Key('settings-notifications'));
+      await tester.scrollUntilVisible(row, 100);
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(find.text('Push, giờ yên lặng, nhắc buổi chụp'), findsOneWidget);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('notification settings'), findsOneWidget);
+    });
+
+    testWidgets('the Thông báo group sits between the button style and '
+        'Đăng xuất', (tester) async {
+      tester.view.physicalSize = const Size(390, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+      double y(Finder f) => tester.getTopLeft(f).dy;
+      expect(
+        y(find.text('KIỂU NÚT CHÍNH')),
+        lessThan(y(find.byKey(const Key('settings-notifications')))),
+      );
+      expect(
+        y(find.byKey(const Key('settings-notifications'))),
+        lessThan(y(find.byKey(const Key('settings-sign-out')))),
+      );
+    });
+
+    testWidgets('sign-out unregisters the device first', (tester) async {
+      final (auth, users) = await _signedIn();
+      final devices = FakeDeviceRegistry();
+      final hold = Completer<void>();
+      devices.holdUnregister = hold;
+      await open(tester, auth, users, devices: devices);
+      final uid = auth.currentUser!.uid;
+      final btn = find.byKey(const Key('settings-sign-out'));
+      await tester.scrollUntilVisible(btn, 100);
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppButton),
+          matching: find.text('Đăng xuất'),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(devices.unregistered, [uid]);
+      expect(auth.currentUser, isNotNull, reason: 'still waiting for it');
+      hold.complete();
+      await tester.pumpAndSettle();
       expect(auth.currentUser, isNull);
     });
   });

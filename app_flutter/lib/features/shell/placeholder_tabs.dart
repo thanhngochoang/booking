@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/awards/award_nudge.dart';
 import 'package:photobooking/features/booking/my_bookings_screen.dart';
@@ -257,7 +258,8 @@ class ProfileTab extends ConsumerWidget {
                         key: const Key('sign-out'),
                         onPressed: switching
                             ? null
-                            : () => ref.read(authRepositoryProvider).signOut(),
+                            : () =>
+                                  ref.read(pushRegistrationProvider).signOut(),
                       ),
                     ],
                   ),

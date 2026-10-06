@@ -17,6 +17,7 @@ import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -43,17 +44,21 @@ class NotificationsWorld {
     this.role = UserRole.customer,
     List<AppNotification> rows = const [],
     NotificationRepository? repository,
-  }) : repo = repository ?? FakeNotificationRepository(rows);
+    FakeNotificationPrefsRepository? prefsRepository,
+    FakeNotificationPermission? permissionPort,
+  }) : repo = repository ?? FakeNotificationRepository(rows),
+       prefs = prefsRepository ?? FakeNotificationPrefsRepository(),
+       permission =
+           permissionPort ??
+           FakeNotificationPermission(NotificationPermissionStatus.granted);
 
   final UserRole role;
   final NotificationRepository repo;
   final auth = FakeAuthRepository();
   final users = FakeUserRepository();
-  final prefs = FakeNotificationPrefsRepository();
+  final FakeNotificationPrefsRepository prefs;
   final push = FakePushMessaging();
-  final permission = FakeNotificationPermission(
-    NotificationPermissionStatus.granted,
-  );
+  final FakeNotificationPermission permission;
   final devices = FakeDeviceRegistry();
   late SharedPreferences sharedPrefs;
   late String uid;
@@ -86,6 +91,7 @@ class NotificationsWorld {
     String location = '/notifications',
     Brightness brightness = Brightness.dark,
     double textScale = 1.0,
+    List<Override> extraOverrides = const [],
   }) {
     Widget stub(BuildContext _, GoRouterState s) =>
         Scaffold(body: Text('stub ${s.uri}'));
@@ -96,9 +102,12 @@ class NotificationsWorld {
           path: '/notifications',
           builder: (_, _) => const NotificationsScreen(),
         ),
+        GoRoute(
+          path: '/settings/notifications',
+          builder: (_, _) => const NotificationSettingsScreen(),
+        ),
         for (final p in [
           '/home',
-          '/settings/notifications',
           '/b/:id',
           '/chat/:id',
           '/me/awards',
@@ -112,7 +121,7 @@ class NotificationsWorld {
     );
     return screenRouterApp(
       router: router,
-      overrides: overrides,
+      overrides: [...overrides, ...extraOverrides],
       brightness: brightness,
       textScale: textScale,
     );

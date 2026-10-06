@@ -7,6 +7,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -169,6 +170,19 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: AppSpace.s6),
+                _SectionLabel(l.notificationTitle),
+                GlassCard(
+                  highlight: false,
+                  child: ListTile(
+                    key: const Key('settings-notifications'),
+                    leading: const AppIcon(AppIcons.notifications),
+                    title: Text(l.notificationTitle),
+                    subtitle: Text(l.settingsNotificationsBody),
+                    trailing: const AppIcon(AppIcons.chevron),
+                    onTap: () => context.push('/settings/notifications'),
+                  ),
+                ),
                 if (kDebugMode) ...[
                   const SizedBox(height: AppSpace.s6),
                   _SectionLabel(l.settingsDeveloper),
@@ -218,7 +232,8 @@ class SettingsScreen extends ConsumerWidget {
       keepLabel: l.settingsSignOutKeep,
       danger: true,
       onConfirm: () async {
-        await ref.read(authRepositoryProvider).signOut();
+        // Drops this device's push token first, then signs out.
+        await ref.read(pushRegistrationProvider).signOut();
       },
     );
   }

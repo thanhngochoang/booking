@@ -18,6 +18,8 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/push/notification_permission.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -30,6 +32,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/fake_push.dart';
 
 Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
   UserRole role,
@@ -58,6 +61,12 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
           FakeServicePackageRepository(),
         ),
         skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
+        // Push ports: no plugin runs in tests.
+        pushMessagingProvider.overrideWithValue(FakePushMessaging()),
+        notificationPermissionProvider.overrideWithValue(
+          FakeNotificationPermission(NotificationPermissionStatus.denied),
+        ),
+        deviceRegistryProvider.overrideWithValue(FakeDeviceRegistry()),
       ],
       child: MaterialApp(
         theme: buildDarkTheme(),
