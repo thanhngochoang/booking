@@ -10,6 +10,7 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/provider_type_sheet.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
@@ -285,8 +286,8 @@ class _ProviderTypeTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final async = ref.watch(photographerProfileProvider(uid));
-    final type = async.value?.summary.providerType;
+    final async = ref.watch(liveProviderTypeProvider);
+    final type = async.value;
     return ListTile(
       key: const Key('profile-provider-type'),
       leading: const Icon(Icons.work_outline),
@@ -305,11 +306,13 @@ class _ProviderTypeTile extends ConsumerWidget {
           ref.invalidate(photographerProfileProvider(uid));
           return;
         }
+        // Refresh the stored profile too, so what follows reads fresh.
+        ref.invalidate(photographerProfileProvider(uid));
         final next = await showProviderTypeSheet(context, current: type);
         if (next == ProviderType.studio &&
             type != ProviderType.studio &&
             context.mounted) {
-          await context.push('/setup/4');
+          await context.push('/setup/4?from=settings');
         }
       },
     );

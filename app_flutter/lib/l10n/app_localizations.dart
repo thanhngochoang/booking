@@ -5290,12 +5290,6 @@ abstract class AppLocalizations {
   /// **'Sửa'**
   String get myAlbumsEdit;
 
-  /// No description provided for @myAlbumsSaving.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đang lưu thứ tự'**
-  String get myAlbumsSaving;
-
   /// No description provided for @albumEditNew.
   ///
   /// In vi, this message translates to:

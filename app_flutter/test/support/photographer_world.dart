@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/award/award.dart';
+import 'package:photobooking/data/award/award_providers.dart';
+import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
@@ -45,6 +48,7 @@ class PhotographerWorld {
   final auth = FakeAuthRepository();
   final providerRepo = FakeProviderRepository();
   final profiles = FakePublicProfileRepository();
+  final awardRepo = FakeAwardRepository();
   final picker = FakeImagePicker();
   final uploader = FakeMediaUploader();
   DateTime today = worldToday;
@@ -67,6 +71,7 @@ class PhotographerWorld {
     String? studioDistrict,
   }) {
     providerRepo.type = type;
+    awardRepo.setTier(AwardTier(providerType: type));
     profiles.add(
       PhotographerProfile(
         summary: fixturePhotographer(
@@ -89,6 +94,7 @@ class PhotographerWorld {
     imagePickerProvider.overrideWithValue(picker),
     mediaUploaderProvider.overrideWithValue(uploader),
     providerRepositoryProvider.overrideWithValue(providerRepo),
+    awardRepositoryProvider.overrideWithValue(awardRepo),
     publicProfileRepositoryProvider.overrideWithValue(profiles),
   ];
 

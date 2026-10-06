@@ -194,7 +194,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           openEvidenceFor: state.uri.queryParameters['skill'],
         ),
       ),
-      GoRoute(path: '/setup/4', builder: (_, _) => const ContactSetupScreen()),
+      GoRoute(
+        path: '/setup/4',
+        builder: (_, state) => ContactSetupScreen(
+          popOnDone: state.uri.queryParameters['from'] == 'settings',
+        ),
+      ),
       GoRoute(
         path: '/p/:postId',
         builder: (_, state) =>

@@ -2989,9 +2989,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get myAlbumsEdit => 'Sửa';
 
   @override
-  String get myAlbumsSaving => 'Đang lưu thứ tự';
-
-  @override
   String get albumEditNew => 'Album mới';
 
   @override

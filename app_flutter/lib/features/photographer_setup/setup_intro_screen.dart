@@ -8,7 +8,6 @@ import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/provider_repository.dart';
-import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/settings/avatar_editor.dart';
 import 'package:photobooking/features/photographer_setup/intro_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
@@ -148,7 +147,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
     _changed();
   }
 
-  void _next() {
+  Future<void> _next() async {
     // Text typed in the equipment field but not added yet is kept.
     if (_equipmentField.text.trim().isNotEmpty) {
       _addEquipment();
@@ -169,9 +168,26 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
       _errors = r.errors;
       _notEligible = false;
     });
-    if (r.ok) {
-      ref.read(setupIntroControllerProvider.notifier).save(r);
+    if (!r.ok) {
+      return;
     }
+    // Studio drops the NAG tier: ask first, as Settings does.
+    if (ref.read(storedProviderTypeProvider).value == ProviderType.artist &&
+        r.choice == ProviderChoice.studio) {
+      final l = context.l10n;
+      final ok = await showConfirmSheet(
+        context,
+        title: l.providerLoseArtistConfirm,
+        body: l.providerLoseArtistBody,
+        confirmLabel: l.providerLoseArtistConfirm,
+        keepLabel: l.providerTypeKeep,
+        danger: true,
+      );
+      if (!ok || !mounted) {
+        return;
+      }
+    }
+    ref.read(setupIntroControllerProvider.notifier).save(r);
   }
 
   @override
@@ -294,11 +310,6 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                             ],
                           ),
                           onRetry: () {
-                            // The profile read underneath holds the error.
-                            final uid = _uid;
-                            if (uid != null) {
-                              ref.invalidate(photographerProfileProvider(uid));
-                            }
                             ref.invalidate(storedProviderTypeProvider);
                           },
                           data: (context, _) => Column(

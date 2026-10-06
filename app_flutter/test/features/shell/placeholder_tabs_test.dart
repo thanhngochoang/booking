@@ -6,6 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/award/award.dart';
+import 'package:photobooking/data/award/award_providers.dart';
+import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
@@ -172,6 +175,7 @@ void main() {
     String initial = '/profile',
     FakePublicProfileRepository? profiles,
     SharedPreferences? prefs,
+    FakeAwardRepository? awards,
   }) {
     final router = GoRouter(
       initialLocation: initial,
@@ -209,6 +213,7 @@ void main() {
         if (profiles != null)
           publicProfileRepositoryProvider.overrideWithValue(profiles),
         if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
+        if (awards != null) awardRepositoryProvider.overrideWithValue(awards),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -291,6 +296,35 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Có giải thưởng? Lên hạng Nhiếp ảnh gia'), findsNothing);
+  });
+
+  testWidgets('S09.01: the nudge hides when the live tier becomes artist', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    final uid = auth.currentUser!.uid;
+    final intro = FakePhotographerIntroRepository()
+      ..seed(uid, const PhotographerIntro(onboardingComplete: true));
+    final awards = FakeAwardRepository(uid: uid)..setTier(const AwardTier());
+    await tester.pumpWidget(
+      routed(
+        auth,
+        users,
+        intro,
+        profiles: profileOf(uid, ProviderType.individual),
+        prefs: prefs,
+        awards: awards,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('award-nudge')), findsOneWidget);
+
+    // The cached profile still says individual; the tier stream moves on.
+    awards.setTier(const AwardTier(providerType: ProviderType.artist));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('award-nudge')), findsNothing);
   });
 
   testWidgets('S09.01: no awards nudge for an artist, a studio or a customer', (

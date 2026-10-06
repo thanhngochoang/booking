@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/provider_repository.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
@@ -25,7 +26,11 @@ Future<PhotographerWorld> _open(
     initialLocation: '/settings',
     routes: [
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
-      GoRoute(path: '/setup/4', builder: (_, _) => const Text('address form')),
+      GoRoute(
+        path: '/setup/4',
+        builder: (_, s) =>
+            Text('address form ${s.uri.queryParameters['from']}'),
+      ),
       GoRoute(path: '/profile/phone', builder: (_, _) => const Text('phone')),
       GoRoute(path: '/profile/skills', builder: (_, _) => const Text('skills')),
       GoRoute(path: '/u/:id', builder: (_, _) => const Text('public')),
@@ -73,19 +78,17 @@ void main() {
     expect(find.text('Cá nhân · Nhiếp ảnh gia'), findsOneWidget);
   });
 
-  testWidgets('switching invalidates the profile and opens the address form', (
+  testWidgets('switching opens the address form, flagged as from Settings', (
     tester,
   ) async {
     final w = await _open(tester);
-    final loads = w.profiles.loads;
     await _openSheet(tester);
     await tester.tap(_key('type-studio'));
     await tester.pumpAndSettle();
     await tester.tap(_key('type-save'));
     await tester.pumpAndSettle();
     expect(w.providerRepo.type, ProviderType.studio);
-    expect(w.profiles.loads, greaterThan(loads));
-    expect(find.text('address form'), findsOneWidget);
+    expect(find.text('address form settings'), findsOneWidget);
   });
 
   testWidgets('saving without a change closes the sheet and calls nothing', (
@@ -119,7 +122,7 @@ void main() {
     );
     expect(tester.widget<AppOptionTile>(_key('type-studio')).selected, isTrue);
     expect(_key('type-save'), findsOneWidget, reason: 'sheet stays open');
-    expect(find.text('address form'), findsNothing);
+    expect(find.text('address form settings'), findsNothing);
   });
 
   testWidgets('a network failure shows a generic error and stays open', (
@@ -161,5 +164,64 @@ void main() {
     await tester.tap(find.widgetWithText(AppButton, 'Đổi sang Studio'));
     await tester.pumpAndSettle();
     expect(w.providerRepo.type, ProviderType.studio);
+  });
+
+  testWidgets('a tier that turns artist mid-session updates the row and '
+      'asks before switching to Studio', (tester) async {
+    final w = await _open(tester);
+    expect(find.text('Cá nhân · Nhiếp ảnh gia'), findsNothing);
+    // The third award was approved: the server set artist, the cached
+    // profile still says individual.
+    w.awardRepo.setTier(const AwardTier(providerType: ProviderType.artist));
+    await tester.pumpAndSettle();
+    expect(find.text('Cá nhân · Nhiếp ảnh gia'), findsOneWidget);
+
+    await _openSheet(tester);
+    await tester.tap(_key('type-studio'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('type-save'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.',
+      ),
+      findsOneWidget,
+    );
+    expect(w.providerRepo.type, ProviderType.individual, reason: 'not yet');
+  });
+
+  testWidgets('no photographer document reads as Cá nhân, not loading', (
+    tester,
+  ) async {
+    usePhone(tester, height: 1400);
+    final w = PhotographerWorld();
+    await w.init();
+    w.awardRepo.setTier(null);
+    final router = GoRouter(
+      initialLocation: '/settings',
+      routes: [
+        GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      ],
+    );
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: router,
+        overrides: [
+          ...w.overrides,
+          userContactRepositoryProvider.overrideWithValue(
+            FakeUserContactRepository(),
+          ),
+          skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: _key('profile-provider-type'),
+        matching: find.text('Cá nhân'),
+      ),
+      findsOneWidget,
+    );
   });
 }

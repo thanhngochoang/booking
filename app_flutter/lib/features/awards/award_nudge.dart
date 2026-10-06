@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/provider_type.dart';
-import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 String _key(String uid) => 'awardNudgeDismissed:$uid';
@@ -39,11 +39,7 @@ class AwardNudgeRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final type = ref
-        .watch(photographerProfileProvider(uid))
-        .value
-        ?.summary
-        .providerType;
+    final type = ref.watch(liveProviderTypeProvider).value;
     // Only an individual sees it; nothing while the type is unknown.
     if (type != ProviderType.individual) {
       return const SizedBox.shrink();

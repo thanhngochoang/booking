@@ -33,6 +33,7 @@ Future<_H> _harness({
   bool failSave = false,
   bool failType = false,
   ProviderType type = ProviderType.individual,
+  bool popOnDone = false,
 }) async {
   final auth = FakeAuthRepository();
   await auth.registerWithEmail('p@b.vn', 'password1', 'Thư');
@@ -47,9 +48,21 @@ Future<_H> _harness({
     profiles.failWith = StateError('offline');
   }
   final router = GoRouter(
-    initialLocation: '/setup/4',
+    initialLocation: popOnDone ? '/settings' : '/setup/4',
     routes: [
-      GoRoute(path: '/setup/4', builder: (_, _) => const ContactSetupScreen()),
+      GoRoute(
+        path: '/settings',
+        builder: (c, _) => TextButton(
+          onPressed: () => c.push('/setup/4?from=settings'),
+          child: const Text('settings'),
+        ),
+      ),
+      GoRoute(
+        path: '/setup/4',
+        builder: (_, s) => ContactSetupScreen(
+          popOnDone: s.uri.queryParameters['from'] == 'settings',
+        ),
+      ),
       GoRoute(path: '/bookings', builder: (_, _) => const Text('work')),
       GoRoute(path: '/profile', builder: (_, _) => const Text('profile')),
     ],
@@ -80,11 +93,17 @@ Future<_H> _open(
   bool failSave = false,
   bool failType = false,
   ProviderType type = ProviderType.individual,
+  bool popOnDone = false,
 }) async {
   tester.view.physicalSize = const Size(390, 2600);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final h = await _harness(failSave: failSave, failType: failType, type: type);
+  final h = await _harness(
+    failSave: failSave,
+    failType: failType,
+    type: type,
+    popOnDone: popOnDone,
+  );
   await tester.pumpWidget(h.widget);
   await tester.pumpAndSettle();
   return h;
@@ -465,6 +484,23 @@ void main() {
       await _type(tester, 'setup-phone', '0903123456');
       await _tap(tester, 'channel-zalo');
     }
+
+    testWidgets('opened from Settings, finishing goes back there', (
+      tester,
+    ) async {
+      final h = await _open(tester, type: ProviderType.studio, popOnDone: true);
+      await tester.tap(find.text('settings'));
+      await tester.pumpAndSettle();
+      await _type(tester, 'setup-city', 'Hà Nội');
+      await fillContact(tester);
+      await _type(tester, 'studio-line', '12 Tràng Tiền');
+      await _type(tester, 'studio-district', 'Hoàn Kiếm');
+      await _type(tester, 'studio-city', 'Hà Nội');
+      await _tap(tester, 'setup-finish');
+      expect(h.repo.completed, {h.uid});
+      expect(find.text('settings'), findsOneWidget);
+      expect(find.text('work'), findsNothing);
+    });
 
     testWidgets('an individual finishes without the address block', (
       tester,

@@ -28,6 +28,9 @@ class SetupContactController extends AsyncNotifier<bool> {
         await ref
             .read(providerRepositoryProvider)
             .setStudioAddress(studioAddress);
+        // The profile now has an address (and the studio type): drop the
+        // cached read so the next screen sees it.
+        ref.invalidate(photographerProfileProvider(uid));
       }
       await ref
           .read(photographerContactRepositoryProvider)

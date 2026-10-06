@@ -378,4 +378,37 @@ void main() {
     expect(tile(tester, 'type-studio').selected, isTrue);
     expect(find.text('Tên studio'), findsOneWidget);
   });
+
+  testWidgets('an artist switching to Studio is asked first; keeping saves '
+      'nothing, confirming switches', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    w.seedProfile(type: ProviderType.artist);
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('type-studio'));
+    await tester.pumpAndSettle();
+    await fillAndNext(tester);
+    expect(
+      find.text(
+        'Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.',
+      ),
+      findsOneWidget,
+    );
+    expect(w.providerRepo.type, ProviderType.artist, reason: 'not yet');
+
+    await tester.tap(find.text('Giữ nguyên'));
+    await tester.pumpAndSettle();
+    expect(w.providerRepo.type, ProviderType.artist);
+    expect(w.intro.saves, 0);
+    expect(find.text('step 2'), findsNothing);
+    expect(_key('setup-next'), findsOneWidget, reason: 'screen stays');
+
+    await tester.tap(_key('setup-next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Đổi sang Studio'));
+    await tester.pumpAndSettle();
+    expect(w.providerRepo.type, ProviderType.studio);
+    expect(find.text('step 2'), findsOneWidget);
+  });
 }

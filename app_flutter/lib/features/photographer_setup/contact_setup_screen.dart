@@ -13,7 +13,11 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// S08.05: setup step 4/4. Service area, main number, and which outside
 /// channels customers may use after they have booked.
 class ContactSetupScreen extends ConsumerWidget {
-  const ContactSetupScreen({super.key});
+  /// [popOnDone]: opened from Settings (after a switch to Studio), so a
+  /// finished save goes back there instead of into the onboarding flow.
+  const ContactSetupScreen({super.key, this.popOnDone = false});
+
+  final bool popOnDone;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +54,8 @@ class ContactSetupScreen extends ConsumerWidget {
               value: prefill,
               loadingLabel: l.loadingLabel,
               onRetry: () => ref.invalidate(contactSetupPrefillProvider),
-              data: (context, draft) => _ContactSetupForm(draft: draft),
+              data: (context, draft) =>
+                  _ContactSetupForm(draft: draft, popOnDone: popOnDone),
             ),
           ),
         ),
@@ -60,8 +65,9 @@ class ContactSetupScreen extends ConsumerWidget {
 }
 
 class _ContactSetupForm extends ConsumerStatefulWidget {
-  const _ContactSetupForm({required this.draft});
+  const _ContactSetupForm({required this.draft, required this.popOnDone});
   final ContactSetupDraft draft;
+  final bool popOnDone;
 
   @override
   ConsumerState<_ContactSetupForm> createState() => _ContactSetupFormState();
@@ -243,7 +249,11 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(l.setupSaveError)));
       } else if (next.value ?? false) {
-        context.go(AppTab.bookings.path);
+        if (widget.popOnDone && context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppTab.bookings.path);
+        }
       }
     });
 

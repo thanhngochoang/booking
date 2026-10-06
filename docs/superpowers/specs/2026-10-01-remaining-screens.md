@@ -158,7 +158,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S64 |
 | S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
-| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ chưa có mock · tạm duyệt bằng CLI (`npm run awards`, b1) | — |
+| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
@@ -182,7 +182,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.04 | Duyệt xác minh nhiếp ảnh gia (dấu tích xanh) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.05 | Kiểm duyệt báo cáo (người dùng, bài, tin nhắn, sự kiện) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · sales | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.07 | Duyệt giải thưởng (hạng NAG): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi, kèm xác minh danh tính khi cấp hạng | nội bộ | admin | B (spec 10-05) | ⬜ đang thiết kế · chưa có mock | — |
+| S23.07 | Duyệt giải thưởng (hạng NAG): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi, kèm xác minh danh tính khi cấp hạng | nội bộ | admin | B (spec 10-05) | ⬜ chưa có mock · tạm duyệt bằng CLI (`npm run awards`, b1) | — |
 | **S24** | **Portfolio album** | | | | | |
 | S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ✅ đã làm (c2) · khớp mock | — |
 | S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
