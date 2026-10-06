@@ -46,7 +46,7 @@ First step of Tasks 1 and 5 checks; adapt and ledger differences:
 
 1. **Docs.** `awards/{id}`: `photographerId`, `competition` (2–120), `year`, `category` (≤ 60, optional), `result`, `workPostId?` (a `work` post of the owner), `status`, `reviewNote?`, `reviewedBy?`, `reviewedAt?`, `createdAt`, `updatedAt`. `awardProofs/{awardId}`: `photographerId`, `files: [{storagePath}]` (≤ 3, under `awardProofs/{uid}/{awardId}/`), `links` (≤ 2, https, ≤ 300 chars), `purgeAfter?`. `awardAudit/{id}`: `awardId`, `actorId`, `action` (`approve | needs_info | reject | revoke`), `note`, `at` (append-only, no client access).
 2. **Callables.** `createAward(input)` → `{awardId}` (status `pending`; ≤ 50 awards per photographer, else `limit_exceeded`); `updateAward({awardId, …})` (owner; any status except `revoked`; content change → `pending`, clears `reviewNote`); `deleteAward({awardId})` (owner; deletes award, proof doc and files); `reviewAward({awardId, action, note?})` (staff; `approve` only from `pending`, `needs_info`/`reject` from `pending`, `revoke` from `approved`; `note` 5–500 required except approve; writes the audit row; sets `purgeAfter = now + 30 d` on final states). Callers without the photographer role (create) or the admin claim (review) → `permission_denied`.
-3. **Proof upload.** The app picks an award id (ULID) before uploading (`createAward` accepts the id like `submitReview` accepts `postId`), uploads to `awardProofs/{uid}/{awardId}/{i}.jpg`, then calls the callable with the storage paths. Storage rule: owner create/read/delete, image ≤ 10 MB; nobody else (staff read through the Admin SDK).
+3. **Proof upload.** The app picks an award id (ULID) before uploading (`createAward` accepts the id like `submitReview` accepts `postId`), uploads to `awardProofs/{uid}/{awardId}/{fileId}.jpg` (a fresh ULID per file; the storage rule is create-only, so files cannot be swapped after review — ruling 2026-10-06 in unit 9c/1-L2), then calls the callable with the storage paths. Storage rule: owner create/read/delete, image ≤ 10 MB; nobody else (staff read through the Admin SDK).
 4. **Recompute** (`recomputeTier(uid)` use case, called by the trigger on every award write and by A1's hook): count `approved` awards → `approvedAwardCount`; `studio` keeps its type; else `artist` when count ≥ 3 (set `artistSince` when it was not artist), `individual` when < 3 (clear `artistSince`). Writes only when something changes (no trigger loops). Emits `artist_granted` / `artist_revoked` through a `notify` port whose live adapter is a logged no-op until plan S17 (named `notifyTierChange`).
 5. **Award review notifications** (`award_reviewed`) go through the same no-op port (`notifyAwardReviewed`).
 6. **Public reads.** S03.01: `awards where photographerId == uid and status == 'approved' orderBy year desc, createdAt desc` (rules allow the query because of the status filter). S25.01: owner query without the status filter. Indexes: `awards (photographerId, status, year desc, createdAt desc)`, `awards (photographerId, createdAt desc)`, `awards (status, createdAt)` (CLI queue).
@@ -191,8 +191,8 @@ Storage:
 ```
 match /awardProofs/{uid}/{awardId}/{file} {
   allow read, delete: if request.auth != null && request.auth.uid == uid;
-  allow create, update: if request.auth != null && request.auth.uid == uid
-    && request.resource.contentType.matches('image/.*') && request.resource.size <= 10 * 1024 * 1024;
+  allow create: if request.auth != null && request.auth.uid == uid
+    && request.resource.contentType.matches('image/(jpeg|png|webp|heic|heif)') && request.resource.size <= 10 * 1024 * 1024;
 }
 ```
 
@@ -223,7 +223,7 @@ abstract class AwardRepository {
   Future<void> create(AwardDraft d);
   Future<void> update(AwardDraft d);
   Future<void> delete(String awardId);
-  String proofPath(String uid, String awardId, int index);   // 'awardProofs/$uid/$awardId/$index.jpg'
+  String proofPath(String uid, String awardId, String fileId); // 'awardProofs/$uid/$awardId/$fileId.jpg', fileId = fresh ULID per upload (create-only storage rule)
 }
 class AwardError implements Exception { const AwardError(this.code); final String code; }
 final awardRepositoryProvider = Provider<AwardRepository>(...);
