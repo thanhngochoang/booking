@@ -6711,6 +6711,234 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Do ứng dụng tổ chức'**
   String get eventHostPlatform;
+
+  /// No description provided for @eventsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get eventsTitle;
+
+  /// No description provided for @eventsAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get eventsAll;
+
+  /// No description provided for @eventsSortSoonest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sớm nhất'**
+  String get eventsSortSoonest;
+
+  /// No description provided for @eventsSortNear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần tôi'**
+  String get eventsSortNear;
+
+  /// No description provided for @eventsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có sự kiện'**
+  String get eventsEmpty;
+
+  /// No description provided for @eventsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện chụp ảnh mới sẽ hiện ở đây.'**
+  String get eventsEmptyBody;
+
+  /// No description provided for @eventsCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo sự kiện'**
+  String get eventsCreate;
+
+  /// No description provided for @eventsNeedArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực để xem sự kiện gần bạn'**
+  String get eventsNeedArea;
+
+  /// No description provided for @eventsMyTickets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé của tôi'**
+  String get eventsMyTickets;
+
+  /// No description provided for @eventsMinePlaceholder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh sách sự kiện bạn tổ chức sẽ hiện ở đây.'**
+  String get eventsMinePlaceholder;
+
+  /// No description provided for @eventJoin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký tham gia'**
+  String get eventJoin;
+
+  /// No description provided for @eventPerPerson.
+  ///
+  /// In vi, this message translates to:
+  /// **'mỗi người'**
+  String get eventPerPerson;
+
+  /// No description provided for @eventViewTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem vé'**
+  String get eventViewTicket;
+
+  /// No description provided for @eventManage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý'**
+  String get eventManage;
+
+  /// No description provided for @eventCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện đã huỷ'**
+  String get eventCancelled;
+
+  /// No description provided for @eventEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện đã kết thúc'**
+  String get eventEnded;
+
+  /// No description provided for @eventClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng đăng ký'**
+  String get eventClosed;
+
+  /// No description provided for @eventPaymentsSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp mở thanh toán'**
+  String get eventPaymentsSoon;
+
+  /// No description provided for @eventTabInfo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin'**
+  String get eventTabInfo;
+
+  /// No description provided for @eventTabTimeline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline'**
+  String get eventTabTimeline;
+
+  /// No description provided for @eventTabChat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhóm chat'**
+  String get eventTabChat;
+
+  /// No description provided for @eventHostRole.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ sự kiện'**
+  String get eventHostRole;
+
+  /// No description provided for @eventHostRoleRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ sự kiện · ★ {rating}'**
+  String eventHostRoleRating(String rating);
+
+  /// No description provided for @eventProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get eventProfile;
+
+  /// No description provided for @eventMeetingPoint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm hẹn: {place}'**
+  String eventMeetingPoint(String place);
+
+  /// No description provided for @eventCapacityLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} chỗ'**
+  String eventCapacityLeft(int n);
+
+  /// No description provided for @eventGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện không còn'**
+  String get eventGone;
+
+  /// No description provided for @eventGoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện này đã bị xoá hoặc chưa được đăng.'**
+  String get eventGoneBody;
+
+  /// No description provided for @eventLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết'**
+  String get eventLinkCopied;
+
+  /// No description provided for @eventShareTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ sự kiện'**
+  String get eventShareTooltip;
+
+  /// No description provided for @eventWeekdayLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}'**
+  String eventWeekdayLong(String weekday);
+
+  /// No description provided for @eventFaqTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi thường gặp'**
+  String get eventFaqTitle;
+
+  /// No description provided for @eventSupportLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần hỏi thêm? Gửi email tới {email}'**
+  String eventSupportLine(String email);
+
+  /// No description provided for @eventChatLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký để vào nhóm'**
+  String get eventChatLocked;
+
+  /// No description provided for @eventChatLockedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ người đã đăng ký mới vào được nhóm chat của sự kiện.'**
+  String get eventChatLockedBody;
+
+  /// No description provided for @eventChatSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhóm chat sắp mở'**
+  String get eventChatSoon;
+
+  /// No description provided for @eventTimelineSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline sắp mở'**
+  String get eventTimelineSoon;
+
+  /// No description provided for @eventsManage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện của tôi'**
+  String get eventsManage;
 }
 
 class _AppLocalizationsDelegate

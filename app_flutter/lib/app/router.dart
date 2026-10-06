@@ -22,6 +22,9 @@ import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/earnings/earnings_screen.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
+import 'package:photobooking/features/events/event_screen.dart';
+import 'package:photobooking/features/events/events_list_screen.dart';
+import 'package:photobooking/features/events/my_events_placeholder.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
@@ -263,6 +266,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => InquiryEntry(
           photographerId: state.pathParameters['uid']!,
           serviceId: state.uri.queryParameters['serviceId'],
+        ),
+      ),
+      GoRoute(path: '/events', builder: (_, _) => const EventsListScreen()),
+      GoRoute(
+        path: '/events/mine',
+        builder: (_, _) => const MyEventsPlaceholder(),
+      ),
+      GoRoute(
+        path: '/e/:eventId',
+        builder: (_, state) =>
+            EventScreen(eventId: state.pathParameters['eventId']!),
+        routes: [
+          // Back from "add phone": the register sheet opens over S11.02.
+          GoRoute(
+            path: 'join',
+            builder: (_, state) => EventScreen(
+              eventId: state.pathParameters['eventId']!,
+              openRegister: true,
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/e/:eventId/timeline',
+        builder: (_, state) => EventScreen(
+          eventId: state.pathParameters['eventId']!,
+          initialTab: EventTab.timeline,
         ),
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),

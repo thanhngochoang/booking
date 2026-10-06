@@ -3822,4 +3822,139 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get eventHostPlatform => 'Do ứng dụng tổ chức';
+
+  @override
+  String get eventsTitle => 'Sự kiện';
+
+  @override
+  String get eventsAll => 'Tất cả';
+
+  @override
+  String get eventsSortSoonest => 'Sớm nhất';
+
+  @override
+  String get eventsSortNear => 'Gần tôi';
+
+  @override
+  String get eventsEmpty => 'Chưa có sự kiện';
+
+  @override
+  String get eventsEmptyBody => 'Sự kiện chụp ảnh mới sẽ hiện ở đây.';
+
+  @override
+  String get eventsCreate => 'Tạo sự kiện';
+
+  @override
+  String get eventsNeedArea => 'Chọn khu vực để xem sự kiện gần bạn';
+
+  @override
+  String get eventsMyTickets => 'Vé của tôi';
+
+  @override
+  String get eventsMinePlaceholder =>
+      'Danh sách sự kiện bạn tổ chức sẽ hiện ở đây.';
+
+  @override
+  String get eventJoin => 'Đăng ký tham gia';
+
+  @override
+  String get eventPerPerson => 'mỗi người';
+
+  @override
+  String get eventViewTicket => 'Xem vé';
+
+  @override
+  String get eventManage => 'Quản lý';
+
+  @override
+  String get eventCancelled => 'Sự kiện đã huỷ';
+
+  @override
+  String get eventEnded => 'Sự kiện đã kết thúc';
+
+  @override
+  String get eventClosed => 'Đã đóng đăng ký';
+
+  @override
+  String get eventPaymentsSoon => 'Sắp mở thanh toán';
+
+  @override
+  String get eventTabInfo => 'Thông tin';
+
+  @override
+  String get eventTabTimeline => 'Timeline';
+
+  @override
+  String get eventTabChat => 'Nhóm chat';
+
+  @override
+  String get eventHostRole => 'Chủ sự kiện';
+
+  @override
+  String eventHostRoleRating(String rating) {
+    return 'Chủ sự kiện · ★ $rating';
+  }
+
+  @override
+  String get eventProfile => 'Hồ sơ';
+
+  @override
+  String eventMeetingPoint(String place) {
+    return 'Điểm hẹn: $place';
+  }
+
+  @override
+  String eventCapacityLeft(int n) {
+    return 'Còn $n chỗ';
+  }
+
+  @override
+  String get eventGone => 'Sự kiện không còn';
+
+  @override
+  String get eventGoneBody => 'Sự kiện này đã bị xoá hoặc chưa được đăng.';
+
+  @override
+  String get eventLinkCopied => 'Đã sao chép liên kết';
+
+  @override
+  String get eventShareTooltip => 'Chia sẻ sự kiện';
+
+  @override
+  String eventWeekdayLong(String weekday) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      '1': 'Thứ hai',
+      '2': 'Thứ ba',
+      '3': 'Thứ tư',
+      '4': 'Thứ năm',
+      '5': 'Thứ sáu',
+      '6': 'Thứ bảy',
+      'other': 'Chủ nhật',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get eventFaqTitle => 'Câu hỏi thường gặp';
+
+  @override
+  String eventSupportLine(String email) {
+    return 'Cần hỏi thêm? Gửi email tới $email';
+  }
+
+  @override
+  String get eventChatLocked => 'Đăng ký để vào nhóm';
+
+  @override
+  String get eventChatLockedBody =>
+      'Chỉ người đã đăng ký mới vào được nhóm chat của sự kiện.';
+
+  @override
+  String get eventChatSoon => 'Nhóm chat sắp mở';
+
+  @override
+  String get eventTimelineSoon => 'Timeline sắp mở';
+
+  @override
+  String get eventsManage => 'Sự kiện của tôi';
 }

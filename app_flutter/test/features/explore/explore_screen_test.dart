@@ -97,11 +97,7 @@ void main() {
       await _toTop(tester);
       expect(w.location.requestCalls, 1);
       expect(find.text('Quanh bạn · vị trí gần đúng'), findsOneWidget);
-      expect(
-        find.byType(EventCard),
-        findsNWidgets(3),
-        reason: 'default 25 km',
-      );
+      expect(find.byType(EventCard), findsNWidgets(3), reason: 'default 25 km');
       expect(
         _top(tester, 'Photo walk phố cổ'),
         lessThan(_top(tester, 'Mini session mùa thu')),
@@ -110,7 +106,10 @@ void main() {
         _top(tester, 'Mini session mùa thu'),
         lessThan(_top(tester, 'Workshop ánh sáng')),
       );
-      expect(find.text('1,1 km · Quốc Bảo · Công viên Bạch Đằng'), findsOneWidget);
+      expect(
+        find.text('1,1 km · Quốc Bảo · Công viên Bạch Đằng'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Để sau turns the card into a chip and it stays away', (
@@ -336,59 +335,58 @@ void main() {
 
   group('navigation', () {
     testWidgets(
-      'event rows and "Xem tất cả" stay inert until the event routes exist',
+      'event rows and "Xem tất cả" stay inert while the event routes are off',
       (tester) async {
-        await tester.pumpWidget(
-          await _app(ExploreWorld(status: LocationPermissionStatus.denied)),
-        );
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('explore-see-all')), findsNothing);
-        await _reveal(tester, find.byType(EventCard));
-        final tile = tester.widget<EventCard>(
-          find.byType(EventCard).first,
-        );
-        expect(tile.onTap, isNull);
-      },
-    );
-
-    testWidgets(
-      'with event routes ready, tapping a row and "Xem tất cả" navigate',
-      (tester) async {
-        final router = GoRouter(
-          routes: [
-            GoRoute(path: '/', builder: (_, _) => const ExploreScreen()),
-            GoRoute(
-              path: '/events',
-              builder: (_, _) => const Text('events-list'),
-            ),
-            GoRoute(
-              path: '/e/:id',
-              builder: (_, s) => Text('event-${s.pathParameters['id']}'),
-            ),
-          ],
-        );
         await tester.pumpWidget(
           await _app(
             ExploreWorld(
               status: LocationPermissionStatus.denied,
-              routesReady: true,
+              routesReady: false,
             ),
-            router: router,
           ),
         );
         await tester.pumpAndSettle();
-        await _reveal(tester, find.byKey(const Key('explore-see-all')));
-        await tester.tap(find.byKey(const Key('explore-see-all')));
-        await tester.pumpAndSettle();
-        expect(find.text('events-list'), findsOneWidget);
-        router.pop();
-        await tester.pumpAndSettle();
-        await _reveal(tester, find.byKey(const Key('event-tile-near')));
-        await tester.tap(find.byKey(const Key('event-tile-near')));
-        await tester.pumpAndSettle();
-        expect(find.text('event-near'), findsOneWidget);
+        expect(find.byKey(const Key('explore-see-all')), findsNothing);
+        await _reveal(tester, find.byType(EventCard));
+        final tile = tester.widget<EventCard>(find.byType(EventCard).first);
+        expect(tile.onTap, isNull);
       },
     );
+
+    testWidgets('"Xem tất cả" opens /events and an event card opens /e/:id', (
+      tester,
+    ) async {
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const ExploreScreen()),
+          GoRoute(
+            path: '/events',
+            builder: (_, _) => const Text('events-list'),
+          ),
+          GoRoute(
+            path: '/e/:id',
+            builder: (_, s) => Text('event-${s.pathParameters['id']}'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        await _app(
+          ExploreWorld(status: LocationPermissionStatus.denied),
+          router: router,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('explore-see-all')));
+      await tester.tap(find.byKey(const Key('explore-see-all')));
+      await tester.pumpAndSettle();
+      expect(find.text('events-list'), findsOneWidget);
+      router.pop();
+      await tester.pumpAndSettle();
+      await _reveal(tester, find.byKey(const Key('event-tile-near')));
+      await tester.tap(find.byKey(const Key('event-tile-near')));
+      await tester.pumpAndSettle();
+      expect(find.text('event-near'), findsOneWidget);
+    });
 
     testWidgets(
       'a customer taps a service tile and lands on Find with the filter',

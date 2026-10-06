@@ -3,6 +3,37 @@
 // Fixtures for the events data layer: Firestore documents in the shape the
 // Functions write, and the matching app models.
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/contact/contact_link_repository.dart';
+import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/data/contact/external_launcher.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/events/event_repository.dart';
+import 'package:photobooking/data/events/nearby_events_repository.dart';
+import 'package:photobooking/data/photographer/photographer_contact.dart';
+import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
+import 'package:photobooking/data/photographer/photographer_contact_repository.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/data/user/user_contact_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/events/event_screen.dart';
+import 'package:photobooking/features/events/events_list_screen.dart';
+import 'package:photobooking/features/explore/location_controller.dart';
+
+import 'screen_host.dart';
+
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
@@ -238,3 +269,174 @@ EventRegistration registrationOf(
   ),
   createdAt: createdAt ?? eventNow,
 );
+
+// ---------------------------------------------------------------------------
+// Screen tests (S11.01–S11.04): fakes, overrides and a router with stubs.
+// ---------------------------------------------------------------------------
+
+/// What a screen test of the events needs, wired the way the app does.
+class EventsWorld {
+  EventsWorld({
+    List<EventDetail> events = const [],
+    List<EventRegistration> registrations = const [],
+    this.uid = 'u1',
+    this.role = UserRole.customer,
+    this.staff,
+    this.contact = const UserContact(phone: '+84903123456'),
+    this.hostRating = 4.8,
+    this.hostChannels = const ContactChannels(call: true),
+    this.onboardingComplete = false,
+    this.now,
+    this.nearbyEvents,
+    this.areaOrigin,
+  }) : repo = FakeEventRepository(
+         uid: uid,
+         events: events,
+         registrations: registrations,
+         clock: () => now ?? eventNow,
+       ),
+       nearby = FakeNearbyEventsRepository(
+         nearbyEvents ?? [for (final e in events) e.summary],
+       );
+
+  final String uid;
+  final UserRole role;
+  final StaffRole? staff;
+  final UserContact? contact;
+  final double hostRating;
+  final ContactChannels hostChannels;
+  final bool onboardingComplete;
+  final DateTime? now;
+  final List<EventSummary>? nearbyEvents;
+
+  /// A saved area for "Gần tôi": `(lat, lng)`; none when null.
+  final ({double lat, double lng})? areaOrigin;
+
+  final FakeEventRepository repo;
+  final FakeNearbyEventsRepository nearby;
+  final launcher = FakeExternalLauncher();
+  final contactRepo = FakePhotographerContactRepository();
+  final contactLinks = FakeContactLinkRepository();
+  late GoRouter router;
+
+  String get location => router.state.uri.toString();
+
+  List<Override> get overrides => [
+    clockProvider.overrideWithValue(() => now ?? eventNow),
+    authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
+    currentProfileProvider.overrideWith(
+      (ref) => Stream.value(
+        UserProfile(uid: uid, role: role, displayName: 'Lan Anh'),
+      ),
+    ),
+    staffRoleProvider.overrideWith((ref) => staff),
+    myIntroProvider.overrideWith(
+      (ref) => Stream.value(
+        PhotographerIntro(onboardingComplete: onboardingComplete),
+      ),
+    ),
+    currentContactProvider.overrideWithValue(AsyncData(contact)),
+    eventRepositoryProvider.overrideWithValue(repo),
+    nearbyEventsRepositoryProvider.overrideWithValue(nearby),
+    externalLauncherProvider.overrideWithValue(launcher),
+    photographerContactRepositoryProvider.overrideWithValue(contactRepo),
+    contactLinkRepositoryProvider.overrideWithValue(contactLinks),
+    photographerProfileProvider('p1').overrideWithValue(
+      AsyncData(
+        PhotographerProfile(
+          summary: PhotographerSummary(
+            id: 'p1',
+            displayName: 'Quốc Bảo',
+            ratingAvg: hostRating,
+            reviewCount: 12,
+            verified: true,
+          ),
+        ),
+      ),
+    ),
+    if (areaOrigin != null)
+      exploreResolutionProvider.overrideWithValue(
+        ExploreResolution(
+          ExploreMode.nearby,
+          ExploreOrigin(
+            lat: areaOrigin!.lat,
+            lng: areaOrigin!.lng,
+            fromDevice: false,
+            areaName: 'Quận 1',
+          ),
+        ),
+      )
+    else
+      exploreResolutionProvider.overrideWithValue(
+        const ExploreResolution(ExploreMode.chooseArea),
+      ),
+  ];
+
+  /// Opens [path] in a router with the event routes and stubs for the rest.
+  Future<void> pump(
+    WidgetTester tester, {
+    String path = '/events',
+    Size size = const Size(390, 844),
+    double textScale = 1,
+    Widget Function(GoRouterState)? bookings,
+    List<Override> extra = const [],
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    contactRepo.seed('p1', channels: hostChannels);
+    Widget stub(BuildContext _, GoRouterState s) =>
+        Scaffold(body: Text('stub ${s.uri}'));
+    router = GoRouter(
+      initialLocation: path,
+      routes: [
+        GoRoute(path: '/events', builder: (_, _) => const EventsListScreen()),
+        GoRoute(path: '/events/mine', builder: stub),
+        GoRoute(path: '/events/new', builder: stub),
+        GoRoute(path: '/events/:id/manage', builder: stub),
+        GoRoute(
+          path: '/e/:eventId',
+          builder: (_, s) => EventScreen(eventId: s.pathParameters['eventId']!),
+          routes: [
+            GoRoute(
+              path: 'join',
+              builder: (_, s) => EventScreen(
+                eventId: s.pathParameters['eventId']!,
+                openRegister: true,
+              ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/e/:eventId/timeline',
+          builder: (_, s) => EventScreen(
+            eventId: s.pathParameters['eventId']!,
+            initialTab: EventTab.timeline,
+          ),
+        ),
+        GoRoute(
+          path: '/bookings',
+          builder: bookings == null ? stub : (_, s) => bookings(s),
+        ),
+        for (final p in ['/home', '/profile/phone', '/u/:uid', '/u/:uid/ask'])
+          GoRoute(path: p, builder: stub),
+      ],
+    );
+    await tester.pumpWidget(
+      screenRouterApp(
+        router: router,
+        overrides: [...overrides, ...extra],
+        textScale: textScale,
+      ),
+    );
+    await settle(tester);
+  }
+}
+
+/// Lets streams and short animations finish without waiting for timers that
+/// never end.
+Future<void> settle(WidgetTester tester) async {
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}

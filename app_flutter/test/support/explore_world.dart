@@ -56,7 +56,7 @@ class ExploreWorld {
     LocationPermissionStatus afterRequest = LocationPermissionStatus.granted,
     List<EventSummary>? events,
     this.role = UserRole.customer,
-    this.routesReady = false,
+    this.routesReady = true,
     this.prefsValues = const {},
   }) : location = FakeLocationRepository(
          status: status,

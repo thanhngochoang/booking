@@ -32,7 +32,7 @@ Future<ExploreWorld> _open(
   return w;
 }
 
-ExploreWorld _nearbyWorld({bool routesReady = false}) => ExploreWorld(
+ExploreWorld _nearbyWorld({bool routesReady = true}) => ExploreWorld(
   status: LocationPermissionStatus.granted,
   routesReady: routesReady,
   prefsValues: {
@@ -188,7 +188,7 @@ void main() {
     final router = GoRouter(
       routes: [GoRoute(path: '/', builder: (_, _) => const ExploreScreen())],
     );
-    final w = _nearbyWorld();
+    final w = _nearbyWorld(routesReady: false);
     await w.init();
     await tester.pumpWidget(
       screenRouterApp(router: router, overrides: w.overrides),
