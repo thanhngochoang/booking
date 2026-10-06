@@ -61,7 +61,7 @@ describe('payout use cases', () => {
     const ev = await releasedPayment(w, '2026-10-15');
     const ticket = w.store.payments.get(ev);
     assert.ok(ticket);
-    w.store.payments.set(ev, { ...ticket, subjectType: 'event_ticket' });
+    w.store.payments.set(ev, { ...ticket, subjectType: 'event_registration' });
     await refused(createPayout(w.payoutDeps, ADMIN, 'p1'), 'not_eligible');
     assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), []);
     const ok = await releasedPayment(w, '2026-10-16');
