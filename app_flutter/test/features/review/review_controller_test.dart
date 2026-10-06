@@ -6,6 +6,7 @@ import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/review/review_providers.dart';
+import 'package:photobooking/data/review/review_repository.dart';
 import 'package:photobooking/features/review/review_controller.dart';
 
 import '../../support/fake_review_repository.dart';
@@ -147,6 +148,102 @@ void main() {
 
       // Verify file deleted
       expect(fakeUploader.deleted, hasLength(1));
+    });
+
+    test('a failed review-only submit keeps the uploaded files', () async {
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      final container = createContainer(picker: picker);
+      await pumpEventQueue();
+      final controller =
+          container.read(reviewControllerProvider('b1').notifier);
+      controller.setRating(5);
+      controller.setText('Nhận xét không gửi kèm ảnh');
+      await controller.pickPhotos();
+
+      fakeReviews.nextError = ReviewErrorCode.network;
+      expect(await controller.submit(share: false), isFalse);
+
+      expect(fakeUploader.deleted, isEmpty);
+      expect(fakeUploader.uploaded, hasLength(1));
+      final state = container.read(reviewControllerProvider('b1'));
+      expect(state.photos.single.status, SharedPhotoStatus.done);
+      expect(state.error, isNotNull);
+    });
+
+    test('review-only treats a conflict as success and deletes the files',
+        () async {
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      final container = createContainer(picker: picker);
+      await pumpEventQueue();
+      final controller =
+          container.read(reviewControllerProvider('b1').notifier);
+      controller.setRating(5);
+      controller.setText('Nhận xét không gửi kèm ảnh');
+      await controller.pickPhotos();
+
+      fakeReviews.nextError = ReviewErrorCode.conflict;
+      expect(await controller.submit(share: false), isTrue);
+      expect(fakeUploader.deleted, hasLength(1));
+    });
+
+    test('an upload still running is cleaned up on review-only', () async {
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      final container = createContainer(picker: picker);
+      await pumpEventQueue();
+      final controller =
+          container.read(reviewControllerProvider('b1').notifier);
+      controller.setRating(5);
+      controller.setText('Nhận xét không gửi kèm ảnh');
+
+      final picking = controller.pickPhotos();
+      while (container.read(reviewControllerProvider('b1')).photos.isEmpty) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(
+        container.read(reviewControllerProvider('b1')).photos.single.status,
+        SharedPhotoStatus.uploading,
+      );
+
+      expect(await controller.submit(share: false), isTrue);
+      await picking;
+      await pumpEventQueue();
+
+      expect(fakeUploader.uploaded, isEmpty);
+    });
+
+    test('without a signed-in user nothing is uploaded and the tile fails',
+        () async {
+      fakeAuth = FakeAuthRepository();
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(fakeAuth),
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(picker),
+          authStateProvider.overrideWith((ref) => Stream.value(null)),
+        ],
+      );
+      final sub = container.listen(reviewControllerProvider('b1'), (_, _) {});
+      addTearDown(sub.close);
+      addTearDown(container.dispose);
+      await pumpEventQueue();
+
+      await container.read(reviewControllerProvider('b1').notifier).pickPhotos();
+
+      expect(fakeUploader.uploadCalls, 0);
+      expect(
+        container.read(reviewControllerProvider('b1')).photos.single.status,
+        SharedPhotoStatus.failed,
+      );
     });
 
     test('remove deletes that file', () async {

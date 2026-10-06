@@ -4845,6 +4845,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xem thêm'**
   String get reviewsMore;
+
+  /// No description provided for @reviewSharedLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem ảnh đã chia sẻ'**
+  String get reviewSharedLink;
+
+  /// No description provided for @reviewAlreadyDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã đánh giá buổi chụp này.'**
+  String get reviewAlreadyDone;
 }
 
 class _AppLocalizationsDelegate

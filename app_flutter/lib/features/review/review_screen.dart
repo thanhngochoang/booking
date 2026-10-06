@@ -67,9 +67,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         SnackBar(content: Text(context.l10n.reviewThanks)),
       );
       context.go('/b/${widget.bookingId}');
-    } else if (state.errorMessage != null) {
+    } else if (state.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.errorMessage!)),
+        SnackBar(content: Text(context.l10n.detailErrorNetwork)),
       );
     }
   }
@@ -94,10 +94,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         ),
         body: AsyncView<Booking?>(
           value: bookingAsync,
-          skeleton: (_) => Padding(
-            padding: const EdgeInsets.all(AppSpace.s4),
-            child: BookingCard.skeleton(size: BookingCardSize.compact),
-          ),
+          skeleton: _skeleton,
           onRetry: () => ref.invalidate(bookingProvider(widget.bookingId)),
           data: (context, booking) {
             if (booking == null) {
@@ -137,25 +134,31 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               thumbUrl: thumbUrl,
             );
 
-            final existingReview = reviewAsync.value;
-            final isReadOnly =
-                existingReview != null || controllerState.isConflict;
-
-            if (isReadOnly && existingReview != null) {
-              return _buildReadOnlyView(
-                context: context,
-                summary: summary,
-                review: existingReview,
-              );
-            }
-
-            return _buildFormView(
-              context: context,
-              theme: theme,
-              summary: summary,
-              photographerName: photographerName,
-              state: controllerState,
-              notifier: notifier,
+            // The form only shows once the existing review has loaded.
+            return AsyncView<Review?>(
+              value: reviewAsync,
+              skeleton: _skeleton,
+              onRetry: () =>
+                  ref.invalidate(bookingReviewProvider(widget.bookingId)),
+              data: (context, existingReview) {
+                if (existingReview != null ||
+                    booking.status == BookingStatus.reviewed ||
+                    controllerState.isConflict) {
+                  return _buildReadOnlyView(
+                    context: context,
+                    summary: summary,
+                    review: existingReview,
+                  );
+                }
+                return _buildFormView(
+                  context: context,
+                  theme: theme,
+                  summary: summary,
+                  photographerName: photographerName,
+                  state: controllerState,
+                  notifier: notifier,
+                );
+              },
             );
           },
         ),
@@ -163,10 +166,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     );
   }
 
+  Widget _skeleton(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(AppSpace.s4),
+        child: BookingCard.skeleton(size: BookingCardSize.compact),
+      );
+
   Widget _buildReadOnlyView({
     required BuildContext context,
     required BookingSummary summary,
-    required Review review,
+    required Review? review,
   }) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
@@ -182,22 +190,31 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               size: BookingCardSize.compact,
             ),
             const SizedBox(height: AppSpace.s6),
-            Center(
-              child: StarRating(
-                value: review.rating,
-                size: 40,
+            if (review == null)
+              Text(
+                l10n.reviewAlreadyDone,
+                key: const Key('review_already_done'),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge,
+              )
+            else ...[
+              Center(
+                child: StarRating(
+                  value: review.rating,
+                  size: 40,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpace.s4),
-            Text(
-              review.text,
-              style: theme.textTheme.bodyLarge,
-            ),
-            if (review.photoPostId != null) ...[
+              const SizedBox(height: AppSpace.s4),
+              Text(
+                review.text,
+                style: theme.textTheme.bodyLarge,
+              ),
+            ],
+            if (review?.photoPostId != null) ...[
               const SizedBox(height: AppSpace.s6),
               AppButton.outline(
-                l10n.reviewShared(1),
-                onPressed: () => context.push('/p/${review.photoPostId}'),
+                l10n.reviewSharedLink,
+                onPressed: () => context.push('/p/${review!.photoPostId}'),
               ),
             ],
           ],

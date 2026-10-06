@@ -53,7 +53,7 @@ class ReviewState {
     this.photos = const [],
     this.postId,
     this.phase = ReviewPhase.idle,
-    this.errorMessage,
+    this.error,
     this.isConflict = false,
   });
 
@@ -62,7 +62,8 @@ class ReviewState {
   final List<SharedPhotoTile> photos;
   final String? postId;
   final ReviewPhase phase;
-  final String? errorMessage;
+  /// The last submit failure; the screen maps it to a localized message.
+  final Object? error;
   final bool isConflict;
 
   bool get canSubmitReviewOnly =>
@@ -88,7 +89,7 @@ class ReviewState {
     List<SharedPhotoTile>? photos,
     String? postId,
     ReviewPhase? phase,
-    String? errorMessage,
+    Object? error,
     bool? isConflict,
   }) {
     return ReviewState(
@@ -97,7 +98,7 @@ class ReviewState {
       photos: photos ?? this.photos,
       postId: postId ?? this.postId,
       phase: phase ?? this.phase,
-      errorMessage: errorMessage,
+      error: error,
       isConflict: isConflict ?? this.isConflict,
     );
   }
@@ -111,6 +112,10 @@ class ReviewController extends Notifier<ReviewState> {
   static const int maxPhotos = 10;
   static const int minTextLength = 10;
   static const int maxTextLength = 1000;
+
+  /// Set once a review-only submit succeeded: uploads that are still running
+  /// are dropped and their files deleted as they finish.
+  bool _discardUploads = false;
 
   @override
   ReviewState build() {
@@ -187,8 +192,12 @@ class ReviewController extends Notifier<ReviewState> {
 
   Future<void> _uploadTile(SharedPhotoTile tile, String postId) async {
     final uid = ref.read(authRepositoryProvider).currentUser?.uid ??
-        ref.read(authStateProvider).value?.uid ??
-        'anonymous';
+        ref.read(authStateProvider).value?.uid;
+    if (uid == null) {
+      // No signed-in user: never upload under a made-up owner.
+      _markFailed(tile.key);
+      return;
+    }
     final storagePath = 'posts/$uid/$postId/${tile.key}.jpg';
 
     try {
@@ -196,6 +205,12 @@ class ReviewController extends Notifier<ReviewState> {
           .read(mediaUploaderProvider)
           .upload(tile.local, storagePath: storagePath)) {
         if (!ref.mounted) return;
+        if (_discardUploads) {
+          if (event.media != null) {
+            unawaited(_deleteQuietly(event.media!.storagePath));
+          }
+          return;
+        }
         final currentIdx = state.photos.indexWhere((p) => p.key == tile.key);
         if (currentIdx < 0) {
           // Tile was removed while uploading
@@ -229,31 +244,27 @@ class ReviewController extends Notifier<ReviewState> {
         }
       }
     } catch (_) {
-      if (!ref.mounted) return;
-      final currentIdx = state.photos.indexWhere((p) => p.key == tile.key);
-      if (currentIdx >= 0) {
-        final updated = state.photos[currentIdx].copyWith(
-          status: SharedPhotoStatus.failed,
-        );
-        final list = [...state.photos];
-        list[currentIdx] = updated;
-        state = state.copyWith(photos: list);
-      }
+      _markFailed(tile.key);
+    }
+  }
+
+  void _markFailed(String key) {
+    if (!ref.mounted) return;
+    final currentIdx = state.photos.indexWhere((p) => p.key == key);
+    if (currentIdx >= 0) {
+      final list = [...state.photos];
+      list[currentIdx] =
+          list[currentIdx].copyWith(status: SharedPhotoStatus.failed);
+      state = state.copyWith(photos: list);
     }
   }
 
   Future<bool> submit({required bool share}) async {
     if (state.phase == ReviewPhase.submitting) return false;
-    state = state.copyWith(phase: ReviewPhase.submitting, errorMessage: null);
+    state = state.copyWith(phase: ReviewPhase.submitting);
 
     try {
       if (!share) {
-        // Delete uploaded files best-effort
-        for (final p in state.photos) {
-          if (p.photo != null) {
-            unawaited(_deleteQuietly(p.photo!.storagePath));
-          }
-        }
         await ref.read(reviewRepositoryProvider).submit(
               bookingId: bookingId,
               rating: state.rating,
@@ -261,6 +272,7 @@ class ReviewController extends Notifier<ReviewState> {
               postId: null,
               photos: const [],
             );
+        _discardSharedFiles();
       } else {
         final photos = state.photos
             .where((p) => p.photo != null)
@@ -279,20 +291,32 @@ class ReviewController extends Notifier<ReviewState> {
     } on ReviewException catch (e) {
       if (e.code == ReviewErrorCode.conflict) {
         // Double submit or lost response: treat as success
+        if (!share) _discardSharedFiles();
         state = state.copyWith(phase: ReviewPhase.done, isConflict: true);
         return true;
       }
       state = state.copyWith(
         phase: ReviewPhase.error,
-        errorMessage: e.message ?? e.code.name,
+        error: e,
       );
       return false;
     } catch (e) {
       state = state.copyWith(
         phase: ReviewPhase.error,
-        errorMessage: e.toString(),
+        error: e,
       );
       return false;
+    }
+  }
+
+  /// After a successful review-only submit the picked files are not wanted:
+  /// delete the finished ones and drop the uploads still running.
+  void _discardSharedFiles() {
+    _discardUploads = true;
+    for (final p in state.photos) {
+      if (p.photo != null) {
+        unawaited(_deleteQuietly(p.photo!.storagePath));
+      }
     }
   }
 

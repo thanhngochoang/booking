@@ -2744,4 +2744,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewsMore => 'Xem thêm';
+
+  @override
+  String get reviewSharedLink => 'Xem ảnh đã chia sẻ';
+
+  @override
+  String get reviewAlreadyDone => 'Bạn đã đánh giá buổi chụp này.';
 }

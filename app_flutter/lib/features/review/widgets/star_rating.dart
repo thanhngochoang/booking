@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/core.dart';
 
 class StarRating extends StatelessWidget {
   const StarRating({
@@ -28,7 +28,7 @@ class StarRating extends StatelessWidget {
     final effectiveValue = value.clamp(0, 5);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final activeColor = const Color(0xFFFFB800);
+    final activeColor = AppColors.warning;
     final inactiveColor = isDark
         ? theme.colorScheme.onSurface.withValues(alpha: 0.25)
         : theme.colorScheme.outlineVariant;
@@ -74,11 +74,14 @@ class StarRating extends StatelessWidget {
     final nextIncrease = effectiveValue < 5 ? effectiveValue + 1 : null;
     final nextDecrease = effectiveValue > 1 ? effectiveValue - 1 : null;
 
+    final l10n = context.l10n;
     return Semantics(
       slider: true,
-      value: '$effectiveValue trên 5 sao',
-      increasedValue: nextIncrease != null ? '$nextIncrease trên 5 sao' : null,
-      decreasedValue: nextDecrease != null ? '$nextDecrease trên 5 sao' : null,
+      value: l10n.reviewStarsSemantics(effectiveValue),
+      increasedValue:
+          nextIncrease != null ? l10n.reviewStarsSemantics(nextIncrease) : null,
+      decreasedValue:
+          nextDecrease != null ? l10n.reviewStarsSemantics(nextDecrease) : null,
       onIncrease: (onChanged != null && nextIncrease != null)
           ? () => onChanged!(nextIncrease)
           : null,

@@ -1404,5 +1404,7 @@
       "count": {"type": "int"}
     }
   },
-  "reviewsMore": "Xem thêm"
+  "reviewsMore": "Xem thêm",
+  "reviewSharedLink": "Xem ảnh đã chia sẻ",
+  "reviewAlreadyDone": "Bạn đã đánh giá buổi chụp này."
 }

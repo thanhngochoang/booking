@@ -2,6 +2,7 @@ import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:photobooking/features/review/widgets/star_rating.dart';
 
 void main() {
@@ -10,6 +11,9 @@ void main() {
       int selected = 0;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) => StarRating(
@@ -35,6 +39,9 @@ void main() {
       int current = 1;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
           home: Scaffold(
             body: Center(
               child: StatefulBuilder(
@@ -69,6 +76,9 @@ void main() {
       int value = 3;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) => StarRating(
@@ -92,7 +102,10 @@ void main() {
     testWidgets('read-only ignores taps', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
+          home: const Scaffold(
             body: StarRating(
               value: 4,
               onChanged: null,

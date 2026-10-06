@@ -273,6 +273,118 @@ void main() {
       expect(find.byKey(const Key('review_text_field')), findsNothing);
     });
 
+    testWidgets('while the review loads the form is not shown', (tester) async {
+      final repo = RecordingBookingRepository()..seedBooking(_booking());
+      final pending = StreamController<Review?>();
+      addTearDown(pending.close);
+
+      await pumpBookingRoute(
+        tester,
+        path: '/b/b1/review',
+        bookings: repo,
+        signedInUid: 'c1',
+        extraOverrides: [
+          bookingReviewProvider('b1').overrideWith((_) => pending.stream),
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(fakePicker),
+        ],
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byKey(const Key('review_text_field')), findsNothing);
+      expect(find.byKey(const ValueKey('booking_card_skeleton')), findsOne);
+
+      pending.add(null);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('review_text_field')), findsOneWidget);
+    });
+
+    testWidgets('a review load error shows retry', (tester) async {
+      final repo = RecordingBookingRepository()..seedBooking(_booking());
+      var calls = 0;
+
+      await pumpBookingRoute(
+        tester,
+        path: '/b/b1/review',
+        bookings: repo,
+        signedInUid: 'c1',
+        extraOverrides: [
+          bookingReviewProvider('b1').overrideWith((_) {
+            calls++;
+            return calls == 1
+                ? Stream<Review?>.error(StateError('boom'))
+                : Stream<Review?>.value(null);
+          }),
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(fakePicker),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('review_text_field')), findsNothing);
+      expect(find.text('Thử lại'), findsOneWidget);
+
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('review_text_field')), findsOneWidget);
+    });
+
+    testWidgets('a reviewed booking without a review doc shows Đã đánh giá',
+        (tester) async {
+      final repo = RecordingBookingRepository()
+        ..seedBooking(_booking(status: BookingStatus.reviewed));
+
+      await pumpBookingRoute(
+        tester,
+        path: '/b/b1/review',
+        bookings: repo,
+        signedInUid: 'c1',
+        extraOverrides: [
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(fakePicker),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('review_already_done')), findsOneWidget);
+      expect(find.byKey(const Key('review_text_field')), findsNothing);
+      expect(find.byKey(const Key('submit_review_button')), findsNothing);
+    });
+
+    testWidgets('a failed submit shows a localized message, not the raw error',
+        (tester) async {
+      final repo = RecordingBookingRepository()..seedBooking(_booking());
+
+      await pumpBookingRoute(
+        tester,
+        path: '/b/b1/review',
+        bookings: repo,
+        signedInUid: 'c1',
+        extraOverrides: [
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(fakePicker),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('star_5')));
+      await tester.enterText(
+        find.byKey(const Key('review_text_field')),
+        'Buổi chụp rất đẹp và chuyên nghiệp',
+      );
+      await tester.pump();
+      fakeReviews.nextError = ReviewErrorCode.unknown;
+      await tester.tap(find.byKey(const Key('submit_review_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Không gửi được. Thử lại nhé.'), findsOneWidget);
+      expect(find.textContaining('ReviewException'), findsNothing);
+    });
+
     testWidgets('a booking that is not completed shows chưa đánh giá được',
         (tester) async {
       final repo = RecordingBookingRepository()
@@ -328,7 +440,7 @@ void main() {
 
       expect(find.text('Rất ưng ý với chất lượng ảnh'), findsOneWidget);
       expect(find.byType(StarRating), findsOneWidget);
-      expect(find.text('Đã chia sẻ 1 ảnh'), findsOneWidget);
+      expect(find.text('Xem ảnh đã chia sẻ'), findsOneWidget);
       expect(find.byKey(const Key('review_text_field')), findsNothing);
       expect(find.byKey(const Key('submit_review_button')), findsNothing);
     });
