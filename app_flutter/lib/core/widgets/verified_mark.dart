@@ -24,7 +24,7 @@ class VerifiedMark extends StatelessWidget {
             dimension: size,
             child: DecoratedBox(
               decoration: const BoxDecoration(
-                color: AppColors.ctaStart,
+                color: AppColors.verified,
                 shape: BoxShape.circle,
               ),
               child: Icon(

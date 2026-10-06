@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 
@@ -36,13 +35,8 @@ String avatarInitial(String name) {
 /// The name is announced to screen readers unless [decorative] is set (use it
 /// next to a visible name). A [badge] keeps its own semantics.
 class AppAvatar extends StatelessWidget {
-  static Widget skeleton({
-    Key? key,
-    AppAvatarSize size = AppAvatarSize.md,
-  }) => AppSkeleton.circle(
-    key: key,
-    size: size.dimension,
-  );
+  static Widget skeleton({Key? key, AppAvatarSize size = AppAvatarSize.md}) =>
+      AppSkeleton.circle(key: key, size: size.dimension);
 
   const AppAvatar({
     super.key,
@@ -77,14 +71,7 @@ class AppAvatar extends StatelessWidget {
             children: [
               DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.ctaStart.withValues(alpha: 0.35),
-                      AppColors.ctaEnd.withValues(alpha: 0.35),
-                    ],
-                  ),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.12),
                 ),
                 child: Center(
                   child: Text(

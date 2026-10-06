@@ -19,6 +19,7 @@ class AppColors {
   static const Color accent = Color(0xFF8338F5);
   static const Color accentForeground = Color(0xFFFFFFFF);
   static const Color accentSoft = Color(0xFFF4EEFF);
+  static const Color verified = Color(0xFF3D63FF);
   static const Color secondary = Color(0xFFEFEFEF);
   static const Color secondaryPressed = Color(0xFFE9E9E9);
   static const Color secondaryForeground = Color(0xFF313131);
@@ -85,6 +86,7 @@ class AppColorsDark {
   static const Color accent = Color(0xFFB08AFF);
   static const Color accentForeground = Color(0xFF0B0B10);
   static const Color accentSoft = Color(0xFF2C0F5C);
+  static const Color verified = Color(0xFF3D63FF);
   static const Color secondary = Color(0x14FFFFFF);
   static const Color secondaryPressed = Color(0x24FFFFFF);
   static const Color secondaryForeground = Color(0xFFF7F7F7);

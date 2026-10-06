@@ -18,7 +18,7 @@ void main() {
         matching: find.byType(DecoratedBox),
       ),
     );
-    expect((disc.decoration as BoxDecoration).color, AppColors.ctaStart);
+    expect((disc.decoration as BoxDecoration).color, AppColors.verified);
     expect(tester.getSize(find.byType(VerifiedMark)), const Size(14, 14));
     handle.dispose();
   });
