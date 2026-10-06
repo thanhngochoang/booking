@@ -42,6 +42,7 @@ class BadgeTile extends StatelessWidget {
               child: Center(
                 child: AppIcon(
                   badgeIconOf(badge.code),
+                  selected: true,
                   size: 20,
                   color: Colors.white,
                 ),

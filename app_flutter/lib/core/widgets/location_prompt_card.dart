@@ -92,7 +92,7 @@ class LocationPromptCard extends StatelessWidget {
                   child: AppIcon(
                     AppIcons.place,
                     size: 18,
-                    color: theme.colorScheme.primary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),

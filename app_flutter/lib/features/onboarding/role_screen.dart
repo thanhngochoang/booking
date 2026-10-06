@@ -140,9 +140,7 @@ class _RoleCard extends StatelessWidget {
               selected: selected,
               color: selected
                   ? scheme.primary
-                  : (Theme.of(context).brightness == Brightness.dark
-                        ? AppColorsDark.foregroundMuted
-                        : AppColors.foregroundMuted),
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: AppSpace.s3),
             Expanded(

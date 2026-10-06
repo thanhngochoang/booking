@@ -55,7 +55,7 @@ class PermissionPrimer extends StatelessWidget {
                 child: AppIcon(
                   AppIcons.notificationsActive,
                   size: 28,
-                  color: theme.colorScheme.primary,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Controls (buttons, inputs, chips) share the login card's rounder shape.
@@ -72,6 +73,8 @@ ThemeData _build({
     onError: Colors.white,
     surface: surface,
     onSurface: foreground,
+    // Secondary/idle glyphs and captions: the muted foreground.
+    onSurfaceVariant: foregroundMuted,
     outline: borderStrong,
     outlineVariant: border,
   );
@@ -101,6 +104,12 @@ ThemeData _build({
     brightness: brightness,
     colorScheme: scheme,
     scaffoldBackgroundColor: background,
+    // Default back/close glyphs (BackButton, automatic AppBar leading) come
+    // from the Material Symbols family, not the bundled Material Icons.
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (_) => const AppIcon(AppIcons.back),
+      closeButtonIconBuilder: (_) => const AppIcon(AppIcons.close),
+    ),
     fontFamily: AppFonts.body,
     textTheme: TextTheme(
       displayLarge: display(AppText.xxl),

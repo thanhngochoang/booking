@@ -48,6 +48,13 @@ const _unknownBadge = BadgeView(
 
 void main() {
   group('BadgeTile', () {
+    testWidgets('earned icon is filled, locked is outline', (tester) async {
+      await tester.pumpWidget(_wrap(const BadgeTile(badge: _earnedBadge)));
+      expect(tester.widget<AppIcon>(find.byType(AppIcon)).selected, isTrue);
+      await tester.pumpWidget(_wrap(const BadgeTile(badge: _notEarnedBadge)));
+      expect(tester.widget<AppIcon>(find.byType(AppIcon)).selected, isFalse);
+    });
+
     testWidgets('earned uses the gradient disc', (tester) async {
       await tester.pumpWidget(_wrap(const BadgeTile(badge: _earnedBadge)));
       await tester.pumpAndSettle();

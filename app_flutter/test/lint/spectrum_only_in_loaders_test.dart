@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+// Only looks for `.spectrum`; raw hex values and the brand logo ring are not
+// scanned, and non-lib files are ignored.
 void main() {
   test('spectrum colours are used only by the brand loaders', () {
     const allowed = {

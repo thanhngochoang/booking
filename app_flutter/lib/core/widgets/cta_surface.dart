@@ -6,8 +6,8 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Dark CTA: violet monochrome (60-30-10 accent), white text passes AA on both stops.
 const ctaGradient = LinearGradient(
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
+  begin: Alignment.centerLeft,
+  end: Alignment.centerRight,
   colors: [AppColors.ctaStart, AppColors.ctaEnd],
 );
 

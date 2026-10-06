@@ -68,6 +68,7 @@ class BadgeChip extends StatelessWidget {
               child: Center(
                 child: AppIcon(
                   badgeIconOf(badge.code),
+                  selected: true,
                   size: 10,
                   color: Colors.white,
                 ),

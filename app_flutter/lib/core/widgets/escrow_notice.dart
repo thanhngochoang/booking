@@ -17,7 +17,9 @@ class EscrowNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
-    final iconColor = dark ? AppColorsDark.primary : AppColors.primary;
+    final iconColor = dark
+        ? AppColorsDark.foregroundMuted
+        : AppColors.foregroundMuted;
     final textColor = dark ? AppColorsDark.foreground : AppColors.foreground;
 
     return Semantics(

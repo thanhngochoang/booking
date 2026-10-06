@@ -37,7 +37,13 @@ class AuroraBackground extends StatelessWidget {
               Positioned(
                 left: -w * 0.45,
                 top: -w * 0.35,
-                child: glow(AppColors.accent, w * 1.1, 0.22),
+                child: glow(
+                  theme.brightness == Brightness.dark
+                      ? AppColors.ctaStart
+                      : AppColors.accent,
+                  w * 1.1,
+                  0.22,
+                ),
               ),
               Positioned(
                 right: -w * 0.5,
