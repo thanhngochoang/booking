@@ -1,5 +1,6 @@
 import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onCall } from 'firebase-functions/v2/https';
+import { Timestamp } from 'firebase-admin/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { handleGetContactLink } from './callables/get_contact_link.js';
 import {
@@ -48,6 +49,22 @@ import {
 import { handleAwardWrite } from './triggers/award_write.js';
 import { handleAwardPurge } from './scheduled/award_purge.js';
 import { liveAwardDeps } from './infra/live_award.js';
+import { evaluateUserBadges } from '@photobooking/domain';
+import { handleMarkAllNotificationsRead } from './callables/notification.js';
+import { FirestoreDeviceDirectory } from './infra/fcm_push.js';
+import { liveBadgeDeps } from './infra/live_badge.js';
+import { liveNotifyDeps } from './infra/live_notification.js';
+import { db } from './infra/admin.js';
+import { handleChatMemberWrite } from './triggers/chat_member_write.js';
+import { handleChatMessageCreated } from './triggers/chat_message_created.js';
+import { handleDeviceWrite } from './triggers/device_write.js';
+import { handleNotificationWrite } from './triggers/notification_write.js';
+import { handleServiceWrite } from './triggers/service_write.js';
+import { handleUserCreated } from './triggers/user_created.js';
+import { evaluatePostAuthor } from './triggers/post_created.js';
+import { handleReconcileBadges } from './scheduled/reconcile_badges.js';
+import { handlePruneNotifications } from './scheduled/prune_notifications.js';
+import { liveReminderDeps } from './scheduled/booking_clock.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -74,7 +91,7 @@ export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispu
 
 /** 15-minute booking lifecycle and escrow sweep clock */
 export const bookingClock = onSchedule(SCHEDULE_OPTIONS, async () => {
-  await handleBookingClock();
+  await handleBookingClock(undefined, liveReminderDeps());
 });
 
 /**
@@ -89,6 +106,10 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
     liveSkillsDeps(uid, live?.updateTime),
   );
+  // `fast_reply` follows stats.responseMinutes (written by the server only).
+  if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {
+    await evaluateUserBadges(liveBadgeDeps(), uid);
+  }
 });
 
 /** Open chat inquiry between customer and photographer */
@@ -118,10 +139,10 @@ export const onBookingWrite = onDocumentWritten(
     const bookingId = event.params.bookingId;
     const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
     const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
-    await handleBookingWrite(
-      { id: bookingId, before, after },
-      liveChatDeps(),
-    );
+    await handleBookingWrite({ id: bookingId, before, after }, liveChatDeps(), undefined, {
+      notify: liveNotifyDeps(),
+      badges: liveBadgeDeps(),
+    });
   },
 );
 
@@ -141,6 +162,7 @@ export const onReviewWrite = onDocumentWritten(
       { bookingId, before, after },
       liveStatsStore(),
       new Date(),
+      liveBadgeDeps(),
     );
   },
 );
@@ -182,9 +204,8 @@ export const reorderAlbumPosts = onCall(CALLABLE_OPTIONS, (request) =>
 
 /** A new post that names an album lands last in it, or is detached when the album is not usable. */
 export const onPostCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'posts/{postId}' }, async (event) => {
-  // Most posts name no album: skip before building the live deps.
-  if (typeof event.data?.get('albumId') !== 'string') return;
-  await handlePostCreated(event.params.postId, liveAlbumDeps());
+  if (typeof event.data?.get('albumId') === 'string') await handlePostCreated(event.params.postId, liveAlbumDeps());
+  await evaluatePostAuthor(event.data?.get('authorId'), liveBadgeDeps());
 });
 
 // ---- awards and the NAG tier (plan B1) ----
@@ -213,5 +234,113 @@ export const purgeAwardProofs = onSchedule(
   { ...SCHEDULE_OPTIONS, schedule: 'every day 03:00', timeoutSeconds: 300 },
   async () => {
     await handleAwardPurge();
+  },
+);
+
+// ---- notifications and badges (plan 10a) ----
+
+/** `{}` → `{marked}`: marks every unread inbox row read and zeroes the unread count. */
+export const markAllNotificationsRead = onCall(CALLABLE_OPTIONS, (request) =>
+  handleMarkAllNotificationsRead(request, liveNotifyDeps()),
+);
+
+/** Keeps `users/{uid}/private/inbox.unreadCount` equal to the number of unread rows. */
+export const onNotificationWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'users/{uid}/notifications/{id}' },
+  async (event) => {
+    await handleNotificationWrite(
+      event.params.uid,
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveNotifyDeps(),
+    );
+  },
+);
+
+/** A chat message notifies the other member (grouped per chat); system messages never do. */
+export const onChatMessageCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'chats/{chatId}/messages/{messageId}' },
+  async (event) => {
+    const message = event.data?.data();
+    if (message === undefined || message.type === 'system') return;
+    const chat = await db().collection('chats').doc(event.params.chatId).get();
+    const members: unknown = chat.data()?.members;
+    await handleChatMessageCreated(
+      {
+        chatId: event.params.chatId,
+        messageId: event.params.messageId,
+        message,
+        members: Array.isArray(members) ? members.filter((m): m is string => typeof m === 'string') : [],
+      },
+      liveNotifyDeps(),
+    );
+  },
+);
+
+/** Reading a chat (member unreadCount → 0) marks its grouped inbox row read. */
+export const onChatMemberWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'chats/{chatId}/members/{uid}' },
+  async (event) => {
+    const after = event.data?.after.exists ? event.data.after.data() : undefined;
+    await handleChatMemberWrite({ chatId: event.params.chatId, uid: event.params.uid, after }, async (uid, chatId, at) => {
+      const ref = db().collection('users').doc(uid).collection('notifications').doc(`g_chat_${chatId}`);
+      return db().runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists || snap.data()?.readAt != null) return false;
+        tx.update(ref, { readAt: Timestamp.fromDate(at) });
+        return true;
+      });
+    });
+  },
+);
+
+/** One account per push token: other device docs with the same token are removed. */
+export const onDeviceWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'devices/{deviceId}' }, async (event) => {
+  const directory = new FirestoreDeviceDirectory(db());
+  await handleDeviceWrite(
+    event.params.deviceId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    {
+      otherDevicesWithToken: async (token, exceptId) => {
+        const snap = await db().collection('devices').where('token', '==', token).get();
+        return snap.docs.filter((d) => d.id !== exceptId).map((d) => d.id);
+      },
+      remove: (ids) => directory.remove(ids),
+    },
+  );
+});
+
+/** A new account earns `new_member`. */
+export const onUserCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'users/{uid}' }, async (event) => {
+  await handleUserCreated(event.params.uid, liveBadgeDeps());
+});
+
+/** Package changes can complete `complete_profile`. */
+export const onServiceWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'photographers/{uid}/services/{serviceId}' },
+  async (event) => {
+    await handleServiceWrite(
+      event.params.uid,
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveBadgeDeps(),
+    );
+  },
+);
+
+/** Nightly 03:30 Asia/Ho_Chi_Minh: syncs the badge catalogue and re-evaluates `new_member` holders. */
+export const reconcileBadges = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '30 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handleReconcileBadges();
+  },
+);
+
+/** Nightly 03:45: deletes read inbox rows older than 90 days. */
+export const pruneNotifications = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '45 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handlePruneNotifications();
   },
 );

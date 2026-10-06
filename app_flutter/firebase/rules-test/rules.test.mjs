@@ -1406,3 +1406,133 @@ test('a proof image over 10 MB, an SVG or a non-image is refused', async () => {
   await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.svg'), photo(), { contentType: 'image/svg+xml' }));
   await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.png'), photo(), { contentType: 'image/png' }));
 });
+
+// ---- notifications, prefs, badges, devices (plan 10a) ----
+
+const seedNotification = (uid, id, readAt = null) =>
+  env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `users/${uid}/notifications/${id}`), {
+      type: 'booking_accepted', tab: 'activity', category: 'booking', title: 't', body: 'b', target: '/b/x',
+      groupKey: null, actors: [], count: 1, thumbUrl: null, lastEventId: null, createdAt: Timestamp.now(), readAt,
+    }));
+
+const goodPrefs = () => ({
+  channels: { booking: { push: true, inApp: true }, chat: { push: false, inApp: true } },
+  quietHours: { enabled: true, from: '22:00', to: '07:00' },
+  reminders: { h24: true, h2: false },
+  updatedAt: serverTimestamp(),
+});
+
+test('notifications: the owner reads their own rows, others cannot', async () => {
+  await seedNotification('nu1', 'n_a');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('nu1').firestore(), 'users/nu1/notifications/n_a')));
+  await assertFails(getDoc(doc(env.authenticatedContext('nu2').firestore(), 'users/nu1/notifications/n_a')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'users/nu1/notifications/n_a')));
+});
+
+test('notifications: the owner may set readAt once to request.time', async () => {
+  await seedNotification('nu1', 'n_b');
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertSucceeds(updateDoc(doc(db, 'users/nu1/notifications/n_b'), { readAt: serverTimestamp() }));
+});
+
+test('notifications: readAt cannot be cleared, set twice or set to another time', async () => {
+  await seedNotification('nu1', 'n_c', Timestamp.now());
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_c'), { readAt: null }));
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_c'), { readAt: serverTimestamp() }));
+  await seedNotification('nu1', 'n_d');
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_d'), { readAt: Timestamp.fromMillis(1000) }));
+});
+
+test('notifications: no other field of a row can change', async () => {
+  await seedNotification('nu1', 'n_e');
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_e'), { title: 'x' }));
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_e'), { readAt: serverTimestamp(), title: 'x' }));
+});
+
+test('notifications: nobody creates or deletes rows', async () => {
+  await seedNotification('nu1', 'n_f');
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertFails(setDoc(doc(db, 'users/nu1/notifications/n_new'), { type: 'promo', readAt: null }));
+  await assertFails(deleteDoc(doc(db, 'users/nu1/notifications/n_f')));
+});
+
+test('unreadCount is not client-writable, and the private inbox doc is owner-read only', async () => {
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'users/nu1'), { displayName: 'N' }));
+  await assertFails(updateDoc(doc(db, 'users/nu1'), { unreadCount: 0 }));
+  await assertFails(updateDoc(doc(db, 'users/nu1'), { unreadCountAt: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/nu1/private/inbox'), { unreadCount: 3, unreadCountAt: Timestamp.now() }));
+  await assertSucceeds(getDoc(doc(db, 'users/nu1/private/inbox')));
+  await assertFails(getDoc(doc(env.authenticatedContext('nu2').firestore(), 'users/nu1/private/inbox')));
+  await assertFails(setDoc(doc(db, 'users/nu1/private/inbox'), { unreadCount: 0 }));
+  await assertFails(updateDoc(doc(db, 'users/nu1/private/inbox'), { unreadCount: 0 }));
+});
+
+test('prefs: the owner writes a valid doc', async () => {
+  const db = env.authenticatedContext('pf1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'users/pf1/private/notification_prefs'), goodPrefs()));
+  await assertSucceeds(getDoc(doc(db, 'users/pf1/private/notification_prefs')));
+});
+
+test('prefs: booking.inApp false is refused', async () => {
+  const db = env.authenticatedContext('pf1').firestore();
+  const p = goodPrefs();
+  p.channels.booking = { push: true, inApp: false };
+  await assertFails(setDoc(doc(db, 'users/pf1/private/notification_prefs'), p));
+});
+
+test('prefs: a bad time string or extra key is refused', async () => {
+  const db = env.authenticatedContext('pf1').firestore();
+  const p = goodPrefs();
+  p.quietHours.from = '25:00';
+  await assertFails(setDoc(doc(db, 'users/pf1/private/notification_prefs'), p));
+  await assertFails(setDoc(doc(db, 'users/pf1/private/notification_prefs'), { ...goodPrefs(), extra: 1 }));
+});
+
+test('prefs: other users cannot read or write them', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/pf1/private/notification_prefs'), { channels: {} }));
+  const other = env.authenticatedContext('pf2').firestore();
+  await assertFails(getDoc(doc(other, 'users/pf1/private/notification_prefs')));
+  await assertFails(setDoc(doc(other, 'users/pf1/private/notification_prefs'), goodPrefs()));
+});
+
+test('badgeProgress is owner-only and not writable', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/bp1/private/badgeProgress'), { entries: { punctual: { current: 3, target: 5 } } }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/private/badgeProgress')));
+  await assertFails(getDoc(doc(env.authenticatedContext('bp2').firestore(), 'users/bp1/private/badgeProgress')));
+  await assertFails(setDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/private/badgeProgress'), { entries: {} }));
+});
+
+test('earned badges are readable by signed-in users, never writable', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/bp1/badges/top_rated'), { badgeId: 'top_rated', uid: 'bp1', awardedAt: Timestamp.now(), snapshot: { text: 'x' } }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('bp2').firestore(), 'users/bp1/badges/top_rated')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'users/bp1/badges/top_rated')));
+  await assertFails(setDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/badges/shoots_10'), { badgeId: 'shoots_10' }));
+  await assertFails(deleteDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/badges/top_rated')));
+});
+
+test('badge catalogue is readable, not writable', async () => {
+  await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'badges/top_rated'), { name: 'Được đánh giá cao' }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('bp1').firestore(), 'badges/top_rated')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'badges/top_rated')));
+  await assertFails(setDoc(doc(env.authenticatedContext('bp1').firestore(), 'badges/x'), { name: 'x' }));
+});
+
+test('devices: owner creates with the id pattern; other uid or extra keys refused', async () => {
+  const db = env.authenticatedContext('du1').firestore();
+  const good = { userId: 'du1', provider: 'fcm', token: 'tok-123', platform: 'android', lastSeenAt: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(db, 'devices/du1_ABCDEFGH12'), good));
+  await assertSucceeds(getDoc(doc(db, 'devices/du1_ABCDEFGH12')));
+  await assertFails(setDoc(doc(db, 'devices/du2_ABCDEFGH12'), { ...good, userId: 'du2' }));
+  await assertFails(setDoc(doc(db, 'devices/du1_ABCDEFGH12'), { ...good, extra: 1 }));
+  await assertFails(setDoc(doc(db, 'devices/du1_ABCDEFGH12'), { ...good, platform: 'web' }));
+  await assertFails(getDoc(doc(env.authenticatedContext('du2').firestore(), 'devices/du1_ABCDEFGH12')));
+  await assertSucceeds(deleteDoc(doc(db, 'devices/du1_ABCDEFGH12')));
+});

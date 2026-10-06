@@ -37,6 +37,20 @@ Password for every account: `seed-password-1`
 | `seed-award-dung-1`, `-2`, `-3` | Dũng | approved (gold, silver, bronze; make Dũng an artist) |
 | `seed-award-binh-1` | Bình | pending (in the review queue: `npm run awards -- list`) |
 
+## Notifications and badges
+
+| Data | Owner | Notes |
+|---|---|---|
+| Inbox rows (`users/{uid}/notifications/*`) | Lan | 5 rows: booking accepted (unread), 24 h reminder (read), refund (read), declined (read, 12 days old), grouped chat with 2 messages (unread) |
+| Inbox rows | An | booking request (unread), new review (read) |
+| `users/{uid}/private/inbox` | Lan, An | `unreadCount` 2 and 1, matching the unread rows |
+| Earned badges | An | `top_rated`, `shoots_10`, `complete_profile`; progress `punctual` 3/5, `shoots_50` 12/50 |
+| Earned badges | Lan | `loyal_customer`; progress `sharer` 2/5, `detailed_reviewer` 3/5 |
+| `badges/{id}` | all | the 12-badge catalogue |
+| `users/{uid}/private/notification_prefs` | none | no doc, so the defaults apply |
+
+Push goes through the Functions emulator's `LoggingPushSender` (type and channel logged, nothing sent).
+
 Try a call while the emulators run (from `app_flutter/firebase/functions`, with the project id
 `scripts/backend-local.sh` printed). The script refuses to run unless the three emulator hosts
 point at a local host, so export them first:

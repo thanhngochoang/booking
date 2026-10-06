@@ -1,8 +1,9 @@
 import { getStorage } from 'firebase-admin/storage';
-import * as logger from 'firebase-functions/logger';
+import { formatVnDate, notify } from '@photobooking/domain';
 import type { AwardCallableDeps } from '../callables/award.js';
 import { db as adminDb } from './admin.js';
 import { FirestoreAwardStore, FirestoreTierStore } from './award_firestore.js';
+import { liveNotifyDeps } from './live_notification.js';
 
 /** Deletes proof files through the Admin SDK (storage rules close them to staff and clients alike). */
 export async function deleteStorageFiles(paths: readonly string[]): Promise<void> {
@@ -21,13 +22,23 @@ export function liveAwardDeps(): AwardCallableDeps {
     awards: new FirestoreAwardStore(db),
     tiers: new FirestoreTierStore(db),
     files: { delete: deleteStorageFiles },
-    // Push notifications arrive with plan S17; until then these are logged no-ops.
     notify: {
       tierChanged: async (uid, to) => {
-        logger.info('notifyTierChange', { uid, to });
+        await notify(liveNotifyDeps(), {
+          userId: uid,
+          content: { type: to === 'artist' ? 'artist_granted' : 'artist_revoked' },
+          target: '/me/awards',
+          dedupeKey: `artist_${to}_${formatVnDate(new Date()).replace(/-/g, '')}`,
+        });
       },
       awardReviewed: async (uid, awardId, status) => {
-        logger.info('notifyAwardReviewed', { uid, awardId, status });
+        if (status === 'pending') return;
+        await notify(liveNotifyDeps(), {
+          userId: uid,
+          content: { type: 'award_reviewed', status },
+          target: '/me/awards',
+          dedupeKey: `award_reviewed_${awardId}_${status}`,
+        });
       },
     },
     clock: { now: () => new Date() },

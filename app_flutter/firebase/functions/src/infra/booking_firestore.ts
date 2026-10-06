@@ -491,6 +491,17 @@ export class FirestoreBookingStore implements BookingStore {
     return res;
   }
 
+  /** Bookings with status `upcoming`, for the reminder sweep. */
+  async findUpcoming(limit = 200): Promise<readonly Booking[]> {
+    const snap = await this.firestore.collection(BOOKINGS_COLLECTION).where('status', '==', 'upcoming').limit(limit).get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b) res.push(b);
+    }
+    return res;
+  }
+
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
     const snap = await this.firestore
       .collection(BOOKINGS_COLLECTION)

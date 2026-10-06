@@ -343,6 +343,32 @@ service cloud.firestore {
         && d.createdAt == request.time;
     }
 
+    // users/{uid}/private/notification_prefs (S17.02): channel switches, quiet hours, reminders.
+    // Booking in-app is always on.
+    function validChannel(c) {
+      return c is map && c.keys().hasOnly(['push', 'inApp']) && c.push is bool && c.inApp is bool;
+    }
+    function validHm(s) { return s is string && s.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'); }
+    function validNotificationPrefs() {
+      let d = request.resource.data;
+      let ch = d.channels;
+      return d.keys().hasOnly(['channels', 'quietHours', 'reminders', 'updatedAt'])
+        && ch is map
+        && ch.keys().hasOnly(['booking', 'jobs', 'instant', 'events', 'chat', 'badges', 'promo'])
+        && 'booking' in ch && validChannel(ch.booking) && ch.booking.inApp == true
+        && (!('jobs' in ch) || validChannel(ch.jobs))
+        && (!('instant' in ch) || validChannel(ch.instant))
+        && (!('events' in ch) || validChannel(ch.events))
+        && (!('chat' in ch) || validChannel(ch.chat))
+        && (!('badges' in ch) || validChannel(ch.badges))
+        && (!('promo' in ch) || validChannel(ch.promo))
+        && d.quietHours is map && d.quietHours.keys().hasOnly(['enabled', 'from', 'to'])
+        && d.quietHours.enabled is bool && validHm(d.quietHours.from) && validHm(d.quietHours.to)
+        && d.reminders is map && d.reminders.keys().hasOnly(['h24', 'h2'])
+        && d.reminders.h24 is bool && d.reminders.h2 is bool
+        && d.updatedAt == request.time;
+    }
+
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid) && validRole() && validAvatar(uid) && onlyKeys(userClientFields());
@@ -350,9 +376,47 @@ service cloud.firestore {
 
       match /private/{docId} {
         allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid) && docId == 'contact' && validContact(uid);
+        // inbox (unreadCount) and badgeProgress are written by Cloud Functions only.
+        allow create, update: if isOwner(uid)
+          && ((docId == 'contact' && validContact(uid))
+              || (docId == 'notification_prefs' && validNotificationPrefs()));
         allow delete: if false;
       }
+
+      // Inbox rows: server-written; the owner may set readAt once, to the request time.
+      match /notifications/{id} {
+        allow read: if isOwner(uid);
+        allow update: if isOwner(uid) && resource.data.readAt == null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+          && request.resource.data.readAt == request.time;
+        allow create, delete: if false;
+      }
+
+      // Earned badges are public to signed-in users; only the server writes them.
+      match /badges/{badgeId} {
+        allow read: if signedIn();
+        allow write: if false;
+      }
+    }
+
+    // Badge catalogue.
+    match /badges/{badgeId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Push tokens: one document per install, owner only.
+    match /devices/{deviceId} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && deviceId.matches('^' + request.auth.uid + '_[A-Za-z0-9]{8,40}$')
+        && request.resource.data.keys().hasOnly(['userId', 'provider', 'token', 'platform', 'lastSeenAt'])
+        && request.resource.data.provider == 'fcm'
+        && request.resource.data.platform in ['android', 'ios']
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 0
+        && request.resource.data.token.size() < 4096;
     }
 
     match /photographers/{uid} {

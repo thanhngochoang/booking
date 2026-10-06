@@ -1,7 +1,7 @@
 // Deterministic local test data for the Firebase emulators. Test values only: these accounts
 // and numbers exist nowhere but in the local emulators. Listed in seed/README.md.
 
-import { titleKeyOf } from '@photobooking/domain';
+import { BADGE_CATALOG, NOTIFICATION_TYPES, renderNotification, titleKeyOf, type NotificationContent, type NotificationType } from '@photobooking/domain';
 
 export const SEED_PASSWORD = 'seed-password-1';
 export const SEED_CREATED_AT = new Date('2026-09-01T00:00:00Z');
@@ -457,5 +457,100 @@ export function seedDocuments(now: Date): SeedDocument[] {
       });
     }
   }
+  docs.push(...notificationAndBadgeDocuments(now));
+  return docs;
+}
+
+interface SeedRow {
+  readonly uid: string;
+  readonly id: string;
+  readonly content: NotificationContent;
+  readonly target: string;
+  readonly ageHours: number;
+  readonly read: boolean;
+  readonly group?: { readonly key: string; readonly count: number; readonly lastEventId: string };
+}
+
+const SEED_CHAT = `${LAN}_${AN}`;
+const ACTOR_AN = { id: AN, name: 'An Studio (seed)', avatarUrl: null };
+const ACTOR_LAN = { id: LAN, name: 'Lan (seed)', avatarUrl: null };
+
+const SEED_ROWS: readonly SeedRow[] = [
+  { uid: LAN, id: 'n_booking_accepted_seed-booking-accepted', ageHours: 1, read: false, target: '/b/seed-booking-accepted',
+    content: { type: 'booking_accepted', photographer: 'An Studio (seed)', day: 'T3 20/10', start: '08:00', place: 'Hồ Hoàn Kiếm, Hà Nội' } },
+  { uid: LAN, id: 'n_shoot_reminder_seed-booking-upcoming_h24', ageHours: 5, read: true, target: '/b/seed-booking-upcoming',
+    content: { type: 'shoot_reminder', hours: 24, service: 'Chân dung 2 giờ', counterpart: 'An Studio (seed)', day: 'T7 10/10', start: '08:00' } },
+  { uid: LAN, id: 'n_refund_done_seed-booking-cancelled', ageHours: 30, read: true, target: '/b/seed-booking-cancelled',
+    content: { type: 'refund_done', amount: 450_000, bookingId: 'seed-booking-cancelled' } },
+  { uid: LAN, id: 'n_booking_declined_seed-booking-declined', ageHours: 12 * 24, read: true, target: '/b/seed-booking-declined',
+    content: { type: 'booking_declined', reason: 'declined', photographer: 'Bình (seed)', percent: 100 } },
+  { uid: LAN, id: `g_chat_${SEED_CHAT}`, ageHours: 2, read: false, target: `/chat/${SEED_CHAT}`,
+    content: { type: 'chat_message', sender: 'An Studio (seed)', preview: 'Chào bạn', count: 2 },
+    group: { key: `chat:${SEED_CHAT}`, count: 2, lastEventId: 'seed-message-2' } },
+  { uid: AN, id: 'n_booking_request_seed-booking-requested-an', ageHours: 3, read: false, target: '/bookings',
+    content: { type: 'booking_request', customer: 'Lan (seed)', service: 'Chân dung 2 giờ', day: 'T7 25/10', start: '16:00' } },
+  { uid: AN, id: 'n_review_new_seed-booking-completed-recent', ageHours: 48, read: true, target: `/u/${AN}?tab=reviews`,
+    content: { type: 'review_new', customer: 'Lan (seed)', rating: 5, text: 'Rất hài lòng, đúng giờ.' } },
+];
+
+/** Inbox rows, unread counts and badges (plan 10a). Defaults apply to everyone: no prefs doc. */
+function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
+  const docs: SeedDocument[] = [];
+  const unread = new Map<string, number>();
+  for (const r of SEED_ROWS) {
+    const meta = NOTIFICATION_TYPES[r.content.type as NotificationType];
+    const at = new Date(now.getTime() - r.ageHours * HOUR_MS);
+    if (!r.read) unread.set(r.uid, (unread.get(r.uid) ?? 0) + 1);
+    docs.push({
+      path: `users/${r.uid}/notifications/${r.id}`,
+      data: {
+        type: r.content.type,
+        tab: meta.tab,
+        category: meta.category,
+        ...renderNotification(r.content),
+        target: r.target,
+        groupKey: r.group?.key ?? null,
+        actors: [r.uid === LAN ? ACTOR_AN : ACTOR_LAN],
+        count: r.group?.count ?? 1,
+        thumbUrl: null,
+        lastEventId: r.group?.lastEventId ?? null,
+        createdAt: at,
+        readAt: r.read ? new Date(at.getTime() + HOUR_MS / 2) : null,
+      },
+    });
+  }
+  for (const uid of [LAN, AN]) {
+    docs.push({ path: `users/${uid}/private/inbox`, data: { unreadCount: unread.get(uid) ?? 0, unreadCountAt: now } });
+  }
+
+  for (const b of BADGE_CATALOG) {
+    docs.push({
+      path: `badges/${b.id}`,
+      data: {
+        name: b.name,
+        shortName: b.shortName,
+        description: b.description,
+        icon: b.icon,
+        source: b.source,
+        audience: b.audience,
+        order: b.order,
+        hiddenWhenLocked: b.hiddenWhenLocked,
+        progress: b.progress,
+      },
+    });
+  }
+  const earned = (uid: string, badgeId: string, text: string, daysAgo: number) =>
+    docs.push({
+      path: `users/${uid}/badges/${badgeId}`,
+      data: { badgeId, uid, awardedAt: new Date(now.getTime() - daysAgo * DAY_MS), snapshot: { text } },
+    });
+  earned(AN, 'top_rated', '4,9 sao từ 58 đánh giá', 20);
+  earned(AN, 'shoots_10', 'Hoàn thành 12 buổi', 10);
+  earned(AN, 'complete_profile', 'Đủ ảnh và gói', 25);
+  earned(LAN, 'loyal_customer', 'Hoàn thành 3 buổi chụp', 5);
+  const progress = (uid: string, entries: Record<string, { current: number; target: number }>) =>
+    docs.push({ path: `users/${uid}/private/badgeProgress`, data: { entries, updatedAt: now } });
+  progress(AN, { punctual: { current: 3, target: 5 }, shoots_50: { current: 12, target: 50 } });
+  progress(LAN, { sharer: { current: 2, target: 5 }, detailed_reviewer: { current: 3, target: 5 } });
   return docs;
 }

@@ -90,3 +90,29 @@ describe('seed fixtures', () => {
     assert.deepEqual(seedDocuments(NOW), seedDocuments(NOW));
   });
 });
+
+describe('seed notifications and badges', () => {
+  const docs = seedDocuments(NOW);
+  const unreadOf = (uid: string) =>
+    docs.filter((d) => d.path.startsWith(`users/${uid}/notifications/`) && d.data.readAt === null).length;
+
+  test('the stored unread count matches the unread rows', () => {
+    for (const uid of ['seed-customer-lan', 'seed-photographer-an']) {
+      const inbox = docs.find((d) => d.path === `users/${uid}/private/inbox`);
+      assert.equal(inbox?.data.unreadCount, unreadOf(uid));
+    }
+    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-customer-lan/notifications/')).length, 5);
+    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-photographer-an/notifications/')).length, 2);
+  });
+
+  test('the catalogue, earned badges and progress are seeded; no prefs doc', () => {
+    assert.equal(docs.filter((d) => /^badges\/[^/]+$/.test(d.path)).length, 12);
+    assert.ok(docs.some((d) => d.path === 'users/seed-photographer-an/badges/top_rated'));
+    assert.ok(docs.some((d) => d.path === 'users/seed-customer-lan/badges/loyal_customer'));
+    assert.deepEqual(
+      (docs.find((d) => d.path === 'users/seed-photographer-an/private/badgeProgress')?.data.entries as Record<string, unknown>).punctual,
+      { current: 3, target: 5 },
+    );
+    assert.equal(docs.some((d) => d.path.endsWith('/private/notification_prefs')), false);
+  });
+});

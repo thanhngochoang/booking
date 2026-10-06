@@ -164,7 +164,7 @@ export class FirestoreStatsStore implements StatsStore {
           if (!data || typeof data.stats !== 'object' || data.stats === null) {
             return null;
           }
-          return data.stats as { ratingSum?: unknown; reviewCount?: unknown };
+          return data.stats as { ratingSum?: unknown; reviewCount?: unknown; punctualMentions?: unknown };
         },
         setPhotographerStats: (uid, patch) => {
           fTx.set(
