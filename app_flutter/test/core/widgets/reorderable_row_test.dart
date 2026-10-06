@@ -125,6 +125,15 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the drag handle is hidden from semantics', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(_list(index: 1, count: 3, onMove: (_) {})),
+    );
+    expect(find.bySemanticsLabel(RegExp('Giữ để kéo')), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets('drag handle and menu have 48dp hit areas', (tester) async {
     await tester.pumpWidget(
       hostWidget(_list(index: 1, count: 3, onMove: (_) {})),

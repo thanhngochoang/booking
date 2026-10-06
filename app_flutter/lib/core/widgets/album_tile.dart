@@ -56,12 +56,16 @@ class AlbumTile extends StatelessWidget {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     final line = dark ? AppColorsDark.border : AppColors.border;
-    final lineStrong = dark ? AppColorsDark.borderStrong : AppColors.borderStrong;
-    final muted = dark ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted;
+    final lineStrong = dark
+        ? AppColorsDark.borderStrong
+        : AppColors.borderStrong;
+    final muted = dark
+        ? AppColorsDark.foregroundMuted
+        : AppColors.foregroundMuted;
     final field = dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted;
     final l = context.l10n;
     final ratio = featured ? _featuredRatio : 1.0;
-    final countText = l.servicePhotos(photoCount);
+    final countText = l.albumPhotoCount(photoCount);
 
     Widget edges(Widget cover) => Padding(
       padding: const EdgeInsets.only(top: AppSpace.s2),
@@ -176,11 +180,11 @@ class AlbumTile extends StatelessWidget {
           ),
         ),
         Text(
-            caption,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: AppText.xs2, color: muted),
-          ),
+          caption,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: AppText.xs2, color: muted),
+        ),
       ],
     );
 

@@ -13,6 +13,7 @@ class PostPickItem {
     required this.thumbUrl,
     this.imageCount = 1,
     this.albumTitle,
+    this.label,
   });
 
   final String postId;
@@ -23,6 +24,10 @@ class PostPickItem {
 
   /// The album the post is in now, shown in the corner instead of the count.
   final String? albumTitle;
+
+  /// Spoken name of the tile, e.g. the first line of the caption. Without it
+  /// (and without an album or count) the tile is read by its position.
+  final String? label;
 }
 
 /// Multi-select grid of posts, three columns (mock `.ck`, S24.03). Selected
@@ -65,6 +70,8 @@ class PostPickerGrid extends StatelessWidget {
         return _PickTile(
           key: ValueKey('post-pick-${item.postId}'),
           item: item,
+          position: i + 1,
+          total: items.length,
           order: order < 0 ? null : order + 1,
           disabled: full && order < 0,
           onTap: () => onToggle(item.postId),
@@ -78,12 +85,16 @@ class _PickTile extends StatelessWidget {
   const _PickTile({
     super.key,
     required this.item,
+    required this.position,
+    required this.total,
     required this.order,
     required this.disabled,
     required this.onTap,
   });
 
   final PostPickItem item;
+  final int position;
+  final int total;
   final int? order;
   final bool disabled;
   final VoidCallback onTap;
@@ -92,15 +103,20 @@ class _PickTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final l = context.l10n;
-    final corner = item.albumTitle ??
+    final corner =
+        item.albumTitle ??
         (item.imageCount > 1 ? l.servicePhotos(item.imageCount) : null);
     final selected = order != null;
+    final named = item.label != null && item.label!.isNotEmpty;
+    final hasDetail = named || item.albumTitle != null || item.imageCount > 1;
     return Semantics(
       button: true,
       selected: selected,
       enabled: !disabled,
       excludeSemantics: true,
       label: [
+        if (named) item.label!,
+        if (!hasDetail) l.postPickPosition(position, total),
         if (item.albumTitle != null) l.postPickInAlbum(item.albumTitle!),
         if (item.albumTitle == null && item.imageCount > 1)
           l.servicePhotos(item.imageCount),

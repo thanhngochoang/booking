@@ -4612,6 +4612,18 @@ abstract class AppLocalizations {
   /// **'Đã chọn, thứ {n}'**
   String postPickSelectedOrder(int n);
 
+  /// No description provided for @postPickPosition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài {index} trên {count}'**
+  String postPickPosition(int index, int count);
+
+  /// No description provided for @albumPhotoCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh'**
+  String albumPhotoCount(int n);
+
   /// No description provided for @postPickInAlbum.
   ///
   /// In vi, this message translates to:

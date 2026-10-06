@@ -18,9 +18,8 @@ Widget _grid(
   int? max,
   ValueChanged<String>? onToggle,
 }) => PhotoImageScope(
-  builder: (context, url, fit, cacheWidth, retry) => const ColoredBox(
-    color: Colors.grey,
-  ),
+  builder: (context, url, fit, cacheWidth, retry) =>
+      const ColoredBox(color: Colors.grey),
   child: PostPickerGrid(
     items: _items,
     selected: selected,
@@ -55,9 +54,7 @@ void main() {
     );
   });
 
-  testWidgets('picker lays out three columns and reports taps', (
-    tester,
-  ) async {
+  testWidgets('picker lays out three columns and reports taps', (tester) async {
     final tapped = <String>[];
     await tester.pumpWidget(
       hostWidget(_grid(const [], onToggle: tapped.add), width: 300),
@@ -95,6 +92,40 @@ void main() {
     expect(node.label, contains('Cưới Đà Lạt'));
     expect(node.label, contains('thứ 1'));
     expect(node.flagsCollection.isSelected, Tristate.isTrue);
+    handle.dispose();
+  });
+
+  testWidgets('every tile has a non-empty label', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(hostWidget(_grid(const [])));
+    for (final id in ['a', 'b', 'c', 'd']) {
+      final node = tester.getSemantics(find.byKey(ValueKey('post-pick-$id')));
+      expect(node.label, isNotEmpty, reason: id);
+    }
+    final b = tester.getSemantics(find.byKey(const ValueKey('post-pick-b')));
+    expect(b.label, 'Bài 2 trên 4');
+    handle.dispose();
+  });
+
+  testWidgets('a supplied label names the tile', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        PhotoImageScope(
+          builder: (context, url, fit, cacheWidth, retry) =>
+              const ColoredBox(color: Colors.grey),
+          child: PostPickerGrid(
+            items: const [
+              PostPickItem(postId: 'z', thumbUrl: 'u/z', label: 'Hồ Tây'),
+            ],
+            selected: const [],
+            onToggle: (_) {},
+          ),
+        ),
+      ),
+    );
+    final node = tester.getSemantics(find.byKey(const ValueKey('post-pick-z')));
+    expect(node.label, 'Hồ Tây');
     handle.dispose();
   });
 }

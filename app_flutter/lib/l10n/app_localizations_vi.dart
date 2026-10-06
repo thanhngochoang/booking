@@ -2608,6 +2608,16 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String postPickPosition(int index, int count) {
+    return 'Bài $index trên $count';
+  }
+
+  @override
+  String albumPhotoCount(int n) {
+    return '$n ảnh';
+  }
+
+  @override
   String postPickInAlbum(String album) {
     return 'Đang ở album $album';
   }

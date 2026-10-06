@@ -1311,6 +1311,19 @@
       "n": {"type": "int"}
     }
   },
+  "postPickPosition": "Bài {index} trên {count}",
+  "@postPickPosition": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
+  "albumPhotoCount": "{n} ảnh",
+  "@albumPhotoCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
   "postPickInAlbum": "Đang ở album {album}",
   "@postPickInAlbum": {
     "placeholders": {

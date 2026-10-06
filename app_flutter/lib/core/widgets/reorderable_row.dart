@@ -33,7 +33,8 @@ class ReorderableRow extends StatelessWidget {
   final String? subtitle;
   final Widget? leading;
 
-  /// Mock `.lrow.unsorted`: dashed border, no fill, for rows not yet ordered.
+  /// Mock `.lrow.unsorted`: a solid border with no fill (the mock's dashed
+  /// border is not drawn), for rows not yet ordered.
   final bool dimmed;
 
   /// Called with the new zero-based index from the menu.
@@ -49,7 +50,9 @@ class ReorderableRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    final muted = dark ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted;
+    final muted = dark
+        ? AppColorsDark.foregroundMuted
+        : AppColors.foregroundMuted;
     final border = dark ? AppColorsDark.border : AppColors.border;
     final fill = dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted;
     final l = context.l10n;
@@ -61,9 +64,7 @@ class ReorderableRow extends StatelessWidget {
       icon: Icon(Icons.more_horiz_rounded, color: muted),
       constraints: const BoxConstraints(minWidth: 180),
       iconSize: AppSpace.s6,
-      style: IconButton.styleFrom(
-        minimumSize: const Size.square(AppSpace.s12),
-      ),
+      style: IconButton.styleFrom(minimumSize: const Size.square(AppSpace.s12)),
       onSelected: (run) => run(),
       itemBuilder: (_) => [
         PopupMenuItem<VoidCallback>(
@@ -93,8 +94,9 @@ class ReorderableRow extends StatelessWidget {
 
     final handle = ReorderableDelayedDragStartListener(
       index: index,
-      child: Semantics(
-        label: l.reorderHandle,
+      // Screen-reader users reorder with the "…" menu and the list's own
+      // move actions; a bare drag handle would only announce a dead control.
+      child: ExcludeSemantics(
         child: SizedBox(
           key: handleKey,
           width: AppSpace.s12,
