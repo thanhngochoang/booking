@@ -259,6 +259,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
         ...(p.verified ? { verifiedAt: at } : {}),
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),
+        // An's stats keep the revocable `top_rated` badge: the evaluator runs on every seed write.
+        ...(p.uid === AN ? { stats: { rating: 4.9, reviewCount: 58, ratingSum: 284, punctualMentions: 3 } } : {}),
         approvedAwardCount: SEED_AWARDS.filter((a) => a.photographerId === p.uid && a.status === 'approved').length,
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
@@ -550,7 +552,9 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
   earned(LAN, 'loyal_customer', 'Hoàn thành 3 buổi chụp', 5);
   const progress = (uid: string, entries: Record<string, { current: number; target: number }>) =>
     docs.push({ path: `users/${uid}/private/badgeProgress`, data: { entries, updatedAt: now } });
-  progress(AN, { punctual: { current: 3, target: 5 }, shoots_50: { current: 12, target: 50 } });
-  progress(LAN, { sharer: { current: 2, target: 5 }, detailed_reviewer: { current: 3, target: 5 } });
+  // Equal to what the evaluator computes from the seeded data, so a trigger run changes nothing.
+  const anShoots = SEED_BOOKINGS.filter((b) => b.photographerId === AN && b.status === 'completed').length;
+  progress(AN, { punctual: { current: 3, target: 5 }, shoots_50: { current: Math.min(anShoots, 50), target: 50 } });
+  progress(LAN, { sharer: { current: 0, target: 5 }, detailed_reviewer: { current: 0, target: 5 } });
   return docs;
 }
