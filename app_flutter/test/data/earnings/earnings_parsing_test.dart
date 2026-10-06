@@ -32,6 +32,19 @@ void main() {
       'lastPayout': {'id': 'p1', 'status': 'failed'},
     });
     expect(s.lastPayoutFailed, isTrue);
+    expect(s.lastPayoutAt, isNull);
+  });
+
+  test('lastPayout.at is parsed', () {
+    final at = DateTime.utc(2026, 10, 5, 3);
+    final s = earningsSummaryFrom({
+      'lastPayout': {
+        'id': 'p1',
+        'status': 'failed',
+        'at': Timestamp.fromDate(at),
+      },
+    });
+    expect(s.lastPayoutAt, at);
   });
 
   test('a cached snapshot sets fromCache', () {

@@ -187,6 +187,49 @@ void main() {
     expect(find.text('stub /work/earnings/account'), findsOneWidget);
   });
 
+  testWidgets('the banner goes once the account was saved after the failure', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      seed: (w) {
+        w.repo.setAccount(
+          w.account(updatedAt: earningsNow.add(const Duration(hours: 1))),
+        );
+        w.repo.emitSummary(
+          EarningsSummary(lastPayoutFailed: true, lastPayoutAt: earningsNow),
+        );
+      },
+    );
+    expect(find.text('Chuyển khoản lỗi, kiểm tra tài khoản'), findsNothing);
+  });
+
+  testWidgets('the banner stays when the account is older than the failure', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      seed: (w) {
+        w.repo.setAccount(
+          w.account(updatedAt: earningsNow.subtract(const Duration(days: 1))),
+        );
+        w.repo.emitSummary(
+          EarningsSummary(lastPayoutFailed: true, lastPayoutAt: earningsNow),
+        );
+      },
+    );
+    expect(find.text('Chuyển khoản lỗi, kiểm tra tài khoản'), findsOneWidget);
+  });
+
+  testWidgets('a row amount is truncated, never rounded up', (tester) async {
+    await _open(
+      tester,
+      seed: (w) => w.repo.emitItems([w.item('a', amount: 1999999)]),
+    );
+    expect(find.text('1,99M'), findsOneWidget);
+    expect(find.text('2M'), findsNothing);
+  });
+
   testWidgets('no failed payout, no banner', (tester) async {
     await _open(tester);
     expect(find.text('Chuyển khoản lỗi, kiểm tra tài khoản'), findsNothing);

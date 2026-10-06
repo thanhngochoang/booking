@@ -83,12 +83,13 @@ class EarningsWorld {
     String bank = 'VCB',
     String last4 = '3456',
     String holder = 'NGUYEN MINH TRI',
+    DateTime? updatedAt,
   }) => PayoutAccountView(
     accountId: 'acc-0',
     bankCode: bank,
     accountLast4: last4,
     holderName: holder,
-    updatedAt: earningsNow,
+    updatedAt: updatedAt ?? earningsNow,
   );
 
   List<Override> get overrides => [

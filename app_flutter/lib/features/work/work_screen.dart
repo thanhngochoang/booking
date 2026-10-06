@@ -289,7 +289,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                 label: l10n.workMonth,
               ),
               StatTile(
-                value: formatMoney(d.heldVnd, short: true),
+                value: formatMoney(d.heldVnd, short: true, decimals: 2),
                 label: l10n.workHeld,
                 onTap: () => context.push('/work/earnings'),
               ),

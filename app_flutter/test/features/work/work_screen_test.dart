@@ -75,7 +75,7 @@ List<Booking> _busy() => [
     service: 'Kỷ yếu nửa ngày',
     place: 'THPT Lê Quý Đôn',
   ),
-  _b('u1', BookingStatus.upcoming, day: '2026-10-15', deposit: 1550000),
+  _b('u1', BookingStatus.upcoming, day: '2026-10-15', deposit: 1590000),
   _b('r1', BookingStatus.requested, deadlineIn: const Duration(hours: 22)),
   _b(
     'r2',
@@ -227,7 +227,8 @@ void main() {
     // Tiles: done this month, held deposits, upcoming shoots.
     await tester.scrollUntilVisible(find.text('Tháng này'), 200);
     expect(find.text('12,4M'), findsOneWidget);
-    expect(find.text('3,2M'), findsOneWidget);
+    // 3.240.000 truncated to two decimals, never rounded up.
+    expect(find.text('3,24M'), findsOneWidget);
     expect(find.text('2'), findsWidgets);
     expect(find.text('Đang giữ'), findsOneWidget);
     expect(find.text('Buổi sắp tới'), findsOneWidget);

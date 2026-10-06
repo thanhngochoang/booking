@@ -28,6 +28,7 @@ EarningsSummary earningsSummaryFrom(
     soonVnd: _int(d['soonAmount']),
     receivedVnd: _int(d['receivedAmount']),
     lastPayoutFailed: last is Map && last['status'] == 'failed',
+    lastPayoutAt: last is Map ? _time(last['at']) : null,
     fromCache: fromCache,
   );
 }

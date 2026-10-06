@@ -62,6 +62,7 @@ class EarningsSummary {
     this.soonVnd = 0,
     this.receivedVnd = 0,
     this.lastPayoutFailed = false,
+    this.lastPayoutAt,
     this.fromCache = false,
   });
 
@@ -69,6 +70,9 @@ class EarningsSummary {
   final int soonVnd;
   final int receivedVnd;
   final bool lastPayoutFailed;
+
+  /// When the last payout row was written (`lastPayout.at`); null if unknown.
+  final DateTime? lastPayoutAt;
 
   /// True while the numbers come from the local cache (maybe stale).
   final bool fromCache;

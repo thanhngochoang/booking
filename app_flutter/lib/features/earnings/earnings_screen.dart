@@ -114,8 +114,14 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                     ),
                   ),
                   error: (_, _, _) => error,
-                  data: (_, s) =>
-                      _Totals(summary: s, onOpenAccount: _openAccount),
+                  data: (_, s) => _Totals(
+                    summary: s,
+                    accountUpdatedAt: ref
+                        .watch(payoutAccountProvider)
+                        .value
+                        ?.updatedAt,
+                    onOpenAccount: _openAccount,
+                  ),
                 ),
               ),
               AsyncView<PayoutAccountView?>(
@@ -165,9 +171,17 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
 }
 
 class _Totals extends StatelessWidget {
-  const _Totals({required this.summary, required this.onOpenAccount});
+  const _Totals({
+    required this.summary,
+    required this.accountUpdatedAt,
+    required this.onOpenAccount,
+  });
 
   final EarningsSummary summary;
+
+  /// `updatedAt` of the active account: an account saved after the failed
+  /// payout means the payee already fixed it, so the banner goes away.
+  final DateTime? accountUpdatedAt;
   final VoidCallback onOpenAccount;
 
   @override
@@ -195,7 +209,10 @@ class _Totals extends StatelessWidget {
             ),
           ],
         ),
-        if (summary.lastPayoutFailed) ...[
+        if (summary.lastPayoutFailed &&
+            !(accountUpdatedAt != null &&
+                summary.lastPayoutAt != null &&
+                accountUpdatedAt!.isAfter(summary.lastPayoutAt!))) ...[
           const SizedBox(height: AppSpace.s3),
           _LinkCard(
             key: const Key('earnings-payout-failed'),
@@ -349,7 +366,13 @@ class _Rows extends ConsumerWidget {
       key: ValueKey(item.id),
       title: title,
       meta: day == null ? item.day : formatDay(day),
-      amount: formatMoney(item.amountVnd, short: true),
+      // Millions truncate to two decimals (never rounded up); below 1M the
+      // plain K form (`450K`) is exact for whole-thousand amounts.
+      amount: formatMoney(
+        item.amountVnd,
+        short: true,
+        decimals: item.amountVnd >= 1000000 ? 2 : 1,
+      ),
       amountLabel: formatMoney(item.amountVnd),
       badge: _badge(l, item),
       note: reason == null ? null : l.earningsHoldReason(reason),
