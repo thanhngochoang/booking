@@ -12,25 +12,35 @@ const DAY_MS = 86_400_000;
  */
 export async function runEventSweeps(
   deps: EventDeps,
+  onError: (eventId: string, step: 'close' | 'complete' | 'consent', error: unknown) => void = () => undefined,
 ): Promise<{ closed: number; completed: number; consentExpired: number }> {
+  // One bad event must not block the others: log it, go on with the rest of the batch.
+  const guarded = async (id: string, step: 'close' | 'complete' | 'consent', fn: () => Promise<boolean>): Promise<boolean> => {
+    try {
+      return await fn();
+    } catch (e) {
+      onError(id, step, e);
+      return false;
+    }
+  };
   let closed = 0;
   let completed = 0;
   let consentExpired = 0;
 
   for (const due of await deps.events.dueForClose(deps.clock.now(), BATCH)) {
-    const did = await deps.events.runTransaction(async (tx) => {
+    const did = await guarded(due.id, 'close', async () => deps.events.runTransaction(async (tx) => {
       const now = deps.clock.now();
       const ev = await tx.getEvent(due.id);
       if (ev === null || (ev.status !== 'open' && ev.status !== 'full')) return false;
       if (ev.registrationDeadline === null || ev.registrationDeadline.getTime() > now.getTime()) return false;
       tx.putEvent({ ...ev, status: 'closed', version: ev.version + 1, updatedAt: now });
       return true;
-    });
+    }));
     if (did) closed += 1;
   }
 
   for (const due of await deps.events.dueForCompletion(deps.clock.now(), BATCH)) {
-    const did = await deps.events.runTransaction(async (tx) => {
+    const did = await guarded(due.id, 'complete', async () => deps.events.runTransaction(async (tx) => {
       const now = deps.clock.now();
       const ev = await tx.getEvent(due.id);
       if (ev === null || (ev.status !== 'open' && ev.status !== 'full' && ev.status !== 'closed')) return false;
@@ -38,19 +48,19 @@ export async function runEventSweeps(
       if (ev.chatId !== null) tx.setChatReadOnlyAt(ev.chatId, new Date(now.getTime() + CHAT_READ_ONLY_DAYS * DAY_MS));
       tx.putEvent({ ...ev, status: 'completed', completedAt: now, version: ev.version + 1, updatedAt: now });
       return true;
-    });
+    }));
     if (did) completed += 1;
   }
 
   for (const due of await deps.events.dueForConsentExpiry(deps.clock.now(), BATCH)) {
-    const did = await deps.events.runTransaction(async (tx) => {
+    const did = await guarded(due.id, 'consent', async () => deps.events.runTransaction(async (tx) => {
       const now = deps.clock.now();
       const ev = await tx.getEvent(due.id);
       if (ev === null || ev.status !== 'draft' || ev.hostConsent !== 'pending') return false;
       if (ev.hostConsentExpiresAt === null || ev.hostConsentExpiresAt.getTime() > now.getTime()) return false;
       expireHostConsent(tx, ev, now);
       return true;
-    });
+    }));
     if (did) consentExpired += 1;
   }
 

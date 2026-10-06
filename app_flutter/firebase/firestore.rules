@@ -648,11 +648,16 @@ service cloud.firestore {
     }
 
     match /events/{eventId} {
-      allow get: if signedIn() && (resource.data.status != 'draft' || eventManager(resource.data));
+      // A never-published draft stays private even after it is cancelled (declined, expired or
+      // cancelled by its manager): a cancelled event is public only if it was published.
+      allow get: if signedIn()
+        && ((resource.data.status != 'draft'
+             && (resource.data.status != 'cancelled' || resource.data.publishedAt != null))
+            || eventManager(resource.data));
       // A public list must filter status (S11.01 uses status in [open, full]); the creator and
       // the named host list their own drafts with createdBy == uid or hostId == uid.
       allow list: if signedIn()
-        && (resource.data.status in ['open', 'full', 'closed', 'completed', 'cancelled']
+        && (resource.data.status in ['open', 'full', 'closed', 'completed']
             || resource.data.createdBy == request.auth.uid
             || resource.data.hostId == request.auth.uid);
       allow write: if false;

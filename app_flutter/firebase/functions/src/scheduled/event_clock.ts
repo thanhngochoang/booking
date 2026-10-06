@@ -7,7 +7,9 @@ export async function handleEventClock(
   deps: EventDeps = liveEventDeps(),
 ): Promise<{ closed: number; completed: number; consentExpired: number }> {
   try {
-    const results = await runEventSweeps(deps);
+    const results = await runEventSweeps(deps, (eventId, step, error) => {
+      logger.error('eventClock step failed', { eventId, step, error: error instanceof Error ? error.name : 'unknown' });
+    });
     logger.info('eventClock sweep completed', results);
     return results;
   } catch (e) {

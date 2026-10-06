@@ -1708,3 +1708,13 @@ test('events storage: an owner uploads a cover, others cannot', async () => {
   await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/a.txt'), photo(), { contentType: 'text/plain' }));
   await assertSucceeds(deleteObject(mine));
 });
+
+test('events: a cancelled never-published draft is private; a cancelled published event is readable', async () => {
+  await evSeed('events/e6', evDoc({ status: 'cancelled', publishedAt: null, hostConsent: 'declined' }));
+  await evSeed('events/e7', evDoc({ status: 'cancelled', publishedAt: Timestamp.now() }));
+  await assertFails(getDoc(doc(evDb('v1'), 'events/e6')));
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e6')));
+  await assertSucceeds(getDoc(doc(evDb('v1'), 'events/e7')));
+  await assertFails(getDocs(query(collection(evDb('v1'), 'events'), where('status', '==', 'cancelled'))));
+  await assertFails(getDocs(query(collection(evDb('v1'), 'events'), where('status', 'in', ['open', 'cancelled']))));
+});

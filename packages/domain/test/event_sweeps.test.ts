@@ -75,4 +75,23 @@ describe('runEventSweeps', () => {
     assert.equal(w.store.hashtags.size, 0);
     assert.equal((await runEventSweeps(w.deps)).consentExpired, 0);
   });
+
+  test('one failing event is reported and does not block the others', async () => {
+    const w = createEventWorld();
+    await publishedEvent(w, {}, ph1, 'aaaaaaaaaaaaaaaaaaaaa');
+    await publishedEvent(w, {}, sales1, 'bbbbbbbbbbbbbbbbbbbbb');
+    w.clock.set(DEADLINE);
+    const real = w.store.runTransaction.bind(w.store);
+    let calls = 0;
+    w.store.runTransaction = ((fn: never) => {
+      calls += 1;
+      if (calls === 1) throw new Error('boom');
+      return real(fn);
+    }) as typeof w.store.runTransaction;
+    const failed: string[] = [];
+    const r = await runEventSweeps(w.deps, (id, step) => failed.push(`${id}:${step}`));
+    assert.equal(r.closed, 1);
+    assert.equal(failed.length, 1);
+    assert.match(failed[0] ?? '', /:close$/);
+  });
 });
