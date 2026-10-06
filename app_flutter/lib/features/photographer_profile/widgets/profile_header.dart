@@ -1,8 +1,10 @@
 // lib/features/photographer_profile/widgets/profile_header.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/badges/badge_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
@@ -173,6 +175,7 @@ class ProfileHeader extends ConsumerWidget {
                 const SizedBox(height: AppSpace.s4),
                 Text(profile.intro.bio, style: theme.textTheme.bodyMedium),
               ],
+              _BadgesRow(uid: s.id),
               if (!artist) AwardsStrip(photographerId: s.id),
               if (skills.specialties.isNotEmpty) ...[
                 const SizedBox(height: AppSpace.s3),
@@ -203,6 +206,32 @@ class ProfileHeader extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Up to three earned badges after the bio; hidden while loading, on error
+/// and when none are earned. "Tất cả" opens S03.02.
+class _BadgesRow extends ConsumerWidget {
+  const _BadgesRow({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final badges = ref.watch(badgeChipsProvider(uid)).value;
+    if (badges == null || badges.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s3),
+      child: BadgeRow(
+        key: const Key('profile-badges'),
+        badges: badges,
+        max: 3,
+        alwaysShowSeeAll: true,
+        onSeeAll: () => context.push('/u/$uid/badges'),
+      ),
     );
   }
 }

@@ -424,15 +424,33 @@ create table chat_pins (
 );
 
 create table notifications (
-  id         text primary key,
+  id         text primary key,                   -- 'n_{dedupeKey}' hoặc 'g_{groupKey}' (dòng gom)
   user_id    text not null references users(id) on delete cascade,
   type       text not null,
+  tab        text not null check (tab in ('activity','events','system')),
+  category   text not null check (category in ('booking','jobs','instant','events','chat','badges','promo')),
   title      text not null, body text not null,
+  target     text not null,                      -- đường dẫn app, ví dụ '/b/01J…'
+  group_key  text,
+  actors     jsonb not null default '[]',        -- ≤ 3 {id, name, avatarUrl}
+  count      int  not null default 1,
+  thumb_url  text,
+  last_event_id text,
   booking_id text, post_id text, event_id text,
   read_at    timestamptz,
   created_at timestamptz not null default now()
 );
 create index ix_notifications_user on notifications (user_id, created_at desc);
+create index ix_notifications_tab  on notifications (user_id, tab, created_at desc);
+
+create table notification_prefs (                  -- 🔒 một dòng mỗi người dùng
+  user_id text primary key references users(id) on delete cascade,
+  channels jsonb not null,                         -- {booking:{push,inApp}, jobs:…, instant:…, events:…, chat:…, badges:…, promo:…}
+  quiet_enabled boolean not null default true,
+  quiet_from text not null default '22:00', quiet_to text not null default '07:00',
+  reminder_24h boolean not null default true, reminder_2h boolean not null default true
+);
+-- Số chưa đọc là count(*) where read_at is null, không có cột riêng; Firestore giữ users/{uid}/private/inbox.
 ```
 
 ### 2.6 Sự kiện
@@ -833,7 +851,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử |
 | `reviews/{bookingId}` | `reviews` | |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột |
-| `notifications/{uid}/items/{id}` | `notifications` | |
+| `users/{uid}/notifications/{id}` | `notifications` | `actors[]`→`actors jsonb`; `users/{uid}/private/inbox.unreadCount` không có cột (đếm `read_at is null`) |
+| `users/{uid}/private/notification_prefs` | `notification_prefs` | `quietHours.*`→`quiet_*`, `reminders.*`→`reminder_*` |
 | `events/{id}` | `events` | `location.*`→cột phẳng; `host.*`, `createdBy*` |
 | `events/{id}/registrations/{id}` | `event_registrations` | `phone` 🔒 |
 | *(mới)* `events/{id}/posts/{postId}` | `event_posts` | Liên kết timeline |

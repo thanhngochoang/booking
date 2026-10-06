@@ -8,6 +8,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
 import 'package:photobooking/features/awards/my_awards_screen.dart';
+import 'package:photobooking/features/badges/badges_screen.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -258,6 +259,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           uid: state.pathParameters['uid']!,
           albumId: state.pathParameters['albumId']!,
         ),
+      ),
+      GoRoute(
+        path: '/u/:uid/badges',
+        builder: (_, state) => BadgesScreen(uid: state.pathParameters['uid']!),
       ),
       GoRoute(
         path: '/u/:uid',

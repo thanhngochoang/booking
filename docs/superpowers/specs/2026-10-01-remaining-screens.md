@@ -86,7 +86,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback | S04 |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
 | S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2; tab Đánh giá 4e) · lệch mock: không nút chia sẻ, lưới vuông thay masonry · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) | S03 |
-| S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) | S37 |
+| S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ✅ đã làm (10a) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
@@ -155,9 +155,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S16.02 | Việc đang tuyển (tab trong Công việc) | `/work?tab=jobs` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
 | S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S62 |
 | **S17** | **Thông báo** | | | | | |
-| S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S63 |
-| S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S64 |
-| S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) | S65 |
+| S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ✅ đã làm (10a) | S63 |
+| S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
+| S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ đã làm (10a) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
 | S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
@@ -491,7 +491,7 @@ Thanh tab dưới dùng `TabBadge` (bong bóng đỏ, chữ trắng, "9+" từ m
 |-----|-----------|-------------|
 | Công việc (nhiếp ảnh gia) | Số yêu cầu đang chờ nhận | Khi không còn yêu cầu chờ (không xoá khi chỉ mở tab) |
 | **Khám phá** | Số sự kiện mới trong khu vực của bạn kể từ lần mở Khám phá gần nhất (nếu chưa có vị trí/khu vực thì tính toàn bộ sự kiện mới) | Khi mở tab Khám phá; đếm lại từ 0 |
-| **Hồ sơ** | Số thông báo chưa đọc (`users/{uid}.unreadCount`, mục 3h); thay chuông ở đầu trang (quyết định 2026-10-05) | Khi thông báo được đọc (không xoá khi chỉ mở tab) |
+| **Hồ sơ** | Số thông báo chưa đọc (`users/{uid}/private/inbox.unreadCount`, mục 3h); thay chuông ở đầu trang (quyết định 2026-10-05) | Khi thông báo được đọc (không xoá khi chỉ mở tab) |
 
 - Số lấy từ `tabBadgesProvider` (`Map<AppTab, int>`), mỗi feature ghi đè khi có dữ liệu; **đã có trong code** (`TabBadge`, `tabBadgesProvider`, `TabShell`, test `tab_badge_test.dart`), giá trị mặc định rỗng nên chưa có chấm nào hiện.
 - Trình đọc màn hình đọc "Khám phá, 3 mục mới" (`Semantics.value`). Chấm không phụ thuộc màu: luôn có số.
@@ -681,8 +681,8 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 ### 3h.1 Hành vi
 
 - **Điểm vào** (đổi 2026-10-05): **không có chuông ở đầu trang**. Số chưa đọc hiện bằng `TabBadge` trên tab **Hồ sơ** (mục 3d.3), giống chấm số của tab Khám phá; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01; push mở thẳng màn đích. Cài đặt (S09.02) → "Thông báo" → S17.02; biểu tượng bánh răng ở S17.01 → S17.02. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01.
-- **Chấm số**: đọc từ `users/{uid}.unreadCount`, "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
-- **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
+- **Chấm số**: đọc từ `users/{uid}/private/inbox.unreadCount` (tài liệu riêng của chủ, không nằm trên `users/{uid}` công khai, 2026-10-06), "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
+- **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng lưu trường `tab` (`activity` · `events` · `system`) do server gán theo `type`, và bộ lọc truy vấn theo `tab`, **không** theo `type`: một `shoot_reminder` là "Đặt lịch" với khách nhưng "Công việc" với NAG, nên `activity` là một mục với nhãn đổi theo vai trò (2026-10-06). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
 - **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới.
 - **Chạm** = đánh dấu đã đọc + đi tới `target` (deep link). **Nhấn giữ** mở menu "Đánh dấu đã đọc / Tắt loại thông báo này" (không có thao tác chỉ vuốt). Hành động đầu trang: "Đánh dấu tất cả đã đọc".
 - **Phân trang**: 30 mục mỗi trang, skeleton khi tải. Empty state có một hành động ("Khám phá nhiếp ảnh gia" cho khách, "Mở Công việc" cho NAG).
@@ -694,6 +694,7 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 |--------|---------|--------------------------|---------|----------|---------|
 | `booking_accepted` | khách | `i-cal`, tông xanh | Đặt lịch | `/bookings/:id` (S05.02) | |
 | `booking_declined` | khách | `i-cal`, tông đỏ | Đặt lịch | `/bookings/:id` | Nêu hoàn cọc |
+| `booking_cancelled` | khách và NAG (bên còn lại; cả hai khi hệ thống huỷ) | `i-cal`, tông đỏ | Đặt lịch / Công việc | `/bookings/:id` | Quan trọng: luôn có dòng trong hộp thư, im giờ yên lặng không áp dụng; khách nhận kèm "Cọc hoàn {percent}%" |
 | `shoot_reminder` | khách (và NAG) | `i-cam` | Đặt lịch / Công việc | `/bookings/:id` | Trước 24 giờ và/hoặc 2 giờ theo S17.02 |
 | `quote_new` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S15.03) | Gom theo `groupKey = job:<id>:quotes` |
 | `instant_assigned` | khách | `i-bolt` | Đặt lịch | `/instant/:id` (S13.05) | |
@@ -725,12 +726,13 @@ Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = 
 users/{uid}/notifications/{id}
   type, title, body
   target            # đường dẫn deep link, ví dụ "/bookings/01J…"
+  tab, category     # `activity|events|system` và nhóm S17.02, server gán theo `type`
   groupKey?         # gom dòng (xem 3h.1)
-  actorIds?         # tối đa 3 id để vẽ avatar; tổng số nằm trong `count`
+  actors?           # tối đa 3 {id, name, avatarUrl?} để vẽ avatar; tổng số nằm trong `count`
   thumbUrl?, count?
   createdAt, readAt?   # readAt null = chưa đọc
 
-users/{uid}.unreadCount                      # số nguyên, Functions tăng/giảm
+users/{uid}/private/inbox                    # {unreadCount, lastReadAt}, chỉ chủ đọc, chỉ server ghi; Functions tính lại (đếm) mỗi khi một dòng đổi
 users/{uid}/private/notification_prefs       # S17.02, chỉ chủ đọc/ghi
   channels: {booking, jobs, instant, events, chat, badges, promo}: {push: bool, inApp: bool}
   quietHours: {enabled, from: "22:00", to: "07:00"}
@@ -744,7 +746,7 @@ devices/{uid}_{installId}                    # token FCM (kế hoạch I4)
 
 ### 3h.4 Pin và dữ liệu mạng
 
-- Không polling. Chỉ lắng nghe 30 mục mới nhất **khi S17.01 đang mở**; ở nơi khác chỉ lắng nghe trường `unreadCount` của `users/{uid}`.
+- Không polling. Chỉ lắng nghe 30 mục mới nhất **khi S17.01 đang mở**; ở nơi khác chỉ lắng nghe trường `unreadCount` của `users/{uid}/private/inbox`.
 - Đánh dấu đã đọc được gom lô (debounce ~1 giây hoặc khi rời màn) thành một `WriteBatch`; cập nhật lạc quan ở UI.
 - Push chỉ mang `type`, `target` và tiêu đề/nội dung ngắn; chi tiết đọc lại từ Firestore khi mở.
 
@@ -760,7 +762,7 @@ Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng
 
 ### 3h.7 Cloud Functions
 
-`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, tăng `unreadCount`, gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
+`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, cập nhật `unreadCount` (trong `users/{uid}/private/inbox`), gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
 
 ## 3i. Use case bổ sung (2026-10-02)
 

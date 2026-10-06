@@ -120,14 +120,16 @@ class BadgeChip extends StatelessWidget {
               children: [
                 disc,
                 const SizedBox(width: AppSpace.s2),
-                Text(
-                  badge.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: fg,
+                Flexible(
+                  child: Text(
+                    badge.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: fg,
+                    ),
                   ),
                 ),
               ],
@@ -176,11 +178,16 @@ class BadgeRow extends StatelessWidget {
     required this.badges,
     this.max = 3,
     this.onSeeAll,
+    this.alwaysShowSeeAll = false,
   });
 
   final List<BadgeView> badges;
   final int max;
   final VoidCallback? onSeeAll;
+
+  /// Show "Tất cả" even when every badge fits (profile rows, so the full
+  /// badges screen stays reachable).
+  final bool alwaysShowSeeAll;
 
   static Widget skeleton({int count = 3}) => _BadgeRowSkeleton(count: count);
 
@@ -200,7 +207,7 @@ class BadgeRow extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (final b in shown) BadgeChip(badge: b),
-        if (hasMore && onSeeAll != null)
+        if ((hasMore || alwaysShowSeeAll) && onSeeAll != null)
           Material(
             color: dark ? AppColorsDark.glass : AppColors.glass,
             shape: StadiumBorder(

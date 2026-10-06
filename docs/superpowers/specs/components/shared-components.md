@@ -210,18 +210,18 @@ Mỗi component hiển thị dữ liệu có **biến thể skeleton riêng** đ
 - Test mỗi skeleton: cùng kích thước với component thật ở 390dp và 320dp (so `tester.getSize`), golden sáng/tối, không ticker khi giảm chuyển động.
 
 ### NotificationRow · Đã có
-Dòng trong hộp thư S17.01. `NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, required VoidCallback onMuteKind})`. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `kind`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. Có biến thể `NotificationRow.skeleton()`. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S17.01.  
-Lớp view-data: `NotificationRowData(id, kind, title, body, timeLabel, unread, thumbUrl, groupAvatars)`, `NotificationKind` (booking, payment, chat, event, badge, system).
+Dòng trong hộp thư S17.01. `NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, VoidCallback? onMuteKind})`; `onMuteKind` null (loại quan trọng không tắt được) ẩn mục "Tắt loại thông báo này" và hành động ngữ nghĩa tương ứng. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `kind`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. Có biến thể `NotificationRow.skeleton()`. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S17.01.  
+Lớp view-data: `NotificationRowData(id, icon, tone, title, body, timeLabel, unread, thumbUrl, groupAvatars)`: `icon` là `IconData` của `AppIcons` (một biểu tượng cho mỗi `type`), `tone` là `NotificationTone` (neutral tím · success xanh · action vàng, glyph mực đậm cố định ở cả hai theme · danger đỏ · muted xám). `NotificationKind` đã bỏ.
 
-### NotificationBell · Đã có
-Biểu tượng chuông có chấm số cho thanh đầu trang S02.01, S02.03, S06.01. `NotificationBell({required int unread, required VoidCallback onTap})`: chuông 36dp (vùng chạm 48dp), chấm số đỏ, "9+" từ mười trở lên, ẩn khi 0. `Semantics.label` theo ngữ cảnh: 0 → "Thông báo", n → "{n} thông báo chưa đọc" (đọc cả cụm, không đọc số trần). `unread` đọc từ `users/{uid}.unreadCount` qua `unreadCountProvider` (không lắng nghe danh sách). Khác `TabBadge` ở chỗ nhãn ngữ nghĩa mang nội dung "thông báo".
+### NotificationBell · Đã gỡ (10a, 2026-10-06)
+Widget đã xoá khỏi code; phần dưới giữ để tra cứu quyết định cũ. Biểu tượng chuông có chấm số cho thanh đầu trang S02.01, S02.03, S06.01. `NotificationBell({required int unread, required VoidCallback onTap})`: chuông 36dp (vùng chạm 48dp), chấm số đỏ, "9+" từ mười trở lên, ẩn khi 0. `Semantics.label` theo ngữ cảnh: 0 → "Thông báo", n → "{n} thông báo chưa đọc" (đọc cả cụm, không đọc số trần). `unread` đọc từ `users/{uid}.unreadCount` qua `unreadCountProvider` (không lắng nghe danh sách). Khác `TabBadge` ở chỗ nhãn ngữ nghĩa mang nội dung "thông báo".
 
 ### PermissionPrimer · Đã có
-Nội dung sheet S17.03, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required String benefit, required VoidCallback onEnable, required VoidCallback onLater})`. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy(store, now, snoozeFor)` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app qua `PrimerStore`. Không chứa logic quyền (controller của S17.03 gọi `NotificationPermissionPort`).  
+Nội dung sheet S17.03, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required List<PrimerBenefit> benefits, String? note, required VoidCallback onEnable, required VoidCallback onLater, bool enabling = false})`; `PrimerBenefit(icon, text)` cho từng dòng lợi ích (3 dòng: lịch được nhận, nhắc giờ chụp, tin nhắn khi app ở nền), `note` là dòng nhỏ "Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.", `enabling` đặt nút chính ở trạng thái đang tải khi hộp thoại OS mở. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy(store, now, snoozeFor)` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app qua `PrimerStore`. Không chứa logic quyền (controller của S17.03 gọi `NotificationPermissionPort`).  
 Chính sách lưu hoãn: `PermissionPrimerPolicy`, `PrimerStore` (`lib/core/permission_primer_policy.dart`).
 
 ### TabBadge · Đã có
-Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget child})`: ẩn khi 0, "9+" từ mười trở lên, nền `error`, `Semantics.value` "{n} mục mới". Số lấy từ `tabBadgesProvider`. Dùng cho Công việc (yêu cầu chờ) và Khám phá (sự kiện mới).
+Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget child})`: ẩn khi 0, "9+" từ mười trở lên, nền `error`, `Semantics.value` mặc định "{n} mục mới", đổi được bằng `semanticsValue` (tab Hồ sơ đọc "{n} thông báo chưa đọc"). Số lấy từ `tabBadgesProvider`. Dùng cho Công việc (yêu cầu chờ) và Khám phá (sự kiện mới).
 
 ---
 
@@ -338,8 +338,9 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S06.02, S09.02, S08.02, S08.03, S08.04 |
 | `TabBadge` | thanh tab dưới (Công việc, Khám phá, Hồ sơ = thông báo chưa đọc) |
 | `NotificationRow` | S17.01 |
-| `NotificationBell` | không dùng nữa (2026-10-05: số chưa đọc là `TabBadge` của tab Hồ sơ; giữ widget cho tới khi plan thông báo gỡ) |
+| `NotificationBell` | đã gỡ (10a, 2026-10-06; số chưa đọc là `TabBadge` của tab Hồ sơ) |
 | `PermissionPrimer` | S17.03 |
+| `BadgeChip`, `BadgeRow` (`alwaysShowSeeAll`), `BadgeTile` | S03.01 và S09.01 (hàng tối đa 3 chip + "Tất cả" → S03.02), S03.02 |
 | `SignatureLoader`, `AsyncView`, `DotRingLoader` | mọi màn có tải dữ liệu |
 | `EscrowNotice` | S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
 | `MoneyBreakdown` | S04.03, S11.03, S06.05, S13.08 |

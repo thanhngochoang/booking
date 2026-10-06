@@ -3607,4 +3607,51 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get primerEnabled => 'Đã bật thông báo';
+
+  @override
+  String get badgesTitle => 'Huy hiệu';
+
+  @override
+  String get badgesFromReviews => 'Từ đánh giá';
+
+  @override
+  String get badgesFromSystem => 'Từ hệ thống';
+
+  @override
+  String badgesFraction(int a, int b) {
+    return '$a / $b';
+  }
+
+  @override
+  String badgesSectionSemantics(String title, int a, int b) {
+    return '$title, đạt $a trên $b';
+  }
+
+  @override
+  String get badgesEmptyTitle => 'Chưa có huy hiệu nào';
+
+  @override
+  String get badgesEmptyBody =>
+      'Huy hiệu sẽ hiện ở đây khi người này đạt được.';
+
+  @override
+  String get badgesLoadError => 'Không tải được huy hiệu';
+
+  @override
+  String badgesNearest(String name, int cur, int target) {
+    return 'Gần đạt nhất: $name · $cur / $target';
+  }
+
+  @override
+  String badgesAwardedOn(String date) {
+    return 'Đạt ngày $date';
+  }
+
+  @override
+  String badgesSheetProgress(int cur, int target) {
+    return '$cur / $target';
+  }
+
+  @override
+  String get badgesRowSemantics => 'Huy hiệu, xem tất cả';
 }

@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/badges/badge_providers.dart';
+import 'package:photobooking/data/badges/badge_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/notifications/app_notification.dart';
 import 'package:photobooking/data/notifications/notification_prefs_repository.dart';
@@ -21,6 +23,7 @@ import 'package:photobooking/features/notifications/notification_settings_screen
 import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'badges_world.dart';
 import 'fake_push.dart';
 import 'screen_host.dart';
 
@@ -60,6 +63,9 @@ class NotificationsWorld {
   final push = FakePushMessaging();
   final FakeNotificationPermission permission;
   final devices = FakeDeviceRegistry();
+
+  /// S09.01 also reads the badge chips; nobody holds a badge by default.
+  final badges = FakeBadgeRepository(catalog: badgeCatalogue());
   late SharedPreferences sharedPrefs;
   late String uid;
   late GoRouter router;
@@ -85,6 +91,7 @@ class NotificationsWorld {
     pushMessagingProvider.overrideWithValue(push),
     notificationPermissionProvider.overrideWithValue(permission),
     deviceRegistryProvider.overrideWithValue(devices),
+    badgeRepositoryProvider.overrideWithValue(badges),
   ];
 
   Widget app({

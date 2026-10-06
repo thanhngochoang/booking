@@ -76,12 +76,12 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 ## S03.02 · Huy hiệu
 
-- **Thông tin**: `/u/:uid/badges` · cả hai · sub‑project 6 · Chưa có.
+- **Thông tin**: `/u/:uid/badges` · cả hai · sub‑project 6 · **Đã có** (10a, `BadgesScreen`).
 - **Mục đích**: ghi nhận người dùng qua huy hiệu từ đánh giá và từ hệ thống.
 - **Điểm vào → ra**: hàng huy hiệu ở S03.01 và S09.01. Chạm một ô → sheet nhỏ nêu điều kiện và ngày đạt.
 - **Bố cục**: Back + "Huy hiệu" + "5 / 12"; section "Từ đánh giá" (đếm đạt/tổng) và "Từ hệ thống"; lưới 2 cột `BadgeTile` (biểu tượng tròn tô `CtaSurface`, tên, điều kiện); huy hiệu chưa đạt (chỉ của chính mình) có biểu tượng xám và `CapacityBar` "3 / 5".
 - **Dữ liệu**: `users/{uid}/badges` (đã đạt, công khai); `users/{uid}/private/badgeProgress` (tiến độ, chỉ chủ); danh mục `badges/{id}`.
-- **Trạng thái**: người khác chỉ thấy huy hiệu đã đạt, ẩn tiến độ; chưa có huy hiệu → empty nêu huy hiệu gần nhất có thể đạt; huy hiệu mới đạt có chấm "Mới" đến lần mở kế tiếp.
+- **Trạng thái**: người khác chỉ thấy huy hiệu đã đạt, ẩn tiến độ và các số đếm; chưa có huy hiệu → người khác thấy empty "Chưa có huy hiệu nào"; hồ sơ của mình chưa đạt cái nào thì hiện thẻ **"Gần đạt nhất: {tên} · {cur} / {target}"** (huy hiệu có `current/target` cao nhất) phía trên lưới, rồi toàn bộ huy hiệu chưa đạt kèm tiến độ; huy hiệu mới đạt (sau lần xem gần nhất, lưu cục bộ `badgesSeenAt:<uid>`) có chấm "Mới" suốt lần mở này và biến mất ở lần mở kế tiếp, không bao giờ hiện trên hồ sơ người khác. Huy hiệu `hiddenWhenLocked` (Thành viên mới) ẩn khi chưa có. Chạm một ô mở sheet: tên, điều kiện, "Đạt ngày {d/M/yyyy}" hoặc "{cur} / {target}".
 - **Chuỗi**: `s37_title` "Huy hiệu", `s37_fromReviews` "Từ đánh giá", `s37_fromSystem` "Từ hệ thống", `s37_new` "Mới", `s37_progress` "{cur} / {target}".
 - **Phân tích**: `badges_open{own}`, `badge_detail{badgeId}`.
 - **Chấp nhận**: tiến độ khớp `badgeProgress`; client không ghi huy hiệu; tích xanh Verified không xuất hiện ở đây (khác khái niệm).
@@ -114,25 +114,25 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 > **Đổi 2026-10-05**: không còn chuông ở đầu trang; mở từ dòng "Thông báo" ở S09.01 hoặc từ push; số chưa đọc là `TabBadge` của tab Hồ sơ (spec chính 3d.3, 3h.1).
 
-- **Thông tin**: `/notifications` · cả hai · sub‑project N · Chưa có. Mock: S17.01 trong mục "Thông báo". Đặc tả chung: spec chính mục 3h.
+- **Thông tin**: `/notifications` · cả hai · sub‑project N · **Đã có** (10a). Mock: S17.01 trong mục "Thông báo". Đặc tả chung: spec chính mục 3h.
 - **Mục đích**: xem lại mọi thứ cần biết (lịch, báo giá, sự kiện, hệ thống) và đi thẳng tới việc cần làm.
-- **Điểm vào → ra**: biểu tượng chuông ở S02.01, S02.03, S06.01 (`NotificationBell`) và chạm vào push. Chạm một dòng → đánh dấu đã đọc + deep link `target` (S05.02, S15.03, S11.02, S06.05, S03.02, S07.01…); bánh răng → S17.02.
+- **Điểm vào → ra**: dòng "Thông báo" ở S09.01 và chạm vào push (không còn chuông; `NotificationBell` đã gỡ). Chạm một dòng → đánh dấu đã đọc + deep link `target`; app chỉ mở `target` khớp danh sách cho phép (`/b/:id` S05.02, `/chat/:id`, `/u/:uid`, `/u/:uid?tab=reviews`, `/u/:uid/badges` S03.02, `/me/awards` S25.01, `/bookings`, `/notifications`), mọi đường dẫn khác hiện "Nội dung này không còn". `booking_request` → `/bookings` (S06.01); `review_new` → `/u/{photographerId}?tab=reviews`. Bánh răng → S17.02.
 - **Bố cục**: Back + "Thông báo" + bánh răng; hành động "Đánh dấu tất cả đã đọc"; `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống); danh sách chia mục Hôm nay / 7 ngày qua / Trước đó bằng `SectionHeader`; mỗi dòng là `NotificationRow`.
-- **Dữ liệu**: `notificationsControllerProvider` (`AsyncNotifier`), nguồn `users/{uid}/notifications` qua `NotificationRepository` (cổng, không lộ kiểu Firebase). Lắng nghe 30 mục mới nhất **chỉ khi màn mở**; kéo xuống cuối tải thêm trang 30. `unreadCount` ở `users/{uid}`. Client chỉ ghi `readAt`, gom lô (debounce ~1 giây hoặc khi rời màn); "tất cả đã đọc" gọi callable `markAllNotificationsRead`. Lọc theo mục là lọc theo `type` ở truy vấn.
+- **Dữ liệu**: `notificationsControllerProvider` (`AsyncNotifier`), nguồn `users/{uid}/notifications` qua `NotificationRepository` (cổng, không lộ kiểu Firebase). Lắng nghe 30 mục mới nhất **chỉ khi màn mở**; kéo xuống cuối tải thêm trang 30. `unreadCount` ở `users/{uid}/private/inbox` (riêng chủ). Client chỉ ghi `readAt`, gom lô (debounce ~1 giây hoặc khi rời màn); "tất cả đã đọc" gọi callable `markAllNotificationsRead`. Lọc theo mục là lọc theo trường `tab` lưu trên mỗi dòng (`activity` · `events` · `system`), không theo `type`.
 - **Trạng thái**: loading = skeleton dòng thông báo; empty = biểu tượng chuông + "Chưa có thông báo nào" + một hành động ("Khám phá nhiếp ảnh gia" / "Mở Công việc"); empty theo mục lọc nêu rõ mục; lỗi = `ErrorState` + "Thử lại"; offline = dải "Đang xem dữ liệu đã lưu", nút đánh dấu bị vô hiệu; `target` không còn tồn tại (booking bị xoá) → SnackBar "Nội dung này không còn".
 - **Tương tác**: chạm = đọc + đi; nhấn giữ = menu "Đánh dấu đã đọc / Tắt loại thông báo này" (thao tác thứ hai ghi `notification_prefs`, hiện SnackBar có "Hoàn tác"); không có thao tác chỉ vuốt; kéo để làm mới. Lời mời Chụp ngay không nằm ở đây (mở S14.02), chỉ có dòng "bỏ lỡ lời mời".
 - **Chuỗi (ARB)**: `s63_title` "Thông báo", `s63_markAllRead` "Đánh dấu tất cả đã đọc", `s63_tabAll` "Tất cả", `s63_tabBooking` "Đặt lịch", `s63_tabWork` "Công việc", `s63_tabEvents` "Sự kiện", `s63_tabSystem` "Hệ thống", `s63_sectionToday` "Hôm nay", `s63_sectionWeek` "7 ngày qua", `s63_sectionEarlier` "Trước đó", `s63_unread` "Chưa đọc", `s63_unreadCount` "{count} thông báo chưa đọc", `s63_menuMarkRead` "Đánh dấu đã đọc", `s63_menuMuteType` "Tắt loại thông báo này", `s63_muted` "Đã tắt loại thông báo này", `s63_undo` "Hoàn tác", `s63_emptyTitle` "Chưa có thông báo nào", `s63_emptyBody`, `s63_emptyCtaCustomer` "Khám phá nhiếp ảnh gia", `s63_emptyCtaPhotographer` "Mở Công việc", `s63_targetGone` "Nội dung này không còn", `s63_groupQuotes` "{n} nhiếp ảnh gia đã báo giá cho việc “{job}”", `s63_timeMinutes` "{n} phút", `s63_timeHours` "{n} giờ", `s63_timeDays` "{n} ngày", và các tiêu đề/nội dung theo `type` (bảng mục 3h.2).
 - **Phân tích**: `notifications_open{unread}`, `notification_tap{type}`, `notification_mark_all`, `notification_mute_type{type}`, `notifications_filter{tab}`. Không ghi nội dung thông báo.
-- **Chấp nhận**: chấm số trên chuông khớp `unreadCount` và được đọc là "{n} thông báo chưa đọc"; chưa đọc luôn có nhãn ngữ nghĩa ngoài chấm tím; dòng gom mở đúng S15.03; không có polling, chỉ một listener (30 mục) khi màn mở và hủy khi rời; đánh dấu đọc được gom lô; client không ghi trường nào khác `readAt`; ở 1,3× chữ không bị cắt (nội dung tối đa 2 dòng nhưng tiêu đề xuống dòng); hai theme.
+- **Chấp nhận**: chấm số trên tab Hồ sơ khớp `unreadCount` và được đọc là "{n} thông báo chưa đọc"; chưa đọc luôn có nhãn ngữ nghĩa ngoài chấm tím; dòng gom mở đúng S15.03; không có polling, chỉ một listener (30 mục) khi màn mở và hủy khi rời; đánh dấu đọc được gom lô; client không ghi trường nào khác `readAt`; ở 1,3× chữ không bị cắt (nội dung tối đa 2 dòng nhưng tiêu đề xuống dòng); hai theme.
 
 ---
 
 ## S17.02 · Cài đặt thông báo
 
-- **Thông tin**: `/settings/notifications` · cả hai · sub‑project N · Chưa có.
+- **Thông tin**: `/settings/notifications` · cả hai · sub‑project N · **Đã có** (10a).
 - **Mục đích**: chọn loại thông báo nào được đẩy ra máy, loại nào chỉ hiện trong app, và giờ yên lặng.
 - **Điểm vào → ra**: S09.02 Cài đặt → "Thông báo"; bánh răng ở S17.01. Back về màn trước; "Mở Cài đặt" mở cài đặt hệ điều hành.
-- **Bố cục**: Back + "Thông báo"; banner khi quyền OS đang tắt ("Thông báo đang tắt trên máy" + "Mở Cài đặt"); bảng công tắc hai cột Push / Trong app cho: Đặt lịch và thanh toán, Việc đăng tuyển, Chụp ngay, Sự kiện, Tin nhắn, Huy hiệu và đánh giá, Khuyến mãi (tắt mặc định); mục Giờ yên lặng (công tắc + khoảng giờ mặc định 22:00–07:00, ghi chú giao dịch quan trọng vẫn có âm); mục Nhắc buổi chụp (24 giờ, 2 giờ). Nhóm "Việc đăng tuyển" chỉ hiện khi tính năng Đăng việc bật; "Chụp ngay" của khách chỉ có Push.
+- **Bố cục**: Back + "Thông báo"; banner khi quyền OS đang tắt ("Thông báo đang tắt trên máy" + "Mở Cài đặt"); bảng công tắc hai cột Push / Trong app cho: Đặt lịch và thanh toán, Việc đăng tuyển, Chụp ngay, Sự kiện, Tin nhắn, Huy hiệu và đánh giá, Khuyến mãi (tắt mặc định); mục Giờ yên lặng (công tắc + khoảng giờ mặc định 22:00–07:00, ghi chú giao dịch quan trọng vẫn có âm); mục Nhắc buổi chụp (24 giờ, 2 giờ). Các hàng **"Việc đăng tuyển" và "Chụp ngay" bị ẩn** (cờ tính năng) cho tới khi hai tính năng đó ra mắt, khác với mock; khi bật, "Chụp ngay" của khách chỉ có Push. Hàng Đặt lịch luôn giữ Trong app bật.
 - **Dữ liệu**: `notificationPrefsProvider`, nguồn `users/{uid}/private/notification_prefs`; trạng thái quyền OS qua `NotificationPermissionPort`, kiểm tra lại khi app quay lại foreground. Ghi ngay khi gạt (lạc quan, hoàn lại khi lỗi).
 - **Trạng thái**: loading = skeleton; quyền OS tắt → banner, cột Push vẫn chỉnh được nhưng có chữ "Đang tắt trên máy"; lỗi ghi → SnackBar + trả công tắc về cũ; offline → công tắc vô hiệu kèm lý do.
 - **Tương tác**: công tắc Push/Trong app độc lập; tắt cả hai của một nhóm là tắt nhóm; giờ yên lặng chọn bằng `showTimePicker`; mỗi công tắc có `Semantics` "Đặt lịch và thanh toán, Push, bật". Nhóm giao dịch quan trọng (thanh toán, huỷ lịch) không tắt hoàn toàn được ở cột Trong app.
@@ -144,7 +144,7 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 ## S17.03 · Xin quyền thông báo (sheet)
 
-- **Thông tin**: `/notifications/permission` (sheet) · cả hai · sub‑project N · Chưa có.
+- **Thông tin**: `/notifications/permission` (sheet) · cả hai · sub‑project N · **Đã có** (10a).
 - **Mục đích**: giải thích lợi ích rồi xin quyền thông báo của hệ điều hành đúng lúc có lý do.
 - **Điểm vào → ra**: chỉ hiện sau một hành động có ý nghĩa: khách sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"); NAG khi bật "Live Shutter" (S14.01) hoặc khi nhận booking đầu tiên. **Không bao giờ ở lúc mở app.** "Bật thông báo" → hộp thoại quyền OS → đóng sheet; "Để sau" → đóng, hỏi lại sau 7 ngày.
 - **Bố cục**: `AppBottomSheet` trên nền S05.02‑like làm mờ (`BlurScrim`); biểu tượng chuông, tiêu đề theo ngữ cảnh, 2–3 dòng lợi ích (biết khi lịch được nhận, nhắc trước giờ chụp, tin nhắn mới), nút chính `AppButton.primary` "Bật thông báo", nút phụ "Để sau" (`AppButton.text`, không phải gradient). `PermissionPrimer`.

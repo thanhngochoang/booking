@@ -6339,6 +6339,78 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã bật thông báo'**
   String get primerEnabled;
+
+  /// No description provided for @badgesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu'**
+  String get badgesTitle;
+
+  /// No description provided for @badgesFromReviews.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ đánh giá'**
+  String get badgesFromReviews;
+
+  /// No description provided for @badgesFromSystem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ hệ thống'**
+  String get badgesFromSystem;
+
+  /// No description provided for @badgesFraction.
+  ///
+  /// In vi, this message translates to:
+  /// **'{a} / {b}'**
+  String badgesFraction(int a, int b);
+
+  /// No description provided for @badgesSectionSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{title}, đạt {a} trên {b}'**
+  String badgesSectionSemantics(String title, int a, int b);
+
+  /// No description provided for @badgesEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có huy hiệu nào'**
+  String get badgesEmptyTitle;
+
+  /// No description provided for @badgesEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu sẽ hiện ở đây khi người này đạt được.'**
+  String get badgesEmptyBody;
+
+  /// No description provided for @badgesLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được huy hiệu'**
+  String get badgesLoadError;
+
+  /// No description provided for @badgesNearest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần đạt nhất: {name} · {cur} / {target}'**
+  String badgesNearest(String name, int cur, int target);
+
+  /// No description provided for @badgesAwardedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đạt ngày {date}'**
+  String badgesAwardedOn(String date);
+
+  /// No description provided for @badgesSheetProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'{cur} / {target}'**
+  String badgesSheetProgress(int cur, int target);
+
+  /// No description provided for @badgesRowSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu, xem tất cả'**
+  String get badgesRowSemantics;
 }
 
 class _AppLocalizationsDelegate

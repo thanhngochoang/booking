@@ -1754,5 +1754,21 @@
   "primerBenefit2": "Nhắc trước giờ chụp, không lỡ hẹn",
   "primerBenefit3": "Tin nhắn mới khi app đang ở nền",
   "primerNote": "Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.",
-  "primerEnabled": "Đã bật thông báo"
+  "primerEnabled": "Đã bật thông báo",
+  "badgesTitle": "Huy hiệu",
+  "badgesFromReviews": "Từ đánh giá",
+  "badgesFromSystem": "Từ hệ thống",
+  "badgesFraction": "{a} / {b}",
+  "@badgesFraction": {"placeholders": {"a": {"type": "int"}, "b": {"type": "int"}}},
+  "badgesSectionSemantics": "{title}, đạt {a} trên {b}",
+  "@badgesSectionSemantics": {"placeholders": {"title": {"type": "String"}, "a": {"type": "int"}, "b": {"type": "int"}}},
+  "badgesEmptyTitle": "Chưa có huy hiệu nào",
+  "badgesEmptyBody": "Huy hiệu sẽ hiện ở đây khi người này đạt được.",
+  "badgesLoadError": "Không tải được huy hiệu",
+  "badgesNearest": "Gần đạt nhất: {name} · {cur} / {target}",
+  "@badgesNearest": {"placeholders": {"name": {"type": "String"}, "cur": {"type": "int"}, "target": {"type": "int"}}},
+  "badgesAwardedOn": "Đạt ngày {date}",
+  "@badgesAwardedOn": {"placeholders": {"date": {"type": "String"}}},
+  "badgesSheetProgress": "{cur} / {target}",
+  "@badgesSheetProgress": {"placeholders": {"cur": {"type": "int"}, "target": {"type": "int"}}}
 }

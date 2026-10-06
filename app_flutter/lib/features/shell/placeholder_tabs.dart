@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/badges/badge_providers.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
@@ -166,6 +167,10 @@ class ProfileTab extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpace.s4),
                       const _NotificationsRow(),
+                      if (profile != null) ...[
+                        const SizedBox(height: AppSpace.s3),
+                        _BadgesRow(uid: profile.uid),
+                      ],
                       if (setupOpen) ...[
                         const SizedBox(height: AppSpace.s6),
                         GlassCard(
@@ -269,6 +274,26 @@ class ProfileTab extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// S09.01: up to three earned badges under the Thông báo row. "Tất cả" is
+/// always there so S03.02 (locked badges and progress) stays reachable.
+class _BadgesRow extends ConsumerWidget {
+  const _BadgesRow({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final badges = ref.watch(badgeChipsProvider(uid)).value ?? const [];
+    return BadgeRow(
+      key: const Key('profile-tab-badges'),
+      badges: badges,
+      max: 3,
+      alwaysShowSeeAll: true,
+      onSeeAll: () => context.push('/u/$uid/badges'),
     );
   }
 }
