@@ -41,14 +41,33 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    expect(find.text('4M'), findsOneWidget);
-    expect(find.text('900K'), findsOneWidget);
+    expect(find.text('3,95M'), findsOneWidget);
+    expect(find.text('0,9M'), findsOneWidget);
     expect(find.text('12,4M'), findsOneWidget);
     final tops = {
       for (final l in ['Đang giữ', 'Sắp nhận', 'Đã nhận'])
         tester.getRect(find.widgetWithText(StatTile, l)).top,
     };
     expect(tops.length, 1, reason: 'same row');
+  });
+
+  testWidgets('each total tile reads the full amount', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _open(
+      tester,
+      seed: (w) => w.repo.emitSummary(
+        const EarningsSummary(heldVnd: 3950000, soonVnd: 900000),
+      ),
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'3\.950\.000₫,\s*Đang giữ')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'900\.000₫,\s*Sắp nhận')),
+      findsOneWidget,
+    );
+    handle.dispose();
   });
 
   testWidgets('rows group by month newest first', (tester) async {

@@ -67,8 +67,15 @@ class _PayoutAccountScreenState extends ConsumerState<PayoutAccountScreen> {
     final l = context.l10n;
     final account = ref.watch(payoutAccountProvider);
     final form = ref.watch(payoutAccountControllerProvider);
+    ref.listen(payoutAccountProvider, (prev, next) {
+      if (next.hasValue && prev?.value != next.value) {
+        ref.read(payoutAccountControllerProvider.notifier).ackSaved();
+      }
+    });
     final showForm =
-        account.hasValue && (account.requireValue == null || form.editing);
+        account.hasValue &&
+        !form.justSaved &&
+        (account.requireValue == null || form.editing);
     return ScreenCode(
       ScreenCodes.payoutAccount,
       child: AuroraBackground(
@@ -94,7 +101,9 @@ class _PayoutAccountScreenState extends ConsumerState<PayoutAccountScreen> {
               message: l.earningsLoadError,
               onRetry: () => ref.invalidate(payoutAccountProvider),
             ),
-            data: (context, a) => showForm
+            data: (context, a) => form.justSaved
+                ? const _Skeleton()
+                : showForm
                 ? _AccountForm(onSubmit: _save)
                 : _ReadView(account: a!),
           ),

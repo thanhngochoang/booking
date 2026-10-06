@@ -17,11 +17,24 @@ import 'screen_host.dart';
 /// 08/10/2026 09:00 in Vietnam.
 final earningsNow = DateTime.utc(2026, 10, 8, 2);
 
+/// A fake whose re-authentication waits for [reauthGate] (a busy sheet).
+class GatedAuthRepository extends FakeAuthRepository {
+  GatedAuthRepository({super.initialReauthMethod, super.cancelSocial});
+
+  Future<void>? reauthGate;
+
+  @override
+  Future<void> reauthenticate({String? password}) async {
+    await reauthGate;
+    return super.reauthenticate(password: password);
+  }
+}
+
 /// A signed-in photographer with in-memory earnings, a recording analytics
 /// hook and S06.05 mounted at `/work/earnings`; other routes are stubs.
 class EarningsWorld {
   EarningsWorld({ReauthMethod? reauthMethod, bool cancelSocial = false})
-    : auth = FakeAuthRepository(
+    : auth = GatedAuthRepository(
         initialReauthMethod: reauthMethod,
         cancelSocial: cancelSocial,
       );
@@ -30,7 +43,7 @@ class EarningsWorld {
   static const password = 'password1';
 
   late String uid;
-  final FakeAuthRepository auth;
+  final GatedAuthRepository auth;
   final repo = FakeEarningsRepository();
 
   /// Registers the signed-in photographer; call before [app].

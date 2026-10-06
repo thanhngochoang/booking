@@ -74,4 +74,21 @@ void main() {
     expect(formatDuration(90, l), '1 giờ 30 phút');
     expect(formatDuration(480, l), '8 giờ');
   });
+
+  test(
+    'formatMoney decimals: 2 keeps totals exact, trailing zeros trimmed',
+    () {
+      String f(int v) => formatMoney(v, short: true, decimals: 2);
+      expect(f(3950000), '3,95M');
+      expect(f(900000), '0,9M');
+      expect(f(450000), '0,45M');
+      expect(f(12400000), '12,4M');
+      expect(f(1000000), '1M');
+      expect(f(99000), '99K');
+      expect(f(0), '0₫');
+      // Other call sites keep one decimal.
+      expect(formatMoney(3950000, short: true), '4M');
+      expect(formatMoney(900000, short: true), '900K');
+    },
+  );
 }

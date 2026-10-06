@@ -19,6 +19,7 @@ class PayoutAccountForm {
     this.holder = '',
     this.editing = false,
     this.saving = false,
+    this.justSaved = false,
   });
 
   final VnBank? bank;
@@ -28,6 +29,10 @@ class PayoutAccountForm {
   /// True while changing an existing account (the read view shows otherwise).
   final bool editing;
   final bool saving;
+
+  /// Set after a successful save until the new masked account arrives, so the
+  /// screen does not flash the empty form.
+  final bool justSaved;
 
   /// What the server will receive, or null while a field is not valid.
   ({String bankCode, String number, String holder})? get valid {
@@ -44,12 +49,14 @@ class PayoutAccountForm {
     String? holder,
     bool? editing,
     bool? saving,
+    bool? justSaved,
   }) => PayoutAccountForm(
     bank: bank ?? this.bank,
     number: number ?? this.number,
     holder: holder ?? this.holder,
     editing: editing ?? this.editing,
     saving: saving ?? this.saving,
+    justSaved: justSaved ?? this.justSaved,
   );
 }
 
@@ -72,6 +79,11 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
     state = PayoutAccountForm(bank: bank, editing: true);
   }
 
+  /// The new account arrived: stop holding the screen.
+  void ackSaved() {
+    if (state.justSaved) state = const PayoutAccountForm();
+  }
+
   /// Back to the read view; whatever was typed is dropped.
   void cancelChange() => state = const PayoutAccountForm();
 
@@ -85,6 +97,7 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
     if (v == null || state.saving) return PayoutSaveOutcome.invalid;
     final isChange = state.editing;
     final repo = ref.read(earningsRepositoryProvider);
+    final before = ref.read(payoutAccountProvider).value;
     state = state.copyWith(saving: true);
     Future<void> attempt() async {
       await repo.saveAccount(
@@ -118,7 +131,9 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
     }
     if (!ref.mounted) return PayoutSaveOutcome.saved;
     // The full number is not kept past this point.
-    state = const PayoutAccountForm();
+    // The new masked account may already have arrived while the call ran.
+    final arrived = !identical(ref.read(payoutAccountProvider).value, before);
+    state = PayoutAccountForm(justSaved: !arrived);
     ref.read(earningsAnalyticsProvider)('payout_account_save', {
       'change': isChange,
     });

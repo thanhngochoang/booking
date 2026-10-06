@@ -74,63 +74,67 @@ class _ReauthBodyState extends ConsumerState<_ReauthBody> {
     final theme = Theme.of(context);
     final usesPassword =
         ref.read(authRepositoryProvider).reauthMethod == ReauthMethod.password;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.s5,
-        0,
-        AppSpace.s5,
-        AppSpace.s4,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            header: true,
-            child: Text(
-              l.payoutAccountReauthTitle,
-              style: theme.textTheme.titleLarge,
-            ),
-          ),
-          const SizedBox(height: AppSpace.s2),
-          Text(l.payoutAccountReauthBody, style: theme.textTheme.bodyMedium),
-          if (usesPassword) ...[
-            const SizedBox(height: AppSpace.s3),
-            TextField(
-              key: const Key('reauth-password'),
-              controller: _password,
-              obscureText: true,
-              autofocus: true,
-              enabled: !_busy,
-              autofillHints: const [AutofillHints.password],
-              textInputAction: TextInputAction.done,
-              onChanged: (_) {
-                if (_error != null) setState(() => _error = null);
-              },
-              onSubmitted: (_) => _go(true),
-              decoration: InputDecoration(
-                labelText: l.payoutAccountReauthPassword,
-                errorText: _error,
+    // No way out (Back, barrier tap) while the sign-in is running.
+    return PopScope(
+      canPop: !_busy,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s5,
+          0,
+          AppSpace.s5,
+          AppSpace.s4,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: Text(
+                l.payoutAccountReauthTitle,
+                style: theme.textTheme.titleLarge,
               ),
             ),
-          ] else if (_error != null) ...[
             const SizedBox(height: AppSpace.s2),
-            Text(
-              _error!,
-              key: const Key('reauth-error'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
+            Text(l.payoutAccountReauthBody, style: theme.textTheme.bodyMedium),
+            if (usesPassword) ...[
+              const SizedBox(height: AppSpace.s3),
+              TextField(
+                key: const Key('reauth-password'),
+                controller: _password,
+                obscureText: true,
+                autofocus: true,
+                enabled: !_busy,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
+                onChanged: (_) {
+                  if (_error != null) setState(() => _error = null);
+                },
+                onSubmitted: (_) => _go(true),
+                decoration: InputDecoration(
+                  labelText: l.payoutAccountReauthPassword,
+                  errorText: _error,
+                ),
               ),
+            ] else if (_error != null) ...[
+              const SizedBox(height: AppSpace.s2),
+              Text(
+                _error!,
+                key: const Key('reauth-error'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpace.s4),
+            AppButton.primary(
+              l.payoutAccountReauthGo,
+              key: const Key('reauth-go'),
+              loading: _busy,
+              onPressed: () => _go(usesPassword),
             ),
           ],
-          const SizedBox(height: AppSpace.s4),
-          AppButton.primary(
-            l.payoutAccountReauthGo,
-            key: const Key('reauth-go'),
-            loading: _busy,
-            onPressed: () => _go(usesPassword),
-          ),
-        ],
+        ),
       ),
     );
   }

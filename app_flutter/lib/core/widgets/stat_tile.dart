@@ -13,10 +13,15 @@ class StatTile extends StatelessWidget {
     required this.value,
     required this.label,
     this.onTap,
+    this.semanticsValue,
   });
 
   final String value;
   final String label;
+
+  /// Read instead of [value] by screen readers (the full amount for a short
+  /// money value).
+  final String? semanticsValue;
 
   /// Makes the tile a button (S06.01 "Đang giữ" opens S06.05); null = static.
   final VoidCallback? onTap;
@@ -64,7 +69,7 @@ class StatTile extends StatelessWidget {
       ),
     );
     return Semantics(
-      label: '$value, $label',
+      label: '${semanticsValue ?? value}, $label',
       button: onTap != null,
       onTap: onTap,
       child: ExcludeSemantics(

@@ -179,15 +179,18 @@ class _Totals extends StatelessWidget {
         StatTileRow(
           tiles: [
             StatTile(
-              value: formatMoney(summary.heldVnd, short: true),
+              value: formatMoney(summary.heldVnd, short: true, decimals: 2),
+              semanticsValue: formatMoney(summary.heldVnd),
               label: l.earningsHeld,
             ),
             StatTile(
-              value: formatMoney(summary.soonVnd, short: true),
+              value: formatMoney(summary.soonVnd, short: true, decimals: 2),
+              semanticsValue: formatMoney(summary.soonVnd),
               label: l.earningsSoon,
             ),
             StatTile(
-              value: formatMoney(summary.receivedVnd, short: true),
+              value: formatMoney(summary.receivedVnd, short: true, decimals: 2),
+              semanticsValue: formatMoney(summary.receivedVnd),
               label: l.earningsReceived,
             ),
           ],

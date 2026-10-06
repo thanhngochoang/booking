@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,7 +7,6 @@ import 'package:photobooking/app/router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
-import 'package:photobooking/data/earnings/earnings.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
 
@@ -270,6 +271,37 @@ void main() {
     expect(_fieldText(tester, 'payout-holder'), 'LE VAN A');
     expect(find.text('Đã lưu tài khoản nhận tiền'), findsNothing);
     expect(_saveEnabled(tester), isTrue);
+  });
+
+  testWidgets('the re-authentication sheet stays while it is signing in', (
+    tester,
+  ) async {
+    final w = await _open(
+      tester,
+      world: EarningsWorld(reauthMethod: ReauthMethod.google),
+      account: true,
+    );
+    final gate = Completer<void>();
+    w.auth.reauthGate = gate.future;
+    await tester.tap(_key('payout-change'));
+    await _settle(tester);
+    await _fill(tester, number: '9876543210', holder: 'le van a');
+    await tester.tap(_key('payout-save'));
+    await _settle(tester);
+    w.repo.failNextSave('reauth_required');
+    await _confirmChange(tester);
+    await tester.tap(_key('reauth-go'));
+    await _settle(tester);
+    // Barrier tap and Back do nothing while busy.
+    await tester.tapAt(const Offset(195, 20));
+    await _settle(tester);
+    await tester.binding.handlePopRoute();
+    await _settle(tester);
+    expect(find.text('Xác nhận lại để đổi tài khoản'), findsOneWidget);
+    gate.complete();
+    await _settle(tester);
+    expect(find.text('Xác nhận lại để đổi tài khoản'), findsNothing);
+    expect(w.repo.saves, ['VCB:3210']);
   });
 
   testWidgets('a cancelled provider sign-in keeps the sheet open', (
