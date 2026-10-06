@@ -289,6 +289,8 @@ create table payments (
   escrow_status   text not null default 'held' check (escrow_status in ('held','released','paid_out','partially_refunded','refunded','disputed')),
   release_after   timestamptz,                    -- hết cửa sổ khiếu nại
   released_at     timestamptz,
+  dispute_reason  text,                           -- do open_dispute ghi; không hiện cho người nhận
+  disputed_at     timestamptz,
   provider_ref    text,
   raw             jsonb,                          -- phản hồi thô của cổng
   idempotency_key text not null unique,
@@ -316,7 +318,8 @@ create table payout_accounts (                    -- 🔒
   account_last4      char(4) not null,
   holder_name        text not null,
   active             boolean not null default true,
-  created_at         timestamptz not null default now()
+  created_at         timestamptz not null default now(),
+  deactivated_at     timestamptz
 );
 create unique index ux_payout_accounts_active on payout_accounts (user_id) where active;
 
@@ -330,6 +333,8 @@ create table payouts (
   reference      text,                             -- mã giao dịch ngân hàng
   approved_by    text references users(id),
   failure_reason text,
+  hold_reason    text,
+  created_by     text references users(id),        -- nhân viên tạo lô
   created_at     timestamptz not null default now(),
   scheduled_at   timestamptz, paid_at timestamptz
 );
@@ -858,7 +863,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | *(mới)* `events/{id}/posts/{postId}` | `event_posts` | Liên kết timeline |
 | `badges/{id}`, `users/{uid}/badges/{id}`, `users/{uid}/private/badgeProgress` | `badge_definitions`, `user_badges`, `badge_progress` | |
 | `taxonomy/skills/items/{id}`, `taxonomy/areas/…` | `taxonomy_items` | |
-| `payoutAccounts/{uid}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá |
+| `payoutAccounts/{uid}` + `accounts/{id}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá; `payoutAccounts/{uid}` là bản che (`account_last4`), không có bảng riêng |
+| `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
 | `config/{key}` | `app_config` | |
