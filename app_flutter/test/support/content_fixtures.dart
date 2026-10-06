@@ -1,3 +1,4 @@
+import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/album/album.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
@@ -142,4 +143,28 @@ AlbumSummary fixtureAlbum(
   coverPostId: coverPostId,
   coverImageIndex: coverImageIndex,
   coverUrl: coverUrl,
+);
+
+Award fixtureAward(
+  String id, {
+  String photographerId = 'p1',
+  String competition = 'Sony World Photography Awards',
+  int year = 2025,
+  String? category,
+  AwardResult result = AwardResult.gold,
+  String? workPostId,
+  AwardStatus status = AwardStatus.approved,
+  String? reviewNote,
+  DateTime? createdAt,
+}) => Award(
+  id: id,
+  photographerId: photographerId,
+  competition: competition,
+  year: year,
+  category: category,
+  result: result,
+  workPostId: workPostId,
+  status: status,
+  reviewNote: reviewNote,
+  createdAt: createdAt ?? fixtureNow,
 );
