@@ -51,7 +51,7 @@ Màn: S11.01, S11.02, S11.03, S11.04, S12.01, S12.02, S12.03. Quy ước chung �
 
 - **Thông tin**: `/bookings?tab=events` · khách · sub‑project 3b · Chưa có.
 - **Mục đích**: giữ vé và xuất trình khi check‑in.
-- **Bố cục**: `SegmentedTabs` "Buổi chụp | Vé sự kiện"; `TicketCard` sắp diễn ra (viền spectrum): tag loại, tên, ngày giờ · số vé, badge "Đã đăng ký", mã QR 112dp trên nền trắng, mã vé chọn‑copy, "Chỉ đường", "Thêm vào lịch"; nút chữ đỏ "Huỷ vé · hoàn {x}%"; các vé khác (chờ thanh toán, đã qua) dạng thẻ gọn.
+- **Bố cục**: `SegmentedTabs` "Buổi chụp | Vé sự kiện"; `TicketCard` sắp diễn ra (viền nổi bật (trung tính)): tag loại, tên, ngày giờ · số vé, badge "Đã đăng ký", mã QR 112dp trên nền trắng, mã vé chọn‑copy, "Chỉ đường", "Thêm vào lịch"; nút chữ đỏ "Huỷ vé · hoàn {x}%"; các vé khác (chờ thanh toán, đã qua) dạng thẻ gọn.
 - **Dữ liệu**: collection group `registrations (userId)` + sự kiện tương ứng; QR mã hoá `ticketCode`.
 - **Trạng thái**: vé chờ thanh toán có "Thanh toán tiếp" (còn thời gian giữ) hoặc "Hết hạn"; vé đã qua mờ, không hiện QR; sự kiện bị huỷ → "Đã hoàn tiền" hoặc "Đang hoàn".
 - **Tương tác**: huỷ vé mở xác nhận nêu số tiền hoàn; chạm QR phóng to với độ sáng cao (nếu khả thi).

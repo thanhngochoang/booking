@@ -19,10 +19,10 @@ Ký hiệu: **Đã có** (đã trong code), **Mới**.
 ## 1. Nền tảng và khung
 
 ### AuroraBackground · Đã có
-Nền tối/sáng có ba vầng sáng (cyan, hồng, tím); sáng giảm còn 50%. `AuroraBackground({Widget? child})`. Mọi màn bọc trong nó với `Scaffold(backgroundColor: transparent)`. Test: hiển thị `child` trên cả hai theme.
+Nền tối/sáng có một vầng tím nhạt và hai vầng trung tính; sáng giảm còn 50%. `AuroraBackground({Widget? child})`. Mọi màn bọc trong nó với `Scaffold(backgroundColor: transparent)`. Test: hiển thị `child` trên cả hai theme.
 
 ### GlassCard · Đã có
-Thẻ kính mờ (blur 24, radius 28, bóng mềm). `GlassCard({required Widget child, bool highlight = true})`. `highlight: true` vẽ viền spectrum (`SpectrumBorder`); **chỉ một thẻ chính mỗi màn** dùng. Thẻ list dùng `highlight: false` (viền mảnh). Dùng ở S01.03, S06.01 (thẻ hôm nay), S09.02, S11.04 (thẻ vé).
+Thẻ kính mờ (blur 24, radius 28, bóng mềm). `GlassCard({required Widget child, bool highlight = true})`. `highlight: true` vẽ viền nổi bật (trung tính) (`HighlightBorder`); **chỉ một thẻ chính mỗi màn** dùng. Thẻ list dùng `highlight: false` (viền mảnh). Dùng ở S01.03, S06.01 (thẻ hôm nay), S09.02, S11.04 (thẻ vé).
 
 ### AuroraHero · Đã có
 Tiêu đề hai dòng, dòng hai tô gradient; có đệm dọc quanh dòng gradient để không cắt dấu tiếng Việt (`height 1.2`). `AuroraHero({lead, accent, tagline})`. Dùng ở S01.03.
@@ -78,7 +78,7 @@ Nút liên hệ gọn, bung kênh khi bấm. `ContactDial({required ContactAcces
 - Test: bung/đóng, một kênh, giảm chuyển động, thứ tự tiêu điểm.
 
 ### LocationPromptCard · Mới
-Thẻ xin vị trí đúng lúc. `LocationPromptCard({required LocationPromptState state, required VoidCallback onAllow, required VoidCallback onLater, VoidCallback? onChooseArea})`. Trạng thái `ask` (biểu tượng ghim, "Sự kiện gần bạn", mô tả, nút "Cho phép" + "Để sau"), `requesting` (nút loading), `denied` (thu thành chip "Chọn khu vực"). Viền spectrum chỉ khi `ask`. Dùng ở S02.03. Widget không gọi hộp thoại quyền; màn xử lý trong `onAllow`.
+Thẻ xin vị trí đúng lúc. `LocationPromptCard({required LocationPromptState state, required VoidCallback onAllow, required VoidCallback onLater, VoidCallback? onChooseArea})`. Trạng thái `ask` (biểu tượng ghim, "Sự kiện gần bạn", mô tả, nút "Cho phép" + "Để sau"), `requesting` (nút loading), `denied` (thu thành chip "Chọn khu vực"). Viền nổi bật (trung tính) chỉ khi `ask`. Dùng ở S02.03. Widget không gọi hộp thoại quyền; màn xử lý trong `onAllow`.
 
 ---
 
@@ -378,7 +378,7 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 - **Widget**: `AppIcon(icon, {selected, size, color, semanticLabel})`: viền (FILL 0) mặc định, đặc (FILL 1) khi `selected` (tab đang chọn, đã lưu/đã thích, ô tuỳ chọn đang chọn). Cỡ: `AppIconSize.sm/md/lg` = 20/24/28.
 - **Bảng ánh xạ** (ý nghĩa, tên Material Symbols, symbol trong mock, `Icons.*` cũ). Đây là danh sách duy nhất mock và app cùng theo; cột "mock" để task cập nhật mock dùng.
 
-| AppIcons | Material Symbols | Mock | Icons.* cũ |
+| AppIcons | Material Symbols | sprite cũ (đã bỏ) | Icons.* cũ |
 |---|---|---|---|
 | `AppIcons.home` | `home` | `i-home` | `Icons.home_outlined` |
 | `AppIcons.explore` | `explore` | `i-explore` | `Icons.explore_outlined` |
