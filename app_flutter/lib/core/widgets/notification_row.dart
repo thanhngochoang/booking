@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_avatar.dart';
 import 'package:photobooking/core/widgets/app_bottom_sheet.dart';
@@ -32,12 +33,12 @@ class NotificationRowData {
 }
 
 IconData notificationKindIcon(NotificationKind kind) => switch (kind) {
-  NotificationKind.booking => Icons.calendar_today,
-  NotificationKind.payment => Icons.account_balance_wallet,
-  NotificationKind.chat => Icons.chat_bubble_outline,
-  NotificationKind.event => Icons.celebration,
-  NotificationKind.badge => Icons.military_tech,
-  NotificationKind.system => Icons.info_outline,
+  NotificationKind.booking => AppIcons.calendar,
+  NotificationKind.payment => AppIcons.wallet,
+  NotificationKind.chat => AppIcons.chat,
+  NotificationKind.event => AppIcons.celebration,
+  NotificationKind.badge => AppIcons.medal,
+  NotificationKind.system => AppIcons.info,
 };
 
 /// Row representing a notification in the inbox (spec S17.01).
@@ -74,7 +75,7 @@ class NotificationRow extends StatelessWidget {
             children: [
               if (item.unread)
                 ListTile(
-                  leading: const Icon(Icons.done_all),
+                  leading: const AppIcon(AppIcons.doneAll),
                   title: Text(l.notificationMarkRead),
                   onTap: () {
                     Navigator.of(ctx).pop();
@@ -82,7 +83,7 @@ class NotificationRow extends StatelessWidget {
                   },
                 ),
               ListTile(
-                leading: const Icon(Icons.notifications_off_outlined),
+                leading: const AppIcon(AppIcons.notificationsOff),
                 title: Text(l.notificationMuteKind),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -168,7 +169,9 @@ class NotificationRow extends StatelessWidget {
                     child: Center(
                       child: Icon(
                         notificationKindIcon(item.kind),
-                        key: ValueKey('notification_kind_icon_${item.kind.name}'),
+                        key: ValueKey(
+                          'notification_kind_icon_${item.kind.name}',
+                        ),
                         size: 20,
                         color: theme.colorScheme.primary,
                       ),
@@ -213,20 +216,22 @@ class NotificationRow extends StatelessWidget {
                           key: const ValueKey('notification_body_text'),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: AppText.sm,
-                            color: fgSec,
-                          ),
+                          style: TextStyle(fontSize: AppText.sm, color: fgSec),
                         ),
                         if (item.groupAvatars.isNotEmpty) ...[
                           const SizedBox(height: AppSpace.s2),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              for (final (index, url) in item.groupAvatars.take(3).indexed)
+                              for (final (index, url)
+                                  in item.groupAvatars.take(3).indexed)
                                 Padding(
-                                  key: ValueKey('notification_group_avatar_$index'),
-                                  padding: const EdgeInsets.only(right: AppSpace.s1),
+                                  key: ValueKey(
+                                    'notification_group_avatar_$index',
+                                  ),
+                                  padding: const EdgeInsets.only(
+                                    right: AppSpace.s1,
+                                  ),
                                   child: AppAvatar(
                                     url: url,
                                     name: '',
@@ -248,7 +253,8 @@ class NotificationRow extends StatelessWidget {
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const SizedBox(width: 40, height: 40),
+                        errorBuilder: (_, _, _) =>
+                            const SizedBox(width: 40, height: 40),
                       ),
                     ),
                   ],
@@ -264,7 +270,7 @@ class NotificationRow extends StatelessWidget {
 
 class _NotificationRowSkeleton extends StatelessWidget {
   const _NotificationRowSkeleton()
-      : super(key: const ValueKey('notification_row_skeleton'));
+    : super(key: const ValueKey('notification_row_skeleton'));
 
   @override
   Widget build(BuildContext context) {

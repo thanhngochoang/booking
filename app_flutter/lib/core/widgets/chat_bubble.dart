@@ -1,6 +1,7 @@
 // lib/core/widgets/chat_bubble.dart
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
@@ -123,7 +124,7 @@ class ChatBubble extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.location_on, size: 16, color: foreground),
+            AppIcon(AppIcons.place, size: 16, color: foreground),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -215,8 +216,8 @@ class ChatBubble extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.error_outline,
+                          const AppIcon(
+                            AppIcons.error,
                             size: 14,
                             color: AppColors.error,
                           ),
@@ -238,8 +239,8 @@ class ChatBubble extends StatelessWidget {
               if (mine && isSending) ...[
                 const Padding(
                   padding: EdgeInsets.only(right: 4, bottom: 6),
-                  child: Icon(
-                    Icons.access_time,
+                  child: AppIcon(
+                    AppIcons.schedule,
                     size: 13,
                     color: Colors.white70,
                   ),

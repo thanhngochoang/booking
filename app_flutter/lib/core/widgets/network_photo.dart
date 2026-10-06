@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 
 /// Builds the actual image widget. [cacheWidth] is the decode width in pixels
 /// (always set; [NetworkPhoto] falls back to the screen width); [retry] says whether a failed load may show a retry
@@ -181,7 +182,7 @@ class PhotoRetryTile extends StatelessWidget {
             child: const Center(
               child: Padding(
                 padding: EdgeInsets.all(4),
-                child: FittedBox(child: Icon(Icons.refresh_rounded, size: 24)),
+                child: FittedBox(child: AppIcon(AppIcons.refresh, size: 24)),
               ),
             ),
           ),

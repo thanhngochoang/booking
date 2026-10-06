@@ -1,5 +1,6 @@
 // lib/core/widgets/escrow_notice.dart
 import 'package:flutter/material.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 
@@ -35,7 +36,7 @@ class EscrowNotice extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 1.0),
-                  child: Icon(Icons.lock_outline, size: 16, color: iconColor),
+                  child: AppIcon(AppIcons.lock, size: 16, color: iconColor),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

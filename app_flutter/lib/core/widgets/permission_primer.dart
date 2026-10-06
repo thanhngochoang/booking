@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 
@@ -51,8 +52,8 @@ class PermissionPrimer extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Icon(
-                  Icons.notifications_active_outlined,
+                child: AppIcon(
+                  AppIcons.notificationsActive,
                   size: 28,
                   color: theme.colorScheme.primary,
                 ),
@@ -73,10 +74,7 @@ class PermissionPrimer extends StatelessWidget {
           Text(
             benefit,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: AppText.sm,
-              color: fgSec,
-            ),
+            style: TextStyle(fontSize: AppText.sm, color: fgSec),
           ),
           const SizedBox(height: AppSpace.s6),
           AppButton.primary(
@@ -84,10 +82,7 @@ class PermissionPrimer extends StatelessWidget {
             onPressed: onEnable,
           ),
           const SizedBox(height: AppSpace.s2),
-          AppButton.text(
-            laterLabel ?? l.primerLater,
-            onPressed: onLater,
-          ),
+          AppButton.text(laterLabel ?? l.primerLater, onPressed: onLater),
         ],
       ),
     );

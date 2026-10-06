@@ -367,3 +367,95 @@ Người dùng quyết định: phân tích UI, thiết kế và viết các sha
 1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, **đã xong**): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
 2. **Nhóm B1** (kế hoạch `2026-10-02-shared-components-b1.md`, **đã xong**): `DateBlock`, `EventCard` (row, featured, compact) + `eventCardDataOf`, `TicketCard` (với mã QR `qr_flutter`), `BadgeChip` + `BadgeRow` + `BadgeTile`, `NotificationRow` + `NotificationBell`, `PermissionPrimer` + `PermissionPrimerPolicy`. Chuyển màn Khám phá sang dùng `EventCard` và xoá `NearbyEventTile`.
 3. **Nhóm B2** (Chụp ngay & bản đồ, kế hoạch tiếp theo khi tới lượt): `SwipeDeck`, `MatchOverlay`, `OfferStack`, `MapPreview`.
+
+
+## Icons (Material Symbols Rounded)
+
+Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Rounded** (weight 400, optical size 24) trong mock, thư viện component và app. Ngoại lệ (giữ SVG/painter tuỳ biến): logo Zalo, WhatsApp, logo ứng dụng (`i-logo`), con dấu `i-seal` và dấu tick của `ProviderMark`.
+
+- **Gói**: `material_symbols_icons` (Flutter), chỉ `lib/core/theme/app_icons.dart` được import `Symbols.*`. Mock dùng font Google "Material Symbols Rounded" (`<span class="ms">tên</span>`, `.ms.on` = FILL 1).
+- **Danh mục**: `AppIcons.<ý nghĩa>` (xuất qua `core/core.dart`); feature không dùng `Icons.*`/`Symbols.*` (test `test/lint/features_use_app_icons_test.dart`).
+- **Widget**: `AppIcon(icon, {selected, size, color, semanticLabel})`: viền (FILL 0) mặc định, đặc (FILL 1) khi `selected` (tab đang chọn, đã lưu/đã thích, ô tuỳ chọn đang chọn). Cỡ: `AppIconSize.sm/md/lg` = 20/24/28.
+- **Bảng ánh xạ** (ý nghĩa, tên Material Symbols, symbol trong mock, `Icons.*` cũ). Đây là danh sách duy nhất mock và app cùng theo; cột "mock" để task cập nhật mock dùng.
+
+| AppIcons | Material Symbols | Mock | Icons.* cũ |
+|---|---|---|---|
+| `AppIcons.home` | `home` | `i-home` | `Icons.home_outlined` |
+| `AppIcons.explore` | `explore` | `i-explore` | `Icons.explore_outlined` |
+| `AppIcons.search` | `search` | `i-search` | `Icons.search` |
+| `AppIcons.add` | `add` | `i-plus` | `Icons.add_rounded`, `Icons.add` |
+| `AppIcons.calendar` | `calendar_today` | `i-cal` | `Icons.event_outlined`, `Icons.calendar_today_outlined`, `Icons.calendar_today` |
+| `AppIcons.calendarCheck` | `event_available` | (mới, chưa có trong mock) | `Icons.event_available_outlined` |
+| `AppIcons.calendarRepeat` | `event_repeat` | (mới, chưa có trong mock) | `Icons.event_repeat_outlined` |
+| `AppIcons.profile` | `person` | `i-user` | `Icons.person_outline_rounded`, `Icons.person_outline`, `Icons.account_circle_outlined` |
+| `AppIcons.chat` | `chat_bubble` | `i-chat` | `Icons.chat_bubble_outline_rounded`, `Icons.chat_bubble_outline` |
+| `AppIcons.notifications` | `notifications` | `i-bell` | `Icons.notifications_none` |
+| `AppIcons.notificationsActive` | `notifications_active` | (mới, chưa có trong mock) | `Icons.notifications_active_outlined` |
+| `AppIcons.notificationsOff` | `notifications_off` | (mới, chưa có trong mock) | `Icons.notifications_off_outlined` |
+| `AppIcons.settings` | `settings` | `i-gear` | `Icons.settings_outlined` |
+| `AppIcons.favorite` | `favorite` | `i-heart` | `Icons.favorite_border`, `Icons.favorite` |
+| `AppIcons.save` | `bookmark` | `i-save` | `Icons.bookmark_border`, `Icons.bookmark` |
+| `AppIcons.share` | `ios_share` | `i-share` | `Icons.ios_share_rounded` |
+| `AppIcons.back` | `arrow_back` | `i-back` | `Icons.arrow_back_rounded`, `Icons.arrow_back` |
+| `AppIcons.forward` | `arrow_forward` | `i-arrow` | `Icons.arrow_forward_rounded` |
+| `AppIcons.arrowUp` | `arrow_upward` | (mới, chưa có trong mock) | `Icons.arrow_upward_rounded` |
+| `AppIcons.arrowDown` | `arrow_downward` | (mới, chưa có trong mock) | `Icons.arrow_downward_rounded` |
+| `AppIcons.check` | `check` | `i-check` | `Icons.check_rounded` |
+| `AppIcons.checkCircle` | `check_circle` | (mới, chưa có trong mock) | `Icons.check_circle_rounded` |
+| `AppIcons.doneAll` | `done_all` | (mới, chưa có trong mock) | `Icons.done_all` |
+| `AppIcons.close` | `close` | `i-x` | `Icons.close_rounded` |
+| `AppIcons.undo` | `undo` | `i-undo` | — |
+| `AppIcons.refresh` | `refresh` | (mới, chưa có trong mock) | `Icons.refresh_rounded` |
+| `AppIcons.more` | `more_horiz` | `i-more` | `Icons.more_horiz_rounded`, `Icons.more_horiz` |
+| `AppIcons.edit` | `edit` | (mới, chưa có trong mock) | `Icons.edit_outlined` |
+| `AppIcons.swap` | `swap_horiz` | `i-swap` | `Icons.swap_horiz_rounded` |
+| `AppIcons.dragHandle` | `drag_handle` | `i-grip` | `Icons.drag_handle_rounded` |
+| `AppIcons.chevron` | `chevron_right` | `i-chev` | `Icons.chevron_right_rounded`, `Icons.chevron_right` |
+| `AppIcons.chevronLeft` | `chevron_left` | (mới, chưa có trong mock) | `Icons.chevron_left_rounded` |
+| `AppIcons.expandMore` | `expand_more` | (mới, chưa có trong mock) | `Icons.expand_more_rounded` |
+| `AppIcons.visibility` | `visibility` | (mới, chưa có trong mock) | `Icons.visibility_outlined` |
+| `AppIcons.visibilityOff` | `visibility_off` | (mới, chưa có trong mock) | `Icons.visibility_off_outlined` |
+| `AppIcons.place` | `location_on` | `i-pin` | `Icons.place_outlined`, `Icons.location_on_outlined`, `Icons.location_on` |
+| `AppIcons.nearMe` | `near_me` | (mới, chưa có trong mock) | `Icons.near_me_outlined` |
+| `AppIcons.myLocation` | `my_location` | (mới, chưa có trong mock) | `Icons.my_location_outlined` |
+| `AppIcons.city` | `location_city` | (mới, chưa có trong mock) | `Icons.location_city_outlined` |
+| `AppIcons.camera` | `photo_camera` | `i-cam` | `Icons.camera_alt`, `Icons.camera_alt_outlined` |
+| `AppIcons.addPhoto` | `add_a_photo` | (mới, chưa có trong mock) | `Icons.add_a_photo_outlined` |
+| `AppIcons.image` | `image` | `i-img` | `Icons.photo_outlined` |
+| `AppIcons.album` | `photo_library` | `i-album` | `Icons.photo_library_outlined`, `Icons.collections_outlined` |
+| `AppIcons.grid` | `grid_view` | (mới, chưa có trong mock) | `Icons.grid_view_rounded` |
+| `AppIcons.list` | `format_list_bulleted` | `i-list` | — |
+| `AppIcons.description` | `description` | (mới, chưa có trong mock) | `Icons.description_outlined` |
+| `AppIcons.schedule` | `schedule` | (mới, chưa có trong mock) | `Icons.schedule_rounded`, `Icons.schedule`, `Icons.access_time` |
+| `AppIcons.mail` | `mail` | `i-mail` | — |
+| `AppIcons.alternateEmail` | `alternate_email` | (mới, chưa có trong mock) | `Icons.alternate_email_rounded` |
+| `AppIcons.lock` | `lock` | `i-lock` | `Icons.lock_outline_rounded`, `Icons.lock_outline` |
+| `AppIcons.lockReset` | `lock_reset` | (mới, chưa có trong mock) | `Icons.lock_reset_rounded` |
+| `AppIcons.phone` | `call` | `i-phone` | `Icons.phone_outlined`, `Icons.call_outlined` |
+| `AppIcons.payment` | `credit_card` | `i-card` | — |
+| `AppIcons.wallet` | `account_balance_wallet` | (mới, chưa có trong mock) | `Icons.account_balance_wallet` |
+| `AppIcons.receipt` | `receipt_long` | (mới, chưa có trong mock) | `Icons.receipt_long_outlined` |
+| `AppIcons.pin` | `pin` | (mới, chưa có trong mock) | `Icons.pin_outlined` |
+| `AppIcons.darkMode` | `dark_mode` | `i-moon` | `Icons.dark_mode_outlined` |
+| `AppIcons.lightMode` | `light_mode` | (mới, chưa có trong mock) | `Icons.light_mode_outlined` |
+| `AppIcons.autoMode` | `brightness_auto` | (mới, chưa có trong mock) | `Icons.brightness_auto_outlined` |
+| `AppIcons.badge` | `badge` | (mới, chưa có trong mock) | `Icons.badge_outlined` |
+| `AppIcons.tag` | `sell` | (mới, chưa có trong mock) | `Icons.sell_outlined` |
+| `AppIcons.star` | `star` | `i-star` | `Icons.star_rounded`, `Icons.star_outline_rounded`, `Icons.star` |
+| `AppIcons.instant` | `bolt` | `i-bolt` | `Icons.bolt` |
+| `AppIcons.ticket` | `confirmation_number` | `i-ticket` | — |
+| `AppIcons.award` | `workspace_premium` | `i-award` | `Icons.workspace_premium_outlined`, `Icons.workspace_premium` |
+| `AppIcons.medal` | `military_tech` | (mới, chưa có trong mock) | `Icons.military_tech` |
+| `AppIcons.verified` | `verified` | (mới, chưa có trong mock) | `Icons.verified` |
+| `AppIcons.work` | `work` | `i-brief` | `Icons.work_outline` |
+| `AppIcons.store` | `storefront` | (mới, chưa có trong mock) | `Icons.storefront_outlined` |
+| `AppIcons.people` | `group` | (mới, chưa có trong mock) | `Icons.people` |
+| `AppIcons.celebration` | `celebration` | (mới, chưa có trong mock) | `Icons.celebration` |
+| `AppIcons.trendingUp` | `trending_up` | (mới, chưa có trong mock) | `Icons.trending_up` |
+| `AppIcons.autoAwesome` | `auto_awesome` | (mới, chưa có trong mock) | `Icons.auto_awesome_outlined` |
+| `AppIcons.gradient` | `gradient` | (mới, chưa có trong mock) | `Icons.gradient_rounded` |
+| `AppIcons.face` | `face_retouching_natural` | (mới, chưa có trong mock) | `Icons.face_retouching_natural` |
+| `AppIcons.info` | `info` | `i-info` | `Icons.info_outline_rounded`, `Icons.info_outline` |
+| `AppIcons.error` | `error` | (mới, chưa có trong mock) | `Icons.error_outline` |
+| `AppIcons.warning` | `warning` | (mới, chưa có trong mock) | `Icons.warning_amber_rounded` |
+| `AppIcons.cloudOff` | `cloud_off` | (mới, chưa có trong mock) | `Icons.cloud_off_rounded`, `Icons.cloud_off_outlined` |

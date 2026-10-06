@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
@@ -129,7 +130,7 @@ class AlbumTile extends StatelessWidget {
             coverUrl == null
                 ? ColoredBox(
                     color: field,
-                    child: Icon(Icons.photo_library_outlined, color: muted),
+                    child: AppIcon(AppIcons.album, color: muted),
                   )
                 : NetworkPhoto(url: coverUrl!),
             if (featured && dimmedNote == null)

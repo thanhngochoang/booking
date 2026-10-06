@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// Soft glows in the logo's colours behind the hero.
+/// Soft glows behind the hero: one faint violet (the accent) and one neutral.
 class AuroraBackground extends StatelessWidget {
   const AuroraBackground({super.key, this.child});
 
@@ -37,17 +37,17 @@ class AuroraBackground extends StatelessWidget {
               Positioned(
                 left: -w * 0.45,
                 top: -w * 0.35,
-                child: glow(AppColors.spectrumCyan, w * 1.1, 0.45),
+                child: glow(AppColors.accent, w * 1.1, 0.22),
               ),
               Positioned(
                 right: -w * 0.5,
                 top: -w * 0.1,
-                child: glow(AppColors.spectrumPink, w * 1.2, 0.4),
+                child: glow(Colors.white, w * 1.2, 0.05),
               ),
               Positioned(
                 left: -w * 0.1,
                 top: w * 0.45,
-                child: glow(AppColors.spectrumViolet, w, 0.35),
+                child: glow(Colors.white, w, 0.04),
               ),
             ],
           );

@@ -8,7 +8,7 @@ Widget _host(int count) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(
-    body: TabBadge(count: count, child: const Icon(Icons.explore_outlined)),
+    body: TabBadge(count: count, child: const AppIcon(AppIcons.explore)),
   ),
 );
 

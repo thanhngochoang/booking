@@ -16,6 +16,7 @@ export 'package:photobooking/core/screen_codes.dart';
 export 'package:photobooking/core/text_fold.dart';
 export 'package:photobooking/core/ulid.dart';
 export 'package:photobooking/core/vnd_input.dart';
+export 'package:photobooking/core/theme/app_icons.dart';
 export 'package:photobooking/core/theme/app_theme.dart';
 export 'package:photobooking/core/theme/tokens.g.dart';
 export 'package:photobooking/core/widgets/signature_loader.dart';

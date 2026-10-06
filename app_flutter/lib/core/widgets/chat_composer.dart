@@ -1,6 +1,7 @@
 // lib/core/widgets/chat_composer.dart
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 import 'package:photobooking/core/widgets/signature_loader.dart';
@@ -104,8 +105,8 @@ class _ChatComposerState extends State<ChatComposer> {
                               child: SignatureLoader(size: LoaderSize.inline),
                             ),
                           )
-                        : Icon(
-                            Icons.camera_alt_outlined,
+                        : AppIcon(
+                            AppIcons.camera,
                             size: 20,
                             color: canPick
                                 ? theme.colorScheme.primary
@@ -191,8 +192,8 @@ class _ChatComposerState extends State<ChatComposer> {
                       width: 40,
                       height: 40,
                       child: Center(
-                        child: Icon(
-                          Icons.arrow_upward_rounded,
+                        child: AppIcon(
+                          AppIcons.arrowUp,
                           size: 20,
                           color: Colors.white,
                         ),

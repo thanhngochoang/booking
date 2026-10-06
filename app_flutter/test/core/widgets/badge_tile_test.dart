@@ -57,30 +57,32 @@ void main() {
       expect(find.text('Chưa đạt'), findsNothing);
     });
 
-    testWidgets("not earned is grey with 'Chưa đạt' and, with progress, a CapacityBar and '3 / 5'", (tester) async {
-      await tester.pumpWidget(_wrap(
-        const BadgeTile(
-          badge: _notEarnedBadge,
-          progress: BadgeProgress(current: 3, total: 5),
-        ),
-      ));
-      await tester.pumpAndSettle();
+    testWidgets(
+      "not earned is grey with 'Chưa đạt' and, with progress, a CapacityBar and '3 / 5'",
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const BadgeTile(
+              badge: _notEarnedBadge,
+              progress: BadgeProgress(current: 3, total: 5),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Not earned disc does NOT use CtaSurface
-      expect(find.byType(CtaSurface), findsNothing);
-      expect(find.text('Chưa đạt'), findsOneWidget);
-      expect(find.byType(CapacityBar), findsOneWidget);
-      expect(find.text('3 / 5'), findsOneWidget);
-    });
+        // Not earned disc does NOT use CtaSurface
+        expect(find.byType(CtaSurface), findsNothing);
+        expect(find.text('Chưa đạt'), findsOneWidget);
+        expect(find.byType(CapacityBar), findsOneWidget);
+        expect(find.text('3 / 5'), findsOneWidget);
+      },
+    );
 
     testWidgets("isNew shows the 'Mới' dot with a label", (tester) async {
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(_wrap(
-        const BadgeTile(
-          badge: _earnedBadge,
-          isNew: true,
-        ),
-      ));
+      await tester.pumpWidget(
+        _wrap(const BadgeTile(badge: _earnedBadge, isNew: true)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Mới'), findsOneWidget);
@@ -91,55 +93,62 @@ void main() {
       await tester.pumpWidget(_wrap(const BadgeTile(badge: _unknownBadge)));
       await tester.pumpAndSettle();
 
-      // Fallback icon is Icons.military_tech
-      final iconFinder = find.byIcon(Icons.military_tech);
+      // Fallback icon is AppIcons.medal
+      final iconFinder = find.byIcon(AppIcons.medal);
       expect(iconFinder, findsOneWidget);
     });
 
-    testWidgets('grid of 2 columns at 320 dp and 1.3x text scale has no overflow', (tester) async {
-      await tester.pumpWidget(_wrap(
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 0.85,
-          children: const [
-            BadgeTile(
-              badge: _notEarnedBadge,
-              progress: BadgeProgress(current: 3, total: 5),
-              isNew: true,
+    testWidgets(
+      'grid of 2 columns at 320 dp and 1.3x text scale has no overflow',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.85,
+              children: const [
+                BadgeTile(
+                  badge: _notEarnedBadge,
+                  progress: BadgeProgress(current: 3, total: 5),
+                  isNew: true,
+                ),
+                BadgeTile(badge: _earnedBadge),
+              ],
             ),
-            BadgeTile(
-              badge: _earnedBadge,
-            ),
-          ],
-        ),
-        width: 320,
-        textScale: 1.3,
-      ));
-      await tester.pumpAndSettle();
+            width: 320,
+            textScale: 1.3,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('skeleton matches size at 390 and 320 dp', (tester) async {
       for (final width in [390.0, 320.0]) {
-        await tester.pumpWidget(_wrap(
-          const BadgeTile(badge: _earnedBadge),
-          width: width,
-        ));
+        await tester.pumpWidget(
+          _wrap(const BadgeTile(badge: _earnedBadge), width: width),
+        );
         await tester.pump();
         final realSize = tester.getSize(find.byType(BadgeTile));
 
-        await tester.pumpWidget(_wrap(
-          AppSkeletonScope(child: BadgeTile.skeleton()),
-          width: width,
-        ));
+        await tester.pumpWidget(
+          _wrap(AppSkeletonScope(child: BadgeTile.skeleton()), width: width),
+        );
         await tester.pump();
-        final skeletonSize = tester.getSize(find.byKey(const ValueKey('badge_tile_skeleton')));
+        final skeletonSize = tester.getSize(
+          find.byKey(const ValueKey('badge_tile_skeleton')),
+        );
 
-        expect(skeletonSize.height, closeTo(realSize.height, 2.0), reason: 'height at $width');
+        expect(
+          skeletonSize.height,
+          closeTo(realSize.height, 2.0),
+          reason: 'height at $width',
+        );
         expect(skeletonSize.width, realSize.width, reason: 'width at $width');
       }
     });

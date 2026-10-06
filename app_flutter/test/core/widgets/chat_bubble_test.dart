@@ -1,6 +1,7 @@
 // test/core/widgets/chat_bubble_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/chat_bubble.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
@@ -59,7 +60,7 @@ void main() {
     );
 
     expect(find.text('Bến Bạch Đằng, Quận 1'), findsOneWidget);
-    expect(find.byIcon(Icons.location_on), findsOneWidget);
+    expect(find.byIcon(AppIcons.place), findsOneWidget);
   });
 
   testWidgets('system bubble is centered and displays text with actions', (
@@ -104,7 +105,7 @@ void main() {
     );
 
     expect(find.text('Đang gửi...'), findsOneWidget);
-    expect(find.byIcon(Icons.access_time), findsOneWidget);
+    expect(find.byIcon(AppIcons.schedule), findsOneWidget);
 
     final opacityWidget = tester.widget<Opacity>(
       find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.6),
@@ -128,7 +129,7 @@ void main() {
 
     expect(find.text('Tin gửi thất bại'), findsOneWidget);
     expect(find.text('Gửi lại'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(AppIcons.error), findsOneWidget);
 
     await tester.tap(find.text('Gửi lại'));
     await tester.pumpAndSettle();

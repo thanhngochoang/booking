@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/core/widgets/app_chip.dart';
@@ -37,7 +38,7 @@ class LocationPromptCard extends StatelessWidget {
           key: const Key('location-choose-area'),
           label: l.locationChooseArea,
           selected: false,
-          leading: const Icon(Icons.place_outlined),
+          leading: const AppIcon(AppIcons.place),
           onChanged: (_) => onChooseArea!(),
         ),
       );
@@ -88,8 +89,8 @@ class LocationPromptCard extends StatelessWidget {
               child: SizedBox.square(
                 dimension: 36,
                 child: ExcludeSemantics(
-                  child: Icon(
-                    Icons.place_outlined,
+                  child: AppIcon(
+                    AppIcons.place,
                     size: 18,
                     color: theme.colorScheme.primary,
                   ),

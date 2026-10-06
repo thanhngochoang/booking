@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// Frosted panel with a hairline in the logo's spectrum.
+/// Frosted panel with a neutral hairline.
 class GlassCard extends StatelessWidget {
   const GlassCard({super.key, required this.child, this.highlight = true});
 
@@ -84,9 +84,9 @@ class SpectrumBorder extends CustomPainter {
         end: Alignment.bottomRight,
         colors: highlight
             ? [
-                AppColors.spectrumCyan.withValues(alpha: 0.7),
+                Colors.white.withValues(alpha: 0.28),
                 Colors.white.withValues(alpha: 0.12),
-                AppColors.spectrumPink.withValues(alpha: 0.7),
+                Colors.white.withValues(alpha: 0.28),
               ]
             : [plain, plain],
       ).createShader(rect);

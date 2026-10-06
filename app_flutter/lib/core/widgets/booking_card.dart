@@ -1,5 +1,6 @@
 // lib/core/widgets/booking_card.dart
 import 'package:flutter/material.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/status_badge.dart';
@@ -98,14 +99,14 @@ class BookingCard extends StatelessWidget {
                       ? Image.network(
                           data.thumbUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.camera_alt,
+                          errorBuilder: (_, _, _) => const AppIcon(
+                            AppIcons.camera,
                             size: 20,
                             color: Colors.grey,
                           ),
                         )
-                      : const Icon(
-                          Icons.camera_alt,
+                      : const AppIcon(
+                          AppIcons.camera,
                           size: 20,
                           color: Colors.grey,
                         ),

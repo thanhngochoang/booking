@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -57,7 +58,7 @@ class ErrorState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.cloud_off_outlined, color: theme.colorScheme.error),
+          AppIcon(AppIcons.cloudOff, color: theme.colorScheme.error),
           const SizedBox(height: AppSpace.s3),
           Text(
             message,

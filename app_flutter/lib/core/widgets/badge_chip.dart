@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
@@ -21,34 +22,27 @@ class BadgeView {
 
 @immutable
 class BadgeProgress {
-  const BadgeProgress({
-    required this.current,
-    required this.total,
-  });
+  const BadgeProgress({required this.current, required this.total});
 
   final int current;
   final int total;
 }
 
 IconData badgeIconOf(String code) => switch (code) {
-  'top_rated' || 'star' => Icons.star,
-  'fast_reply' || 'quick' => Icons.bolt,
-  'verified' || 'id' => Icons.verified,
-  'expert' || 'pro' => Icons.workspace_premium,
-  'shoots_10' || 'shoots_50' || 'shoots_100' || 'camera' => Icons.camera_alt,
-  'punctual' || 'on_time' => Icons.schedule,
-  'rising_star' => Icons.trending_up,
-  'community' => Icons.people,
-  _ => Icons.military_tech,
+  'top_rated' || 'star' => AppIcons.star,
+  'fast_reply' || 'quick' => AppIcons.instant,
+  'verified' || 'id' => AppIcons.verified,
+  'expert' || 'pro' => AppIcons.award,
+  'shoots_10' || 'shoots_50' || 'shoots_100' || 'camera' => AppIcons.camera,
+  'punctual' || 'on_time' => AppIcons.schedule,
+  'rising_star' => AppIcons.trendingUp,
+  'community' => AppIcons.people,
+  _ => AppIcons.medal,
 };
 
 /// Chip showing an earned or locked badge (spec S03.01, S09.01, photographer cards).
 class BadgeChip extends StatelessWidget {
-  const BadgeChip({
-    super.key,
-    required this.badge,
-    this.onTap,
-  });
+  const BadgeChip({super.key, required this.badge, this.onTap});
 
   final BadgeView badge;
   final VoidCallback? onTap;
@@ -88,11 +82,7 @@ class BadgeChip extends StatelessWidget {
             child: SizedBox.square(
               dimension: 16,
               child: Center(
-                child: Icon(
-                  badgeIconOf(badge.code),
-                  size: 10,
-                  color: fgSec,
-                ),
+                child: Icon(badgeIconOf(badge.code), size: 10, color: fgSec),
               ),
             ),
           );
@@ -231,7 +221,7 @@ class BadgeRow extends StatelessWidget {
 
 class _BadgeRowSkeleton extends StatelessWidget {
   const _BadgeRowSkeleton({required this.count})
-      : super(key: const ValueKey('badge_row_skeleton'));
+    : super(key: const ValueKey('badge_row_skeleton'));
 
   final int count;
 

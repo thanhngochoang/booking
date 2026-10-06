@@ -50,7 +50,7 @@ void main() {
       _card(
         leading: const PhotoPill(label: 'Rảnh T7 này', dot: PhotoPillDot.ok),
         trailing: const PhotoPill(label: 'Chân dung · từ 1,5M'),
-        action: const Icon(Icons.bookmark_border, key: Key('save')),
+        action: const AppIcon(AppIcons.save, key: Key('save')),
       ),
     );
     expect(
@@ -141,7 +141,7 @@ void main() {
           action: IconButton(
             key: const Key('act'),
             onPressed: () => acts++,
-            icon: const Icon(Icons.bookmark_border),
+            icon: const AppIcon(AppIcons.save),
           ),
         ),
       );
@@ -254,7 +254,7 @@ void main() {
         textScale: 1.3,
         title: 'Nguyễn Thị Phương Anh Thư Hoàng Gia',
         subtitle: 'Quận 3 · ★ 4,9 (58) · 112 buổi chụp chân dung gia đình',
-        action: const Icon(Icons.bookmark_border),
+        action: const AppIcon(AppIcons.save),
       ),
     );
     expect(tester.takeException(), isNull);

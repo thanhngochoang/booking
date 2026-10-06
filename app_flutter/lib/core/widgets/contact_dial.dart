@@ -9,6 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:photobooking/core/contact_channel.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/screen_codes.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/screen_code.dart';
 import 'package:photobooking/core/widgets/signature_loader.dart';
@@ -252,8 +253,8 @@ class _ContactDialState extends State<ContactDial>
 
     Widget glyph(double size) => widget.busy
         ? (_reduced
-              ? Icon(
-                  Icons.phone_outlined,
+              ? AppIcon(
+                  AppIcons.phone,
                   size: size,
                   color: color.withValues(alpha: 0.38),
                 )
@@ -268,10 +269,10 @@ class _ContactDialState extends State<ContactDial>
                   ),
                 ))
         : locked
-        ? Icon(Icons.chat_bubble_outline_rounded, size: size, color: color)
+        ? AppIcon(AppIcons.chat, size: size, color: color)
         : single
         ? ChannelGlyph(external.single, size: size, color: color)
-        : Icon(Icons.phone_outlined, size: size, color: color);
+        : AppIcon(AppIcons.phone, size: size, color: color);
 
     final visual = widget.style == ContactDialStyle.icon
         ? Container(
@@ -641,15 +642,15 @@ class ChannelGlyph extends StatelessWidget {
     );
     return ExcludeSemantics(
       child: switch (channel) {
-        ContactChannel.call => Icon(
-          Icons.call_outlined,
+        ContactChannel.call => AppIcon(
+          AppIcons.phone,
           size: size,
           color: color,
         ),
         ContactChannel.zalo => svg('assets/social/zalo.svg'),
         ContactChannel.whatsapp => svg('assets/social/whatsapp.svg'),
-        ContactChannel.inApp => Icon(
-          Icons.chat_bubble_outline_rounded,
+        ContactChannel.inApp => AppIcon(
+          AppIcons.chat,
           size: size,
           color: color,
         ),

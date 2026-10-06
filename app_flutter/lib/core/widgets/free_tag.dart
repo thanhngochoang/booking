@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 ({Color fill, Color text}) _freeColors(Brightness b) => b == Brightness.dark
@@ -65,7 +66,7 @@ class FreeBanner extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: c.text),
+            AppIcon(AppIcons.checkCircle, color: c.text),
             const SizedBox(width: AppSpace.s3),
             Expanded(
               child: Column(

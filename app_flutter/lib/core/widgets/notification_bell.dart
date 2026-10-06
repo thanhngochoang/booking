@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Bell icon button with red unread count dot for headers (spec S02.01, S02.03, S06.01).
@@ -32,10 +33,7 @@ class NotificationBell extends StatelessWidget {
         onTap: onTap,
         radius: 24,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: 48,
-            minHeight: 48,
-          ),
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: Center(
             child: SizedBox.square(
               dimension: 36,
@@ -43,8 +41,8 @@ class NotificationBell extends StatelessWidget {
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
-                  Icon(
-                    Icons.notifications_none,
+                  AppIcon(
+                    AppIcons.notifications,
                     size: 28,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -54,7 +52,10 @@ class NotificationBell extends StatelessWidget {
                       right: 2,
                       child: Container(
                         key: const ValueKey('notification_bell_dot'),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         constraints: const BoxConstraints(
                           minWidth: 16,
                           minHeight: 16,

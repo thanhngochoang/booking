@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// One row of a sortable list (mock `.lrow`, S24.04): drag handle, optional
@@ -61,7 +62,7 @@ class ReorderableRow extends StatelessWidget {
 
     final menu = PopupMenuButton<VoidCallback>(
       tooltip: l.reorderMenu,
-      icon: Icon(Icons.more_horiz_rounded, color: muted),
+      icon: AppIcon(AppIcons.more, color: muted),
       constraints: const BoxConstraints(minWidth: 180),
       iconSize: AppSpace.s6,
       style: IconButton.styleFrom(minimumSize: const Size.square(AppSpace.s12)),
@@ -101,7 +102,7 @@ class ReorderableRow extends StatelessWidget {
           key: handleKey,
           width: AppSpace.s12,
           height: AppSpace.s12,
-          child: Icon(Icons.drag_handle_rounded, color: muted),
+          child: AppIcon(AppIcons.dragHandle, color: muted),
         ),
       ),
     );

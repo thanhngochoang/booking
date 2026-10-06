@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Banner indicating cached/offline data is being viewed:
@@ -22,8 +23,8 @@ class OfflineBanner extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.cloud_off_rounded,
+            AppIcon(
+              AppIcons.cloudOff,
               size: 16,
               color: theme.colorScheme.onSurfaceVariant,
             ),
