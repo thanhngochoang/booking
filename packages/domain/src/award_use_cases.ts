@@ -205,7 +205,8 @@ export async function reviewAward(
     tx.addAudit({ awardId, actorId, action: act, note, at: now });
     return { status, ownerId: award.photographerId };
   });
-  await recomputeTier(deps, out.ownerId);
+  // The review is committed; the onAwardWrite trigger recomputes anyway, so a failure here is not an error.
+  await quietly(async () => void (await recomputeTier(deps, out.ownerId)));
   await quietly(() => deps.notify.awardReviewed(out.ownerId, awardId, out.status));
   return { status: out.status };
 }

@@ -214,4 +214,13 @@ describe('award use cases', () => {
     await reviewAward(deps, 'adm', true, { awardId: 'a1', action: 'reject', note: 'Không đọc được ảnh' });
     assert.deepEqual(reviewed, [['u1', 'a1', 'rejected']]);
   });
+
+  it('a failing recompute does not fail a committed review', async () => {
+    seed('a1', 'pending');
+    deps = { ...deps, tiers: { runTransaction: async () => { throw new Error('boom'); } } };
+    const res = await reviewAward(deps, 'adm', true, { awardId: 'a1', action: 'approve' });
+    assert.deepEqual(res, { status: 'approved' });
+    assert.equal(store.awards.get('a1')?.status, 'approved');
+    assert.deepEqual(reviewed, [['u1', 'a1', 'approved']]);
+  });
 });

@@ -1,6 +1,6 @@
 import { getStorage } from 'firebase-admin/storage';
 import * as logger from 'firebase-functions/logger';
-import type { AwardDeps } from '@photobooking/domain';
+import type { AwardCallableDeps } from '../callables/award.js';
 import { db as adminDb } from './admin.js';
 import { FirestoreAwardStore, FirestoreTierStore } from './award_firestore.js';
 
@@ -11,9 +11,13 @@ export async function deleteStorageFiles(paths: readonly string[]): Promise<void
   await Promise.all(paths.map((p) => bucket.file(p).delete({ ignoreNotFound: true })));
 }
 
-export function liveAwardDeps(): AwardDeps {
+export function liveAwardDeps(): AwardCallableDeps {
   const db = adminDb();
   return {
+    userRole: async (uid) => {
+      const role: unknown = (await db.collection('users').doc(uid).get()).data()?.role;
+      return typeof role === 'string' ? role : null;
+    },
     awards: new FirestoreAwardStore(db),
     tiers: new FirestoreTierStore(db),
     files: { delete: deleteStorageFiles },

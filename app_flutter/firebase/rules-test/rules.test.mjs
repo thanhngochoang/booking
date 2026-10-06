@@ -1392,9 +1392,11 @@ test('the owner uploads, reads and deletes a proof image; others cannot read it'
   await assertSucceeds(deleteObject(own));
 });
 
-test('a proof image over 10 MB or not an image is refused', async () => {
+test('a proof image over 10 MB, an SVG or a non-image is refused', async () => {
   const st = env.authenticatedContext('awo1').storage();
   await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/ok.jpg'), photo(10 * 1024 * 1024), jpeg));
   await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/big.jpg'), photo(10 * 1024 * 1024 + 1), jpeg));
   await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.pdf'), photo(), { contentType: 'application/pdf' }));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.svg'), photo(), { contentType: 'image/svg+xml' }));
+  await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.png'), photo(), { contentType: 'image/png' }));
 });

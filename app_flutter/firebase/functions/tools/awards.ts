@@ -3,12 +3,33 @@
 //   npm run awards -- show <awardId>
 //   npm run awards -- approve <awardId> --actor <uid>
 //   npm run awards -- needs-info|reject|revoke <awardId> "<note>" --actor <uid>
-// Uses the Admin SDK (GOOGLE_APPLICATION_CREDENTIALS, or the emulators through *_EMULATOR_HOST).
+// Uses the Admin SDK. Environment (see HELP below): GOOGLE_APPLICATION_CREDENTIALS (a service
+// account key; `show` needs it to sign URLs), STORAGE_BUCKET for `show`, or the emulators through
+// FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST.
 // Decisions go through the same reviewAward use case as the callable; `--actor` must be a user
 // with the admin claim.
 
 import { fileURLToPath } from 'node:url';
 import { reviewAward, type Award, type AwardDeps, type AwardProof, type ReviewAction } from '@photobooking/domain';
+
+export const HELP = `${'usage: awards list | show <id> | approve <id> --actor <uid> | needs-info|reject|revoke <id> "<note>" --actor <uid>'}
+
+Environment:
+  GOOGLE_APPLICATION_CREDENTIALS  path to a service account key (real project; \`show\` needs it to sign URLs)
+  GCLOUD_PROJECT                  project id
+  STORAGE_BUCKET                  bucket of the proof files (or FIREBASE_STORAGE_BUCKET); required by \`show\`
+  FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST
+                                  use these instead of credentials to work against the emulators
+--actor must be a user with the custom claim staffRole = admin.`;
+
+/** Bucket that holds the proof files; `show` cannot guess it outside Cloud Functions. */
+export function bucketNameFromEnv(env: Readonly<Record<string, string | undefined>>): string {
+  const name = env.STORAGE_BUCKET ?? env.FIREBASE_STORAGE_BUCKET;
+  if (name === undefined || name === '') {
+    throw new Error('show needs the proof bucket: set STORAGE_BUCKET (or FIREBASE_STORAGE_BUCKET), e.g. my-project.firebasestorage.app');
+  }
+  return name;
+}
 
 export type Command = 'list' | 'show' | 'approve' | 'needs-info' | 'reject' | 'revoke';
 
@@ -61,8 +82,8 @@ export interface CliIo {
   print(line: string): void;
   listPending(): Promise<Award[]>;
   show(awardId: string): Promise<{ award: Award; proof: AwardProof | null; urls: string[] } | null>;
-  /** When set, the actor must pass it (the real CLI checks the admin claim). */
-  isAdmin?(uid: string): Promise<boolean>;
+  /** The actor of a decision must pass it (the real CLI checks the admin claim). */
+  isAdmin(uid: string): Promise<boolean>;
 }
 
 export async function runCli(argv: readonly string[], deps: AwardDeps, io: CliIo): Promise<void> {
@@ -86,7 +107,7 @@ export async function runCli(argv: readonly string[], deps: AwardDeps, io: CliIo
     return;
   }
   if (args.actor === null) throw new Error(`${args.command} needs --actor <uid> of an admin. ${USAGE}`);
-  if (io.isAdmin !== undefined && !(await io.isAdmin(args.actor))) {
+  if (!(await io.isAdmin(args.actor))) {
     throw new Error(`${args.actor} does not have the admin claim`);
   }
   const action = ACTIONS[args.command] as ReviewAction;
@@ -99,6 +120,10 @@ export async function runCli(argv: readonly string[], deps: AwardDeps, io: CliIo
 }
 
 async function main(): Promise<void> {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    console.log(HELP);
+    return;
+  }
   const { getAuth } = await import('firebase-admin/auth');
   const { getStorage } = await import('firebase-admin/storage');
   const { db } = await import('../src/infra/admin.js');
@@ -122,9 +147,11 @@ async function main(): Promise<void> {
       const ad = a?.data();
       if (ad === undefined) return null;
       const proof = p?.data() === undefined ? null : proofFromDoc(id, p.data() ?? {});
-      const bucket = getStorage().bucket();
       const urls: string[] = [];
-      for (const f of proof?.files ?? []) {
+      const files = proof?.files ?? [];
+      const bucket = files.length > 0 ? getStorage().bucket(bucketNameFromEnv(process.env)) : null;
+      for (const f of files) {
+        if (bucket === null) break;
         const [url] = await bucket.file(f).getSignedUrl({ action: 'read', expires: Date.now() + 15 * 60 * 1000 });
         urls.push(url);
       }

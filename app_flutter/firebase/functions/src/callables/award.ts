@@ -11,6 +11,9 @@ import {
 } from '@photobooking/domain';
 import { toHttpsError } from './errors.js';
 
+/** Award deps plus the role lookup `createAward` needs (`users/{uid}.role`). */
+export type AwardCallableDeps = AwardDeps & { userRole(uid: string): Promise<string | null> };
+
 /** The part of a callable request the award handlers use (a `CallableRequest` fits). */
 export interface AwardCallableInput {
   readonly auth?: { readonly uid: string; readonly token?: Readonly<Record<string, unknown>> } | undefined;
@@ -42,11 +45,12 @@ async function run<T>(operation: string, fn: () => Promise<T>): Promise<T> {
 /** `{awardId, competition, year, category?, result, workPostId?, proofFiles?, proofLinks?}` → `{awardId}` */
 export async function handleCreateAward(
   request: AwardCallableInput,
-  deps: AwardDeps,
+  deps: AwardCallableDeps,
 ): Promise<{ awardId: string }> {
   const uid = requireUid(request);
   return run('createAward', async () => {
-    // Only a photographer profile may claim awards.
+    // Only a photographer (role and profile) may claim awards.
+    if ((await deps.userRole(uid)) !== 'photographer') throw new DomainError('permission_denied');
     const profile = await deps.tiers.runTransaction((tx) => tx.getTierState(uid));
     if (profile === null) throw new DomainError('permission_denied');
     return createAward(deps, uid, request.data);

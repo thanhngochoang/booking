@@ -16,8 +16,11 @@ describe('award callables', () => {
   let store: MemoryAwardStore;
   let notified: string[];
 
-  function deps(): AwardDeps {
+  const roles = new Map<string, string>([['p1', 'photographer']]);
+
+  function deps(): AwardDeps & { userRole(uid: string): Promise<string | null> } {
     return {
+      userRole: async (uid) => roles.get(uid) ?? null,
       awards: store,
       tiers: store.tiers,
       files: { delete: async () => {} },
@@ -80,6 +83,16 @@ describe('award callables', () => {
       () => handleCreateAward({ auth: { uid: 'c1' }, data: input }, deps()),
       (e: unknown) => e instanceof HttpsError && e.code === 'permission-denied',
     );
+  });
+
+  it('a customer is refused even with a photographers doc', async () => {
+    roles.set('c2', 'customer');
+    store.seedTier('c2', { providerType: 'individual', artistSince: null, approvedAwardCount: 0 });
+    await assert.rejects(
+      () => handleCreateAward({ auth: { uid: 'c2' }, data: input }, deps()),
+      (e: unknown) => e instanceof HttpsError && e.code === 'permission-denied',
+    );
+    assert.equal(store.awards.size, 0);
   });
 
   it('domain errors map to HttpsError', async () => {

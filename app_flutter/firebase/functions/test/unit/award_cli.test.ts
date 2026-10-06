@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { MemoryAwardStore, type Award, type AwardDeps } from '@photobooking/domain';
-import { parseArgs, runCli } from '../../tools/awards.js';
+import { bucketNameFromEnv, parseArgs, runCli } from '../../tools/awards.js';
 
 const NOW = new Date('2026-10-10T12:00:00.000Z');
 const A1 = '01ARZ3NDEKTSV4RRFFQ69G5F01';
@@ -35,7 +35,9 @@ describe('awards staff CLI', () => {
     notify: { tierChanged: async () => {}, awardReviewed: async () => {} },
     clock: { now: () => NOW },
   });
+  let admin = true;
   const io = {
+    isAdmin: async () => admin,
     print: (s: string) => void out.push(s),
     // Memory dry run: the queue comes from the store.
     listPending: async () => [...store.awards.values()].filter((a) => a.status === 'pending'),
@@ -48,6 +50,7 @@ describe('awards staff CLI', () => {
   beforeEach(() => {
     store = new MemoryAwardStore();
     out = [];
+    admin = true;
     store.seedTier('p1', { providerType: 'individual', artistSince: null, approvedAwardCount: 0 });
   });
 
@@ -89,5 +92,19 @@ describe('awards staff CLI', () => {
     assert.equal(store.awards.get(A1)?.status, 'approved');
     assert.equal(store.audit[0]?.actorId, 'staff1');
     assert.equal(store.tierStates.get('p1')?.approvedAwardCount, 1);
+  });
+
+  it('a non-admin actor is refused', async () => {
+    store.seedAward(award(A1, '2026-10-01T00:00:00Z'));
+    admin = false;
+    await assert.rejects(() => runCli(['approve', A1, '--actor', 'p1'], deps(), io), /admin claim/);
+    assert.equal(store.awards.get(A1)?.status, 'pending');
+    assert.equal(store.audit.length, 0);
+  });
+
+  it('show without a bucket name explains how to set it', () => {
+    assert.throws(() => bucketNameFromEnv({}), /set STORAGE_BUCKET/);
+    assert.equal(bucketNameFromEnv({ FIREBASE_STORAGE_BUCKET: 'b' }), 'b');
+    assert.equal(bucketNameFromEnv({ STORAGE_BUCKET: 'a', FIREBASE_STORAGE_BUCKET: 'b' }), 'a');
   });
 });

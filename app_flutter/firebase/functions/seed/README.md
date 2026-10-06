@@ -47,3 +47,11 @@ export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.
 npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
 # 200 {"result":{"url":"https://zalo.me/84912000002"}}
 ```
+
+## Staff CLI for awards
+
+`npm run awards -- --help` lists the commands. Against the emulators set
+`FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`; against a real project set
+`GOOGLE_APPLICATION_CREDENTIALS` (a service account key). `show` also needs `STORAGE_BUCKET`
+(or `FIREBASE_STORAGE_BUCKET`) and credentials that can sign URLs. `--actor` is a user with the
+admin claim, e.g. `seed-staff-admin` locally.
