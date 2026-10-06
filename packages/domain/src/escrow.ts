@@ -33,6 +33,10 @@ export interface Payment {
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;
+  /** Set by openDispute; server-only. */
+  readonly dispute?: { readonly reason: string; readonly openedAt: string } | null;
+  /** Current payout batch; cleared when that batch fails. */
+  readonly payoutId?: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
