@@ -1,6 +1,9 @@
 // test/features/photographer_profile/profile_providers_test.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart' show PortfolioView;
+import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/album/album_repository.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
@@ -199,5 +202,53 @@ void main() {
     expect(c.read(profilePackagesProvider('p1')).hasError, isTrue);
     expect(c.read(portfolioProvider('p1')).hasError, isTrue);
     expect((services.calls, posts.calls), (1, 1));
+  });
+
+  group('portfolioViewProvider', () {
+    ProviderContainer containerWith(FakeAlbumRepository albums) {
+      final c = ProviderContainer(
+        overrides: [albumRepositoryProvider.overrideWithValue(albums)],
+        retry: (_, _) => null,
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 20));
+
+    test('no visible album: the timeline, whatever was chosen', () async {
+      final c = containerWith(
+        FakeAlbumRepository([fixtureAlbum('e', visible: false)]),
+      );
+      final sub = c.listen(portfolioViewProvider('p1'), (_, _) {});
+      addTearDown(sub.close);
+      await settle();
+      expect(c.read(portfolioViewProvider('p1')), PortfolioView.timeline);
+      c
+          .read(portfolioViewChoiceProvider('p1').notifier)
+          .choose(PortfolioView.albums);
+      expect(c.read(portfolioViewProvider('p1')), PortfolioView.timeline);
+    });
+
+    test(
+      'a visible album: Albums by default, then the visitor choice',
+      () async {
+        final c = containerWith(FakeAlbumRepository([fixtureAlbum('a1')]));
+        final sub = c.listen(portfolioViewProvider('p1'), (_, _) {});
+        addTearDown(sub.close);
+        await settle();
+        expect(c.read(portfolioViewProvider('p1')), PortfolioView.albums);
+        c
+            .read(portfolioViewChoiceProvider('p1').notifier)
+            .choose(PortfolioView.timeline);
+        expect(c.read(portfolioViewProvider('p1')), PortfolioView.timeline);
+        expect(
+          c.read(portfolioViewProvider('p2')),
+          PortfolioView.timeline,
+          reason: 'another profile has its own state',
+        );
+      },
+    );
   });
 }

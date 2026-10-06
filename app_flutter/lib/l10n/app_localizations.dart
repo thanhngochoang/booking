@@ -5091,6 +5091,138 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không tải được danh sách album.'**
   String get albumPickLoadError;
+
+  /// No description provided for @portfolioAlbumCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} album'**
+  String portfolioAlbumCount(int n);
+
+  /// No description provided for @portfolioArrange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp xếp'**
+  String get portfolioArrange;
+
+  /// No description provided for @albumDetailCounts.
+  ///
+  /// In vi, this message translates to:
+  /// **'{posts} bài · {photos} ảnh'**
+  String albumDetailCounts(int posts, int photos);
+
+  /// No description provided for @albumDetailEmptyOwner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album chưa có bài'**
+  String get albumDetailEmptyOwner;
+
+  /// No description provided for @albumDetailEmptyOwnerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm bài để album hiện trên hồ sơ của bạn.'**
+  String get albumDetailEmptyOwnerBody;
+
+  /// No description provided for @albumDetailAddPosts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm bài'**
+  String get albumDetailAddPosts;
+
+  /// No description provided for @albumDetailGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album này không còn'**
+  String get albumDetailGone;
+
+  /// No description provided for @albumDetailGoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album có thể đã bị xoá hoặc chưa có bài nào.'**
+  String get albumDetailGoneBody;
+
+  /// No description provided for @albumDetailShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ album'**
+  String get albumDetailShare;
+
+  /// No description provided for @albumDetailLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết album'**
+  String get albumDetailLinkCopied;
+
+  /// No description provided for @albumDetailMenu.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuỳ chọn album'**
+  String get albumDetailMenu;
+
+  /// No description provided for @albumDetailArrange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp xếp bài'**
+  String get albumDetailArrange;
+
+  /// No description provided for @albumDetailArrangeDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get albumDetailArrangeDone;
+
+  /// No description provided for @albumDetailRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ khỏi album'**
+  String get albumDetailRemove;
+
+  /// No description provided for @albumDetailRemoveFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bỏ được bài khỏi album.'**
+  String get albumDetailRemoveFailed;
+
+  /// No description provided for @albumDetailDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá album'**
+  String get albumDetailDelete;
+
+  /// No description provided for @albumDetailDeleteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá album này?'**
+  String get albumDetailDeleteTitle;
+
+  /// No description provided for @albumDetailDeleteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài trong album không bị xoá, chuyển về Chưa xếp album.'**
+  String get albumDetailDeleteBody;
+
+  /// No description provided for @albumDetailDeleteError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không xoá được album. Thử lại sau.'**
+  String get albumDetailDeleteError;
+
+  /// No description provided for @albumDetailReordered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đổi thứ tự'**
+  String get albumDetailReordered;
+
+  /// No description provided for @albumDetailReorderFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được thứ tự'**
+  String get albumDetailReorderFailed;
+
+  /// No description provided for @albumDetailUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get albumDetailUndo;
 }
 
 class _AppLocalizationsDelegate

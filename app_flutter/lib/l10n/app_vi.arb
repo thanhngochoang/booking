@@ -1451,5 +1451,38 @@
   "albumPickDup": "Bạn đã có album tên này",
   "albumPickLimit": "Bạn đã có đủ 30 album.",
   "albumPickCreateError": "Không tạo được album. Thử lại sau.",
-  "albumPickLoadError": "Không tải được danh sách album."
+  "albumPickLoadError": "Không tải được danh sách album.",
+  "portfolioAlbumCount": "{n} album",
+  "@portfolioAlbumCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "portfolioArrange": "Sắp xếp",
+  "albumDetailCounts": "{posts} bài · {photos} ảnh",
+  "@albumDetailCounts": {
+    "placeholders": {
+      "posts": {"type": "int"},
+      "photos": {"type": "int"}
+    }
+  },
+  "albumDetailEmptyOwner": "Album chưa có bài",
+  "albumDetailEmptyOwnerBody": "Thêm bài để album hiện trên hồ sơ của bạn.",
+  "albumDetailAddPosts": "Thêm bài",
+  "albumDetailGone": "Album này không còn",
+  "albumDetailGoneBody": "Album có thể đã bị xoá hoặc chưa có bài nào.",
+  "albumDetailShare": "Chia sẻ album",
+  "albumDetailLinkCopied": "Đã sao chép liên kết album",
+  "albumDetailMenu": "Tuỳ chọn album",
+  "albumDetailArrange": "Sắp xếp bài",
+  "albumDetailArrangeDone": "Xong",
+  "albumDetailRemove": "Bỏ khỏi album",
+  "albumDetailRemoveFailed": "Chưa bỏ được bài khỏi album.",
+  "albumDetailDelete": "Xoá album",
+  "albumDetailDeleteTitle": "Xoá album này?",
+  "albumDetailDeleteBody": "Bài trong album không bị xoá, chuyển về Chưa xếp album.",
+  "albumDetailDeleteError": "Không xoá được album. Thử lại sau.",
+  "albumDetailReordered": "Đã đổi thứ tự",
+  "albumDetailReorderFailed": "Chưa lưu được thứ tự",
+  "albumDetailUndo": "Hoàn tác"
 }

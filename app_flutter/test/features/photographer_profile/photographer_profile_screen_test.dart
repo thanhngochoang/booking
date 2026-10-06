@@ -422,4 +422,217 @@ void main() {
       expect(w.profiles.loads, 1, reason: 'no hidden retries');
     },
   );
+
+  group('Portfolio toggle (Album / Dòng thời gian)', () {
+    double offset(WidgetTester tester) =>
+        tester.state<ScrollableState>(_page).position.pixels;
+
+    /// Scrolls until the toggle sits clear of the app bar and footer bar.
+    Future<void> toToggle(WidgetTester tester) async {
+      final toggle = find.byType(PortfolioViewToggle);
+      for (var i = 0; i < 12; i++) {
+        if (toggle.evaluate().isNotEmpty) {
+          final top = tester.getTopLeft(toggle).dy;
+          if (top > 120 && top < 420) {
+            return;
+          }
+        }
+        await tester.drag(_page, const Offset(0, -100));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    PortfolioView shown(WidgetTester tester) => tester
+        .widget<PortfolioViewToggle>(find.byType(PortfolioViewToggle))
+        .value;
+
+    void twoAlbums(ProfileWorld w) {
+      w.albums
+        ..add(
+          fixtureAlbum(
+            'al1',
+            title: 'Tác phẩm đạt giải',
+            position: 1,
+            mediaCount: 12,
+            coverUrl: 'https://img.test/al1.jpg',
+          ),
+        )
+        ..add(
+          fixtureAlbum(
+            'al2',
+            title: 'Hà Giang 2025',
+            position: 2,
+            mediaCount: 18,
+          ),
+        );
+    }
+
+    testWidgets('no visible album hides the toggle and shows the timeline', (
+      tester,
+    ) async {
+      final w = await _world(tester);
+      w.albums.add(fixtureAlbum('empty', visible: false, postCount: 0));
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        _key('portfolio-a'),
+        200,
+        scrollable: _page,
+      );
+      expect(find.byType(PortfolioViewToggle), findsNothing);
+      expect(_key('portfolio-a'), findsOneWidget);
+      expect(_key('portfolio-arrange'), findsNothing);
+    });
+
+    testWidgets('with albums the toggle defaults to Albums', (tester) async {
+      final w = await _world(tester);
+      twoAlbums(w);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      expect(shown(tester), PortfolioView.albums);
+      expect(find.text('2 album'), findsOneWidget);
+      expect(_key('album-al2'), findsOneWidget);
+      expect(_key('portfolio-a'), findsNothing);
+    });
+
+    testWidgets('the first album is featured, the others are not', (
+      tester,
+    ) async {
+      final w = await _world(tester);
+      twoAlbums(w);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      expect(tester.widget<AlbumTile>(_key('album-al1')).featured, isTrue);
+      expect(tester.widget<AlbumTile>(_key('album-al2')).featured, isFalse);
+    });
+
+    testWidgets('an album opens its detail page', (tester) async {
+      final w = await _world(tester);
+      twoAlbums(w);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      await tester.tap(_key('album-al2'));
+      await tester.pumpAndSettle();
+      expect(w.router.state.uri.path, '/u/p1/albums/al2');
+      expect(find.text('Hà Giang 2025'), findsWidgets);
+    });
+
+    testWidgets('switching views keeps each scroll position', (tester) async {
+      final w = await _world(tester, width: 360);
+      twoAlbums(w);
+      for (var i = 0; i < 12; i++) {
+        w.discovery.posts.add(
+          fixturePost('t$i', age: Duration(minutes: 10 + i)),
+        );
+      }
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      await tester.drag(_page, const Offset(0, -40));
+      await tester.pumpAndSettle();
+      final albumsAt = offset(tester);
+
+      await tester.tap(find.text('Dòng thời gian'));
+      await tester.pumpAndSettle();
+      expect(_key('portfolio-t0'), findsOneWidget);
+      await tester.drag(_page, const Offset(0, 30));
+      await tester.pumpAndSettle();
+      final timelineAt = offset(tester);
+      expect(timelineAt, isNot(closeTo(albumsAt, 1)));
+
+      await tester.tap(find.text('Album'));
+      await tester.pumpAndSettle();
+      expect(shown(tester), PortfolioView.albums);
+      expect(offset(tester), closeTo(albumsAt, 1));
+
+      await tester.tap(find.text('Dòng thời gian'));
+      await tester.pumpAndSettle();
+      expect(offset(tester), closeTo(timelineAt, 1));
+    });
+
+    testWidgets('the choice is kept when the tab is left and reopened', (
+      tester,
+    ) async {
+      final w = await _world(tester);
+      twoAlbums(w);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      await tester.tap(find.text('Dòng thời gian'));
+      await tester.pumpAndSettle();
+      await _toTabs(tester);
+      await tester.tap(find.text('Gói'));
+      await tester.pumpAndSettle();
+      await _toTabs(tester);
+      await tester.tap(find.text('Portfolio'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      expect(shown(tester), PortfolioView.timeline);
+    });
+
+    testWidgets('the owner sees Sắp xếp and it opens /me/albums', (
+      tester,
+    ) async {
+      final w = await _world(tester, role: UserRole.photographer);
+      w.profiles.add(
+        PhotographerProfile(
+          summary: fixturePhotographer(w.uid, name: 'Lan Anh'),
+          intro: const PhotographerIntro(onboardingComplete: true),
+        ),
+      );
+      w.albums.add(fixtureAlbum('mine', photographerId: w.uid));
+      await tester.pumpWidget(w.app('/u/${w.uid}'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      expect(find.text('Sắp xếp'), findsOneWidget);
+      await tester.tap(_key('portfolio-arrange'));
+      await tester.pumpAndSettle();
+      expect(find.text('stub /me/albums'), findsOneWidget);
+    });
+
+    testWidgets('a visitor does not see Sắp xếp', (tester) async {
+      final w = await _world(tester);
+      twoAlbums(w);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await toToggle(tester);
+      expect(find.text('Sắp xếp'), findsNothing);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets('album view fits 320dp at 1.3x text (${b.name})', (
+        tester,
+      ) async {
+        final w = await _world(tester, width: 320, role: UserRole.photographer);
+        w.profiles.add(
+          PhotographerProfile(
+            summary: fixturePhotographer(w.uid, name: 'Lan Anh'),
+            intro: const PhotographerIntro(onboardingComplete: true),
+          ),
+        );
+        w.albums
+          ..add(
+            fixtureAlbum(
+              'x1',
+              photographerId: w.uid,
+              title: 'Một tên album rất dài để thử xuống dòng trên màn hẹp',
+            ),
+          )
+          ..add(fixtureAlbum('x2', photographerId: w.uid, position: 2))
+          ..add(fixtureAlbum('x3', photographerId: w.uid, position: 3));
+        await tester.pumpWidget(
+          w.app('/u/${w.uid}', brightness: b, textScale: 1.3),
+        );
+        await tester.pumpAndSettle();
+        await toToggle(tester);
+        await tester.drag(_page, const Offset(0, -120));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }

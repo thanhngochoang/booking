@@ -2875,4 +2875,77 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get albumPickLoadError => 'Không tải được danh sách album.';
+
+  @override
+  String portfolioAlbumCount(int n) {
+    return '$n album';
+  }
+
+  @override
+  String get portfolioArrange => 'Sắp xếp';
+
+  @override
+  String albumDetailCounts(int posts, int photos) {
+    return '$posts bài · $photos ảnh';
+  }
+
+  @override
+  String get albumDetailEmptyOwner => 'Album chưa có bài';
+
+  @override
+  String get albumDetailEmptyOwnerBody =>
+      'Thêm bài để album hiện trên hồ sơ của bạn.';
+
+  @override
+  String get albumDetailAddPosts => 'Thêm bài';
+
+  @override
+  String get albumDetailGone => 'Album này không còn';
+
+  @override
+  String get albumDetailGoneBody =>
+      'Album có thể đã bị xoá hoặc chưa có bài nào.';
+
+  @override
+  String get albumDetailShare => 'Chia sẻ album';
+
+  @override
+  String get albumDetailLinkCopied => 'Đã sao chép liên kết album';
+
+  @override
+  String get albumDetailMenu => 'Tuỳ chọn album';
+
+  @override
+  String get albumDetailArrange => 'Sắp xếp bài';
+
+  @override
+  String get albumDetailArrangeDone => 'Xong';
+
+  @override
+  String get albumDetailRemove => 'Bỏ khỏi album';
+
+  @override
+  String get albumDetailRemoveFailed => 'Chưa bỏ được bài khỏi album.';
+
+  @override
+  String get albumDetailDelete => 'Xoá album';
+
+  @override
+  String get albumDetailDeleteTitle => 'Xoá album này?';
+
+  @override
+  String get albumDetailDeleteBody =>
+      'Bài trong album không bị xoá, chuyển về Chưa xếp album.';
+
+  @override
+  String get albumDetailDeleteError => 'Không xoá được album. Thử lại sau.';
+
+  @override
+  String get albumDetailReordered => 'Đã đổi thứ tự';
+
+  @override
+  String get albumDetailReorderFailed => 'Chưa lưu được thứ tự';
+
+  @override
+  String get albumDetailUndo => 'Hoàn tác';
 }

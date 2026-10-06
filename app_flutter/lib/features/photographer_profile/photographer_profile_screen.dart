@@ -86,8 +86,7 @@ class _PhotographerProfileScreenState
       ScreenCodes.photographerProfile,
       child: AsyncView<PhotographerProfile?>(
         value: profile,
-        onRetry: () =>
-            ref.invalidate(photographerProfileProvider(widget.uid)),
+        onRetry: () => ref.invalidate(photographerProfileProvider(widget.uid)),
         skeleton: (_) => const _ProfileSkeleton(),
         error: (context, _, _) => _Message(
           title: l.profileLoadError,
@@ -183,6 +182,7 @@ class _PhotographerProfileScreenState
               builder: (context, value, _) => switch (value) {
                 ProfileSection.portfolio => PortfolioSliver(
                   photographerId: widget.uid,
+                  owner: owner,
                 ),
                 ProfileSection.services => ServicesSliver(
                   photographerId: widget.uid,
