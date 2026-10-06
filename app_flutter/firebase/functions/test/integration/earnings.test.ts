@@ -7,6 +7,7 @@ import { applySeed } from '../../seed/apply.js';
 import { callCallable, emulatorProject, resetEmulators, signIn } from '../../seed/emulator_client.js';
 import { AN, BINH, LAN, SEED_PASSWORD, SEED_USERS } from '../../seed/fixtures.js';
 import { aesGcmCipher } from '../../src/infra/account_cipher.js';
+import { FirestorePayoutStore } from '../../src/infra/payout_firestore.js';
 import { emulatorPayoutKey } from '../../seed/emulator_key.js';
 
 // The earnings triggers (onPaymentWritten, onPayoutWritten) and savePayoutAccount on the Functions
@@ -48,6 +49,19 @@ async function newPayment(id: string, payeeId: string, bookingId: string, escrow
 }
 
 describe('earnings on the emulators', () => {
+  test('payouts batch only booking payments (event tickets wait for 10c Task 9)', async () => {
+    await newPayment('int-pay-ev', AN, 'seed-event-1', 'released');
+    await db.doc('payments/int-pay-ev').update({ subjectType: 'event_ticket' });
+    const store = new FirestorePayoutStore(db);
+    const payable = await store.runTransaction((tx) => tx.listPayablePayments(AN));
+    assert.ok(!payable.some((p) => p.id === 'int-pay-ev'));
+    const due = await store.listDuePayees();
+    const before = due.find((d) => d.payeeId === AN)?.amount ?? 0;
+    await db.doc('payments/int-pay-ev').update({ amount: before + 999_000_000 });
+    assert.equal((await store.listDuePayees()).find((d) => d.payeeId === AN)?.amount ?? 0, before);
+    await db.doc('payments/int-pay-ev').delete();
+  });
+
   test('a released payment appears in Sắp nhận', async () => {
     const before = (await data(`earnings/${BINH}`)).soonAmount as number;
     await newPayment('int-pay-1', BINH, 'seed-booking-requested-binh', 'released');

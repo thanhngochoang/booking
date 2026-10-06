@@ -55,6 +55,31 @@ describe('payout use cases', () => {
     assert.deepEqual(po.items.map((i) => i.paymentId), [ok]);
   });
 
+  it('event-ticket payments are not batched (nor counted as due) until S06.05 shows them', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    const ev = await releasedPayment(w, '2026-10-15');
+    const ticket = w.store.payments.get(ev);
+    assert.ok(ticket);
+    w.store.payments.set(ev, { ...ticket, subjectType: 'event_ticket' });
+    await refused(createPayout(w.payoutDeps, ADMIN, 'p1'), 'not_eligible');
+    assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), []);
+    const ok = await releasedPayment(w, '2026-10-16');
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    assert.deepEqual(po.items.map((i) => i.paymentId), [ok]);
+  });
+
+  it('a cipher failure fails execute before the payout turns processing', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    await releasedPayment(w, '2026-10-15');
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    const deps = { ...w.payoutDeps, cipher: { ...w.payoutDeps.cipher, decrypt: async () => { throw new Error('bad key'); } } };
+    await assert.rejects(executePayout(deps, ADMIN, po.id), /bad key/);
+    assert.equal(w.payoutStore.payouts.get(po.id)?.status, 'pending');
+    assert.deepEqual(w.payGateway.calls, []);
+  });
+
   it('the payout amount equals the sum of its items', async () => {
     const w = createPayoutWorld();
     await addAccount(w);

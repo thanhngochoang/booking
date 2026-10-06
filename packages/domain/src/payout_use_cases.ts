@@ -53,12 +53,25 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
 export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutId: string): Promise<Payout> {
   requireAdmin(actor);
 
-  const started = await deps.store.runTransaction(async (tx) => {
+  // Decrypt before anything is written: a key problem then fails fast and leaves the payout as it
+  // was, not `processing`. (Remaining case for S23 staff tooling: the gateway keeps throwing after
+  // the payout is `processing`; it stays `processing` for staff to look at and re-run.)
+  const preview = await deps.store.runTransaction(async (tx) => {
     const p = await tx.getPayout(payoutId);
     if (p === null) throw new DomainError('not_found');
     if (p.status !== 'pending' && p.status !== 'processing') throw new DomainError('conflict');
     const account = await tx.getAccount(p.payeeId, p.accountId);
     if (account === null) throw new DomainError('not_eligible');
+    return account;
+  });
+  const accountNumber = await deps.cipher.decrypt(preview.accountNumberEnc);
+
+  const started = await deps.store.runTransaction(async (tx) => {
+    const p = await tx.getPayout(payoutId);
+    if (p === null) throw new DomainError('not_found');
+    if (p.status !== 'pending' && p.status !== 'processing') throw new DomainError('conflict');
+    const account = await tx.getAccount(p.payeeId, p.accountId);
+    if (account === null || account.accountNumberEnc !== preview.accountNumberEnc) throw new DomainError('conflict');
     const at = deps.clock.now().toISOString();
     const processing: Payout =
       p.status === 'processing' ? p : { ...p, status: 'processing', processingAt: at, updatedAt: at };
@@ -66,7 +79,6 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
     return { payout: processing, account };
   });
 
-  const accountNumber = await deps.cipher.decrypt(started.account.accountNumberEnc);
   const outcome = await deps.gateway.transfer({
     payoutId,
     amount: started.payout.amount,

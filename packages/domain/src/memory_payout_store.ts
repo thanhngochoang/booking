@@ -29,8 +29,9 @@ export class MemoryPayoutStore implements PayoutStore {
   }
 
   private payable(payeeId: string): Payment[] {
+    // TODO(10c Task 9): only booking payments are batched until event-ticket earnings rows exist on S06.05.
     return [...this.booking.payments.values()]
-      .filter((p) => p.payeeId === payeeId && p.escrowStatus === 'released' && !p.payoutId)
+      .filter((p) => p.payeeId === payeeId && p.subjectType === 'booking' && p.escrowStatus === 'released' && !p.payoutId)
       .map((p) => ({ ...p }));
   }
 
@@ -43,7 +44,7 @@ export class MemoryPayoutStore implements PayoutStore {
   async listDuePayees(): Promise<{ payeeId: string; amount: number; hasAccount: boolean }[]> {
     const totals = new Map<string, number>();
     for (const p of this.booking.payments.values()) {
-      if (p.escrowStatus !== 'released' || p.payoutId) continue;
+      if (p.subjectType !== 'booking' || p.escrowStatus !== 'released' || p.payoutId) continue; // TODO(10c Task 9)
       const net = p.amount - this.refunded(p.id);
       if (net > 0) totals.set(p.payeeId, (totals.get(p.payeeId) ?? 0) + net);
     }
