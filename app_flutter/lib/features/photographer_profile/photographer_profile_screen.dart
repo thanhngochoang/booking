@@ -304,12 +304,9 @@ class _ProfileSkeleton extends StatelessWidget {
           Center(child: AppSkeleton.line(width: 240)),
           const SizedBox(height: AppSpace.s4),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              StatTile.skeleton(),
-              StatTile.skeleton(),
-              StatTile.skeleton(),
-              StatTile.skeleton(),
+              for (var i = 0; i < 4; i++)
+                Expanded(child: FittedBox(child: StatTile.skeleton())),
             ],
           ),
           const SizedBox(height: AppSpace.s4),

@@ -2948,4 +2948,8 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get albumDetailUndo => 'Hoàn tác';
+
+  @override
+  String get albumDetailArrangeLoadFailed =>
+      'Chưa tải hết bài để sắp xếp. Thử lại sau.';
 }

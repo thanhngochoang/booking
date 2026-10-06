@@ -37,9 +37,6 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
   bool _arranging = false;
   bool _preparing = false;
 
-  bool get _owner =>
-      ref.read(authRepositoryProvider).currentUser?.uid == widget.uid;
-
   /// No public web host exists yet, so the in-app path is what is copied.
   String get _link => '/u/${widget.uid}/albums/${widget.albumId}';
 
@@ -57,14 +54,24 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
 
   Future<void> _startArranging() async {
     setState(() => _preparing = true);
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
     await ref.read(albumPostsProvider(widget.albumId).notifier).loadAll();
     if (!mounted) {
       return;
     }
+    // Reordering needs every post; a page that failed leaves some out.
+    final complete =
+        ref.read(albumPostsProvider(widget.albumId)).value?.hasMore == false;
     setState(() {
       _preparing = false;
-      _arranging = true;
+      _arranging = complete;
     });
+    if (!complete) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l.albumDetailArrangeLoadFailed)));
+    }
   }
 
   Future<void> _delete() async {
@@ -111,6 +118,9 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final notifier = ref.read(albumPostsProvider(widget.albumId).notifier);
+    // The undo may run after this screen is gone, so it uses the repository
+    // itself, not the (then disposed) notifier.
+    final repo = ref.read(albumRepositoryProvider);
     final ok = await notifier.reorder(after);
     if (!mounted) {
       return;
@@ -128,7 +138,20 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: l.albumDetailUndo,
-          onPressed: () => notifier.reorder(before),
+          onPressed: () async {
+            try {
+              await repo.reorderPosts(widget.albumId, before);
+              if (mounted) {
+                ref.invalidate(albumPostsProvider(widget.albumId));
+              }
+            } catch (_) {
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(content: Text(l.albumDetailReorderFailed)),
+                );
+            }
+          },
         ),
       ),
     );
@@ -138,9 +161,12 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final album = ref.watch(albumProvider(widget.albumId));
-    final owner = _owner;
+    final me = ref.watch(authRepositoryProvider).currentUser?.uid;
     final a = album.value;
-    final visible = a != null && (owner || a.visible);
+    // The URL's uid must be the album's real owner, else it is not shown.
+    final owner = a != null && me == a.photographerId;
+    final visible =
+        a != null && a.photographerId == widget.uid && (owner || a.visible);
     return ScreenCode(
       ScreenCodes.albumDetail,
       child: AuroraBackground(
@@ -244,15 +270,15 @@ class _Skeleton extends StatelessWidget {
     physics: const NeverScrollableScrollPhysics(),
     padding: const EdgeInsets.all(AppSpace.s4),
     children: [
-      AppSkeleton.line(width: 220, height: AppText.xl),
+      AppSkeleton.line(widthFactor: 0.6, height: AppText.xl),
       const SizedBox(height: AppSpace.s3),
-      AppSkeleton.line(width: 180),
+      AppSkeleton.line(widthFactor: 0.5),
       const SizedBox(height: AppSpace.s4),
       Row(
         children: [
-          Expanded(child: AppSkeleton.box(height: 160)),
+          Expanded(child: AppSkeleton.box(height: AppSpace.s12 * 3)),
           const SizedBox(width: AppSpace.s2),
-          Expanded(child: AppSkeleton.box(height: 160)),
+          Expanded(child: AppSkeleton.box(height: AppSpace.s12 * 3)),
         ],
       ),
     ],
@@ -315,9 +341,9 @@ class _Body extends ConsumerWidget {
           onRetry: () => ref.invalidate(albumPostsProvider(album.id)),
           skeleton: (_) => Row(
             children: [
-              Expanded(child: AppSkeleton.box(height: 180)),
+              Expanded(child: AppSkeleton.box(height: AppSpace.s12 * 4)),
               const SizedBox(width: AppSpace.s2),
-              Expanded(child: AppSkeleton.box(height: 180)),
+              Expanded(child: AppSkeleton.box(height: AppSpace.s12 * 4)),
             ],
           ),
           isEmpty: (s) => s.posts.isEmpty,
@@ -355,7 +381,7 @@ class _AuthorRow extends ConsumerWidget {
     );
     return AsyncView(
       value: profile,
-      skeleton: (_) => AppSkeleton.line(width: 200),
+      skeleton: (_) => AppSkeleton.line(widthFactor: 0.5),
       error: (_, _, _) => const SizedBox.shrink(),
       data: (context, p) {
         if (p == null) {
@@ -560,7 +586,7 @@ class _ArrangeList extends ConsumerWidget {
   final Future<void> Function(List<String> before, List<String> after)
   onReorder;
 
-  static const _thumb = 44.0;
+  static const _thumb = AppSpace.s12;
 
   Future<void> _move(BuildContext context, int from, int to) async {
     if (to < 0 || to >= posts.length || to == from) {

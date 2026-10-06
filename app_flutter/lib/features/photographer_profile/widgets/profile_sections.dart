@@ -112,19 +112,14 @@ class _PortfolioSliverState extends ConsumerState<PortfolioSliver> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (albums.isNotEmpty)
-                    // Scales down rather than overflowing on a narrow screen
-                    // at a large text size.
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: PortfolioViewToggle(
-                        key: const Key('portfolio-toggle'),
-                        value: view,
-                        onChanged: (v) {
-                          if (v != view) {
-                            _switchTo(view, v);
-                          }
-                        },
-                      ),
+                    PortfolioViewToggle(
+                      key: const Key('portfolio-toggle'),
+                      value: view,
+                      onChanged: (v) {
+                        if (v != view) {
+                          _switchTo(view, v);
+                        }
+                      },
                     ),
                   Row(
                     mainAxisSize: MainAxisSize.min,

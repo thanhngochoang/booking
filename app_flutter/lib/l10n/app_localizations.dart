@@ -5223,6 +5223,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Hoàn tác'**
   String get albumDetailUndo;
+
+  /// No description provided for @albumDetailArrangeLoadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải hết bài để sắp xếp. Thử lại sau.'**
+  String get albumDetailArrangeLoadFailed;
 }
 
 class _AppLocalizationsDelegate

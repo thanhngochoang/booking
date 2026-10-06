@@ -44,4 +44,30 @@ void main() {
       greaterThanOrEqualTo(48),
     );
   });
+
+  for (final b in Brightness.values) {
+    testWidgets('fits 288dp at 1.3x text with 48dp segments (${b.name})', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        hostWidget(
+          PortfolioViewToggle(value: PortfolioView.albums, onChanged: (_) {}),
+          width: 288,
+          textScale: 1.3,
+          brightness: b,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(PortfolioViewToggle)).width,
+        lessThanOrEqualTo(288),
+      );
+      for (final i in [0, 1]) {
+        expect(
+          tester.getSize(find.byType(InkWell).at(i)).height,
+          greaterThanOrEqualTo(48),
+        );
+      }
+    });
+  }
 }

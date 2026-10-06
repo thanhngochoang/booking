@@ -93,8 +93,9 @@ class AlbumPostsController extends AsyncNotifier<AlbumPostsState> {
     }
   }
 
-  /// Shows [postIds] order at once and saves it; puts the old order back and
-  /// returns false when the save fails. Returns true when nothing changed.
+  /// Shows [postIds] order at once and saves it. Returns true when saved; puts
+  /// the old order back and returns false when the save fails. Also returns
+  /// false (nothing changes) when [postIds] is not exactly the loaded posts.
   Future<bool> reorder(List<String> postIds) async {
     final current = state.value;
     if (current == null) {

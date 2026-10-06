@@ -181,7 +181,111 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Album này không còn'), findsOneWidget);
     expect(_key('profile-book'), findsNothing);
-    expect(find.text('Xem hồ sơ'), findsOneWidget);
+    await tester.tap(find.text('Xem hồ sơ'));
+    await tester.pumpAndSettle();
+    expect(w.router.state.uri.path, '/u/p1');
+    expect(tester.takeException(), isNull);
+    expect(find.text('Portfolio'), findsOneWidget);
+  });
+
+  testWidgets('an album of another photographer under this uid is gone', (
+    tester,
+  ) async {
+    final w = await _world(tester); // al1 belongs to p1
+    await tester.pumpWidget(w.app('/u/p2/albums/al1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Album này không còn'), findsOneWidget);
+    expect(find.text('Tác phẩm đạt giải'), findsNothing);
+  });
+
+  testWidgets('a foreign album never shows the owner menu', (tester) async {
+    final w = await _world(tester, role: UserRole.photographer);
+    await tester.pumpWidget(w.app('/u/p1/albums/al1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tác phẩm đạt giải'), findsOneWidget);
+    expect(_key('album-menu'), findsNothing);
+    // The signed-in user is not the album's owner, whatever the URL says.
+    await tester.pumpWidget(const SizedBox());
+    final w2 = await _world(tester, role: UserRole.photographer, mine: true);
+    await tester.pumpWidget(w2.app('/u/p1/albums/al1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Album này không còn'), findsOneWidget);
+    expect(_key('album-menu'), findsNothing);
+  });
+
+  testWidgets('undo still works, or says it failed, after leaving', (
+    tester,
+  ) async {
+    final w = await _world(tester, role: UserRole.photographer, mine: true);
+    await tester.pumpWidget(w.app('/u/${w.uid}/albums/al1'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('album-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sắp xếp bài'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác với mục này').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chuyển xuống'));
+    await tester.pumpAndSettle();
+    w.router.go('/u/p1');
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Hoàn tác'), findsOneWidget);
+    await tester.tap(find.text('Hoàn tác'));
+    await tester.pumpAndSettle();
+    expect(w.albums.calls.last, 'reorderPosts:al1:x1,x2,x3');
+    expect(tester.takeException(), isNull);
+
+    // A failing undo reports it instead of throwing.
+    await tester.pumpWidget(const SizedBox());
+    final w2 = await _world(tester, role: UserRole.photographer, mine: true);
+    await tester.pumpWidget(w2.app('/u/${w2.uid}/albums/al1'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('album-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sắp xếp bài'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác với mục này').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chuyển xuống'));
+    await tester.pumpAndSettle();
+    w2.router.go('/u/p1');
+    await tester.pump(const Duration(milliseconds: 400));
+    w2.albums.failWith = const AlbumError('unavailable');
+    await tester.tap(find.text('Hoàn tác'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chưa lưu được thứ tự'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('arrange mode is not entered when a page failed to load', (
+    tester,
+  ) async {
+    final w = await _world(
+      tester,
+      role: UserRole.photographer,
+      mine: true,
+      withPosts: false,
+    );
+    for (var i = 1; i <= 30; i++) {
+      w.discovery.posts.add(
+        fixturePost(
+          'm$i',
+          photographerId: w.uid,
+          albumId: 'al1',
+          albumPosition: i,
+        ),
+      );
+    }
+    await tester.pumpWidget(w.app('/u/${w.uid}/albums/al1'));
+    await tester.pumpAndSettle();
+    w.discovery.posts.failWith = StateError('offline');
+    await tester.tap(_key('album-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sắp xếp bài'));
+    await tester.pumpAndSettle();
+    expect(_key('album-arrange-list'), findsNothing);
+    expect(find.textContaining('Chưa tải hết bài'), findsOneWidget);
+    expect(_key('album-post-m1'), findsOneWidget);
   });
 
   testWidgets('an empty album is gone for visitors', (tester) async {

@@ -1484,5 +1484,6 @@
   "albumDetailDeleteError": "Không xoá được album. Thử lại sau.",
   "albumDetailReordered": "Đã đổi thứ tự",
   "albumDetailReorderFailed": "Chưa lưu được thứ tự",
-  "albumDetailUndo": "Hoàn tác"
+  "albumDetailUndo": "Hoàn tác",
+  "albumDetailArrangeLoadFailed": "Chưa tải hết bài để sắp xếp. Thử lại sau."
 }
