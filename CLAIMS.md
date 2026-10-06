@@ -5,12 +5,12 @@ Written only by `.claude/skills/run-next-plan/scripts/board.py`; do not edit by 
 One line per unit: id · state · branch · machine · last update.
 
 ## Active
-- `C1` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `C2` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `C3` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `9c/2-L1` · in review (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 
 ## Finished
+- `C1` · done (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `9a/2-L1` · done (PR #31) · `plan/9abc-L1-provider-portfolio-awards` · MacBook-Pro · 2026-10-06
 - `8e/7-L1` · done (PR #30) · `plan/8e-7-L1-review-ui` · MacBook-Pro · 2026-10-06
 - `9c/1-L2` · done (PR #28) · `plan/9c-1-L2-awards-core` · MacBook-Pro · 2026-10-06
