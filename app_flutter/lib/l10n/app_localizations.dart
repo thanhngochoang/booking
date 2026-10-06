@@ -4857,6 +4857,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bạn đã đánh giá buổi chụp này.'**
   String get reviewAlreadyDone;
+
+  /// No description provided for @reviewsAnonymousName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách hàng'**
+  String get reviewsAnonymousName;
 }
 
 class _AppLocalizationsDelegate

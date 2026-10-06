@@ -507,7 +507,17 @@ class _ReviewsContent extends ConsumerWidget {
           _ReviewRow(review: reviews[i]),
           if (i < reviews.length - 1) const Divider(height: 1),
         ],
-        if (notifier.loadingMore)
+        if (notifier.loadMoreFailed)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
+            child: Center(
+              child: TextButton(
+                onPressed: notifier.retryLoadMore,
+                child: Text(l.retry),
+              ),
+            ),
+          )
+        else if (notifier.loadingMore)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpace.s4),
             child: Center(
@@ -525,7 +535,11 @@ class _ReviewRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final customer = ref.watch(partyProfileProvider(review.customerId)).value;
+    final customerAsync = ref.watch(partyProfileProvider(review.customerId));
+    if (customerAsync.isLoading && !customerAsync.hasValue) {
+      return ReviewTile.skeleton();
+    }
+    final customer = customerAsync.value;
     final thumbs = review.photoPostId != null
         ? ref.watch(reviewPostProvider(review.photoPostId!)).value?.images
                 .take(3)
@@ -536,7 +550,7 @@ class _ReviewRow extends ConsumerWidget {
 
     return ReviewTile(
       review: review,
-      name: customer?.displayName ?? 'Khách hàng',
+      name: customer?.displayName ?? context.l10n.reviewsAnonymousName,
       avatarUrl: customer?.avatarUrl,
       thumbs: thumbs,
     );
@@ -627,7 +641,8 @@ class _ReviewTileState extends State<ReviewTile> {
               final textSpan = TextSpan(text: widget.review.text, style: style);
               final textPainter = TextPainter(
                 text: textSpan,
-                textDirection: TextDirection.ltr,
+                textDirection: Directionality.of(context),
+                textScaler: MediaQuery.textScalerOf(context),
                 maxLines: 4,
               )..layout(
                   maxWidth: constraints.maxWidth.isFinite

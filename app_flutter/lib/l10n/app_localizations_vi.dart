@@ -2750,4 +2750,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewAlreadyDone => 'Bạn đã đánh giá buổi chụp này.';
+
+  @override
+  String get reviewsAnonymousName => 'Khách hàng';
 }

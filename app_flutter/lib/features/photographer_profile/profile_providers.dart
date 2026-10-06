@@ -115,7 +115,9 @@ class PhotographerReviews extends AsyncNotifier<List<Review>> {
   Object? _cursor;
   bool _hasMore = false;
   bool _loadingMore = false;
+  bool _loadMoreFailed = false;
 
+  bool get loadMoreFailed => _loadMoreFailed;
   bool get hasMore => _hasMore;
   bool get loadingMore => _loadingMore;
 
@@ -124,6 +126,7 @@ class PhotographerReviews extends AsyncNotifier<List<Review>> {
     _cursor = null;
     _hasMore = false;
     _loadingMore = false;
+    _loadMoreFailed = false;
     final page = await ref
         .watch(reviewRepositoryProvider)
         .forPhotographer(photographerId, limit: 10);
@@ -132,9 +135,15 @@ class PhotographerReviews extends AsyncNotifier<List<Review>> {
     return page.items;
   }
 
+  /// After a failed page the list stops auto-loading; the user taps "Thử lại".
+  Future<void> retryLoadMore() async {
+    _loadMoreFailed = false;
+    await loadMore();
+  }
+
   Future<void> loadMore() async {
     final current = state.value;
-    if (current == null || !_hasMore || _loadingMore) return;
+    if (current == null || !_hasMore || _loadingMore || _loadMoreFailed) return;
     _loadingMore = true;
     state = AsyncData(List<Review>.of(current));
     try {
@@ -147,6 +156,7 @@ class PhotographerReviews extends AsyncNotifier<List<Review>> {
       state = AsyncData([...current, ...page.items]);
     } catch (_) {
       _loadingMore = false;
+      _loadMoreFailed = true;
       state = AsyncData(List<Review>.of(current));
     }
   }

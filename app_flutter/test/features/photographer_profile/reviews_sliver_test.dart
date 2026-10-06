@@ -99,6 +99,25 @@ class _PagingReviewRepository implements ReviewRepository {
       null;
 }
 
+class _FlakyPagingRepository extends _PagingReviewRepository {
+  _FlakyPagingRepository({required super.firstPage, required super.secondPage});
+  int secondPageCalls = 0;
+  bool failSecond = true;
+
+  @override
+  Future<ReviewPage> forPhotographer(
+    String photographerId, {
+    Object? after,
+    int limit = 10,
+  }) async {
+    if (after != null) {
+      secondPageCalls++;
+      if (failSecond) throw Exception('boom');
+    }
+    return super.forPhotographer(photographerId, after: after, limit: limit);
+  }
+}
+
 void main() {
   group('ReviewsSliver', () {
     late FakeReviewRepository fakeReviews;
@@ -382,6 +401,110 @@ void main() {
 
       expect(find.text('Xem thêm'), findsNothing);
       expect(find.text(longReview.text), findsOneWidget);
+    });
+
+    testWidgets('a failing next page shows retry instead of auto-retrying', (
+      tester,
+    ) async {
+      final repo = _FlakyPagingRepository(
+        firstPage: [
+          for (var i = 0; i < 10; i++)
+            Review(
+              bookingId: 'b$i',
+              customerId: 'c$i',
+              photographerId: 'p1',
+              serviceId: 's1',
+              rating: 5,
+              text: 'Đánh giá $i',
+              createdAt: DateTime(2026, 10, 1, 10, i),
+            ),
+        ],
+        secondPage: [
+          Review(
+            bookingId: 'b10',
+            customerId: 'c10',
+            photographerId: 'p1',
+            serviceId: 's1',
+            rating: 5,
+            text: 'Trang hai',
+            createdAt: DateTime(2026, 10, 1, 9),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        buildApp(
+          sliver: const ReviewsSliver(photographerId: 'p1'),
+          overrides: [reviewRepositoryProvider.overrideWithValue(repo)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      expect(repo.secondPageCalls, 1);
+      expect(find.text('Thử lại'), findsOneWidget);
+
+      repo.failSecond = false;
+      await tester.ensureVisible(find.text('Thử lại'));
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      expect(find.text('Thử lại'), findsNothing);
+      expect(repo.secondPageCalls, 2);
+      expect(find.text('Trang hai'), findsOneWidget);
+    });
+
+    testWidgets('a review that overflows only at 1.3x text shows Xem thêm', (
+      tester,
+    ) async {
+      fakeReviews.seedReview(
+        Review(
+          bookingId: 'b1',
+          customerId: 'c1',
+          photographerId: 'p1',
+          serviceId: 's1',
+          rating: 5,
+          text: List.filled(40, 'chụp').join(' '),
+          createdAt: DateTime(2026, 10, 2),
+        ),
+      );
+      await tester.pumpWidget(
+        buildApp(sliver: const ReviewsSliver(photographerId: 'p1')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Xem thêm'), findsNothing);
+
+      await tester.pumpWidget(
+        buildApp(
+          sliver: const ReviewsSliver(photographerId: 'p1'),
+          textScale: 1.3,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Xem thêm'), findsOneWidget);
+    });
+
+    testWidgets('an unknown customer shows the localized fallback name', (
+      tester,
+    ) async {
+      fakeReviews.seedReview(
+        Review(
+          bookingId: 'b1',
+          customerId: 'ghost',
+          photographerId: 'p1',
+          serviceId: 's1',
+          rating: 5,
+          text: 'Tốt',
+          createdAt: DateTime(2026, 10, 2),
+        ),
+      );
+      await tester.pumpWidget(
+        buildApp(sliver: const ReviewsSliver(photographerId: 'p1')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Khách hàng'), findsOneWidget);
     });
 
     testWidgets('photo thumbnails open the real-shoot post', (tester) async {
