@@ -1329,5 +1329,37 @@
     "placeholders": {
       "album": {"type": "String"}
     }
+  },
+  "awardResultGold": "Huy chương Vàng",
+  "awardResultSilver": "Huy chương Bạc",
+  "awardResultBronze": "Huy chương Đồng",
+  "awardResultHonorable": "Giải Khuyến khích",
+  "awardResultFinalist": "Top / Chung kết",
+  "awardResultExhibited": "Chọn triển lãm",
+  "awardShortGold": "Vàng / Nhất",
+  "awardShortSilver": "Bạc / Nhì",
+  "awardShortBronze": "Đồng / Ba",
+  "awardShortHonorable": "Khuyến khích",
+  "awardShortFinalist": "Top / Chung kết",
+  "awardShortExhibited": "Chọn triển lãm",
+  "awardPending": "Chờ duyệt",
+  "awardApproved": "Đã duyệt",
+  "awardNeedsInfo": "Bổ sung",
+  "awardRejected": "Từ chối",
+  "awardRevoked": "Đã thu hồi",
+  "awardChipSemantics": "Giải thưởng: {title}, {subtitle}",
+  "@awardChipSemantics": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "subtitle": {"type": "String"}
+    }
+  },
+  "awardRowSemantics": "Giải thưởng: {title}, {subtitle}, trạng thái {status}",
+  "@awardRowSemantics": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "subtitle": {"type": "String"},
+      "status": {"type": "String"}
+    }
   }
 }

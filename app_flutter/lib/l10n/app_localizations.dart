@@ -4629,6 +4629,120 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đang ở album {album}'**
   String postPickInAlbum(String album);
+
+  /// No description provided for @awardResultGold.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy chương Vàng'**
+  String get awardResultGold;
+
+  /// No description provided for @awardResultSilver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy chương Bạc'**
+  String get awardResultSilver;
+
+  /// No description provided for @awardResultBronze.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy chương Đồng'**
+  String get awardResultBronze;
+
+  /// No description provided for @awardResultHonorable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải Khuyến khích'**
+  String get awardResultHonorable;
+
+  /// No description provided for @awardResultFinalist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Top / Chung kết'**
+  String get awardResultFinalist;
+
+  /// No description provided for @awardResultExhibited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn triển lãm'**
+  String get awardResultExhibited;
+
+  /// No description provided for @awardShortGold.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vàng / Nhất'**
+  String get awardShortGold;
+
+  /// No description provided for @awardShortSilver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạc / Nhì'**
+  String get awardShortSilver;
+
+  /// No description provided for @awardShortBronze.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng / Ba'**
+  String get awardShortBronze;
+
+  /// No description provided for @awardShortHonorable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khuyến khích'**
+  String get awardShortHonorable;
+
+  /// No description provided for @awardShortFinalist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Top / Chung kết'**
+  String get awardShortFinalist;
+
+  /// No description provided for @awardShortExhibited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn triển lãm'**
+  String get awardShortExhibited;
+
+  /// No description provided for @awardPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ duyệt'**
+  String get awardPending;
+
+  /// No description provided for @awardApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã duyệt'**
+  String get awardApproved;
+
+  /// No description provided for @awardNeedsInfo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bổ sung'**
+  String get awardNeedsInfo;
+
+  /// No description provided for @awardRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get awardRejected;
+
+  /// No description provided for @awardRevoked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu hồi'**
+  String get awardRevoked;
+
+  /// No description provided for @awardChipSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng: {title}, {subtitle}'**
+  String awardChipSemantics(String title, String subtitle);
+
+  /// No description provided for @awardRowSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng: {title}, {subtitle}, trạng thái {status}'**
+  String awardRowSemantics(String title, String subtitle, String status);
 }
 
 class _AppLocalizationsDelegate
