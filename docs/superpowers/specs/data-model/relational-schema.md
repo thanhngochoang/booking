@@ -103,7 +103,12 @@ create table photographers (
   onboarding_complete  boolean not null default false,
   accepts_inquiries    boolean not null default true,
   -- dẫn xuất (use case ghi)
-  rating_avg           numeric(3,2) not null default 0,
+  -- 2026-10-06: rating_avg thay bằng các cột cà chua/gạch
+  tomato_count         int not null default 0,
+  brick_count          int not null default 0,
+  signed_sum           numeric(8,2) not null default 0,
+  tomato_pct           smallint not null default 0,
+  score                numeric(4,3) not null default 0,
   review_count         int not null default 0,
   completed_count      int not null default 0,
   response_minutes_median int,
@@ -359,7 +364,11 @@ create table reviews (
   booking_id      text primary key references bookings(id),
   customer_id     text not null references users(id),
   photographer_id text not null references photographers(user_id),
-  rating          smallint not null check (rating between 1 and 5),
+  verdict         text not null check (verdict in ('tomato','brick')),
+  hits            smallint not null check (hits between 1 and 10),
+  intensity       numeric(3,2) not null,
+  reasons         text[] not null default '{}'
+                  check ((verdict = 'brick') = (cardinality(reasons) > 0)),
   text            text not null,
   photo_post_id   text references posts(id),
   created_at      timestamptz not null default now(),
@@ -852,7 +861,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | Giá trị | Nguồn sự thật | Cách giữ |
 |---------|---------------|----------|
 | `posts.like_count`, `save_count` | `likes`, `saves` | Use case/trigger cập nhật; có job đối soát hằng đêm |
-| `photographers.rating_avg`, `review_count`, `completed_count` | `reviews`, `bookings` | `submit_review`, `transition_booking` |
+| `photographers.tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`, `review_count`, `completed_count` | `reviews`, `bookings` | `submit_review`, `transition_booking` |
 | `photographers.starting_price` | `min(services.price) where active` | `onPhotographerWrite` |
 | `photographers.next_free_date` | `availability_days`, `bookings` | Cron mỗi giờ |
 | `photographers.skills_completeness` | kỹ năng đã khai | `onPhotographerWrite` |

@@ -457,7 +457,7 @@ Huy hiệu ghi nhận người dùng (cả khách và nhiếp ảnh gia) và đ�
 
 | Nguồn | Ý nghĩa | Ví dụ (danh mục khởi đầu) |
 |-------|---------|---------------------------|
-| `review` | Suy ra từ đánh giá | "Được đánh giá cao" (NAG: ≥ 4,8 sao và ≥ 20 đánh giá), "Khen nhiều về đúng giờ" (≥ 5 đánh giá nhắc từ khoá "đúng giờ"), "Nhận xét chi tiết" (khách: ≥ 5 nhận xét ≥ 50 ký tự) |
+| `review` | Suy ra từ đánh giá | "Được đánh giá cao" (NAG: ≥ 95% cà chua và ≥ 20 đánh giá; đổi 2026-10-06), "Khen nhiều về đúng giờ" (≥ 5 đánh giá nhắc từ khoá "đúng giờ"), "Nhận xét chi tiết" (khách: ≥ 5 nhận xét ≥ 50 ký tự) |
 | `system` | Hệ thống trao theo hoạt động | "Thành viên mới" (30 ngày đầu), "Hồ sơ đầy đủ" (≥ 6 ảnh và ≥ 1 gói), "Phản hồi nhanh" (trung vị ≤ 60 phút trong 10 yêu cầu gần nhất), "10 / 50 / 100 buổi chụp", "Chủ sự kiện" (≥ 1 sự kiện hoàn thành), "Khách thân thiết" (≥ 3 buổi hoàn thành), "Người chia sẻ" (≥ 5 bài "Buổi chụp thật") |
 
 Dữ liệu:
@@ -503,7 +503,7 @@ Thanh tab dưới dùng `TabBadge` (bong bóng đỏ, chữ trắng, "9+" từ m
 - **Dữ liệu có cấu trúc, không gõ tự do.** Nhiếp ảnh gia chọn từ danh mục chuẩn (id ổn định, nhãn tiếng Việt) để thuật toán so khớp được và đổi nhãn không làm hỏng dữ liệu.
 - **Thuật toán nằm ngoài ứng dụng.** Ứng dụng chỉ biết một giao diện (`RecommendationRepository`); mọi cách xếp hạng nằm trong dịch vụ riêng `services/recommender`, nâng cấp hoặc thay mới mà không phát hành lại ứng dụng.
 - **Giải thích được.** Mỗi gợi ý trả kèm lý do ngắn bằng tiếng Việt ("Chuyên sâu chân dung · 1,2 km · rảnh T7"), hiển thị ở S02.01, S02.06.
-- **Luôn có đường lui.** Dịch vụ lỗi hoặc chậm thì ứng dụng tự xếp theo sao và khoảng cách.
+- **Luôn có đường lui.** Dịch vụ lỗi hoặc chậm thì ứng dụng tự xếp theo điểm đánh giá (`smoothedScore`, spec 2026-10-06) và khoảng cách.
 
 ### 3e.2 Thu thập kỹ năng (S08.02–S08.04)
 
@@ -850,7 +850,7 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S02.01 | Header chào + chuông + chat; chip danh mục; thẻ ảnh lớn; "Rảnh tuần này" ngang; "Buổi chụp thật" | Empty: `EmptyState` có nút "Khám phá nhiếp ảnh gia". Feed phân trang 20/lần. Chấm lịch lấy từ `stats.nextFreeDate`. | Chạm ảnh → S02.02; chạm tên → S03.01; pill "Rảnh T7" hiện đúng ngày thật. |
 | S02.02 | Ảnh lớn, tác giả + `VerifiedMark`, mô tả, like/save/vị trí/chia sẻ, gói gắn bài, "Thêm của …" | Like/save lạc quan, hoàn tác khi lỗi. Bài `real_shoot` hiện "Chụp bởi … · gói …". | "Đặt gói này" mở S04.01 đã chọn gói (bỏ bước 1); thiếu SĐT → S04.05 trước. |
 | S03.01 | Hero, avatar, tên + `VerifiedMark`, thống kê, bio, **hàng huy hiệu** (+ "Xem tất cả" → S03.02), tab Portfolio/Gói/Lịch/Đánh giá; nút cố định gồm nút **Nhắn tin hỏi trước** (biểu tượng chat, mở chat `inquiry`) + **Đặt lịch** | Tab Lịch dùng `AvailabilityCalendar` chỉ đọc. Chưa có đánh giá → empty có chữ rõ. Chưa có huy hiệu → ẩn hàng. | Nút chat mở chat hỏi trước (không có gọi/Zalo/WhatsApp trước khi đặt); "Đặt lịch" mở S04.01 (qua S04.05 nếu thiếu SĐT). |
-| S02.06 | Chip lọc đã điền (khu vực, ngày, dịch vụ, giá, sao), đếm kết quả, danh sách `PhotographerCard` (tên + `VerifiedMark`, tối đa 2 huy hiệu) | Khu vực mặc định lấy từ vị trí hoặc khu vực đã chọn (mục 3c). Không kết quả: gợi ý nới bộ lọc, nút "Xoá bộ lọc". | "Đặt T7" mở S04.02 với ngày và dịch vụ sẵn (qua S04.05 nếu thiếu SĐT). |
+| S02.06 | Chip lọc đã điền (khu vực, ngày, dịch vụ, giá, % cà chua), đếm kết quả, danh sách `PhotographerCard` (tên + `VerifiedMark`, tối đa 2 huy hiệu) | Khu vực mặc định lấy từ vị trí hoặc khu vực đã chọn (mục 3c). Không kết quả: gợi ý nới bộ lọc, nút "Xoá bộ lọc". | "Đặt T7" mở S04.02 với ngày và dịch vụ sẵn (qua S04.05 nếu thiếu SĐT). |
 | S04.01 | Chọn gói (thumb, mô tả, giá); tổng tiền trên nút | Bước 3 Địa điểm: bản đồ nhỏ + ô địa chỉ, mặc định từ lọc. Đóng sheet khi đã chọn → hỏi xác nhận. | Chuyển bước giữ lựa chọn khi quay lại. |
 | S04.02 | Lưới tháng 4 trạng thái; chip giờ theo `durationMinutes`; gợi ý giờ của nhiếp ảnh gia | Ngày "Chờ" xem được, không chọn được. Kiểm tra lại availability khi vào bước 4. | Ngày bị chiếm → lỗi `day_taken`, quay S04.02 với ngày gạch. |
 | S04.03 | Tóm tắt booking, hàng **Ghi chú + SĐT của bạn** (lấy từ hồ sơ, sửa được), bảng tiền, chính sách huỷ, MoMo/VNPay | Nút "Đặt cọc" loading + vô hiệu khi đang gọi `createDeposit`. SĐT sai/thiếu → lỗi dưới ô, không gọi cổng. | Thành công mở cổng; client không tin redirect, chờ `bookings.status`. |

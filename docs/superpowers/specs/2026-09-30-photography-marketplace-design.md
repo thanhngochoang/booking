@@ -83,7 +83,7 @@ Màn ngoài tab: Chi tiết ảnh, Hồ sơ nhiếp ảnh gia, Sheet đặt lị
 3. **Nhiếp ảnh gia nhận booking**: push "Yêu cầu mới, đã cọc" → tab Công việc mở ở Yêu cầu → card có ghi chú khách, Nhận (đếm ngược 24h) / Từ chối (chọn lý do) → Nhận: trạng thái Đã xác nhận, phòng chat mở, lịch ngày đó thành Đã đặt.
 4. **Nhiếp ảnh gia quản lý lịch**: Công việc → icon lịch → lịch tháng → chạm ngày trống → Nghỉ (hoặc chọn dải ngày) → khách không đặt được. Đã đặt và Chờ tự sinh từ booking.
 5. **Khách hoàn thành buổi chụp**: nhắc trước 24h (push + card Sắp tới) → ngày chụp: chi tiết booking hiện "Hôm nay", nút Chỉ đường, Nhắn tin → sau `endTime` nhiếp ảnh gia bấm "Hoàn thành" (hoặc hệ thống sau 24h) → trạng thái Hoàn thành, khách trả phần còn lại tại chỗ.
-6. **Khách đánh giá và chia sẻ**: push "Buổi chụp thế nào?" → màn Đánh giá: sao + nhận xét (bắt buộc), chọn ảnh chia sẻ (tuỳ chọn, tối đa 10) → review lên hồ sơ, ảnh thành bài "Buổi chụp thật" có tag nhiếp ảnh gia và link gói.
+6. **Khách đánh giá và chia sẻ**: push "Buổi chụp thế nào?" → màn Đánh giá: cà chua hoặc gạch (đổi 2026-10-06, thay sao) + nhận xét (bắt buộc), chọn ảnh chia sẻ (tuỳ chọn, tối đa 10) → review lên hồ sơ, ảnh thành bài "Buổi chụp thật" có tag nhiếp ảnh gia và link gói.
 7. **Người mới khám phá qua ảnh chia sẻ**: bài "Buổi chụp thật" trong feed → chi tiết ảnh hiện "Chụp bởi Minh Trí · gói Chân dung 2 giờ" → hồ sơ → đặt lịch. Cũng là nội dung share ra ngoài app (deep link `/p/{postId}`).
 
 ---
@@ -105,7 +105,7 @@ photographers/{uid}                       # chỉ tồn tại khi role = photogr
   styles: string[], equipment: string[], yearsExperience
   serviceArea: {city, geo, radiusKm}
   verified: bool, verifiedAt
-  stats: {rating, reviewCount, completedCount, responseMinutes, repeatCustomerCount}   # do Functions tính
+  stats: {tomatoCount, brickCount, tomatoPct, score, reviewCount, completedCount, responseMinutes, repeatCustomerCount}   # do Functions tính
   startingPrice                           # min(services.price), do Functions tính
   portfolio: string[]                     # postIds được ghim, tối đa 30
   onboardingComplete: bool
@@ -147,7 +147,7 @@ payments/{paymentId}
   bookingId, provider, amount, status: "created" | "paid" | "failed" | "refunded", providerRef, raw
 
 reviews/{bookingId}                        # 1 review / booking
-  customerId, photographerId, rating (1–5), text, photoPostId?, createdAt
+  customerId, photographerId, verdict (tomato|brick), hits (1–10), intensity, reasons, text, photoPostId?, createdAt
 
 chats/{chatId}
   bookingId, members: [customerId, photographerId], lastMessage: {text, senderId, at}, unread: {uid: count}
