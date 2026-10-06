@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/awards/award_nudge.dart';
 import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
@@ -193,6 +194,7 @@ class ProfileTab extends ConsumerWidget {
                       if (isPhotographer) ...[
                         const SizedBox(height: AppSpace.s4),
                         const _MyAlbumsRow(),
+                        AwardNudgeRow(uid: profile!.uid),
                       ],
                       const SizedBox(height: AppSpace.s6),
                       GlassCard(

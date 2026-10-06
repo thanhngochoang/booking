@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
+import 'package:photobooking/features/awards/my_awards_screen.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -235,6 +236,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
+      GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
       GoRoute(
         path: '/u/:uid/albums/:albumId',
         builder: (_, state) => AlbumDetailScreen(

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:photobooking/data/content/provider_type.dart';
+
 /// What the photographer won. Codes match the server (`awards.result`).
 enum AwardResult {
   gold('gold'),
@@ -158,4 +160,32 @@ class AwardError implements Exception {
 
   @override
   String toString() => 'AwardError($code)';
+}
+
+/// The owner's tier as the server keeps it on `photographers/{uid}`: how many
+/// awards are approved and whether the artist (NAG) tier is on. It is live, so
+/// S25.01 turns gold when the third award is approved.
+@immutable
+class AwardTier {
+  const AwardTier({
+    this.providerType = ProviderType.individual,
+    this.approvedCount = 0,
+    this.artistSince,
+  });
+
+  final ProviderType providerType;
+  final int approvedCount;
+
+  /// When the artist tier began; null unless [providerType] is artist.
+  final DateTime? artistSince;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AwardTier &&
+      other.providerType == providerType &&
+      other.approvedCount == approvedCount &&
+      other.artistSince == artistSince;
+
+  @override
+  int get hashCode => Object.hash(providerType, approvedCount, artistSince);
 }

@@ -3133,4 +3133,239 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get myAlbumsUnsortedSubUnknown =>
       'Bài chưa xếp · chỉ ở Dòng thời gian';
+
+  @override
+  String get s2501Title => 'Giải thưởng';
+
+  @override
+  String get s2501Info => 'Về hạng Nhiếp ảnh gia';
+
+  @override
+  String get s2501InfoBody =>
+      'Khi có ít nhất 3 giải đã được duyệt, hồ sơ Cá nhân của bạn tự lên hạng Nhiếp ảnh gia và có tích vàng. Hồ sơ Studio vẫn khai giải được nhưng không tính hạng. Nếu số giải đã duyệt xuống dưới 3, hạng quay về Cá nhân. Chỉ giải đã duyệt hiện trên hồ sơ công khai.';
+
+  @override
+  String get s2501InfoClose => 'Đã hiểu';
+
+  @override
+  String get s2501Tier => 'Hạng Nhiếp ảnh gia (NAG)';
+
+  @override
+  String s2501Remaining(int n) {
+    return 'Còn $n giải đã duyệt nữa để nhận tích vàng';
+  }
+
+  @override
+  String s2501IsArtist(String date) {
+    return 'Bạn là Nhiếp ảnh gia · từ $date';
+  }
+
+  @override
+  String get s2501IsArtistNoDate => 'Bạn là Nhiếp ảnh gia';
+
+  @override
+  String s2501Progress(int a, int n) {
+    return '$a / $n giải đã duyệt';
+  }
+
+  @override
+  String s2501Listed(int n) {
+    return 'Đã khai · $n giải';
+  }
+
+  @override
+  String get s2501Add => 'Thêm giải thưởng';
+
+  @override
+  String get s2501EmptyTitle => 'Giải thưởng giúp khách tin tác phẩm của bạn';
+
+  @override
+  String get s2501EmptyBody =>
+      'Khai giải kèm minh chứng. Giải được duyệt sẽ hiện trên hồ sơ của bạn.';
+
+  @override
+  String get s2501LoadError => 'Không tải được giải thưởng. Thử lại sau.';
+
+  @override
+  String s2501RowTitle(String result, String competition, int year) {
+    return '$result · $competition $year';
+  }
+
+  @override
+  String s2501Sent(String date) {
+    return 'gửi $date';
+  }
+
+  @override
+  String get s2501DeleteTitle => 'Xoá giải thưởng?';
+
+  @override
+  String get s2501DeleteBody => 'Giải và minh chứng đã tải lên sẽ bị xoá.';
+
+  @override
+  String get s2501Delete => 'Xoá';
+
+  @override
+  String get s2501DeleteError => 'Chưa xoá được giải. Thử lại sau.';
+
+  @override
+  String get s2501EditApprovedTitle => 'Sửa giải đã duyệt?';
+
+  @override
+  String get s2501EditApprovedBody =>
+      'Giải sẽ được duyệt lại. Trong lúc chờ, giải ẩn khỏi hồ sơ công khai và không tính vào hạng.';
+
+  @override
+  String get s2501EditApprovedGo => 'Tiếp tục sửa';
+
+  @override
+  String get s2502Add => 'Thêm giải thưởng';
+
+  @override
+  String get s2502Edit => 'Sửa giải thưởng';
+
+  @override
+  String get s2502Competition => 'Cuộc thi / triển lãm · bắt buộc';
+
+  @override
+  String get s2502CompetitionRequired => 'Nhập tên cuộc thi hoặc triển lãm';
+
+  @override
+  String get s2502Year => 'Năm';
+
+  @override
+  String s2502YearInvalid(int max) {
+    return 'Năm từ 1950 đến $max';
+  }
+
+  @override
+  String get s2502Category => 'Hạng mục';
+
+  @override
+  String get s2502Result => 'Kết quả · bắt buộc';
+
+  @override
+  String get s2502Work => 'Tác phẩm · tuỳ chọn';
+
+  @override
+  String get s2502WorkNone => 'Không gắn tác phẩm';
+
+  @override
+  String get s2502WorkChosen => 'Đã chọn một tác phẩm';
+
+  @override
+  String get s2502WorkTitle => 'Chọn tác phẩm';
+
+  @override
+  String get s2502WorkClear => 'Bỏ chọn tác phẩm';
+
+  @override
+  String get s2502WorkEmpty => 'Bạn chưa có bài nào để gắn.';
+
+  @override
+  String get s2502WorkLoadError => 'Không tải được bài của bạn. Thử lại sau.';
+
+  @override
+  String get s2502Proof => 'Minh chứng · bắt buộc';
+
+  @override
+  String get s2502ProofNone =>
+      'Thêm ảnh giấy chứng nhận hoặc link trang công bố';
+
+  @override
+  String s2502ProofSummary(int images, int links) {
+    return '$images ảnh · $links link';
+  }
+
+  @override
+  String get s2502ProofTitle => 'Minh chứng';
+
+  @override
+  String s2502ProofImages(int n, int max) {
+    return 'Ảnh giấy chứng nhận · $n / $max';
+  }
+
+  @override
+  String get s2502ProofAddImage => 'Thêm ảnh';
+
+  @override
+  String s2502ProofLinks(int max) {
+    return 'Link trang công bố · tối đa $max';
+  }
+
+  @override
+  String get s2502ProofAddLink => 'Thêm link';
+
+  @override
+  String get s2502LinkLabel => 'Link';
+
+  @override
+  String get s2502LinkHttps => 'Link phải bắt đầu bằng https://';
+
+  @override
+  String get s2502LinkRemove => 'Xoá link';
+
+  @override
+  String get s2502ProofDone => 'Xong';
+
+  @override
+  String s2502TileUploading(int n) {
+    return 'Đang tải ảnh $n';
+  }
+
+  @override
+  String s2502TileFailed(int n) {
+    return 'Chưa tải được ảnh $n. Chạm để thử lại';
+  }
+
+  @override
+  String s2502TileDone(int n) {
+    return 'Ảnh $n đã tải';
+  }
+
+  @override
+  String s2502TileSaved(int n) {
+    return 'Ảnh $n đã gửi trước đó';
+  }
+
+  @override
+  String s2502TileRemove(int n) {
+    return 'Xoá ảnh $n';
+  }
+
+  @override
+  String get s2502Privacy =>
+      'Minh chứng chỉ đội duyệt xem và được xoá 30 ngày sau khi duyệt xong. Duyệt trong 3 ngày làm việc.';
+
+  @override
+  String get s2502Submit => 'Gửi duyệt';
+
+  @override
+  String get s2502SubmitWait =>
+      'Đợi ảnh tải xong hoặc xoá ảnh lỗi trước khi gửi.';
+
+  @override
+  String get s2502LoadError => 'Không mở được giải này. Thử lại sau.';
+
+  @override
+  String get s2502SubmitError => 'Chưa gửi được. Thử lại sau.';
+
+  @override
+  String get s2502SubmitLimit => 'Bạn đã khai tối đa 50 giải.';
+
+  @override
+  String get s2502SubmitRejected =>
+      'Thông tin chưa hợp lệ. Kiểm tra lại các ô.';
+
+  @override
+  String get settingsAwards => 'Giải thưởng';
+
+  @override
+  String get settingsAwardsBody => 'Khai giải để lên hạng Nhiếp ảnh gia';
+
+  @override
+  String get profileAwardNudge => 'Có giải thưởng? Lên hạng Nhiếp ảnh gia';
+
+  @override
+  String get profileAwardNudgeLater => 'Để sau';
 }

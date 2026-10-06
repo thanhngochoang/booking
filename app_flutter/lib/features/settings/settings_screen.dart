@@ -65,6 +65,15 @@ class SettingsScreen extends ConsumerWidget {
                         _ProviderTypeTile(uid: profile.uid),
                         const _RowDivider(),
                         ListTile(
+                          key: const Key('profile-awards'),
+                          leading: const Icon(Icons.workspace_premium_outlined),
+                          title: Text(l.settingsAwards),
+                          subtitle: Text(l.settingsAwardsBody),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => context.push('/me/awards'),
+                        ),
+                        const _RowDivider(),
+                        ListTile(
                           key: const Key('profile-public'),
                           leading: const Icon(Icons.storefront_outlined),
                           title: Text(l.settingsPublicProfile),

@@ -5541,6 +5541,402 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Bài chưa xếp · chỉ ở Dòng thời gian'**
   String get myAlbumsUnsortedSubUnknown;
+
+  /// No description provided for @s2501Title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng'**
+  String get s2501Title;
+
+  /// No description provided for @s2501Info.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về hạng Nhiếp ảnh gia'**
+  String get s2501Info;
+
+  /// No description provided for @s2501InfoBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi có ít nhất 3 giải đã được duyệt, hồ sơ Cá nhân của bạn tự lên hạng Nhiếp ảnh gia và có tích vàng. Hồ sơ Studio vẫn khai giải được nhưng không tính hạng. Nếu số giải đã duyệt xuống dưới 3, hạng quay về Cá nhân. Chỉ giải đã duyệt hiện trên hồ sơ công khai.'**
+  String get s2501InfoBody;
+
+  /// No description provided for @s2501InfoClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hiểu'**
+  String get s2501InfoClose;
+
+  /// No description provided for @s2501Tier.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạng Nhiếp ảnh gia (NAG)'**
+  String get s2501Tier;
+
+  /// No description provided for @s2501Remaining.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} giải đã duyệt nữa để nhận tích vàng'**
+  String s2501Remaining(int n);
+
+  /// No description provided for @s2501IsArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn là Nhiếp ảnh gia · từ {date}'**
+  String s2501IsArtist(String date);
+
+  /// No description provided for @s2501IsArtistNoDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn là Nhiếp ảnh gia'**
+  String get s2501IsArtistNoDate;
+
+  /// No description provided for @s2501Progress.
+  ///
+  /// In vi, this message translates to:
+  /// **'{a} / {n} giải đã duyệt'**
+  String s2501Progress(int a, int n);
+
+  /// No description provided for @s2501Listed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khai · {n} giải'**
+  String s2501Listed(int n);
+
+  /// No description provided for @s2501Add.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm giải thưởng'**
+  String get s2501Add;
+
+  /// No description provided for @s2501EmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng giúp khách tin tác phẩm của bạn'**
+  String get s2501EmptyTitle;
+
+  /// No description provided for @s2501EmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khai giải kèm minh chứng. Giải được duyệt sẽ hiện trên hồ sơ của bạn.'**
+  String get s2501EmptyBody;
+
+  /// No description provided for @s2501LoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được giải thưởng. Thử lại sau.'**
+  String get s2501LoadError;
+
+  /// No description provided for @s2501RowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{result} · {competition} {year}'**
+  String s2501RowTitle(String result, String competition, int year);
+
+  /// No description provided for @s2501Sent.
+  ///
+  /// In vi, this message translates to:
+  /// **'gửi {date}'**
+  String s2501Sent(String date);
+
+  /// No description provided for @s2501DeleteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá giải thưởng?'**
+  String get s2501DeleteTitle;
+
+  /// No description provided for @s2501DeleteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải và minh chứng đã tải lên sẽ bị xoá.'**
+  String get s2501DeleteBody;
+
+  /// No description provided for @s2501Delete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get s2501Delete;
+
+  /// No description provided for @s2501DeleteError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xoá được giải. Thử lại sau.'**
+  String get s2501DeleteError;
+
+  /// No description provided for @s2501EditApprovedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa giải đã duyệt?'**
+  String get s2501EditApprovedTitle;
+
+  /// No description provided for @s2501EditApprovedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải sẽ được duyệt lại. Trong lúc chờ, giải ẩn khỏi hồ sơ công khai và không tính vào hạng.'**
+  String get s2501EditApprovedBody;
+
+  /// No description provided for @s2501EditApprovedGo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục sửa'**
+  String get s2501EditApprovedGo;
+
+  /// No description provided for @s2502Add.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm giải thưởng'**
+  String get s2502Add;
+
+  /// No description provided for @s2502Edit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa giải thưởng'**
+  String get s2502Edit;
+
+  /// No description provided for @s2502Competition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuộc thi / triển lãm · bắt buộc'**
+  String get s2502Competition;
+
+  /// No description provided for @s2502CompetitionRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên cuộc thi hoặc triển lãm'**
+  String get s2502CompetitionRequired;
+
+  /// No description provided for @s2502Year.
+  ///
+  /// In vi, this message translates to:
+  /// **'Năm'**
+  String get s2502Year;
+
+  /// No description provided for @s2502YearInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Năm từ 1950 đến {max}'**
+  String s2502YearInvalid(int max);
+
+  /// No description provided for @s2502Category.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạng mục'**
+  String get s2502Category;
+
+  /// No description provided for @s2502Result.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết quả · bắt buộc'**
+  String get s2502Result;
+
+  /// No description provided for @s2502Work.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tác phẩm · tuỳ chọn'**
+  String get s2502Work;
+
+  /// No description provided for @s2502WorkNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gắn tác phẩm'**
+  String get s2502WorkNone;
+
+  /// No description provided for @s2502WorkChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn một tác phẩm'**
+  String get s2502WorkChosen;
+
+  /// No description provided for @s2502WorkTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tác phẩm'**
+  String get s2502WorkTitle;
+
+  /// No description provided for @s2502WorkClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chọn tác phẩm'**
+  String get s2502WorkClear;
+
+  /// No description provided for @s2502WorkEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa có bài nào để gắn.'**
+  String get s2502WorkEmpty;
+
+  /// No description provided for @s2502WorkLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài của bạn. Thử lại sau.'**
+  String get s2502WorkLoadError;
+
+  /// No description provided for @s2502Proof.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng · bắt buộc'**
+  String get s2502Proof;
+
+  /// No description provided for @s2502ProofNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh giấy chứng nhận hoặc link trang công bố'**
+  String get s2502ProofNone;
+
+  /// No description provided for @s2502ProofSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'{images} ảnh · {links} link'**
+  String s2502ProofSummary(int images, int links);
+
+  /// No description provided for @s2502ProofTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng'**
+  String get s2502ProofTitle;
+
+  /// No description provided for @s2502ProofImages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh giấy chứng nhận · {n} / {max}'**
+  String s2502ProofImages(int n, int max);
+
+  /// No description provided for @s2502ProofAddImage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh'**
+  String get s2502ProofAddImage;
+
+  /// No description provided for @s2502ProofLinks.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link trang công bố · tối đa {max}'**
+  String s2502ProofLinks(int max);
+
+  /// No description provided for @s2502ProofAddLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm link'**
+  String get s2502ProofAddLink;
+
+  /// No description provided for @s2502LinkLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link'**
+  String get s2502LinkLabel;
+
+  /// No description provided for @s2502LinkHttps.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link phải bắt đầu bằng https://'**
+  String get s2502LinkHttps;
+
+  /// No description provided for @s2502LinkRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá link'**
+  String get s2502LinkRemove;
+
+  /// No description provided for @s2502ProofDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get s2502ProofDone;
+
+  /// No description provided for @s2502TileUploading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tải ảnh {n}'**
+  String s2502TileUploading(int n);
+
+  /// No description provided for @s2502TileFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải được ảnh {n}. Chạm để thử lại'**
+  String s2502TileFailed(int n);
+
+  /// No description provided for @s2502TileDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {n} đã tải'**
+  String s2502TileDone(int n);
+
+  /// No description provided for @s2502TileSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {n} đã gửi trước đó'**
+  String s2502TileSaved(int n);
+
+  /// No description provided for @s2502TileRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá ảnh {n}'**
+  String s2502TileRemove(int n);
+
+  /// No description provided for @s2502Privacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng chỉ đội duyệt xem và được xoá 30 ngày sau khi duyệt xong. Duyệt trong 3 ngày làm việc.'**
+  String get s2502Privacy;
+
+  /// No description provided for @s2502Submit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi duyệt'**
+  String get s2502Submit;
+
+  /// No description provided for @s2502SubmitWait.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đợi ảnh tải xong hoặc xoá ảnh lỗi trước khi gửi.'**
+  String get s2502SubmitWait;
+
+  /// No description provided for @s2502LoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở được giải này. Thử lại sau.'**
+  String get s2502LoadError;
+
+  /// No description provided for @s2502SubmitError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được. Thử lại sau.'**
+  String get s2502SubmitError;
+
+  /// No description provided for @s2502SubmitLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã khai tối đa 50 giải.'**
+  String get s2502SubmitLimit;
+
+  /// No description provided for @s2502SubmitRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin chưa hợp lệ. Kiểm tra lại các ô.'**
+  String get s2502SubmitRejected;
+
+  /// No description provided for @settingsAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng'**
+  String get settingsAwards;
+
+  /// No description provided for @settingsAwardsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khai giải để lên hạng Nhiếp ảnh gia'**
+  String get settingsAwardsBody;
+
+  /// No description provided for @profileAwardNudge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có giải thưởng? Lên hạng Nhiếp ảnh gia'**
+  String get profileAwardNudge;
+
+  /// No description provided for @profileAwardNudgeLater.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để sau'**
+  String get profileAwardNudgeLater;
 }
 
 class _AppLocalizationsDelegate
