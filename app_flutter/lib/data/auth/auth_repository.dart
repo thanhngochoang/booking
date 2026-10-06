@@ -22,6 +22,9 @@ class AuthUser {
       AuthUser(uid: uid, email: email, displayName: name, photoUrl: photoUrl);
 }
 
+/// How the current user proves who they are again before a sensitive change.
+enum ReauthMethod { password, google, facebook }
+
 abstract class AuthRepository {
   Stream<AuthUser?> authStateChanges();
   AuthUser? get currentUser;
@@ -36,6 +39,15 @@ abstract class AuthRepository {
   Future<AuthUser> signInWithGoogle();
   Future<AuthUser> signInWithFacebook();
   Future<void> signOut();
+
+  /// From the current user's sign-in providers; null when signed out.
+  ReauthMethod? get reauthMethod;
+
+  /// Signs the current user in again (password for email accounts, else the
+  /// provider flow), then refreshes the ID token so callables see a new
+  /// `auth_time`. Throws [AuthException] (cancelled, wrongPassword, network,
+  /// unknown).
+  Future<void> reauthenticate({String? password});
 }
 
 class FirebaseAuthRepository implements AuthRepository {
@@ -100,8 +112,7 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
-  @override
-  Future<AuthUser> signInWithGoogle() async {
+  Future<fb.AuthCredential> _googleCredential() async {
     final GoogleSignInAccount account;
     try {
       if (!_googleReady) {
@@ -115,10 +126,15 @@ class FirebaseAuthRepository implements AuthRepository {
       }
       throw const AuthException(AuthError.unknown);
     }
+    return fb.GoogleAuthProvider.credential(
+      idToken: account.authentication.idToken,
+    );
+  }
+
+  @override
+  Future<AuthUser> signInWithGoogle() async {
+    final cred = await _googleCredential();
     try {
-      final cred = fb.GoogleAuthProvider.credential(
-        idToken: account.authentication.idToken,
-      );
       final c = await _auth.signInWithCredential(cred);
       return _map(c.user!);
     } catch (e) {
@@ -126,8 +142,7 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
-  @override
-  Future<AuthUser> signInWithFacebook() async {
+  Future<fb.AuthCredential> _facebookCredential() async {
     final LoginResult result;
     try {
       result = await _facebook.login(
@@ -143,8 +158,13 @@ class FirebaseAuthRepository implements AuthRepository {
     if (result.status != LoginStatus.success || token == null) {
       throw const AuthException(AuthError.unknown);
     }
+    return fb.FacebookAuthProvider.credential(token);
+  }
+
+  @override
+  Future<AuthUser> signInWithFacebook() async {
+    final cred = await _facebookCredential();
     try {
-      final cred = fb.FacebookAuthProvider.credential(token);
       final c = await _auth.signInWithCredential(cred);
       return _map(c.user!);
     } catch (e) {
@@ -168,6 +188,49 @@ class FirebaseAuthRepository implements AuthRepository {
       quiet(_facebook.logOut),
     ]);
   }
+
+  @override
+  ReauthMethod? get reauthMethod {
+    final u = _auth.currentUser;
+    if (u == null) return null;
+    final ids = {for (final p in u.providerData) p.providerId};
+    if (ids.contains('password')) return ReauthMethod.password;
+    if (ids.contains('google.com')) return ReauthMethod.google;
+    if (ids.contains('facebook.com')) return ReauthMethod.facebook;
+    return ReauthMethod.password;
+  }
+
+  @override
+  Future<void> reauthenticate({String? password}) async {
+    final user = _auth.currentUser;
+    final method = reauthMethod;
+    if (user == null || method == null) {
+      throw const AuthException(AuthError.unknown);
+    }
+    final fb.AuthCredential cred;
+    switch (method) {
+      case ReauthMethod.password:
+        final email = user.email;
+        if (email == null || password == null || password.isEmpty) {
+          throw const AuthException(AuthError.wrongPassword);
+        }
+        cred = fb.EmailAuthProvider.credential(
+          email: email,
+          password: password,
+        );
+      case ReauthMethod.google:
+        cred = await _googleCredential();
+      case ReauthMethod.facebook:
+        cred = await _facebookCredential();
+    }
+    try {
+      await user.reauthenticateWithCredential(cred);
+      // A fresh token carries the new auth_time the callable checks.
+      await user.getIdToken(true);
+    } catch (e) {
+      throw AuthException(mapAuthException(e));
+    }
+  }
 }
 
 /// In-memory implementation for tests and widget previews.
@@ -176,7 +239,15 @@ class FakeAuthRepository implements AuthRepository {
     this.cancelSocial = false,
     this.emitBeforeName = false,
     AuthUser? initialUser,
+    this.initialReauthMethod,
   }) : _current = initialUser;
+
+  /// Overrides the method guessed from the user (for users set via
+  /// [initialUser]).
+  final ReauthMethod? initialReauthMethod;
+
+  /// How many times [reauthenticate] succeeded.
+  int reauthentications = 0;
   final bool cancelSocial;
 
   /// Mimics Firebase: authStateChanges fires before updateDisplayName lands.
@@ -254,4 +325,32 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async => _emit(null);
+
+  @override
+  ReauthMethod? get reauthMethod {
+    final u = _current;
+    if (u == null) return null;
+    if (initialReauthMethod != null) return initialReauthMethod;
+    if (u.uid.startsWith('google-')) return ReauthMethod.google;
+    if (u.uid.startsWith('facebook-')) return ReauthMethod.facebook;
+    return ReauthMethod.password;
+  }
+
+  @override
+  Future<void> reauthenticate({String? password}) async {
+    final u = _current;
+    final method = reauthMethod;
+    if (u == null || method == null) {
+      throw const AuthException(AuthError.unknown);
+    }
+    if (method == ReauthMethod.password) {
+      final rec = _users[u.email];
+      if (password == null || rec == null || rec.password != password) {
+        throw const AuthException(AuthError.wrongPassword);
+      }
+    } else if (cancelSocial) {
+      throw const AuthException(AuthError.cancelled);
+    }
+    reauthentications++;
+  }
 }
