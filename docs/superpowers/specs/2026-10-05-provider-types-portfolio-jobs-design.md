@@ -119,7 +119,8 @@ Các quyết định dưới đây là đề xuất của buổi review 2026-10-
 2. **Hai mốc thả tiền**, mặc định 50/50:
    - Mốc 1 `shoot`: thả khi buổi chụp `shot` (thợ ảnh bấm "Đã chụp xong", hoặc tự động `end + 24 giờ`) và hết cửa sổ khiếu nại của mốc 1 (24 giờ).
    - Mốc 2 `delivery`: thả khi khách **duyệt bàn giao**, hoặc **tự duyệt** sau 3 ngày kể từ `delivered` nếu khách không phản hồi.
-3. **Bàn giao** là một bước trong app: thợ ảnh gửi link bộ ảnh (Google Drive, Dropbox, Pixieset… v1) kèm vài ảnh xem trước tải lên app (≤ 10, để làm bằng chứng khi khiếu nại). Lưu toàn bộ ảnh giao trên app: câu hỏi mở 5.
+3. **Đổi 2026-10-06**: bàn giao hai lớp (ảnh mẫu có watermark, link ảnh gốc mở khi khách đồng ý, 48 giờ kiểm tra), xem [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đoạn dưới là bản cũ.
+   **Bàn giao** là một bước trong app: thợ ảnh gửi link bộ ảnh (Google Drive, Dropbox, Pixieset… v1) kèm vài ảnh xem trước tải lên app (≤ 10, để làm bằng chứng khi khiếu nại). Lưu toàn bộ ảnh giao trên app: câu hỏi mở 5.
 4. **Chỉnh sửa**: gói và báo giá có `revisions` (số lần sửa, 0–5). Khách "Yêu cầu chỉnh sửa" khi còn lượt → `revision_requested`, thợ ảnh nộp lại → `delivered`. Hết lượt thì chỉ còn Duyệt hoặc Khiếu nại.
 5. **Trễ hạn**: quá `deliveryDays` sau `shot` mà chưa `delivered` → khách được "Huỷ phần bàn giao", hoàn 100% mốc 2; thợ ảnh giữ mốc 1.
 6. **Khiếu nại** (S18) mở được trong cửa sổ của từng mốc; với mốc 2, cửa sổ là thời gian chờ duyệt.
@@ -139,6 +140,8 @@ Các quyết định dưới đây là đề xuất của buổi review 2026-10-
 `Delivery`: `id`, `bookingId`, `round` (1 + số lần sửa), `link`, `previews: List<FileRef>` (≤ 10), `note?`, `submittedAt`, `decision?: {kind: approve | request_revision, note?, at}`.
 
 ### 4.3 Máy trạng thái mới
+
+> **Đổi 2026-10-06**: thêm trạng thái `approved` giữa `delivered` và `completed` (spec bàn giao hai lớp §4). Booking studio: giao thợ trước 24 giờ, studio bàn giao ([`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md) §5).
 
 ```
 draft ──(paid)──▶ requested ──(thợ nhận)──▶ accepted           (source = package)
@@ -280,4 +283,4 @@ A1 trước B1 (B cần `providerType`). D1 trước D3 (báo giá tạo booking
 5. Bàn giao: link ngoài + ảnh xem trước (đề xuất) hay lưu toàn bộ ảnh giao trên Storage (chi phí, thời hạn lưu)?
 6. Hoa hồng nền tảng: có thu không, tỉ lệ, ai chịu (khách, thợ ảnh, chia đôi)?
 7. Giới hạn chống spam (3 việc mở / khách, 20 báo giá mở / thợ ảnh) có cần thu phí báo giá kiểu "connects" như các nền tảng freelancer không?
-8. Studio nhiều thành viên: spec riêng; trong lúc chờ, Studio là một tài khoản như cá nhân.
+8. Studio nhiều thành viên: spec riêng; trong lúc chờ, Studio là một tài khoản như cá nhân. **Đã có spec 2026-10-06**: [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md).

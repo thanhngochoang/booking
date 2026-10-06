@@ -36,6 +36,8 @@ abstract final class ScreenCodes {
   static const cancelBooking = 'S05.03';
   static const contactAfterBooking = 'S05.04';
   static const reviewAndShare = 'S05.05';
+  static const deliveryReview = 'S05.06';
+  static const requestRevision = 'S05.07';
   // S06 Nhận việc (nhiếp ảnh gia).
   static const work = 'S06.01';
   static const workEmpty = 'S06.02';
@@ -43,6 +45,7 @@ abstract final class ScreenCodes {
   static const myCalendar = 'S06.04';
   static const earnings = 'S06.05';
   static const payoutAccount = 'S06.06';
+  static const submitDelivery = 'S06.07';
   // S07 Hội thoại.
   static const chat = 'S07.01';
   static const chats = 'S07.02';
@@ -109,10 +112,13 @@ abstract final class ScreenCodes {
   // S21 Xác minh.
   static const verifyPhone = 'S21.01';
   static const verifyPhotographer = 'S21.02';
+  static const verifyIdentity = 'S21.03';
+  static const verifyBusiness = 'S21.04';
   // S22 Thanh toán & tài khoản.
   static const paymentHistory = 'S22.01';
   static const deleteAccount = 'S22.02';
   static const privacy = 'S22.03';
+  static const refundAccount = 'S22.04';
   // S23 Vận hành nội bộ (staff).
   static const staffDisputes = 'S23.01';
   static const staffPayouts = 'S23.02';
@@ -130,6 +136,12 @@ abstract final class ScreenCodes {
   // S25 Giải thưởng & hạng Nhiếp ảnh gia (NAG).
   static const myAwards = 'S25.01';
   static const editAward = 'S25.02';
+  // S26 Studio và thành viên.
+  static const studioMembers = 'S26.01';
+  static const inviteMember = 'S26.02';
+  static const myStudio = 'S26.03';
+  static const assignPhotographer = 'S26.04';
+  static const requestPhotographerChange = 'S26.05';
 
   static const all = <String>[
     splash,
@@ -155,12 +167,15 @@ abstract final class ScreenCodes {
     cancelBooking,
     contactAfterBooking,
     reviewAndShare,
+    deliveryReview,
+    requestRevision,
     work,
     workEmpty,
     declineRequest,
     myCalendar,
     earnings,
     payoutAccount,
+    submitDelivery,
     chat,
     chats,
     setupProfile,
@@ -212,9 +227,12 @@ abstract final class ScreenCodes {
     blockedUsers,
     verifyPhone,
     verifyPhotographer,
+    verifyIdentity,
+    verifyBusiness,
     paymentHistory,
     deleteAccount,
     privacy,
+    refundAccount,
     staffDisputes,
     staffPayouts,
     staffManualRefunds,
@@ -229,5 +247,10 @@ abstract final class ScreenCodes {
     pickAlbum,
     myAwards,
     editAward,
+    studioMembers,
+    inviteMember,
+    myStudio,
+    assignPhotographer,
+    requestPhotographerChange,
   ];
 }
