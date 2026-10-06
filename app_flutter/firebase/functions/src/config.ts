@@ -1,3 +1,4 @@
+import { defineSecret } from 'firebase-functions/params';
 import type { DocumentOptions } from 'firebase-functions/v2/firestore';
 import type { CallableOptions } from 'firebase-functions/v2/https';
 import type { ScheduleOptions } from 'firebase-functions/v2/scheduler';
@@ -86,3 +87,18 @@ export function storageUrlPrefixes(): string[] {
   return prefixes;
 }
 
+
+/**
+ * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
+ * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts and to
+ * nothing else; the emulator reads it from `.secret.local`.
+ */
+export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');
+
+/**
+ * `fake` runs the reference payout gateway (emulator, or `PAYOUTS_MODE=fake` in the dev project);
+ * anything else is `off`: no real bank adapter exists, so executing a payout is refused.
+ */
+export function payoutsMode(env: Readonly<Record<string, string | undefined>> = process.env): 'fake' | 'off' {
+  return env.FUNCTIONS_EMULATOR === 'true' || env.PAYOUTS_MODE === 'fake' ? 'fake' : 'off';
+}

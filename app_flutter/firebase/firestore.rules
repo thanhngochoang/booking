@@ -485,6 +485,35 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // earnings/{uid}: the photographer's money summary and one row per payment (S06.05).
+    // Written only by the earnings triggers; the owner reads. Rows hold fixed hold-reason codes,
+    // never the customer's dispute text.
+    match /earnings/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+      match /items/{itemId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    // payoutAccounts/{uid}: masked view of the active payout account (S06.06): bank, last 4
+    // digits, holder. Written only by savePayoutAccount. The history under accounts/ holds the
+    // encrypted number and is server-only.
+    match /payoutAccounts/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+      match /accounts/{accountId} {
+        allow read, write: if false;
+      }
+    }
+
+    // payouts/{payoutId}: batches paid to a photographer; the payee reads, staff use the CLI.
+    match /payouts/{payoutId} {
+      allow read: if signedIn() && resource.data.payeeId == request.auth.uid;
+      allow write: if false;
+    }
+
     match /refunds/{refundId} {
       allow read, write: if false;
     }

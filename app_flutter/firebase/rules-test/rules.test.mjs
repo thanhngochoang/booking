@@ -1536,3 +1536,58 @@ test('devices: owner creates with the id pattern; other uid or extra keys refuse
   await assertFails(getDoc(doc(env.authenticatedContext('du2').firestore(), 'devices/du1_ABCDEFGH12')));
   await assertSucceeds(deleteDoc(doc(db, 'devices/du1_ABCDEFGH12')));
 });
+
+// ---- earnings and payout accounts (unit 10b) ----
+const seedDoc = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+
+test('the owner reads their earnings and rows', async () => {
+  await seedDoc('earnings/ea1', { heldAmount: 1, soonAmount: 2, receivedAmount: 3, lastPayout: null, updatedAt: Timestamp.now() });
+  await seedDoc('earnings/ea1/items/pay1', { payeeId: 'ea1', amount: 5, state: 'held' });
+  const db = env.authenticatedContext('ea1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'earnings/ea1')));
+  await assertSucceeds(getDoc(doc(db, 'earnings/ea1/items/pay1')));
+  await assertSucceeds(getDocs(collection(db, 'earnings/ea1/items')));
+});
+test('another user cannot read earnings or items', async () => {
+  const other = env.authenticatedContext('ea2').firestore();
+  await assertFails(getDoc(doc(other, 'earnings/ea1')));
+  await assertFails(getDoc(doc(other, 'earnings/ea1/items/pay1')));
+  await assertFails(getDocs(collection(other, 'earnings/ea1/items')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'earnings/ea1')));
+});
+test('nobody writes earnings', async () => {
+  const db = env.authenticatedContext('ea1').firestore();
+  await assertFails(setDoc(doc(db, 'earnings/ea1'), { heldAmount: 9 }));
+  await assertFails(updateDoc(doc(db, 'earnings/ea1'), { heldAmount: 9 }));
+  await assertFails(setDoc(doc(db, 'earnings/ea1/items/pay2'), { amount: 9 }));
+  await assertFails(deleteDoc(doc(db, 'earnings/ea1/items/pay1')));
+});
+test('the owner reads the masked account view and cannot write it', async () => {
+  await seedDoc('payoutAccounts/pa1', { accountId: 'a1', bankCode: 'VCB', accountLast4: '6789', holderName: 'NGUYEN VAN AN', updatedAt: Timestamp.now() });
+  const db = env.authenticatedContext('pa1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'payoutAccounts/pa1')));
+  await assertFails(getDoc(doc(env.authenticatedContext('pa2').firestore(), 'payoutAccounts/pa1')));
+  await assertFails(setDoc(doc(db, 'payoutAccounts/pa1'), { accountLast4: '0000' }));
+  await assertFails(updateDoc(doc(db, 'payoutAccounts/pa1'), { holderName: 'X' }));
+  await assertFails(deleteDoc(doc(db, 'payoutAccounts/pa1')));
+});
+test('the owner cannot read the accounts history', async () => {
+  await seedDoc('payoutAccounts/pa1/accounts/a1', { accountNumberEnc: 'v1:x:y:z', userId: 'pa1' });
+  const db = env.authenticatedContext('pa1').firestore();
+  await assertFails(getDoc(doc(db, 'payoutAccounts/pa1/accounts/a1')));
+  await assertFails(getDocs(collection(db, 'payoutAccounts/pa1/accounts')));
+  await assertFails(setDoc(doc(db, 'payoutAccounts/pa1/accounts/a2'), { accountNumberEnc: 'v1:x:y:z' }));
+});
+test('a payee reads their payouts, nobody else, nobody writes', async () => {
+  await seedDoc('payouts/po1', { payeeId: 'pp1', status: 'paid', amount: 100, items: [], createdAt: Timestamp.now() });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1')));
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('pp1').firestore(), 'payouts'), where('payeeId', '==', 'pp1'))));
+  await assertFails(getDoc(doc(env.authenticatedContext('pp2').firestore(), 'payouts/po1')));
+  await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po2'), { payeeId: 'pp1' }));
+  await assertFails(updateDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1'), { status: 'failed' }));
+});
+test('payments stay closed', async () => {
+  await seedDoc('payments/pay9', { payeeId: 'pp1', amount: 5 });
+  await assertFails(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay9')));
+  await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay10'), { payeeId: 'pp1' }));
+});

@@ -116,3 +116,53 @@ describe('seed notifications and badges', () => {
     assert.equal(docs.some((d) => d.path.endsWith('/private/notification_prefs')), false);
   });
 });
+
+describe('seed payouts and earnings', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+
+  test('An has an encrypted payout account and a masked view; Bình has none', () => {
+    const view = get('payoutAccounts/seed-photographer-an');
+    assert.equal(view?.accountLast4, '6789');
+    assert.equal(view?.holderName, 'NGUYEN VAN AN');
+    assert.equal('accountNumberEnc' in (view ?? {}), false);
+    const stored = get('payoutAccounts/seed-photographer-an/accounts/seed-account-an-1');
+    assert.match(String(stored?.accountNumberEnc), /^v1:/);
+    assert.doesNotMatch(JSON.stringify(docs.filter((d) => d.path.startsWith('payoutAccounts/'))), /0123456789/);
+    assert.equal(docs.some((d) => d.path.startsWith('payoutAccounts/seed-photographer-binh')), false);
+  });
+
+  test('the old completed payment is paid out in a paid payout with its ledger entry', () => {
+    const pay = get('payments/seed-payment-seed-booking-completed-old');
+    assert.equal(pay?.escrowStatus, 'paid_out');
+    assert.equal(pay?.payoutId, 'seed-payout-an-1');
+    const po = get('payouts/seed-payout-an-1');
+    assert.equal(po?.status, 'paid');
+    assert.equal(po?.amount, pay?.amount);
+    const entry = get('ledger_entries/seed-ledger-seed-payout-an-1-pay');
+    assert.equal(entry?.type, 'payout_paid');
+    assert.equal(entry?.amount, -(pay?.amount as number));
+  });
+
+  test('the disputed booking holds its payment with the reason', () => {
+    const pay = get('payments/seed-payment-seed-booking-disputed');
+    assert.equal(pay?.escrowStatus, 'disputed');
+    assert.equal((pay?.dispute as { reason: string }).reason, 'Ảnh giao thiếu so với gói');
+    assert.equal(get('bookings/seed-booking-disputed')?.escrowStatus, 'disputed');
+    const item = get('earnings/seed-photographer-an/items/seed-payment-seed-booking-disputed');
+    assert.equal(item?.state, 'disputed');
+    assert.equal(item?.holdReason, 'dispute');
+  });
+
+  test('the earnings projection equals the payments', () => {
+    const e = get('earnings/seed-photographer-an');
+    const dep = (price: number) => Math.floor(price * 0.3);
+    // held: accepted + upcoming + disputed; soon: completed-recent; received: completed-old.
+    assert.equal(e?.heldAmount, 3 * dep(1_500_000));
+    assert.equal(e?.soonAmount, dep(1_500_000));
+    assert.equal(e?.receivedAmount, dep(1_500_000));
+    assert.equal((e?.lastPayout as { status: string }).status, 'paid');
+    assert.equal(get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old')?.state, 'paid_out');
+    assert.equal(get('earnings/seed-photographer-binh')?.heldAmount, Math.floor(1_200_000 * 0.3));
+  });
+});

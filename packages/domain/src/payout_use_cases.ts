@@ -81,6 +81,11 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
     if (p.status !== 'processing') throw new DomainError('conflict');
     const at = deps.clock.now().toISOString();
     const payments = await tx.getPayments(p.items.map((i) => i.paymentId));
+    // Every batched payment must still be released into this batch; otherwise nothing is written
+    // (no partial ledger) and the payout stays `processing` for staff to look at.
+    if (payments.some((pay) => pay === null || pay.escrowStatus !== 'released' || pay.payoutId !== p.id)) {
+      throw new DomainError('conflict');
+    }
 
     if (outcome.status === 'paid') {
       const done: Payout = { ...p, status: 'paid', paidAt: at, reference: outcome.reference, updatedAt: at };

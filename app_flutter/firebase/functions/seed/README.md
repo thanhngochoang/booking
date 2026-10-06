@@ -37,6 +37,16 @@ Password for every account: `seed-password-1`
 | `seed-award-dung-1`, `-2`, `-3` | Dũng | approved (gold, silver, bronze; make Dũng an artist) |
 | `seed-award-binh-1` | Bình | pending (in the review queue: `npm run awards -- list`) |
 
+## Earnings and payouts (plan 10b)
+
+| Data | Owner | Notes |
+|---|---|---|
+| `payoutAccounts/{uid}` + `accounts/seed-account-an-1` | An | VCB, `0123456789` (stored encrypted with the emulator key in `.secret.local`; the owner view shows `•••• 6789`), holder `NGUYEN VAN AN` |
+| Payout `seed-payout-an-1` | An | `paid`; its payment (`seed-payment-seed-booking-completed-old`) is `paid_out`, with a `payout_paid` ledger entry |
+| `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed`, reason "Ảnh giao thiếu so với gói" |
+| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 3 × 450 000, soon 450 000, received 450 000) |
+| Payout account | Bình | none (the S06.05 add-account card) |
+
 ## Notifications and badges
 
 | Data | Owner | Notes |
@@ -69,3 +79,18 @@ npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
 `GOOGLE_APPLICATION_CREDENTIALS` (a service account key). `show` also needs `STORAGE_BUCKET`
 (or `FIREBASE_STORAGE_BUCKET`) and credentials that can sign URLs. `--actor` is a user with the
 admin claim, e.g. `seed-staff-admin` locally.
+
+## Staff CLI for payouts
+
+`npm run payouts -- --help` lists the commands: `due` (payees with released money and open
+payouts), `show <payoutId>` (the account is printed masked, `•••• 6789`), and
+`create <payeeId>`, `execute <payoutId>`, `hold <payoutId> "<reason>"`, `resume <payoutId>`, each
+with `--actor <uid>` of an admin (`seed-staff-admin` locally). Against the emulators set
+`FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`; the key comes from `.secret.local`.
+Against a real project set `GOOGLE_APPLICATION_CREDENTIALS` and `PAYOUT_ACCOUNT_KEY`. `execute`
+works only with the fake gateway (emulators or `PAYOUTS_MODE=fake`): no real bank adapter exists.
+
+```bash
+npm run payouts -- due
+npm run payouts -- create seed-photographer-an --actor seed-staff-admin   # batches An's released payment (completed-recent)
+```

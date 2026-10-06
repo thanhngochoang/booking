@@ -1,7 +1,22 @@
 // Deterministic local test data for the Firebase emulators. Test values only: these accounts
 // and numbers exist nowhere but in the local emulators. Listed in seed/README.md.
 
-import { BADGE_CATALOG, NOTIFICATION_TYPES, renderNotification, titleKeyOf, type NotificationContent, type NotificationType } from '@photobooking/domain';
+import {
+  BADGE_CATALOG,
+  NOTIFICATION_TYPES,
+  accountLast4,
+  earningItemOf,
+  renderNotification,
+  summarizeEarnings,
+  titleKeyOf,
+  type EarningItem,
+  type NotificationContent,
+  type NotificationType,
+  type Payment,
+  type Payout,
+} from '@photobooking/domain';
+import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
+import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
 export const SEED_CREATED_AT = new Date('2026-09-01T00:00:00Z');
@@ -127,6 +142,8 @@ export interface SeedBooking {
   readonly place: string;
   /** Days between completion and seeding; null when not completed. */
   readonly completedDaysAgo: number | null;
+  /** The deposit is held back by a dispute; the text is what the customer wrote. */
+  readonly dispute?: { readonly reason: string };
 }
 
 export const SEED_BOOKINGS: readonly SeedBooking[] = [
@@ -136,7 +153,15 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
   { id: 'seed-booking-cancelled', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'cancelled', date: '2026-10-22', start: '08:00', end: '10:00', place: 'Văn Miếu, Hà Nội', completedDaysAgo: null },
   { id: 'seed-booking-completed-recent', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-27', start: '08:00', end: '10:00', place: 'Hồ Tây, Hà Nội', completedDaysAgo: 3 },
   { id: 'seed-booking-completed-old', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-08-20', start: '08:00', end: '10:00', place: 'Phố cổ, Hà Nội', completedDaysAgo: 40 },
+  // Completed 10 hours before seeding, then disputed by Lan: the money stays on hold (S06.05 row with a reason).
+  { id: 'seed-booking-disputed', customerId: LAN, photographerId: AN, serviceId: 'seed-service-portrait', status: 'completed', date: '2026-09-29', start: '08:00', end: '10:00', place: 'Hồ Gươm, Hà Nội', completedDaysAgo: 10 / 24, dispute: { reason: 'Ảnh giao thiếu so với gói' } },
 ];
+
+/** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
+export const SEED_AN_ACCOUNT = { id: 'seed-account-an-1', bankCode: 'VCB', number: '0123456789', holderName: 'NGUYEN VAN AN' } as const;
+export const SEED_PAYOUT_AN = 'seed-payout-an-1';
+/** The booking whose payment the seeded payout paid out. */
+export const SEED_PAID_OUT_BOOKING = 'seed-booking-completed-old';
 
 export interface SeedPost {
   readonly id: string;
@@ -189,6 +214,12 @@ const TIMELINE: Readonly<Record<string, readonly string[]>> = {
   completed: ['requested', 'accepted', 'upcoming', 'completed'],
 };
 
+function escrowOf(b: SeedBooking): string {
+  if (b.dispute !== undefined) return 'disputed';
+  if (b.id === SEED_PAID_OUT_BOOKING) return 'released';
+  return b.status === 'completed' ? 'released' : b.status === 'cancelled' ? 'refunded' : 'held';
+}
+
 function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
   const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
   if (service === undefined) throw new Error(`unknown seed service ${b.serviceId}`);
@@ -200,11 +231,7 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
   const timeline = steps.map((status, i) => ({ status, at: new Date(last.getTime() - (steps.length - 1 - i) * HOUR_MS) }));
   const createdAt = timeline[0]?.at ?? last;
   const completedAt = b.status === 'completed' ? last : null;
-  const escrowStatus = b.status === 'completed'
-    ? 'released'
-    : b.status === 'cancelled'
-      ? 'refunded'
-      : 'held';
+  const escrowStatus = escrowOf(b);
 
   return {
     customerId: b.customerId,
@@ -370,23 +397,24 @@ export function seedDocuments(now: Date): SeedDocument[] {
 
     // Payment document
     const paymentId = `seed-payment-${b.id}`;
-    const escrowStatus = b.status === 'completed' ? 'released' : b.status === 'cancelled' ? 'refunded' : 'held';
-    docs.push({
-      path: `payments/${paymentId}`,
-      data: {
-        subjectType: 'booking',
-        subjectId: b.id,
-        payerId: b.customerId,
-        payeeId: b.photographerId,
-        provider: 'fake',
-        amount: deposit,
-        status: b.status === 'cancelled' ? 'refunded' : 'paid',
-        escrowStatus,
-        idempotencyKey: `dep_${b.id}_fake`,
-        createdAt,
-        updatedAt,
-      },
-    });
+    const paidOut = b.id === SEED_PAID_OUT_BOOKING;
+    const escrowStatus = paidOut ? 'paid_out' : escrowOf(b);
+    const paymentData: Record<string, unknown> = {
+      subjectType: 'booking',
+      subjectId: b.id,
+      payerId: b.customerId,
+      payeeId: b.photographerId,
+      provider: 'fake',
+      amount: deposit,
+      status: b.status === 'cancelled' ? 'refunded' : 'paid',
+      escrowStatus,
+      idempotencyKey: `dep_${b.id}_fake`,
+      ...(paidOut ? { payoutId: SEED_PAYOUT_AN } : {}),
+      ...(b.dispute !== undefined ? { dispute: { reason: b.dispute.reason, openedAt: new Date(updatedAt.getTime() + HOUR_MS) } } : {}),
+      createdAt,
+      updatedAt,
+    };
+    docs.push({ path: `payments/${paymentId}`, data: paymentData });
 
     // Ledger entry for deposit
     docs.push({
@@ -403,7 +431,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       },
     });
 
-    if (b.status === 'completed') {
+    if (b.status === 'completed' && b.dispute === undefined) {
       docs.push({
         path: `ledger_entries/seed-ledger-${b.id}-rel`,
         data: {
@@ -460,6 +488,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
     }
   }
   docs.push(...notificationAndBadgeDocuments(now));
+  docs.push(...payoutAndEarningsDocuments(now, docs));
   return docs;
 }
 
@@ -556,5 +585,153 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
   const anShoots = SEED_BOOKINGS.filter((b) => b.photographerId === AN && b.status === 'completed').length;
   progress(AN, { punctual: { current: 3, target: 5 }, shoots_50: { current: Math.min(anShoots, 50), target: 50 } });
   progress(LAN, { sharer: { current: 0, target: 5 }, detailed_reviewer: { current: 0, target: 5 } });
+  return docs;
+}
+
+
+/**
+ * An's payout account and one paid payout (plan 10b), and the `earnings` projection of every
+ * photographer with payments, computed by the same pure functions the triggers use so the seed
+ * does not depend on trigger timing. Bình has no account.
+ */
+function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
+  const docs: SeedDocument[] = [];
+  const at = SEED_CREATED_AT;
+  const a = SEED_AN_ACCOUNT;
+  docs.push({
+    path: `payoutAccounts/${AN}`,
+    data: { accountId: a.id, bankCode: a.bankCode, accountLast4: accountLast4(a.number), holderName: a.holderName, updatedAt: at },
+  });
+  docs.push({
+    path: `payoutAccounts/${AN}/accounts/${a.id}`,
+    data: {
+      userId: AN,
+      bankCode: a.bankCode,
+      accountNumberEnc: encryptSyncForSeed(emulatorPayoutKey(), a.number),
+      accountLast4: accountLast4(a.number),
+      holderName: a.holderName,
+      active: true,
+      createdAt: at,
+    },
+  });
+
+  const paymentDoc = (id: string) => existing.find((d) => d.path === `payments/${id}`);
+  const paidId = `seed-payment-${SEED_PAID_OUT_BOOKING}`;
+  const paid = paymentDoc(paidId);
+  if (paid === undefined) throw new Error('seed: the paid-out payment is missing');
+  const amount = paid.data.amount as number;
+  const paidAt = new Date(now.getTime() - 35 * DAY_MS);
+  docs.push({
+    path: `payouts/${SEED_PAYOUT_AN}`,
+    data: {
+      payeeId: AN,
+      accountId: a.id,
+      amount,
+      status: 'paid',
+      items: [{ paymentId: paidId, amount }],
+      reference: `FAKE-${SEED_PAYOUT_AN}`,
+      failureReason: null,
+      holdReason: null,
+      createdBy: ADMIN,
+      createdAt: new Date(paidAt.getTime() - HOUR_MS),
+      updatedAt: paidAt,
+      processingAt: new Date(paidAt.getTime() - HOUR_MS / 2),
+      paidAt,
+    },
+  });
+  docs.push({
+    path: `ledger_entries/seed-ledger-${SEED_PAYOUT_AN}-pay`,
+    data: {
+      type: 'payout_paid',
+      paymentId: paidId,
+      payoutId: SEED_PAYOUT_AN,
+      subjectType: 'booking',
+      subjectId: SEED_PAID_OUT_BOOKING,
+      accountOwnerId: AN,
+      amount: -amount,
+      note: `Payout ${SEED_PAYOUT_AN}`,
+      at: paidAt,
+    },
+  });
+
+  // The projection: rows and totals per payee, from the seeded payments.
+  const payout: Payout = {
+    id: SEED_PAYOUT_AN,
+    payeeId: AN,
+    accountId: a.id,
+    amount,
+    status: 'paid',
+    items: [{ paymentId: paidId, amount }],
+    createdBy: ADMIN,
+    createdAt: new Date(paidAt.getTime() - HOUR_MS).toISOString(),
+    updatedAt: paidAt.toISOString(),
+    paidAt: paidAt.toISOString(),
+  };
+  const iso = (v: unknown): string | undefined => (v instanceof Date ? v.toISOString() : undefined);
+  const byPayee = new Map<string, EarningItem[]>();
+  for (const d of existing) {
+    if (!/^payments\/[^/]+$/.test(d.path)) continue;
+    const id = d.path.slice('payments/'.length);
+    const x = d.data;
+    const booking = SEED_BOOKINGS.find((b) => b.id === x.subjectId);
+    const service = SEED_SERVICES.find((s) => s.id === booking?.serviceId);
+    if (booking === undefined || service === undefined) continue;
+    const payment: Payment = {
+      id,
+      subjectType: 'booking',
+      subjectId: booking.id,
+      payerId: x.payerId as string,
+      payeeId: x.payeeId as string,
+      provider: 'fake',
+      amount: x.amount as number,
+      status: x.status as Payment['status'],
+      escrowStatus: x.escrowStatus as Payment['escrowStatus'],
+      idempotencyKey: x.idempotencyKey as string,
+      payoutId: (x.payoutId as string | undefined) ?? null,
+      createdAt: iso(x.createdAt) ?? at.toISOString(),
+      updatedAt: iso(x.updatedAt) ?? at.toISOString(),
+    };
+    const refunded = x.status === 'refunded' ? payment.amount : 0;
+    const item = earningItemOf({
+      payment,
+      refunded,
+      subject: { counterpartName: 'Lan (seed)', label: service.name, day: booking.date },
+      payout: payment.payoutId === SEED_PAYOUT_AN ? payout : null,
+      now,
+    });
+    if (item === null) continue;
+    byPayee.set(item.payeeId, [...(byPayee.get(item.payeeId) ?? []), item]);
+  }
+  for (const [payeeId, items] of byPayee) {
+    const summary = summarizeEarnings(payeeId, items, payeeId === AN ? payout : null, now);
+    docs.push({
+      path: `earnings/${payeeId}`,
+      data: {
+        heldAmount: summary.heldAmount,
+        soonAmount: summary.soonAmount,
+        receivedAmount: summary.receivedAmount,
+        lastPayout: summary.lastPayout === null ? null : { id: summary.lastPayout.id, status: summary.lastPayout.status, at: new Date(summary.lastPayout.at) },
+        updatedAt: now,
+      },
+    });
+    for (const i of items) {
+      docs.push({
+        path: `earnings/${payeeId}/items/${i.id}`,
+        data: {
+          payeeId: i.payeeId,
+          subjectType: i.subjectType,
+          subjectId: i.subjectId,
+          counterpartName: i.counterpartName,
+          subjectLabel: i.subjectLabel,
+          day: i.day,
+          amount: i.amount,
+          state: i.state,
+          holdReason: i.holdReason,
+          paidOutAt: i.paidOutAt === null ? null : new Date(i.paidOutAt),
+          updatedAt: now,
+        },
+      });
+    }
+  }
   return docs;
 }

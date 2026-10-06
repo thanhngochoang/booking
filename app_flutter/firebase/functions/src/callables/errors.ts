@@ -14,6 +14,8 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   conflict: 'aborted',
   price_changed: 'failed-precondition',
   not_eligible: 'failed-precondition',
+  // A fresh sign-in is needed; the client re-authenticates and retries once.
+  reauth_required: 'failed-precondition',
 };
 
 /**

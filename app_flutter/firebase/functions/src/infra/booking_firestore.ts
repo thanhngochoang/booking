@@ -169,6 +169,8 @@ export function paymentToFirestore(p: Payment): DocumentData {
     paidAt: toTimestamp(p.paidAt),
     releasedAt: toTimestamp(p.releasedAt),
     releaseAfter: toTimestamp(p.releaseAfter),
+    dispute: p.dispute ? { reason: p.dispute.reason, openedAt: toTimestamp(p.dispute.openedAt) } : null,
+    payoutId: p.payoutId ?? null,
     createdAt: toTimestamp(p.createdAt),
     updatedAt: toTimestamp(p.updatedAt),
   };
@@ -191,6 +193,11 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     paidAt: toIsoString(d.paidAt),
     releasedAt: toIsoString(d.releasedAt),
     releaseAfter: toIsoString(d.releaseAfter),
+    dispute:
+      d.dispute && typeof d.dispute === 'object' && typeof d.dispute.reason === 'string'
+        ? { reason: d.dispute.reason, openedAt: toIsoString(d.dispute.openedAt) ?? new Date(0).toISOString() }
+        : null,
+    payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
   };

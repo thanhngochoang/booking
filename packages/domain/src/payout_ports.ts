@@ -33,6 +33,11 @@ export interface PayoutStore {
 }
 
 export interface PayoutGateway {
+  /**
+   * `payoutId` is an idempotency key: the real adapter MUST send it to the bank so that a retry
+   * of the same payout (after a crash between the transfer and the ledger write) never pays twice
+   * and returns the first outcome.
+   */
   transfer(r: {
     payoutId: string;
     amount: number;

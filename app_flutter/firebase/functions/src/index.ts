@@ -17,7 +17,11 @@ import {
   handleProposeReschedule,
   handleAnswerReschedule,
 } from './callables/chat.js';
-import { CALLABLE_OPTIONS, SCHEDULE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
+import { CALLABLE_OPTIONS, PAYOUT_ACCOUNT_KEY, SCHEDULE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
+import { handleSavePayoutAccount } from './callables/payout_account.js';
+import { handlePaymentWrite } from './triggers/payment_write.js';
+import { handlePayoutWrite } from './triggers/payout_write.js';
+import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
 import { liveSkillsDeps } from './infra/live_skills.js';
 import { liveBookingDeps } from './infra/live_booking.js';
@@ -344,3 +348,33 @@ export const pruneNotifications = onSchedule(
     await handlePruneNotifications();
   },
 );
+
+// ---- earnings and payout account (plan 10b) ----
+
+/**
+ * `{bankCode, accountNumber, holderName}` → `{accountId, accountLast4}`. Photographers only; a
+ * change of an existing account needs a sign-in from the last 5 minutes (`reauth_required`).
+ * The number is stored AES-256-GCM encrypted with the secret PAYOUT_ACCOUNT_KEY.
+ */
+export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
+  handleSavePayoutAccount(request, livePayoutAccountDeps()),
+);
+
+/** A payment write refreshes the payee's earnings rows and totals. */
+export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payments/{paymentId}' }, async (event) => {
+  await handlePaymentWrite(
+    event.params.paymentId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    liveEarningsDeps(),
+  );
+});
+
+/** A payout write refreshes the rows of every payment in the batch and the last-payout card. */
+export const onPayoutWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payouts/{payoutId}' }, async (event) => {
+  await handlePayoutWrite(
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    liveEarningsDeps(),
+  );
+});

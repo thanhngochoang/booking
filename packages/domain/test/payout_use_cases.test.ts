@@ -141,6 +141,24 @@ describe('payout use cases', () => {
     assert.equal([...w.store.ledgerEntries.values()].filter((e) => e.type === 'payout_paid').length, 1);
   });
 
+  it('a payment that left the batch during the transfer is a conflict and writes nothing', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    const a = await releasedPayment(w, '2026-10-15');
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    const real = w.payGateway.transfer.bind(w.payGateway);
+    (w.payoutDeps.gateway as { transfer: typeof real }).transfer = async (r) => {
+      const pay = w.store.payments.get(a);
+      assert.ok(pay);
+      w.store.payments.set(a, { ...pay, escrowStatus: 'disputed' });
+      return real(r);
+    };
+    await refused(executePayout(w.payoutDeps, ADMIN, po.id), 'conflict');
+    assert.equal(w.payoutStore.payouts.get(po.id)?.status, 'processing');
+    assert.equal(w.store.payments.get(a)?.escrowStatus, 'disputed');
+    assert.equal([...w.store.ledgerEntries.values()].filter((e) => e.type === 'payout_paid').length, 0);
+  });
+
   it('a failed payout returns its payments', async () => {
     const w = createPayoutWorld();
     await addAccount(w, '0123450000');
