@@ -366,7 +366,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('4.8 · 2 đánh giá'), findsOneWidget);
+      expect(find.text('4,8 · 2 đánh giá'), findsOneWidget);
       expect(find.text('Thanh Ngô'), findsOneWidget);
       expect(find.text('02/10/2026'), findsOneWidget);
       expect(find.text('Buổi chụp diễn ra hoàn hảo!'), findsOneWidget);

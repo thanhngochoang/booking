@@ -408,8 +408,9 @@ class _ReviewsSliverState extends ConsumerState<ReviewsSliver> {
 
   @override
   Widget build(BuildContext context) {
-    final reviewsAsync =
-        ref.watch(photographerReviewsProvider(widget.photographerId));
+    final reviewsAsync = ref.watch(
+      photographerReviewsProvider(widget.photographerId),
+    );
     return SliverToBoxAdapter(
       child: AsyncView<List<Review>>(
         value: reviewsAsync,
@@ -458,10 +459,7 @@ class _EmptyReviews extends StatelessWidget {
 }
 
 class _ReviewsContent extends ConsumerWidget {
-  const _ReviewsContent({
-    required this.photographerId,
-    required this.reviews,
-  });
+  const _ReviewsContent({required this.photographerId, required this.reviews});
 
   final String photographerId;
   final List<Review> reviews;
@@ -470,39 +468,30 @@ class _ReviewsContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final profile =
-        ref.watch(photographerProfileProvider(photographerId)).value;
+    final profile = ref
+        .watch(photographerProfileProvider(photographerId))
+        .value;
 
-    final String ratingStr;
-    final int count;
-    if (profile != null && profile.summary.hasRating) {
-      ratingStr = profile.summary.ratingAvg.toStringAsFixed(1);
-      count = profile.summary.reviewCount;
-    } else if (reviews.isNotEmpty) {
-      final avg =
-          reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
-      ratingStr = avg.toStringAsFixed(1);
-      count = reviews.length;
-    } else {
-      ratingStr = '0.0';
-      count = 0;
-    }
-
-    final notifier =
-        ref.read(photographerReviewsProvider(photographerId).notifier);
+    final notifier = ref.read(
+      photographerReviewsProvider(photographerId).notifier,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: AppSpace.s3),
-          child: Text(
-            l.reviewsHeader(ratingStr, count),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+        if (profile != null && profile.summary.hasRating)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpace.s3),
+            child: Text(
+              l.reviewsHeader(
+                formatRating(profile.summary.ratingAvg),
+                profile.summary.reviewCount,
+              ),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
         for (var i = 0; i < reviews.length; i++) ...[
           _ReviewRow(review: reviews[i]),
           if (i < reviews.length - 1) const Divider(height: 1),
@@ -520,9 +509,7 @@ class _ReviewsContent extends ConsumerWidget {
         else if (notifier.loadingMore)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpace.s4),
-            child: Center(
-              child: SignatureLoader(size: LoaderSize.inline),
-            ),
+            child: Center(child: SignatureLoader(size: LoaderSize.inline)),
           ),
       ],
     );
@@ -541,11 +528,14 @@ class _ReviewRow extends ConsumerWidget {
     }
     final customer = customerAsync.value;
     final thumbs = review.photoPostId != null
-        ? ref.watch(reviewPostProvider(review.photoPostId!)).value?.images
-                .take(3)
-                .map((img) => img.url)
-                .toList() ??
-            const <String>[]
+        ? ref
+                  .watch(reviewPostProvider(review.photoPostId!))
+                  .value
+                  ?.images
+                  .take(3)
+                  .map((img) => img.url)
+                  .toList() ??
+              const <String>[]
         : const <String>[];
 
     return ReviewTile(
@@ -636,19 +626,21 @@ class _ReviewTileState extends State<ReviewTile> {
           const SizedBox(height: AppSpace.s2),
           LayoutBuilder(
             builder: (context, constraints) {
-              final style = theme.textTheme.bodyMedium ??
+              final style =
+                  theme.textTheme.bodyMedium ??
                   const TextStyle(fontSize: 14, height: 1.4);
               final textSpan = TextSpan(text: widget.review.text, style: style);
-              final textPainter = TextPainter(
-                text: textSpan,
-                textDirection: Directionality.of(context),
-                textScaler: MediaQuery.textScalerOf(context),
-                maxLines: 4,
-              )..layout(
-                  maxWidth: constraints.maxWidth.isFinite
-                      ? constraints.maxWidth
-                      : double.infinity,
-                );
+              final textPainter =
+                  TextPainter(
+                    text: textSpan,
+                    textDirection: Directionality.of(context),
+                    textScaler: MediaQuery.textScalerOf(context),
+                    maxLines: 4,
+                  )..layout(
+                    maxWidth: constraints.maxWidth.isFinite
+                        ? constraints.maxWidth
+                        : double.infinity,
+                  );
 
               final exceeded = textPainter.didExceedMaxLines;
 
@@ -663,15 +655,22 @@ class _ReviewTileState extends State<ReviewTile> {
                     overflow: _expanded ? null : TextOverflow.ellipsis,
                   ),
                   if (exceeded && !_expanded) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpace.s1),
                     InkWell(
                       onTap: () => setState(() => _expanded = true),
-                      child: Text(
-                        context.l10n.reviewsMore,
-                        style: TextStyle(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: AppSpace.s12,
+                        ),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          widthFactor: 1,
+                          child: Text(
+                            context.l10n.reviewsMore,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -680,7 +679,8 @@ class _ReviewTileState extends State<ReviewTile> {
               );
             },
           ),
-          if (widget.thumbs.isNotEmpty && widget.review.photoPostId != null) ...[
+          if (widget.thumbs.isNotEmpty &&
+              widget.review.photoPostId != null) ...[
             const SizedBox(height: AppSpace.s2),
             SizedBox(
               height: 72,
@@ -691,7 +691,7 @@ class _ReviewTileState extends State<ReviewTile> {
                       padding: const EdgeInsets.only(right: AppSpace.s2),
                       child: Semantics(
                         button: true,
-                        label: context.l10n.profilePhoto,
+                        label: context.l10n.reviewThumbLabel,
                         child: InkWell(
                           key: Key('review-thumb-$thumb'),
                           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -772,4 +772,3 @@ class _ReviewTileSkeleton extends StatelessWidget {
     );
   }
 }
-
