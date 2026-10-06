@@ -283,7 +283,7 @@ class _EditAlbumBodyState extends ConsumerState<_EditAlbumBody> {
                     width: AppSpace.s12,
                     height: AppSpace.s12,
                   ),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: _busy ? null : _close,
                 ),
               ],

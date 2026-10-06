@@ -223,7 +223,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('app-sheet')), findsOneWidget);
       expect(find.text('gate'), findsOneWidget);
-      expect(find.byIcon(Icons.lock_outline_rounded), findsNothing);
+      expect(find.byIcon(AppIcons.lock), findsNothing);
       await tester.enterText(find.byType(TextFormField), '0903123456');
       await tester.pump();
       await tester.tap(find.byKey(const Key('phone-save')));

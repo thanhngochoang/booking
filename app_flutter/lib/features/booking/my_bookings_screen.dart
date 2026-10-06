@@ -96,7 +96,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
               IconButton(
                 key: const Key('bookings-chats'),
                 tooltip: l10n.bookingsChats,
-                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                icon: const AppIcon(AppIcons.chat),
                 onPressed: () => context.push('/chats'),
               ),
           ],
@@ -183,7 +183,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           AppButton.outline(
             l10n.bookingsDirections,
             size: AppButtonSize.small,
-            icon: const Icon(Icons.near_me_outlined, size: 18),
+            icon: const AppIcon(AppIcons.nearMe, size: 18),
             onPressed: () => _onDirections(b),
           ),
         );

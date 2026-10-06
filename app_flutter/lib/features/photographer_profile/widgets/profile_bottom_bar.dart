@@ -35,7 +35,7 @@ class ProfileBottomBar extends ConsumerWidget {
         ? AppButton.primary(
             l.profileEdit,
             key: const Key('profile-edit'),
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            icon: const AppIcon(AppIcons.edit, color: Colors.white),
             onPressed: onEdit,
           )
         : Row(

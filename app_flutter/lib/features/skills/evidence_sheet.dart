@@ -186,7 +186,7 @@ class _EvidenceSheetState extends ConsumerState<EvidenceSheet> {
                   key: const Key('evidence-retry'),
                   onPressed: () =>
                       ref.read(ownPostsProvider.notifier).retryLoadMore(),
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: const AppIcon(AppIcons.refresh),
                   label: Text(l.skillEvidenceLoadMoreRetry),
                 ),
               ),

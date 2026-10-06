@@ -54,7 +54,7 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
                           key: const Key('role-customer'),
                           title: l.roleCustomerTitle,
                           body: l.roleCustomerBody,
-                          icon: Icons.search,
+                          icon: AppIcons.search,
                           selected: _selected == UserRole.customer,
                           onTap: () =>
                               setState(() => _selected = UserRole.customer),
@@ -64,7 +64,7 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
                           key: const Key('role-photographer'),
                           title: l.rolePhotographerTitle,
                           body: l.rolePhotographerBody,
-                          icon: Icons.camera_alt_outlined,
+                          icon: AppIcons.camera,
                           selected: _selected == UserRole.photographer,
                           onTap: () =>
                               setState(() => _selected = UserRole.photographer),
@@ -135,7 +135,15 @@ class _RoleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: scheme.primary),
+            AppIcon(
+              icon,
+              selected: selected,
+              color: selected
+                  ? scheme.primary
+                  : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColorsDark.foregroundMuted
+                        : AppColors.foregroundMuted),
+            ),
             const SizedBox(width: AppSpace.s3),
             Expanded(
               child: Column(

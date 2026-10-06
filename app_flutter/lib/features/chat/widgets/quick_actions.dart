@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/chat/chat.dart';
@@ -31,11 +31,13 @@ class QuickActionsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isBooking = thread.kind == ChatKind.booking && booking != null;
-    final isAcceptedOrUpcoming = isBooking &&
+    final isAcceptedOrUpcoming =
+        isBooking &&
         (booking!.status == BookingStatus.accepted ||
             booking!.status == BookingStatus.upcoming);
 
-    final showReschedule = isAcceptedOrUpcoming &&
+    final showReschedule =
+        isAcceptedOrUpcoming &&
         rescheduleEnabled &&
         !thread.rescheduleUsed &&
         !hasPendingProposal;
@@ -44,32 +46,37 @@ class QuickActionsRow extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3, vertical: AppSpace.s1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s3,
+        vertical: AppSpace.s1,
+      ),
       child: Row(
         children: [
           _ActionChip(
-            icon: Icons.location_on_outlined,
+            icon: AppIcons.place,
             label: l10n.chatSendLocation,
             onTap: onSendLocation,
           ),
           const SizedBox(width: AppSpace.s2),
           _ActionChip(
-            icon: Icons.photo_outlined,
+            icon: AppIcons.image,
             label: l10n.chatSendRef,
             onTap: onSendRefImage,
           ),
           if (showReschedule) ...[
             const SizedBox(width: AppSpace.s2),
             _ActionChip(
-              icon: Icons.event_repeat_outlined,
+              icon: AppIcons.calendarRepeat,
               label: l10n.chatReschedule,
               onTap: onReschedule,
             ),
           ],
-          if (isAcceptedOrUpcoming && placeName != null && placeName.isNotEmpty) ...[
+          if (isAcceptedOrUpcoming &&
+              placeName != null &&
+              placeName.isNotEmpty) ...[
             const SizedBox(width: AppSpace.s2),
             _ActionChip(
-              icon: Icons.place_outlined,
+              icon: AppIcons.place,
               label: l10n.chatConfirmPlace,
               onTap: () => onConfirmPlace(placeName),
             ),
@@ -99,7 +106,11 @@ class _ActionChip extends StatelessWidget {
     final border = theme.colorScheme.outlineVariant;
 
     return ActionChip(
-      avatar: Icon(icon, size: 16, color: theme.colorScheme.primary),
+      avatar: AppIcon(
+        icon,
+        size: AppIconSize.sm,
+        color: dark ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted,
+      ),
       label: Text(label, style: theme.textTheme.labelMedium),
       backgroundColor: bg,
       side: BorderSide(color: border),

@@ -18,11 +18,14 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
   @override
   void initState() {
     super.initState();
-    final current = ref.read(profilePackagesProvider(widget.args.photographerId));
+    final current = ref.read(
+      profilePackagesProvider(widget.args.photographerId),
+    );
     if (current.hasValue) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref.read(bookingFlowControllerProvider(widget.args).notifier)
+        ref
+            .read(bookingFlowControllerProvider(widget.args).notifier)
             .applyPackages(current.value!);
       });
     }
@@ -34,7 +37,8 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
       profilePackagesProvider(widget.args.photographerId),
       (prev, next) {
         if (next.hasValue) {
-          ref.read(bookingFlowControllerProvider(widget.args).notifier)
+          ref
+              .read(bookingFlowControllerProvider(widget.args).notifier)
               .applyPackages(next.value!);
         }
       },
@@ -42,8 +46,12 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
 
     final l10n = context.l10n;
     final state = ref.watch(bookingFlowControllerProvider(widget.args));
-    final controller = ref.read(bookingFlowControllerProvider(widget.args).notifier);
-    final packagesAsync = ref.watch(profilePackagesProvider(widget.args.photographerId));
+    final controller = ref.read(
+      bookingFlowControllerProvider(widget.args).notifier,
+    );
+    final packagesAsync = ref.watch(
+      profilePackagesProvider(widget.args.photographerId),
+    );
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
@@ -84,7 +92,7 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: scheme.error),
+                      AppIcon(AppIcons.info, size: 16, color: scheme.error),
                       const SizedBox(width: AppSpace.s2),
                       Expanded(
                         child: Text(
@@ -187,7 +195,8 @@ class _PackageTile extends StatelessWidget {
       if (package.durationMinutes > 0) '${package.durationMinutes} phút',
       if (package.photoCount != null) '${package.photoCount} ảnh',
       if (package.editedCount != null) '${package.editedCount} ảnh sửa',
-      if (package.deliveryDays != null) 'trả trong ${package.deliveryDays} ngày',
+      if (package.deliveryDays != null)
+        'trả trong ${package.deliveryDays} ngày',
     ].join(' · ');
 
     return Semantics(
@@ -213,7 +222,8 @@ class _PackageTile extends StatelessWidget {
                 children: [
                   _OptionRadio(selected: selected, edge: edge),
                   const SizedBox(width: AppSpace.s2h),
-                  if (package.coverUrl != null && package.coverUrl!.isNotEmpty) ...[
+                  if (package.coverUrl != null &&
+                      package.coverUrl!.isNotEmpty) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: SizedBox(

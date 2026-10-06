@@ -450,7 +450,7 @@ void main() {
 
   testWidgets('privacy line is plain text, as in the mock', (tester) async {
     await _open(tester);
-    expect(find.byIcon(Icons.lock_outline_rounded), findsNothing);
+    expect(find.byIcon(AppIcons.lock), findsNothing);
   });
 
   testWidgets('the footer reaches the bottom edge over the gesture bar', (

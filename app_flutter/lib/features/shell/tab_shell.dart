@@ -50,7 +50,12 @@ class TabShell extends ConsumerWidget {
                   NavigationDestination(
                     icon: TabBadge(
                       count: badges[s.tab] ?? 0,
-                      child: Icon(s.icon),
+                      child: AppIcon(s.icon),
+                    ),
+                    // Active tab: filled glyph; the theme colours it accent.
+                    selectedIcon: TabBadge(
+                      count: badges[s.tab] ?? 0,
+                      child: AppIcon(s.icon, selected: true),
                     ),
                     label: s.label(l),
                   ),
@@ -112,7 +117,7 @@ class MiddleTabDestination extends StatelessWidget {
               height: 36,
               child: CtaSurface(
                 borderRadius: BorderRadius.circular(18),
-                child: Center(child: Icon(icon, color: Colors.white)),
+                child: Center(child: AppIcon(icon, color: Colors.white)),
               ),
             ),
           ),

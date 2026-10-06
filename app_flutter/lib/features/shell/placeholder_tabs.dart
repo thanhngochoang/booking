@@ -123,7 +123,7 @@ class ProfileTab extends ConsumerWidget {
             IconButton(
               key: const Key('open-settings'),
               tooltip: l.settingsTitle,
-              icon: const Icon(Icons.settings_outlined),
+              icon: const AppIcon(AppIcons.settings),
               onPressed: () => context.push('/settings'),
             ),
           ],
@@ -183,7 +183,7 @@ class ProfileTab extends ConsumerWidget {
                                 AppButton.outline(
                                   l.profileSetupContinue,
                                   key: const Key('continue-setup'),
-                                  icon: const Icon(Icons.arrow_forward_rounded),
+                                  icon: const AppIcon(AppIcons.forward),
                                   onPressed: () => context.push('/setup'),
                                 ),
                               ],
@@ -228,7 +228,7 @@ class ProfileTab extends ConsumerWidget {
                                     : l.profileSwitchToPhotographer,
                                 key: const Key('switch-role'),
                                 size: AppButtonSize.small,
-                                icon: const Icon(Icons.swap_horiz_rounded),
+                                icon: const AppIcon(AppIcons.swap),
                                 loading: switching,
                                 onPressed: profile == null
                                     ? null
@@ -293,7 +293,7 @@ class _MyAlbumsRow extends StatelessWidget {
               padding: const EdgeInsets.all(AppSpace.s4),
               child: Row(
                 children: [
-                  const Icon(Icons.collections_outlined),
+                  const AppIcon(AppIcons.album),
                   const SizedBox(width: AppSpace.s3),
                   Expanded(
                     child: Column(
@@ -310,7 +310,7 @@ class _MyAlbumsRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded),
+                  const AppIcon(AppIcons.chevron),
                 ],
               ),
             ),

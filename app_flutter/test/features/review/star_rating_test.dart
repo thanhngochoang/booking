@@ -2,8 +2,11 @@ import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:photobooking/features/review/widgets/star_rating.dart';
+
+import '../../support/icon_finders.dart';
 
 void main() {
   group('StarRating', () {
@@ -121,8 +124,8 @@ void main() {
       await tester.pump();
 
       // Remains 4 stars filled
-      expect(find.byIcon(Icons.star_rounded), findsNWidgets(4));
-      expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
+      expect(filledIcon(AppIcons.star), findsNWidgets(4));
+      expect(outlineIcon(AppIcons.star), findsOneWidget);
     });
   });
 }

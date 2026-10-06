@@ -480,7 +480,7 @@ class _PickField extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.expand_more_rounded, color: muted),
+                  AppIcon(AppIcons.expandMore, color: muted),
                 ],
               ),
             ),
@@ -586,7 +586,7 @@ class _AddTile extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
-          child: Center(child: Icon(Icons.add_rounded, color: muted)),
+          child: Center(child: AppIcon(AppIcons.add, color: muted)),
         ),
       ),
     );
@@ -654,7 +654,7 @@ class _ImageTile extends StatelessWidget {
                     key: Key('create-remove-$index'),
                     tooltip: l.createRemove,
                     style: scrim,
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const AppIcon(AppIcons.close),
                     onPressed: onRemove,
                   ),
                 ),
@@ -666,7 +666,7 @@ class _ImageTile extends StatelessWidget {
                       key: Key('create-up-$index'),
                       tooltip: l.createMoveUp,
                       style: scrim,
-                      icon: const Icon(Icons.arrow_upward_rounded),
+                      icon: const AppIcon(AppIcons.arrowUp),
                       onPressed: onUp,
                     ),
                   ),
@@ -678,7 +678,7 @@ class _ImageTile extends StatelessWidget {
                       key: Key('create-down-$index'),
                       tooltip: l.createMoveDown,
                       style: scrim,
-                      icon: const Icon(Icons.arrow_downward_rounded),
+                      icon: const AppIcon(AppIcons.arrowDown),
                       onPressed: onDown,
                     ),
                   ),
@@ -687,8 +687,8 @@ class _ImageTile extends StatelessWidget {
                 const Positioned(
                   top: AppSpace.s2,
                   left: AppSpace.s2,
-                  child: Icon(
-                    Icons.check_circle_rounded,
+                  child: AppIcon(
+                    AppIcons.checkCircle,
                     color: AppColors.success,
                   ),
                 ),
@@ -727,7 +727,7 @@ class _ImageTile extends StatelessWidget {
                           key: Key('create-retry-$index'),
                           tooltip: l.createRetryPhoto,
                           style: scrim,
-                          icon: const Icon(Icons.refresh_rounded),
+                          icon: const AppIcon(AppIcons.refresh),
                           onPressed: locked ? null : onRetry,
                         ),
                         Text(

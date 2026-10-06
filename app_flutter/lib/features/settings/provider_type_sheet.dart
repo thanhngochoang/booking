@@ -126,7 +126,7 @@ class _ProviderTypeSheetState extends ConsumerState<ProviderTypeSheet> {
                 key: const Key('type-individual'),
                 label: l.setupTypeIndividual,
                 description: l.setupTypeIndividualBody,
-                leading: const Icon(Icons.person_outline_rounded),
+                leading: const AppIcon(AppIcons.profile),
                 selected: _choice == ProviderChoice.individual,
                 onTap: () {
                   if (!_busy) {
@@ -139,7 +139,7 @@ class _ProviderTypeSheetState extends ConsumerState<ProviderTypeSheet> {
                 key: const Key('type-studio'),
                 label: l.setupTypeStudio,
                 description: l.setupTypeStudioBody,
-                leading: const Icon(Icons.work_outline),
+                leading: const AppIcon(AppIcons.work),
                 selected: _choice == ProviderChoice.studio,
                 onTap: () {
                   if (!_busy) {

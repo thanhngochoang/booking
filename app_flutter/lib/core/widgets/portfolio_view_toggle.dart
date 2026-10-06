@@ -122,7 +122,7 @@ class _Segment extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 14, color: color),
+                    AppIcon(icon, size: 14, color: color),
                     const SizedBox(width: AppSpace.s1),
                     Flexible(
                       child: Text(

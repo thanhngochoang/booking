@@ -498,7 +498,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('edit-name')),
-        matching: find.byIcon(Icons.person_outline_rounded),
+        matching: find.byIcon(AppIcons.profile),
       ),
       findsNothing,
     );

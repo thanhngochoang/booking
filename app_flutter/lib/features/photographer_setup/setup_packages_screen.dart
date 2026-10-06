@@ -543,7 +543,7 @@ class _DurationField extends StatelessWidget {
             hintText: hint,
             errorText: error,
             errorMaxLines: 2,
-            suffixIcon: const Icon(Icons.expand_more_rounded),
+            suffixIcon: const AppIcon(AppIcons.expandMore),
           ),
           child: Text(
             value ?? '',
@@ -673,7 +673,7 @@ class _PackageCard extends StatelessWidget {
                 IconButton(
                   key: Key('package-hide-${p.id}'),
                   tooltip: l.packageHideTooltip(p.name),
-                  icon: const Icon(Icons.visibility_off_outlined),
+                  icon: const AppIcon(AppIcons.visibilityOff),
                   onPressed: onHide,
                 ),
               ],

@@ -53,9 +53,7 @@ List<RouteBase> bookingDetailRoutes() => [
   ),
   GoRoute(
     path: '/b/:id/review',
-    builder: (_, s) => ReviewScreen(
-      bookingId: s.pathParameters['id']!,
-    ),
+    builder: (_, s) => ReviewScreen(bookingId: s.pathParameters['id']!),
   ),
 ];
 
@@ -244,7 +242,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               PopupMenuButton<DetailAction>(
                 key: const Key('detail-more'),
                 tooltip: l10n.detailMore,
-                icon: const Icon(Icons.more_horiz_rounded),
+                icon: const AppIcon(AppIcons.more),
                 itemBuilder: (_) => [
                   for (final a in menu)
                     PopupMenuItem(value: a, child: Text(l10n.detailReschedule)),
@@ -417,7 +415,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         AppButton.outline(
           l10n.detailDirections,
           size: AppButtonSize.small,
-          icon: const Icon(Icons.near_me_outlined, size: 18),
+          icon: const AppIcon(AppIcons.nearMe, size: 18),
           onPressed: () => run(DetailAction.directions),
         ),
       );
@@ -586,8 +584,8 @@ class _PaidToast extends StatelessWidget {
                 ),
                 child: const Padding(
                   padding: EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.check_rounded,
+                  child: AppIcon(
+                    AppIcons.check,
                     size: 12,
                     color: AppColors.foregroundInverse,
                   ),

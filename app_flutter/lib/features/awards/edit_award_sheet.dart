@@ -235,7 +235,7 @@ class _AwardFormState extends ConsumerState<_AwardForm> {
                     width: AppSpace.s12,
                     height: AppSpace.s12,
                   ),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: busy ? null : _close,
                 ),
               ],
@@ -361,8 +361,8 @@ class _AwardFormState extends ConsumerState<_AwardForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ExcludeSemantics(
-                          child: Icon(
-                            Icons.lock_outline_rounded,
+                          child: AppIcon(
+                            AppIcons.lock,
                             size: AppText.base,
                             color: muted,
                           ),
@@ -492,7 +492,7 @@ class _PickRow extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpace.s2),
                   ],
-                  const Icon(Icons.chevron_right_rounded),
+                  const AppIcon(AppIcons.chevron),
                 ],
               ),
             ),
@@ -753,7 +753,7 @@ class _ProofSheetState extends ConsumerState<_ProofSheet> {
                                 width: AppSpace.s12,
                                 height: AppSpace.s12,
                               ),
-                              icon: const Icon(Icons.close_rounded),
+                              icon: const AppIcon(AppIcons.close),
                               onPressed: busy ? null : () => _removeLink(i),
                             ),
                         ],
@@ -768,7 +768,7 @@ class _ProofSheetState extends ConsumerState<_ProofSheet> {
                           minimumSize: const Size(AppSpace.s12, AppSpace.s12),
                         ),
                         onPressed: busy ? null : _addLink,
-                        icon: const Icon(Icons.add_rounded),
+                        icon: const AppIcon(AppIcons.add),
                         label: Text(l.s2502ProofAddLink),
                       ),
                     ),
@@ -817,7 +817,7 @@ class _AddImageTile extends StatelessWidget {
           onTap: onTap,
           child: const SizedBox.square(
             dimension: _tileSize,
-            child: Center(child: Icon(Icons.add_a_photo_outlined)),
+            child: Center(child: AppIcon(AppIcons.addPhoto)),
           ),
         ),
       ),
@@ -873,7 +873,7 @@ class _ProofTileView extends StatelessWidget {
                   errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 )
               else
-                const Center(child: Icon(Icons.description_outlined)),
+                const Center(child: AppIcon(AppIcons.description)),
               if (tile.status == ProofStatus.uploading) ...[
                 const ColoredBox(color: AppColors.overlay),
                 Center(
@@ -893,7 +893,7 @@ class _ProofTileView extends StatelessWidget {
                       width: AppSpace.s12,
                       height: AppSpace.s12,
                     ),
-                    icon: const Icon(Icons.refresh_rounded, color: ink),
+                    icon: const AppIcon(AppIcons.refresh, color: ink),
                     onPressed: enabled ? onRetry : null,
                   ),
                 ),
@@ -902,8 +902,8 @@ class _ProofTileView extends StatelessWidget {
                 const Positioned(
                   left: AppSpace.s1,
                   bottom: AppSpace.s1,
-                  child: Icon(
-                    Icons.check_circle_rounded,
+                  child: AppIcon(
+                    AppIcons.checkCircle,
                     size: AppText.base2,
                     color: AppColors.success,
                   ),
@@ -927,8 +927,8 @@ class _ProofTileView extends StatelessWidget {
                       ),
                       child: Padding(
                         padding: EdgeInsets.all(AppSpace.s1),
-                        child: Icon(
-                          Icons.close_rounded,
+                        child: AppIcon(
+                          AppIcons.close,
                           size: AppText.base2,
                           color: ink,
                         ),

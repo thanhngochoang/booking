@@ -43,7 +43,7 @@ class AvatarEditor extends ConsumerWidget {
           l.editProfileChangeAvatar,
           key: const Key('change-avatar'),
           size: AppButtonSize.small,
-          icon: const Icon(Icons.photo_library_outlined),
+          icon: const AppIcon(AppIcons.album),
           loading: busy,
           onPressed: busy
               ? null

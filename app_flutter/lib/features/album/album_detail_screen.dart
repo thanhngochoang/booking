@@ -193,7 +193,7 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                 ? null
                 : IconButton(
                     tooltip: l.back,
-                    icon: const Icon(Icons.arrow_back_rounded),
+                    icon: const AppIcon(AppIcons.back),
                     onPressed: () => context.go('/u/${widget.uid}'),
                   ),
             actions: [
@@ -207,14 +207,14 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
                 IconButton(
                   key: const Key('album-share'),
                   tooltip: l.albumDetailShare,
-                  icon: const Icon(Icons.ios_share_rounded),
+                  icon: const AppIcon(AppIcons.share),
                   onPressed: _share,
                 ),
                 if (owner)
                   PopupMenuButton<_Menu>(
                     key: const Key('album-menu'),
                     tooltip: l.albumDetailMenu,
-                    icon: const Icon(Icons.more_horiz_rounded),
+                    icon: const AppIcon(AppIcons.more),
                     onSelected: (item) => _onMenu(item, a),
                     itemBuilder: (_) => [
                       PopupMenuItem(
@@ -566,8 +566,8 @@ class _PostTile extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.photo_library_outlined,
+                            const AppIcon(
+                              AppIcons.album,
                               size: AppText.xs2,
                               color: Colors.white,
                             ),

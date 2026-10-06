@@ -122,7 +122,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: l10n.calendarPrevMonth,
-                      icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                      icon: const AppIcon(AppIcons.chevronLeft, size: 20),
                       onPressed: canPrev
                           ? () => _changeMonth(addMonths(_month, -1))
                           : null,
@@ -130,7 +130,7 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: l10n.calendarNextMonth,
-                      icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                      icon: const AppIcon(AppIcons.chevron, size: 20),
                       onPressed: canNext
                           ? () => _changeMonth(addMonths(_month, 1))
                           : null,

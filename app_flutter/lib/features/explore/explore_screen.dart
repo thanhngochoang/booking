@@ -172,11 +172,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           SliverToBoxAdapter(
             child: Row(
               children: [
-                Icon(
-                  Icons.place_outlined,
+                AppIcon(
+                  AppIcons.place,
                   key: const Key('explore-pin'),
                   size: 15,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColorsDark.foregroundMuted
+                      : AppColors.foregroundMuted,
                 ),
                 const SizedBox(width: AppSpace.s2),
                 Expanded(
@@ -349,7 +351,12 @@ class _EventsSection {
 
     if (resolving) {
       return SliverMainAxisGroup(
-        slivers: [header, gap, SliverToBoxAdapter(child: loadingWidget()), tail],
+        slivers: [
+          header,
+          gap,
+          SliverToBoxAdapter(child: loadingWidget()),
+          tail,
+        ],
       );
     }
     if (nearby) {

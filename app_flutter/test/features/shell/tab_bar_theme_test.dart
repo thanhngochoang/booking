@@ -10,11 +10,12 @@ Widget _bar(ThemeData theme) => MaterialApp(
       selectedIndex: 0,
       destinations: const [
         NavigationDestination(
-          icon: Icon(Icons.home, key: Key('on')),
+          icon: AppIcon(AppIcons.home, key: Key('on')),
+          selectedIcon: AppIcon(AppIcons.home, selected: true, key: Key('on')),
           label: 'A',
         ),
         NavigationDestination(
-          icon: Icon(Icons.search, key: Key('off')),
+          icon: AppIcon(AppIcons.search, key: Key('off')),
           label: 'B',
         ),
       ],
@@ -30,6 +31,24 @@ Color? _label(WidgetTester t, String text) =>
     DefaultTextStyle.of(t.element(find.text(text))).style.color;
 
 void main() {
+  testWidgets('active tab icon is filled, inactive is outline', (tester) async {
+    await tester.pumpWidget(_bar(buildDarkTheme()));
+    final on = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(const Key('on')),
+        matching: find.byType(Icon),
+      ),
+    );
+    final off = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(const Key('off')),
+        matching: find.byType(Icon),
+      ),
+    );
+    expect(on.fill, 1);
+    expect(off.fill, 0);
+  });
+
   testWidgets('dark: selected is primary, unselected is the muted grey', (
     tester,
   ) async {
@@ -61,8 +80,11 @@ void main() {
               bottomNavigationBar: NavigationBar(
                 selectedIndex: sel,
                 destinations: const [
-                  MiddleTabDestination(icon: Icons.add, label: 'M'),
-                  NavigationDestination(icon: Icon(Icons.search), label: 'B'),
+                  MiddleTabDestination(icon: AppIcons.add, label: 'M'),
+                  NavigationDestination(
+                    icon: AppIcon(AppIcons.search),
+                    label: 'B',
+                  ),
                 ],
               ),
             ),

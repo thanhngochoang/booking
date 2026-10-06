@@ -151,7 +151,7 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
                       backgroundColor: AppColors.overlay,
                       foregroundColor: AppColors.foregroundInverse,
                     ),
-                    icon: const Icon(Icons.arrow_back),
+                    icon: const AppIcon(AppIcons.back),
                     onPressed: () => context.canPop()
                         ? context.pop()
                         : context.go(AppTab.home.path),
@@ -305,9 +305,8 @@ class _Content extends ConsumerWidget {
                       children: [
                         _CountButton(
                           key: const Key('like'),
-                          icon: view.liked
-                              ? Icons.favorite
-                              : Icons.favorite_border,
+                          icon: AppIcons.favorite,
+                          selected: view.liked,
                           count: view.likeCount,
                           label: view.liked ? l.photoUnlike : l.photoLike,
                           color: view.liked ? theme.colorScheme.error : null,
@@ -315,9 +314,8 @@ class _Content extends ConsumerWidget {
                         ),
                         _CountButton(
                           key: const Key('save'),
-                          icon: view.saved
-                              ? Icons.bookmark
-                              : Icons.bookmark_border,
+                          icon: AppIcons.save,
+                          selected: view.saved,
                           count: view.saveCount,
                           label: view.saved ? l.photoUnsave : l.photoSave,
                           onTap: onSave,
@@ -327,10 +325,7 @@ class _Content extends ConsumerWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                const Icon(
-                                  Icons.place_outlined,
-                                  size: _iconSize,
-                                ),
+                                const AppIcon(AppIcons.place, size: _iconSize),
                                 const SizedBox(width: AppSpace.s1),
                                 Flexible(
                                   child: Text(
@@ -499,6 +494,7 @@ class _CountButton extends StatelessWidget {
   const _CountButton({
     super.key,
     required this.icon,
+    required this.selected,
     required this.count,
     required this.label,
     required this.onTap,
@@ -506,6 +502,7 @@ class _CountButton extends StatelessWidget {
   });
 
   final IconData icon;
+  final bool selected;
   final int count;
   final String label;
   final VoidCallback onTap;
@@ -531,7 +528,7 @@ class _CountButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color),
+                AppIcon(icon, selected: selected, color: color),
                 const SizedBox(width: AppSpace.s1),
                 Text(
                   '$count',
@@ -572,9 +569,7 @@ class _ServiceCard extends StatelessWidget {
         color: scheme.secondary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          side: BorderSide(
-            color: service.active ? scheme.primary : scheme.outlineVariant,
-          ),
+          side: BorderSide(color: scheme.outlineVariant),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpace.s3),

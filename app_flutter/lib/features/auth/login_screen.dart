@@ -147,7 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         autofillHints: const [AutofillHints.email],
                         decoration: InputDecoration(
                           labelText: l.emailLabel,
-                          prefixIcon: const Icon(Icons.alternate_email_rounded),
+                          prefixIcon: const AppIcon(AppIcons.alternateEmail),
                         ),
                         validator: (v) => validateEmail(v, l),
                       ),
@@ -162,13 +162,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onFieldSubmitted: (_) => submit(),
                         decoration: InputDecoration(
                           labelText: l.passwordLabel,
-                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                          prefixIcon: const AppIcon(AppIcons.lock),
                           suffixIcon: IconButton(
                             tooltip: _obscure ? l.showPassword : l.hidePassword,
-                            icon: Icon(
+                            icon: AppIcon(
                               _obscure
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                                  ? AppIcons.visibility
+                                  : AppIcons.visibilityOff,
                             ),
                             onPressed: () =>
                                 setState(() => _obscure = !_obscure),
@@ -183,7 +183,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 AppButton.primary(
                   l.loginButton,
                   key: const Key('login'),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+                  icon: const AppIcon(AppIcons.forward, size: 20),
                   loading: busy(_Method.email),
                   onPressed: loading ? null : submit,
                 ),

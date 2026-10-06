@@ -167,7 +167,7 @@ class NotificationRow extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Center(
-                      child: Icon(
+                      child: AppIcon(
                         notificationKindIcon(item.kind),
                         key: ValueKey(
                           'notification_kind_icon_${item.kind.name}',

@@ -254,14 +254,14 @@ void main() {
     expect(
       find.descendant(
         of: _key('portfolio-a'),
-        matching: find.byIcon(Icons.workspace_premium_outlined),
+        matching: find.byIcon(AppIcons.award),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: _key('portfolio-e'),
-        matching: find.byIcon(Icons.workspace_premium_outlined),
+        matching: find.byIcon(AppIcons.award),
       ),
       findsNothing,
     );

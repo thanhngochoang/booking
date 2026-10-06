@@ -110,7 +110,7 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
                             hintText: l.areaPickerSearch,
-                            prefixIcon: const Icon(Icons.search),
+                            prefixIcon: const AppIcon(AppIcons.search),
                           ),
                         ),
                       ],
@@ -121,7 +121,7 @@ class _AreaPickerSheetState extends ConsumerState<AreaPickerSheet> {
                   _AreaRow(
                     key: const Key('area-use-device'),
                     label: l.areaPickerUseDevice,
-                    icon: Icons.my_location_outlined,
+                    icon: AppIcons.myLocation,
                     selected: _selected == _deviceId,
                     onTap: () => setState(() {
                       _selected = _deviceId;
@@ -271,7 +271,7 @@ class _AreaRow extends StatelessWidget {
       label: label,
       selected: selected,
       onTap: onTap,
-      leading: icon == null ? null : Icon(icon),
+      leading: icon == null ? null : AppIcon(icon!),
     ),
   );
 }

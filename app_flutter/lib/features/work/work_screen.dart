@@ -189,7 +189,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             IconButton(
               key: const Key('open-calendar'),
               tooltip: l10n.myCalendarTitle,
-              icon: const Icon(Icons.event_available_outlined),
+              icon: const AppIcon(AppIcons.calendarCheck),
               onPressed: () => context.push('/work/calendar'),
             ),
           ],
@@ -326,7 +326,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             child: AppButton.outline(
               l10n.workDirections,
               size: AppButtonSize.small,
-              icon: const Icon(Icons.near_me_outlined, size: 18),
+              icon: const AppIcon(AppIcons.nearMe, size: 18),
               onPressed: () => _onDirections(b),
             ),
           ),

@@ -116,8 +116,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               );
             }
 
-            final uid =
-                ref.watch(authStateProvider).value?.uid;
+            final uid = ref.watch(authStateProvider).value?.uid;
             if (uid != null && uid != booking.customerId) {
               return Center(
                 child: EmptyState(
@@ -295,7 +294,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       Text(
                         l10n.reviewOptional,
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
+                          color: theme.brightness == Brightness.dark
+                              ? AppColorsDark.foregroundMuted
+                              : AppColors.foregroundMuted,
                         ),
                       ),
                     ],

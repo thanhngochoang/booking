@@ -219,7 +219,7 @@ class ProviderTag extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            AppIcon(
               // Studio: briefcase, as the mock's `#i-brief`.
               artist ? AppIcons.award : AppIcons.work,
               size: AppText.xs2,

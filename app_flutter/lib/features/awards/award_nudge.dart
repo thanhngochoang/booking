@@ -84,7 +84,7 @@ class AwardNudgeRow extends ConsumerWidget {
                             style: theme.textTheme.titleSmall,
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded),
+                        const AppIcon(AppIcons.chevron),
                       ],
                     ),
                   ),

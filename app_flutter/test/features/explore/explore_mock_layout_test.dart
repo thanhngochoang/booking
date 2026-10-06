@@ -143,11 +143,11 @@ void main() {
   });
 
   group('S02.04', () {
-    testWidgets('the location line has a 15dp accent pin', (tester) async {
+    testWidgets('the location line has a 15dp neutral pin', (tester) async {
       await _open(tester, world: _nearbyWorld());
-      final pin = tester.widget<Icon>(find.byKey(const Key('explore-pin')));
+      final pin = tester.widget<AppIcon>(find.byKey(const Key("explore-pin")));
       expect(pin.size, 15);
-      expect(pin.color, AppColorsDark.primary);
+      expect(pin.color, AppColorsDark.foregroundMuted);
     });
 
     testWidgets('event rows: accent day, #type tag, price and seats right', (

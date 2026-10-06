@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:photobooking/core/theme/tokens.g.dart';
-import 'package:photobooking/core/widgets/app_avatar.dart';
-import 'package:photobooking/core/widgets/async_view.dart';
-import 'package:photobooking/core/widgets/booking_card.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -16,11 +13,7 @@ import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 class ChatContextCard extends ConsumerWidget {
-  const ChatContextCard({
-    super.key,
-    required this.thread,
-    this.serviceId,
-  });
+  const ChatContextCard({super.key, required this.thread, this.serviceId});
 
   final ChatThread thread;
   final String? serviceId;
@@ -56,7 +49,10 @@ class _BookingContextCard extends ConsumerWidget {
     final profileAsync = ref.watch(partyProfileProvider(photographerId));
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3, vertical: AppSpace.s2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s3,
+        vertical: AppSpace.s2,
+      ),
       child: AsyncView<Booking?>(
         value: bookingAsync,
         skeleton: (_) => BookingCard.skeleton(size: BookingCardSize.compact),
@@ -88,10 +84,7 @@ class _BookingContextCard extends ConsumerWidget {
 }
 
 class _InquiryContextCard extends ConsumerWidget {
-  const _InquiryContextCard({
-    required this.photographerId,
-    this.serviceId,
-  });
+  const _InquiryContextCard({required this.photographerId, this.serviceId});
 
   final String photographerId;
   final String? serviceId;
@@ -105,7 +98,10 @@ class _InquiryContextCard extends ConsumerWidget {
     final border = theme.colorScheme.outlineVariant;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3, vertical: AppSpace.s2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s3,
+        vertical: AppSpace.s2,
+      ),
       child: AsyncView<PhotographerProfile?>(
         value: profileAsync,
         skeleton: (_) => Container(
@@ -165,7 +161,7 @@ class _InquiryContextCard extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right, size: 20),
+                      const AppIcon(AppIcons.chevron, size: 20),
                     ],
                   ),
                 ),

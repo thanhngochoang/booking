@@ -11,6 +11,7 @@ import 'package:photobooking/data/content/service_summary.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
+import '../../support/icon_finders.dart';
 import '../../support/screen_host.dart';
 
 GoRouter _router(String start) => GoRouter(
@@ -156,7 +157,7 @@ void main() {
       await tester.tap(find.byKey(const Key('like')));
       await tester.pump();
       expect(_in('like', find.text('215')), findsOneWidget);
-      expect(_in('like', find.byIcon(Icons.favorite)), findsOneWidget);
+      expect(_in('like', filledIcon(AppIcons.favorite)), findsOneWidget);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('like')));
       await tester.pumpAndSettle();

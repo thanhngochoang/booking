@@ -66,7 +66,7 @@ class BadgeChip extends StatelessWidget {
             child: SizedBox.square(
               dimension: 16,
               child: Center(
-                child: Icon(
+                child: AppIcon(
                   badgeIconOf(badge.code),
                   size: 10,
                   color: Colors.white,
@@ -82,7 +82,7 @@ class BadgeChip extends StatelessWidget {
             child: SizedBox.square(
               dimension: 16,
               child: Center(
-                child: Icon(badgeIconOf(badge.code), size: 10, color: fgSec),
+                child: AppIcon(badgeIconOf(badge.code), size: 10, color: fgSec),
               ),
             ),
           );

@@ -318,9 +318,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                                 key: const Key('type-individual'),
                                 label: l.setupTypeIndividual,
                                 description: l.setupTypeIndividualBody,
-                                leading: const Icon(
-                                  Icons.person_outline_rounded,
-                                ),
+                                leading: const AppIcon(AppIcons.profile),
                                 selected: choice == ProviderChoice.individual,
                                 onTap: () {
                                   if (!saving) {
@@ -333,7 +331,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                                 key: const Key('type-studio'),
                                 label: l.setupTypeStudio,
                                 description: l.setupTypeStudioBody,
-                                leading: const Icon(Icons.work_outline),
+                                leading: const AppIcon(AppIcons.work),
                                 selected: choice == ProviderChoice.studio,
                                 onTap: () {
                                   if (!saving) {
@@ -458,7 +456,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                                   ),
                                 ),
                               ),
-                              icon: const Icon(Icons.add_rounded),
+                              icon: const AppIcon(AppIcons.add),
                               onPressed: saving || full ? null : _addEquipment,
                             ),
                           ],
@@ -480,11 +478,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 16,
-                              color: muted,
-                            ),
+                            AppIcon(AppIcons.info, size: 16, color: muted),
                             const SizedBox(width: AppSpace.s2),
                             Expanded(
                               child: Text(

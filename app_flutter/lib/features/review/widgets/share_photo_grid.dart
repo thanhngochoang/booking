@@ -98,7 +98,7 @@ class _AddPhotoTile extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
-          child: Center(child: Icon(Icons.add_rounded, color: muted, size: 32)),
+          child: Center(child: AppIcon(AppIcons.add, color: muted, size: 32)),
         ),
       ),
     );
@@ -168,7 +168,7 @@ class _PhotoTile extends StatelessWidget {
             Center(
               child: IconButton(
                 key: Key('retry_photo_$index'),
-                icon: const Icon(Icons.refresh_rounded, color: ink, size: 28),
+                icon: const AppIcon(AppIcons.refresh, color: ink, size: 28),
                 tooltip: l10n.reviewUploadFailed,
                 onPressed: enabled ? onRetry : null,
               ),
@@ -180,8 +180,8 @@ class _PhotoTile extends StatelessWidget {
             const Positioned(
               bottom: AppSpace.s1,
               left: AppSpace.s1,
-              child: Icon(
-                Icons.check_circle_rounded,
+              child: AppIcon(
+                AppIcons.checkCircle,
                 color: AppColors.success,
                 size: 18,
               ),
@@ -201,7 +201,7 @@ class _PhotoTile extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: EdgeInsets.all(AppSpace.s1),
-                    child: Icon(Icons.close_rounded, size: 18),
+                    child: AppIcon(AppIcons.close, size: 18),
                   ),
                 ),
                 tooltip: l10n.createRemove,
