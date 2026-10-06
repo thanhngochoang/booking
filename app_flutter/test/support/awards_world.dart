@@ -53,11 +53,14 @@ class AwardsWorld extends CreatePostWorld {
     reviewNote: note,
   );
 
+  /// Replaces the fake uploader (a test that drives uploads itself).
+  MediaUploader? uploaderOverride;
+
   @override
   List<Override> get overrides => [
     ...super.overrides,
     awardRepositoryProvider.overrideWithValue(awardRepo),
-    mediaUploaderProvider.overrideWithValue(uploader),
+    mediaUploaderProvider.overrideWithValue(uploaderOverride ?? uploader),
     imagePickerProvider.overrideWithValue(picker),
     clockProvider.overrideWithValue(() => fixtureNow),
   ];

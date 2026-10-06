@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
 
 import '../../support/awards_world.dart';
 import '../../support/content_fixtures.dart';
+import '../../support/screen_host.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
 
@@ -46,6 +50,54 @@ Future<void> _openProof(WidgetTester tester) async {
 
 bool _enabled(WidgetTester tester) =>
     tester.widget<AppButton>(_key('award-submit')).onPressed != null;
+
+/// An uploader driven by the test whose uploads keep running after the
+/// listener is gone, like a real upload task.
+class _ManualUploader implements MediaUploader {
+  final Map<String, StreamController<UploadEvent>> pending = {};
+  final List<String> deleted = [];
+
+  @override
+  Stream<UploadEvent> upload(PickedImage image, {required String storagePath}) {
+    final c = StreamController<UploadEvent>();
+    pending[storagePath] = c;
+    return c.stream;
+  }
+
+  void finish(String path) {
+    pending[path]!
+      ..add(
+        UploadEvent.done(
+          UploadedMedia(url: 'https://storage.test/$path', storagePath: path),
+        ),
+      )
+      ..close();
+  }
+
+  @override
+  Future<void> delete(String storagePath) async => deleted.add(storagePath);
+}
+
+Future<(AwardsWorld, _ManualUploader)> _openManual(WidgetTester tester) async {
+  usePhone(tester);
+  AwardSheetHost.results.clear();
+  final w = AwardsWorld();
+  await w.init();
+  final manual = _ManualUploader();
+  w.uploaderOverride = manual;
+  w.picker.answers.add([_pic]);
+  await tester.pumpWidget(
+    screenApp(home: const AwardSheetHost(), overrides: w.overrides),
+  );
+  await tester.tap(_key('open'));
+  await tester.pumpAndSettle();
+  await _openProof(tester);
+  await tester.tap(_key('award-add-image'));
+  await tester.pump();
+  await tester.pump();
+  expect(manual.pending, hasLength(1));
+  return (w, manual);
+}
 
 void main() {
   testWidgets('submit stays disabled without a proof', (tester) async {
@@ -288,4 +340,39 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('removing a tile mid-upload deletes the file when it finishes', (
+    tester,
+  ) async {
+    final (_, manual) = await _openManual(tester);
+    final path = manual.pending.keys.single;
+    await tester.tap(_key('proof-remove-0'));
+    await tester.pump();
+    expect(_key('proof-tile-0'), findsNothing);
+    expect(manual.deleted, isEmpty);
+
+    manual.finish(path);
+    await tester.pumpAndSettle();
+    expect(manual.deleted, [path]);
+    expect(_key('proof-tile-0'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('closing the sheet mid-upload deletes the file when it '
+      'finishes', (tester) async {
+    final (_, manual) = await _openManual(tester);
+    final path = manual.pending.keys.single;
+    await tester.tap(_key('award-proof-done'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('award-close'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Bỏ'));
+    await tester.pumpAndSettle();
+    expect(_key('award-competition'), findsNothing);
+
+    manual.finish(path);
+    await tester.pumpAndSettle();
+    expect(manual.deleted, [path]);
+    expect(tester.takeException(), isNull);
+  });
 }

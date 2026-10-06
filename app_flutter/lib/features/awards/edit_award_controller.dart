@@ -351,7 +351,7 @@ class EditAwardController extends Notifier<EditAwardState> {
 
   Future<void> retry(String key) async {
     final i = state.tiles.indexWhere((t) => t.key == key);
-    if (i < 0 || state.tiles[i].status != ProofStatus.failed) {
+    if (i < 0 || state.tiles[i].status != ProofStatus.failed || _busy) {
       return;
     }
     final tile = state.tiles[i].copyWith(
@@ -414,6 +414,14 @@ class EditAwardController extends Notifier<EditAwardState> {
         } else if (!dropped) {
           _update(tile.key, (t) => t.copyWith(progress: event.fraction));
         }
+      }
+      // The stream ended with neither a result nor an error.
+      final i = state.tiles.indexWhere((t) => t.key == tile.key);
+      if (ref.mounted &&
+          i >= 0 &&
+          state.tiles[i].status == ProofStatus.uploading) {
+        unawaited(_deleteQuietly(path));
+        _markFailed(tile.key);
       }
     } catch (_) {
       unawaited(_deleteQuietly(path));
