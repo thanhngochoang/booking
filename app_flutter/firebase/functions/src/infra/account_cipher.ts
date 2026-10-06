@@ -25,8 +25,12 @@ export function aesGcmCipher(keyB64: string): AccountCipher {
     decrypt: async (enc) => {
       const [v, iv, tag, data] = enc.split(':');
       if (v !== 'v1' || !iv || !tag || !data) throw new Error('unknown ciphertext version');
-      const d = createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64'));
-      d.setAuthTag(Buffer.from(tag, 'base64'));
+      const ivBytes = Buffer.from(iv, 'base64');
+      const tagBytes = Buffer.from(tag, 'base64');
+      if (ivBytes.length !== 12) throw new Error('invalid ciphertext: bad IV length');
+      if (tagBytes.length !== 16) throw new Error('invalid ciphertext: bad tag length');
+      const d = createDecipheriv('aes-256-gcm', key, ivBytes, { authTagLength: 16 });
+      d.setAuthTag(tagBytes);
       return Buffer.concat([d.update(Buffer.from(data, 'base64')), d.final()]).toString('utf8');
     },
   };

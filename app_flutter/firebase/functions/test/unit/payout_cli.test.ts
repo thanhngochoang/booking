@@ -7,7 +7,7 @@ import {
   type Payment,
   type PayoutDeps,
 } from '@photobooking/domain';
-import { cliPayoutsMode, parseArgs, runCli, type CliIo } from '../../tools/payouts.js';
+import { cliPayoutsMode, devProjectFromFirebaserc, parseArgs, runCli, type CliIo } from '../../tools/payouts.js';
 import { aesGcmCipher } from '../../src/infra/account_cipher.js';
 import { payoutGateway } from '../../src/infra/live_payout.js';
 import { payoutsMode } from '../../src/config.js';
@@ -101,6 +101,18 @@ describe('payouts staff CLI', () => {
     assert.equal(payoutsMode({ PAYOUTS_MODE: 'fake' }), 'fake');
     assert.equal(cliPayoutsMode({ FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080' }), 'fake');
     assert.equal(cliPayoutsMode({}), 'off');
+  });
+
+  it('PAYOUTS_MODE=fake works only in the dev project of .firebaserc', () => {
+    const dev = devProjectFromFirebaserc('{"projects":{"dev":"proj-dev","prod":"proj-prod"}}');
+    assert.equal(dev, 'proj-dev');
+    assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-dev' }, dev), 'fake');
+    assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-prod' }, dev), 'off');
+    assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake' }, dev), 'off');
+    assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-dev' }, null), 'off');
+    assert.equal(cliPayoutsMode({ GCLOUD_PROJECT: 'proj-dev' }, dev), 'off');
+    assert.equal(devProjectFromFirebaserc('not json'), null);
+    assert.equal(devProjectFromFirebaserc('{"projects":{}}'), null);
   });
 
   it('show masks the account number', async () => {

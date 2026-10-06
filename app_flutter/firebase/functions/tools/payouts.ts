@@ -6,7 +6,7 @@
 //   npm run payouts -- hold <payoutId> "<reason>" --actor <uid>
 //   npm run payouts -- resume <payoutId> --actor <uid>
 // Uses the Admin SDK and the same domain use cases as any future staff screen. There is no real
-// bank adapter: `execute` works only against the fake gateway (emulators, or PAYOUTS_MODE=fake).
+// bank adapter: `execute` works only against the fake gateway (emulators, or PAYOUTS_MODE=fake in the dev project of .firebaserc only).
 
 import { fileURLToPath } from 'node:url';
 import {
@@ -29,7 +29,8 @@ Environment:
   GCLOUD_PROJECT                  project id
   PAYOUT_ACCOUNT_KEY              base64 key of the account cipher (32 bytes); with FIRESTORE_EMULATOR_HOST
                                   the emulator key from .secret.local is used when it is unset
-  PAYOUTS_MODE=fake               allow \`execute\` against the fake gateway (emulators allow it by default)
+  PAYOUTS_MODE=fake               allow \`execute\` against the fake gateway, only when GCLOUD_PROJECT is the dev
+                                  project of .firebaserc (emulators allow it by default; any other project: refused)
   FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST
                                   use these instead of credentials to work against the emulators
 --actor must be a user with the custom claim staffRole = admin. \`show\` prints the account masked (•••• 6789).`;
@@ -79,10 +80,31 @@ export interface CliIo {
   listOpenPayouts(): Promise<Payout[]>;
 }
 
-/** `fake` when the fake gateway may run: emulators or `PAYOUTS_MODE=fake`. */
-export function cliPayoutsMode(env: Readonly<Record<string, string | undefined>>): 'fake' | 'off' {
+/**
+ * `fake` only when the fake gateway may run: against the emulators, or when `PAYOUTS_MODE=fake`
+ * AND the project id (GCLOUD_PROJECT) equals the dev project from `.firebaserc` (alias `dev`,
+ * passed in as `devProjectId`). Never against any other project, whatever the variable says.
+ */
+export function cliPayoutsMode(
+  env: Readonly<Record<string, string | undefined>>,
+  devProjectId: string | null = null,
+): 'fake' | 'off' {
   const emulator = (env.FIRESTORE_EMULATOR_HOST ?? '') !== '' || env.FUNCTIONS_EMULATOR === 'true';
-  return emulator || env.PAYOUTS_MODE === 'fake' ? 'fake' : 'off';
+  if (emulator) return 'fake';
+  const project = env.GCLOUD_PROJECT ?? '';
+  return env.PAYOUTS_MODE === 'fake' && devProjectId !== null && devProjectId !== '' && project === devProjectId
+    ? 'fake'
+    : 'off';
+}
+
+/** The dev project id from `.firebaserc` (alias `dev`), or null when it cannot be read. */
+export function devProjectFromFirebaserc(json: string): string | null {
+  try {
+    const dev = (JSON.parse(json) as { projects?: Record<string, unknown> }).projects?.dev;
+    return typeof dev === 'string' && dev !== '' ? dev : null;
+  } catch {
+    return null;
+  }
 }
 
 const money = (n: number): string => `${n.toLocaleString('en-US')} VND`;
@@ -139,7 +161,7 @@ export async function runCli(
     }
     case 'execute': {
       if (mode !== 'fake') {
-        throw new Error('execute is refused: no real bank adapter exists. Use the emulators or PAYOUTS_MODE=fake.');
+        throw new Error('execute is refused: no real bank adapter exists. Use the emulators, or PAYOUTS_MODE=fake with GCLOUD_PROJECT set to the dev project.');
       }
       const p = await executePayout(deps, actor, target);
       io.print(`${p.id} -> ${p.status}${p.reference ? ` (${p.reference})` : ''}${p.failureReason ? ` (${p.failureReason})` : ''}`);
@@ -167,7 +189,16 @@ async function main(): Promise<void> {
   const { db } = await import('../src/infra/admin.js');
   const { livePayoutDeps, payoutGateway } = await import('../src/infra/live_payout.js');
   const { payoutFromFirestore, PAYOUTS_COLLECTION } = await import('../src/infra/payout_firestore.js');
-  const mode = cliPayoutsMode(process.env);
+  const { readFileSync } = await import('node:fs');
+  let devProject: string | null = null;
+  try {
+    devProject = devProjectFromFirebaserc(
+      readFileSync(fileURLToPath(new URL('../../.firebaserc', import.meta.url)), 'utf8'),
+    );
+  } catch {
+    devProject = null;
+  }
+  const mode = cliPayoutsMode(process.env, devProject);
   let key = process.env.PAYOUT_ACCOUNT_KEY;
   if ((key === undefined || key === '') && (process.env.FIRESTORE_EMULATOR_HOST ?? '') !== '') {
     key = (await import('../seed/emulator_key.js')).emulatorPayoutKey();

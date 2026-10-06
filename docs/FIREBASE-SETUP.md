@@ -327,7 +327,7 @@ Lưu ý:
 
 - Không bao giờ đổi hoặc xóa khóa khi đã có tài khoản được lưu: dữ liệu cũ sẽ không giải mã được. Chuỗi mã hóa có tiền tố phiên bản (`v1:`) để sau này xoay khóa.
 - Emulator dùng khóa thử trong `app_flutter/firebase/functions/.secret.local` (giá trị test, không phải bí mật). Công cụ nhân viên `npm run payouts` đọc khóa từ biến môi trường `PAYOUT_ACCOUNT_KEY`, hoặc từ file này khi chạy với emulator.
-- Chuyển tiền thật chưa tồn tại: `npm run payouts -- execute` chỉ chạy với cổng giả (emulator, hoặc `PAYOUTS_MODE=fake` trong `functions/.env.<project>` của project dev).
+- Chuyển tiền thật chưa tồn tại: `npm run payouts -- execute` chỉ chạy với cổng giả: với emulator, hoặc khi đặt `PAYOUTS_MODE=fake` và `GCLOUD_PROJECT` đúng bằng project dev trong `.firebaserc` (alias `dev`, công cụ tự đọc, không ghi cứng). Với mọi project khác (kể cả production) lệnh `execute` bị từ chối.
 
 ## Sự cố thường gặp
 

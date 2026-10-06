@@ -29,6 +29,15 @@ describe('account cipher (AES-256-GCM)', () => {
     await assert.rejects(c.decrypt([v, iv, badTag.toString('base64'), data].join(':')));
   });
 
+  it('a truncated tag or a wrong IV length is refused', async () => {
+    const c = aesGcmCipher(KEY);
+    const [v, iv, tag, data] = (await c.encrypt('0123456789')).split(':') as [string, string, string, string];
+    const shortTag = Buffer.from(tag, 'base64').subarray(0, 4).toString('base64');
+    await assert.rejects(c.decrypt([v, iv, shortTag, data].join(':')), /bad tag length/);
+    const longIv = Buffer.alloc(16, 1).toString('base64');
+    await assert.rejects(c.decrypt([v, longIv, tag, data].join(':')), /bad IV length/);
+  });
+
   it('another key cannot decrypt, and an unknown version is refused', async () => {
     const enc = await aesGcmCipher(KEY).encrypt('0123456789');
     await assert.rejects(aesGcmCipher(Buffer.alloc(32, 9).toString('base64')).decrypt(enc));
