@@ -19,15 +19,20 @@ abstract class AwardRepository {
   Future<void> update(AwardDraft d);
   Future<void> delete(String awardId);
 
-  /// Where proof image [index] of an award is uploaded.
-  String proofPath(String uid, String awardId, int index);
+  /// Where one proof image of an award is uploaded. [fileId] must be fresh for
+  /// every upload (a new ULID): storage rules refuse overwriting a file, so an
+  /// approved award's evidence cannot be swapped after review.
+  String proofPath(String uid, String awardId, String fileId);
 }
 
 /// In-memory repository for widget tests. It does not model server limits
 /// unless [failWith] is set.
 class FakeAwardRepository implements AwardRepository {
-  FakeAwardRepository([List<Award> awards = const []])
+  FakeAwardRepository({this.uid = 'p1', List<Award> awards = const []})
     : _awards = List.of(awards);
+
+  /// The signed-in owner: `create` stores awards under this uid.
+  final String uid;
 
   final List<Award> _awards;
   final _changes = StreamController<void>.broadcast();
@@ -54,7 +59,9 @@ class FakeAwardRepository implements AwardRepository {
   }
 
   Stream<List<Award>> _watch(bool Function(Award) where) async* {
-    List<Award> now() => _awards.where(where).toList();
+    List<Award> now() =>
+        _awards.where(where).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     yield now();
     await for (final _ in _changes.stream) {
       yield now();
@@ -96,7 +103,7 @@ class FakeAwardRepository implements AwardRepository {
     add(
       Award(
         id: d.awardId,
-        photographerId: 'me',
+        photographerId: uid,
         competition: d.competition,
         year: d.year,
         category: d.category,
@@ -113,6 +120,22 @@ class FakeAwardRepository implements AwardRepository {
     _check();
     calls.add('update:${d.awardId}');
     drafts.add(d);
+    final i = _awards.indexWhere((a) => a.id == d.awardId);
+    if (i >= 0) {
+      final old = _awards[i];
+      _awards[i] = Award(
+        id: old.id,
+        photographerId: old.photographerId,
+        competition: d.competition,
+        year: d.year,
+        category: d.category,
+        result: d.result,
+        workPostId: d.workPostId,
+        status: AwardStatus.pending,
+        createdAt: old.createdAt,
+      );
+      _changes.add(null);
+    }
   }
 
   @override
@@ -124,6 +147,6 @@ class FakeAwardRepository implements AwardRepository {
   }
 
   @override
-  String proofPath(String uid, String awardId, int index) =>
-      'awardProofs/$uid/$awardId/$index.jpg';
+  String proofPath(String uid, String awardId, String fileId) =>
+      'awardProofs/$uid/$awardId/$fileId.jpg';
 }

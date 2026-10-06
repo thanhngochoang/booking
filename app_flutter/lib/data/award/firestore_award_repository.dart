@@ -161,6 +161,6 @@ class FirestoreAwardRepository implements AwardRepository {
   }
 
   @override
-  String proofPath(String uid, String awardId, int index) =>
-      'awardProofs/$uid/$awardId/$index.jpg';
+  String proofPath(String uid, String awardId, String fileId) =>
+      'awardProofs/$uid/$awardId/$fileId.jpg';
 }

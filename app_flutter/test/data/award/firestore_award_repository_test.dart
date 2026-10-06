@@ -128,7 +128,10 @@ void main() {
   });
 
   test('proofPath builds the storage path', () {
-    expect(repo.proofPath('u1', 'a1', 2), 'awardProofs/u1/a1/2.jpg');
+    expect(
+      repo.proofPath('u1', 'a1', '01HZX'),
+      'awardProofs/u1/a1/01HZX.jpg',
+    );
   });
 
   test('loadDraft joins the award and its proof doc', () async {
@@ -220,12 +223,51 @@ void main() {
   });
 
   test('the fake repository filters by owner', () async {
-    final fake = FakeAwardRepository([
-      fixtureAward('a'),
-      fixtureAward('b', status: AwardStatus.pending),
-      fixtureAward('c', photographerId: 'p2'),
-    ]);
+    final fake = FakeAwardRepository(
+      awards: [
+        fixtureAward('a'),
+        fixtureAward('b', status: AwardStatus.pending),
+        fixtureAward('c', photographerId: 'p2'),
+      ],
+    );
     expect((await fake.watchMine('p1').first).map((a) => a.id), ['a', 'b']);
     expect((await fake.watchApproved('p1').first).map((a) => a.id), ['a']);
+  });
+
+  group('FakeAwardRepository', () {
+    const draft = AwardDraft(
+      awardId: 'n1',
+      competition: 'Giải mới',
+      year: 2025,
+      result: AwardResult.gold,
+    );
+
+    test('a created award appears first in watchMine for its owner', () async {
+      final fake = FakeAwardRepository(
+        uid: 'p1',
+        awards: [fixtureAward('a')],
+      );
+      await fake.create(draft);
+      final list = await fake.watchMine('p1').first;
+      expect(list.first.id, 'n1');
+      expect(list.first.photographerId, 'p1');
+      expect(list.first.status, AwardStatus.pending);
+    });
+
+    test('update replaces the fields and re-queues the award', () async {
+      final fake = FakeAwardRepository(awards: [fixtureAward('a')]);
+      await fake.update(
+        const AwardDraft(
+          awardId: 'a',
+          competition: 'Đổi tên',
+          year: 2024,
+          result: AwardResult.silver,
+        ),
+      );
+      final a = (await fake.watchMine('p1').first).single;
+      expect(a.competition, 'Đổi tên');
+      expect(a.result, AwardResult.silver);
+      expect(a.status, AwardStatus.pending);
+    });
   });
 }
