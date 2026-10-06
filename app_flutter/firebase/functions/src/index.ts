@@ -90,7 +90,7 @@ export const transitionBooking = onCall(CALLABLE_OPTIONS, (request) => handleTra
 export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
 
 /** 15-minute booking lifecycle and escrow sweep clock */
-export const bookingClock = onSchedule(SCHEDULE_OPTIONS, async () => {
+export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 300 }, async () => {
   await handleBookingClock(undefined, liveReminderDeps());
 });
 

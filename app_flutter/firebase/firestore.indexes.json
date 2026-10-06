@@ -405,21 +405,29 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "awardedAt",
+          "fieldPath": "uid",
           "order": "ASCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "badges",
-      "queryScope": "COLLECTION_GROUP",
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "badgeId",
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "uid",
+          "fieldPath": "day",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "start",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]

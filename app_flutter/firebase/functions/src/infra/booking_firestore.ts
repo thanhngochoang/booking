@@ -491,15 +491,25 @@ export class FirestoreBookingStore implements BookingStore {
     return res;
   }
 
-  /** Bookings with status `upcoming`, for the reminder sweep. */
-  async findUpcoming(limit = 200): Promise<readonly Booking[]> {
-    const snap = await this.firestore.collection(BOOKINGS_COLLECTION).where('status', '==', 'upcoming').limit(limit).get();
-    const res: Booking[] = [];
+  /**
+   * One page of `upcoming` bookings ordered by day, start and id (index `status, day, start, __name__`).
+   * Pass the previous `next` as `after`; `next` is null on the last page.
+   */
+  async findUpcomingPage(limit: number, after: unknown = null): Promise<{ bookings: Booking[]; next: unknown }> {
+    let q = this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'upcoming')
+      .orderBy('day')
+      .orderBy('start')
+      .orderBy('__name__');
+    if (after !== null) q = q.startAfter(after as never);
+    const snap = await q.limit(limit).get();
+    const bookings: Booking[] = [];
     for (const doc of snap.docs) {
       const b = bookingFromFirestore(doc.id, doc.data());
-      if (b) res.push(b);
+      if (b) bookings.push(b);
     }
-    return res;
+    return { bookings, next: snap.size < limit ? null : (snap.docs[snap.size - 1] ?? null) };
   }
 
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {

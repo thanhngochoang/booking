@@ -20,20 +20,22 @@ export async function handleReviewWrite(
   }
 
   const outcome = await countReview(store, input.bookingId, now);
-  if (outcome === 'counted') {
+  // Notice and badges are idempotent (dedupe key review_new_<bookingId>), so a retry after a failure
+  // finds the review already counted and still completes them.
+  {
     const photographerId = String(input.after.photographerId ?? '');
     const customerId = String(input.after.customerId ?? '');
     if (badges && photographerId) {
       await notifyNewReview(badges, input.bookingId, photographerId, customerId, input.after);
-      // Both sides are evaluated even when one fails; the event is retried afterwards (idempotent).
+      // Both sides are evaluated even when one fails; the event is then retried (the retry sees 'already').
       const results = await Promise.allSettled(
         [photographerId, customerId].filter((u) => u !== '').map((u) => evaluateUserBadges(badges, u)),
       );
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failed) throw new Error(`badge evaluation failed after review: ${String(failed.reason)}`);
     }
-    logger.info('onReviewWrite', { bookingId: input.bookingId, outcome });
   }
+  logger.info('onReviewWrite', { bookingId: input.bookingId, outcome });
 
   return outcome;
 }

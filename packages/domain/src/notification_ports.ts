@@ -34,7 +34,7 @@ export interface NotificationTx {
 
 export interface NotificationStore {
   runTransaction<T>(fn: (tx: NotificationTx) => Promise<T>): Promise<T>;
-  /** Raw prefs document (`users/{uid}/private/notificationPrefs`) or null. */
+  /** Raw prefs document (`users/{uid}/private/notification_prefs`) or null. */
   getPrefs(uid: string): Promise<unknown>;
   listUnreadIds(uid: string, limit: number): Promise<string[]>;
   markRead(uid: string, ids: readonly string[], at: Date): Promise<void>;

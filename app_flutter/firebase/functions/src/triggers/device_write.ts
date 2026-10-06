@@ -6,7 +6,12 @@ export interface DeviceWriteDeps {
   remove(ids: readonly string[]): Promise<void>;
 }
 
-/** Decision 10: a token belongs to one account; the previous holders' docs go (same phone, new sign-in). */
+/**
+ * Tradeoff (kept on purpose): the other docs are removed whatever their owner, because the case this
+ * covers is a second account signing in on the same phone; the old account's push would otherwise
+ * reach the new user. A token is per install, so two real users never legitimately share one.
+ * Decision 10: a token belongs to one account; the previous holders' docs go (same phone, new sign-in).
+ */
 export async function handleDeviceWrite(
   id: string,
   before: { token?: unknown } | undefined,
