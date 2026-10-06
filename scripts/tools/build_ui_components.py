@@ -1,6 +1,6 @@
 """Builds docs/design/ui-components.html, the shared-component gallery.
 
-The page reuses the screen mock's <style> and icon sprite (docs/design/ui-mock.html), so both pages
+The page reuses the screen mock's <style> and the (brand-only) icon sprite (docs/design/ui-mock.html), so both pages
 always share one look. Each tile shows a component, its API line, the screens that use it and its
 skeleton. Run from the repo root: python3 scripts/tools/build_ui_components.py
 """
@@ -12,11 +12,59 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MOCK = ROOT / 'docs/design/ui-mock.html'
 OUT = ROOT / 'docs/design/ui-components.html'
+SPEC = ROOT / 'docs/superpowers/specs/components/shared-components.md'
 
 mock = MOCK.read_text(encoding='utf-8')
 STYLE = re.search(r'<style>(.*?)</style>', mock, re.S).group(1)
 SPRITE = re.search(r'<svg width="0" height="0".*?</svg>', mock, re.S).group(0)
 APT = re.search(r'<svg class="apt run" viewBox="0 0 100 100" aria-hidden="true">.*?</svg>', mock, re.S).group(0)
+
+
+# Icon family (2026-10-06): Material Symbols Rounded. Tile snippets below were written against the old sprite
+# ids; they are converted to <span class="ms"> at the end (same map as the mock, see shared-components.md "Icons").
+ICON_MAP = {'home': 'home', 'explore': 'explore', 'search': 'search', 'plus': 'add', 'cal': 'calendar_today', 'user': 'person',
+            'chat': 'chat_bubble', 'heart': 'favorite', 'save': 'bookmark', 'share': 'ios_share', 'back': 'arrow_back',
+            'pin': 'location_on', 'check': 'check', 'bell': 'notifications', 'cam': 'photo_camera', 'more': 'more_horiz',
+            'gear': 'settings', 'moon': 'dark_mode', 'mail': 'mail', 'lock': 'lock', 'arrow': 'arrow_forward', 'phone': 'call',
+            'card': 'credit_card', 'swap': 'swap_horiz', 'star': 'star', 'bolt': 'bolt', 'ticket': 'confirmation_number',
+            'award': 'workspace_premium', 'brief': 'work', 'x': 'close', 'undo': 'undo', 'info': 'info', 'grip': 'drag_handle',
+            'chev': 'chevron_right', 'album': 'photo_library', 'list': 'format_list_bulleted', 'img': 'image'}
+KEEP_SVG = {'whatsapp', 'zalo', 'logo', 'seal'}
+
+
+def to_ms(snippet):
+    def rep(m):
+        attrs, name = m.group(1), m.group(2)
+        if name in KEEP_SVG:
+            return m.group(0)
+        cls, sty = ['ms'], []
+        c = re.search(r'class="([^"]*)"', attrs)
+        if c:
+            cls += c.group(1).split()
+        st = re.search(r'style="([^"]*)"', attrs)
+        for d in (st.group(1).split(';') if st else []):
+            if ':' not in d:
+                continue
+            k, v = (x.strip() for x in d.split(':', 1))
+            if k == 'width':
+                sty.append('font-size:' + v)
+            elif k == 'stroke' and v not in ('currentColor', 'none'):
+                sty.append('color:' + v)
+            elif k == 'transform':
+                sty.append(d.strip())
+        a = f' style="{";".join(sty)}"' if sty else ''
+        return f'<span class="{" ".join(cls)}"{a}>{ICON_MAP[name]}</span>'
+    return re.sub(r'<svg([^>]*)><use href="#i-([\w-]+)"/></svg>', rep, snippet)
+
+
+def icon_rows():
+    """Rows of the mapping table in shared-components.md -> Icons: (AppIcons name, symbol, in mock?)."""
+    rows = []
+    for line in SPEC.read_text(encoding='utf-8').splitlines():
+        m = re.match(r'\| `AppIcons\.(\w+)` \| `(\w+)` \| (.+?) \|', line)
+        if m:
+            rows.append((m.group(1), m.group(2), m.group(3).startswith('`')))
+    return rows
 
 
 def wavy(n, a, r=40):
@@ -79,10 +127,21 @@ GALLERY_CSS = '''
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:620px){.pair{grid-template-columns:1fr}}
 .stage{border-radius:var(--r2);padding:12px;display:flex;flex-direction:column;gap:10px;justify-content:center;min-height:120px;position:relative;overflow:hidden;
-  background:radial-gradient(circle at 0% 0%,rgba(20,224,245,calc(.3*var(--glow))),transparent 55%),radial-gradient(circle at 100% 10%,rgba(255,69,208,calc(.26*var(--glow))),transparent 55%),var(--bg)}
+  background:radial-gradient(circle at 0% 0%,rgba(138,63,252,calc(.16*var(--glow))),transparent 55%),var(--bg)}
 .stage .lab{position:absolute;top:6px;right:8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .row3{display:flex;gap:16px;align-items:center;justify-content:space-around;flex-wrap:wrap}
 .row3 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
+/* Icons and 60-30-10 sections */
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.icell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border:1px solid var(--line);border-radius:var(--r2);background:var(--field);text-align:center;min-width:0}
+.icell .ms{font-size:28px;color:var(--ink)}
+.icell .ms.on{color:var(--accent)}
+.icell code{font-size:10.5px;color:var(--ink-2);overflow-wrap:anywhere}.icell small{font-size:10px;color:var(--ink-3);overflow-wrap:anywhere}
+.icell.new{border-style:dashed}
+.split{display:flex;height:56px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--line-2)}
+.split>div{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;min-width:0}
+.swl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.swl div{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--ink-2)}.swl i{height:34px;border-radius:8px;border:1px solid var(--line-2)}.swl code{font-size:10.5px}
 /* Skeleton: white only (no hues, dark theme included), white sweep; still under reduced motion. */
 :root{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:#E6E3DE;--sk-edge:transparent;--sk-shine:rgba(255,255,255,.85)}}
@@ -269,7 +328,36 @@ tile('states', 'EmptyState · ErrorState · OfflineBanner', 'EmptyState({title, 
      '<div class="toast" style="font-size:11.5px">Đang xem dữ liệu đã lưu</div><div class="empty" style="padding:6px"><div class="ill ph p4" style="border-radius:50%;width:64px;height:64px"></div><b>Chưa có buổi chụp sắp tới</b><div class="btn pri sm" style="flex:none;padding:0 18px">Tìm nhiếp ảnh gia</div></div>',
      '<div class="meta">Trạng thái kết quả, không có skeleton.</div>')
 
-nav = ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, *_ in T)
+WIDE = []  # (anchor, name, html) sections after the tiles
+
+
+def swatches(items):
+    return '<div class="swl">' + ''.join(
+        f'<div><i style="background:{c}"></i><b>{n}</b><code>{v}</code></div>' for n, c, v in items) + '</div>'
+
+
+_rows = icon_rows()
+_cells = ''.join(
+    f'<div class="icell{"" if inmock else " new"}"><span class="ms">{sym}</span><code>{html.escape(name)}</code><small>{sym}</small></div>'
+    for name, sym, inmock in _rows)
+WIDE.append(('icons', 'Icons · Material Symbols Rounded', f'''<div class="api">AppIcons.&lt;ý nghĩa&gt; · AppIcon(icon, {{selected, size, color, semanticLabel}}) · AppIconSize.sm/md/lg = 20/24/28</div>
+      <div class="use">Weight 400, optical size 24. Viền (FILL 0) mặc định, đặc (FILL 1) khi đang chọn, đã lưu, đã thích. Khung nét đứt: biểu tượng chưa có trong mock. Logo Zalo, WhatsApp, logo ứng dụng và con dấu giữ SVG. {len(_rows)} biểu tượng, bảng ánh xạ ở shared-components.md.</div>
+      <div class="igrid">{_cells}</div>
+      <div class="row3" style="margin-top:6px"><figure><span class="ms" style="font-size:20px">home</span>20 · sm</figure><figure><span class="ms" style="font-size:24px">home</span>24 · md</figure><figure><span class="ms" style="font-size:28px">home</span>28 · lg</figure><figure><span class="ms on" style="font-size:24px;color:var(--accent)">home</span>FILL 1 · đang chọn</figure><figure><span class="ms" style="font-size:24px;color:var(--ink-3)">home</span>tab chưa chọn</figure></div>'''))
+WIDE.append(('mau', 'Màu · quy tắc 60-30-10', f'''<div class="api">AppColors · CtaSurface · chỉ tím ở 10%</div>
+      <div class="use">60% nền và bề mặt, 30% kính trung tính, chữ phụ, đường kẻ (không màu), 10% tím cho nút chính, tab đang chọn, mục đang chọn, link, tiến trình. Phổ màu (cyan, tím, hồng, cam, vàng) chỉ trong loader. Màu trạng thái và vàng của dấu NAG/giải thưởng ngoài quy tắc.</div>
+      <div class="split" aria-label="Tỉ lệ 60-30-10 tối"><div style="flex:60;background:#0B0B10;color:#F7F7F7">60% nền · surface</div><div style="flex:30;background:#2A2833;color:#D6D6D6">30% trung tính</div><div style="flex:10;background:#B08AFF;color:#0B0B10">10%</div></div>
+      <div class="split" aria-label="Tỉ lệ 60-30-10 sáng" style="margin-top:6px"><div style="flex:60;background:#F4F1EC;color:#313131">60% nền · surface</div><div style="flex:30;background:#EDE9E3;color:#313131">30% trung tính</div><div style="flex:10;background:#8338F5;color:#fff">10%</div></div>
+      <h4 style="font-size:12px;color:var(--ink-3);margin-top:6px">60% · tối</h4>
+      {swatches([('bg', '#0B0B10', '0B0B10'), ('surface', '#17151F', '17151F')])}
+      <h4 style="font-size:12px;color:var(--ink-3)">30% · tối (trung tính)</h4>
+      {swatches([('glass / field', 'rgba(255,255,255,.08)', 'trắng 8%'), ('glass-hi', 'rgba(255,255,255,.14)', 'trắng 14%'), ('ink-2', '#D6D6D6', 'D6D6D6'), ('ink-3', '#AEAEAE', 'AEAEAE'), ('line', 'rgba(255,255,255,.12)', 'trắng 12%')])}
+      <h4 style="font-size:12px;color:var(--ink-3)">10% · tím</h4>
+      {swatches([('accent tối', '#B08AFF', 'B08AFF'), ('CTA tối', 'linear-gradient(90deg,#8A3FFC,#6E2FD6)', '8A3FFC → 6E2FD6'), ('accent sáng', '#8338F5', '8338F5'), ('CTA sáng', 'linear-gradient(135deg,#8338F5,#702BDB)', '8338F5 → 702BDB'), ('focus', '#14E0F5', 'cyan, chỉ viền focus')])}
+      <h4 style="font-size:12px;color:var(--ink-3)">60% · sáng và 30% · sáng</h4>
+      {swatches([('bg', '#F4F1EC', 'F4F1EC'), ('surface', '#FFFFFF', 'FFFFFF'), ('field', '#EDE9E3', 'EDE9E3'), ('ink', '#313131', '313131')])}'''))
+
+nav = ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, *_ in T) + ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, _ in WIDE)
 tiles = []
 for a, n, api, use, real, skel in T:
     plain = ' plain' if a in ('signatureloader', 'signatureloader-vib', 'asyncview') else ''  # loaders sit on the bare screen background
@@ -279,12 +367,18 @@ for a, n, api, use, real, skel in T:
       <div class="use">Dùng ở: {use}</div>
       <div class="pair"><div class="stage{plain}"><span class="lab">Thật</span>{real}</div><div class="stage{plain}"><span class="lab">Skeleton</span>{skel}</div></div>
     </section>''')
+for a, n, body in WIDE:
+    tiles.append(f'''    <section class="tile" id="{a}" style="grid-column:1/-1">
+      <h3>{n}</h3>
+      {body}
+    </section>''')
 
 page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh gia" (Flutter). Sinh bởi scripts/tools/build_ui_components.py
      từ CSS và icon của docs/design/ui-mock.html; sửa script rồi chạy lại, không sửa file này bằng tay.
      Đặc tả: docs/superpowers/specs/components/shared-components.md -->
 <title>Nhiếp Ảnh Gia Components</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
 <style>{STYLE}{GALLERY_CSS}</style>
 {SPRITE}
 <div class="gwrap">
@@ -296,7 +390,7 @@ page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh
   <p>Mỗi ô là một widget trong <code>lib/core/widgets/</code>: tên, API, màn dùng nó, trạng thái thật và skeleton của nó. Danh sách và thẻ đang tải dùng skeleton của chính component; chờ cấp màn dùng SignatureLoader với một loại sóng (tròn khi tải dữ liệu, rung khi chờ một bên khác). Màn hình đầy đủ ở mock màn.</p>
   <nav class="gnav" aria-label="Component">{nav}</nav>
   <div class="ggrid">
-{chr(10).join(tiles)}
+{to_ms(chr(10).join(tiles))}
   </div>
 </div>
 <script>
@@ -309,4 +403,4 @@ page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh
 </script>
 '''
 OUT.write_text(page, encoding='utf-8')
-print(f'wrote {OUT.relative_to(ROOT)}: {len(T)} components')
+print(f'wrote {OUT.relative_to(ROOT)}: {len(T)} components, {len(WIDE)} sections, {len(_rows)} icons')
