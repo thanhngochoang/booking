@@ -57,6 +57,8 @@ dependencies:
   qr_flutter: ^4.1.0
   http: ^1.6.0
   material_symbols_icons: ^4.2960.0
+  firebase_messaging: ^16.7.0
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

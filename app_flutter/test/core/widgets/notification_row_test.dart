@@ -21,7 +21,8 @@ Widget _wrap(Widget child, {double width = 390}) {
 
 NotificationRowData _item({
   String id = 'n1',
-  NotificationKind kind = NotificationKind.booking,
+  IconData icon = AppIcons.calendar,
+  NotificationTone tone = NotificationTone.neutral,
   String title = 'Lịch chụp đã được xác nhận',
   String body = 'Nhiếp ảnh gia Minh Trí đã xác nhận buổi chụp vào 14:30 T7 12/10.',
   String timeLabel = '5 phút',
@@ -31,7 +32,8 @@ NotificationRowData _item({
 }) {
   return NotificationRowData(
     id: id,
-    kind: kind,
+    icon: icon,
+    tone: tone,
     title: title,
     body: body,
     timeLabel: timeLabel,
@@ -90,11 +92,21 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('one icon per kind', (tester) async {
-      for (final kind in NotificationKind.values) {
+    testWidgets('row shows the given icon and tone disc', (tester) async {
+      final expected = <NotificationTone, (Color, Color)>{
+        NotificationTone.neutral: (AppColors.primarySubtle, AppColors.primary),
+        NotificationTone.success: (AppColors.successSubtle, AppColors.success),
+        NotificationTone.action: (AppColors.warningSubtle, AppColors.foreground),
+        NotificationTone.danger: (AppColors.errorSubtle, AppColors.error),
+        NotificationTone.muted: (
+          AppColors.surfaceMuted,
+          AppColors.foregroundMuted,
+        ),
+      };
+      for (final e in expected.entries) {
         await tester.pumpWidget(_wrap(
           NotificationRow(
-            item: _item(kind: kind),
+            item: _item(icon: AppIcons.award, tone: e.key),
             onTap: () {},
             onMarkRead: () {},
             onMuteKind: () {},
@@ -102,8 +114,41 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        expect(find.byKey(ValueKey('notification_kind_icon_${kind.name}')), findsOneWidget);
+        final disc = tester.widget<Container>(find.byKey(const ValueKey('notification_disc')));
+        expect((disc.decoration! as BoxDecoration).color, e.value.$1, reason: '${e.key} disc');
+        final icon = tester.widget<AppIcon>(find.byKey(const ValueKey('notification_icon')));
+        expect(icon.icon, AppIcons.award);
+        expect(icon.color, e.value.$2, reason: '${e.key} glyph');
       }
+    });
+
+    testWidgets('null onMuteKind hides the menu item and the custom action', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_wrap(
+        NotificationRow(
+          item: _item(unread: true),
+          onTap: () {},
+          onMarkRead: () {},
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.byType(NotificationRow));
+      await tester.pumpAndSettle();
+      expect(find.text('Đánh dấu đã đọc'), findsOneWidget);
+      expect(find.text('Tắt loại thông báo này'), findsNothing);
+      await tester.tap(find.text('Đánh dấu đã đọc'));
+      await tester.pumpAndSettle();
+
+      final semanticsWidget = tester.widget<Semantics>(
+        find.descendant(
+          of: find.byType(NotificationRow),
+          matching: find.byType(Semantics),
+        ).first,
+      );
+      final labels = semanticsWidget.properties.customSemanticsActions!.keys.map((a) => a.label);
+      expect(labels, ['Đánh dấu đã đọc']);
+      handle.dispose();
     });
 
     testWidgets('grouped row shows at most 3 avatars', (tester) async {
@@ -266,39 +311,6 @@ void main() {
         expect(skeletonSize.height, closeTo(realSize.height, 2.0), reason: 'height at $width');
         expect(skeletonSize.width, realSize.width, reason: 'width at $width');
       }
-    });
-  });
-
-  group('NotificationBell', () {
-    testWidgets('hidden dot at 0, 9+ at 10, labels per count, target 48', (tester) async {
-      final handle = tester.ensureSemantics();
-
-      // 0 unread: no dot, label 'Thông báo'
-      await tester.pumpWidget(_wrap(NotificationBell(unread: 0, onTap: () {})));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('notification_bell_dot')), findsNothing);
-      expect(tester.getSemantics(find.byType(NotificationBell)).label, 'Thông báo');
-
-      // 5 unread: badge '5', label '5 thông báo chưa đọc'
-      await tester.pumpWidget(_wrap(NotificationBell(unread: 5, onTap: () {})));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('notification_bell_dot')), findsOneWidget);
-      expect(find.text('5'), findsOneWidget);
-      expect(tester.getSemantics(find.byType(NotificationBell)).label, '5 thông báo chưa đọc');
-
-      // 10 unread: badge '9+', label '10 thông báo chưa đọc'
-      await tester.pumpWidget(_wrap(NotificationBell(unread: 10, onTap: () {})));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('notification_bell_dot')), findsOneWidget);
-      expect(find.text('9+'), findsOneWidget);
-      expect(tester.getSemantics(find.byType(NotificationBell)).label, '10 thông báo chưa đọc');
-
-      // Target size >= 48
-      final bellSize = tester.getSize(find.byType(NotificationBell));
-      expect(bellSize.width, greaterThanOrEqualTo(48.0));
-      expect(bellSize.height, greaterThanOrEqualTo(48.0));
-
-      handle.dispose();
     });
   });
 }

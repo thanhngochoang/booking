@@ -188,4 +188,22 @@ void main() {
       }
     });
   });
+
+  test('badgeIconOf maps the catalogue icon keys, unknown → medal', () {
+    const keys = {
+      'favorite': AppIcons.favorite,
+      'schedule': AppIcons.schedule,
+      'check': AppIcons.check,
+      'celebration': AppIcons.celebration,
+      'person': AppIcons.profile,
+      'chat_bubble': AppIcons.chat,
+      'photo_camera': AppIcons.camera,
+      'calendar_today': AppIcons.calendar,
+      'ios_share': AppIcons.share,
+    };
+    for (final e in keys.entries) {
+      expect(badgeIconOf(e.key), e.value, reason: e.key);
+    }
+    expect(badgeIconOf('nope'), AppIcons.medal);
+  });
 }

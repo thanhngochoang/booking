@@ -37,6 +37,16 @@ IconData badgeIconOf(String code) => switch (code) {
   'punctual' || 'on_time' => AppIcons.schedule,
   'rising_star' => AppIcons.trendingUp,
   'community' => AppIcons.people,
+  // Catalogue icon keys (badges/{id}.icon).
+  'favorite' => AppIcons.favorite,
+  'schedule' => AppIcons.schedule,
+  'check' => AppIcons.check,
+  'celebration' => AppIcons.celebration,
+  'person' => AppIcons.profile,
+  'chat_bubble' => AppIcons.chat,
+  'photo_camera' => AppIcons.camera,
+  'calendar_today' => AppIcons.calendar,
+  'ios_share' => AppIcons.share,
   _ => AppIcons.medal,
 };
 

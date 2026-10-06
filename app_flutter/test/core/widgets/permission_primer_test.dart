@@ -14,6 +14,12 @@ Widget _wrap(Widget child) {
   );
 }
 
+const _benefits = [
+  PrimerBenefit(AppIcons.calendar, 'Biết ngay khi lịch được nhận hoặc thay đổi'),
+  PrimerBenefit(AppIcons.schedule, 'Nhắc trước giờ chụp, không lỡ hẹn'),
+  PrimerBenefit(AppIcons.chat, 'Tin nhắn mới khi app đang ở nền'),
+];
+
 void main() {
   group('PermissionPrimer', () {
     testWidgets("one primary button 'Bật thông báo', 'Để sau' calls onLater", (
@@ -26,8 +32,8 @@ void main() {
         _wrap(
           PermissionPrimer(
             title: 'Nhận thông báo lịch chụp',
-            benefit:
-                'Biết ngay khi thợ ảnh nhận lời hoặc có cập nhật về buổi chụp.',
+            benefits: _benefits,
+            note: 'Chọn "Để sau", chúng tôi sẽ hỏi lại sau 7 ngày.',
             onEnable: () => enableCalled = true,
             onLater: () => laterCalled = true,
           ),
@@ -37,12 +43,14 @@ void main() {
 
       // Renders title and benefit text
       expect(find.text('Nhận thông báo lịch chụp'), findsOneWidget);
+      expect(find.byKey(const ValueKey('primer_benefit')), findsNWidgets(3));
+      expect(find.text('Biết ngay khi lịch được nhận hoặc thay đổi'), findsOneWidget);
+      expect(find.byIcon(AppIcons.calendar), findsOneWidget);
       expect(
-        find.text(
-          'Biết ngay khi thợ ảnh nhận lời hoặc có cập nhật về buổi chụp.',
-        ),
+        find.text('Chọn "Để sau", chúng tôi sẽ hỏi lại sau 7 ngày.'),
         findsOneWidget,
       );
+      expect(find.byType(AppButton), findsNWidgets(2));
 
       // Bell icon is present
       expect(find.byIcon(AppIcons.notificationsActive), findsOneWidget);
@@ -79,7 +87,8 @@ void main() {
               child: Scaffold(
                 body: PermissionPrimer(
                   title: 'Nhận thông báo lịch chụp',
-                  benefit: 'Biết ngay khi thợ ảnh nhận lời hoặc có cập nhật về buổi chụp.',
+                  benefits: _benefits,
+                  note: 'Chọn "Để sau", chúng tôi sẽ hỏi lại sau 7 ngày.',
                   onEnable: () {},
                   onLater: () {},
                 ),
@@ -91,5 +100,24 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('enabling shows the button loading', (tester) async {
+      var enableCalls = 0;
+      await tester.pumpWidget(
+        _wrap(
+          PermissionPrimer(
+            title: 'Nhận thông báo lịch chụp',
+            benefits: _benefits,
+            enabling: true,
+            onEnable: () => enableCalls++,
+            onLater: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      final button = tester.widget<AppButton>(find.byType(AppButton).first);
+      expect(button.loading, isTrue);
+      expect(find.byType(DotRingLoader), findsOneWidget);
+    });
   });
 }

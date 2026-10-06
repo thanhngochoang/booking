@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:photobooking/data/prefs/shared_preferences_provider.dart';
 
-/// Overridden in main() with the instance loaded before runApp, so reads
-/// are synchronous and the first frame already has the saved theme.
-final sharedPreferencesProvider = Provider<SharedPreferences>(
-  (ref) => throw UnimplementedError('override in main()'),
-);
+// The provider lives in data/ so the data layer can read device settings;
+// features keep importing it from here.
+export 'package:photobooking/data/prefs/shared_preferences_provider.dart';
 
 const _key = 'themeMode';
 

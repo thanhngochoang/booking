@@ -7,13 +7,16 @@ import 'package:photobooking/core/widgets/app_avatar.dart';
 import 'package:photobooking/core/widgets/app_bottom_sheet.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 
-enum NotificationKind { booking, payment, chat, event, badge, system }
+/// Semantic colour of a row's icon disc (spec S17.01: green = success, yellow
+/// = needs action, red = refused, purple = default).
+enum NotificationTone { neutral, success, action, danger, muted }
 
 @immutable
 class NotificationRowData {
   const NotificationRowData({
     required this.id,
-    required this.kind,
+    required this.icon,
+    this.tone = NotificationTone.neutral,
     required this.title,
     required this.body,
     required this.timeLabel,
@@ -23,7 +26,8 @@ class NotificationRowData {
   });
 
   final String id;
-  final NotificationKind kind;
+  final IconData icon;
+  final NotificationTone tone;
   final String title;
   final String body;
   final String timeLabel;
@@ -32,14 +36,31 @@ class NotificationRowData {
   final List<String> groupAvatars;
 }
 
-IconData notificationKindIcon(NotificationKind kind) => switch (kind) {
-  NotificationKind.booking => AppIcons.calendar,
-  NotificationKind.payment => AppIcons.wallet,
-  NotificationKind.chat => AppIcons.chat,
-  NotificationKind.event => AppIcons.celebration,
-  NotificationKind.badge => AppIcons.medal,
-  NotificationKind.system => AppIcons.info,
-};
+(Color disc, Color glyph) _toneColors(NotificationTone tone, bool dark) {
+  return switch (tone) {
+    NotificationTone.neutral => (
+      dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle,
+      dark ? AppColorsDark.primary : AppColors.primary,
+    ),
+    NotificationTone.success => (
+      dark ? AppColorsDark.successSubtle : AppColors.successSubtle,
+      dark ? AppColorsDark.success : AppColors.success,
+    ),
+    // Dark ink on the light yellow disc: the yellow itself is below AA there.
+    NotificationTone.action => (
+      dark ? AppColorsDark.warningSubtle : AppColors.warningSubtle,
+      dark ? AppColorsDark.foreground : AppColors.foreground,
+    ),
+    NotificationTone.danger => (
+      dark ? AppColorsDark.errorSubtle : AppColors.errorSubtle,
+      dark ? AppColorsDark.error : AppColors.error,
+    ),
+    NotificationTone.muted => (
+      dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
+      dark ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted,
+    ),
+  };
+}
 
 /// Row representing a notification in the inbox (spec S17.01).
 class NotificationRow extends StatelessWidget {
@@ -48,13 +69,16 @@ class NotificationRow extends StatelessWidget {
     required this.item,
     required this.onTap,
     required this.onMarkRead,
-    required this.onMuteKind,
+    this.onMuteKind,
   });
 
   final NotificationRowData item;
   final VoidCallback onTap;
   final VoidCallback onMarkRead;
-  final VoidCallback onMuteKind;
+
+  /// Null hides the "Tắt loại thông báo này" menu item and custom action
+  /// (transaction notifications cannot be muted).
+  final VoidCallback? onMuteKind;
 
   static Widget skeleton() => const _NotificationRowSkeleton();
 
@@ -82,14 +106,15 @@ class NotificationRow extends StatelessWidget {
                     onMarkRead();
                   },
                 ),
-              ListTile(
-                leading: const AppIcon(AppIcons.notificationsOff),
-                title: Text(l.notificationMuteKind),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  onMuteKind();
-                },
-              ),
+              if (onMuteKind != null)
+                ListTile(
+                  leading: const AppIcon(AppIcons.notificationsOff),
+                  title: Text(l.notificationMuteKind),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    onMuteKind!();
+                  },
+                ),
             ],
           ),
         ),
@@ -106,6 +131,7 @@ class NotificationRow extends StatelessWidget {
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final l = context.l10n;
+    final (discColor, glyphColor) = _toneColors(item.tone, dark);
 
     final semanticsLabel = item.unread
         ? '${l.notificationUnreadPrefix}. ${item.title}. ${item.body}. ${item.timeLabel}'
@@ -114,7 +140,7 @@ class NotificationRow extends StatelessWidget {
     final actions = <CustomSemanticsAction, VoidCallback>{
       if (item.unread)
         CustomSemanticsAction(label: l.notificationMarkRead): onMarkRead,
-      CustomSemanticsAction(label: l.notificationMuteKind): onMuteKind,
+      CustomSemanticsAction(label: l.notificationMuteKind): ?onMuteKind,
     };
 
     return Semantics(
@@ -156,24 +182,21 @@ class NotificationRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpace.s2),
-                  // Kind icon
+                  // Icon disc
                   Container(
+                    key: const ValueKey('notification_disc'),
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: dark
-                          ? AppColorsDark.surfaceMuted
-                          : AppColors.surfaceMuted,
+                      color: discColor,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: AppIcon(
-                        notificationKindIcon(item.kind),
-                        key: ValueKey(
-                          'notification_kind_icon_${item.kind.name}',
-                        ),
+                        item.icon,
+                        key: const ValueKey('notification_icon'),
                         size: 20,
-                        color: theme.colorScheme.primary,
+                        color: glyphColor,
                       ),
                     ),
                   ),
