@@ -32,6 +32,10 @@ abstract class PostRepository {
     int limit = 20,
   });
 
+  /// The posts of one album in `albumPosition` order, [limit] clamped to
+  /// 1..[kMaxPageSize]. Same cursor rules as [feed].
+  Future<PostPage> byAlbum(String albumId, {String? cursor, int limit = 24});
+
   /// Null when the post does not exist or was removed.
   Future<PostSummary?> byId(String postId);
 }

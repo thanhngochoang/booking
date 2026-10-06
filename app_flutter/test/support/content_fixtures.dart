@@ -1,3 +1,4 @@
+import 'package:photobooking/data/album/album.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/post_summary.dart';
@@ -22,6 +23,8 @@ PostSummary fixturePost(
   int images = 1,
   bool inPortfolio = true,
   List<String> hashtags = const ['chandung'],
+  String? albumId,
+  int? albumPosition,
 }) => PostSummary(
   id: id,
   kind: kind,
@@ -43,6 +46,8 @@ PostSummary fixturePost(
   specialtyId: specialtyId,
   hashtags: hashtags,
   inPortfolio: inPortfolio,
+  albumId: albumId,
+  albumPosition: albumPosition,
   likeCount: likes,
   saveCount: saves,
   createdAt: fixtureNow.subtract(age),
@@ -111,4 +116,30 @@ ServiceSummary fixtureService(
   editedCount: 40,
   deliveryDays: 5,
   active: active,
+);
+
+AlbumSummary fixtureAlbum(
+  String id, {
+  String photographerId = 'p1',
+  String title = 'Album',
+  String description = '',
+  int position = 1,
+  int postCount = 1,
+  int mediaCount = 1,
+  bool visible = true,
+  String? coverPostId,
+  int? coverImageIndex,
+  String? coverUrl,
+}) => AlbumSummary(
+  id: id,
+  photographerId: photographerId,
+  title: title,
+  description: description,
+  position: position,
+  postCount: postCount,
+  mediaCount: mediaCount,
+  visible: visible,
+  coverPostId: coverPostId,
+  coverImageIndex: coverImageIndex,
+  coverUrl: coverUrl,
 );

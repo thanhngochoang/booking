@@ -19,6 +19,7 @@ class PostDraft {
     this.locationName,
     this.styleId,
     this.inPortfolio = true,
+    this.albumId,
   });
 
   /// A ULID created on the device; publishing the same id again overwrites.
@@ -33,6 +34,9 @@ class PostDraft {
   final String? locationName;
   final String? styleId;
   final bool inPortfolio;
+
+  /// Optional album to file the post in; the server sets its position.
+  final String? albumId;
 }
 
 abstract class PostPublisher {
@@ -68,6 +72,7 @@ class FakePostPublisher implements PostPublisher {
       specialtyId: draft.specialtyId,
       hashtags: extractHashtags(draft.caption),
       inPortfolio: draft.inPortfolio,
+      albumId: draft.albumId,
       createdAt: _now(),
     );
     posts.removeById(draft.id);
