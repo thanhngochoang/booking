@@ -78,8 +78,7 @@ class FirestoreEventRepository implements EventRepository {
     // One extra row says whether another page exists.
     final snap = await q.limit(limit + 1).get();
     final rows = [
-      for (final d in snap.docs)
-        ?eventSummaryFromFirestore(d.id, d.data()),
+      for (final d in snap.docs) ?eventSummaryFromFirestore(d.id, d.data()),
     ];
     final page = rows.take(limit).toList();
     return EventPage(
@@ -93,10 +92,13 @@ class FirestoreEventRepository implements EventRepository {
     if (!_validId(eventId)) {
       return Stream.value(null);
     }
-    return _events
-        .doc(eventId)
-        .snapshots()
-        .map((s) => eventDetailFromFirestore(s.id, s.data()));
+    return _orIfDenied<EventDetail?>(
+      _events
+          .doc(eventId)
+          .snapshots()
+          .map((s) => eventDetailFromFirestore(s.id, s.data())),
+      null,
+    );
   }
 
   @override
@@ -145,6 +147,20 @@ class FirestoreEventRepository implements EventRepository {
           return out;
         });
   }
+
+  /// A read the rules refuse (a draft or contact the viewer may not see)
+  /// is "nothing there", not a failed stream.
+  Stream<T> _orIfDenied<T>(Stream<T> source, T fallback) => source.transform(
+    StreamTransformer<T, T>.fromHandlers(
+      handleError: (error, stack, sink) {
+        if (error is FirebaseException && error.code == 'permission-denied') {
+          sink.add(fallback);
+        } else {
+          sink.addError(error, stack);
+        }
+      },
+    ),
+  );
 
   CollectionReference<Map<String, dynamic>> _registrations(String eventId) =>
       _events.doc(eventId).collection('registrations');
@@ -198,9 +214,12 @@ class FirestoreEventRepository implements EventRepository {
     if (!_validId(eventId)) {
       return Stream.value(const []);
     }
-    return _registrations(eventId)
-        .snapshots()
-        .map((qs) => _parseRegistrations(qs.docs));
+    return _orIfDenied<List<EventRegistration>>(
+      _registrations(eventId)
+          .snapshots()
+          .map((qs) => _parseRegistrations(qs.docs)),
+      const [],
+    );
   }
 
   @override
@@ -212,31 +231,34 @@ class FirestoreEventRepository implements EventRepository {
       return Stream.value(null);
     }
     final regRef = _registrations(eventId).doc(registrationId);
-    return regRef.collection('private').doc('contact').snapshots().asyncMap((
-      snap,
-    ) async {
-      final contact = bookingContactFromFirestore(snap.data());
-      if (contact == null) {
-        return null;
-      }
-      // The server never writes a phone for a free ticket, and the rules deny
-      // the host one; check the registration too so a stray document can never
-      // surface a phone for a ticket that does not unlock contact (O3).
-      try {
-        final reg = registrationFromFirestore(
-          registrationId,
-          (await regRef.get()).data(),
-        );
-        if (reg == null ||
-            reg.status != RegistrationStatus.paid ||
-            !reg.contactEligible) {
+    return _orIfDenied<BookingContactSnapshot?>(
+      regRef.collection('private').doc('contact').snapshots().asyncMap((
+        snap,
+      ) async {
+        final contact = bookingContactFromFirestore(snap.data());
+        if (contact == null) {
           return null;
         }
-      } on FirebaseException {
-        return null;
-      }
-      return contact;
-    });
+        // The server never writes a phone for a free ticket, and the rules deny
+        // the host one; check the registration too so a stray document can never
+        // surface a phone for a ticket that does not unlock contact (O3).
+        try {
+          final reg = registrationFromFirestore(
+            registrationId,
+            (await regRef.get()).data(),
+          );
+          if (reg == null ||
+              reg.status != RegistrationStatus.paid ||
+              !reg.contactEligible) {
+            return null;
+          }
+        } on FirebaseException {
+          return null;
+        }
+        return contact;
+      }),
+      null,
+    );
   }
 
   // ---- callables ----------------------------------------------------------

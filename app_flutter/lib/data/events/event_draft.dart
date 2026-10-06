@@ -86,6 +86,7 @@ class EventDraft {
     this.hashtag,
     this.faq,
     this.hostPhotographerId,
+    this.cleared = const {},
   });
 
   /// Resume a saved draft in the form.
@@ -148,6 +149,12 @@ class EventDraft {
   /// Staff only: the photographer the draft is created for (owner decision O1).
   final String? hostPhotographerId;
 
+  /// Fields the user emptied on a draft that already exists on the server
+  /// (`cover`, `place`, `deadline`, `schedule`): [toCallable] sends an explicit
+  /// null for them, because leaving a key out keeps the stored value. Set by
+  /// the `clear*` flags of [copyWith]; giving the field a value again drops it.
+  final Set<String> cleared;
+
   EventDraft copyWith({
     String? eventId,
     String? title,
@@ -164,30 +171,48 @@ class EventDraft {
     int? priceVnd,
     DateTime? registrationDeadline,
     bool clearDeadline = false,
+    bool clearSchedule = false,
     String? hashtag,
     List<EventFaq>? faq,
     String? hostPhotographerId,
-  }) => EventDraft(
-    eventId: eventId ?? this.eventId,
-    title: title ?? this.title,
-    type: type ?? this.type,
-    description: description ?? this.description,
-    coverUrl: clearCover ? null : (coverUrl ?? this.coverUrl),
-    coverPath: clearCover ? null : (coverPath ?? this.coverPath),
-    startsAt: startsAt ?? this.startsAt,
-    endsAt: endsAt ?? this.endsAt,
-    place: clearPlace ? null : (place ?? this.place),
-    capacity: capacity ?? this.capacity,
-    priceVnd: priceVnd ?? this.priceVnd,
-    registrationDeadline: clearDeadline
-        ? null
-        : (registrationDeadline ?? this.registrationDeadline),
-    hashtag: hashtag ?? this.hashtag,
-    faq: faq ?? this.faq,
-    hostPhotographerId: hostPhotographerId ?? this.hostPhotographerId,
-  );
+  }) {
+    final next = {...cleared};
+    void track(String key, bool clear, Object? value) {
+      if (clear) {
+        next.add(key);
+      } else if (value != null) {
+        next.remove(key);
+      }
+    }
 
-  /// The `saveEventDraft` payload: only the fields that are filled.
+    track('cover', clearCover, coverUrl);
+    track('place', clearPlace, place);
+    track('deadline', clearDeadline, registrationDeadline);
+    track('schedule', clearSchedule, startsAt ?? endsAt);
+    return EventDraft(
+      eventId: eventId ?? this.eventId,
+      title: title ?? this.title,
+      type: type ?? this.type,
+      description: description ?? this.description,
+      coverUrl: clearCover ? null : (coverUrl ?? this.coverUrl),
+      coverPath: clearCover ? null : (coverPath ?? this.coverPath),
+      startsAt: clearSchedule ? null : (startsAt ?? this.startsAt),
+      endsAt: clearSchedule ? null : (endsAt ?? this.endsAt),
+      place: clearPlace ? null : (place ?? this.place),
+      capacity: capacity ?? this.capacity,
+      priceVnd: priceVnd ?? this.priceVnd,
+      registrationDeadline: clearDeadline
+          ? null
+          : (registrationDeadline ?? this.registrationDeadline),
+      hashtag: hashtag ?? this.hashtag,
+      faq: faq ?? this.faq,
+      hostPhotographerId: hostPhotographerId ?? this.hostPhotographerId,
+      cleared: next,
+    );
+  }
+
+  /// The `saveEventDraft` payload: the fields that are filled, plus an explicit
+  /// null for each field in [cleared] that is still empty.
   Map<String, Object?> toCallable() => {
     'eventId': ?eventId,
     'title': ?title,
@@ -204,6 +229,17 @@ class EventDraft {
     'hashtag': ?hashtag,
     'faq': ?faq?.map((f) => f.toJson()).toList(),
     'hostPhotographerId': ?hostPhotographerId,
+    if (cleared.contains('cover') && coverUrl == null) ...{
+      'coverUrl': null,
+      'coverPath': null,
+    },
+    if (cleared.contains('place') && place == null) 'location': null,
+    if (cleared.contains('deadline') && registrationDeadline == null)
+      'registrationDeadline': null,
+    if (cleared.contains('schedule') && startsAt == null) ...{
+      'startAt': null,
+      'endAt': null,
+    },
   };
 
   Map<String, Object?> toJson() => {
@@ -222,6 +258,7 @@ class EventDraft {
     'hashtag': ?hashtag,
     'faq': ?faq?.map((f) => f.toJson()).toList(),
     'hostPhotographerId': ?hostPhotographerId,
+    if (cleared.isNotEmpty) 'cleared': cleared.toList()..sort(),
   };
 
   /// Reads what [toJson] wrote; anything unreadable is left empty.
@@ -256,6 +293,12 @@ class EventDraft {
             ]
           : null,
       hostPhotographerId: text(json['hostPhotographerId']),
+      cleared: json['cleared'] is List
+          ? {
+              for (final k in json['cleared']! as List)
+                if (k is String) k,
+            }
+          : const {},
     );
   }
 

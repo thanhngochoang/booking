@@ -239,6 +239,9 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  // Claims travel with the ID token: a role granted or removed after sign-in
+  // shows up only when the token refreshes (about hourly, or on the next
+  // sign-in), not instantly.
   @override
   Future<StaffRole?> staffRole() async {
     try {

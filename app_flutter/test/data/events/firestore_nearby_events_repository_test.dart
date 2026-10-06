@@ -106,4 +106,15 @@ void main() {
     expect(await repo.countCreatedSince(cells: [hcmCell], since: since), 1);
     expect(await repo.countCreatedSince(cells: [hanoiCell], since: since), 0);
   });
+
+  test('a cell count with no since still carries a createdAt bound', () async {
+    // Documents without createdAt cannot match the bounded query the
+    // (status, location.geohash, createdAt) index serves.
+    await seed('ok');
+    await db
+        .collection('events')
+        .doc('nocreated')
+        .set({...eventDoc(lat: hcm.$1, lng: hcm.$2)}..remove('createdAt'));
+    expect(await repo.countCreatedSince(cells: [hcmCell]), 1);
+  });
 }

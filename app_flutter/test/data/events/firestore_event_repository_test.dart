@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -765,4 +766,107 @@ void main() {
       const EventDraft(),
     );
   });
+
+  group('refused reads', () {
+    test(
+      'a permission-denied event stream is null, other errors pass',
+      () async {
+        final denied = _deniedDb('events');
+        final r = FirestoreEventRepository(
+          uid: 'u1',
+          uploader: uploader,
+          db: denied,
+          functions: functions,
+        );
+        expect(await r.watchEvent('ev1').first, isNull);
+        expect(await r.watchRegistrations('ev1').first, isEmpty);
+        final other = FirestoreEventRepository(
+          uid: 'u1',
+          uploader: uploader,
+          db: _deniedDb('events', code: 'unavailable'),
+          functions: functions,
+        );
+        await expectLater(
+          other.watchEvent('ev1'),
+          emitsError(isA<FirebaseException>()),
+        );
+      },
+    );
+
+    test('a denied contact stream is null', () async {
+      final r = FirestoreEventRepository(
+        uid: 'u1',
+        uploader: uploader,
+        db: _deniedDb('events'),
+        functions: functions,
+      );
+      expect(await r.watchRegistrationContact('ev1', 'r1').first, isNull);
+    });
+  });
+
+  test('a cleared field is sent as an explicit null', () {
+    const base = EventDraft(
+      eventId: 'e',
+      coverUrl: 'u',
+      coverPath: 'p',
+      place: EventPlace(name: 'n', lat: 1, lng: 2),
+    );
+    final cleared = base.copyWith(
+      clearCover: true,
+      clearPlace: true,
+      clearDeadline: true,
+    );
+    expect(cleared.toCallable(), {
+      'eventId': 'e',
+      'coverUrl': null,
+      'coverPath': null,
+      'location': null,
+      'registrationDeadline': null,
+    });
+    expect(
+      EventDraft.fromJson(cleared.toJson()).toCallable(),
+      cleared.toCallable(),
+    );
+    // A new value drops the clear.
+    expect(
+      cleared.copyWith(coverUrl: 'v', coverPath: 'q').toCallable()['coverUrl'],
+      'v',
+    );
+    expect(base.toCallable().containsKey('location'), isTrue);
+    expect(const EventDraft(eventId: 'e').toCallable(), {'eventId': 'e'});
+  });
+}
+
+class _MockDb extends Mock implements FirebaseFirestore {}
+
+// ignore: subtype_of_sealed_class
+class _MockCol extends Mock
+    implements CollectionReference<Map<String, dynamic>> {}
+
+// ignore: subtype_of_sealed_class
+class _MockDoc extends Mock
+    implements DocumentReference<Map<String, dynamic>> {}
+
+/// A database where every event, registration and contact stream fails with
+/// [code], like a rules refusal.
+FirebaseFirestore _deniedDb(String _, {String code = 'permission-denied'}) {
+  Stream<T> fail<T>() =>
+      Stream<T>.error(FirebaseException(plugin: 'cloud_firestore', code: code));
+  final db = _MockDb();
+  final events = _MockCol();
+  final eventDoc = _MockDoc();
+  final regs = _MockCol();
+  final regDoc = _MockDoc();
+  final priv = _MockCol();
+  final contactDoc = _MockDoc();
+  when(() => db.collection('events')).thenReturn(events);
+  when(() => events.doc(any())).thenReturn(eventDoc);
+  when(() => eventDoc.snapshots()).thenAnswer((_) => fail());
+  when(() => eventDoc.collection('registrations')).thenReturn(regs);
+  when(() => regs.snapshots()).thenAnswer((_) => fail());
+  when(() => regs.doc(any())).thenReturn(regDoc);
+  when(() => regDoc.collection('private')).thenReturn(priv);
+  when(() => priv.doc('contact')).thenReturn(contactDoc);
+  when(() => contactDoc.snapshots()).thenAnswer((_) => fail());
+  return db;
 }

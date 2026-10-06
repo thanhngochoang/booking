@@ -100,23 +100,25 @@ class FirestoreNearbyEventsRepository implements NearbyEventsRepository {
     DateTime? since,
     int cap = 10,
   }) async {
-    Query<Map<String, dynamic>> filtered(Query<Map<String, dynamic>> q) {
-      if (since == null) {
-        return q;
-      }
-      return q.where('createdAt', isGreaterThan: Timestamp.fromDate(since));
-    }
+    // With cells the query is a geohash range and always carries a createdAt
+    // bound (epoch when [since] is null), so it is served by the existing
+    // (status, location.geohash, createdAt) index; a bare geohash range with
+    // no createdAt would need a (status, location.geohash) index instead.
+    final bound = Timestamp.fromDate(
+      since ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    );
 
     var total = 0;
     final targets = cells == null ? <String?>[null] : cells.toSet().toList();
     for (final cell in targets) {
       var q = _base();
       if (cell != null) {
-        q = _cell(q, cell);
-      }
-      q = filtered(q);
-      if (cell != null && since != null) {
-        q = q.orderBy('location.geohash').orderBy('createdAt');
+        q = _cell(q, cell)
+            .where('createdAt', isGreaterThan: bound)
+            .orderBy('location.geohash')
+            .orderBy('createdAt');
+      } else if (since != null) {
+        q = q.where('createdAt', isGreaterThan: bound);
       }
       // The capped number is all Explore shows, so read at most [cap] rows.
       final snap = await q.limit(cap - total).get();
