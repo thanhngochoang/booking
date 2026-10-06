@@ -152,28 +152,34 @@ export async function sendDueReminders(deps: NotifyDeps, bookings: readonly Book
       (async () => {
         const customer = await actorOf(deps, b.customerId, CUSTOMER_FALLBACK);
         const photographer = await actorOf(deps, b.photographerId, PHOTOGRAPHER_FALLBACK);
-        for (const [userId, other] of [
-          [b.customerId, photographer],
-          [b.photographerId, customer],
-        ] as const) {
-          const r = await notify(deps, {
-            userId,
-            actor: other,
-            thumbUrl: other.avatarUrl,
-            target: `/b/${b.id}`,
-            dedupeKey: `shoot_reminder_${b.id}_${variant}`,
-            reminder: variant,
-            content: {
-              type: 'shoot_reminder',
-              hours: variant === 'h24' ? 24 : 2,
-              service: b.serviceSnapshot.name,
-              counterpart: other.name,
-              day: formatDayShortVi(b.day),
-              start: b.start,
-            },
-          });
-          if (r === 'created') sent += 1;
-        }
+        const results = await Promise.allSettled(
+          (
+            [
+              [b.customerId, photographer],
+              [b.photographerId, customer],
+            ] as const
+          ).map(async ([userId, other]) => {
+            const r = await notify(deps, {
+              userId,
+              actor: other,
+              thumbUrl: other.avatarUrl,
+              target: `/b/${b.id}`,
+              dedupeKey: `shoot_reminder_${b.id}_${variant}`,
+              reminder: variant,
+              content: {
+                type: 'shoot_reminder',
+                hours: variant === 'h24' ? 24 : 2,
+                service: b.serviceSnapshot.name,
+                counterpart: other.name,
+                day: formatDayShortVi(b.day),
+                start: b.start,
+              },
+            });
+            if (r === 'created') sent += 1;
+          }),
+        );
+        const bad = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+        if (bad) throw bad.reason;
       })(),
     );
   }

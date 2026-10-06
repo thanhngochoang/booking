@@ -50,9 +50,10 @@ export class MemoryBadgeStore implements BadgeStore {
     return result;
   }
 
-  async holdersOlderThan(badgeId: string, cutoff: Date, limit: number): Promise<string[]> {
+  async holdersOlderThan(badgeId: string, cutoff: Date, limit: number, after: string | null = null): Promise<string[]> {
     const out: string[] = [];
-    for (const [uid, m] of this.earned) {
+    for (const [uid, m] of [...this.earned].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      if (after !== null && uid <= after) continue;
       const b = m.get(badgeId);
       if (b && b.awardedAt.getTime() < cutoff.getTime()) out.push(uid);
     }

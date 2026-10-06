@@ -59,14 +59,13 @@ export async function evaluateUserBadges(
 export async function reconcileBadges(deps: BadgeDeps): Promise<{ catalogWrites: number; reevaluated: number }> {
   const catalogWrites = await deps.badges.syncCatalog(BADGE_CATALOG);
   const cutoff = new Date(deps.clock.now().getTime() - NEW_MEMBER_DAYS * 24 * 60 * 60 * 1000);
-  const seen = new Set<string>();
+  let cursor: string | null = null;
   let reevaluated = 0;
   let firstError: unknown = null;
   for (let page = 0; page < HOLDER_MAX_PAGES; page++) {
-    const holders = (await deps.badges.holdersOlderThan('new_member', cutoff, HOLDER_PAGE)).filter((u) => !seen.has(u));
+    const holders = await deps.badges.holdersOlderThan('new_member', cutoff, HOLDER_PAGE, cursor);
     if (holders.length === 0) break;
     for (const uid of holders) {
-      seen.add(uid);
       try {
         await evaluateUserBadges(deps, uid);
         reevaluated += 1;
@@ -74,6 +73,8 @@ export async function reconcileBadges(deps: BadgeDeps): Promise<{ catalogWrites:
         firstError ??= e; // one bad user must not stop the nightly run
       }
     }
+    cursor = holders[holders.length - 1] ?? null;
+    if (holders.length < HOLDER_PAGE) break;
   }
   if (firstError !== null) throw new Error(`reconcileBadges: some users failed: ${String(firstError)}`);
   return { catalogWrites, reevaluated };

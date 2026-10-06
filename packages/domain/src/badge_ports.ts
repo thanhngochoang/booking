@@ -19,8 +19,8 @@ export interface BadgeTx {
 
 export interface BadgeStore {
   runTransaction<T>(fn: (tx: BadgeTx) => Promise<T>): Promise<T>;
-  /** Uids that hold `badgeId` awarded before `cutoff`. */
-  holdersOlderThan(badgeId: string, cutoff: Date, limit: number): Promise<string[]>;
+  /** Uids that hold `badgeId` awarded before `cutoff`, ordered by uid, strictly after the `after` cursor. */
+  holdersOlderThan(badgeId: string, cutoff: Date, limit: number, after?: string | null): Promise<string[]>;
   /** Writes only the catalogue docs that differ; returns how many were written. */
   syncCatalog(defs: readonly BadgeDefinition[]): Promise<number>;
 }

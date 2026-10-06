@@ -41,8 +41,10 @@ export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<Noti
         const id = `g_${req.groupKey.replace(/:/g, '_')}`;
         const prev = await tx.getRow(req.userId, id);
         if (prev && req.eventId && prev.lastEventId === req.eventId) return { result: 'duplicate' as const, row: null };
-        const count = (prev?.count ?? 0) + 1;
-        const actors = [req.actor, ...(prev?.actors ?? []).filter((a) => a.id !== req.actor?.id)].slice(0, 3);
+        // A row the user already read restarts: count 1 and a single actor.
+        const carried = prev && prev.readAt === null ? prev : null;
+        const count = (carried?.count ?? 0) + 1;
+        const actors = [req.actor, ...(carried?.actors ?? []).filter((a) => a.id !== req.actor?.id)].slice(0, 3);
         const t = renderNotification({ ...req.content, count } as NotificationContent);
         const next: NotificationRow = {
           ...base,
@@ -55,7 +57,7 @@ export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<Noti
           lastEventId: req.eventId ?? null,
         };
         tx.putRow(next);
-        return { result: prev ? ('grouped' as const) : ('created' as const), row: next };
+        return { result: carried ? ('grouped' as const) : ('created' as const), row: next };
       }
       const id = `n_${req.dedupeKey.replace(/:/g, '_')}`;
       if (await tx.getRow(req.userId, id)) return { result: 'duplicate' as const, row: null };

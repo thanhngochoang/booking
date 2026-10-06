@@ -186,4 +186,15 @@ describe('reminders', () => {
     assert.equal(await sendDueReminders(w2.deps, [upcoming]), 1);
     assert.equal(w2.store.rowsOf('c1').length, 0);
   });
+
+  it('one failing recipient does not skip the other', async () => {
+    const w = createNotifyWorld(at(1.5));
+    const real = w.store.getPrefs.bind(w.store);
+    w.store.getPrefs = async (uid: string) => {
+      if (uid === 'c1') throw new Error('boom');
+      return real(uid);
+    };
+    await assert.rejects(sendDueReminders(w.deps, [upcoming]), /reminders failed/);
+    assert.equal(w.store.rowsOf('p1').length, 1);
+  });
 });

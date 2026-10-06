@@ -131,4 +131,15 @@ describe('badge use cases', () => {
     assert.deepEqual(store.earnedIds('old'), []);
     assert.deepEqual(store.earnedIds('fresh'), ['new_member']);
   });
+
+  it('reconcile pages through holders that stay holders', async () => {
+    const old = new Date('2026-01-01T00:00:00.000Z');
+    for (let i = 0; i < 450; i++) {
+      const uid = `u${String(i).padStart(4, '0')}`;
+      store.seedEarned(uid, { badgeId: 'new_member', awardedAt: old, snapshotText: 'x' });
+      metrics.values.set(uid, { accountAgeDays: 0 }); // still meets: stays a holder
+    }
+    const r = await reconcileBadges(deps);
+    assert.equal(r.reevaluated, 450);
+  });
 });

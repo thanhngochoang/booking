@@ -86,10 +86,9 @@ describe('notify', () => {
     assert.equal(w.push.sent[0]?.msg.channel, 'quiet');
   });
 
-  it('grouped events bump count, move to the top and become unread', async () => {
+  it('grouped events bump count and move to the top while unread', async () => {
     await notify(w.deps, chat(1, 'a', 'm1'));
     const id = 'g_chat_c1';
-    await w.store.markRead('u1', [id], new Date());
     w.clock.advanceMinutes(5);
     assert.equal(await notify(w.deps, chat(2, 'b', 'm2')), 'grouped');
     const row = w.store.rowsOf('u1')[0];
@@ -100,6 +99,18 @@ describe('notify', () => {
     assert.equal(w.store.rowsOf('u1').length, 1);
     assert.equal(w.push.sent.length, 2);
     assert.equal(w.push.sent[1]?.msg.data.notificationId, id);
+  });
+
+  it('a read group restarts at count 1 with a single actor', async () => {
+    for (const [i, a] of ['a', 'b', 'c'].entries()) await notify(w.deps, chat(i, a, `m${i}`));
+    assert.equal(w.store.rowsOf('u1')[0]?.count, 3);
+    await w.store.markRead('u1', ['g_chat_c1'], w.clock.now());
+    assert.equal(await notify(w.deps, chat(9, 'd', 'm9')), 'created');
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.count, 1);
+    assert.equal(row?.body, 'tin 9');
+    assert.deepEqual(row?.actors.map((x) => x.id), ['d']);
+    assert.equal(row?.readAt, null);
   });
 
   it('the same event id twice is a duplicate', async () => {
@@ -151,6 +162,13 @@ describe('unread count', () => {
     await notify(w.deps, review());
     assert.equal(await reconcileUnread(w.deps, 'u1'), 1);
     assert.equal(w.store.unread.get('u1')?.count, 1);
+  });
+
+  it('two counts with equal time are both written', async () => {
+    const at = new Date('2026-10-10T10:00:00.000Z');
+    assert.equal(await w.store.setUnreadCount('u1', 2, at), true);
+    assert.equal(await w.store.setUnreadCount('u1', 4, at), true);
+    assert.equal(w.store.unread.get('u1')?.count, 4);
   });
 
   it('an older count never overwrites a newer one', async () => {

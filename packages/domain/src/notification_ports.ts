@@ -42,6 +42,7 @@ export interface NotificationStore {
   /**
    * Writes the private inbox doc `users/{uid}/private/inbox` (`unreadCount`, `unreadCountAt`; ruling R1,
    * never the public user doc) only when `at` is not older than the stored `unreadCountAt`. True when written.
+   * Adapters must compare and write in ONE transaction, or concurrent reconciles can overwrite a newer count.
    */
   setUnreadCount(uid: string, count: number, at: Date): Promise<boolean>;
   /**
