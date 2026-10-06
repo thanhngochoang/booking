@@ -36,6 +36,7 @@ class FirestorePostPublisher implements PostPublisher {
       if (d.styleId != null) 'style': d.styleId,
       'hashtags': hashtags,
       'inPortfolio': d.inPortfolio,
+      if (d.albumId != null) 'albumId': d.albumId,
       'likeCount': 0,
       'saveCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
@@ -71,6 +72,7 @@ class FirestorePostPublisher implements PostPublisher {
       specialtyId: d.specialtyId,
       hashtags: hashtags,
       inPortfolio: d.inPortfolio,
+      albumId: d.albumId,
       createdAt: DateTime.now().toUtc(),
     );
   }

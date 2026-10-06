@@ -60,6 +60,10 @@ PostSummary? postFromFirestore(String id, Map<String, dynamic> d) {
       if (d['hashtags'] is List) ...(d['hashtags'] as List).whereType<String>(),
     ],
     inPortfolio: d['inPortfolio'] == true,
+    albumId: _str(d['albumId']),
+    albumPosition: d['albumPosition'] is num
+        ? (d['albumPosition'] as num).toInt()
+        : null,
     likeCount: _int(d['likeCount']),
     saveCount: _int(d['saveCount']),
     createdAt: createdAt.toDate().toUtc(),
@@ -170,6 +174,46 @@ class FirestorePostRepository implements PostRepository {
     cursor,
     limit,
   );
+
+  @override
+  Future<PostPage> byAlbum(
+    String albumId, {
+    String? cursor,
+    int limit = 24,
+  }) async {
+    if (!_validId(albumId)) {
+      return const PostPage();
+    }
+    final n = clampPageSize(limit);
+    var q = _posts
+        .where('albumId', isEqualTo: albumId)
+        .orderBy('albumPosition');
+    if (cursor != null) {
+      if (!_validId(cursor)) {
+        return const PostPage();
+      }
+      final at = await _posts.doc(cursor).get();
+      if (!at.exists) {
+        return const PostPage();
+      }
+      q = q.startAfterDocument(at);
+    }
+    // One post of look-ahead: nextCursor is set exactly when more follow.
+    final snap = await q.limit(n + 1).get();
+    final posts = <PostSummary>[];
+    final rawIds = <String>[];
+    for (final d in snap.docs) {
+      final p = postFromFirestore(d.id, d.data());
+      if (p != null) {
+        posts.add(p);
+        rawIds.add(d.id);
+      }
+    }
+    if (posts.length <= n) {
+      return PostPage(posts: posts);
+    }
+    return PostPage(posts: posts.take(n).toList(), nextCursor: rawIds[n - 1]);
+  }
 
   @override
   Future<PostSummary?> byId(String postId) async {

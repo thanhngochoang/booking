@@ -36,6 +36,8 @@ class PostSummary {
     this.specialtyId,
     this.hashtags = const [],
     this.inPortfolio = false,
+    this.albumId,
+    this.albumPosition,
     this.likeCount = 0,
     this.saveCount = 0,
     required this.createdAt,
@@ -60,6 +62,11 @@ class PostSummary {
   /// Lower-case tags without `#`, extracted from the caption.
   final List<String> hashtags;
   final bool inPortfolio;
+
+  /// The album this post is filed in, with its 1-based place there (set by
+  /// the server); both null for a post that only shows on the timeline.
+  final String? albumId;
+  final int? albumPosition;
   final int likeCount;
   final int saveCount;
   final DateTime createdAt;

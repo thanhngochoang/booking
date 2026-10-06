@@ -22,6 +22,7 @@ PostDraft draft({
   String? specialty = 'portrait',
   bool portfolio = true,
   int images = 2,
+  String? albumId,
 }) => PostDraft(
   id: id,
   photographerId: 'p1',
@@ -35,6 +36,7 @@ PostDraft draft({
   locationName: location,
   styleId: style,
   inPortfolio: portfolio,
+  albumId: albumId,
 );
 
 typedef Env = ({PostPublisher publisher, PostRepository reader});
@@ -123,6 +125,25 @@ void main() {
       publisher: FirestorePostPublisher(db: db),
       reader: FirestorePostRepository(db: db),
     );
+  });
+
+  group('album field', () {
+    test('a draft with albumId writes albumId and no albumPosition', () async {
+      final db = FakeFirebaseFirestore();
+      await FirestorePostPublisher(db: db).publish(draft(albumId: 'al1'));
+      final doc = await db.collection('posts').doc(draft().id).get();
+      expect(doc.data()!['albumId'], 'al1');
+      expect(doc.data()!.containsKey('albumPosition'), isFalse);
+      expect(doc.data()!['inPortfolio'], isTrue);
+    });
+
+    test('a draft without albumId writes no album field', () async {
+      final db = FakeFirebaseFirestore();
+      await FirestorePostPublisher(db: db).publish(draft());
+      final doc = await db.collection('posts').doc(draft().id).get();
+      expect(doc.data()!.containsKey('albumId'), isFalse);
+      expect(doc.data()!.containsKey('albumPosition'), isFalse);
+    });
   });
 
   group('FakePostPublisher', () {

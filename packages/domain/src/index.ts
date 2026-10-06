@@ -40,3 +40,7 @@ export * from './provider_ports.js';
 export * from './memory_provider_store.js';
 export * from './set_provider_type.js';
 export * from './studio_address.js';
+export * from './album.js';
+export * from './album_ports.js';
+export * from './memory_album_store.js';
+export * from './album_use_cases.js';

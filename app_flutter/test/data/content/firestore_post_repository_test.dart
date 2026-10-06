@@ -25,6 +25,8 @@ Map<String, dynamic> postDoc(PostSummary p) => {
   if (p.specialtyId != null) 'specialty': p.specialtyId,
   'hashtags': p.hashtags,
   'inPortfolio': p.inPortfolio,
+  if (p.albumId != null) 'albumId': p.albumId,
+  if (p.albumPosition != null) 'albumPosition': p.albumPosition,
   'likeCount': p.likeCount,
   'saveCount': p.saveCount,
   'createdAt': Timestamp.fromDate(p.createdAt),
@@ -44,6 +46,42 @@ void main() {
   });
   engagementContract('firestore', () async {
     return FirestoreEngagementRepository(db: FakeFirebaseFirestore());
+  });
+
+  group('album fields', () {
+    test('a post reads its album fields', () async {
+      final db = await seededDb([
+        fixturePost('a', albumId: 'al1', albumPosition: 3),
+        fixturePost('b'),
+      ]);
+      final repo = FirestorePostRepository(db: db);
+      final a = (await repo.byId('a'))!;
+      expect((a.albumId, a.albumPosition), ('al1', 3));
+      final b = (await repo.byId('b'))!;
+      expect((b.albumId, b.albumPosition), (null, null));
+    });
+
+    test('byAlbum orders by albumPosition', () async {
+      final db = await seededDb([
+        fixturePost('a', albumId: 'al1', albumPosition: 3),
+        fixturePost('b', albumId: 'al1', albumPosition: 1),
+        fixturePost('c', albumId: 'al1', albumPosition: 2),
+        fixturePost('d', albumId: 'al2', albumPosition: 1),
+        fixturePost('e'),
+      ]);
+      final repo = FirestorePostRepository(db: db);
+      final first = await repo.byAlbum('al1', limit: 2);
+      expect(first.posts.map((p) => p.id), ['b', 'c']);
+      expect(first.nextCursor, 'c');
+      final second = await repo.byAlbum(
+        'al1',
+        cursor: first.nextCursor,
+        limit: 2,
+      );
+      expect(second.posts.map((p) => p.id), ['a']);
+      expect(second.nextCursor, isNull);
+      expect((await repo.byAlbum('a/b')).posts, isEmpty);
+    });
   });
 
   group('postFromFirestore', () {

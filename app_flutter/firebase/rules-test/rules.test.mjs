@@ -883,6 +883,75 @@ test('posts cannot be edited or deleted from the client yet', async () => {
   await assertFails(deleteDoc(doc(db, 'posts/own')));
 });
 
+// ---- portfolio albums (plan C) ----
+async function seedAlbum(id, photographerId) {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `albums/${id}`), { photographerId, title: 'A', position: 1, postCount: 0, mediaCount: 0, visible: false }));
+}
+
+test('albums are readable by signed-in users', async () => {
+  await seedAlbum('alb-read', 'e1');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('anyone').firestore(), 'albums/alb-read')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'albums/alb-read')));
+});
+
+test('nobody writes albums', async () => {
+  await seedAlbum('alb-w', 'e1');
+  const db = env.authenticatedContext('e1').firestore();
+  await assertFails(setDoc(doc(db, 'albums/alb-new'), { photographerId: 'e1', title: 'B' }));
+  await assertFails(updateDoc(doc(db, 'albums/alb-w'), { title: 'C' }));
+  await assertFails(deleteDoc(doc(db, 'albums/alb-w')));
+});
+
+test('a post may name the author\'s own album', async () => {
+  await seedShooter('e1');
+  await seedAlbum('alb-own', 'e1');
+  const db = env.authenticatedContext('e1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-alb'), validPost('e1', { albumId: 'alb-own' })));
+});
+
+test('a post may not name another photographer\'s existing album', async () => {
+  await seedShooter('e2');
+  await seedAlbum('alb-other', 'e9');
+  const db = env.authenticatedContext('e2').firestore();
+  await assertFails(setDoc(doc(db, 'posts/post-alb2'), validPost('e2', { albumId: 'alb-other' })));
+});
+
+test('a post may name a deleted (missing) album and lands unsorted later', async () => {
+  await seedShooter('e5');
+  const db = env.authenticatedContext('e5').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-alb3'), validPost('e5', { albumId: 'alb-missing' })));
+});
+
+test('a post may not name an album id with a slash', async () => {
+  await seedShooter('e6');
+  const db = env.authenticatedContext('e6').firestore();
+  await assertFails(setDoc(doc(db, 'posts/post-alb7'), validPost('e6', { albumId: 'a/b/c' })));
+});
+
+test('a post may not name an over-long album id', async () => {
+  await seedShooter('e7');
+  const db = env.authenticatedContext('e7').firestore();
+  await assertFails(setDoc(doc(db, 'posts/post-alb8'), validPost('e7', { albumId: 'a'.repeat(65) })));
+});
+
+test('a post may not set albumPosition', async () => {
+  await seedShooter('e3');
+  await seedAlbum('alb-e3', 'e3');
+  const db = env.authenticatedContext('e3').firestore();
+  await assertFails(setDoc(doc(db, 'posts/post-alb4'), validPost('e3', { albumId: 'alb-e3', albumPosition: 1 })));
+  await assertFails(setDoc(doc(db, 'posts/post-alb5'), validPost('e3', { albumPosition: 1 })));
+});
+
+test('posts still cannot be updated', async () => {
+  await seedShooter('e4');
+  await seedAlbum('alb-e4', 'e4');
+  const db = env.authenticatedContext('e4').firestore();
+  await assertSucceeds(setDoc(doc(db, 'posts/post-alb6'), validPost('e4', { albumId: 'alb-e4' })));
+  await assertFails(updateDoc(doc(db, 'posts/post-alb6'), { albumId: deleteField() }));
+  await assertFails(updateDoc(doc(db, 'posts/post-alb6'), { albumPosition: 1 }));
+});
+
 // ---- Plan 2d2: avatars ----
 const ulidJpg = '01JB0Z8K3V5N6Q7R8S9T0V1W2X.jpg';
 

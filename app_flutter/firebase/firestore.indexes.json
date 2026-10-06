@@ -229,6 +229,52 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "albums",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "photographerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "position",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "albums",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "photographerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "position",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "albumId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "albumPosition",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

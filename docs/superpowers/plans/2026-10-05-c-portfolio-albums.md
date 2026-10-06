@@ -48,7 +48,7 @@ Task 1 Step 1 (lane 2) and the first step of Tasks 5–7 (lane 1) check these; a
 
 ## Decisions (where the spec is silent)
 
-1. **Who writes.** Rules: `albums` read if signed in, write false. Posts keep `update, delete: false`; `validPostCreate()` accepts an optional `albumId` (string) when `get(albums/{albumId}).data.photographerId == request.auth.uid`, and never `albumPosition`.
+1. **Who writes.** Rules: `albums` read if signed in, write false. Posts keep `update, delete: false`; `validPostCreate()` accepts an optional `albumId` (string matching `[A-Za-z0-9_-]{1,64}`) when the album does not exist **or** `get(albums/{albumId}).data.photographerId == request.auth.uid` (a missing album must not block the publish: the trigger detaches it, Review Focus 4 — ruling 2026-10-06 in unit 9b/1-L2), and never `albumPosition`.
 2. **New post into an album.** Trigger `onPostCreated` (`posts/{postId}`): if `albumId` is set, in one transaction read the album; if it is gone, belongs to someone else, or has 200 posts, remove `albumId` from the post (it stays in the timeline) and stop; else set `albumPosition = postCount + 1`, `postCount + 1`, `mediaCount + imageUrls.length`, `visible = true`, `updatedAt`. Idempotent: a post that already has `albumPosition` is skipped.
 3. **Album doc** `albums/{id}`: `photographerId`, `title`, `titleKey` (lower-cased, trimmed, for uniqueness), `description`, `cover?: {postId, imageIndex}`, `position` (1-based), `postCount`, `mediaCount`, `visible`, `createdAt`, `updatedAt`. Ids are ULIDs from the server.
 4. **Callables** (`asia-southeast1`, caller must own every album and post named):
@@ -58,7 +58,7 @@ Task 1 Step 1 (lane 2) and the first step of Tasks 5–7 (lane 1) check these; a
    - `reorderAlbums({albumIds})`: must be exactly the caller's album ids; rewrites `position`.
    - `movePostsToAlbum({albumId: string | null, postIds})`: `postIds` 1–50, all the caller's `work` posts; each post leaves its old album (that album compacts, its cover resets if it pointed at the post) and is appended in the given order; `albumId: null` = remove from albums; `limit_exceeded` if the target would pass 200.
    - `reorderAlbumPosts({albumId, postIds})`: exactly the album's post ids; rewrites `albumPosition`.
-   All run in one Firestore transaction (≤ 200 posts + 30 albums stays under the 500-write limit).
+   All run in one Firestore transaction. A move can touch every source album of the moved posts (up to 29 albums × 199 renumbered posts); Firestore has no 500-write cap any more (limits are 10 MiB per commit and 270 s per transaction), so this succeeds, but large moves lock many posts — the app sends at most 50 posts per call (corrected 2026-10-06 in unit 9b/1-L2).
 5. **Public reads.** Profile albums: `albums where photographerId == uid and visible == true orderBy position`. Owner: same without `visible`. Album posts: `posts where albumId == x orderBy albumPosition` (page 24). Indexes: `albums (photographerId, visible, position)`, `albums (photographerId, position)`, `posts (albumId, albumPosition)`.
 6. **Cover.** No `cover` → the first image of the post at `albumPosition == 1`. The app resolves it from the first page of album posts; `AlbumSummary.coverUrl` is filled by the repository with that rule (album docs do not copy URLs).
 7. **`inPortfolio`.** The publisher keeps writing `inPortfolio: true` (rules unchanged for it) and keeps the `photographers/{uid}.portfolio` arrayUnion; nothing reads it for the Portfolio tab any more (the timeline is `byPhotographer`, which already ignores it). Removing the field is left for a later clean-up.
@@ -193,10 +193,12 @@ match /albums/{albumId} {
 }
 // in validPostCreate(): add 'albumId' to the hasOnly list, then
 && (!('albumId' in d) || (d.albumId is string
-     && get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == request.auth.uid))
+     && d.albumId.matches('[A-Za-z0-9_-]{1,64}')
+     && (!exists(/databases/$(database)/documents/albums/$(d.albumId))
+         || get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == request.auth.uid)))
 ```
 
-- [ ] **Step 1: Write the failing tests.** Unit: "unauthenticated is refused"; "domain errors map to HttpsError". Integration (do not run): "a post created with albumId lands last in the album"; "concurrent creates get consecutive positions"; "a retried trigger does not count twice"; "a post naming a missing album stays unsorted"; "movePostsToAlbum moves and compacts". Rules (do not run): "albums are readable by signed-in users"; "nobody writes albums"; "a post may name the author's own album"; "a post may not name another photographer's album"; "a post may not set albumPosition"; "posts still cannot be updated".
+- [ ] **Step 1: Write the failing tests.** Unit: "unauthenticated is refused"; "domain errors map to HttpsError". Integration (do not run): "a post created with albumId lands last in the album"; "concurrent creates get consecutive positions"; "a retried trigger does not count twice"; "a post naming a missing album stays unsorted"; "movePostsToAlbum moves and compacts". Rules (do not run): "albums are readable by signed-in users"; "nobody writes albums"; "a post may name the author's own album"; "a post may not name another photographer's album"; "a post may name a missing album (the trigger detaches it)"; "a post may not name an album id with a slash"; "a post may not set albumPosition"; "posts still cannot be updated".
 - [ ] **Step 2: Run** `(cd app_flutter/firebase/functions && npm test)` → fail. **Step 3: Implement** (store maps `albums/{id}` and the post slice; trigger uses `TRIGGER_OPTIONS`). **Step 4: Run** `npm test && npm run build` → pass; ledger the skipped emulator suites.
 - [ ] **Step 5: Commit** `feat(functions): album callables and post-created trigger [c]`.
 

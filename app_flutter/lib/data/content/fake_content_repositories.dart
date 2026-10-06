@@ -87,6 +87,20 @@ class FakePostRepository implements PostRepository {
   }
 
   @override
+  Future<PostPage> byAlbum(
+    String albumId, {
+    String? cursor,
+    int limit = 24,
+  }) async {
+    if (failWith != null) {
+      throw failWith!;
+    }
+    final sorted = _posts.where((p) => p.albumId == albumId).toList()
+      ..sort((a, b) => (a.albumPosition ?? 0).compareTo(b.albumPosition ?? 0));
+    return _page(sorted, cursor, limit);
+  }
+
+  @override
   Future<PostSummary?> byId(String postId) async {
     if (failWith != null) {
       throw failWith!;

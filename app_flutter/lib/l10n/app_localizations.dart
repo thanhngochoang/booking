@@ -4545,6 +4545,90 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Studio · {district}'**
   String providerStudioDistrict(String district);
+
+  /// No description provided for @albumEmptyNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trống · chưa hiện công khai'**
+  String get albumEmptyNote;
+
+  /// No description provided for @portfolioViewAlbums.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album'**
+  String get portfolioViewAlbums;
+
+  /// No description provided for @portfolioViewTimeline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dòng thời gian'**
+  String get portfolioViewTimeline;
+
+  /// No description provided for @reorderPosition.
+  ///
+  /// In vi, this message translates to:
+  /// **'{index} trên {count}'**
+  String reorderPosition(int index, int count);
+
+  /// No description provided for @reorderMoveUp.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển lên'**
+  String get reorderMoveUp;
+
+  /// No description provided for @reorderMoveDown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển xuống'**
+  String get reorderMoveDown;
+
+  /// No description provided for @reorderMoveTop.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lên đầu'**
+  String get reorderMoveTop;
+
+  /// No description provided for @reorderMoveBottom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xuống cuối'**
+  String get reorderMoveBottom;
+
+  /// No description provided for @reorderMenu.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thao tác với mục này'**
+  String get reorderMenu;
+
+  /// No description provided for @reorderHandle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ để kéo sắp xếp'**
+  String get reorderHandle;
+
+  /// No description provided for @postPickSelectedOrder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn, thứ {n}'**
+  String postPickSelectedOrder(int n);
+
+  /// No description provided for @postPickPosition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài {index} trên {count}'**
+  String postPickPosition(int index, int count);
+
+  /// No description provided for @albumPhotoCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ảnh'**
+  String albumPhotoCount(int n);
+
+  /// No description provided for @postPickInAlbum.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang ở album {album}'**
+  String postPickInAlbum(String album);
 }
 
 class _AppLocalizationsDelegate

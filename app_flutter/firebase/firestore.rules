@@ -320,7 +320,7 @@ service cloud.firestore {
       let uid = request.auth.uid;
       return d.keys().hasOnly(['kind', 'authorId', 'photographerId', 'serviceId', 'specialty',
                                'imageUrls', 'imageMeta', 'caption', 'location', 'style',
-                               'hashtags', 'inPortfolio', 'likeCount', 'saveCount', 'createdAt'])
+                               'hashtags', 'inPortfolio', 'albumId', 'likeCount', 'saveCount', 'createdAt'])
         && d.keys().hasAll(['kind', 'authorId', 'photographerId', 'serviceId', 'imageUrls',
                             'caption', 'likeCount', 'saveCount', 'createdAt'])
         && d.kind == 'work'
@@ -335,6 +335,10 @@ service cloud.firestore {
         && d.caption is string && d.caption.size() <= 2000
         && (!('hashtags' in d) || (d.hashtags is list && d.hashtags.size() <= 30))
         && (!('inPortfolio' in d) || d.inPortfolio is bool)
+        && (!('albumId' in d) || (d.albumId is string
+             && d.albumId.matches('[A-Za-z0-9_-]{1,64}')
+             && (!exists(/databases/$(database)/documents/albums/$(d.albumId))
+                 || get(/databases/$(database)/documents/albums/$(d.albumId)).data.photographerId == uid)))
         && d.likeCount == 0 && d.saveCount == 0
         && d.createdAt == request.time;
     }
@@ -449,6 +453,12 @@ service cloud.firestore {
 
     // Posts are read by any signed-in user. A photographer creates their own
     // work post (S21); counters are always written by Cloud Functions.
+    // Portfolio albums: written only by the album callables and the onPostCreated trigger.
+    match /albums/{albumId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if signedIn() && validPostCreate();
