@@ -2362,12 +2362,6 @@ abstract class AppLocalizations {
   /// **'Phong cách'**
   String get createStyleTitle;
 
-  /// No description provided for @createPortfolio.
-  ///
-  /// In vi, this message translates to:
-  /// **'Thêm vào portfolio'**
-  String get createPortfolio;
-
   /// No description provided for @createPublish.
   ///
   /// In vi, this message translates to:
@@ -5019,6 +5013,84 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đổi sang Studio'**
   String get providerLoseArtistConfirm;
+
+  /// No description provided for @createAlbumLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album · tuỳ chọn'**
+  String get createAlbumLabel;
+
+  /// No description provided for @albumPickTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xếp vào album'**
+  String get albumPickTitle;
+
+  /// No description provided for @albumPickNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không xếp album'**
+  String get albumPickNone;
+
+  /// No description provided for @albumPickNoneSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ hiện ở Dòng thời gian'**
+  String get albumPickNoneSub;
+
+  /// No description provided for @albumPickCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài'**
+  String albumPickCount(int n);
+
+  /// No description provided for @albumPickRecent.
+  ///
+  /// In vi, this message translates to:
+  /// **'dùng gần nhất'**
+  String get albumPickRecent;
+
+  /// No description provided for @albumPickNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album mới'**
+  String get albumPickNew;
+
+  /// No description provided for @albumPickNewName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên album'**
+  String get albumPickNewName;
+
+  /// No description provided for @albumPickCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo'**
+  String get albumPickCreate;
+
+  /// No description provided for @albumPickDup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có album tên này'**
+  String get albumPickDup;
+
+  /// No description provided for @albumPickLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có đủ 30 album.'**
+  String get albumPickLimit;
+
+  /// No description provided for @albumPickCreateError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tạo được album. Thử lại sau.'**
+  String get albumPickCreateError;
+
+  /// No description provided for @albumPickLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách album.'**
+  String get albumPickLoadError;
 }
 
 class _AppLocalizationsDelegate

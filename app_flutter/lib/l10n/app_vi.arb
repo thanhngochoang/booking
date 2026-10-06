@@ -511,7 +511,6 @@
   "createStyleLabel": "Phong cách",
   "createStyleNone": "Không chọn",
   "createStyleTitle": "Phong cách",
-  "createPortfolio": "Thêm vào portfolio",
   "createPublish": "Đăng",
   "createRemove": "Gỡ ảnh",
   "createMoveUp": "Đưa lên",
@@ -1434,5 +1433,23 @@
   "providerTypeSave": "Lưu",
   "providerTypeKeep": "Giữ nguyên",
   "providerLoseArtistBody": "Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.",
-  "providerLoseArtistConfirm": "Đổi sang Studio"
+  "providerLoseArtistConfirm": "Đổi sang Studio",
+  "createAlbumLabel": "Album · tuỳ chọn",
+  "albumPickTitle": "Xếp vào album",
+  "albumPickNone": "Không xếp album",
+  "albumPickNoneSub": "Chỉ hiện ở Dòng thời gian",
+  "albumPickCount": "{n} bài",
+  "@albumPickCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "albumPickRecent": "dùng gần nhất",
+  "albumPickNew": "Album mới",
+  "albumPickNewName": "Tên album",
+  "albumPickCreate": "Tạo",
+  "albumPickDup": "Bạn đã có album tên này",
+  "albumPickLimit": "Bạn đã có đủ 30 album.",
+  "albumPickCreateError": "Không tạo được album. Thử lại sau.",
+  "albumPickLoadError": "Không tải được danh sách album."
 }

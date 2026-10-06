@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/album/album_repository.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
@@ -17,6 +19,7 @@ import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/content_fixtures.dart';
+import '../../support/create_post_world.dart';
 
 PickedImage img(int i) =>
     PickedImage(path: '/tmp/$i.jpg', name: '$i.jpg', sizeBytes: 1000);
@@ -53,6 +56,7 @@ class _Env {
     this.posts,
     this.prefs,
     this.uid,
+    this.albums,
   );
   final ProviderContainer c;
   final FakeImagePicker picker;
@@ -61,6 +65,7 @@ class _Env {
   final FakePostRepository posts;
   final SharedPreferences prefs;
   final String? uid;
+  final OwnedFakeAlbumRepository albums;
   PostComposerController get ctl => c.read(postComposerProvider.notifier);
   ComposerState get state => c.read(postComposerProvider);
 }
@@ -69,6 +74,7 @@ Future<_Env> _env({
   List<List<PickedImage>> picks = const [],
   bool signedIn = true,
   Map<String, Object> prefsValues = const {},
+  List<String> albumIds = const [],
 }) async {
   SharedPreferences.setMockInitialValues(prefsValues);
   final prefs = await SharedPreferences.getInstance();
@@ -80,9 +86,14 @@ Future<_Env> _env({
   final picker = FakeImagePicker(picks);
   final uploader = FakeMediaUploader();
   final posts = FakePostRepository();
+  final albums = OwnedFakeAlbumRepository(uid ?? '');
+  for (final id in albumIds) {
+    albums.add(fixtureAlbum(id, photographerId: uid ?? ''));
+  }
   final publisher = FakePostPublisher(posts: posts, clock: () => fixtureNow);
   final c = ProviderContainer(
     overrides: [
+      albumRepositoryProvider.overrideWithValue(albums),
       sharedPreferencesProvider.overrideWithValue(prefs),
       authRepositoryProvider.overrideWithValue(auth),
       imagePickerProvider.overrideWithValue(picker),
@@ -91,11 +102,12 @@ Future<_Env> _env({
     ],
   );
   addTearDown(c.dispose);
-  return _Env(c, picker, uploader, publisher, posts, prefs, uid);
+  return _Env(c, picker, uploader, publisher, posts, prefs, uid, albums);
 }
 
-Future<_Env> _ready({int photos = 2}) async {
+Future<_Env> _ready({int photos = 2, List<String> albumIds = const []}) async {
   final e = await _env(
+    albumIds: albumIds,
     picks: [
       [for (var i = 0; i < photos; i++) img(i)],
     ],
@@ -110,7 +122,7 @@ void main() {
     test('starts empty and cannot be published', () async {
       final e = await _env();
       expect(e.state.images, isEmpty);
-      expect(e.state.inPortfolio, isTrue);
+      expect(e.state.albumId, isNull);
       expect(e.state.canPublish, isFalse);
       expect(e.state.draftId, hasLength(26));
     });
@@ -413,14 +425,14 @@ void main() {
         e.ctl.setService(fixtureService('s1'));
         e.ctl.setLocation('Bến Bạch Đằng');
         e.ctl.setStyle('film');
-        e.ctl.setInPortfolio(false);
+        e.ctl.setAlbum('al1');
         final stored = jsonDecode(
           e.prefs.getString('postDraft:${e.uid}')!,
         ) as Map<String, dynamic>;
         expect(stored['caption'], 'Chiều muộn');
         expect(stored['serviceId'], 's1');
         expect(stored['specialtyId'], 'portrait');
-        expect(stored['inPortfolio'], false);
+        expect(stored['albumId'], 'al1');
         expect(stored.containsKey('images'), isFalse);
         expect(e.prefs.getKeys().where((k) => k.startsWith('postDraft')), [
           'postDraft:${e.uid}',
@@ -454,7 +466,7 @@ void main() {
         ..setService(fixtureService('s1'))
         ..setLocation('Hồ Gươm')
         ..setStyle('film')
-        ..setInPortfolio(false);
+        ..setAlbum('al1');
       first.dispose();
 
       final second = make();
@@ -467,9 +479,9 @@ void main() {
           s.specialtyId,
           s.locationName,
           s.styleId,
-          s.inPortfolio,
+          s.albumId,
         ),
-        ('Nháp của tôi', 's1', 'portrait', 'Hồ Gươm', 'film', false),
+        ('Nháp của tôi', 's1', 'portrait', 'Hồ Gươm', 'film', 'al1'),
       );
       expect(s.images, isEmpty);
       expect(prefs.containsKey('postDraft:$uid'), isTrue);
@@ -649,12 +661,96 @@ void main() {
       await run;
     });
 
-    test('the portfolio switch alone makes a draft', () async {
+    test('the album alone makes a draft', () async {
       final e = await _env();
-      e.ctl.setInPortfolio(false);
+      e.ctl.setAlbum('al1');
       expect(e.prefs.containsKey('postDraft:${e.uid}'), isTrue);
-      e.ctl.setInPortfolio(true);
+      e.ctl.setAlbum(null);
       expect(e.prefs.containsKey('postDraft:${e.uid}'), isFalse);
+    });
+  });
+
+  group('the album', () {
+    test('a new draft preselects the last used album', () async {
+      SharedPreferences.setMockInitialValues({});
+      final probe = await SharedPreferences.getInstance();
+      final auth = FakeAuthRepository();
+      final uid = (await auth.registerWithEmail(
+        'a@b.vn',
+        'password1',
+        'M',
+      )).uid;
+      await probe.setString('lastAlbum:$uid', 'al2');
+      final c = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(probe),
+          authRepositoryProvider.overrideWithValue(auth),
+          albumRepositoryProvider.overrideWithValue(FakeAlbumRepository()),
+        ],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(postComposerProvider).albumId, 'al2');
+    });
+
+    test('publishing sends albumId and remembers it', () async {
+      final e = await _ready(albumIds: ['al1']);
+      e.ctl.setAlbum('al1');
+      expect((await e.ctl.publish()).outcome, PublishOutcome.published);
+      expect(e.publisher.published.single.albumId, 'al1');
+      expect(e.prefs.getString('lastAlbum:${e.uid}'), 'al1');
+      expect(e.state.albumId, 'al1');
+    });
+
+    test('publishing with none sends no albumId', () async {
+      final e = await _ready(albumIds: ['al1']);
+      expect((await e.ctl.publish()).outcome, PublishOutcome.published);
+      expect(e.publisher.published.single.albumId, isNull);
+      expect(e.prefs.getString('lastAlbum:${e.uid}'), isNull);
+    });
+
+    test('a deleted album is not sent', () async {
+      final e = await _ready();
+      e.ctl.setAlbum('gone');
+      expect((await e.ctl.publish()).outcome, PublishOutcome.published);
+      expect(e.publisher.published.single.albumId, isNull);
+      expect(e.prefs.getString('lastAlbum:${e.uid}'), isNull);
+    });
+
+    test('the draft keeps the album across restarts', () async {
+      final e = await _env();
+      e.ctl.setAlbum('al1');
+      e.ctl.setCaption('x');
+      final stored = jsonDecode(e.prefs.getString('postDraft:${e.uid}')!);
+      expect(stored['albumId'], 'al1');
+      expect(
+        e.prefs.getKeys().where((k) => k.startsWith('lastAlbum')),
+        isEmpty,
+      );
+    });
+
+    test('an explicit none in the draft beats the last used album', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final auth = FakeAuthRepository();
+      final uid = (await auth.registerWithEmail(
+        'a@b.vn',
+        'password1',
+        'M',
+      )).uid;
+      await prefs.setString('lastAlbum:$uid', 'al2');
+      await prefs.setString(
+        'postDraft:$uid',
+        jsonEncode({'caption': 'x', 'albumId': null}),
+      );
+      final c = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authRepositoryProvider.overrideWithValue(auth),
+          albumRepositoryProvider.overrideWithValue(FakeAlbumRepository()),
+        ],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(postComposerProvider).albumId, isNull);
     });
   });
 }

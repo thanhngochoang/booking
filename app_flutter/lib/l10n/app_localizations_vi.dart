@@ -1293,9 +1293,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get createStyleTitle => 'Phong cách';
 
   @override
-  String get createPortfolio => 'Thêm vào portfolio';
-
-  @override
   String get createPublish => 'Đăng';
 
   @override
@@ -2837,4 +2834,45 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerLoseArtistConfirm => 'Đổi sang Studio';
+
+  @override
+  String get createAlbumLabel => 'Album · tuỳ chọn';
+
+  @override
+  String get albumPickTitle => 'Xếp vào album';
+
+  @override
+  String get albumPickNone => 'Không xếp album';
+
+  @override
+  String get albumPickNoneSub => 'Chỉ hiện ở Dòng thời gian';
+
+  @override
+  String albumPickCount(int n) {
+    return '$n bài';
+  }
+
+  @override
+  String get albumPickRecent => 'dùng gần nhất';
+
+  @override
+  String get albumPickNew => 'Album mới';
+
+  @override
+  String get albumPickNewName => 'Tên album';
+
+  @override
+  String get albumPickCreate => 'Tạo';
+
+  @override
+  String get albumPickDup => 'Bạn đã có album tên này';
+
+  @override
+  String get albumPickLimit => 'Bạn đã có đủ 30 album.';
+
+  @override
+  String get albumPickCreateError => 'Không tạo được album. Thử lại sau.';
+
+  @override
+  String get albumPickLoadError => 'Không tải được danh sách album.';
 }
