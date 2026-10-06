@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
@@ -35,10 +36,12 @@ class ProfileHeader extends ConsumerWidget {
     final genres = skills.specialtyIds.isNotEmpty
         ? skills.specialtyIds
         : s.specialtyIds;
+    final studio = s.providerType == ProviderType.studio;
     final meta = [
       for (final id in genres.take(2)) catalog.label(SkillGroup.specialty, id),
-      ?s.areaLabel,
+      ?(studio ? (s.studioDistrict ?? s.areaLabel) : s.areaLabel),
     ].join(' · ');
+    final mark = providerMarkOf(type: s.providerType, verified: s.verified);
     final nameStyle = theme.textTheme.headlineSmall?.copyWith(
       fontFamily: AppFonts.display,
       fontWeight: FontWeight.w600,
@@ -91,13 +94,23 @@ class ProfileHeader extends ConsumerWidget {
                             children: [
                               Semantics(
                                 header: true,
-                                child: s.verified
-                                    ? VerifiedName(
-                                        s.displayName,
-                                        style: nameStyle,
-                                      )
-                                    : Text(s.displayName, style: nameStyle),
+                                child: ProviderName(
+                                  s.displayName,
+                                  mark: mark,
+                                  style: nameStyle,
+                                ),
                               ),
+                              if (s.providerType != ProviderType.individual)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: AppSpace.s1,
+                                  ),
+                                  child: ProviderTag(
+                                    key: const Key('profile-provider-tag'),
+                                    type: s.providerType,
+                                    showAwards: false,
+                                  ),
+                                ),
                               if (meta.isNotEmpty)
                                 Text(meta, style: theme.textTheme.bodySmall),
                             ],

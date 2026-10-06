@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
@@ -45,9 +46,18 @@ void usePhoneFor(
 /// plus what S03.01 reads: public profiles, skills, the availability month,
 /// the photographer's contact flags, and stub routes for every link.
 class ProfileWorld {
-  ProfileWorld({UserRole role = UserRole.customer, bool hasPhone = true})
-    : discovery = DiscoveryWorld(role: role, hasPhone: hasPhone);
+  ProfileWorld({
+    UserRole role = UserRole.customer,
+    bool hasPhone = true,
+    List<PhotographerSummary>? photographers,
+  }) : _photographers = photographers ?? discoveryPhotographers(),
+       discovery = DiscoveryWorld(
+         role: role,
+         hasPhone: hasPhone,
+         photographers: photographers,
+       );
 
+  final List<PhotographerSummary> _photographers;
   final DiscoveryWorld discovery;
   final profiles = FakePublicProfileRepository();
   final availability = FakeAvailabilityRepository();
@@ -60,7 +70,7 @@ class ProfileWorld {
 
   Future<void> init() async {
     await discovery.init();
-    for (final p in discoveryPhotographers()) {
+    for (final p in _photographers) {
       profiles.add(
         PhotographerProfile(
           summary: p,

@@ -260,15 +260,14 @@ class _Content extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                author.verified
-                                    ? VerifiedName(
-                                        author.displayName,
-                                        style: theme.textTheme.titleMedium,
-                                      )
-                                    : Text(
-                                        author.displayName,
-                                        style: theme.textTheme.titleMedium,
-                                      ),
+                                ProviderName(
+                                  author.displayName,
+                                  mark: providerMarkOf(
+                                    type: author.providerType,
+                                    verified: author.verified,
+                                  ),
+                                  style: theme.textTheme.titleMedium,
+                                ),
                                 Text(
                                   _authorMeta(author),
                                   style: theme.textTheme.bodySmall,
@@ -635,10 +634,8 @@ class _DetailSkeleton extends StatelessWidget {
       AspectRatio(
         aspectRatio: _galleryAspect,
         child: LayoutBuilder(
-          builder: (context, constraints) => AppSkeleton.box(
-            height: constraints.maxHeight,
-            radius: 0,
-          ),
+          builder: (context, constraints) =>
+              AppSkeleton.box(height: constraints.maxHeight, radius: 0),
         ),
       ),
       Padding(
@@ -663,4 +660,3 @@ class _DetailSkeleton extends StatelessWidget {
     ],
   );
 }
-

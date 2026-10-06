@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
@@ -17,9 +19,14 @@ Future<ProfileWorld> _world(
   UserRole role = UserRole.customer,
   bool hasPhone = true,
   double width = 390,
+  List<PhotographerSummary>? photographers,
 }) async {
   usePhoneFor(tester, width: width, height: width < 390 ? 640 : 1400);
-  final w = ProfileWorld(role: role, hasPhone: hasPhone);
+  final w = ProfileWorld(
+    role: role,
+    hasPhone: hasPhone,
+    photographers: photographers,
+  );
   await w.init();
   return w;
 }
@@ -49,6 +56,66 @@ bool _enabled(WidgetTester tester, String key) =>
     null;
 
 void main() {
+  testWidgets('artist profile shows the gold mark and the Nhiếp ảnh gia tag', (
+    tester,
+  ) async {
+    final w = await _world(
+      tester,
+      photographers: [
+        fixturePhotographer(
+          'p1',
+          name: 'Lê Hoàng Vũ',
+          verified: true,
+          providerType: ProviderType.artist,
+          approvedAwards: 7,
+        ),
+      ],
+    );
+    await tester.pumpWidget(w.app('/u/p1'));
+    await tester.pumpAndSettle();
+    expect(find.byType(VerifiedMark), findsNothing);
+    expect(
+      tester.widget<ProviderMark>(find.byType(ProviderMark)).kind,
+      ProviderMarkKind.artist,
+    );
+    expect(_key('profile-provider-tag'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: _key('profile-provider-tag'),
+        matching: find.text('Nhiếp ảnh gia'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('studio profile shows the Studio tag and district', (
+    tester,
+  ) async {
+    final w = await _world(
+      tester,
+      photographers: [
+        fixturePhotographer(
+          'p1',
+          name: 'Cúc Studio',
+          providerType: ProviderType.studio,
+          studioDistrict: 'Quận 3',
+          areaLabel: 'TP.HCM',
+        ),
+      ],
+    );
+    await tester.pumpWidget(w.app('/u/p1'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: _key('profile-provider-tag'),
+        matching: find.text('Studio'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Chân dung · Cưới · Quận 3'), findsOneWidget);
+    expect(find.byType(VerifiedMark), findsNothing);
+  });
+
   testWidgets(
     'a visitor sees who, how good and from how much; no phone anywhere',
     (tester) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/home/home_screen.dart';
@@ -57,7 +58,6 @@ Future<void> _pump(
   await tester.pumpWidget(await _app(w, textScale: textScale));
   await tester.pumpAndSettle();
 }
-
 
 /// The vertical feed (the chip row scrolls sideways).
 final _feed = find
@@ -168,6 +168,38 @@ void main() {
       _left(tester, const Key('free-p1')),
       lessThan(_left(tester, const Key('free-p3'))),
     );
+  });
+
+  testWidgets('home free-this-week card shows the artist mark', (tester) async {
+    final h = tester.ensureSemantics();
+    await _pump(
+      tester,
+      DiscoveryWorld(
+        photographers: [
+          for (final p in discoveryPhotographers())
+            if (p.id == 'p2')
+              fixturePhotographer(
+                'p2',
+                name: 'Hồng Nhung',
+                specialties: const ['wedding'],
+                nextFreeDate: '2026-10-02',
+                providerType: ProviderType.artist,
+              )
+            else
+              p,
+        ],
+      ),
+    );
+    final card = find.byKey(const Key('free-p2'));
+    expect(
+      tester.getSemantics(card).label,
+      startsWith('Hồng Nhung, Nhiếp ảnh gia đã duyệt'),
+    );
+    expect(
+      find.descendant(of: card, matching: find.byType(ProviderMark)),
+      findsOneWidget,
+    );
+    h.dispose();
   });
 
   testWidgets(
@@ -442,4 +474,3 @@ void main() {
     },
   );
 }
-
