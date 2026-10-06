@@ -17,5 +17,5 @@
       "@photobooking/domain": ["../../../packages/domain/src/index"]
     }
   },
-  "include": ["src", "test", "seed"]
+  "include": ["src", "test", "seed", "tools"]
 }

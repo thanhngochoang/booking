@@ -39,6 +39,15 @@ import {
 } from './callables/album.js';
 import { handlePostCreated } from './triggers/post_created.js';
 import { liveAlbumDeps } from './infra/live_album.js';
+import {
+  handleCreateAward,
+  handleDeleteAward,
+  handleReviewAward,
+  handleUpdateAward,
+} from './callables/award.js';
+import { handleAwardWrite } from './triggers/award_write.js';
+import { handleAwardPurge } from './scheduled/award_purge.js';
+import { liveAwardDeps } from './infra/live_award.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -177,3 +186,32 @@ export const onPostCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: '
   if (typeof event.data?.get('albumId') !== 'string') return;
   await handlePostCreated(event.params.postId, liveAlbumDeps());
 });
+
+// ---- awards and the NAG tier (plan B1) ----
+
+/** `{awardId, competition, year, category?, result, workPostId?, proofFiles?, proofLinks?}` → `{awardId}`; limit_exceeded at 50. */
+export const createAward = onCall(CALLABLE_OPTIONS, (request) => handleCreateAward(request, liveAwardDeps()));
+
+/** Owner edit; a content change sends a reviewed award back to `pending`. */
+export const updateAward = onCall(CALLABLE_OPTIONS, (request) => handleUpdateAward(request, liveAwardDeps()));
+
+/** `{awardId}`: deletes the award, its proof doc and files. */
+export const deleteAward = onCall(CALLABLE_OPTIONS, (request) => handleDeleteAward(request, liveAwardDeps()));
+
+/** Staff only (claim `staffRole: 'admin'`): `{awardId, action, note?}` → `{status}`. */
+export const reviewAward = onCall(CALLABLE_OPTIONS, (request) => handleReviewAward(request, liveAwardDeps()));
+
+/** Recomputes the artist tier for the before and after owner of every award write. */
+export const onAwardWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'awards/{awardId}' }, async (event) => {
+  const before = event.data?.before.exists ? event.data.before.data() : undefined;
+  const after = event.data?.after.exists ? event.data.after.data() : undefined;
+  await handleAwardWrite(before, after, liveAwardDeps());
+});
+
+/** Daily 03:00 Asia/Ho_Chi_Minh: deletes proofs 30 days after a final decision. */
+export const purgeAwardProofs = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: 'every day 03:00', timeoutSeconds: 300 },
+  async () => {
+    await handleAwardPurge();
+  },
+);

@@ -39,6 +39,15 @@ service firebase.storage {
       allow delete: if isOwner(uid);
     }
 
+    // Award proofs: awardProofs/{uid}/{awardId}/{file}. Owner only (staff read through the
+    // Admin SDK), images up to 10 MB.
+    match /awardProofs/{uid}/{awardId}/{file} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.size <= 10 * 1024 * 1024;
+    }
+
     // Chat images: chats/{chatId}/{uid}/{file}. Only chat members may read.
     // The sender uploads under their own uid (<= 8 MB), update/delete disallowed.
     match /chats/{chatId}/{uid}/{file} {

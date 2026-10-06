@@ -15,12 +15,16 @@ export const AN = 'seed-photographer-an';
 export const BINH = 'seed-photographer-binh';
 export const CUC = 'seed-photographer-cuc';
 export const DUNG = 'seed-photographer-dung';
+/** Staff account with the custom claim `staffRole: 'admin'` (reviews awards; see `applySeed`). */
+export const ADMIN = 'seed-staff-admin';
 
 export interface SeedUser {
   readonly uid: string;
   readonly email: string;
   readonly displayName: string;
   readonly role: 'customer' | 'photographer';
+  /** Custom auth claim `staffRole`, set by `applySeed`. */
+  readonly staffRole?: 'admin';
 }
 
 export const SEED_USERS: readonly SeedUser[] = [
@@ -30,6 +34,7 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: BINH, email: 'binh.unverified@seed.test', displayName: 'Bình (seed)', role: 'photographer' },
   { uid: CUC, email: 'cuc.studio@seed.test', displayName: 'Cúc Studio (seed)', role: 'photographer' },
   { uid: DUNG, email: 'dung.artist@seed.test', displayName: 'Dũng (seed, nghệ sĩ)', role: 'photographer' },
+  { uid: ADMIN, email: 'admin.staff@seed.test', displayName: 'Admin (seed, nhân viên)', role: 'customer', staffRole: 'admin' },
 ];
 
 /** Private customer numbers (`users/{uid}/private/contact`). Minh has none, for `phone_required`. */
@@ -154,6 +159,23 @@ export const SEED_POSTS: readonly SeedPost[] = [
   { id: 'seed-post-an-5', photographerId: AN, images: 2, caption: 'Cưới ngoại cảnh', album: null },
 ];
 
+export interface SeedAward {
+  readonly id: string;
+  readonly photographerId: string;
+  readonly competition: string;
+  readonly year: number;
+  readonly result: 'gold' | 'silver' | 'bronze' | 'honorable' | 'finalist' | 'exhibited';
+  readonly status: 'pending' | 'approved';
+}
+
+/** Dũng has three approved awards (artist tier); Bình has one pending in the review queue. */
+export const SEED_AWARDS: readonly SeedAward[] = [
+  { id: 'seed-award-dung-1', photographerId: DUNG, competition: 'Sony World Photography Awards', year: 2024, result: 'gold', status: 'approved' },
+  { id: 'seed-award-dung-2', photographerId: DUNG, competition: 'Siena International Photo Awards', year: 2023, result: 'silver', status: 'approved' },
+  { id: 'seed-award-dung-3', photographerId: DUNG, competition: 'Hội Nghệ sĩ Nhiếp ảnh Việt Nam', year: 2022, result: 'bronze', status: 'approved' },
+  { id: 'seed-award-binh-1', photographerId: BINH, competition: 'Vietnam Photo Contest', year: 2025, result: 'finalist', status: 'pending' },
+];
+
 export interface SeedDocument {
   readonly path: string;
   readonly data: Record<string, unknown>;
@@ -237,6 +259,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
         ...(p.verified ? { verifiedAt: at } : {}),
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),
+        approvedAwardCount: SEED_AWARDS.filter((a) => a.photographerId === p.uid && a.status === 'approved').length,
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
         updatedAt: at,
@@ -290,6 +313,30 @@ export function seedDocuments(now: Date): SeedDocument[] {
         visible: inAlbum.length > 0,
         createdAt: at,
         updatedAt: at,
+      },
+    });
+  }
+  for (const a of SEED_AWARDS) {
+    docs.push({
+      path: `awards/${a.id}`,
+      data: {
+        photographerId: a.photographerId,
+        competition: a.competition,
+        year: a.year,
+        result: a.result,
+        status: a.status,
+        ...(a.status === 'approved' ? { reviewedBy: ADMIN, reviewedAt: at } : {}),
+        createdAt: at,
+        updatedAt: at,
+      },
+    });
+    docs.push({
+      path: `awardProofs/${a.id}`,
+      data: {
+        photographerId: a.photographerId,
+        files: [],
+        links: [`https://seed.test/awards/${a.id}`],
+        ...(a.status === 'approved' ? { purgeAfter: new Date(at.getTime() + 30 * DAY_MS) } : {}),
       },
     });
   }
