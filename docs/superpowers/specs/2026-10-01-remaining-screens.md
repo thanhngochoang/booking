@@ -26,9 +26,10 @@ Nguồn: `design-system/tokens.json` → `lib/core/theme/tokens.g.dart` (sinh b�
 | Mục | Quy tắc |
 |-----|---------|
 | Nền | Mọi màn bọc trong `AuroraBackground`, `Scaffold` trong suốt. Tối là mặc định (`ThemeModeController`). |
-| Màu | Canvas `0B0B10`, surface `17151F`, primary `B08AFF` (tối) / `8338F5` (sáng), focus cyan `14E0F5` (tối). |
+| Màu | Canvas `0B0B10`, surface `17151F`, primary `B08AFF` (tối) / `8338F5` (sáng), focus cyan `14E0F5` (tối). Quy tắc **60-30-10** (quyết định 2026-10-06): **60%** nền và bề mặt (canvas, surface); **30%** trung tính không màu (kính `glass`/`field`/`glass-hi`, chữ phụ `ink-2`/`ink-3`, đường kẻ); **10%** tím, chỉ cho nút chính (`CtaSurface`), tab đang chọn, chip/segment/ô đang chọn, link, thanh tiến trình. Không dùng tím cho tiêu đề section, viền trang trí, icon chưa chọn hay nền thẻ. Phổ màu (cyan, tím, hồng, cam, vàng) chỉ nằm trong loader (`SignatureLoader`, `DotRingLoader`); cyan chỉ cho viền focus. Ngoài quy tắc: màu trạng thái (ok, warn, bad, pending, closed), vàng của dấu NAG/Studio và chip giải thưởng, ảnh nội dung, tick xác minh xanh `3D63FF`. |
+| Icon | Một bộ duy nhất **Material Symbols Rounded** (weight 400, optical size 24; viền mặc định, đặc FILL 1 khi chọn) qua `AppIcons`/`AppIcon` trong app, `<span class="ms">` trong mock và gallery. Giữ SVG: logo Zalo, WhatsApp, logo ứng dụng, con dấu và tick của `ProviderMark`. Bảng ánh xạ: `components/shared-components.md` → "Icons". |
 | Nút chính | `AppButton.primary`, **một nút mỗi màn**, tô bằng `CtaSurface` (hai kiểu bên dưới). Phụ: `AppButton.outline` hoặc nút kính. Huỷ/từ chối: nút đỏ trong sheet xác nhận, hoặc `AppButton.text` đỏ. |
-| Thẻ | `GlassCard` (radius 28, blur 24). Viền spectrum (`highlight: true`) chỉ cho **một thẻ chính mỗi màn**. Thẻ list thường dùng `highlight: false`. |
+| Thẻ | `GlassCard` (radius 28, blur 24). Viền nổi bật (`highlight: true`, trung tính) chỉ cho **một thẻ chính mỗi màn**. Thẻ list thường dùng `highlight: false`. |
 | Chữ | Fraunces 600 cho tiêu đề màn, tên section, số lớn; Be Vietnam Pro cho phần còn lại. Số tiền, ngày giờ dùng `FontFeature.tabularFigures()`. Cả hai font đã kiểm tra đủ glyph tiếng Việt (kể cả `ẳ ữ ệ ₫`). |
 | Hình khối | Radius 8 (ảnh nhỏ) · 16 (nút, input; `controlRadius`) · 20 (card) · 28 (kính, sheet). Lưới 4dp. |
 | Tab giữa | Vòng tròn 36dp tô bằng `CtaSurface` (cùng kiểu nút chính). |
@@ -43,7 +44,7 @@ Hai điểm khác bản mock đầu: (a) chip đã chọn trong *bộ lọc* là
 
 | Kiểu | Cách vẽ | Ghi chú |
 |------|---------|---------|
-| `gradient` | Tối: `ctaStart → ctaMid → ctaEnd` (xanh, tím, hồng). Sáng: gradient **cùng tông tím** `8338F5 → 702BDB` (135°), bóng `0 4px 12px` tím 25% | Lý do chế độ sáng: dải đủ màu cạnh tranh với vầng sáng pastel của nền và làm rối mắt. Token `cta-light-start/end`. |
+| `gradient` | Tối: gradient **một tông tím** `8A3FFC → 6E2FD6` (90°, trước 2026-10-06 là xanh, tím, hồng); bóng tím `8A3FFC` 35%. Sáng: gradient **cùng tông tím** `8338F5 → 702BDB` (135°), bóng `0 4px 12px` tím 25% | Lý do chế độ sáng: dải đủ màu cạnh tranh với vầng sáng pastel của nền và làm rối mắt. Token `cta-light-start/end`. |
 | `avatar` | Ảnh avatar → nâng sáng về 55–100% → blur σ12 → **nhân** (`BlendMode.modulate`) với gradient của theme | Cần `avatarUrl`. Chưa có thì tự dùng `gradient`, dòng chọn ở S09.02 bị khóa kèm lời nhắc "Thêm ảnh đại diện trong hồ sơ để dùng kiểu này." |
 
 Vì phép nhân chỉ làm tối, nút avatar không bao giờ sáng hơn gradient; chữ trắng giữ tương phản của gradient (≥ 4,7:1 dải tối, ≥ 5,5:1 dải sáng) với mọi ảnh. Trong lúc ảnh tải hoặc lỗi, gradient nằm bên dưới nên nút không bao giờ trống. Áp dụng cho `AppButton.primary` và đĩa tab giữa; không áp dụng cho chi tiết nhỏ (ngày chọn, bong bóng chat, thanh tiến độ).
