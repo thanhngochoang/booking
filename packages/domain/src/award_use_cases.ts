@@ -29,6 +29,15 @@ function idOf(v: unknown): string {
   return v;
 }
 
+/** Best-effort side effect: a failure must not undo or skip the rest. */
+async function quietly(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch {
+    // The domain has no logger; the write already committed.
+  }
+}
+
 const sameList = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && a.every((x, i) => x === b[i]);
 
@@ -110,9 +119,9 @@ export async function updateAward(deps: AwardDeps, callerId: string, raw: unknow
     ) {
       throw new DomainError('invalid_argument');
     }
-    // needs_info and rejected go back to the queue whenever the owner saves.
-    const requeue = award.status === 'needs_info' || award.status === 'rejected' || (award.status === 'approved' && changed);
-    if (!changed && !requeue) return { wasApproved: false, dropped: [] as string[] };
+    if (!changed) return { wasApproved: false, dropped: [] as string[] };
+    // Any content change sends a reviewed award back to the queue.
+    const requeue = award.status !== 'pending';
     const status: AwardStatus = requeue ? 'pending' : award.status;
     tx.putAward({
       ...award,
@@ -140,8 +149,8 @@ export async function updateAward(deps: AwardDeps, callerId: string, raw: unknow
       dropped: old.files.filter((f) => !kept.has(f)),
     };
   });
-  if (outcome.dropped.length > 0) await deps.files.delete(outcome.dropped);
   if (outcome.wasApproved) await recomputeTier(deps, callerId);
+  if (outcome.dropped.length > 0) await quietly(() => deps.files.delete(outcome.dropped));
 }
 
 export async function deleteAward(deps: AwardDeps, callerId: string, raw: unknown): Promise<void> {
@@ -155,8 +164,8 @@ export async function deleteAward(deps: AwardDeps, callerId: string, raw: unknow
     tx.deleteProof(awardId);
     return { files: proof?.files ?? [], wasApproved: award.status === 'approved' };
   });
-  if (out.files.length > 0) await deps.files.delete(out.files);
   if (out.wasApproved) await recomputeTier(deps, callerId);
+  if (out.files.length > 0) await quietly(() => deps.files.delete(out.files));
 }
 
 export async function reviewAward(
@@ -196,8 +205,8 @@ export async function reviewAward(
     tx.addAudit({ awardId, actorId, action: act, note, at: now });
     return { status, ownerId: award.photographerId };
   });
-  await deps.notify.awardReviewed(out.ownerId, awardId, out.status);
   await recomputeTier(deps, out.ownerId);
+  await quietly(() => deps.notify.awardReviewed(out.ownerId, awardId, out.status));
   return { status: out.status };
 }
 
@@ -224,7 +233,8 @@ export async function recomputeTier(
     }
     return { result: 'count' as const, to: null };
   });
-  if (out.to !== null) await deps.notify.tierChanged(uid, out.to);
+  const to = out.to;
+  if (to !== null) await quietly(() => deps.notify.tierChanged(uid, to));
   return out.result;
 }
 
@@ -232,12 +242,18 @@ export async function purgeDueProofs(
   deps: AwardDeps & { proofsDue: (now: Date) => Promise<AwardProof[]> },
 ): Promise<number> {
   const due = await deps.proofsDue(deps.clock.now());
+  let done = 0;
   for (const p of due) {
-    // Files first: a failed delete leaves the proof doc for the next run.
-    if (p.files.length > 0) await deps.files.delete(p.files);
-    await deps.awards.runTransaction(async (tx) => {
-      tx.deleteProof(p.awardId);
-    });
+    try {
+      // Files first: a failed delete leaves the proof doc for the next run.
+      if (p.files.length > 0) await deps.files.delete(p.files);
+      await deps.awards.runTransaction(async (tx) => {
+        tx.deleteProof(p.awardId);
+      });
+      done += 1;
+    } catch {
+      // One bad proof must not block the others; it is retried tomorrow.
+    }
   }
-  return due.length;
+  return done;
 }

@@ -121,6 +121,41 @@ describe('award use cases', () => {
     assert.equal(store.awards.get('a1')?.reviewNote, null);
   });
 
+  it('an unchanged save of a rejected award writes nothing', async () => {
+    store.seedAward(award('a1', 'rejected', { reviewNote: 'không rõ' }));
+    store.seedProof({ awardId: 'a1', photographerId: 'u1', files: ['awardProofs/u1/a1/0.jpg'], links: [], purgeAfter: null });
+    await updateAward(deps, 'u1', input());
+    assert.equal(store.awards.get('a1')?.status, 'rejected');
+    assert.equal(store.writes, 0);
+  });
+
+  it('a changed rejected award is re-queued', async () => {
+    store.seedAward(award('a1', 'rejected', { reviewNote: 'không rõ' }));
+    store.seedProof({ awardId: 'a1', photographerId: 'u1', files: ['awardProofs/u1/a1/0.jpg'], links: [], purgeAfter: null });
+    await updateAward(deps, 'u1', input({ proofLinks: ['https://a.vn/x'] }));
+    assert.equal(store.awards.get('a1')?.status, 'pending');
+    assert.equal(store.awards.get('a1')?.reviewNote, null);
+  });
+
+  it('a failing file delete still recomputes the tier', async () => {
+    for (const id of ['a1', 'a2', 'a3']) seed(id, 'approved');
+    store.seedTier('u1', { providerType: 'artist', artistSince: OLD, approvedAwardCount: 3 });
+    deps = { ...deps, files: { delete: async () => { throw new Error('boom'); } } };
+    await updateAward(deps, 'u1', input({ proofFiles: [], proofLinks: ['https://a.vn/x'] }));
+    assert.equal(store.tierStates.get('u1')?.providerType, 'individual');
+    await deleteAward(deps, 'u1', { awardId: 'a2' });
+    assert.equal(store.tierStates.get('u1')?.approvedAwardCount, 1);
+  });
+
+  it('a failing notify still recomputes the tier', async () => {
+    for (const id of ['a1', 'a2']) seed(id, 'approved');
+    seed('a3', 'pending');
+    store.seedTier('u1', { providerType: 'individual', artistSince: null, approvedAwardCount: 2 });
+    deps = { ...deps, notify: { tierChanged: async () => undefined, awardReviewed: async () => { throw new Error('boom'); } } };
+    await reviewAward(deps, 'adm', true, { awardId: 'a3', action: 'approve' });
+    assert.equal(store.tierStates.get('u1')?.providerType, 'artist');
+  });
+
   it('a revoked award cannot be edited', async () => {
     seed('a1', 'revoked');
     await refused(updateAward(deps, 'u1', input({ year: 2023 })), 'conflict');

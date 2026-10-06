@@ -89,6 +89,30 @@ describe('artist tier', () => {
     assert.equal(await recomputeTier(deps, 'ghost'), 'unchanged');
   });
 
+  it('a failing tierChanged notify does not throw', async () => {
+    for (const id of ['a1', 'a2', 'a3']) seed(id, 'approved');
+    store.seedTier('u1', { providerType: 'individual', artistSince: null, approvedAwardCount: 0 });
+    deps = { ...deps, notify: { tierChanged: async () => { throw new Error('boom'); }, awardReviewed: async () => undefined } };
+    assert.equal(await recomputeTier(deps, 'u1'), 'artist');
+    assert.equal(store.tierStates.get('u1')?.providerType, 'artist');
+  });
+
+  it('purge continues after one failure', async () => {
+    const proof = (id: string): AwardProof => ({
+      awardId: id, photographerId: 'u1', files: [`awardProofs/u1/${id}/0.jpg`], links: [], purgeAfter: OLD,
+    });
+    store.seedProof(proof('a1'));
+    store.seedProof(proof('a2'));
+    const n = await purgeDueProofs({
+      ...deps,
+      files: { delete: async (p) => { if (p[0]?.includes('/a1/')) throw new Error('boom'); deleted.push([...p]); } },
+      proofsDue: async () => [...store.proofs.values()],
+    });
+    assert.equal(n, 1);
+    assert.equal(store.proofs.has('a1'), true);
+    assert.equal(store.proofs.has('a2'), false);
+  });
+
   it('purge deletes due proofs and their files only', async () => {
     const proof = (id: string, due: Date | null): AwardProof => ({
       awardId: id, photographerId: 'u1', files: [`awardProofs/u1/${id}/0.jpg`], links: [], purgeAfter: due,
