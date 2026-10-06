@@ -6,9 +6,9 @@ One line per unit: id · state · branch · machine · last update.
 
 ## Active
 - `8e/7-L1` · in progress · `plan/8e-7-L1-review-ui` · MAC-JM4RLWTXXR · 2026-10-05
-- `9a/1-L2` · in review (PR #26) · `plan/9a-1-L2-provider-types-core` · MacBook-Pro · 2026-10-06
 
 ## Finished
+- `9a/1-L2` · done (PR #26) · `plan/9a-1-L2-provider-types-core` · MacBook-Pro · 2026-10-06
 - `8d/6-L1` · done (PR #24) · `plan/8d-6-L1-chat-ui` · MAC-JM4RLWTXXR · 2026-10-05
 - `9` · done (PR #23) · `plan/9-backend-phase2` · MAC-JM4RLWTXXR · 2026-10-05
 - `8d` · released · `plan/8d-6-L1-chat` · MacBook-Pro-2 · 2026-10-04
