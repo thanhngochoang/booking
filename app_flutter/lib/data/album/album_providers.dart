@@ -19,9 +19,9 @@ final profileAlbumsProvider = StreamProvider.autoDispose
 
 /// The signed-in photographer's own albums, empty ones included.
 final myAlbumsProvider = StreamProvider.autoDispose<List<AlbumSummary>>((ref) {
-  final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+  final uid = ref.watch(authStateProvider).value?.uid;
   if (uid == null) {
-    return const Stream.empty();
+    return Stream.value(const <AlbumSummary>[]);
   }
   return ref
       .watch(albumRepositoryProvider)

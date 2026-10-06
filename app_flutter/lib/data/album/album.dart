@@ -44,6 +44,36 @@ class AlbumSummary {
     coverImageIndex: coverImageIndex,
     coverUrl: url,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      other is AlbumSummary &&
+      other.id == id &&
+      other.photographerId == photographerId &&
+      other.title == title &&
+      other.description == description &&
+      other.position == position &&
+      other.postCount == postCount &&
+      other.mediaCount == mediaCount &&
+      other.visible == visible &&
+      other.coverPostId == coverPostId &&
+      other.coverImageIndex == coverImageIndex &&
+      other.coverUrl == coverUrl;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    photographerId,
+    title,
+    description,
+    position,
+    postCount,
+    mediaCount,
+    visible,
+    coverPostId,
+    coverImageIndex,
+    coverUrl,
+  );
 }
 
 /// What to do with an album's cover: let the first post decide, or pick one

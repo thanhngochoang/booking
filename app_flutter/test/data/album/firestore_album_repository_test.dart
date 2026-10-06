@@ -31,6 +31,15 @@ Map<String, dynamic> albumDoc(AlbumSummary a, {Map<String, Object?>? cover}) =>
       'updatedAt': Timestamp.fromDate(fixtureNow),
     };
 
+/// A database whose `posts` reads fail, like an offline or rules error.
+class _PostsFailDb extends FakeFirebaseFirestore {
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String path) =>
+      path == 'posts'
+      ? throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable')
+      : super.collection(path);
+}
+
 void main() {
   late FakeFirebaseFirestore db;
   late _MockFunctions functions;
@@ -86,6 +95,34 @@ void main() {
     final a = (await repo.album('al1'))!;
     expect(a.coverPostId, isNull);
     expect(a.coverUrl, 'https://img.test/b-0.jpg');
+  });
+
+  test('a failing cover read leaves coverUrl null', () async {
+    final bad = _PostsFailDb();
+    final badRepo = FirestoreAlbumRepository(db: bad, functions: functions);
+    await bad
+        .collection('albums')
+        .doc('al1')
+        .set(
+          albumDoc(
+            fixtureAlbum('al1', postCount: 2, mediaCount: 2),
+            cover: {'postId': 'a', 'imageIndex': 0},
+          ),
+        );
+    final a = (await badRepo.album('al1'))!;
+    expect(a.title, 'Album');
+    expect(a.coverUrl, isNull);
+    final list = await badRepo.watchAlbums('p1', includeEmpty: true).first;
+    expect(list.map((x) => x.id), ['al1']);
+    expect(list.single.coverUrl, isNull);
+  });
+
+  test('two summaries with the same fields are equal', () {
+    final a = fixtureAlbum('x', coverUrl: 'u');
+    expect(a, fixtureAlbum('x', coverUrl: 'u'));
+    expect(a.hashCode, fixtureAlbum('x', coverUrl: 'u').hashCode);
+    expect(a == fixtureAlbum('x', coverUrl: 'v'), isFalse);
+    expect(a == fixtureAlbum('x', title: 'Khác', coverUrl: 'u'), isFalse);
   });
 
   test('album returns null for a missing or malformed id', () async {

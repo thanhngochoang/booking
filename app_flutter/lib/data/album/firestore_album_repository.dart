@@ -116,7 +116,13 @@ class FirestoreAlbumRepository implements AlbumRepository {
     if (postCount == 0) {
       return album;
     }
-    return album.withCoverUrl(await _coverUrl(id, coverPostId, coverIndex));
+    // A failing cover read (offline, rules) must not fail the album: the tile
+    // shows its placeholder instead.
+    try {
+      return album.withCoverUrl(await _coverUrl(id, coverPostId, coverIndex));
+    } on Object {
+      return album;
+    }
   }
 
   @override
