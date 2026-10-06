@@ -1288,5 +1288,33 @@
     "placeholders": {
       "district": {"type": "String"}
     }
+  },
+  "albumEmptyNote": "Trống · chưa hiện công khai",
+  "portfolioViewAlbums": "Album",
+  "portfolioViewTimeline": "Dòng thời gian",
+  "reorderPosition": "{index} trên {count}",
+  "@reorderPosition": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
+  "reorderMoveUp": "Chuyển lên",
+  "reorderMoveDown": "Chuyển xuống",
+  "reorderMoveTop": "Lên đầu",
+  "reorderMoveBottom": "Xuống cuối",
+  "reorderMenu": "Thao tác với mục này",
+  "reorderHandle": "Giữ để kéo sắp xếp",
+  "postPickSelectedOrder": "Đã chọn, thứ {n}",
+  "@postPickSelectedOrder": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "postPickInAlbum": "Đang ở album {album}",
+  "@postPickInAlbum": {
+    "placeholders": {
+      "album": {"type": "String"}
+    }
   }
 }

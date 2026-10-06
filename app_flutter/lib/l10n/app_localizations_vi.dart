@@ -2569,4 +2569,46 @@ class AppLocalizationsVi extends AppLocalizations {
   String providerStudioDistrict(String district) {
     return 'Studio · $district';
   }
+
+  @override
+  String get albumEmptyNote => 'Trống · chưa hiện công khai';
+
+  @override
+  String get portfolioViewAlbums => 'Album';
+
+  @override
+  String get portfolioViewTimeline => 'Dòng thời gian';
+
+  @override
+  String reorderPosition(int index, int count) {
+    return '$index trên $count';
+  }
+
+  @override
+  String get reorderMoveUp => 'Chuyển lên';
+
+  @override
+  String get reorderMoveDown => 'Chuyển xuống';
+
+  @override
+  String get reorderMoveTop => 'Lên đầu';
+
+  @override
+  String get reorderMoveBottom => 'Xuống cuối';
+
+  @override
+  String get reorderMenu => 'Thao tác với mục này';
+
+  @override
+  String get reorderHandle => 'Giữ để kéo sắp xếp';
+
+  @override
+  String postPickSelectedOrder(int n) {
+    return 'Đã chọn, thứ $n';
+  }
+
+  @override
+  String postPickInAlbum(String album) {
+    return 'Đang ở album $album';
+  }
 }
