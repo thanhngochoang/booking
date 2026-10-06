@@ -14,6 +14,7 @@ export async function applySeed(db: Firestore, auth: Auth, now: Date, guard: Loc
       if ((e as { code?: string }).code !== 'auth/user-not-found') throw e;
       await auth.createUser({ uid: u.uid, ...props });
     }
+    if (u.staffRole !== undefined) await auth.setCustomUserClaims(u.uid, { staffRole: u.staffRole });
   }
   const batch = db.batch();
   for (const d of seedDocuments(now)) batch.set(db.doc(d.path), d.data);

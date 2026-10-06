@@ -459,6 +459,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Awards (plan B1): everyone signed in reads approved ones, the owner reads all of theirs;
+    // proofs are owner-only; the audit log is closed. Written only by the award callables.
+    match /awards/{awardId} {
+      allow read: if signedIn()
+        && (resource.data.status == 'approved' || resource.data.photographerId == request.auth.uid);
+      allow write: if false;
+    }
+    match /awardProofs/{awardId} {
+      allow read: if signedIn() && resource.data.photographerId == request.auth.uid;
+      allow write: if false;
+    }
+    match /awardAudit/{id} {
+      allow read, write: if false;
+    }
+
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if signedIn() && validPostCreate();

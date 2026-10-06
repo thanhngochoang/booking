@@ -2621,4 +2621,65 @@ class AppLocalizationsVi extends AppLocalizations {
   String postPickInAlbum(String album) {
     return 'Đang ở album $album';
   }
+
+  @override
+  String get awardResultGold => 'Huy chương Vàng';
+
+  @override
+  String get awardResultSilver => 'Huy chương Bạc';
+
+  @override
+  String get awardResultBronze => 'Huy chương Đồng';
+
+  @override
+  String get awardResultHonorable => 'Giải Khuyến khích';
+
+  @override
+  String get awardResultFinalist => 'Top / Chung kết';
+
+  @override
+  String get awardResultExhibited => 'Chọn triển lãm';
+
+  @override
+  String get awardShortGold => 'Vàng / Nhất';
+
+  @override
+  String get awardShortSilver => 'Bạc / Nhì';
+
+  @override
+  String get awardShortBronze => 'Đồng / Ba';
+
+  @override
+  String get awardShortHonorable => 'Khuyến khích';
+
+  @override
+  String get awardShortFinalist => 'Top / Chung kết';
+
+  @override
+  String get awardShortExhibited => 'Chọn triển lãm';
+
+  @override
+  String get awardPending => 'Chờ duyệt';
+
+  @override
+  String get awardApproved => 'Đã duyệt';
+
+  @override
+  String get awardNeedsInfo => 'Bổ sung';
+
+  @override
+  String get awardRejected => 'Từ chối';
+
+  @override
+  String get awardRevoked => 'Đã thu hồi';
+
+  @override
+  String awardChipSemantics(String title, String subtitle) {
+    return 'Giải thưởng: $title, $subtitle';
+  }
+
+  @override
+  String awardRowSemantics(String title, String subtitle, String status) {
+    return 'Giải thưởng: $title, $subtitle, trạng thái $status';
+  }
 }

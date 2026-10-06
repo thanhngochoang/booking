@@ -1335,3 +1335,74 @@ test('others cannot read private/studioAddress', async () => {
   await assertFails(getDoc(doc(env.authenticatedContext('other').firestore(), 'photographers/pt7/private/studioAddress')));
   await assertFails(setDoc(doc(env.authenticatedContext('pt7').firestore(), 'photographers/pt7/private/studioAddress'), { line: 'x' }));
 });
+
+// ---- Plan B1: awards, proofs, audit and proof images ----
+async function seedAward(id, photographerId, status) {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), `awards/${id}`), { photographerId, competition: 'Sony', year: 2025, result: 'gold', status });
+    await setDoc(doc(c.firestore(), `awardProofs/${id}`), { photographerId, files: [], links: ['https://example.com/x'] });
+  });
+}
+
+test('anyone signed in reads approved awards', async () => {
+  await seedAward('aw-ok', 'awo1', 'approved');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('anyone').firestore(), 'awards/aw-ok')));
+  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('anyone').firestore(), 'awards'),
+    where('photographerId', '==', 'awo1'), where('status', '==', 'approved'))));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'awards/aw-ok')));
+});
+
+test('a pending award is readable by its owner only', async () => {
+  await seedAward('aw-pend', 'awo1', 'pending');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('awo1').firestore(), 'awards/aw-pend')));
+  await assertFails(getDoc(doc(env.authenticatedContext('other').firestore(), 'awards/aw-pend')));
+  await assertFails(getDocs(query(collection(env.authenticatedContext('other').firestore(), 'awards'),
+    where('photographerId', '==', 'awo1'))));
+});
+
+test('nobody writes awards from the client', async () => {
+  await seedAward('aw-w', 'awo1', 'pending');
+  const db = env.authenticatedContext('awo1').firestore();
+  await assertFails(setDoc(doc(db, 'awards/aw-new'), { photographerId: 'awo1', status: 'approved' }));
+  await assertFails(updateDoc(doc(db, 'awards/aw-w'), { status: 'approved' }));
+  await assertFails(deleteDoc(doc(db, 'awards/aw-w')));
+});
+
+test('proof docs are owner-only', async () => {
+  await seedAward('aw-pr', 'awo1', 'approved');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('awo1').firestore(), 'awardProofs/aw-pr')));
+  await assertFails(getDoc(doc(env.authenticatedContext('other').firestore(), 'awardProofs/aw-pr')));
+  await assertFails(updateDoc(doc(env.authenticatedContext('awo1').firestore(), 'awardProofs/aw-pr'), { links: [] }));
+});
+
+test('nobody reads the audit log', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'awardAudit/au1'), { awardId: 'aw-pr', actorId: 'staff', action: 'approve', note: '', at: Timestamp.now() }));
+  await assertFails(getDoc(doc(env.authenticatedContext('staff').firestore(), 'awardAudit/au1')));
+  await assertFails(setDoc(doc(env.authenticatedContext('awo1').firestore(), 'awardAudit/au2'), { awardId: 'x' }));
+});
+
+test('the owner uploads, reads and deletes a proof image; others cannot read it', async () => {
+  const own = ref(env.authenticatedContext('awo1').storage(), 'awardProofs/awo1/aw1/0.jpg');
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertSucceeds(getBytes(own));
+  await assertFails(getBytes(ref(env.authenticatedContext('other').storage(), 'awardProofs/awo1/aw1/0.jpg')));
+  await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), 'awardProofs/awo1/aw1/0.jpg')));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('other').storage(), 'awardProofs/awo1/aw1/1.jpg'), photo(), jpeg));
+  await assertSucceeds(deleteObject(own));
+});
+
+test('an existing proof file cannot be overwritten', async () => {
+  const own = ref(env.authenticatedContext('awo1').storage(), 'awardProofs/awo1/aw1/fixed.jpg');
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertFails(uploadBytes(own, photo(), jpeg));
+});
+
+test('a proof image over 10 MB, an SVG or a non-image is refused', async () => {
+  const st = env.authenticatedContext('awo1').storage();
+  await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/ok.jpg'), photo(10 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/big.jpg'), photo(10 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.pdf'), photo(), { contentType: 'application/pdf' }));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.svg'), photo(), { contentType: 'image/svg+xml' }));
+  await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.png'), photo(), { contentType: 'image/png' }));
+});

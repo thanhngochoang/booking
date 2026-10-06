@@ -14,7 +14,8 @@ Password for every account: `seed-password-1`
 | `an.verified@seed.test` | `seed-photographer-an` | photographer | verified, Hà Nội; Gọi + Zalo + WhatsApp; `+84912000001`, Zalo `+84912000002`, WhatsApp `+14155550101` |
 | `binh.unverified@seed.test` | `seed-photographer-binh` | photographer | not verified, Đà Nẵng; Gọi only; `+84987000001` |
 | `cuc.studio@seed.test` | `seed-photographer-cuc` | photographer | studio (`providerType: studio`), TP.HCM; private studio address, public district Quận 1; Gọi only; `+84938000001` |
-| `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`), Huế; Gọi only; `+84905000001` |
+| `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`, `approvedAwardCount: 3`), Huế; Gọi only; `+84905000001` |
+| `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and is the `--actor` of `npm run awards` |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
 |---|---|---|---|
@@ -31,6 +32,11 @@ Password for every account: `seed-password-1`
 | `seed-post-an-3` | An | `work` post in album `seed-album-an-street` ("Đường phố", position 2; 1 photo) |
 | `seed-post-an-4`, `-5` | An | `work` posts on the timeline only (no album) |
 
+| Award | Owner | Status |
+|---|---|---|
+| `seed-award-dung-1`, `-2`, `-3` | Dũng | approved (gold, silver, bronze; make Dũng an artist) |
+| `seed-award-binh-1` | Bình | pending (in the review queue: `npm run awards -- list`) |
+
 Try a call while the emulators run (from `app_flutter/firebase/functions`, with the project id
 `scripts/backend-local.sh` printed). The script refuses to run unless the three emulator hosts
 point at a local host, so export them first:
@@ -41,3 +47,11 @@ export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.
 npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
 # 200 {"result":{"url":"https://zalo.me/84912000002"}}
 ```
+
+## Staff CLI for awards
+
+`npm run awards -- --help` lists the commands. Against the emulators set
+`FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`; against a real project set
+`GOOGLE_APPLICATION_CREDENTIALS` (a service account key). `show` also needs `STORAGE_BUCKET`
+(or `FIREBASE_STORAGE_BUCKET`) and credentials that can sign URLs. `--actor` is a user with the
+admin claim, e.g. `seed-staff-admin` locally.
