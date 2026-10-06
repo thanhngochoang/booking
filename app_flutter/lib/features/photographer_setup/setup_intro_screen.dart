@@ -13,6 +13,7 @@ import 'package:photobooking/features/settings/avatar_editor.dart';
 import 'package:photobooking/features/photographer_setup/intro_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_controller.dart';
+import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 
 /// S08.01, setup step 1/4: name, short bio, equipment (years and genres are
 /// step 3, S08.02). Everything typed is kept as a device draft until
@@ -31,7 +32,10 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
   final _equipmentField = TextEditingController();
   List<String> _equipment = const [];
   Map<IntroField, IntroError> _errors = const {};
-  ProviderChoice _choice = ProviderChoice.individual;
+
+  /// What the person tapped or an old draft holds; null until then, so the
+  /// stored type fills it (a late read still does, whatever else was typed).
+  ProviderChoice? _choice;
 
   /// Set when the server refused the type change (`not_eligible`).
   bool _notEligible = false;
@@ -62,7 +66,6 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
       return;
     }
     var name = '';
-    var choice = ProviderChoice.individual;
     PhotographerIntro? intro;
     try {
       // Read once from the repository: a provider nobody listens to is
@@ -72,12 +75,6 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
               ?.displayName ??
           '';
       intro = await ref.read(photographerIntroRepositoryProvider).get(uid);
-      choice =
-          (await ref.read(publicProfileRepositoryProvider).load(uid))
-              ?.summary
-              .providerType
-              .choice ??
-          choice;
     } catch (_) {
       // Offline or no document yet: start from what is known.
     }
@@ -90,7 +87,6 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
           displayName: name,
           bio: intro?.bio ?? '',
           equipment: intro?.equipment ?? const [],
-          choice: choice,
         ),
       ),
     );
@@ -100,7 +96,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
     _name.text = d.displayName;
     _bio.text = d.bio;
     _equipment = [...d.equipment];
-    _choice = d.choice ?? ProviderChoice.individual;
+    _choice = d.choice;
   }
 
   void _changed() {
@@ -122,8 +118,12 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
         );
   }
 
+  /// The tapped choice, else the stored type; null while that is unknown.
+  ProviderChoice? get _effective =>
+      _choice ?? ref.read(storedProviderTypeProvider).value?.choice;
+
   void _pick(ProviderChoice c) {
-    if (c == _choice) {
+    if (c == _effective) {
       return;
     }
     setState(() {
@@ -153,12 +153,16 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
     if (_equipmentField.text.trim().isNotEmpty) {
       _addEquipment();
     }
+    final choice = _effective;
+    if (choice == null) {
+      return; // the stored type is not known yet: the button is disabled too
+    }
     final r = validateIntro(
       IntroInput(
         displayName: _name.text,
         bio: _bio.text,
         equipment: _equipment,
-        choice: _choice,
+        choice: choice,
       ),
     );
     setState(() {
@@ -191,6 +195,8 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final saving = ref.watch(setupIntroControllerProvider).isLoading;
+    final stored = ref.watch(storedProviderTypeProvider);
+    final choice = _choice ?? stored.value?.choice;
     ref.listen(setupIntroControllerProvider, (prev, next) {
       if (next.isLoading || !(prev?.isLoading ?? false)) {
         return;
@@ -277,30 +283,55 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                           ),
                         ),
                         const SizedBox(height: AppSpace.s2),
-                        AppOptionTile(
-                          key: const Key('type-individual'),
-                          label: l.setupTypeIndividual,
-                          description: l.setupTypeIndividualBody,
-                          leading: const Icon(Icons.person_outline_rounded),
-                          selected: _choice == ProviderChoice.individual,
-                          onTap: () {
-                            if (!saving) {
-                              _pick(ProviderChoice.individual);
+                        AsyncView<ProviderType>(
+                          value: stored,
+                          loadingLabel: l.loadingLabel,
+                          skeleton: (_) => Column(
+                            children: [
+                              AppOptionTile.skeleton(),
+                              const SizedBox(height: AppSpace.s2),
+                              AppOptionTile.skeleton(),
+                            ],
+                          ),
+                          onRetry: () {
+                            // The profile read underneath holds the error.
+                            final uid = _uid;
+                            if (uid != null) {
+                              ref.invalidate(photographerProfileProvider(uid));
                             }
+                            ref.invalidate(storedProviderTypeProvider);
                           },
-                        ),
-                        const SizedBox(height: AppSpace.s2),
-                        AppOptionTile(
-                          key: const Key('type-studio'),
-                          label: l.setupTypeStudio,
-                          description: l.setupTypeStudioBody,
-                          leading: const Icon(Icons.work_outline),
-                          selected: _choice == ProviderChoice.studio,
-                          onTap: () {
-                            if (!saving) {
-                              _pick(ProviderChoice.studio);
-                            }
-                          },
+                          data: (context, _) => Column(
+                            children: [
+                              AppOptionTile(
+                                key: const Key('type-individual'),
+                                label: l.setupTypeIndividual,
+                                description: l.setupTypeIndividualBody,
+                                leading: const Icon(
+                                  Icons.person_outline_rounded,
+                                ),
+                                selected: choice == ProviderChoice.individual,
+                                onTap: () {
+                                  if (!saving) {
+                                    _pick(ProviderChoice.individual);
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: AppSpace.s2),
+                              AppOptionTile(
+                                key: const Key('type-studio'),
+                                label: l.setupTypeStudio,
+                                description: l.setupTypeStudioBody,
+                                leading: const Icon(Icons.work_outline),
+                                selected: choice == ProviderChoice.studio,
+                                onTap: () {
+                                  if (!saving) {
+                                    _pick(ProviderChoice.studio);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                         if (_notEligible)
                           Padding(
@@ -325,7 +356,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                           textInputAction: TextInputAction.next,
                           autofillHints: const [AutofillHints.name],
                           decoration: InputDecoration(
-                            labelText: _choice == ProviderChoice.studio
+                            labelText: choice == ProviderChoice.studio
                                 ? l.setupStudioName
                                 : l.displayNameLabel,
                             errorText: err(IntroField.name),
@@ -466,7 +497,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                       l.setupNext,
                       key: const Key('setup-next'),
                       loading: saving,
-                      onPressed: _next,
+                      onPressed: stored.hasValue ? _next : null,
                     ),
                   ),
                 ),

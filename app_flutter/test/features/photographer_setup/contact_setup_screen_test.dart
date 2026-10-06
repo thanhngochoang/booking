@@ -31,6 +31,7 @@ class _H {
 
 Future<_H> _harness({
   bool failSave = false,
+  bool failType = false,
   ProviderType type = ProviderType.individual,
 }) async {
   final auth = FakeAuthRepository();
@@ -42,6 +43,9 @@ Future<_H> _harness({
       summary: fixturePhotographer(auth.currentUser!.uid, providerType: type),
     ),
   ]);
+  if (failType) {
+    profiles.failWith = StateError('offline');
+  }
   final router = GoRouter(
     initialLocation: '/setup/4',
     routes: [
@@ -74,12 +78,13 @@ Future<_H> _harness({
 Future<_H> _open(
   WidgetTester tester, {
   bool failSave = false,
+  bool failType = false,
   ProviderType type = ProviderType.individual,
 }) async {
   tester.view.physicalSize = const Size(390, 2600);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final h = await _harness(failSave: failSave, type: type);
+  final h = await _harness(failSave: failSave, failType: failType, type: type);
   await tester.pumpWidget(h.widget);
   await tester.pumpAndSettle();
   return h;
@@ -517,6 +522,14 @@ void main() {
       await _tap(tester, 'setup-finish');
       expect(h.repo.completed, isEmpty);
       expect(find.textContaining('Không lưu được thiết lập'), findsOneWidget);
+    });
+
+    testWidgets('shows retry when the type cannot be read', (tester) async {
+      final h = await _open(tester, type: ProviderType.studio, failType: true);
+      expect(find.byKey(const Key('error-retry')), findsOneWidget);
+      expect(find.byKey(const Key('studio-line')), findsNothing);
+      expect(find.byKey(const Key('setup-finish')), findsNothing);
+      expect(h.repo.completed, isEmpty);
     });
   });
 }

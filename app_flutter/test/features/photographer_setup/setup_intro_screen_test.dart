@@ -317,4 +317,65 @@ void main() {
     expect(find.byKey(const Key('type-error')), findsNothing);
     expect(find.text('step 2'), findsNothing);
   });
+
+  testWidgets(
+    'a studio whose type read fails cannot save and never calls setType',
+    (tester) async {
+      usePhone(tester, height: 1400);
+      final w = await _world();
+      w.seedProfile(type: ProviderType.studio);
+      w.profiles.failWith = StateError('offline');
+      var calls = 0;
+      w.providerRepo.onSetType = () => calls++;
+      await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+      await tester.pumpAndSettle();
+      expect(_key('error-retry'), findsOneWidget);
+      expect(_key('type-individual'), findsNothing);
+      await tester.enterText(_key('setup-bio'), 'Ánh sáng tự nhiên.');
+      await tester.tap(_key('setup-next'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(calls, 0);
+      expect(w.intro.saves, 0);
+      expect(w.providerRepo.type, ProviderType.studio);
+      expect(find.text('step 2'), findsNothing);
+    },
+  );
+
+  testWidgets('a late type read fills the choice after the user typed', (
+    tester,
+  ) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    w.seedProfile(type: ProviderType.studio);
+    w.profiles.failWith = StateError('offline');
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await tester.enterText(_key('setup-name'), 'Gõ trước');
+    await tester.pump();
+    w.profiles.failWith = null;
+    await tester.tap(_key('error-retry'));
+    await tester.pumpAndSettle();
+    expect(tile(tester, 'type-studio').selected, isTrue);
+    expect(find.text('Gõ trước'), findsOneWidget);
+    await tester.enterText(_key('setup-bio'), 'Ánh sáng tự nhiên.');
+    await tester.tap(_key('setup-next'));
+    await tester.pumpAndSettle();
+    expect(w.providerRepo.type, ProviderType.studio, reason: 'not switched');
+    expect(find.text('step 2'), findsOneWidget);
+  });
+
+  testWidgets('an old draft without choice takes the stored studio type', (
+    tester,
+  ) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    w.seedProfile(type: ProviderType.studio);
+    await SetupDraftStore(w.prefs)
+        .saveIntro(w.uid, const IntroDraft(displayName: 'Nháp cũ', bio: 'x'));
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.text('Nháp cũ'), findsOneWidget);
+    expect(tile(tester, 'type-studio').selected, isTrue);
+    expect(find.text('Tên studio'), findsOneWidget);
+  });
 }

@@ -49,9 +49,7 @@ class ContactSetupScreen extends ConsumerWidget {
             child: AsyncView<ContactSetupDraft>(
               value: prefill,
               loadingLabel: l.loadingLabel,
-              // A failed prefill must not block a first-time setup.
-              error: (context, _, _) =>
-                  const _ContactSetupForm(draft: ContactSetupDraft()),
+              onRetry: () => ref.invalidate(contactSetupPrefillProvider),
               data: (context, draft) => _ContactSetupForm(draft: draft),
             ),
           ),

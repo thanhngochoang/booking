@@ -77,20 +77,20 @@ final contactSetupPrefillProvider =
       final area = await repo.watchServiceArea(uid).first;
       final channels = await repo.watchChannels(uid).first;
       final numbers = await repo.watchNumbers(uid).first;
-      var type = ProviderType.individual;
-      String? district;
+      // The type must be known: a studio without its address block could
+      // not finish, and a guess would hide it. A failed read is an error.
+      final p = await ref.read(publicProfileRepositoryProvider).load(uid);
+      final type = p?.summary.providerType ?? ProviderType.individual;
+      final district = p?.summary.studioDistrict;
       StudioAddressInput? address;
-      try {
-        final p = await ref.read(publicProfileRepositoryProvider).load(uid);
-        type = p?.summary.providerType ?? type;
-        district = p?.summary.studioDistrict;
-        if (type == ProviderType.studio) {
+      if (type == ProviderType.studio) {
+        try {
           address = await ref
               .read(providerRepositoryProvider)
               .myStudioAddress(uid);
+        } catch (_) {
+          // Nothing saved readable: the fields start empty.
         }
-      } catch (_) {
-        // Offline: the form still opens, the server checks at finish.
       }
       return ContactSetupDraft(
         area: area,
