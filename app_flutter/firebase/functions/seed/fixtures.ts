@@ -5,17 +5,24 @@ import {
   BADGE_CATALOG,
   NOTIFICATION_TYPES,
   accountLast4,
+  encodeGeohash,
+  formatVnDate,
+  hashtagBase,
+  hashtagKeyOf,
   earningItemOf,
   renderNotification,
   summarizeEarnings,
   titleKeyOf,
   type EarningItem,
+  type EventRecord,
+  type RegistrationDoc,
   type NotificationContent,
   type NotificationType,
   type Payment,
   type Payout,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
+import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -489,6 +496,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   }
   docs.push(...notificationAndBadgeDocuments(now));
   docs.push(...payoutAndEarningsDocuments(now, docs));
+  docs.push(...eventDocuments(now));
   return docs;
 }
 
@@ -733,5 +741,106 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
       });
     }
   }
+  return docs;
+}
+
+export const SEED_EVENT_FREE = 'seed-event-an-free-photowalk';
+export const SEED_EVENT_PAID = 'seed-event-an-paid-workshop';
+export const SEED_REGISTRATION_LAN = 'seed-registration-lan-free-walk';
+export const SEED_TICKET_CODE_LAN = 'VE-LANA-0000';
+
+/**
+ * Two open events of An (a free photo walk and a paid workshop) and Lan's free registration to the
+ * walk. Written through the same mapping the Functions use (plan 10c). The free ticket is `paid`
+ * with `contactEligible: false` and has no `private/contact` snapshot (O3).
+ */
+function eventDocuments(now: Date): SeedDocument[] {
+  const make = (id: string, title: string, type: EventRecord['type'], daysAhead: number, price: number, capacity: number): EventRecord => {
+    const startAt = new Date(now.getTime() + daysAhead * DAY_MS + 2 * HOUR_MS);
+    const endAt = new Date(startAt.getTime() + 2 * HOUR_MS);
+    const hashtag = hashtagBase(title, startAt);
+    return {
+      id,
+      host: { type: 'photographer', id: AN, name: 'An Studio (seed)', avatarUrl: null, verified: true },
+      createdBy: AN,
+      createdByRole: 'photographer',
+      hostConsent: 'not_required',
+      hostConsentExpiresAt: null,
+      title,
+      description: 'Sự kiện mẫu cho môi trường thử nghiệm.',
+      type,
+      coverUrl: null,
+      coverPath: null,
+      startAt,
+      endAt,
+      dayKey: formatVnDate(startAt),
+      location: {
+        name: 'Hồ Gươm', meetingPoint: 'Cổng đền Ngọc Sơn', lat: 21.0285, lng: 105.8542,
+        geohash: encodeGeohash(21.0285, 105.8542), areaId: null,
+      },
+      capacity,
+      price,
+      registrationDeadline: new Date(startAt.getTime() - 12 * HOUR_MS),
+      faq: [],
+      hashtag,
+      hashtagKey: hashtagKeyOf(hashtag),
+      hashtagLocked: false,
+      status: 'open',
+      registeredCount: 0,
+      heldCount: 0,
+      chatId: `event_${id}`,
+      postCount: 0,
+      version: 1,
+      publishedAt: now,
+      completedAt: null,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+  };
+  const free = make(SEED_EVENT_FREE, 'Photo walk phố cổ', 'photo_walk', 8, 0, 20);
+  const paid = make(SEED_EVENT_PAID, 'Workshop ánh sáng tự nhiên', 'workshop', 15, 250_000, 12);
+  const registration: RegistrationDoc = {
+    id: SEED_REGISTRATION_LAN,
+    eventId: free.id,
+    userId: LAN,
+    userName: 'Lan (seed)',
+    userAvatarUrl: null,
+    quantity: 1,
+    amount: 0,
+    status: 'paid',
+    holdExpiresAt: null,
+    ticketCode: SEED_TICKET_CODE_LAN,
+    paymentId: null,
+    contactEligible: false,
+    checkedInAt: null,
+    cancelledAt: null,
+    refundPercent: null,
+    event: {
+      title: free.title, type: free.type, startAt: free.startAt as Date, endAt: free.endAt as Date,
+      locationName: 'Hồ Gươm', lat: 21.0285, lng: 105.8542, coverUrl: null,
+    },
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const docs: SeedDocument[] = [];
+  for (const e of [{ ...free, registeredCount: 1 }, paid]) {
+    docs.push({ path: `events/${e.id}`, data: eventToFirestore(e) as Record<string, unknown> });
+    docs.push({ path: `event_hashtags/${e.hashtagKey}`, data: { eventId: e.id } });
+    docs.push({ path: `availability/${AN}/days/${e.dayKey}`, data: { state: 'booked', eventId: e.id, updatedAt: now } });
+    docs.push({
+      path: `chats/${e.chatId}`,
+      data: groupChatToFirestore({
+        id: e.chatId as string, kind: 'event_group', eventId: e.id, title: e.title,
+        members: e.id === free.id ? [AN, LAN] : [AN], moderators: [AN],
+        memberCount: e.id === free.id ? 2 : 1, moderatorsOnly: false,
+        lastMessageAt: null, lastMessagePreview: null, lastSenderId: null, readOnlyAt: null,
+        createdAt: now, updatedAt: now,
+      }) as Record<string, unknown>,
+    });
+  }
+  docs.push({ path: `events/${free.id}/registrations/${registration.id}`, data: registrationToFirestore(registration) as Record<string, unknown> });
+  docs.push({ path: `ticket_codes/${registration.ticketCode}`, data: { eventId: free.id, registrationId: registration.id } });
   return docs;
 }

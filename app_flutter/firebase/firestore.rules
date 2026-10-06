@@ -620,6 +620,67 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- photo events (plan 10c) ----
+    // Everything under events/ is written by Cloud Functions only. Clients read:
+    //  - an event unless it is a draft (a draft is read by its managers);
+    //  - a registration if it is theirs, or they manage the event;
+    //  - registrations/{id}/private/contact: the attendee, or a manager only for a ticket that
+    //    unlocks contact (contactEligible == true: a paid ticket, never a free one, O3) up to
+    //    7 days after the event ends. A free registration therefore exposes no phone to the host.
+    function staffIs(role) { return signedIn() && request.auth.token.get('staffRole', '') == role; }
+    function eventManager(e) {
+      return signedIn()
+        && ((e.host.type == 'photographer' && e.host.id == request.auth.uid)
+            || staffIs('admin')
+            || (staffIs('sales') && e.createdBy == request.auth.uid));
+    }
+    function eventDoc(eventId) {
+      return get(/databases/$(database)/documents/events/$(eventId)).data;
+    }
+    function registrationDoc(eventId, regId) {
+      return get(/databases/$(database)/documents/events/$(eventId)/registrations/$(regId)).data;
+    }
+    function ticketContactUnlockedFor(e, r) {
+      return r.status == 'paid'
+        && r.get('contactEligible', false) == true
+        && e.endAt != null
+        && request.time <= e.endAt + duration.value(7, 'd');
+    }
+
+    match /events/{eventId} {
+      allow get: if signedIn() && (resource.data.status != 'draft' || eventManager(resource.data));
+      // A public list must filter status (S11.01 uses status in [open, full]); the creator and
+      // the named host list their own drafts with createdBy == uid or hostId == uid.
+      allow list: if signedIn()
+        && (resource.data.status in ['open', 'full', 'closed', 'completed', 'cancelled']
+            || resource.data.createdBy == request.auth.uid
+            || resource.data.hostId == request.auth.uid);
+      allow write: if false;
+
+      match /registrations/{regId} {
+        allow read: if signedIn()
+          && (resource.data.userId == request.auth.uid || eventManager(eventDoc(eventId)));
+        allow write: if false;
+
+        match /private/{docId} {
+          allow read: if signedIn() && docId == 'contact'
+            && (registrationDoc(eventId, regId).userId == request.auth.uid
+                || (eventManager(eventDoc(eventId))
+                    && ticketContactUnlockedFor(eventDoc(eventId), registrationDoc(eventId, regId))));
+          allow write: if false;
+        }
+      }
+    }
+
+    // S11.04: "my tickets" is a collection-group query with userId == uid.
+    match /{path=**}/registrations/{regId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Uniqueness guards (hashtag, ticket code): server only.
+    match /event_hashtags/{key} { allow read, write: if false; }
+    match /ticket_codes/{code} { allow read, write: if false; }
+
     match /{document=**} {
       allow read, write: if false;
     }

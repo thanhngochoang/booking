@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
@@ -1590,4 +1590,121 @@ test('payments stay closed', async () => {
   await seedDoc('payments/pay9', { payeeId: 'pp1', amount: 5 });
   await assertFails(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay9')));
   await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay10'), { payeeId: 'pp1' }));
+});
+
+// ---- Photo events (plan 10c) ----
+const EV_PUBLIC = ['open', 'full'];
+const evDoc = (over = {}) => ({
+  host: { type: 'photographer', id: 'eh1', name: 'An', avatarUrl: null, verified: true },
+  hostId: 'eh1', createdBy: 'eh1', createdByRole: 'photographer', hostConsent: 'not_required',
+  title: 'Photo walk', status: 'open', price: 0, capacity: 10, registeredCount: 1, heldCount: 0,
+  startAt: Timestamp.fromMillis(Date.now() + 5 * 86_400_000),
+  endAt: Timestamp.fromMillis(Date.now() + 5 * 86_400_000 + 3_600_000),
+  createdAt: Timestamp.now(), ...over,
+});
+const regDoc = (userId, over = {}) => ({
+  id: 'r1', eventId: 'e1', userId, status: 'paid', quantity: 1, amount: 0, contactEligible: false,
+  ticketCode: 'VE-ABCD-1012', createdAt: Timestamp.now(), ...over,
+});
+const evSeed = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+const evDb = (uid, claims) => env.authenticatedContext(uid, claims).firestore();
+
+test('events: a visitor reads an open event', async () => {
+  await evSeed('events/e1', evDoc());
+  await assertSucceeds(getDoc(doc(evDb('v1'), 'events/e1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'events/e1')));
+});
+test('events: a visitor cannot read a draft', async () => {
+  await evSeed('events/e2', evDoc({ status: 'draft' }));
+  await assertFails(getDoc(doc(evDb('v1'), 'events/e2')));
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e2')));
+});
+test('events: the creator lists their drafts', async () => {
+  await evSeed('events/e3', evDoc({ status: 'draft', createdBy: 'creator1', hostId: null,
+    host: { type: 'platform', id: null, name: null, avatarUrl: null, verified: true } }));
+  await assertSucceeds(getDocs(query(collection(evDb('creator1'), 'events'), where('createdBy', '==', 'creator1'))));
+});
+test('events: a public list must filter status', async () => {
+  await assertSucceeds(getDocs(query(collection(evDb('v1'), 'events'), where('status', 'in', EV_PUBLIC))));
+  await assertFails(getDocs(collection(evDb('v1'), 'events')));
+});
+test('events: nobody writes events', async () => {
+  await assertFails(setDoc(doc(evDb('eh1'), 'events/e9'), evDoc()));
+  await assertFails(updateDoc(doc(evDb('eh1'), 'events/e1'), { title: 'x' }));
+  await assertFails(deleteDoc(doc(evDb('eh1'), 'events/e1')));
+  await assertFails(setDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e9'), evDoc()));
+});
+test('events: a user reads their own registration', async () => {
+  await evSeed('events/e1', evDoc());
+  await evSeed('events/e1/registrations/r1', regDoc('att1'));
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'events/e1/registrations/r1')));
+});
+test('events: another user cannot read a registration', async () => {
+  await assertFails(getDoc(doc(evDb('att2'), 'events/e1/registrations/r1')));
+});
+test('events: the host reads every registration of their event', async () => {
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r1')));
+  await assertSucceeds(getDocs(collection(evDb('eh1'), 'events/e1/registrations')));
+});
+test('events: a sales user cannot read registrations of another sales user\'s event', async () => {
+  await evSeed('events/e4', evDoc({ createdBy: 'sales1', hostId: null,
+    host: { type: 'platform', id: null, name: null, avatarUrl: null, verified: true } }));
+  await evSeed('events/e4/registrations/r1', regDoc('att1', { eventId: 'e4' }));
+  await assertSucceeds(getDoc(doc(evDb('sales1', { staffRole: 'sales' }), 'events/e4/registrations/r1')));
+  await assertFails(getDoc(doc(evDb('sales2', { staffRole: 'sales' }), 'events/e4/registrations/r1')));
+});
+test('events: an admin reads any registration', async () => {
+  await assertSucceeds(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e4/registrations/r1')));
+  await assertSucceeds(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/registrations/r1')));
+});
+test('events: a host reads a paid attendee\'s contact', async () => {
+  await evSeed('events/e1/registrations/r2', regDoc('att3', { id: 'r2', amount: 120000, contactEligible: true }));
+  await evSeed('events/e1/registrations/r2/private/contact', { name: 'Khách', phone: '+84912345678' });
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r2/private/contact')));
+});
+test('events: a host cannot read a held attendee\'s contact', async () => {
+  await evSeed('events/e1/registrations/r3', regDoc('att4', { id: 'r3', status: 'held', amount: 120000 }));
+  await evSeed('events/e1/registrations/r3/private/contact', { name: 'Khách', phone: '+84912345679' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r3/private/contact')));
+});
+test('events: a host cannot read the contact of a free registration (O3)', async () => {
+  await evSeed('events/e1/registrations/r1/private/contact', { name: 'Khách', phone: '+84912345600' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r1/private/contact')));
+  await assertFails(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/registrations/r1/private/contact')));
+});
+test('events: the attendee reads their own contact', async () => {
+  await assertSucceeds(getDoc(doc(evDb('att3'), 'events/e1/registrations/r2/private/contact')));
+  await assertFails(getDoc(doc(evDb('att2'), 'events/e1/registrations/r2/private/contact')));
+  await assertFails(setDoc(doc(evDb('att3'), 'events/e1/registrations/r2/private/contact'), { phone: '+84900000000' }));
+});
+test('events: a host cannot read a paid contact after the 7-day window', async () => {
+  await evSeed('events/e5', evDoc({ endAt: Timestamp.fromMillis(Date.now() - 8 * 86_400_000) }));
+  await evSeed('events/e5/registrations/r1', regDoc('att1', { eventId: 'e5', amount: 5000, contactEligible: true }));
+  await evSeed('events/e5/registrations/r1/private/contact', { name: 'K', phone: '+84912345601' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'events/e5/registrations/r1/private/contact')));
+});
+test('events: collection group: a user lists only their registrations', async () => {
+  await assertSucceeds(getDocs(query(collectionGroup(evDb('att1'), 'registrations'), where('userId', '==', 'att1'))));
+  await assertFails(getDocs(query(collectionGroup(evDb('att1'), 'registrations'), where('userId', '==', 'att2'))));
+  await assertFails(getDocs(collectionGroup(evDb('att1'), 'registrations')));
+});
+test('events: guards are closed', async () => {
+  await evSeed('event_hashtags/photowalk1012', { eventId: 'e1' });
+  await evSeed('ticket_codes/VE-ABCD-1012', { eventId: 'e1', registrationId: 'r1' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'event_hashtags/photowalk1012')));
+  await assertFails(setDoc(doc(evDb('eh1'), 'event_hashtags/other'), { eventId: 'e1' }));
+  await assertFails(getDoc(doc(evDb('eh1'), 'ticket_codes/VE-ABCD-1012')));
+  await assertFails(setDoc(doc(evDb('att1'), 'ticket_codes/VE-ZZZZ-1012'), { eventId: 'e1', registrationId: 'r1' }));
+});
+test('events storage: an owner uploads a cover, others cannot', async () => {
+  const mine = ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/cover.jpg');
+  await assertSucceeds(uploadBytes(mine, photo(), jpeg));
+  await assertSucceeds(getBytes(mine));
+  const other = env.authenticatedContext('eh2').storage();
+  await assertFails(uploadBytes(ref(other, 'eventCovers/eh1/e1/x.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(other, 'eventCovers/eh1/e1/cover.jpg')));
+  await assertSucceeds(getBytes(ref(other, 'eventCovers/eh1/e1/cover.jpg')));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/big.jpg'), photo(9 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/a.txt'), photo(), { contentType: 'text/plain' }));
+  await assertSucceeds(deleteObject(mine));
 });

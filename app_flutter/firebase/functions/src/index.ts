@@ -69,6 +69,18 @@ import { evaluatePostAuthor } from './triggers/post_created.js';
 import { handleReconcileBadges } from './scheduled/reconcile_badges.js';
 import { handlePruneNotifications } from './scheduled/prune_notifications.js';
 import { liveReminderDeps } from './scheduled/booking_clock.js';
+import {
+  handleCancelEvent,
+  handleCancelRegistration,
+  handleCheckInRegistration,
+  handlePublishEvent,
+  handleRegisterEvent,
+  handleRespondToHostConsent,
+  handleSaveEventDraft,
+  handleUpdateEvent,
+} from './callables/event.js';
+import { handleEventClock } from './scheduled/event_clock.js';
+import { liveEventCallableDeps, liveEventDeps } from './infra/live_event.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -377,4 +389,43 @@ export const onPayoutWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document:
     event.data?.after.exists ? event.data.after.data() : undefined,
     liveEarningsDeps(),
   );
+});
+
+// ---- photo events (plan 10c) ----
+
+/** `{eventId?, …fields, hostPhotographerId?}` → `{eventId, hashtag}`; creates or edits a draft. */
+export const saveEventDraft = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSaveEventDraft(request, liveEventCallableDeps()),
+);
+
+/** `{eventId}`: draft → open (needs the host's consent when staff created it for a photographer). */
+export const publishEvent = onCall(CALLABLE_OPTIONS, (request) => handlePublishEvent(request, liveEventDeps()));
+
+/** `{eventId, …fields}`: edits a published event. */
+export const updateEvent = onCall(CALLABLE_OPTIONS, (request) => handleUpdateEvent(request, liveEventDeps()));
+
+/** `{eventId}` → `{paidRegistrationIds}` */
+export const cancelEvent = onCall(CALLABLE_OPTIONS, (request) => handleCancelEvent(request, liveEventDeps()));
+
+/** `{eventId, accept}`: the photographer answers a staff-created draft (24 h). */
+export const respondToHostConsent = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondToHostConsent(request, liveEventDeps()),
+);
+
+/** `{eventId, quantity, name}` → registration (free events: paid at once). */
+export const registerEvent = onCall(CALLABLE_OPTIONS, (request) => handleRegisterEvent(request, liveEventDeps()));
+
+/** `{eventId, registrationId}` */
+export const cancelRegistration = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelRegistration(request, liveEventDeps()),
+);
+
+/** `{eventId, ticketCode}` → `{name, quantity}` */
+export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCheckInRegistration(request, liveEventDeps()),
+);
+
+/** Every 5 minutes: closes registration, completes events, expires unanswered host invitations. */
+export const eventClock = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 5 minutes', timeoutSeconds: 120 }, async () => {
+  await handleEventClock();
 });
