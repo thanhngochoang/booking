@@ -86,12 +86,17 @@ export function bookingContactUnlocked(
   }
 }
 
-/** `contact_unlocked` for an event ticket: `paid`, until 7 days after the event ends (inclusive). */
+/**
+ * `contact_unlocked` for an event ticket: `paid`, until 7 days after the event ends (inclusive).
+ * Owner decision O3: only a paid ticket (`contactEligible`) unlocks; a free registration gives the
+ * group chat and in-app chat only, so a missing flag counts as locked.
+ */
 export function ticketContactUnlocked(
-  registration: { readonly status: string; readonly eventEndsAt: Date | null },
+  registration: { readonly status: string; readonly eventEndsAt: Date | null; readonly contactEligible?: boolean },
   now: Date,
 ): boolean {
   return registration.status === 'paid'
+    && registration.contactEligible === true
     && registration.eventEndsAt !== null
     && now.getTime() - registration.eventEndsAt.getTime() <= TICKET_CONTACT_DAYS * DAY_MS;
 }
