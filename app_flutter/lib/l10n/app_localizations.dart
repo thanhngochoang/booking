@@ -4816,12 +4816,6 @@ abstract class AppLocalizations {
   /// **'Cảm ơn bạn đã đánh giá!'**
   String get reviewThanks;
 
-  /// No description provided for @reviewShared.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đã chia sẻ {count} ảnh'**
-  String reviewShared(int count);
-
   /// No description provided for @reviewStarsSemantics.
   ///
   /// In vi, this message translates to:
@@ -4863,6 +4857,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Khách hàng'**
   String get reviewsAnonymousName;
+
+  /// No description provided for @reviewThumbLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh buổi chụp'**
+  String get reviewThumbLabel;
+
+  /// No description provided for @reviewErrorForbidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không thể đánh giá buổi chụp này.'**
+  String get reviewErrorForbidden;
+
+  /// No description provided for @reviewPhotoUploading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {index} đang tải lên, {percent}%'**
+  String reviewPhotoUploading(int index, int percent);
 }
 
 class _AppLocalizationsDelegate

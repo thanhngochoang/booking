@@ -75,13 +75,23 @@ class StarRating extends StatelessWidget {
     final nextDecrease = effectiveValue > 1 ? effectiveValue - 1 : null;
 
     final l10n = context.l10n;
+    if (onChanged == null) {
+      // Read-only: a plain label, not a slider that cannot be moved.
+      return Semantics(
+        label: l10n.reviewStarsSemantics(effectiveValue),
+        excludeSemantics: true,
+        child: starsRow,
+      );
+    }
     return Semantics(
       slider: true,
       value: l10n.reviewStarsSemantics(effectiveValue),
-      increasedValue:
-          nextIncrease != null ? l10n.reviewStarsSemantics(nextIncrease) : null,
-      decreasedValue:
-          nextDecrease != null ? l10n.reviewStarsSemantics(nextDecrease) : null,
+      increasedValue: nextIncrease != null
+          ? l10n.reviewStarsSemantics(nextIncrease)
+          : null,
+      decreasedValue: nextDecrease != null
+          ? l10n.reviewStarsSemantics(nextDecrease)
+          : null,
       onIncrease: (onChanged != null && nextIncrease != null)
           ? () => onChanged!(nextIncrease)
           : null,

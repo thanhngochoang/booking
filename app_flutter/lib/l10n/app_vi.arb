@@ -1384,12 +1384,6 @@
   "reviewSubmit": "Gửi đánh giá",
   "reviewNotYet": "Buổi chụp chưa hoàn thành nên chưa đánh giá được.",
   "reviewThanks": "Cảm ơn bạn đã đánh giá!",
-  "reviewShared": "Đã chia sẻ {count} ảnh",
-  "@reviewShared": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "reviewStarsSemantics": "{rating} trên 5 sao",
   "@reviewStarsSemantics": {
     "placeholders": {
@@ -1407,5 +1401,14 @@
   "reviewsMore": "Xem thêm",
   "reviewSharedLink": "Xem ảnh đã chia sẻ",
   "reviewAlreadyDone": "Bạn đã đánh giá buổi chụp này.",
-  "reviewsAnonymousName": "Khách hàng"
+  "reviewsAnonymousName": "Khách hàng",
+  "reviewThumbLabel": "Ảnh buổi chụp",
+  "reviewErrorForbidden": "Bạn không thể đánh giá buổi chụp này.",
+  "reviewPhotoUploading": "Ảnh {index} đang tải lên, {percent}%",
+  "@reviewPhotoUploading": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "percent": {"type": "int"}
+    }
+  }
 }

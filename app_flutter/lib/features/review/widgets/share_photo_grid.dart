@@ -33,6 +33,15 @@ class SharePhotoGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        Text(
+          l10n.reviewShareHint(photographerName),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.brightness == Brightness.dark
+                ? AppColorsDark.foregroundMuted
+                : AppColors.foregroundMuted,
+          ),
+        ),
+        const SizedBox(height: AppSpace.s2),
         if (itemCount > 0)
           GridView.builder(
             shrinkWrap: true,
@@ -61,15 +70,6 @@ class SharePhotoGrid extends StatelessWidget {
               );
             },
           ),
-        const SizedBox(height: AppSpace.s2),
-        Text(
-          l10n.reviewShareHint(photographerName),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.brightness == Brightness.dark
-                ? AppColorsDark.foregroundMuted
-                : AppColors.foregroundMuted,
-          ),
-        ),
       ],
     );
   }
@@ -98,9 +98,7 @@ class _AddPhotoTile extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
-          child: Center(
-            child: Icon(Icons.add_rounded, color: muted, size: 32),
-          ),
+          child: Center(child: Icon(Icons.add_rounded, color: muted, size: 32)),
         ),
       ),
     );
@@ -131,11 +129,10 @@ class _PhotoTile extends StatelessWidget {
 
     const ink = AppColors.foregroundInverse;
     final scrim = IconButton.styleFrom(
-      backgroundColor: AppColors.overlay,
       foregroundColor: ink,
-      minimumSize: const Size(28, 28),
+      minimumSize: const Size.square(AppSpace.s12),
       padding: EdgeInsets.zero,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      tapTargetSize: MaterialTapTargetSize.padded,
     );
 
     return ClipRRect(
@@ -147,18 +144,20 @@ class _PhotoTile extends StatelessWidget {
           Image.file(
             File(tile.local.path),
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => ColoredBox(
-              color: theme.colorScheme.surfaceContainerHighest,
-            ),
+            errorBuilder: (_, _, _) =>
+                ColoredBox(color: theme.colorScheme.surfaceContainerHighest),
           ),
 
           // Uploading overlay
           if (tile.status == SharedPhotoStatus.uploading) ...[
             const ColoredBox(color: AppColors.overlay),
             Center(
-              child: UploadProgressRing(
-                fraction: tile.progress,
-                size: 32,
+              child: Semantics(
+                label: l10n.reviewPhotoUploading(
+                  index + 1,
+                  (tile.progress.clamp(0.0, 1.0) * 100).round(),
+                ),
+                child: UploadProgressRing(fraction: tile.progress, size: 32),
               ),
             ),
           ],
@@ -191,11 +190,21 @@ class _PhotoTile extends StatelessWidget {
           // Remove button (top right)
           if (enabled)
             Positioned(
-              top: AppSpace.s1,
-              right: AppSpace.s1,
+              top: 0,
+              right: 0,
               child: IconButton(
                 key: Key('remove_photo_$index'),
-                icon: const Icon(Icons.close_rounded, size: 18),
+                icon: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.overlay,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpace.s1),
+                    child: Icon(Icons.close_rounded, size: 18),
+                  ),
+                ),
+                tooltip: l10n.createRemove,
                 style: scrim,
                 onPressed: onRemove,
               ),

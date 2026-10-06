@@ -139,6 +139,9 @@ Future<BookingWorldHandles> pumpBookingRoute(
   bool realPayments = false,
   bool disableAnimations = false,
   Size viewSize = const Size(390, 844),
+
+  /// Height of the on-screen keyboard (bottom view inset), in dp.
+  double keyboardInset = 0,
   List<Override> extraOverrides = const [],
 
   /// Signs in as this uid instead of the registered fake user (S05.02 shows
@@ -339,6 +342,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
         disableAnimations: disableAnimations,
         textScaler: TextScaler.linear(textScale),
         size: viewSize,
+          viewInsets: EdgeInsets.only(bottom: keyboardInset),
       ),
       child: screenRouterApp(
         router: router,

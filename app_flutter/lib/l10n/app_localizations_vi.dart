@@ -2725,11 +2725,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewThanks => 'Cảm ơn bạn đã đánh giá!';
 
   @override
-  String reviewShared(int count) {
-    return 'Đã chia sẻ $count ảnh';
-  }
-
-  @override
   String reviewStarsSemantics(int rating) {
     return '$rating trên 5 sao';
   }
@@ -2753,4 +2748,15 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewsAnonymousName => 'Khách hàng';
+
+  @override
+  String get reviewThumbLabel => 'Ảnh buổi chụp';
+
+  @override
+  String get reviewErrorForbidden => 'Bạn không thể đánh giá buổi chụp này.';
+
+  @override
+  String reviewPhotoUploading(int index, int percent) {
+    return 'Ảnh $index đang tải lên, $percent%';
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -9,15 +10,13 @@ import 'package:photobooking/data/booking/booking_summary.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/review/review_providers.dart';
+import 'package:photobooking/data/review/review_repository.dart';
 import 'package:photobooking/features/review/review_controller.dart';
 import 'package:photobooking/features/review/widgets/share_photo_grid.dart';
 import 'package:photobooking/features/review/widgets/star_rating.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
-  const ReviewScreen({
-    super.key,
-    required this.bookingId,
-  });
+  const ReviewScreen({super.key, required this.bookingId});
 
   final String bookingId;
 
@@ -49,8 +48,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Future<void> _submit({required bool share}) async {
-    final notifier =
-        ref.read(reviewControllerProvider(widget.bookingId).notifier);
+    final notifier = ref.read(
+      reviewControllerProvider(widget.bookingId).notifier,
+    );
     final success = await notifier.submit(share: share);
     if (!mounted) return;
 
@@ -63,14 +63,20 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.reviewThanks)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.reviewThanks)));
       context.go('/b/${widget.bookingId}');
     } else if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.detailErrorNetwork)),
-      );
+      final l10n = context.l10n;
+      final error = state.error;
+      final message = switch (error is ReviewException ? error.code : null) {
+        ReviewErrorCode.notEligible => l10n.reviewNotYet,
+        ReviewErrorCode.permissionDenied ||
+        ReviewErrorCode.notFound => l10n.reviewErrorForbidden,
+        _ => l10n.detailErrorNetwork,
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -80,10 +86,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final theme = Theme.of(context);
     final bookingAsync = ref.watch(bookingProvider(widget.bookingId));
     final reviewAsync = ref.watch(bookingReviewProvider(widget.bookingId));
-    final controllerState =
-        ref.watch(reviewControllerProvider(widget.bookingId));
-    final notifier =
-        ref.read(reviewControllerProvider(widget.bookingId).notifier);
+    final controllerState = ref.watch(
+      reviewControllerProvider(widget.bookingId),
+    );
+    final notifier = ref.read(
+      reviewControllerProvider(widget.bookingId).notifier,
+    );
 
     return ScreenCode(
       ScreenCodes.reviewAndShare,
@@ -100,7 +108,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             if (booking == null) {
               return Center(
                 child: EmptyState(
-                  title: l10n.reviewNotYet,
+                  title: l10n.detailNotFound,
                   body: '',
                   actionLabel: l10n.back,
                   onAction: () => Navigator.of(context).maybePop(),
@@ -108,7 +116,21 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               );
             }
 
-            final isEligible = booking.status == BookingStatus.completed ||
+            final uid =
+                ref.watch(authStateProvider).value?.uid;
+            if (uid != null && uid != booking.customerId) {
+              return Center(
+                child: EmptyState(
+                  title: l10n.reviewErrorForbidden,
+                  body: '',
+                  actionLabel: l10n.back,
+                  onAction: () => Navigator.of(context).maybePop(),
+                ),
+              );
+            }
+
+            final isEligible =
+                booking.status == BookingStatus.completed ||
                 booking.status == BookingStatus.reviewed;
             if (!isEligible) {
               return Center(
@@ -167,9 +189,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 
   Widget _skeleton(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(AppSpace.s4),
-        child: BookingCard.skeleton(size: BookingCardSize.compact),
-      );
+    padding: const EdgeInsets.all(AppSpace.s4),
+    child: BookingCard.skeleton(size: BookingCardSize.compact),
+  );
 
   Widget _buildReadOnlyView({
     required BuildContext context,
@@ -185,10 +207,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            BookingCard(
-              data: summary,
-              size: BookingCardSize.compact,
-            ),
+            BookingCard(data: summary, size: BookingCardSize.compact),
             const SizedBox(height: AppSpace.s6),
             if (review == null)
               Text(
@@ -198,17 +217,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 style: theme.textTheme.bodyLarge,
               )
             else ...[
-              Center(
-                child: StarRating(
-                  value: review.rating,
-                  size: 40,
-                ),
-              ),
+              Center(child: StarRating(value: review.rating, size: 40)),
               const SizedBox(height: AppSpace.s4),
-              Text(
-                review.text,
-                style: theme.textTheme.bodyLarge,
-              ),
+              Text(review.text, style: theme.textTheme.bodyLarge),
             ],
             if (review?.photoPostId != null) ...[
               const SizedBox(height: AppSpace.s6),
@@ -233,8 +244,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }) {
     final l10n = context.l10n;
     final isSubmitting = state.phase == ReviewPhase.submitting;
-    final trimmedLength = state.text.trim().length;
-    final showError = state.text.isNotEmpty && trimmedLength < 10;
+    final trimmedLength = state.text.trim().characters.length;
+    final showError =
+        state.text.isNotEmpty && trimmedLength < ReviewController.minTextLength;
 
     return SafeArea(
       child: Column(
@@ -245,10 +257,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  BookingCard(
-                    data: summary,
-                    size: BookingCardSize.compact,
-                  ),
+                  BookingCard(data: summary, size: BookingCardSize.compact),
                   const SizedBox(height: AppSpace.s6),
                   Center(
                     child: StarRating(
@@ -264,7 +273,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     enabled: !isSubmitting,
                     minLines: 3,
                     maxLines: 6,
-                    maxLength: 1000,
+                    maxLength: ReviewController.maxTextLength,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
                       labelText: l10n.reviewText,
@@ -283,19 +292,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         ),
                       ),
                       const SizedBox(width: AppSpace.s2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s2,
-                          vertical: AppSpace.s1 / 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.control),
-                        ),
-                        child: Text(
-                          l10n.reviewOptional,
-                          style: theme.textTheme.labelSmall,
+                      Text(
+                        l10n.reviewOptional,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ],
@@ -337,10 +337,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 : Row(
                     children: [
                       Expanded(
+                        flex: 2,
                         child: AppButton.outline(
                           l10n.reviewOnly,
                           key: const Key('review_only_button'),
-                          loading: isSubmitting,
+                          loading:
+                              isSubmitting && state.submittedShare == false,
                           onPressed: state.canSubmitReviewOnly
                               ? () => _submit(share: false)
                               : null,
@@ -348,10 +350,11 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       ),
                       const SizedBox(width: AppSpace.s3),
                       Expanded(
+                        flex: 3,
                         child: AppButton.primary(
                           l10n.reviewSubmitShare(state.photos.length),
                           key: const Key('submit_share_button'),
-                          loading: isSubmitting,
+                          loading: isSubmitting && state.submittedShare == true,
                           onPressed: state.canSubmitWithShare
                               ? () => _submit(share: true)
                               : null,

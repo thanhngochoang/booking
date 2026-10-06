@@ -71,7 +71,9 @@ void main() {
       expect(current, greaterThan(1));
     });
 
-    testWidgets('semantics expose a slider with increase/decrease', (tester) async {
+    testWidgets('semantics expose a slider with increase/decrease', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       int value = 3;
       await tester.pumpWidget(
@@ -93,8 +95,14 @@ void main() {
       final node = tester.getSemantics(find.byType(StarRating));
       expect(node.getSemanticsData().flagsCollection.isSlider, isTrue);
       expect(node.value, '3 trên 5 sao');
-      expect(node.getSemanticsData().hasAction(SemanticsAction.increase), isTrue);
-      expect(node.getSemanticsData().hasAction(SemanticsAction.decrease), isTrue);
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.increase),
+        isTrue,
+      );
+      expect(
+        node.getSemanticsData().hasAction(SemanticsAction.decrease),
+        isTrue,
+      );
 
       handle.dispose();
     });
@@ -105,12 +113,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: Locale('vi'),
-          home: Scaffold(
-            body: StarRating(
-              value: 4,
-              onChanged: null,
-            ),
-          ),
+          home: Scaffold(body: StarRating(value: 4, onChanged: null)),
         ),
       );
 
