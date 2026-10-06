@@ -248,6 +248,14 @@ describe('album use cases', () => {
     assert.equal(store.albums.get('full')?.postCount, 200);
   });
 
+  it('appendNewPost detaches a non-work post', async () => {
+    fill('a', 1, ['p1']);
+    store.seedPost(post('p2', { albumId: 'a', kind: 'event' }));
+    assert.equal(await appendNewPost(deps, 'p2'), 'detached');
+    assert.equal(store.posts.get('p2')?.albumId, null);
+    assert.equal(store.albums.get('a')?.postCount, 1);
+  });
+
   it('appendNewPost skips a post that already has a position', async () => {
     fill('a', 1, ['p1']);
     const before = store.writes;

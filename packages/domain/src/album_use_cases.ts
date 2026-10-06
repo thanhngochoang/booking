@@ -241,6 +241,10 @@ export async function appendNewPost(
     const [post] = await tx.getPosts([postId]);
     if (post === null || post === undefined) return 'skipped';
     if (post.albumId === null || post.albumPosition !== null) return 'skipped';
+    if (post.kind !== 'work') {
+      tx.setPostAlbum(postId, null, null);
+      return 'detached';
+    }
     const album = await tx.getAlbum(post.albumId);
     if (
       album === null ||

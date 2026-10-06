@@ -173,5 +173,7 @@ export const reorderAlbumPosts = onCall(CALLABLE_OPTIONS, (request) =>
 
 /** A new post that names an album lands last in it, or is detached when the album is not usable. */
 export const onPostCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'posts/{postId}' }, async (event) => {
+  // Most posts name no album: skip before building the live deps.
+  if (typeof event.data?.get('albumId') !== 'string') return;
   await handlePostCreated(event.params.postId, liveAlbumDeps());
 });

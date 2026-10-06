@@ -1,6 +1,8 @@
 // Deterministic local test data for the Firebase emulators. Test values only: these accounts
 // and numbers exist nowhere but in the local emulators. Listed in seed/README.md.
 
+import { titleKeyOf } from '@photobooking/domain';
+
 export const SEED_PASSWORD = 'seed-password-1';
 export const SEED_CREATED_AT = new Date('2026-09-01T00:00:00Z');
 
@@ -279,7 +281,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       data: {
         photographerId: AN,
         title: a.title,
-        titleKey: a.title.toLowerCase(),
+        titleKey: titleKeyOf(a.title),
         description: '',
         cover: null,
         position: a.position,
