@@ -258,4 +258,76 @@ describe('album use cases', () => {
     assert.equal(store.writes, before);
     assert.equal(store.albums.get('a')?.postCount, 1);
   });
+
+  it('composed and decomposed titles are the same title', async () => {
+    await createAlbum(deps, 'u1', { title: '\u00ea\u0301' }); // composed-ish: ê + acute
+    await refused(createAlbum(deps, 'u1', { title: '\u1ebf' }), 'conflict');
+    await refused(createAlbum(deps, 'u1', { title: 'e\u0302\u0301' }), 'conflict');
+  });
+
+  it('renaming onto another album title is a conflict', async () => {
+    store.seedAlbum(album('a', 1, { title: 'Cưới', titleKey: 'cưới' }));
+    store.seedAlbum(album('b', 2));
+    await refused(updateAlbum(deps, 'u1', { albumId: 'b', title: '  CƯỚI ' }), 'conflict');
+    await updateAlbum(deps, 'u1', { albumId: 'a', title: 'CƯỚI' }); // own title is fine
+    assert.equal(store.albums.get('a')?.title, 'CƯỚI');
+  });
+
+  it('moving two posts out of one source leaves the rest compact', async () => {
+    fill('s', 1, ['p1', 'p2', 'p3']);
+    await movePostsToAlbum(deps, 'u1', { albumId: null, postIds: ['p1', 'p3'] });
+    assert.deepEqual(inAlbum('s'), ['p2:1']);
+    assert.equal(store.albums.get('s')?.postCount, 1);
+    assert.equal(store.albums.get('s')?.mediaCount, 2);
+  });
+
+  it('moving a post into the album it is already in re-appends it', async () => {
+    fill('t', 1, ['a', 'b', 'c']);
+    await movePostsToAlbum(deps, 'u1', { albumId: 't', postIds: ['a'] });
+    assert.deepEqual(inAlbum('t'), ['b:1', 'c:2', 'a:3']);
+    assert.equal(store.albums.get('t')?.postCount, 3);
+    assert.equal(store.albums.get('t')?.mediaCount, 6);
+  });
+
+  it('moving from two source albums compacts both and keeps the given order', async () => {
+    fill('s1', 1, ['a1', 'a2', 'a3']);
+    fill('s2', 2, ['b1', 'b2']);
+    store.seedAlbum(album('t', 3));
+    await movePostsToAlbum(deps, 'u1', { albumId: 't', postIds: ['b1', 'a1', 'a3'] });
+    assert.deepEqual(inAlbum('s1'), ['a2:1']);
+    assert.deepEqual(inAlbum('s2'), ['b2:1']);
+    assert.deepEqual(inAlbum('t'), ['b1:1', 'a1:2', 'a3:3']);
+    assert.equal(store.albums.get('s1')?.postCount, 1);
+    assert.equal(store.albums.get('s2')?.postCount, 1);
+    assert.equal(store.albums.get('t')?.postCount, 3);
+    assert.equal(store.albums.get('t')?.mediaCount, 6);
+  });
+
+  it('moving the cover post to another album resets the old cover', async () => {
+    fill('s', 1, ['p1', 'p2'], { cover: { postId: 'p1', imageIndex: 1 } });
+    store.seedAlbum(album('t', 2));
+    await movePostsToAlbum(deps, 'u1', { albumId: 't', postIds: ['p1'] });
+    assert.equal(store.albums.get('s')?.cover, null);
+    assert.equal(store.albums.get('t')?.cover, null);
+  });
+
+  it('the boundary: 199 posts accept one more, 199 plus two is limit_exceeded', async () => {
+    fill('t', 1, Array.from({ length: 199 }, (_, i) => `t${i}`));
+    store.seedPost(post('p1'));
+    store.seedPost(post('p2'));
+    await refused(movePostsToAlbum(deps, 'u1', { albumId: 't', postIds: ['p1', 'p2'] }), 'limit_exceeded');
+    assert.equal(store.albums.get('t')?.postCount, 199);
+    await movePostsToAlbum(deps, 'u1', { albumId: 't', postIds: ['p1'] });
+    assert.equal(store.albums.get('t')?.postCount, 200);
+    assert.equal(store.posts.get('p1')?.albumPosition, 200);
+  });
+
+  it('appendNewPost into an empty album gives position 1 and makes it visible', async () => {
+    store.seedAlbum(album('a', 1));
+    store.seedPost(post('p1', { albumId: 'a' }));
+    assert.equal(await appendNewPost(deps, 'p1'), 'appended');
+    assert.equal(store.posts.get('p1')?.albumPosition, 1);
+    assert.equal(store.albums.get('a')?.visible, true);
+    assert.equal(store.albums.get('a')?.postCount, 1);
+  });
 });

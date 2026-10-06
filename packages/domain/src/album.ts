@@ -40,12 +40,12 @@ export interface AlbumPost {
 
 /** Trim, collapse runs of whitespace, lower-case (locale-insensitive). */
 export function titleKeyOf(title: string): string {
-  return title.trim().replace(/\s+/g, ' ').toLowerCase();
+  return title.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function cleanTitle(v: unknown): string {
   if (typeof v !== 'string') throw new DomainError('invalid_argument');
-  const t = v.trim().replace(/\s+/g, ' ');
+  const t = v.normalize('NFC').trim().replace(/\s+/g, ' ');
   const n = graphemeCount(t);
   if (n < 1 || n > ALBUM_TITLE_MAX) throw new DomainError('invalid_argument');
   return t;
