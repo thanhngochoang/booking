@@ -2682,4 +2682,81 @@ class AppLocalizationsVi extends AppLocalizations {
   String awardRowSemantics(String title, String subtitle, String status) {
     return 'Giải thưởng: $title, $subtitle, trạng thái $status';
   }
+
+  @override
+  String get reviewTitle => 'Buổi chụp thế nào?';
+
+  @override
+  String get reviewText => 'Nhận xét';
+
+  @override
+  String get reviewTextHint => 'Chia sẻ cảm nhận của bạn về buổi chụp...';
+
+  @override
+  String get reviewTextTooShort => 'Viết ít nhất 10 ký tự';
+
+  @override
+  String get reviewShare => 'Chia sẻ ảnh bạn thích';
+
+  @override
+  String get reviewOptional => 'Tuỳ chọn';
+
+  @override
+  String reviewShareHint(String name) {
+    return 'Ảnh hiện trong \'Buổi chụp thật\' trên Trang chủ và hồ sơ $name, có tag nhiếp ảnh gia';
+  }
+
+  @override
+  String get reviewOnly => 'Chỉ đánh giá';
+
+  @override
+  String reviewSubmitShare(int count) {
+    return 'Gửi & chia sẻ $count ảnh';
+  }
+
+  @override
+  String get reviewSubmit => 'Gửi đánh giá';
+
+  @override
+  String get reviewNotYet =>
+      'Buổi chụp chưa hoàn thành nên chưa đánh giá được.';
+
+  @override
+  String get reviewThanks => 'Cảm ơn bạn đã đánh giá!';
+
+  @override
+  String reviewStarsSemantics(int rating) {
+    return '$rating trên 5 sao';
+  }
+
+  @override
+  String get reviewUploadFailed => 'Tải ảnh lỗi. Thử lại';
+
+  @override
+  String reviewsHeader(String rating, int count) {
+    return '$rating · $count đánh giá';
+  }
+
+  @override
+  String get reviewsMore => 'Xem thêm';
+
+  @override
+  String get reviewSharedLink => 'Xem ảnh đã chia sẻ';
+
+  @override
+  String get reviewAlreadyDone => 'Bạn đã đánh giá buổi chụp này.';
+
+  @override
+  String get reviewsAnonymousName => 'Khách hàng';
+
+  @override
+  String get reviewThumbLabel => 'Ảnh buổi chụp';
+
+  @override
+  String get reviewErrorForbidden => 'Bạn không thể đánh giá buổi chụp này.';
+
+  @override
+  String reviewPhotoUploading(int index, int percent) {
+    return 'Ảnh $index đang tải lên, $percent%';
+  }
 }

@@ -5,14 +5,14 @@ import 'package:photobooking/features/booking/booking_features.dart';
 
 void main() {
   group('BookingFeatures & nowTickerProvider', () {
-    test('chat and reschedule are on by default, review is off', () {
+    test('chat, reschedule and review are on by default', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final features = container.read(bookingFeaturesProvider);
       expect(features.chat, isTrue);
       expect(features.reschedule, isTrue);
-      expect(features.review, isFalse);
+      expect(features.review, isTrue);
     });
 
     testWidgets(

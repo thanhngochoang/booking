@@ -60,7 +60,7 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 8b | `2026-10-02-step4b-booking-sheet.md` (S04.01–S04.04) | done 2026-10-03: 4b Task 1 in 8a2/3-L2 (merged); Tasks 2–8 in 8b/4-L1; deferred items in `handover/ledger-step4b-8b-4-L1.md` |
 | 8c | `2026-10-02-step4c-booking-detail-lists.md` (S05.02, S05.03, S05.01, S06.01, S06.02, S06.03) | done 2026-10-03: 4c Task 1 in 8c/4-L2 (G4); Tasks 2–7 in 8c/5-L1; deferred items and lane 2 requests in `handover/ledger-step4c-8c-5-L1.md` |
 | 8d | `2026-10-02-step4d-chat.md` (S07.01, S07.02 chat list, reschedule) | done 2026-10-05: 4d Tasks 1–6 in 8d/5-L2 (PR #14); Tasks 7–9 in 8d/6-L1 (plan/8d-6-L1-chat-ui) |
-| 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | partly done 2026-10-03: 4e Tasks 1–3 (review domain, Functions, rules, indexes, lib/data/review) in 8e/6-L2 (reaches G6); remaining: Tasks 4–5 (lane 1 step 7; needs G6) |
+| 8e | `2026-10-02-step4e-review-share.md` (S05.05, reviews on S03.01) | done 2026-10-06: 4e Tasks 1–3 in 8e/6-L2; Tasks 4–5 in 8e/7-L1 (PR #30); deferred items in `handover/ledger-step4e-8e-7-L1.md` |
 | 8b1 | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications, explore uses EventCard) | done 2026-10-03 (b1/7-L2) |
 | 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
 | 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | done 2026-10-05 (PR #23); deferred Task 11 performance check to plan 16 |

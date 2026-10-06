@@ -172,7 +172,11 @@ class FirebaseAuthRepository implements AuthRepository {
 
 /// In-memory implementation for tests and widget previews.
 class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.cancelSocial = false, this.emitBeforeName = false});
+  FakeAuthRepository({
+    this.cancelSocial = false,
+    this.emitBeforeName = false,
+    AuthUser? initialUser,
+  }) : _current = initialUser;
   final bool cancelSocial;
 
   /// Mimics Firebase: authStateChanges fires before updateDisplayName lands.

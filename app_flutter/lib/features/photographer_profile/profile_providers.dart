@@ -7,6 +7,8 @@ import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
+import 'package:photobooking/data/review/review.dart';
+import 'package:photobooking/data/review/review_providers.dart';
 
 /// S03.01 "Gói": active packages, cheapest first. One-shot.
 final profilePackagesProvider = FutureProvider.autoDispose
@@ -104,3 +106,70 @@ final portfolioProvider = AsyncNotifierProvider.autoDispose
       PortfolioController.new,
       retry: (_, _) => null,
     );
+
+/// S03.01 "Đánh giá": paginated list of reviews for a photographer.
+class PhotographerReviews extends AsyncNotifier<List<Review>> {
+  PhotographerReviews(this.photographerId);
+
+  final String photographerId;
+  Object? _cursor;
+  bool _hasMore = false;
+  bool _loadingMore = false;
+  bool _loadMoreFailed = false;
+
+  bool get loadMoreFailed => _loadMoreFailed;
+  bool get hasMore => _hasMore;
+  bool get loadingMore => _loadingMore;
+
+  @override
+  Future<List<Review>> build() async {
+    _cursor = null;
+    _hasMore = false;
+    _loadingMore = false;
+    _loadMoreFailed = false;
+    final page = await ref
+        .watch(reviewRepositoryProvider)
+        .forPhotographer(photographerId, limit: 10);
+    _cursor = page.cursor;
+    _hasMore = page.hasMore;
+    return page.items;
+  }
+
+  /// After a failed page the list stops auto-loading; the user taps "Thử lại".
+  Future<void> retryLoadMore() async {
+    _loadMoreFailed = false;
+    await loadMore();
+  }
+
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !_hasMore || _loadingMore || _loadMoreFailed) return;
+    _loadingMore = true;
+    state = AsyncData(List<Review>.of(current));
+    try {
+      final page = await ref
+          .read(reviewRepositoryProvider)
+          .forPhotographer(photographerId, after: _cursor, limit: 10);
+      _cursor = page.cursor;
+      _hasMore = page.hasMore;
+      _loadingMore = false;
+      state = AsyncData([...current, ...page.items]);
+    } catch (_) {
+      _loadingMore = false;
+      _loadMoreFailed = true;
+      state = AsyncData(List<Review>.of(current));
+    }
+  }
+}
+
+final photographerReviewsProvider = AsyncNotifierProvider.autoDispose
+    .family<PhotographerReviews, List<Review>, String>(
+      PhotographerReviews.new,
+    );
+
+/// Post summary for review thumbnails.
+final reviewPostProvider =
+    FutureProvider.autoDispose.family<PostSummary?, String>((ref, postId) {
+  return ref.watch(postRepositoryProvider).byId(postId);
+});
+

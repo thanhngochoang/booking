@@ -17,11 +17,13 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 
 import 'discovery_world.dart';
+import 'fake_review_repository.dart';
 import 'screen_host.dart';
 
 const profileBio =
@@ -51,6 +53,7 @@ class ProfileWorld {
   final availability = FakeAvailabilityRepository();
   final skills = FakeSkillsRepository();
   final contacts = FakePhotographerContactRepository();
+  final reviews = FakeReviewRepository();
   late GoRouter router;
 
   String get uid => discovery.uid;
@@ -97,6 +100,7 @@ class ProfileWorld {
     contactLinkRepositoryProvider.overrideWithValue(
       FakeContactLinkRepository(),
     ),
+    reviewRepositoryProvider.overrideWithValue(reviews),
   ];
 
   Widget app(

@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/review/review_repository.dart';
+import 'fake_booking_repository.dart';
 
 class FakeReviewRepository implements ReviewRepository {
   FakeReviewRepository({
@@ -9,6 +12,9 @@ class FakeReviewRepository implements ReviewRepository {
   });
 
   String currentUserId;
+  String defaultPhotographerId = 'photog1';
+  final Map<String, String> bookingPhotographerIds = {};
+  FakeBookingRepository? bookingRepository;
   ReviewErrorCode? nextError;
   ReviewException? nextException;
 
@@ -117,10 +123,12 @@ class FakeReviewRepository implements ReviewRepository {
       'photos': photos,
     });
 
+    final photogId =
+        bookingPhotographerIds[bookingId] ?? defaultPhotographerId;
     final review = Review(
       bookingId: bookingId,
       customerId: currentUserId,
-      photographerId: 'photog1',
+      photographerId: photogId,
       serviceId: 'srv1',
       rating: rating,
       text: text,
@@ -129,6 +137,26 @@ class FakeReviewRepository implements ReviewRepository {
     );
 
     seedReview(review);
+
+    if (bookingRepository != null &&
+        bookingRepository!.bookings.containsKey(bookingId)) {
+      final old = bookingRepository!.bookings[bookingId]!;
+      final updated = old.copyWith(
+        status: BookingStatus.reviewed,
+        reviewedAt: DateTime.now(),
+      );
+      bookingRepository!.seedBooking(updated);
+      bookingRepository!.addEvent(
+        BookingEventRecord(
+          id: 'event-reviewed-$bookingId',
+          bookingId: bookingId,
+          status: BookingStatus.reviewed,
+          at: DateTime.now(),
+          actorId: currentUserId,
+        ),
+      );
+    }
+
     return postId;
   }
 }
