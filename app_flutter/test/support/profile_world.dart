@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/award/award_providers.dart';
+import 'package:photobooking/data/award/award_repository.dart';
+import 'package:photobooking/data/album/album_repository.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
@@ -19,6 +24,7 @@ import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 
@@ -45,22 +51,37 @@ void usePhoneFor(
 /// plus what S03.01 reads: public profiles, skills, the availability month,
 /// the photographer's contact flags, and stub routes for every link.
 class ProfileWorld {
-  ProfileWorld({UserRole role = UserRole.customer, bool hasPhone = true})
-    : discovery = DiscoveryWorld(role: role, hasPhone: hasPhone);
+  ProfileWorld({
+    UserRole role = UserRole.customer,
+    bool hasPhone = true,
+    List<PhotographerSummary>? photographers,
+  }) : _photographers = photographers ?? discoveryPhotographers(),
+       discovery = DiscoveryWorld(
+         role: role,
+         hasPhone: hasPhone,
+         photographers: photographers,
+       );
 
+  final List<PhotographerSummary> _photographers;
   final DiscoveryWorld discovery;
   final profiles = FakePublicProfileRepository();
   final availability = FakeAvailabilityRepository();
   final skills = FakeSkillsRepository();
   final contacts = FakePhotographerContactRepository();
   final reviews = FakeReviewRepository();
+
+  /// Approved awards of any photographer; empty unless a test adds some.
+  FakeAwardRepository awards = FakeAwardRepository();
+
+  /// Albums of any photographer; empty unless a test adds some.
+  final albums = FakeAlbumRepository();
   late GoRouter router;
 
   String get uid => discovery.uid;
 
   Future<void> init() async {
     await discovery.init();
-    for (final p in discoveryPhotographers()) {
+    for (final p in _photographers) {
       profiles.add(
         PhotographerProfile(
           summary: p,
@@ -101,6 +122,8 @@ class ProfileWorld {
       FakeContactLinkRepository(),
     ),
     reviewRepositoryProvider.overrideWithValue(reviews),
+    albumRepositoryProvider.overrideWithValue(albums),
+    awardRepositoryProvider.overrideWithValue(awards),
   ];
 
   Widget app(
@@ -124,6 +147,13 @@ class ProfileWorld {
           routes: [
             GoRoute(path: 'book', builder: stub),
             GoRoute(path: 'ask', builder: stub),
+            GoRoute(
+              path: 'albums/:albumId',
+              builder: (_, s) => AlbumDetailScreen(
+                uid: s.pathParameters['uid']!,
+                albumId: s.pathParameters['albumId']!,
+              ),
+            ),
           ],
         ),
         for (final p in [
@@ -135,6 +165,7 @@ class ProfileWorld {
           '/setup/4',
           '/settings/profile',
           '/p/:id',
+          '/me/albums',
         ])
           GoRoute(path: p, builder: stub),
       ],

@@ -511,7 +511,6 @@
   "createStyleLabel": "Phong cách",
   "createStyleNone": "Không chọn",
   "createStyleTitle": "Phong cách",
-  "createPortfolio": "Thêm vào portfolio",
   "createPublish": "Đăng",
   "createRemove": "Gỡ ảnh",
   "createMoveUp": "Đưa lên",
@@ -1410,5 +1409,274 @@
       "index": {"type": "int"},
       "percent": {"type": "int"}
     }
-  }
+  },
+  "setupTypeHeading": "Bạn nhận việc với tư cách",
+  "setupTypeIndividual": "Cá nhân",
+  "setupTypeIndividualBody": "Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).",
+  "setupTypeStudio": "Studio",
+  "setupTypeStudioBody": "Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có.",
+  "setupTypeNote": "Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.",
+  "setupStudioName": "Tên studio",
+  "setupStudioAddress": "Địa chỉ cơ sở",
+  "setupStudioLine": "Số nhà, đường",
+  "setupStudioWard": "Phường / xã",
+  "setupStudioDistrict": "Quận / huyện",
+  "setupStudioCity": "Tỉnh / thành phố",
+  "setupStudioLineError": "Nhập số nhà, đường (ít nhất 5 ký tự).",
+  "setupStudioWardError": "Phường / xã tối đa 60 ký tự.",
+  "setupStudioDistrictError": "Nhập quận / huyện.",
+  "setupStudioCityError": "Nhập tỉnh / thành phố.",
+  "setupStudioAddressNote": "Khách chỉ thấy tới quận; địa chỉ đầy đủ hiện sau khi đã đặt.",
+  "providerNotEligible": "Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.",
+  "settingsProviderType": "Hình thức nhận việc",
+  "settingsProviderArtist": "Cá nhân · Nhiếp ảnh gia",
+  "providerTypeSave": "Lưu",
+  "providerTypeKeep": "Giữ nguyên",
+  "providerLoseArtistBody": "Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.",
+  "providerLoseArtistConfirm": "Đổi sang Studio",
+  "createAlbumLabel": "Album · tuỳ chọn",
+  "albumPickTitle": "Xếp vào album",
+  "albumPickNone": "Không xếp album",
+  "albumPickNoneSub": "Chỉ hiện ở Dòng thời gian",
+  "albumPickCount": "{n} bài",
+  "@albumPickCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "albumPickRecent": "dùng gần nhất",
+  "albumPickNew": "Album mới",
+  "albumPickCreate": "Tạo",
+  "albumPickDup": "Bạn đã có album tên này",
+  "albumPickLimit": "Bạn đã có đủ 30 album.",
+  "albumPickCreateError": "Không tạo được album. Thử lại sau.",
+  "albumPickLoadError": "Không tải được danh sách album.",
+  "portfolioAlbumCount": "{n} album",
+  "@portfolioAlbumCount": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "portfolioArrange": "Sắp xếp",
+  "albumDetailCounts": "{posts} bài · {photos} ảnh",
+  "@albumDetailCounts": {
+    "placeholders": {
+      "posts": {"type": "int"},
+      "photos": {"type": "int"}
+    }
+  },
+  "albumDetailEmptyOwner": "Album chưa có bài",
+  "albumDetailEmptyOwnerBody": "Thêm bài để album hiện trên hồ sơ của bạn.",
+  "albumDetailAddPosts": "Thêm bài",
+  "albumDetailGone": "Album này không còn",
+  "albumDetailGoneBody": "Album có thể đã bị xoá hoặc chưa có bài nào.",
+  "albumDetailShare": "Chia sẻ album",
+  "albumDetailLinkCopied": "Đã sao chép liên kết album",
+  "albumDetailMenu": "Tuỳ chọn album",
+  "albumDetailArrange": "Sắp xếp bài",
+  "albumDetailArrangeDone": "Xong",
+  "albumDetailRemove": "Bỏ khỏi album",
+  "albumDetailRemoveFailed": "Chưa bỏ được bài khỏi album.",
+  "albumDetailDelete": "Xoá album",
+  "albumDetailDeleteTitle": "Xoá album này?",
+  "albumDetailDeleteBody": "Bài trong album không bị xoá, chuyển về Chưa xếp album.",
+  "albumDetailDeleteError": "Không xoá được album. Thử lại sau.",
+  "albumDetailReordered": "Đã đổi thứ tự",
+  "albumDetailReorderFailed": "Chưa lưu được thứ tự",
+  "albumDetailUndo": "Hoàn tác",
+  "albumDetailArrangeLoadFailed": "Chưa tải hết bài để sắp xếp. Thử lại sau.",
+  "profileMyAlbums": "Album của tôi",
+  "profileMyAlbumsSub": "Gom bài thành album, sắp xếp thứ tự trên hồ sơ",
+  "myAlbumsTitle": "Album của tôi",
+  "myAlbumsHint": "Thứ tự dưới đây là thứ tự trên hồ sơ. Giữ ≡ rồi kéo, hoặc chạm … → Chuyển lên / xuống.",
+  "myAlbumsFeatured": "hiện rộng",
+  "myAlbumsUnsorted": "Chưa xếp album",
+  "myAlbumsUnsortedSub": "{n} bài · chỉ ở Dòng thời gian",
+  "@myAlbumsUnsortedSub": {
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "myAlbumsEmptyTitle": "Gom bài thành album để khách xem theo bộ",
+  "myAlbumsEmptyBody": "Bài chưa xếp album vẫn hiện ở Dòng thời gian.",
+  "myAlbumsOpen": "Xem album",
+  "myAlbumsEdit": "Sửa",
+  "albumEditNew": "Album mới",
+  "albumEditTitle": "Sửa album",
+  "albumEditClose": "Đóng",
+  "albumEditName": "Tên album · bắt buộc",
+  "albumEditNameCount": "{n} / {max}",
+  "@albumEditNameCount": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "albumEditNameRequired": "Nhập tên album",
+  "albumEditDesc": "Mô tả · tuỳ chọn",
+  "albumEditCover": "Ảnh bìa",
+  "albumEditCoverAuto": "Tự động: ảnh đầu tiên của album",
+  "albumEditCoverChosen": "Đã chọn một ảnh làm bìa",
+  "albumEditCoverPick": "Chọn ảnh",
+  "albumEditCoverTitle": "Chọn ảnh bìa",
+  "albumEditCoverReset": "Dùng ảnh tự động",
+  "albumEditCoverLoadError": "Không tải được ảnh của album.",
+  "albumEditCoverTile": "Ảnh {index} trên {count}",
+  "@albumEditCoverTile": {
+    "placeholders": {
+      "index": {"type": "int"},
+      "count": {"type": "int"}
+    }
+  },
+  "albumEditNote": "Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.",
+  "albumEditCreate": "Tạo và thêm bài",
+  "albumEditSave": "Lưu",
+  "albumEditSaveError": "Chưa lưu được album. Thử lại sau.",
+  "albumEditDiscardTitle": "Bỏ thay đổi?",
+  "albumEditDiscardBody": "Những gì bạn vừa nhập sẽ mất.",
+  "albumEditDiscard": "Bỏ",
+  "albumEditKeep": "Tiếp tục sửa",
+  "addPostsTitle": "Thêm bài vào album",
+  "addPostsSelected": "{n} đã chọn",
+  "@addPostsSelected": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "addPostsTabUnsorted": "Chưa xếp · {n}",
+  "@addPostsTabUnsorted": {
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "addPostsTabAll": "Tất cả bài · {n}",
+  "@addPostsTabAll": {
+    "placeholders": {
+      "n": {"type": "String"}
+    }
+  },
+  "addPostsMoveWarn": "{n} bài đang ở \"{album}\" sẽ chuyển sang album này.",
+  "@addPostsMoveWarn": {
+    "placeholders": {
+      "n": {"type": "int"},
+      "album": {"type": "String"}
+    }
+  },
+  "addPostsMoveWarnMany": "{n} bài đang ở album khác sẽ chuyển sang album này.",
+  "@addPostsMoveWarnMany": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "addPostsAdd": "Thêm {n} bài",
+  "@addPostsAdd": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "addPostsPick": "Chọn bài để thêm",
+  "addPostsFull": "Album đã đủ 200 bài",
+  "addPostsNoneTitle": "Đăng bài trước",
+  "addPostsNoneBody": "Bài bạn đăng sẽ hiện ở đây để xếp vào album.",
+  "addPostsNoneAction": "Đăng bài",
+  "addPostsUnsortedEmpty": "Mọi bài của bạn đã nằm trong album.",
+  "addPostsLoadError": "Không tải được bài. Thử lại sau.",
+  "addPostsError": "Chưa thêm được bài. Thử lại sau.",
+  "addPostsPartial": "Đã thêm {done} bài, còn {left} bài chưa thêm được.",
+  "@addPostsPartial": {
+    "placeholders": {
+      "done": {"type": "int"},
+      "left": {"type": "int"}
+    }
+  },
+  "addPostsMore": "Xem thêm bài",
+  "myAlbumsUnsortedSubUnknown": "Bài chưa xếp · chỉ ở Dòng thời gian",
+  "s2501Title": "Giải thưởng",
+  "s2501Info": "Về hạng Nhiếp ảnh gia",
+  "s2501InfoBody": "Khi có ít nhất 3 giải đã được duyệt, hồ sơ Cá nhân của bạn tự lên hạng Nhiếp ảnh gia và có tích vàng. Hồ sơ Studio vẫn khai giải được nhưng không tính hạng. Nếu số giải đã duyệt xuống dưới 3, hạng quay về Cá nhân. Chỉ giải đã duyệt hiện trên hồ sơ công khai.",
+  "s2501InfoClose": "Đã hiểu",
+  "s2501Tier": "Hạng Nhiếp ảnh gia (NAG)",
+  "s2501Remaining": "Còn {n} giải đã duyệt nữa để nhận tích vàng",
+  "@s2501Remaining": {"placeholders": {"n": {"type": "int"}}},
+  "s2501IsArtist": "Bạn là Nhiếp ảnh gia · từ {date}",
+  "@s2501IsArtist": {"placeholders": {"date": {"type": "String"}}},
+  "s2501IsArtistNoDate": "Bạn là Nhiếp ảnh gia",
+  "s2501Progress": "{a} / {n} giải đã duyệt",
+  "@s2501Progress": {"placeholders": {"a": {"type": "int"}, "n": {"type": "int"}}},
+  "s2501Listed": "Đã khai · {n} giải",
+  "@s2501Listed": {"placeholders": {"n": {"type": "int"}}},
+  "s2501Add": "Thêm giải thưởng",
+  "s2501EmptyTitle": "Giải thưởng giúp khách tin tác phẩm của bạn",
+  "s2501EmptyBody": "Khai giải kèm minh chứng. Giải được duyệt sẽ hiện trên hồ sơ của bạn.",
+  "s2501LoadError": "Không tải được giải thưởng. Thử lại sau.",
+  "s2501RowTitle": "{result} · {competition} {year}",
+  "@s2501RowTitle": {"placeholders": {"result": {"type": "String"}, "competition": {"type": "String"}, "year": {"type": "int"}}},
+  "s2501Sent": "gửi {date}",
+  "@s2501Sent": {"placeholders": {"date": {"type": "String"}}},
+  "s2501DeleteTitle": "Xoá giải thưởng?",
+  "s2501DeleteBody": "Giải và minh chứng đã tải lên sẽ bị xoá.",
+  "s2501Delete": "Xoá",
+  "s2501DeleteError": "Chưa xoá được giải. Thử lại sau.",
+  "s2501EditApprovedTitle": "Sửa giải đã duyệt?",
+  "s2501EditApprovedBody": "Giải sẽ được duyệt lại. Trong lúc chờ, giải ẩn khỏi hồ sơ công khai và không tính vào hạng.",
+  "s2501EditApprovedGo": "Tiếp tục sửa",
+  "s2502Add": "Thêm giải thưởng",
+  "s2502Edit": "Sửa giải thưởng",
+  "s2502Competition": "Cuộc thi / triển lãm · bắt buộc",
+  "s2502CompetitionRequired": "Nhập tên cuộc thi hoặc triển lãm",
+  "s2502Year": "Năm",
+  "s2502YearInvalid": "Năm từ 1950 đến {max}",
+  "@s2502YearInvalid": {"placeholders": {"max": {"type": "int"}}},
+  "s2502Category": "Hạng mục",
+  "s2502Result": "Kết quả · bắt buộc",
+  "s2502Work": "Tác phẩm · tuỳ chọn",
+  "s2502WorkNone": "Không gắn tác phẩm",
+  "s2502WorkChosen": "Đã chọn một tác phẩm",
+  "s2502WorkTitle": "Chọn tác phẩm",
+  "s2502WorkClear": "Bỏ chọn tác phẩm",
+  "s2502WorkEmpty": "Bạn chưa có bài nào để gắn.",
+  "s2502WorkLoadError": "Không tải được bài của bạn. Thử lại sau.",
+  "s2502Proof": "Minh chứng · bắt buộc",
+  "s2502ProofNone": "Thêm ảnh giấy chứng nhận hoặc link trang công bố",
+  "s2502ProofSummary": "{images} ảnh · {links} link",
+  "@s2502ProofSummary": {"placeholders": {"images": {"type": "int"}, "links": {"type": "int"}}},
+  "s2502ProofTitle": "Minh chứng",
+  "s2502ProofImages": "Ảnh giấy chứng nhận · {n} / {max}",
+  "@s2502ProofImages": {"placeholders": {"n": {"type": "int"}, "max": {"type": "int"}}},
+  "s2502ProofAddImage": "Thêm ảnh",
+  "s2502ProofLinks": "Link trang công bố · tối đa {max}",
+  "@s2502ProofLinks": {"placeholders": {"max": {"type": "int"}}},
+  "s2502ProofAddLink": "Thêm link",
+  "s2502LinkLabel": "Link",
+  "s2502LinkHttps": "Link phải bắt đầu bằng https://",
+  "s2502LinkRemove": "Xoá link",
+  "s2502ProofDone": "Xong",
+  "s2502TileUploading": "Đang tải ảnh {n}",
+  "@s2502TileUploading": {"placeholders": {"n": {"type": "int"}}},
+  "s2502TileFailed": "Chưa tải được ảnh {n}. Chạm để thử lại",
+  "@s2502TileFailed": {"placeholders": {"n": {"type": "int"}}},
+  "s2502TileDone": "Ảnh {n} đã tải",
+  "@s2502TileDone": {"placeholders": {"n": {"type": "int"}}},
+  "s2502TileSaved": "Ảnh {n} đã gửi trước đó",
+  "@s2502TileSaved": {"placeholders": {"n": {"type": "int"}}},
+  "s2502TileRemove": "Xoá ảnh {n}",
+  "@s2502TileRemove": {"placeholders": {"n": {"type": "int"}}},
+  "s2502Privacy": "Minh chứng chỉ đội duyệt xem và được xoá 30 ngày sau khi duyệt xong. Duyệt trong 3 ngày làm việc.",
+  "s2502Submit": "Gửi duyệt",
+  "s2502SubmitWait": "Đợi ảnh tải xong hoặc xoá ảnh lỗi trước khi gửi.",
+  "s2502LoadError": "Không mở được giải này. Thử lại sau.",
+  "s2502SubmitError": "Chưa gửi được. Thử lại sau.",
+  "s2502SubmitLimit": "Bạn đã khai tối đa 50 giải.",
+  "s2502SubmitRejected": "Thông tin chưa hợp lệ. Kiểm tra lại các ô.",
+  "settingsAwards": "Giải thưởng",
+  "settingsAwardsBody": "Khai giải để lên hạng Nhiếp ảnh gia",
+  "profileAwardNudge": "Có giải thưởng? Lên hạng Nhiếp ảnh gia",
+  "profileAwardNudgeLater": "Để sau",
+  "profileStatAwards": "giải thưởng",
+  "profileAwardSub": "{competition} {year}",
+  "@profileAwardSub": {"placeholders": {"competition": {"type": "String"}, "year": {"type": "int"}}},
+  "profileAwardSubCategory": "{competition} {year} · {category}",
+  "@profileAwardSubCategory": {"placeholders": {"competition": {"type": "String"}, "year": {"type": "int"}, "category": {"type": "String"}}},
+  "profileAwardsMore": "Xem cả {n} giải",
+  "@profileAwardsMore": {"placeholders": {"n": {"type": "int"}}}
 }

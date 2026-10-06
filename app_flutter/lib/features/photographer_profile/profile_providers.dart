@@ -2,6 +2,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:photobooking/core/core.dart' show PortfolioView;
+import 'package:photobooking/data/album/album_providers.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
@@ -163,13 +165,42 @@ class PhotographerReviews extends AsyncNotifier<List<Review>> {
 }
 
 final photographerReviewsProvider = AsyncNotifierProvider.autoDispose
-    .family<PhotographerReviews, List<Review>, String>(
-      PhotographerReviews.new,
-    );
+    .family<PhotographerReviews, List<Review>, String>(PhotographerReviews.new);
 
 /// Post summary for review thumbnails.
-final reviewPostProvider =
-    FutureProvider.autoDispose.family<PostSummary?, String>((ref, postId) {
-  return ref.watch(postRepositoryProvider).byId(postId);
-});
+final reviewPostProvider = FutureProvider.autoDispose
+    .family<PostSummary?, String>((ref, postId) {
+      return ref.watch(postRepositoryProvider).byId(postId);
+    });
 
+/// What the visitor picked on the Portfolio toggle this session; null until
+/// they pick. Kept alive so leaving and returning to a profile keeps it.
+class PortfolioViewChoice extends Notifier<PortfolioView?> {
+  PortfolioViewChoice(this.photographerId);
+
+  final String photographerId;
+
+  @override
+  PortfolioView? build() => null;
+
+  void choose(PortfolioView view) => state = view;
+}
+
+final portfolioViewChoiceProvider =
+    NotifierProvider.family<PortfolioViewChoice, PortfolioView?, String>(
+      PortfolioViewChoice.new,
+    );
+
+/// The Portfolio view in use: Album when the profile has at least one visible
+/// album, else the timeline; once the visitor picks, their pick (unless
+/// there is no album left to show).
+final portfolioViewProvider = Provider.autoDispose
+    .family<PortfolioView, String>((ref, photographerId) {
+      final albums =
+          ref.watch(profileAlbumsProvider(photographerId)).value ?? const [];
+      if (albums.isEmpty) {
+        return PortfolioView.timeline;
+      }
+      return ref.watch(portfolioViewChoiceProvider(photographerId)) ??
+          PortfolioView.albums;
+    });

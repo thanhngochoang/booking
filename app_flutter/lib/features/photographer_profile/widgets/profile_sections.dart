@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/album/album.dart';
+import 'package:photobooking/data/album/album_providers.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
@@ -30,11 +32,178 @@ class _Quiet extends StatelessWidget {
   );
 }
 
-/// S03.01 "Portfolio": a lazy two-column grid (only visible tiles are built,
-/// each photo decoded at tile size by `NetworkPhoto`), "Xem thêm ảnh", then
-/// "Thợ ảnh tương tự".
-class PortfolioSliver extends ConsumerWidget {
-  const PortfolioSliver({super.key, required this.photographerId});
+/// S03.01 "Portfolio": the Album / Dòng thời gian toggle with its count and,
+/// for the owner, "Sắp xếp"; then the chosen view and "Thợ ảnh tương tự".
+///
+/// Albums view: the first album full width, the rest two per row. Timeline
+/// view: a lazy two-column grid (only visible tiles are built, each photo
+/// decoded at tile size by `NetworkPhoto`) and "Xem thêm ảnh". With no visible
+/// album there is no toggle and only the timeline. The page scroll offset of
+/// each view is remembered while switching.
+class PortfolioSliver extends ConsumerStatefulWidget {
+  const PortfolioSliver({
+    super.key,
+    required this.photographerId,
+    this.owner = false,
+  });
+  final String photographerId;
+  final bool owner;
+
+  @override
+  ConsumerState<PortfolioSliver> createState() => _PortfolioSliverState();
+}
+
+class _PortfolioSliverState extends ConsumerState<PortfolioSliver> {
+  final _offsets = <PortfolioView, double>{};
+  final _headerKey = GlobalKey();
+
+  /// Where the header row sits in the viewport when a view is shown for the
+  /// first time (0 = top edge).
+  static const _firstVisitAlignment = 0.15;
+
+  void _switchTo(PortfolioView from, PortfolioView to) {
+    final position = Scrollable.maybeOf(context)?.position;
+    if (position != null && position.hasPixels) {
+      _offsets[from] = position.pixels;
+    }
+    ref
+        .read(portfolioViewChoiceProvider(widget.photographerId).notifier)
+        .choose(to);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || position == null || !position.hasPixels) {
+        return;
+      }
+      final saved = _offsets[to];
+      if (saved != null) {
+        position.jumpTo(
+          saved.clamp(position.minScrollExtent, position.maxScrollExtent),
+        );
+        return;
+      }
+      final header = _headerKey.currentContext;
+      if (header != null) {
+        Scrollable.ensureVisible(header, alignment: _firstVisitAlignment);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final uid = widget.photographerId;
+    final albumsAsync = ref.watch(profileAlbumsProvider(uid));
+    if (albumsAsync.isLoading && !albumsAsync.hasValue) {
+      return const SliverToBoxAdapter(
+        child: AlbumTile.skeleton(featured: true),
+      );
+    }
+    final albums = albumsAsync.value ?? const <AlbumSummary>[];
+    final view = ref.watch(portfolioViewProvider(uid));
+    final showHeader = albums.isNotEmpty || widget.owner;
+    return SliverMainAxisGroup(
+      slivers: [
+        if (showHeader)
+          SliverToBoxAdapter(
+            child: Padding(
+              key: _headerKey,
+              padding: const EdgeInsets.only(bottom: AppSpace.s3),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (albums.isNotEmpty)
+                    PortfolioViewToggle(
+                      key: const Key('portfolio-toggle'),
+                      value: view,
+                      onChanged: (v) {
+                        if (v != view) {
+                          _switchTo(view, v);
+                        }
+                      },
+                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (albums.isNotEmpty)
+                        Text(
+                          l.portfolioAlbumCount(albums.length),
+                          key: const Key('portfolio-album-count'),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      if (widget.owner)
+                        TextButton(
+                          key: const Key('portfolio-arrange'),
+                          onPressed: () => context.push('/me/albums'),
+                          child: Text(l.portfolioArrange),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (view == PortfolioView.albums && albums.isNotEmpty)
+          ..._albumSlivers(albums)
+        else
+          _TimelineSlivers(photographerId: uid),
+        SliverToBoxAdapter(child: _Similar(photographerId: uid)),
+      ],
+    );
+  }
+
+  List<Widget> _albumSlivers(List<AlbumSummary> albums) {
+    void open(AlbumSummary a) =>
+        context.push('/u/${widget.photographerId}/albums/${a.id}');
+    final rest = albums.skip(1).toList();
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(top: AppSpace.s2, bottom: AppSpace.s4),
+          child: AlbumTile(
+            key: Key('album-${albums.first.id}'),
+            featured: true,
+            title: albums.first.title,
+            photoCount: albums.first.mediaCount,
+            coverUrl: albums.first.coverUrl,
+            onTap: () => open(albums.first),
+          ),
+        ),
+      ),
+      SliverList.builder(
+        itemCount: (rest.length + 1) ~/ 2,
+        itemBuilder: (context, row) {
+          Widget cell(int i) => i >= rest.length
+              ? const SizedBox.shrink()
+              : AlbumTile(
+                  key: Key('album-${rest[i].id}'),
+                  title: rest[i].title,
+                  photoCount: rest[i].mediaCount,
+                  coverUrl: rest[i].coverUrl,
+                  onTap: () => open(rest[i]),
+                );
+          return Padding(
+            padding: const EdgeInsets.only(
+              top: AppSpace.s2,
+              bottom: AppSpace.s4,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: cell(row * 2)),
+                const SizedBox(width: AppSpace.s3),
+                Expanded(child: cell(row * 2 + 1)),
+              ],
+            ),
+          );
+        },
+      ),
+    ];
+  }
+}
+
+/// The timeline view: every work post, newest first.
+class _TimelineSlivers extends ConsumerWidget {
+  const _TimelineSlivers({required this.photographerId});
   final String photographerId;
 
   @override
@@ -48,11 +217,8 @@ class PortfolioSliver extends ConsumerWidget {
             ?.evidencePostIds ??
         const <String>{};
     return switch (state) {
-      AsyncData(:final value) when value.posts.isEmpty => SliverMainAxisGroup(
-        slivers: [
-          SliverToBoxAdapter(child: _Quiet(l.profileNoPortfolio)),
-          SliverToBoxAdapter(child: _Similar(photographerId: photographerId)),
-        ],
+      AsyncData(:final value) when value.posts.isEmpty => SliverToBoxAdapter(
+        child: _Quiet(l.profileNoPortfolio),
       ),
       AsyncData(:final value) => SliverMainAxisGroup(
         slivers: [
@@ -82,7 +248,6 @@ class PortfolioSliver extends ConsumerWidget {
                 ),
               ),
             ),
-          SliverToBoxAdapter(child: _Similar(photographerId: photographerId)),
         ],
       ),
       AsyncError() => SliverToBoxAdapter(

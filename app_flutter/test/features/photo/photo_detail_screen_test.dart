@@ -6,6 +6,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/photo/photo_detail_screen.dart';
 
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
 import '../../support/content_fixtures.dart';
@@ -77,6 +78,37 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'photo detail author line shows the studio seal for a verified studio',
+    (tester) async {
+      await _open(
+        tester,
+        DiscoveryWorld(
+          photographers: [
+            for (final p in discoveryPhotographers())
+              if (p.id == 'p1')
+                fixturePhotographer(
+                  'p1',
+                  name: 'Minh Trí',
+                  verified: true,
+                  providerType: ProviderType.studio,
+                  specialties: const ['portrait', 'wedding'],
+                  areaLabel: 'Quận 3',
+                )
+              else
+                p,
+          ],
+        ),
+      );
+      expect(find.byType(VerifiedMark), findsNothing);
+      expect(find.byType(ProviderMark), findsOneWidget);
+      expect(
+        tester.widget<ProviderMark>(find.byType(ProviderMark)).kind,
+        ProviderMarkKind.studio,
+      );
+    },
+  );
 
   testWidgets('the package card shows the package thumbnail beside its name', (
     tester,

@@ -8,6 +8,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/awards/award_nudge.dart';
 import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
@@ -190,6 +191,11 @@ class ProfileTab extends ConsumerWidget {
                           ),
                         ),
                       ],
+                      if (isPhotographer) ...[
+                        const SizedBox(height: AppSpace.s4),
+                        const _MyAlbumsRow(),
+                        AwardNudgeRow(uid: profile!.uid),
+                      ],
                       const SizedBox(height: AppSpace.s6),
                       GlassCard(
                         highlight: false,
@@ -253,6 +259,59 @@ class ProfileTab extends ConsumerWidget {
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S09.01: photographers open S24.02 from here.
+class _MyAlbumsRow extends StatelessWidget {
+  const _MyAlbumsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return GlassCard(
+      highlight: false,
+      child: Semantics(
+        button: true,
+        label: '${l.profileMyAlbums}. ${l.profileMyAlbumsSub}',
+        excludeSemantics: true,
+        onTap: () => context.push('/me/albums'),
+        child: InkWell(
+          key: const Key('open-my-albums'),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () => context.push('/me/albums'),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSpace.s12),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpace.s4),
+              child: Row(
+                children: [
+                  const Icon(Icons.collections_outlined),
+                  const SizedBox(width: AppSpace.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.profileMyAlbums,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        Text(
+                          l.profileMyAlbumsSub,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
               ),
             ),
           ),

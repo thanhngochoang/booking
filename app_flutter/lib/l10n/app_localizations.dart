@@ -2362,12 +2362,6 @@ abstract class AppLocalizations {
   /// **'Phong cách'**
   String get createStyleTitle;
 
-  /// No description provided for @createPortfolio.
-  ///
-  /// In vi, this message translates to:
-  /// **'Thêm vào portfolio'**
-  String get createPortfolio;
-
   /// No description provided for @createPublish.
   ///
   /// In vi, this message translates to:
@@ -4875,6 +4869,1092 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ảnh {index} đang tải lên, {percent}%'**
   String reviewPhotoUploading(int index, int percent);
+
+  /// No description provided for @setupTypeHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận việc với tư cách'**
+  String get setupTypeHeading;
+
+  /// No description provided for @setupTypeIndividual.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cá nhân'**
+  String get setupTypeIndividual;
+
+  /// No description provided for @setupTypeIndividualBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).'**
+  String get setupTypeIndividualBody;
+
+  /// No description provided for @setupTypeStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio'**
+  String get setupTypeStudio;
+
+  /// No description provided for @setupTypeStudioBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có.'**
+  String get setupTypeStudioBody;
+
+  /// No description provided for @setupTypeNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.'**
+  String get setupTypeNote;
+
+  /// No description provided for @setupStudioName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên studio'**
+  String get setupStudioName;
+
+  /// No description provided for @setupStudioAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cơ sở'**
+  String get setupStudioAddress;
+
+  /// No description provided for @setupStudioLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nhà, đường'**
+  String get setupStudioLine;
+
+  /// No description provided for @setupStudioWard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phường / xã'**
+  String get setupStudioWard;
+
+  /// No description provided for @setupStudioDistrict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quận / huyện'**
+  String get setupStudioDistrict;
+
+  /// No description provided for @setupStudioCity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tỉnh / thành phố'**
+  String get setupStudioCity;
+
+  /// No description provided for @setupStudioLineError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số nhà, đường (ít nhất 5 ký tự).'**
+  String get setupStudioLineError;
+
+  /// No description provided for @setupStudioWardError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phường / xã tối đa 60 ký tự.'**
+  String get setupStudioWardError;
+
+  /// No description provided for @setupStudioDistrictError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập quận / huyện.'**
+  String get setupStudioDistrictError;
+
+  /// No description provided for @setupStudioCityError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tỉnh / thành phố.'**
+  String get setupStudioCityError;
+
+  /// No description provided for @setupStudioAddressNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chỉ thấy tới quận; địa chỉ đầy đủ hiện sau khi đã đặt.'**
+  String get setupStudioAddressNote;
+
+  /// No description provided for @providerNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.'**
+  String get providerNotEligible;
+
+  /// No description provided for @settingsProviderType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hình thức nhận việc'**
+  String get settingsProviderType;
+
+  /// No description provided for @settingsProviderArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cá nhân · Nhiếp ảnh gia'**
+  String get settingsProviderArtist;
+
+  /// No description provided for @providerTypeSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get providerTypeSave;
+
+  /// No description provided for @providerTypeKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ nguyên'**
+  String get providerTypeKeep;
+
+  /// No description provided for @providerLoseArtistBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.'**
+  String get providerLoseArtistBody;
+
+  /// No description provided for @providerLoseArtistConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi sang Studio'**
+  String get providerLoseArtistConfirm;
+
+  /// No description provided for @createAlbumLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album · tuỳ chọn'**
+  String get createAlbumLabel;
+
+  /// No description provided for @albumPickTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xếp vào album'**
+  String get albumPickTitle;
+
+  /// No description provided for @albumPickNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không xếp album'**
+  String get albumPickNone;
+
+  /// No description provided for @albumPickNoneSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ hiện ở Dòng thời gian'**
+  String get albumPickNoneSub;
+
+  /// No description provided for @albumPickCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài'**
+  String albumPickCount(int n);
+
+  /// No description provided for @albumPickRecent.
+  ///
+  /// In vi, this message translates to:
+  /// **'dùng gần nhất'**
+  String get albumPickRecent;
+
+  /// No description provided for @albumPickNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album mới'**
+  String get albumPickNew;
+
+  /// No description provided for @albumPickCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo'**
+  String get albumPickCreate;
+
+  /// No description provided for @albumPickDup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có album tên này'**
+  String get albumPickDup;
+
+  /// No description provided for @albumPickLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có đủ 30 album.'**
+  String get albumPickLimit;
+
+  /// No description provided for @albumPickCreateError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tạo được album. Thử lại sau.'**
+  String get albumPickCreateError;
+
+  /// No description provided for @albumPickLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được danh sách album.'**
+  String get albumPickLoadError;
+
+  /// No description provided for @portfolioAlbumCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} album'**
+  String portfolioAlbumCount(int n);
+
+  /// No description provided for @portfolioArrange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp xếp'**
+  String get portfolioArrange;
+
+  /// No description provided for @albumDetailCounts.
+  ///
+  /// In vi, this message translates to:
+  /// **'{posts} bài · {photos} ảnh'**
+  String albumDetailCounts(int posts, int photos);
+
+  /// No description provided for @albumDetailEmptyOwner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album chưa có bài'**
+  String get albumDetailEmptyOwner;
+
+  /// No description provided for @albumDetailEmptyOwnerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm bài để album hiện trên hồ sơ của bạn.'**
+  String get albumDetailEmptyOwnerBody;
+
+  /// No description provided for @albumDetailAddPosts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm bài'**
+  String get albumDetailAddPosts;
+
+  /// No description provided for @albumDetailGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album này không còn'**
+  String get albumDetailGone;
+
+  /// No description provided for @albumDetailGoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album có thể đã bị xoá hoặc chưa có bài nào.'**
+  String get albumDetailGoneBody;
+
+  /// No description provided for @albumDetailShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ album'**
+  String get albumDetailShare;
+
+  /// No description provided for @albumDetailLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết album'**
+  String get albumDetailLinkCopied;
+
+  /// No description provided for @albumDetailMenu.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuỳ chọn album'**
+  String get albumDetailMenu;
+
+  /// No description provided for @albumDetailArrange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp xếp bài'**
+  String get albumDetailArrange;
+
+  /// No description provided for @albumDetailArrangeDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get albumDetailArrangeDone;
+
+  /// No description provided for @albumDetailRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ khỏi album'**
+  String get albumDetailRemove;
+
+  /// No description provided for @albumDetailRemoveFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa bỏ được bài khỏi album.'**
+  String get albumDetailRemoveFailed;
+
+  /// No description provided for @albumDetailDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá album'**
+  String get albumDetailDelete;
+
+  /// No description provided for @albumDetailDeleteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá album này?'**
+  String get albumDetailDeleteTitle;
+
+  /// No description provided for @albumDetailDeleteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài trong album không bị xoá, chuyển về Chưa xếp album.'**
+  String get albumDetailDeleteBody;
+
+  /// No description provided for @albumDetailDeleteError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không xoá được album. Thử lại sau.'**
+  String get albumDetailDeleteError;
+
+  /// No description provided for @albumDetailReordered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đổi thứ tự'**
+  String get albumDetailReordered;
+
+  /// No description provided for @albumDetailReorderFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được thứ tự'**
+  String get albumDetailReorderFailed;
+
+  /// No description provided for @albumDetailUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get albumDetailUndo;
+
+  /// No description provided for @albumDetailArrangeLoadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải hết bài để sắp xếp. Thử lại sau.'**
+  String get albumDetailArrangeLoadFailed;
+
+  /// No description provided for @profileMyAlbums.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album của tôi'**
+  String get profileMyAlbums;
+
+  /// No description provided for @profileMyAlbumsSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gom bài thành album, sắp xếp thứ tự trên hồ sơ'**
+  String get profileMyAlbumsSub;
+
+  /// No description provided for @myAlbumsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album của tôi'**
+  String get myAlbumsTitle;
+
+  /// No description provided for @myAlbumsHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ tự dưới đây là thứ tự trên hồ sơ. Giữ ≡ rồi kéo, hoặc chạm … → Chuyển lên / xuống.'**
+  String get myAlbumsHint;
+
+  /// No description provided for @myAlbumsFeatured.
+  ///
+  /// In vi, this message translates to:
+  /// **'hiện rộng'**
+  String get myAlbumsFeatured;
+
+  /// No description provided for @myAlbumsUnsorted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xếp album'**
+  String get myAlbumsUnsorted;
+
+  /// No description provided for @myAlbumsUnsortedSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài · chỉ ở Dòng thời gian'**
+  String myAlbumsUnsortedSub(String n);
+
+  /// No description provided for @myAlbumsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gom bài thành album để khách xem theo bộ'**
+  String get myAlbumsEmptyTitle;
+
+  /// No description provided for @myAlbumsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài chưa xếp album vẫn hiện ở Dòng thời gian.'**
+  String get myAlbumsEmptyBody;
+
+  /// No description provided for @myAlbumsOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem album'**
+  String get myAlbumsOpen;
+
+  /// No description provided for @myAlbumsEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa'**
+  String get myAlbumsEdit;
+
+  /// No description provided for @albumEditNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album mới'**
+  String get albumEditNew;
+
+  /// No description provided for @albumEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa album'**
+  String get albumEditTitle;
+
+  /// No description provided for @albumEditClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get albumEditClose;
+
+  /// No description provided for @albumEditName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên album · bắt buộc'**
+  String get albumEditName;
+
+  /// No description provided for @albumEditNameCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / {max}'**
+  String albumEditNameCount(int n, int max);
+
+  /// No description provided for @albumEditNameRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên album'**
+  String get albumEditNameRequired;
+
+  /// No description provided for @albumEditDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả · tuỳ chọn'**
+  String get albumEditDesc;
+
+  /// No description provided for @albumEditCover.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh bìa'**
+  String get albumEditCover;
+
+  /// No description provided for @albumEditCoverAuto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tự động: ảnh đầu tiên của album'**
+  String get albumEditCoverAuto;
+
+  /// No description provided for @albumEditCoverChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn một ảnh làm bìa'**
+  String get albumEditCoverChosen;
+
+  /// No description provided for @albumEditCoverPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ảnh'**
+  String get albumEditCoverPick;
+
+  /// No description provided for @albumEditCoverTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ảnh bìa'**
+  String get albumEditCoverTitle;
+
+  /// No description provided for @albumEditCoverReset.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng ảnh tự động'**
+  String get albumEditCoverReset;
+
+  /// No description provided for @albumEditCoverLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ảnh của album.'**
+  String get albumEditCoverLoadError;
+
+  /// No description provided for @albumEditCoverTile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {index} trên {count}'**
+  String albumEditCoverTile(int index, int count);
+
+  /// No description provided for @albumEditNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.'**
+  String get albumEditNote;
+
+  /// No description provided for @albumEditCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo và thêm bài'**
+  String get albumEditCreate;
+
+  /// No description provided for @albumEditSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get albumEditSave;
+
+  /// No description provided for @albumEditSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được album. Thử lại sau.'**
+  String get albumEditSaveError;
+
+  /// No description provided for @albumEditDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ thay đổi?'**
+  String get albumEditDiscardTitle;
+
+  /// No description provided for @albumEditDiscardBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Những gì bạn vừa nhập sẽ mất.'**
+  String get albumEditDiscardBody;
+
+  /// No description provided for @albumEditDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ'**
+  String get albumEditDiscard;
+
+  /// No description provided for @albumEditKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục sửa'**
+  String get albumEditKeep;
+
+  /// No description provided for @addPostsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm bài vào album'**
+  String get addPostsTitle;
+
+  /// No description provided for @addPostsSelected.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} đã chọn'**
+  String addPostsSelected(int n);
+
+  /// No description provided for @addPostsTabUnsorted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xếp · {n}'**
+  String addPostsTabUnsorted(String n);
+
+  /// No description provided for @addPostsTabAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả bài · {n}'**
+  String addPostsTabAll(String n);
+
+  /// No description provided for @addPostsMoveWarn.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài đang ở \"{album}\" sẽ chuyển sang album này.'**
+  String addPostsMoveWarn(int n, String album);
+
+  /// No description provided for @addPostsMoveWarnMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài đang ở album khác sẽ chuyển sang album này.'**
+  String addPostsMoveWarnMany(int n);
+
+  /// No description provided for @addPostsAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm {n} bài'**
+  String addPostsAdd(int n);
+
+  /// No description provided for @addPostsPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn bài để thêm'**
+  String get addPostsPick;
+
+  /// No description provided for @addPostsFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Album đã đủ 200 bài'**
+  String get addPostsFull;
+
+  /// No description provided for @addPostsNoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài trước'**
+  String get addPostsNoneTitle;
+
+  /// No description provided for @addPostsNoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài bạn đăng sẽ hiện ở đây để xếp vào album.'**
+  String get addPostsNoneBody;
+
+  /// No description provided for @addPostsNoneAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài'**
+  String get addPostsNoneAction;
+
+  /// No description provided for @addPostsUnsortedEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi bài của bạn đã nằm trong album.'**
+  String get addPostsUnsortedEmpty;
+
+  /// No description provided for @addPostsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài. Thử lại sau.'**
+  String get addPostsLoadError;
+
+  /// No description provided for @addPostsError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thêm được bài. Thử lại sau.'**
+  String get addPostsError;
+
+  /// No description provided for @addPostsPartial.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thêm {done} bài, còn {left} bài chưa thêm được.'**
+  String addPostsPartial(int done, int left);
+
+  /// No description provided for @addPostsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm bài'**
+  String get addPostsMore;
+
+  /// No description provided for @myAlbumsUnsortedSubUnknown.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài chưa xếp · chỉ ở Dòng thời gian'**
+  String get myAlbumsUnsortedSubUnknown;
+
+  /// No description provided for @s2501Title.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng'**
+  String get s2501Title;
+
+  /// No description provided for @s2501Info.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về hạng Nhiếp ảnh gia'**
+  String get s2501Info;
+
+  /// No description provided for @s2501InfoBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi có ít nhất 3 giải đã được duyệt, hồ sơ Cá nhân của bạn tự lên hạng Nhiếp ảnh gia và có tích vàng. Hồ sơ Studio vẫn khai giải được nhưng không tính hạng. Nếu số giải đã duyệt xuống dưới 3, hạng quay về Cá nhân. Chỉ giải đã duyệt hiện trên hồ sơ công khai.'**
+  String get s2501InfoBody;
+
+  /// No description provided for @s2501InfoClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hiểu'**
+  String get s2501InfoClose;
+
+  /// No description provided for @s2501Tier.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạng Nhiếp ảnh gia (NAG)'**
+  String get s2501Tier;
+
+  /// No description provided for @s2501Remaining.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} giải đã duyệt nữa để nhận tích vàng'**
+  String s2501Remaining(int n);
+
+  /// No description provided for @s2501IsArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn là Nhiếp ảnh gia · từ {date}'**
+  String s2501IsArtist(String date);
+
+  /// No description provided for @s2501IsArtistNoDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn là Nhiếp ảnh gia'**
+  String get s2501IsArtistNoDate;
+
+  /// No description provided for @s2501Progress.
+  ///
+  /// In vi, this message translates to:
+  /// **'{a} / {n} giải đã duyệt'**
+  String s2501Progress(int a, int n);
+
+  /// No description provided for @s2501Listed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khai · {n} giải'**
+  String s2501Listed(int n);
+
+  /// No description provided for @s2501Add.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm giải thưởng'**
+  String get s2501Add;
+
+  /// No description provided for @s2501EmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng giúp khách tin tác phẩm của bạn'**
+  String get s2501EmptyTitle;
+
+  /// No description provided for @s2501EmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khai giải kèm minh chứng. Giải được duyệt sẽ hiện trên hồ sơ của bạn.'**
+  String get s2501EmptyBody;
+
+  /// No description provided for @s2501LoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được giải thưởng. Thử lại sau.'**
+  String get s2501LoadError;
+
+  /// No description provided for @s2501RowTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{result} · {competition} {year}'**
+  String s2501RowTitle(String result, String competition, int year);
+
+  /// No description provided for @s2501Sent.
+  ///
+  /// In vi, this message translates to:
+  /// **'gửi {date}'**
+  String s2501Sent(String date);
+
+  /// No description provided for @s2501DeleteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá giải thưởng?'**
+  String get s2501DeleteTitle;
+
+  /// No description provided for @s2501DeleteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải và minh chứng đã tải lên sẽ bị xoá.'**
+  String get s2501DeleteBody;
+
+  /// No description provided for @s2501Delete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get s2501Delete;
+
+  /// No description provided for @s2501DeleteError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xoá được giải. Thử lại sau.'**
+  String get s2501DeleteError;
+
+  /// No description provided for @s2501EditApprovedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa giải đã duyệt?'**
+  String get s2501EditApprovedTitle;
+
+  /// No description provided for @s2501EditApprovedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải sẽ được duyệt lại. Trong lúc chờ, giải ẩn khỏi hồ sơ công khai và không tính vào hạng.'**
+  String get s2501EditApprovedBody;
+
+  /// No description provided for @s2501EditApprovedGo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục sửa'**
+  String get s2501EditApprovedGo;
+
+  /// No description provided for @s2502Add.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm giải thưởng'**
+  String get s2502Add;
+
+  /// No description provided for @s2502Edit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa giải thưởng'**
+  String get s2502Edit;
+
+  /// No description provided for @s2502Competition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuộc thi / triển lãm · bắt buộc'**
+  String get s2502Competition;
+
+  /// No description provided for @s2502CompetitionRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên cuộc thi hoặc triển lãm'**
+  String get s2502CompetitionRequired;
+
+  /// No description provided for @s2502Year.
+  ///
+  /// In vi, this message translates to:
+  /// **'Năm'**
+  String get s2502Year;
+
+  /// No description provided for @s2502YearInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Năm từ 1950 đến {max}'**
+  String s2502YearInvalid(int max);
+
+  /// No description provided for @s2502Category.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạng mục'**
+  String get s2502Category;
+
+  /// No description provided for @s2502Result.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết quả · bắt buộc'**
+  String get s2502Result;
+
+  /// No description provided for @s2502Work.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tác phẩm · tuỳ chọn'**
+  String get s2502Work;
+
+  /// No description provided for @s2502WorkNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gắn tác phẩm'**
+  String get s2502WorkNone;
+
+  /// No description provided for @s2502WorkChosen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chọn một tác phẩm'**
+  String get s2502WorkChosen;
+
+  /// No description provided for @s2502WorkTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tác phẩm'**
+  String get s2502WorkTitle;
+
+  /// No description provided for @s2502WorkClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ chọn tác phẩm'**
+  String get s2502WorkClear;
+
+  /// No description provided for @s2502WorkEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa có bài nào để gắn.'**
+  String get s2502WorkEmpty;
+
+  /// No description provided for @s2502WorkLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài của bạn. Thử lại sau.'**
+  String get s2502WorkLoadError;
+
+  /// No description provided for @s2502Proof.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng · bắt buộc'**
+  String get s2502Proof;
+
+  /// No description provided for @s2502ProofNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh giấy chứng nhận hoặc link trang công bố'**
+  String get s2502ProofNone;
+
+  /// No description provided for @s2502ProofSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'{images} ảnh · {links} link'**
+  String s2502ProofSummary(int images, int links);
+
+  /// No description provided for @s2502ProofTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng'**
+  String get s2502ProofTitle;
+
+  /// No description provided for @s2502ProofImages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh giấy chứng nhận · {n} / {max}'**
+  String s2502ProofImages(int n, int max);
+
+  /// No description provided for @s2502ProofAddImage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh'**
+  String get s2502ProofAddImage;
+
+  /// No description provided for @s2502ProofLinks.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link trang công bố · tối đa {max}'**
+  String s2502ProofLinks(int max);
+
+  /// No description provided for @s2502ProofAddLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm link'**
+  String get s2502ProofAddLink;
+
+  /// No description provided for @s2502LinkLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link'**
+  String get s2502LinkLabel;
+
+  /// No description provided for @s2502LinkHttps.
+  ///
+  /// In vi, this message translates to:
+  /// **'Link phải bắt đầu bằng https://'**
+  String get s2502LinkHttps;
+
+  /// No description provided for @s2502LinkRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá link'**
+  String get s2502LinkRemove;
+
+  /// No description provided for @s2502ProofDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get s2502ProofDone;
+
+  /// No description provided for @s2502TileUploading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tải ảnh {n}'**
+  String s2502TileUploading(int n);
+
+  /// No description provided for @s2502TileFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải được ảnh {n}. Chạm để thử lại'**
+  String s2502TileFailed(int n);
+
+  /// No description provided for @s2502TileDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {n} đã tải'**
+  String s2502TileDone(int n);
+
+  /// No description provided for @s2502TileSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh {n} đã gửi trước đó'**
+  String s2502TileSaved(int n);
+
+  /// No description provided for @s2502TileRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá ảnh {n}'**
+  String s2502TileRemove(int n);
+
+  /// No description provided for @s2502Privacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Minh chứng chỉ đội duyệt xem và được xoá 30 ngày sau khi duyệt xong. Duyệt trong 3 ngày làm việc.'**
+  String get s2502Privacy;
+
+  /// No description provided for @s2502Submit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi duyệt'**
+  String get s2502Submit;
+
+  /// No description provided for @s2502SubmitWait.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đợi ảnh tải xong hoặc xoá ảnh lỗi trước khi gửi.'**
+  String get s2502SubmitWait;
+
+  /// No description provided for @s2502LoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở được giải này. Thử lại sau.'**
+  String get s2502LoadError;
+
+  /// No description provided for @s2502SubmitError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được. Thử lại sau.'**
+  String get s2502SubmitError;
+
+  /// No description provided for @s2502SubmitLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã khai tối đa 50 giải.'**
+  String get s2502SubmitLimit;
+
+  /// No description provided for @s2502SubmitRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin chưa hợp lệ. Kiểm tra lại các ô.'**
+  String get s2502SubmitRejected;
+
+  /// No description provided for @settingsAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giải thưởng'**
+  String get settingsAwards;
+
+  /// No description provided for @settingsAwardsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khai giải để lên hạng Nhiếp ảnh gia'**
+  String get settingsAwardsBody;
+
+  /// No description provided for @profileAwardNudge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có giải thưởng? Lên hạng Nhiếp ảnh gia'**
+  String get profileAwardNudge;
+
+  /// No description provided for @profileAwardNudgeLater.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để sau'**
+  String get profileAwardNudgeLater;
+
+  /// No description provided for @profileStatAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'giải thưởng'**
+  String get profileStatAwards;
+
+  /// No description provided for @profileAwardSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{competition} {year}'**
+  String profileAwardSub(String competition, int year);
+
+  /// No description provided for @profileAwardSubCategory.
+  ///
+  /// In vi, this message translates to:
+  /// **'{competition} {year} · {category}'**
+  String profileAwardSubCategory(String competition, int year, String category);
+
+  /// No description provided for @profileAwardsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem cả {n} giải'**
+  String profileAwardsMore(int n);
 }
 
 class _AppLocalizationsDelegate

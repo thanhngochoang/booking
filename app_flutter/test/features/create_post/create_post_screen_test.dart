@@ -15,7 +15,12 @@ import 'package:photobooking/features/create_post/post_composer.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/create_post_world.dart';
+
+import 'package:photobooking/data/album/album.dart';
+
 import '../../support/screen_host.dart';
+
+const _uid = 'fake-1';
 
 PickedImage img(int i) => PickedImage(path: '/tmp/none-$i.jpg', name: '$i.jpg');
 
@@ -25,7 +30,8 @@ class _Create {
     List<List<PickedImage>>? picks,
     this.withService = true,
     MediaUploader? uploader,
-  }) : world = CreatePostWorld(),
+    Map<String, Object> prefsValues = const {},
+  }) : world = CreatePostWorld(prefsValues: prefsValues),
        picker = FakeImagePicker(
          picks ??
              [
@@ -122,19 +128,15 @@ Future<void> _pickService(WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'an empty form: the plus tile, the fields, the portfolio switch on, "Đăng" disabled',
+    'an empty form: the plus tile, the fields, the album field, "Đăng" disabled',
     (tester) async {
       await _open(tester);
       expect(find.text('Đăng bài'), findsOneWidget);
       expect(find.byKey(const Key('create-add')), findsOneWidget);
       expect(find.byKey(const Key('create-caption')), findsOneWidget);
       expect(find.text('Gói dịch vụ · bắt buộc'), findsOneWidget);
-      expect(
-        tester
-            .widget<SwitchListTile>(find.byKey(const Key('create-portfolio')))
-            .value,
-        isTrue,
-      );
+      expect(find.byKey(const Key('create-portfolio')), findsNothing);
+      expect(find.byKey(const Key('create-album')), findsOneWidget);
       expect(_enabled(tester, 'create-publish'), isFalse);
       expect(
         find.text('Thêm ít nhất một ảnh'),
@@ -365,18 +367,152 @@ void main() {
     expect(_state(tester).styleId, isNull);
   });
 
-  testWidgets('the portfolio switch and the place are stored in the form', (
-    tester,
-  ) async {
+  testWidgets('the place is stored in the form', (tester) async {
     await _open(tester);
-    await _tap(tester, find.byKey(const Key('create-portfolio')));
     await tester.enterText(
       find.byKey(const Key('create-location')),
       'Bến Bạch Đằng',
     );
     await tester.pump();
-    expect(_state(tester).inPortfolio, isFalse);
     expect(_state(tester).locationName, 'Bến Bạch Đằng');
+  });
+
+  group('the album field', () {
+    Future<_Create> openWith(
+      WidgetTester tester, {
+      Map<String, Object> prefs = const {},
+      bool albums = true,
+    }) async {
+      final c = _Create(prefsValues: prefs);
+      await c.init();
+      if (albums) {
+        c.world.addAlbum('al1', title: 'Tác phẩm đạt giải', postCount: 9);
+        c.world.addAlbum('al2', position: 2);
+      }
+      await tester.pumpWidget(
+        screenApp(home: c.screen(), overrides: c.overrides),
+      );
+      await tester.pumpAndSettle();
+      return c;
+    }
+
+    String fieldText(WidgetTester tester) => tester
+        .widget<Semantics>(
+          find
+              .descendant(
+                of: find.byKey(const Key('create-album')),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        )
+        .properties
+        .label!;
+
+    testWidgets('the album field replaces the portfolio switch', (
+      tester,
+    ) async {
+      await openWith(tester);
+      expect(find.byKey(const Key('create-portfolio')), findsNothing);
+      expect(find.text('Album · tuỳ chọn'), findsOneWidget);
+      expect(fieldText(tester), 'Album · tuỳ chọn, Không xếp album');
+    });
+
+    testWidgets('new draft preselects the last used album', (tester) async {
+      await openWith(tester, prefs: {'lastAlbum:$_uid': 'al2'});
+      expect(fieldText(tester), contains('Hà Giang 2025'));
+    });
+
+    testWidgets('a deleted last album falls back to none', (tester) async {
+      final c = await openWith(tester, prefs: {'lastAlbum:$_uid': 'gone'});
+      expect(fieldText(tester), contains('Không xếp album'));
+      await _addPhotos(tester);
+      await _pickService(tester);
+      await _tap(tester, find.byKey(const Key('create-publish')));
+      await tester.pumpAndSettle();
+      expect(c.publisher.published.single.albumId, isNull);
+    });
+
+    testWidgets('choosing an album fills the field and closes the sheet', (
+      tester,
+    ) async {
+      await openWith(tester);
+      await _tap(tester, find.byKey(const Key('create-album')));
+      await tester.pumpAndSettle();
+      expect(find.text('Xếp vào album'), findsOneWidget);
+      expect(find.text('Chỉ hiện ở Dòng thời gian'), findsOneWidget);
+      expect(find.text('9 bài'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('album-pick-al1')));
+      await tester.pumpAndSettle();
+      expect(find.text('Xếp vào album'), findsNothing);
+      expect(_state(tester).albumId, 'al1');
+      expect(fieldText(tester), contains('Tác phẩm đạt giải'));
+    });
+
+    testWidgets('the last used album is marked in the sheet', (tester) async {
+      await openWith(tester, prefs: {'lastAlbum:$_uid': 'al1'});
+      await _tap(tester, find.byKey(const Key('create-album')));
+      await tester.pumpAndSettle();
+      expect(find.text('9 bài · dùng gần nhất'), findsOneWidget);
+    });
+
+    testWidgets('publishing sends albumId and remembers it', (tester) async {
+      final c = await openWith(tester);
+      await _tap(tester, find.byKey(const Key('create-album')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('album-pick-al1')));
+      await tester.pumpAndSettle();
+      await _addPhotos(tester);
+      await _pickService(tester);
+      await _tap(tester, find.byKey(const Key('create-publish')));
+      await tester.pumpAndSettle();
+      expect(c.publisher.published.single.albumId, 'al1');
+      expect(c.world.prefs.getString('lastAlbum:${c.world.uid}'), 'al1');
+    });
+
+    testWidgets('publishing with none sends no albumId', (tester) async {
+      final c = await openWith(tester);
+      await _addPhotos(tester);
+      await _pickService(tester);
+      await _tap(tester, find.byKey(const Key('create-publish')));
+      await tester.pumpAndSettle();
+      expect(c.publisher.published.single.albumId, isNull);
+    });
+
+    testWidgets('Album mới creates an album and selects it', (tester) async {
+      final c = await openWith(tester, albums: false);
+      await _tap(tester, find.byKey(const Key('create-album')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('album-pick-new')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('album-edit-title')),
+        'Phố cổ',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('album-edit-save')));
+      await tester.pumpAndSettle();
+      expect(c.world.albums.calls, ['create:Phố cổ']);
+      expect(find.text('Xếp vào album'), findsNothing);
+      expect(_state(tester).albumId, 'new1');
+      expect(fieldText(tester), contains('Phố cổ'));
+    });
+
+    testWidgets('a duplicate name shows the error and keeps the prompt', (
+      tester,
+    ) async {
+      final c = await openWith(tester, albums: false);
+      c.world.albums.failWith = const AlbumError('conflict');
+      await _tap(tester, find.byKey(const Key('create-album')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('album-pick-new')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('album-edit-title')), 'A');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('album-edit-save')));
+      await tester.pumpAndSettle();
+      expect(find.text('Bạn đã có album tên này'), findsOneWidget);
+      expect(_state(tester).albumId, isNull);
+    });
   });
 
   testWidgets('leaving the screen and coming back keeps what was typed', (

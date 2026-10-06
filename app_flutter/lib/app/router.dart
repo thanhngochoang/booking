@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/album/album_detail_screen.dart';
+import 'package:photobooking/features/album/my_albums_screen.dart';
+import 'package:photobooking/features/awards/my_awards_screen.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -191,7 +194,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           openEvidenceFor: state.uri.queryParameters['skill'],
         ),
       ),
-      GoRoute(path: '/setup/4', builder: (_, _) => const ContactSetupScreen()),
+      GoRoute(
+        path: '/setup/4',
+        builder: (_, state) => ContactSetupScreen(
+          popOnDone: state.uri.queryParameters['from'] == 'settings',
+        ),
+      ),
       GoRoute(
         path: '/p/:postId',
         builder: (_, state) =>
@@ -203,7 +211,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           args: BookingFlowArgs(
             photographerId: state.pathParameters['uid']!,
             serviceId: state.uri.queryParameters['serviceId'],
-            day: state.uri.queryParameters['day'] ??
+            day:
+                state.uri.queryParameters['day'] ??
                 state.uri.queryParameters['date'],
             area: state.uri.queryParameters['area'],
           ),
@@ -211,15 +220,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/b/:id/pay',
-        builder: (_, state) => PaymentPendingScreen(
-          bookingId: state.pathParameters['id']!,
-        ),
+        builder: (_, state) =>
+            PaymentPendingScreen(bookingId: state.pathParameters['id']!),
       ),
       ...bookingDetailRoutes(),
-      GoRoute(
-        path: '/chats',
-        builder: (_, _) => const ChatListScreen(),
-      ),
+      GoRoute(path: '/chats', builder: (_, _) => const ChatListScreen()),
       GoRoute(
         path: '/chat/:chatId',
         builder: (_, state) => ChatScreen(
@@ -233,6 +238,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => InquiryEntry(
           photographerId: state.pathParameters['uid']!,
           serviceId: state.uri.queryParameters['serviceId'],
+        ),
+      ),
+      GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
+      GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      GoRoute(
+        path: '/u/:uid/albums/:albumId',
+        builder: (_, state) => AlbumDetailScreen(
+          uid: state.pathParameters['uid']!,
+          albumId: state.pathParameters['albumId']!,
         ),
       ),
       GoRoute(

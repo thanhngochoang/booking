@@ -59,12 +59,22 @@ class FakeProviderRepository implements ProviderRepository {
   /// When set, every call throws it.
   ProviderError? failWith;
 
+  /// Every call throws a non-[ProviderError] (network).
+  bool failWithNetwork = false;
+
+  /// Called on each [setType] that reaches the server.
+  void Function()? onSetType;
+
   @override
   Future<ProviderType> setType(ProviderChoice choice) async {
     final e = failWith;
     if (e != null) {
       throw e;
     }
+    if (failWithNetwork) {
+      throw StateError('network');
+    }
+    onSetType?.call();
     // The server keeps artist for an individual choice.
     if (choice == ProviderChoice.individual && type == ProviderType.artist) {
       return type;
@@ -79,6 +89,9 @@ class FakeProviderRepository implements ProviderRepository {
     final e = failWith;
     if (e != null) {
       throw e;
+    }
+    if (failWithNetwork) {
+      throw StateError('network');
     }
     address = a;
   }

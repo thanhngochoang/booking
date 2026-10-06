@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:photobooking/data/award/award.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 
 /// Reads are direct; writes go through the award callables, which validate and
 /// enforce the limits. Writes throw [AwardError] with the server code.
@@ -10,6 +11,9 @@ abstract class AwardRepository {
 
   /// Approved awards of one photographer, newest year first.
   Stream<List<Award>> watchApproved(String photographerId);
+
+  /// The owner's tier, live. Null when the photographer document is missing.
+  Stream<AwardTier?> watchTier(String uid);
 
   /// For editing: the award and its proof document (owner only). Null when the
   /// award does not exist.
@@ -36,6 +40,17 @@ class FakeAwardRepository implements AwardRepository {
 
   final List<Award> _awards;
   final _changes = StreamController<void>.broadcast();
+
+  AwardTier? _tier;
+  bool _tierSet = false;
+
+  /// Sets the tier the stream reports; without it the tier follows the
+  /// approved awards (individual below three, artist from three).
+  void setTier(AwardTier? tier) {
+    _tier = tier;
+    _tierSet = true;
+    _changes.add(null);
+  }
 
   /// When set, every write throws it.
   AwardError? failWith;
@@ -77,6 +92,29 @@ class FakeAwardRepository implements AwardRepository {
     (a) =>
         a.photographerId == photographerId && a.status == AwardStatus.approved,
   );
+
+  @override
+  Stream<AwardTier?> watchTier(String uid) async* {
+    AwardTier? now() {
+      if (_tierSet) {
+        return _tier;
+      }
+      final n = _awards
+          .where(
+            (a) => a.photographerId == uid && a.status == AwardStatus.approved,
+          )
+          .length;
+      return AwardTier(
+        providerType: n >= 3 ? ProviderType.artist : ProviderType.individual,
+        approvedCount: n,
+      );
+    }
+
+    yield now();
+    await for (final _ in _changes.stream) {
+      yield now();
+    }
+  }
 
   @override
   Future<AwardDraft?> loadDraft(String awardId) async {

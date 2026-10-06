@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
+import 'package:photobooking/features/photographer_profile/widgets/awards_strip.dart';
 
 /// Top of S03.01: photo, avatar over it, name + check, genres · area, follow,
 /// the four stats, bio, skill tags, equipment, and the owner's meter.
@@ -35,10 +37,13 @@ class ProfileHeader extends ConsumerWidget {
     final genres = skills.specialtyIds.isNotEmpty
         ? skills.specialtyIds
         : s.specialtyIds;
+    final studio = s.providerType == ProviderType.studio;
+    final artist = s.providerType == ProviderType.artist;
     final meta = [
       for (final id in genres.take(2)) catalog.label(SkillGroup.specialty, id),
-      ?s.areaLabel,
+      ?(studio ? (s.studioDistrict ?? s.areaLabel) : s.areaLabel),
     ].join(' · ');
+    final mark = providerMarkOf(type: s.providerType, verified: s.verified);
     final nameStyle = theme.textTheme.headlineSmall?.copyWith(
       fontFamily: AppFonts.display,
       fontWeight: FontWeight.w600,
@@ -91,13 +96,23 @@ class ProfileHeader extends ConsumerWidget {
                             children: [
                               Semantics(
                                 header: true,
-                                child: s.verified
-                                    ? VerifiedName(
-                                        s.displayName,
-                                        style: nameStyle,
-                                      )
-                                    : Text(s.displayName, style: nameStyle),
+                                child: ProviderName(
+                                  s.displayName,
+                                  mark: mark,
+                                  style: nameStyle,
+                                ),
                               ),
+                              if (s.providerType != ProviderType.individual)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: AppSpace.s1,
+                                  ),
+                                  child: ProviderTag(
+                                    key: const Key('profile-provider-tag'),
+                                    type: s.providerType,
+                                    showAwards: false,
+                                  ),
+                                ),
                               if (meta.isNotEmpty)
                                 Text(meta, style: theme.textTheme.bodySmall),
                             ],
@@ -130,26 +145,35 @@ class ProfileHeader extends ConsumerWidget {
                         ? l.profileStatReviews(s.reviewCount)
                         : l.profileStatNoReviews,
                   ),
+                  if (artist)
+                    StatTile(
+                      value: '${s.approvedAwardCount}',
+                      label: l.profileStatAwards,
+                    ),
                   StatTile(
                     value: '${s.completedCount}',
                     label: l.profileStatShoots,
                   ),
-                  StatTile(
-                    value: s.responseMinutes == null
-                        ? '—'
-                        : responseLabel(s.responseMinutes!, l),
-                    label: l.profileStatResponse,
-                  ),
+                  if (!artist)
+                    StatTile(
+                      value: s.responseMinutes == null
+                          ? '—'
+                          : responseLabel(s.responseMinutes!, l),
+                      label: l.profileStatResponse,
+                    ),
                   StatTile(
                     value: years == null ? '—' : l.profileYearsValue(years),
                     label: l.profileStatYears,
                   ),
                 ],
               ),
+              if (artist)
+                AwardsStrip(photographerId: s.id, reserveWhileLoading: true),
               if (profile.intro.bio.isNotEmpty) ...[
                 const SizedBox(height: AppSpace.s4),
                 Text(profile.intro.bio, style: theme.textTheme.bodyMedium),
               ],
+              if (!artist) AwardsStrip(photographerId: s.id),
               if (skills.specialties.isNotEmpty) ...[
                 const SizedBox(height: AppSpace.s3),
                 Wrap(

@@ -685,11 +685,9 @@ class _PackageCard extends StatelessWidget {
   }
 }
 
-
 class _PackageSkeleton extends StatelessWidget {
   const _PackageSkeleton();
 
   @override
   Widget build(BuildContext context) => AppSkeleton.card(height: 64);
 }
-

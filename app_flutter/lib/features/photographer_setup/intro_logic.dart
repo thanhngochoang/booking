@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 const kBioMaxLength = 300;
@@ -16,11 +17,15 @@ class IntroInput {
     required this.displayName,
     required this.bio,
     this.equipment = const [],
+    this.choice = ProviderChoice.individual,
   });
 
   final String displayName;
   final String bio;
   final List<String> equipment;
+
+  /// Cá nhân or Studio (S08.01); the server decides artist.
+  final ProviderChoice choice;
 }
 
 /// Cleaned values and the problems found; save only when [ok].
@@ -31,12 +36,14 @@ class IntroResult {
     required this.displayName,
     required this.bio,
     this.equipment = const [],
+    this.choice = ProviderChoice.individual,
   });
 
   final Map<IntroField, IntroError> errors;
   final String displayName;
   final String bio;
   final List<String> equipment;
+  final ProviderChoice choice;
 
   bool get ok => errors.isEmpty;
 }
@@ -81,6 +88,7 @@ IntroResult validateIntro(IntroInput input) {
     displayName: name,
     bio: bio,
     equipment: cleanEquipment(input.equipment),
+    choice: input.choice,
   );
 }
 

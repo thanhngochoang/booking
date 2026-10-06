@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/photographer/provider_repository.dart';
 import 'package:photobooking/features/settings/avatar_editor.dart';
 import 'package:photobooking/features/photographer_setup/intro_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_controller.dart';
+import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 
 /// S08.01, setup step 1/4: name, short bio, equipment (years and genres are
 /// step 3, S08.02). Everything typed is kept as a device draft until
@@ -28,6 +31,13 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
   final _equipmentField = TextEditingController();
   List<String> _equipment = const [];
   Map<IntroField, IntroError> _errors = const {};
+
+  /// What the person tapped or an old draft holds; null until then, so the
+  /// stored type fills it (a late read still does, whatever else was typed).
+  ProviderChoice? _choice;
+
+  /// Set when the server refused the type change (`not_eligible`).
+  bool _notEligible = false;
 
   /// The person typed something: a late load must not overwrite it.
   bool _touched = false;
@@ -85,6 +95,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
     _name.text = d.displayName;
     _bio.text = d.bio;
     _equipment = [...d.equipment];
+    _choice = d.choice;
   }
 
   void _changed() {
@@ -101,8 +112,24 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
             displayName: _name.text,
             bio: _bio.text,
             equipment: _equipment,
+            choice: _choice,
           ),
         );
+  }
+
+  /// The tapped choice, else the stored type; null while that is unknown.
+  ProviderChoice? get _effective =>
+      _choice ?? ref.read(storedProviderTypeProvider).value?.choice;
+
+  void _pick(ProviderChoice c) {
+    if (c == _effective) {
+      return;
+    }
+    setState(() {
+      _choice = c;
+      _notEligible = false;
+    });
+    _changed();
   }
 
   void _addEquipment() {
@@ -120,22 +147,47 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
     _changed();
   }
 
-  void _next() {
+  Future<void> _next() async {
     // Text typed in the equipment field but not added yet is kept.
     if (_equipmentField.text.trim().isNotEmpty) {
       _addEquipment();
+    }
+    final choice = _effective;
+    if (choice == null) {
+      return; // the stored type is not known yet: the button is disabled too
     }
     final r = validateIntro(
       IntroInput(
         displayName: _name.text,
         bio: _bio.text,
         equipment: _equipment,
+        choice: choice,
       ),
     );
-    setState(() => _errors = r.errors);
-    if (r.ok) {
-      ref.read(setupIntroControllerProvider.notifier).save(r);
+    setState(() {
+      _errors = r.errors;
+      _notEligible = false;
+    });
+    if (!r.ok) {
+      return;
     }
+    // Studio drops the NAG tier: ask first, as Settings does.
+    if (ref.read(storedProviderTypeProvider).value == ProviderType.artist &&
+        r.choice == ProviderChoice.studio) {
+      final l = context.l10n;
+      final ok = await showConfirmSheet(
+        context,
+        title: l.providerLoseArtistConfirm,
+        body: l.providerLoseArtistBody,
+        confirmLabel: l.providerLoseArtistConfirm,
+        keepLabel: l.providerTypeKeep,
+        danger: true,
+      );
+      if (!ok || !mounted) {
+        return;
+      }
+    }
+    ref.read(setupIntroControllerProvider.notifier).save(r);
   }
 
   @override
@@ -159,11 +211,16 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final saving = ref.watch(setupIntroControllerProvider).isLoading;
+    final stored = ref.watch(storedProviderTypeProvider);
+    final choice = _choice ?? stored.value?.choice;
     ref.listen(setupIntroControllerProvider, (prev, next) {
       if (next.isLoading || !(prev?.isLoading ?? false)) {
         return;
       }
-      if (next.hasError) {
+      final e = next.error;
+      if (e is ProviderError && e.code == 'not_eligible') {
+        setState(() => _notEligible = true);
+      } else if (next.hasError) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(l.setupSaveError)));
@@ -233,6 +290,75 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                         const SizedBox(height: AppSpace.s4),
                         const AvatarEditor(),
                         const SizedBox(height: AppSpace.s4),
+                        // Mock `#S08.01-type`: who takes the jobs.
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            l.setupTypeHeading,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpace.s2),
+                        AsyncView<ProviderType>(
+                          value: stored,
+                          loadingLabel: l.loadingLabel,
+                          skeleton: (_) => Column(
+                            children: [
+                              AppOptionTile.skeleton(),
+                              const SizedBox(height: AppSpace.s2),
+                              AppOptionTile.skeleton(),
+                            ],
+                          ),
+                          onRetry: () {
+                            ref.invalidate(storedProviderTypeProvider);
+                          },
+                          data: (context, _) => Column(
+                            children: [
+                              AppOptionTile(
+                                key: const Key('type-individual'),
+                                label: l.setupTypeIndividual,
+                                description: l.setupTypeIndividualBody,
+                                leading: const Icon(
+                                  Icons.person_outline_rounded,
+                                ),
+                                selected: choice == ProviderChoice.individual,
+                                onTap: () {
+                                  if (!saving) {
+                                    _pick(ProviderChoice.individual);
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: AppSpace.s2),
+                              AppOptionTile(
+                                key: const Key('type-studio'),
+                                label: l.setupTypeStudio,
+                                description: l.setupTypeStudioBody,
+                                leading: const Icon(Icons.work_outline),
+                                selected: choice == ProviderChoice.studio,
+                                onTap: () {
+                                  if (!saving) {
+                                    _pick(ProviderChoice.studio);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_notEligible)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpace.s2),
+                            child: Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                l.providerNotEligible,
+                                key: const Key('type-error'),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: scheme.error,
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: AppSpace.s4),
                         TextField(
                           key: const Key('setup-name'),
                           controller: _name,
@@ -241,7 +367,9 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                           textInputAction: TextInputAction.next,
                           autofillHints: const [AutofillHints.name],
                           decoration: InputDecoration(
-                            labelText: l.displayNameLabel,
+                            labelText: choice == ProviderChoice.studio
+                                ? l.setupStudioName
+                                : l.displayNameLabel,
                             errorText: err(IntroField.name),
                           ),
                           onChanged: (_) => _changed(),
@@ -347,6 +475,27 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                             ),
                           ),
                         ],
+                        const SizedBox(height: AppSpace.s4),
+                        // Mock `.lockn`: where to change it later.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: muted,
+                            ),
+                            const SizedBox(width: AppSpace.s2),
+                            Expanded(
+                              child: Text(
+                                l.setupTypeNote,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: muted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -359,7 +508,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                       l.setupNext,
                       key: const Key('setup-next'),
                       loading: saving,
-                      onPressed: _next,
+                      onPressed: stored.hasValue ? _next : null,
                     ),
                   ),
                 ),

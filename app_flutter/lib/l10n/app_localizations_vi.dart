@@ -1293,9 +1293,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get createStyleTitle => 'Phong cách';
 
   @override
-  String get createPortfolio => 'Thêm vào portfolio';
-
-  @override
   String get createPublish => 'Đăng';
 
   @override
@@ -2758,5 +2755,636 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String reviewPhotoUploading(int index, int percent) {
     return 'Ảnh $index đang tải lên, $percent%';
+  }
+
+  @override
+  String get setupTypeHeading => 'Bạn nhận việc với tư cách';
+
+  @override
+  String get setupTypeIndividual => 'Cá nhân';
+
+  @override
+  String get setupTypeIndividualBody =>
+      'Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).';
+
+  @override
+  String get setupTypeStudio => 'Studio';
+
+  @override
+  String get setupTypeStudioBody =>
+      'Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có.';
+
+  @override
+  String get setupTypeNote =>
+      'Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.';
+
+  @override
+  String get setupStudioName => 'Tên studio';
+
+  @override
+  String get setupStudioAddress => 'Địa chỉ cơ sở';
+
+  @override
+  String get setupStudioLine => 'Số nhà, đường';
+
+  @override
+  String get setupStudioWard => 'Phường / xã';
+
+  @override
+  String get setupStudioDistrict => 'Quận / huyện';
+
+  @override
+  String get setupStudioCity => 'Tỉnh / thành phố';
+
+  @override
+  String get setupStudioLineError => 'Nhập số nhà, đường (ít nhất 5 ký tự).';
+
+  @override
+  String get setupStudioWardError => 'Phường / xã tối đa 60 ký tự.';
+
+  @override
+  String get setupStudioDistrictError => 'Nhập quận / huyện.';
+
+  @override
+  String get setupStudioCityError => 'Nhập tỉnh / thành phố.';
+
+  @override
+  String get setupStudioAddressNote =>
+      'Khách chỉ thấy tới quận; địa chỉ đầy đủ hiện sau khi đã đặt.';
+
+  @override
+  String get providerNotEligible =>
+      'Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.';
+
+  @override
+  String get settingsProviderType => 'Hình thức nhận việc';
+
+  @override
+  String get settingsProviderArtist => 'Cá nhân · Nhiếp ảnh gia';
+
+  @override
+  String get providerTypeSave => 'Lưu';
+
+  @override
+  String get providerTypeKeep => 'Giữ nguyên';
+
+  @override
+  String get providerLoseArtistBody =>
+      'Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.';
+
+  @override
+  String get providerLoseArtistConfirm => 'Đổi sang Studio';
+
+  @override
+  String get createAlbumLabel => 'Album · tuỳ chọn';
+
+  @override
+  String get albumPickTitle => 'Xếp vào album';
+
+  @override
+  String get albumPickNone => 'Không xếp album';
+
+  @override
+  String get albumPickNoneSub => 'Chỉ hiện ở Dòng thời gian';
+
+  @override
+  String albumPickCount(int n) {
+    return '$n bài';
+  }
+
+  @override
+  String get albumPickRecent => 'dùng gần nhất';
+
+  @override
+  String get albumPickNew => 'Album mới';
+
+  @override
+  String get albumPickCreate => 'Tạo';
+
+  @override
+  String get albumPickDup => 'Bạn đã có album tên này';
+
+  @override
+  String get albumPickLimit => 'Bạn đã có đủ 30 album.';
+
+  @override
+  String get albumPickCreateError => 'Không tạo được album. Thử lại sau.';
+
+  @override
+  String get albumPickLoadError => 'Không tải được danh sách album.';
+
+  @override
+  String portfolioAlbumCount(int n) {
+    return '$n album';
+  }
+
+  @override
+  String get portfolioArrange => 'Sắp xếp';
+
+  @override
+  String albumDetailCounts(int posts, int photos) {
+    return '$posts bài · $photos ảnh';
+  }
+
+  @override
+  String get albumDetailEmptyOwner => 'Album chưa có bài';
+
+  @override
+  String get albumDetailEmptyOwnerBody =>
+      'Thêm bài để album hiện trên hồ sơ của bạn.';
+
+  @override
+  String get albumDetailAddPosts => 'Thêm bài';
+
+  @override
+  String get albumDetailGone => 'Album này không còn';
+
+  @override
+  String get albumDetailGoneBody =>
+      'Album có thể đã bị xoá hoặc chưa có bài nào.';
+
+  @override
+  String get albumDetailShare => 'Chia sẻ album';
+
+  @override
+  String get albumDetailLinkCopied => 'Đã sao chép liên kết album';
+
+  @override
+  String get albumDetailMenu => 'Tuỳ chọn album';
+
+  @override
+  String get albumDetailArrange => 'Sắp xếp bài';
+
+  @override
+  String get albumDetailArrangeDone => 'Xong';
+
+  @override
+  String get albumDetailRemove => 'Bỏ khỏi album';
+
+  @override
+  String get albumDetailRemoveFailed => 'Chưa bỏ được bài khỏi album.';
+
+  @override
+  String get albumDetailDelete => 'Xoá album';
+
+  @override
+  String get albumDetailDeleteTitle => 'Xoá album này?';
+
+  @override
+  String get albumDetailDeleteBody =>
+      'Bài trong album không bị xoá, chuyển về Chưa xếp album.';
+
+  @override
+  String get albumDetailDeleteError => 'Không xoá được album. Thử lại sau.';
+
+  @override
+  String get albumDetailReordered => 'Đã đổi thứ tự';
+
+  @override
+  String get albumDetailReorderFailed => 'Chưa lưu được thứ tự';
+
+  @override
+  String get albumDetailUndo => 'Hoàn tác';
+
+  @override
+  String get albumDetailArrangeLoadFailed =>
+      'Chưa tải hết bài để sắp xếp. Thử lại sau.';
+
+  @override
+  String get profileMyAlbums => 'Album của tôi';
+
+  @override
+  String get profileMyAlbumsSub =>
+      'Gom bài thành album, sắp xếp thứ tự trên hồ sơ';
+
+  @override
+  String get myAlbumsTitle => 'Album của tôi';
+
+  @override
+  String get myAlbumsHint =>
+      'Thứ tự dưới đây là thứ tự trên hồ sơ. Giữ ≡ rồi kéo, hoặc chạm … → Chuyển lên / xuống.';
+
+  @override
+  String get myAlbumsFeatured => 'hiện rộng';
+
+  @override
+  String get myAlbumsUnsorted => 'Chưa xếp album';
+
+  @override
+  String myAlbumsUnsortedSub(String n) {
+    return '$n bài · chỉ ở Dòng thời gian';
+  }
+
+  @override
+  String get myAlbumsEmptyTitle => 'Gom bài thành album để khách xem theo bộ';
+
+  @override
+  String get myAlbumsEmptyBody =>
+      'Bài chưa xếp album vẫn hiện ở Dòng thời gian.';
+
+  @override
+  String get myAlbumsOpen => 'Xem album';
+
+  @override
+  String get myAlbumsEdit => 'Sửa';
+
+  @override
+  String get albumEditNew => 'Album mới';
+
+  @override
+  String get albumEditTitle => 'Sửa album';
+
+  @override
+  String get albumEditClose => 'Đóng';
+
+  @override
+  String get albumEditName => 'Tên album · bắt buộc';
+
+  @override
+  String albumEditNameCount(int n, int max) {
+    return '$n / $max';
+  }
+
+  @override
+  String get albumEditNameRequired => 'Nhập tên album';
+
+  @override
+  String get albumEditDesc => 'Mô tả · tuỳ chọn';
+
+  @override
+  String get albumEditCover => 'Ảnh bìa';
+
+  @override
+  String get albumEditCoverAuto => 'Tự động: ảnh đầu tiên của album';
+
+  @override
+  String get albumEditCoverChosen => 'Đã chọn một ảnh làm bìa';
+
+  @override
+  String get albumEditCoverPick => 'Chọn ảnh';
+
+  @override
+  String get albumEditCoverTitle => 'Chọn ảnh bìa';
+
+  @override
+  String get albumEditCoverReset => 'Dùng ảnh tự động';
+
+  @override
+  String get albumEditCoverLoadError => 'Không tải được ảnh của album.';
+
+  @override
+  String albumEditCoverTile(int index, int count) {
+    return 'Ảnh $index trên $count';
+  }
+
+  @override
+  String get albumEditNote =>
+      'Album trống chưa hiện trên hồ sơ. Thêm bài ngay sau khi tạo.';
+
+  @override
+  String get albumEditCreate => 'Tạo và thêm bài';
+
+  @override
+  String get albumEditSave => 'Lưu';
+
+  @override
+  String get albumEditSaveError => 'Chưa lưu được album. Thử lại sau.';
+
+  @override
+  String get albumEditDiscardTitle => 'Bỏ thay đổi?';
+
+  @override
+  String get albumEditDiscardBody => 'Những gì bạn vừa nhập sẽ mất.';
+
+  @override
+  String get albumEditDiscard => 'Bỏ';
+
+  @override
+  String get albumEditKeep => 'Tiếp tục sửa';
+
+  @override
+  String get addPostsTitle => 'Thêm bài vào album';
+
+  @override
+  String addPostsSelected(int n) {
+    return '$n đã chọn';
+  }
+
+  @override
+  String addPostsTabUnsorted(String n) {
+    return 'Chưa xếp · $n';
+  }
+
+  @override
+  String addPostsTabAll(String n) {
+    return 'Tất cả bài · $n';
+  }
+
+  @override
+  String addPostsMoveWarn(int n, String album) {
+    return '$n bài đang ở \"$album\" sẽ chuyển sang album này.';
+  }
+
+  @override
+  String addPostsMoveWarnMany(int n) {
+    return '$n bài đang ở album khác sẽ chuyển sang album này.';
+  }
+
+  @override
+  String addPostsAdd(int n) {
+    return 'Thêm $n bài';
+  }
+
+  @override
+  String get addPostsPick => 'Chọn bài để thêm';
+
+  @override
+  String get addPostsFull => 'Album đã đủ 200 bài';
+
+  @override
+  String get addPostsNoneTitle => 'Đăng bài trước';
+
+  @override
+  String get addPostsNoneBody => 'Bài bạn đăng sẽ hiện ở đây để xếp vào album.';
+
+  @override
+  String get addPostsNoneAction => 'Đăng bài';
+
+  @override
+  String get addPostsUnsortedEmpty => 'Mọi bài của bạn đã nằm trong album.';
+
+  @override
+  String get addPostsLoadError => 'Không tải được bài. Thử lại sau.';
+
+  @override
+  String get addPostsError => 'Chưa thêm được bài. Thử lại sau.';
+
+  @override
+  String addPostsPartial(int done, int left) {
+    return 'Đã thêm $done bài, còn $left bài chưa thêm được.';
+  }
+
+  @override
+  String get addPostsMore => 'Xem thêm bài';
+
+  @override
+  String get myAlbumsUnsortedSubUnknown =>
+      'Bài chưa xếp · chỉ ở Dòng thời gian';
+
+  @override
+  String get s2501Title => 'Giải thưởng';
+
+  @override
+  String get s2501Info => 'Về hạng Nhiếp ảnh gia';
+
+  @override
+  String get s2501InfoBody =>
+      'Khi có ít nhất 3 giải đã được duyệt, hồ sơ Cá nhân của bạn tự lên hạng Nhiếp ảnh gia và có tích vàng. Hồ sơ Studio vẫn khai giải được nhưng không tính hạng. Nếu số giải đã duyệt xuống dưới 3, hạng quay về Cá nhân. Chỉ giải đã duyệt hiện trên hồ sơ công khai.';
+
+  @override
+  String get s2501InfoClose => 'Đã hiểu';
+
+  @override
+  String get s2501Tier => 'Hạng Nhiếp ảnh gia (NAG)';
+
+  @override
+  String s2501Remaining(int n) {
+    return 'Còn $n giải đã duyệt nữa để nhận tích vàng';
+  }
+
+  @override
+  String s2501IsArtist(String date) {
+    return 'Bạn là Nhiếp ảnh gia · từ $date';
+  }
+
+  @override
+  String get s2501IsArtistNoDate => 'Bạn là Nhiếp ảnh gia';
+
+  @override
+  String s2501Progress(int a, int n) {
+    return '$a / $n giải đã duyệt';
+  }
+
+  @override
+  String s2501Listed(int n) {
+    return 'Đã khai · $n giải';
+  }
+
+  @override
+  String get s2501Add => 'Thêm giải thưởng';
+
+  @override
+  String get s2501EmptyTitle => 'Giải thưởng giúp khách tin tác phẩm của bạn';
+
+  @override
+  String get s2501EmptyBody =>
+      'Khai giải kèm minh chứng. Giải được duyệt sẽ hiện trên hồ sơ của bạn.';
+
+  @override
+  String get s2501LoadError => 'Không tải được giải thưởng. Thử lại sau.';
+
+  @override
+  String s2501RowTitle(String result, String competition, int year) {
+    return '$result · $competition $year';
+  }
+
+  @override
+  String s2501Sent(String date) {
+    return 'gửi $date';
+  }
+
+  @override
+  String get s2501DeleteTitle => 'Xoá giải thưởng?';
+
+  @override
+  String get s2501DeleteBody => 'Giải và minh chứng đã tải lên sẽ bị xoá.';
+
+  @override
+  String get s2501Delete => 'Xoá';
+
+  @override
+  String get s2501DeleteError => 'Chưa xoá được giải. Thử lại sau.';
+
+  @override
+  String get s2501EditApprovedTitle => 'Sửa giải đã duyệt?';
+
+  @override
+  String get s2501EditApprovedBody =>
+      'Giải sẽ được duyệt lại. Trong lúc chờ, giải ẩn khỏi hồ sơ công khai và không tính vào hạng.';
+
+  @override
+  String get s2501EditApprovedGo => 'Tiếp tục sửa';
+
+  @override
+  String get s2502Add => 'Thêm giải thưởng';
+
+  @override
+  String get s2502Edit => 'Sửa giải thưởng';
+
+  @override
+  String get s2502Competition => 'Cuộc thi / triển lãm · bắt buộc';
+
+  @override
+  String get s2502CompetitionRequired => 'Nhập tên cuộc thi hoặc triển lãm';
+
+  @override
+  String get s2502Year => 'Năm';
+
+  @override
+  String s2502YearInvalid(int max) {
+    return 'Năm từ 1950 đến $max';
+  }
+
+  @override
+  String get s2502Category => 'Hạng mục';
+
+  @override
+  String get s2502Result => 'Kết quả · bắt buộc';
+
+  @override
+  String get s2502Work => 'Tác phẩm · tuỳ chọn';
+
+  @override
+  String get s2502WorkNone => 'Không gắn tác phẩm';
+
+  @override
+  String get s2502WorkChosen => 'Đã chọn một tác phẩm';
+
+  @override
+  String get s2502WorkTitle => 'Chọn tác phẩm';
+
+  @override
+  String get s2502WorkClear => 'Bỏ chọn tác phẩm';
+
+  @override
+  String get s2502WorkEmpty => 'Bạn chưa có bài nào để gắn.';
+
+  @override
+  String get s2502WorkLoadError => 'Không tải được bài của bạn. Thử lại sau.';
+
+  @override
+  String get s2502Proof => 'Minh chứng · bắt buộc';
+
+  @override
+  String get s2502ProofNone =>
+      'Thêm ảnh giấy chứng nhận hoặc link trang công bố';
+
+  @override
+  String s2502ProofSummary(int images, int links) {
+    return '$images ảnh · $links link';
+  }
+
+  @override
+  String get s2502ProofTitle => 'Minh chứng';
+
+  @override
+  String s2502ProofImages(int n, int max) {
+    return 'Ảnh giấy chứng nhận · $n / $max';
+  }
+
+  @override
+  String get s2502ProofAddImage => 'Thêm ảnh';
+
+  @override
+  String s2502ProofLinks(int max) {
+    return 'Link trang công bố · tối đa $max';
+  }
+
+  @override
+  String get s2502ProofAddLink => 'Thêm link';
+
+  @override
+  String get s2502LinkLabel => 'Link';
+
+  @override
+  String get s2502LinkHttps => 'Link phải bắt đầu bằng https://';
+
+  @override
+  String get s2502LinkRemove => 'Xoá link';
+
+  @override
+  String get s2502ProofDone => 'Xong';
+
+  @override
+  String s2502TileUploading(int n) {
+    return 'Đang tải ảnh $n';
+  }
+
+  @override
+  String s2502TileFailed(int n) {
+    return 'Chưa tải được ảnh $n. Chạm để thử lại';
+  }
+
+  @override
+  String s2502TileDone(int n) {
+    return 'Ảnh $n đã tải';
+  }
+
+  @override
+  String s2502TileSaved(int n) {
+    return 'Ảnh $n đã gửi trước đó';
+  }
+
+  @override
+  String s2502TileRemove(int n) {
+    return 'Xoá ảnh $n';
+  }
+
+  @override
+  String get s2502Privacy =>
+      'Minh chứng chỉ đội duyệt xem và được xoá 30 ngày sau khi duyệt xong. Duyệt trong 3 ngày làm việc.';
+
+  @override
+  String get s2502Submit => 'Gửi duyệt';
+
+  @override
+  String get s2502SubmitWait =>
+      'Đợi ảnh tải xong hoặc xoá ảnh lỗi trước khi gửi.';
+
+  @override
+  String get s2502LoadError => 'Không mở được giải này. Thử lại sau.';
+
+  @override
+  String get s2502SubmitError => 'Chưa gửi được. Thử lại sau.';
+
+  @override
+  String get s2502SubmitLimit => 'Bạn đã khai tối đa 50 giải.';
+
+  @override
+  String get s2502SubmitRejected =>
+      'Thông tin chưa hợp lệ. Kiểm tra lại các ô.';
+
+  @override
+  String get settingsAwards => 'Giải thưởng';
+
+  @override
+  String get settingsAwardsBody => 'Khai giải để lên hạng Nhiếp ảnh gia';
+
+  @override
+  String get profileAwardNudge => 'Có giải thưởng? Lên hạng Nhiếp ảnh gia';
+
+  @override
+  String get profileAwardNudgeLater => 'Để sau';
+
+  @override
+  String get profileStatAwards => 'giải thưởng';
+
+  @override
+  String profileAwardSub(String competition, int year) {
+    return '$competition $year';
+  }
+
+  @override
+  String profileAwardSubCategory(
+    String competition,
+    int year,
+    String category,
+  ) {
+    return '$competition $year · $category';
+  }
+
+  @override
+  String profileAwardsMore(int n) {
+    return 'Xem cả $n giải';
   }
 }

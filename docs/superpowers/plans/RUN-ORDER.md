@@ -64,9 +64,9 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 8b1 | `2026-10-02-shared-components-b1.md` (EventCard, TicketCard, badges, notifications, explore uses EventCard) | done 2026-10-03 (b1/7-L2) |
 | 8a | `2026-10-02-step4a-booking-backend.md` (booking domain, fake payments, escrow, rules, app repository) | done 2026-10-02; screen UI plans 4b–4e to follow |
 | 9 | `2026-10-01-backend-phase2-selfhosted-postgres.md` | done 2026-10-05 (PR #23); deferred Task 11 performance check to plan 16 |
-| 9a | `2026-10-05-a1-provider-types.md` (provider types: marks and tags, S08.01 Cá nhân/Studio, studio address, switch in S09.02) | lane 2 Tasks 1–5 done 2026-10-06 in 9a/1-L2 (gate GA1; ledger `handover/ledger-a1-provider-types-9a-1-L2.md`); remaining: lane 1 Tasks 6–7 (unit 9a/2-L1) |
-| 9b | `2026-10-05-c-portfolio-albums.md` (S24, S03.01 Album / Dòng thời gian, S10.01 album field) | lane 2 Tasks 1–4 done 2026-10-06 in 9b/1-L2 (gate GC1; ledger `handover/ledger-c-portfolio-albums-9b-1-L2.md`); remaining: units C1 (Task 5), C2 (Task 6), C3 (Task 7), parallel |
-| 9c | `2026-10-05-b1-awards-artist-tier.md` (S25, NAG tier, S03.01 awards strip, staff CLI for S23.07) | lane 2 Tasks 1–4 done 2026-10-06 in 9c/1-L2 (gate GB1; ledger `handover/ledger-b1-awards-artist-tier-9c-1-L2.md`); remaining: lane 1 Tasks 5–6 (unit 9c/2-L1) |
+| 9a | `2026-10-05-a1-provider-types.md` (provider types: marks and tags, S08.01 Cá nhân/Studio, studio address, switch in S09.02) | done 2026-10-06: Tasks 1–5 in 9a/1-L2; Tasks 6–7 in 9a/2-L1 (batch PR #31 with C1–C3 and 9c/2-L1); ledger `handover/ledger-a1-provider-types-9a-2-L1.md` |
+| 9b | `2026-10-05-c-portfolio-albums.md` (S24, S03.01 Album / Dòng thời gian, S10.01 album field) | done 2026-10-06: Tasks 1–4 in 9b/1-L2; C1–C3 (Tasks 5–7) in the batch PR #31; ledger `handover/ledger-c-portfolio-albums-9b-2-L1.md` |
+| 9c | `2026-10-05-b1-awards-artist-tier.md` (S25, NAG tier, S03.01 awards strip, staff CLI for S23.07) | done 2026-10-06: Tasks 1–4 in 9c/1-L2; Tasks 5–6 in 9c/2-L1 (batch PR #31); ledger `handover/ledger-b1-awards-artist-tier-9c-2-L1.md` |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |
 | 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
 | 12 | `2026-10-01-instant-i4-photographer-app.md` (S13.08, S14) | not started |

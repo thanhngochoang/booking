@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/album/album_providers.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
@@ -15,6 +16,7 @@ import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/features/create_post/create_post_providers.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 enum ComposerImageStatus { local, uploading, uploaded, failed }
@@ -59,7 +61,7 @@ class ComposerState {
     this.specialtyId,
     this.locationName,
     this.styleId,
-    this.inPortfolio = true,
+    this.albumId,
     this.publishing = false,
   });
 
@@ -72,7 +74,11 @@ class ComposerState {
   final String? specialtyId;
   final String? locationName;
   final String? styleId;
-  final bool inPortfolio;
+
+  /// The album the post is filed in; null = "Không xếp album". It may name an
+  /// album that was deleted since; the screen and [PostComposerController.publish]
+  /// check it against the user's albums.
+  final String? albumId;
   final bool publishing;
 
   bool get canPublish =>
@@ -85,7 +91,6 @@ class ComposerState {
   ComposerState copyWith({
     List<ComposerImage>? images,
     String? caption,
-    bool? inPortfolio,
     bool? publishing,
   }) => ComposerState(
     draftId: draftId,
@@ -95,7 +100,7 @@ class ComposerState {
     specialtyId: specialtyId,
     locationName: locationName,
     styleId: styleId,
-    inPortfolio: inPortfolio ?? this.inPortfolio,
+    albumId: albumId,
     publishing: publishing ?? this.publishing,
   );
 
@@ -107,7 +112,7 @@ class ComposerState {
     specialtyId: specialty,
     locationName: locationName,
     styleId: styleId,
-    inPortfolio: inPortfolio,
+    albumId: albumId,
     publishing: publishing,
   );
 
@@ -119,7 +124,7 @@ class ComposerState {
     specialtyId: specialtyId,
     locationName: v,
     styleId: styleId,
-    inPortfolio: inPortfolio,
+    albumId: albumId,
     publishing: publishing,
   );
 
@@ -131,7 +136,21 @@ class ComposerState {
     specialtyId: specialtyId,
     locationName: locationName,
     styleId: v,
-    inPortfolio: inPortfolio,
+    albumId: albumId,
+    publishing: publishing,
+  );
+}
+
+extension on ComposerState {
+  ComposerState withAlbum(String? id) => ComposerState(
+    draftId: draftId,
+    images: images,
+    caption: caption,
+    serviceId: serviceId,
+    specialtyId: specialtyId,
+    locationName: locationName,
+    styleId: styleId,
+    albumId: id,
     publishing: publishing,
   );
 }
@@ -187,7 +206,10 @@ class PostComposerController extends Notifier<ComposerState> {
       }
     });
     return (uid == null ? null : _restore(uid)) ??
-        ComposerState(draftId: newUlid());
+        ComposerState(
+          draftId: newUlid(),
+          albumId: uid == null ? null : _prefs.getString(lastAlbumKey(uid)),
+        );
   }
 
   ComposerState? _restore(String uid) {
@@ -204,7 +226,10 @@ class PostComposerController extends Notifier<ComposerState> {
         specialtyId: m['specialtyId'] as String?,
         locationName: m['locationName'] as String?,
         styleId: m['styleId'] as String?,
-        inPortfolio: m['inPortfolio'] as bool? ?? true,
+        // A stored null is an explicit "Không xếp album"; no key = never set.
+        albumId: m.containsKey('albumId')
+            ? m['albumId'] as String?
+            : _prefs.getString(lastAlbumKey(uid)),
       );
     } catch (_) {
       return null;
@@ -224,7 +249,7 @@ class PostComposerController extends Notifier<ComposerState> {
         s.serviceId == null &&
         s.locationName == null &&
         s.styleId == null &&
-        s.inPortfolio;
+        s.albumId == null;
     if (empty) {
       unawaited(_prefs.remove(_draftKey(uid)));
       return;
@@ -238,7 +263,7 @@ class PostComposerController extends Notifier<ComposerState> {
           'specialtyId': s.specialtyId,
           'locationName': s.locationName,
           'styleId': s.styleId,
-          'inPortfolio': s.inPortfolio,
+          'albumId': s.albumId,
         }),
       ),
     );
@@ -337,12 +362,33 @@ class PostComposerController extends Notifier<ComposerState> {
     _persist();
   }
 
-  void setInPortfolio(bool v) {
+  void setAlbum(String? albumId) {
     if (state.publishing) {
       return;
     }
-    state = state.copyWith(inPortfolio: v);
+    state = state.withAlbum(albumId);
     _persist();
+  }
+
+  /// The album to send: the chosen one only while it still exists (a deleted
+  /// last-used album must not reach the server). When the albums cannot be
+  /// read the choice is sent as is; the server detaches a missing album.
+  Future<String?> _liveAlbum(String? id) async {
+    if (id == null) {
+      return null;
+    }
+    // Hold the autoDispose provider open while waiting, and wait for the
+    // sign-in state so a not-yet-resolved user does not read as "no albums".
+    final hold = ref.listen(myAlbumsProvider, (_, _) {});
+    try {
+      await ref.read(authStateProvider.future);
+      final mine = await ref.read(myAlbumsProvider.future);
+      return mine.any((a) => a.id == id) ? id : null;
+    } catch (_) {
+      return id;
+    } finally {
+      hold.close();
+    }
   }
 
   ComposerImage? _image(String key) {
@@ -447,6 +493,10 @@ class PostComposerController extends Notifier<ComposerState> {
     if (!ref.mounted || gen != _gen) {
       return const PostPublishResult(PublishOutcome.notReady);
     }
+    final albumId = await _liveAlbum(state.albumId);
+    if (!ref.mounted || gen != _gen) {
+      return const PostPublishResult(PublishOutcome.notReady);
+    }
     final s = state;
     try {
       final post = await publisher.publish(
@@ -459,13 +509,19 @@ class PostComposerController extends Notifier<ComposerState> {
           caption: s.caption.trim(),
           locationName: s.locationName,
           styleId: s.styleId,
-          inPortfolio: s.inPortfolio,
+          albumId: albumId,
         ),
       );
       await prefs.remove(_draftKey(uid));
+      if (albumId != null) {
+        await prefs.setString(lastAlbumKey(uid), albumId);
+        if (ref.mounted) {
+          ref.invalidate(lastAlbumProvider);
+        }
+      }
       if (ref.mounted && gen == _gen) {
         _publishAttempted = false;
-        state = ComposerState(draftId: newUlid(), inPortfolio: s.inPortfolio);
+        state = ComposerState(draftId: newUlid(), albumId: albumId);
       }
       return PostPublishResult(PublishOutcome.published, post.id);
     } catch (_) {

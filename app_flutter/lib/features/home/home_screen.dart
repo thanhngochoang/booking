@@ -365,10 +365,14 @@ class _PostBlock extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (p.verified)
-                          VerifiedName(p.displayName, style: nameStyle)
-                        else
-                          Text(p.displayName, style: nameStyle),
+                        ProviderName(
+                          p.displayName,
+                          mark: providerMarkOf(
+                            type: p.providerType,
+                            verified: p.verified,
+                          ),
+                          style: nameStyle,
+                        ),
                         Text(
                           areaRatingMeta(p, l),
                           maxLines: 2,
@@ -475,9 +479,7 @@ class _FreeThisWeekSection extends ConsumerWidget {
                 height: _freeCardWidth / _freeCardAspect,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
                   itemCount: shown.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(width: AppSpace.s2),
@@ -490,14 +492,57 @@ class _FreeThisWeekSection extends ConsumerWidget {
                       ?specialty,
                       ?priceFromLabel(p.startingPriceVnd, l),
                     ].join(' · ');
+                    final freeMark = providerMarkOf(
+                      type: p.providerType,
+                      verified: p.verified,
+                    );
                     return SizedBox(
                       width: _freeCardWidth,
                       child: PhotoCard(
                         key: Key('free-${p.id}'),
                         imageUrl: p.heroUrl!,
                         aspect: _freeCardAspect,
-                        title: p.displayName,
-                        subtitle: from.isEmpty ? null : from,
+                        semanticLabel: [
+                          p.displayName,
+                          switch (freeMark) {
+                            ProviderMarkKind.verified => l.verifiedLabel,
+                            ProviderMarkKind.artist => l.providerArtistMark,
+                            ProviderMarkKind.studio => l.providerStudioMark,
+                            null => null,
+                          },
+                          if (from.isNotEmpty) from,
+                        ].whereType<String>().join(', '),
+                        overlay: IgnorePointer(
+                          child: ExcludeSemantics(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ProviderName(
+                                  p.displayName,
+                                  mark: freeMark,
+                                  maxLines: 2,
+                                  style: const TextStyle(
+                                    color: AppColors.foregroundInverse,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: AppText.sm,
+                                  ),
+                                ),
+                                if (from.isNotEmpty)
+                                  Text(
+                                    from,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.foregroundInverse
+                                          .withValues(alpha: 0.85),
+                                      fontSize: AppText.xs,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
                         onTap: () => context.push('/u/${p.id}'),
                       ),
                     );
@@ -541,13 +586,12 @@ class _RealShootsSection extends ConsumerWidget {
                 child: GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: _realShootColumns,
-                        mainAxisSpacing: AppSpace.s2,
-                        crossAxisSpacing: AppSpace.s2,
-                        childAspectRatio: _realShootAspect,
-                      ),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _realShootColumns,
+                    mainAxisSpacing: AppSpace.s2,
+                    crossAxisSpacing: AppSpace.s2,
+                    childAspectRatio: _realShootAspect,
+                  ),
                   itemCount: list.length,
                   itemBuilder: (context, i) {
                     final f = list[i];

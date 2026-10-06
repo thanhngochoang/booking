@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/album/album.dart';
+import 'package:photobooking/data/album/album_providers.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
+import 'package:photobooking/features/create_post/album_picker_sheet.dart';
 import 'package:photobooking/features/create_post/create_post_providers.dart';
 import 'package:photobooking/features/create_post/post_composer.dart';
 
@@ -14,7 +17,7 @@ import 'package:photobooking/features/create_post/post_composer.dart';
 ///
 /// Mock S10.01: "Đăng bài" bar · two-column photo grid with a "+" tile · caption
 /// · the package field (accent border, required) · place and style side by
-/// side · "Thêm vào portfolio" switch · sticky footer with "Đăng". The
+/// side · "Album · tuỳ chọn" field (S24.05) · sticky footer with "Đăng". The
 /// "Bài đăng / Sự kiện" tabs arrive with the events plan.
 class CreatePostScreen extends ConsumerStatefulWidget {
   const CreatePostScreen({
@@ -106,6 +109,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     }
   }
 
+  Future<void> _pickAlbum(String? current) async {
+    final picked = await showAlbumPicker(context, selected: current);
+    if (picked != null && mounted) {
+      ref.read(postComposerProvider.notifier).setAlbum(picked.albumId);
+    }
+  }
+
   Future<void> _pickStyle(String? current) async {
     final l = context.l10n;
     final picked = await showAppSheet<_PickedStyle>(
@@ -169,6 +179,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           ref.read(postComposerProvider.notifier).setService(null);
         }
       });
+    }
+    // The stored album may have been deleted since: then the field reads
+    // "Không xếp album" and publish drops it (the composer checks too).
+    AlbumSummary? album;
+    for (final a
+        in ref.watch(myAlbumsProvider).value ?? const <AlbumSummary>[]) {
+      if (a.id == s.albumId) {
+        album = a;
+      }
     }
     final canAdd = s.images.length < PostComposerController.maxImages;
 
@@ -287,12 +306,12 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   ],
                 ),
               const SizedBox(height: AppSpace.s2),
-              SwitchListTile(
-                key: const Key('create-portfolio'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.createPortfolio),
-                value: s.inPortfolio,
-                onChanged: s.publishing ? null : ctl.setInPortfolio,
+              _PickField(
+                key: const Key('create-album'),
+                label: l.createAlbumLabel,
+                value: album?.title,
+                placeholder: l.albumPickNone,
+                onTap: s.publishing ? null : () => _pickAlbum(album?.id),
               ),
             ],
           ),
@@ -527,7 +546,9 @@ class _ServiceField extends StatelessWidget {
             _PickField(
               key: const Key('create-service'),
               label: l.createServiceLabel,
-              value: c == null ? null : '${c.name} · ${formatMoney(c.priceVnd)}',
+              value: c == null
+                  ? null
+                  : '${c.name} · ${formatMoney(c.priceVnd)}',
               placeholder: l.createServicePick,
               accent: true,
               error: showError,

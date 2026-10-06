@@ -25,3 +25,13 @@ final approvedAwardsProvider = StreamProvider.autoDispose
       (ref, photographerId) =>
           ref.watch(awardRepositoryProvider).watchApproved(photographerId),
     );
+
+/// The signed-in photographer's tier, live; null when signed out or when the
+/// photographer document does not exist.
+final myTierProvider = StreamProvider.autoDispose<AwardTier?>((ref) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) {
+    return Stream.value(null);
+  }
+  return ref.watch(awardRepositoryProvider).watchTier(uid);
+});

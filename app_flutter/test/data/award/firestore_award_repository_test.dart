@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/award/firestore_award_repository.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 
 import '../../support/content_fixtures.dart';
 
@@ -47,9 +48,8 @@ void main() {
     db = FakeFirebaseFirestore();
     functions = _MockFunctions();
     callable = _MockCallable();
-    when(
-      () => functions.httpsCallable(any(), options: any(named: 'options')),
-    ).thenReturn(callable);
+    when(() => functions.httpsCallable(any(), options: any(named: 'options')))
+        .thenReturn(callable);
     repo = FirestoreAwardRepository(db: db, functions: functions);
   });
 
@@ -76,8 +76,16 @@ void main() {
     expect(a.reviewNote, 'Thiếu minh chứng');
     expect(a.year, 2025);
     expect(a.createdAt, fixtureNow);
-    expect(a, fixtureAward('a1', category: 'Open', result: AwardResult.finalist,
-        status: AwardStatus.needsInfo, reviewNote: 'Thiếu minh chứng'));
+    expect(
+      a,
+      fixtureAward(
+        'a1',
+        category: 'Open',
+        result: AwardResult.finalist,
+        status: AwardStatus.needsInfo,
+        reviewNote: 'Thiếu minh chứng',
+      ),
+    );
   });
 
   test('an unknown status reads as pending', () async {
@@ -128,10 +136,7 @@ void main() {
   });
 
   test('proofPath builds the storage path', () {
-    expect(
-      repo.proofPath('u1', 'a1', '01HZX'),
-      'awardProofs/u1/a1/01HZX.jpg',
-    );
+    expect(repo.proofPath('u1', 'a1', '01HZX'), 'awardProofs/u1/a1/01HZX.jpg');
   });
 
   test('loadDraft joins the award and its proof doc', () async {
@@ -169,11 +174,15 @@ void main() {
           proofLinks: ['https://x.test/a'],
         ),
       );
-      verify(() => functions.httpsCallable('createAward',
-          options: any(named: 'options'))).called(1);
-      final sent = verify(() => callable.call<Object?>(captureAny()))
-          .captured
-          .single as Map;
+      verify(
+        () => functions.httpsCallable(
+          'createAward',
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+      final sent =
+          verify(() => callable.call<Object?>(captureAny())).captured.single
+              as Map;
       expect(sent, {
         'awardId': 'a1',
         'competition': 'Sony',
@@ -199,10 +208,18 @@ void main() {
         ),
       );
       await repo.delete('a1');
-      verify(() => functions.httpsCallable('updateAward',
-          options: any(named: 'options'))).called(1);
-      verify(() => functions.httpsCallable('deleteAward',
-          options: any(named: 'options'))).called(1);
+      verify(
+        () => functions.httpsCallable(
+          'updateAward',
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+      verify(
+        () => functions.httpsCallable(
+          'deleteAward',
+          options: any(named: 'options'),
+        ),
+      ).called(1);
     });
 
     test('limit_exceeded becomes AwardError', () async {
@@ -220,6 +237,40 @@ void main() {
         ),
       );
     });
+  });
+
+  test('watchTier reads the tier fields of photographers/{uid}', () async {
+    await db.collection('photographers').doc('p1').set({
+      'providerType': 'artist',
+      'approvedAwardCount': 3,
+      'artistSince': Timestamp.fromDate(DateTime.utc(2026, 10, 5)),
+    });
+    final t = (await repo.watchTier('p1').first)!;
+    expect(t.providerType, ProviderType.artist);
+    expect(t.approvedCount, 3);
+    expect(t.artistSince, DateTime.utc(2026, 10, 5));
+    expect(await repo.watchTier('nobody').first, isNull);
+    await db.collection('photographers').doc('p2').set({});
+    final plain = (await repo.watchTier('p2').first)!;
+    expect(plain.providerType, ProviderType.individual);
+    expect(plain.approvedCount, 0);
+    expect(plain.artistSince, isNull);
+  });
+
+  test('the fake tier follows the approved awards until it is set', () async {
+    final fake = FakeAwardRepository(
+      awards: [
+        for (final id in ['a', 'b', 'c']) fixtureAward(id),
+      ],
+    );
+    final t = (await fake.watchTier('p1').first)!;
+    expect(t.providerType, ProviderType.artist);
+    expect(t.approvedCount, 3);
+    fake.setTier(const AwardTier(approvedCount: 1));
+    expect(
+      (await fake.watchTier('p1').first)!.providerType,
+      ProviderType.individual,
+    );
   });
 
   test('the fake repository filters by owner', () async {
@@ -243,10 +294,7 @@ void main() {
     );
 
     test('a created award appears first in watchMine for its owner', () async {
-      final fake = FakeAwardRepository(
-        uid: 'p1',
-        awards: [fixtureAward('a')],
-      );
+      final fake = FakeAwardRepository(uid: 'p1', awards: [fixtureAward('a')]);
       await fake.create(draft);
       final list = await fake.watchMine('p1').first;
       expect(list.first.id, 'n1');

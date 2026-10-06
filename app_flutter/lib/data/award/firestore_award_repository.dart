@@ -6,11 +6,13 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 
 bool _validId(String id) => id.isNotEmpty && !id.contains('/');
 
-DateTime _time(Object? v) =>
-    v is Timestamp ? v.toDate().toUtc() : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+DateTime _time(Object? v) => v is Timestamp
+    ? v.toDate().toUtc()
+    : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 
 String? _str(Object? v) => v is String && v.isNotEmpty ? v : null;
 
@@ -97,6 +99,26 @@ class FirestoreAwardRepository implements AwardRepository {
         .orderBy('year', descending: true)
         .orderBy('createdAt', descending: true),
   );
+
+  @override
+  Stream<AwardTier?> watchTier(String uid) {
+    if (!_validId(uid)) {
+      return Stream.value(null);
+    }
+    return _db.collection('photographers').doc(uid).snapshots().map((snap) {
+      final d = snap.data();
+      if (d == null) {
+        return null;
+      }
+      final count = d['approvedAwardCount'];
+      final since = d['artistSince'];
+      return AwardTier(
+        providerType: ProviderType.fromCode(d['providerType']),
+        approvedCount: count is num ? count.toInt() : 0,
+        artistSince: since is Timestamp ? since.toDate().toUtc() : null,
+      );
+    });
+  }
 
   @override
   Future<AwardDraft?> loadDraft(String awardId) async {

@@ -56,12 +56,14 @@ class PortfolioViewToggle extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final v in PortfolioView.values)
-              _Segment(
-                icon: labels[v]!.$1,
-                label: labels[v]!.$2,
-                selected: v == value,
-                color: v == value ? theme.colorScheme.primary : secondary,
-                onTap: () => onChanged(v),
+              Flexible(
+                child: _Segment(
+                  icon: labels[v]!.$1,
+                  label: labels[v]!.$2,
+                  selected: v == value,
+                  color: v == value ? theme.colorScheme.primary : secondary,
+                  onTap: () => onChanged(v),
+                ),
               ),
           ],
         ),
@@ -121,15 +123,18 @@ class _Segment extends StatelessWidget {
                   children: [
                     Icon(icon, size: 14, color: color),
                     const SizedBox(width: AppSpace.s1),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: AppText.xs2,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: color,
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: AppText.xs2,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: color,
+                        ),
                       ),
                     ),
                   ],
