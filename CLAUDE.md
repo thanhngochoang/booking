@@ -85,6 +85,7 @@ Plans run in the order of `docs/superpowers/plans/RUN-ORDER.md`, several machine
 source ../scripts/env.sh && export HOME="$PWD/../.home"   # project-local Flutter/JDK; HOME avoids tool-telemetry writes outside the sandbox
 export PATH="$PWD/../.flutter/bin:$PATH"
 flutter analyze && flutter test
+dart run tool/affected_test.dart origin/develop --run   # only the tests this branch can affect (CI does the same on PRs; docs/testing/affected-tests.md)
 dart run tool/gen_tokens.dart      # after editing design-system/tokens.json
 flutter gen-l10n                   # after editing lib/l10n/app_vi.arb
 ../scripts/backend-local.sh        # local backend: Auth/Firestore/Functions/Storage emulators + UI :4000, seed; --fresh, --seed, --lan
