@@ -1392,6 +1392,12 @@ test('the owner uploads, reads and deletes a proof image; others cannot read it'
   await assertSucceeds(deleteObject(own));
 });
 
+test('an existing proof file cannot be overwritten', async () => {
+  const own = ref(env.authenticatedContext('awo1').storage(), 'awardProofs/awo1/aw1/fixed.jpg');
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertFails(uploadBytes(own, photo(), jpeg));
+});
+
 test('a proof image over 10 MB, an SVG or a non-image is refused', async () => {
   const st = env.authenticatedContext('awo1').storage();
   await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/ok.jpg'), photo(10 * 1024 * 1024), jpeg));
