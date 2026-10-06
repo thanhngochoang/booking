@@ -521,6 +521,7 @@ class _FreeThisWeekSection extends ConsumerWidget {
                                 ProviderName(
                                   p.displayName,
                                   mark: freeMark,
+                                  maxLines: 2,
                                   style: const TextStyle(
                                     color: AppColors.foregroundInverse,
                                     fontWeight: FontWeight.w700,

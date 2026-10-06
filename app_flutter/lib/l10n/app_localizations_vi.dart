@@ -2759,4 +2759,82 @@ class AppLocalizationsVi extends AppLocalizations {
   String reviewPhotoUploading(int index, int percent) {
     return 'Ảnh $index đang tải lên, $percent%';
   }
+
+  @override
+  String get setupTypeHeading => 'Bạn nhận việc với tư cách';
+
+  @override
+  String get setupTypeIndividual => 'Cá nhân';
+
+  @override
+  String get setupTypeIndividualBody =>
+      'Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).';
+
+  @override
+  String get setupTypeStudio => 'Studio';
+
+  @override
+  String get setupTypeStudioBody =>
+      'Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có.';
+
+  @override
+  String get setupTypeNote =>
+      'Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.';
+
+  @override
+  String get setupStudioName => 'Tên studio';
+
+  @override
+  String get setupStudioAddress => 'Địa chỉ cơ sở';
+
+  @override
+  String get setupStudioLine => 'Số nhà, đường';
+
+  @override
+  String get setupStudioWard => 'Phường / xã';
+
+  @override
+  String get setupStudioDistrict => 'Quận / huyện';
+
+  @override
+  String get setupStudioCity => 'Tỉnh / thành phố';
+
+  @override
+  String get setupStudioLineError => 'Nhập số nhà, đường (ít nhất 5 ký tự).';
+
+  @override
+  String get setupStudioWardError => 'Phường / xã tối đa 60 ký tự.';
+
+  @override
+  String get setupStudioDistrictError => 'Nhập quận / huyện.';
+
+  @override
+  String get setupStudioCityError => 'Nhập tỉnh / thành phố.';
+
+  @override
+  String get setupStudioAddressNote =>
+      'Khách chỉ thấy tới quận; địa chỉ đầy đủ hiện sau khi đã đặt.';
+
+  @override
+  String get providerNotEligible =>
+      'Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.';
+
+  @override
+  String get settingsProviderType => 'Hình thức nhận việc';
+
+  @override
+  String get settingsProviderArtist => 'Cá nhân · Nhiếp ảnh gia';
+
+  @override
+  String get providerTypeSave => 'Lưu';
+
+  @override
+  String get providerTypeKeep => 'Giữ nguyên';
+
+  @override
+  String get providerLoseArtistBody =>
+      'Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.';
+
+  @override
+  String get providerLoseArtistConfirm => 'Đổi sang Studio';
 }

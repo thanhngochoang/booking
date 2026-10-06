@@ -6,26 +6,42 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 import 'package:photobooking/data/photographer/photographer_contact_repository.dart';
+import 'package:photobooking/data/photographer/provider_providers.dart';
+import 'package:photobooking/data/photographer/provider_repository.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/photographer_setup/contact_setup_screen.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import '../../support/content_fixtures.dart';
 import '../../support/idle.dart';
 
 class _H {
-  _H(this.auth, this.repo, this.widget);
+  _H(this.auth, this.repo, this.provider, this.widget);
+  final FakeProviderRepository provider;
   final FakeAuthRepository auth;
   final FakePhotographerContactRepository repo;
   final Widget widget;
   String get uid => auth.currentUser!.uid;
 }
 
-Future<_H> _harness({bool failSave = false}) async {
+Future<_H> _harness({
+  bool failSave = false,
+  ProviderType type = ProviderType.individual,
+}) async {
   final auth = FakeAuthRepository();
   await auth.registerWithEmail('p@b.vn', 'password1', 'Thư');
   final repo = FakePhotographerContactRepository(failSave: failSave);
+  final provider = FakeProviderRepository(type: type);
+  final profiles = FakePublicProfileRepository([
+    PhotographerProfile(
+      summary: fixturePhotographer(auth.currentUser!.uid, providerType: type),
+    ),
+  ]);
   final router = GoRouter(
     initialLocation: '/setup/4',
     routes: [
@@ -37,10 +53,13 @@ Future<_H> _harness({bool failSave = false}) async {
   return _H(
     auth,
     repo,
+    provider,
     ProviderScope(
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         photographerContactRepositoryProvider.overrideWithValue(repo),
+        providerRepositoryProvider.overrideWithValue(provider),
+        publicProfileRepositoryProvider.overrideWithValue(profiles),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -52,11 +71,15 @@ Future<_H> _harness({bool failSave = false}) async {
   );
 }
 
-Future<_H> _open(WidgetTester tester, {bool failSave = false}) async {
+Future<_H> _open(
+  WidgetTester tester, {
+  bool failSave = false,
+  ProviderType type = ProviderType.individual,
+}) async {
   tester.view.physicalSize = const Size(390, 2600);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final h = await _harness(failSave: failSave);
+  final h = await _harness(failSave: failSave, type: type);
   await tester.pumpWidget(h.widget);
   await tester.pumpAndSettle();
   return h;
@@ -430,5 +453,70 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('setup-phone')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('setup-phone')).hitTestable(), findsWidgets);
+  });
+
+  group('studio address', () {
+    Future<void> fillContact(WidgetTester tester) async {
+      await _type(tester, 'setup-phone', '0903123456');
+      await _tap(tester, 'channel-zalo');
+    }
+
+    testWidgets('an individual finishes without the address block', (
+      tester,
+    ) async {
+      final h = await _open(tester);
+      expect(find.byKey(const Key('studio-line')), findsNothing);
+      await _type(tester, 'setup-city', 'Hà Nội');
+      await fillContact(tester);
+      await _tap(tester, 'setup-finish');
+      expect(h.repo.completed, {h.uid});
+      expect(h.provider.address, isNull);
+    });
+
+    testWidgets('studio needs an address to finish', (tester) async {
+      final h = await _open(tester, type: ProviderType.studio);
+      expect(find.text('Địa chỉ cơ sở'), findsOneWidget);
+      await _type(tester, 'setup-city', 'Hà Nội');
+      await fillContact(tester);
+      await _tap(tester, 'setup-finish');
+      expect(
+        find.text('Nhập số nhà, đường (ít nhất 5 ký tự).'),
+        findsOneWidget,
+      );
+      expect(find.text('Nhập quận / huyện.'), findsOneWidget);
+      expect(h.repo.completed, isEmpty);
+      expect(h.provider.address, isNull);
+      expect(find.text('work'), findsNothing);
+    });
+
+    testWidgets('a studio saves the address before finishing', (tester) async {
+      final h = await _open(tester, type: ProviderType.studio);
+      await _type(tester, 'setup-city', 'Hà Nội');
+      await fillContact(tester);
+      await _type(tester, 'studio-line', ' 12 Tràng Tiền ');
+      await _type(tester, 'studio-district', 'Hoàn Kiếm');
+      await _type(tester, 'studio-city', 'Hà Nội');
+      await _tap(tester, 'setup-finish');
+      final a = h.provider.address!;
+      expect(
+        (a.line, a.ward, a.district, a.city),
+        ('12 Tràng Tiền', null, 'Hoàn Kiếm', 'Hà Nội'),
+      );
+      expect(h.repo.completed, {h.uid});
+      expect(find.text('work'), findsOneWidget);
+    });
+
+    testWidgets('a refused address keeps the form and says so', (tester) async {
+      final h = await _open(tester, type: ProviderType.studio);
+      h.provider.failWith = const ProviderError('not_eligible');
+      await _type(tester, 'setup-city', 'Hà Nội');
+      await fillContact(tester);
+      await _type(tester, 'studio-line', '12 Tràng Tiền');
+      await _type(tester, 'studio-district', 'Hoàn Kiếm');
+      await _type(tester, 'studio-city', 'Hà Nội');
+      await _tap(tester, 'setup-finish');
+      expect(h.repo.completed, isEmpty);
+      expect(find.textContaining('Không lưu được thiết lập'), findsOneWidget);
+    });
   });
 }

@@ -4875,6 +4875,150 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ảnh {index} đang tải lên, {percent}%'**
   String reviewPhotoUploading(int index, int percent);
+
+  /// No description provided for @setupTypeHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận việc với tư cách'**
+  String get setupTypeHeading;
+
+  /// No description provided for @setupTypeIndividual.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cá nhân'**
+  String get setupTypeIndividual;
+
+  /// No description provided for @setupTypeIndividualBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).'**
+  String get setupTypeIndividualBody;
+
+  /// No description provided for @setupTypeStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio'**
+  String get setupTypeStudio;
+
+  /// No description provided for @setupTypeStudioBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có.'**
+  String get setupTypeStudioBody;
+
+  /// No description provided for @setupTypeNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.'**
+  String get setupTypeNote;
+
+  /// No description provided for @setupStudioName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên studio'**
+  String get setupStudioName;
+
+  /// No description provided for @setupStudioAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ cơ sở'**
+  String get setupStudioAddress;
+
+  /// No description provided for @setupStudioLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nhà, đường'**
+  String get setupStudioLine;
+
+  /// No description provided for @setupStudioWard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phường / xã'**
+  String get setupStudioWard;
+
+  /// No description provided for @setupStudioDistrict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quận / huyện'**
+  String get setupStudioDistrict;
+
+  /// No description provided for @setupStudioCity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tỉnh / thành phố'**
+  String get setupStudioCity;
+
+  /// No description provided for @setupStudioLineError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số nhà, đường (ít nhất 5 ký tự).'**
+  String get setupStudioLineError;
+
+  /// No description provided for @setupStudioWardError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phường / xã tối đa 60 ký tự.'**
+  String get setupStudioWardError;
+
+  /// No description provided for @setupStudioDistrictError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập quận / huyện.'**
+  String get setupStudioDistrictError;
+
+  /// No description provided for @setupStudioCityError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tỉnh / thành phố.'**
+  String get setupStudioCityError;
+
+  /// No description provided for @setupStudioAddressNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chỉ thấy tới quận; địa chỉ đầy đủ hiện sau khi đã đặt.'**
+  String get setupStudioAddressNote;
+
+  /// No description provided for @providerNotEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.'**
+  String get providerNotEligible;
+
+  /// No description provided for @settingsProviderType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hình thức nhận việc'**
+  String get settingsProviderType;
+
+  /// No description provided for @settingsProviderArtist.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cá nhân · Nhiếp ảnh gia'**
+  String get settingsProviderArtist;
+
+  /// No description provided for @providerTypeSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get providerTypeSave;
+
+  /// No description provided for @providerTypeKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ nguyên'**
+  String get providerTypeKeep;
+
+  /// No description provided for @providerLoseArtistBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.'**
+  String get providerLoseArtistBody;
+
+  /// No description provided for @providerLoseArtistConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi sang Studio'**
+  String get providerLoseArtistConfirm;
 }
 
 class _AppLocalizationsDelegate

@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/features/photographer_setup/contact_setup_controller.dart';
 import 'package:photobooking/features/photographer_setup/contact_setup_logic.dart';
+import 'package:photobooking/features/photographer_setup/studio_address_logic.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// S08.05: setup step 4/4. Service area, main number, and which outside
@@ -79,6 +81,22 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
         ? ''
         : nationalFromE164(widget.draft.numbers!.zaloPhone!),
   );
+  late final _studioLine = TextEditingController(
+    text: widget.draft.studioAddress?.line ?? '',
+  );
+  late final _studioWard = TextEditingController(
+    text: widget.draft.studioAddress?.ward ?? '',
+  );
+  late final _studioDistrict = TextEditingController(
+    text:
+        widget.draft.studioAddress?.district ??
+        widget.draft.studioDistrict ??
+        '',
+  );
+  // City starts from the service area city when nothing is saved.
+  late final _studioCity = TextEditingController(
+    text: widget.draft.studioAddress?.city ?? widget.draft.area?.city ?? '',
+  );
   late final _whatsappOwn = TextEditingController(
     text: widget.draft.numbers?.whatsappPhone ?? '',
   );
@@ -100,8 +118,21 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
     _phone.dispose();
     _zaloOwn.dispose();
     _whatsappOwn.dispose();
+    _studioLine.dispose();
+    _studioWard.dispose();
+    _studioDistrict.dispose();
+    _studioCity.dispose();
     super.dispose();
   }
+
+  bool get _isStudio => widget.draft.providerType == ProviderType.studio;
+
+  StudioAddressForm get _studioForm => StudioAddressForm(
+    line: _studioLine.text,
+    ward: _studioWard.text,
+    district: _studioDistrict.text,
+    city: _studioCity.text,
+  );
 
   ContactSetupInput get _input => ContactSetupInput(
     city: _city.text,
@@ -132,13 +163,23 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
     final area = r.area;
     final channels = r.channels;
     final numbers = r.numbers;
-    if (!r.ok || area == null || channels == null || numbers == null) {
+    final studio = _isStudio ? validateStudioAddress(_studioForm) : null;
+    if (!r.ok ||
+        area == null ||
+        channels == null ||
+        numbers == null ||
+        (studio != null && !studio.ok)) {
       setState(() => _submitted = true);
       return;
     }
     ref
         .read(setupContactControllerProvider.notifier)
-        .save(area: area, channels: channels, numbers: numbers);
+        .save(
+          area: area,
+          channels: channels,
+          numbers: numbers,
+          studioAddress: studio?.address,
+        );
   }
 
   void _back() {
@@ -212,6 +253,12 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
         ? validateContactSetup(_input).errors
         : const <ContactSetupField, ContactSetupError>{};
     String? err(ContactSetupField f) => _errorText(l, errors[f]);
+    final studioErrors = _submitted && _isStudio
+        ? validateStudioAddress(_studioForm).errors
+        : const <StudioAddressField, StudioAddressError>{};
+    String? studioErr(StudioAddressField f) => studioErrors[f] == null
+        ? null
+        : studioAddressErrorText(studioErrors[f]!, l);
     final channelsError = err(ContactSetupField.channels);
     void changed() => setState(() {});
     Widget glyph(ContactChannel c) => Container(
@@ -247,6 +294,75 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
                   ),
                 ),
                 const SizedBox(height: AppSpace.s4),
+                if (_isStudio) ...[
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      l.setupStudioAddress,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s2),
+                  TextFormField(
+                    key: const Key('studio-line'),
+                    controller: _studioLine,
+                    enabled: !saving,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    autofillHints: const [AutofillHints.streetAddressLine1],
+                    onChanged: (_) => changed(),
+                    decoration: InputDecoration(
+                      labelText: l.setupStudioLine,
+                      errorText: studioErr(StudioAddressField.line),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s3),
+                  TextFormField(
+                    key: const Key('studio-ward'),
+                    controller: _studioWard,
+                    enabled: !saving,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    onChanged: (_) => changed(),
+                    decoration: InputDecoration(
+                      labelText: l.setupStudioWard,
+                      errorText: studioErr(StudioAddressField.ward),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s3),
+                  TextFormField(
+                    key: const Key('studio-district'),
+                    controller: _studioDistrict,
+                    enabled: !saving,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    onChanged: (_) => changed(),
+                    decoration: InputDecoration(
+                      labelText: l.setupStudioDistrict,
+                      errorText: studioErr(StudioAddressField.district),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s3),
+                  TextFormField(
+                    key: const Key('studio-city'),
+                    controller: _studioCity,
+                    enabled: !saving,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    autofillHints: const [AutofillHints.addressCity],
+                    onChanged: (_) => changed(),
+                    decoration: InputDecoration(
+                      labelText: l.setupStudioCity,
+                      errorText: studioErr(StudioAddressField.city),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s2),
+                  Text(
+                    l.setupStudioAddressNote,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: AppSpace.s5),
+                ],
                 Text(l.setupContactArea, style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpace.s2),
                 TextFormField(

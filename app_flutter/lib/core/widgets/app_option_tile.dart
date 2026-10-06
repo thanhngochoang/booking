@@ -16,9 +16,13 @@ class AppOptionTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.leading,
+    this.description,
   });
 
   final String label;
+
+  /// Optional second line under [label] (mock `.opt .d`).
+  final String? description;
   final bool selected;
   final VoidCallback onTap;
 
@@ -43,7 +47,7 @@ class AppOptionTile extends StatelessWidget {
       checked: selected,
       selected: selected,
       inMutuallyExclusiveGroup: true,
-      label: label,
+      label: description == null ? label : '$label. $description',
       excludeSemantics: true,
       onTap: onTap,
       child: Material(
@@ -72,7 +76,27 @@ class AppOptionTile extends StatelessWidget {
                       const SizedBox(width: AppSpace.s2),
                     ],
                     Expanded(
-                      child: Text(label, style: theme.textTheme.bodyMedium),
+                      child: description == null
+                          ? Text(label, style: theme.textTheme.bodyMedium)
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  label,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  description!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: dark
+                                        ? AppColorsDark.foregroundMuted
+                                        : AppColors.foregroundMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ],
                 ),

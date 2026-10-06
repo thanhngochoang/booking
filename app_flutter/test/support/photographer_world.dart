@@ -11,12 +11,18 @@ import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/photographer/provider_providers.dart';
+import 'package:photobooking/data/photographer/provider_repository.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'content_fixtures.dart';
 import 'screen_host.dart';
 
 /// Thursday 1 Oct 2026 on the Vietnamese calendar.
@@ -37,6 +43,8 @@ class PhotographerWorld {
   final availability = FakeAvailabilityRepository();
   final users = FakeUserRepository();
   final auth = FakeAuthRepository();
+  final providerRepo = FakeProviderRepository();
+  final profiles = FakePublicProfileRepository();
   final picker = FakeImagePicker();
   final uploader = FakeMediaUploader();
   DateTime today = worldToday;
@@ -53,6 +61,23 @@ class PhotographerWorld {
     uid = u.uid;
   }
 
+  /// The stored public profile of the signed-in photographer.
+  void seedProfile({
+    ProviderType type = ProviderType.individual,
+    String? studioDistrict,
+  }) {
+    providerRepo.type = type;
+    profiles.add(
+      PhotographerProfile(
+        summary: fixturePhotographer(
+          uid,
+          providerType: type,
+          studioDistrict: studioDistrict,
+        ),
+      ),
+    );
+  }
+
   List<Override> get overrides => [
     sharedPreferencesProvider.overrideWithValue(prefs),
     authRepositoryProvider.overrideWithValue(auth),
@@ -63,6 +88,8 @@ class PhotographerWorld {
     calendarTodayProvider.overrideWithValue(today),
     imagePickerProvider.overrideWithValue(picker),
     mediaUploaderProvider.overrideWithValue(uploader),
+    providerRepositoryProvider.overrideWithValue(providerRepo),
+    publicProfileRepositoryProvider.overrideWithValue(profiles),
   ];
 
   /// Destinations the screens of this plan link to, shown as their path.

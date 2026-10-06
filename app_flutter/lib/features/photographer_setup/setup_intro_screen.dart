@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
+import 'package:photobooking/data/photographer/provider_repository.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/settings/avatar_editor.dart';
 import 'package:photobooking/features/photographer_setup/intro_logic.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
@@ -28,6 +31,10 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
   final _equipmentField = TextEditingController();
   List<String> _equipment = const [];
   Map<IntroField, IntroError> _errors = const {};
+  ProviderChoice _choice = ProviderChoice.individual;
+
+  /// Set when the server refused the type change (`not_eligible`).
+  bool _notEligible = false;
 
   /// The person typed something: a late load must not overwrite it.
   bool _touched = false;
@@ -55,6 +62,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
       return;
     }
     var name = '';
+    var choice = ProviderChoice.individual;
     PhotographerIntro? intro;
     try {
       // Read once from the repository: a provider nobody listens to is
@@ -64,6 +72,12 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
               ?.displayName ??
           '';
       intro = await ref.read(photographerIntroRepositoryProvider).get(uid);
+      choice =
+          (await ref.read(publicProfileRepositoryProvider).load(uid))
+              ?.summary
+              .providerType
+              .choice ??
+          choice;
     } catch (_) {
       // Offline or no document yet: start from what is known.
     }
@@ -76,6 +90,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
           displayName: name,
           bio: intro?.bio ?? '',
           equipment: intro?.equipment ?? const [],
+          choice: choice,
         ),
       ),
     );
@@ -85,6 +100,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
     _name.text = d.displayName;
     _bio.text = d.bio;
     _equipment = [...d.equipment];
+    _choice = d.choice ?? ProviderChoice.individual;
   }
 
   void _changed() {
@@ -101,8 +117,20 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
             displayName: _name.text,
             bio: _bio.text,
             equipment: _equipment,
+            choice: _choice,
           ),
         );
+  }
+
+  void _pick(ProviderChoice c) {
+    if (c == _choice) {
+      return;
+    }
+    setState(() {
+      _choice = c;
+      _notEligible = false;
+    });
+    _changed();
   }
 
   void _addEquipment() {
@@ -130,9 +158,13 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
         displayName: _name.text,
         bio: _bio.text,
         equipment: _equipment,
+        choice: _choice,
       ),
     );
-    setState(() => _errors = r.errors);
+    setState(() {
+      _errors = r.errors;
+      _notEligible = false;
+    });
     if (r.ok) {
       ref.read(setupIntroControllerProvider.notifier).save(r);
     }
@@ -163,7 +195,10 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
       if (next.isLoading || !(prev?.isLoading ?? false)) {
         return;
       }
-      if (next.hasError) {
+      final e = next.error;
+      if (e is ProviderError && e.code == 'not_eligible') {
+        setState(() => _notEligible = true);
+      } else if (next.hasError) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(content: Text(l.setupSaveError)));
@@ -233,6 +268,55 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                         const SizedBox(height: AppSpace.s4),
                         const AvatarEditor(),
                         const SizedBox(height: AppSpace.s4),
+                        // Mock `#S08.01-type`: who takes the jobs.
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            l.setupTypeHeading,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpace.s2),
+                        AppOptionTile(
+                          key: const Key('type-individual'),
+                          label: l.setupTypeIndividual,
+                          description: l.setupTypeIndividualBody,
+                          leading: const Icon(Icons.person_outline_rounded),
+                          selected: _choice == ProviderChoice.individual,
+                          onTap: () {
+                            if (!saving) {
+                              _pick(ProviderChoice.individual);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: AppSpace.s2),
+                        AppOptionTile(
+                          key: const Key('type-studio'),
+                          label: l.setupTypeStudio,
+                          description: l.setupTypeStudioBody,
+                          leading: const Icon(Icons.work_outline),
+                          selected: _choice == ProviderChoice.studio,
+                          onTap: () {
+                            if (!saving) {
+                              _pick(ProviderChoice.studio);
+                            }
+                          },
+                        ),
+                        if (_notEligible)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpace.s2),
+                            child: Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                l.providerNotEligible,
+                                key: const Key('type-error'),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: scheme.error,
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: AppSpace.s4),
                         TextField(
                           key: const Key('setup-name'),
                           controller: _name,
@@ -241,7 +325,9 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                           textInputAction: TextInputAction.next,
                           autofillHints: const [AutofillHints.name],
                           decoration: InputDecoration(
-                            labelText: l.displayNameLabel,
+                            labelText: _choice == ProviderChoice.studio
+                                ? l.setupStudioName
+                                : l.displayNameLabel,
                             errorText: err(IntroField.name),
                           ),
                           onChanged: (_) => _changed(),
@@ -347,6 +433,27 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                             ),
                           ),
                         ],
+                        const SizedBox(height: AppSpace.s4),
+                        // Mock `.lockn`: where to change it later.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: muted,
+                            ),
+                            const SizedBox(width: AppSpace.s2),
+                            Expanded(
+                              child: Text(
+                                l.setupTypeNote,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: muted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

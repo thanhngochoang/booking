@@ -249,9 +249,18 @@ class ProviderTag extends StatelessWidget {
 /// it reads as a superscript to the name rather than sitting mid-line. With no
 /// [mark] it is the plain name.
 class ProviderName extends StatelessWidget {
-  const ProviderName(this.name, {super.key, this.mark, this.style});
+  const ProviderName(
+    this.name, {
+    super.key,
+    this.mark,
+    this.style,
+    this.maxLines,
+  });
 
   final String name;
+
+  /// Cuts a long name with an ellipsis after this many lines.
+  final int? maxLines;
   final ProviderMarkKind? mark;
   final TextStyle? style;
 
@@ -277,6 +286,8 @@ class ProviderName extends StatelessWidget {
         ],
       ),
       style: style,
+      maxLines: maxLines,
+      overflow: maxLines == null ? TextOverflow.clip : TextOverflow.ellipsis,
     );
   }
 }

@@ -1410,5 +1410,29 @@
       "index": {"type": "int"},
       "percent": {"type": "int"}
     }
-  }
+  },
+  "setupTypeHeading": "Bạn nhận việc với tư cách",
+  "setupTypeIndividual": "Cá nhân",
+  "setupTypeIndividualBody": "Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).",
+  "setupTypeStudio": "Studio",
+  "setupTypeStudioBody": "Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có.",
+  "setupTypeNote": "Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.",
+  "setupStudioName": "Tên studio",
+  "setupStudioAddress": "Địa chỉ cơ sở",
+  "setupStudioLine": "Số nhà, đường",
+  "setupStudioWard": "Phường / xã",
+  "setupStudioDistrict": "Quận / huyện",
+  "setupStudioCity": "Tỉnh / thành phố",
+  "setupStudioLineError": "Nhập số nhà, đường (ít nhất 5 ký tự).",
+  "setupStudioWardError": "Phường / xã tối đa 60 ký tự.",
+  "setupStudioDistrictError": "Nhập quận / huyện.",
+  "setupStudioCityError": "Nhập tỉnh / thành phố.",
+  "setupStudioAddressNote": "Khách chỉ thấy tới quận; địa chỉ đầy đủ hiện sau khi đã đặt.",
+  "providerNotEligible": "Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.",
+  "settingsProviderType": "Hình thức nhận việc",
+  "settingsProviderArtist": "Cá nhân · Nhiếp ảnh gia",
+  "providerTypeSave": "Lưu",
+  "providerTypeKeep": "Giữ nguyên",
+  "providerLoseArtistBody": "Đổi sang Studio sẽ bỏ hạng Nhiếp ảnh gia. Giải thưởng vẫn giữ.",
+  "providerLoseArtistConfirm": "Đổi sang Studio"
 }

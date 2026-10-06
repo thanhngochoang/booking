@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/provider_repository.dart';
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 
@@ -194,4 +197,124 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  AppOptionTile tile(WidgetTester t, String k) =>
+      t.widget<AppOptionTile>(_key(k));
+
+  testWidgets('choice defaults to Cá nhân', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.text('Bạn nhận việc với tư cách'), findsOneWidget);
+    expect(tile(tester, 'type-individual').selected, isTrue);
+    expect(tile(tester, 'type-studio').selected, isFalse);
+    expect(find.text('Tên hiển thị'), findsOneWidget);
+    expect(
+      find.text(
+        'Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a stored studio profile preselects Studio', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    w.seedProfile(type: ProviderType.studio);
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(tile(tester, 'type-studio').selected, isTrue);
+  });
+
+  testWidgets('choosing Studio relabels the name field', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('type-studio'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tên studio'), findsOneWidget);
+    expect(find.text('Tên hiển thị'), findsNothing);
+    expect(tile(tester, 'type-studio').selected, isTrue);
+    expect(
+      SetupDraftStore(w.prefs).intro(w.uid)?.choice,
+      ProviderChoice.studio,
+    );
+  });
+
+  Future<void> fillAndNext(WidgetTester tester) async {
+    await tester.enterText(_key('setup-bio'), 'Ánh sáng tự nhiên.');
+    await tester.tap(_key('setup-next'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('saving calls setType only when the choice changed', (
+    tester,
+  ) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    w.seedProfile();
+    var calls = 0;
+    w.providerRepo.onSetType = () => calls++;
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await fillAndNext(tester);
+    expect(calls, 0, reason: 'unchanged');
+    expect(find.text('step 2'), findsOneWidget);
+
+    final w2 = await _world();
+    w2.seedProfile();
+    var calls2 = 0;
+    w2.providerRepo.onSetType = () => calls2++;
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(w2.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('type-studio'));
+    await tester.pumpAndSettle();
+    await fillAndNext(tester);
+    expect(calls2, 1);
+    expect(w2.providerRepo.type, ProviderType.studio);
+    expect(w2.intro.saves, 1);
+    expect(find.text('step 2'), findsOneWidget);
+  });
+
+  testWidgets(
+    'not eligible shows the reason under the choice and saves nothing',
+    (tester) async {
+      usePhone(tester, height: 1400);
+      final w = await _world();
+      w.seedProfile();
+      w.providerRepo.failWith = const ProviderError('not_eligible');
+      await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+      await tester.pumpAndSettle();
+      await tester.tap(_key('type-studio'));
+      await tester.pumpAndSettle();
+      await fillAndNext(tester);
+      expect(
+        find.text(
+          'Còn booking chưa xong hoặc tiền đang giữ. Hoàn tất chúng trước khi đổi.',
+        ),
+        findsOneWidget,
+      );
+      expect(tile(tester, 'type-studio').selected, isTrue);
+      expect(w.intro.saves, 0);
+      expect(find.text('step 2'), findsNothing);
+    },
+  );
+
+  testWidgets('a network failure shows the generic save error', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    w.seedProfile();
+    w.providerRepo.failWithNetwork = true;
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('type-studio'));
+    await tester.pumpAndSettle();
+    await fillAndNext(tester);
+    expect(find.textContaining('Không lưu được thiết lập'), findsOneWidget);
+    expect(find.byKey(const Key('type-error')), findsNothing);
+    expect(find.text('step 2'), findsNothing);
+  });
 }

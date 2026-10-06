@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
+import 'package:photobooking/features/settings/provider_type_sheet.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
@@ -58,6 +61,8 @@ class SettingsScreen extends ConsumerWidget {
                       if (profile?.role == UserRole.photographer) ...[
                         const _RowDivider(),
                         _SkillsTile(uid: profile!.uid),
+                        const _RowDivider(),
+                        _ProviderTypeTile(uid: profile.uid),
                         const _RowDivider(),
                         ListTile(
                           key: const Key('profile-public'),
@@ -256,6 +261,48 @@ class _PhoneTile extends ConsumerWidget {
       ),
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () => context.push('/profile/phone'),
+    );
+  }
+}
+
+/// "Hình thức nhận việc": Cá nhân, Cá nhân · Nhiếp ảnh gia, or Studio. Opens
+/// [ProviderTypeSheet]; after a switch to Studio the address form (S08.05)
+/// opens, since the profile has none yet.
+class _ProviderTypeTile extends ConsumerWidget {
+  const _ProviderTypeTile({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final async = ref.watch(photographerProfileProvider(uid));
+    final type = async.value?.summary.providerType;
+    return ListTile(
+      key: const Key('profile-provider-type'),
+      leading: const Icon(Icons.work_outline),
+      title: Text(l.settingsProviderType),
+      subtitle: type == null
+          ? null
+          : Text(switch (type) {
+              ProviderType.individual => l.setupTypeIndividual,
+              ProviderType.artist => l.settingsProviderArtist,
+              ProviderType.studio => l.setupTypeStudio,
+            }),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: () async {
+        if (type == null) {
+          // Not loaded (or failed): this tap is the retry.
+          ref.invalidate(photographerProfileProvider(uid));
+          return;
+        }
+        final next = await showProviderTypeSheet(context, current: type);
+        if (next == ProviderType.studio &&
+            type != ProviderType.studio &&
+            context.mounted) {
+          await context.push('/setup/4');
+        }
+      },
     );
   }
 }

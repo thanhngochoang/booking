@@ -170,6 +170,39 @@ void main() {
     );
   });
 
+  testWidgets('a long name in the free card ellipsizes at 320 x 1.3 text', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      DiscoveryWorld(
+        photographers: [
+          for (final p in discoveryPhotographers())
+            if (p.id == 'p2')
+              fixturePhotographer(
+                'p2',
+                name:
+                    'Nguyễn Thị Hồng Nhung Phương Thảo Studio Chụp Ảnh Cưới Hỏi Sài Gòn',
+                specialties: const ['wedding'],
+                nextFreeDate: '2026-10-02',
+                providerType: ProviderType.artist,
+              )
+            else
+              p,
+        ],
+      ),
+      textScale: 1.3,
+      size: const Size(320, 640),
+    );
+    final name = find.descendant(
+      of: find.byKey(const Key('free-p2')),
+      matching: find.byType(ProviderName),
+    );
+    expect(name, findsOneWidget);
+    expect(tester.widget<ProviderName>(name).maxLines, 2);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('home free-this-week card shows the artist mark', (tester) async {
     final h = tester.ensureSemantics();
     await _pump(

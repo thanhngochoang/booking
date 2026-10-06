@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 
 String _s(Object? v) => v is String ? v : '';
@@ -15,16 +16,21 @@ class IntroDraft {
     this.displayName = '',
     this.bio = '',
     this.equipment = const [],
+    this.choice,
   });
 
   final String displayName;
   final String bio;
   final List<String> equipment;
 
+  /// Null until the person picked Cá nhân or Studio on this device.
+  final ProviderChoice? choice;
+
   Map<String, Object> toJson() => {
     'displayName': displayName,
     'bio': bio,
     'equipment': equipment,
+    'choice': ?choice?.name,
   };
 
   static IntroDraft? fromJson(Object? raw) {
@@ -40,6 +46,11 @@ class IntroDraft {
           for (final e in eq)
             if (e is String) e,
       ],
+      choice: switch (raw['choice']) {
+        'studio' => ProviderChoice.studio,
+        'individual' => ProviderChoice.individual,
+        _ => null,
+      },
     );
   }
 
@@ -48,10 +59,12 @@ class IntroDraft {
       other is IntroDraft &&
       other.displayName == displayName &&
       other.bio == bio &&
+      other.choice == choice &&
       listEquals(other.equipment, equipment);
 
   @override
-  int get hashCode => Object.hash(displayName, bio, Object.hashAll(equipment));
+  int get hashCode =>
+      Object.hash(displayName, bio, choice, Object.hashAll(equipment));
 }
 
 /// The package form of step 2 as typed, before "Thêm gói này".
