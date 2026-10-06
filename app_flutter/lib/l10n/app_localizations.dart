@@ -5937,6 +5937,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Để sau'**
   String get profileAwardNudgeLater;
+
+  /// No description provided for @profileStatAwards.
+  ///
+  /// In vi, this message translates to:
+  /// **'giải thưởng'**
+  String get profileStatAwards;
+
+  /// No description provided for @profileAwardSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'{competition} {year}'**
+  String profileAwardSub(String competition, int year);
+
+  /// No description provided for @profileAwardSubCategory.
+  ///
+  /// In vi, this message translates to:
+  /// **'{competition} {year} · {category}'**
+  String profileAwardSubCategory(String competition, int year, String category);
+
+  /// No description provided for @profileAwardsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem cả {n} giải'**
+  String profileAwardsMore(int n);
 }
 
 class _AppLocalizationsDelegate

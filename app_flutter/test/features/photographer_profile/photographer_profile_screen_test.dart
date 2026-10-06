@@ -1,7 +1,11 @@
 // test/features/photographer_profile/photographer_profile_screen_test.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/award/award.dart';
+import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
@@ -635,4 +639,142 @@ void main() {
       });
     }
   });
+
+  group('awards on S03.01', () {
+    PhotographerSummary artist() => fixturePhotographer(
+      'p1',
+      name: 'Lê Hoàng Vũ',
+      verified: true,
+      providerType: ProviderType.artist,
+      approvedAwards: 7,
+    );
+
+    void seed(ProfileWorld w, int n) {
+      for (var i = 0; i < n; i++) {
+        w.awards.add(
+          fixtureAward(
+            'a$i',
+            year: 2020 + i,
+            result: i.isEven ? AwardResult.gold : AwardResult.finalist,
+            competition: 'VIPA',
+            category: 'Phong cảnh',
+            createdAt: fixtureNow.add(Duration(days: i)),
+          ),
+        );
+      }
+    }
+
+    testWidgets('an artist shows the giải thưởng stat instead of phản hồi', (
+      tester,
+    ) async {
+      final w = await _world(tester, photographers: [artist()]);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      expect(find.text('giải thưởng'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+      expect(find.text('phản hồi'), findsNothing);
+      expect(find.text('buổi chụp'), findsOneWidget);
+      expect(find.text('kinh nghiệm'), findsOneWidget);
+    });
+
+    testWidgets('an artist shows the awards strip above the bio', (
+      tester,
+    ) async {
+      final w = await _world(tester, photographers: [artist()]);
+      seed(w, 3);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AwardChip), findsNWidgets(2));
+      expect(
+        tester.getTopLeft(_key('profile-awards-strip')).dy,
+        lessThan(tester.getTopLeft(find.text(profileBio)).dy),
+      );
+      // Newest first: 2022 gold before 2021.
+      expect(find.text('VIPA 2022 · Phong cảnh'), findsOneWidget);
+      expect(find.text('VIPA 2021 · Phong cảnh'), findsOneWidget);
+      expect(find.text('VIPA 2020 · Phong cảnh'), findsNothing);
+    });
+
+    testWidgets('the strip opens the full list read-only', (tester) async {
+      final w = await _world(tester, photographers: [artist()]);
+      seed(w, 3);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(AwardChip).first);
+      await tester.pumpAndSettle();
+      expect(_key('profile-awards-sheet'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: _key('profile-awards-sheet'),
+          matching: find.byType(AwardRow),
+        ),
+        findsNWidgets(3),
+      );
+      expect(_key('award_status_badge'), findsNothing);
+      expect(find.text('Giải thưởng'), findsOneWidget);
+    });
+
+    testWidgets('an individual with approved awards shows the strip below the '
+        'bio and keeps phản hồi', (tester) async {
+      final w = await _world(tester);
+      w.awards.add(fixtureAward('a1', competition: 'VIPA', year: 2024));
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AwardChip), findsOneWidget);
+      expect(
+        tester.getTopLeft(_key('profile-awards-strip')).dy,
+        greaterThan(tester.getTopLeft(find.text(profileBio)).dy),
+      );
+      expect(find.text('phản hồi'), findsOneWidget);
+      expect(find.text('giải thưởng'), findsNothing);
+    });
+
+    testWidgets('no approved awards: no strip', (tester) async {
+      final w = await _world(tester, photographers: [artist()]);
+      w.awards.add(
+        fixtureAward('a1', status: AwardStatus.pending, competition: 'VIPA'),
+      );
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AwardChip), findsNothing);
+      expect(_key('profile-awards-strip'), findsNothing);
+    });
+
+    testWidgets('the strip loads with chip skeletons', (tester) async {
+      final w = await _world(tester, photographers: [artist()]);
+      w.awards = _NeverAwards();
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(_key('profile-awards-skeleton'), findsOneWidget);
+      expect(find.byType(AwardChip), findsNWidgets(2));
+      expect(find.text('Giải thưởng'), findsNothing);
+    });
+
+    for (final b in Brightness.values) {
+      testWidgets(
+        'artist header and strip fit 320dp at 1.3x text (${b.name})',
+        (tester) async {
+          final w = await _world(tester, width: 320, photographers: [artist()]);
+          seed(w, 3);
+          await tester.pumpWidget(
+            w.app('/u/p1', brightness: b, textScale: 1.3),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(AwardChip), findsNWidgets(2));
+          expect(_key('profile-awards-more'), findsOneWidget);
+          await tester.drag(_page, const Offset(0, -150));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  });
+}
+
+/// An award repository whose approved list never arrives.
+class _NeverAwards extends FakeAwardRepository {
+  @override
+  Stream<List<Award>> watchApproved(String photographerId) =>
+      StreamController<List<Award>>().stream;
 }

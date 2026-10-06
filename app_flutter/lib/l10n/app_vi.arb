@@ -1672,5 +1672,12 @@
   "settingsAwards": "Giải thưởng",
   "settingsAwardsBody": "Khai giải để lên hạng Nhiếp ảnh gia",
   "profileAwardNudge": "Có giải thưởng? Lên hạng Nhiếp ảnh gia",
-  "profileAwardNudgeLater": "Để sau"
+  "profileAwardNudgeLater": "Để sau",
+  "profileStatAwards": "giải thưởng",
+  "profileAwardSub": "{competition} {year}",
+  "@profileAwardSub": {"placeholders": {"competition": {"type": "String"}, "year": {"type": "int"}}},
+  "profileAwardSubCategory": "{competition} {year} · {category}",
+  "@profileAwardSubCategory": {"placeholders": {"competition": {"type": "String"}, "year": {"type": "int"}, "category": {"type": "String"}}},
+  "profileAwardsMore": "Xem cả {n} giải",
+  "@profileAwardsMore": {"placeholders": {"n": {"type": "int"}}}
 }

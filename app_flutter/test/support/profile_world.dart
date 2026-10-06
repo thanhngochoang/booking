@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/award/award_providers.dart';
+import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/album/album_repository.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
@@ -68,6 +70,9 @@ class ProfileWorld {
   final contacts = FakePhotographerContactRepository();
   final reviews = FakeReviewRepository();
 
+  /// Approved awards of any photographer; empty unless a test adds some.
+  FakeAwardRepository awards = FakeAwardRepository();
+
   /// Albums of any photographer; empty unless a test adds some.
   final albums = FakeAlbumRepository();
   late GoRouter router;
@@ -118,6 +123,7 @@ class ProfileWorld {
     ),
     reviewRepositoryProvider.overrideWithValue(reviews),
     albumRepositoryProvider.overrideWithValue(albums),
+    awardRepositoryProvider.overrideWithValue(awards),
   ];
 
   Widget app(

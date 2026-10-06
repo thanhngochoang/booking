@@ -3368,4 +3368,26 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileAwardNudgeLater => 'Để sau';
+
+  @override
+  String get profileStatAwards => 'giải thưởng';
+
+  @override
+  String profileAwardSub(String competition, int year) {
+    return '$competition $year';
+  }
+
+  @override
+  String profileAwardSubCategory(
+    String competition,
+    int year,
+    String category,
+  ) {
+    return '$competition $year · $category';
+  }
+
+  @override
+  String profileAwardsMore(int n) {
+    return 'Xem cả $n giải';
+  }
 }

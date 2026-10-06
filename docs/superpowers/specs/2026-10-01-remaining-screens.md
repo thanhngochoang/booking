@@ -84,7 +84,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S02.05 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S36 |
 | S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback | S04 |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
-| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2; tab Đánh giá 4e) · lệch mock: không nút chia sẻ, lưới vuông thay masonry · loại nhà cung cấp: đã làm (a1) | S03 |
+| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2; tab Đánh giá 4e) · lệch mock: không nút chia sẻ, lưới vuông thay masonry · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) | S03 |
 | S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
@@ -158,7 +158,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S64 |
 | S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
-| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
+| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ chưa có mock · tạm duyệt bằng CLI (`npm run awards`, b1) | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help` | cả hai | mới | ⬜ đang thiết kế · chưa có mock | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
@@ -190,8 +190,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S24.04 | Thêm bài vào album (sheet) | — (sheet) | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
 | S24.05 | Chọn album khi đăng (sheet trên S10.01) | — (sheet) | thợ ảnh | C (spec 10-05) | ✅ đã làm (c1) · khớp mock | — |
 | **S25** | **Giải thưởng & hạng Nhiếp ảnh gia (NAG)** | | | | | |
-| S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
-| S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | — |
+| S25.01 | Giải thưởng của tôi (tiến độ lên NAG, trạng thái từng giải) | `/me/awards` | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · có mock | — |
+| S25.02 | Thêm / sửa giải thưởng (sheet) | — (sheet) | thợ ảnh | B (spec 10-05) | ✅ đã làm (b1) · có mock | — |
 
 Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
