@@ -1,6 +1,7 @@
 // test/features/album/edit_album_sheet_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/album/album.dart';
 
 import '../../support/content_fixtures.dart';
@@ -231,7 +232,7 @@ void main() {
         .style!
         .backgroundColor!
         .resolve({});
-    expect(bg, const Color(0xFFE91E11));
+    expect(bg, AppColors.destructive);
     await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(w.albums.calls, ['delete:al1']);
@@ -257,6 +258,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(_key('album-edit-title'), findsNothing);
     expect(SheetHost.results.single, isNull);
+    expect(w.albums.calls, isEmpty);
+  });
+
+  testWidgets('dragging the sheet down keeps the edits', (tester) async {
+    final w = await _open(tester);
+    await _type(tester, 'album-edit-title', 'Phố cổ');
+    await tester.drag(
+      find.byKey(const Key('app-sheet-handle')),
+      const Offset(0, 500),
+    );
+    await tester.pumpAndSettle();
+    expect(_key('album-edit-title'), findsOneWidget);
+    expect(find.text('Phố cổ'), findsOneWidget);
     expect(w.albums.calls, isEmpty);
   });
 

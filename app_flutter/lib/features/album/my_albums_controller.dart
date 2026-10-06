@@ -14,6 +14,11 @@ const int kMaxAlbumPosts = 200;
 /// `movePostsToAlbum` takes at most this many posts per call.
 const int kMaxMovePerCall = 50;
 
+/// Pages one read of the unsorted list may fetch before it stops and offers
+/// "Xem thêm bài" (so a photographer whose posts are all in albums does not
+/// read their whole history at once).
+const int kMaxPagesPerRead = 3;
+
 /// Page size of the post lists in the add-posts sheet.
 const int kPostPickPage = 30;
 
@@ -39,6 +44,9 @@ class AlbumOrderController extends Notifier<AlbumOrderState> {
   /// Shows [ids] and saves them. Returns true when saved; on failure the
   /// stored order shows again and false is returned.
   Future<bool> reorder(List<String> ids) async {
+    if (state.saving) {
+      return false; // a save is in flight; callers check `saving` first
+    }
     _echoed = false;
     state = AlbumOrderState(pending: ids, saving: true);
     try {
@@ -117,7 +125,9 @@ class MyPostsController extends AsyncNotifier<MyPostsState> {
     final posts = [...from.posts];
     var cursor = from.cursor;
     var found = 0;
+    var pages = 0;
     do {
+      pages++;
       final page = await repo.byPhotographer(
         uid,
         cursor: cursor,
@@ -127,7 +137,7 @@ class MyPostsController extends AsyncNotifier<MyPostsState> {
       posts.addAll(kept);
       found += kept.length;
       cursor = page.nextCursor;
-    } while (cursor != null && found < want);
+    } while (cursor != null && found < want && pages < kMaxPagesPerRead);
     return MyPostsState(posts: posts, cursor: cursor);
   }
 

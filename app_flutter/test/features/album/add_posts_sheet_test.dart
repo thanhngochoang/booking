@@ -242,7 +242,7 @@ void main() {
   ) async {
     final (w, _) = await _open(
       tester,
-      albumPosts: 0,
+      albumPosts: 148,
       flakyFrom: 2,
       seed: (w) {
         for (var i = 1; i <= 52; i++) {
@@ -275,7 +275,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('2 đã chọn'), findsOneWidget);
-    expect(SheetHost.results, isEmpty);
+    // Room is recomputed from what landed: 148 + 50 leaves 2.
+    expect(find.text('Album đã đủ 200 bài'), findsOneWidget);
+    await tester.tap(_key('add-posts-close'));
+    await tester.pumpAndSettle();
+    expect(SheetHost.results.single, 50);
   });
 
   testWidgets('a failed add shows an error and keeps the selection', (

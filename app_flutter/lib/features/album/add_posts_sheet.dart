@@ -17,19 +17,29 @@ import 'package:photobooking/features/album/my_albums_controller.dart';
 Future<int?> showAddPostsSheet(
   BuildContext context, {
   required AlbumSummary album,
-}) {
-  return showAppSheet<int>(
+}) async {
+  final added = _Added();
+  final result = await showAppSheet<int>(
     context,
     builder: (_) => ScreenCode(
       ScreenCodes.addPostsToAlbum,
-      child: _AddPostsBody(album: album),
+      child: _AddPostsBody(album: album, added: added),
     ),
   );
+  // Posts added before a failed batch still count when the sheet is closed.
+  return result ?? (added.count > 0 ? added.count : null);
+}
+
+/// How many posts the sheet has filed so far, kept outside the sheet so the
+/// caller still gets it after a partial failure.
+class _Added {
+  int count = 0;
 }
 
 class _AddPostsBody extends ConsumerStatefulWidget {
-  const _AddPostsBody({required this.album});
+  const _AddPostsBody({required this.album, required this.added});
   final AlbumSummary album;
+  final _Added added;
 
   @override
   ConsumerState<_AddPostsBody> createState() => _AddPostsBodyState();
@@ -44,7 +54,8 @@ class _AddPostsBodyState extends ConsumerState<_AddPostsBody> {
   String? _error;
 
   AlbumSummary get _album => widget.album;
-  int get _room => (kMaxAlbumPosts - _album.postCount).clamp(0, kMaxAlbumPosts);
+  int get _room => (kMaxAlbumPosts - _album.postCount - widget.added.count)
+      .clamp(0, kMaxAlbumPosts);
 
   void _toggle(String id) {
     if (_busy) {
@@ -86,6 +97,7 @@ class _AddPostsBodyState extends ConsumerState<_AddPostsBody> {
         final end = (i + kMaxMovePerCall).clamp(0, ids.length);
         await repo.movePosts(_album.id, ids.sublist(i, end));
         done = end;
+        widget.added.count += end - i;
       }
     } catch (e) {
       if (!mounted) {

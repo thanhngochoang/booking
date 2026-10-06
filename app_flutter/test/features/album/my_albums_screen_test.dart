@@ -1,4 +1,6 @@
 // test/features/album/my_albums_screen_test.dart
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/album/album.dart';
 
 import '../../support/content_fixtures.dart';
+import '../../support/create_post_world.dart';
 import '../../support/my_albums_world.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
@@ -75,6 +78,20 @@ Future<void> _drag(WidgetTester tester, int row, double dy) async {
   await tester.pumpAndSettle();
 }
 
+/// Holds `reorder` until [release] is called.
+class _SlowAlbums extends OwnedFakeAlbumRepository {
+  _SlowAlbums(super.ownerUid);
+  final gate = Completer<void>();
+  var reorders = 0;
+
+  @override
+  Future<void> reorder(List<String> albumIds) async {
+    reorders++;
+    await gate.future;
+    return super.reorder(albumIds);
+  }
+}
+
 void main() {
   testWidgets('albums list in position order, with counts and notes', (
     tester,
@@ -105,6 +122,61 @@ void main() {
     await tester.pumpAndSettle();
     expect(w.albums.calls.last, 'reorder:al1,al2,al3');
     expect(_titles(tester), ['Album 1', 'Album 2', 'Album 3']);
+  });
+
+  testWidgets('a drop while a save is in flight is ignored', (tester) async {
+    usePhone(tester);
+    final w = MyAlbumsWorld();
+    await w.init();
+    final slow = _SlowAlbums(w.uid);
+    w.albums = slow;
+    for (var i = 1; i <= 3; i++) {
+      slow.add(
+        fixtureAlbum(
+          'al$i',
+          photographerId: w.uid,
+          title: 'Album $i',
+          position: i,
+        ),
+      );
+    }
+    await tester.pumpWidget(w.app());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Thao tác với mục này').at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chuyển lên'));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Thao tác với mục này').at(2));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chuyển lên'));
+    await tester.pump();
+    expect(slow.reorders, 1);
+    slow.gate.complete();
+    await tester.pumpAndSettle();
+    expect(slow.reorders, 1);
+    expect(_titles(tester), ['Album 2', 'Album 1', 'Album 3']);
+  });
+
+  testWidgets('the unsorted read stops after three pages', (tester) async {
+    usePhone(tester);
+    final w = MyAlbumsWorld();
+    await w.init();
+    w.albums.add(fixtureAlbum('al1', photographerId: w.uid, position: 1));
+    for (var i = 0; i < 100; i++) {
+      w.posts.add(
+        fixturePost(
+          'p$i',
+          photographerId: w.uid,
+          albumId: 'al1',
+          albumPosition: i + 1,
+          age: Duration(minutes: i),
+        ),
+      );
+    }
+    await tester.pumpWidget(w.app());
+    await tester.pumpAndSettle();
+    expect(w.posts.byPhotographerCursors.length, 3);
+    expect(find.text('0+ bài · chỉ ở Dòng thời gian'), findsOneWidget);
   });
 
   testWidgets('move up saves the new order', (tester) async {
@@ -223,9 +295,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Xoá album này?'), findsOneWidget);
     expect(w.albums.calls, isNot(contains('delete:al3')));
-    await tester.tap(find.widgetWithText(FilledButton, 'Xoá album'));
+    final confirm = find.widgetWithText(FilledButton, 'Xoá album');
+    expect(
+      tester.widget<FilledButton>(confirm).style!.backgroundColor!.resolve({}),
+      AppColors.destructive,
+    );
+    final reads = w.posts.byPhotographerCursors.length;
+    await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(w.albums.calls, contains('delete:al3'));
+    // The unsorted count is read again: the album's posts are unsorted now.
+    expect(w.posts.byPhotographerCursors.length, greaterThan(reads));
     expect(_titles(tester), ['Album 1', 'Album 2']);
   });
 

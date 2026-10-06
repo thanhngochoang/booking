@@ -14,6 +14,7 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/album/add_posts_sheet.dart';
 import 'package:photobooking/features/album/album_detail_controller.dart';
 import 'package:photobooking/features/album/edit_album_sheet.dart';
+import 'package:photobooking/features/album/my_albums_controller.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
 
 /// S24.01 "Chi tiết album" at `/u/:uid/albums/:albumId`: an album read as a
@@ -95,6 +96,7 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     if (!deleted || !mounted) {
       return;
     }
+    ref.invalidate(myPostsProvider(MyPostsFilter.unsorted));
     _leave();
   }
 

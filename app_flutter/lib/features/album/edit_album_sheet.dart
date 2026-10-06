@@ -7,6 +7,7 @@ import 'package:photobooking/data/album/album.dart';
 import 'package:photobooking/data/album/album_providers.dart';
 import 'package:photobooking/features/album/add_posts_sheet.dart';
 import 'package:photobooking/features/album/album_detail_controller.dart';
+import 'package:photobooking/features/album/my_albums_controller.dart';
 
 /// Limits of the form (plan C, Global Constraints).
 const int kAlbumTitleMax = 40;
@@ -35,6 +36,8 @@ Future<String?> showEditAlbumSheet(
   final container = ProviderScope.containerOf(context, listen: false);
   final result = await showAppSheet<_EditResult>(
     context,
+    // A drag would pop past PopScope: edits and a running save must survive.
+    enableDrag: false,
     builder: (_) => ScreenCode(
       ScreenCodes.editAlbum,
       child: _EditAlbumBody(album: album, addPosts: addPostsAfterCreate),
@@ -202,6 +205,7 @@ class _EditAlbumBodyState extends ConsumerState<_EditAlbumBody> {
     );
     if (deleted && mounted) {
       ref.invalidate(albumProvider(a.id));
+      ref.invalidate(myPostsProvider(MyPostsFilter.unsorted));
       Navigator.of(context).pop(const _EditResult(null));
     }
   }

@@ -28,6 +28,10 @@ class MyAlbumsScreen extends ConsumerWidget {
     List<String> before,
     List<String> after,
   ) async {
+    // One save at a time: a drop during a save would race it.
+    if (ref.read(albumOrderProvider).saving) {
+      return;
+    }
     final l = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     // The undo may run after this screen is gone, so it uses the repository
@@ -78,7 +82,7 @@ class MyAlbumsScreen extends ConsumerWidget {
   ) async {
     final l = context.l10n;
     final repo = ref.read(albumRepositoryProvider);
-    await showConfirmSheet(
+    final deleted = await showConfirmSheet(
       context,
       title: l.albumDetailDeleteTitle,
       body: l.albumDetailDeleteBody,
@@ -92,6 +96,10 @@ class MyAlbumsScreen extends ConsumerWidget {
         }
       },
     );
+    if (deleted) {
+      // Its posts are unsorted now.
+      ref.invalidate(myPostsProvider(MyPostsFilter.unsorted));
+    }
   }
 
   /// "Chưa xếp album": pick the album to file posts in, then pick the posts.
