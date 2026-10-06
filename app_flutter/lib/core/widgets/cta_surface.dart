@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// The blue → violet → magenta of the logo; white text passes AA on every stop.
+/// Dark CTA: violet monochrome (60-30-10 accent), white text passes AA on both stops.
 const ctaGradient = LinearGradient(
-  colors: [AppColors.ctaStart, AppColors.ctaMid, AppColors.ctaEnd],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [AppColors.ctaStart, AppColors.ctaEnd],
 );
 
 /// On the light canvas the main action stays in one hue (violet 500 → 600),

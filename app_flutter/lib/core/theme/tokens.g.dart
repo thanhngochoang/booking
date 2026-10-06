@@ -16,6 +16,9 @@ class AppColors {
   static const Color primaryPressed = Color(0xFF5B21B6);
   static const Color primarySubtle = Color(0xFFF4EEFF);
   static const Color primaryForeground = Color(0xFFFFFFFF);
+  static const Color accent = Color(0xFF8338F5);
+  static const Color accentForeground = Color(0xFFFFFFFF);
+  static const Color accentSoft = Color(0xFFF4EEFF);
   static const Color secondary = Color(0xFFEFEFEF);
   static const Color secondaryPressed = Color(0xFFE9E9E9);
   static const Color secondaryForeground = Color(0xFF313131);
@@ -44,9 +47,8 @@ class AppColors {
   static const Color bookingClosed = Color(0xFF898888);
   static const Color pillInk = Color(0xFF1B1A18);
   static const Color heroCanvas = Color(0xFF0B0B10);
-  static const Color ctaStart = Color(0xFF3D63FF);
-  static const Color ctaMid = Color(0xFF8A3FFC);
-  static const Color ctaEnd = Color(0xFFD6249F);
+  static const Color ctaStart = Color(0xFF8A3FFC);
+  static const Color ctaEnd = Color(0xFF6E2FD6);
   static const Color ctaLightStart = Color(0xFF8338F5);
   static const Color ctaLightEnd = Color(0xFF702BDB);
   static const Color spectrumCyan = Color(0xFF14E0F5);
@@ -80,6 +82,9 @@ class AppColorsDark {
   static const Color primaryPressed = Color(0xFFCDB4FF);
   static const Color primarySubtle = Color(0xFF2C0F5C);
   static const Color primaryForeground = Color(0xFF0B0B10);
+  static const Color accent = Color(0xFFB08AFF);
+  static const Color accentForeground = Color(0xFF0B0B10);
+  static const Color accentSoft = Color(0xFF2C0F5C);
   static const Color secondary = Color(0x14FFFFFF);
   static const Color secondaryPressed = Color(0x24FFFFFF);
   static const Color secondaryForeground = Color(0xFFF7F7F7);
@@ -109,7 +114,6 @@ class AppColorsDark {
   static const Color pillInk = AppColors.pillInk;
   static const Color heroCanvas = AppColors.heroCanvas;
   static const Color ctaStart = AppColors.ctaStart;
-  static const Color ctaMid = AppColors.ctaMid;
   static const Color ctaEnd = AppColors.ctaEnd;
   static const Color ctaLightStart = AppColors.ctaLightStart;
   static const Color ctaLightEnd = AppColors.ctaLightEnd;

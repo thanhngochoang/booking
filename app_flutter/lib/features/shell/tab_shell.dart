@@ -101,7 +101,7 @@ class MiddleTabDestination extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.ctaMid.withValues(alpha: 0.45),
+                  color: AppColors.ctaStart.withValues(alpha: 0.45),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),

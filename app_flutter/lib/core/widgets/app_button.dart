@@ -276,7 +276,7 @@ class _GradientFill extends StatelessWidget {
               : [
                   BoxShadow(
                     color: dark
-                        ? AppColors.ctaMid.withValues(alpha: 0.35)
+                        ? AppColors.ctaStart.withValues(alpha: 0.35)
                         : AppColors.ctaLightStart.withValues(alpha: 0.25),
                     blurRadius: dark ? 18 : 12,
                     offset: Offset(0, dark ? 8 : 4),

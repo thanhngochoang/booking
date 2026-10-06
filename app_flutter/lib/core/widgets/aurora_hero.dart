@@ -36,7 +36,7 @@ class AuroraHero extends StatelessWidget {
             AppColors.spectrumOrange,
             AppColors.spectrumYellow,
           ]
-        : const [AppColors.ctaStart, AppColors.ctaMid, AppColors.ctaEnd];
+        : const [AppColors.ctaLightStart, AppColors.ctaLightEnd];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

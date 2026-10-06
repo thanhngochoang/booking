@@ -34,11 +34,20 @@ LinearGradient _gradientOf(WidgetTester tester) {
 
 void main() {
   test('gradient follows the theme brightness', () {
-    expect(ctaGradientFor(Brightness.dark).colors, hasLength(3));
+    expect(ctaGradientFor(Brightness.dark).colors, hasLength(2));
     expect(ctaGradientFor(Brightness.light).colors, [
       AppColors.ctaLightStart,
       AppColors.ctaLightEnd,
     ]);
+  });
+
+  test('dark CTA is a violet two-stop gradient', () {
+    expect(ctaGradientFor(Brightness.dark).colors, [
+      const Color(0xFF8A3FFC),
+      const Color(0xFF6E2FD6),
+    ]);
+    expect(AppColors.ctaStart, const Color(0xFF8A3FFC));
+    expect(AppColors.ctaEnd, const Color(0xFF6E2FD6));
   });
 
   testWidgets('light theme: tonal gradient, no avatar layers', (tester) async {
@@ -48,9 +57,9 @@ void main() {
     expect(find.text('Đặt lịch'), findsOneWidget);
   });
 
-  testWidgets('dark theme: full spectrum gradient', (tester) async {
+  testWidgets('dark theme: violet two-stop gradient', (tester) async {
     await tester.pumpWidget(_host(buildDarkTheme()));
-    expect(_gradientOf(tester).colors, hasLength(3));
+    expect(_gradientOf(tester).colors, hasLength(2));
   });
 
   testWidgets('avatar style blurs the photo and tints it with the gradient', (
@@ -61,7 +70,7 @@ void main() {
     expect(find.byType(ShaderMask), findsOneWidget);
     expect(find.byType(ImageFiltered), findsOneWidget);
     // Gradient stays underneath as the loading/failed fallback.
-    expect(_gradientOf(tester).colors, hasLength(3));
+    expect(_gradientOf(tester).colors, hasLength(2));
     expect(find.text('Đặt lịch'), findsOneWidget);
   });
 }
