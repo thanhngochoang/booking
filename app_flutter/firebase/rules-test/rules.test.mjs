@@ -1578,10 +1578,10 @@ test('the owner cannot read the accounts history', async () => {
   await assertFails(getDocs(collection(db, 'payoutAccounts/pa1/accounts')));
   await assertFails(setDoc(doc(db, 'payoutAccounts/pa1/accounts/a2'), { accountNumberEnc: 'v1:x:y:z' }));
 });
-test('a payee reads their payouts, nobody else, nobody writes', async () => {
-  await seedDoc('payouts/po1', { payeeId: 'pp1', status: 'paid', amount: 100, items: [], createdAt: Timestamp.now() });
-  await assertSucceeds(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1')));
-  await assertSucceeds(getDocs(query(collection(env.authenticatedContext('pp1').firestore(), 'payouts'), where('payeeId', '==', 'pp1'))));
+test('payouts are server-only: the payee cannot read or write them', async () => {
+  await seedDoc('payouts/po1', { payeeId: 'pp1', status: 'paid', amount: 100, items: [], holdReason: 'x', createdAt: Timestamp.now() });
+  await assertFails(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1')));
+  await assertFails(getDocs(query(collection(env.authenticatedContext('pp1').firestore(), 'payouts'), where('payeeId', '==', 'pp1'))));
   await assertFails(getDoc(doc(env.authenticatedContext('pp2').firestore(), 'payouts/po1')));
   await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po2'), { payeeId: 'pp1' }));
   await assertFails(updateDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1'), { status: 'failed' }));

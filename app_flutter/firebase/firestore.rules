@@ -508,10 +508,10 @@ service cloud.firestore {
       }
     }
 
-    // payouts/{payoutId}: batches paid to a photographer; the payee reads, staff use the CLI.
+    // payouts/{payoutId}: batches paid to a photographer. Server-only: rows hold staff free text
+    // (holdReason, failureReason, reference, createdBy); the app reads the summary instead.
     match /payouts/{payoutId} {
-      allow read: if signedIn() && resource.data.payeeId == request.auth.uid;
-      allow write: if false;
+      allow read, write: if false;
     }
 
     match /refunds/{refundId} {
