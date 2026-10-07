@@ -19,6 +19,11 @@ export interface ServiceCatalog {
   getService(photographerId: string, serviceId: string): Promise<ServiceRecord | null>;
 }
 
+/** Whether a provider currently takes orders (verified and profile complete). */
+export interface ProviderOrderGate {
+  acceptsOrders(photographerId: string): Promise<boolean>;
+}
+
 export interface CustomerContactRecord extends UserContactRecord {
   readonly phone: string;
   readonly allowZalo?: boolean;
@@ -108,6 +113,7 @@ export interface PaymentGateway {
 export interface BookingDeps {
   readonly store: BookingStore;
   readonly services: ServiceCatalog;
+  readonly providers: ProviderOrderGate;
   readonly contacts: CustomerContactReader;
   readonly gateway: PaymentGateway;
   readonly clock: Clock;

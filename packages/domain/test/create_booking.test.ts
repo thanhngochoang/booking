@@ -181,4 +181,50 @@ describe('Task 4: createBookingDraft', () => {
     });
     assert.equal(booking.status, 'draft');
   });
+
+  describe('provider must accept orders', () => {
+    const input = {
+      customerId: 'c1',
+      photographerId: 'p1',
+      serviceId: 'srv_01',
+      day: '2026-10-15',
+      start: '14:00',
+      place: { name: 'Nhà thờ Lớn' },
+    };
+    const isNotAccepting = (err: unknown) =>
+      err instanceof DomainError && err.code === 'not_accepting_orders';
+
+    it('refuses a provider that is not verified with not_accepting_orders', async () => {
+      const world = createBookingWorld();
+      world.providers.set('p1', { verified: false, onboardingComplete: true });
+      await assert.rejects(createBookingDraft(world.deps, input), isNotAccepting);
+      assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
+      assert.equal(await world.store.getCustomerDraftForDay('c1', 'p1', '2026-10-15'), null);
+    });
+
+    it('refuses a verified provider that has not finished setup with not_accepting_orders', async () => {
+      const world = createBookingWorld();
+      world.providers.set('p1', { verified: true, onboardingComplete: false });
+      await assert.rejects(createBookingDraft(world.deps, input), isNotAccepting);
+      assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
+    });
+
+    it('checks the service before the provider', async () => {
+      const world = createBookingWorld();
+      world.providers.set('p1', {});
+      await assert.rejects(
+        createBookingDraft(world.deps, { ...input, serviceId: 'srv_missing' }),
+        (err: unknown) => err instanceof DomainError && err.code === 'not_found',
+      );
+    });
+
+    it('checks the provider before price and phone', async () => {
+      const world = createBookingWorld();
+      world.providers.set('p1', {});
+      await assert.rejects(
+        createBookingDraft(world.deps, { ...input, customerId: 'c_nophone', expectedPrice: 1 }),
+        isNotAccepting,
+      );
+    });
+  });
 });

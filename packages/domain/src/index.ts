@@ -12,6 +12,7 @@ export * from './booking_policy.js';
 export * from './booking_machine.js';
 export * from './escrow.js';
 export * from './booking_ports.js';
+export * from './provider_orders.js';
 export * from './booking_requests.js';
 export * from './memory_booking_store.js';
 export * from './fake_payment_gateway.js';

@@ -1,6 +1,7 @@
 import { MemoryBookingStore } from '../../src/memory_booking_store.js';
 import { FakePaymentGateway } from '../../src/fake_payment_gateway.js';
 import type { BookingDeps, CustomerContactReader, ServiceCatalog, ServiceRecord } from '../../src/booking_ports.js';
+import { acceptsOrders, type OrderEligibilityFields } from '../../src/provider_orders.js';
 import type { Clock, IdGenerator } from '../../src/ports.js';
 
 export class ControllableClock implements Clock {
@@ -41,6 +42,7 @@ export interface BookingWorld {
   readonly clock: ControllableClock;
   readonly ids: SequentialIdGen;
   readonly services: Map<string, ServiceRecord>;
+  readonly providers: Map<string, OrderEligibilityFields>;
   readonly contacts: Map<string, { phone: string; allowZalo?: boolean; allowWhatsApp?: boolean; name?: string }>;
 }
 
@@ -52,6 +54,11 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
 
   const services = new Map<string, ServiceRecord>();
   const contacts = new Map<string, { phone: string; allowZalo?: boolean; allowWhatsApp?: boolean; name?: string }>();
+
+  // Default photographer is open for orders
+  const providers = new Map<string, OrderEligibilityFields>([
+    ['p1', { verified: true, onboardingComplete: true }],
+  ]);
 
   // Default seed service
   services.set('srv_01', {
@@ -88,11 +95,12 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
   const deps: BookingDeps = {
     store,
     services: serviceCatalog,
+    providers: { acceptsOrders: async (id) => acceptsOrders(providers.get(id)) },
     contacts: contactReader,
     gateway,
     clock,
     ids,
   };
 
-  return { deps, store, gateway, clock, ids, services, contacts };
+  return { deps, store, gateway, clock, ids, services, providers, contacts };
 }
