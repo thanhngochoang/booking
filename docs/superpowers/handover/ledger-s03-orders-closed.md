@@ -27,10 +27,10 @@ Plan: `docs/superpowers/plans/2026-10-07-s03-orders-closed.md`, Tasks 1–5. Bra
 - Task 1: minor (deferred): acceptingOrdersPatch has no case for a non-bool stored flag ('true' string) — provider_orders.test.ts
 - Task 1: minor (deferred): second refusal test in create_booking.test.ts checks only the availability day, not the customer draft
 - Task 2: minor (deferred): sync runs after skills in the same try — a permanent skills error skips the sync (gate unaffected; next write heals)
-- Task 2: minor (deferred): liveAcceptingOrdersWriter uses update(); NOT_FOUND (code 5) on a doc deleted mid-event retries up to 1 h — set(merge) would avoid it
+- Task 2: ~~liveAcceptingOrdersWriter NOT_FOUND retries~~ fixed in the final wave (code 5 is a no-op; `set(merge)` rejected: it would recreate a deleted photographer doc)
 - Task 2: minor (deferred): FirestoreProviderOrderGate defaults firestore to db() unlike sibling readers (plan-mandated signature)
 - Task 2: minor (deferred): handlePhotographerEvent positional args (writer before now) easy to misorder
-- Task 3: minor (deferred): notAcceptingOrders branch in BookingFlowController duplicates the deadlinePassed/notFound group
+- Task 3: ~~notAcceptingOrders branch duplicates deadlinePassed/notFound~~ folded into that group in the final wave
 - Task 3: minor (deferred): mapping test helper returns bool? for a non-nullable field
 - Task 3: minor (deferred): "page of only closed providers" Find test does not assert a second page was requested
 - Task 4: minor (deferred): orders_closed_tag_test proves a CustomPaint, not the dashed painter type
@@ -45,6 +45,17 @@ Plan: `docs/superpowers/plans/2026-10-07-s03-orders-closed.md`, Tasks 1–5. Bra
 - Remote recommender filtering (note added to `services/recommender/api/openapi.yaml`).
 - Home shelves filtering (spec silent).
 - "Mời báo giá" has no screen yet (Decision 5, #139).
+
+## Final whole-branch review (2026-10-07)
+Verdict "with fixes"; one fix wave (88f135b, 62ee2c3), scoped re-review: all addressed.
+- F1 (Important): after a `not_accepting_orders` refusal the flow controller invalidates `photographerProfileProvider`; the booking sheet shows `EmptyState` "Nhiếp ảnh gia này chưa nhận đặt lịch." + "Đóng" when the loaded profile is closed (loading/failed keep today's flow; server guards). Covers "Đặt lại" (booking detail, payment pending), deep links `/u/:uid/book` and album detail while loading.
+- F2–F4 (Minor): `onPhotographerWrite` doc comment; seed computes `acceptingOrders` from the same `onboardingComplete` value it writes; the live writer treats NOT_FOUND as a no-op.
+- Ruling: the blocked booking sheet reuses the sheet's `EmptyState` pattern — the mock has no frame for it — cost if wrong: one widget to restyle once the mock gets a frame.
+- Parked (minor, cosmetic): blocked sheet keeps the "Đặt lịch với {name}" header and step 1/4 progress; redundant vertical padding and an empty body line under `EmptyState`.
+- Recorded on #135 (not this unit): `createDeposit` does not re-check the gate, so a draft made before a revocation can still be paid within its 30-minute life; when S21/S23 sets `verified` server-side, write `acceptingOrders` in the same write (a dropped trigger event otherwise leaves the public flag stale until the next write).
+
+## Release note
+After deploy, every photographer without `verified: true` disappears from Find (S02.06) and cannot be booked (spec §4/§7). There is no staff tool yet (S23.04): providers who must stay bookable in dev need `verified: true` set from the console (the trigger then writes `acceptingOrders`).
 
 ## Skipped by standing rules
 - The rules test for `acceptingOrders` is written, not run (CI runs it); no Functions integration tests; no device build, so the pixel look is not verified on device.
