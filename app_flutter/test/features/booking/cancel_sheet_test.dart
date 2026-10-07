@@ -195,7 +195,7 @@ void main() {
     await _settle(tester);
     expect(_sheet, findsNothing);
 
-    final reopen = find.text('Huỷ yêu cầu · hoàn cọc 100%');
+    final reopen = find.text('Huỷ yêu cầu · hoàn 100%');
     await tester.ensureVisible(reopen);
     await tester.tap(reopen);
     await _settle(tester);
@@ -339,7 +339,7 @@ void main() {
     expect(_inSheet(find.text('Huỷ buổi chụp với Nguyễn Văn A?')), findsOne);
     expect(_inSheet(find.byType(PolicyTable)), findsNothing);
     expect(
-      _inSheet(find.text('Nguyễn Văn A được hoàn cọc 100%')),
+      _inSheet(find.text('Nguyễn Văn A được hoàn 100%')),
       findsOneWidget,
     );
     expect(_refundLine('450.000₫'), findsOneWidget);
@@ -359,7 +359,7 @@ void main() {
       reason: 'Thiết bị gặp sự cố',
     ));
     expect(
-      find.text('Đã huỷ. Nguyễn Văn A được hoàn cọc 100%'),
+      find.text('Đã huỷ. Nguyễn Văn A được hoàn 100%'),
       findsOneWidget,
     );
   });

@@ -1,6 +1,8 @@
 import 'dart:io' show SocketException;
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 
 class BookingException implements Exception {
   const BookingException(this.code);
@@ -21,6 +23,7 @@ enum BookingErrorCode {
   permissionDenied,
   notFound,
   invalidArgument,
+  paymentAttemptsExceeded,
   network,
   unknown,
 }
@@ -77,6 +80,8 @@ BookingErrorCode _codeToBookingError(String code) {
     case 'invalid_argument':
     case 'invalid-argument':
       return BookingErrorCode.invalidArgument;
+    case 'payment_attempts_exceeded':
+      return BookingErrorCode.paymentAttemptsExceeded;
     case 'unavailable':
     case 'deadline-exceeded':
     case 'network':
@@ -86,35 +91,26 @@ BookingErrorCode _codeToBookingError(String code) {
   }
 }
 
-class CreateDepositResponse {
-  const CreateDepositResponse({
-    required this.paymentId,
-    required this.payUrl,
-    required this.provider,
-  });
-
-  final String paymentId;
-  final String payUrl;
-  final String provider;
-}
-
-class ConfirmPaymentResponse {
-  const ConfirmPaymentResponse({
-    required this.paymentId,
-    required this.status,
-    this.booking,
-  });
-
-  final String paymentId;
-  final String status;
-  final Booking? booking;
-}
-
-class CheckDepositResponse {
-  const CheckDepositResponse({required this.paid, this.booking});
+/// Answer of `checkPayment`: whether the booking is paid and its current state.
+class CheckPaymentResponse {
+  const CheckPaymentResponse({required this.paid, this.booking});
 
   final bool paid;
   final Booking? booking;
+}
+
+/// What the fake gateway simulates (`confirmFakePayment`, dev only): the
+/// mis-transfer table of the payments spec.
+enum FakeTransferKind {
+  exact('exact'),
+  under('under'),
+  over('over'),
+  wrongContent('wrong_content');
+
+  const FakeTransferKind(this.code);
+
+  /// Wire code of the callable's `kind`.
+  final String code;
 }
 
 enum BookingRole { customer, photographer }
@@ -158,20 +154,25 @@ abstract class BookingRepository {
     int? expectedPrice,
   });
 
-  /// Initiates deposit payment intent.
-  Future<CreateDepositResponse> createDeposit({
+  /// Starts (or restarts, "Tạo QR mới") the payment of a draft booking. The
+  /// booking's `checkout` mirrors the answer. At most 3 per booking, then
+  /// [BookingErrorCode.paymentAttemptsExceeded].
+  Future<BookingCheckout> createPayment({
     required String bookingId,
-    required String provider,
-    String? returnUrl,
+    required PayMethod method,
   });
 
-  /// Confirms fake payment (dev/test).
-  Future<ConfirmPaymentResponse> confirmFakePayment({
+  /// Asks the server to check the current payment with the provider
+  /// ("Kiểm tra lại"); never creates one.
+  Future<CheckPaymentResponse> checkPayment({required String bookingId});
+
+  /// Simulates a bank transfer to [paymentId] (dev/test only, refused by the
+  /// server elsewhere) and returns the outcome code (`paid`, `partial`,
+  /// `paid_with_refund`, `needs_review`, ...).
+  Future<String> confirmFakePayment({
     required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
   });
-
-  /// Checks deposit status.
-  Future<CheckDepositResponse> checkDeposit({required String bookingId});
 
   /// Transitions booking lifecycle state.
   Future<Booking> transitionBooking({

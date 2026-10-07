@@ -9,7 +9,7 @@ import 'widget_host.dart';
 
 const _sampleSteps = [
   TimelineStep(
-    title: 'Đã gửi & đặt cọc',
+    title: 'Đã gửi & thanh toán',
     subtitle: 'Hôm nay 9:41 · 450.000₫',
     state: TimelineStepState.done,
   ),
@@ -31,7 +31,7 @@ void main() {
       hostWidget(const StatusTimeline(steps: _sampleSteps)),
     );
 
-    expect(find.text('Đã gửi & đặt cọc'), findsOneWidget);
+    expect(find.text('Đã gửi & thanh toán'), findsOneWidget);
     expect(find.text('Hôm nay 9:41 · 450.000₫'), findsOneWidget);
     expect(find.text('Chờ Minh Trí nhận'), findsOneWidget);
     expect(find.text('Đã xác nhận'), findsOneWidget);

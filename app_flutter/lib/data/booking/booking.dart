@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 part 'booking.freezed.dart';
@@ -103,6 +104,11 @@ abstract class Booking with _$Booking {
     DateTime? completedAt,
     DateTime? reviewedAt,
     String? chatId,
+
+    /// What S04.04 pays: mirror of `bookings/{id}.checkout`, set while a draft
+    /// waits for its payment. Not part of the JSON form.
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    BookingCheckout? checkout,
     @Default(1) int version,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -223,6 +229,7 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       completedAt: toDateTime(data['completedAt']),
       reviewedAt: toDateTime(data['reviewedAt']),
       chatId: data['chatId'] as String?,
+      checkout: bookingCheckoutFrom(data['checkout']),
       version: (data['version'] as num?)?.toInt() ?? 1,
       createdAt: createdAt,
       updatedAt: updatedAt,

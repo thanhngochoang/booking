@@ -147,14 +147,14 @@ void main() {
       (bookingId: 'b1', action: 'decline', reason: 'Ngoài khu vực phục vụ'),
     ]);
     expect(_sheet, findsNothing);
-    expect(find.text('Đã từ chối. Lan Anh được hoàn cọc.'), findsOneWidget);
+    expect(find.text('Đã từ chối. Lan Anh được hoàn 100%.'), findsOneWidget);
   });
 
   testWidgets('shows the refund line with the full deposit', (tester) async {
     await _open(tester);
 
     expect(
-      _inSheet(find.text('Lan Anh được hoàn cọc 450.000₫ và nhận lý do này.')),
+      _inSheet(find.text('Lan Anh được hoàn 100% (450.000₫) và nhận lý do này.')),
       findsOneWidget,
     );
   });

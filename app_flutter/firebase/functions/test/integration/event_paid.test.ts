@@ -11,6 +11,7 @@ import { FirestoreEventStore, firestoreEventPeople, ownCoverUpload } from '../..
 import { firestoreUserContactReader } from '../../src/infra/firestore.js';
 import { storageUrlPrefixes } from '../../src/config.js';
 import { handleReleaseEventHolds } from '../../src/scheduled/event_clock.js';
+import { eventStartInDays } from './event_social_support.js';
 
 // Paid tickets on the Functions emulator (plan 10c Task 9): hold, fake confirmation (allowed on the
 // emulator), hold expiry, event cancellation with refunds. CI runs it (npm run test:integration).
@@ -18,7 +19,6 @@ import { handleReleaseEventHolds } from '../../src/scheduled/event_clock.js';
 let app: App;
 let db: Firestore;
 const tokens = new Map<string, string>();
-const DAY = 86_400_000;
 const PRICE = 150_000;
 
 before(async () => {
@@ -52,7 +52,7 @@ let nextDay = 60;
 async function publishPaid(over: Record<string, unknown> = {}): Promise<string> {
   const eventId = newUlid(Date.now());
   const path = `eventCovers/${AN}/${eventId}/cover.jpg`;
-  const start = new Date(Date.now() + nextDay++ * DAY);
+  const start = eventStartInDays(nextDay++);
   const res = await call('saveEventDraft', AN, {
     eventId, title: `Workshop ${eventId.slice(-6)}`, type: 'workshop',
     coverUrl: bucketUrl(path), coverPath: path,

@@ -10,13 +10,13 @@ import 'widget_host.dart';
 const _sampleLines = [
   MoneyLine(label: 'Gói Chân dung 2 giờ', vnd: 1500000),
   MoneyLine(
-    label: 'Đặt cọc hôm nay (30%)',
-    vnd: 450000,
+    label: 'Thanh toán 100%',
+    vnd: 1500000,
     style: MoneyLineStyle.strong,
   ),
   MoneyLine(
-    label: 'Còn lại trả tại buổi chụp',
-    vnd: 1050000,
+    label: 'Đã gồm thuế',
+    vnd: 136364,
     style: MoneyLineStyle.muted,
   ),
 ];
@@ -29,19 +29,19 @@ void main() {
         hostWidget(const MoneyBreakdown(lines: _sampleLines)),
       );
 
-      expect(find.text('1.500.000₫'), findsOneWidget);
-      expect(find.text('450.000₫'), findsOneWidget);
-      expect(find.text('1.050.000₫'), findsOneWidget);
+      // The package line and the strong "Thanh toán 100%" row show the same price.
+      expect(find.text('1.500.000₫'), findsNWidgets(2));
+      expect(find.text('136.364₫'), findsOneWidget);
 
       // Strong line has bold font weight
-      final strongText = tester.widget<Text>(find.text('450.000₫'));
+      final strongText = tester.widget<Text>(find.text('1.500.000₫').last);
       expect(
         strongText.style?.fontWeight,
         anyOf(FontWeight.bold, FontWeight.w700, FontWeight.w600),
       );
 
       // Numbers have tabular figures
-      final normalNum = tester.widget<Text>(find.text('1.500.000₫'));
+      final normalNum = tester.widget<Text>(find.text('1.500.000₫').first);
       expect(
         normalNum.style?.fontFeatures,
         contains(const FontFeature.tabularFigures()),
@@ -49,7 +49,7 @@ void main() {
 
       // Muted label has muted/secondary color
       final mutedLabel = tester.widget<Text>(
-        find.text('Còn lại trả tại buổi chụp'),
+        find.text('Đã gồm thuế'),
       );
       expect(
         mutedLabel.style?.color,

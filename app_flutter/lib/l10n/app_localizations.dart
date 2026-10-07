@@ -901,13 +901,13 @@ abstract class AppLocalizations {
   /// No description provided for @phonePrivacy.
   ///
   /// In vi, this message translates to:
-  /// **'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
+  /// **'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.'**
   String get phonePrivacy;
 
   /// No description provided for @editProfilePhoneHint.
   ///
   /// In vi, this message translates to:
-  /// **'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
+  /// **'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.'**
   String get editProfilePhoneHint;
 
   /// No description provided for @addPhoneSave.
@@ -3088,12 +3088,6 @@ abstract class AppLocalizations {
   /// **'Đang xem dữ liệu đã lưu'**
   String get offlineBanner;
 
-  /// No description provided for @escrowNoticeDeposit.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.'**
-  String get escrowNoticeDeposit;
-
   /// No description provided for @settingsSignOutConfirmBody.
   ///
   /// In vi, this message translates to:
@@ -3373,25 +3367,19 @@ abstract class AppLocalizations {
   /// No description provided for @bookDepositToday.
   ///
   /// In vi, this message translates to:
-  /// **'Đặt cọc hôm nay (30%)'**
+  /// **'Thanh toán 100%'**
   String get bookDepositToday;
-
-  /// No description provided for @bookRemaining.
-  ///
-  /// In vi, this message translates to:
-  /// **'Còn lại trả tại buổi chụp'**
-  String get bookRemaining;
 
   /// No description provided for @bookPolicy.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.'**
+  /// **'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.'**
   String get bookPolicy;
 
   /// No description provided for @bookPay.
   ///
   /// In vi, this message translates to:
-  /// **'Đặt cọc {amount}'**
+  /// **'Thanh toán {amount}'**
   String bookPay(String amount);
 
   /// No description provided for @payTitle.
@@ -3400,40 +3388,154 @@ abstract class AppLocalizations {
   /// **'Thanh toán'**
   String get payTitle;
 
-  /// No description provided for @payPendingTitle.
+  /// S04.04 (mock): app bar title of the VietQR checkout.
   ///
   /// In vi, this message translates to:
-  /// **'Đang chờ xác nhận thanh toán'**
-  String get payPendingTitle;
+  /// **'Chuyển khoản QR'**
+  String get payQrTitle;
 
-  /// No description provided for @payPendingBody.
+  /// S04.04 (mock): countdown pill, time is mm:ss.
   ///
   /// In vi, this message translates to:
-  /// **'{provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.'**
-  String payPendingBody(String provider);
+  /// **'Còn {time}'**
+  String payQrCountdown(String time);
 
-  /// No description provided for @payProviderFake.
+  /// No description provided for @payQrCountdownSemantics.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng thử nghiệm'**
-  String get payProviderFake;
+  /// **'QR còn hiệu lực {minutes} phút {seconds} giây'**
+  String payQrCountdownSemantics(int minutes, int seconds);
 
-  /// No description provided for @payProviderNamed.
+  /// No description provided for @payQrExpiredPill.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng {name}'**
-  String payProviderNamed(String name);
+  /// **'Hết hạn'**
+  String get payQrExpiredPill;
 
-  /// No description provided for @payProviderGeneric.
+  /// No description provided for @payQrExpired.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng thanh toán'**
-  String get payProviderGeneric;
+  /// **'QR đã hết hạn'**
+  String get payQrExpired;
+
+  /// No description provided for @payQrBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng'**
+  String get payQrBank;
+
+  /// No description provided for @payQrBankNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản thu hộ của trung gian thanh toán'**
+  String get payQrBankNote;
+
+  /// No description provided for @payQrAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản'**
+  String get payQrAccount;
+
+  /// No description provided for @payQrContent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung'**
+  String get payQrContent;
+
+  /// No description provided for @payQrCopy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép'**
+  String get payQrCopy;
+
+  /// No description provided for @payQrCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép nội dung chuyển khoản'**
+  String get payQrCopied;
+
+  /// No description provided for @payQrHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.'**
+  String get payQrHint;
+
+  /// No description provided for @payQrNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo QR mới'**
+  String get payQrNew;
+
+  /// No description provided for @payQrOpenBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở app ngân hàng'**
+  String get payQrOpenBank;
+
+  /// No description provided for @payQrSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã VietQR {amount}, nội dung {code}'**
+  String payQrSemantics(String amount, String code);
+
+  /// S04.04 (mock): photographer and package under the amount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {service}'**
+  String payQrWho(String name, String service);
+
+  /// No description provided for @payWalletWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ xác nhận'**
+  String get payWalletWaiting;
+
+  /// No description provided for @payWalletReopen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở lại {name}'**
+  String payWalletReopen(String name);
+
+  /// No description provided for @fakeTransferTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giả lập chuyển khoản (thử nghiệm)'**
+  String get fakeTransferTitle;
+
+  /// No description provided for @fakeTransferExact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển đúng'**
+  String get fakeTransferExact;
+
+  /// No description provided for @fakeTransferUnder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển thiếu'**
+  String get fakeTransferUnder;
+
+  /// No description provided for @fakeTransferOver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển thừa'**
+  String get fakeTransferOver;
+
+  /// No description provided for @fakeTransferWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sai nội dung'**
+  String get fakeTransferWrong;
+
+  /// No description provided for @fakeTransferOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giả lập chuyển khoản'**
+  String get fakeTransferOpen;
 
   /// No description provided for @payAwaitingDeposit.
   ///
   /// In vi, this message translates to:
-  /// **'Chờ cọc'**
+  /// **'Chờ thanh toán'**
   String get payAwaitingDeposit;
 
   /// No description provided for @payCheckAgain.
@@ -3447,12 +3549,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa nhận được xác nhận, thử lại sau ít phút'**
   String get payNotYet;
-
-  /// No description provided for @payChangeProvider.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đổi cổng thanh toán'**
-  String get payChangeProvider;
 
   /// No description provided for @fakePaymentTitle.
   ///
@@ -3487,7 +3583,7 @@ abstract class AppLocalizations {
   /// No description provided for @escrowNoticeHeld.
   ///
   /// In vi, this message translates to:
-  /// **'Cọc {amount} đang được giữ an toàn'**
+  /// **'Đã thanh toán {amount}, tiền được giữ an toàn'**
   String escrowNoticeHeld(String amount);
 
   /// No description provided for @paySuccessTitle.
@@ -3523,7 +3619,7 @@ abstract class AppLocalizations {
   /// No description provided for @payExpiredBody.
   ///
   /// In vi, this message translates to:
-  /// **'Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
+  /// **'Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
   String get payExpiredBody;
 
   /// No description provided for @payRetry.
@@ -3598,12 +3694,6 @@ abstract class AppLocalizations {
   /// **'Không gửi được. Kiểm tra mạng rồi thử lại.'**
   String get bookNetworkError;
 
-  /// No description provided for @fakePayTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Cổng thanh toán giả (chỉ để thử)'**
-  String get fakePayTitle;
-
   /// No description provided for @fakePayBody.
   ///
   /// In vi, this message translates to:
@@ -3631,7 +3721,7 @@ abstract class AppLocalizations {
   /// No description provided for @timelineSent.
   ///
   /// In vi, this message translates to:
-  /// **'Đã gửi & đặt cọc'**
+  /// **'Đã gửi & thanh toán'**
   String get timelineSent;
 
   /// No description provided for @timelineSentDetail.
@@ -3715,7 +3805,7 @@ abstract class AppLocalizations {
   /// No description provided for @timelineExpired.
   ///
   /// In vi, this message translates to:
-  /// **'Hết hạn, đã hoàn cọc'**
+  /// **'Hết hạn, đã hoàn tiền'**
   String get timelineExpired;
 
   /// No description provided for @timelineCancelled.
@@ -3751,13 +3841,13 @@ abstract class AppLocalizations {
   /// No description provided for @detailPaidToast.
   ///
   /// In vi, this message translates to:
-  /// **'Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ.'**
-  String detailPaidToast(String amount, String name);
+  /// **'Đã thanh toán {amount}, tiền được giữ an toàn.'**
+  String detailPaidToast(String amount);
 
   /// No description provided for @escrowNoticeHeldPhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành'**
+  /// **'{amount} đang được giữ, chuyển cho bạn theo 2 mốc'**
   String escrowNoticeHeldPhotographer(String amount);
 
   /// No description provided for @detailMessage.
@@ -3787,7 +3877,7 @@ abstract class AppLocalizations {
   /// No description provided for @detailCancelCustomer.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ yêu cầu · hoàn cọc {pct}%'**
+  /// **'Huỷ yêu cầu · hoàn {pct}%'**
   String detailCancelCustomer(int pct);
 
   /// No description provided for @detailCancelPhotographer.
@@ -3991,7 +4081,7 @@ abstract class AppLocalizations {
   /// No description provided for @cancelRefundPhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'{name} được hoàn cọc 100%'**
+  /// **'{name} được hoàn 100%'**
   String cancelRefundPhotographer(String name);
 
   /// No description provided for @cancelReasonSick.
@@ -4021,7 +4111,7 @@ abstract class AppLocalizations {
   /// No description provided for @cancelDonePhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'Đã huỷ. {name} được hoàn cọc 100%'**
+  /// **'Đã huỷ. {name} được hoàn 100%'**
   String cancelDonePhotographer(String name);
 
   /// No description provided for @bookingsTitle.
@@ -4099,7 +4189,7 @@ abstract class AppLocalizations {
   /// No description provided for @bookingsEmptyPendingBody.
   ///
   /// In vi, this message translates to:
-  /// **'Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.'**
+  /// **'Yêu cầu đã thanh toán, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.'**
   String get bookingsEmptyPendingBody;
 
   /// No description provided for @bookingsEmptyDone.
@@ -4207,7 +4297,7 @@ abstract class AppLocalizations {
   /// No description provided for @workDepositPaid.
   ///
   /// In vi, this message translates to:
-  /// **'đã cọc {amount}'**
+  /// **'đã trả {amount}'**
   String workDepositPaid(String amount);
 
   /// No description provided for @workRequestNote.
@@ -4219,7 +4309,7 @@ abstract class AppLocalizations {
   /// No description provided for @workRequestExpired.
   ///
   /// In vi, this message translates to:
-  /// **'Yêu cầu {name} đã hết hạn, đã hoàn cọc'**
+  /// **'Yêu cầu {name} đã hết hạn, đã hoàn tiền'**
   String workRequestExpired(String name);
 
   /// No description provided for @workEmptyTitle.
@@ -4303,13 +4393,13 @@ abstract class AppLocalizations {
   /// No description provided for @declineRefundNote.
   ///
   /// In vi, this message translates to:
-  /// **'{name} được hoàn cọc {amount} và nhận lý do này.'**
+  /// **'{name} được hoàn 100% ({amount}) và nhận lý do này.'**
   String declineRefundNote(String name, String amount);
 
   /// No description provided for @declineDoneToast.
   ///
   /// In vi, this message translates to:
-  /// **'Đã từ chối. {name} được hoàn cọc.'**
+  /// **'Đã từ chối. {name} được hoàn 100%.'**
   String declineDoneToast(String name);
 
   /// No description provided for @chatInput.
@@ -4393,7 +4483,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatSysRequested.
   ///
   /// In vi, this message translates to:
-  /// **'Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.'**
+  /// **'Đã thanh toán. Chờ nhiếp ảnh gia nhận trong 24 giờ.'**
   String get chatSysRequested;
 
   /// No description provided for @chatSysAccepted.
@@ -6547,7 +6637,7 @@ abstract class AppLocalizations {
   /// No description provided for @earningsEmptyBody.
   ///
   /// In vi, this message translates to:
-  /// **'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.'**
+  /// **'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán.'**
   String get earningsEmptyBody;
 
   /// No description provided for @earningsMore.
@@ -8367,6 +8457,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'ZaloPay'**
   String get payMethodZaloPay;
+
+  /// S04.03 (mock): sub-label of the bank QR option.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn phí · xác nhận ngay'**
+  String get payMethodBankQrNote;
+
+  /// S04.03: createPayment refused a 4th attempt for the booking (payment_attempts_exceeded).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã tạo QR 3 lần. Hãy đặt lại từ đầu.'**
+  String get payAttemptsExceeded;
 
   /// Semantics label of the payment method group on S11.03.
   ///

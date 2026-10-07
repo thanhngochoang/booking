@@ -1,4 +1,5 @@
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 const testServiceSnapshot = BookingServiceSnapshot(
@@ -32,12 +33,13 @@ Booking makeTestBooking({
   BookingPlace place = testPlace,
   String? note = 'Chụp ảnh kỷ niệm',
   BookingStatus status = BookingStatus.requested,
-  int deposit = 300000,
-  int remaining = 700000,
+  int deposit = 1000000,
+  int remaining = 0,
   EscrowStatus? escrowStatus = EscrowStatus.held,
   DateTime? depositPaidAt,
   DateTime? completedAt,
   BookingCancel? cancel,
+  BookingCheckout? checkout,
   DateTime? createdAt,
   DateTime? updatedAt,
 }) {
@@ -61,6 +63,7 @@ Booking makeTestBooking({
         depositPaidAt ?? (status != BookingStatus.draft ? now : null),
     completedAt: completedAt,
     cancel: cancel,
+    checkout: checkout,
     createdAt: createdAt ?? now,
     updatedAt: updatedAt ?? now,
   );

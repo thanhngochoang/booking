@@ -7,7 +7,7 @@ import 'package:photobooking/core/widgets/escrow_notice.dart';
 import 'widget_host.dart';
 
 const _defaultText =
-    'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.';
+    'Tiền thanh toán được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.';
 
 void main() {
   testWidgets('lock icon and text read as one container', (tester) async {

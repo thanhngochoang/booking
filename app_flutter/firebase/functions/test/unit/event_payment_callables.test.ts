@@ -17,7 +17,7 @@ import {
   handleRegisterEvent,
   handleSaveEventDraft,
 } from '../../src/callables/event.js';
-import { handleConfirmFakePayment } from '../../src/callables/booking.js';
+import { handleConfirmFakePayment } from '../../src/callables/payment.js';
 import { CALLABLE_OPTIONS, DEV_PROJECT_ID, PAYMENT_CALLABLE_OPTIONS, currentProjectId } from '../../src/config.js';
 import { assertFakePaymentsAllowed, fakePaymentsAllowed } from '../../src/infra/fake_payments.js';
 import { handleEventClock, handleReleaseEventHolds } from '../../src/scheduled/event_clock.js';

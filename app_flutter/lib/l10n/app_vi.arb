@@ -162,8 +162,8 @@
   "addPhoneExample": "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.",
   "allowZaloLabel": "Cho phép liên hệ qua Zalo",
   "allowWhatsAppLabel": "Cho phép liên hệ qua WhatsApp",
-  "phonePrivacy": "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
-  "editProfilePhoneHint": "Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.",
+  "phonePrivacy": "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.",
+  "editProfilePhoneHint": "Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.",
   "addPhoneSave": "Lưu và tiếp tục",
   "phoneSaveError": "Không lưu được số điện thoại. Thử lại nhé.",
   "contactLabel": "Liên hệ",
@@ -759,7 +759,6 @@
   "profileEditPhoto": "Ảnh đại diện và tên",
   "profileEditContact": "Khu vực và liên hệ",
   "offlineBanner": "Đang xem dữ liệu đã lưu",
-  "escrowNoticeDeposit": "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.",
   "settingsSignOutConfirmBody": "Bạn có chắc chắn muốn đăng xuất không?",
   "settingsSignOutKeep": "Ở lại",
   "ticketUpcoming": "Đã đăng ký",
@@ -847,35 +846,60 @@
   "bookNote": "Ghi chú",
   "bookNoteHint": "Thêm ghi chú cho nhiếp ảnh gia (tuỳ chọn)",
   "bookYourPhone": "SĐT của bạn",
-  "bookDepositToday": "Đặt cọc hôm nay (30%)",
-  "bookRemaining": "Còn lại trả tại buổi chụp",
-  "bookPolicy": "Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.",
-  "bookPay": "Đặt cọc {amount}",
+  "bookDepositToday": "Thanh toán 100%",
+  "bookPolicy": "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.",
+  "bookPay": "Thanh toán {amount}",
   "@bookPay": {
     "placeholders": {
       "amount": {"type": "String"}
     }
   },
   "payTitle": "Thanh toán",
-  "payPendingTitle": "Đang chờ xác nhận thanh toán",
-  "payPendingBody": "{provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.",
-  "@payPendingBody": {
-    "placeholders": {
-      "provider": {"type": "String"}
-    }
+  "payQrTitle": "Chuyển khoản QR",
+  "@payQrTitle": {"description": "S04.04 (mock): app bar title of the VietQR checkout."},
+  "payQrCountdown": "Còn {time}",
+  "@payQrCountdown": {
+    "description": "S04.04 (mock): countdown pill, time is mm:ss.",
+    "placeholders": {"time": {"type": "String"}}
   },
-  "payProviderFake": "Cổng thử nghiệm",
-  "payProviderNamed": "Cổng {name}",
-  "@payProviderNamed": {
-    "placeholders": {
-      "name": {"type": "String"}
-    }
+  "payQrCountdownSemantics": "QR còn hiệu lực {minutes} phút {seconds} giây",
+  "@payQrCountdownSemantics": {
+    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
   },
-  "payProviderGeneric": "Cổng thanh toán",
-  "payAwaitingDeposit": "Chờ cọc",
+  "payQrExpiredPill": "Hết hạn",
+  "payQrExpired": "QR đã hết hạn",
+  "payQrBank": "Ngân hàng",
+  "payQrBankNote": "Tài khoản thu hộ của trung gian thanh toán",
+  "payQrAccount": "Số tài khoản",
+  "payQrContent": "Nội dung",
+  "payQrCopy": "Sao chép",
+  "payQrCopied": "Đã sao chép nội dung chuyển khoản",
+  "payQrHint": "Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.",
+  "payQrNew": "Tạo QR mới",
+  "payQrOpenBank": "Mở app ngân hàng",
+  "payQrSemantics": "Mã VietQR {amount}, nội dung {code}",
+  "@payQrSemantics": {
+    "placeholders": {"amount": {"type": "String"}, "code": {"type": "String"}}
+  },
+  "payQrWho": "{name} · {service}",
+  "@payQrWho": {
+    "description": "S04.04 (mock): photographer and package under the amount.",
+    "placeholders": {"name": {"type": "String"}, "service": {"type": "String"}}
+  },
+  "payWalletWaiting": "Đang chờ xác nhận",
+  "payWalletReopen": "Mở lại {name}",
+  "@payWalletReopen": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "fakeTransferTitle": "Giả lập chuyển khoản (thử nghiệm)",
+  "fakeTransferExact": "Chuyển đúng",
+  "fakeTransferUnder": "Chuyển thiếu",
+  "fakeTransferOver": "Chuyển thừa",
+  "fakeTransferWrong": "Sai nội dung",
+  "fakeTransferOpen": "Giả lập chuyển khoản",
+  "payAwaitingDeposit": "Chờ thanh toán",
   "payCheckAgain": "Kiểm tra lại",
   "payNotYet": "Chưa nhận được xác nhận, thử lại sau ít phút",
-  "payChangeProvider": "Đổi cổng thanh toán",
   "fakePaymentTitle": "Cổng thanh toán giả (chỉ để thử)",
   "fakePaymentSuccess": "Thanh toán thành công",
   "fakePaymentCancel": "Huỷ",
@@ -886,7 +910,7 @@
       "name": {"type": "String"}
     }
   },
-  "escrowNoticeHeld": "Cọc {amount} đang được giữ an toàn",
+  "escrowNoticeHeld": "Đã thanh toán {amount}, tiền được giữ an toàn",
   "@escrowNoticeHeld": {
     "placeholders": {
       "amount": {"type": "String"}
@@ -902,7 +926,7 @@
   "payViewBookings": "Xem lịch đặt",
   "payExpired": "Yêu cầu đã hết hạn",
   "payExpiredTitle": "Yêu cầu đã hết hạn",
-  "payExpiredBody": "Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.",
+  "payExpiredBody": "Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.",
   "payRetry": "Đặt lại",
   "payBookAgain": "Đặt lại",
   "payGoHome": "Về trang chủ",
@@ -933,12 +957,11 @@
   "bookTryAgain": "Yêu cầu đã hết hạn, thử lại nhé.",
   "bookPaymentsOff": "Thanh toán chưa mở trên máy chủ này.",
   "bookNetworkError": "Không gửi được. Kiểm tra mạng rồi thử lại.",
-  "fakePayTitle": "Cổng thanh toán giả (chỉ để thử)",
   "fakePayBody": "Bản dùng thử: không có tiền thật nào được trừ.",
   "fakePayConfirm": "Thanh toán thành công",
   "actionCancel": "Huỷ",
   "actionRetry": "Thử lại",
-  "timelineSent": "Đã gửi & đặt cọc",
+  "timelineSent": "Đã gửi & thanh toán",
   "timelineSentDetail": "{when} · {amount}",
   "@timelineSentDetail": {
     "placeholders": {
@@ -978,7 +1001,7 @@
   },
   "timelineReview": "Đánh giá & chia sẻ ảnh",
   "timelineDeclined": "Đã từ chối",
-  "timelineExpired": "Hết hạn, đã hoàn cọc",
+  "timelineExpired": "Hết hạn, đã hoàn tiền",
   "timelineCancelled": "Đã huỷ · hoàn {amount}",
   "@timelineCancelled": {
     "placeholders": {
@@ -1009,14 +1032,13 @@
       "code": {"type": "String"}
     }
   },
-  "detailPaidToast": "Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ.",
+  "detailPaidToast": "Đã thanh toán {amount}, tiền được giữ an toàn.",
   "@detailPaidToast": {
     "placeholders": {
-      "amount": {"type": "String"},
-      "name": {"type": "String"}
+      "amount": {"type": "String"}
     }
   },
-  "escrowNoticeHeldPhotographer": "Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành",
+  "escrowNoticeHeldPhotographer": "{amount} đang được giữ, chuyển cho bạn theo 2 mốc",
   "@escrowNoticeHeldPhotographer": {
     "placeholders": {
       "amount": {"type": "String"}
@@ -1026,7 +1048,7 @@
   "detailMore": "Thêm thao tác",
   "detailReschedule": "Đổi lịch",
   "detailDirections": "Chỉ đường",
-  "detailCancelCustomer": "Huỷ yêu cầu · hoàn cọc {pct}%",
+  "detailCancelCustomer": "Huỷ yêu cầu · hoàn {pct}%",
   "@detailCancelCustomer": {
     "placeholders": {
       "pct": {"type": "int"}
@@ -1085,7 +1107,7 @@
   "cancelReasonPlans": "Đổi kế hoạch",
   "cancelReasonFound": "Tìm được thợ khác",
   "cancelReasonOther": "Lý do khác",
-  "cancelRefundPhotographer": "{name} được hoàn cọc 100%",
+  "cancelRefundPhotographer": "{name} được hoàn 100%",
   "@cancelRefundPhotographer": {
     "placeholders": {
       "name": {"type": "String"}
@@ -1100,7 +1122,7 @@
     }
   },
   "cancelDoneNoRefund": "Đã huỷ buổi chụp",
-  "cancelDonePhotographer": "Đã huỷ. {name} được hoàn cọc 100%",
+  "cancelDonePhotographer": "Đã huỷ. {name} được hoàn 100%",
   "@cancelDonePhotographer": {
     "placeholders": {
       "name": {"type": "String"}
@@ -1118,7 +1140,7 @@
   "bookingsEmptyUpcomingBody": "Buổi chụp đã được nhận sẽ hiện ở đây.",
   "bookingsFindPhotographer": "Tìm nhiếp ảnh gia",
   "bookingsEmptyPending": "Chưa có yêu cầu chờ",
-  "bookingsEmptyPendingBody": "Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.",
+  "bookingsEmptyPendingBody": "Yêu cầu đã thanh toán, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.",
   "bookingsEmptyDone": "Chưa có buổi nào xong",
   "bookingsEmptyDoneBody": "Buổi chụp đã hoàn thành, đã huỷ hoặc bị từ chối sẽ hiện ở đây.",
   "workTitle": "Công việc",
@@ -1159,7 +1181,7 @@
       "place": {"type": "String"}
     }
   },
-  "workDepositPaid": "đã cọc {amount}",
+  "workDepositPaid": "đã trả {amount}",
   "@workDepositPaid": {
     "placeholders": {
       "amount": {"type": "String"}
@@ -1172,7 +1194,7 @@
       "deposit": {"type": "String"}
     }
   },
-  "workRequestExpired": "Yêu cầu {name} đã hết hạn, đã hoàn cọc",
+  "workRequestExpired": "Yêu cầu {name} đã hết hạn, đã hoàn tiền",
   "@workRequestExpired": {
     "placeholders": {
       "name": {"type": "String"}
@@ -1196,14 +1218,14 @@
   "declineReasonArea": "Ngoài khu vực phục vụ",
   "declineReasonService": "Gói không phù hợp nhu cầu",
   "declineReasonOther": "Lý do khác",
-  "declineRefundNote": "{name} được hoàn cọc {amount} và nhận lý do này.",
+  "declineRefundNote": "{name} được hoàn 100% ({amount}) và nhận lý do này.",
   "@declineRefundNote": {
     "placeholders": {
       "name": {"type": "String"},
       "amount": {"type": "String"}
     }
   },
-  "declineDoneToast": "Đã từ chối. {name} được hoàn cọc.",
+  "declineDoneToast": "Đã từ chối. {name} được hoàn 100%.",
   "@declineDoneToast": {
     "placeholders": {
       "name": {"type": "String"}
@@ -1237,7 +1259,7 @@
     }
   },
   "chatLocationDenied": "Không thể lấy vị trí. Vui lòng cấp quyền vị trí.",
-  "chatSysRequested": "Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.",
+  "chatSysRequested": "Đã thanh toán. Chờ nhiếp ảnh gia nhận trong 24 giờ.",
   "chatSysAccepted": "Nhiếp ảnh gia đã nhận buổi chụp.",
   "chatSysDeclined": "Nhiếp ảnh gia đã từ chối yêu cầu.",
   "chatSysExpired": "Yêu cầu đã hết hạn.",
@@ -1799,7 +1821,7 @@
   "earningsHoldPayoutOnHold": "Lô chi trả đang tạm giữ",
   "earningsCustomerFallback": "Khách",
   "earningsEmptyTitle": "Chưa có khoản thu nào",
-  "earningsEmptyBody": "Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.",
+  "earningsEmptyBody": "Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán.",
   "earningsMore": "Xem thêm",
   "earningsLoadError": "Không tải được thu nhập",
   "payoutAccountTitle": "Tài khoản nhận tiền",
@@ -2172,6 +2194,10 @@
   "@payMethodBankQr": {"description": "S11.03 (mock): pay by bank transfer QR."},
   "payMethodMomo": "MoMo",
   "payMethodZaloPay": "ZaloPay",
+  "payMethodBankQrNote": "Miễn phí · xác nhận ngay",
+  "@payMethodBankQrNote": {"description": "S04.03 (mock): sub-label of the bank QR option."},
+  "payAttemptsExceeded": "Đã tạo QR 3 lần. Hãy đặt lại từ đầu.",
+  "@payAttemptsExceeded": {"description": "S04.03: createPayment refused a 4th attempt for the booking (payment_attempts_exceeded)."},
   "payMethodLabel": "Phương thức thanh toán",
   "@payMethodLabel": {"description": "Semantics label of the payment method group on S11.03."},
   "ticketCancelledRefunded": "Đã huỷ · đã hoàn tiền",

@@ -68,23 +68,23 @@ export function renderNotification(c: NotificationContent): { title: string; bod
       return c.reason === 'declined'
         ? {
             title: `${c.photographer} không nhận được lịch`,
-            body: `Cọc đã hoàn ${c.percent}%. Xem các nhiếp ảnh gia còn rảnh.`,
+            body: `Đã hoàn ${c.percent}% số đã trả. Xem các nhiếp ảnh gia còn rảnh.`,
           }
         : {
             title: `${c.photographer} chưa trả lời kịp`,
-            body: `Yêu cầu đã hết hạn. Cọc đã hoàn ${c.percent}%.`,
+            body: `Yêu cầu đã hết hạn. Đã hoàn ${c.percent}% số đã trả.`,
           };
     case 'booking_cancelled':
       return c.by === 'system'
         ? { title: `Lịch ${c.day} · ${c.start} đã bị huỷ`, body: 'Xem chi tiết trong lịch hẹn.' }
         : {
             title: `${c.name} đã huỷ lịch`,
-            body: `${c.day} · ${c.start}.${c.percent === null ? '' : ` Cọc hoàn ${c.percent}%.`}`,
+            body: `${c.day} · ${c.start}.${c.percent === null ? '' : ` Hoàn ${c.percent}% số đã trả.`}`,
           };
     case 'refund_done':
       return {
         title: `Đã hoàn ${formatVnd(c.amount)}`,
-        body: `Khoản cọc buổi chụp #${c.bookingId.slice(-4).toUpperCase()} đã về tài khoản của bạn.`,
+        body: `Khoản thanh toán buổi chụp #${c.bookingId.slice(-4).toUpperCase()} đã về tài khoản của bạn.`,
       };
     case 'shoot_reminder':
       return {

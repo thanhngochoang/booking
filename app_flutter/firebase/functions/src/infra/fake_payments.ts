@@ -17,6 +17,17 @@ export function fakePaymentsAllowed(env: Env = process.env): boolean {
   return env.FUNCTIONS_EMULATOR === 'true' && project !== undefined && project.startsWith('demo-');
 }
 
+/**
+ * True where `createPayment` may open a payment. Only the fake gateway is wired today (its QR
+ * pays a test BIDV account and its webhook answers 404 outside the emulator and the dev project),
+ * so this is `fakePaymentsAllowed`: production fails closed (`not_eligible`) instead of showing a
+ * scannable QR nobody would ever confirm. The real intermediary's unit changes this when it wires
+ * its gateway.
+ */
+export function checkoutGatewayAvailable(env: Env = process.env): boolean {
+  return fakePaymentsAllowed(env);
+}
+
 /** Call before any read or write of a fake-payment callable. */
 export function assertFakePaymentsAllowed(env: Env = process.env): void {
   if (!fakePaymentsAllowed(env)) {

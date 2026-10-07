@@ -3,10 +3,19 @@
  * Pure TypeScript (no external dependencies).
  */
 
-export const DEPOSIT_PERCENT = 30;
+/** Customers pay the whole price when they book (payments spec M2); no deposit any more. */
+export const UPFRONT_PERCENT = 100;
 export const DISPUTE_WINDOW_HOURS = 24;
 export const ACCEPT_DEADLINE_HOURS = 24;
 export const DRAFT_EXPIRY_MINUTES = 30;
+/** A checkout payment (QR) is valid this long after it is created. */
+export const PAYMENT_EXPIRY_MINUTES = 15;
+/** The reconciliation job re-checks `created` payments older than this. */
+export const PAYMENT_RECONCILE_AFTER_MINUTES = 3;
+/** A draft stays payable until the latest QR's expiry plus this. */
+export const DRAFT_PAYMENT_GRACE_MINUTES = 5;
+/** At most this many payments (QRs) per booking. */
+export const MAX_PAYMENT_ATTEMPTS = 3;
 export const AUTO_COMPLETE_DELAY_HOURS = 24;
 export const ESCROW_RELEASE_DELAY_HOURS = 24;
 export const BOOKING_CONTACT_RETENTION_DAYS = 30;
@@ -19,14 +28,17 @@ export const MAX_DISPUTE_REASON_LENGTH = 500;
 export const MAX_CANCEL_REASON_LENGTH = 200;
 export const MAX_BOOKING_DAYS_AHEAD = 365;
 
-/** Deposit calculation: floor(price * 0.30), remainder to complete price. */
+/**
+ * The up-front payment for a service price: the whole price, nothing left to pay later.
+ * The name and the `deposit`/`remaining` fields stay for now (Decision 1 of #129);
+ * `remaining` is always 0.
+ */
 export function computeDeposit(price: number): { deposit: number; remaining: number } {
   if (price < 0) {
     throw new Error('Price must be non-negative');
   }
-  const deposit = Math.floor((price * DEPOSIT_PERCENT) / 100);
-  const remaining = price - deposit;
-  return { deposit, remaining };
+  const deposit = Math.floor((price * UPFRONT_PERCENT) / 100);
+  return { deposit, remaining: price - deposit };
 }
 
 /**

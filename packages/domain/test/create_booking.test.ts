@@ -1,8 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { computeDeposit } from '../src/booking_policy.js';
 import { createBookingWorld } from './support/booking_world.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { DomainError } from '../src/errors.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('Task 4: createBookingDraft', () => {
   it('creates draft booking and holds calendar day as pending', async () => {
@@ -18,8 +22,8 @@ describe('Task 4: createBookingDraft', () => {
     });
 
     assert.equal(booking.status, 'draft');
-    assert.equal(booking.deposit, 300_000);
-    assert.equal(booking.remaining, 700_000);
+    assert.equal(booking.deposit, PAID);
+    assert.equal(booking.remaining, 0);
     assert.equal(booking.end, '16:00'); // 14:00 + 120 mins
     assert.equal(booking.note, 'Chụp áo dài');
 

@@ -120,7 +120,7 @@ describe('Firestore mapping for events', () => {
     assert.deepEqual([plain.refundId, plain.refundStatus], [null, null]);
     const refund: Refund = {
       id: 'rf1', paymentId: 'p1', subjectType: 'event_registration', amount: 250000, percent: 100, status: 'pending',
-      manual: false, reason: 'customer_cancel', createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
+      manual: false, fromEscrow: true, reason: 'customer_cancel', createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
     };
     assert.deepEqual(refundFromFirestore('rf1', refundToFirestore(refund)), refund);
     const old = refundToFirestore({ ...refund, subjectType: undefined });
@@ -132,7 +132,7 @@ describe('Firestore mapping for events', () => {
     const asked: unknown[] = [];
     const refundDoc = refundToFirestore({
       id: 'rf1', paymentId: 'p1', subjectType: 'event_registration', amount: 1, percent: 100, status: 'pending',
-      manual: false, createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
+      manual: false, fromEscrow: true, createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
     });
     const q = {
       where: (...args: unknown[]) => { asked.push(['where', ...args]); return q; },

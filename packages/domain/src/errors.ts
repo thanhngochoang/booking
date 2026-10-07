@@ -14,6 +14,8 @@ export const ERROR_CODES = [
   'not_eligible',
   'reauth_required',
   'not_accepting_orders',
+  /** A booking already had MAX_PAYMENT_ATTEMPTS payments ("Tạo QR mới" cannot hold the day forever). */
+  'payment_attempts_exceeded',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

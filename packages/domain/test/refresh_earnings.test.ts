@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { computeDeposit } from '../src/booking_policy.js';
 import { describe, it } from 'node:test';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { createPayoutWorld, paidBooking, release } from './support/payout_world.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('refreshEarnings', () => {
   it('refresh writes the named rows and the summary', async () => {
@@ -10,9 +14,9 @@ describe('refreshEarnings', () => {
     const b = await paidBooking(w, '2026-10-16');
     release(w, b.paymentId);
     const s = await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId, b.paymentId] });
-    assert.deepEqual([s.heldAmount, s.soonAmount, s.receivedAmount], [300_000, 300_000, 0]);
+    assert.deepEqual([s.heldAmount, s.soonAmount, s.receivedAmount], [PAID, PAID, 0]);
     assert.equal(w.earningsStore.items.size, 2);
-    assert.equal(w.earningsStore.summaries.get('p1')?.soonAmount, 300_000);
+    assert.equal(w.earningsStore.summaries.get('p1')?.soonAmount, PAID);
     const row = w.earningsStore.items.get(`p1/${a.paymentId}`);
     assert.equal(row?.counterpartName, 'Khách Hàng Một');
     assert.equal(row?.subjectLabel, 'Gói Chân dung');

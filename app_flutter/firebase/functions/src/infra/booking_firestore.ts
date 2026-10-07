@@ -9,22 +9,28 @@ import {
   type Firestore,
   type Transaction,
 } from 'firebase-admin/firestore';
-import type {
-  Booking,
-  BookingContactSnapshot,
-  BookingStatus,
-  EscrowStatus,
-  PaymentProvider,
-  AvailabilityDayRecord,
-  BookingStore,
-  BookingTx,
-  Payment,
-  PaymentStatus,
-  PaymentSubject,
-  Refund,
-  RefundStatus,
-  LedgerEntry,
-  LedgerEntryType,
+import {
+  PAYMENT_METHODS,
+  escrowRefundedTotal,
+  isPaymentMethod,
+  type Booking,
+  type BookingCheckout,
+  type BookingContactSnapshot,
+  type BookingStatus,
+  type EscrowStatus,
+  type PaymentProvider,
+  type AvailabilityDayRecord,
+  type BookingStore,
+  type BookingTx,
+  type Payment,
+  type PaymentStatus,
+  type PaymentSubject,
+  type Refund,
+  type RefundStatus,
+  type LedgerEntry,
+  type LedgerEntryType,
+  type TransferOutcome,
+  type TransferRecord,
 } from '@photobooking/domain';
 
 export const BOOKINGS_COLLECTION = 'bookings';
@@ -32,6 +38,8 @@ export const AVAILABILITY_COLLECTION = 'availability';
 export const PAYMENTS_COLLECTION = 'payments';
 export const REFUNDS_COLLECTION = 'refunds';
 export const LEDGER_COLLECTION = 'ledger_entries';
+/** One handled provider notification per doc, id `${provider}_${txnId}` (server only). */
+export const PAYMENT_NOTIFICATIONS_COLLECTION = 'payment_notifications';
 
 function toIsoString(v: unknown): string | undefined {
   if (v instanceof Timestamp) return v.toDate().toISOString();
@@ -43,6 +51,60 @@ function toIsoString(v: unknown): string | undefined {
 function toTimestamp(iso: string | undefined): Timestamp | null {
   if (!iso) return null;
   return Timestamp.fromDate(new Date(iso));
+}
+
+/** The client mirror of the open payment (#129 Decision 14); absent optional fields are not written. */
+function checkoutToFirestore(c: BookingCheckout | undefined): DocumentData | null {
+  if (!c) return null;
+  const optional = {
+    qrPayload: c.qrPayload,
+    bankName: c.bankName,
+    accountMasked: c.accountMasked,
+    payUrl: c.payUrl,
+    bankAppsUrl: c.bankAppsUrl,
+  };
+  return {
+    paymentId: c.paymentId,
+    method: c.method,
+    amount: c.amount,
+    expiresAt: toTimestamp(c.expiresAt),
+    transferCode: c.transferCode,
+    attempt: c.attempt,
+    ...Object.fromEntries(Object.entries(optional).filter(([, v]) => v !== undefined)),
+  };
+}
+
+function checkoutFromFirestore(d: unknown): BookingCheckout | undefined {
+  if (!d || typeof d !== 'object') return undefined;
+  const c = d as Record<string, unknown>;
+  const expiresAt = toIsoString(c.expiresAt);
+  if (
+    typeof c.paymentId !== 'string' ||
+    !isPaymentMethod(c.method) ||
+    typeof c.amount !== 'number' ||
+    expiresAt === undefined ||
+    typeof c.transferCode !== 'string' ||
+    typeof c.attempt !== 'number'
+  ) {
+    return undefined;
+  }
+  const str = (k: string): string | undefined => (typeof c[k] === 'string' ? (c[k] as string) : undefined);
+  const optional = {
+    qrPayload: str('qrPayload'),
+    bankName: str('bankName'),
+    accountMasked: str('accountMasked'),
+    payUrl: str('payUrl'),
+    bankAppsUrl: str('bankAppsUrl'),
+  };
+  return {
+    paymentId: c.paymentId,
+    method: c.method,
+    amount: c.amount,
+    expiresAt,
+    transferCode: c.transferCode,
+    attempt: c.attempt,
+    ...(Object.fromEntries(Object.entries(optional).filter(([, v]) => v !== undefined)) as Partial<BookingCheckout>),
+  };
 }
 
 export function bookingToFirestore(b: Booking): DocumentData {
@@ -83,6 +145,8 @@ export function bookingToFirestore(b: Booking): DocumentData {
     completedAt: toTimestamp(b.completedAt),
     reviewedAt: toTimestamp(b.reviewedAt),
     chatId: b.chatId ?? null,
+    checkout: checkoutToFirestore(b.checkout),
+    payableUntil: toTimestamp(b.payableUntil),
     version: b.version,
     createdAt: toTimestamp(b.createdAt),
     updatedAt: toTimestamp(b.updatedAt),
@@ -106,6 +170,8 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     return null;
   }
 
+  const checkout = checkoutFromFirestore(d.checkout);
+  const payableUntil = toIsoString(d.payableUntil);
   const pointGeo = place.point instanceof GeoPoint ? { lat: place.point.latitude, lng: place.point.longitude } : undefined;
 
   let cancelObj: Booking['cancel'] | undefined;
@@ -149,6 +215,8 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     completedAt: toIsoString(d.completedAt),
     reviewedAt: toIsoString(d.reviewedAt),
     chatId: d.chatId ?? undefined,
+    ...(checkout !== undefined ? { checkout } : {}),
+    ...(payableUntil !== undefined ? { payableUntil } : {}),
     version: d.version ?? 1,
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
@@ -169,6 +237,11 @@ export function paymentToFirestore(p: Payment): DocumentData {
     escrowStatus: p.escrowStatus,
     idempotencyKey: p.idempotencyKey,
     providerRef: p.providerRef ?? null,
+    // Checkout payments (createPayment); null on ticket and older deposit payments.
+    method: p.method ?? null,
+    transferCode: p.transferCode ?? null,
+    expiresAt: toTimestamp(p.expiresAt),
+    receivedAmount: p.receivedAmount ?? null,
     paidAt: toTimestamp(p.paidAt),
     releasedAt: toTimestamp(p.releasedAt),
     releaseAfter: toTimestamp(p.releaseAfter),
@@ -194,6 +267,10 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     escrowStatus: d.escrowStatus as EscrowStatus,
     idempotencyKey: d.idempotencyKey,
     providerRef: d.providerRef ?? undefined,
+    ...(isPaymentMethod(d.method) ? { method: d.method } : {}),
+    ...(typeof d.transferCode === 'string' && d.transferCode !== '' ? { transferCode: d.transferCode } : {}),
+    ...(toIsoString(d.expiresAt) !== undefined ? { expiresAt: toIsoString(d.expiresAt) } : {}),
+    ...(typeof d.receivedAmount === 'number' ? { receivedAmount: d.receivedAmount } : {}),
     paidAt: toIsoString(d.paidAt),
     releasedAt: toIsoString(d.releasedAt),
     releaseAfter: toIsoString(d.releaseAfter),
@@ -215,6 +292,7 @@ export function refundToFirestore(r: Refund): DocumentData {
     percent: r.percent,
     status: r.status,
     manual: r.manual,
+    fromEscrow: r.fromEscrow,
     reason: r.reason ?? null,
     providerRef: r.providerRef ?? null,
     createdAt: toTimestamp(r.createdAt),
@@ -232,11 +310,26 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
     percent: d.percent,
     status: d.status as RefundStatus,
     manual: d.manual ?? false,
+    // Stored before the marker existed: a cancellation/decline/dispute refund, out of escrow.
+    fromEscrow: d.fromEscrow !== false,
     ...(d.reason ? { reason: d.reason } : {}),
     ...(d.providerRef ? { providerRef: d.providerRef } : {}),
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
   };
+}
+
+/**
+ * What escrow gave back for one payment, from its `refunds` documents: release, payouts and
+ * earnings subtract this. Money sent straight back on arrival (`fromEscrow: false`) is left out;
+ * a document without the marker counts. The free-text `reason` is never read.
+ */
+export function escrowRefundedOfDocs(docs: readonly DocumentData[]): number {
+  return escrowRefundedTotal(
+    docs
+      .filter((d) => typeof d.amount === 'number')
+      .map((d) => ({ amount: d.amount as number, fromEscrow: d.fromEscrow !== false })),
+  );
 }
 
 export function ledgerEntryToFirestore(e: LedgerEntry): DocumentData {
@@ -269,6 +362,43 @@ export function ledgerEntryFromFirestore(id: string, d: DocumentData | undefined
     ...(d.note ? { note: d.note } : {}),
     at: toIsoString(d.at) ?? new Date().toISOString(),
   };
+}
+
+const TRANSFER_OUTCOMES: readonly string[] = ['paid', 'paid_with_refund', 'partial', 'refunded', 'needs_review'] satisfies readonly Exclude<TransferOutcome, 'duplicate'>[];
+
+/** `payment_notifications/{id}`: `{provider, txnId, raw, receivedAt, outcome, paymentId}` (#129 Decision 4). */
+export function transferRecordToFirestore(r: TransferRecord): DocumentData {
+  return {
+    provider: r.provider,
+    txnId: r.txnId,
+    raw: r.raw ?? null,
+    receivedAt: toTimestamp(r.receivedAt),
+    outcome: r.outcome,
+    paymentId: r.paymentId ?? null,
+  };
+}
+
+export function transferRecordFromFirestore(id: string, d: DocumentData | undefined): TransferRecord | null {
+  if (!d) return null;
+  const outcome = TRANSFER_OUTCOMES.includes(d.outcome) ? (d.outcome as TransferRecord['outcome']) : 'needs_review';
+  return {
+    id,
+    provider: d.provider as PaymentProvider,
+    txnId: d.txnId,
+    ...(typeof d.raw === 'string' ? { raw: d.raw } : {}),
+    receivedAt: toIsoString(d.receivedAt) ?? new Date(0).toISOString(),
+    outcome,
+    ...(typeof d.paymentId === 'string' && d.paymentId !== '' ? { paymentId: d.paymentId } : {}),
+  };
+}
+
+function paymentsOf(docs: readonly { id: string; data(): DocumentData }[]): Payment[] {
+  const res: Payment[] = [];
+  for (const doc of docs) {
+    const p = paymentFromFirestore(doc.id, doc.data());
+    if (p) res.push(p);
+  }
+  return res;
 }
 
 export class FirestoreBookingStore implements BookingStore {
@@ -361,6 +491,13 @@ export class FirestoreBookingStore implements BookingStore {
         },
         addLedgerEntry: async (entry) => {
           fTx.set(this.firestore.collection(LEDGER_COLLECTION).doc(entry.id), ledgerEntryToFirestore(entry));
+        },
+        getTransferRecord: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(id));
+          return transferRecordFromFirestore(snap.id, snap.data());
+        },
+        saveTransferRecord: async (record) => {
+          fTx.set(this.firestore.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(record.id), transferRecordToFirestore(record));
         },
         addBookingEvent: async (event) => {
           const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(event.bookingId).collection('events').doc(event.id);
@@ -460,11 +597,52 @@ export class FirestoreBookingStore implements BookingStore {
     };
   }
 
-  async findUnpaidDraftsOlderThan(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
+  async findPaymentsByTransferCode(code: string): Promise<readonly Payment[]> {
+    const snap = await this.firestore.collection(PAYMENTS_COLLECTION).where('transferCode', '==', code).get();
+    return paymentsOf(snap.docs);
+  }
+
+  async getTransferRecord(id: string): Promise<TransferRecord | null> {
+    const snap = await this.firestore.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(id).get();
+    return transferRecordFromFirestore(snap.id, snap.data());
+  }
+
+  /**
+   * Open checkout payments of bookings: `method` is set only by createPayment, so ticket payments and
+   * older deposit payments still `created` never fill the page
+   * (index `status, subjectType, method, createdAt`).
+   */
+  async findPaymentsToReconcile(createdBefore: Date, limit = 100): Promise<readonly Payment[]> {
+    const snap = await this.firestore
+      .collection(PAYMENTS_COLLECTION)
+      .where('status', '==', 'created')
+      .where('subjectType', '==', 'booking')
+      .where('method', 'in', [...PAYMENT_METHODS])
+      .where('createdAt', '<=', Timestamp.fromDate(createdBefore))
+      .limit(limit)
+      .get();
+    return paymentsOf(snap.docs);
+  }
+
+  /** The same set as findPaymentsToReconcile, past `expiresAt` (index `status, subjectType, method, expiresAt`). */
+  async findOverduePayments(now: Date, limit = 100): Promise<readonly Payment[]> {
+    const snap = await this.firestore
+      .collection(PAYMENTS_COLLECTION)
+      .where('status', '==', 'created')
+      .where('subjectType', '==', 'booking')
+      .where('method', 'in', [...PAYMENT_METHODS])
+      .where('expiresAt', '<=', Timestamp.fromDate(now))
+      .limit(limit)
+      .get();
+    return paymentsOf(snap.docs);
+  }
+
+  /** Drafts with `payableUntil <= now` (index `status, payableUntil`); drafts without it never match. */
+  async findExpiredDrafts(now: Date, limit = 100): Promise<readonly Booking[]> {
     const snap = await this.firestore
       .collection(BOOKINGS_COLLECTION)
       .where('status', '==', 'draft')
-      .where('createdAt', '<=', Timestamp.fromDate(cutoff))
+      .where('payableUntil', '<=', Timestamp.fromDate(now))
       .limit(limit)
       .get();
     const res: Booking[] = [];

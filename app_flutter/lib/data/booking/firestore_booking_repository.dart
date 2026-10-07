@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
@@ -149,63 +151,49 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<CreateDepositResponse> createDeposit({
+  Future<BookingCheckout> createPayment({
     required String bookingId,
-    required String provider,
-    String? returnUrl,
+    required PayMethod method,
   }) async {
     return _call(
-      'createDeposit',
-      {
-        'bookingId': bookingId,
-        'provider': provider,
-        'returnUrl': ?returnUrl,
-      },
+      'createPayment',
+      {'bookingId': bookingId, 'method': method.code},
       (raw) {
-        final map = (raw as Map).cast<String, dynamic>();
-        return CreateDepositResponse(
-          paymentId: map['paymentId'] as String,
-          payUrl: map['payUrl'] as String,
-          provider: map['provider'] as String,
+        final checkout = bookingCheckoutFrom(
+          raw is Map ? raw['checkout'] : null,
         );
+        if (checkout == null) throw const BookingException('invalid_response');
+        return checkout;
       },
     );
   }
 
   @override
-  Future<ConfirmPaymentResponse> confirmFakePayment({
-    required String paymentId,
-  }) async {
-    return _call('confirmFakePayment', {'paymentId': paymentId}, (raw) {
-      final map = (raw as Map).cast<String, dynamic>();
-      final payMap = (map['payment'] as Map).cast<String, dynamic>();
-      final bookingMap = map['booking'] != null
-          ? (map['booking'] as Map).cast<String, dynamic>()
-          : null;
-      return ConfirmPaymentResponse(
-        paymentId: payMap['id'] as String,
-        status: payMap['status'] as String,
-        booking: bookingMap != null
-            ? bookingFromFirestore(bookingMap['id'] as String, bookingMap)
-            : null,
-      );
-    });
-  }
-
-  @override
-  Future<CheckDepositResponse> checkDeposit({required String bookingId}) async {
-    return _call('checkDeposit', {'bookingId': bookingId}, (raw) {
+  Future<CheckPaymentResponse> checkPayment({required String bookingId}) async {
+    return _call('checkPayment', {'bookingId': bookingId}, (raw) {
       final map = (raw as Map).cast<String, dynamic>();
       final bookingMap = map['booking'] != null
           ? (map['booking'] as Map).cast<String, dynamic>()
           : null;
-      return CheckDepositResponse(
+      return CheckPaymentResponse(
         paid: map['paid'] as bool,
         booking: bookingMap != null
             ? bookingFromFirestore(bookingMap['id'] as String, bookingMap)
             : null,
       );
     });
+  }
+
+  @override
+  Future<String> confirmFakePayment({
+    required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
+  }) async {
+    return _call(
+      'confirmFakePayment',
+      {'paymentId': paymentId, 'kind': kind.code},
+      (raw) => (raw as Map)['outcome'] as String,
+    );
   }
 
   @override

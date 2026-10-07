@@ -7,14 +7,28 @@ import type { EscrowStatus, PaymentProvider } from './booking.js';
 import { computeRefund } from './booking_policy.js';
 import { DomainError } from './errors.js';
 
+/**
+ * `expired`: nobody paid in time (or the QR was replaced). `needs_review` is reserved for staff
+ * (S23.02); no code path writes it on a Payment yet.
+ */
 export const PAYMENT_STATUSES = [
   'created',
   'paid',
-  'failed',
+  'expired',
+  'needs_review',
   'refunded',
   'partially_refunded',
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+/** Methods a customer can pay with today. */
+export const PAYMENT_METHODS = ['bank_qr', 'momo', 'zalopay'] as const;
+/** Card methods are in the product plan but never accepted yet. */
+export const RESERVED_PAYMENT_METHODS = ['domestic_card', 'intl_card'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+/** True for a method a customer can pay with today (reserved card methods are false). */
+export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
+  typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 
 export type PaymentSubject = 'booking' | 'event_registration';
 
@@ -32,6 +46,18 @@ export interface Payment {
   readonly escrowStatus: EscrowStatus;
   readonly idempotencyKey: string;
   readonly providerRef?: string;
+  /** Checkout payments: how the customer pays. */
+  readonly method?: PaymentMethod;
+  /** Bank QR: the memo to type, `PB XXXXXX` (see payment_code.ts). */
+  readonly transferCode?: string;
+  /** ISO-8601 UTC; transfers received at or after it are refunded. */
+  readonly expiresAt?: string;
+  /**
+   * VND counted toward `amount` so far: the running total while under-paid, `amount` once paid.
+   * Money sent straight back on arrival (a late or extra transfer, the excess over `amount`) is not
+   * counted; the ledger has every transfer.
+   */
+  readonly receivedAmount?: number;
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;
@@ -55,14 +81,40 @@ export interface Refund {
   readonly percent: number;
   readonly status: RefundStatus;
   readonly manual: boolean;
+  /**
+   * True when the money came out of what escrow held for the payee: a cancellation, decline,
+   * expiry or dispute share, or a paid payment whose draft was gone (`applyRefundToPayment`).
+   * False for money sent straight back on arrival, which never entered escrow (`transferRefund`:
+   * the excess of an over-transfer, a second or late transfer, an under-paid payment that expired).
+   * Release, payouts and earnings subtract only escrow refunds. Never derived from `reason`.
+   * Rows stored before the field existed are read as true (see `isEscrowRefund`).
+   */
+  readonly fromEscrow: boolean;
   readonly reason?: string;
   readonly providerRef?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
 
+/**
+ * A payment the customer has actually paid (and that still holds some of it): only these are
+ * scheduled for release, disputed or shown as earnings. A `created` QR payment already has escrow
+ * `held` from creation but is not money yet.
+ */
+export const isSettledPayment = (p: Pick<Payment, 'status'>): boolean =>
+  p.status === 'paid' || p.status === 'partially_refunded';
+
+/** True unless the refund is marked as money that never entered escrow (a missing marker counts). */
+export const isEscrowRefund = (r: Pick<Refund, 'fromEscrow'> | { readonly fromEscrow?: boolean }): boolean =>
+  r.fromEscrow !== false;
+
+/** What escrow gave back to the payer: the sum of the escrow refunds (release subtracts this). */
+export function escrowRefundedTotal(refunds: readonly (Pick<Refund, 'amount'> & { readonly fromEscrow?: boolean })[]): number {
+  return refunds.reduce((sum, r) => (isEscrowRefund(r) ? sum + r.amount : sum), 0);
+}
+
 export const LEDGER_ENTRY_TYPES = [
-  'deposit_received',
+  'payment_received',
   'ticket_received',
   'refund_issued',
   'escrow_released',
@@ -71,6 +123,9 @@ export const LEDGER_ENTRY_TYPES = [
   'adjustment',
 ] as const;
 export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number];
+
+/** Old name of `payment_received`, still found in dev data; readers count it, nothing writes it. */
+export const LEGACY_PAYMENT_RECEIVED_TYPE = 'deposit_received';
 
 export interface LedgerEntry {
   readonly id: string;
@@ -87,7 +142,7 @@ export interface LedgerEntry {
 }
 
 /**
- * Creates a paid deposit Payment and corresponding LedgerEntry (`deposit_received`).
+ * Creates a paid Payment for the booking and its LedgerEntry (`payment_received`).
  */
 export function createDepositPayment(params: {
   readonly paymentId: string;
@@ -121,13 +176,13 @@ export function createDepositPayment(params: {
 
   const ledgerEntry: LedgerEntry = {
     id: params.ledgerEntryId,
-    type: 'deposit_received',
+    type: 'payment_received',
     paymentId: params.paymentId,
     subjectType: 'booking',
     subjectId: params.bookingId,
     accountOwnerId: 'platform_escrow',
     amount: params.amount,
-    note: `Deposit for booking ${params.bookingId}`,
+    note: `Payment for booking ${params.bookingId}`,
     at,
   };
 
@@ -178,6 +233,7 @@ export function applyRefundToPayment(params: {
     percent,
     status: 'pending',
     manual: false,
+    fromEscrow: true,
     reason,
     createdAt: at,
     updatedAt: at,
@@ -255,8 +311,15 @@ export function disputeEscrowPayment(payment: Payment, now: Date): Payment {
 }
 
 /**
- * Verifies Invariant 11:
- * Total payment amount == sum(received) - sum(refund_issued)
+ * Verifies Invariant 11 for one payment from its status and the ledger, never from refund reasons
+ * (a cancellation reason is free text typed by the customer):
+ * - ledger refunds always equal the refund records;
+ * - `expired`: sum(received) - sum(refunded) = 0 (every transfer was given back);
+ * - `paid`: sum(received) - sum(refunded) = amount (an over-transfer is refunded and the payment stays paid);
+ * - `refunded` / `partially_refunded`: the amount was received in full (received >= amount) and
+ *   refunds never exceed what was received (refunds then also cover any over-transfer);
+ * - `created` / `needs_review`: refunds never exceed what was received.
+ * Both `payment_received` and the legacy `deposit_received` count as received.
  */
 export function verifyPaymentLedgerInvariant(
   payment: Payment,
@@ -268,14 +331,28 @@ export function verifyPaymentLedgerInvariant(
 
   for (const entry of entries) {
     if (entry.paymentId === payment.id) {
-      if (entry.type === 'deposit_received' || entry.type === 'ticket_received') {
+      const type: string = entry.type;
+      if (type === 'payment_received' || type === LEGACY_PAYMENT_RECEIVED_TYPE || type === 'ticket_received') {
         received += entry.amount;
-      } else if (entry.type === 'refund_issued') {
+      } else if (type === 'refund_issued') {
         refunded += Math.abs(entry.amount);
       }
     }
   }
 
   const totalRefundAmount = refunds.reduce((sum, r) => sum + r.amount, 0);
-  return received === payment.amount && refunded === totalRefundAmount;
+  if (refunded !== totalRefundAmount) return false;
+
+  switch (payment.status) {
+    case 'expired':
+      return received - refunded === 0;
+    case 'paid':
+      return received - refunded === payment.amount;
+    case 'refunded':
+    case 'partially_refunded':
+      return received >= payment.amount && refunded <= received;
+    case 'created':
+    case 'needs_review':
+      return refunded <= received;
+  }
 }

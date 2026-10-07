@@ -1,11 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createBookingWorld } from './support/booking_world.js';
+import { computeDeposit } from '../src/booking_policy.js';
+import { createBookingWorld, newDraft, payDraft } from './support/booking_world.js';
+import { createPayment } from '../src/create_payment.js';
 import { createBookingDraft } from '../src/create_booking.js';
-import { createDeposit } from '../src/create_deposit.js';
-import { confirmFakePayment } from '../src/handle_payment.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('Task 5: runBookingSweeps', () => {
   it('cleans up unpaid draft after 30 minutes and frees calendar day', async () => {
@@ -44,8 +47,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
 
     // Advance 25 hours (past 24h accept deadline)
     world.clock.advanceHours(25);
@@ -55,7 +57,7 @@ describe('Task 5: runBookingSweeps', () => {
 
     const b = await world.store.getBooking(draft.id);
     assert.equal(b?.status, 'expired');
-    assert.equal(b?.depositRefunded, 300_000);
+    assert.equal(b?.depositRefunded, PAID);
 
     // Day is freed
     const day = await world.store.getAvailabilityDay('p1', '2026-10-15');
@@ -73,8 +75,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Advance to 2026-10-14 07:00 UTC (exactly 24h before start)
@@ -98,8 +99,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Advance to 2026-10-16 09:00 UTC (24h after end time)
@@ -122,8 +122,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Complete at 2026-10-15 09:30 UTC
@@ -142,5 +141,45 @@ describe('Task 5: runBookingSweeps', () => {
 
     const b = await world.store.getBooking(draft.id);
     assert.equal(b?.escrowStatus, 'released');
+  });
+
+  it('drafts are deleted when payableUntil has passed', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await newDraft(world);
+    assert.equal(draft.payableUntil, '2026-10-10T10:30:00.000Z');
+
+    world.clock.advanceMinutes(29);
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
+
+    world.clock.advanceMinutes(1); // payableUntil <= now
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 1);
+    assert.equal(await world.store.getBooking(draft.id), null);
+    assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
+  });
+
+  it('a draft with a live QR past 30 minutes is kept', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await newDraft(world);
+    world.clock.advanceMinutes(20);
+    await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
+    // QR expires 10:35, payableUntil 10:40
+
+    world.clock.setTime(new Date('2026-10-10T10:31:00.000Z'));
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
+
+    world.clock.setTime(new Date('2026-10-10T10:40:00.000Z'));
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 1);
+    assert.equal(await world.store.getBooking(draft.id), null);
+  });
+
+  it('a draft without payableUntil (old data) is not swept', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await newDraft(world);
+    world.store.bookings.set(draft.id, { ...draft, payableUntil: undefined });
+    world.clock.advanceHours(5);
+
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
   });
 });

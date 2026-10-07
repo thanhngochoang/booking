@@ -3,7 +3,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 /// Client-side mirror of the server's `contact_unlocked` for bookings
-/// (domain-model.md): from the deposit (`requested`) on, and for 30 days after
+/// (domain-model.md): from the payment (`requested`) on, and for 30 days after
 /// `completed`. It only decides which button to draw; `getContactLink` checks
 /// again on the server. Event tickets (`paid`, until 7 days after the event)
 /// get their own mapping when the registration model exists.

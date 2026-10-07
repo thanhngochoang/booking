@@ -11,7 +11,7 @@ describe('phase 1 domain module, as reused by the API', () => {
   it('lists the ErrorCode catalogue of domain-model.md §4', () => {
     expect([...ERROR_CODES].sort()).toEqual([
       'conflict', 'contact_locked', 'day_taken', 'deadline_passed', 'invalid_argument',
-      'limit_exceeded', 'not_accepting_orders', 'not_eligible', 'not_found', 'permission_denied', 'phone_required', 'price_changed', 'reauth_required', 'sold_out',
+      'limit_exceeded', 'not_accepting_orders', 'not_eligible', 'not_found', 'payment_attempts_exceeded', 'permission_denied', 'phone_required', 'price_changed', 'reauth_required', 'sold_out',
     ]);
   });
 

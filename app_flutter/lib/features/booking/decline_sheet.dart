@@ -18,7 +18,7 @@ const declineReasonMaxLength = 200;
 ///
 /// A reason is required: the red button stays disabled until one of the
 /// fixed reasons is chosen, or "Lý do khác" has at least
-/// [declineReasonMinLength] characters. The customer gets the full deposit
+/// [declineReasonMinLength] characters. The customer gets the full payment
 /// back and sees the reason.
 Future<bool?> showDeclineSheet(
   BuildContext context, {

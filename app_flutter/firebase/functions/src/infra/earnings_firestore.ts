@@ -2,6 +2,7 @@ import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/fir
 import {
   EARNING_STATES,
   formatVnDate,
+  isSettledPayment,
   type EarningItem,
   type EarningState,
   type EarningSubject,
@@ -11,7 +12,13 @@ import {
   type PaymentSubject,
   type Payout,
 } from '@photobooking/domain';
-import { BOOKINGS_COLLECTION, PAYMENTS_COLLECTION, REFUNDS_COLLECTION, paymentFromFirestore } from './booking_firestore.js';
+import {
+  BOOKINGS_COLLECTION,
+  PAYMENTS_COLLECTION,
+  REFUNDS_COLLECTION,
+  escrowRefundedOfDocs,
+  paymentFromFirestore,
+} from './booking_firestore.js';
 import { PAYOUTS_COLLECTION, payoutFromFirestore } from './payout_firestore.js';
 
 export const EARNINGS_COLLECTION = 'earnings';
@@ -77,7 +84,7 @@ export class FirestoreEarningsStore implements EarningsStore {
         },
         refundedTotal: async (paymentId) => {
           const snap = await fTx.get(this.db.collection(REFUNDS_COLLECTION).where('paymentId', '==', paymentId));
-          return snap.docs.reduce((n, d) => n + (typeof d.data().amount === 'number' ? (d.data().amount as number) : 0), 0);
+          return escrowRefundedOfDocs(snap.docs.map((d) => d.data()));
         },
         getSubject: async (p): Promise<EarningSubject | null> => {
           if (p.subjectType === 'event_registration') {
@@ -97,6 +104,9 @@ export class FirestoreEarningsStore implements EarningsStore {
             };
           }
           if (p.subjectType !== 'booking') return null;
+          // An unpaid QR payment (escrow `held` from creation) is not money yet (earningItemOf
+          // drops it too; this saves the reads).
+          if (!isSettledPayment(p) && p.status !== 'refunded') return null;
           const b = await fTx.get(this.db.collection(BOOKINGS_COLLECTION).doc(p.subjectId));
           const d = b.data();
           if (d === undefined) return null;

@@ -3,6 +3,11 @@ import { FakePaymentGateway } from '../../src/fake_payment_gateway.js';
 import type { BookingDeps, CustomerContactReader, ServiceCatalog, ServiceRecord } from '../../src/booking_ports.js';
 import { acceptsOrders, type OrderEligibilityFields } from '../../src/provider_orders.js';
 import type { Clock, IdGenerator } from '../../src/ports.js';
+import type { Booking } from '../../src/booking.js';
+import type { TransferNotification } from '../../src/booking_ports.js';
+import { createBookingDraft } from '../../src/create_booking.js';
+import { createPayment } from '../../src/create_payment.js';
+import { handleTransferNotification } from '../../src/handle_transfer.js';
 
 export class ControllableClock implements Clock {
   constructor(private currentTime: Date = new Date('2026-10-10T10:00:00.000Z')) {}
@@ -103,4 +108,49 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
   };
 
   return { deps, store, gateway, clock, ids, services, providers, contacts };
+}
+
+/** The default draft request: c1 books p1's `srv_01` (1 000 000 VND) on 2026-10-15 at 14:00. */
+export const DRAFT_INPUT = {
+  customerId: 'c1',
+  photographerId: 'p1',
+  serviceId: 'srv_01',
+  day: '2026-10-15',
+  start: '14:00',
+  place: { name: 'Nhà thờ Lớn' },
+} as const;
+
+export function newDraft(world: BookingWorld, overrides: Record<string, unknown> = {}): Promise<Booking> {
+  return createBookingDraft(world.deps, { ...DRAFT_INPUT, ...overrides });
+}
+
+let txnCounter = 0;
+
+/**
+ * A fake-provider bank transfer of `amount` with `content` as the memo (default: the transfer
+ * code alone), received now unless `receivedAt` says otherwise. Each call gets a new txnId.
+ */
+export function transferOf(
+  world: BookingWorld,
+  p: { readonly content: string; readonly amount: number; readonly txnId?: string; readonly receivedAt?: string },
+): TransferNotification {
+  txnCounter += 1;
+  return {
+    provider: 'fake',
+    txnId: p.txnId ?? `txn_${txnCounter}`,
+    amount: p.amount,
+    content: p.content,
+    receivedAt: p.receivedAt ?? world.clock.now().toISOString(),
+    raw: JSON.stringify({ amount: p.amount, content: p.content }),
+  };
+}
+
+/**
+ * Pays a draft in full the way a customer does: a bank-QR payment (createPayment), then one
+ * transfer of the exact amount with its code. Returns the payment id.
+ */
+export async function payDraft(world: BookingWorld, bookingId: string, customerId = 'c1'): Promise<{ readonly paymentId: string }> {
+  const { paymentId, checkout } = await createPayment(world.deps, { bookingId, customerId, method: 'bank_qr' });
+  await handleTransferNotification(world.deps, transferOf(world, { content: checkout.transferCode, amount: checkout.amount }));
+  return { paymentId };
 }

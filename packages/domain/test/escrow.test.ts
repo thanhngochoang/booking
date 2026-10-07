@@ -8,11 +8,13 @@ import {
   verifyPaymentLedgerInvariant,
 } from '../src/escrow.js';
 import { DomainError } from '../src/errors.js';
+import type { LedgerEntry, Payment, Refund } from '../src/escrow.js';
+import { LEDGER_ENTRY_TYPES, PAYMENT_METHODS, PAYMENT_STATUSES, RESERVED_PAYMENT_METHODS } from '../src/escrow.js';
 
 describe('Task 3: Escrow & ledger maths', () => {
   const now = new Date('2026-10-10T10:00:00.000Z');
 
-  it('createDepositPayment: creates paid payment and deposit_received ledger entry', () => {
+  it('createDepositPayment: creates paid payment and payment_received ledger entry', () => {
     const { payment, ledgerEntry } = createDepositPayment({
       paymentId: 'pay_01',
       bookingId: 'b_01',
@@ -35,7 +37,7 @@ describe('Task 3: Escrow & ledger maths', () => {
     assert.equal(payment.paidAt, now.toISOString());
 
     assert.equal(ledgerEntry.id, 'led_01');
-    assert.equal(ledgerEntry.type, 'deposit_received');
+    assert.equal(ledgerEntry.type, 'payment_received');
     assert.equal(ledgerEntry.paymentId, 'pay_01');
     assert.equal(ledgerEntry.subjectId, 'b_01');
     assert.equal(ledgerEntry.amount, 300_000);
@@ -262,7 +264,7 @@ describe('Task 3: Escrow & ledger maths', () => {
       now,
     });
 
-    const { refund, ledgerEntry: e2 } = applyRefundToPayment({
+    const { payment: updatedPayment, refund, ledgerEntry: e2 } = applyRefundToPayment({
       payment,
       refundId: 'ref_01',
       percent: 50,
@@ -270,7 +272,122 @@ describe('Task 3: Escrow & ledger maths', () => {
       now,
     });
 
-    const isBalanced = verifyPaymentLedgerInvariant(payment, [refund], [e1, e2]);
+    const isBalanced = verifyPaymentLedgerInvariant(updatedPayment, [refund], [e1, e2]);
     assert.equal(isBalanced, true);
+  });
+  describe('payment statuses, methods and the QR ledger', () => {
+    const at = now.toISOString();
+    const qrPayment = (over: Partial<Payment> = {}): Payment => ({
+      id: 'pay_qr',
+      subjectType: 'booking',
+      subjectId: 'b_01',
+      payerId: 'cust_01',
+      payeeId: 'photog_01',
+      provider: 'fake',
+      amount: 1_500_000,
+      status: 'paid',
+      escrowStatus: 'held',
+      idempotencyKey: 'idem_qr',
+      method: 'bank_qr',
+      transferCode: 'PB 7F3K2Q',
+      expiresAt: '2026-10-10T10:15:00.000Z',
+      receivedAmount: 1_600_000,
+      createdAt: at,
+      updatedAt: at,
+      ...over,
+    });
+    const received = (id: string, amount: number, type: LedgerEntry['type'] = 'payment_received'): LedgerEntry => ({
+      id,
+      type,
+      paymentId: 'pay_qr',
+      accountOwnerId: 'platform_escrow',
+      amount,
+      at,
+    });
+    const refundOf = (id: string, amount: number, reason: string): { refund: Refund; entry: LedgerEntry } => ({
+      refund: {
+        id,
+        paymentId: 'pay_qr',
+        amount,
+        percent: 100,
+        status: 'done',
+        manual: false,
+        fromEscrow: false,
+        reason,
+        createdAt: at,
+        updatedAt: at,
+      },
+      entry: { id: `led_${id}`, type: 'refund_issued', paymentId: 'pay_qr', refundId: id, accountOwnerId: 'cust_01', amount: -amount, note: reason, at },
+    });
+
+    it('lists the statuses and methods of the payments spec, without failed', () => {
+      assert.deepEqual([...PAYMENT_STATUSES], ['created', 'paid', 'expired', 'needs_review', 'refunded', 'partially_refunded']);
+      assert.deepEqual([...PAYMENT_METHODS], ['bank_qr', 'momo', 'zalopay']);
+      assert.deepEqual([...RESERVED_PAYMENT_METHODS], ['domestic_card', 'intl_card']);
+      assert.ok(LEDGER_ENTRY_TYPES.includes('payment_received'));
+      assert.ok(!(LEDGER_ENTRY_TYPES as readonly string[]).includes('deposit_received'));
+    });
+
+    it('a paid QR payment with an over-transfer keeps the ledger invariant', () => {
+      const { refund, entry } = refundOf('r1', 100_000, 'overpaid_excess');
+      assert.equal(verifyPaymentLedgerInvariant(qrPayment(), [refund], [received('l1', 1_600_000), entry]), true);
+    });
+
+    it('a paid QR payment with an unrefunded over-transfer is out of balance', () => {
+      assert.equal(verifyPaymentLedgerInvariant(qrPayment(), [], [received('l1', 1_600_000)]), false);
+    });
+
+    it('a top-up in two transfers keeps the invariant', () => {
+      const p = qrPayment({ receivedAmount: 1_500_000 });
+      assert.equal(verifyPaymentLedgerInvariant(p, [], [received('l1', 500_000), received('l2', 1_000_000)]), true);
+    });
+
+    it('an expired payment that received 500 000 and refunded it balances to 0', () => {
+      const p = qrPayment({ status: 'expired', escrowStatus: 'refunded', receivedAmount: 500_000 });
+      const { refund, entry } = refundOf('r1', 500_000, 'underpaid_expired');
+      assert.equal(verifyPaymentLedgerInvariant(p, [refund], [received('l1', 500_000), entry]), true);
+      assert.equal(verifyPaymentLedgerInvariant(p, [], [received('l1', 500_000)]), false);
+    });
+
+    it('an expired payment that never received anything balances to 0', () => {
+      assert.equal(verifyPaymentLedgerInvariant(qrPayment({ status: 'expired', escrowStatus: 'refunded' }), [], []), true);
+    });
+
+    it('a cancelled over-transferred payment keeps the invariant', () => {
+      const excess = refundOf('r1', 100_000, 'overpaid_excess');
+      const cancel = refundOf('r2', 1_500_000, 'customer_cancelled');
+      const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded' });
+      assert.equal(
+        verifyPaymentLedgerInvariant(p, [excess.refund, cancel.refund], [received('l1', 1_600_000), excess.entry, cancel.entry]),
+        true,
+      );
+    });
+
+    it('a cancellation refund whose reason text says overpaid_excess does not hide an unbalanced paid ledger', () => {
+      // Paid 1 500 000, then a 750 000 cancellation refund typed with a reason that mimics an excess refund.
+      const cancel = refundOf('r1', 750_000, 'overpaid_excess');
+      // Status still paid: the ledger says 1 500 000 - 750 000 != amount.
+      assert.equal(verifyPaymentLedgerInvariant(qrPayment({ receivedAmount: 1_500_000 }), [cancel.refund], [received('l1', 1_500_000), cancel.entry]), false);
+      // Properly recorded as partially_refunded it is fine, whatever the reason text.
+      const p = qrPayment({ status: 'partially_refunded', escrowStatus: 'partially_refunded', receivedAmount: 1_500_000 });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), true);
+    });
+
+    it('refunds beyond what was received never balance', () => {
+      const cancel = refundOf('r1', 1_700_000, 'customer_cancelled');
+      const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded' });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), false);
+    });
+
+    it('a refunded payment that was never received in full is out of balance', () => {
+      const cancel = refundOf('r1', 500_000, 'customer_cancelled');
+      const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded' });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 500_000), cancel.entry]), false);
+    });
+
+    it('old deposit_received entries still count', () => {
+      const p = qrPayment({ amount: 300_000, receivedAmount: undefined });
+      assert.equal(verifyPaymentLedgerInvariant(p, [], [received('l1', 300_000, 'deposit_received' as LedgerEntry['type'])]), true);
+    });
   });
 });

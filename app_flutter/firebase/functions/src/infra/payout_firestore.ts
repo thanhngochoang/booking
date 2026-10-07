@@ -15,6 +15,7 @@ import {
   LEDGER_COLLECTION,
   PAYMENTS_COLLECTION,
   REFUNDS_COLLECTION,
+  escrowRefundedOfDocs,
   ledgerEntryToFirestore,
   paymentFromFirestore,
   paymentToFirestore,
@@ -123,7 +124,7 @@ export class FirestorePayoutStore implements PayoutStore {
 
   private refundedOf(paymentId: string, read: (q: FirebaseFirestore.Query) => Promise<FirebaseFirestore.QuerySnapshot>): Promise<number> {
     return read(this.db.collection(REFUNDS_COLLECTION).where('paymentId', '==', paymentId)).then((snap) =>
-      snap.docs.reduce((sum, d) => sum + (typeof d.data().amount === 'number' ? (d.data().amount as number) : 0), 0),
+      escrowRefundedOfDocs(snap.docs.map((d) => d.data())),
     );
   }
 

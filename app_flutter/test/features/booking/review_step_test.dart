@@ -175,7 +175,7 @@ void main() {
   );
 
   testWidgets(
-    'shows the summary card, note and phone side by side, price, deposit 30 % and remaining',
+    'shows the summary card, note and phone side by side, price, the whole price up front and no remaining',
     (tester) async {
       await navigateToReviewStep(tester);
 
@@ -183,10 +183,11 @@ void main() {
       expect(find.text('Minh Trí · Gói Chân Dung'), findsOneWidget);
       expect(find.text('Bến Bạch Đằng'), findsOneWidget);
 
-      // Money breakdown: 1.500.000, deposit 450.000 (30%), remaining 1.050.000
+      // Money breakdown: the whole price 1.500.000 is paid up front
+      final upfront = depositFor(1500000);
+      expect(upfront.deposit, 1500000);
+      expect(upfront.remaining, 0);
       expect(find.text('1.500.000₫'), findsWidgets);
-      expect(find.text('450.000₫'), findsWidgets);
-      expect(find.text('1.050.000₫'), findsWidgets);
 
       // Phone field is prefilled with saved formatted phone: '903 123 456'
       final phoneFieldFinder = find.byType(PhoneField);
@@ -200,21 +201,44 @@ void main() {
         '903 123 456',
       );
 
-      // Deposit button
+      // The pay button carries the whole price
       expect(
-        find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'),
+        find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'),
         findsOneWidget,
       );
     },
   );
 
-  testWidgets('deposit plus remaining equals the price for an odd price', (
+  testWidgets(
+    'money rows are "Gói Gói Chân Dung" and "Thanh toán 100%" with the full price',
+    (tester) async {
+      await navigateToReviewStep(tester);
+
+      final rows = find.descendant(
+        of: find.byType(MoneyBreakdown),
+        matching: find.byType(Text),
+      );
+      expect(
+        tester.widgetList<Text>(rows).map((t) => t.data).toList(),
+        ['Gói Gói Chân Dung', '1.500.000₫', 'Thanh toán 100%', '1.500.000₫'],
+      );
+    },
+  );
+
+  testWidgets('no "cọc" or "Còn lại" text anywhere', (tester) async {
+    await navigateToReviewStep(tester);
+
+    expect(find.textContaining('cọc'), findsNothing);
+    expect(find.textContaining('Cọc'), findsNothing);
+    expect(find.textContaining('Còn lại'), findsNothing);
+  });
+
+  testWidgets('the whole price is paid up front for an odd price', (
     tester,
   ) async {
     final oddMath = depositFor(1234567);
-    expect(oddMath.deposit, 370370);
-    expect(oddMath.remaining, 864197);
-    expect(oddMath.deposit + oddMath.remaining, 1234567);
+    expect(oddMath.deposit, 1234567);
+    expect(oddMath.remaining, 0);
 
     await navigateToReviewStep(
       tester,
@@ -222,26 +246,22 @@ void main() {
       packages: [oddPackage],
     );
 
-    expect(find.text('370.370₫'), findsWidgets);
-    expect(find.text('864.197₫'), findsWidgets);
-    expect(find.widgetWithText(AppButton, 'Đặt cọc 370.370₫'), findsOneWidget);
+    expect(find.text('1.234.567₫'), findsWidgets);
+    expect(
+      find.widgetWithText(AppButton, 'Thanh toán 1.234.567₫'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('shows the escrow notice and the cancellation policy text', (
+  testWidgets('the helper is the mock sentence, with no separate escrow notice', (
     tester,
   ) async {
     await navigateToReviewStep(tester);
 
-    expect(find.byType(EscrowNotice), findsOneWidget);
-    expect(
-      find.textContaining('Tiền cọc được giữ an toàn trên ứng dụng'),
-      findsOneWidget,
-    );
-
-    // Policy text
+    expect(find.byType(EscrowNotice), findsNothing);
     expect(
       find.text(
-        'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.',
+        'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.',
       ),
       findsOneWidget,
     );
@@ -268,7 +288,7 @@ void main() {
   });
 
   testWidgets(
-    'an invalid phone shows the error on focus loss and disables Đặt cọc',
+    'an invalid phone shows the error on focus loss and disables the pay button',
     (tester) async {
       await navigateToReviewStep(tester);
 
@@ -292,25 +312,40 @@ void main() {
         findsOneWidget,
       );
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
       expect(tester.widget<AppButton>(payBtn).onPressed, isNull);
     },
   );
 
   testWidgets(
-    'the ProviderPicker has MoMo selected by default; tapping VNPay selects it',
+    'Chuyển khoản QR is selected by default; tapping MoMo selects it',
     (tester) async {
       await navigateToReviewStep(tester);
 
-      expect(find.byType(ProviderPicker), findsOneWidget);
+      expect(find.byType(PayMethodSelector), findsOneWidget);
+      PayMethodSelector selector() =>
+          tester.widget<PayMethodSelector>(find.byType(PayMethodSelector));
+      expect(selector().value, PayMethod.bankQr);
 
-      final vnpayBtn = find.text('VNPay');
-      await tester.tap(vnpayBtn);
+      final momo = find.text('MoMo');
+      await tester.ensureVisible(momo);
+      await tester.tap(momo);
       await tester.pumpAndSettle();
 
-      // Now VNPay is selected
-      final picker = tester.widget<ProviderPicker>(find.byType(ProviderPicker));
-      expect(picker.value, PaymentProviderCode.vnpay);
+      expect(selector().value, PayMethod.momo);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ReviewStep)),
+      );
+      expect(
+        container
+            .read(
+              bookingFlowControllerProvider(
+                const BookingFlowArgs(photographerId: 'p1', serviceId: 's1'),
+              ),
+            )
+            .method,
+        PayMethod.momo,
+      );
     },
   );
 
@@ -362,6 +397,7 @@ void main() {
         );
 
         expect(tester.takeException(), isNull);
+        expect(find.byType(PayMethodSelector), findsOneWidget);
         expect(tester.getSize(find.byKey(const Key('app-sheet'))).width, 320);
 
         final note = find.byKey(const Key('book-note-field'));

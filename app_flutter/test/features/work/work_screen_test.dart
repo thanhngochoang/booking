@@ -224,7 +224,7 @@ void main() {
     );
     expect(find.text('1,5M'), findsNWidgets(2));
     expect(
-      find.text('“Chụp gia đình 4 người, có bé 2 tuổi.” · đã cọc 450K'),
+      find.text('“Chụp gia đình 4 người, có bé 2 tuổi.” · đã trả 450K'),
       findsOneWidget,
     );
     expect(find.text('Từ chối'), findsNWidgets(2));
@@ -322,13 +322,13 @@ void main() {
     await _settle(tester);
     expect(find.textContaining('Nhận · còn'), findsNothing);
     expect(
-      find.text('Yêu cầu Lan Anh đã hết hạn, đã hoàn cọc'),
+      find.text('Yêu cầu Lan Anh đã hết hạn, đã hoàn tiền'),
       findsOneWidget,
     );
   });
 
   testWidgets('an expired request disappears with Yêu cầu {tên} đã hết hạn, '
-      'đã hoàn cọc', (tester) async {
+      'đã hoàn tiền', (tester) async {
     final repo = _repo(_busy());
     await _pump(tester, repo);
     await _settle(tester);
@@ -342,7 +342,7 @@ void main() {
     expect(find.text('Nhận · còn 5 giờ'), findsNothing);
     expect(find.text('Nhận · còn 22 giờ'), findsOneWidget);
     expect(
-      find.text('Yêu cầu Lan Anh đã hết hạn, đã hoàn cọc'),
+      find.text('Yêu cầu Lan Anh đã hết hạn, đã hoàn tiền'),
       findsOneWidget,
     );
   });
@@ -369,7 +369,7 @@ void main() {
     expect(repo.transitions, [
       (bookingId: 'r1', action: 'decline', reason: 'Kín lịch hôm đó'),
     ]);
-    expect(find.text('Đã từ chối. Lan Anh được hoàn cọc.'), findsOneWidget);
+    expect(find.text('Đã từ chối. Lan Anh được hoàn 100%.'), findsOneWidget);
     expect(find.textContaining('Nhận · còn'), findsNothing);
   });
 

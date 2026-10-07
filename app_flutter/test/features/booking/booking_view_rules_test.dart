@@ -273,7 +273,7 @@ void main() {
         photographerName: 'Minh Trí',
       );
       expect(steps, hasLength(7));
-      expect(steps[0].title, 'Đã gửi & đặt cọc');
+      expect(steps[0].title, 'Đã gửi & thanh toán');
       expect(steps[0].subtitle, 'Hôm nay 09:41 · 450.000₫');
       expect(steps[1].title, 'Chờ Minh Trí nhận');
       expect(steps[1].subtitle, 'Thường trong 1 giờ');
@@ -425,7 +425,7 @@ void main() {
       expect(steps.last.title, 'Đã huỷ · hoàn 450.000₫');
     });
 
-    test("expired: stopped 'Hết hạn, đã hoàn cọc'", () {
+    test("expired: stopped 'Hết hạn, đã hoàn tiền'", () {
       final steps = timelineSteps(
         _b(BookingStatus.expired),
         [_ev(BookingStatus.requested, sentAt)],
@@ -437,7 +437,7 @@ void main() {
         TimelineStepState.done,
         TimelineStepState.stopped,
       ]);
-      expect(steps.last.title, 'Hết hạn, đã hoàn cọc');
+      expect(steps.last.title, 'Hết hạn, đã hoàn tiền');
     });
 
     test("declined: stopped 'Đã từ chối'", () {
