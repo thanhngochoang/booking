@@ -9,13 +9,19 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
+import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/event_manage/checkin_sheet.dart';
+import 'package:photobooking/features/event_manage/manage_event_controller.dart';
 
 import '../../support/event_world.dart';
 
 const _path = '/events/ev1/manage';
+
+/// 13/10 08:00 in Việt Nam: the event day, two hours before the start.
+final _eventDay = eventNow.add(const Duration(days: 3, hours: -2));
 
 /// The host (p1) of ev1, signed in.
 EventsWorld _host({
@@ -198,6 +204,7 @@ void main() {
 
   testWidgets('scan success says Đã vào', (tester) async {
     final w = _host(
+      now: _eventDay,
       registrations: [
         registrationOf('r1', 'ev1', userName: 'Lan Anh', quantity: 2),
       ],
@@ -219,6 +226,7 @@ void main() {
 
   testWidgets('scanning a used ticket says Vé đã dùng', (tester) async {
     final w = _host(
+      now: _eventDay,
       registrations: [
         registrationOf(
           'r1',
@@ -235,7 +243,10 @@ void main() {
   });
 
   testWidgets('an unknown code says Vé không hợp lệ', (tester) async {
-    final w = _host(registrations: [registrationOf('r1', 'ev1')]);
+    final w = _host(
+      now: _eventDay,
+      registrations: [registrationOf('r1', 'ev1')],
+    );
     w.scanner.enqueue('VE-ZZZZ-1013');
     await _open(tester, w);
     await _tap(tester, find.byKey(const Key('manage-scan')));
@@ -244,6 +255,7 @@ void main() {
 
   testWidgets('manual code entry checks in', (tester) async {
     final w = _host(
+      now: _eventDay,
       registrations: [registrationOf('r1', 'ev1', userName: 'Lan Anh')],
     );
     w.scanner.manual = true;
@@ -269,6 +281,84 @@ void main() {
     final w = _host(now: end.add(const Duration(hours: 1, minutes: 59)));
     await _open(tester, w);
     expect(_scanEnabled(tester), isTrue);
+  });
+
+  testWidgets('before the event day scan is off and says when it opens', (
+    tester,
+  ) async {
+    // eventNow is three days before; 12/10 23:59 VN is one minute early.
+    final w = _host(
+      now: _eventDay.subtract(const Duration(hours: 8, minutes: 1)),
+    );
+    await _open(tester, w);
+    expect(_scanEnabled(tester), isFalse);
+    expect(
+      tester
+          .widget<Tooltip>(
+            find.ancestor(
+              of: find.byKey(const Key('manage-scan')),
+              matching: find.byType(Tooltip),
+            ),
+          )
+          .message,
+      'Chưa tới ngày diễn ra. Check‑in mở từ 00:00 hôm đó.',
+    );
+  });
+
+  testWidgets('scan opens at 00:00 on the event day', (tester) async {
+    final w = _host(now: _eventDay.subtract(const Duration(hours: 8)));
+    await _open(tester, w);
+    expect(_scanEnabled(tester), isTrue);
+  });
+
+  test('a not_eligible answer reads not yet / closed, never invalid', () {
+    final e = detailOf('ev1');
+    const err = EventError('not_eligible');
+    expect(
+      checkinOutcomeOf(err, event: e, now: eventNow),
+      CheckinOutcome.notYet,
+    );
+    expect(
+      checkinOutcomeOf(
+        err,
+        event: e,
+        now: e.endsAt.add(const Duration(hours: 3)),
+      ),
+      CheckinOutcome.closed,
+    );
+    expect(
+      checkinOutcomeOf(const EventError('not_found')),
+      CheckinOutcome.invalid,
+    );
+    expect(checkinOutcomeOf(const EventError('conflict')), CheckinOutcome.used);
+  });
+
+  testWidgets('no loader spins while a scan or result sheet waits', (
+    tester,
+  ) async {
+    final w = _host(
+      now: _eventDay,
+      registrations: [registrationOf('r1', 'ev1', userName: 'Lan Anh')],
+    );
+    w.scanner.manual = true;
+    await _open(tester, w);
+    AppButton scan() =>
+        tester.widget<AppButton>(find.byKey(const Key('manage-scan')));
+
+    await _tap(tester, find.byKey(const Key('manage-scan')));
+    expect(find.byKey(const Key('checkin-code')), findsOneWidget);
+    expect(scan().loading, isFalse);
+    expect(scan().onPressed, isNull);
+
+    await tester.enterText(
+      find.byKey(const Key('checkin-code')),
+      'VE-AB2C-1013',
+    );
+    await tester.pump();
+    await _tap(tester, find.byKey(const Key('checkin-submit')));
+    expect(find.byKey(const Key('checkin-result')), findsOneWidget);
+    expect(scan().loading, isFalse);
+    expect(find.byType(DotRingLoader), findsNothing);
   });
 
   testWidgets('scan is disabled two hours after the end', (tester) async {

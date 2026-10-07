@@ -652,6 +652,43 @@ void main() {
       expect(find.text('Thông tin sự kiện'), findsOneWidget);
     });
 
+    testWidgets('a resumed draft has one bar; back goes 2 → 1, then asks', (
+      tester,
+    ) async {
+      final w = _photographer();
+      w.repo.putEvent(
+        detailOf(
+          'ev9',
+          status: EventStatus.draft,
+          createdBy: 'u1',
+          hostId: 'u1',
+        ),
+      );
+      await w.pump(
+        tester,
+        path: '/events/new?draft=ev9',
+        organizer: true,
+        size: _size,
+      );
+      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.byType(Scaffold), findsOneWidget);
+      expect(find.text('Tạo sự kiện'), findsOneWidget);
+      expect(find.text('1 / 2'), findsOneWidget);
+
+      await _next(tester);
+      expect(find.text('2 / 2'), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('create-event-back')));
+      await settle(tester);
+      expect(find.text('1 / 2'), findsOneWidget);
+      expect(w.location, '/events/new?draft=ev9');
+
+      await tester.tap(find.byKey(const Key('create-event-back')));
+      await settle(tester);
+      expect(find.text('Lưu nháp?'), findsOneWidget);
+    });
+
     testWidgets('a published event opens the manage page instead', (
       tester,
     ) async {

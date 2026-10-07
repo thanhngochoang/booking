@@ -107,21 +107,41 @@ class FirestoreEventRepository implements EventRepository {
     if (me == null) {
       return Stream.value(const []);
     }
+    // Events I created, and events naming me as host (a staff-made event I
+    // accepted, O1). An OR of two equalities needs no composite index, and
+    // each side matches the list rule (`createdBy == uid || hostId == uid`).
     // No orderBy: a draft saved before it has a date has no startAt and would
     // drop out of an ordered query. Sorted here, undated drafts first.
-    return _events.where('createdBy', isEqualTo: me).snapshots().map((qs) {
-      final out = [
-        for (final d in qs.docs) ?eventSummaryFromFirestore(d.id, d.data()),
-      ];
-      out.sort((a, b) {
-        if (a.hasSchedule != b.hasSchedule) {
-          return a.hasSchedule ? 1 : -1;
-        }
-        return b.startsAt.compareTo(a.startsAt);
-      });
-      return out;
-    });
+    return _events
+        .where(
+          Filter.or(
+            Filter('createdBy', isEqualTo: me),
+            Filter('hostId', isEqualTo: me),
+          ),
+        )
+        .snapshots()
+        .map((qs) {
+          final out = [
+            for (final d in qs.docs)
+              if (!_awaitsAnswer(d.data(), me))
+                ?eventSummaryFromFirestore(d.id, d.data()),
+          ];
+          out.sort((a, b) {
+            if (a.hasSchedule != b.hasSchedule) {
+              return a.hasSchedule ? 1 : -1;
+            }
+            return b.startsAt.compareTo(a.startsAt);
+          });
+          return out;
+        });
   }
+
+  /// A staff-made draft naming [me] that I have not accepted: an invitation
+  /// (S12.03 answers it), not one of my events yet.
+  static bool _awaitsAnswer(Map<String, dynamic> d, String me) =>
+      d['createdBy'] != me &&
+      d['status'] == 'draft' &&
+      d['hostConsent'] != 'accepted';
 
   @override
   Stream<List<EventDetail>> watchHostInvitations() {

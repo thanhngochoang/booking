@@ -93,7 +93,11 @@ class ManageEventScreen extends ConsumerStatefulWidget {
 }
 
 class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
+  /// A scan or result sheet is open: the button is off, without a loader.
   bool _scanning = false;
+
+  /// A check-in call is on its way: the only time the button shows a loader.
+  bool _checking = false;
 
   void _say(String text) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
@@ -108,7 +112,7 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
     }
   }
 
-  Future<void> _scan() async {
+  Future<void> _scan(EventDetail event) async {
     if (_scanning) {
       return;
     }
@@ -125,7 +129,19 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
         if (code == null || !mounted) {
           return;
         }
-        final result = await ctl.checkIn(code);
+        setState(() => _checking = true);
+        final CheckinResult result;
+        try {
+          result = await ctl.checkIn(
+            code,
+            event: event,
+            now: ref.read(clockProvider)(),
+          );
+        } finally {
+          if (mounted) {
+            setState(() => _checking = false);
+          }
+        }
         if (!mounted) {
           return;
         }
@@ -200,7 +216,11 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
           if (invited) {
             return _frame(context, body: _invitation(context, detail));
           }
-          return EventRouteRedirect('/events/new?draft=${detail.id}');
+          // My own draft is edited in S12.01; a staff-made draft I accepted
+          // as host stays here (read-only until staff publish it, O1).
+          if (detail.createdBy == me) {
+            return EventRouteRedirect('/events/new?draft=${detail.id}');
+          }
         }
         return _content(context, detail);
       },
@@ -288,6 +308,7 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
         e.summary.status != EventStatus.completed &&
         now.isBefore(e.endsAt);
     final scanOpen = manageCanScan(e, now);
+    final window = checkinWindowOf(e, now);
     final busy = ref.watch(manageEventControllerProvider(e.id)).busy;
     final free = e.summary.isFree;
 
@@ -314,13 +335,17 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
                   Expanded(
                     flex: 60,
                     child: Tooltip(
-                      message: scanOpen ? '' : l.manageScanClosed,
+                      message: switch (window) {
+                        CheckinWindow.open => '',
+                        CheckinWindow.notYet => l.checkinNotYet,
+                        CheckinWindow.closed => l.manageScanClosed,
+                      },
                       child: AppButton.primary(
                         l.manageScan,
                         key: const Key('manage-scan'),
-                        loading: _scanning,
+                        loading: _checking,
                         onPressed: scanOpen && !_scanning && !busy
-                            ? _scan
+                            ? () => _scan(e)
                             : null,
                       ),
                     ),

@@ -4468,4 +4468,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get createEventDeadlineReset => 'Dùng hạn tự động';
+
+  @override
+  String get checkinNotYet =>
+      'Chưa tới ngày diễn ra. Check‑in mở từ 00:00 hôm đó.';
+
+  @override
+  String get eventDateUnset => 'Chưa chọn ngày';
 }

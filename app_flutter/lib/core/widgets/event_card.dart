@@ -18,6 +18,7 @@ class EventCardData {
     required this.typeTag,
     required this.typeLabel,
     required this.startsAt,
+    this.hasDate = true,
     this.placeName,
     required this.priceVnd,
     required this.seatsLeft,
@@ -32,6 +33,10 @@ class EventCardData {
   final String typeTag;
   final String typeLabel;
   final DateTime startsAt;
+
+  /// False for a draft saved before its day was chosen: the card shows no
+  /// date ([startsAt] is then only a sort key).
+  final bool hasDate;
   final String? placeName;
   final int priceVnd;
   final int seatsLeft;
@@ -71,19 +76,21 @@ class EventCard extends StatelessWidget {
     final vn = toVn(data.startsAt);
     final isSoldOut = data.soldOut || data.seatsLeft == 0;
 
-    final dateSpoken = l.eventDateSpoken(
-      vn.weekday.toString(),
-      vn.day,
-      vn.month,
-    );
+    final dateSpoken = data.hasDate
+        ? l.eventDateSpoken(vn.weekday.toString(), vn.day, vn.month)
+        : l.eventDateUnset;
     final placeParts = [
       if (distanceLabel != null && distanceLabel!.isNotEmpty) distanceLabel!,
       if (data.hostName.isNotEmpty) data.hostName,
       if (data.placeName != null && data.placeName!.isNotEmpty) data.placeName!,
     ];
     final placeSpoken = placeParts.join(', ');
-    final priceSpoken = data.priceVnd == 0 ? l.freeTag : formatMoney(data.priceVnd);
-    final seatsSpoken = isSoldOut ? l.eventSoldOut : l.eventSeatsLeft(data.seatsLeft);
+    final priceSpoken = data.priceVnd == 0
+        ? l.freeTag
+        : formatMoney(data.priceVnd);
+    final seatsSpoken = isSoldOut
+        ? l.eventSoldOut
+        : l.eventSeatsLeft(data.seatsLeft);
 
     final semanticLabel = [
       data.title,
@@ -95,16 +102,28 @@ class EventCard extends StatelessWidget {
 
     final content = switch (size) {
       EventCardSize.row => _buildRow(context, theme, dark, vn, isSoldOut, l),
-      EventCardSize.featured => _buildFeatured(context, theme, dark, vn, isSoldOut, l),
-      EventCardSize.compact => _buildCompact(context, theme, dark, vn, isSoldOut, l),
+      EventCardSize.featured => _buildFeatured(
+        context,
+        theme,
+        dark,
+        vn,
+        isSoldOut,
+        l,
+      ),
+      EventCardSize.compact => _buildCompact(
+        context,
+        theme,
+        dark,
+        vn,
+        isSoldOut,
+        l,
+      ),
     };
 
     return Semantics(
       button: onTap != null,
       label: semanticLabel,
-      child: ExcludeSemantics(
-        child: content,
-      ),
+      child: ExcludeSemantics(child: content),
     );
   }
 
@@ -141,7 +160,9 @@ class EventCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DateBlock(day: data.startsAt),
+              data.hasDate
+                  ? DateBlock(day: data.startsAt)
+                  : const DateBlock.undated(),
               const SizedBox(width: AppSpace.s3),
               Expanded(
                 child: Column(
@@ -166,10 +187,7 @@ class EventCard extends StatelessWidget {
                         placeParts.join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: fgSec,
-                        ),
+                        style: TextStyle(fontSize: 12, color: fgSec),
                       ),
                     const SizedBox(height: 2),
                     Text(
@@ -200,19 +218,21 @@ class EventCard extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: fg,
-                        fontFeatures: const [
-                          FontFeature.tabularFigures(),
-                        ],
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   const SizedBox(height: 4),
                   Text(
-                    isSoldOut ? l.eventSoldOut : l.eventSeatsLeft(data.seatsLeft),
+                    isSoldOut
+                        ? l.eventSoldOut
+                        : l.eventSeatsLeft(data.seatsLeft),
                     key: const Key('event-seats'),
                     style: TextStyle(
                       fontSize: 11,
                       color: isSoldOut ? theme.colorScheme.error : fgSec,
-                      fontWeight: isSoldOut ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSoldOut
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ],
@@ -252,14 +272,13 @@ class EventCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               if (data.coverUrl != null && data.coverUrl!.isNotEmpty)
-                NetworkPhoto(
-                  url: data.coverUrl!,
-                  fit: BoxFit.cover,
-                )
+                NetworkPhoto(url: data.coverUrl!, fit: BoxFit.cover)
               else
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
+                    color: dark
+                        ? AppColorsDark.surfaceMuted
+                        : AppColors.surfaceMuted,
                   ),
                 ),
               DecoratedBox(
@@ -284,7 +303,10 @@ class EventCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     child: Text(
                       pillParts.join(' · '),
                       style: const TextStyle(
@@ -319,7 +341,9 @@ class EventCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}',
+                          data.hasDate
+                              ? '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}'
+                              : '—',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white.withValues(alpha: 0.8),
@@ -380,10 +404,7 @@ class EventCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 4 / 3,
                 child: data.coverUrl != null && data.coverUrl!.isNotEmpty
-                    ? NetworkPhoto(
-                        url: data.coverUrl!,
-                        fit: BoxFit.cover,
-                      )
+                    ? NetworkPhoto(url: data.coverUrl!, fit: BoxFit.cover)
                     : DecoratedBox(
                         decoration: BoxDecoration(
                           color: dark
@@ -413,16 +434,18 @@ class EventCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: fgSec,
-                          ),
+                          data.hasDate
+                              ? '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}'
+                              : '—',
+                          style: TextStyle(fontSize: 11, color: fgSec),
                         ),
                         const Spacer(),
                         Flexible(
                           child: data.priceVnd == 0
-                              ? const FittedBox(fit: BoxFit.scaleDown, child: FreeTag())
+                              ? const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: FreeTag(),
+                                )
                               : Text(
                                   formatMoney(data.priceVnd),
                                   style: TextStyle(
@@ -566,8 +589,16 @@ class _EventCardCompactSkeleton extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      AppSkeleton.box(width: 36, height: 11, radius: AppRadius.sm),
-                      AppSkeleton.box(width: 48, height: 12, radius: AppRadius.sm),
+                      AppSkeleton.box(
+                        width: 36,
+                        height: 11,
+                        radius: AppRadius.sm,
+                      ),
+                      AppSkeleton.box(
+                        width: 48,
+                        height: 12,
+                        radius: AppRadius.sm,
+                      ),
                     ],
                   ),
                 ],

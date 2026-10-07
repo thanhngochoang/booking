@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where, or } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
@@ -1623,6 +1623,14 @@ test('events: the creator lists their drafts', async () => {
   await evSeed('events/e3', evDoc({ status: 'draft', createdBy: 'creator1', hostId: null,
     host: { type: 'platform', id: null, name: null, avatarUrl: null, verified: true } }));
   await assertSucceeds(getDocs(query(collection(evDb('creator1'), 'events'), where('createdBy', '==', 'creator1'))));
+});
+test('events: "my events" is createdBy == me OR hostId == me (S06.01, /events/mine)', async () => {
+  await evSeed('events/e4', evDoc({ status: 'draft', createdBy: 'staff1', hostId: 'host1', hostConsent: 'accepted',
+    host: { type: 'photographer', id: 'host1', name: 'H', avatarUrl: null, verified: true } }));
+  const mine = (uid) => query(collection(evDb(uid), 'events'),
+    or(where('createdBy', '==', uid), where('hostId', '==', uid)));
+  await assertSucceeds(getDocs(mine('host1')));
+  await assertSucceeds(getDocs(mine('staff1')));
 });
 test('events: a public list must filter status', async () => {
   await assertSucceeds(getDocs(query(collection(evDb('v1'), 'events'), where('status', 'in', EV_PUBLIC))));

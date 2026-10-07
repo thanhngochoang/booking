@@ -74,8 +74,9 @@ abstract class EventRepository {
   /// Null when the event does not exist or the viewer may not read it.
   Stream<EventDetail?> watchEvent(String eventId);
 
-  /// Events I created, drafts included, latest start first (drafts without a
-  /// date first).
+  /// Events I created or host (a staff-made event naming me, O1), drafts
+  /// included, latest start first (drafts without a date first). A draft
+  /// still waiting for my answer as host is an invitation, not listed here.
   Stream<List<EventSummary>> watchMine();
 
   /// Drafts staff created naming me as host that wait for my answer (owner
@@ -264,12 +265,22 @@ class FakeEventRepository implements EventRepository {
   Stream<List<EventSummary>> watchMine() => _watch(() {
     final mine =
         _events.values
-            .where((e) => e.createdBy == uid)
+            .where(
+              (e) =>
+                  e.createdBy == uid ||
+                  (e.summary.hostId == uid && !_awaitsMyAnswer(e)),
+            )
             .map((e) => e.summary)
             .toList()
           ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
     return mine;
   });
+
+  /// A staff-made draft naming me that I have not answered (or declined).
+  bool _awaitsMyAnswer(EventDetail e) =>
+      e.createdBy != uid &&
+      e.summary.status == EventStatus.draft &&
+      e.hostConsent != HostConsent.accepted;
 
   @override
   Stream<List<EventDetail>> watchHostInvitations() => _watch(() {
@@ -587,6 +598,24 @@ class FakeEventRepository implements EventRepository {
     String ticketCode,
   ) async {
     _maybeFail();
+    final ev = _events[eventId];
+    if (ev != null) {
+      if (ev.summary.status == EventStatus.cancelled) {
+        throw const EventError('not_eligible');
+      }
+      // Server window: 00:00 VN on the event day → endAt + 2 h.
+      final now = _clock();
+      final v = ev.summary.startsAt.toUtc().add(const Duration(hours: 7));
+      final opens = DateTime.utc(
+        v.year,
+        v.month,
+        v.day,
+      ).subtract(const Duration(hours: 7));
+      final closes = ev.endsAt.add(const Duration(hours: 2));
+      if (now.isBefore(opens) || now.isAfter(closes)) {
+        throw const EventError('not_eligible');
+      }
+    }
     final i = _registrations.indexWhere(
       (r) =>
           r.eventId == eventId &&

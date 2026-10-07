@@ -124,10 +124,24 @@ void main() {
     },
   );
 
-  test('check-in accepts a paid ticket once', () async {
+  test('check-in accepts a paid ticket once, on the event day', () async {
+    // 13/10 00:00 VN: the window opens (domain checkInRegistration).
+    final opens = eventNow.add(const Duration(days: 3, hours: -10));
+    var now = eventNow; // registration closes 12 h before the start
+    repo = FakeEventRepository(
+      uid: 'u1',
+      clock: () => now,
+      events: [detailOf('ev1', priceVnd: 0, capacity: 3, registered: 0)],
+    );
     final out = await repo.register('ev1', quantity: 2, name: 'Lan');
     final code = repo.registrations.single.ticketCode;
     expect(out.status, RegistrationStatus.paid);
+    now = opens.subtract(const Duration(minutes: 1));
+    await expectLater(
+      repo.checkIn('ev1', code),
+      throwsA(isA<EventError>().having((e) => e.code, 'code', 'not_eligible')),
+    );
+    now = opens;
     final r = await repo.checkIn('ev1', code);
     expect((r.name, r.quantity), ('Lan', 2));
     await expectLater(

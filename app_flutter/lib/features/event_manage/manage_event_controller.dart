@@ -23,17 +23,38 @@ final registrationContactProvider = StreamProvider.autoDispose
           .watchRegistrationContact(key.eventId, key.registrationId),
     );
 
-/// "Quét mã check‑in" is on from when the event is published until
-/// `endAt + 2 h`, and never for a cancelled or unpublished event.
+/// When the server starts taking check-ins: 00:00 in Việt Nam on the event
+/// day (domain `checkInRegistration`: `parseVnDateTime(dayKey, '00:00')`).
+DateTime checkinOpensAt(EventDetail e) =>
+    calendarDay(toVn(e.summary.startsAt)).subtract(const Duration(hours: 7));
+
+/// When the server stops taking check-ins: `endAt + CHECKIN_GRACE_HOURS`.
+DateTime checkinClosesAt(EventDetail e) => e.endsAt.add(checkinGrace);
+
+/// Where [now] sits against the check-in window of [e].
+enum CheckinWindow { notYet, open, closed }
+
+CheckinWindow checkinWindowOf(EventDetail e, DateTime now) {
+  if (now.isBefore(checkinOpensAt(e))) {
+    return CheckinWindow.notYet;
+  }
+  if (now.isAfter(checkinClosesAt(e))) {
+    return CheckinWindow.closed;
+  }
+  return CheckinWindow.open;
+}
+
+/// "Quét mã check‑in" is on only while the server takes check-ins (event day
+/// 00:00 VN → `endAt + 2 h`), and never for a cancelled or unpublished event.
 bool manageCanScan(EventDetail e, DateTime now) {
-  final open = switch (e.summary.status) {
+  final published = switch (e.summary.status) {
     EventStatus.open ||
     EventStatus.full ||
     EventStatus.closed ||
     EventStatus.completed => true,
     _ => false,
   };
-  return open && now.isBefore(e.endsAt.add(checkinGrace));
+  return published && checkinWindowOf(e, now) == CheckinWindow.open;
 }
 
 /// The numbers S12.03 shows, from the event and its registrations.
@@ -99,9 +120,21 @@ class ManageStats {
 }
 
 /// Maps what the server said to what the host reads after a scan.
-CheckinOutcome checkinOutcomeOf(Object error) => switch (eventErrorCodeOf(
-  error,
-)) {
+/// `not_eligible` is the time window (or a cancelled event): before the event
+/// day it reads "not yet", after `endAt + 2 h` "closed", never "invalid".
+CheckinOutcome checkinOutcomeOf(
+  Object error, {
+  EventDetail? event,
+  DateTime? now,
+}) => switch (eventErrorCodeOf(error)) {
+  'not_eligible' when event != null && now != null => switch (checkinWindowOf(
+    event,
+    now,
+  )) {
+    CheckinWindow.notYet => CheckinOutcome.notYet,
+    CheckinWindow.closed => CheckinOutcome.closed,
+    CheckinWindow.open => CheckinOutcome.invalid,
+  },
   'not_found' || 'not_eligible' || 'invalid_argument' => CheckinOutcome.invalid,
   'conflict' => CheckinOutcome.used,
   _ => CheckinOutcome.failed,
@@ -129,7 +162,13 @@ class ManageEventController extends Notifier<ManageEventState> {
 
   EventRepository get _repo => ref.read(eventRepositoryProvider);
 
-  Future<CheckinResult> checkIn(String code) async {
+  /// [event] and [now] let a `not_eligible` answer say "not yet" or
+  /// "closed" instead of "invalid".
+  Future<CheckinResult> checkIn(
+    String code, {
+    EventDetail? event,
+    DateTime? now,
+  }) async {
     try {
       final r = await _repo.checkIn(eventId, code);
       return CheckinResult(
@@ -138,7 +177,7 @@ class ManageEventController extends Notifier<ManageEventState> {
         quantity: r.quantity,
       );
     } catch (e) {
-      return CheckinResult(checkinOutcomeOf(e));
+      return CheckinResult(checkinOutcomeOf(e, event: event, now: now));
     }
   }
 

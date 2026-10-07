@@ -253,40 +253,70 @@ void main() {
   });
 
   group('own data', () {
+    test('watchMine asks createdBy == me or hostId == me, drafts first, latest first', () async {
+      await seed(
+        'x1',
+        eventDoc(
+          createdBy: 'u1',
+          hostId: 'u1',
+          startAt: eventNow.add(const Duration(days: 1)),
+        ),
+      );
+      await seed(
+        'x2',
+        eventDoc(
+          createdBy: 'u1',
+          hostId: 'u1',
+          startAt: eventNow.add(const Duration(days: 5)),
+        ),
+      );
+      await seed(
+        'dr',
+        eventDoc(
+          createdBy: 'u1',
+          hostId: 'u1',
+          status: 'draft',
+          schedule: false,
+        ),
+      );
+      await seed('other', eventDoc(createdBy: 'u2'));
+      final mine = await repo.watchMine().first;
+      expect(mine.map((e) => e.id), ['dr', 'x2', 'x1']);
+      expect(mine.first.hasSchedule, isFalse);
+      expect(mine.first.status, EventStatus.draft);
+      expect(await repoFor(null).watchMine().first, isEmpty);
+    });
+
     test(
-      'watchMine asks createdBy == me, drafts included, latest first',
+      'watchMine also lists staff-made events I host, not invitations',
       () async {
         await seed(
-          'x1',
-          eventDoc(
-            createdBy: 'u1',
-            hostId: 'u1',
-            startAt: eventNow.add(const Duration(days: 1)),
-          ),
+          'hosted',
+          eventDoc(createdBy: 'staff1', createdByRole: 'sales', hostId: 'u1'),
         );
         await seed(
-          'x2',
+          'accepted-draft',
           eventDoc(
-            createdBy: 'u1',
-            hostId: 'u1',
-            startAt: eventNow.add(const Duration(days: 5)),
-          ),
-        );
-        await seed(
-          'dr',
-          eventDoc(
-            createdBy: 'u1',
+            createdBy: 'staff1',
+            createdByRole: 'sales',
             hostId: 'u1',
             status: 'draft',
-            schedule: false,
+            hostConsent: 'accepted',
           ),
         );
-        await seed('other', eventDoc(createdBy: 'u2'));
-        final mine = await repo.watchMine().first;
-        expect(mine.map((e) => e.id), ['dr', 'x2', 'x1']);
-        expect(mine.first.hasSchedule, isFalse);
-        expect(mine.first.status, EventStatus.draft);
-        expect(await repoFor(null).watchMine().first, isEmpty);
+        await seed(
+          'invite',
+          eventDoc(
+            createdBy: 'staff1',
+            createdByRole: 'sales',
+            hostId: 'u1',
+            status: 'draft',
+            hostConsent: 'pending',
+          ),
+        );
+        await seed('theirs', eventDoc(createdBy: 'staff1', hostId: 'p9'));
+        final ids = (await repo.watchMine().first).map((e) => e.id).toSet();
+        expect(ids, {'hosted', 'accepted-draft'});
       },
     );
 

@@ -160,24 +160,30 @@ class CreateEventScreen extends ConsumerWidget {
       );
     }
     final event = ref.watch(eventProvider(id));
+    final loaded = event.value;
+    if (loaded != null) {
+      // The form brings its own bar ("1 / 2", "Lưu nháp?" on back); the gate
+      // is only for loading, missing and failed reads.
+      if (loaded.summary.status != EventStatus.draft) {
+        return EventRouteRedirect('/events/${loaded.id}/manage');
+      }
+      return _CreateEventForm(
+        key: ValueKey('draft-$id'),
+        args: CreateEventArgs(
+          resumeId: id,
+          seed: EventDraft.fromDetail(loaded),
+        ),
+        platform: loaded.summary.isPlatformHosted,
+        hostName: loaded.summary.hostName,
+      );
+    }
     return gate(
       AsyncView<EventDetail?>(
         value: event,
         onRetry: () => ref.invalidate(eventProvider(id)),
         isEmpty: (e) => e == null,
         empty: (_) => EmptyState(title: l.manageGone, body: ''),
-        data: (context, e) {
-          if (e!.summary.status != EventStatus.draft) {
-            return EventRouteRedirect('/events/${e.id}/manage');
-          }
-          return _CreateEventForm(
-            key: ValueKey('draft-$id'),
-            args: CreateEventArgs(resumeId: id, seed: EventDraft.fromDetail(e)),
-            platform: e.summary.isPlatformHosted,
-            hostName: e.summary.hostName,
-            embedded: true,
-          );
-        },
+        data: (_, _) => const SizedBox.shrink(),
       ),
     );
   }
@@ -213,7 +219,6 @@ class _CreateEventForm extends ConsumerStatefulWidget {
     required this.args,
     required this.platform,
     required this.hostName,
-    this.embedded = false,
   });
 
   final CreateEventArgs args;
@@ -221,9 +226,6 @@ class _CreateEventForm extends ConsumerStatefulWidget {
   /// Staff create platform-hosted events (Decision 1).
   final bool platform;
   final String hostName;
-
-  /// Already inside the gate's scaffold (a resumed draft).
-  final bool embedded;
 
   @override
   ConsumerState<_CreateEventForm> createState() => _CreateEventFormState();

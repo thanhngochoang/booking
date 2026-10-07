@@ -4,15 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/events/event_card_data_of.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/features/event_manage/manage_event_screen.dart';
 
-/// Where a row of "Sự kiện của tôi" leads: a draft resumes in S12.01, the
-/// rest open S12.03.
-String myEventPath(EventSummary e) => e.status == EventStatus.draft
+/// Where a row of "Sự kiện của tôi" leads: my own draft resumes in S12.01;
+/// the rest open S12.03 (a staff-made draft I host waits there for staff to
+/// publish it, O1).
+String myEventPath(EventSummary e, String? me) =>
+    e.status == EventStatus.draft && e.createdBy == me
     ? '/events/new?draft=${e.id}'
     : '/events/${e.id}/manage';
 
@@ -44,14 +47,15 @@ List<EventSummary> orderMyEvents(List<EventSummary> events, DateTime now) {
 }
 
 /// One event of mine as a card, tagged when it is a draft or cancelled.
-class MyEventTile extends StatelessWidget {
+class MyEventTile extends ConsumerWidget {
   const MyEventTile({super.key, required this.event});
 
   final EventSummary event;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final me = ref.watch(authStateProvider).value?.uid;
     final tag = switch (event.status) {
       EventStatus.draft => l.myEventsDraft,
       EventStatus.cancelled => l.eventStatusCancelled,
@@ -71,7 +75,7 @@ class MyEventTile extends StatelessWidget {
         EventCard(
           key: Key('my-event-${event.id}'),
           data: eventCardDataOf(event, l),
-          onTap: () => context.push(myEventPath(event)),
+          onTap: () => context.push(myEventPath(event, me)),
         ),
       ],
     );

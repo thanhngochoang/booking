@@ -12,6 +12,7 @@ EventCardData eventCardDataOf(EventSummary e, AppLocalizations l) {
     typeTag: e.type.tag,
     typeLabel: e.type.label(l),
     startsAt: e.startsAt,
+    hasDate: e.hasSchedule,
     placeName: e.locationName,
     priceVnd: e.priceVnd,
     seatsLeft: e.seatsLeft,

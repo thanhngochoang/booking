@@ -190,6 +190,10 @@ EventSummary summaryOf(
   EventStatus status = EventStatus.open,
   EventType type = EventType.photoWalk,
   Duration startsIn = const Duration(days: 3),
+
+  /// False: a draft saved before its day was chosen (`startAt` null; the
+  /// mapping falls back to `createdAt`).
+  bool schedule = true,
 }) => EventSummary(
   id: id,
   title: title,
@@ -199,7 +203,10 @@ EventSummary summaryOf(
   hostId: hostType == HostType.platform ? null : hostId,
   createdBy: createdBy,
   type: type,
-  startsAt: eventNow.add(startsIn),
+  startsAt: schedule
+      ? eventNow.add(startsIn)
+      : eventNow.subtract(const Duration(days: 1)),
+  hasSchedule: schedule,
   endsAt: eventNow.add(startsIn + const Duration(hours: 2)),
   locationName: 'Công viên Bạch Đằng',
   geohash: encodeGeohash(10.78, 106.70),
@@ -227,6 +234,7 @@ EventDetail detailOf(
   DateTime? hostConsentExpiresAt,
   List<EventFaq> faq = const [],
   Duration startsIn = const Duration(days: 3),
+  bool schedule = true,
 }) {
   final s = summaryOf(
     id,
@@ -238,6 +246,7 @@ EventDetail detailOf(
     registered: registered,
     status: status,
     startsIn: startsIn,
+    schedule: schedule,
   );
   return EventDetail(
     summary: s,

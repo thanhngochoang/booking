@@ -2039,5 +2039,13 @@
   "createPostTabPost": "Bài đăng",
   "createPostTabEvent": "Sự kiện",
   "createEventLocationFailed": "Không lấy được vị trí. Hãy chọn khu vực nhé.",
-  "createEventDeadlineReset": "Dùng hạn tự động"
+  "createEventDeadlineReset": "Dùng hạn tự động",
+  "checkinNotYet": "Chưa tới ngày diễn ra. Check‑in mở từ 00:00 hôm đó.",
+  "@checkinNotYet": {
+    "description": "S12.03: a scan, or the disabled scan button, before 00:00 VN on the event day (the server takes check-ins from then)."
+  },
+  "eventDateUnset": "Chưa chọn ngày",
+  "@eventDateUnset": {
+    "description": "EventCard/DateBlock: spoken in place of the date of a draft whose day is not chosen yet."
+  }
 }

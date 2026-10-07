@@ -7,7 +7,7 @@ import 'package:photobooking/core/core.dart';
 String normalizeTicketCode(String raw) => raw.trim().toUpperCase();
 
 /// What checking a ticket in came to.
-enum CheckinOutcome { ok, invalid, used, failed }
+enum CheckinOutcome { ok, invalid, used, notYet, closed, failed }
 
 class CheckinResult {
   const CheckinResult(this.outcome, {this.name = '', this.quantity = 0});
@@ -102,6 +102,8 @@ class _CheckinResultBody extends StatelessWidget {
       CheckinOutcome.ok => l.checkinOk(result.name, result.quantity),
       CheckinOutcome.invalid => l.checkinInvalid,
       CheckinOutcome.used => l.checkinUsed,
+      CheckinOutcome.notYet => l.checkinNotYet,
+      CheckinOutcome.closed => l.manageScanClosed,
       CheckinOutcome.failed => l.checkinFailed,
     };
     final color = ok ? AppColors.success : theme.colorScheme.error;

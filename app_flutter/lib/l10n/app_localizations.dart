@@ -7899,6 +7899,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Dùng hạn tự động'**
   String get createEventDeadlineReset;
+
+  /// S12.03: a scan, or the disabled scan button, before 00:00 VN on the event day (the server takes check-ins from then).
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tới ngày diễn ra. Check‑in mở từ 00:00 hôm đó.'**
+  String get checkinNotYet;
+
+  /// EventCard/DateBlock: spoken in place of the date of a draft whose day is not chosen yet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa chọn ngày'**
+  String get eventDateUnset;
 }
 
 class _AppLocalizationsDelegate
