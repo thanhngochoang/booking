@@ -345,7 +345,7 @@ void main() {
       action: 'decline',
       reason: 'Kín lịch hôm đó',
     ));
-    expect(find.text('Đã từ chối. Khách hàng được hoàn cọc.'), findsOneWidget);
+    expect(find.text('Đã từ chối. Khách hàng được hoàn 100%.'), findsOneWidget);
 
     await pumpBookingDetail(
       tester,

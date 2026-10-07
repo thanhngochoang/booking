@@ -639,7 +639,7 @@ void main() {
 
       expect(find.text('Yêu cầu đã hết hạn'), findsOneWidget);
       expect(
-        find.textContaining('Chưa nhận được tiền cọc trong 30 phút'),
+        find.textContaining('Chưa nhận được thanh toán nên yêu cầu đã huỷ'),
         findsOneWidget,
       );
 

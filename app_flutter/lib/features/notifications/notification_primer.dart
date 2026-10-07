@@ -13,7 +13,7 @@ sealed class PrimerContext {
   const PrimerContext();
 }
 
-/// A customer just paid the deposit: "Bật thông báo để biết khi {name} nhận lịch".
+/// A customer just paid: "Bật thông báo để biết khi {name} nhận lịch".
 class CustomerBookingPrimer extends PrimerContext {
   const CustomerBookingPrimer(this.photographerName);
 

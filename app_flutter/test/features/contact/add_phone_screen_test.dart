@@ -168,7 +168,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
-      find.text('Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'),
+      find.text('Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

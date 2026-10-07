@@ -448,7 +448,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.',
+          'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.',
         ),
         findsOneWidget,
       );

@@ -70,7 +70,7 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
 
   final String bookingId;
 
-  /// Opened right after the deposit (`?paid=1`): shows the paid toast.
+  /// Opened right after the payment (`?paid=1`): shows the paid toast.
   final bool justPaid;
   final DetailSheet? openSheet;
 
@@ -339,7 +339,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     if (paidToast && !_primerAsked && name.isNotEmpty) {
       _primerAsked = true;
-      // After the toast is on screen: the deposit is the meaningful action.
+      // After the toast is on screen: the payment is the meaningful action.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           unawaited(
@@ -357,7 +357,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (paidToast) ...[
-            _PaidToast(l10n.detailPaidToast(formatMoney(b.deposit), name)),
+            _PaidToast(l10n.detailPaidToast(formatMoney(b.deposit))),
             const SizedBox(height: AppSpace.s3),
           ] else if (b.escrowStatus == EscrowStatus.held) ...[
             EscrowNotice(
@@ -574,7 +574,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 }
 
-/// Inline result line after the deposit (mock `.toast`).
+/// Inline result line after the payment (mock `.toast`).
 class _PaidToast extends StatelessWidget {
   const _PaidToast(this.text);
 

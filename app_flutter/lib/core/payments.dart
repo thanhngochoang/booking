@@ -1,6 +1,6 @@
 // lib/core/payments.dart
 
-/// Supported payment providers for deposits and booking payments.
+/// Supported payment providers for booking and ticket payments.
 enum PaymentProviderCode {
   momo('momo'),
   vnpay('vnpay');

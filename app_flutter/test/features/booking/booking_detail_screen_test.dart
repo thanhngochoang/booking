@@ -111,7 +111,7 @@ void main() {
     expect(find.text('Buổi chụp #B1'), findsOneWidget);
     expect(
       find.text(
-        'Cọc 450.000₫ đang được giữ an toàn. Minh Trí sẽ trả lời trong 24 giờ.',
+        'Đã thanh toán 450.000₫, tiền được giữ an toàn.',
       ),
       findsOneWidget,
     );
@@ -130,7 +130,7 @@ void main() {
 
     expect(find.byType(ContactDial), findsOneWidget);
     expect(find.text('Liên hệ'), findsOneWidget);
-    expect(find.text('Huỷ yêu cầu · hoàn cọc 100%'), findsOneWidget);
+    expect(find.text('Huỷ yêu cầu · hoàn 100%'), findsOneWidget);
   });
 
   testWidgets('without ?paid=1 the held deposit shows as an EscrowNotice', (
@@ -143,10 +143,10 @@ void main() {
     );
     await _settle(tester);
 
-    expect(find.textContaining('Minh Trí sẽ trả lời'), findsNothing);
+    expect(find.textContaining('tiền được giữ an toàn.'), findsNothing);
     expect(
       tester.widget<EscrowNotice>(find.byType(EscrowNotice)).text,
-      'Cọc 450.000₫ đang được giữ an toàn',
+      'Đã thanh toán 450.000₫, tiền được giữ an toàn',
     );
   });
 
@@ -163,14 +163,14 @@ void main() {
       bookings: _repo(_booking(status: BookingStatus.accepted)),
     );
     await _settle(tester);
-    expect(find.text('Huỷ yêu cầu · hoàn cọc 100%'), findsOneWidget);
+    expect(find.text('Huỷ yêu cầu · hoàn 100%'), findsOneWidget);
 
     clock.advance(const Duration(minutes: 1));
     await tester.pump(const Duration(minutes: 1));
     await _settle(tester);
 
-    expect(find.text('Huỷ yêu cầu · hoàn cọc 50%'), findsOneWidget);
-    expect(find.text('Huỷ yêu cầu · hoàn cọc 100%'), findsNothing);
+    expect(find.text('Huỷ yêu cầu · hoàn 50%'), findsOneWidget);
+    expect(find.text('Huỷ yêu cầu · hoàn 100%'), findsNothing);
   });
 
   testWidgets('customer Liên hệ asks the server for the link '
@@ -560,7 +560,7 @@ void main() {
     );
     await _settle(tester);
 
-    final cancel = find.text('Huỷ yêu cầu · hoàn cọc 100%');
+    final cancel = find.text('Huỷ yêu cầu · hoàn 100%');
     await tester.ensureVisible(cancel);
     await tester.tap(cancel);
     await _settle(tester);

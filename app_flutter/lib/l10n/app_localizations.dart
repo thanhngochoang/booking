@@ -901,13 +901,13 @@ abstract class AppLocalizations {
   /// No description provided for @phonePrivacy.
   ///
   /// In vi, this message translates to:
-  /// **'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
+  /// **'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.'**
   String get phonePrivacy;
 
   /// No description provided for @editProfilePhoneHint.
   ///
   /// In vi, this message translates to:
-  /// **'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.'**
+  /// **'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.'**
   String get editProfilePhoneHint;
 
   /// No description provided for @addPhoneSave.
@@ -3583,7 +3583,7 @@ abstract class AppLocalizations {
   /// No description provided for @escrowNoticeHeld.
   ///
   /// In vi, this message translates to:
-  /// **'Cọc {amount} đang được giữ an toàn'**
+  /// **'Đã thanh toán {amount}, tiền được giữ an toàn'**
   String escrowNoticeHeld(String amount);
 
   /// No description provided for @paySuccessTitle.
@@ -3619,7 +3619,7 @@ abstract class AppLocalizations {
   /// No description provided for @payExpiredBody.
   ///
   /// In vi, this message translates to:
-  /// **'Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
+  /// **'Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
   String get payExpiredBody;
 
   /// No description provided for @payRetry.
@@ -3694,12 +3694,6 @@ abstract class AppLocalizations {
   /// **'Không gửi được. Kiểm tra mạng rồi thử lại.'**
   String get bookNetworkError;
 
-  /// No description provided for @fakePayTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Cổng thanh toán giả (chỉ để thử)'**
-  String get fakePayTitle;
-
   /// No description provided for @fakePayBody.
   ///
   /// In vi, this message translates to:
@@ -3727,7 +3721,7 @@ abstract class AppLocalizations {
   /// No description provided for @timelineSent.
   ///
   /// In vi, this message translates to:
-  /// **'Đã gửi & đặt cọc'**
+  /// **'Đã gửi & thanh toán'**
   String get timelineSent;
 
   /// No description provided for @timelineSentDetail.
@@ -3811,7 +3805,7 @@ abstract class AppLocalizations {
   /// No description provided for @timelineExpired.
   ///
   /// In vi, this message translates to:
-  /// **'Hết hạn, đã hoàn cọc'**
+  /// **'Hết hạn, đã hoàn tiền'**
   String get timelineExpired;
 
   /// No description provided for @timelineCancelled.
@@ -3847,13 +3841,13 @@ abstract class AppLocalizations {
   /// No description provided for @detailPaidToast.
   ///
   /// In vi, this message translates to:
-  /// **'Cọc {amount} đang được giữ an toàn. {name} sẽ trả lời trong 24 giờ.'**
-  String detailPaidToast(String amount, String name);
+  /// **'Đã thanh toán {amount}, tiền được giữ an toàn.'**
+  String detailPaidToast(String amount);
 
   /// No description provided for @escrowNoticeHeldPhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'Cọc {amount} đang được giữ, chuyển cho bạn sau khi hoàn thành'**
+  /// **'{amount} đang được giữ, chuyển cho bạn theo 2 mốc'**
   String escrowNoticeHeldPhotographer(String amount);
 
   /// No description provided for @detailMessage.
@@ -3883,7 +3877,7 @@ abstract class AppLocalizations {
   /// No description provided for @detailCancelCustomer.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ yêu cầu · hoàn cọc {pct}%'**
+  /// **'Huỷ yêu cầu · hoàn {pct}%'**
   String detailCancelCustomer(int pct);
 
   /// No description provided for @detailCancelPhotographer.
@@ -4087,7 +4081,7 @@ abstract class AppLocalizations {
   /// No description provided for @cancelRefundPhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'{name} được hoàn cọc 100%'**
+  /// **'{name} được hoàn 100%'**
   String cancelRefundPhotographer(String name);
 
   /// No description provided for @cancelReasonSick.
@@ -4117,7 +4111,7 @@ abstract class AppLocalizations {
   /// No description provided for @cancelDonePhotographer.
   ///
   /// In vi, this message translates to:
-  /// **'Đã huỷ. {name} được hoàn cọc 100%'**
+  /// **'Đã huỷ. {name} được hoàn 100%'**
   String cancelDonePhotographer(String name);
 
   /// No description provided for @bookingsTitle.
@@ -4195,7 +4189,7 @@ abstract class AppLocalizations {
   /// No description provided for @bookingsEmptyPendingBody.
   ///
   /// In vi, this message translates to:
-  /// **'Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.'**
+  /// **'Yêu cầu đã thanh toán, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.'**
   String get bookingsEmptyPendingBody;
 
   /// No description provided for @bookingsEmptyDone.
@@ -4303,7 +4297,7 @@ abstract class AppLocalizations {
   /// No description provided for @workDepositPaid.
   ///
   /// In vi, this message translates to:
-  /// **'đã cọc {amount}'**
+  /// **'đã trả {amount}'**
   String workDepositPaid(String amount);
 
   /// No description provided for @workRequestNote.
@@ -4315,7 +4309,7 @@ abstract class AppLocalizations {
   /// No description provided for @workRequestExpired.
   ///
   /// In vi, this message translates to:
-  /// **'Yêu cầu {name} đã hết hạn, đã hoàn cọc'**
+  /// **'Yêu cầu {name} đã hết hạn, đã hoàn tiền'**
   String workRequestExpired(String name);
 
   /// No description provided for @workEmptyTitle.
@@ -4399,13 +4393,13 @@ abstract class AppLocalizations {
   /// No description provided for @declineRefundNote.
   ///
   /// In vi, this message translates to:
-  /// **'{name} được hoàn cọc {amount} và nhận lý do này.'**
+  /// **'{name} được hoàn 100% ({amount}) và nhận lý do này.'**
   String declineRefundNote(String name, String amount);
 
   /// No description provided for @declineDoneToast.
   ///
   /// In vi, this message translates to:
-  /// **'Đã từ chối. {name} được hoàn cọc.'**
+  /// **'Đã từ chối. {name} được hoàn 100%.'**
   String declineDoneToast(String name);
 
   /// No description provided for @chatInput.
@@ -4489,7 +4483,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatSysRequested.
   ///
   /// In vi, this message translates to:
-  /// **'Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.'**
+  /// **'Đã thanh toán. Chờ nhiếp ảnh gia nhận trong 24 giờ.'**
   String get chatSysRequested;
 
   /// No description provided for @chatSysAccepted.
@@ -6643,7 +6637,7 @@ abstract class AppLocalizations {
   /// No description provided for @earningsEmptyBody.
   ///
   /// In vi, this message translates to:
-  /// **'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.'**
+  /// **'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán.'**
   String get earningsEmptyBody;
 
   /// No description provided for @earningsMore.

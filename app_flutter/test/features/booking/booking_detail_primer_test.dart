@@ -71,7 +71,7 @@ void main() {
     await _open(tester, uid: detailCustomerUid, path: '/b/b1?paid=1');
     expect(
       find.text(
-        'Cọc 450.000₫ đang được giữ an toàn. Minh Trí sẽ trả lời trong 24 giờ.',
+        'Đã thanh toán 450.000₫, tiền được giữ an toàn.',
       ),
       findsOneWidget,
     );

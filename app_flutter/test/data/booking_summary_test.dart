@@ -31,7 +31,7 @@ void main() {
       booking,
       photographerName: 'Minh Trí',
       thumbUrl: 'https://example.com/thumb.jpg',
-      statusLabel: 'Chờ cọc',
+      statusLabel: 'Chờ thanh toán',
     );
 
     expect(summary.photographerName, 'Minh Trí');
@@ -42,6 +42,6 @@ void main() {
     expect(summary.end, '17:30');
     expect(summary.placeName, 'Bến Bạch Đằng');
     expect(summary.status, BookingStatus.requested);
-    expect(summary.statusLabel, 'Chờ cọc');
+    expect(summary.statusLabel, 'Chờ thanh toán');
   });
 }

@@ -155,7 +155,7 @@ void main() {
       expect(find.byType(PaymentPendingScreen), findsNothing);
       expect(find.byType(BookingDetailScreen), findsOneWidget);
       expect(
-        find.textContaining('Minh Trí sẽ trả lời trong 24 giờ'),
+        find.textContaining('tiền được giữ an toàn.'),
         findsOneWidget,
       );
 
