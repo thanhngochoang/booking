@@ -136,6 +136,8 @@
   --color-focus-ring: #8338F5;
   --color-overlay: #6A000000;
   --color-overlay-light: #88FFFFFF;
+  --color-scrim: #B8000000;
+  --color-on-scrim: #E6FFFFFF;
   --color-rating: #E6C617;
   --color-booking-waiting: #8338F5;
   --color-booking-accepted: #1A9F02;

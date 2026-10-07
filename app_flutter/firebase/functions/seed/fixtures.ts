@@ -873,7 +873,7 @@ function eventDocuments(now: Date): SeedDocument[] {
   const share = (id: string, authorId: string, name: string) => ({
     path: `posts/${id}`,
     data: {
-      kind: 'event_share', authorId, photographerId: AN, serviceId: '', eventId: free.id,
+      kind: 'event_share', authorId, photographerId: '', serviceId: '', eventId: free.id,
       imageUrls: [`https://seed.test/${id}/1.jpg`, `https://seed.test/${id}/2.jpg`],
       imageMeta: [{ blurHash: null, w: 800, h: 1000 }, { blurHash: null, w: 800, h: 1000 }],
       caption: `Ảnh của ${name} #${free.hashtag}`, hashtags: [free.hashtagKey], inPortfolio: false,

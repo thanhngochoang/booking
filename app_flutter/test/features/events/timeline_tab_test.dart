@@ -174,7 +174,30 @@ void main() {
       expect(_byKey('timeline-post'), findsOneWidget);
     });
 
-    testWidgets('pages of 20 with "Xem thêm"', (tester) async {
+    testWidgets('pages of 20; the next page loads near the end of the scroll', (
+      tester,
+    ) async {
+      final items = [
+        for (var i = 0; i < 25; i++)
+          timelineItemOf('q$i', 'Tác giả $i', minutesAgo: i),
+      ];
+      final w = _world(items: items);
+      await w.pump(tester, path: '/e/ev1/timeline', size: const Size(390, 844));
+      expect(w.timeline.pages.map((p) => p.cursor), [null]);
+      expect(_byKey('timeline-more'), findsNothing); // the mock has no button
+      await tester.drag(find.byType(ListView).first, const Offset(0, -6000));
+      await settle(tester);
+      expect(w.timeline.pages.map((p) => p.cursor), [null, 'q19']);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -6000));
+      await settle(tester);
+      expect(_byKey('timeline-item-q24'), findsOneWidget);
+      // The last page has no cursor: nothing more is asked.
+      expect(w.timeline.pages, hasLength(2));
+    });
+
+    testWidgets('a first page that does not fill the screen loads the next', (
+      tester,
+    ) async {
       final items = [
         for (var i = 0; i < 25; i++)
           timelineItemOf('q$i', 'Tác giả $i', minutesAgo: i),
@@ -183,17 +206,11 @@ void main() {
       await w.pump(
         tester,
         path: '/e/ev1/timeline',
-        size: const Size(390, 6000),
+        size: const Size(390, 9000),
       );
-      expect(find.byType(GestureDetector).evaluate().length, greaterThan(20));
-      expect(_byKey('timeline-item-q19'), findsOneWidget);
-      expect(_byKey('timeline-item-q20'), findsNothing);
-      await tester.ensureVisible(_byKey('timeline-more'));
-      await tester.tap(_byKey('timeline-more'));
       await settle(tester);
-      expect(_byKey('timeline-item-q24'), findsOneWidget);
-      expect(_byKey('timeline-more'), findsNothing);
       expect(w.timeline.pages.map((p) => p.cursor), [null, 'q19']);
+      expect(_byKey('timeline-item-q24'), findsOneWidget);
     });
 
     testWidgets('pull to refresh loads the first page again', (tester) async {

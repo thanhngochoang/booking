@@ -1179,52 +1179,91 @@ class _CoverTile extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AspectRatio(
         aspectRatio: 16 / 10,
-        child: Material(
-          color: scheme.secondary,
-          shape: RoundedRectangleBorder(
-            borderRadius: radius,
-            side: BorderSide(color: scheme.outline),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            key: const Key('create-event-cover'),
-            focusNode: focusNode,
-            onTap: enabled ? onTap : null,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                content,
-                if (has)
-                  Positioned(
-                    right: AppSpace.s2,
-                    bottom: AppSpace.s2,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppColors.overlay,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s3,
-                          vertical: AppSpace.s1,
+        // Mock S12.01: an empty tile has a 1px dashed `--line-2` border; a
+        // chosen photo keeps a plain one.
+        child: CustomPaint(
+          key: const Key('create-event-cover-frame'),
+          foregroundPainter: has
+              ? null
+              : _DashedBorderPainter(color: scheme.outline, radius: radius),
+          child: Material(
+            color: scheme.secondary,
+            shape: RoundedRectangleBorder(
+              borderRadius: radius,
+              side: has ? BorderSide(color: scheme.outline) : BorderSide.none,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: const Key('create-event-cover'),
+              focusNode: focusNode,
+              onTap: enabled ? onTap : null,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  content,
+                  if (has)
+                    Positioned(
+                      right: AppSpace.s2,
+                      bottom: AppSpace.s2,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.overlay,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
-                        child: Text(
-                          l.createEventCoverChange,
-                          style: const TextStyle(
-                            color: AppColors.foregroundInverse,
-                            fontSize: AppText.sm,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s3,
+                            vertical: AppSpace.s1,
+                          ),
+                          child: Text(
+                            l.createEventCoverChange,
+                            style: const TextStyle(
+                              color: AppColors.foregroundInverse,
+                              fontSize: AppText.sm,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// A 1px dashed outline inside a rounded rect (mock `border:1px dashed`).
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final BorderRadius radius;
+
+  /// Dash and gap lengths.
+  static const _dash = AppSpace.s1;
+  static const _gap = AppSpace.s1;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(radius.toRRect((Offset.zero & size).deflate(0.5)));
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (final metric in path.computeMetrics()) {
+      for (var at = 0.0; at < metric.length; at += _dash + _gap) {
+        canvas.drawPath(metric.extractPath(at, at + _dash), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color || old.radius != radius;
 }
 
 /// A tap-to-choose field in the mock's `.field` look: small label over the

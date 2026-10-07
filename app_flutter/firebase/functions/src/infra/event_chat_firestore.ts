@@ -7,6 +7,7 @@ import {
   type Transaction,
 } from 'firebase-admin/firestore';
 import type {
+  PaidRegistration,
   EventChatStore,
   EventChatTx,
   GroupChat,
@@ -28,6 +29,16 @@ function date(v: unknown): Date | null {
 }
 
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+/** The slice of a `paid` registration membership reads (I1, O1). */
+export function paidRegistrationFrom(id: string, d: DocumentData): PaidRegistration {
+  return {
+    id,
+    createdAt: date(d.createdAt) ?? new Date(0),
+    userName: String(d.userName ?? ''),
+    userAvatarUrl: str(d.userAvatarUrl),
+  };
+}
 
 export function groupChatDoc(c: GroupChat): DocumentData {
   return {
@@ -170,10 +181,10 @@ export class FirestoreEventChatStore implements EventChatStore {
           const d = s.data();
           return s.exists && d ? groupMessageFrom(chatId, id, d) : null;
         },
-        hasOtherPaidRegistration: async (eventId, uid, except) => {
+        paidRegistrations: async (eventId, uid) => {
           const q = fs.collection(EVENTS_COLLECTION).doc(eventId).collection('registrations')
             .where('userId', '==', uid).where('status', '==', 'paid');
-          return (await fTx.get(q)).docs.some((d) => d.id !== except);
+          return (await fTx.get(q)).docs.map((d) => paidRegistrationFrom(d.id, d.data()));
         },
         putChat: (c) => {
           writes.push(() => fTx.set(chatRef(c.id), groupChatDoc(c), { merge: true }));

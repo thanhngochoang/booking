@@ -7,6 +7,9 @@ export async function handleChatMemberWrite(
   markRead: MarkChatRowRead,
   now: Date = new Date(),
 ): Promise<boolean> {
+  // M9: an event group (`event_{eventId}`) has no inbox row, and every send rewrites the sender's
+  // member doc (rate window), so the group chats stop here.
+  if (input.chatId.startsWith('event_')) return false;
   if (input.after === undefined || input.after.unreadCount !== 0) return false;
   return markRead(input.uid, input.chatId, now);
 }

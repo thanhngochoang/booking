@@ -240,7 +240,10 @@ class _EventScreenState extends ConsumerState<EventScreen> {
 
     final s = e.summary;
     final cancelled = state == EventJoinState.cancelled;
-    final member = manager || (reg?.status == RegistrationStatus.paid);
+    // In the group chat: its moderators (host, creator) and paid attendees;
+    // other staff see the inline panel instead of a refused S11.06 (M10).
+    final member =
+        e.isGroupModerator(uid) || (reg?.status == RegistrationStatus.paid);
     final timeline = _tab == EventTab.timeline;
     final postMode = timelinePostMode(
       e,

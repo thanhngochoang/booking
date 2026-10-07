@@ -7984,12 +7984,6 @@ abstract class AppLocalizations {
   /// **'chủ sự kiện'**
   String get timelineHostSuffix;
 
-  /// No description provided for @timelineMore.
-  ///
-  /// In vi, this message translates to:
-  /// **'Xem thêm'**
-  String get timelineMore;
-
   /// No description provided for @timelineModerateFailed.
   ///
   /// In vi, this message translates to:
@@ -8241,6 +8235,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Sự kiện: {title}'**
   String postEventChip(String title);
+
+  /// S11.06 member list: section header of the members a moderator removed (moderators only).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời ra'**
+  String get chatRemovedSection;
+
+  /// S11.06 member list: moderator action that lifts a removal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho vào lại'**
+  String get chatRestore;
+
+  /// S11.06 member list: note under the Đã mời ra section.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.'**
+  String get chatRestoreHint;
+
+  /// S12.03: link at the right of the Người tham gia header; opens the check-in scanner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Check‑in'**
+  String get manageCheckinLink;
 }
 
 class _AppLocalizationsDelegate

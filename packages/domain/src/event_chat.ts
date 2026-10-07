@@ -1,6 +1,6 @@
 import { DomainError } from './errors.js';
 import type { EventCaller, RegistrationDoc } from './event.js';
-import type { EventChatDeps, EventChatTx } from './event_chat_ports.js';
+import type { EventChatDeps, EventChatTx, PaidRegistration } from './event_chat_ports.js';
 import { isId } from './ids.js';
 import { previewOf, validateMessageInput } from './chat.js';
 
@@ -169,7 +169,7 @@ export async function sendEventMessage(deps: EventChatDeps, senderId: string, ra
   });
 }
 
-const MODERATION = ['pin', 'unpin', 'delete', 'mute', 'unmute', 'remove', 'moderatorsOnly'] as const;
+const MODERATION = ['pin', 'unpin', 'delete', 'mute', 'unmute', 'remove', 'restore', 'moderatorsOnly'] as const;
 
 /** `{eventId, action, messageId?, userId?, minutes?, on?}`; moderators (and admin staff) only. */
 export async function moderateEventChat(deps: EventChatDeps, caller: EventCaller, raw: unknown): Promise<void> {
@@ -178,7 +178,8 @@ export async function moderateEventChat(deps: EventChatDeps, caller: EventCaller
   const action = MODERATION.find((a) => a === r.action);
   if (action === undefined) throw new DomainError('invalid_argument');
   const messageId = action === 'pin' || action === 'unpin' || action === 'delete' ? idOf(r.messageId) : null;
-  const userId = action === 'mute' || action === 'unmute' || action === 'remove' ? idOf(r.userId) : null;
+  const userId = action === 'mute' || action === 'unmute' || action === 'remove' || action === 'restore'
+    ? idOf(r.userId) : null;
   let minutes = MUTE_DEFAULT_MINUTES;
   if (action === 'mute' && r.minutes !== undefined) {
     if (typeof r.minutes !== 'number' || !Number.isInteger(r.minutes) || r.minutes < 1 || r.minutes > MUTE_MAX_MINUTES) {
@@ -199,6 +200,8 @@ export async function moderateEventChat(deps: EventChatDeps, caller: EventCaller
       if (target === null) throw new DomainError('not_found');
       if (target.role === 'moderator' || chat.moderators.includes(userId)) throw new DomainError('permission_denied');
     }
+    const paid = action === 'restore' && userId !== null ? await tx.paidRegistrations(chat.eventId, userId) : [];
+    const profile = action === 'restore' && paid.length > 0 && userId !== null ? await deps.people.user(userId) : null;
 
     switch (action) {
       case 'moderatorsOnly':
@@ -235,6 +238,18 @@ export async function moderateEventChat(deps: EventChatDeps, caller: EventCaller
         const members = chat.members.filter((u) => u !== t.uid);
         tx.putMember(chatId, { ...t, removedAt: now, removedBy: caller.uid });
         tx.putChat({ ...chat, members, memberCount: members.length, updatedAt: now });
+        return;
+      }
+      case 'restore': {
+        // O1/M8: lifts a moderator removal. With a paid ticket now the user is back at once;
+        // otherwise only the flag goes, so their next ticket lets them in.
+        const t = target as GroupMember;
+        if (t.removedBy === null) return;
+        if (paid.length > 0) {
+          writeJoin(tx, deps, chat, t, t.uid, { name: profile?.name ?? t.name, avatarUrl: profile?.avatarUrl ?? t.avatarUrl }, now);
+        } else {
+          tx.putMember(chatId, { ...t, removedBy: null });
+        }
       }
     }
   });
@@ -275,52 +290,86 @@ export async function postEventAnnouncement(
 }
 
 /**
- * A `paid` registration (a free one counts: it is `paid` at once) joins its user to the event chat
- * once, with a system line; `paid` → `cancelled | refunded` removes them. A member a moderator
- * removed stays out. Idempotent: a repeated or unrelated write changes nothing.
+ * Whether the user should be in the group now: a moderator always; otherwise a `paid` registration,
+ * and after a moderator removed them only one created after that removal (O1/M8: a new ticket
+ * re-admits).
+ */
+export function shouldBeGroupMember(
+  chat: Pick<GroupChat, 'moderators'>,
+  member: Pick<GroupMember, 'removedAt' | 'removedBy'> | null,
+  uid: string,
+  paid: readonly PaidRegistration[],
+): boolean {
+  if (chat.moderators.includes(uid)) return true;
+  const removedAt = member?.removedBy != null ? member.removedAt : null;
+  if (removedAt === null) return paid.length > 0;
+  return paid.some((p) => p.createdAt.getTime() > removedAt.getTime());
+}
+
+/** Writes the join (member doc, `members`, system line) inside a transaction, after all reads. */
+function writeJoin(
+  tx: EventChatTx,
+  deps: EventChatDeps,
+  chat: GroupChat,
+  member: GroupMember | null,
+  uid: string,
+  who: { name: string; avatarUrl: string | null },
+  now: Date,
+): void {
+  const members = chat.members.includes(uid) ? chat.members : [...chat.members, uid];
+  tx.putMember(chat.id, {
+    uid, role: chat.moderators.includes(uid) ? 'moderator' : 'member', name: who.name, avatarUrl: who.avatarUrl,
+    mutedUntil: member?.mutedUntil ?? null, joinedAt: now, removedAt: null, removedBy: null,
+    sentWindowStart: member?.sentWindowStart ?? null, sentInWindow: member?.sentInWindow ?? 0,
+  });
+  tx.putChat({ ...chat, members, memberCount: members.length, updatedAt: now });
+  tx.addMessage({
+    id: deps.ids.newId(), chatId: chat.id, senderId: null, senderName: null, type: 'system', body: null,
+    imagePath: null, point: null, system: { kind: 'member_joined', userId: uid, name: who.name },
+    createdAt: now, deletedAt: null,
+  });
+}
+
+/**
+ * Keeps the user's group membership in step with their registrations. The trigger's change is only
+ * a wake-up (deliveries are at-least-once and unordered): the target state is derived inside the
+ * transaction from the user's `paid` registrations now and the moderator removal (I1). Joining posts
+ * a system line once; leaving keeps the member doc. The member's name is the profile display name,
+ * falling back to the name typed on the registration (M7). Idempotent.
  */
 export async function syncEventChatMembership(
   deps: EventChatDeps,
   change: { before: RegistrationDoc | null; after: RegistrationDoc | null },
 ): Promise<'joined' | 'left' | 'none'> {
   const { before, after: next } = change;
-  const wasPaid = before?.status === 'paid';
-  const isPaid = next?.status === 'paid';
   const reg = next ?? before;
-  if (reg === null || wasPaid === isPaid) return 'none';
+  // Only a change in "paid" can change membership; anything else is not even a wake-up.
+  if (reg === null || (before?.status === 'paid') === (next?.status === 'paid')) return 'none';
   const chatId = eventChatId(reg.eventId);
   const uid = reg.userId;
+  const profile = await deps.people.user(uid);
 
   return deps.chats.runTransaction(async (tx) => {
     const now = deps.clock.now();
     const chat = await tx.getChat(chatId);
     if (chat === null) return 'none';
     const member = await tx.getMember(chatId, uid);
+    const paid = await tx.paidRegistrations(reg.eventId, uid);
     const inChat = chat.members.includes(uid);
+    const should = shouldBeGroupMember(chat, member, uid, paid);
 
-    if (isPaid) {
-      if (inChat && member?.removedAt == null) return 'none';
-      if (member?.removedAt != null && member.removedBy !== null) return 'none'; // removed by a moderator
-      const name = reg.userName;
-      const members = inChat ? chat.members : [...chat.members, uid];
-      tx.putMember(chatId, {
-        uid, role: chat.moderators.includes(uid) ? 'moderator' : 'member', name, avatarUrl: reg.userAvatarUrl,
-        mutedUntil: member?.mutedUntil ?? null, joinedAt: now, removedAt: null, removedBy: null,
-        sentWindowStart: member?.sentWindowStart ?? null, sentInWindow: member?.sentInWindow ?? 0,
-      });
-      tx.putChat({ ...chat, members, memberCount: members.length, updatedAt: now });
-      tx.addMessage({
-        id: deps.ids.newId(), chatId, senderId: null, senderName: null, type: 'system', body: null,
-        imagePath: null, point: null, system: { kind: 'member_joined', userId: uid, name },
-        createdAt: now, deletedAt: null,
-      });
+    if (should) {
+      // In the chat with a live member doc (or a moderator still on the implicit one): nothing to do.
+      if (inChat && (member === null ? chat.moderators.includes(uid) : member.removedAt === null)) return 'none';
+      const latest = [...paid].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+      const name = profile?.name ?? latest?.userName ?? reg.userName;
+      writeJoin(tx, deps, chat, member, uid, { name, avatarUrl: profile?.avatarUrl ?? latest?.userAvatarUrl ?? null }, now);
       return 'joined';
     }
 
-    if (!inChat || chat.moderators.includes(uid)) return 'none';
-    if (await tx.hasOtherPaidRegistration(reg.eventId, uid, reg.id)) return 'none';
+    if (!inChat) return 'none';
     const members = chat.members.filter((u) => u !== uid);
-    if (member !== null) tx.putMember(chatId, { ...member, removedAt: now, removedBy: null });
+    if (member !== null) tx.putMember(chatId, { ...member, removedAt: now, removedBy: member.removedBy });
     tx.putChat({ ...chat, members, memberCount: members.length, updatedAt: now });
     return 'left';
   });

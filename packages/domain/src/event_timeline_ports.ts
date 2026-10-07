@@ -37,8 +37,7 @@ export interface TimelineRow {
 export interface SharedPost {
   readonly id: string;
   readonly authorId: string;
-  /** The host photographer, or '' for a platform event. */
-  readonly photographerId: string;
+  /** No `photographerId`: an event share is never a photographer's own work, the adapter writes ''. */
   readonly eventId: string;
   readonly imageUrls: readonly string[];
   readonly imageMeta: ReadonlyArray<{ readonly w: number | null; readonly h: number | null; readonly blurHash: string | null }>;

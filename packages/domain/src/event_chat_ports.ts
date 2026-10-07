@@ -1,13 +1,21 @@
 import type { GroupChat, GroupMember, GroupMessage, GroupPin } from './event_chat.js';
 import type { Clock, IdGenerator } from './ports.js';
 
+/** The slice of a `paid` registration that group membership needs. */
+export interface PaidRegistration {
+  readonly id: string;
+  readonly createdAt: Date;
+  readonly userName: string;
+  readonly userAvatarUrl: string | null;
+}
+
 /** Every read must come before the first write (Firestore transactions; the memory store enforces it). */
 export interface EventChatTx {
   getChat(chatId: string): Promise<GroupChat | null>;
   getMember(chatId: string, uid: string): Promise<GroupMember | null>;
   getMessage(chatId: string, messageId: string): Promise<GroupMessage | null>;
-  /** A `paid` registration of the user for the event other than `exceptRegistrationId`. */
-  hasOtherPaidRegistration(eventId: string, uid: string, exceptRegistrationId: string): Promise<boolean>;
+  /** The user's registrations for the event that are `paid` right now (read in the transaction). */
+  paidRegistrations(eventId: string, uid: string): Promise<readonly PaidRegistration[]>;
   putChat(chat: GroupChat): void;
   putMember(chatId: string, member: GroupMember): void;
   addMessage(message: GroupMessage): void;

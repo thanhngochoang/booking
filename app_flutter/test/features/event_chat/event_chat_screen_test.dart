@@ -134,6 +134,19 @@ void main() {
       final w = _world(pin: _pin);
       await w.pump(tester, path: '/e/ev1/chat', size: _sw);
       expect(find.text('Ghim · Quốc Bảo'), findsOneWidget);
+      // Mock `.ctx .ic`: push_pin in a 30px round field-filled well.
+      expect(tester.getSize(_byKey('chat-pin-icon')), const Size(30, 30));
+      final well = tester.widget<Container>(_byKey('chat-pin-icon'));
+      expect((well.decoration! as BoxDecoration).shape, BoxShape.circle);
+      expect(
+        find.descendant(
+          of: _byKey('chat-pin-icon'),
+          matching: find.byWidgetPredicate(
+            (w) => w is AppIcon && w.icon == AppIcons.pushPin,
+          ),
+        ),
+        findsOneWidget,
+      );
       final card = tester.getTopLeft(_byKey('chat-pin')).dy;
       final first = tester.getTopLeft(find.text('Mình đến sớm 10 phút')).dy;
       expect(card, lessThan(first));
@@ -368,6 +381,38 @@ void main() {
       expect(find.text('Gửi lại'), findsNothing);
     });
 
+    testWidgets(
+      'a refusal the screen cannot explain says the general text (M2)',
+      (tester) async {
+        final w = _world();
+        await w.pump(tester, path: '/e/ev1/chat', size: _sw);
+        // Not muted here, so not_eligible must not claim a mute.
+        w.chat.failWith = const ChatException(ChatErrorCode.notEligible);
+        await tester.enterText(find.byType(TextField), 'Chào');
+        await tester.pump();
+        await tester.tap(find.bySemanticsLabel('Gửi tin nhắn'));
+        await settle(tester);
+        expect(find.text('Không thực hiện được. Thử lại nhé.'), findsOneWidget);
+        expect(find.text('Bạn đang bị tắt tiếng trong nhóm'), findsNothing);
+      },
+    );
+
+    testWidgets('a refusal after moderators-only switched on says so (M2)', (
+      tester,
+    ) async {
+      final w = _world();
+      await w.pump(tester, path: '/e/ev1/chat', size: _sw);
+      await tester.enterText(find.byType(TextField), 'Chào');
+      await tester.pump();
+      // The switch lands while the message is on its way.
+      w.chat
+        ..failWith = const ChatException(ChatErrorCode.permissionDenied)
+        ..setChat(_thread(modOnly: true));
+      await tester.tap(find.bySemanticsLabel('Gửi tin nhắn'));
+      await settle(tester);
+      expect(find.text('Chỉ điều hành được nhắn'), findsWidgets);
+    });
+
     testWidgets('non-members see Đăng ký để vào nhóm', (tester) async {
       final w = _world(noChat: true, me: null);
       await w.pump(tester, path: '/e/ev1/chat', size: _sw);
@@ -439,6 +484,48 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, 'Gỡ khỏi nhóm'));
       await settle(tester);
       expect((w.chat.moderations.last as RemoveMember).userId, 'u3');
+    });
+
+    testWidgets('moderators see Đã mời ra and restore a member (O1)', (
+      tester,
+    ) async {
+      final w = _world(
+        uid: 'p1',
+        me: const GroupMemberState(role: GroupRole.moderator),
+      );
+      w.chat.setMembers(const [
+        GroupMember(uid: 'p1', name: 'Quốc Bảo', role: GroupRole.moderator),
+        GroupMember(uid: 'u2', name: 'Lan Anh'),
+        GroupMember(uid: 'u9', name: 'Bị mời ra', removedByModerator: true),
+      ]);
+      await w.pump(tester, path: '/e/ev1/chat', size: _sw);
+      await tester.tap(_byKey('chat-more'));
+      await settle(tester);
+      await tester.tap(find.text('Thành viên'));
+      await settle(tester);
+      expect(_byKey('members-removed'), findsOneWidget);
+      expect(find.text('Đã mời ra'), findsOneWidget);
+      expect(_byKey('member-u9'), findsNothing); // not among the members
+      await tester.tap(_byKey('restore-u9'));
+      await settle(tester);
+      expect((w.chat.moderations.single as RestoreMember).userId, 'u9');
+      expect(_byKey('members-removed'), findsNothing);
+      expect(_byKey('member-u9'), findsOneWidget);
+    });
+
+    testWidgets('members do not see Đã mời ra', (tester) async {
+      final w = _world();
+      w.chat.setMembers(const [
+        GroupMember(uid: 'p1', name: 'Quốc Bảo', role: GroupRole.moderator),
+        GroupMember(uid: 'u9', name: 'Bị mời ra', removedByModerator: true),
+      ]);
+      await w.pump(tester, path: '/e/ev1/chat', size: _sw);
+      await tester.tap(_byKey('chat-more'));
+      await settle(tester);
+      await tester.tap(find.text('Thành viên'));
+      await settle(tester);
+      expect(_byKey('members-removed'), findsNothing);
+      expect(find.text('Bị mời ra'), findsNothing);
     });
 
     testWidgets('moderators switch Chỉ điều hành được nhắn in the menu', (

@@ -88,12 +88,29 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(text)));
 
-  String _errorText(AppLocalizations l, ChatErrorCode code) => switch (code) {
-    ChatErrorCode.limitExceeded => l.chatRateLimited,
-    ChatErrorCode.notEligible => l.chatMutedNote,
-    ChatErrorCode.permissionDenied => l.chatModOnly,
-    _ => l.chatActionFailed,
-  };
+  /// The server's codes are shared by several causes (`not_eligible`: muted
+  /// or the chat closed; `permission_denied`: moderators-only or removed), so
+  /// the text follows what this screen knows, else the general one (M2).
+  String _errorText(AppLocalizations l, ChatErrorCode code, String uid) {
+    final id = widget.eventId;
+    final thread = ref.read(groupChatProvider(id)).value;
+    final me = ref.read(groupMeProvider(id)).value;
+    final now = ref.read(clockProvider)();
+    final moderator =
+        me?.role == GroupRole.moderator ||
+        (thread?.moderators.contains(uid) ?? false);
+    return switch (code) {
+      ChatErrorCode.limitExceeded => l.chatRateLimited,
+      ChatErrorCode.notEligible when thread?.isReadOnlyAt(now) ?? false =>
+        l.eventChatClosed,
+      ChatErrorCode.notEligible when me?.isMutedAt(now) ?? false =>
+        l.chatMutedNote,
+      ChatErrorCode.permissionDenied
+          when (thread?.moderatorsOnly ?? false) && !moderator =>
+        l.chatModOnly,
+      _ => l.chatActionFailed,
+    };
+  }
 
   Future<void> _messageMenu(
     ChatMessage m,
@@ -215,7 +232,7 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
     ) {
       final code = ref.read(eventChatControllerProvider(id)).errorCode;
       if (code != null) {
-        _say(_errorText(l, code));
+        _say(_errorText(l, code, uid));
       }
     });
 
@@ -290,8 +307,8 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
           title: l.eventChatLocked,
           body: l.eventChatLockedBody,
           illustration: Container(
-            width: 96,
-            height: 96,
+            width: AppSpace.s16 + AppSpace.s8,
+            height: AppSpace.s16 + AppSpace.s8,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.secondary,
               shape: BoxShape.circle,
@@ -358,7 +375,7 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
         if (localMute)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpace.s1),
-            child: AppIcon(AppIcons.notificationsOff, size: 18),
+            child: AppIcon(AppIcons.notificationsOff, size: AppIconSize.sm),
           ),
         PopupMenuButton<String>(
           key: const Key('chat-more'),
@@ -499,6 +516,9 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
   }
 }
 
+/// The icon well of the pinned card (mock `.ctx .ic` 30px).
+const double _pinWell = AppSpace.s8 - AppSpace.s1 / 2;
+
 /// "Ghim · {name}" and the pinned text; a tap shows all of it.
 class _PinCard extends StatelessWidget {
   const _PinCard({required this.pin, required this.open, required this.onTap});
@@ -536,13 +556,32 @@ class _PinCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.card),
             onTap: onTap,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
+              constraints: const BoxConstraints(minHeight: AppSpace.s12),
               child: Padding(
-                padding: const EdgeInsets.all(AppSpace.s3),
+                padding: const EdgeInsets.all(AppSpace.s2),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const AppIcon(AppIcons.pushPin, size: 18),
+                    // Mock `.ctx .ic`: a 30px round field-filled well, ink-2 icon at 20.
+                    Container(
+                      key: const Key('chat-pin-icon'),
+                      width: _pinWell,
+                      height: _pinWell,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: dark
+                            ? AppColorsDark.surfaceMuted
+                            : AppColors.surfaceMuted,
+                        shape: BoxShape.circle,
+                      ),
+                      child: AppIcon(
+                        AppIcons.pushPin,
+                        size: AppIconSize.sm,
+                        color: dark
+                            ? AppColorsDark.foregroundSecondary
+                            : AppColors.foregroundSecondary,
+                      ),
+                    ),
                     const SizedBox(width: AppSpace.s2),
                     Expanded(
                       child: Column(

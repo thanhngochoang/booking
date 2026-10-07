@@ -279,6 +279,9 @@ describe('cancel', () => {
     assert.ok(ev?.cancelledAt);
     assert.equal(w.store.availabilityDays.has('ph1/2026-10-04'), false);
     assert.deepEqual(w.store.registrationsOf('ev1_aaaaaaaaaaaaaaaaaaaa').map((x) => x.status), ['cancelled', 'cancelled']);
+    // M5: the group chat turns read-only 7 days after the cancellation.
+    assert.ok(ev?.chatId);
+    assert.equal(w.store.chatReadOnlyAt.get(ev.chatId)?.getTime(), (ev.cancelledAt as Date).getTime() + 7 * 86_400_000);
   });
 
   test('cancel returns paid registration ids for refunds', async () => {

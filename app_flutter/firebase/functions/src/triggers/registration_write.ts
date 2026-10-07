@@ -4,8 +4,9 @@ import type { DocumentData } from 'firebase-admin/firestore';
 import { registrationFromFirestore } from '../infra/event_firestore.js';
 
 /**
- * A registration write keeps the event group chat's membership in step: `paid` joins (once, with a
- * system line), `paid` → `cancelled | refunded` leaves. Idempotent, so the trigger's retries are safe.
+ * A registration write keeps the event group chat's membership in step. The change is only a
+ * wake-up: the domain derives membership inside its transaction from the user's `paid`
+ * registrations now (I1), so late, repeated or out-of-order deliveries are safe.
  */
 export async function handleRegistrationWrite(
   input: { eventId: string; regId: string; before: DocumentData | undefined; after: DocumentData | undefined },

@@ -15,7 +15,8 @@ abstract class EventChatRepository {
   /// My member doc; null for a moderator who has none yet and for non-members.
   Stream<GroupMemberState?> watchMe(String eventId);
 
-  /// The people in the chat, names and avatars only.
+  /// The people in the chat, names and avatars only, plus those a moderator
+  /// removed ([GroupMember.removedByModerator]).
   Stream<List<GroupMember>> watchMembers(String eventId);
 
   /// Newest [limit] messages, oldest first.
@@ -50,8 +51,13 @@ abstract class EventChatRepository {
 
   Future<void> moderate(String eventId, ChatModeration action);
 
-  /// S12.03 "Nhắn nhóm": a moderator message, pinned.
-  Future<void> announce(String eventId, String text);
+  /// S12.03 "Nhắn nhóm": a moderator message, pinned. A retry with the same
+  /// [clientId] posts it once.
+  Future<void> announce(
+    String eventId,
+    String text, {
+    required String clientId,
+  });
 
   /// Zeroes my unread marker; failures are ignored.
   Future<void> markRead(String eventId);
@@ -94,6 +100,7 @@ class FakeEventChatRepository implements EventChatRepository {
   final List<({String eventId, String clientId})> locations = [];
   final List<ChatModeration> moderations = [];
   final List<String> announcements = [];
+  final List<String> announcementIds = [];
   int markedRead = 0;
 
   /// Download URLs by storage path; unknown paths resolve to a made-up URL.
@@ -249,13 +256,39 @@ class FakeEventChatRepository implements EventChatRepository {
             readOnlyAt: c.readOnlyAt,
           );
         }
-      case MuteMember() || UnmuteMember() || RemoveMember():
+      case RemoveMember(:final userId):
+        _setRemoved(userId, true);
+      case RestoreMember(:final userId):
+        _setRemoved(userId, false);
+      case MuteMember() || UnmuteMember():
         break;
     }
   }
 
+  void _setRemoved(String userId, bool removed) {
+    _members.value = [
+      for (final m in _members.value)
+        if (m.uid == userId)
+          GroupMember(
+            uid: m.uid,
+            name: m.name,
+            avatarUrl: m.avatarUrl,
+            role: m.role,
+            mutedUntil: m.mutedUntil,
+            removedByModerator: removed,
+          )
+        else
+          m,
+    ];
+  }
+
   @override
-  Future<void> announce(String eventId, String text) async {
+  Future<void> announce(
+    String eventId,
+    String text, {
+    required String clientId,
+  }) async {
+    announcementIds.add(clientId);
     _maybeFail();
     announcements.add(text);
   }

@@ -120,6 +120,18 @@ class EventDetail {
         (role == StaffRole.sales && createdBy == uid);
   }
 
+  /// Mirrors the moderators the server gives the group chat at publish: the
+  /// hosting photographer and whoever created the event. An admin who is
+  /// neither is a manager but not in the chat (review M10).
+  bool isGroupModerator(String? uid) {
+    if (uid == null || uid.isEmpty) {
+      return false;
+    }
+    return (summary.hostType == HostType.photographer &&
+            summary.hostId == uid) ||
+        createdBy == uid;
+  }
+
   /// Registration is still possible (open, deadline not passed).
   bool canRegisterAt(DateTime now) =>
       summary.status == EventStatus.open &&

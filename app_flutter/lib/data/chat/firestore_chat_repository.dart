@@ -10,16 +10,19 @@ import 'package:photobooking/data/media/firebase_media_uploader.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
+/// The 1-1 chat kinds S07.02 lists (`chats.kind`); event groups (`event_group`) are excluded.
+const oneToOneChatKinds = ['inquiry', 'booking'];
+
 class FirestoreChatRepository implements ChatRepository {
   FirestoreChatRepository({
     FirebaseFirestore? firestore,
     FirebaseFunctions? functions,
     FirebaseAuth? auth,
     MediaUploader? mediaUploader,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _customFunctions = functions,
-        _auth = auth ?? FirebaseAuth.instance,
-        _mediaUploader = mediaUploader ?? FirebaseMediaUploader();
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _customFunctions = functions,
+       _auth = auth ?? FirebaseAuth.instance,
+       _mediaUploader = mediaUploader ?? FirebaseMediaUploader();
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions? _customFunctions;
@@ -33,15 +36,15 @@ class FirestoreChatRepository implements ChatRepository {
   @visibleForTesting
   static ChatErrorCode mapFunctionsError(dynamic e) {
     if (e is FirebaseFunctionsException) {
-      final detailsCode =
-          e.details is Map ? (e.details as Map)['code'] as String? : null;
+      final detailsCode = e.details is Map
+          ? (e.details as Map)['code'] as String?
+          : null;
       for (final candidate in [detailsCode, e.code, e.message]) {
         if (candidate == null) continue;
         final mapped = switch (candidate) {
           'limit_exceeded' ||
           'resource-exhausted' => ChatErrorCode.limitExceeded,
-          'not_eligible' ||
-          'failed-precondition' => ChatErrorCode.notEligible,
+          'not_eligible' || 'failed-precondition' => ChatErrorCode.notEligible,
           'permission_denied' ||
           'permission-denied' => ChatErrorCode.permissionDenied,
           'not_found' || 'not-found' => ChatErrorCode.notFound,
@@ -76,8 +79,9 @@ class FirestoreChatRepository implements ChatRepository {
         .limit(limit)
         .snapshots()
         .map((snap) {
-          final msgs =
-              snap.docs.map((doc) => ChatMessage.fromFirestore(doc)).toList();
+          final msgs = snap.docs
+              .map((doc) => ChatMessage.fromFirestore(doc))
+              .toList();
           return msgs.reversed.toList();
         });
   }
@@ -97,8 +101,9 @@ class FirestoreChatRepository implements ChatRepository {
         .limit(limit)
         .get();
 
-    final msgs =
-        snap.docs.map((doc) => ChatMessage.fromFirestore(doc)).toList();
+    final msgs = snap.docs
+        .map((doc) => ChatMessage.fromFirestore(doc))
+        .toList();
     return msgs.reversed.toList();
   }
 
@@ -109,16 +114,21 @@ class FirestoreChatRepository implements ChatRepository {
       return Stream.value(const []);
     }
 
+    // Filtered on the server (review I2): a group message must not re-fire every member's inbox
+    // listener, and groups must not take rows of the 50-row page. Index:
+    // chats (members CONTAINS, kind ASC, lastMessageAt DESC).
     return _firestore
         .collection('chats')
         .where('members', arrayContains: uid)
+        .where('kind', whereIn: oneToOneChatKinds)
         .orderBy('lastMessageAt', descending: true)
         .limit(limit)
         .snapshots()
         .asyncMap((snap) async {
           final items = <ChatListItem>[];
           for (final doc in snap.docs) {
-            // Event group chats have their own screen (S11.06), never a row here.
+            // Event group chats have their own screen (S11.06), never a row here
+            // (kept as a guard behind the server filter).
             if (doc.data()['kind'] == 'event_group') continue;
             final thread = ChatThread.fromFirestore(doc);
             int unread = 0;
@@ -130,7 +140,8 @@ class FirestoreChatRepository implements ChatRepository {
                   .doc(uid)
                   .get();
               if (memberDoc.exists) {
-                unread = (memberDoc.data()?['unreadCount'] as num?)?.toInt() ?? 0;
+                unread =
+                    (memberDoc.data()?['unreadCount'] as num?)?.toInt() ?? 0;
               }
             } catch (_) {}
             items.add(ChatListItem(thread: thread, unreadCount: unread));

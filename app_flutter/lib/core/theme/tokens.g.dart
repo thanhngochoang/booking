@@ -40,6 +40,8 @@ class AppColors {
   static const Color focusRing = Color(0xFF8338F5);
   static const Color overlay = Color(0x6A000000);
   static const Color overlayLight = Color(0x88FFFFFF);
+  static const Color scrim = Color(0xB8000000);
+  static const Color onScrim = Color(0xE6FFFFFF);
   static const Color rating = Color(0xFFE6C617);
   static const Color bookingWaiting = Color(0xFF8338F5);
   static const Color bookingAccepted = Color(0xFF1A9F02);
@@ -107,6 +109,8 @@ class AppColorsDark {
   static const Color focusRing = Color(0xFF14E0F5);
   static const Color overlay = AppColors.overlay;
   static const Color overlayLight = AppColors.overlayLight;
+  static const Color scrim = AppColors.scrim;
+  static const Color onScrim = AppColors.onScrim;
   static const Color rating = AppColors.rating;
   static const Color bookingWaiting = AppColors.bookingWaiting;
   static const Color bookingAccepted = AppColors.bookingAccepted;

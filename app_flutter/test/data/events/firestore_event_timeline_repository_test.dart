@@ -66,6 +66,7 @@ void main() {
       uploader: uploader,
       db: db,
       functions: functions,
+      measure: (path) async => (w: 800, h: 1200),
     );
   });
 
@@ -147,6 +148,15 @@ void main() {
     expect(await repo.watchPendingCount('ev1').first, 2);
   });
 
+  test('the pending count does not stop at 100 (count aggregation)', () async {
+    for (var i = 0; i < 105; i++) {
+      final id = 'p${i.toString().padLeft(3, '0')}';
+      await seed('ev1', id, row(id, status: 'pending', minutesAgo: i));
+    }
+    await seed('ev1', 'v1', row('v1'));
+    expect(await repo.watchPendingCount('ev1').first, 105);
+  });
+
   group('share', () {
     final photo = const PickedImage(path: '/tmp/a.jpg', name: 'a.jpg');
 
@@ -170,6 +180,9 @@ void main() {
       final images = sent['images'] as List;
       expect(images, hasLength(2));
       expect((images.first as Map)['path'], uploader.uploaded.first);
+      // M11: the tile gets the real aspect.
+      expect((images.first as Map)['w'], 800);
+      expect((images.first as Map)['h'], 1200);
       expect(
         (images.first as Map)['url'],
         'https://storage.test/${uploader.uploaded.first}',
@@ -181,6 +194,27 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'an image whose size cannot be read is sent without w and h',
+      () async {
+        answer({'postId': 'whatever'});
+        final blind = FirestoreEventTimelineRepository(
+          uid: 'u1',
+          uploader: uploader,
+          db: db,
+          functions: functions,
+          measure: (path) async => throw const FormatException('not an image'),
+        );
+        await blind.share('ev1', images: [photo], caption: '');
+        final sent =
+            verify(() => callable.call<Object?>(captureAny())).captured.single
+                as Map<String, Object?>;
+        final image = (sent['images'] as List).single as Map;
+        expect(image.containsKey('w'), isFalse);
+        expect(image.containsKey('h'), isFalse);
+      },
+    );
 
     test('a refused share deletes what it uploaded', () async {
       when(() => callable.call<Object?>(any())).thenThrow(

@@ -85,6 +85,16 @@ describe('event timeline callables', () => {
     assert.equal(store.events.get(EV)?.postCount, 0);
   });
 
+  it('an attendee share never appears in byPhotographer of the host (C1)', async () => {
+    store.seedPaid(EV, 'cu1');
+    await handleShareEventPost({ auth: { uid: 'cu1' }, data: { eventId: EV, postId: 'p1', images: images('cu1', 'p1') } }, deps());
+    await handleShareEventPost({ auth: { uid: 'ph1' }, data: { eventId: EV, postId: 'p2', images: images('ph1', 'p2') } }, deps());
+    // byPhotographer is `posts where photographerId == host`: the written documents never match it.
+    const written = [...store.sharedPosts.values()].map(sharedPostToFirestore);
+    assert.equal(written.length, 2);
+    assert.deepEqual(written.filter((d) => d.photographerId === 'ph1'), []);
+  });
+
   it('the post trigger links a hashtag post and skips plain ones', async () => {
     store.seedPost({
       id: 'w1', authorId: 'ph1', kind: 'work', hashtags: ['photowalk1012'], eventId: null,
@@ -120,13 +130,14 @@ describe('event timeline Firestore mapping', () => {
     assert.equal(timelinePostFromFirestore('p1', undefined), null);
   });
 
-  it('a shared post has no service, the host as photographer and zero counters', () => {
+  it('a shared post has no service, no photographer and zero counters', () => {
     const doc = sharedPostToFirestore({
-      id: 'p1', authorId: 'cu1', photographerId: '', eventId: EV, imageUrls: ['u'], imageMeta: [{ w: 1, h: 2, blurHash: null }],
+      id: 'p1', authorId: 'cu1', eventId: EV, imageUrls: ['u'], imageMeta: [{ w: 1, h: 2, blurHash: null }],
       caption: '#x', hashtags: ['x'], createdAt: T,
     });
     assert.equal(doc.kind, 'event_share');
     assert.equal(doc.serviceId, '');
+    assert.equal(doc.photographerId, '');
     assert.equal(doc.eventId, EV);
     assert.equal(doc.likeCount, 0);
     assert.equal(doc.saveCount, 0);

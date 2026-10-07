@@ -10,6 +10,7 @@ import {
   type EventRecord,
 } from './event.js';
 import { DomainError } from './errors.js';
+import { GROUP_READONLY_DAYS } from './event_chat.js';
 import { hashtagBase, hashtagKeyOf, hashtagWithSuffix } from './event_hashtag.js';
 import type { EventDeps, EventGroupChatSeed, EventTx } from './event_ports.js';
 import { isId } from './ids.js';
@@ -328,6 +329,8 @@ export async function cancelEvent(
       tx.deleteAvailability(hostId, ev.dayKey);
     }
     if (ev.status === 'draft') tx.deleteHashtag(ev.hashtagKey);
+    // M5: the group chat of a cancelled event closes like a completed one, 7 days later.
+    if (ev.chatId !== null) tx.setChatReadOnlyAt(ev.chatId, new Date(now.getTime() + GROUP_READONLY_DAYS * 86_400_000));
     tx.putEvent({
       ...ev,
       status: 'cancelled',

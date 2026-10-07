@@ -2068,7 +2068,6 @@
   "timelineReport": "Báo cáo",
   "timelineReportSoon": "Sắp có",
   "timelineHostSuffix": "chủ sự kiện",
-  "timelineMore": "Xem thêm",
   "timelineModerateFailed": "Không thực hiện được. Thử lại nhé.",
   "timelineItemLabel": "Ảnh của {name}",
   "@timelineItemLabel": {
@@ -2130,5 +2129,13 @@
   "@postEventChip": {
     "description": "S02.02: the chip under the caption of a photo shared to an event.",
     "placeholders": {"title": {"type": "String"}}
-  }
+  },
+  "chatRemovedSection": "Đã mời ra",
+  "@chatRemovedSection": {"description": "S11.06 member list: section header of the members a moderator removed (moderators only)."},
+  "chatRestore": "Cho vào lại",
+  "@chatRestore": {"description": "S11.06 member list: moderator action that lifts a removal."},
+  "chatRestoreHint": "Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.",
+  "@chatRestoreHint": {"description": "S11.06 member list: note under the Đã mời ra section."},
+  "manageCheckinLink": "Check‑in",
+  "@manageCheckinLink": {"description": "S12.03: link at the right of the Người tham gia header; opens the check-in scanner."}
 }

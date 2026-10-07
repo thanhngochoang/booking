@@ -81,12 +81,15 @@ export function timelinePostFromFirestore(id: string, d: DocumentData | undefine
   };
 }
 
-/** An `event_share` post: no service, the host as `photographerId`, counters at 0 (Decision 17). */
+/**
+ * An `event_share` post: no service, counters at 0, and `photographerId: ''` so it never shows in a
+ * photographer's portfolio (every `photographerId ==` reader). Overrides Decision 17 (review C1).
+ */
 export function sharedPostToFirestore(p: SharedPost): DocumentData {
   return {
     kind: 'event_share',
     authorId: p.authorId,
-    photographerId: p.photographerId,
+    photographerId: '',
     serviceId: '',
     eventId: p.eventId,
     imageUrls: [...p.imageUrls],

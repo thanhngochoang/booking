@@ -21,6 +21,7 @@ import {
   groupMemberFrom,
   groupMessageDoc,
   groupMessageFrom,
+  paidRegistrationFrom,
 } from '../../src/infra/event_chat_firestore.js';
 import { registrationToFirestore } from '../../src/infra/event_firestore.js';
 import { handleRegistrationWrite } from '../../src/triggers/registration_write.js';
@@ -109,6 +110,19 @@ describe('event chat callables', () => {
     await handleModerateEventChat({ auth: { uid: 'ph1', token: { staffRole: 'admin' } }, data: { eventId: EV, action: 'delete', messageId: 'a' } }, deps());
     assert.equal(store.messagesOf(CHAT).find((m) => m.id === 'a')?.body, null);
   });
+
+  it('remove then restore through the callable (O1/M8)', async () => {
+    store.seedPaid(EV, 'cu1', 'r1', { createdAt: new Date(T.getTime() - 60_000) });
+    await handleModerateEventChat({ auth: { uid: 'ph1' }, data: { eventId: EV, action: 'remove', userId: 'cu1' } }, deps());
+    assert.deepEqual(store.chats.get(CHAT)?.members, ['ph1']);
+    await assert.rejects(
+      () => handleModerateEventChat({ auth: { uid: 'cu1' }, data: { eventId: EV, action: 'restore', userId: 'cu1' } }, deps()),
+      (e: unknown) => e instanceof HttpsError && e.code === 'permission-denied',
+    );
+    assert.deepEqual(await handleModerateEventChat({ auth: { uid: 'ph1' }, data: { eventId: EV, action: 'restore', userId: 'cu1' } }, deps()), {});
+    assert.deepEqual(store.chats.get(CHAT)?.members, ['ph1', 'cu1']);
+    assert.equal(store.members.get(`${CHAT}/cu1`)?.removedBy, null);
+  });
 });
 
 describe('registration trigger', () => {
@@ -126,16 +140,58 @@ describe('registration trigger', () => {
       version: 1, createdAt: T, updatedAt: T,
     };
     const paid = registrationToFirestore(reg);
+    store.seedPaid(EV, 'cu1', 'r1', { createdAt: T, userName: 'Lan' });
     assert.equal(await handleRegistrationWrite({ eventId: EV, regId: 'r1', before: undefined, after: paid }, deps), 'joined');
     assert.deepEqual(store.chats.get(CHAT)?.members, ['ph1', 'cu1']);
+    assert.equal(store.members.get(`${CHAT}/cu1`)?.name, 'Lan', 'no profile: the registration name');
     assert.equal(await handleRegistrationWrite({ eventId: EV, regId: 'r1', before: undefined, after: paid }, deps), 'none');
     const cancelled = registrationToFirestore({ ...reg, status: 'cancelled' });
+    store.unpay(EV, 'cu1', 'r1');
     assert.equal(await handleRegistrationWrite({ eventId: EV, regId: 'r1', before: paid, after: cancelled }, deps), 'left');
+    assert.deepEqual(store.chats.get(CHAT)?.members, ['ph1']);
+    // I1: the join delivered (again) after the cancel does not re-add the member.
+    assert.equal(await handleRegistrationWrite({ eventId: EV, regId: 'r1', before: undefined, after: paid }, deps), 'none');
+    assert.deepEqual(store.chats.get(CHAT)?.members, ['ph1']);
+  });
+
+  it('a join retried after a failed first attempt and the leave does not re-add the member (I1)', async () => {
+    const store = new MemoryEventChatStore();
+    store.seedChat(chat({ members: ['ph1'], memberCount: 1 }));
+    let fail = true;
+    const deps: EventChatDeps = {
+      chats: {
+        runTransaction: (fn) => {
+          if (fail) { fail = false; return Promise.reject(new Error('aborted')); }
+          return store.runTransaction(fn);
+        },
+      },
+      people: { user: async () => null }, clock: { now: () => T }, ids: { newId: () => 'sys1' },
+    };
+    const reg = registrationToFirestore({
+      id: 'r1', eventId: EV, userId: 'cu1', userName: 'Lan', userAvatarUrl: null, quantity: 1, amount: 0, status: 'paid',
+      holdExpiresAt: null, ticketCode: 'VE-AAAA-1012', paymentId: null, contactEligible: false, checkedInAt: null,
+      cancelledAt: null, refundPercent: null,
+      event: { title: 'T', type: 'photo_walk', startAt: T, endAt: T, locationName: 'L', lat: 1, lng: 2, coverUrl: null },
+      version: 1, createdAt: T, updatedAt: T,
+    });
+    store.seedPaid(EV, 'cu1', 'r1', { createdAt: T });
+    await assert.rejects(handleRegistrationWrite({ eventId: EV, regId: 'r1', before: undefined, after: reg }, deps));
+    store.unpay(EV, 'cu1', 'r1');
+    const cancelled = { ...reg, status: 'cancelled' };
+    assert.equal(await handleRegistrationWrite({ eventId: EV, regId: 'r1', before: reg, after: cancelled }, deps), 'none');
+    assert.equal(await handleRegistrationWrite({ eventId: EV, regId: 'r1', before: undefined, after: reg }, deps), 'none');
     assert.deepEqual(store.chats.get(CHAT)?.members, ['ph1']);
   });
 });
 
 describe('event chat Firestore mapping', () => {
+  it('a paid registration maps to the slice membership reads', () => {
+    assert.deepEqual(
+      paidRegistrationFrom('r1', { createdAt: Timestamp.fromDate(T), userName: 'Lan', userAvatarUrl: null, status: 'paid' }),
+      { id: 'r1', createdAt: T, userName: 'Lan', userAvatarUrl: null },
+    );
+  });
+
   it('a chat, member and message survive the round trip', () => {
     const c = chat({ lastMessageAt: T, lastMessagePreview: 'hi', lastSenderId: 'cu1', readOnlyAt: T });
     const cd = groupChatDoc(c);

@@ -41,14 +41,14 @@ describe('event group chat on the emulators', () => {
     assert.equal(joined.memberCount, 2);
     const member = (await env.db.doc(`chats/event_${eventId}/members/${LAN}`).get()).data();
     assert.equal(member?.role, 'member');
-    assert.equal(member?.name, 'Lan');
+    assert.equal(member?.name, 'Lan (seed)', 'the profile display name, not the registration name (M7)');
     assert.equal('phone' in (member ?? {}), false);
     const lines = await env.db.collection(`chats/event_${eventId}/messages`).where('type', '==', 'system').get();
     assert.equal(lines.size, 1);
 
     const sent = await callAs(env, 'sendEventMessage', LAN, { eventId, message: { clientId: 'm1', type: 'text', body: 'Xin chào cả nhóm' } });
     assert.equal(sent.status, 200, sent.text);
-    assert.equal((await env.db.doc(`chats/event_${eventId}/messages/m1`).get()).data()?.senderName, 'Lan');
+    assert.equal((await env.db.doc(`chats/event_${eventId}/messages/m1`).get()).data()?.senderName, 'Lan (seed)');
 
     const cancel = await callAs(env, 'cancelRegistration', LAN, { eventId, registrationId: regId });
     assert.equal(cancel.status, 200, cancel.text);
@@ -90,5 +90,13 @@ describe('event group chat on the emulators', () => {
     await new Promise((r) => setTimeout(r, 1500));
     const inbox = await env.db.collection(`users/${guest}/notifications`).get();
     assert.equal(inbox.size, 0, 'group messages never create chat notifications');
+
+    // O1/M8: a moderator restores the removed guest, who still holds the paid ticket.
+    assert.equal((await callAs(env, 'moderateEventChat', guest, { eventId, action: 'restore', userId: guest })).status, 403);
+    assert.equal((await callAs(env, 'moderateEventChat', AN, { eventId, action: 'restore', userId: guest })).status, 200);
+    assert.ok(((await chatOf(eventId))?.members as string[]).includes(guest));
+    const restored = (await env.db.doc(`chats/event_${eventId}/members/${guest}`).get()).data();
+    assert.equal(restored?.removedBy, null);
+    assert.equal(restored?.removedAt, null);
   });
 });

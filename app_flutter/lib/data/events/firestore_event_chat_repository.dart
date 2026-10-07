@@ -40,6 +40,67 @@ GroupChatThread? groupChatFromFirestore(String id, Map<String, dynamic>? d) {
   );
 }
 
+/// [make]'s values; on a `permission-denied` refusal it emits [fallback] and
+/// listens again after [every], at most [attempts] listens in all. Cancelling
+/// stops the wait at once: no listen starts after the subscription is gone
+/// (review M1).
+Stream<T> healingStream<T>(
+  Stream<T> Function() make,
+  T fallback, {
+  required int attempts,
+  required Duration every,
+}) {
+  late final StreamController<T> out;
+  StreamSubscription<T>? sub;
+  Timer? wait;
+  var tries = 0;
+  var stopped = false;
+
+  void listen() {
+    if (stopped) {
+      return;
+    }
+    tries++;
+    sub = make().listen(
+      out.add,
+      onError: (Object error, StackTrace stack) {
+        final refused =
+            error is FirebaseException && error.code == 'permission-denied';
+        // A refused (or failed) listen is over; drop it before going on.
+        final old = sub;
+        sub = null;
+        unawaited(old?.cancel());
+        if (!refused) {
+          out.addError(error, stack);
+          unawaited(out.close());
+          return;
+        }
+        out.add(fallback);
+        if (tries < attempts) {
+          wait = Timer(every, listen);
+        } else {
+          unawaited(out.close());
+        }
+      },
+      onDone: () {
+        if (wait?.isActive != true) {
+          unawaited(out.close());
+        }
+      },
+    );
+  }
+
+  out = StreamController<T>(
+    onListen: listen,
+    onCancel: () async {
+      stopped = true;
+      wait?.cancel();
+      await sub?.cancel();
+    },
+  );
+  return out.stream;
+}
+
 GroupRole _role(Object? v) =>
     v == 'moderator' ? GroupRole.moderator : GroupRole.member;
 
@@ -52,6 +113,8 @@ class FirestoreEventChatRepository implements EventChatRepository {
     required this.urls,
     FirebaseFirestore? db,
     FirebaseFunctions? functions,
+    this.healAttempts = 10,
+    this.healEvery = const Duration(seconds: 3),
   }) : _override = db,
        _functions =
            functions ?? FirebaseFunctions.instanceFor(region: functionsRegion);
@@ -59,6 +122,11 @@ class FirestoreEventChatRepository implements EventChatRepository {
   final String? uid;
   final MediaUploader uploader;
   final MediaUrlResolver urls;
+
+  /// Re-listens after a refusal: 10 tries, 3 seconds apart by default, about
+  /// the time the membership trigger needs.
+  final int healAttempts;
+  final Duration healEvery;
   final FirebaseFirestore? _override;
   final FirebaseFunctions _functions;
 
@@ -83,26 +151,8 @@ class FirestoreEventChatRepository implements EventChatRepository {
   /// Like [_orIfDenied], but tries again: a person who registers a moment
   /// before the server adds them to the chat is refused at first, and a
   /// Firestore listener never recovers from a refusal by itself.
-  Stream<T> _healing<T>(Stream<T> Function() make, T fallback) async* {
-    for (var attempt = 0; attempt < _healAttempts; attempt++) {
-      try {
-        await for (final v in make()) {
-          yield v;
-        }
-        return;
-      } on FirebaseException catch (e) {
-        if (e.code != 'permission-denied') {
-          rethrow;
-        }
-        yield fallback;
-        await Future<void>.delayed(_healEvery);
-      }
-    }
-  }
-
-  /// 10 tries, 3 seconds apart: about the time the membership trigger needs.
-  static const _healAttempts = 10;
-  static const _healEvery = Duration(seconds: 3);
+  Stream<T> _healing<T>(Stream<T> Function() make, T fallback) =>
+      healingStream(make, fallback, attempts: healAttempts, every: healEvery);
 
   @override
   Stream<GroupChatThread?> watchChat(String eventId) {
@@ -148,7 +198,11 @@ class FirestoreEventChatRepository implements EventChatRepository {
       _chat(eventId).collection('members').snapshots().map((qs) {
         final out = [
           for (final d in qs.docs)
-            if (d.data()['role'] != null && d.data()['removedAt'] == null)
+            // Members now, and those a moderator removed (they can be
+            // restored); someone who left by cancelling is not listed.
+            if (d.data()['role'] != null &&
+                (d.data()['removedAt'] == null ||
+                    d.data()['removedBy'] is String))
               GroupMember(
                 uid: d.id,
                 name: d.data()['name'] is String
@@ -157,6 +211,9 @@ class FirestoreEventChatRepository implements EventChatRepository {
                 avatarUrl: d.data()['avatarUrl'] as String?,
                 role: _role(d.data()['role']),
                 mutedUntil: _date(d.data()['mutedUntil']),
+                removedByModerator:
+                    d.data()['removedAt'] != null &&
+                    d.data()['removedBy'] is String,
               ),
         ];
         out.sort((a, b) {
@@ -331,11 +388,16 @@ class FirestoreEventChatRepository implements EventChatRepository {
   }
 
   @override
-  Future<void> announce(String eventId, String text) async {
+  Future<void> announce(
+    String eventId,
+    String text, {
+    required String clientId,
+  }) async {
     try {
       await callEventFunction(_functions, 'postEventAnnouncement', {
         'eventId': eventId,
         'text': text,
+        'clientId': clientId,
       });
     } on EventError catch (e) {
       throw ChatException(_chatCode(e.code), e.code);

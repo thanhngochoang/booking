@@ -123,6 +123,51 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
   /// can arrive after the first build (the account loads on its own).
   bool? _picked;
 
+  /// The event screen's list this tab sits in: the next page loads when it
+  /// nears the end (review M15; the mock draws no "Xem thêm" button).
+  ScrollPosition? _position;
+
+  /// How close to the end (in logical pixels) the next page starts loading.
+  static const _loadAhead = 600.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final p = Scrollable.maybeOf(context)?.position;
+    if (!identical(p, _position)) {
+      _position?.removeListener(_nearEnd);
+      _position = p;
+      p?.addListener(_nearEnd);
+    }
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_nearEnd);
+    super.dispose();
+  }
+
+  /// Loads the next page when the list is within [_loadAhead] of its end,
+  /// or when the page does not even fill the screen. A failed page waits for
+  /// the retry link instead of looping.
+  void _nearEnd() {
+    if (!mounted) {
+      return;
+    }
+    final p = _position;
+    if (p == null || !p.hasContentDimensions || p.extentAfter > _loadAhead) {
+      return;
+    }
+    final state = ref.read(timelineControllerProvider(_key));
+    if (state.cursor == null ||
+        state.loading ||
+        state.loadingMore ||
+        state.moreFailed) {
+      return;
+    }
+    ref.read(timelineControllerProvider(_key).notifier).loadMore();
+  }
+
   bool get _review => widget.isManager && (_picked ?? widget.initialReview);
 
   TimelineKey get _key => (
@@ -221,6 +266,10 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
         ),
       );
     } else {
+      if (state.cursor != null && !state.loadingMore && !state.moreFailed) {
+        // A short page may not fill the screen, so no scroll would ever ask.
+        WidgetsBinding.instance.addPostFrameCallback((_) => _nearEnd());
+      }
       body = Column(
         children: [
           _Masonry(
@@ -229,24 +278,20 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
             onOpen: (i) => context.push('/p/${i.postId}'),
             onMenu: _menu,
           ),
-          if (state.cursor != null) ...[
-            const SizedBox(height: AppSpace.s3),
-            AppButton.outline(
-              l.timelineMore,
-              key: const Key('timeline-more'),
-              loading: state.loadingMore,
-              onPressed: state.loadingMore ? null : controller.loadMore,
+          if (state.loadingMore)
+            const Padding(
+              key: Key('timeline-loading-more'),
+              padding: EdgeInsets.all(AppSpace.s3),
+              child: Center(child: DotRingLoader(size: LoaderSize.inline)),
             ),
-            if (state.moreFailed)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpace.s2),
-                child: Text(
-                  l.skillEvidenceLoadMoreRetry,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+          if (state.moreFailed)
+            Center(
+              child: TextButton(
+                key: const Key('timeline-more-retry'),
+                onPressed: controller.loadMore,
+                child: Text(l.skillEvidenceLoadMoreRetry),
               ),
-          ],
+            ),
         ],
       );
     }
@@ -430,7 +475,7 @@ class _Tile extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0x00000000), Color(0xB8000000)],
+                        colors: [Colors.transparent, AppColors.scrim],
                       ),
                     ),
                     child: Padding(
@@ -446,8 +491,8 @@ class _Tile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         // Mock `.ph .ov small`: 11px, white at 90%.
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 11,
+                          color: AppColors.onScrim,
+                          fontSize: AppText.xs2,
                         ),
                       ),
                     ),

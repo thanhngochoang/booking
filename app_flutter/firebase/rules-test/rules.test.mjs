@@ -1810,7 +1810,10 @@ test('group chat members read each other\'s member docs; 1-1 chats keep owner-on
 test('a group member marks the chat read but changes nothing else on their member doc', async () => {
   await assertSucceeds(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { unreadCount: 0, lastReadAt: serverTimestamp() }));
   await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { role: 'moderator' }));
-  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { mutedUntil: null }));
+  // M14: a real value, alongside an otherwise valid read marker, so only the affectedKeys guard refuses it.
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { mutedUntil: Timestamp.now() }));
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'),
+    { unreadCount: 0, lastReadAt: serverTimestamp(), mutedUntil: Timestamp.now() }));
 });
 
 test('chat storage: a removed member cannot read chat images', async () => {

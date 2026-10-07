@@ -54,6 +54,7 @@ void main() {
         fixturePost(
           id,
           kind: PostKind.eventShare,
+          photographerId: '',
           authorId: 'u7',
           serviceId: '',
           eventId: 'ev1',
@@ -79,11 +80,31 @@ void main() {
       expect(shares.posts.map((p) => p.id), ['s1']);
     });
 
+    test(
+      'an attendee share never appears in byPhotographer of the host',
+      () async {
+        // The server writes event shares with photographerId '' (review C1).
+        final db = await seededDb([
+          fixturePost('w1'),
+          fixturePost(
+            's1',
+            kind: PostKind.eventShare,
+            photographerId: '',
+            authorId: 'u7',
+            serviceId: '',
+            eventId: 'ev1',
+          ),
+        ]);
+        final page = await FirestorePostRepository(db: db).byPhotographer('p1');
+        expect(page.posts.map((p) => p.id), ['w1']);
+      },
+    );
+
     test('an event_share post parses without a package', () {
       final p = postFromFirestore('s2', {
         'kind': 'event_share',
         'authorId': 'u7',
-        'photographerId': 'p1',
+        'photographerId': '',
         'serviceId': '',
         'eventId': 'ev1',
         'imageUrls': ['https://img.test/1.jpg'],
@@ -95,7 +116,7 @@ void main() {
       expect(p.serviceId, '');
       expect(p.eventId, 'ev1');
       expect(p.authorId, 'u7');
-      expect(p.photographerId, 'p1');
+      expect(p.photographerId, '');
     });
 
     test('a post without an event has no eventId', () async {

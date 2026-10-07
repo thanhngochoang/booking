@@ -92,6 +92,7 @@ class GroupMember {
     this.avatarUrl,
     this.role = GroupRole.member,
     this.mutedUntil,
+    this.removedByModerator = false,
   });
 
   final String uid;
@@ -99,6 +100,11 @@ class GroupMember {
   final String? avatarUrl;
   final GroupRole role;
   final DateTime? mutedUntil;
+
+  /// A moderator removed them (O1/M8): listed under "Đã mời ra" for the
+  /// moderators, who can restore them. Members who left by cancelling are not
+  /// listed at all.
+  final bool removedByModerator;
 
   bool isMutedAt(DateTime now) =>
       mutedUntil != null && now.isBefore(mutedUntil!);
@@ -110,10 +116,12 @@ class GroupMember {
       other.name == name &&
       other.avatarUrl == avatarUrl &&
       other.role == role &&
-      other.mutedUntil == mutedUntil;
+      other.mutedUntil == mutedUntil &&
+      other.removedByModerator == removedByModerator;
 
   @override
-  int get hashCode => Object.hash(uid, name, avatarUrl, role, mutedUntil);
+  int get hashCode =>
+      Object.hash(uid, name, avatarUrl, role, mutedUntil, removedByModerator);
 }
 
 /// The newest pinned message, shown at the top of the chat.
@@ -205,6 +213,15 @@ final class RemoveMember extends ChatModeration {
   final String userId;
   @override
   Map<String, Object?> toCallable() => {'action': 'remove', 'userId': userId};
+}
+
+/// Lifts a moderator removal (O1/M8): back in at once with a paid ticket,
+/// otherwise their next ticket lets them in.
+final class RestoreMember extends ChatModeration {
+  const RestoreMember(this.userId);
+  final String userId;
+  @override
+  Map<String, Object?> toCallable() => {'action': 'restore', 'userId': userId};
 }
 
 final class SetModeratorsOnly extends ChatModeration {

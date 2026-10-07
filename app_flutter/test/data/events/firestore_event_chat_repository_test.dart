@@ -133,10 +133,29 @@ void main() {
         'removedAt': _ts(5),
       });
       await db.doc('chats/event_ev1/members/u4').set({'unreadCount': 0});
+      await db.doc('chats/event_ev1/members/u5').set({
+        'role': 'member',
+        'name': 'Bị mời ra',
+        'removedAt': _ts(3),
+        'removedBy': 'p1',
+      });
       final list = await repo.watchMembers('ev1').first;
-      expect(list.map((m) => m.name), ['Quốc Bảo', 'An', 'Minh Khoa']);
+      // u3 left by cancelling: not listed; u5 a moderator removed: flagged.
+      expect(list.map((m) => m.name), [
+        'Quốc Bảo',
+        'An',
+        'Bị mời ra',
+        'Minh Khoa',
+      ]);
       expect(list.first.role, GroupRole.moderator);
       expect(list[1].avatarUrl, 'https://a.test/u1.jpg');
+      expect(
+        [
+          for (final m in list)
+            if (m.removedByModerator) m.uid,
+        ],
+        ['u5'],
+      );
     },
   );
 
@@ -283,6 +302,7 @@ void main() {
         ),
         (const UnmuteMember('u2'), {'action': 'unmute', 'userId': 'u2'}),
         (const RemoveMember('u2'), {'action': 'remove', 'userId': 'u2'}),
+        (const RestoreMember('u2'), {'action': 'restore', 'userId': 'u2'}),
         (
           const SetModeratorsOnly(on: true),
           {'action': 'moderatorsOnly', 'on': true},
@@ -296,14 +316,86 @@ void main() {
 
     test('announce calls postEventAnnouncement', () async {
       answer({'messageId': 'a1'});
-      await repo.announce('ev1', 'Tập trung 7h45');
-      expect(lastCall(), {'eventId': 'ev1', 'text': 'Tập trung 7h45'});
+      await repo.announce('ev1', 'Tập trung 7h45', clientId: 'c1');
+      expect(lastCall(), {
+        'eventId': 'ev1',
+        'text': 'Tập trung 7h45',
+        'clientId': 'c1',
+      });
       verify(
         () => functions.httpsCallable(
           'postEventAnnouncement',
           options: any(named: 'options'),
         ),
       ).called(1);
+    });
+  });
+
+  group('healingStream (M1)', () {
+    FirebaseException refused() =>
+        FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied');
+
+    test('refused twice, then the value: fallback, fallback, value', () async {
+      var listens = 0;
+      Stream<int> make() {
+        listens++;
+        return listens <= 2 ? Stream<int>.error(refused()) : Stream.value(7);
+      }
+
+      final got = await healingStream<int>(
+        make,
+        0,
+        attempts: 10,
+        every: Duration.zero,
+      ).toList();
+      expect(got, [0, 0, 7]);
+      expect(listens, 3);
+    });
+
+    test('stops after the attempts with the fallback', () async {
+      var listens = 0;
+      final got = await healingStream<int>(
+        () {
+          listens++;
+          return Stream<int>.error(refused());
+        },
+        -1,
+        attempts: 3,
+        every: Duration.zero,
+      ).toList();
+      expect(got, [-1, -1, -1]);
+      expect(listens, 3);
+    });
+
+    test('a cancel during the wait starts no new listen', () async {
+      var listens = 0;
+      final sub = healingStream<int>(
+        () {
+          listens++;
+          return Stream<int>.error(refused());
+        },
+        0,
+        attempts: 10,
+        every: const Duration(milliseconds: 50),
+      ).listen((_) {});
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(listens, 1);
+      await sub.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(listens, 1);
+    });
+
+    test('another error ends the stream with it', () async {
+      final got = healingStream<int>(
+        () => Stream<int>.error(StateError('boom')),
+        0,
+        attempts: 10,
+        every: Duration.zero,
+      );
+      await expectLater(
+        got,
+        emitsInOrder([emitsError(isStateError), emitsDone]),
+      );
     });
   });
 

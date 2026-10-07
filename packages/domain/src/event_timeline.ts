@@ -29,9 +29,9 @@ export function timelineStatusFor(a: TimelineAuthor): TimelineStatus {
   return a.isPhotographer || a.hasPaidTicket || a.isManager ? 'visible' : 'pending';
 }
 
-/** Not a draft, and not later than 30 days after the event completed. */
+/** Not a draft or a cancelled event (M4), and not later than 30 days after the event completed. */
 export function timelineOpen(e: Pick<EventRecord, 'status' | 'completedAt'>, now: Date): boolean {
-  if (e.status === 'draft') return false;
+  if (e.status === 'draft' || e.status === 'cancelled') return false;
   if (e.completedAt === null) return true;
   return now.getTime() <= e.completedAt.getTime() + TIMELINE_OPEN_DAYS * DAY_MS;
 }
@@ -181,7 +181,6 @@ export async function shareEventPost(
     const post: SharedPost = {
       id: postId,
       authorId: caller.uid,
-      photographerId: ev.host.id ?? '',
       eventId,
       imageUrls: images.map((i) => i.url),
       imageMeta: images.map((i) => ({ w: i.w, h: i.h, blurHash: i.blurHash })),

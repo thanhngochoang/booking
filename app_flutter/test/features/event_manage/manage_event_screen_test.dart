@@ -225,6 +225,41 @@ void main() {
     expect(find.text(_badge('Đã vào')), findsOneWidget); // the row's badge
   });
 
+  testWidgets('the Check‑in link opens the same scanner (O3)', (tester) async {
+    final w = _host(
+      now: _eventDay,
+      registrations: [
+        registrationOf('r1', 'ev1', userName: 'Lan Anh', quantity: 2),
+      ],
+    );
+    w.scanner.enqueue('VE-AB2C-1013');
+    await _open(tester, w);
+    final link = find.byKey(const Key('manage-checkin-link'));
+    expect(
+      find.descendant(of: link, matching: find.text('Check‑in')),
+      findsOneWidget,
+    );
+    expect(tester.getSize(link).height, greaterThanOrEqualTo(48));
+    await _tap(tester, link);
+    expect(w.scanner.calls, 1);
+    expect(w.repo.checkedIn, ['VE-AB2C-1013']);
+    expect(find.text('Đã vào · Lan Anh · 2 vé'), findsOneWidget);
+  });
+
+  testWidgets('the Check‑in link follows the scan window (O3)', (tester) async {
+    final w = _host(
+      now: _eventDay.subtract(const Duration(hours: 8, minutes: 1)),
+    );
+    await _open(tester, w);
+    expect(_scanEnabled(tester), isFalse);
+    expect(
+      tester
+          .widget<TextButton>(find.byKey(const Key('manage-checkin-link')))
+          .onPressed,
+      isNull,
+    );
+  });
+
   testWidgets('scanning a used ticket says Vé đã dùng', (tester) async {
     final w = _host(
       now: _eventDay,
@@ -424,7 +459,8 @@ void main() {
     expect(find.text(_badge('Đã huỷ')), findsOneWidget);
     expect(find.byKey(const Key('manage-cancelled-strip')), findsOneWidget);
     expect(find.byKey(const Key('manage-scan')), findsNothing);
-    expect(find.byKey(const Key('manage-broadcast')), findsNothing);
+    expect(find.byKey(const Key('manage-broadcast')), findsNothing); // M5
+    expect(find.byKey(const Key('manage-checkin-link')), findsNothing);
     expect(find.byKey(const Key('manage-cancel')), findsNothing);
     expect(find.byKey(const Key('manage-empty-share')), findsNothing);
   });
@@ -474,6 +510,9 @@ void main() {
     await tester.tap(find.byKey(const Key('announce-send')));
     await settle(tester);
     expect(w.chat.announcements.single, 'Xin chào');
+    // M3: the retry reuses the first attempt's clientId (the server posts once).
+    expect(w.chat.announcementIds, hasLength(2));
+    expect(w.chat.announcementIds.toSet(), hasLength(1));
   });
 
   testWidgets('closing the announcement sheet with text asks first', (

@@ -439,6 +439,36 @@ void main() {
       final items = await repo.watchMyChats().first;
       expect(items.map((i) => i.thread.id), ['c1']);
     });
+
+    test('the query filters on kind, so a newer group never takes a row of the page', () async {
+      final auth = _Auth();
+      final user = _User();
+      when(() => auth.currentUser).thenReturn(user);
+      when(() => user.uid).thenReturn('u1');
+      await firestore.doc('chats/c1').set({
+        'kind': 'booking',
+        'members': ['u1', 'p1'],
+        'customerId': 'u1',
+        'photographerId': 'p1',
+        'lastMessageAt': Timestamp.fromDate(DateTime(2026, 10, 3, 9)),
+      });
+      await firestore.doc('chats/event_ev1').set({
+        'kind': 'event_group',
+        'eventId': 'ev1',
+        'title': 'Photo walk',
+        'members': ['u1', 'p1'],
+        'lastMessageAt': Timestamp.fromDate(DateTime(2026, 10, 3, 10)),
+      });
+      final repo = FirestoreChatRepository(
+        firestore: firestore,
+        auth: auth,
+        mediaUploader: FakeMediaUploader(),
+      );
+      // With a one-row page, a client-side filter alone would return nothing.
+      final items = await repo.watchMyChats(limit: 1).first;
+      expect(items.map((i) => i.thread.id), ['c1']);
+      expect(oneToOneChatKinds, ['inquiry', 'booking']);
+    });
   });
 
   group('group chat messages', () {

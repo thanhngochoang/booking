@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { DomainError } from '../src/errors.js';
 import {
   GROUP_RATE_PER_MINUTE, assertCanSendToGroup, moderateEventChat, postEventAnnouncement, sendEventMessage,
-  syncEventChatMembership,
+  shouldBeGroupMember, syncEventChatMembership,
 } from '../src/event_chat.js';
 import type { EventCaller } from '../src/event.js';
 import {
-  CHAT, EV, T0, chatSeed, createChatWorld, memberSeed, mod, registrationDoc, text,
+  CHAT, EV, T0, chatSeed, createChatWorld, memberSeed, mod, registrationDoc, text, type ChatWorld,
 } from './support/event_social_world.js';
 
 const refused = (code: string) => (e: unknown) => e instanceof DomainError && e.code === code;
@@ -15,9 +15,19 @@ const customer = (uid: string): EventCaller => ({ uid, staffRole: null });
 const paid = (uid: string, id = `rg_${uid}`) => registrationDoc({ id, userId: uid, userName: `Tên ${uid}`, eventId: EV, status: 'paid' });
 
 describe('syncEventChatMembership', () => {
+  // The store holds the registrations as they are now; a `sync` call is one trigger delivery.
+  const pay = (w: ChatWorld, uid: string, id = `rg_${uid}`, createdAt = w.clock.now()) => {
+    w.store.seedPaid(EV, uid, id, { createdAt, userName: `Tên ${uid}` });
+    return paid(uid, id);
+  };
+  const cancel = (w: ChatWorld, reg: ReturnType<typeof paid>, status: 'cancelled' | 'refunded' = 'cancelled') => {
+    w.store.unpay(EV, reg.userId, reg.id);
+    return { before: reg, after: { ...reg, status } };
+  };
+
   test('a paid registration joins once and posts the join line', async () => {
     const w = createChatWorld();
-    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu3') }), 'joined');
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: pay(w, 'cu3') }), 'joined');
     const chat = w.store.chats.get(CHAT);
     assert.deepEqual(chat?.members, ['ph1', 'cu1', 'cu2', 'cu3']);
     assert.equal(chat?.memberCount, 4);
@@ -30,21 +40,33 @@ describe('syncEventChatMembership', () => {
     assert.equal(line?.senderId, null);
   });
 
+  test('the member name is the profile display name, else the registration name (M7)', async () => {
+    const w = createChatWorld();
+    const deps = { ...w.deps, people: { user: async (uid: string) => (uid === 'cu3' ? { name: 'Lan Chi', avatarUrl: 'https://a.test/l.jpg' } : null) } };
+    assert.equal(await syncEventChatMembership(deps, { before: null, after: { ...pay(w, 'cu3'), userName: 'Nguyễn Thị Lan Chi' } }), 'joined');
+    assert.equal(w.store.members.get(`${CHAT}/cu3`)?.name, 'Lan Chi');
+    assert.equal(w.store.members.get(`${CHAT}/cu3`)?.avatarUrl, 'https://a.test/l.jpg');
+    w.store.seedPaid(EV, 'cu4', 'rg_cu4', { userName: 'Tên vé cu4' });
+    assert.equal(await syncEventChatMembership(deps, { before: null, after: paid('cu4') }), 'joined');
+    assert.equal(w.store.members.get(`${CHAT}/cu4`)?.name, 'Tên vé cu4');
+  });
+
   test('a held registration that becomes paid joins; a repeated write does not rejoin', async () => {
     const w = createChatWorld();
     const held = registrationDoc({ userId: 'cu3', eventId: EV, status: 'held' });
     assert.equal(await syncEventChatMembership(w.deps, { before: null, after: held }), 'none');
+    w.store.seedPaid(EV, 'cu3', held.id);
     assert.equal(await syncEventChatMembership(w.deps, { before: held, after: { ...held, status: 'paid' } }), 'joined');
     const writes = w.store.writes;
-    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu3') }), 'none');
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu3', held.id) }), 'none');
     assert.equal(w.store.writes, writes);
     assert.equal(w.store.messagesOf(CHAT).length, 1);
   });
 
   test('a second paid registration of the same user does not join twice', async () => {
     const w = createChatWorld();
-    await syncEventChatMembership(w.deps, { before: null, after: paid('cu3', 'rgA') });
-    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu3', 'rgB') }), 'none');
+    await syncEventChatMembership(w.deps, { before: null, after: pay(w, 'cu3', 'rgA') });
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: pay(w, 'cu3', 'rgB') }), 'none');
     assert.equal(w.store.chats.get(CHAT)?.members.filter((u) => u === 'cu3').length, 1);
     assert.equal(w.store.messagesOf(CHAT).length, 1);
   });
@@ -52,8 +74,7 @@ describe('syncEventChatMembership', () => {
   test('refund or cancel removes the member and keeps the member doc', async () => {
     for (const status of ['cancelled', 'refunded'] as const) {
       const w = createChatWorld();
-      const reg = paid('cu1');
-      assert.equal(await syncEventChatMembership(w.deps, { before: reg, after: { ...reg, status } }), 'left');
+      assert.equal(await syncEventChatMembership(w.deps, cancel(w, paid('cu1'), status)), 'left');
       assert.deepEqual(w.store.chats.get(CHAT)?.members, ['ph1', 'cu2']);
       assert.equal(w.store.chats.get(CHAT)?.memberCount, 2);
       const doc = w.store.members.get(`${CHAT}/cu1`);
@@ -65,27 +86,83 @@ describe('syncEventChatMembership', () => {
   test('a user with another paid ticket stays; the host never leaves', async () => {
     const w = createChatWorld();
     w.store.seedPaid(EV, 'cu1', 'other');
-    const reg = paid('cu1');
-    assert.equal(await syncEventChatMembership(w.deps, { before: reg, after: { ...reg, status: 'cancelled' } }), 'none');
+    assert.equal(await syncEventChatMembership(w.deps, cancel(w, paid('cu1'))), 'none');
     const host = registrationDoc({ userId: 'ph1', eventId: EV, status: 'paid' });
     assert.equal(await syncEventChatMembership(w.deps, { before: host, after: { ...host, status: 'cancelled' } }), 'none');
     assert.ok(w.store.chats.get(CHAT)?.members.includes('ph1'));
   });
 
-  test('someone a moderator removed does not rejoin; one who left by cancelling does', async () => {
+  test('a join delivered after the cancel does not re-add the member (I1)', async () => {
+    const w = createChatWorld();
+    // A free registration is created paid and cancelled a few seconds later; the cancel is delivered first.
+    const reg = pay(w, 'cu3');
+    const cancelled = cancel(w, reg);
+    assert.equal(await syncEventChatMembership(w.deps, cancelled), 'none');
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: reg }), 'none');
+    assert.equal(w.store.chats.get(CHAT)?.members.includes('cu3'), false);
+    assert.equal(w.store.messagesOf(CHAT).length, 0);
+  });
+
+  test('a failed join retried after the leave does not re-add the member (I1)', async () => {
+    const w = createChatWorld();
+    const reg = pay(w, 'cu3');
+    const flaky = { ...w.deps, chats: { runTransaction: async () => { throw new Error('aborted'); } } };
+    await assert.rejects(syncEventChatMembership(flaky, { before: null, after: reg }));
+    // The leave runs (and finds nothing to do), then the join is retried.
+    assert.equal(await syncEventChatMembership(w.deps, cancel(w, reg)), 'none');
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: reg }), 'none');
+    assert.equal(w.store.chats.get(CHAT)?.members.includes('cu3'), false);
+  });
+
+  test('a late cancel of an old ticket does not remove a member who still holds a paid one', async () => {
+    const w = createChatWorld();
+    const old = paid('cu1');
+    pay(w, 'cu1', 'rg_new');
+    assert.equal(await syncEventChatMembership(w.deps, cancel(w, old)), 'none');
+    assert.ok(w.store.chats.get(CHAT)?.members.includes('cu1'));
+  });
+
+  test('someone a moderator removed does not rejoin with an old ticket; one who left by cancelling does', async () => {
     const w = createChatWorld();
     await moderateEventChat(w.deps, mod, { eventId: EV, action: 'remove', userId: 'cu1' });
-    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu1', 'again') }), 'none');
-    const reg = paid('cu2');
-    await syncEventChatMembership(w.deps, { before: reg, after: { ...reg, status: 'cancelled' } });
-    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu2', 'again') }), 'joined');
+    // A late or repeated delivery for the ticket bought before the removal.
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu1') }), 'none');
+    assert.equal(w.store.chats.get(CHAT)?.members.includes('cu1'), false);
+    w.clock.advance(60_000);
+    await syncEventChatMembership(w.deps, cancel(w, paid('cu2')));
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: pay(w, 'cu2', 'again') }), 'joined');
     assert.ok(w.store.chats.get(CHAT)?.members.includes('cu2'));
     assert.equal(w.store.members.get(`${CHAT}/cu2`)?.removedAt, null);
+  });
+
+  test('a ticket bought after a moderator removal re-admits the member (O1/M8)', async () => {
+    const w = createChatWorld();
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'remove', userId: 'cu1' });
+    w.clock.advance(60_000);
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: pay(w, 'cu1', 'rg_after') }), 'joined');
+    const doc = w.store.members.get(`${CHAT}/cu1`);
+    assert.equal(doc?.removedAt, null);
+    assert.equal(doc?.removedBy, null);
+    assert.ok(w.store.chats.get(CHAT)?.members.includes('cu1'));
   });
 
   test('an event without a chat is ignored', async () => {
     const w = createChatWorld();
     assert.equal(await syncEventChatMembership(w.deps, { before: null, after: registrationDoc({ eventId: 'nochat', status: 'paid' }) }), 'none');
+  });
+});
+
+describe('shouldBeGroupMember', () => {
+  const at = (ms: number) => new Date(T0.getTime() + ms);
+  const reg = (ms: number) => ({ id: `r${ms}`, createdAt: at(ms), userName: 'x', userAvatarUrl: null });
+  test('moderators always; others need a paid ticket, after a moderator removal a newer one', () => {
+    const chat = { moderators: ['ph1'] };
+    assert.equal(shouldBeGroupMember(chat, null, 'ph1', []), true);
+    assert.equal(shouldBeGroupMember(chat, null, 'cu1', []), false);
+    assert.equal(shouldBeGroupMember(chat, null, 'cu1', [reg(0)]), true);
+    assert.equal(shouldBeGroupMember(chat, { removedAt: at(10), removedBy: null }, 'cu1', [reg(0)]), true);
+    assert.equal(shouldBeGroupMember(chat, { removedAt: at(10), removedBy: 'ph1' }, 'cu1', [reg(0)]), false);
+    assert.equal(shouldBeGroupMember(chat, { removedAt: at(10), removedBy: 'ph1' }, 'cu1', [reg(0), reg(20)]), true);
   });
 });
 
@@ -244,6 +321,34 @@ describe('moderateEventChat', () => {
     assert.equal(w.store.chats.get(CHAT)?.memberCount, 2);
     assert.equal(w.store.members.get(`${CHAT}/cu2`)?.removedBy, 'ad1');
     await assert.rejects(moderateEventChat(w.deps, mod, { eventId: EV, action: 'remove', userId: 'ph1' }), refused('permission_denied'));
+  });
+
+  test('restore with a paid ticket brings the member back; without one it only lifts the removal (O1/M8)', async () => {
+    const w = createChatWorld();
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'remove', userId: 'cu1' });
+    await assert.rejects(moderateEventChat(w.deps, customer('cu2'), { eventId: EV, action: 'restore', userId: 'cu1' }), refused('permission_denied'));
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'restore', userId: 'cu1' });
+    assert.ok(w.store.chats.get(CHAT)?.members.includes('cu1'));
+    assert.equal(w.store.members.get(`${CHAT}/cu1`)?.removedBy, null);
+    assert.equal(w.store.members.get(`${CHAT}/cu1`)?.removedAt, null);
+    assert.equal(w.store.messagesOf(CHAT).at(-1)?.system?.userId, 'cu1');
+    await sendEventMessage(w.deps, 'cu1', text('m1'));
+
+    // cu2 is removed, then cancels: restore only clears the flag; the next ticket lets them in.
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'remove', userId: 'cu2' });
+    w.store.unpay(EV, 'cu2', 'rg_cu2');
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'restore', userId: 'cu2' });
+    assert.equal(w.store.chats.get(CHAT)?.members.includes('cu2'), false);
+    assert.equal(w.store.members.get(`${CHAT}/cu2`)?.removedBy, null);
+    assert.notEqual(w.store.members.get(`${CHAT}/cu2`)?.removedAt, null);
+    w.store.seedPaid(EV, 'cu2', 'old_again', { createdAt: new Date(0) });
+    assert.equal(await syncEventChatMembership(w.deps, { before: null, after: paid('cu2', 'old_again') }), 'joined');
+
+    // Restoring someone who was not removed by a moderator is a no-op; a stranger is not_found.
+    const writes = w.store.writes;
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'restore', userId: 'cu1' });
+    assert.equal(w.store.writes, writes);
+    await assert.rejects(moderateEventChat(w.deps, mod, { eventId: EV, action: 'restore', userId: 'ghost' }), refused('not_found'));
   });
 
   test('moderators-only switches on and off', async () => {

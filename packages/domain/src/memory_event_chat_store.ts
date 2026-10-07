@@ -1,13 +1,13 @@
 import type { GroupChat, GroupMember, GroupMessage, GroupPin } from './event_chat.js';
-import type { EventChatStore, EventChatTx } from './event_chat_ports.js';
+import type { EventChatStore, EventChatTx, PaidRegistration } from './event_chat_ports.js';
 
 export class MemoryEventChatStore implements EventChatStore {
   readonly chats = new Map<string, GroupChat>();
   readonly members = new Map<string, GroupMember>(); // `${chatId}/${uid}`
   readonly messages = new Map<string, GroupMessage[]>(); // chatId -> in order
   readonly pins = new Map<string, GroupPin>(); // `${chatId}/${messageId}`
-  /** `${eventId}/${uid}/${registrationId}` of paid registrations (for the "other paid ticket" check). */
-  readonly paid = new Set<string>();
+  /** Paid registrations now, by `${eventId}/${uid}/${registrationId}` (membership is derived from them). */
+  readonly paid = new Map<string, PaidRegistration>();
   /** Committed write count. */
   writes = 0;
 
@@ -21,8 +21,15 @@ export class MemoryEventChatStore implements EventChatStore {
     this.members.set(`${chatId}/${m.uid}`, m);
   }
 
-  seedPaid(eventId: string, uid: string, registrationId: string): void {
-    this.paid.add(`${eventId}/${uid}/${registrationId}`);
+  seedPaid(eventId: string, uid: string, registrationId: string, over: Partial<PaidRegistration> = {}): void {
+    this.paid.set(`${eventId}/${uid}/${registrationId}`, {
+      id: registrationId, createdAt: new Date(0), userName: `Tên ${uid}`, userAvatarUrl: null, ...over,
+    });
+  }
+
+  /** The registration is no longer `paid` (cancelled, refunded or expired). */
+  unpay(eventId: string, uid: string, registrationId: string): void {
+    this.paid.delete(`${eventId}/${uid}/${registrationId}`);
   }
 
   messagesOf(chatId: string): GroupMessage[] {
@@ -60,9 +67,9 @@ export class MemoryEventChatStore implements EventChatStore {
           read('getMessage');
           return this.messagesOf(chatId).find((m) => m.id === id) ?? null;
         },
-        hasOtherPaidRegistration: async (eventId, uid, except) => {
-          read('hasOtherPaidRegistration');
-          return [...this.paid].some((k) => k.startsWith(`${eventId}/${uid}/`) && !k.endsWith(`/${except}`));
+        paidRegistrations: async (eventId, uid) => {
+          read('paidRegistrations');
+          return [...this.paid.entries()].filter(([k]) => k.startsWith(`${eventId}/${uid}/`)).map(([, v]) => v);
         },
         putChat: (c) => write(() => { this.chats.set(c.id, c); }),
         putMember: (chatId, m) => write(() => { this.members.set(`${chatId}/${m.uid}`, m); }),

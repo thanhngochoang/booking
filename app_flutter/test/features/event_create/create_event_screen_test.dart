@@ -99,6 +99,21 @@ Future<void> _fillStepTwo(
 
 void main() {
   group('S12.01', () {
+    testWidgets('the empty cover tile has a dashed border (mock, O2)', (
+      tester,
+    ) async {
+      final w = _photographer();
+      await _open(tester, w);
+      CustomPaint frame() => tester.widget<CustomPaint>(
+        find.byKey(const Key('create-event-cover-frame')),
+      );
+      expect(frame().foregroundPainter, isNotNull);
+      await tester.tap(find.byKey(const Key('create-event-cover')));
+      await settle(tester);
+      // A chosen photo keeps the plain border.
+      expect(frame().foregroundPainter, isNull);
+    });
+
     testWidgets('Tiếp tục is disabled until cover, title and type', (
       tester,
     ) async {

@@ -42,6 +42,10 @@ class _AnnounceSheetState extends ConsumerState<AnnounceSheet> {
   bool _busy = false;
   bool _failed = false;
 
+  /// One id per announcement: a retry after a lost answer reuses it, so the
+  /// server posts and pins it once (review M3). Editing the text starts a new one.
+  String _clientId = newUlid();
+
   @override
   void dispose() {
     _text.dispose();
@@ -83,7 +87,7 @@ class _AnnounceSheetState extends ConsumerState<AnnounceSheet> {
     try {
       await ref
           .read(eventChatRepositoryProvider)
-          .announce(widget.eventId, _text.text.trim());
+          .announce(widget.eventId, _text.text.trim(), clientId: _clientId);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -149,7 +153,10 @@ class _AnnounceSheetState extends ConsumerState<AnnounceSheet> {
               maxLines: 6,
               maxLength: announceMaxLength,
               textCapitalization: TextCapitalization.sentences,
-              onChanged: (_) => setState(() => _failed = false),
+              onChanged: (_) => setState(() {
+                _failed = false;
+                _clientId = newUlid();
+              }),
               decoration: InputDecoration(hintText: l.manageAnnounceHint),
             ),
             if (_failed)

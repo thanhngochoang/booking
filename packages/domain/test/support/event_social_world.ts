@@ -80,6 +80,9 @@ export function createChatWorld(): ChatWorld {
   store.seedMember(CHAT, memberSeed('ph1', { role: 'moderator' }));
   store.seedMember(CHAT, memberSeed('cu1'));
   store.seedMember(CHAT, memberSeed('cu2'));
+  // cu1 and cu2 hold a paid ticket (membership is derived from them).
+  store.seedPaid(EV, 'cu1', 'rg_cu1', { createdAt: new Date(T0.getTime() - 86_400_000) });
+  store.seedPaid(EV, 'cu2', 'rg_cu2', { createdAt: new Date(T0.getTime() - 86_400_000) });
   return { deps, store, clock };
 }
 

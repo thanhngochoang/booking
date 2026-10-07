@@ -4517,9 +4517,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get timelineHostSuffix => 'chủ sự kiện';
 
   @override
-  String get timelineMore => 'Xem thêm';
-
-  @override
   String get timelineModerateFailed => 'Không thực hiện được. Thử lại nhé.';
 
   @override
@@ -4656,4 +4653,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String postEventChip(String title) {
     return 'Sự kiện: $title';
   }
+
+  @override
+  String get chatRemovedSection => 'Đã mời ra';
+
+  @override
+  String get chatRestore => 'Cho vào lại';
+
+  @override
+  String get chatRestoreHint =>
+      'Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.';
+
+  @override
+  String get manageCheckinLink => 'Check‑in';
 }

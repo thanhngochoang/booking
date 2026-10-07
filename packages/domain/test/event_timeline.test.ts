@@ -23,10 +23,11 @@ describe('timelineStatusFor', () => {
 });
 
 describe('timelineOpen', () => {
-  test('a draft is closed; a completed event closes 30 days after', () => {
+  test('a draft or a cancelled event is closed; a completed event closes 30 days after', () => {
     const done = new Date('2026-10-04T05:00:00.000Z');
     const now = new Date(done.getTime() + 30 * DAY);
     assert.equal(timelineOpen(eventRecord({ status: 'draft' }), now), false);
+    assert.equal(timelineOpen(eventRecord({ status: 'cancelled', cancelledAt: done }), done), false);
     assert.equal(timelineOpen(eventRecord({ status: 'completed', completedAt: done }), now), true);
     assert.equal(timelineOpen(eventRecord({ status: 'completed', completedAt: done }), new Date(now.getTime() + 1)), false);
     assert.equal(timelineOpen(eventRecord({ status: 'open' }), now), true);
@@ -132,14 +133,14 @@ describe('shareEventPost', () => {
     assert.equal(w.store.events.get(EV)?.postCount, 2);
   });
 
-  test('share writes an event_share post with the event, the host and no service', async () => {
+  test('share writes an event_share post with the event and no service or photographer', async () => {
     const w = createTimelineWorld();
     w.store.seedPaid(EV, 'cu1');
     await shareEventPost(w.deps, customer('cu1'), req('cu1'));
     const p = w.store.sharedPosts.get('sp1');
     assert.equal(p?.eventId, EV);
     assert.equal(p?.authorId, 'cu1');
-    assert.equal(p?.photographerId, 'ph1');
+    assert.equal(p !== undefined && 'photographerId' in p, false);
     assert.equal(p?.imageUrls.length, 2);
   });
 

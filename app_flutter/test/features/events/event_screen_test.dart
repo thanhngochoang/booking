@@ -338,6 +338,21 @@ void main() {
       expect(w.location, '/e/ev1/chat');
     });
 
+    testWidgets('an admin who is not in the chat sees the inline panel (M10)', (
+      tester,
+    ) async {
+      final w = EventsWorld(
+        events: [_free('ev1')],
+        uid: 'ad1',
+        staff: StaffRole.admin,
+      );
+      await w.pump(tester, path: '/e/ev1', size: _sw);
+      await tester.tap(find.text('Nhóm chat'));
+      await settle(tester);
+      expect(w.location, '/e/ev1');
+      expect(find.text('Đăng ký để vào nhóm'), findsOneWidget);
+    });
+
     testWidgets('/timeline opens the Timeline tab with its own code', (
       tester,
     ) async {

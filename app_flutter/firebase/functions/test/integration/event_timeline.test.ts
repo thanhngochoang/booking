@@ -82,6 +82,7 @@ describe('event timeline on the emulators', () => {
     assert.equal(post?.kind, 'event_share');
     assert.equal(post?.eventId, eventId);
     assert.equal(post?.serviceId, '');
+    assert.equal(post?.photographerId, '', 'never in the host portfolio (byPhotographer)');
     assert.match(post?.caption as string, new RegExp(`#${hashtag}$`));
     assert.equal((await rowOf(eventId, postId))?.status, 'visible');
     // onPostCreated runs for the new post and must not write a second row

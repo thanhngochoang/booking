@@ -335,7 +335,12 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
                       l.manageBroadcast,
                       key: const Key('manage-broadcast'),
                       // The group chat exists from the moment the event is published.
-                      onPressed: e.summary.status == EventStatus.draft || busy
+                      // Never for a cancelled event (the footer is gone too);
+                      // its chat closes 7 days after the cancel (M5).
+                      onPressed:
+                          e.summary.status == EventStatus.draft ||
+                              cancelled ||
+                              busy
                           ? null
                           : _announce,
                     ),
@@ -424,7 +429,13 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
             _PendingPostsRow(eventId: e.id),
           ],
           const SizedBox(height: AppSpace.s3),
-          SectionHeader(title: l.manageParticipants),
+          // Mock S12.03 `.sec`: "Người tham gia" with a "Check‑in" link that
+          // opens the same scanner as the footer button, under the same window.
+          _ParticipantsHeader(
+            title: l.manageParticipants,
+            linkLabel: cancelled ? null : l.manageCheckinLink,
+            onLink: scanOpen && !_scanning && !busy ? () => _scan(e) : null,
+          ),
           AsyncView<List<EventRegistration>>(
             value: regs,
             skeleton: (_) => Column(
@@ -517,7 +528,9 @@ class _PendingPostsRow extends ConsumerWidget {
           borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: () => context.push('/e/$eventId/timeline?review=1'),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
+            constraints: const BoxConstraints(
+              minHeight: AppSpace.s12 + AppSpace.s2,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
               child: Row(
@@ -552,6 +565,61 @@ class _PendingPostsRow extends ConsumerWidget {
 }
 
 /// The date block, title, time and place, and the status (mock S12.03 card).
+/// "Người tham gia" and, at its right, the "Check‑in" link (S12.03).
+class _ParticipantsHeader extends StatelessWidget {
+  const _ParticipantsHeader({
+    required this.title,
+    required this.linkLabel,
+    required this.onLink,
+  });
+
+  final String title;
+
+  /// Null hides the link (a cancelled event).
+  final String? linkLabel;
+
+  /// Null shows the link disabled (outside the check-in window, or a scan
+  /// already open), exactly when the footer button is.
+  final VoidCallback? onLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = linkLabel;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          if (label != null)
+            TextButton(
+              key: const Key('manage-checkin-link'),
+              onPressed: onLink,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(AppSpace.s12, AppSpace.s12),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2),
+                textStyle: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: Text(label),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.event});
   final EventDetail event;

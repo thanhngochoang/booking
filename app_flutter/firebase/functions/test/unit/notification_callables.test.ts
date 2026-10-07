@@ -73,6 +73,9 @@ describe('notification callables and triggers', () => {
     assert.equal(await handleChatMemberWrite({ chatId: 'c1', uid: 'u1', after: undefined }, mark), false);
     assert.equal(await handleChatMemberWrite({ chatId: 'c1', uid: 'u1', after: { unreadCount: 0 } }, mark), true);
     assert.deepEqual(calls, ['u1/c1']);
+    // M9: event group chats have no inbox row; their member writes are skipped.
+    assert.equal(await handleChatMemberWrite({ chatId: 'event_ev1', uid: 'u1', after: { unreadCount: 0 } }, mark), false);
+    assert.deepEqual(calls, ['u1/c1']);
   });
 
   it('a device token moves to its newest owner', async () => {
