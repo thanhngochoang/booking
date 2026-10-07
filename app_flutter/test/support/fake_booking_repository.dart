@@ -1,13 +1,17 @@
 import 'dart:async';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 class FakeBookingRepository implements BookingRepository {
-  FakeBookingRepository({this.customerId = 'c1'});
+  FakeBookingRepository({this.customerId = 'c1', DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
 
   final String customerId;
+  final DateTime Function() _clock;
   final Map<String, Booking> bookings = {};
   final Map<String, BookingContactSnapshot> contacts = {};
   final Map<String, List<BookingEventRecord>> events = {};
@@ -17,7 +21,7 @@ class FakeBookingRepository implements BookingRepository {
   final _eventChanges = StreamController<String>.broadcast();
 
   BookingErrorCode? nextError;
-  BookingErrorCode? nextDepositError;
+  BookingErrorCode? nextPaymentError;
   final createCalls =
       <
         ({
@@ -30,8 +34,12 @@ class FakeBookingRepository implements BookingRepository {
           int? expectedPrice,
         })
       >[];
-  final depositCalls = <({String bookingId, String provider})>[];
+  final paymentCalls = <({String bookingId, PayMethod method})>[];
   final fakeConfirms = <String>[];
+  final fakeConfirmKinds = <FakeTransferKind>[];
+
+  /// paymentId → bookingId, for the payments this fake created.
+  final _paymentBooking = <String, String>{};
   final checkCalls = <String>[];
 
   void remove(String id) {
@@ -59,6 +67,7 @@ class FakeBookingRepository implements BookingRepository {
       BookingErrorCode.permissionDenied => 'permission_denied',
       BookingErrorCode.notFound => 'not_found',
       BookingErrorCode.invalidArgument => 'invalid_argument',
+      BookingErrorCode.paymentAttemptsExceeded => 'payment_attempts_exceeded',
       BookingErrorCode.network => 'unavailable',
       BookingErrorCode.unknown => 'unknown',
     };
@@ -178,8 +187,8 @@ class FakeBookingRepository implements BookingRepository {
       place: place,
       note: note,
       status: BookingStatus.draft,
-      deposit: 300000,
-      remaining: 700000,
+      deposit: 1000000,
+      remaining: 0,
       createdAt: now,
       updatedAt: now,
     );
@@ -189,57 +198,86 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<CreateDepositResponse> createDeposit({
+  Future<BookingCheckout> createPayment({
     required String bookingId,
-    required String provider,
-    String? returnUrl,
+    required PayMethod method,
   }) async {
     _checkNextError();
-    final depErr = nextDepositError;
-    if (depErr != null) {
-      nextDepositError = null;
-      throw BookingException(_serverCodeFor(depErr));
+    final payErr = nextPaymentError;
+    if (payErr != null) {
+      nextPaymentError = null;
+      throw BookingException(_serverCodeFor(payErr));
     }
-    depositCalls.add((bookingId: bookingId, provider: provider));
-    return CreateDepositResponse(
-      paymentId: 'pay_$bookingId',
-      payUrl: 'https://fake-pay.test/$bookingId',
-      provider: provider,
+    paymentCalls.add((bookingId: bookingId, method: method));
+    final attempt = paymentCalls.where((c) => c.bookingId == bookingId).length;
+    final paymentId = attempt == 1
+        ? 'pay_$bookingId'
+        : 'pay_${bookingId}_$attempt';
+    _paymentBooking[paymentId] = bookingId;
+    final isQr = method == PayMethod.bankQr;
+    final b = bookings[bookingId];
+    final checkout = BookingCheckout(
+      paymentId: paymentId,
+      method: method,
+      amount: b?.deposit ?? 1000000,
+      expiresAt: _clock().toUtc().add(const Duration(minutes: 15)),
+      transferCode: 'PB 7F3K2Q',
+      attempt: attempt,
+      qrPayload: isQr ? fakeQrPayload : null,
+      bankName: isQr ? 'BIDV' : null,
+      accountMasked: isQr ? '9624 •••• 3812' : null,
+      bankAppsUrl: isQr ? 'https://fake-pay.local/bank-apps' : null,
+      payUrl: isQr
+          ? null
+          : 'https://fake-pay.local/${method.code}?paymentId=$paymentId',
     );
+    if (b != null) {
+      bookings[bookingId] = b.copyWith(checkout: checkout);
+      _bookingChanges.add(bookingId);
+    }
+    return checkout;
   }
 
+  /// Fixed fake VietQR text (a test value, not a real account).
+  static const fakeQrPayload =
+      '00020101021238570010A000000727012700069704180113962470000038120208QRIBFTTA53037045802VN6304ABCD';
+
   @override
-  Future<ConfirmPaymentResponse> confirmFakePayment({
+  Future<String> confirmFakePayment({
     required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
   }) async {
     _checkNextError();
     fakeConfirms.add(paymentId);
-    final bookingId = paymentId.replaceFirst('pay_', '');
+    fakeConfirmKinds.add(kind);
+    final bookingId =
+        _paymentBooking[paymentId] ?? paymentId.replaceFirst('pay_', '');
+    final pays =
+        kind == FakeTransferKind.exact || kind == FakeTransferKind.over;
     final b = bookings[bookingId];
-    if (b != null) {
-      final updated = b.copyWith(
+    if (pays && b != null) {
+      bookings[bookingId] = b.copyWith(
         status: BookingStatus.requested,
         escrowStatus: EscrowStatus.held,
-        depositPaidAt: DateTime.now().toUtc(),
+        depositPaidAt: _clock().toUtc(),
       );
-      bookings[bookingId] = updated;
       _bookingChanges.add(bookingId);
-      return ConfirmPaymentResponse(
-        paymentId: paymentId,
-        status: 'paid',
-        booking: updated,
-      );
     }
-    return ConfirmPaymentResponse(paymentId: paymentId, status: 'paid');
+    return switch (kind) {
+      FakeTransferKind.exact => 'paid',
+      FakeTransferKind.over => 'paid_with_refund',
+      FakeTransferKind.under => 'partial',
+      FakeTransferKind.wrongContent => 'needs_review',
+    };
   }
 
   @override
-  Future<CheckDepositResponse> checkDeposit({required String bookingId}) async {
+  Future<CheckPaymentResponse> checkPayment({required String bookingId}) async {
     _checkNextError();
     checkCalls.add(bookingId);
     final b = bookings[bookingId];
-    return CheckDepositResponse(
-      paid: b?.status != BookingStatus.draft,
+    return CheckPaymentResponse(
+      paid: b != null && b.status != BookingStatus.draft,
       booking: b,
     );
   }
@@ -312,4 +350,3 @@ extension _StreamStartWith<T> on Stream<T> {
     yield* this;
   }
 }
-

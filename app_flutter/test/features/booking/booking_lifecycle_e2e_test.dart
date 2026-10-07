@@ -74,10 +74,11 @@ class _ServerLikeRepository extends RecordingBookingRepository {
   }
 
   @override
-  Future<ConfirmPaymentResponse> confirmFakePayment({
+  Future<String> confirmFakePayment({
     required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
   }) async {
-    final res = await super.confirmFakePayment(paymentId: paymentId);
+    final res = await super.confirmFakePayment(paymentId: paymentId, kind: kind);
     final id = paymentId.replaceFirst('pay_', '');
     final b = bookings[id]!;
     seedContact(
@@ -203,8 +204,11 @@ Future<String> _paidRequest(_ServerLikeRepository repo) async {
     start: '15:30',
     place: const BookingPlace(name: 'Bến Bạch Đằng'),
   );
-  final dep = await repo.createDeposit(bookingId: b.id, provider: 'momo');
-  await repo.confirmFakePayment(paymentId: dep.paymentId);
+  final checkout = await repo.createPayment(
+    bookingId: b.id,
+    method: PayMethod.bankQr,
+  );
+  await repo.confirmFakePayment(paymentId: checkout.paymentId);
   repo.transitions.clear();
   return b.id;
 }

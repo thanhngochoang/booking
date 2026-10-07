@@ -100,7 +100,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
             context.replace('/b/$bookingId/pay');
           });
         } else {
-          ref.read(externalLauncherProvider).open(payUrl);
+          if (payUrl != null) ref.read(externalLauncherProvider).open(payUrl);
           context.replace('/b/$bookingId/pay');
         }
       case NeedPhone():
@@ -141,6 +141,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
       case BookingErrorCode.invalidArgument:
+      case BookingErrorCode.paymentAttemptsExceeded:
       case BookingErrorCode.unknown:
         final controller = ref.read(
           bookingFlowControllerProvider(widget.args).notifier,

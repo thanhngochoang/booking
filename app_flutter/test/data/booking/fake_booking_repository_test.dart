@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -86,16 +87,99 @@ void main() {
       expect(createCall.note, 'Ghi chú');
       expect(createCall.expectedPrice, 1000000);
 
-      await repo.createDeposit(bookingId: 'b1', provider: 'momo');
-      expect(repo.depositCalls.length, 1);
-      expect(repo.depositCalls.first.bookingId, 'b1');
-      expect(repo.depositCalls.first.provider, 'momo');
+      await repo.createPayment(bookingId: 'b1', method: PayMethod.momo);
+      expect(repo.paymentCalls.length, 1);
+      expect(repo.paymentCalls.first.bookingId, 'b1');
+      expect(repo.paymentCalls.first.method, PayMethod.momo);
 
-      await repo.confirmFakePayment(paymentId: 'pay_b1');
+      await repo.confirmFakePayment(
+        paymentId: 'pay_b1',
+        kind: FakeTransferKind.under,
+      );
       expect(repo.fakeConfirms, ['pay_b1']);
+      expect(repo.fakeConfirmKinds, [FakeTransferKind.under]);
 
-      await repo.checkDeposit(bookingId: 'b1');
+      await repo.checkPayment(bookingId: 'b1');
       expect(repo.checkCalls, ['b1']);
+    });
+
+    test('createPayment builds the fixed fake checkout from the clock', () async {
+      final now = DateTime.utc(2026, 10, 7, 3);
+      final repo = FakeBookingRepository(clock: () => now);
+      final draft = await repo.createBooking(
+        photographerId: 'p1',
+        serviceId: 's1',
+        day: '2026-10-15',
+        start: '09:00',
+        place: const BookingPlace(name: 'Công viên'),
+      );
+
+      final qr = await repo.createPayment(
+        bookingId: draft.id,
+        method: PayMethod.bankQr,
+      );
+      expect(qr.transferCode, 'PB 7F3K2Q');
+      expect(qr.bankName, 'BIDV');
+      expect(qr.accountMasked, '9624 •••• 3812');
+      expect(qr.bankAppsUrl, 'https://fake-pay.local/bank-apps');
+      expect(qr.qrPayload, startsWith('000201'));
+      expect(qr.payUrl, isNull);
+      expect(qr.amount, draft.deposit);
+      expect(qr.expiresAt, now.add(const Duration(minutes: 15)));
+      expect(qr.attempt, 1);
+      expect((await repo.getBooking(draft.id))?.checkout, qr);
+
+      final wallet = await repo.createPayment(
+        bookingId: draft.id,
+        method: PayMethod.momo,
+      );
+      expect(wallet.payUrl, startsWith('https://fake-pay.local/momo'));
+      expect(wallet.qrPayload, isNull);
+      expect(wallet.attempt, 2);
+      expect(wallet.paymentId, isNot(qr.paymentId));
+    });
+
+    test('nextPaymentError throws once from createPayment', () async {
+      final repo = FakeBookingRepository();
+      repo.nextPaymentError = BookingErrorCode.paymentAttemptsExceeded;
+      await expectLater(
+        repo.createPayment(bookingId: 'b1', method: PayMethod.bankQr),
+        throwsA(isA<BookingException>().having(
+            (e) => e.code, 'code', 'payment_attempts_exceeded')),
+      );
+      expect(repo.nextPaymentError, isNull);
+      expect(repo.paymentCalls, isEmpty);
+    });
+
+    test('confirmFakePayment: exact and over pay, under and wrong content do not',
+        () async {
+      for (final (kind, outcome, paid) in [
+        (FakeTransferKind.exact, 'paid', true),
+        (FakeTransferKind.over, 'paid_with_refund', true),
+        (FakeTransferKind.under, 'partial', false),
+        (FakeTransferKind.wrongContent, 'needs_review', false),
+      ]) {
+        final repo = FakeBookingRepository();
+        final draft = await repo.createBooking(
+          photographerId: 'p1',
+          serviceId: 's1',
+          day: '2026-10-15',
+          start: '09:00',
+          place: const BookingPlace(name: 'Công viên'),
+        );
+        final c = await repo.createPayment(
+          bookingId: draft.id,
+          method: PayMethod.bankQr,
+        );
+        expect(await repo.confirmFakePayment(paymentId: c.paymentId, kind: kind),
+            outcome);
+        expect(
+          (await repo.getBooking(draft.id))?.status ==
+              BookingStatus.requested,
+          paid,
+          reason: kind.code,
+        );
+      }
     });
 
     test('watchEvents emits seeded and added events', () async {

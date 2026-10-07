@@ -57,7 +57,7 @@ class _PaymentPendingScreenState extends ConsumerState<PaymentPendingScreen> {
     try {
       final res = await ref
           .read(bookingRepositoryProvider)
-          .checkDeposit(bookingId: widget.bookingId);
+          .checkPayment(bookingId: widget.bookingId);
       if (!mounted) return;
       if (!res.paid) _showSnack(l10n.payNotYet);
     } catch (_) {
@@ -106,15 +106,18 @@ class _PaymentPendingScreenState extends ConsumerState<PaymentPendingScreen> {
     setState(() => _changing = true);
     final repo = ref.read(bookingRepositoryProvider);
     try {
-      final checkout = await repo.createDeposit(
+      final checkout = await repo.createPayment(
         bookingId: b.id,
-        provider: picked.code,
+        method: picked == PaymentProviderCode.momo
+            ? PayMethod.momo
+            : PayMethod.bankQr,
       );
       if (!mounted) return;
       if (ref.read(realPaymentsProvider)) {
-        await ref
-            .read(externalLauncherProvider)
-            .open(Uri.parse(checkout.payUrl));
+        final payUrl = checkout.payUrl;
+        if (payUrl != null) {
+          await ref.read(externalLauncherProvider).open(Uri.parse(payUrl));
+        }
       } else {
         // The fake sheet confirms by itself; its result does not matter here.
         await showAppSheet<bool>(

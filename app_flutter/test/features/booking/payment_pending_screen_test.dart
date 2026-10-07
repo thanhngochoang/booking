@@ -151,7 +151,7 @@ void main() {
     expect(find.textContaining('Cổng thử nghiệm chưa báo về.'), findsOneWidget);
   });
 
-  testWidgets('check again calls checkDeposit only', (tester) async {
+  testWidgets('check again calls checkPayment only', (tester) async {
     final fakeRepo = FakeBookingRepository();
     fakeRepo.seedBooking(_makeBooking());
 
@@ -169,7 +169,7 @@ void main() {
 
     expect(fakeRepo.checkCalls, ['booking_1']);
     expect(fakeRepo.createCalls, isEmpty);
-    expect(fakeRepo.depositCalls, isEmpty);
+    expect(fakeRepo.paymentCalls, isEmpty);
   });
 
   testWidgets('check again with no payment yet shows the not-yet message', (
@@ -217,7 +217,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Đang chờ xác nhận thanh toán'), findsOneWidget);
-      expect(fakeRepo.depositCalls, isEmpty);
+      expect(fakeRepo.paymentCalls, isEmpty);
     },
   );
 
@@ -308,8 +308,8 @@ void main() {
 
       // Stays on S04.04
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
-      expect(fakeRepo.depositCalls, [
-        (bookingId: 'booking_1', provider: 'vnpay'),
+      expect(fakeRepo.paymentCalls, [
+        (bookingId: 'booking_1', method: PayMethod.bankQr),
       ]);
       expect(fakeRepo.fakeConfirms, isEmpty);
       expect(fakeRepo.createCalls, isEmpty);
@@ -347,7 +347,7 @@ void main() {
     'change provider in real mode opens the new payUrl and stays on S04.04',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
-      fakeRepo.seedBooking(_makeBooking(depositProvider: 'momo'));
+      fakeRepo.seedBooking(_makeBooking(depositProvider: 'vnpay'));
 
       final handles = await pumpBookingRoute(
         tester,
@@ -359,11 +359,11 @@ void main() {
 
       await tester.tap(find.widgetWithText(AppButton, 'Đổi cổng thanh toán'));
       await _settle(tester);
-      await tester.tap(find.text('VNPay'));
+      await tester.tap(find.text('MoMo'));
       await _settle(tester);
 
-      expect(fakeRepo.depositCalls, [
-        (bookingId: 'booking_1', provider: 'vnpay'),
+      expect(fakeRepo.paymentCalls, [
+        (bookingId: 'booking_1', method: PayMethod.momo),
       ]);
       expect(handles.externalLauncher.opened, hasLength(1));
       expect(find.byType(FakePaymentSheet), findsNothing);
@@ -389,7 +389,7 @@ void main() {
     await tester.tap(find.text('MoMo'));
     await _settle(tester);
 
-    expect(fakeRepo.depositCalls, isEmpty);
+    expect(fakeRepo.paymentCalls, isEmpty);
     expect(find.byType(FakePaymentSheet), findsNothing);
   });
 

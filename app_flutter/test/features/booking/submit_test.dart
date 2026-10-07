@@ -89,7 +89,7 @@ void main() {
   }
 
   testWidgets(
-    'Đặt cọc creates the booking with the chosen values, then the deposit with the chosen provider',
+    'Đặt cọc creates the booking with the chosen values, then the bank QR payment',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
       await navigateToReviewStep(tester, bookings: fakeRepo);
@@ -113,10 +113,11 @@ void main() {
       expect(call.note, isNull);
       expect(call.expectedPrice, 1500000);
 
-      expect(fakeRepo.depositCalls.length, 1);
-      final depCall = fakeRepo.depositCalls.single;
-      expect(depCall.bookingId, 'booking_1');
-      expect(depCall.provider, 'vnpay');
+      expect(fakeRepo.paymentCalls.length, 1);
+      final payCall = fakeRepo.paymentCalls.single;
+      expect(payCall.bookingId, 'booking_1');
+      // Until S04.03 gets its method selector (Task 6) every booking pays by QR.
+      expect(payCall.method, PayMethod.bankQr);
     },
   );
 
@@ -130,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeRepo.createCalls.length, 1);
-    expect(fakeRepo.depositCalls.length, 1);
+    expect(fakeRepo.paymentCalls.length, 1);
   });
 
   testWidgets('fake mode: the fake gateway sheet confirms and S04.04 hands '
@@ -185,7 +186,7 @@ void main() {
   );
 
   testWidgets(
-    'real mode opens payUrl with the external launcher and opens S04.04',
+    'real mode opens S04.04 without a sheet or an external page for a bank QR',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
       final handles = await navigateToReviewStep(
@@ -199,9 +200,8 @@ void main() {
       await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
       expect(find.byType(FakePaymentSheet), findsNothing);
-      expect(handles.externalLauncher.opened, [
-        Uri.parse('https://fake-pay.test/booking_1'),
-      ]);
+      // A bank QR has no payUrl: S04.04 draws the QR itself.
+      expect(handles.externalLauncher.opened, isEmpty);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
     },
   );
@@ -320,7 +320,7 @@ void main() {
     'a network error keeps everything and Thử lại reuses the same draft',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
-      fakeRepo.nextDepositError = BookingErrorCode.network;
+      fakeRepo.nextPaymentError = BookingErrorCode.network;
 
       await navigateToReviewStep(tester, bookings: fakeRepo);
 
@@ -336,7 +336,7 @@ void main() {
 
       // Draft was created on first call
       expect(fakeRepo.createCalls.length, 1);
-      expect(fakeRepo.depositCalls, isEmpty);
+      expect(fakeRepo.paymentCalls, isEmpty);
 
       // Tap Thử lại
       await tester.tap(find.text('Thử lại'));
@@ -344,7 +344,7 @@ void main() {
 
       // Second attempt reuses draft booking_1: no second createBooking, but one deposit call
       expect(fakeRepo.createCalls.length, 1);
-      expect(fakeRepo.depositCalls.length, 1);
+      expect(fakeRepo.paymentCalls.length, 1);
     },
   );
 
@@ -365,7 +365,7 @@ void main() {
       );
       expect(find.text('Thử lại'), findsNothing);
       expect(find.text('Thanh toán chưa mở trên máy chủ này.'), findsNothing);
-      expect(fakeRepo.depositCalls, isEmpty);
+      expect(fakeRepo.paymentCalls, isEmpty);
     },
   );
 

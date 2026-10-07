@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
@@ -52,25 +53,21 @@ class _OrderedBookingRepository extends FakeBookingRepository {
   }
 
   @override
-  Future<CreateDepositResponse> createDeposit({
+  Future<BookingCheckout> createPayment({
     required String bookingId,
-    required String provider,
-    String? returnUrl,
+    required PayMethod method,
   }) {
-    log.add('createDeposit($provider)');
-    return super.createDeposit(
-      bookingId: bookingId,
-      provider: provider,
-      returnUrl: returnUrl,
-    );
+    log.add('createPayment(${method.code})');
+    return super.createPayment(bookingId: bookingId, method: method);
   }
 
   @override
-  Future<ConfirmPaymentResponse> confirmFakePayment({
+  Future<String> confirmFakePayment({
     required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
   }) {
     log.add('confirmFakePayment');
-    return super.confirmFakePayment(paymentId: paymentId);
+    return super.confirmFakePayment(paymentId: paymentId, kind: kind);
   }
 }
 
@@ -158,7 +155,7 @@ void main() {
 
       expect(repo.log, [
         'createBooking',
-        'createDeposit(momo)',
+        'createPayment(bank_qr)',
         'confirmFakePayment',
       ]);
       final created = repo.createCalls.single;

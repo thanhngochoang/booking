@@ -26,12 +26,14 @@ final class GoToPayment extends SubmitOutcome {
   const GoToPayment({
     required this.bookingId,
     required this.paymentId,
-    required this.payUrl,
+    this.payUrl,
   });
 
   final String bookingId;
   final String paymentId;
-  final Uri payUrl;
+
+  /// Wallet page; null for a bank QR (S04.04 shows the QR itself).
+  final Uri? payUrl;
 }
 
 final class NeedPhone extends SubmitOutcome {
@@ -286,9 +288,11 @@ class BookingFlowController extends Notifier<BookingFlowState> {
               .id;
 
       state = state.copyWith(bookingId: bookingId, phase: SubmitPhase.paying);
-      final checkout = await repo.createDeposit(
+      // Task 6 brings the S04.03 method selector; until then every booking
+      // pays by bank QR.
+      final checkout = await repo.createPayment(
         bookingId: bookingId,
-        provider: s.provider.code,
+        method: PayMethod.bankQr,
       );
 
       state = state.copyWith(paymentId: checkout.paymentId, phase: SubmitPhase.done);
@@ -296,7 +300,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         GoToPayment(
           bookingId: bookingId,
           paymentId: checkout.paymentId,
-          payUrl: Uri.parse(checkout.payUrl),
+          payUrl: checkout.payUrl == null ? null : Uri.parse(checkout.payUrl!),
         ),
       );
     } catch (e) {
@@ -347,6 +351,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
       case BookingErrorCode.invalidArgument:
+      case BookingErrorCode.paymentAttemptsExceeded:
       case BookingErrorCode.unknown:
         state = state.copyWith(phase: SubmitPhase.idle, error: err);
     }
