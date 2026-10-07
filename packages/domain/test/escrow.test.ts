@@ -264,7 +264,7 @@ describe('Task 3: Escrow & ledger maths', () => {
       now,
     });
 
-    const { refund, ledgerEntry: e2 } = applyRefundToPayment({
+    const { payment: updatedPayment, refund, ledgerEntry: e2 } = applyRefundToPayment({
       payment,
       refundId: 'ref_01',
       percent: 50,
@@ -272,7 +272,7 @@ describe('Task 3: Escrow & ledger maths', () => {
       now,
     });
 
-    const isBalanced = verifyPaymentLedgerInvariant(payment, [refund], [e1, e2]);
+    const isBalanced = verifyPaymentLedgerInvariant(updatedPayment, [refund], [e1, e2]);
     assert.equal(isBalanced, true);
   });
   describe('payment statuses, methods and the QR ledger', () => {
@@ -352,7 +352,7 @@ describe('Task 3: Escrow & ledger maths', () => {
       assert.equal(verifyPaymentLedgerInvariant(qrPayment({ status: 'expired', escrowStatus: 'refunded' }), [], []), true);
     });
 
-    it('a cancelled over-transferred payment: the excess refund does not count against the amount', () => {
+    it('a cancelled over-transferred payment keeps the invariant', () => {
       const excess = refundOf('r1', 100_000, 'overpaid_excess');
       const cancel = refundOf('r2', 1_500_000, 'customer_cancelled');
       const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded' });
@@ -360,6 +360,28 @@ describe('Task 3: Escrow & ledger maths', () => {
         verifyPaymentLedgerInvariant(p, [excess.refund, cancel.refund], [received('l1', 1_600_000), excess.entry, cancel.entry]),
         true,
       );
+    });
+
+    it('a cancellation refund whose reason text says overpaid_excess does not hide an unbalanced paid ledger', () => {
+      // Paid 1 500 000, then a 750 000 cancellation refund typed with a reason that mimics an excess refund.
+      const cancel = refundOf('r1', 750_000, 'overpaid_excess');
+      // Status still paid: the ledger says 1 500 000 - 750 000 != amount.
+      assert.equal(verifyPaymentLedgerInvariant(qrPayment({ receivedAmount: 1_500_000 }), [cancel.refund], [received('l1', 1_500_000), cancel.entry]), false);
+      // Properly recorded as partially_refunded it is fine, whatever the reason text.
+      const p = qrPayment({ status: 'partially_refunded', escrowStatus: 'partially_refunded', receivedAmount: 1_500_000 });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), true);
+    });
+
+    it('refunds beyond what was received never balance', () => {
+      const cancel = refundOf('r1', 1_700_000, 'customer_cancelled');
+      const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded' });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), false);
+    });
+
+    it('a refunded payment that was never received in full is out of balance', () => {
+      const cancel = refundOf('r1', 500_000, 'customer_cancelled');
+      const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded' });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 500_000), cancel.entry]), false);
     });
 
     it('old deposit_received entries still count', () => {

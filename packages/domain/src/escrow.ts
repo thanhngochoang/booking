@@ -94,17 +94,6 @@ export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number];
 /** Old name of `payment_received`, still found in dev data; readers count it, nothing writes it. */
 export const LEGACY_PAYMENT_RECEIVED_TYPE = 'deposit_received';
 
-/**
- * Refund reasons that give back money which was never part of the payment's amount
- * (the over-payment, the under-payment of an expired QR, a late or duplicate transfer).
- */
-export const EXCESS_REFUND_REASONS = [
-  'overpaid_excess',
-  'underpaid_expired',
-  'late_transfer',
-  'extra_transfer',
-] as const;
-
 export interface LedgerEntry {
   readonly id: string;
   readonly type: LedgerEntryType;
@@ -288,11 +277,14 @@ export function disputeEscrowPayment(payment: Payment, now: Date): Payment {
 }
 
 /**
- * Verifies Invariant 11 for one payment:
- * - ledger refunds add up to the refund records;
- * - an `expired` payment received nothing net (every transfer was given back);
- * - any other payment: sum(received) minus the refunds of excess money (`EXCESS_REFUND_REASONS`)
- *   equals `payment.amount`. Refunds for a cancellation are not counted here.
+ * Verifies Invariant 11 for one payment from its status and the ledger, never from refund reasons
+ * (a cancellation reason is free text typed by the customer):
+ * - ledger refunds always equal the refund records;
+ * - `expired`: sum(received) - sum(refunded) = 0 (every transfer was given back);
+ * - `paid`: sum(received) - sum(refunded) = amount (an over-transfer is refunded and the payment stays paid);
+ * - `refunded` / `partially_refunded`: the amount was received in full (received >= amount) and
+ *   refunds never exceed what was received (refunds then also cover any over-transfer);
+ * - `created` / `needs_review`: refunds never exceed what was received.
  * Both `payment_received` and the legacy `deposit_received` count as received.
  */
 export function verifyPaymentLedgerInvariant(
@@ -317,11 +309,16 @@ export function verifyPaymentLedgerInvariant(
   const totalRefundAmount = refunds.reduce((sum, r) => sum + r.amount, 0);
   if (refunded !== totalRefundAmount) return false;
 
-  if (payment.status === 'expired') {
-    return received === refunded;
+  switch (payment.status) {
+    case 'expired':
+      return received - refunded === 0;
+    case 'paid':
+      return received - refunded === payment.amount;
+    case 'refunded':
+    case 'partially_refunded':
+      return received >= payment.amount && refunded <= received;
+    case 'created':
+    case 'needs_review':
+      return refunded <= received;
   }
-  const excessRefunded = refunds
-    .filter((r) => r.reason !== undefined && (EXCESS_REFUND_REASONS as readonly string[]).includes(r.reason))
-    .reduce((sum, r) => sum + r.amount, 0);
-  return received - excessRefunded === payment.amount;
 }
