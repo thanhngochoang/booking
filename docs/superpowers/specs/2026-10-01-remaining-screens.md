@@ -266,16 +266,24 @@ events/{eventId}
   registrationDeadline           # mặc định = startAt - 12h
   status: "draft" | "open" | "full" | "closed" | "cancelled" | "completed"
   registeredCount, heldCount     # do Functions tính, client chỉ đọc
+  faq: [{question, answer}]      # O2: chỉ sự kiện của nền tảng, staff nhập ở S12.02; ≤ 10 cặp, 120/500 ký tự
+  hostConsent?: "pending" | "accepted" | "declined" | "expired"   # O1: chỉ sự kiện staff tạo hộ
+  hostConsentExpiresAt?          # lúc mời + 24 giờ
   createdAt, updatedAt
 
 events/{eventId}/registrations/{regId}
-  userId, name, phone, quantity (1–4)
+  userId, name, quantity (1–4)   # số điện thoại chỉ ở registrations/{regId}/private/contact, chỉ vé trả tiền
+  contactEligible: bool          # O3: true chỉ khi vé trả tiền đã paid; vé không thu phí luôn false
+  refundDue?: bool               # sự kiện bị huỷ khi tiền vé còn treo: clock hoàn 100%
+  refundId?, refundStatus?: "pending" | "done" | "failed"   # khoản hoàn của vé, "Đang hoàn" tới khi done
   amount                         # quantity * price tại thời điểm đăng ký
   status: "held" | "paid" | "cancelled" | "refunded"
   holdExpiresAt                  # now + 10 phút khi status = held
   ticketCode                     # dạng VE-7K2Q-0420, duy nhất
   paymentId?, checkedInAt?, cancelledAt?, refundPercent?
 ```
+
+`payments/{id}` của vé có thêm `eventId` (subjectType `event_registration`, subjectId = regId) để clock đóng dấu `releaseAfter` và tìm khoản cần hoàn.
 
 Chỉ mục: `events (status, startAt)`, `events (type, startAt)`, `events (location.geohash, startAt)`, `events (hostId, startAt)`, collection group `registrations (userId, status)`.
 
@@ -327,8 +335,8 @@ Rules: client không ghi `status`, `registeredCount`, `heldCount`, `ticketCode`,
 
 - `admin` và `sales` **không** nằm trong `users.role` và không chọn được ở S01.05. Chúng là custom claim `staffRole` do hàm `setStaffRole` đặt, chỉ `admin` gọi được và có nhật ký. Rules và Functions kiểm claim; client chỉ dùng claim để ẩn/hiện nút.
 - Màn tạo (S12.01, S12.02) và quản lý (S12.03) dùng chung cho cả ba vai trò. Chỉ staff thấy thêm ô **"Tổ chức bởi"** (Nền tảng hoặc chọn một nhiếp ảnh gia) ở S12.01. Nút "Tạo sự kiện" nằm ở S11.01 và, với staff, ở S09.02 (hàng "Quản lý sự kiện"); staff không có tab Đăng bài.
-- Sự kiện `host.type = "platform"`: S11.01/S11.02 hiện "Do ứng dụng tổ chức" thay hàng nhiếp ảnh gia; không có `availability` để đánh dấu; doanh thu thuộc nền tảng; liên hệ trước khi đăng ký đi vào chat hỏi trước của hộp thư hỗ trợ (câu hỏi mở 16).
-- Sự kiện tạo hộ cho nhiếp ảnh gia: chỉ đánh dấu `availability` ngày đó của nhiếp ảnh gia khi họ đồng ý (`hostConsent`); nhiếp ảnh gia nhận thông báo để chấp nhận hoặc từ chối trong 24 giờ, quá hạn thì sự kiện không đăng (câu hỏi mở 17).
+- Sự kiện `host.type = "platform"`: S11.01/S11.02 hiện "Do ứng dụng tổ chức" thay hàng nhiếp ảnh gia; không có `availability` để đánh dấu; doanh thu thuộc nền tảng; không có nút "Nhắn tin hỏi trước": S11.02 hiện mục **Câu hỏi thường gặp** do staff nhập ở S12.02 (`Event.faq`, tối đa 10 cặp hỏi–đáp, câu hỏi ≤ 120, trả lời ≤ 500 ký tự) và một dòng email hỗ trợ cố định cho tới khi có S23.06 (O2, 2026-10-06; dòng email ẩn cho tới khi chủ dự án cho địa chỉ).
+- Sự kiện tạo hộ cho nhiếp ảnh gia (O1, 2026-10-06, đã chốt): được phép, nhưng là nháp cho tới khi nhiếp ảnh gia đồng ý. `hostConsent: pending → accepted | declined | expired`, `hostConsentExpiresAt` = lúc mời + 24 giờ; nhiếp ảnh gia nhận thông báo `event_host_invited` (chạm mở S11.02 với Chấp nhận / Từ chối); chỉ `accepted` mới đăng được và mới đánh dấu `availability`; từ chối hoặc quá hạn thì nháp bị huỷ; sửa trường quan trọng sau khi đã đồng ý đưa về `pending`.
 
 ### 3.7 Timeline và nhóm chat của sự kiện
 
@@ -350,7 +358,7 @@ Mỗi sự kiện có hai không gian chia sẻ: **timeline** công khai gom bà
 
 **Câu hỏi trước khi đăng ký.**
 - Sự kiện do nhiếp ảnh gia tổ chức: nút "Nhắn tin hỏi trước" mở chat `inquiry` với nhiếp ảnh gia (mục 3b.1).
-- Sự kiện do nền tảng tổ chức (`host.type = platform`): chat `inquiry` đi vào **hộp thư hỗ trợ** của staff. Đề xuất: mặc định giao cho người tạo sự kiện (`createdBy`), mọi `sales`/`admin` thấy hàng đợi chung và có thể nhận hoặc giao lại; quy tắc 3 tin / 14 ngày như chat hỏi trước. Cần xác nhận (câu hỏi mở 16).
+- Sự kiện do nền tảng tổ chức (`host.type = platform`), O2 (2026-10-06, đã chốt): **không** có chat hỏi trước. S11.02 hiện **Câu hỏi thường gặp** (`Event.faq`, staff nhập ở S12.02) và một dòng email hỗ trợ cố định cho tới khi có hộp thư hỗ trợ S23.06. Dòng email đang ẩn cho tới khi chủ dự án cho địa chỉ thật.
 - Sau khi đăng ký, trao đổi chung chuyển sang nhóm chat.
 
 ## 3b. Liên hệ và số điện thoại
@@ -360,10 +368,10 @@ Mỗi sự kiện có hai không gian chia sẻ: **timeline** công khai gom bà
 - **Khách muốn đặt lịch (booking hoặc vé sự kiện) phải có số điện thoại** trong hồ sơ. Chưa có thì mọi điểm vào đặt lịch (S02.02 "Đặt gói này", S03.01 "Đặt lịch", S02.06 "Đặt T7", S11.02 "Đăng ký") mở S04.05 trước, lưu xong quay lại đúng bước đang làm (`returnTo`). Không chặn xem, lướt, lưu, nhắn trong app.
 - **Xác minh số điện thoại làm sau.** Bản này chỉ kiểm tra định dạng. Dữ liệu có sẵn cờ `phoneVerified: false`; UI chưa hiện dấu xác minh cho số. Khi làm xác minh (Firebase Phone Auth, OTP) chỉ cần bật cờ và thêm bước vào S04.05.
 - **Kênh ngoài chỉ mở sau khi đã đặt.** Nhiếp ảnh gia chọn bật kênh nào (Gọi điện, Zalo, WhatsApp) ở S08.05, cần ít nhất một số điện thoại. Nhưng khách **chỉ thấy và dùng** các kênh đó sau khi "mở khoá liên hệ":
-  - Booking ở `requested` (đã cọc), `accepted`, `upcoming`, hoặc `completed` (trong 30 ngày sau); hoặc vé sự kiện `paid` (cho tới 7 ngày sau sự kiện). `declined`, `expired`, `cancelled`, `refunded` thì khoá lại.
+  - Booking ở `requested` (đã cọc), `accepted`, `upcoming`, hoặc `completed` (trong 30 ngày sau); hoặc vé sự kiện **trả tiền** đã `paid` (`contactEligible: true`, cho tới 7 ngày sau sự kiện, chỉ khi chủ là nhiếp ảnh gia). Vé không thu phí cũng ở `paid` nhưng **không** mở liên hệ (O3, 2026-10-06): chỉ mở nhóm chat sự kiện và chat trong app. `declined`, `expired`, `cancelled`, `refunded` thì khoá lại.
   - **Trước khi đặt** (S03.01, S11.02) chỉ có nút **Nhắn tin hỏi trước** trong app. Đó là chat `inquiry` với quy tắc: (1) khách gửi **tối đa 3 tin** khi nhiếp ảnh gia chưa trả lời; (2) **ngay khi nhiếp ảnh gia trả lời tin đầu tiên, giới hạn được gỡ vĩnh viễn và hai bên nhắn tin tự do với nhau** (văn bản, ảnh, vị trí), không còn đếm tin; (3) cuộc trò chuyện tự đóng sau 14 ngày không có tin nào từ cả hai phía (mỗi tin mới đặt lại bộ đếm 14 ngày), và mở lại được khi một bên nhắn tiếp; khi khách đặt lịch, cùng cuộc trò chuyện gắn `bookingId` và thành chat booking (S07.01). Nhiếp ảnh gia có thể tắt nhận tin hỏi trước (`acceptInquiries`).
   - Mục đích: giữ giao dịch trong nền tảng (không chốt giá ngoài rồi bỏ cọc) nhưng vẫn cho khách hỏi trước khi quyết định.
-- Số của khách **chỉ hiện với nhiếp ảnh gia sau khi khách đặt cọc** (booking ở `requested` trở đi, hoặc vé sự kiện `paid` với chủ sự kiện). Trước đó nhiếp ảnh gia không thấy số.
+- Số của khách **chỉ hiện với nhiếp ảnh gia sau khi khách đặt cọc** (booking ở `requested` trở đi, hoặc vé sự kiện trả tiền đã `paid` với chủ sự kiện; vé không thu phí không bao giờ lộ số, O3). Trước đó nhiếp ảnh gia không thấy số.
 
 ### 3b.2 Dữ liệu
 
@@ -957,7 +965,7 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 ## 8. Câu hỏi mở
 
 1. **Ai tạo sự kiện?** (đã chốt): nhiếp ảnh gia, hoặc tài khoản `admin`/`sales` của ứng dụng (mục 3.6). Khách và tổ chức bên ngoài (CLB, trường) không tạo trong v1.
-2. **Hoàn vé** (đã chốt): huỷ trước 48 giờ hoàn 100%, sau đó không hoàn; chủ huỷ hoàn 100%.
+2. **Hoàn vé** (đã chốt): huỷ trước 48 giờ hoàn 100%, sau đó không hoàn; chủ huỷ hoàn 100%. O4 (2026-10-06): khách vẫn huỷ được vé trả tiền trong 48 giờ cuối, không hoàn; chỗ được nhả, tiền vé vẫn treo và chuyển cho chủ sự kiện sau sự kiện như dự kiến (chủ huỷ sự kiện sau đó thì hoàn cả khoản này).
 3. **Tiền vé và cọc** (đã chốt): treo ở nền tảng, chỉ chuyển cho nhiếp ảnh gia / chủ sự kiện sau khi hoàn thành (mục 3g). Còn mở: độ dài cửa sổ khiếu nại (đề xuất 24 giờ) và số ngày tối đa từ lúc hoàn thành tới lúc chi trả.
 4. **Quyền riêng tư số của khách**: đề xuất chỉ hiện sau cọc và xoá khỏi `customerContact` 30 ngày sau hoàn thành. Có cần giữ lâu hơn (bảo hành ảnh, tranh chấp)?
 5. **Liên hệ ngoài app** (đã chốt): gọi/Zalo/WhatsApp chỉ mở sau khi đã đặt; trước đó chỉ có chat hỏi trước trong app (mục 3b.1). Còn mở: sau `completed` giữ kênh mở bao lâu (đề xuất 30 ngày).
@@ -967,9 +975,9 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 9. **Ảnh avatar làm nút** (đã chốt): chỉ dùng avatar, không cho chọn ảnh khác. Hiệu ứng mờ ảnh dùng cho modal và trang giới thiệu (mục 1.2).
 10. **Huy hiệu**: danh mục khởi đầu ở mục 3d.2 có đủ không, ai duyệt thêm/bớt (admin trong console hay màn riêng)? Huy hiệu của khách có công khai không (đề xuất: công khai trên hồ sơ, chỉ khi khách bật)? Có cấp bậc (đồng, bạc, vàng) cho huy hiệu số lượng không?
 15. **Biểu tượng Zalo/WhatsApp**: bản Simple Icons dùng tạm cho dev. Cần lấy tài nguyên chính thức của hai hãng và xác nhận điều khoản dùng thương hiệu trước khi phát hành.
-16. **Hộp thư hỗ trợ** (đề xuất ở mục 3.7, cần xác nhận): chat hỏi trước của sự kiện do nền tảng tổ chức đi vào hộp thư chung của staff, mặc định giao cho `createdBy`, `sales`/`admin` nhận hoặc giao lại. Cần quyết định có hạn phản hồi (SLA) và thông báo cho ai khi quá hạn không.
+16. **Hỏi trước sự kiện của nền tảng** (đã chốt O2, 2026-10-06): không có chat hỏi trước; S11.02 hiện FAQ do staff nhập và một email hỗ trợ cố định cho tới khi có S23.06. Còn mở: địa chỉ email hỗ trợ (dòng email ẩn cho tới khi có).
 21. **Kiểm duyệt timeline và nhóm chat**: ai chịu trách nhiệm nội dung (chủ sự kiện, staff), có cần bộ lọc ảnh nhạy cảm tự động và nút báo cáo gửi về đâu? Bài của người ngoài chờ duyệt có làm chủ sự kiện quá tải không (đề xuất: bật tự duyệt theo người theo dõi)?
-17. **Tạo hộ nhiếp ảnh gia**: có bắt buộc nhiếp ảnh gia đồng ý (`hostConsent`) như đề xuất, hay sales được tạo thẳng khi đã thoả thuận ngoài ứng dụng?
+17. **Tạo hộ nhiếp ảnh gia** (đã chốt O1, 2026-10-06): bắt buộc nhiếp ảnh gia đồng ý trong 24 giờ (`hostConsent`), xem mục 3.6. Còn làm sau: ô chọn nhiếp ảnh gia cho staff ở S12.01.
 18. **Quản trị chi trả**: bảng điều khiển duyệt lô chi trả, khiếu nại và đối soát cổng nằm ở đâu (web nội bộ riêng, Firebase console + callable tạm thời)? Có cần vai trò `finance` ngoài `admin`/`sales`?
 19. **Đã chọn hướng 2026-10-06** (spec thanh toán §1, §11): mô hình A1, chờ luật sư xác nhận. Bản cũ: **Pháp lý giữ tiền hộ**: tham vấn xem mô hình treo tiền có cần giấy phép trung gian thanh toán hay đi qua cổng có sản phẩm ký quỹ; quyết định trước khi bật cổng thật.
 20. **Phần không hoàn khi huỷ muộn** (50% hoặc 100% giữ lại): giả định chuyển cho nhiếp ảnh gia như bồi thường; xác nhận hoặc cho nền tảng giữ một phần.

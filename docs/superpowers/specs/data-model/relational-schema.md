@@ -299,21 +299,26 @@ create table payments (
   provider_ref    text,
   raw             jsonb,                          -- phản hồi thô của cổng
   idempotency_key text not null unique,
+  event_id        text,                           -- vé: sự kiện của đăng ký (FK thêm ở 2.6)
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
 create index ix_payments_subject on payments (subject_type, subject_id);
+create index ix_payments_event on payments (event_id, status, escrow_status) where event_id is not null;
 create index ix_payments_release on payments (escrow_status, release_after) where escrow_status = 'held';
 
 create table refunds (
-  id         text primary key,
+  id         text primary key,                    -- khoá chống trùng gửi sang cổng
   payment_id text not null references payments(id),
+  subject_type text not null check (subject_type in ('booking','event_registration','instant_request')),
   amount     bigint not null check (amount > 0),
   percent    smallint check (percent between 0 and 100),
   status     text not null check (status in ('pending','done','failed')),
   manual     boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+create index ix_refunds_resend on refunds (subject_type, status, created_at);
 
 create table payout_accounts (                    -- 🔒
   id                 text primary key,
@@ -477,7 +482,8 @@ create table events (
   host_photographer_id text references photographers(user_id),
   created_by    text not null references users(id),
   created_by_role text not null check (created_by_role in ('photographer','admin','sales')),
-  host_consent  text not null default 'not_required' check (host_consent in ('not_required','pending','accepted','declined')),
+  host_consent  text not null default 'not_required' check (host_consent in ('not_required','pending','accepted','declined','expired')),
+  host_consent_expires_at timestamptz,            -- O1: lúc mời + 24 giờ
   title         text not null, description text not null default '',
   cover_file_id text references files(id),
   type          text not null check (type in ('photo_walk','mini_session','workshop','cosplay','other')),
@@ -491,6 +497,7 @@ create table events (
   status        text not null check (status in ('draft','open','full','closed','cancelled','completed')),
   registered_count int not null default 0, held_count int not null default 0,
   chat_id       text,
+  faq           jsonb not null default '[]',      -- O2: [{question, answer}], ≤ 10; chỉ sự kiện platform
   version       int not null default 1,
   created_at    timestamptz not null default now(), updated_at timestamptz not null default now(),
   check (host_type <> 'photographer' or host_photographer_id is not null),
@@ -517,12 +524,19 @@ create table event_registrations (
   payment_id      text references payments(id),
   checked_in_at   timestamptz, cancelled_at timestamptz,
   refund_percent  smallint,
+  contact_eligible boolean not null default false, -- O3: true chỉ với vé trả tiền đã paid
+  refund_due      boolean not null default false,  -- sự kiện huỷ khi tiền vé còn treo
+  refund_id       text,                            -- FK refunds(id), thêm sau khi tạo bảng refunds
+  refund_status   text check (refund_status in ('pending','done','failed')),
   version         int not null default 1,
   created_at      timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create index ix_event_regs_event on event_registrations (event_id, status);
 create index ix_event_regs_user on event_registrations (user_id, status);
 create unique index ux_event_regs_active on event_registrations (event_id, user_id) where status in ('held','paid');
+create index ix_event_regs_refund_due on event_registrations (refund_due) where refund_due;
+alter table event_registrations add constraint fk_event_regs_refund foreign key (refund_id) references refunds(id);
+alter table payments add constraint fk_payments_event foreign key (event_id) references events(id);
 
 create table event_posts (
   event_id text not null references events(id) on delete cascade,
