@@ -88,7 +88,8 @@ describe('event group chat on the emulators', () => {
     assert.equal((await callAs(env, 'moderateEventChat', AN, { eventId, action: 'remove', userId: guest })).status, 200);
     assert.equal(((await chatOf(eventId))?.members as string[]).includes(guest), false);
     await new Promise((r) => setTimeout(r, 1500));
-    const inbox = await env.db.collection(`users/${guest}/notifications`).get();
+    // Only chat rows count: a new account also gets the `new_member` badge notice.
+    const inbox = await env.db.collection(`users/${guest}/notifications`).where('type', '==', 'chat_message').get();
     assert.equal(inbox.size, 0, 'group messages never create chat notifications');
 
     // O1/M8: a moderator restores the removed guest, who still holds the paid ticket.
