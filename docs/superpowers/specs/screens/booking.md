@@ -10,7 +10,7 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 ### Quy tắc chung của luồng
 
-- **Thông tin**: khách · sub‑project 4 · Chưa có.
+- **Thông tin**: khách · sub‑project 4 · Đã làm (S04.03: thanh toán 100%, #129).
 - **Điều kiện vào**: khách đăng nhập và **có số điện thoại hợp lệ**. Thiếu thì mở S04.05 trước, lưu xong quay lại đúng bước (`returnTo`). Vào từ S02.02 ("Đặt gói này") thì bỏ bước 1; vào từ S02.06 ("Đặt T7") thì có sẵn ngày và dịch vụ.
 - **Trạng thái luồng** giữ trong controller: `serviceId`, `date`, `start`, `end`, `place`, `note`, `phone`, `method` (mặc định `bank_qr`). Quay lại không mất lựa chọn. Đóng sheet khi đã chọn gì đó hỏi xác nhận "Bỏ yêu cầu đặt lịch?". Không lưu nháp lên server cho tới khi tạo `draft` ở bước 4.
 - **Tiền**: tổng giá gói luôn nằm trên nút chính; khách trả 100% khi đặt, tiền được giữ và chuyển cho thợ theo 2 mốc.

@@ -35,7 +35,7 @@ Hoa hồng sàn được tổ chức trung gian **tách khi chi** và chuyển v
 1. **S04.03** (bước 4/4 đặt lịch, đổi tên "Xem lại & thanh toán"): bảng tiền "Thanh toán 100% · {giá}", một dòng chữ phụ "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả." (không có `EscrowNotice` riêng), chọn phương thức (VietQR chọn sẵn, "Miễn phí · xác nhận ngay"; MoMo; ZaloPay), chính sách huỷ tính trên số đã trả, nút chính **"Thanh toán {giá}"** → callable `createPayment`.
 2. `createPayment` tạo `Payment` (`status = created`, `expiresAt` = +15 phút) và yêu cầu thanh toán ở tổ chức trung gian: VietQR động (số tiền + nội dung = mã thanh toán ngắn) hoặc link/deeplink ví.
 3. **S04.04** (VietQR): QR lớn, số tiền, nội dung chuyển khoản, đếm ngược, viền "Tạo QR mới" (khoản cũ `expired`, tạo khoản mới), chính "Mở app ngân hàng" (deeplink danh sách app ngân hàng); dòng "Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động." Ví: mở app ví, quay lại thì về S04.04 chờ kết quả.
-4. Tổ chức trung gian gọi **webhook** → `handlePaymentNotification` (HTTP function, kiểm chữ ký, idempotent theo mã giao dịch của họ, lưu bản gốc) → `Payment.status = paid`, bút toán `payment_received`, booking `draft → requested/accepted`.
+4. Tổ chức trung gian gọi **webhook** → `paymentWebhook` (HTTP function, kiểm chữ ký ở Functions) rồi `handleTransferNotification` ở miền (đã xác thực, idempotent theo mã giao dịch của họ, lưu bản gốc) → `Payment.status = paid`, bút toán `payment_received`, booking `draft → requested/accepted`.
 5. Job **đối soát** mỗi 5 phút hỏi trạng thái các khoản `created` quá 3 phút; job ngày đối chiếu sao kê của tổ chức trung gian với sổ cái (S23.02).
 
 ### 3.3 Chuyển sai (VietQR)
@@ -119,11 +119,11 @@ Mỗi khoản doanh thu xuất **hoá đơn điện tử** (nhà cung cấp hoá
 ## 9. Cổng kỹ thuật
 
 `packages/domain`:
-- `PaymentGateway { createPayment, queryPayment, refund, verifyWebhook }`
+- `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }` (cùng `checkPaymentStatus` cho vé tới #137)
 - `PayoutGateway { lookupAccountName, createPayout, queryPayout }`
 - Luật: trạng thái `Payment`, khớp tên, lịch chi, tính số tiền chi, chuyển sai.
 
-Bản cài đặt: `Fake*Gateway` (emulator, dev, test; mô phỏng webhook và chuyển sai) và bản thật của tổ chức trung gian được chọn. Webhook là HTTP function (`onRequest`) có kiểm chữ ký; mọi lệnh gọi ra ngoài có `idempotencyKey`. Vì `packages/domain` không được import Node, `verifyWebhook` **không** nằm trên cổng miền: Functions kiểm chữ ký rồi đưa cho miền một `TransferNotification` đã xác thực (cổng miền có `createPayment`, `queryTransfers`, `refund`). Cờ `REAL_PAYMENTS` chỉ bật sau khi xong §11.
+Bản cài đặt: `Fake*Gateway` (emulator, dev, test; mô phỏng webhook và chuyển sai) và bản thật của tổ chức trung gian được chọn. Webhook là HTTP function (`onRequest`) có kiểm chữ ký; mọi lệnh gọi ra ngoài có `idempotencyKey`. Vì `packages/domain` không được import Node, `verifyWebhook` **không** nằm trên cổng miền: Functions kiểm chữ ký rồi đưa cho miền một `TransferNotification` đã xác thực (cổng miền: `createPayment`, `queryTransfers`, `issueRefund` và `provider`). Cờ `REAL_PAYMENTS` chỉ bật sau khi xong §11.
 
 ## 10. Chọn tổ chức trung gian
 

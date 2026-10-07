@@ -90,7 +90,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
-| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) | S07 |
+| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · bước địa điểm chưa có bản đồ | S07 |
 | S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
@@ -693,7 +693,7 @@ Mọi biến động tiền là một **bút toán bất biến** (append‑only
 
 ### 3g.6 Hiển thị trong ứng dụng
 
-- Khách: dòng thông báo "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành" (`EscrowNotice`) ở S04.03, S05.02, S11.03, S11.04.
+- Khách: S04.03 có một dòng chữ phụ "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả."; `EscrowNotice` "Đã thanh toán {số tiền}, tiền được giữ an toàn" ở S05.02 (vé: "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.") ở S11.03, S11.04.
 - Nhiếp ảnh gia: S05.02 ghi rõ "Cọc {số tiền} đang được giữ, chuyển cho bạn sau khi hoàn thành"; S06.01 ô số liệu "Đang giữ"; **S06.05 Thu nhập** (đang giữ, sắp nhận, đã nhận, lịch sử, từng khoản) và **S06.06 Tài khoản nhận tiền**.
 - Staff `admin`: màn duyệt lô chi trả và khiếu nại nằm ở bảng điều khiển quản trị (ngoài phạm vi ứng dụng khách; câu hỏi mở 18).
 
@@ -884,10 +884,10 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S02.06 | Chip lọc đã điền (khu vực, ngày, dịch vụ, giá, % cà chua), đếm kết quả, danh sách `PhotographerCard` (tên + `VerifiedMark`, tối đa 2 huy hiệu) | Khu vực mặc định lấy từ vị trí hoặc khu vực đã chọn (mục 3c). Không kết quả: gợi ý nới bộ lọc, nút "Xoá bộ lọc". | "Đặt T7" mở S04.02 với ngày và dịch vụ sẵn (qua S04.05 nếu thiếu SĐT). |
 | S04.01 | Chọn gói (thumb, mô tả, giá); tổng tiền trên nút | Bước 3 Địa điểm: bản đồ nhỏ + ô địa chỉ, mặc định từ lọc. Đóng sheet khi đã chọn → hỏi xác nhận. | Chuyển bước giữ lựa chọn khi quay lại. |
 | S04.02 | Lưới tháng 4 trạng thái; chip giờ theo `durationMinutes`; gợi ý giờ của nhiếp ảnh gia | Ngày "Chờ" xem được, không chọn được. Kiểm tra lại availability khi vào bước 4. | Ngày bị chiếm → lỗi `day_taken`, quay S04.02 với ngày gạch. |
-| S04.03 | Tóm tắt booking, hàng **Ghi chú + SĐT của bạn** (lấy từ hồ sơ, sửa được), bảng tiền, chính sách huỷ, MoMo/VNPay | Nút "Đặt cọc" loading + vô hiệu khi đang gọi `createDeposit`. SĐT sai/thiếu → lỗi dưới ô, không gọi cổng. | Thành công mở cổng; client không tin redirect, chờ `bookings.status`. |
-| S04.04 | Vòng chờ, giải thích, `BookingCard`, "Kiểm tra lại", "Đổi cổng" | Hiện sau 5 phút chưa `paid`. 30 phút → booking `draft` bị dọn, báo cho người dùng. | "Kiểm tra lại" gọi Function hỏi cổng; `paid` → tự chuyển S05.02. |
-| S05.02 | Toast cọc, `BookingCard`, `StatusTimeline`, hàng hai nút "Nhắn tin" + `ContactDial` "Liên hệ", nút chữ Huỷ; "Đổi lịch" nằm trong menu `…` ở thanh trên | Một màn cho mọi trạng thái; hành động hiện theo trạng thái. Hôm diễn ra: nút "Chỉ đường". | "Liên hệ" bung S05.04; huỷ mở S05.03 kèm số tiền hoàn. |
-| S05.03 | Bảng hoàn cọc, dòng áp dụng nổi bật, số tiền nhận lại, lý do, Giữ lịch / Huỷ | Lý do mặc định "Đổi kế hoạch". Nút đỏ chỉ trong sheet này. | Sau huỷ: `cancelled`, toast, availability được nhả. |
+| S04.03 | Tóm tắt booking, hàng **Ghi chú + SĐT của bạn** (lấy từ hồ sơ, sửa được), bảng tiền hai hàng ("Gói {tên}", "Thanh toán 100%"), một dòng chữ phụ về giữ tiền và huỷ, chọn phương thức (Chuyển khoản QR chọn sẵn · MoMo · ZaloPay) | Nút "Thanh toán {số tiền}" loading + vô hiệu mọi điều khiển khi đang gọi `createPayment`. SĐT sai/thiếu → lỗi dưới ô, không gọi `createPayment`. | Thành công sang S04.04; client không tin redirect, chờ `bookings.status`. |
+| S04.04 | Chuyển khoản QR: QR, số tiền, "{tên} · {gói}" + badge "Chờ thanh toán", `CountdownPill` "Còn mm:ss", ngân hàng / số tài khoản / nội dung `PB XXXXXX` + "Sao chép", "Tạo QR mới" + "Mở app ngân hàng". Ví: vòng chờ "Đang chờ xác nhận", "Kiểm tra lại" + "Mở lại {ví}" | Hiện ngay sau `createPayment`. Hết 15 phút: QR mờ "QR đã hết hạn", chỉ còn "Tạo QR mới" (tối đa 3 khoản mỗi booking). Sau `payableUntil` booking `draft` bị dọn → "Yêu cầu đã hết hạn" + "Đặt lại". | "Kiểm tra lại" (ví) gọi `checkPayment` hỏi cổng; `requested` → tự chuyển S05.02. Bản thử có "Giả lập chuyển khoản". |
+| S05.02 | Toast "Đã thanh toán {số tiền}, tiền được giữ an toàn.", `BookingCard`, `StatusTimeline`, hàng hai nút "Nhắn tin" + `ContactDial` "Liên hệ", nút chữ Huỷ; "Đổi lịch" nằm trong menu `…` ở thanh trên | Một màn cho mọi trạng thái; hành động hiện theo trạng thái. Hôm diễn ra: nút "Chỉ đường". | "Liên hệ" bung S05.04; huỷ mở S05.03 kèm số tiền hoàn. |
+| S05.03 | Bảng hoàn tiền (tính trên số đã trả), dòng áp dụng nổi bật, số tiền nhận lại, lý do, Giữ lịch / Huỷ | Lý do mặc định "Đổi kế hoạch". Nút đỏ chỉ trong sheet này. | Sau huỷ: `cancelled`, toast, availability được nhả. |
 | S07.01 | Thanh ngữ cảnh booking, hành động nhanh, bong bóng, ô nhập + gửi + ảnh | Realtime qua snapshot; gửi lỗi → thử lại tại chỗ. Tin `system` cho đổi lịch. | Gửi ảnh nén ≤ 2048px. |
 | S05.05 | Sao, nhận xét (bắt buộc), lưới chọn ảnh chia sẻ (≤ 10) | "Chỉ đánh giá" hoặc "Gửi & chia sẻ n ảnh". Chỉ mở khi booking `completed`. | Tạo `reviews/{bookingId}` + post `real_shoot`; có thể kích hoạt huy hiệu (toast "Bạn nhận huy hiệu …"). |
 | S02.03 | Ô tìm kiếm; nhóm Dịch vụ/Địa điểm/Phong cách/Thợ ảnh; **thẻ "Sự kiện gần bạn"** xin vị trí; section Sự kiện chụp ảnh | Trạng thái vị trí: chưa hỏi (thẻ), cho phép → S02.04, từ chối/để sau → chip "Chọn khu vực" → S02.05. Section sự kiện ẩn nếu không có sự kiện sắp tới. | Chỉ bấm "Cho phép" mới hiện hộp thoại quyền; "Xem tất cả" → S11.01. |

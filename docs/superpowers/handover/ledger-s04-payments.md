@@ -14,8 +14,8 @@ Plan: `docs/superpowers/plans/2026-10-07-s04-payments.md`, Tasks 1–9. Branch `
 - `screens/photographer.md`: S06.01 ("đã trả 450K", "Đang giữ", toast "đã hoàn tiền"), S06.03 (`s23_refundNote` "{name} được hoàn 100% ({amount}) và nhận lý do này."); `screens/account.md`: `s42_phoneHint` "… sau khi bạn thanh toán."
 - `components/shared-components.md`: new `PayMethodSelector` and `CountdownPill`; `EscrowNotice` texts and `MoneyBreakdown` lines without deposit; the stale `ProviderPicker` entry (MoMo | VNPay) replaced by `PayMethodSelector` + `PayMethodPicker` (S11.03); usage table updated.
 - `data-model/README.md` §2.3 (100% up front; no more 30% split) and the use-case table (`createPayment`, `paymentWebhook`, `checkPayment`, `paymentClock`); `domain-model.md` (`Booking.checkout`/`payableUntil`, `Payment.method/transferCode/expiresAt/receivedAmount`, `Refund.reason`, new `PaymentNotification`, `PaymentStatus`, `PaymentMethod`, `TransferOutcome`, `LedgerEntryType`, invariants 2 and 11, a Payment state machine); `relational-schema.md` §2.4 (`payments` columns, status check, unique `transfer_code`, `refunds.reason/provider_ref`, `bookings.checkout/payable_until`, table `payment_notifications`, migration map).
-- `2026-10-06-payments-payouts-design.md`: new §3.4 (fake provider signature, body, response codes, transfer code format and matching, constants) and a sentence in §9 that `verifyWebhook` lives in Functions (domain purity), the port has `createPayment`, `queryTransfers`, `refund`; §3.2 step 1 now says one helper line instead of an `EscrowNotice`.
-- `2026-10-01-remaining-screens.md`: the S04.03 and S04.04 "Trạng thái" cells read "✅ thanh toán 100%, VietQR (#129)" (they replace "đã làm (4b)" and its notes about the missing map in step 3 and the S05.02 return). The per-screen state table further down (rows S04.03, S04.04, S05.02, S05.03, around lines 887–890) and the escrow wording near line 696 still say "cọc"/"Đổi cổng"; left as is because only the status cells were in scope, to be refreshed with the S05 work.
+- `2026-10-06-payments-payouts-design.md`: §3.2 step 4 now names `paymentWebhook` → `handleTransferNotification`; §9 port list is `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }`; new §3.4 (fake provider signature, body, response codes, transfer code format and matching, constants) and a sentence in §9 that `verifyWebhook` lives in Functions (domain purity), the port has `createPayment`, `queryTransfers`, `refund`; §3.2 step 1 now says one helper line instead of an `EscrowNotice`.
+- `2026-10-01-remaining-screens.md`: the S04.03 and S04.04 "Trạng thái" cells read "✅ thanh toán 100%, VietQR (#129)" (they replace "đã làm (4b)" and its notes about the missing map in step 3 and the S05.02 return). Fix round 1: the per-screen state table rows (S04.03, S04.04, S05.02, S05.03) and the escrow sentence near line 696 were also rewritten to the build, and the S04.03 status cell keeps " · bước địa điểm chưa có bản đồ".
 
 ## Rulings
 Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s04-payments/progress-plan-129-s04-dat-lich-thanh-toan.md`), in order. Rulings 5 and 6 rename plan interfaces; Ruling 8 replaces the plan's per-second live region. The docs above describe what was built.
@@ -48,6 +48,7 @@ From the plan:
 - Moving ticket payments (S11.03) to `createPayment` and the webhook (#137). Tickets keep `createDepositIntent`, `checkPaymentStatus`, `confirmFakeTicketPayment`.
 - Card methods (`domestic_card`, `intl_card`; config flag off).
 - Old dev drafts without `payableUntil` are not swept.
+- Step 3 (S04.03 flow, place step) still has no map: "bước địa điểm chưa có bản đồ" stays open in the S04.03 status cell of `2026-10-01-remaining-screens.md`.
 
 ## Minor findings (deferred)
 Verbatim from the SDD ledger, grouped by task. Lines tagged FINAL REVIEW TRIAGE are for the whole-branch review to rule on.
@@ -113,6 +114,7 @@ Verbatim from the SDD ledger, grouped by task. Lines tagged FINAL REVIEW TRIAGE 
 - The item "Chặn confirmFakePayment…" of #129 was already merged in #126 (commit 347326a); `confirmFakePayment` is guarded by `assertFakePaymentsAllowed` and now also takes `kind`.
 
 ## Notes for the next unit
+- Task 3: handoff to T4: reconcile query must skip legacy/ticket created payments; underpaid_expired refund is one refund without providerRef (real adapter may need per-transfer refunds → defer to intermediary unit). (the sweep skips payments without a transfer code, so tickets and legacy payments are left alone)
 - Push bodies in `packages/domain/src/notification_render.ts` (lines ~71–87) still say "Cọc…" (Task 8 triage item).
 - Stored names stay `deposit`/`remaining`/`depositProvider`/`depositPaidAt` (Decision 1); `deposit` is the full price and `remaining` is 0. Arb keys such as `bookDepositToday`, `payAwaitingDeposit` keep their names with new values.
 - The dev webhook is public with a committed test secret (fake money only); the real provider unit must use `defineSecret` and its own signature scheme.
