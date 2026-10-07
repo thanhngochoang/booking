@@ -49,6 +49,7 @@ Nothing here was deployed by this unit; CI deploys Firestore and the functions o
    - the `events` composites: `(status, [type], [price], startAt)` and `(status, location.geohash, startAt / createdAt)`;
    - `registrations` collection group `(userId, createdAt desc)` and `(status, holdExpiresAt)`, plus the `id` and `refundDue` field overrides (Task 9);
    - `timeline (status, addedAt desc)`;
+   - `events (status, createdAt)`; `events (createdBy, startAt desc)` and `(hostId, startAt desc)` (the `watchMine` `Filter.or` behind S06.01 "Sự kiện của tôi"); `events (status, registrationDeadline)`, `(status, endAt)` and `(status, hostConsent, hostConsentExpiresAt)` (the `eventClock` sweeps); collection-scope `registrations (status, holdExpiresAt)` (hold release). `eventClock` and S06.01 error until these are built;
    - `payments (eventId, status, escrowStatus)` (Task 9);
    - `refunds (subjectType, status, createdAt)` (fix round): the `refund_resend` step of `eventClock` logs errors until it is built. Refunds now store `subjectType`; refunds written before have none and are never re-sent (none are pending outside dev).
 2. **Storage rules: manual, required.** `storage.rules` adds `eventCovers/{uid}/{eventId}/{file}`; without it every S12.01 cover upload is refused and, since the cover is required at publish (Decision 6), no event can be published on dev. Right after merging, either run the **firebase-deploy** workflow by hand (Actions → firebase-deploy → Run workflow, `target: dev`, `storage: true`), or from `app_flutter/firebase/rules-test/`:
@@ -59,7 +60,8 @@ Nothing here was deployed by this unit; CI deploys Firestore and the functions o
 
    Production later: the same workflow with `target: production`, or `npm run deploy:storage:prod`.
 3. **Functions** (CI job `deploy-functions`, after the domain and functions tests): adds the scheduled `releaseEventHolds` (every minute) and `eventClock`, and the callables `confirmFakeTicketPayment` and `checkTicketPayment`.
-4. **Production release stays blocked on #129**: the fake-payment gate refuses outside the emulator and the dev project and no real gateway exists, so paid tickets (and bookings) cannot be paid there. iOS also needs `NSCameraUsageDescription` before the check-in scanner ships on iOS.
+4. **App build last.** The events-enabled app build (`eventRoutesReadyProvider` / `eventPaymentsReadyProvider` true) goes to testers only after steps 1–3: every index above built, Storage rules and functions deployed.
+5. **Production release stays blocked on #129**: the fake-payment gate refuses outside the emulator and the dev project and no real gateway exists, so paid tickets (and bookings) cannot be paid there. iOS also needs `NSCameraUsageDescription` before the check-in scanner ships on iOS.
 
 Other notes:
 - Events published before Task 7 have a group chat without moderator member docs (they still send; a one-off backfill fixes the member list).
@@ -70,16 +72,17 @@ Other notes:
 - Task 9+10 M7: `checkTicketPayment` asks the gateway only about the registration's latest intent (`reg.paymentId`); an earlier intent paid with another provider waits for the provider callback, which #129 adds.
 - Task 9+10 N2: a gateway call that throws is recorded `failed` (manual) instead of staying `pending`, and a `failed` outcome written first hides a later success of a parallel send (same as bookings). With a real provider, a throw should leave the refund `pending` for the re-send and the provider callback should be able to move `failed` → `done`.
 - The S11.03 mapping of "Chuyển khoản QR" and "ZaloPay" onto the `vnpay` code (owner question 5).
-- Production release of paid tickets and bookings (deploy order step 4).
+- Production release of paid tickets and bookings (deploy order step 5).
 
 ## Deferred
 
 - Push for announcements, cancellations and "Có ảnh mới" (no push pipeline for events yet, S17 plans).
 - Analytics events of `events.md` (no analytics layer; `ContactAction.onEvent` unused).
-- Post-publish edit UI (the `updateEvent` callable exists; the app edits drafts only).
+- Post-publish edit UI (the `updateEvent` callable exists; the app edits drafts only). This includes the staff FAQ of platform events, which is frozen at publish.
 - "Tạo hộ" UI: staff photographer picker on S12.01 (backend and the photographer's accept/decline exist; `hostInvitationsProvider` is not shown anywhere, the photographer reaches an invitation only through the notification).
 - Support inbox for platform events (S23.06); S11.02 shows the staff-entered FAQ only. The support line is hidden until the owner gives an address the project owns (`eventSupportEmail` in `event_links.dart`, now `null`).
 - Report sheet ("Báo cáo" in the S11.06 long-press menu is a disabled "Sắp có" row until S20.01).
+- Final-fix review minors: the FAQ "incomplete" error shows while the question is still being typed (show it on save or blur instead); a few raw pixel values in the rebuilt TicketCard/EventCard should move to tokens; the free hero event on S11.01 no longer shows "Không thu phí" because the featured card carries no price (mock).
 - QR brightness: the full-screen ticket QR does not raise the screen brightness (no plugin).
 - Author post deletion: a post deleted by its author should leave the timeline once post deletion exists.
 - In-app unread badges for group chats (no per-message counters for groups by design).
