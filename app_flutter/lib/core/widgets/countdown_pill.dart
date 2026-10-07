@@ -3,10 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/countdown.dart'
+    show isCountdownAnnounceSecond;
 
 /// Small pill with the time left (mock `.st.live`): "Còn 14:32", or "Hết hạn"
-/// at zero. A live region, so a screen reader hears "QR còn hiệu lực 14 phút
-/// 32 giây" as it changes. The caller owns the clock and passes [remaining].
+/// at zero. A live region only at 5 min, 1 min, 10 s and zero, so a screen
+/// reader hears "QR còn hiệu lực 5 phút 0 giây" there and is not interrupted
+/// every second. The caller owns the clock and passes [remaining].
 class CountdownPill extends StatelessWidget {
   const CountdownPill({super.key, required this.remaining});
 
@@ -27,7 +30,9 @@ class CountdownPill extends StatelessWidget {
           );
 
     return Semantics(
-      liveRegion: true,
+      // The label follows every second, but only the coarse thresholds and
+      // zero are announced (WCAG 4.1.3).
+      liveRegion: isCountdownAnnounceSecond(remaining.inSeconds),
       label: expired
           ? l10n.payQrExpired
           : l10n.payQrCountdownSemantics(minutes, seconds),

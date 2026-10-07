@@ -5,6 +5,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
+/// Seconds left at which a countdown is a live region (5 min, 1 min, 10 s and
+/// zero), so a screen reader does not re-announce it every tick.
+bool isCountdownAnnounceSecond(int seconds) =>
+    seconds == 300 || seconds == 60 || seconds == 10 || seconds == 0;
+
 /// Progress ring with big number and unit for countdowns (spec .cd):
 /// updates per second when < 1 hour, per minute when >= 1 hour.
 /// Announces to assistive tech at 5m, 1m, 10s and 0s thresholds.
@@ -93,10 +98,6 @@ class _CountdownRingState extends State<CountdownRing> {
     });
   }
 
-  bool _isAnnounceThreshold(int seconds) {
-    return seconds == 300 || seconds == 60 || seconds == 10 || seconds == 0;
-  }
-
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -136,7 +137,7 @@ class _CountdownRingState extends State<CountdownRing> {
       semanticsLabel = 'Còn ${_left.inSeconds} giây';
     }
 
-    final isLiveRegion = _isAnnounceThreshold(_left.inSeconds);
+    final isLiveRegion = isCountdownAnnounceSecond(_left.inSeconds);
 
     return Semantics(
       label: semanticsLabel,
