@@ -186,8 +186,9 @@ Future<String> _customerBooks(
   await tester.enterText(find.byType(TextField), 'Bến Bạch Đằng');
   await _settle(tester);
   await _tapButton(tester, 'Tiếp tục · 1.500.000₫');
-  await _tapButton(tester, 'Đặt cọc 1.500.000₫');
-  await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
+  await _tapButton(tester, 'Thanh toán 1.500.000₫');
+  // S04.04 waits for the transfer; the fake gateway delivers it.
+  await repo.confirmFakePayment(paymentId: 'pay_booking_1');
   await _settle(tester);
 
   final id = repo.createCalls.isEmpty ? '' : 'booking_1';

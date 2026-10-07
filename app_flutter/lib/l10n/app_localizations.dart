@@ -3088,12 +3088,6 @@ abstract class AppLocalizations {
   /// **'Đang xem dữ liệu đã lưu'**
   String get offlineBanner;
 
-  /// No description provided for @escrowNoticeDeposit.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.'**
-  String get escrowNoticeDeposit;
-
   /// No description provided for @settingsSignOutConfirmBody.
   ///
   /// In vi, this message translates to:
@@ -3373,25 +3367,19 @@ abstract class AppLocalizations {
   /// No description provided for @bookDepositToday.
   ///
   /// In vi, this message translates to:
-  /// **'Đặt cọc hôm nay (30%)'**
+  /// **'Thanh toán 100%'**
   String get bookDepositToday;
-
-  /// No description provided for @bookRemaining.
-  ///
-  /// In vi, this message translates to:
-  /// **'Còn lại trả tại buổi chụp'**
-  String get bookRemaining;
 
   /// No description provided for @bookPolicy.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.'**
+  /// **'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.'**
   String get bookPolicy;
 
   /// No description provided for @bookPay.
   ///
   /// In vi, this message translates to:
-  /// **'Đặt cọc {amount}'**
+  /// **'Thanh toán {amount}'**
   String bookPay(String amount);
 
   /// No description provided for @payTitle.
@@ -8367,6 +8355,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'ZaloPay'**
   String get payMethodZaloPay;
+
+  /// S04.03 (mock): sub-label of the bank QR option.
+  ///
+  /// In vi, this message translates to:
+  /// **'Miễn phí · xác nhận ngay'**
+  String get payMethodBankQrNote;
+
+  /// S04.03: createPayment refused a 4th attempt for the booking (payment_attempts_exceeded).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã tạo QR 3 lần. Hãy đặt lại từ đầu.'**
+  String get payAttemptsExceeded;
 
   /// Semantics label of the payment method group on S11.03.
   ///

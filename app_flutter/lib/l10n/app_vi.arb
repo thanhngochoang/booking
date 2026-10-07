@@ -759,7 +759,6 @@
   "profileEditPhoto": "Ảnh đại diện và tên",
   "profileEditContact": "Khu vực và liên hệ",
   "offlineBanner": "Đang xem dữ liệu đã lưu",
-  "escrowNoticeDeposit": "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.",
   "settingsSignOutConfirmBody": "Bạn có chắc chắn muốn đăng xuất không?",
   "settingsSignOutKeep": "Ở lại",
   "ticketUpcoming": "Đã đăng ký",
@@ -847,10 +846,9 @@
   "bookNote": "Ghi chú",
   "bookNoteHint": "Thêm ghi chú cho nhiếp ảnh gia (tuỳ chọn)",
   "bookYourPhone": "SĐT của bạn",
-  "bookDepositToday": "Đặt cọc hôm nay (30%)",
-  "bookRemaining": "Còn lại trả tại buổi chụp",
-  "bookPolicy": "Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.",
-  "bookPay": "Đặt cọc {amount}",
+  "bookDepositToday": "Thanh toán 100%",
+  "bookPolicy": "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.",
+  "bookPay": "Thanh toán {amount}",
   "@bookPay": {
     "placeholders": {
       "amount": {"type": "String"}
@@ -2172,6 +2170,10 @@
   "@payMethodBankQr": {"description": "S11.03 (mock): pay by bank transfer QR."},
   "payMethodMomo": "MoMo",
   "payMethodZaloPay": "ZaloPay",
+  "payMethodBankQrNote": "Miễn phí · xác nhận ngay",
+  "@payMethodBankQrNote": {"description": "S04.03 (mock): sub-label of the bank QR option."},
+  "payAttemptsExceeded": "Đã tạo QR 3 lần. Hãy đặt lại từ đầu.",
+  "@payAttemptsExceeded": {"description": "S04.03: createPayment refused a 4th attempt for the booking (payment_attempts_exceeded)."},
   "payMethodLabel": "Phương thức thanh toán",
   "@payMethodLabel": {"description": "Semantics label of the payment method group on S11.03."},
   "ticketCancelledRefunded": "Đã huỷ · đã hoàn tiền",

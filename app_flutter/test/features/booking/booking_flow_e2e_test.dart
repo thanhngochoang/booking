@@ -136,12 +136,14 @@ void main() {
       // S04.03: nothing has been written to the server yet.
       expect(find.byType(ReviewStep), findsOneWidget);
       expect(repo.log, isEmpty);
-      await _tapButton(tester, 'Đặt cọc 1.500.000₫');
-      await tester.pumpAndSettle();
+      await _tapButton(tester, 'Thanh toán 1.500.000₫');
+      await _pumpWhileWaiting(tester);
 
-      // The fake gateway sheet.
-      expect(find.byType(FakePaymentSheet), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
+      // No sheet: S04.04 waits for the transfer, which the fake gateway
+      // delivers (S04.04's own simulator button comes with its rewrite).
+      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+      await repo.confirmFakePayment(paymentId: 'pay_booking_1');
       await _pumpWhileWaiting(tester);
 
       // S04.04 saw the status leave draft and moved on to S05.02.

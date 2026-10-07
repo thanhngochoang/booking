@@ -1721,10 +1721,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get offlineBanner => 'Đang xem dữ liệu đã lưu';
 
   @override
-  String get escrowNoticeDeposit =>
-      'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.';
-
-  @override
   String get settingsSignOutConfirmBody =>
       'Bạn có chắc chắn muốn đăng xuất không?';
 
@@ -1880,18 +1876,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String get bookYourPhone => 'SĐT của bạn';
 
   @override
-  String get bookDepositToday => 'Đặt cọc hôm nay (30%)';
-
-  @override
-  String get bookRemaining => 'Còn lại trả tại buổi chụp';
+  String get bookDepositToday => 'Thanh toán 100%';
 
   @override
   String get bookPolicy =>
-      'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.';
+      'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.';
 
   @override
   String bookPay(String amount) {
-    return 'Đặt cọc $amount';
+    return 'Thanh toán $amount';
   }
 
   @override
@@ -4733,6 +4726,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payMethodZaloPay => 'ZaloPay';
+
+  @override
+  String get payMethodBankQrNote => 'Miễn phí · xác nhận ngay';
+
+  @override
+  String get payAttemptsExceeded => 'Đã tạo QR 3 lần. Hãy đặt lại từ đầu.';
 
   @override
   String get payMethodLabel => 'Phương thức thanh toán';

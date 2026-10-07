@@ -1,6 +1,9 @@
 // test/features/booking/booking_flow_controller_test.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/payments.dart';
+import 'package:photobooking/data/booking/booking_providers.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/service_summary.dart';
@@ -9,6 +12,8 @@ import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
+
+import '../../support/fake_booking_repository.dart';
 
 void main() {
   const photographerId = 'p1';
@@ -36,6 +41,7 @@ void main() {
     List<ServiceSummary>? packages,
     UserContact? contact,
     DateTime? now,
+    FakeBookingRepository? bookings,
   }) {
     final effectiveNow = now ?? today;
     return ProviderContainer(
@@ -48,6 +54,7 @@ void main() {
         currentContactProvider.overrideWithValue(
           AsyncData(contact ?? const UserContact(phone: '+84912345678')),
         ),
+        if (bookings != null) bookingRepositoryProvider.overrideWithValue(bookings),
       ],
     );
   }
@@ -340,5 +347,102 @@ void main() {
     expect(state.start, '14:00');
     expect(state.placeName, 'Bảo tàng Mỹ thuật');
     expect(state.step, BookingStep.place);
+  });
+
+  group('payment', () {
+    const args = BookingFlowArgs(photographerId: photographerId);
+
+    BookingFlowController readyToPay(
+      ProviderContainer container,
+      List<SubmitOutcome> outcomes,
+    ) {
+      final sub = container.listen(bookingFlowControllerProvider(args), (_, _) {});
+      addTearDown(sub.close);
+      final ctrl = container.read(bookingFlowControllerProvider(args).notifier);
+      ctrl.outcomes.listen(outcomes.add);
+      ctrl.selectService(package1);
+      ctrl.next();
+      ctrl.selectDay('2026-10-05');
+      ctrl.selectStart('09:00');
+      ctrl.next();
+      ctrl.setPlace('Studio A');
+      ctrl.next();
+      return ctrl;
+    }
+
+    test('the method defaults to the bank QR and setMethod changes it', () {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+      final sub = container.listen(bookingFlowControllerProvider(args), (_, _) {});
+      addTearDown(sub.close);
+
+      expect(container.read(bookingFlowControllerProvider(args)).method, PayMethod.bankQr);
+      container
+          .read(bookingFlowControllerProvider(args).notifier)
+          .setMethod(PayMethod.zaloPay);
+      expect(container.read(bookingFlowControllerProvider(args)).method, PayMethod.zaloPay);
+    });
+
+    test('the amount to pay is the whole price', () {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+      final sub = container.listen(bookingFlowControllerProvider(args), (_, _) {});
+      addTearDown(sub.close);
+      container.read(bookingFlowControllerProvider(args).notifier).selectService(package1);
+
+      expect(container.read(bookingFlowControllerProvider(args)).payVnd, 1500000);
+    });
+
+    test('submit creates the booking then a payment with the chosen method', () async {
+      final repo = FakeBookingRepository();
+      final container = makeContainer(bookings: repo);
+      addTearDown(container.dispose);
+      final outcomes = <SubmitOutcome>[];
+      final ctrl = readyToPay(container, outcomes);
+
+      ctrl.setMethod(PayMethod.momo);
+      await ctrl.submit();
+
+      expect(repo.createCalls, hasLength(1));
+      expect(repo.paymentCalls, [(bookingId: 'booking_1', method: PayMethod.momo)]);
+    });
+
+    test('GoToPayment carries the booking id and the checkout', () async {
+      final repo = FakeBookingRepository();
+      final container = makeContainer(bookings: repo);
+      addTearDown(container.dispose);
+      final outcomes = <SubmitOutcome>[];
+      final ctrl = readyToPay(container, outcomes);
+
+      await ctrl.submit();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(outcomes, hasLength(1));
+      final go = outcomes.single as GoToPayment;
+      expect(go.bookingId, 'booking_1');
+      expect(go.checkout.paymentId, 'pay_booking_1');
+      expect(go.checkout.method, PayMethod.bankQr);
+      expect(go.checkout.transferCode, 'PB 7F3K2Q');
+      expect(go.checkout.payUrl, isNull);
+    });
+
+    test('payment_attempts_exceeded keeps the review step and forgets the draft', () async {
+      final repo = FakeBookingRepository()
+        ..nextPaymentError = BookingErrorCode.paymentAttemptsExceeded;
+      final container = makeContainer(bookings: repo);
+      addTearDown(container.dispose);
+      final outcomes = <SubmitOutcome>[];
+      final ctrl = readyToPay(container, outcomes);
+
+      await ctrl.submit();
+      await Future<void>.delayed(Duration.zero);
+
+      final state = container.read(bookingFlowControllerProvider(args));
+      expect(state.error, BookingErrorCode.paymentAttemptsExceeded);
+      expect(state.step, BookingStep.review);
+      expect(state.phase, SubmitPhase.idle);
+      expect(state.bookingId, isNull);
+      expect(outcomes, isEmpty);
+    });
   });
 }

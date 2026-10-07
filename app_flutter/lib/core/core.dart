@@ -71,6 +71,7 @@ export 'package:photobooking/core/widgets/money_breakdown.dart';
 export 'package:photobooking/core/widgets/policy_table.dart';
 export 'package:photobooking/core/widgets/provider_mark.dart';
 export 'package:photobooking/core/widgets/orders_closed_tag.dart';
+export 'package:photobooking/core/widgets/pay_method_selector.dart';
 export 'package:photobooking/core/widgets/provider_picker.dart';
 export 'package:photobooking/core/widgets/reason_picker.dart';
 export 'package:photobooking/core/widgets/status_timeline.dart';

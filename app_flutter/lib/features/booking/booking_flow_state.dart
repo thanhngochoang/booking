@@ -50,7 +50,7 @@ class BookingFlowState {
     this.placeName = '',
     this.note = '',
     this.phone,
-    this.provider = PaymentProviderCode.momo,
+    this.method = PayMethod.bankQr,
     this.phase = SubmitPhase.idle,
     this.error,
     this.takenDays = const {},
@@ -69,7 +69,7 @@ class BookingFlowState {
   final String placeName;
   final String note;
   final String? phone;
-  final PaymentProviderCode provider;
+  final PayMethod method;
   final SubmitPhase phase;
   final BookingErrorCode? error;
   final Set<String> takenDays;
@@ -84,14 +84,16 @@ class BookingFlowState {
       placeName.isNotEmpty ||
       note.isNotEmpty;
 
-  int? get depositVnd =>
-      priceVnd != null ? depositFor(priceVnd!).deposit : null;
+  /// What the customer pays when booking: the whole price (payments spec M2).
+  int? get payVnd => priceVnd != null ? depositFor(priceVnd!).deposit : null;
 
   String? get end => (start != null && durationMinutes != null)
       ? endTimeFor(start!, durationMinutes!)
       : null;
 
-  bool get busy => phase == SubmitPhase.creating || phase == SubmitPhase.paying;
+  /// True from the tap on pay until S04.04 replaces the sheet, so a second tap
+  /// cannot start another payment while the first outcome is being handled.
+  bool get busy => phase != SubmitPhase.idle;
 
   bool get canContinue {
     switch (step) {
@@ -124,13 +126,14 @@ class BookingFlowState {
     String? note,
     String? phone,
     bool clearPhone = false,
-    PaymentProviderCode? provider,
+    PayMethod? method,
     SubmitPhase? phase,
     BookingErrorCode? error,
     bool clearError = false,
     Set<String>? takenDays,
     bool? priceChanged,
     String? bookingId,
+    bool clearBookingId = false,
     String? paymentId,
   }) {
     return BookingFlowState(
@@ -145,12 +148,12 @@ class BookingFlowState {
       placeName: placeName ?? this.placeName,
       note: note ?? this.note,
       phone: clearPhone ? null : (phone ?? this.phone),
-      provider: provider ?? this.provider,
+      method: method ?? this.method,
       phase: phase ?? this.phase,
       error: clearError ? null : (error ?? this.error),
       takenDays: takenDays ?? this.takenDays,
       priceChanged: priceChanged ?? this.priceChanged,
-      bookingId: bookingId ?? this.bookingId,
+      bookingId: clearBookingId ? null : (bookingId ?? this.bookingId),
       paymentId: paymentId ?? this.paymentId,
     );
   }

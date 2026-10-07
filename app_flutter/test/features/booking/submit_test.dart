@@ -89,19 +89,20 @@ void main() {
   }
 
   testWidgets(
-    'Đặt cọc creates the booking with the chosen values, then the bank QR payment',
+    'Thanh toán creates the booking with the chosen values, then a payment with the chosen method',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
       await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      // Choose VNPay
-      await tester.tap(find.text('VNPay'));
+      // Choose ZaloPay
+      final zalo = find.text('ZaloPay');
+      await tester.ensureVisible(zalo);
+      await tester.tap(zalo);
       await tester.pumpAndSettle();
 
-      // Tap Đặt cọc
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
       await tester.tap(payBtn);
-      await tester.pumpAndSettle();
+      await pumpWhileWaiting(tester); // lands on S04.04
 
       expect(fakeRepo.createCalls.length, 1);
       final call = fakeRepo.createCalls.single;
@@ -116,52 +117,36 @@ void main() {
       expect(fakeRepo.paymentCalls.length, 1);
       final payCall = fakeRepo.paymentCalls.single;
       expect(payCall.bookingId, 'booking_1');
-      // Until S04.03 gets its method selector (Task 6) every booking pays by QR.
-      expect(payCall.method, PayMethod.bankQr);
+      expect(payCall.method, PayMethod.zaloPay);
     },
   );
 
-  testWidgets('double tap creates one booking and one deposit', (tester) async {
+  testWidgets('the bank QR is the default method', (tester) async {
     final fakeRepo = FakeBookingRepository();
     await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+    await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
+    await pumpWhileWaiting(tester);
+
+    expect(fakeRepo.paymentCalls.single.method, PayMethod.bankQr);
+  });
+
+  testWidgets('double tap creates one booking and one payment', (tester) async {
+    final fakeRepo = FakeBookingRepository();
+    await navigateToReviewStep(tester, bookings: fakeRepo);
+
+    final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
     await tester.tap(payBtn);
     await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+    await pumpWhileWaiting(tester);
 
     expect(fakeRepo.createCalls.length, 1);
     expect(fakeRepo.paymentCalls.length, 1);
   });
 
-  testWidgets('fake mode: the fake gateway sheet confirms and S04.04 hands '
-      'over to S05.02', (tester) async {
-    final fakeRepo = FakeBookingRepository();
-    final handles = await navigateToReviewStep(
-      tester,
-      bookings: fakeRepo,
-      realPayments: false,
-    );
-
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
-    await tester.tap(payBtn);
-    await tester.pumpAndSettle();
-
-    // Fake payment sheet is open
-    expect(find.byType(FakePaymentSheet), findsOneWidget);
-    expect(find.text('Cổng thanh toán giả (chỉ để thử)'), findsOneWidget);
-
-    // Tap Thanh toán thành công
-    await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
-    await tester.pumpAndSettle();
-
-    expect(fakeRepo.fakeConfirms, contains('pay_booking_1'));
-    // S04.04 (/b/booking_1/pay) sees the paid booking and opens S05.02.
-    expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
-  });
-
   testWidgets(
-    'fake mode: Huỷ on the fake sheet still opens S04.04 without confirming',
+    'fake mode goes straight to S04.04 without a sheet; a simulated transfer '
+    'hands over to S05.02',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
       final handles = await navigateToReviewStep(
@@ -170,18 +155,19 @@ void main() {
         realPayments: false,
       );
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
       await tester.tap(payBtn);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(FakePaymentSheet), findsOneWidget);
-
-      // Tap Huỷ
-      await tester.tap(find.widgetWithText(AppButton, 'Huỷ'));
       await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
+      expect(find.byType(FakePaymentSheet), findsNothing);
       expect(fakeRepo.fakeConfirms, isEmpty);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+
+      // The transfer arrives (the screen's own simulator button comes with
+      // its rewrite); S04.04 sees the status leave draft and opens S05.02.
+      await fakeRepo.confirmFakePayment(paymentId: 'pay_booking_1');
+      await tester.pumpAndSettle();
+      expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
     },
   );
 
@@ -195,7 +181,7 @@ void main() {
         realPayments: true,
       );
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
       await tester.tap(payBtn);
       await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
@@ -203,6 +189,70 @@ void main() {
       // A bank QR has no payUrl: S04.04 draws the QR itself.
       expect(handles.externalLauncher.opened, isEmpty);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+    },
+  );
+
+  testWidgets(
+    'a wallet with real payments opens payUrl then shows S04.04',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      final handles = await navigateToReviewStep(
+        tester,
+        bookings: fakeRepo,
+        realPayments: true,
+      );
+
+      final momo = find.text('MoMo');
+      await tester.ensureVisible(momo);
+      await tester.tap(momo);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
+      await pumpWhileWaiting(tester);
+
+      expect(handles.externalLauncher.opened, [
+        Uri.parse('https://fake-pay.local/momo?paymentId=pay_booking_1'),
+      ]);
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+    },
+  );
+
+  testWidgets(
+    'a wallet in fake mode opens no page and no sheet, only S04.04',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      final handles = await navigateToReviewStep(
+        tester,
+        bookings: fakeRepo,
+        realPayments: false,
+      );
+
+      final momo = find.text('MoMo');
+      await tester.ensureVisible(momo);
+      await tester.tap(momo);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
+      await pumpWhileWaiting(tester);
+
+      expect(handles.externalLauncher.opened, isEmpty);
+      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+    },
+  );
+
+  testWidgets(
+    'payment_attempts_exceeded shows "Đã tạo QR 3 lần. Hãy đặt lại từ đầu." without Thử lại',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository()
+        ..nextPaymentError = BookingErrorCode.paymentAttemptsExceeded;
+      final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Đã tạo QR 3 lần. Hãy đặt lại từ đầu.'), findsOneWidget);
+      expect(find.text('Thử lại'), findsNothing);
+      expect(handles.router.state.uri.toString(), isNot(contains('/pay')));
+      expect(find.byType(ReviewStep), findsOneWidget);
     },
   );
 
@@ -221,9 +271,9 @@ void main() {
     await tester.enterText(phoneFinder, '0987654321');
     await tester.pumpAndSettle();
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
     await tester.tap(payBtn);
-    await tester.pumpAndSettle();
+    await pumpWhileWaiting(tester);
 
     // Verify contact was saved with new phone +84987654321
     final saved =
@@ -240,7 +290,7 @@ void main() {
 
     await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
@@ -257,7 +307,7 @@ void main() {
 
       final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
       await tester.tap(payBtn);
       await tester.pumpAndSettle();
 
@@ -303,7 +353,7 @@ void main() {
     // Update package list for when provider is invalidated
     packageList = [updatedPackage, bookingPackage2];
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
@@ -324,7 +374,7 @@ void main() {
 
       await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
       await tester.tap(payBtn);
       await tester.pumpAndSettle();
 
@@ -340,9 +390,9 @@ void main() {
 
       // Tap Thử lại
       await tester.tap(find.text('Thử lại'));
-      await tester.pumpAndSettle();
+      await pumpWhileWaiting(tester);
 
-      // Second attempt reuses draft booking_1: no second createBooking, but one deposit call
+      // Second attempt reuses draft booking_1: no second createBooking, but one payment call
       expect(fakeRepo.createCalls.length, 1);
       expect(fakeRepo.paymentCalls.length, 1);
     },
@@ -356,7 +406,7 @@ void main() {
 
       await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫'));
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
       await tester.pumpAndSettle();
 
       expect(
@@ -389,7 +439,7 @@ void main() {
       final before = reads;
       expect(before, greaterThan(0));
 
-      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫'));
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
       await tester.pumpAndSettle();
 
       expect(reads, greaterThan(before));
@@ -404,7 +454,7 @@ void main() {
 
     await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
