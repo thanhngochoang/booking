@@ -324,6 +324,43 @@ void main() {
     );
 
     testWidgets(
+      'a second tap on the expired "Tạo QR mới" before the new QR arrives creates nothing',
+      (tester) async {
+        final s = await _pump(
+          tester,
+          realPayments: true,
+          checkout: (now) => _qr(
+            expiresAt: now.add(const Duration(minutes: 15)),
+            code: 'PB 9ZZ9ZZ',
+          ),
+        );
+        s.repo.deferCheckoutUpdates = true;
+        await s.advance(tester, const Duration(minutes: 15));
+        expect(find.text('QR đã hết hạn'), findsOneWidget);
+        expect(find.byType(AppButton), findsOneWidget);
+
+        await tester.tap(find.byType(AppButton));
+        await _settle(tester);
+        // The callable has answered but the booking snapshot has not: the
+        // old, expired QR is still shown and the button stays busy.
+        expect(s.repo.paymentCalls, hasLength(1));
+        expect(find.text('PB 9ZZ9ZZ'), findsOneWidget);
+        await tester.tap(find.byType(AppButton), warnIfMissed: false);
+        await _settle(tester);
+        expect(s.repo.paymentCalls, hasLength(1));
+
+        s.repo.releaseCheckoutUpdates();
+        await _settle(tester);
+        expect(find.text('PB 7F3K2Q'), findsOneWidget);
+        expect(find.text('Còn 15:00'), findsOneWidget);
+        // The new QR is live: "Tạo QR mới" works again.
+        await tester.tap(find.widgetWithText(AppButton, 'Tạo QR mới'));
+        await _settle(tester);
+        expect(s.repo.paymentCalls, hasLength(2));
+      },
+    );
+
+    testWidgets(
       '"Tạo QR mới" is also there before expiry, as the outline button',
       (tester) async {
         final s = await _pump(tester, checkout: _freshQr);

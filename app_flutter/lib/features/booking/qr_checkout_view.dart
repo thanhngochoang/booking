@@ -38,29 +38,65 @@ class QrCheckoutView extends ConsumerStatefulWidget {
 class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
   bool _creating = false;
 
+  /// The checkout "Tạo QR mới" got back, until the booking stream shows it.
+  BookingCheckout? _created;
+
+  /// True once the screen shows [created] (or a later attempt).
+  bool _shows(BookingCheckout created) =>
+      widget.checkout.paymentId == created.paymentId ||
+      widget.checkout.attempt >= created.attempt;
+
+  @override
+  void didUpdateWidget(covariant QrCheckoutView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The booking stream brought the new checkout: the button is live again.
+    final created = _created;
+    if (created != null && _shows(created)) {
+      _created = null;
+      _creating = false;
+    }
+  }
+
+  void _doneCreating() {
+    if (!mounted) return;
+    setState(() {
+      _creating = false;
+      _created = null;
+    });
+  }
+
   /// "Tạo QR mới": same method, a fresh payment and a fresh 15 minutes. The
-  /// booking stream brings the new checkout; nothing is navigated here.
+  /// booking stream brings the new checkout; nothing is navigated here. The
+  /// button stays busy until that checkout is on screen (the callable can
+  /// answer first, and the old, maybe expired QR would offer it again: a
+  /// second tap would spend another of the 3 attempts). An error frees it.
   Future<void> _newQr() async {
     if (_creating) return;
     setState(() => _creating = true);
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref
+      final created = await ref
           .read(bookingRepositoryProvider)
           .createPayment(
             bookingId: widget.booking.id,
             method: widget.checkout.method,
           );
+      if (!mounted) return;
+      // The snapshot may already be on screen; else didUpdateWidget frees it.
+      if (_shows(created)) {
+        _doneCreating();
+      } else {
+        _created = created;
+      }
     } catch (e) {
+      _doneCreating();
       showPaymentSnack(
         messenger,
         bookingErrorOf(e) == BookingErrorCode.paymentAttemptsExceeded
             ? l10n.payAttemptsExceeded
             : l10n.bookTryAgain,
       );
-    } finally {
-      if (mounted) setState(() => _creating = false);
     }
   }
 

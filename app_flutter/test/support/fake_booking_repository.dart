@@ -38,6 +38,24 @@ class FakeBookingRepository implements BookingRepository {
   final fakeConfirms = <String>[];
   final fakeConfirmKinds = <FakeTransferKind>[];
 
+  /// When true, [createPayment] returns before the booking stream shows the new
+  /// checkout (a slow snapshot); [releaseCheckoutUpdates] delivers it.
+  bool deferCheckoutUpdates = false;
+  final _deferredCheckouts = <String, BookingCheckout>{};
+
+  /// Writes the checkouts held back by [deferCheckoutUpdates] to their
+  /// bookings and notifies the streams.
+  void releaseCheckoutUpdates() {
+    for (final MapEntry(key: bookingId, value: checkout)
+        in _deferredCheckouts.entries) {
+      final b = bookings[bookingId];
+      if (b == null) continue;
+      bookings[bookingId] = b.copyWith(checkout: checkout);
+      _bookingChanges.add(bookingId);
+    }
+    _deferredCheckouts.clear();
+  }
+
   /// paymentId → bookingId, for the payments this fake created.
   final _paymentBooking = <String, String>{};
   final checkCalls = <String>[];
@@ -209,13 +227,16 @@ class FakeBookingRepository implements BookingRepository {
       throw BookingException(_serverCodeFor(payErr));
     }
     paymentCalls.add((bookingId: bookingId, method: method));
-    final attempt = paymentCalls.where((c) => c.bookingId == bookingId).length;
+    final b = bookings[bookingId];
+    // Like the server: the next attempt after the calls made and the one shown.
+    final calls = paymentCalls.where((c) => c.bookingId == bookingId).length;
+    final shown = (b?.checkout?.attempt ?? 0) + 1;
+    final attempt = calls > shown ? calls : shown;
     final paymentId = attempt == 1
         ? 'pay_$bookingId'
         : 'pay_${bookingId}_$attempt';
     _paymentBooking[paymentId] = bookingId;
     final isQr = method == PayMethod.bankQr;
-    final b = bookings[bookingId];
     final checkout = BookingCheckout(
       paymentId: paymentId,
       method: method,
@@ -231,7 +252,9 @@ class FakeBookingRepository implements BookingRepository {
           ? null
           : 'https://fake-pay.local/${method.code}?paymentId=$paymentId',
     );
-    if (b != null) {
+    if (b != null && deferCheckoutUpdates) {
+      _deferredCheckouts[bookingId] = checkout;
+    } else if (b != null) {
       bookings[bookingId] = b.copyWith(checkout: checkout);
       _bookingChanges.add(bookingId);
     }
