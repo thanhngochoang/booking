@@ -127,7 +127,8 @@ export type OtpVerdict = 'ok' | 'required' | 'expired' | 'too_many' | 'wrong';
 /** required = missing, consumed or bound to another account. */
 export function checkOtp(c: OtpChallenge | null, given: { codeHash: string; targetHash: string }, now: Date): OtpVerdict;
 
-// payout_ports.ts (additions)
+// payout_ports.ts (additions) — AccountNameLookup and NameLookupResult live in account_lookup.ts (shared with #141 S22.04;
+// whichever plan lands first creates that file with this exact shape) and are re-exported here.
 export interface AccountNameLookup { lookup(r: { bankCode: string; accountNumber: string }): Promise<NameLookupResult> }
 export interface VerifiedNameReader { legalName(uid: string): Promise<string | null> }
 export interface OtpSender { send(r: { phone: string; code: string; purpose: 'payout_account' }): Promise<void> }
