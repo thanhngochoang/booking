@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, deleteField, arrayUnion, writeBatch, serverTimestamp, Timestamp, GeoPoint, collection, collectionGroup, query, where, or } from 'firebase/firestore';
 import { ref, uploadBytes, getBytes, deleteObject } from 'firebase/storage';
 
 let env;
@@ -1406,3 +1406,424 @@ test('a proof image over 10 MB, an SVG or a non-image is refused', async () => {
   await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.svg'), photo(), { contentType: 'image/svg+xml' }));
   await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.png'), photo(), { contentType: 'image/png' }));
 });
+
+// ---- notifications, prefs, badges, devices (plan 10a) ----
+
+const seedNotification = (uid, id, readAt = null) =>
+  env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), `users/${uid}/notifications/${id}`), {
+      type: 'booking_accepted', tab: 'activity', category: 'booking', title: 't', body: 'b', target: '/b/x',
+      groupKey: null, actors: [], count: 1, thumbUrl: null, lastEventId: null, createdAt: Timestamp.now(), readAt,
+    }));
+
+const goodPrefs = () => ({
+  channels: { booking: { push: true, inApp: true }, chat: { push: false, inApp: true } },
+  quietHours: { enabled: true, from: '22:00', to: '07:00' },
+  reminders: { h24: true, h2: false },
+  updatedAt: serverTimestamp(),
+});
+
+test('notifications: the owner reads their own rows, others cannot', async () => {
+  await seedNotification('nu1', 'n_a');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('nu1').firestore(), 'users/nu1/notifications/n_a')));
+  await assertFails(getDoc(doc(env.authenticatedContext('nu2').firestore(), 'users/nu1/notifications/n_a')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'users/nu1/notifications/n_a')));
+});
+
+test('notifications: the owner may set readAt once to request.time', async () => {
+  await seedNotification('nu1', 'n_b');
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertSucceeds(updateDoc(doc(db, 'users/nu1/notifications/n_b'), { readAt: serverTimestamp() }));
+});
+
+test('notifications: readAt cannot be cleared, set twice or set to another time', async () => {
+  await seedNotification('nu1', 'n_c', Timestamp.now());
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_c'), { readAt: null }));
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_c'), { readAt: serverTimestamp() }));
+  await seedNotification('nu1', 'n_d');
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_d'), { readAt: Timestamp.fromMillis(1000) }));
+});
+
+test('notifications: no other field of a row can change', async () => {
+  await seedNotification('nu1', 'n_e');
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_e'), { title: 'x' }));
+  await assertFails(updateDoc(doc(db, 'users/nu1/notifications/n_e'), { readAt: serverTimestamp(), title: 'x' }));
+});
+
+test('notifications: nobody creates or deletes rows', async () => {
+  await seedNotification('nu1', 'n_f');
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertFails(setDoc(doc(db, 'users/nu1/notifications/n_new'), { type: 'promo', readAt: null }));
+  await assertFails(deleteDoc(doc(db, 'users/nu1/notifications/n_f')));
+});
+
+test('unreadCount is not client-writable, and the private inbox doc is owner-read only', async () => {
+  const db = env.authenticatedContext('nu1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'users/nu1'), { displayName: 'N' }));
+  await assertFails(updateDoc(doc(db, 'users/nu1'), { unreadCount: 0 }));
+  await assertFails(updateDoc(doc(db, 'users/nu1'), { unreadCountAt: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/nu1/private/inbox'), { unreadCount: 3, unreadCountAt: Timestamp.now() }));
+  await assertSucceeds(getDoc(doc(db, 'users/nu1/private/inbox')));
+  await assertFails(getDoc(doc(env.authenticatedContext('nu2').firestore(), 'users/nu1/private/inbox')));
+  await assertFails(setDoc(doc(db, 'users/nu1/private/inbox'), { unreadCount: 0 }));
+  await assertFails(updateDoc(doc(db, 'users/nu1/private/inbox'), { unreadCount: 0 }));
+});
+
+test('prefs: the owner writes a valid doc', async () => {
+  const db = env.authenticatedContext('pf1').firestore();
+  await assertSucceeds(setDoc(doc(db, 'users/pf1/private/notification_prefs'), goodPrefs()));
+  await assertSucceeds(getDoc(doc(db, 'users/pf1/private/notification_prefs')));
+});
+
+test('prefs: booking.inApp false is refused', async () => {
+  const db = env.authenticatedContext('pf1').firestore();
+  const p = goodPrefs();
+  p.channels.booking = { push: true, inApp: false };
+  await assertFails(setDoc(doc(db, 'users/pf1/private/notification_prefs'), p));
+});
+
+test('prefs: a bad time string or extra key is refused', async () => {
+  const db = env.authenticatedContext('pf1').firestore();
+  const p = goodPrefs();
+  p.quietHours.from = '25:00';
+  await assertFails(setDoc(doc(db, 'users/pf1/private/notification_prefs'), p));
+  await assertFails(setDoc(doc(db, 'users/pf1/private/notification_prefs'), { ...goodPrefs(), extra: 1 }));
+});
+
+test('prefs: other users cannot read or write them', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/pf1/private/notification_prefs'), { channels: {} }));
+  const other = env.authenticatedContext('pf2').firestore();
+  await assertFails(getDoc(doc(other, 'users/pf1/private/notification_prefs')));
+  await assertFails(setDoc(doc(other, 'users/pf1/private/notification_prefs'), goodPrefs()));
+});
+
+test('badgeProgress is owner-only and not writable', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/bp1/private/badgeProgress'), { entries: { punctual: { current: 3, target: 5 } } }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/private/badgeProgress')));
+  await assertFails(getDoc(doc(env.authenticatedContext('bp2').firestore(), 'users/bp1/private/badgeProgress')));
+  await assertFails(setDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/private/badgeProgress'), { entries: {} }));
+});
+
+test('earned badges are readable by signed-in users, never writable', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'users/bp1/badges/top_rated'), { badgeId: 'top_rated', uid: 'bp1', awardedAt: Timestamp.now(), snapshot: { text: 'x' } }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('bp2').firestore(), 'users/bp1/badges/top_rated')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'users/bp1/badges/top_rated')));
+  await assertFails(setDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/badges/shoots_10'), { badgeId: 'shoots_10' }));
+  await assertFails(deleteDoc(doc(env.authenticatedContext('bp1').firestore(), 'users/bp1/badges/top_rated')));
+});
+
+test('badge catalogue is readable, not writable', async () => {
+  await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'badges/top_rated'), { name: 'Được đánh giá cao' }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('bp1').firestore(), 'badges/top_rated')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'badges/top_rated')));
+  await assertFails(setDoc(doc(env.authenticatedContext('bp1').firestore(), 'badges/x'), { name: 'x' }));
+});
+
+test('devices: owner creates with the id pattern; other uid or extra keys refused', async () => {
+  const db = env.authenticatedContext('du1').firestore();
+  const good = { userId: 'du1', provider: 'fcm', token: 'tok-123', platform: 'android', lastSeenAt: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(db, 'devices/du1_ABCDEFGH12'), good));
+  await assertSucceeds(getDoc(doc(db, 'devices/du1_ABCDEFGH12')));
+  await assertFails(setDoc(doc(db, 'devices/du2_ABCDEFGH12'), { ...good, userId: 'du2' }));
+  await assertFails(setDoc(doc(db, 'devices/du1_ABCDEFGH12'), { ...good, extra: 1 }));
+  await assertFails(setDoc(doc(db, 'devices/du1_ABCDEFGH12'), { ...good, platform: 'web' }));
+  await assertFails(getDoc(doc(env.authenticatedContext('du2').firestore(), 'devices/du1_ABCDEFGH12')));
+  await assertSucceeds(deleteDoc(doc(db, 'devices/du1_ABCDEFGH12')));
+});
+
+// ---- earnings and payout accounts (unit 10b) ----
+const seedDoc = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+
+test('the owner reads their earnings and rows', async () => {
+  await seedDoc('earnings/ea1', { heldAmount: 1, soonAmount: 2, receivedAmount: 3, lastPayout: null, updatedAt: Timestamp.now() });
+  await seedDoc('earnings/ea1/items/pay1', { payeeId: 'ea1', amount: 5, state: 'held' });
+  const db = env.authenticatedContext('ea1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'earnings/ea1')));
+  await assertSucceeds(getDoc(doc(db, 'earnings/ea1/items/pay1')));
+  await assertSucceeds(getDocs(collection(db, 'earnings/ea1/items')));
+});
+test('another user cannot read earnings or items', async () => {
+  const other = env.authenticatedContext('ea2').firestore();
+  await assertFails(getDoc(doc(other, 'earnings/ea1')));
+  await assertFails(getDoc(doc(other, 'earnings/ea1/items/pay1')));
+  await assertFails(getDocs(collection(other, 'earnings/ea1/items')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'earnings/ea1')));
+});
+test('nobody writes earnings', async () => {
+  const db = env.authenticatedContext('ea1').firestore();
+  await assertFails(setDoc(doc(db, 'earnings/ea1'), { heldAmount: 9 }));
+  await assertFails(updateDoc(doc(db, 'earnings/ea1'), { heldAmount: 9 }));
+  await assertFails(setDoc(doc(db, 'earnings/ea1/items/pay2'), { amount: 9 }));
+  await assertFails(deleteDoc(doc(db, 'earnings/ea1/items/pay1')));
+});
+test('the owner reads the masked account view and cannot write it', async () => {
+  await seedDoc('payoutAccounts/pa1', { accountId: 'a1', bankCode: 'VCB', accountLast4: '6789', holderName: 'NGUYEN VAN AN', updatedAt: Timestamp.now() });
+  const db = env.authenticatedContext('pa1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'payoutAccounts/pa1')));
+  await assertFails(getDoc(doc(env.authenticatedContext('pa2').firestore(), 'payoutAccounts/pa1')));
+  await assertFails(setDoc(doc(db, 'payoutAccounts/pa1'), { accountLast4: '0000' }));
+  await assertFails(updateDoc(doc(db, 'payoutAccounts/pa1'), { holderName: 'X' }));
+  await assertFails(deleteDoc(doc(db, 'payoutAccounts/pa1')));
+});
+test('the owner cannot read the accounts history', async () => {
+  await seedDoc('payoutAccounts/pa1/accounts/a1', { accountNumberEnc: 'v1:x:y:z', userId: 'pa1' });
+  const db = env.authenticatedContext('pa1').firestore();
+  await assertFails(getDoc(doc(db, 'payoutAccounts/pa1/accounts/a1')));
+  await assertFails(getDocs(collection(db, 'payoutAccounts/pa1/accounts')));
+  await assertFails(setDoc(doc(db, 'payoutAccounts/pa1/accounts/a2'), { accountNumberEnc: 'v1:x:y:z' }));
+});
+test('payouts are server-only: the payee cannot read or write them', async () => {
+  await seedDoc('payouts/po1', { payeeId: 'pp1', status: 'paid', amount: 100, items: [], holdReason: 'x', createdAt: Timestamp.now() });
+  await assertFails(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1')));
+  await assertFails(getDocs(query(collection(env.authenticatedContext('pp1').firestore(), 'payouts'), where('payeeId', '==', 'pp1'))));
+  await assertFails(getDoc(doc(env.authenticatedContext('pp2').firestore(), 'payouts/po1')));
+  await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po2'), { payeeId: 'pp1' }));
+  await assertFails(updateDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1'), { status: 'failed' }));
+});
+test('payments stay closed', async () => {
+  await seedDoc('payments/pay9', { payeeId: 'pp1', amount: 5 });
+  await assertFails(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay9')));
+  await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay10'), { payeeId: 'pp1' }));
+});
+
+// ---- Photo events (plan 10c) ----
+const EV_PUBLIC = ['open', 'full'];
+const evDoc = (over = {}) => ({
+  host: { type: 'photographer', id: 'eh1', name: 'An', avatarUrl: null, verified: true },
+  hostId: 'eh1', createdBy: 'eh1', createdByRole: 'photographer', hostConsent: 'not_required',
+  title: 'Photo walk', status: 'open', price: 0, capacity: 10, registeredCount: 1, heldCount: 0,
+  startAt: Timestamp.fromMillis(Date.now() + 5 * 86_400_000),
+  endAt: Timestamp.fromMillis(Date.now() + 5 * 86_400_000 + 3_600_000),
+  createdAt: Timestamp.now(), ...over,
+});
+const regDoc = (userId, over = {}) => ({
+  id: 'r1', eventId: 'e1', userId, status: 'paid', quantity: 1, amount: 0, contactEligible: false,
+  ticketCode: 'VE-ABCD-1012', createdAt: Timestamp.now(), ...over,
+});
+const evSeed = (path, data) => env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), path), data));
+const evDb = (uid, claims) => env.authenticatedContext(uid, claims).firestore();
+
+test('events: a visitor reads an open event', async () => {
+  await evSeed('events/e1', evDoc());
+  await assertSucceeds(getDoc(doc(evDb('v1'), 'events/e1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'events/e1')));
+});
+test('events: a visitor cannot read a draft', async () => {
+  await evSeed('events/e2', evDoc({ status: 'draft' }));
+  await assertFails(getDoc(doc(evDb('v1'), 'events/e2')));
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e2')));
+});
+test('events: the creator lists their drafts', async () => {
+  await evSeed('events/e3', evDoc({ status: 'draft', createdBy: 'creator1', hostId: null,
+    host: { type: 'platform', id: null, name: null, avatarUrl: null, verified: true } }));
+  await assertSucceeds(getDocs(query(collection(evDb('creator1'), 'events'), where('createdBy', '==', 'creator1'))));
+});
+test('events: "my events" is createdBy == me OR hostId == me (S06.01, /events/mine)', async () => {
+  await evSeed('events/e4', evDoc({ status: 'draft', createdBy: 'staff1', hostId: 'host1', hostConsent: 'accepted',
+    host: { type: 'photographer', id: 'host1', name: 'H', avatarUrl: null, verified: true } }));
+  const mine = (uid) => query(collection(evDb(uid), 'events'),
+    or(where('createdBy', '==', uid), where('hostId', '==', uid)));
+  await assertSucceeds(getDocs(mine('host1')));
+  await assertSucceeds(getDocs(mine('staff1')));
+});
+test('events: a public list must filter status', async () => {
+  await assertSucceeds(getDocs(query(collection(evDb('v1'), 'events'), where('status', 'in', EV_PUBLIC))));
+  await assertFails(getDocs(collection(evDb('v1'), 'events')));
+});
+test('events: nobody writes events', async () => {
+  await assertFails(setDoc(doc(evDb('eh1'), 'events/e9'), evDoc()));
+  await assertFails(updateDoc(doc(evDb('eh1'), 'events/e1'), { title: 'x' }));
+  await assertFails(deleteDoc(doc(evDb('eh1'), 'events/e1')));
+  await assertFails(setDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e9'), evDoc()));
+});
+test('events: a user reads their own registration', async () => {
+  await evSeed('events/e1', evDoc());
+  await evSeed('events/e1/registrations/r1', regDoc('att1'));
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'events/e1/registrations/r1')));
+});
+test('events: another user cannot read a registration', async () => {
+  await assertFails(getDoc(doc(evDb('att2'), 'events/e1/registrations/r1')));
+});
+test('events: the host reads every registration of their event', async () => {
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r1')));
+  await assertSucceeds(getDocs(collection(evDb('eh1'), 'events/e1/registrations')));
+});
+test('events: a sales user cannot read registrations of another sales user\'s event', async () => {
+  await evSeed('events/e4', evDoc({ createdBy: 'sales1', hostId: null,
+    host: { type: 'platform', id: null, name: null, avatarUrl: null, verified: true } }));
+  await evSeed('events/e4/registrations/r1', regDoc('att1', { eventId: 'e4' }));
+  await assertSucceeds(getDoc(doc(evDb('sales1', { staffRole: 'sales' }), 'events/e4/registrations/r1')));
+  await assertFails(getDoc(doc(evDb('sales2', { staffRole: 'sales' }), 'events/e4/registrations/r1')));
+});
+test('events: an admin reads any registration', async () => {
+  await assertSucceeds(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e4/registrations/r1')));
+  await assertSucceeds(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/registrations/r1')));
+});
+test('events: a host reads a paid attendee\'s contact', async () => {
+  await evSeed('events/e1/registrations/r2', regDoc('att3', { id: 'r2', amount: 120000, contactEligible: true }));
+  await evSeed('events/e1/registrations/r2/private/contact', { name: 'Khách', phone: '+84912345678' });
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r2/private/contact')));
+});
+test('events: a host cannot read a held attendee\'s contact', async () => {
+  await evSeed('events/e1/registrations/r3', regDoc('att4', { id: 'r3', status: 'held', amount: 120000 }));
+  await evSeed('events/e1/registrations/r3/private/contact', { name: 'Khách', phone: '+84912345679' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r3/private/contact')));
+});
+test('events: a host cannot read the contact of a free registration (O3)', async () => {
+  await evSeed('events/e1/registrations/r1/private/contact', { name: 'Khách', phone: '+84912345600' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'events/e1/registrations/r1/private/contact')));
+  await assertFails(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/registrations/r1/private/contact')));
+});
+test('events: the attendee reads their own contact', async () => {
+  await assertSucceeds(getDoc(doc(evDb('att3'), 'events/e1/registrations/r2/private/contact')));
+  await assertFails(getDoc(doc(evDb('att2'), 'events/e1/registrations/r2/private/contact')));
+  await assertFails(setDoc(doc(evDb('att3'), 'events/e1/registrations/r2/private/contact'), { phone: '+84900000000' }));
+});
+test('events: a host cannot read a paid contact after the 7-day window', async () => {
+  await evSeed('events/e5', evDoc({ endAt: Timestamp.fromMillis(Date.now() - 8 * 86_400_000) }));
+  await evSeed('events/e5/registrations/r1', regDoc('att1', { eventId: 'e5', amount: 5000, contactEligible: true }));
+  await evSeed('events/e5/registrations/r1/private/contact', { name: 'K', phone: '+84912345601' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'events/e5/registrations/r1/private/contact')));
+});
+test('events: collection group: a user lists only their registrations', async () => {
+  await assertSucceeds(getDocs(query(collectionGroup(evDb('att1'), 'registrations'), where('userId', '==', 'att1'))));
+  await assertFails(getDocs(query(collectionGroup(evDb('att1'), 'registrations'), where('userId', '==', 'att2'))));
+  await assertFails(getDocs(collectionGroup(evDb('att1'), 'registrations')));
+});
+test('events: guards are closed', async () => {
+  await evSeed('event_hashtags/photowalk1012', { eventId: 'e1' });
+  await evSeed('ticket_codes/VE-ABCD-1012', { eventId: 'e1', registrationId: 'r1' });
+  await assertFails(getDoc(doc(evDb('eh1'), 'event_hashtags/photowalk1012')));
+  await assertFails(setDoc(doc(evDb('eh1'), 'event_hashtags/other'), { eventId: 'e1' }));
+  await assertFails(getDoc(doc(evDb('eh1'), 'ticket_codes/VE-ABCD-1012')));
+  await assertFails(setDoc(doc(evDb('att1'), 'ticket_codes/VE-ZZZZ-1012'), { eventId: 'e1', registrationId: 'r1' }));
+});
+test('events storage: an owner uploads a cover, others cannot', async () => {
+  const mine = ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/cover.jpg');
+  await assertSucceeds(uploadBytes(mine, photo(), jpeg));
+  await assertSucceeds(getBytes(mine));
+  const other = env.authenticatedContext('eh2').storage();
+  await assertFails(uploadBytes(ref(other, 'eventCovers/eh1/e1/x.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(other, 'eventCovers/eh1/e1/cover.jpg')));
+  await assertSucceeds(getBytes(ref(other, 'eventCovers/eh1/e1/cover.jpg')));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/big.jpg'), photo(9 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/a.txt'), photo(), { contentType: 'text/plain' }));
+  await assertSucceeds(deleteObject(mine));
+});
+
+test('events: a cancelled never-published draft is private; a cancelled published event is readable', async () => {
+  await evSeed('events/e6', evDoc({ status: 'cancelled', publishedAt: null, hostConsent: 'declined' }));
+  await evSeed('events/e7', evDoc({ status: 'cancelled', publishedAt: Timestamp.now() }));
+  await assertFails(getDoc(doc(evDb('v1'), 'events/e6')));
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e6')));
+  await assertSucceeds(getDoc(doc(evDb('v1'), 'events/e7')));
+  await assertFails(getDocs(query(collection(evDb('v1'), 'events'), where('status', '==', 'cancelled'))));
+  await assertFails(getDocs(query(collection(evDb('v1'), 'events'), where('status', 'in', ['open', 'cancelled']))));
+});
+
+// ---- Event timeline and group chat (plan 10c, Task 7) ----
+const tlRow = (status, over = {}) => ({
+  postId: 'tp1', source: 'hashtag', status, authorId: 'att1', authorName: 'Lan', isHost: false,
+  imageUrl: 'https://s.test/a.jpg', imageW: 10, imageH: 20, imageCount: 1, addedAt: Timestamp.now(), moderatedBy: null, ...over,
+});
+
+test('timeline: visitors read visible rows', async () => {
+  await evSeed('events/e1', evDoc());
+  await evSeed('events/e1/timeline/tp1', tlRow('visible'));
+  await assertSucceeds(getDoc(doc(evDb('v1'), 'events/e1/timeline/tp1')));
+  await assertSucceeds(getDocs(query(collection(evDb('v1'), 'events/e1/timeline'), where('status', '==', 'visible'))));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'events/e1/timeline/tp1')));
+});
+test('timeline: visitors cannot read pending or hidden rows', async () => {
+  await evSeed('events/e1/timeline/tp2', tlRow('pending', { postId: 'tp2' }));
+  await evSeed('events/e1/timeline/tp3', tlRow('hidden', { postId: 'tp3' }));
+  await assertFails(getDoc(doc(evDb('v1'), 'events/e1/timeline/tp2')));
+  await assertFails(getDoc(doc(evDb('att1'), 'events/e1/timeline/tp3')));
+  await assertFails(getDocs(query(collection(evDb('v1'), 'events/e1/timeline'), where('status', '==', 'pending'))));
+  await assertFails(getDocs(collection(evDb('v1'), 'events/e1/timeline')));
+});
+test('timeline: managers read pending and hidden rows', async () => {
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e1/timeline/tp2')));
+  await assertSucceeds(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/timeline/tp3')));
+  await assertSucceeds(getDocs(query(collection(evDb('eh1'), 'events/e1/timeline'), where('status', '==', 'pending'))));
+  await assertFails(getDoc(doc(evDb('sales2', { staffRole: 'sales' }), 'events/e1/timeline/tp2')));
+});
+test('timeline: nobody writes rows', async () => {
+  await assertFails(setDoc(doc(evDb('eh1'), 'events/e1/timeline/new'), tlRow('visible', { postId: 'new' })));
+  await assertFails(updateDoc(doc(evDb('eh1'), 'events/e1/timeline/tp2'), { status: 'visible' }));
+  await assertFails(deleteDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/timeline/tp2')));
+  await assertFails(updateDoc(doc(evDb('att1'), 'events/e1/timeline/tp1'), { status: 'hidden' }));
+});
+
+const grpChat = (members, over = {}) => ({
+  kind: 'event_group', eventId: 'e1', title: 'Photo walk', members, moderators: ['eh1'], memberCount: members.length,
+  moderatorsOnly: false, readOnlyAt: null, createdAt: Timestamp.now(), updatedAt: Timestamp.now(), ...over,
+});
+const grpMember = (name, over = {}) => ({
+  role: 'member', name, avatarUrl: null, mutedUntil: null, joinedAt: Timestamp.now(), removedAt: null, removedBy: null,
+  sentWindowStart: null, sentInWindow: 0, ...over,
+});
+
+test('chat pins: members read them, others cannot, nobody writes', async () => {
+  await evSeed('chats/event_e1', grpChat(['eh1', 'att1']));
+  await evSeed('chats/event_e1/pins/m1', { body: 'Họp 8h', senderName: 'An', pinnedBy: 'eh1', pinnedAt: Timestamp.now() });
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'chats/event_e1/pins/m1')));
+  await assertSucceeds(getDocs(collection(evDb('eh1'), 'chats/event_e1/pins')));
+  await assertFails(getDoc(doc(evDb('v1'), 'chats/event_e1/pins/m1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'chats/event_e1/pins/m1')));
+  await assertFails(setDoc(doc(evDb('eh1'), 'chats/event_e1/pins/m2'), { body: 'x' }));
+  await assertFails(deleteDoc(doc(evDb('eh1'), 'chats/event_e1/pins/m1')));
+});
+test('a removed member cannot read messages, pins or the chat', async () => {
+  await evSeed('chats/event_e2', grpChat(['eh1', 'att1']));
+  await evSeed('chats/event_e2/messages/m1', { senderId: 'att1', senderName: 'Lan', type: 'text', body: 'hi', createdAt: Timestamp.now() });
+  await evSeed('chats/event_e2/pins/m1', { body: 'hi', senderName: 'Lan', pinnedBy: 'eh1', pinnedAt: Timestamp.now() });
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'chats/event_e2/messages/m1')));
+  // the server removes att1: the uid leaves `members`, the member doc stays as history
+  await evSeed('chats/event_e2', grpChat(['eh1']));
+  await evSeed('chats/event_e2/members/att1', grpMember('Lan', { removedAt: Timestamp.now(), removedBy: 'eh1' }));
+  await assertFails(getDoc(doc(evDb('att1'), 'chats/event_e2/messages/m1')));
+  await assertFails(getDocs(collection(evDb('att1'), 'chats/event_e2/messages')));
+  await assertFails(getDoc(doc(evDb('att1'), 'chats/event_e2/pins/m1')));
+  await assertFails(getDoc(doc(evDb('att1'), 'chats/event_e2')));
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'chats/event_e2/messages/m1')));
+});
+test('group chat members read each other\'s member docs; 1-1 chats keep owner-only', async () => {
+  await evSeed('chats/event_e3', grpChat(['eh1', 'att1']));
+  await evSeed('chats/event_e3/members/eh1', grpMember('An', { role: 'moderator' }));
+  await evSeed('chats/event_e3/members/att1', grpMember('Lan'));
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'chats/event_e3/members/eh1')));
+  await assertSucceeds(getDocs(collection(evDb('att1'), 'chats/event_e3/members')));
+  await assertFails(getDoc(doc(evDb('v1'), 'chats/event_e3/members/att1')));
+  await assertFails(setDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), grpMember('Hack', { role: 'moderator' })));
+  await evSeed('chats/chat_1on1', { kind: 'inquiry', members: ['userA', 'userB'] });
+  await evSeed('chats/chat_1on1/members/userA', { unreadCount: 1 });
+  await assertFails(getDoc(doc(evDb('userB'), 'chats/chat_1on1/members/userA')));
+  await assertSucceeds(getDoc(doc(evDb('userA'), 'chats/chat_1on1/members/userA')));
+});
+test('a group member marks the chat read but changes nothing else on their member doc', async () => {
+  await assertSucceeds(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { unreadCount: 0, lastReadAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { role: 'moderator' }));
+  // M14: a real value, alongside an otherwise valid read marker, so only the affectedKeys guard refuses it.
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { mutedUntil: Timestamp.now() }));
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'),
+    { unreadCount: 0, lastReadAt: serverTimestamp(), mutedUntil: Timestamp.now() }));
+});
+
+test('chat storage: a removed member cannot read chat images', async () => {
+  await evSeed('chats/event_e4', grpChat(['eh1', 'att1']));
+  const path = 'chats/event_e4/att1/pic.jpg';
+  await assertSucceeds(uploadBytes(ref(evStorage('att1'), path), photo(), jpeg));
+  await assertSucceeds(getBytes(ref(evStorage('eh1'), path)));
+  await assertFails(getBytes(ref(evStorage('v1'), path)));
+  await evSeed('chats/event_e4', grpChat(['eh1']));
+  await assertFails(getBytes(ref(evStorage('att1'), path)));
+  await assertFails(uploadBytes(ref(evStorage('att1'), 'chats/event_e4/att1/again.jpg'), photo(), jpeg));
+});
+function evStorage(uid) { return env.authenticatedContext(uid).storage(); }

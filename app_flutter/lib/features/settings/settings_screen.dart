@@ -7,6 +7,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -29,9 +30,9 @@ class SettingsScreen extends ConsumerWidget {
     final buttonStyle = ref.watch(buttonStyleProvider);
     final showCodes = ref.watch(showScreenCodesProvider);
     final themes = [
-      (ThemeMode.dark, l.themeDark, Icons.dark_mode_outlined),
-      (ThemeMode.light, l.themeLight, Icons.light_mode_outlined),
-      (ThemeMode.system, l.themeSystem, Icons.brightness_auto_outlined),
+      (ThemeMode.dark, l.themeDark, AppIcons.darkMode),
+      (ThemeMode.light, l.themeLight, AppIcons.lightMode),
+      (ThemeMode.system, l.themeSystem, AppIcons.autoMode),
     ];
     return ScreenCode(
       ScreenCodes.settings,
@@ -51,10 +52,10 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       ListTile(
                         key: const Key('settings-edit-profile'),
-                        leading: const Icon(Icons.person_outline_rounded),
+                        leading: const AppIcon(AppIcons.profile),
                         title: Text(l.settingsEditProfile),
                         subtitle: Text(name ?? l.settingsEditProfileBody),
-                        trailing: const Icon(Icons.chevron_right_rounded),
+                        trailing: const AppIcon(AppIcons.chevron),
                         onTap: () => context.push('/settings/profile'),
                       ),
                       const _RowDivider(),
@@ -67,20 +68,30 @@ class SettingsScreen extends ConsumerWidget {
                         const _RowDivider(),
                         ListTile(
                           key: const Key('profile-awards'),
-                          leading: const Icon(Icons.workspace_premium_outlined),
+                          leading: const AppIcon(AppIcons.award),
                           title: Text(l.settingsAwards),
                           subtitle: Text(l.settingsAwardsBody),
-                          trailing: const Icon(Icons.chevron_right_rounded),
+                          trailing: const AppIcon(AppIcons.chevron),
                           onTap: () => context.push('/me/awards'),
                         ),
                         const _RowDivider(),
                         ListTile(
                           key: const Key('profile-public'),
-                          leading: const Icon(Icons.storefront_outlined),
+                          leading: const AppIcon(AppIcons.store),
                           title: Text(l.settingsPublicProfile),
                           subtitle: Text(l.settingsPublicProfileBody),
-                          trailing: const Icon(Icons.chevron_right_rounded),
+                          trailing: const AppIcon(AppIcons.chevron),
                           onTap: () => context.push('/u/${profile.uid}'),
+                        ),
+                      ],
+                      if (ref.watch(staffRoleProvider).value != null) ...[
+                        const _RowDivider(),
+                        ListTile(
+                          key: const Key('settings-manage-events'),
+                          leading: const AppIcon(AppIcons.celebration),
+                          title: Text(l.settingsManageEvents),
+                          trailing: const AppIcon(AppIcons.chevron),
+                          onTap: () => context.push('/events/mine'),
                         ),
                       ],
                     ],
@@ -97,11 +108,11 @@ class SettingsScreen extends ConsumerWidget {
                         if (i > 0) const _RowDivider(),
                         ListTile(
                           key: Key('theme-${value.name}'),
-                          leading: Icon(icon),
+                          leading: AppIcon(icon, selected: value == mode),
                           title: Text(label),
                           selected: value == mode,
                           trailing: value == mode
-                              ? const Icon(Icons.check_rounded)
+                              ? const AppIcon(AppIcons.check)
                               : null,
                           onTap: () =>
                               ref.read(themeModeProvider.notifier).set(value),
@@ -118,11 +129,14 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       ListTile(
                         key: const Key('button-gradient'),
-                        leading: const Icon(Icons.gradient_rounded),
+                        leading: AppIcon(
+                          AppIcons.gradient,
+                          selected: buttonStyle == ButtonStyleMode.gradient,
+                        ),
                         title: Text(l.buttonStyleGradient),
                         selected: buttonStyle == ButtonStyleMode.gradient,
                         trailing: buttonStyle == ButtonStyleMode.gradient
-                            ? const Icon(Icons.check_rounded)
+                            ? const AppIcon(AppIcons.check)
                             : null,
                         onTap: () => ref
                             .read(buttonStyleProvider.notifier)
@@ -132,7 +146,12 @@ class SettingsScreen extends ConsumerWidget {
                       ListTile(
                         key: const Key('button-avatar'),
                         enabled: hasAvatar,
-                        leading: const Icon(Icons.face_retouching_natural),
+                        leading: AppIcon(
+                          AppIcons.face,
+                          selected:
+                              hasAvatar &&
+                              buttonStyle == ButtonStyleMode.avatar,
+                        ),
                         title: Text(l.buttonStyleAvatar),
                         subtitle: hasAvatar
                             ? null
@@ -141,7 +160,7 @@ class SettingsScreen extends ConsumerWidget {
                             hasAvatar && buttonStyle == ButtonStyleMode.avatar,
                         trailing:
                             hasAvatar && buttonStyle == ButtonStyleMode.avatar
-                            ? const Icon(Icons.check_rounded)
+                            ? const AppIcon(AppIcons.check)
                             : null,
                         onTap: () => ref
                             .read(buttonStyleProvider.notifier)
@@ -161,6 +180,19 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: AppSpace.s6),
+                _SectionLabel(l.notificationTitle),
+                GlassCard(
+                  highlight: false,
+                  child: ListTile(
+                    key: const Key('settings-notifications'),
+                    leading: const AppIcon(AppIcons.notifications),
+                    title: Text(l.notificationTitle),
+                    subtitle: Text(l.settingsNotificationsBody),
+                    trailing: const AppIcon(AppIcons.chevron),
+                    onTap: () => context.push('/settings/notifications'),
+                  ),
+                ),
                 if (kDebugMode) ...[
                   const SizedBox(height: AppSpace.s6),
                   _SectionLabel(l.settingsDeveloper),
@@ -168,7 +200,7 @@ class SettingsScreen extends ConsumerWidget {
                     highlight: false,
                     child: SwitchListTile(
                       key: const Key('show-screen-codes'),
-                      secondary: const Icon(Icons.pin_outlined),
+                      secondary: const AppIcon(AppIcons.pin),
                       title: Text(l.settingsShowScreenCodes),
                       subtitle: Text(l.settingsShowScreenCodesBody),
                       value: showCodes,
@@ -210,7 +242,8 @@ class SettingsScreen extends ConsumerWidget {
       keepLabel: l.settingsSignOutKeep,
       danger: true,
       onConfirm: () async {
-        await ref.read(authRepositoryProvider).signOut();
+        // Drops this device's push token first, then signs out.
+        await ref.read(pushRegistrationProvider).signOut();
       },
     );
   }
@@ -260,7 +293,7 @@ class _PhoneTile extends ConsumerWidget {
     final tail = phone.length > 4 ? phone.substring(phone.length - 4) : '';
     return ListTile(
       key: const Key('profile-phone'),
-      leading: const Icon(Icons.phone_outlined),
+      leading: const AppIcon(AppIcons.phone),
       title: Text(l.settingsPhone),
       subtitle: Text(
         phone.isEmpty
@@ -269,7 +302,7 @@ class _PhoneTile extends ConsumerWidget {
             ? l.settingsPhoneAdded
             : l.settingsPhoneMasked(tail),
       ),
-      trailing: const Icon(Icons.chevron_right_rounded),
+      trailing: const AppIcon(AppIcons.chevron),
       onTap: () => context.push('/profile/phone'),
     );
   }
@@ -290,7 +323,7 @@ class _ProviderTypeTile extends ConsumerWidget {
     final type = async.value;
     return ListTile(
       key: const Key('profile-provider-type'),
-      leading: const Icon(Icons.work_outline),
+      leading: const AppIcon(AppIcons.work),
       title: Text(l.settingsProviderType),
       subtitle: type == null
           ? null
@@ -299,7 +332,7 @@ class _ProviderTypeTile extends ConsumerWidget {
               ProviderType.artist => l.settingsProviderArtist,
               ProviderType.studio => l.setupTypeStudio,
             }),
-      trailing: const Icon(Icons.chevron_right_rounded),
+      trailing: const AppIcon(AppIcons.chevron),
       onTap: () async {
         if (type == null) {
           // Not loaded (or failed): this tap is the retry.
@@ -331,7 +364,7 @@ class _SkillsTile extends ConsumerWidget {
     final snapshot = ref.watch(photographerSkillsSnapshotProvider(uid)).value;
     return ListTile(
       key: const Key('profile-skills'),
-      leading: const Icon(Icons.auto_awesome_outlined),
+      leading: const AppIcon(AppIcons.autoAwesome),
       title: Text(l.settingsSkills),
       subtitle: snapshot == null
           ? Text(l.settingsSkillsBody)
@@ -339,7 +372,7 @@ class _SkillsTile extends ConsumerWidget {
               padding: const EdgeInsets.only(top: AppSpace.s1),
               child: CompletenessMeter(percent: snapshot.server.completeness),
             ),
-      trailing: const Icon(Icons.chevron_right_rounded),
+      trailing: const AppIcon(AppIcons.chevron),
       onTap: () async {
         await context.push('/profile/skills');
         if (context.mounted) {

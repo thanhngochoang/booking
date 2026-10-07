@@ -1,5 +1,6 @@
 // lib/core/widgets/escrow_notice.dart
 import 'package:flutter/material.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 
@@ -16,7 +17,9 @@ class EscrowNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
-    final iconColor = dark ? AppColorsDark.primary : AppColors.primary;
+    final iconColor = dark
+        ? AppColorsDark.foregroundMuted
+        : AppColors.foregroundMuted;
     final textColor = dark ? AppColorsDark.foreground : AppColors.foreground;
 
     return Semantics(
@@ -35,7 +38,7 @@ class EscrowNotice extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 1.0),
-                  child: Icon(Icons.lock_outline, size: 16, color: iconColor),
+                  child: AppIcon(AppIcons.lock, size: 16, color: iconColor),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

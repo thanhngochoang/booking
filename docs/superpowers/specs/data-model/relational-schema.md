@@ -294,24 +294,31 @@ create table payments (
   escrow_status   text not null default 'held' check (escrow_status in ('held','released','paid_out','partially_refunded','refunded','disputed')),
   release_after   timestamptz,                    -- hết cửa sổ khiếu nại
   released_at     timestamptz,
+  dispute_reason  text,                           -- do open_dispute ghi; không hiện cho người nhận
+  disputed_at     timestamptz,
   provider_ref    text,
   raw             jsonb,                          -- phản hồi thô của cổng
   idempotency_key text not null unique,
+  event_id        text,                           -- vé: sự kiện của đăng ký (FK thêm ở 2.6)
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
 create index ix_payments_subject on payments (subject_type, subject_id);
+create index ix_payments_event on payments (event_id, status, escrow_status) where event_id is not null;
 create index ix_payments_release on payments (escrow_status, release_after) where escrow_status = 'held';
 
 create table refunds (
-  id         text primary key,
+  id         text primary key,                    -- khoá chống trùng gửi sang cổng
   payment_id text not null references payments(id),
+  subject_type text not null check (subject_type in ('booking','event_registration','instant_request')),
   amount     bigint not null check (amount > 0),
   percent    smallint check (percent between 0 and 100),
   status     text not null check (status in ('pending','done','failed')),
   manual     boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+create index ix_refunds_resend on refunds (subject_type, status, created_at);
 
 create table payout_accounts (                    -- 🔒
   id                 text primary key,
@@ -321,7 +328,8 @@ create table payout_accounts (                    -- 🔒
   account_last4      char(4) not null,
   holder_name        text not null,
   active             boolean not null default true,
-  created_at         timestamptz not null default now()
+  created_at         timestamptz not null default now(),
+  deactivated_at     timestamptz
 );
 create unique index ux_payout_accounts_active on payout_accounts (user_id) where active;
 
@@ -335,6 +343,8 @@ create table payouts (
   reference      text,                             -- mã giao dịch ngân hàng
   approved_by    text references users(id),
   failure_reason text,
+  hold_reason    text,
+  created_by     text references users(id),        -- nhân viên tạo lô
   created_at     timestamptz not null default now(),
   scheduled_at   timestamptz, paid_at timestamptz
 );
@@ -433,15 +443,33 @@ create table chat_pins (
 );
 
 create table notifications (
-  id         text primary key,
+  id         text primary key,                   -- 'n_{dedupeKey}' hoặc 'g_{groupKey}' (dòng gom)
   user_id    text not null references users(id) on delete cascade,
   type       text not null,
+  tab        text not null check (tab in ('activity','events','system')),
+  category   text not null check (category in ('booking','jobs','instant','events','chat','badges','promo')),
   title      text not null, body text not null,
+  target     text not null,                      -- đường dẫn app, ví dụ '/b/01J…'
+  group_key  text,
+  actors     jsonb not null default '[]',        -- ≤ 3 {id, name, avatarUrl}
+  count      int  not null default 1,
+  thumb_url  text,
+  last_event_id text,
   booking_id text, post_id text, event_id text,
   read_at    timestamptz,
   created_at timestamptz not null default now()
 );
 create index ix_notifications_user on notifications (user_id, created_at desc);
+create index ix_notifications_tab  on notifications (user_id, tab, created_at desc);
+
+create table notification_prefs (                  -- 🔒 một dòng mỗi người dùng
+  user_id text primary key references users(id) on delete cascade,
+  channels jsonb not null,                         -- {booking:{push,inApp}, jobs:…, instant:…, events:…, chat:…, badges:…, promo:…}
+  quiet_enabled boolean not null default true,
+  quiet_from text not null default '22:00', quiet_to text not null default '07:00',
+  reminder_24h boolean not null default true, reminder_2h boolean not null default true
+);
+-- Số chưa đọc là count(*) where read_at is null, không có cột riêng; Firestore giữ users/{uid}/private/inbox.
 ```
 
 ### 2.6 Sự kiện
@@ -454,7 +482,8 @@ create table events (
   host_photographer_id text references photographers(user_id),
   created_by    text not null references users(id),
   created_by_role text not null check (created_by_role in ('photographer','admin','sales')),
-  host_consent  text not null default 'not_required' check (host_consent in ('not_required','pending','accepted','declined')),
+  host_consent  text not null default 'not_required' check (host_consent in ('not_required','pending','accepted','declined','expired')),
+  host_consent_expires_at timestamptz,            -- O1: lúc mời + 24 giờ
   title         text not null, description text not null default '',
   cover_file_id text references files(id),
   type          text not null check (type in ('photo_walk','mini_session','workshop','cosplay','other')),
@@ -468,6 +497,7 @@ create table events (
   status        text not null check (status in ('draft','open','full','closed','cancelled','completed')),
   registered_count int not null default 0, held_count int not null default 0,
   chat_id       text,
+  faq           jsonb not null default '[]',      -- O2: [{question, answer}], ≤ 10; chỉ sự kiện platform
   version       int not null default 1,
   created_at    timestamptz not null default now(), updated_at timestamptz not null default now(),
   check (host_type <> 'photographer' or host_photographer_id is not null),
@@ -494,12 +524,19 @@ create table event_registrations (
   payment_id      text references payments(id),
   checked_in_at   timestamptz, cancelled_at timestamptz,
   refund_percent  smallint,
+  contact_eligible boolean not null default false, -- O3: true chỉ với vé trả tiền đã paid
+  refund_due      boolean not null default false,  -- sự kiện huỷ khi tiền vé còn treo
+  refund_id       text,                            -- FK refunds(id), thêm sau khi tạo bảng refunds
+  refund_status   text check (refund_status in ('pending','done','failed')),
   version         int not null default 1,
   created_at      timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create index ix_event_regs_event on event_registrations (event_id, status);
 create index ix_event_regs_user on event_registrations (user_id, status);
 create unique index ux_event_regs_active on event_registrations (event_id, user_id) where status in ('held','paid');
+create index ix_event_regs_refund_due on event_registrations (refund_due) where refund_due;
+alter table event_registrations add constraint fk_event_regs_refund foreign key (refund_id) references refunds(id);
+alter table payments add constraint fk_payments_event foreign key (event_id) references events(id);
 
 create table event_posts (
   event_id text not null references events(id) on delete cascade,
@@ -842,13 +879,15 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử |
 | `reviews/{bookingId}` | `reviews` | |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột |
-| `notifications/{uid}/items/{id}` | `notifications` | |
+| `users/{uid}/notifications/{id}` | `notifications` | `actors[]`→`actors jsonb`; `users/{uid}/private/inbox.unreadCount` không có cột (đếm `read_at is null`) |
+| `users/{uid}/private/notification_prefs` | `notification_prefs` | `quietHours.*`→`quiet_*`, `reminders.*`→`reminder_*` |
 | `events/{id}` | `events` | `location.*`→cột phẳng; `host.*`, `createdBy*` |
 | `events/{id}/registrations/{id}` | `event_registrations` | `phone` 🔒 |
-| *(mới)* `events/{id}/posts/{postId}` | `event_posts` | Liên kết timeline |
+| `events/{id}/timeline/{postId}` | `event_posts` | Liên kết timeline; tên `timeline`, không phải `posts`, để không trùng id bộ sưu tập `posts` (và index của nó); `status` visible/pending/hidden, `source` hashtag/explicit; `events.postCount` chỉ đếm hàng `visible`. Nhóm chat sự kiện `chats/event_{id}` (+ `members`, `messages`, `pins/{messageId}`) → `chats` kind `event_group`, `chat_members`, `messages`, `chat_pins` |
 | `badges/{id}`, `users/{uid}/badges/{id}`, `users/{uid}/private/badgeProgress` | `badge_definitions`, `user_badges`, `badge_progress` | |
 | `taxonomy/skills/items/{id}`, `taxonomy/areas/…` | `taxonomy_items` | |
-| `payoutAccounts/{uid}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá |
+| `payoutAccounts/{uid}` + `accounts/{id}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá; `payoutAccounts/{uid}` là bản che (`account_last4`), không có bảng riêng |
+| `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |
 | `config/{key}` | `app_config` | |

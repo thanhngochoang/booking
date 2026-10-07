@@ -22,6 +22,8 @@ export interface Payment {
   readonly id: string;
   readonly subjectType: PaymentSubject;
   readonly subjectId: string;
+  /** Ticket payments only: the event of the registration (`subjectId`), for the event's escrow sweeps. */
+  readonly eventId?: string;
   readonly payerId: string;
   readonly payeeId: string;
   readonly provider: PaymentProvider;
@@ -33,6 +35,10 @@ export interface Payment {
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;
+  /** Set by openDispute; server-only. */
+  readonly dispute?: { readonly reason: string; readonly openedAt: string } | null;
+  /** Current payout batch; cleared when that batch fails. */
+  readonly payoutId?: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -43,6 +49,8 @@ export type RefundStatus = (typeof REFUND_STATUSES)[number];
 export interface Refund {
   readonly id: string;
   readonly paymentId: string;
+  /** The payment's subject (the event clock re-sends ticket refunds left `pending`). */
+  readonly subjectType?: PaymentSubject;
   readonly amount: number;
   readonly percent: number;
   readonly status: RefundStatus;
@@ -165,6 +173,7 @@ export function applyRefundToPayment(params: {
   const refund: Refund = {
     id: refundId,
     paymentId: payment.id,
+    subjectType: payment.subjectType,
     amount: refundAmount,
     percent,
     status: 'pending',

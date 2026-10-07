@@ -304,6 +304,31 @@ Workflow chạy với `--force` để Firebase CLI tự đặt chính sách dọ
 | `Permission 'cloudfunctions.functions.create' denied`, `iam.serviceAccounts.actAs`, `artifactregistry...`, `run.services...`, `eventarc.triggers...` | Thiếu role tương ứng (bước 3). |
 | `Since this is your first time using 2nd gen functions, we need a little bit longer to finish setting everything up` | Lần đầu dùng Eventarc: chờ vài phút rồi chạy lại. |
 
+## 12. Khóa mã hóa tài khoản nhận tiền (`PAYOUT_ACCOUNT_KEY`)
+
+Callable `savePayoutAccount` mã hóa số tài khoản ngân hàng của nhiếp ảnh gia bằng AES‑256‑GCM trước khi lưu (`payoutAccounts/{uid}/accounts/{id}`, chỉ server đọc được). Khóa là 32 byte ngẫu nhiên, mã hóa base64, lưu trong Secret Manager với tên `PAYOUT_ACCOUNT_KEY`. **Phải tạo secret này trong từng project trước khi deploy functions**: nếu chưa có, `firebase deploy --only functions` (và job `deploy-functions` của CI) lỗi.
+
+Tạo secret (một lần cho mỗi project, chạy ở máy bạn, không commit khóa):
+
+```bash
+openssl rand -base64 32 | firebase functions:secrets:set PAYOUT_ACCOUNT_KEY --project <project-id> --data-file -
+```
+
+Cấp quyền cho service account của CI (bước 10.1) trên **chính secret này**, để lần deploy sau gắn được secret vào function:
+
+```bash
+gcloud secrets add-iam-policy-binding PAYOUT_ACCOUNT_KEY \
+  --project <project-id> \
+  --member "serviceAccount:<ci-service-account>@<project-id>.iam.gserviceaccount.com" \
+  --role roles/secretmanager.admin
+```
+
+Lưu ý:
+
+- Không bao giờ đổi hoặc xóa khóa khi đã có tài khoản được lưu: dữ liệu cũ sẽ không giải mã được. Chuỗi mã hóa có tiền tố phiên bản (`v1:`) để sau này xoay khóa.
+- Emulator dùng khóa thử trong `app_flutter/firebase/functions/.secret.local` (giá trị test, không phải bí mật). Công cụ nhân viên `npm run payouts` đọc khóa từ biến môi trường `PAYOUT_ACCOUNT_KEY`, hoặc từ file này khi chạy với emulator.
+- Chuyển tiền thật chưa tồn tại: `npm run payouts -- execute` chỉ chạy với cổng giả: với emulator, hoặc khi đặt `PAYOUTS_MODE=fake` và `GCLOUD_PROJECT` đúng bằng project dev trong `.firebaserc` (alias `dev`, công cụ tự đọc, không ghi cứng). Với mọi project khác (kể cả production) lệnh `execute` bị từ chối.
+
 ## Sự cố thường gặp
 
 | Triệu chứng | Nguyên nhân và cách sửa |

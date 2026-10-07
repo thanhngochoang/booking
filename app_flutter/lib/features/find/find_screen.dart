@@ -151,8 +151,6 @@ class _FindPhotographerScreenState
     ),
   );
 
-
-
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -175,9 +173,7 @@ class _FindPhotographerScreenState
           ),
           AppChip(
             key: const Key('find-date'),
-            label: filters.date == null
-                ? l.findDate
-                : formatDay(filters.date!),
+            label: filters.date == null ? l.findDate : formatDay(filters.date!),
             selected: filters.date != null,
             onChanged: (_) => _pickDate(filters),
           ),
@@ -213,10 +209,7 @@ class _FindPhotographerScreenState
                   ),
             selected: filters.budgetMax != null,
             onChanged: (_) async {
-              final r = await pickBudget(
-                context,
-                current: filters.budgetMax,
-              );
+              final r = await pickBudget(context, current: filters.budgetMax);
               if (r != null) {
                 filterCtl.setBudget(r.value);
               }
@@ -245,16 +238,8 @@ class _FindPhotographerScreenState
           for (final (key, sort, label) in [
             ('find-sort-best', RecommendationSort.best, l.findSortBest),
             ('find-sort-near', RecommendationSort.near, l.findSortNear),
-            (
-              'find-sort-price',
-              RecommendationSort.price,
-              l.findSortPrice,
-            ),
-            (
-              'find-sort-rating',
-              RecommendationSort.rating,
-              l.findSortRating,
-            ),
+            ('find-sort-price', RecommendationSort.price, l.findSortPrice),
+            ('find-sort-rating', RecommendationSort.rating, l.findSortRating),
           ])
             AppChip(
               key: Key(key),
@@ -279,7 +264,7 @@ class _FindPhotographerScreenState
             IconButton(
               key: const Key('find-area'),
               tooltip: l.locationChooseArea,
-              icon: const Icon(Icons.place_outlined),
+              icon: const AppIcon(AppIcons.place),
               onPressed: () => showAreaPicker(context),
             ),
           ],
@@ -387,7 +372,7 @@ class _LoadedResultsBox extends StatelessWidget {
                   padding: const EdgeInsets.only(top: AppSpace.s1),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: _noteIconSize),
+                      const AppIcon(AppIcons.info, size: _noteIconSize),
                       const SizedBox(width: AppSpace.s1),
                       Expanded(
                         child: Text(
@@ -442,9 +427,7 @@ class _LoadedResultsBox extends StatelessWidget {
         if (data.loadingMore)
           const Padding(
             padding: EdgeInsets.all(AppSpace.s4),
-            child: Center(
-              child: SignatureLoader(size: LoaderSize.inline),
-            ),
+            child: Center(child: SignatureLoader(size: LoaderSize.inline)),
           ),
         const SizedBox(height: AppSpace.s8),
       ],

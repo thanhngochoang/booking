@@ -383,7 +383,7 @@ class _ContactSetupFormState extends ConsumerState<_ContactSetupForm> {
                   onChanged: (_) => changed(),
                   decoration: InputDecoration(
                     labelText: l.setupContactCity,
-                    prefixIcon: const Icon(Icons.location_city_outlined),
+                    prefixIcon: const AppIcon(AppIcons.city),
                     errorText: err(ContactSetupField.city),
                   ),
                 ),

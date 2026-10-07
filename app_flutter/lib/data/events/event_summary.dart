@@ -47,8 +47,20 @@ enum EventStatus {
   );
 }
 
-/// What a list or card needs to know about an event. The full `Event` entity
-/// (registrations, hashtag, chat) arrives with the events plan.
+/// Who runs an event: a photographer, or the app itself (staff-created,
+/// platform-hosted events have no host id).
+enum HostType {
+  photographer,
+  platform;
+
+  String get code => name;
+
+  static HostType fromCode(String? code) =>
+      code == 'photographer' ? HostType.photographer : HostType.platform;
+}
+
+/// What a list or card needs to know about an event. The full entity
+/// (hashtag, chat, FAQ) is `EventDetail`.
 class EventSummary {
   const EventSummary({
     required this.id,
@@ -63,6 +75,11 @@ class EventSummary {
     required this.heldCount,
     required this.status,
     required this.createdAt,
+    this.hostType = HostType.photographer,
+    this.hostId,
+    this.endsAt,
+    this.createdBy = '',
+    this.hasSchedule = true,
     this.locationName,
     this.geohash,
     this.lat,
@@ -72,12 +89,24 @@ class EventSummary {
 
   final String id;
   final String title;
+
+  /// Empty for a platform-hosted event: show the localized platform name.
   final String hostName;
   final bool hostVerified;
+  final HostType hostType;
+
+  /// The hosting photographer; null for a platform-hosted event.
+  final String? hostId;
+
+  /// Who created it (the host, or the staff member who created it for them).
+  final String createdBy;
   final EventType type;
 
-  /// UTC instant.
+  /// UTC instant. A draft saved before its date was chosen has none: this is
+  /// then its creation time and [hasSchedule] is false.
   final DateTime startsAt;
+  final DateTime? endsAt;
+  final bool hasSchedule;
   final String? locationName;
 
   /// Venue geohash (9 characters in storage); null when the event has no geo.
@@ -95,6 +124,7 @@ class EventSummary {
   final String? coverUrl;
 
   bool get isFree => priceVnd == 0;
+  bool get isPlatformHosted => hostType == HostType.platform;
   int get seatsLeft => math.max(0, capacity - registeredCount - heldCount);
   bool get hasGeo => lat != null && lng != null;
 }

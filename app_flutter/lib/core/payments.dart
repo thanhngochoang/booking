@@ -17,3 +17,18 @@ enum PaymentProviderCode {
     return null;
   }
 }
+
+/// The ways to pay a ticket on S11.03 (mock: "Chuyển khoản QR", "MoMo",
+/// "ZaloPay"). Until the VietQR / licensed-intermediary move (issue #129)
+/// each one is sent as a provider code the current gateway accepts: a bank
+/// QR and ZaloPay go through the VNPay gateway (VNPAY-QR), MoMo through MoMo.
+enum PayMethod {
+  bankQr(PaymentProviderCode.vnpay),
+  momo(PaymentProviderCode.momo),
+  zaloPay(PaymentProviderCode.vnpay);
+
+  const PayMethod(this.provider);
+
+  /// The provider code sent to `registerEvent`.
+  final PaymentProviderCode provider;
+}

@@ -18,19 +18,29 @@ import 'package:photobooking/features/create_post/post_composer.dart';
 /// Mock S10.01: "Đăng bài" bar · two-column photo grid with a "+" tile · caption
 /// · the package field (accent border, required) · place and style side by
 /// side · "Album · tuỳ chọn" field (S24.05) · sticky footer with "Đăng". The
-/// "Bài đăng / Sự kiện" tabs arrive with the events plan.
+/// "Bài đăng / Sự kiện" tabs sit under the bar; "Sự kiện" leads to S12.01.
 class CreatePostScreen extends ConsumerStatefulWidget {
   const CreatePostScreen({
     super.key,
     required this.onAddService,
     required this.onPublished,
+    this.onOpenEvents,
+    this.initialCaption,
   });
+
+  /// Text the caption starts with ("#Tag " from an event timeline). Added in
+  /// front of what is already typed, unless it is there already.
+  final String? initialCaption;
 
   /// "Thêm gói", shown when the photographer has no package yet.
   final VoidCallback onAddService;
 
   /// Receives the id of the new post.
   final ValueChanged<String> onPublished;
+
+  /// "Sự kiện" of the "Bài đăng / Sự kiện" tabs: opens S12.01. Without it the
+  /// tabs are not shown.
+  final VoidCallback? onOpenEvents;
 
   @override
   ConsumerState<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -51,6 +61,35 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       final now = ref.read(postComposerProvider);
       _caption.text = now.caption;
       _location.text = now.locationName ?? '';
+    });
+    _applyInitialCaption();
+  }
+
+  @override
+  void didUpdateWidget(CreatePostScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.initialCaption != old.initialCaption) {
+      _applyInitialCaption();
+    }
+  }
+
+  /// "#Tag " in front of the caption (once: a caption that has the tag is left as it is).
+  void _applyInitialCaption() {
+    final prefill = widget.initialCaption;
+    if (prefill == null || prefill.trim().isEmpty) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final current = ref.read(postComposerProvider).caption;
+      if (current.toLowerCase().contains(prefill.trim().toLowerCase())) {
+        return;
+      }
+      final next = '$prefill$current';
+      _caption.text = next;
+      ref.read(postComposerProvider.notifier).setCaption(next);
     });
   }
 
@@ -223,6 +262,22 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.onOpenEvents != null) ...[
+                SegmentedTabs<int>(
+                  key: const Key('create-post-tabs'),
+                  options: [
+                    SegmentOption(value: 0, label: l.createPostTabPost),
+                    SegmentOption(value: 1, label: l.createPostTabEvent),
+                  ],
+                  value: 0,
+                  onChanged: (v) {
+                    if (v == 1) {
+                      widget.onOpenEvents!();
+                    }
+                  },
+                ),
+                const SizedBox(height: AppSpace.s3),
+              ],
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -480,7 +535,7 @@ class _PickField extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.expand_more_rounded, color: muted),
+                  AppIcon(AppIcons.expandMore, color: muted),
                 ],
               ),
             ),
@@ -586,7 +641,7 @@ class _AddTile extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
-          child: Center(child: Icon(Icons.add_rounded, color: muted)),
+          child: Center(child: AppIcon(AppIcons.add, color: muted)),
         ),
       ),
     );
@@ -654,7 +709,7 @@ class _ImageTile extends StatelessWidget {
                     key: Key('create-remove-$index'),
                     tooltip: l.createRemove,
                     style: scrim,
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const AppIcon(AppIcons.close),
                     onPressed: onRemove,
                   ),
                 ),
@@ -666,7 +721,7 @@ class _ImageTile extends StatelessWidget {
                       key: Key('create-up-$index'),
                       tooltip: l.createMoveUp,
                       style: scrim,
-                      icon: const Icon(Icons.arrow_upward_rounded),
+                      icon: const AppIcon(AppIcons.arrowUp),
                       onPressed: onUp,
                     ),
                   ),
@@ -678,7 +733,7 @@ class _ImageTile extends StatelessWidget {
                       key: Key('create-down-$index'),
                       tooltip: l.createMoveDown,
                       style: scrim,
-                      icon: const Icon(Icons.arrow_downward_rounded),
+                      icon: const AppIcon(AppIcons.arrowDown),
                       onPressed: onDown,
                     ),
                   ),
@@ -687,8 +742,8 @@ class _ImageTile extends StatelessWidget {
                 const Positioned(
                   top: AppSpace.s2,
                   left: AppSpace.s2,
-                  child: Icon(
-                    Icons.check_circle_rounded,
+                  child: AppIcon(
+                    AppIcons.checkCircle,
                     color: AppColors.success,
                   ),
                 ),
@@ -727,7 +782,7 @@ class _ImageTile extends StatelessWidget {
                           key: Key('create-retry-$index'),
                           tooltip: l.createRetryPhoto,
                           style: scrim,
-                          icon: const Icon(Icons.refresh_rounded),
+                          icon: const AppIcon(AppIcons.refresh),
                           onPressed: locked ? null : onRetry,
                         ),
                         Text(

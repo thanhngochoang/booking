@@ -26,9 +26,10 @@ Nguồn: `design-system/tokens.json` → `lib/core/theme/tokens.g.dart` (sinh b�
 | Mục | Quy tắc |
 |-----|---------|
 | Nền | Mọi màn bọc trong `AuroraBackground`, `Scaffold` trong suốt. Tối là mặc định (`ThemeModeController`). |
-| Màu | Canvas `0B0B10`, surface `17151F`, primary `B08AFF` (tối) / `8338F5` (sáng), focus cyan `14E0F5` (tối). |
+| Màu | Canvas `0B0B10`, surface `17151F`, primary `B08AFF` (tối) / `8338F5` (sáng), focus cyan `14E0F5` (tối). Quy tắc **60-30-10** (quyết định 2026-10-06): **60%** nền và bề mặt (canvas, surface); **30%** trung tính không màu (kính `glass`/`field`/`glass-hi`, chữ phụ `ink-2`/`ink-3`, đường kẻ); **10%** tím, chỉ cho nút chính (`CtaSurface`), tab đang chọn, chip/segment/ô đang chọn, link, thanh tiến trình. Không dùng tím cho tiêu đề section, viền trang trí, icon chưa chọn hay nền thẻ. Phổ màu (cyan, tím, hồng, cam, vàng) chỉ nằm trong loader (`SignatureLoader`, `DotRingLoader`) và vòng logo thương hiệu (`.logo` conic trong mock, logo app), hai chỗ duy nhất dùng phổ; cyan chỉ cho viền focus. Ngoài quy tắc: màu trạng thái (ok, warn, bad, pending, closed), vàng của dấu NAG/Studio và chip giải thưởng, ảnh nội dung, tick xác minh xanh `3D63FF`. |
+| Icon | Một bộ duy nhất **Material Symbols Rounded** (weight 400, optical size 24; viền mặc định, đặc FILL 1 khi chọn) qua `AppIcons`/`AppIcon` trong app, `<span class="ms">` trong mock và gallery. Giữ SVG: logo Zalo, WhatsApp, logo ứng dụng, con dấu và tick của `ProviderMark`. Bảng ánh xạ: `components/shared-components.md` → "Icons". |
 | Nút chính | `AppButton.primary`, **một nút mỗi màn**, tô bằng `CtaSurface` (hai kiểu bên dưới). Phụ: `AppButton.outline` hoặc nút kính. Huỷ/từ chối: nút đỏ trong sheet xác nhận, hoặc `AppButton.text` đỏ. |
-| Thẻ | `GlassCard` (radius 28, blur 24). Viền spectrum (`highlight: true`) chỉ cho **một thẻ chính mỗi màn**. Thẻ list thường dùng `highlight: false`. |
+| Thẻ | `GlassCard` (radius 28, blur 24). Viền nổi bật (`highlight: true`, trung tính) chỉ cho **một thẻ chính mỗi màn**. Thẻ list thường dùng `highlight: false`. |
 | Chữ | Fraunces 600 cho tiêu đề màn, tên section, số lớn; Be Vietnam Pro cho phần còn lại. Số tiền, ngày giờ dùng `FontFeature.tabularFigures()`. Cả hai font đã kiểm tra đủ glyph tiếng Việt (kể cả `ẳ ữ ệ ₫`). |
 | Hình khối | Radius 8 (ảnh nhỏ) · 16 (nút, input; `controlRadius`) · 20 (card) · 28 (kính, sheet). Lưới 4dp. |
 | Tab giữa | Vòng tròn 36dp tô bằng `CtaSurface` (cùng kiểu nút chính). |
@@ -43,7 +44,7 @@ Hai điểm khác bản mock đầu: (a) chip đã chọn trong *bộ lọc* là
 
 | Kiểu | Cách vẽ | Ghi chú |
 |------|---------|---------|
-| `gradient` | Tối: `ctaStart → ctaMid → ctaEnd` (xanh, tím, hồng). Sáng: gradient **cùng tông tím** `8338F5 → 702BDB` (135°), bóng `0 4px 12px` tím 25% | Lý do chế độ sáng: dải đủ màu cạnh tranh với vầng sáng pastel của nền và làm rối mắt. Token `cta-light-start/end`. |
+| `gradient` | Tối: gradient **một tông tím** `8A3FFC → 6E2FD6` (90°, trước 2026-10-06 là xanh, tím, hồng); bóng tím `8A3FFC` 35%. Sáng: gradient **cùng tông tím** `8338F5 → 702BDB` (135°), bóng `0 4px 12px` tím 25% | Lý do chế độ sáng: dải đủ màu cạnh tranh với vầng sáng pastel của nền và làm rối mắt. Token `cta-light-start/end`. |
 | `avatar` | Ảnh avatar → nâng sáng về 55–100% → blur σ12 → **nhân** (`BlendMode.modulate`) với gradient của theme | Cần `avatarUrl`. Chưa có thì tự dùng `gradient`, dòng chọn ở S09.02 bị khóa kèm lời nhắc "Thêm ảnh đại diện trong hồ sơ để dùng kiểu này." |
 
 Vì phép nhân chỉ làm tối, nút avatar không bao giờ sáng hơn gradient; chữ trắng giữ tương phản của gradient (≥ 4,7:1 dải tối, ≥ 5,5:1 dải sáng) với mọi ảnh. Trong lúc ảnh tải hoặc lỗi, gradient nằm bên dưới nên nút không bao giờ trống. Áp dụng cho `AppButton.primary` và đĩa tab giữa; không áp dụng cho chi tiết nhỏ (ngày chọn, bong bóng chat, thanh tiến độ).
@@ -85,7 +86,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback | S04 |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
 | S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2; tab Đánh giá 4e) · lệch mock: không nút chia sẻ, lưới vuông thay masonry · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) | S03 |
-| S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ⬜ chưa có plan (huy hiệu) | S37 |
+| S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ✅ đã làm (10a) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
@@ -93,7 +94,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ đã làm (4b) · về S05.02 (4c) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
-| S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · ẩn tab Vé sự kiện tới khi có S11.04 | S14 |
+| S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
 | S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e | S09 |
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
@@ -105,8 +106,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ đã làm (4c) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
-| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S43 |
-| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ⬜ chưa có plan (đặt lịch / công việc) | S44 |
+| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ✅ đã làm (10b) · chỉnh theo spec thanh toán 10-06 ở #56–#58 | S43 |
+| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ đã làm (10b) · chỉnh theo spec thanh toán 10-06 ở #56–#58 | S44 |
 | S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) | S11 |
@@ -124,16 +125,16 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) | S21 |
 | **S11** | **Tham gia sự kiện** | | | | | |
-| S11.01 | Danh sách sự kiện | `/events` | cả hai | 3b | ⬜ chưa có plan (sự kiện) | S15 |
-| S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ⬜ chưa có plan (sự kiện) | S16 |
-| S11.03 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ⬜ chưa có plan (sự kiện) | S17 |
-| S11.04 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ⬜ chưa có plan (sự kiện) | S18 |
-| S11.05 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S11.02) | cả hai | 3b | ⬜ chưa có plan (sự kiện) | S45 |
-| S11.06 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b | ⬜ chưa có plan (sự kiện) | S46 |
+| S11.01 | Danh sách sự kiện | `/events` | cả hai | 3b | ✅ đã làm (10c) | S15 |
+| S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ✅ đã làm (10c) | S16 |
+| S11.03 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ✅ đã làm (10c) | S17 |
+| S11.04 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ✅ đã làm (10c) | S18 |
+| S11.05 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S11.02) | cả hai | 3b | ✅ đã làm (10c) | S45 |
+| S11.06 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b | ✅ đã làm (10c) | S46 |
 | **S12** | **Tổ chức sự kiện** | | | | | |
-| S12.01 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ⬜ chưa có plan (sự kiện) | S25 |
-| S12.02 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b | ⬜ chưa có plan (sự kiện) | S26 |
-| S12.03 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ⬜ chưa có plan (sự kiện) | S27 |
+| S12.01 | Tạo sự kiện 1/2 | `/events/new` (bước `info`) | NAG · admin · sales | 3b | ✅ đã làm (10c) | S25 |
+| S12.02 | Tạo sự kiện 2/2 | bước `schedule` | NAG · admin · sales | 3b | ✅ đã làm (10c) | S26 |
+| S12.03 | Quản lý sự kiện | `/events/:eventId/manage` | NAG chủ · admin · sales (người tạo) | 3b | ✅ đã làm (10c) | S27 |
 | **S13** | **Chụp ngay (khách)** | | | | | |
 | S13.01 | Chụp ngay: gói, kiểu chụp, điểm hẹn, giá; "Xem nhiếp ảnh gia phù hợp" | `/instant` | khách | I5 | ⬜ plan I5 | S47 |
 | S13.02 | Chụp ngay: vuốt chọn nhiếp ảnh gia (5 thẻ) | `/instant/:id` (`choosing`) | khách | I5 | ⬜ plan I5 (viết lại) | — (mới) |
@@ -157,9 +158,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S16.02 | Việc đang tuyển (tab trong Công việc) | `/work?tab=jobs` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
 | S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S62 |
 | **S17** | **Thông báo** | | | | | |
-| S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S63 |
-| S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ⬜ chưa có plan (thông báo) | S64 |
-| S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ⬜ chưa có plan (thông báo) | S65 |
+| S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ✅ đã làm (10a) | S63 |
+| S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
+| S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ đã làm (10a) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
 | S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
@@ -265,16 +266,24 @@ events/{eventId}
   registrationDeadline           # mặc định = startAt - 12h
   status: "draft" | "open" | "full" | "closed" | "cancelled" | "completed"
   registeredCount, heldCount     # do Functions tính, client chỉ đọc
+  faq: [{question, answer}]      # O2: chỉ sự kiện của nền tảng, staff nhập ở S12.02; ≤ 10 cặp, 120/500 ký tự
+  hostConsent?: "pending" | "accepted" | "declined" | "expired"   # O1: chỉ sự kiện staff tạo hộ
+  hostConsentExpiresAt?          # lúc mời + 24 giờ
   createdAt, updatedAt
 
 events/{eventId}/registrations/{regId}
-  userId, name, phone, quantity (1–4)
+  userId, name, quantity (1–4)   # số điện thoại chỉ ở registrations/{regId}/private/contact, chỉ vé trả tiền
+  contactEligible: bool          # O3: true chỉ khi vé trả tiền đã paid; vé không thu phí luôn false
+  refundDue?: bool               # sự kiện bị huỷ khi tiền vé còn treo: clock hoàn 100%
+  refundId?, refundStatus?: "pending" | "done" | "failed"   # khoản hoàn của vé, "Đang hoàn" tới khi done
   amount                         # quantity * price tại thời điểm đăng ký
   status: "held" | "paid" | "cancelled" | "refunded"
   holdExpiresAt                  # now + 10 phút khi status = held
   ticketCode                     # dạng VE-7K2Q-0420, duy nhất
   paymentId?, checkedInAt?, cancelledAt?, refundPercent?
 ```
+
+`payments/{id}` của vé có thêm `eventId` (subjectType `event_registration`, subjectId = regId) để clock đóng dấu `releaseAfter` và tìm khoản cần hoàn.
 
 Chỉ mục: `events (status, startAt)`, `events (type, startAt)`, `events (location.geohash, startAt)`, `events (hostId, startAt)`, collection group `registrations (userId, status)`.
 
@@ -326,8 +335,8 @@ Rules: client không ghi `status`, `registeredCount`, `heldCount`, `ticketCode`,
 
 - `admin` và `sales` **không** nằm trong `users.role` và không chọn được ở S01.05. Chúng là custom claim `staffRole` do hàm `setStaffRole` đặt, chỉ `admin` gọi được và có nhật ký. Rules và Functions kiểm claim; client chỉ dùng claim để ẩn/hiện nút.
 - Màn tạo (S12.01, S12.02) và quản lý (S12.03) dùng chung cho cả ba vai trò. Chỉ staff thấy thêm ô **"Tổ chức bởi"** (Nền tảng hoặc chọn một nhiếp ảnh gia) ở S12.01. Nút "Tạo sự kiện" nằm ở S11.01 và, với staff, ở S09.02 (hàng "Quản lý sự kiện"); staff không có tab Đăng bài.
-- Sự kiện `host.type = "platform"`: S11.01/S11.02 hiện "Do ứng dụng tổ chức" thay hàng nhiếp ảnh gia; không có `availability` để đánh dấu; doanh thu thuộc nền tảng; liên hệ trước khi đăng ký đi vào chat hỏi trước của hộp thư hỗ trợ (câu hỏi mở 16).
-- Sự kiện tạo hộ cho nhiếp ảnh gia: chỉ đánh dấu `availability` ngày đó của nhiếp ảnh gia khi họ đồng ý (`hostConsent`); nhiếp ảnh gia nhận thông báo để chấp nhận hoặc từ chối trong 24 giờ, quá hạn thì sự kiện không đăng (câu hỏi mở 17).
+- Sự kiện `host.type = "platform"`: S11.01/S11.02 hiện "Do ứng dụng tổ chức" thay hàng nhiếp ảnh gia; không có `availability` để đánh dấu; doanh thu thuộc nền tảng; không có nút "Nhắn tin hỏi trước": S11.02 hiện mục **Câu hỏi thường gặp** do staff nhập ở S12.02 (`Event.faq`, tối đa 10 cặp hỏi–đáp, câu hỏi ≤ 120, trả lời ≤ 500 ký tự) và một dòng email hỗ trợ cố định cho tới khi có S23.06 (O2, 2026-10-06; dòng email ẩn cho tới khi chủ dự án cho địa chỉ).
+- Sự kiện tạo hộ cho nhiếp ảnh gia (O1, 2026-10-06, đã chốt): được phép, nhưng là nháp cho tới khi nhiếp ảnh gia đồng ý. `hostConsent: pending → accepted | declined | expired`, `hostConsentExpiresAt` = lúc mời + 24 giờ; nhiếp ảnh gia nhận thông báo `event_host_invited` (chạm mở S11.02 với Chấp nhận / Từ chối); chỉ `accepted` mới đăng được và mới đánh dấu `availability`; từ chối hoặc quá hạn thì nháp bị huỷ; sửa trường quan trọng sau khi đã đồng ý đưa về `pending`.
 
 ### 3.7 Timeline và nhóm chat của sự kiện
 
@@ -349,7 +358,7 @@ Mỗi sự kiện có hai không gian chia sẻ: **timeline** công khai gom bà
 
 **Câu hỏi trước khi đăng ký.**
 - Sự kiện do nhiếp ảnh gia tổ chức: nút "Nhắn tin hỏi trước" mở chat `inquiry` với nhiếp ảnh gia (mục 3b.1).
-- Sự kiện do nền tảng tổ chức (`host.type = platform`): chat `inquiry` đi vào **hộp thư hỗ trợ** của staff. Đề xuất: mặc định giao cho người tạo sự kiện (`createdBy`), mọi `sales`/`admin` thấy hàng đợi chung và có thể nhận hoặc giao lại; quy tắc 3 tin / 14 ngày như chat hỏi trước. Cần xác nhận (câu hỏi mở 16).
+- Sự kiện do nền tảng tổ chức (`host.type = platform`), O2 (2026-10-06, đã chốt): **không** có chat hỏi trước. S11.02 hiện **Câu hỏi thường gặp** (`Event.faq`, staff nhập ở S12.02) và một dòng email hỗ trợ cố định cho tới khi có hộp thư hỗ trợ S23.06. Dòng email đang ẩn cho tới khi chủ dự án cho địa chỉ thật.
 - Sau khi đăng ký, trao đổi chung chuyển sang nhóm chat.
 
 ## 3b. Liên hệ và số điện thoại
@@ -359,10 +368,10 @@ Mỗi sự kiện có hai không gian chia sẻ: **timeline** công khai gom bà
 - **Khách muốn đặt lịch (booking hoặc vé sự kiện) phải có số điện thoại** trong hồ sơ. Chưa có thì mọi điểm vào đặt lịch (S02.02 "Đặt gói này", S03.01 "Đặt lịch", S02.06 "Đặt T7", S11.02 "Đăng ký") mở S04.05 trước, lưu xong quay lại đúng bước đang làm (`returnTo`). Không chặn xem, lướt, lưu, nhắn trong app.
 - **Xác minh số điện thoại làm sau.** Bản này chỉ kiểm tra định dạng. Dữ liệu có sẵn cờ `phoneVerified: false`; UI chưa hiện dấu xác minh cho số. Khi làm xác minh (Firebase Phone Auth, OTP) chỉ cần bật cờ và thêm bước vào S04.05.
 - **Kênh ngoài chỉ mở sau khi đã đặt.** Nhiếp ảnh gia chọn bật kênh nào (Gọi điện, Zalo, WhatsApp) ở S08.05, cần ít nhất một số điện thoại. Nhưng khách **chỉ thấy và dùng** các kênh đó sau khi "mở khoá liên hệ":
-  - Booking ở `requested` (đã cọc), `accepted`, `upcoming`, hoặc `completed` (trong 30 ngày sau); hoặc vé sự kiện `paid` (cho tới 7 ngày sau sự kiện). `declined`, `expired`, `cancelled`, `refunded` thì khoá lại.
+  - Booking ở `requested` (đã cọc), `accepted`, `upcoming`, hoặc `completed` (trong 30 ngày sau); hoặc vé sự kiện **trả tiền** đã `paid` (`contactEligible: true`, cho tới 7 ngày sau sự kiện, chỉ khi chủ là nhiếp ảnh gia). Vé không thu phí cũng ở `paid` nhưng **không** mở liên hệ (O3, 2026-10-06): chỉ mở nhóm chat sự kiện và chat trong app. `declined`, `expired`, `cancelled`, `refunded` thì khoá lại.
   - **Trước khi đặt** (S03.01, S11.02) chỉ có nút **Nhắn tin hỏi trước** trong app. Đó là chat `inquiry` với quy tắc: (1) khách gửi **tối đa 3 tin** khi nhiếp ảnh gia chưa trả lời; (2) **ngay khi nhiếp ảnh gia trả lời tin đầu tiên, giới hạn được gỡ vĩnh viễn và hai bên nhắn tin tự do với nhau** (văn bản, ảnh, vị trí), không còn đếm tin; (3) cuộc trò chuyện tự đóng sau 14 ngày không có tin nào từ cả hai phía (mỗi tin mới đặt lại bộ đếm 14 ngày), và mở lại được khi một bên nhắn tiếp; khi khách đặt lịch, cùng cuộc trò chuyện gắn `bookingId` và thành chat booking (S07.01). Nhiếp ảnh gia có thể tắt nhận tin hỏi trước (`acceptInquiries`).
   - Mục đích: giữ giao dịch trong nền tảng (không chốt giá ngoài rồi bỏ cọc) nhưng vẫn cho khách hỏi trước khi quyết định.
-- Số của khách **chỉ hiện với nhiếp ảnh gia sau khi khách đặt cọc** (booking ở `requested` trở đi, hoặc vé sự kiện `paid` với chủ sự kiện). Trước đó nhiếp ảnh gia không thấy số.
+- Số của khách **chỉ hiện với nhiếp ảnh gia sau khi khách đặt cọc** (booking ở `requested` trở đi, hoặc vé sự kiện trả tiền đã `paid` với chủ sự kiện; vé không thu phí không bao giờ lộ số, O3). Trước đó nhiếp ảnh gia không thấy số.
 
 ### 3b.2 Dữ liệu
 
@@ -506,7 +515,7 @@ Thanh tab dưới dùng `TabBadge` (bong bóng đỏ, chữ trắng, "9+" từ m
 |-----|-----------|-------------|
 | Công việc (nhiếp ảnh gia) | Số yêu cầu đang chờ nhận | Khi không còn yêu cầu chờ (không xoá khi chỉ mở tab) |
 | **Khám phá** | Số sự kiện mới trong khu vực của bạn kể từ lần mở Khám phá gần nhất (nếu chưa có vị trí/khu vực thì tính toàn bộ sự kiện mới) | Khi mở tab Khám phá; đếm lại từ 0 |
-| **Hồ sơ** | Số thông báo chưa đọc (`users/{uid}.unreadCount`, mục 3h); thay chuông ở đầu trang (quyết định 2026-10-05) | Khi thông báo được đọc (không xoá khi chỉ mở tab) |
+| **Hồ sơ** | Số thông báo chưa đọc (`users/{uid}/private/inbox.unreadCount`, mục 3h); thay chuông ở đầu trang (quyết định 2026-10-05) | Khi thông báo được đọc (không xoá khi chỉ mở tab) |
 
 - Số lấy từ `tabBadgesProvider` (`Map<AppTab, int>`), mỗi feature ghi đè khi có dữ liệu; **đã có trong code** (`TabBadge`, `tabBadgesProvider`, `TabShell`, test `tab_badge_test.dart`), giá trị mặc định rỗng nên chưa có chấm nào hiện.
 - Trình đọc màn hình đọc "Khám phá, 3 mục mới" (`Semantics.value`). Chấm không phụ thuộc màu: luôn có số.
@@ -676,6 +685,7 @@ Khách khiếu nại trong cửa sổ khiếu nại → khoản thành `disputed
 - Nhiếp ảnh gia khai **tài khoản nhận tiền** (ngân hàng) ở S06.06 trước khi nhận được tiền; thiếu thì khoản vẫn tích luỹ ở `released` và ứng dụng nhắc thêm tài khoản.
 - Giai đoạn đầu `admin` duyệt từng lô và chuyển khoản thủ công (xuất tệp đối soát); sau đó tự động qua API chi hộ của ngân hàng/cổng. Mỗi lô `Payout` gồm nhiều khoản `released`, trạng thái `pending → processing → paid` (hoặc `failed`, `on_hold`).
 - v1 không thu hoa hồng, nhưng sổ cái có sẵn bút toán `fee` để bật sau.
+- Chi trả chạy qua CLI của nhân viên (`npm run payouts`) với cổng giả cho tới khi có nhà cung cấp ngân hàng và S23; ứng dụng chỉ đọc kết quả ở S06.05.
 
 ### 3g.5 Sổ cái (ledger)
 
@@ -698,8 +708,8 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 ### 3h.1 Hành vi
 
 - **Điểm vào** (đổi 2026-10-05): **không có chuông ở đầu trang**. Số chưa đọc hiện bằng `TabBadge` trên tab **Hồ sơ** (mục 3d.3), giống chấm số của tab Khám phá; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01; push mở thẳng màn đích. Cài đặt (S09.02) → "Thông báo" → S17.02; biểu tượng bánh răng ở S17.01 → S17.02. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01.
-- **Chấm số**: đọc từ `users/{uid}.unreadCount`, "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
-- **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
+- **Chấm số**: đọc từ `users/{uid}/private/inbox.unreadCount` (tài liệu riêng của chủ, không nằm trên `users/{uid}` công khai, 2026-10-06), "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
+- **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng lưu trường `tab` (`activity` · `events` · `system`) do server gán theo `type`, và bộ lọc truy vấn theo `tab`, **không** theo `type`: một `shoot_reminder` là "Đặt lịch" với khách nhưng "Công việc" với NAG, nên `activity` là một mục với nhãn đổi theo vai trò (2026-10-06). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
 - **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới.
 - **Chạm** = đánh dấu đã đọc + đi tới `target` (deep link). **Nhấn giữ** mở menu "Đánh dấu đã đọc / Tắt loại thông báo này" (không có thao tác chỉ vuốt). Hành động đầu trang: "Đánh dấu tất cả đã đọc".
 - **Phân trang**: 30 mục mỗi trang, skeleton khi tải. Empty state có một hành động ("Khám phá nhiếp ảnh gia" cho khách, "Mở Công việc" cho NAG).
@@ -711,6 +721,7 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 |--------|---------|--------------------------|---------|----------|---------|
 | `booking_accepted` | khách | `i-cal`, tông xanh | Đặt lịch | `/bookings/:id` (S05.02) | |
 | `booking_declined` | khách | `i-cal`, tông đỏ | Đặt lịch | `/bookings/:id` | Nêu hoàn cọc |
+| `booking_cancelled` | khách và NAG (bên còn lại; cả hai khi hệ thống huỷ) | `i-cal`, tông đỏ | Đặt lịch / Công việc | `/bookings/:id` | Quan trọng: luôn có dòng trong hộp thư, im giờ yên lặng không áp dụng; khách nhận kèm "Cọc hoàn {percent}%" |
 | `shoot_reminder` | khách (và NAG) | `i-cam` | Đặt lịch / Công việc | `/bookings/:id` | Trước 24 giờ và/hoặc 2 giờ theo S17.02 |
 | `quote_new` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S15.03) | Gom theo `groupKey = job:<id>:quotes` |
 | `instant_assigned` | khách | `i-bolt` | Đặt lịch | `/instant/:id` (S13.05) | |
@@ -742,12 +753,13 @@ Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = 
 users/{uid}/notifications/{id}
   type, title, body
   target            # đường dẫn deep link, ví dụ "/bookings/01J…"
+  tab, category     # `activity|events|system` và nhóm S17.02, server gán theo `type`
   groupKey?         # gom dòng (xem 3h.1)
-  actorIds?         # tối đa 3 id để vẽ avatar; tổng số nằm trong `count`
+  actors?           # tối đa 3 {id, name, avatarUrl?} để vẽ avatar; tổng số nằm trong `count`
   thumbUrl?, count?
   createdAt, readAt?   # readAt null = chưa đọc
 
-users/{uid}.unreadCount                      # số nguyên, Functions tăng/giảm
+users/{uid}/private/inbox                    # {unreadCount, unreadCountAt}, chỉ chủ đọc, chỉ server ghi; Functions tính lại (đếm) mỗi khi một dòng đổi
 users/{uid}/private/notification_prefs       # S17.02, chỉ chủ đọc/ghi
   channels: {booking, jobs, instant, events, chat, badges, promo}: {push: bool, inApp: bool}
   quietHours: {enabled, from: "22:00", to: "07:00"}
@@ -761,7 +773,7 @@ devices/{uid}_{installId}                    # token FCM (kế hoạch I4)
 
 ### 3h.4 Pin và dữ liệu mạng
 
-- Không polling. Chỉ lắng nghe 30 mục mới nhất **khi S17.01 đang mở**; ở nơi khác chỉ lắng nghe trường `unreadCount` của `users/{uid}`.
+- Không polling. Chỉ lắng nghe 30 mục mới nhất **khi S17.01 đang mở**; ở nơi khác chỉ lắng nghe trường `unreadCount` của `users/{uid}/private/inbox`.
 - Đánh dấu đã đọc được gom lô (debounce ~1 giây hoặc khi rời màn) thành một `WriteBatch`; cập nhật lạc quan ở UI.
 - Push chỉ mang `type`, `target` và tiêu đề/nội dung ngắn; chi tiết đọc lại từ Firestore khi mở.
 
@@ -777,7 +789,7 @@ Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng
 
 ### 3h.7 Cloud Functions
 
-`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, tăng `unreadCount`, gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
+`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, cập nhật `unreadCount` và `unreadCountAt` (trong `users/{uid}/private/inbox`), gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
 
 ## 3i. Use case bổ sung (2026-10-02)
 
@@ -953,7 +965,7 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 ## 8. Câu hỏi mở
 
 1. **Ai tạo sự kiện?** (đã chốt): nhiếp ảnh gia, hoặc tài khoản `admin`/`sales` của ứng dụng (mục 3.6). Khách và tổ chức bên ngoài (CLB, trường) không tạo trong v1.
-2. **Hoàn vé** (đã chốt): huỷ trước 48 giờ hoàn 100%, sau đó không hoàn; chủ huỷ hoàn 100%.
+2. **Hoàn vé** (đã chốt): huỷ trước 48 giờ hoàn 100%, sau đó không hoàn; chủ huỷ hoàn 100%. O4 (2026-10-06): khách vẫn huỷ được vé trả tiền trong 48 giờ cuối, không hoàn; chỗ được nhả, tiền vé vẫn treo và chuyển cho chủ sự kiện sau sự kiện như dự kiến (chủ huỷ sự kiện sau đó thì hoàn cả khoản này).
 3. **Tiền vé và cọc** (đã chốt): treo ở nền tảng, chỉ chuyển cho nhiếp ảnh gia / chủ sự kiện sau khi hoàn thành (mục 3g). Còn mở: độ dài cửa sổ khiếu nại (đề xuất 24 giờ) và số ngày tối đa từ lúc hoàn thành tới lúc chi trả.
 4. **Quyền riêng tư số của khách**: đề xuất chỉ hiện sau cọc và xoá khỏi `customerContact` 30 ngày sau hoàn thành. Có cần giữ lâu hơn (bảo hành ảnh, tranh chấp)?
 5. **Liên hệ ngoài app** (đã chốt): gọi/Zalo/WhatsApp chỉ mở sau khi đã đặt; trước đó chỉ có chat hỏi trước trong app (mục 3b.1). Còn mở: sau `completed` giữ kênh mở bao lâu (đề xuất 30 ngày).
@@ -963,9 +975,9 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 9. **Ảnh avatar làm nút** (đã chốt): chỉ dùng avatar, không cho chọn ảnh khác. Hiệu ứng mờ ảnh dùng cho modal và trang giới thiệu (mục 1.2).
 10. **Huy hiệu**: danh mục khởi đầu ở mục 3d.2 có đủ không, ai duyệt thêm/bớt (admin trong console hay màn riêng)? Huy hiệu của khách có công khai không (đề xuất: công khai trên hồ sơ, chỉ khi khách bật)? Có cấp bậc (đồng, bạc, vàng) cho huy hiệu số lượng không?
 15. **Biểu tượng Zalo/WhatsApp**: bản Simple Icons dùng tạm cho dev. Cần lấy tài nguyên chính thức của hai hãng và xác nhận điều khoản dùng thương hiệu trước khi phát hành.
-16. **Hộp thư hỗ trợ** (đề xuất ở mục 3.7, cần xác nhận): chat hỏi trước của sự kiện do nền tảng tổ chức đi vào hộp thư chung của staff, mặc định giao cho `createdBy`, `sales`/`admin` nhận hoặc giao lại. Cần quyết định có hạn phản hồi (SLA) và thông báo cho ai khi quá hạn không.
+16. **Hỏi trước sự kiện của nền tảng** (đã chốt O2, 2026-10-06): không có chat hỏi trước; S11.02 hiện FAQ do staff nhập và một email hỗ trợ cố định cho tới khi có S23.06. Còn mở: địa chỉ email hỗ trợ (dòng email ẩn cho tới khi có).
 21. **Kiểm duyệt timeline và nhóm chat**: ai chịu trách nhiệm nội dung (chủ sự kiện, staff), có cần bộ lọc ảnh nhạy cảm tự động và nút báo cáo gửi về đâu? Bài của người ngoài chờ duyệt có làm chủ sự kiện quá tải không (đề xuất: bật tự duyệt theo người theo dõi)?
-17. **Tạo hộ nhiếp ảnh gia**: có bắt buộc nhiếp ảnh gia đồng ý (`hostConsent`) như đề xuất, hay sales được tạo thẳng khi đã thoả thuận ngoài ứng dụng?
+17. **Tạo hộ nhiếp ảnh gia** (đã chốt O1, 2026-10-06): bắt buộc nhiếp ảnh gia đồng ý trong 24 giờ (`hostConsent`), xem mục 3.6. Còn làm sau: ô chọn nhiếp ảnh gia cho staff ở S12.01.
 18. **Quản trị chi trả**: bảng điều khiển duyệt lô chi trả, khiếu nại và đối soát cổng nằm ở đâu (web nội bộ riêng, Firebase console + callable tạm thời)? Có cần vai trò `finance` ngoài `admin`/`sales`?
 19. **Đã chọn hướng 2026-10-06** (spec thanh toán §1, §11): mô hình A1, chờ luật sư xác nhận. Bản cũ: **Pháp lý giữ tiền hộ**: tham vấn xem mô hình treo tiền có cần giấy phép trung gian thanh toán hay đi qua cổng có sản phẩm ký quỹ; quyết định trước khi bật cổng thật.
 20. **Phần không hoàn khi huỷ muộn** (50% hoặc 100% giữ lại): giả định chuyển cho nhiếp ảnh gia như bồi thường; xác nhận hoặc cho nền tảng giữ một phần.

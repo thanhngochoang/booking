@@ -75,6 +75,10 @@ screen-codes · core-display-widgets · 2a · 2b · 2c · 3a1 · 3a2 · 3b1 · 3
 | 9a | `2026-10-05-a1-provider-types.md` (provider types: marks and tags, S08.01 Cá nhân/Studio, studio address, switch in S09.02) | done 2026-10-06: Tasks 1–5 in 9a/1-L2; Tasks 6–7 in 9a/2-L1 (batch PR #31 with C1–C3 and 9c/2-L1); ledger `handover/ledger-a1-provider-types-9a-2-L1.md` |
 | 9b | `2026-10-05-c-portfolio-albums.md` (S24, S03.01 Album / Dòng thời gian, S10.01 album field) | done 2026-10-06: Tasks 1–4 in 9b/1-L2; C1–C3 (Tasks 5–7) in the batch PR #31; ledger `handover/ledger-c-portfolio-albums-9b-2-L1.md` |
 | 9c | `2026-10-05-b1-awards-artist-tier.md` (S25, NAG tier, S03.01 awards strip, staff CLI for S23.07) | done 2026-10-06: Tasks 1–4 in 9c/1-L2; Tasks 5–6 in 9c/2-L1 (batch PR #31); ledger `handover/ledger-b1-awards-artist-tier-9c-2-L1.md` |
+| 9d | `2026-10-06-icons-color-603010.md` (Material Symbols Rounded everywhere, 60‑30‑10 palette: mock, gallery, tokens, app) | done 2026-10-06 on the stack branch plan/stack-2026-10 (not yet in develop); ledger `handover/ledger-icons-color-9d.md` |
+| 10a | `2026-10-06-10a-notifications-badges.md` (S17.01–S17.03 notifications, S03.02 badges) | done 2026-10-06 on plan/stack-2026-10 (not yet in develop); ledger `handover/ledger-notifications-badges-10a.md` |
+| 10b | `2026-10-06-10b-earnings-payout.md` (S06.05 Thu nhập, S06.06 Tài khoản nhận tiền) | done 2026-10-06 on plan/stack-2026-10 (not yet in develop); owner must create secret `PAYOUT_ACCOUNT_KEY` before develop; ledger `handover/ledger-earnings-payout-10b.md` |
+| 10c | `2026-10-06-10c-events.md` (S11 events, S12 create/manage events) | not started; owner decisions O1–O4 in the plan |
 | 10 | `2026-10-01-instant-i2-dispatch-core.md` | stale: rewrite after the instant spec is approved (I2–I6) |
 | 11 | `2026-10-01-instant-i3-dispatch-service.md` | not started |
 | 12 | `2026-10-01-instant-i4-photographer-app.md` (S13.08, S14) | not started |

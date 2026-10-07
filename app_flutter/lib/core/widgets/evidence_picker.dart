@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 
@@ -114,8 +115,8 @@ class EvidencePicker extends StatelessWidget {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(1),
-                            child: Icon(
-                              Icons.check_rounded,
+                            child: AppIcon(
+                              AppIcons.check,
                               size: 14,
                               color: scheme.onPrimary,
                             ),

@@ -156,7 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       tooltip: l.chatsTitle,
                       icon: TabBadge(
                         count: totalUnread,
-                        child: const Icon(Icons.chat_bubble_outline_rounded),
+                        child: const AppIcon(AppIcons.chat),
                       ),
                       onPressed: () => context.push('/chats'),
                     ),
@@ -395,7 +395,7 @@ class _PostBlock extends ConsumerWidget {
               backgroundColor: AppColors.overlay,
               foregroundColor: AppColors.foregroundInverse,
             ),
-            icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+            icon: AppIcon(AppIcons.save, selected: saved),
             onPressed: () async {
               final ok = await ref
                   .read(engagementProvider.notifier)

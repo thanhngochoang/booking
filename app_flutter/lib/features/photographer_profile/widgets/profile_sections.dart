@@ -298,8 +298,8 @@ class _PortfolioTile extends StatelessWidget {
                     ),
                     child: Padding(
                       padding: EdgeInsets.all(AppSpace.s1),
-                      child: Icon(
-                        Icons.workspace_premium_outlined,
+                      child: AppIcon(
+                        AppIcons.award,
                         size: 16,
                         color: Colors.white,
                       ),

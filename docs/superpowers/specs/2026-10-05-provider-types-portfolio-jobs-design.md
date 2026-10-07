@@ -254,7 +254,7 @@ Enum mới: `ProviderType`, `AwardResult`, `AwardStatus` (`pending`, `needs_info
 
 ## 8. Thông báo: bỏ chuông ở đầu trang (quyết định 2026-10-05)
 
-Người dùng quyết định không có biểu tượng chuông ở góc trên phải. Số thông báo chưa đọc (`users/{uid}.unreadCount`) hiện bằng `TabBadge` trên **tab Hồ sơ**; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01 (và không dùng ở S16.02). Biểu tượng chat ở S02.01 giữ nguyên. Khi tab Hồ sơ đã có số thông báo, các tab khác vẫn giữ chấm số riêng của chúng (spec chính 3d.3).
+Người dùng quyết định không có biểu tượng chuông ở góc trên phải. Số thông báo chưa đọc (`users/{uid}/private/inbox.unreadCount`) hiện bằng `TabBadge` trên **tab Hồ sơ**; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01 (và không dùng ở S16.02). Biểu tượng chat ở S02.01 giữ nguyên. Khi tab Hồ sơ đã có số thông báo, các tab khác vẫn giữ chấm số riêng của chúng (spec chính 3d.3).
 
 ## 9. Thứ tự triển khai (đề xuất cho RUN-ORDER)
 

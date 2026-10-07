@@ -115,7 +115,7 @@ void main() {
           label: 'Quận 1',
           selected: false,
           onChanged: (_) {},
-          leading: const Icon(Icons.place_outlined, key: Key('lead')),
+          leading: const AppIcon(AppIcons.place, key: Key('lead')),
         ),
       ),
     );
@@ -145,7 +145,7 @@ void main() {
         AppChip(
           label: 'Một nhãn rất dài rất dài rất dài rất dài rất dài rất dài',
           selected: true,
-          leading: const Icon(Icons.place_outlined),
+          leading: const AppIcon(AppIcons.place),
           onChanged: (_) {},
         ),
         width: 320,
@@ -175,18 +175,18 @@ void main() {
     await tester.pumpWidget(
       hostWidget(AppChip(label: 'A', selected: true, onChanged: (_) {})),
     );
-    expect(find.byIcon(Icons.check), findsNothing);
+    expect(find.byIcon(AppIcons.check), findsNothing);
     await tester.pumpWidget(
       hostWidget(
         AppChip(
           label: 'A',
           selected: true,
           onChanged: (_) {},
-          leading: const Icon(Icons.place_outlined),
+          leading: const AppIcon(AppIcons.place),
         ),
       ),
     );
-    expect(find.byIcon(Icons.place_outlined), findsOneWidget);
+    expect(find.byIcon(AppIcons.place), findsOneWidget);
   });
 
   testWidgets('unselected label is secondary ink at weight 500', (

@@ -63,6 +63,17 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    // Event covers: eventCovers/{uid}/{eventId}/{file}. Signed-in users look at them; the owner
+    // uploads before the draft exists, under their own uid: the creator, or the host photographer
+    // of a staff-created draft (the server checks the path against both at save), images < 8 MB.
+    match /eventCovers/{uid}/{eventId}/{file} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid);
+    }
+
     // Anything else is closed.
     match /{allPaths=**} {
       allow read, write: if false;

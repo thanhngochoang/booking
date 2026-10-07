@@ -146,7 +146,7 @@ class MyAlbumsScreen extends ConsumerWidget {
                 ? null
                 : IconButton(
                     tooltip: l.back,
-                    icon: const Icon(Icons.arrow_back_rounded),
+                    icon: const AppIcon(AppIcons.back),
                     onPressed: () => context.go('/profile'),
                   ),
             title: Text(l.myAlbumsTitle),
@@ -154,7 +154,7 @@ class MyAlbumsScreen extends ConsumerWidget {
               IconButton(
                 key: const Key('my-albums-add'),
                 tooltip: atLimit ? l.albumPickLimit : l.albumPickNew,
-                icon: const Icon(Icons.add_rounded),
+                icon: const AppIcon(AppIcons.add),
                 onPressed: albums.hasValue && !atLimit
                     ? () => _new(context)
                     : null,
@@ -472,7 +472,7 @@ class _UnsortedRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: muted),
+                  AppIcon(AppIcons.chevron, color: muted),
                 ],
               ),
             ),

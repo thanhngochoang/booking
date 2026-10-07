@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
@@ -12,6 +14,7 @@ import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/create_post/post_composer.dart';
+import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/create_post_world.dart';
@@ -31,6 +34,7 @@ class _Create {
     this.withService = true,
     MediaUploader? uploader,
     Map<String, Object> prefsValues = const {},
+    this.initialCaption,
   }) : world = CreatePostWorld(prefsValues: prefsValues),
        picker = FakeImagePicker(
          picks ??
@@ -44,6 +48,7 @@ class _Create {
   final FakeImagePicker picker;
   final MediaUploader uploader;
   final bool withService;
+  final String? initialCaption;
   late final FakePostPublisher publisher;
   late List<Override> overrides;
   final published = <String>[];
@@ -64,6 +69,7 @@ class _Create {
   }
 
   Widget screen() => CreatePostScreen(
+    initialCaption: initialCaption,
     onAddService: () => addServiceTaps++,
     onPublished: published.add,
   );
@@ -580,6 +586,123 @@ void main() {
     expect(_state(tester).serviceId, isNull);
     expect(_enabled(tester, 'create-publish'), isFalse);
     expect(find.text('Chọn gói dịch vụ cho bài đăng'), findsOneWidget);
+  });
+
+  group('S10.01 opened from an event timeline', () {
+    String field(WidgetTester tester) => tester
+        .widget<TextField>(find.byKey(const Key('create-caption')))
+        .controller!
+        .text;
+
+    testWidgets('the caption starts with #Tag and a space', (tester) async {
+      await _open(tester, create: _Create(initialCaption: '#PhotoWalk1020 '));
+      expect(field(tester), '#PhotoWalk1020 ');
+      expect(_state(tester).caption, '#PhotoWalk1020 ');
+    });
+
+    testWidgets('it goes in front of what was already typed', (tester) async {
+      final c = _Create(
+        initialCaption: '#PhotoWalk1020 ',
+        prefsValues: {'postDraft:$_uid': '{"caption":"Hello"}'},
+      );
+      await _open(tester, create: c);
+      expect(field(tester), '#PhotoWalk1020 Hello');
+    });
+
+    testWidgets('a caption that has the tag (any case) is left alone', (
+      tester,
+    ) async {
+      final c = _Create(
+        initialCaption: '#PhotoWalk1020 ',
+        prefsValues: {'postDraft:$_uid': '{"caption":"Đẹp #photowalk1020"}'},
+      );
+      await _open(tester, create: c);
+      expect(field(tester), 'Đẹp #photowalk1020');
+    });
+
+    testWidgets('/action?caption= prefills a photographer\'s post', (
+      tester,
+    ) async {
+      final w = CreatePostWorld();
+      await w.init();
+      w.services.add(fixtureService('s1', photographerId: w.uid));
+      final router = GoRouter(
+        initialLocation: AppTab.action.path,
+        routes: [
+          GoRoute(
+            path: AppTab.action.path,
+            builder: (_, s) =>
+                ActionTab(caption: s.uri.queryParameters['caption']),
+          ),
+          GoRoute(path: '/events/new', builder: (_, _) => const Text('events')),
+        ],
+      );
+      await tester.pumpWidget(
+        screenRouterApp(router: router, overrides: w.overrides),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('create-caption')))
+            .controller!
+            .text,
+        '',
+      );
+      router.go(
+        '${AppTab.action.path}?caption=${Uri.encodeQueryComponent('#Tag1 ')}',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('create-caption')))
+            .controller!
+            .text,
+        '#Tag1 ',
+      );
+    });
+  });
+
+  group('S10.01 Bài đăng / Sự kiện', () {
+    testWidgets('S10.01 Sự kiện tab opens /events/new', (tester) async {
+      final w = CreatePostWorld();
+      await w.init();
+      final router = GoRouter(
+        initialLocation: AppTab.action.path,
+        routes: [
+          GoRoute(
+            path: AppTab.action.path,
+            builder: (_, _) => const ActionTab(),
+          ),
+          GoRoute(
+            path: '/events/new',
+            builder: (_, s) => Text('stub ${s.uri}'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        screenRouterApp(router: router, overrides: w.overrides),
+      );
+      await tester.pumpAndSettle();
+
+      final tabs = find.byKey(const Key('create-post-tabs'));
+      expect(tabs, findsOneWidget);
+      expect(
+        find.descendant(of: tabs, matching: find.text('Bài đăng')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.descendant(of: tabs, matching: find.text('Sự kiện')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('stub /events/new'), findsOneWidget);
+    });
+
+    testWidgets('without an events entry the tabs are not shown', (
+      tester,
+    ) async {
+      await _open(tester);
+      expect(find.byKey(const Key('create-post-tabs')), findsNothing);
+    });
   });
 }
 

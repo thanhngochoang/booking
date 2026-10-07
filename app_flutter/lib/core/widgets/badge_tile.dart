@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/badge_chip.dart';
@@ -39,8 +40,9 @@ class BadgeTile extends StatelessWidget {
             child: SizedBox.square(
               dimension: 36,
               child: Center(
-                child: Icon(
+                child: AppIcon(
                   badgeIconOf(badge.code),
+                  selected: true,
                   size: 20,
                   color: Colors.white,
                 ),
@@ -55,11 +57,7 @@ class BadgeTile extends StatelessWidget {
             child: SizedBox.square(
               dimension: 36,
               child: Center(
-                child: Icon(
-                  badgeIconOf(badge.code),
-                  size: 20,
-                  color: fgSec,
-                ),
+                child: AppIcon(badgeIconOf(badge.code), size: 20, color: fgSec),
               ),
             ),
           );
@@ -81,8 +79,12 @@ class BadgeTile extends StatelessWidget {
               alignment: Alignment.topLeft,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minWidth: constraints.maxWidth.isFinite ? constraints.maxWidth : 0,
-                  maxWidth: constraints.maxWidth.isFinite ? constraints.maxWidth : double.infinity,
+                  minWidth: constraints.maxWidth.isFinite
+                      ? constraints.maxWidth
+                      : 0,
+                  maxWidth: constraints.maxWidth.isFinite
+                      ? constraints.maxWidth
+                      : double.infinity,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -133,19 +135,13 @@ class BadgeTile extends StatelessWidget {
                       badge.condition,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: fgSec,
-                      ),
+                      style: TextStyle(fontSize: 10.5, color: fgSec),
                     ),
                     if (!badge.earned) ...[
                       const SizedBox(height: AppSpace.s2),
                       Text(
                         l.badgeNotEarned,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: fgSec,
-                        ),
+                        style: TextStyle(fontSize: 10.5, color: fgSec),
                       ),
                       if (progress != null) ...[
                         const SizedBox(height: AppSpace.s1),
@@ -169,7 +165,7 @@ class BadgeTile extends StatelessWidget {
 
 class _BadgeTileSkeleton extends StatelessWidget {
   const _BadgeTileSkeleton()
-      : super(key: const ValueKey('badge_tile_skeleton'));
+    : super(key: const ValueKey('badge_tile_skeleton'));
 
   @override
   Widget build(BuildContext context) {

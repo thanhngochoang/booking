@@ -91,4 +91,32 @@ void main() {
     expect(tile.bottom - label.bottom, lessThan(20));
     expect(value.top - tile.top, greaterThan(30));
   });
+
+  testWidgets('a tile with onTap is a button and calls it', (tester) async {
+    final handle = tester.ensureSemantics();
+    var taps = 0;
+    await tester.pumpWidget(
+      hostWidget(StatTile(value: '5', label: 'Đang giữ', onTap: () => taps++)),
+    );
+    final node = tester.getSemantics(find.bySemanticsLabel('5, Đang giữ'));
+    expect(node.flagsCollection.isButton, isTrue);
+    expect(
+      tester.getSize(find.byType(StatTile)).height,
+      greaterThanOrEqualTo(48),
+    );
+    await tester.tap(find.byType(StatTile));
+    expect(taps, 1);
+    handle.dispose();
+  });
+
+  testWidgets('a tile without onTap is not a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(const StatTile(value: '5', label: 'Đang giữ')),
+    );
+    final node = tester.getSemantics(find.bySemanticsLabel('5, Đang giữ'));
+    expect(node.flagsCollection.isButton, isFalse);
+    expect(find.byType(InkWell), findsNothing);
+    handle.dispose();
+  });
 }

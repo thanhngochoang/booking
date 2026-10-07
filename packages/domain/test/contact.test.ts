@@ -63,14 +63,19 @@ describe('booking contact unlock (domain-model §5; client contactAccessForBooki
 describe('ticket contact unlock', () => {
   test('a paid ticket is open until 7 days after the event, inclusive', () => {
     const tomorrow = new Date(NOW.getTime() + 86_400_000);
-    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: tomorrow }, NOW), true);
-    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: daysAgo(7) }, NOW), true);
-    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: daysAgo(7, 1000) }, NOW), false);
-    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: null }, NOW), false);
+    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: tomorrow, contactEligible: true }, NOW), true);
+    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: daysAgo(7), contactEligible: true }, NOW), true);
+    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: daysAgo(7, 1000), contactEligible: true }, NOW), false);
+    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: null, contactEligible: true }, NOW), false);
+  });
+  test('a free registration is paid but never unlocks contact (O3)', () => {
+    const tomorrow = new Date(NOW.getTime() + 86_400_000);
+    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: tomorrow, contactEligible: false }, NOW), false);
+    assert.equal(ticketContactUnlocked({ status: 'paid', eventEndsAt: tomorrow }, NOW), false);
   });
   test('held, cancelled and refunded tickets are closed', () => {
     for (const status of ['held', 'cancelled', 'refunded']) {
-      assert.equal(ticketContactUnlocked({ status, eventEndsAt: NOW }, NOW), false, status);
+      assert.equal(ticketContactUnlocked({ status, eventEndsAt: NOW, contactEligible: true }, NOW), false, status);
     }
   });
 });

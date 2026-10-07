@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/data/award/award.dart';
@@ -62,8 +63,8 @@ class AwardDisc extends StatelessWidget {
       ),
       child: SizedBox.square(
         dimension: size,
-        child: Icon(
-          Icons.workspace_premium,
+        child: AppIcon(
+          AppIcons.award,
           size: 16,
           color: gold
               ? AppColors.goldInk

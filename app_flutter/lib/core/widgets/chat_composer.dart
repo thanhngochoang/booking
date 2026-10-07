@@ -1,6 +1,7 @@
 // lib/core/widgets/chat_composer.dart
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
 import 'package:photobooking/core/widgets/signature_loader.dart';
@@ -18,9 +19,13 @@ class ChatComposer extends StatefulWidget {
     this.enabled = true,
     this.disabledReason,
     this.busy = false,
+    this.hint,
   });
 
   final ValueChanged<String> onSend;
+
+  /// Placeholder while the composer is on; defaults to the 1-1 chat's.
+  final String? hint;
   final VoidCallback? onPickImage;
   final bool enabled;
   final String? disabledReason;
@@ -104,8 +109,8 @@ class _ChatComposerState extends State<ChatComposer> {
                               child: SignatureLoader(size: LoaderSize.inline),
                             ),
                           )
-                        : Icon(
-                            Icons.camera_alt_outlined,
+                        : AppIcon(
+                            AppIcons.camera,
                             size: 20,
                             color: canPick
                                 ? theme.colorScheme.primary
@@ -133,7 +138,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: widget.enabled
-                      ? 'Nhập tin nhắn…'
+                      ? (widget.hint ?? 'Nhập tin nhắn…')
                       : (widget.disabledReason ?? 'Cuộc trò chuyện đã đóng'),
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: secondary,
@@ -191,8 +196,8 @@ class _ChatComposerState extends State<ChatComposer> {
                       width: 40,
                       height: 40,
                       child: Center(
-                        child: Icon(
-                          Icons.arrow_upward_rounded,
+                        child: AppIcon(
+                          AppIcons.forward,
                           size: 20,
                           color: Colors.white,
                         ),

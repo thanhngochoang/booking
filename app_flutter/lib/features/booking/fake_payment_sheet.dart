@@ -73,7 +73,6 @@ class _FakePaymentSheetState extends ConsumerState<FakePaymentSheet> {
               formatMoney(widget.amountVnd),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
               ),
             ),
           ),

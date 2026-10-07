@@ -5955,6 +5955,2472 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xem cả {n} giải'**
   String profileAwardsMore(int n);
+
+  /// No description provided for @notifSettingsTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cài đặt thông báo'**
+  String get notifSettingsTooltip;
+
+  /// No description provided for @notifTabAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get notifTabAll;
+
+  /// No description provided for @notifTabBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get notifTabBooking;
+
+  /// No description provided for @notifTabWork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Công việc'**
+  String get notifTabWork;
+
+  /// No description provided for @notifTabEvents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get notifTabEvents;
+
+  /// No description provided for @notifTabSystem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hệ thống'**
+  String get notifTabSystem;
+
+  /// No description provided for @notifUnreadHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} chưa đọc'**
+  String notifUnreadHeader(int n);
+
+  /// No description provided for @notifMarkAllRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu tất cả đã đọc'**
+  String get notifMarkAllRead;
+
+  /// No description provided for @notifSectionToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get notifSectionToday;
+
+  /// No description provided for @notifSectionWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'7 ngày qua'**
+  String get notifSectionWeek;
+
+  /// No description provided for @notifSectionEarlier.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trước đó'**
+  String get notifSectionEarlier;
+
+  /// No description provided for @notifEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thông báo nào'**
+  String get notifEmptyTitle;
+
+  /// No description provided for @notifEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch hẹn, tin nhắn và huy hiệu của bạn sẽ hiện ở đây.'**
+  String get notifEmptyBody;
+
+  /// No description provided for @notifEmptyCtaCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá nhiếp ảnh gia'**
+  String get notifEmptyCtaCustomer;
+
+  /// No description provided for @notifEmptyCtaPhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở Công việc'**
+  String get notifEmptyCtaPhotographer;
+
+  /// No description provided for @notifEmptyFiltered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thông báo nào trong mục {tab}'**
+  String notifEmptyFiltered(String tab);
+
+  /// No description provided for @notifEmptyFilteredBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn mục khác để xem thêm.'**
+  String get notifEmptyFilteredBody;
+
+  /// No description provided for @notifTargetGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung này không còn'**
+  String get notifTargetGone;
+
+  /// No description provided for @notifMuted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã tắt loại thông báo này'**
+  String get notifMuted;
+
+  /// No description provided for @notifUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get notifUndo;
+
+  /// No description provided for @notifTimeNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vừa xong'**
+  String get notifTimeNow;
+
+  /// No description provided for @notifTimeMinutes.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String notifTimeMinutes(int n);
+
+  /// No description provided for @notifTimeHours.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giờ'**
+  String notifTimeHours(int n);
+
+  /// No description provided for @notifTimeYesterday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm qua'**
+  String get notifTimeYesterday;
+
+  /// No description provided for @notifTimeDays.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} ngày'**
+  String notifTimeDays(int n);
+
+  /// No description provided for @notifRowSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo, {n} thông báo chưa đọc, {title}'**
+  String notifRowSemantics(int n, String title);
+
+  /// No description provided for @notifRowSemanticsRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo, {title}'**
+  String notifRowSemanticsRead(String title);
+
+  /// No description provided for @notifLoadMoreError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải thêm được. Kéo xuống để thử lại.'**
+  String get notifLoadMoreError;
+
+  /// No description provided for @settingsNotificationsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Push, giờ yên lặng, nhắc buổi chụp'**
+  String get settingsNotificationsBody;
+
+  /// No description provided for @notifSettingsOsOffTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo đang tắt trên máy'**
+  String get notifSettingsOsOffTitle;
+
+  /// No description provided for @notifSettingsOsOffBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn sẽ không nhận push cho tới khi bật lại.'**
+  String get notifSettingsOsOffBody;
+
+  /// No description provided for @notifSettingsOpenSettings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở Cài đặt'**
+  String get notifSettingsOpenSettings;
+
+  /// No description provided for @notifSettingsColType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại'**
+  String get notifSettingsColType;
+
+  /// No description provided for @notifSettingsColPush.
+  ///
+  /// In vi, this message translates to:
+  /// **'Push'**
+  String get notifSettingsColPush;
+
+  /// No description provided for @notifSettingsColInApp.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong app'**
+  String get notifSettingsColInApp;
+
+  /// No description provided for @notifSettingsPushOffOs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tắt trên máy'**
+  String get notifSettingsPushOffOs;
+
+  /// No description provided for @notifSettingsCatBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch và thanh toán'**
+  String get notifSettingsCatBooking;
+
+  /// No description provided for @notifSettingsCatJobs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Việc đăng tuyển'**
+  String get notifSettingsCatJobs;
+
+  /// No description provided for @notifSettingsCatInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp ngay'**
+  String get notifSettingsCatInstant;
+
+  /// No description provided for @notifSettingsCatEvents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get notifSettingsCatEvents;
+
+  /// No description provided for @notifSettingsCatChat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn'**
+  String get notifSettingsCatChat;
+
+  /// No description provided for @notifSettingsCatBadges.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu và đánh giá'**
+  String get notifSettingsCatBadges;
+
+  /// No description provided for @notifSettingsCatPromo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khuyến mãi'**
+  String get notifSettingsCatPromo;
+
+  /// No description provided for @notifSwitchOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'{group}, {channel}, bật'**
+  String notifSwitchOn(String group, String channel);
+
+  /// No description provided for @notifSwitchOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'{group}, {channel}, tắt'**
+  String notifSwitchOff(String group, String channel);
+
+  /// No description provided for @notifSwitchLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'{group}, {channel}, luôn bật'**
+  String notifSwitchLocked(String group, String channel);
+
+  /// No description provided for @notifSettingsQuietTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ yên lặng'**
+  String get notifSettingsQuietTitle;
+
+  /// No description provided for @notifSettingsQuietLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{from}–{to} · chỉ thông báo quan trọng vẫn có âm'**
+  String notifSettingsQuietLine(String from, String to);
+
+  /// No description provided for @notifSettingsQuietSwitchOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ yên lặng, bật'**
+  String get notifSettingsQuietSwitchOn;
+
+  /// No description provided for @notifSettingsQuietSwitchOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ yên lặng, tắt'**
+  String get notifSettingsQuietSwitchOff;
+
+  /// No description provided for @notifSettingsPickFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yên lặng từ'**
+  String get notifSettingsPickFrom;
+
+  /// No description provided for @notifSettingsPickTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Yên lặng đến'**
+  String get notifSettingsPickTo;
+
+  /// No description provided for @notifSettingsRemindersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắc buổi chụp'**
+  String get notifSettingsRemindersTitle;
+
+  /// No description provided for @notifSettingsReminder24.
+  ///
+  /// In vi, this message translates to:
+  /// **'24 giờ'**
+  String get notifSettingsReminder24;
+
+  /// No description provided for @notifSettingsReminder2.
+  ///
+  /// In vi, this message translates to:
+  /// **'2 giờ'**
+  String get notifSettingsReminder2;
+
+  /// No description provided for @notifSettingsSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được, thử lại'**
+  String get notifSettingsSaveError;
+
+  /// No description provided for @primerTitleCustomerBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để biết khi {name} nhận lịch'**
+  String primerTitleCustomerBooking(String name);
+
+  /// No description provided for @primerTitleCustomerInstant.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để biết khi có người nhận chụp ngay'**
+  String get primerTitleCustomerInstant;
+
+  /// No description provided for @primerTitlePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để không bỏ lỡ lời mời việc'**
+  String get primerTitlePhotographer;
+
+  /// No description provided for @primerBenefit1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Biết ngay khi lịch được nhận hoặc thay đổi'**
+  String get primerBenefit1;
+
+  /// No description provided for @primerBenefit2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắc trước giờ chụp, không lỡ hẹn'**
+  String get primerBenefit2;
+
+  /// No description provided for @primerBenefit3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn mới khi app đang ở nền'**
+  String get primerBenefit3;
+
+  /// No description provided for @primerNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.'**
+  String get primerNote;
+
+  /// No description provided for @primerEnabled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bật thông báo'**
+  String get primerEnabled;
+
+  /// No description provided for @badgesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu'**
+  String get badgesTitle;
+
+  /// No description provided for @badgesFromReviews.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ đánh giá'**
+  String get badgesFromReviews;
+
+  /// No description provided for @badgesFromSystem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ hệ thống'**
+  String get badgesFromSystem;
+
+  /// No description provided for @badgesFraction.
+  ///
+  /// In vi, this message translates to:
+  /// **'{a} / {b}'**
+  String badgesFraction(int a, int b);
+
+  /// No description provided for @badgesSectionSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{title}, đạt {a} trên {b}'**
+  String badgesSectionSemantics(String title, int a, int b);
+
+  /// No description provided for @badgesEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có huy hiệu nào'**
+  String get badgesEmptyTitle;
+
+  /// No description provided for @badgesEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huy hiệu sẽ hiện ở đây khi người này đạt được.'**
+  String get badgesEmptyBody;
+
+  /// No description provided for @badgesLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được huy hiệu'**
+  String get badgesLoadError;
+
+  /// No description provided for @badgesNearest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần đạt nhất: {name} · {cur} / {target}'**
+  String badgesNearest(String name, int cur, int target);
+
+  /// No description provided for @badgesAwardedOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đạt ngày {date}'**
+  String badgesAwardedOn(String date);
+
+  /// No description provided for @badgesSheetProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'{cur} / {target}'**
+  String badgesSheetProgress(int cur, int target);
+
+  /// No description provided for @earningsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thu nhập'**
+  String get earningsTitle;
+
+  /// No description provided for @earningsNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.'**
+  String get earningsNotice;
+
+  /// No description provided for @earningsHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get earningsHeld;
+
+  /// No description provided for @earningsSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp nhận'**
+  String get earningsSoon;
+
+  /// No description provided for @earningsReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận'**
+  String get earningsReceived;
+
+  /// No description provided for @earningsStateHeld.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang giữ'**
+  String get earningsStateHeld;
+
+  /// No description provided for @earningsStateReleased.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ chi trả'**
+  String get earningsStateReleased;
+
+  /// No description provided for @earningsStatePaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển {date}'**
+  String earningsStatePaid(String date);
+
+  /// No description provided for @earningsStateDispute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang khiếu nại'**
+  String get earningsStateDispute;
+
+  /// No description provided for @earningsAddAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm tài khoản để nhận tiền'**
+  String get earningsAddAccount;
+
+  /// No description provided for @earningsAddAccountSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần có trước khi chuyển khoản'**
+  String get earningsAddAccountSub;
+
+  /// No description provided for @earningsItems.
+  ///
+  /// In vi, this message translates to:
+  /// **'Các khoản'**
+  String get earningsItems;
+
+  /// No description provided for @earningsMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}'**
+  String earningsMonth(int month);
+
+  /// No description provided for @earningsMonthYear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}/{year}'**
+  String earningsMonthYear(int month, int year);
+
+  /// No description provided for @earningsPayoutFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản lỗi, kiểm tra tài khoản'**
+  String get earningsPayoutFailed;
+
+  /// No description provided for @earningsHoldReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}'**
+  String earningsHoldReason(String reason);
+
+  /// No description provided for @earningsHoldDispute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã báo vấn đề, đang chờ xử lý'**
+  String get earningsHoldDispute;
+
+  /// No description provided for @earningsHoldPayoutOnHold.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lô chi trả đang tạm giữ'**
+  String get earningsHoldPayoutOnHold;
+
+  /// No description provided for @earningsCustomerFallback.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách'**
+  String get earningsCustomerFallback;
+
+  /// No description provided for @earningsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có khoản thu nào'**
+  String get earningsEmptyTitle;
+
+  /// No description provided for @earningsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.'**
+  String get earningsEmptyBody;
+
+  /// No description provided for @earningsMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get earningsMore;
+
+  /// No description provided for @earningsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được thu nhập'**
+  String get earningsLoadError;
+
+  /// No description provided for @payoutAccountTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản nhận tiền'**
+  String get payoutAccountTitle;
+
+  /// No description provided for @profileEarnings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thu nhập'**
+  String get profileEarnings;
+
+  /// No description provided for @profileEarningsSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền đang giữ, sắp nhận và đã nhận'**
+  String get profileEarningsSub;
+
+  /// No description provided for @payoutAccountIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.'**
+  String get payoutAccountIntro;
+
+  /// No description provided for @payoutAccountBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng'**
+  String get payoutAccountBank;
+
+  /// No description provided for @payoutAccountBankPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngân hàng'**
+  String get payoutAccountBankPick;
+
+  /// No description provided for @payoutAccountBankSearch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm ngân hàng'**
+  String get payoutAccountBankSearch;
+
+  /// No description provided for @payoutAccountBankNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy ngân hàng'**
+  String get payoutAccountBankNone;
+
+  /// No description provided for @payoutAccountNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản'**
+  String get payoutAccountNumber;
+
+  /// No description provided for @payoutAccountHolder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên chủ tài khoản'**
+  String get payoutAccountHolder;
+
+  /// No description provided for @payoutAccountSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu tài khoản'**
+  String get payoutAccountSave;
+
+  /// No description provided for @payoutAccountHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên chủ tài khoản phải trùng tên bạn đã xác minh. Số tài khoản được mã hoá và chỉ hiện 4 số cuối.'**
+  String get payoutAccountHint;
+
+  /// No description provided for @payoutAccountMasked.
+  ///
+  /// In vi, this message translates to:
+  /// **'•••• {last4}'**
+  String payoutAccountMasked(String last4);
+
+  /// No description provided for @payoutAccountChange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi tài khoản'**
+  String get payoutAccountChange;
+
+  /// No description provided for @payoutAccountNumberError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản gồm 6–20 chữ số'**
+  String get payoutAccountNumberError;
+
+  /// No description provided for @payoutAccountHolderError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập họ tên viết hoa không dấu, 2–50 chữ cái'**
+  String get payoutAccountHolderError;
+
+  /// No description provided for @payoutAccountChangeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi tài khoản nhận tiền?'**
+  String get payoutAccountChangeTitle;
+
+  /// No description provided for @payoutAccountChangeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.'**
+  String get payoutAccountChangeBody;
+
+  /// No description provided for @payoutAccountChangeConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi tài khoản'**
+  String get payoutAccountChangeConfirm;
+
+  /// No description provided for @payoutAccountReauthTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận lại để đổi tài khoản'**
+  String get payoutAccountReauthTitle;
+
+  /// No description provided for @payoutAccountReauthBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vì an toàn, hãy đăng nhập lại trước khi đổi tài khoản nhận tiền.'**
+  String get payoutAccountReauthBody;
+
+  /// No description provided for @payoutAccountReauthPassword.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mật khẩu'**
+  String get payoutAccountReauthPassword;
+
+  /// No description provided for @payoutAccountReauthGo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get payoutAccountReauthGo;
+
+  /// No description provided for @payoutAccountReauthWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mật khẩu chưa đúng'**
+  String get payoutAccountReauthWrong;
+
+  /// No description provided for @payoutAccountSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu tài khoản nhận tiền'**
+  String get payoutAccountSaved;
+
+  /// No description provided for @payoutAccountSaveError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được. Thử lại'**
+  String get payoutAccountSaveError;
+
+  /// No description provided for @payoutAccountBusy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chuyển một lô tiền, thử lại sau ít phút'**
+  String get payoutAccountBusy;
+
+  /// No description provided for @eventHostPlatform.
+  ///
+  /// In vi, this message translates to:
+  /// **'Do ứng dụng tổ chức'**
+  String get eventHostPlatform;
+
+  /// No description provided for @eventsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get eventsTitle;
+
+  /// No description provided for @eventsAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get eventsAll;
+
+  /// No description provided for @eventsSortSoonest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sớm nhất'**
+  String get eventsSortSoonest;
+
+  /// No description provided for @eventsSortNear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gần tôi'**
+  String get eventsSortNear;
+
+  /// No description provided for @eventsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có sự kiện'**
+  String get eventsEmpty;
+
+  /// No description provided for @eventsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện chụp ảnh mới sẽ hiện ở đây.'**
+  String get eventsEmptyBody;
+
+  /// No description provided for @eventsCreate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo sự kiện'**
+  String get eventsCreate;
+
+  /// No description provided for @eventsNeedArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực để xem sự kiện gần bạn'**
+  String get eventsNeedArea;
+
+  /// No description provided for @eventsMyTickets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé của tôi'**
+  String get eventsMyTickets;
+
+  /// No description provided for @eventJoin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký tham gia'**
+  String get eventJoin;
+
+  /// No description provided for @eventPerPerson.
+  ///
+  /// In vi, this message translates to:
+  /// **'mỗi người'**
+  String get eventPerPerson;
+
+  /// No description provided for @eventViewTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem vé'**
+  String get eventViewTicket;
+
+  /// No description provided for @eventManage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý'**
+  String get eventManage;
+
+  /// No description provided for @eventCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện đã huỷ'**
+  String get eventCancelled;
+
+  /// No description provided for @eventEnded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện đã kết thúc'**
+  String get eventEnded;
+
+  /// No description provided for @eventClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng đăng ký'**
+  String get eventClosed;
+
+  /// No description provided for @eventPaymentsSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp mở thanh toán'**
+  String get eventPaymentsSoon;
+
+  /// No description provided for @eventTabInfo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin'**
+  String get eventTabInfo;
+
+  /// No description provided for @eventTabTimeline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline'**
+  String get eventTabTimeline;
+
+  /// No description provided for @eventTabChat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhóm chat'**
+  String get eventTabChat;
+
+  /// No description provided for @eventHostRole.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ sự kiện'**
+  String get eventHostRole;
+
+  /// No description provided for @eventHostRoleRating.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ sự kiện · ★ {rating}'**
+  String eventHostRoleRating(String rating);
+
+  /// No description provided for @eventProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get eventProfile;
+
+  /// No description provided for @eventMeetingPoint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm hẹn: {place}'**
+  String eventMeetingPoint(String place);
+
+  /// No description provided for @eventCapacityLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} chỗ'**
+  String eventCapacityLeft(int n);
+
+  /// No description provided for @eventGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện không còn'**
+  String get eventGone;
+
+  /// No description provided for @eventGoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện này đã bị xoá hoặc chưa được đăng.'**
+  String get eventGoneBody;
+
+  /// No description provided for @eventLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết'**
+  String get eventLinkCopied;
+
+  /// No description provided for @eventShareTooltip.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ sự kiện'**
+  String get eventShareTooltip;
+
+  /// No description provided for @eventWeekdayLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}'**
+  String eventWeekdayLong(String weekday);
+
+  /// No description provided for @eventFaqTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi thường gặp'**
+  String get eventFaqTitle;
+
+  /// No description provided for @eventSupportLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần hỏi thêm? Gửi email tới {email}'**
+  String eventSupportLine(String email);
+
+  /// No description provided for @eventChatLocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký để vào nhóm'**
+  String get eventChatLocked;
+
+  /// No description provided for @eventChatLockedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ người đã đăng ký mới vào được nhóm chat của sự kiện.'**
+  String get eventChatLockedBody;
+
+  /// No description provided for @eventChatSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhóm chat sắp mở'**
+  String get eventChatSoon;
+
+  /// No description provided for @eventTimelineSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline sắp mở'**
+  String get eventTimelineSoon;
+
+  /// No description provided for @eventsManage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện của tôi'**
+  String get eventsManage;
+
+  /// No description provided for @eventRegisterTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ký tham gia'**
+  String get eventRegisterTitle;
+
+  /// No description provided for @registerTickets.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số vé'**
+  String get registerTickets;
+
+  /// No description provided for @registerTicketsHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa 4 vé, còn {n} chỗ'**
+  String registerTicketsHint(int n);
+
+  /// No description provided for @registerName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Họ tên người tham gia'**
+  String get registerName;
+
+  /// No description provided for @registerNameError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập họ tên, tối đa 60 ký tự'**
+  String get registerNameError;
+
+  /// No description provided for @registerPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get registerPhone;
+
+  /// No description provided for @registerChangePhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi'**
+  String get registerChangePhone;
+
+  /// No description provided for @registerFree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đăng ký'**
+  String get registerFree;
+
+  /// No description provided for @registerSoldOut.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết chỗ'**
+  String get registerSoldOut;
+
+  /// No description provided for @registerDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng ký'**
+  String get registerDone;
+
+  /// No description provided for @registerOpenChat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào nhóm chat'**
+  String get registerOpenChat;
+
+  /// No description provided for @registerError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đăng ký được. Kiểm tra mạng rồi thử lại.'**
+  String get registerError;
+
+  /// No description provided for @registerLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt một vé'**
+  String get registerLess;
+
+  /// No description provided for @registerMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm một vé'**
+  String get registerMore;
+
+  /// No description provided for @ticketsTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé sự kiện'**
+  String get ticketsTab;
+
+  /// No description provided for @bookingsTabShoots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp'**
+  String get bookingsTabShoots;
+
+  /// No description provided for @ticketCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã vé'**
+  String get ticketCode;
+
+  /// No description provided for @ticketCancelRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé · hoàn {pct}%'**
+  String ticketCancelRefund(int pct);
+
+  /// No description provided for @ticketCancelNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé · không hoàn tiền'**
+  String get ticketCancelNoRefund;
+
+  /// No description provided for @ticketAttended.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã tham gia'**
+  String get ticketAttended;
+
+  /// No description provided for @ticketRefunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn tiền'**
+  String get ticketRefunded;
+
+  /// No description provided for @ticketRefunding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoàn'**
+  String get ticketRefunding;
+
+  /// No description provided for @ticketShowHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa mã này cho chủ sự kiện khi đến điểm hẹn.'**
+  String get ticketShowHint;
+
+  /// No description provided for @ticketsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có vé sự kiện'**
+  String get ticketsEmpty;
+
+  /// No description provided for @ticketsBrowse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem sự kiện'**
+  String get ticketsBrowse;
+
+  /// No description provided for @ticketCancelConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ vé {event}?'**
+  String ticketCancelConfirmTitle(String event);
+
+  /// No description provided for @ticketCancelFreeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỗ của bạn sẽ được nhả cho người khác.'**
+  String get ticketCancelFreeBody;
+
+  /// No description provided for @ticketCancelRefundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn được hoàn {pct}% tiền vé.'**
+  String ticketCancelRefundBody(int pct);
+
+  /// No description provided for @ticketCancelNoRefundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn dưới 48 giờ nên không được hoàn tiền vé. Tiền vé được giữ tới khi sự kiện kết thúc.'**
+  String get ticketCancelNoRefundBody;
+
+  /// No description provided for @ticketKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ vé'**
+  String get ticketKeep;
+
+  /// No description provided for @ticketCancelDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ vé'**
+  String get ticketCancelDone;
+
+  /// No description provided for @ticketCancelUsed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé đã dùng, không huỷ được'**
+  String get ticketCancelUsed;
+
+  /// No description provided for @ticketQrClose.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get ticketQrClose;
+
+  /// No description provided for @createEventTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo sự kiện'**
+  String get createEventTitle;
+
+  /// No description provided for @createEventInfo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin sự kiện'**
+  String get createEventInfo;
+
+  /// No description provided for @createEventCover.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh bìa 16:10'**
+  String get createEventCover;
+
+  /// No description provided for @createEventCoverChange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi ảnh bìa'**
+  String get createEventCoverChange;
+
+  /// No description provided for @createEventName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên sự kiện'**
+  String get createEventName;
+
+  /// No description provided for @createEventNameRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên sự kiện · bắt buộc'**
+  String get createEventNameRequired;
+
+  /// No description provided for @createEventType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại sự kiện'**
+  String get createEventType;
+
+  /// No description provided for @createEventDesc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả'**
+  String get createEventDesc;
+
+  /// No description provided for @createEventHost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổ chức bởi'**
+  String get createEventHost;
+
+  /// No description provided for @createEventHostPlatform.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nền tảng'**
+  String get createEventHostPlatform;
+
+  /// No description provided for @createEventHostLater.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổ chức hộ một nhiếp ảnh gia sẽ có sau.'**
+  String get createEventHostLater;
+
+  /// No description provided for @createEventContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get createEventContinue;
+
+  /// No description provided for @createEventSaveDraftAsk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp?'**
+  String get createEventSaveDraftAsk;
+
+  /// No description provided for @createEventDraftKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get createEventDraftKeep;
+
+  /// No description provided for @createEventDraftDiscard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ'**
+  String get createEventDraftDiscard;
+
+  /// No description provided for @createEventSchedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch và vé'**
+  String get createEventSchedule;
+
+  /// No description provided for @createEventDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày'**
+  String get createEventDay;
+
+  /// No description provided for @createEventStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ bắt đầu'**
+  String get createEventStart;
+
+  /// No description provided for @createEventEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get createEventEnd;
+
+  /// No description provided for @createEventCapacity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sức chứa'**
+  String get createEventCapacity;
+
+  /// No description provided for @createEventCapacityUnit.
+  ///
+  /// In vi, this message translates to:
+  /// **'người'**
+  String get createEventCapacityUnit;
+
+  /// No description provided for @createEventPlace.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa điểm'**
+  String get createEventPlace;
+
+  /// No description provided for @createEventMeeting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm hẹn'**
+  String get createEventMeeting;
+
+  /// No description provided for @createEventArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực'**
+  String get createEventArea;
+
+  /// No description provided for @createEventAreaPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực'**
+  String get createEventAreaPick;
+
+  /// No description provided for @createEventUseLocation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng vị trí hiện tại'**
+  String get createEventUseLocation;
+
+  /// No description provided for @createEventLocationUsed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lấy vị trí hiện tại'**
+  String get createEventLocationUsed;
+
+  /// No description provided for @createEventHashtag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hashtag sự kiện'**
+  String get createEventHashtag;
+
+  /// No description provided for @createEventHashtagTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hashtag này đã có sự kiện khác dùng'**
+  String get createEventHashtagTaken;
+
+  /// No description provided for @createEventPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá mỗi người (₫)'**
+  String get createEventPrice;
+
+  /// No description provided for @createEventDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn đăng ký'**
+  String get createEventDeadline;
+
+  /// No description provided for @createEventDeadlineAuto.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tự động'**
+  String get createEventDeadlineAuto;
+
+  /// No description provided for @createEventFreeHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Để giá bằng 0 nếu không thu phí.'**
+  String get createEventFreeHint;
+
+  /// No description provided for @createEventEscrowHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền vé được giữ trên ứng dụng và chuyển cho bạn sau khi sự kiện kết thúc.'**
+  String get createEventEscrowHint;
+
+  /// No description provided for @createEventPreview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem trước'**
+  String get createEventPreview;
+
+  /// No description provided for @createEventSaveDraft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp'**
+  String get createEventSaveDraft;
+
+  /// No description provided for @createEventPublish.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng sự kiện'**
+  String get createEventPublish;
+
+  /// No description provided for @createEventPublished.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng sự kiện'**
+  String get createEventPublished;
+
+  /// No description provided for @createEventDraftSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu nháp'**
+  String get createEventDraftSaved;
+
+  /// No description provided for @createEventDayTaken.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có lịch hôm đó'**
+  String get createEventDayTaken;
+
+  /// No description provided for @createEventErrorSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần sửa {n} mục trước khi đăng'**
+  String createEventErrorSummary(int n);
+
+  /// No description provided for @createEventPickDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get createEventPickDay;
+
+  /// No description provided for @createEventPickTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn giờ'**
+  String get createEventPickTime;
+
+  /// No description provided for @createEventErrCover.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm ảnh bìa cho sự kiện'**
+  String get createEventErrCover;
+
+  /// No description provided for @createEventErrTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên sự kiện'**
+  String get createEventErrTitle;
+
+  /// No description provided for @createEventErrTitleLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên sự kiện tối đa 80 ký tự'**
+  String get createEventErrTitleLong;
+
+  /// No description provided for @createEventErrType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn loại sự kiện'**
+  String get createEventErrType;
+
+  /// No description provided for @createEventErrDescLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả tối đa 1000 ký tự'**
+  String get createEventErrDescLong;
+
+  /// No description provided for @createEventErrDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày diễn ra'**
+  String get createEventErrDay;
+
+  /// No description provided for @createEventErrStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn giờ bắt đầu'**
+  String get createEventErrStart;
+
+  /// No description provided for @createEventErrEnd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn giờ kết thúc'**
+  String get createEventErrEnd;
+
+  /// No description provided for @createEventErrEndBeforeStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ kết thúc phải sau giờ bắt đầu'**
+  String get createEventErrEndBeforeStart;
+
+  /// No description provided for @createEventErrSameDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện diễn ra trong một ngày'**
+  String get createEventErrSameDay;
+
+  /// No description provided for @createEventErrStartSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ bắt đầu phải sau bây giờ ít nhất 2 giờ'**
+  String get createEventErrStartSoon;
+
+  /// No description provided for @createEventErrCapacity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sức chứa từ 1 đến 500 người'**
+  String get createEventErrCapacity;
+
+  /// No description provided for @createEventErrPlace.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tên địa điểm'**
+  String get createEventErrPlace;
+
+  /// No description provided for @createEventErrPlacePoint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khu vực hoặc dùng vị trí hiện tại'**
+  String get createEventErrPlacePoint;
+
+  /// No description provided for @createEventErrPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá tiền là bội số của 1.000₫, tối đa 100.000.000₫'**
+  String get createEventErrPrice;
+
+  /// No description provided for @createEventErrPriceRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập giá, để 0 nếu không thu phí'**
+  String get createEventErrPriceRequired;
+
+  /// No description provided for @createEventErrDeadline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hạn đăng ký phải trước giờ bắt đầu'**
+  String get createEventErrDeadline;
+
+  /// No description provided for @createEventErrHashtag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hashtag gồm 3–40 chữ không dấu hoặc số'**
+  String get createEventErrHashtag;
+
+  /// No description provided for @createEventFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đăng được sự kiện. Kiểm tra mạng rồi thử lại.'**
+  String get createEventFailed;
+
+  /// No description provided for @createEventSaveFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu được nháp. Kiểm tra mạng rồi thử lại.'**
+  String get createEventSaveFailed;
+
+  /// No description provided for @createEventCoverFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được ảnh bìa. Thử lại nhé.'**
+  String get createEventCoverFailed;
+
+  /// No description provided for @createEventSetupTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thiện hồ sơ để tạo sự kiện'**
+  String get createEventSetupTitle;
+
+  /// No description provided for @createEventSetupBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần hoàn tất hồ sơ nhiếp ảnh gia trước khi tổ chức sự kiện.'**
+  String get createEventSetupBody;
+
+  /// No description provided for @createEventSetupCta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thiện hồ sơ'**
+  String get createEventSetupCta;
+
+  /// No description provided for @createEventNotAllowed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ nhiếp ảnh gia và nhân viên mới tạo được sự kiện.'**
+  String get createEventNotAllowed;
+
+  /// No description provided for @eventStatusDraft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nháp'**
+  String get eventStatusDraft;
+
+  /// No description provided for @eventStatusOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang mở'**
+  String get eventStatusOpen;
+
+  /// No description provided for @eventStatusFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết chỗ'**
+  String get eventStatusFull;
+
+  /// No description provided for @eventStatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng'**
+  String get eventStatusClosed;
+
+  /// No description provided for @eventStatusCancelled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ'**
+  String get eventStatusCancelled;
+
+  /// No description provided for @eventStatusCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã kết thúc'**
+  String get eventStatusCompleted;
+
+  /// No description provided for @manageTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý sự kiện'**
+  String get manageTitle;
+
+  /// No description provided for @manageRegistered.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng ký'**
+  String get manageRegistered;
+
+  /// No description provided for @manageRevenue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Doanh thu'**
+  String get manageRevenue;
+
+  /// No description provided for @manageDaysLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày còn lại'**
+  String get manageDaysLeft;
+
+  /// No description provided for @manageParticipants.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người tham gia'**
+  String get manageParticipants;
+
+  /// No description provided for @manageEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có người đăng ký'**
+  String get manageEmpty;
+
+  /// No description provided for @manageShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ sự kiện'**
+  String get manageShare;
+
+  /// No description provided for @manageViewPage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem trang sự kiện'**
+  String get manageViewPage;
+
+  /// No description provided for @manageBroadcast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn nhóm'**
+  String get manageBroadcast;
+
+  /// No description provided for @manageBroadcastSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn nhóm sắp mở'**
+  String get manageBroadcastSoon;
+
+  /// No description provided for @manageScan.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét mã check‑in'**
+  String get manageScan;
+
+  /// No description provided for @manageCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ sự kiện · hoàn tiền mọi vé'**
+  String get manageCancel;
+
+  /// No description provided for @manageCancelTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ sự kiện này?'**
+  String get manageCancelTitle;
+
+  /// No description provided for @manageCancelBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} vé · hoàn {amount}'**
+  String manageCancelBody(int n, String amount);
+
+  /// No description provided for @manageNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có khoản hoàn'**
+  String get manageNoRefund;
+
+  /// No description provided for @manageCancelConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ sự kiện'**
+  String get manageCancelConfirm;
+
+  /// No description provided for @manageCancelKeep.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ sự kiện'**
+  String get manageCancelKeep;
+
+  /// No description provided for @manageCancelDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ sự kiện'**
+  String get manageCancelDone;
+
+  /// No description provided for @manageCancelFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không huỷ được sự kiện. Thử lại nhé.'**
+  String get manageCancelFailed;
+
+  /// No description provided for @manageGone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy sự kiện'**
+  String get manageGone;
+
+  /// No description provided for @managePaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả'**
+  String get managePaid;
+
+  /// No description provided for @manageUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ trả'**
+  String get manageUnpaid;
+
+  /// No description provided for @manageCheckedIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã vào'**
+  String get manageCheckedIn;
+
+  /// No description provided for @manageTicketQty.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} vé'**
+  String manageTicketQty(int n);
+
+  /// No description provided for @manageTicketCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} vé · {code}'**
+  String manageTicketCode(int n, String code);
+
+  /// No description provided for @manageNoMoney.
+  ///
+  /// In vi, this message translates to:
+  /// **'—'**
+  String get manageNoMoney;
+
+  /// No description provided for @manageScanClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hết giờ check‑in'**
+  String get manageScanClosed;
+
+  /// No description provided for @manageInviteTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lời mời tổ chức sự kiện'**
+  String get manageInviteTitle;
+
+  /// No description provided for @manageInviteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhân viên đã tạo sự kiện này cho bạn. Hãy trả lời trước {time}, quá hạn sự kiện sẽ bị huỷ.'**
+  String manageInviteBody(String time);
+
+  /// No description provided for @manageInviteAccept.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chấp nhận'**
+  String get manageInviteAccept;
+
+  /// No description provided for @manageInviteDecline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get manageInviteDecline;
+
+  /// No description provided for @manageInviteAccepted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chấp nhận, nhân viên sẽ đăng sự kiện'**
+  String get manageInviteAccepted;
+
+  /// No description provided for @manageInviteDeclined.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã từ chối lời mời'**
+  String get manageInviteDeclined;
+
+  /// No description provided for @manageInviteFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gửi được câu trả lời. Thử lại nhé.'**
+  String get manageInviteFailed;
+
+  /// No description provided for @checkinOk.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã vào · {name} · {count} vé'**
+  String checkinOk(String name, int count);
+
+  /// No description provided for @checkinInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé không hợp lệ'**
+  String get checkinInvalid;
+
+  /// No description provided for @checkinUsed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé đã dùng'**
+  String get checkinUsed;
+
+  /// No description provided for @checkinManual.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã vé'**
+  String get checkinManual;
+
+  /// No description provided for @checkinManualHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã vé, ví dụ VE-7K2Q-0420'**
+  String get checkinManualHint;
+
+  /// No description provided for @checkinManualSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra'**
+  String get checkinManualSubmit;
+
+  /// No description provided for @checkinNext.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét tiếp'**
+  String get checkinNext;
+
+  /// No description provided for @checkinScanTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét mã vé'**
+  String get checkinScanTitle;
+
+  /// No description provided for @checkinCameraOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở được camera. Nhập mã vé để check‑in.'**
+  String get checkinCameraOff;
+
+  /// No description provided for @checkinFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không check‑in được. Thử lại nhé.'**
+  String get checkinFailed;
+
+  /// No description provided for @myEventsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện của tôi'**
+  String get myEventsTitle;
+
+  /// No description provided for @myEventsDraft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nháp'**
+  String get myEventsDraft;
+
+  /// No description provided for @myEventsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa tổ chức sự kiện nào'**
+  String get myEventsEmpty;
+
+  /// No description provided for @myEventsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện bạn tạo sẽ hiện ở đây.'**
+  String get myEventsEmptyBody;
+
+  /// No description provided for @myEventsSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get myEventsSeeAll;
+
+  /// No description provided for @settingsManageEvents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý sự kiện'**
+  String get settingsManageEvents;
+
+  /// No description provided for @createPostTabPost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài đăng'**
+  String get createPostTabPost;
+
+  /// No description provided for @createPostTabEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get createPostTabEvent;
+
+  /// No description provided for @createEventLocationFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lấy được vị trí. Hãy chọn khu vực nhé.'**
+  String get createEventLocationFailed;
+
+  /// No description provided for @createEventDeadlineReset.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng hạn tự động'**
+  String get createEventDeadlineReset;
+
+  /// S12.03: a scan, or the disabled scan button, before 00:00 VN on the event day (the server takes check-ins from then).
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tới ngày diễn ra. Check‑in mở từ 00:00 hôm đó.'**
+  String get checkinNotYet;
+
+  /// EventCard/DateBlock: spoken in place of the date of a draft whose day is not chosen yet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa chọn ngày'**
+  String get eventDateUnset;
+
+  /// S11.05: how many visible posts the event timeline holds, next to the hashtag chip.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài'**
+  String timelineCount(int n);
+
+  /// S11.05 bottom button; {tag} is the event hashtag with its #.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ảnh với {tag}'**
+  String timelinePost(String tag);
+
+  /// No description provided for @timelineEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!'**
+  String get timelineEmpty;
+
+  /// No description provided for @timelinePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ duyệt'**
+  String get timelinePending;
+
+  /// No description provided for @timelineVisibleTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng'**
+  String get timelineVisibleTab;
+
+  /// No description provided for @timelinePendingEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có bài nào chờ duyệt.'**
+  String get timelinePendingEmpty;
+
+  /// No description provided for @timelineClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline đã đóng đăng mới'**
+  String get timelineClosed;
+
+  /// No description provided for @timelineHide.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn khỏi timeline'**
+  String get timelineHide;
+
+  /// No description provided for @timelineApprove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt'**
+  String get timelineApprove;
+
+  /// No description provided for @timelineReport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo'**
+  String get timelineReport;
+
+  /// No description provided for @timelineReportSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp có'**
+  String get timelineReportSoon;
+
+  /// No description provided for @timelineHostSuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'chủ sự kiện'**
+  String get timelineHostSuffix;
+
+  /// No description provided for @timelineModerateFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thực hiện được. Thử lại nhé.'**
+  String get timelineModerateFailed;
+
+  /// No description provided for @timelineItemLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh của {name}'**
+  String timelineItemLabel(String name);
+
+  /// No description provided for @timelineMenuHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhấn giữ để mở menu'**
+  String get timelineMenuHint;
+
+  /// No description provided for @shareTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ ảnh sự kiện'**
+  String get shareTitle;
+
+  /// No description provided for @shareSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng'**
+  String get shareSend;
+
+  /// No description provided for @shareCaptionHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết chú thích…'**
+  String get shareCaptionHint;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đăng được ảnh. Kiểm tra mạng rồi thử lại.'**
+  String get shareFailed;
+
+  /// No description provided for @shareClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline đã đóng đăng mới.'**
+  String get shareClosed;
+
+  /// No description provided for @shareDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng lên timeline'**
+  String get shareDone;
+
+  /// No description provided for @shareDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ bài đang soạn?'**
+  String get shareDiscardTitle;
+
+  /// No description provided for @shareKeepEditing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục soạn'**
+  String get shareKeepEditing;
+
+  /// S11.06 app bar subtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} thành viên'**
+  String chatMembers(int n);
+
+  /// No description provided for @chatPinned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim'**
+  String get chatPinned;
+
+  /// No description provided for @eventChatInput.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn cho nhóm…'**
+  String get eventChatInput;
+
+  /// No description provided for @eventChatClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhóm đã đóng'**
+  String get eventChatClosed;
+
+  /// No description provided for @chatMutedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang bị tắt tiếng trong nhóm'**
+  String get chatMutedNote;
+
+  /// No description provided for @chatModOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ điều hành được nhắn'**
+  String get chatModOnly;
+
+  /// No description provided for @chatJoined.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã vào nhóm'**
+  String chatJoined(String name);
+
+  /// No description provided for @chatPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim'**
+  String get chatPin;
+
+  /// No description provided for @chatUnpin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ghim'**
+  String get chatUnpin;
+
+  /// No description provided for @chatDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get chatDelete;
+
+  /// No description provided for @chatDeleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn đã bị xoá'**
+  String get chatDeleted;
+
+  /// No description provided for @chatMute24h.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt tiếng 24 giờ'**
+  String get chatMute24h;
+
+  /// No description provided for @chatUnmute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật tiếng'**
+  String get chatUnmute;
+
+  /// No description provided for @chatRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ khỏi nhóm'**
+  String get chatRemove;
+
+  /// No description provided for @chatRemoveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ {name} khỏi nhóm?'**
+  String chatRemoveTitle(String name);
+
+  /// No description provided for @chatMemberList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get chatMemberList;
+
+  /// No description provided for @chatMemberModerator.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều hành'**
+  String get chatMemberModerator;
+
+  /// No description provided for @chatMemberMuted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang bị tắt tiếng'**
+  String get chatMemberMuted;
+
+  /// No description provided for @chatMuteGroup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt tiếng nhóm'**
+  String get chatMuteGroup;
+
+  /// No description provided for @chatUnmuteGroup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật tiếng nhóm'**
+  String get chatUnmuteGroup;
+
+  /// No description provided for @chatRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhắn quá nhanh. Thử lại sau ít giây nhé.'**
+  String get chatRateLimited;
+
+  /// No description provided for @chatActionFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thực hiện được. Thử lại nhé.'**
+  String get chatActionFailed;
+
+  /// No description provided for @chatLockedAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem sự kiện'**
+  String get chatLockedAction;
+
+  /// No description provided for @chatMessageOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name}: {text}'**
+  String chatMessageOf(String name, String text);
+
+  /// No description provided for @manageAnnounceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim thông báo vào nhóm'**
+  String get manageAnnounceTitle;
+
+  /// No description provided for @manageAnnounceHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết thông báo cho cả nhóm'**
+  String get manageAnnounceHint;
+
+  /// No description provided for @manageAnnounceSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim'**
+  String get manageAnnounceSend;
+
+  /// No description provided for @manageAnnounceDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ghim thông báo vào nhóm'**
+  String get manageAnnounceDone;
+
+  /// No description provided for @manageAnnounceFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không ghim được thông báo. Thử lại nhé.'**
+  String get manageAnnounceFailed;
+
+  /// No description provided for @managePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài chờ duyệt'**
+  String get managePending;
+
+  /// S02.02: the chip under the caption of a photo shared to an event.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện: {title}'**
+  String postEventChip(String title);
+
+  /// S11.06 member list: section header of the members a moderator removed (moderators only).
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã mời ra'**
+  String get chatRemovedSection;
+
+  /// S11.06 member list: moderator action that lifts a removal.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cho vào lại'**
+  String get chatRestore;
+
+  /// S11.06 member list: note under the Đã mời ra section.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.'**
+  String get chatRestoreHint;
+
+  /// S12.03: link at the right of the Người tham gia header; opens the check-in scanner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Check‑in'**
+  String get manageCheckinLink;
+
+  /// S11.03 paid: the total line of the money table.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng thanh toán'**
+  String get registerTotal;
+
+  /// S11.03 paid: tickets times the ticket price.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} vé × {price}'**
+  String registerLine(int n, String price);
+
+  /// S11.03 paid: the primary button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán {amount}'**
+  String registerPay(String amount);
+
+  /// S11.03 paid: seats are held while the customer pays (mm:ss).
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ chỗ còn {time}'**
+  String registerHold(String time);
+
+  /// No description provided for @registerHoldExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỗ giữ đã hết hạn'**
+  String get registerHoldExpired;
+
+  /// No description provided for @registerPolicy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.'**
+  String get registerPolicy;
+
+  /// No description provided for @escrowNoticeTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.'**
+  String get escrowNoticeTicket;
+
+  /// No description provided for @ticketPayContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán tiếp'**
+  String get ticketPayContinue;
+
+  /// No description provided for @ticketHoldExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get ticketHoldExpired;
+
+  /// No description provided for @ticketRefundAmount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận lại {amount}'**
+  String ticketRefundAmount(String amount);
+
+  /// No description provided for @ticketNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.'**
+  String get ticketNoRefund;
+
+  /// No description provided for @fakeTicketPayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán thử'**
+  String get fakeTicketPayTitle;
+
+  /// S11.03 (mock): pay by bank transfer QR.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản QR'**
+  String get payMethodBankQr;
+
+  /// No description provided for @payMethodMomo.
+  ///
+  /// In vi, this message translates to:
+  /// **'MoMo'**
+  String get payMethodMomo;
+
+  /// No description provided for @payMethodZaloPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'ZaloPay'**
+  String get payMethodZaloPay;
+
+  /// Semantics label of the payment method group on S11.03.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phương thức thanh toán'**
+  String get payMethodLabel;
+
+  /// S11.04: a cancelled ticket whose payment came after the hold and was refunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ · đã hoàn tiền'**
+  String get ticketCancelledRefunded;
+
+  /// S11.04: as above while the refund is still on its way.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ · đang hoàn tiền'**
+  String get ticketCancelledRefunding;
+
+  /// SnackBar when the ticket payment sheet fails.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thanh toán được. Kiểm tra mạng rồi thử lại.'**
+  String get ticketPayFailed;
+
+  /// SnackBar when the server refuses fake payments (fake_payments_disabled).
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán thử chỉ dùng được trên bản thử nghiệm.'**
+  String get ticketPayFakeDisabled;
+
+  /// Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'{registered}/{capacity} đã đăng ký'**
+  String eventRegisteredOf(int registered, int capacity);
+
+  /// No description provided for @createEventFaqHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa {max} câu.'**
+  String createEventFaqHint(int max);
+
+  /// No description provided for @createEventFaqQuestion.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi {n}'**
+  String createEventFaqQuestion(int n);
+
+  /// No description provided for @createEventFaqAnswer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả lời'**
+  String get createEventFaqAnswer;
+
+  /// No description provided for @createEventFaqAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm câu hỏi'**
+  String get createEventFaqAdd;
+
+  /// No description provided for @createEventFaqRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá câu hỏi {n}'**
+  String createEventFaqRemove(int n);
+
+  /// No description provided for @createEventErrFaq.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập đủ cả câu hỏi và câu trả lời.'**
+  String get createEventErrFaq;
 }
 
 class _AppLocalizationsDelegate

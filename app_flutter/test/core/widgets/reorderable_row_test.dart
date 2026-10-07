@@ -35,7 +35,7 @@ Widget _list({
 }
 
 Future<void> _open(WidgetTester tester) async {
-  await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+  await tester.tap(find.byIcon(AppIcons.more));
   await tester.pumpAndSettle();
 }
 

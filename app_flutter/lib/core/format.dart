@@ -11,7 +11,11 @@ String formatDistance(double km) {
 
 /// `1.500.000₫`; with [short] `1,5M` / `250K` for small cards. Callers show
 /// the FreeTag for 0, never `0₫`.
-String formatMoney(int vnd, {bool short = false}) {
+///
+/// With [short] and [decimals] 2, amounts from 100.000₫ up show in millions
+/// with up to two decimals, trailing zeros trimmed (`3,95M`, `0,9M`), for
+/// totals where `4M` for 3.950.000₫ would misread money.
+String formatMoney(int vnd, {bool short = false, int decimals = 1}) {
   String grouped(int n) {
     final s = n.toString();
     final out = StringBuffer();
@@ -24,16 +28,28 @@ String formatMoney(int vnd, {bool short = false}) {
     return out.toString();
   }
 
-  String compact(double v, String unit) {
-    final rounded = (v * 10).round() / 10;
+  String compact(double v, String unit, [int places = 1]) {
+    final f = places == 2 ? 100 : 10;
+    final rounded = (v * f).round() / f;
     final text = rounded == rounded.roundToDouble()
         ? rounded.round().toString()
-        : rounded.toStringAsFixed(1).replaceAll('.', ',');
+        : rounded
+              .toStringAsFixed(places)
+              .replaceAll(RegExp(r'0+$'), '')
+              .replaceAll('.', ',');
     return '$text$unit';
   }
 
   if (!short || vnd < 1000) {
     return '${grouped(vnd)}₫';
+  }
+  if (decimals >= 2 && vnd >= 100000) {
+    // Truncate (never round up) so a total is not overstated.
+    final hundredths = vnd ~/ 10000;
+    final whole = hundredths ~/ 100;
+    final frac = (hundredths % 100).toString().padLeft(2, '0');
+    final trimmed = frac.replaceAll(RegExp(r'0+$'), '');
+    return '$whole${trimmed.isEmpty ? '' : ',$trimmed'}M';
   }
   if (vnd >= 1000000) {
     return compact(vnd / 1000000, 'M');

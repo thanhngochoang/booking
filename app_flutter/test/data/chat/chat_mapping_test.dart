@@ -1,10 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/chat/firestore_chat_repository.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
+
+class _Auth extends Mock implements FirebaseAuth {}
+
+class _User extends Mock implements User {}
 
 void main() {
   late FakeFirebaseFirestore firestore;
@@ -401,5 +408,116 @@ void main() {
         ChatErrorCode.unknown,
       );
     });
+  });
+
+  group('S07.02 hides event groups', () {
+    test('watchMyChats drops event_group and keeps 1-1 chats', () async {
+      final auth = _Auth();
+      final user = _User();
+      when(() => auth.currentUser).thenReturn(user);
+      when(() => user.uid).thenReturn('u1');
+      final now = Timestamp.fromDate(DateTime(2026, 10, 3, 10));
+      await firestore.doc('chats/c1').set({
+        'kind': 'inquiry',
+        'members': ['u1', 'p1'],
+        'customerId': 'u1',
+        'photographerId': 'p1',
+        'lastMessageAt': now,
+      });
+      await firestore.doc('chats/event_ev1').set({
+        'kind': 'event_group',
+        'eventId': 'ev1',
+        'title': 'Photo walk',
+        'members': ['u1', 'p1'],
+        'lastMessageAt': now,
+      });
+      final repo = FirestoreChatRepository(
+        firestore: firestore,
+        auth: auth,
+        mediaUploader: FakeMediaUploader(),
+      );
+      final items = await repo.watchMyChats().first;
+      expect(items.map((i) => i.thread.id), ['c1']);
+    });
+
+    test('the query filters on kind, so a newer group never takes a row of the page', () async {
+      final auth = _Auth();
+      final user = _User();
+      when(() => auth.currentUser).thenReturn(user);
+      when(() => user.uid).thenReturn('u1');
+      await firestore.doc('chats/c1').set({
+        'kind': 'booking',
+        'members': ['u1', 'p1'],
+        'customerId': 'u1',
+        'photographerId': 'p1',
+        'lastMessageAt': Timestamp.fromDate(DateTime(2026, 10, 3, 9)),
+      });
+      await firestore.doc('chats/event_ev1').set({
+        'kind': 'event_group',
+        'eventId': 'ev1',
+        'title': 'Photo walk',
+        'members': ['u1', 'p1'],
+        'lastMessageAt': Timestamp.fromDate(DateTime(2026, 10, 3, 10)),
+      });
+      final repo = FirestoreChatRepository(
+        firestore: firestore,
+        auth: auth,
+        mediaUploader: FakeMediaUploader(),
+      );
+      // With a one-row page, a client-side filter alone would return nothing.
+      final items = await repo.watchMyChats(limit: 1).first;
+      expect(items.map((i) => i.thread.id), ['c1']);
+      expect(oneToOneChatKinds, ['inquiry', 'booking']);
+    });
+  });
+
+  group('group chat messages', () {
+    test(
+      'a group message parses the sender name, a tombstone and a join line',
+      () async {
+        final now = Timestamp.fromDate(DateTime(2026, 10, 3, 10));
+        final text = await makeDoc('chats/event_ev1/messages/m1', {
+          'senderId': 'u2',
+          'senderName': 'Lan Anh',
+          'type': 'text',
+          'body': 'Chào cả nhóm',
+          'createdAt': now,
+        });
+        final m = ChatMessage.fromFirestore(text);
+        expect(
+          (m.senderName, m.body, m.deletedAt),
+          ('Lan Anh', 'Chào cả nhóm', null),
+        );
+
+        final gone = await makeDoc('chats/event_ev1/messages/m2', {
+          'senderId': 'u2',
+          'senderName': 'Lan Anh',
+          'type': 'text',
+          'body': null,
+          'createdAt': now,
+          'deletedAt': now,
+        });
+        expect(
+          ChatMessage.fromFirestore(gone).deletedAt,
+          DateTime(2026, 10, 3, 10),
+        );
+
+        final join = await makeDoc('chats/event_ev1/messages/m3', {
+          'senderId': null,
+          'type': 'system',
+          'system': {
+            'kind': 'member_joined',
+            'userId': 'u3',
+            'name': 'Minh Khoa',
+          },
+          'createdAt': now,
+        });
+        final j = ChatMessage.fromFirestore(join);
+        expect(
+          (j.system?.kind, j.system?.name, j.system?.userId),
+          ('member_joined', 'Minh Khoa', 'u3'),
+        );
+      },
+    );
   });
 }

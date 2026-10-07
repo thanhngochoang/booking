@@ -57,9 +57,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final toggle = IconButton(
       tooltip: _obscure ? l.showPassword : l.hidePassword,
-      icon: Icon(
-        _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-      ),
+      icon: AppIcon(_obscure ? AppIcons.visibility : AppIcons.visibilityOff),
       onPressed: () => setState(() => _obscure = !_obscure),
     );
 
@@ -88,7 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   autofillHints: const [AutofillHints.name],
                   decoration: InputDecoration(
                     labelText: l.displayNameLabel,
-                    prefixIcon: const Icon(Icons.person_outline_rounded),
+                    prefixIcon: const AppIcon(AppIcons.profile),
                   ),
                   validator: (v) => validateName(v, l),
                 ),
@@ -102,7 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   autofillHints: const [AutofillHints.email],
                   decoration: InputDecoration(
                     labelText: l.emailLabel,
-                    prefixIcon: const Icon(Icons.alternate_email_rounded),
+                    prefixIcon: const AppIcon(AppIcons.alternateEmail),
                   ),
                   validator: (v) => validateEmail(v, l),
                 ),
@@ -116,7 +114,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   autofillHints: const [AutofillHints.newPassword],
                   decoration: InputDecoration(
                     labelText: l.passwordLabel,
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    prefixIcon: const AppIcon(AppIcons.lock),
                     suffixIcon: toggle,
                   ),
                   validator: (v) => validatePassword(v, l),
@@ -132,7 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onFieldSubmitted: (_) => submit(),
                   decoration: InputDecoration(
                     labelText: l.passwordConfirmLabel,
-                    prefixIcon: const Icon(Icons.lock_reset_rounded),
+                    prefixIcon: const AppIcon(AppIcons.lockReset),
                   ),
                   validator: (v) => validateConfirm(v, _password.text, l),
                 ),
@@ -140,7 +138,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 AppButton.primary(
                   l.registerButton,
                   key: const Key('register'),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+                  icon: const AppIcon(AppIcons.forward, size: 20),
                   loading: loading,
                   onPressed: submit,
                 ),

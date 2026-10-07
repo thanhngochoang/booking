@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/calendar_days.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
@@ -206,7 +207,7 @@ class AvailabilityCalendar extends StatelessWidget {
             children: [
               IconButton(
                 tooltip: l.calendarPrevMonth,
-                icon: const Icon(Icons.chevron_left_rounded),
+                icon: const AppIcon(AppIcons.chevronLeft),
                 onPressed: change != null && _canPrev(m)
                     ? () => change(addMonths(m, -1))
                     : null,
@@ -225,7 +226,7 @@ class AvailabilityCalendar extends StatelessWidget {
               ),
               IconButton(
                 tooltip: l.calendarNextMonth,
-                icon: const Icon(Icons.chevron_right_rounded),
+                icon: const AppIcon(AppIcons.chevron),
                 onPressed: change != null && _canNext(m)
                     ? () => change(addMonths(m, 1))
                     : null,
@@ -475,9 +476,7 @@ class _AvailabilityCalendarSkeleton extends StatelessWidget {
             children: [
               for (var i = 0; i < 7; i++)
                 Expanded(
-                  child: Center(
-                    child: AppSkeleton.line(width: 20, height: 12),
-                  ),
+                  child: Center(child: AppSkeleton.line(width: 20, height: 12)),
                 ),
             ],
           ),

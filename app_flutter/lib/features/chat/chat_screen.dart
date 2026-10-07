@@ -69,7 +69,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _loadOlderMessages() async {
-    final streamMsgs = ref.read(chatMessagesProvider(widget.chatId)).value ?? [];
+    final streamMsgs =
+        ref.read(chatMessagesProvider(widget.chatId)).value ?? [];
     final all = [..._olderMessages, ...streamMsgs];
     if (all.isEmpty) return;
 
@@ -78,10 +79,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     setState(() => _isLoadingOlder = true);
     try {
-      final older = await ref.read(chatRepositoryProvider).olderMessages(
-            widget.chatId,
-            before: oldest,
-          );
+      final older = await ref
+          .read(chatRepositoryProvider)
+          .olderMessages(widget.chatId, before: oldest);
       if (mounted && older.isNotEmpty) {
         setState(() {
           _olderMessages.insertAll(0, older);
@@ -108,8 +108,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     if (res != null && mounted) {
-      final controller =
-          ref.read(chatControllerProvider(widget.chatId).notifier);
+      final controller = ref.read(
+        chatControllerProvider(widget.chatId).notifier,
+      );
       await controller.proposeReschedule(
         bookingId: booking.id,
         day: res.day,
@@ -125,7 +126,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final threadAsync = ref.watch(chatThreadProvider(widget.chatId));
     final messagesAsync = ref.watch(chatMessagesProvider(widget.chatId));
     final controllerState = ref.watch(chatControllerProvider(widget.chatId));
-    final controller = ref.watch(chatControllerProvider(widget.chatId).notifier);
+    final controller = ref.watch(
+      chatControllerProvider(widget.chatId).notifier,
+    );
     final bookingFeatures = ref.watch(bookingFeaturesProvider);
     final now = ref.watch(clockProvider)();
 
@@ -156,7 +159,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           data: (context, thread) {
             if (thread == null) {
-              return const Center(child: Text('Không tìm thấy cuộc trò chuyện'));
+              return const Center(
+                child: Text('Không tìm thấy cuộc trò chuyện'),
+              );
             }
 
             // Sync controller with stream messages
@@ -193,10 +198,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             final counterpartId = currentUserId == thread.customerId
                 ? thread.photographerId
                 : thread.customerId;
-            final counterpartProfile =
-                ref.watch(partyProfileProvider(counterpartId)).value;
-            final counterpartName = counterpartProfile?.displayName ??
-                (currentUserId == thread.customerId ? 'Nhiếp ảnh gia' : 'Khách hàng');
+            final counterpartProfile = ref
+                .watch(partyProfileProvider(counterpartId))
+                .value;
+            final counterpartName =
+                counterpartProfile?.displayName ??
+                (currentUserId == thread.customerId
+                    ? 'Nhiếp ảnh gia'
+                    : 'Khách hàng');
 
             // Has pending proposal?
             final hasPendingProposal = allMessages.any(
@@ -206,17 +215,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             );
 
             // Read only?
-            final isReadOnly = thread.readOnlyAt != null &&
-                now.isAfter(thread.readOnlyAt!);
+            final isReadOnly =
+                thread.readOnlyAt != null && now.isAfter(thread.readOnlyAt!);
 
             // Closed inquiry?
-            final isClosedInquiry = thread.kind == ChatKind.inquiry &&
+            final isClosedInquiry =
+                thread.kind == ChatKind.inquiry &&
                 thread.lastMessageAt != null &&
                 now.difference(thread.lastMessageAt!).inDays >= 14;
 
             // Inquiry 3-message limit reached?
             final isCustomer = currentUserId == thread.customerId;
-            final inquiryLimitReached = thread.kind == ChatKind.inquiry &&
+            final inquiryLimitReached =
+                thread.kind == ChatKind.inquiry &&
                 isCustomer &&
                 thread.photographerRepliedAt == null &&
                 thread.customerMessagesBeforeReply >= 3;
@@ -229,10 +240,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             return SafeArea(
               child: Column(
                 children: [
-                  ChatContextCard(
-                    thread: thread,
-                    serviceId: widget.serviceId,
-                  ),
+                  ChatContextCard(thread: thread, serviceId: widget.serviceId),
                   QuickActionsRow(
                     thread: thread,
                     booking: booking,
@@ -269,7 +277,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             horizontal: AppSpace.s3,
                             vertical: AppSpace.s2,
                           ),
-                          itemCount: reversedMessages.length +
+                          itemCount:
+                              reversedMessages.length +
                               (_isLoadingOlder ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (_isLoadingOlder &&
@@ -333,10 +342,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       child: Text(
                         l10n.chatReadOnly,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     )
                   else ...[
@@ -348,7 +355,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                         child: Text(
                           l10n.chatClosed,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurfaceVariant,
@@ -385,9 +393,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final counterpartId = currentUserId == thread.customerId
         ? thread.photographerId
         : thread.customerId;
-    final counterpartProfile =
-        ref.watch(partyProfileProvider(counterpartId)).value;
-    final counterpartName = counterpartProfile?.displayName ??
+    final counterpartProfile = ref
+        .watch(partyProfileProvider(counterpartId))
+        .value;
+    final counterpartName =
+        counterpartProfile?.displayName ??
         (currentUserId == thread.customerId ? 'Nhiếp ảnh gia' : 'Khách hàng');
     final avatarUrl = counterpartProfile?.avatarUrl;
 
@@ -402,17 +412,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           const SizedBox(width: AppSpace.s2),
           Flexible(
-            child: Text(
-              counterpartName,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(counterpartName, overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
       actions: [
         if (thread.bookingId != null)
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_horiz),
+            icon: const AppIcon(AppIcons.more),
             onSelected: (val) {
               if (val == 'view_booking') {
                 context.push('/b/${thread.bookingId}');
@@ -464,9 +471,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             await controller.answerReschedule(msg.id, accept: true);
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.chatDayTaken)),
-              );
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(l10n.chatDayTaken)));
             }
           }
         },

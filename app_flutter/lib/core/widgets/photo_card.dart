@@ -236,6 +236,9 @@ enum PhotoPillDot {
 
   /// Partly available, e.g. "Còn buổi chiều" (yellow).
   warn,
+
+  /// Not available, e.g. "Hết chỗ" (red).
+  bad,
 }
 
 /// A small white pill over a photo: availability ("Rảnh T7 này"), package and
@@ -263,9 +266,11 @@ class PhotoPill extends StatelessWidget {
             if (dot != null) ...[
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: dot == PhotoPillDot.ok
-                      ? AppColors.success
-                      : AppColors.warning,
+                  color: switch (dot!) {
+                    PhotoPillDot.ok => AppColors.success,
+                    PhotoPillDot.warn => AppColors.warning,
+                    PhotoPillDot.bad => AppColors.error,
+                  },
                   shape: BoxShape.circle,
                 ),
                 child: const SizedBox.square(dimension: 7),

@@ -3387,4 +3387,1385 @@ class AppLocalizationsVi extends AppLocalizations {
   String profileAwardsMore(int n) {
     return 'Xem cả $n giải';
   }
+
+  @override
+  String get notifSettingsTooltip => 'Cài đặt thông báo';
+
+  @override
+  String get notifTabAll => 'Tất cả';
+
+  @override
+  String get notifTabBooking => 'Đặt lịch';
+
+  @override
+  String get notifTabWork => 'Công việc';
+
+  @override
+  String get notifTabEvents => 'Sự kiện';
+
+  @override
+  String get notifTabSystem => 'Hệ thống';
+
+  @override
+  String notifUnreadHeader(int n) {
+    return '$n chưa đọc';
+  }
+
+  @override
+  String get notifMarkAllRead => 'Đánh dấu tất cả đã đọc';
+
+  @override
+  String get notifSectionToday => 'Hôm nay';
+
+  @override
+  String get notifSectionWeek => '7 ngày qua';
+
+  @override
+  String get notifSectionEarlier => 'Trước đó';
+
+  @override
+  String get notifEmptyTitle => 'Chưa có thông báo nào';
+
+  @override
+  String get notifEmptyBody =>
+      'Lịch hẹn, tin nhắn và huy hiệu của bạn sẽ hiện ở đây.';
+
+  @override
+  String get notifEmptyCtaCustomer => 'Khám phá nhiếp ảnh gia';
+
+  @override
+  String get notifEmptyCtaPhotographer => 'Mở Công việc';
+
+  @override
+  String notifEmptyFiltered(String tab) {
+    return 'Chưa có thông báo nào trong mục $tab';
+  }
+
+  @override
+  String get notifEmptyFilteredBody => 'Chọn mục khác để xem thêm.';
+
+  @override
+  String get notifTargetGone => 'Nội dung này không còn';
+
+  @override
+  String get notifMuted => 'Đã tắt loại thông báo này';
+
+  @override
+  String get notifUndo => 'Hoàn tác';
+
+  @override
+  String get notifTimeNow => 'Vừa xong';
+
+  @override
+  String notifTimeMinutes(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String notifTimeHours(int n) {
+    return '$n giờ';
+  }
+
+  @override
+  String get notifTimeYesterday => 'Hôm qua';
+
+  @override
+  String notifTimeDays(int n) {
+    return '$n ngày';
+  }
+
+  @override
+  String notifRowSemantics(int n, String title) {
+    return 'Thông báo, $n thông báo chưa đọc, $title';
+  }
+
+  @override
+  String notifRowSemanticsRead(String title) {
+    return 'Thông báo, $title';
+  }
+
+  @override
+  String get notifLoadMoreError => 'Chưa tải thêm được. Kéo xuống để thử lại.';
+
+  @override
+  String get settingsNotificationsBody => 'Push, giờ yên lặng, nhắc buổi chụp';
+
+  @override
+  String get notifSettingsOsOffTitle => 'Thông báo đang tắt trên máy';
+
+  @override
+  String get notifSettingsOsOffBody =>
+      'Bạn sẽ không nhận push cho tới khi bật lại.';
+
+  @override
+  String get notifSettingsOpenSettings => 'Mở Cài đặt';
+
+  @override
+  String get notifSettingsColType => 'Loại';
+
+  @override
+  String get notifSettingsColPush => 'Push';
+
+  @override
+  String get notifSettingsColInApp => 'Trong app';
+
+  @override
+  String get notifSettingsPushOffOs => 'Đang tắt trên máy';
+
+  @override
+  String get notifSettingsCatBooking => 'Đặt lịch và thanh toán';
+
+  @override
+  String get notifSettingsCatJobs => 'Việc đăng tuyển';
+
+  @override
+  String get notifSettingsCatInstant => 'Chụp ngay';
+
+  @override
+  String get notifSettingsCatEvents => 'Sự kiện';
+
+  @override
+  String get notifSettingsCatChat => 'Tin nhắn';
+
+  @override
+  String get notifSettingsCatBadges => 'Huy hiệu và đánh giá';
+
+  @override
+  String get notifSettingsCatPromo => 'Khuyến mãi';
+
+  @override
+  String notifSwitchOn(String group, String channel) {
+    return '$group, $channel, bật';
+  }
+
+  @override
+  String notifSwitchOff(String group, String channel) {
+    return '$group, $channel, tắt';
+  }
+
+  @override
+  String notifSwitchLocked(String group, String channel) {
+    return '$group, $channel, luôn bật';
+  }
+
+  @override
+  String get notifSettingsQuietTitle => 'Giờ yên lặng';
+
+  @override
+  String notifSettingsQuietLine(String from, String to) {
+    return '$from–$to · chỉ thông báo quan trọng vẫn có âm';
+  }
+
+  @override
+  String get notifSettingsQuietSwitchOn => 'Giờ yên lặng, bật';
+
+  @override
+  String get notifSettingsQuietSwitchOff => 'Giờ yên lặng, tắt';
+
+  @override
+  String get notifSettingsPickFrom => 'Yên lặng từ';
+
+  @override
+  String get notifSettingsPickTo => 'Yên lặng đến';
+
+  @override
+  String get notifSettingsRemindersTitle => 'Nhắc buổi chụp';
+
+  @override
+  String get notifSettingsReminder24 => '24 giờ';
+
+  @override
+  String get notifSettingsReminder2 => '2 giờ';
+
+  @override
+  String get notifSettingsSaveError => 'Không lưu được, thử lại';
+
+  @override
+  String primerTitleCustomerBooking(String name) {
+    return 'Bật thông báo để biết khi $name nhận lịch';
+  }
+
+  @override
+  String get primerTitleCustomerInstant =>
+      'Bật thông báo để biết khi có người nhận chụp ngay';
+
+  @override
+  String get primerTitlePhotographer =>
+      'Bật thông báo để không bỏ lỡ lời mời việc';
+
+  @override
+  String get primerBenefit1 => 'Biết ngay khi lịch được nhận hoặc thay đổi';
+
+  @override
+  String get primerBenefit2 => 'Nhắc trước giờ chụp, không lỡ hẹn';
+
+  @override
+  String get primerBenefit3 => 'Tin nhắn mới khi app đang ở nền';
+
+  @override
+  String get primerNote => 'Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.';
+
+  @override
+  String get primerEnabled => 'Đã bật thông báo';
+
+  @override
+  String get badgesTitle => 'Huy hiệu';
+
+  @override
+  String get badgesFromReviews => 'Từ đánh giá';
+
+  @override
+  String get badgesFromSystem => 'Từ hệ thống';
+
+  @override
+  String badgesFraction(int a, int b) {
+    return '$a / $b';
+  }
+
+  @override
+  String badgesSectionSemantics(String title, int a, int b) {
+    return '$title, đạt $a trên $b';
+  }
+
+  @override
+  String get badgesEmptyTitle => 'Chưa có huy hiệu nào';
+
+  @override
+  String get badgesEmptyBody =>
+      'Huy hiệu sẽ hiện ở đây khi người này đạt được.';
+
+  @override
+  String get badgesLoadError => 'Không tải được huy hiệu';
+
+  @override
+  String badgesNearest(String name, int cur, int target) {
+    return 'Gần đạt nhất: $name · $cur / $target';
+  }
+
+  @override
+  String badgesAwardedOn(String date) {
+    return 'Đạt ngày $date';
+  }
+
+  @override
+  String badgesSheetProgress(int cur, int target) {
+    return '$cur / $target';
+  }
+
+  @override
+  String get earningsTitle => 'Thu nhập';
+
+  @override
+  String get earningsNotice =>
+      'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.';
+
+  @override
+  String get earningsHeld => 'Đang giữ';
+
+  @override
+  String get earningsSoon => 'Sắp nhận';
+
+  @override
+  String get earningsReceived => 'Đã nhận';
+
+  @override
+  String get earningsStateHeld => 'Đang giữ';
+
+  @override
+  String get earningsStateReleased => 'Chờ chi trả';
+
+  @override
+  String earningsStatePaid(String date) {
+    return 'Đã chuyển $date';
+  }
+
+  @override
+  String get earningsStateDispute => 'Đang khiếu nại';
+
+  @override
+  String get earningsAddAccount => 'Thêm tài khoản để nhận tiền';
+
+  @override
+  String get earningsAddAccountSub => 'Cần có trước khi chuyển khoản';
+
+  @override
+  String get earningsItems => 'Các khoản';
+
+  @override
+  String earningsMonth(int month) {
+    return 'Tháng $month';
+  }
+
+  @override
+  String earningsMonthYear(int month, int year) {
+    return 'Tháng $month/$year';
+  }
+
+  @override
+  String get earningsPayoutFailed => 'Chuyển khoản lỗi, kiểm tra tài khoản';
+
+  @override
+  String earningsHoldReason(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String get earningsHoldDispute => 'Khách đã báo vấn đề, đang chờ xử lý';
+
+  @override
+  String get earningsHoldPayoutOnHold => 'Lô chi trả đang tạm giữ';
+
+  @override
+  String get earningsCustomerFallback => 'Khách';
+
+  @override
+  String get earningsEmptyTitle => 'Chưa có khoản thu nào';
+
+  @override
+  String get earningsEmptyBody =>
+      'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.';
+
+  @override
+  String get earningsMore => 'Xem thêm';
+
+  @override
+  String get earningsLoadError => 'Không tải được thu nhập';
+
+  @override
+  String get payoutAccountTitle => 'Tài khoản nhận tiền';
+
+  @override
+  String get profileEarnings => 'Thu nhập';
+
+  @override
+  String get profileEarningsSub => 'Tiền đang giữ, sắp nhận và đã nhận';
+
+  @override
+  String get payoutAccountIntro =>
+      'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.';
+
+  @override
+  String get payoutAccountBank => 'Ngân hàng';
+
+  @override
+  String get payoutAccountBankPick => 'Chọn ngân hàng';
+
+  @override
+  String get payoutAccountBankSearch => 'Tìm ngân hàng';
+
+  @override
+  String get payoutAccountBankNone => 'Không tìm thấy ngân hàng';
+
+  @override
+  String get payoutAccountNumber => 'Số tài khoản';
+
+  @override
+  String get payoutAccountHolder => 'Tên chủ tài khoản';
+
+  @override
+  String get payoutAccountSave => 'Lưu tài khoản';
+
+  @override
+  String get payoutAccountHint =>
+      'Tên chủ tài khoản phải trùng tên bạn đã xác minh. Số tài khoản được mã hoá và chỉ hiện 4 số cuối.';
+
+  @override
+  String payoutAccountMasked(String last4) {
+    return '•••• $last4';
+  }
+
+  @override
+  String get payoutAccountChange => 'Đổi tài khoản';
+
+  @override
+  String get payoutAccountNumberError => 'Số tài khoản gồm 6–20 chữ số';
+
+  @override
+  String get payoutAccountHolderError =>
+      'Nhập họ tên viết hoa không dấu, 2–50 chữ cái';
+
+  @override
+  String get payoutAccountChangeTitle => 'Đổi tài khoản nhận tiền?';
+
+  @override
+  String get payoutAccountChangeBody =>
+      'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.';
+
+  @override
+  String get payoutAccountChangeConfirm => 'Đổi tài khoản';
+
+  @override
+  String get payoutAccountReauthTitle => 'Xác nhận lại để đổi tài khoản';
+
+  @override
+  String get payoutAccountReauthBody =>
+      'Vì an toàn, hãy đăng nhập lại trước khi đổi tài khoản nhận tiền.';
+
+  @override
+  String get payoutAccountReauthPassword => 'Mật khẩu';
+
+  @override
+  String get payoutAccountReauthGo => 'Xác nhận';
+
+  @override
+  String get payoutAccountReauthWrong => 'Mật khẩu chưa đúng';
+
+  @override
+  String get payoutAccountSaved => 'Đã lưu tài khoản nhận tiền';
+
+  @override
+  String get payoutAccountSaveError => 'Không lưu được. Thử lại';
+
+  @override
+  String get payoutAccountBusy =>
+      'Đang chuyển một lô tiền, thử lại sau ít phút';
+
+  @override
+  String get eventHostPlatform => 'Do ứng dụng tổ chức';
+
+  @override
+  String get eventsTitle => 'Sự kiện';
+
+  @override
+  String get eventsAll => 'Tất cả';
+
+  @override
+  String get eventsSortSoonest => 'Sớm nhất';
+
+  @override
+  String get eventsSortNear => 'Gần tôi';
+
+  @override
+  String get eventsEmpty => 'Chưa có sự kiện';
+
+  @override
+  String get eventsEmptyBody => 'Sự kiện chụp ảnh mới sẽ hiện ở đây.';
+
+  @override
+  String get eventsCreate => 'Tạo sự kiện';
+
+  @override
+  String get eventsNeedArea => 'Chọn khu vực để xem sự kiện gần bạn';
+
+  @override
+  String get eventsMyTickets => 'Vé của tôi';
+
+  @override
+  String get eventJoin => 'Đăng ký tham gia';
+
+  @override
+  String get eventPerPerson => 'mỗi người';
+
+  @override
+  String get eventViewTicket => 'Xem vé';
+
+  @override
+  String get eventManage => 'Quản lý';
+
+  @override
+  String get eventCancelled => 'Sự kiện đã huỷ';
+
+  @override
+  String get eventEnded => 'Sự kiện đã kết thúc';
+
+  @override
+  String get eventClosed => 'Đã đóng đăng ký';
+
+  @override
+  String get eventPaymentsSoon => 'Sắp mở thanh toán';
+
+  @override
+  String get eventTabInfo => 'Thông tin';
+
+  @override
+  String get eventTabTimeline => 'Timeline';
+
+  @override
+  String get eventTabChat => 'Nhóm chat';
+
+  @override
+  String get eventHostRole => 'Chủ sự kiện';
+
+  @override
+  String eventHostRoleRating(String rating) {
+    return 'Chủ sự kiện · ★ $rating';
+  }
+
+  @override
+  String get eventProfile => 'Hồ sơ';
+
+  @override
+  String eventMeetingPoint(String place) {
+    return 'Điểm hẹn: $place';
+  }
+
+  @override
+  String eventCapacityLeft(int n) {
+    return 'Còn $n chỗ';
+  }
+
+  @override
+  String get eventGone => 'Sự kiện không còn';
+
+  @override
+  String get eventGoneBody => 'Sự kiện này đã bị xoá hoặc chưa được đăng.';
+
+  @override
+  String get eventLinkCopied => 'Đã sao chép liên kết';
+
+  @override
+  String get eventShareTooltip => 'Chia sẻ sự kiện';
+
+  @override
+  String eventWeekdayLong(String weekday) {
+    String _temp0 = intl.Intl.selectLogic(weekday, {
+      '1': 'Thứ hai',
+      '2': 'Thứ ba',
+      '3': 'Thứ tư',
+      '4': 'Thứ năm',
+      '5': 'Thứ sáu',
+      '6': 'Thứ bảy',
+      'other': 'Chủ nhật',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get eventFaqTitle => 'Câu hỏi thường gặp';
+
+  @override
+  String eventSupportLine(String email) {
+    return 'Cần hỏi thêm? Gửi email tới $email';
+  }
+
+  @override
+  String get eventChatLocked => 'Đăng ký để vào nhóm';
+
+  @override
+  String get eventChatLockedBody =>
+      'Chỉ người đã đăng ký mới vào được nhóm chat của sự kiện.';
+
+  @override
+  String get eventChatSoon => 'Nhóm chat sắp mở';
+
+  @override
+  String get eventTimelineSoon => 'Timeline sắp mở';
+
+  @override
+  String get eventsManage => 'Sự kiện của tôi';
+
+  @override
+  String get eventRegisterTitle => 'Đăng ký tham gia';
+
+  @override
+  String get registerTickets => 'Số vé';
+
+  @override
+  String registerTicketsHint(int n) {
+    return 'Tối đa 4 vé, còn $n chỗ';
+  }
+
+  @override
+  String get registerName => 'Họ tên người tham gia';
+
+  @override
+  String get registerNameError => 'Nhập họ tên, tối đa 60 ký tự';
+
+  @override
+  String get registerPhone => 'Số điện thoại';
+
+  @override
+  String get registerChangePhone => 'Đổi';
+
+  @override
+  String get registerFree => 'Xác nhận đăng ký';
+
+  @override
+  String get registerSoldOut => 'Hết chỗ';
+
+  @override
+  String get registerDone => 'Đã đăng ký';
+
+  @override
+  String get registerOpenChat => 'Vào nhóm chat';
+
+  @override
+  String get registerError => 'Chưa đăng ký được. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get registerLess => 'Bớt một vé';
+
+  @override
+  String get registerMore => 'Thêm một vé';
+
+  @override
+  String get ticketsTab => 'Vé sự kiện';
+
+  @override
+  String get bookingsTabShoots => 'Buổi chụp';
+
+  @override
+  String get ticketCode => 'Mã vé';
+
+  @override
+  String ticketCancelRefund(int pct) {
+    return 'Huỷ vé · hoàn $pct%';
+  }
+
+  @override
+  String get ticketCancelNoRefund => 'Huỷ vé · không hoàn tiền';
+
+  @override
+  String get ticketAttended => 'Đã tham gia';
+
+  @override
+  String get ticketRefunded => 'Đã hoàn tiền';
+
+  @override
+  String get ticketRefunding => 'Đang hoàn';
+
+  @override
+  String get ticketShowHint => 'Đưa mã này cho chủ sự kiện khi đến điểm hẹn.';
+
+  @override
+  String get ticketsEmpty => 'Chưa có vé sự kiện';
+
+  @override
+  String get ticketsBrowse => 'Xem sự kiện';
+
+  @override
+  String ticketCancelConfirmTitle(String event) {
+    return 'Huỷ vé $event?';
+  }
+
+  @override
+  String get ticketCancelFreeBody => 'Chỗ của bạn sẽ được nhả cho người khác.';
+
+  @override
+  String ticketCancelRefundBody(int pct) {
+    return 'Bạn được hoàn $pct% tiền vé.';
+  }
+
+  @override
+  String get ticketCancelNoRefundBody =>
+      'Còn dưới 48 giờ nên không được hoàn tiền vé. Tiền vé được giữ tới khi sự kiện kết thúc.';
+
+  @override
+  String get ticketKeep => 'Giữ vé';
+
+  @override
+  String get ticketCancelDone => 'Đã huỷ vé';
+
+  @override
+  String get ticketCancelUsed => 'Vé đã dùng, không huỷ được';
+
+  @override
+  String get ticketQrClose => 'Đóng';
+
+  @override
+  String get createEventTitle => 'Tạo sự kiện';
+
+  @override
+  String get createEventInfo => 'Thông tin sự kiện';
+
+  @override
+  String get createEventCover => 'Thêm ảnh bìa 16:10';
+
+  @override
+  String get createEventCoverChange => 'Đổi ảnh bìa';
+
+  @override
+  String get createEventName => 'Tên sự kiện';
+
+  @override
+  String get createEventNameRequired => 'Tên sự kiện · bắt buộc';
+
+  @override
+  String get createEventType => 'Loại sự kiện';
+
+  @override
+  String get createEventDesc => 'Mô tả';
+
+  @override
+  String get createEventHost => 'Tổ chức bởi';
+
+  @override
+  String get createEventHostPlatform => 'Nền tảng';
+
+  @override
+  String get createEventHostLater => 'Tổ chức hộ một nhiếp ảnh gia sẽ có sau.';
+
+  @override
+  String get createEventContinue => 'Tiếp tục';
+
+  @override
+  String get createEventSaveDraftAsk => 'Lưu nháp?';
+
+  @override
+  String get createEventDraftKeep => 'Lưu';
+
+  @override
+  String get createEventDraftDiscard => 'Bỏ';
+
+  @override
+  String get createEventSchedule => 'Lịch và vé';
+
+  @override
+  String get createEventDay => 'Ngày';
+
+  @override
+  String get createEventStart => 'Giờ bắt đầu';
+
+  @override
+  String get createEventEnd => 'Kết thúc';
+
+  @override
+  String get createEventCapacity => 'Sức chứa';
+
+  @override
+  String get createEventCapacityUnit => 'người';
+
+  @override
+  String get createEventPlace => 'Địa điểm';
+
+  @override
+  String get createEventMeeting => 'Điểm hẹn';
+
+  @override
+  String get createEventArea => 'Khu vực';
+
+  @override
+  String get createEventAreaPick => 'Chọn khu vực';
+
+  @override
+  String get createEventUseLocation => 'Dùng vị trí hiện tại';
+
+  @override
+  String get createEventLocationUsed => 'Đã lấy vị trí hiện tại';
+
+  @override
+  String get createEventHashtag => 'Hashtag sự kiện';
+
+  @override
+  String get createEventHashtagTaken => 'Hashtag này đã có sự kiện khác dùng';
+
+  @override
+  String get createEventPrice => 'Giá mỗi người (₫)';
+
+  @override
+  String get createEventDeadline => 'Hạn đăng ký';
+
+  @override
+  String get createEventDeadlineAuto => 'Tự động';
+
+  @override
+  String get createEventFreeHint => 'Để giá bằng 0 nếu không thu phí.';
+
+  @override
+  String get createEventEscrowHint =>
+      'Tiền vé được giữ trên ứng dụng và chuyển cho bạn sau khi sự kiện kết thúc.';
+
+  @override
+  String get createEventPreview => 'Xem trước';
+
+  @override
+  String get createEventSaveDraft => 'Lưu nháp';
+
+  @override
+  String get createEventPublish => 'Đăng sự kiện';
+
+  @override
+  String get createEventPublished => 'Đã đăng sự kiện';
+
+  @override
+  String get createEventDraftSaved => 'Đã lưu nháp';
+
+  @override
+  String get createEventDayTaken => 'Bạn đã có lịch hôm đó';
+
+  @override
+  String createEventErrorSummary(int n) {
+    return 'Cần sửa $n mục trước khi đăng';
+  }
+
+  @override
+  String get createEventPickDay => 'Chọn ngày';
+
+  @override
+  String get createEventPickTime => 'Chọn giờ';
+
+  @override
+  String get createEventErrCover => 'Thêm ảnh bìa cho sự kiện';
+
+  @override
+  String get createEventErrTitle => 'Nhập tên sự kiện';
+
+  @override
+  String get createEventErrTitleLong => 'Tên sự kiện tối đa 80 ký tự';
+
+  @override
+  String get createEventErrType => 'Chọn loại sự kiện';
+
+  @override
+  String get createEventErrDescLong => 'Mô tả tối đa 1000 ký tự';
+
+  @override
+  String get createEventErrDay => 'Chọn ngày diễn ra';
+
+  @override
+  String get createEventErrStart => 'Chọn giờ bắt đầu';
+
+  @override
+  String get createEventErrEnd => 'Chọn giờ kết thúc';
+
+  @override
+  String get createEventErrEndBeforeStart =>
+      'Giờ kết thúc phải sau giờ bắt đầu';
+
+  @override
+  String get createEventErrSameDay => 'Sự kiện diễn ra trong một ngày';
+
+  @override
+  String get createEventErrStartSoon =>
+      'Giờ bắt đầu phải sau bây giờ ít nhất 2 giờ';
+
+  @override
+  String get createEventErrCapacity => 'Sức chứa từ 1 đến 500 người';
+
+  @override
+  String get createEventErrPlace => 'Nhập tên địa điểm';
+
+  @override
+  String get createEventErrPlacePoint =>
+      'Chọn khu vực hoặc dùng vị trí hiện tại';
+
+  @override
+  String get createEventErrPrice =>
+      'Giá tiền là bội số của 1.000₫, tối đa 100.000.000₫';
+
+  @override
+  String get createEventErrPriceRequired => 'Nhập giá, để 0 nếu không thu phí';
+
+  @override
+  String get createEventErrDeadline => 'Hạn đăng ký phải trước giờ bắt đầu';
+
+  @override
+  String get createEventErrHashtag => 'Hashtag gồm 3–40 chữ không dấu hoặc số';
+
+  @override
+  String get createEventFailed =>
+      'Không đăng được sự kiện. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get createEventSaveFailed =>
+      'Không lưu được nháp. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get createEventCoverFailed => 'Không tải được ảnh bìa. Thử lại nhé.';
+
+  @override
+  String get createEventSetupTitle => 'Hoàn thiện hồ sơ để tạo sự kiện';
+
+  @override
+  String get createEventSetupBody =>
+      'Bạn cần hoàn tất hồ sơ nhiếp ảnh gia trước khi tổ chức sự kiện.';
+
+  @override
+  String get createEventSetupCta => 'Hoàn thiện hồ sơ';
+
+  @override
+  String get createEventNotAllowed =>
+      'Chỉ nhiếp ảnh gia và nhân viên mới tạo được sự kiện.';
+
+  @override
+  String get eventStatusDraft => 'Nháp';
+
+  @override
+  String get eventStatusOpen => 'Đang mở';
+
+  @override
+  String get eventStatusFull => 'Hết chỗ';
+
+  @override
+  String get eventStatusClosed => 'Đã đóng';
+
+  @override
+  String get eventStatusCancelled => 'Đã huỷ';
+
+  @override
+  String get eventStatusCompleted => 'Đã kết thúc';
+
+  @override
+  String get manageTitle => 'Quản lý sự kiện';
+
+  @override
+  String get manageRegistered => 'Đã đăng ký';
+
+  @override
+  String get manageRevenue => 'Doanh thu';
+
+  @override
+  String get manageDaysLeft => 'Ngày còn lại';
+
+  @override
+  String get manageParticipants => 'Người tham gia';
+
+  @override
+  String get manageEmpty => 'Chưa có người đăng ký';
+
+  @override
+  String get manageShare => 'Chia sẻ sự kiện';
+
+  @override
+  String get manageViewPage => 'Xem trang sự kiện';
+
+  @override
+  String get manageBroadcast => 'Nhắn nhóm';
+
+  @override
+  String get manageBroadcastSoon => 'Nhắn nhóm sắp mở';
+
+  @override
+  String get manageScan => 'Quét mã check‑in';
+
+  @override
+  String get manageCancel => 'Huỷ sự kiện · hoàn tiền mọi vé';
+
+  @override
+  String get manageCancelTitle => 'Huỷ sự kiện này?';
+
+  @override
+  String manageCancelBody(int n, String amount) {
+    return '$n vé · hoàn $amount';
+  }
+
+  @override
+  String get manageNoRefund => 'Không có khoản hoàn';
+
+  @override
+  String get manageCancelConfirm => 'Huỷ sự kiện';
+
+  @override
+  String get manageCancelKeep => 'Giữ sự kiện';
+
+  @override
+  String get manageCancelDone => 'Đã huỷ sự kiện';
+
+  @override
+  String get manageCancelFailed => 'Không huỷ được sự kiện. Thử lại nhé.';
+
+  @override
+  String get manageGone => 'Không tìm thấy sự kiện';
+
+  @override
+  String get managePaid => 'Đã trả';
+
+  @override
+  String get manageUnpaid => 'Chờ trả';
+
+  @override
+  String get manageCheckedIn => 'Đã vào';
+
+  @override
+  String manageTicketQty(int n) {
+    return '$n vé';
+  }
+
+  @override
+  String manageTicketCode(int n, String code) {
+    return '$n vé · $code';
+  }
+
+  @override
+  String get manageNoMoney => '—';
+
+  @override
+  String get manageScanClosed => 'Đã hết giờ check‑in';
+
+  @override
+  String get manageInviteTitle => 'Lời mời tổ chức sự kiện';
+
+  @override
+  String manageInviteBody(String time) {
+    return 'Nhân viên đã tạo sự kiện này cho bạn. Hãy trả lời trước $time, quá hạn sự kiện sẽ bị huỷ.';
+  }
+
+  @override
+  String get manageInviteAccept => 'Chấp nhận';
+
+  @override
+  String get manageInviteDecline => 'Từ chối';
+
+  @override
+  String get manageInviteAccepted => 'Đã chấp nhận, nhân viên sẽ đăng sự kiện';
+
+  @override
+  String get manageInviteDeclined => 'Đã từ chối lời mời';
+
+  @override
+  String get manageInviteFailed => 'Không gửi được câu trả lời. Thử lại nhé.';
+
+  @override
+  String checkinOk(String name, int count) {
+    return 'Đã vào · $name · $count vé';
+  }
+
+  @override
+  String get checkinInvalid => 'Vé không hợp lệ';
+
+  @override
+  String get checkinUsed => 'Vé đã dùng';
+
+  @override
+  String get checkinManual => 'Nhập mã vé';
+
+  @override
+  String get checkinManualHint => 'Mã vé, ví dụ VE-7K2Q-0420';
+
+  @override
+  String get checkinManualSubmit => 'Kiểm tra';
+
+  @override
+  String get checkinNext => 'Quét tiếp';
+
+  @override
+  String get checkinScanTitle => 'Quét mã vé';
+
+  @override
+  String get checkinCameraOff =>
+      'Không mở được camera. Nhập mã vé để check‑in.';
+
+  @override
+  String get checkinFailed => 'Không check‑in được. Thử lại nhé.';
+
+  @override
+  String get myEventsTitle => 'Sự kiện của tôi';
+
+  @override
+  String get myEventsDraft => 'Nháp';
+
+  @override
+  String get myEventsEmpty => 'Bạn chưa tổ chức sự kiện nào';
+
+  @override
+  String get myEventsEmptyBody => 'Sự kiện bạn tạo sẽ hiện ở đây.';
+
+  @override
+  String get myEventsSeeAll => 'Xem tất cả';
+
+  @override
+  String get settingsManageEvents => 'Quản lý sự kiện';
+
+  @override
+  String get createPostTabPost => 'Bài đăng';
+
+  @override
+  String get createPostTabEvent => 'Sự kiện';
+
+  @override
+  String get createEventLocationFailed =>
+      'Không lấy được vị trí. Hãy chọn khu vực nhé.';
+
+  @override
+  String get createEventDeadlineReset => 'Dùng hạn tự động';
+
+  @override
+  String get checkinNotYet =>
+      'Chưa tới ngày diễn ra. Check‑in mở từ 00:00 hôm đó.';
+
+  @override
+  String get eventDateUnset => 'Chưa chọn ngày';
+
+  @override
+  String timelineCount(int n) {
+    return '$n bài';
+  }
+
+  @override
+  String timelinePost(String tag) {
+    return 'Đăng ảnh với $tag';
+  }
+
+  @override
+  String get timelineEmpty => 'Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!';
+
+  @override
+  String get timelinePending => 'Chờ duyệt';
+
+  @override
+  String get timelineVisibleTab => 'Đã đăng';
+
+  @override
+  String get timelinePendingEmpty => 'Không có bài nào chờ duyệt.';
+
+  @override
+  String get timelineClosed => 'Timeline đã đóng đăng mới';
+
+  @override
+  String get timelineHide => 'Ẩn khỏi timeline';
+
+  @override
+  String get timelineApprove => 'Duyệt';
+
+  @override
+  String get timelineReport => 'Báo cáo';
+
+  @override
+  String get timelineReportSoon => 'Sắp có';
+
+  @override
+  String get timelineHostSuffix => 'chủ sự kiện';
+
+  @override
+  String get timelineModerateFailed => 'Không thực hiện được. Thử lại nhé.';
+
+  @override
+  String timelineItemLabel(String name) {
+    return 'Ảnh của $name';
+  }
+
+  @override
+  String get timelineMenuHint => 'Nhấn giữ để mở menu';
+
+  @override
+  String get shareTitle => 'Chia sẻ ảnh sự kiện';
+
+  @override
+  String get shareSend => 'Đăng';
+
+  @override
+  String get shareCaptionHint => 'Viết chú thích…';
+
+  @override
+  String get shareFailed => 'Không đăng được ảnh. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get shareClosed => 'Timeline đã đóng đăng mới.';
+
+  @override
+  String get shareDone => 'Đã đăng lên timeline';
+
+  @override
+  String get shareDiscardTitle => 'Bỏ bài đang soạn?';
+
+  @override
+  String get shareKeepEditing => 'Tiếp tục soạn';
+
+  @override
+  String chatMembers(int n) {
+    return '$n thành viên';
+  }
+
+  @override
+  String get chatPinned => 'Ghim';
+
+  @override
+  String get eventChatInput => 'Nhắn cho nhóm…';
+
+  @override
+  String get eventChatClosed => 'Nhóm đã đóng';
+
+  @override
+  String get chatMutedNote => 'Bạn đang bị tắt tiếng trong nhóm';
+
+  @override
+  String get chatModOnly => 'Chỉ điều hành được nhắn';
+
+  @override
+  String chatJoined(String name) {
+    return '$name đã vào nhóm';
+  }
+
+  @override
+  String get chatPin => 'Ghim';
+
+  @override
+  String get chatUnpin => 'Bỏ ghim';
+
+  @override
+  String get chatDelete => 'Xoá';
+
+  @override
+  String get chatDeleted => 'Tin nhắn đã bị xoá';
+
+  @override
+  String get chatMute24h => 'Tắt tiếng 24 giờ';
+
+  @override
+  String get chatUnmute => 'Bật tiếng';
+
+  @override
+  String get chatRemove => 'Gỡ khỏi nhóm';
+
+  @override
+  String chatRemoveTitle(String name) {
+    return 'Gỡ $name khỏi nhóm?';
+  }
+
+  @override
+  String get chatMemberList => 'Thành viên';
+
+  @override
+  String get chatMemberModerator => 'Điều hành';
+
+  @override
+  String get chatMemberMuted => 'Đang bị tắt tiếng';
+
+  @override
+  String get chatMuteGroup => 'Tắt tiếng nhóm';
+
+  @override
+  String get chatUnmuteGroup => 'Bật tiếng nhóm';
+
+  @override
+  String get chatRateLimited => 'Bạn nhắn quá nhanh. Thử lại sau ít giây nhé.';
+
+  @override
+  String get chatActionFailed => 'Không thực hiện được. Thử lại nhé.';
+
+  @override
+  String get chatLockedAction => 'Xem sự kiện';
+
+  @override
+  String chatMessageOf(String name, String text) {
+    return '$name: $text';
+  }
+
+  @override
+  String get manageAnnounceTitle => 'Ghim thông báo vào nhóm';
+
+  @override
+  String get manageAnnounceHint => 'Viết thông báo cho cả nhóm';
+
+  @override
+  String get manageAnnounceSend => 'Ghim';
+
+  @override
+  String get manageAnnounceDone => 'Đã ghim thông báo vào nhóm';
+
+  @override
+  String get manageAnnounceFailed => 'Không ghim được thông báo. Thử lại nhé.';
+
+  @override
+  String get managePending => 'Bài chờ duyệt';
+
+  @override
+  String postEventChip(String title) {
+    return 'Sự kiện: $title';
+  }
+
+  @override
+  String get chatRemovedSection => 'Đã mời ra';
+
+  @override
+  String get chatRestore => 'Cho vào lại';
+
+  @override
+  String get chatRestoreHint =>
+      'Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.';
+
+  @override
+  String get manageCheckinLink => 'Check‑in';
+
+  @override
+  String get registerTotal => 'Tổng thanh toán';
+
+  @override
+  String registerLine(int n, String price) {
+    return '$n vé × $price';
+  }
+
+  @override
+  String registerPay(String amount) {
+    return 'Thanh toán $amount';
+  }
+
+  @override
+  String registerHold(String time) {
+    return 'Giữ chỗ còn $time';
+  }
+
+  @override
+  String get registerHoldExpired => 'Chỗ giữ đã hết hạn';
+
+  @override
+  String get registerPolicy =>
+      'Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.';
+
+  @override
+  String get escrowNoticeTicket =>
+      'Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.';
+
+  @override
+  String get ticketPayContinue => 'Thanh toán tiếp';
+
+  @override
+  String get ticketHoldExpired => 'Hết hạn';
+
+  @override
+  String ticketRefundAmount(String amount) {
+    return 'Bạn nhận lại $amount';
+  }
+
+  @override
+  String get ticketNoRefund =>
+      'Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.';
+
+  @override
+  String get fakeTicketPayTitle => 'Thanh toán thử';
+
+  @override
+  String get payMethodBankQr => 'Chuyển khoản QR';
+
+  @override
+  String get payMethodMomo => 'MoMo';
+
+  @override
+  String get payMethodZaloPay => 'ZaloPay';
+
+  @override
+  String get payMethodLabel => 'Phương thức thanh toán';
+
+  @override
+  String get ticketCancelledRefunded => 'Đã huỷ · đã hoàn tiền';
+
+  @override
+  String get ticketCancelledRefunding => 'Đã huỷ · đang hoàn tiền';
+
+  @override
+  String get ticketPayFailed =>
+      'Chưa thanh toán được. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get ticketPayFakeDisabled =>
+      'Thanh toán thử chỉ dùng được trên bản thử nghiệm.';
+
+  @override
+  String eventRegisteredOf(int registered, int capacity) {
+    return '$registered/$capacity đã đăng ký';
+  }
+
+  @override
+  String createEventFaqHint(int max) {
+    return 'Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa $max câu.';
+  }
+
+  @override
+  String createEventFaqQuestion(int n) {
+    return 'Câu hỏi $n';
+  }
+
+  @override
+  String get createEventFaqAnswer => 'Trả lời';
+
+  @override
+  String get createEventFaqAdd => 'Thêm câu hỏi';
+
+  @override
+  String createEventFaqRemove(int n) {
+    return 'Xoá câu hỏi $n';
+  }
+
+  @override
+  String get createEventErrFaq => 'Nhập đủ cả câu hỏi và câu trả lời.';
 }

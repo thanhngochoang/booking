@@ -7,6 +7,10 @@ import type { PaymentProvider } from './booking.js';
 
 export class FakePaymentGateway implements PaymentGateway {
   readonly paidPayments = new Set<string>();
+  /** Refunds the fake has paid back, by refund id (a repeated id is the same refund, never a second one). */
+  readonly issuedRefunds = new Map<string, number>();
+  /** Every `issueRefund` call, by refund id (repeats included). */
+  readonly refundCalls: string[] = [];
   refundFailureId?: string;
 
   async createDepositIntent(params: {
@@ -29,9 +33,11 @@ export class FakePaymentGateway implements PaymentGateway {
     readonly provider: PaymentProvider;
     readonly providerRef?: string;
   }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }> {
+    this.refundCalls.push(params.refundId);
     if (this.refundFailureId === params.refundId) {
       return { success: false, error: 'simulated_refund_failure' };
     }
+    if (!this.issuedRefunds.has(params.refundId)) this.issuedRefunds.set(params.refundId, params.amount);
     return {
       success: true,
       providerRef: `fake_refund_${params.refundId}`,

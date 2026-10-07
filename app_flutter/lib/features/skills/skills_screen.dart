@@ -728,11 +728,7 @@ class _EvidenceRow extends StatelessWidget {
         padding: const EdgeInsets.only(left: AppSpace.s3),
         child: Row(
           children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              size: 20,
-              color: AppColors.warning,
-            ),
+            const AppIcon(AppIcons.warning, size: 20, color: AppColors.warning),
             const SizedBox(width: AppSpace.s2),
             Expanded(
               child: Column(

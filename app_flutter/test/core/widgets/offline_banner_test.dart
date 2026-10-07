@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 
@@ -9,7 +8,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(hostWidget(const OfflineBanner()));
-    expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
+    expect(find.byIcon(AppIcons.cloudOff), findsOneWidget);
     expect(find.text('Đang xem dữ liệu đã lưu'), findsOneWidget);
   });
 

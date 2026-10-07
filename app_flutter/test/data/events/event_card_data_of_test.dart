@@ -12,40 +12,43 @@ void main() {
   });
 
   group('eventCardDataOf', () {
-    test('maps EventSummary fields, seatsLeft and soldOut from status full', () {
-      final now = DateTime.utc(2026, 10, 12, 10, 0);
-      final e = EventSummary(
-        id: 'ev_1',
-        title: 'Mini session mùa thu',
-        hostName: 'Minh Trí',
-        hostVerified: true,
-        type: EventType.miniSession,
-        startsAt: now,
-        priceVnd: 600000,
-        capacity: 10,
-        registeredCount: 7,
-        heldCount: 0,
-        status: EventStatus.full,
-        createdAt: now,
-        locationName: 'Công viên Bạch Đằng',
-        coverUrl: 'https://example.com/cover.jpg',
-      );
+    test(
+      'maps EventSummary fields, seatsLeft and soldOut from status full',
+      () {
+        final now = DateTime.utc(2026, 10, 12, 10, 0);
+        final e = EventSummary(
+          id: 'ev_1',
+          title: 'Mini session mùa thu',
+          hostName: 'Minh Trí',
+          hostVerified: true,
+          type: EventType.miniSession,
+          startsAt: now,
+          priceVnd: 600000,
+          capacity: 10,
+          registeredCount: 7,
+          heldCount: 0,
+          status: EventStatus.full,
+          createdAt: now,
+          locationName: 'Công viên Bạch Đằng',
+          coverUrl: 'https://example.com/cover.jpg',
+        );
 
-      final data = eventCardDataOf(e, l);
+        final data = eventCardDataOf(e, l);
 
-      expect(data.id, 'ev_1');
-      expect(data.title, 'Mini session mùa thu');
-      expect(data.hostName, 'Minh Trí');
-      expect(data.hostVerified, isTrue);
-      expect(data.typeTag, '#minisession');
-      expect(data.typeLabel, l.eventTypeMiniSession);
-      expect(data.startsAt, now);
-      expect(data.placeName, 'Công viên Bạch Đằng');
-      expect(data.priceVnd, 600000);
-      expect(data.seatsLeft, 3);
-      expect(data.soldOut, isTrue); // status is full
-      expect(data.coverUrl, 'https://example.com/cover.jpg');
-    });
+        expect(data.id, 'ev_1');
+        expect(data.title, 'Mini session mùa thu');
+        expect(data.hostName, 'Minh Trí');
+        expect(data.hostVerified, isTrue);
+        expect(data.typeTag, '#minisession');
+        expect(data.typeLabel, l.eventTypeMiniSession);
+        expect(data.startsAt, now);
+        expect(data.placeName, 'Công viên Bạch Đằng');
+        expect(data.priceVnd, 600000);
+        expect(data.seatsLeft, 3);
+        expect(data.soldOut, isTrue); // status is full
+        expect(data.coverUrl, 'https://example.com/cover.jpg');
+      },
+    );
 
     test('soldOut is true when seatsLeft is 0', () {
       final now = DateTime.utc(2026, 10, 12, 10, 0);
@@ -90,6 +93,30 @@ void main() {
       final data = eventCardDataOf(e, l);
       expect(data.seatsLeft, 4);
       expect(data.soldOut, isFalse);
+    });
+
+    test('a platform host shows Do ứng dụng tổ chức', () {
+      final now = DateTime.utc(2026, 10, 12, 10, 0);
+      final e = EventSummary(
+        id: 'ev_4',
+        title: 'Workshop ánh sáng',
+        hostName: '',
+        hostVerified: true,
+        hostType: HostType.platform,
+        type: EventType.workshop,
+        startsAt: now,
+        priceVnd: 0,
+        capacity: 10,
+        registeredCount: 1,
+        heldCount: 0,
+        status: EventStatus.open,
+        createdAt: now,
+      );
+
+      final data = eventCardDataOf(e, l);
+      expect(data.hostName, 'Do ứng dụng tổ chức');
+      expect(data.hostName, l.eventHostPlatform);
+      expect(data.hostVerified, isFalse);
     });
   });
 }

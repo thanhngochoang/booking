@@ -38,3 +38,13 @@ final currentProfileProvider = StreamProvider<UserProfile?>((ref) async* {
       .watch(user.uid)
       .asyncMap((p) async => p ?? await repo.ensureProfile(user));
 });
+
+/// The signed-in user's staff role (ID-token claim); null for everyone else.
+/// Read again whenever the signed-in user changes.
+final staffRoleProvider = FutureProvider<StaffRole?>((ref) async {
+  final user = await ref.watch(authStateProvider.future);
+  if (user == null) {
+    return null;
+  }
+  return ref.watch(authRepositoryProvider).staffRole();
+});

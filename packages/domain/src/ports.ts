@@ -43,6 +43,8 @@ export interface RegistrationRecord {
   /** `RegistrationStatus` code. */
   readonly status: string;
   readonly eventEndsAt: Date | null;
+  /** O3: true only for a paid ticket after payment. A free registration never unlocks contact. */
+  readonly contactEligible: boolean;
 }
 
 export interface RegistrationReader {

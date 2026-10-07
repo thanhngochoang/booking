@@ -34,7 +34,7 @@ Ký hiệu: **PK** khoá chính, **FK** khoá ngoại, `?` có thể rỗng, `�
 | `User` | `id` PK, `displayName`, `avatar: FileRef?`, `role: UserRole?`, `staffRole: StaffRole?`, `city?`, `locale = 'vi'`, `createdAt`, `updatedAt`, `deletedAt?` | `role = null` cho tới khi chọn ở màn chọn vai trò; `staffRole` chỉ do admin đặt |
 | `UserContact` 🔒 | `userId` PK/FK, `phone: PhoneNumber`, `phoneVerified = false`, `allowZalo = true`, `allowWhatsApp = false`, `updatedAt` | Số điện thoại khách; không nằm trong `User` (công khai) |
 | `AuthIdentity` 🔒 | `id` PK, `userId` FK, `provider: AuthProvider`, `subject`, `email?`, `createdAt` | `(provider, subject)` duy nhất; cho phép đổi IdP |
-| `Device` 🔒 | `id` PK, `userId` FK, `provider: PushProvider`, `token`, `platform`, `lastSeenAt` | Thay `users.fcmTokens` |
+| `Device` 🔒 | `id` PK (Firestore: `{uid}_{installId}`, `installId` sinh một lần cho mỗi lần cài), `userId` FK, `provider: PushProvider`, `token`, `platform`, `lastSeenAt` | Thay `users.fcmTokens` |
 | `File` | `id` PK, `ownerUserId` FK, `storageProvider`, `storageKey`, `mimeType`, `sizeBytes`, `width?`, `height?`, `blurhash?`, `createdAt` | Mọi ảnh/tệp |
 
 ### 2.2 Nhiếp ảnh gia
@@ -68,12 +68,13 @@ Ký hiệu: **PK** khoá chính, **FK** khoá ngoại, `?` có thể rỗng, `�
 | `Booking` | `id` PK, `customerId`, `photographerId`, `serviceId`, `serviceSnapshot: {name, price: Money, durationMinutes}`, `day: LocalDate`, `start: LocalTime`, `end: LocalTime`, `place: {name, point?}`, `note?`, `status: BookingStatus`, `deposit: Money`, `remaining: Money`, `depositProvider?`, `depositPaidAt?`, `depositRefundedAt?`, `acceptDeadline?: Instant`, `cancel?: {by, reason, at, refundPercent}`, `chatId?`, `version`, `createdAt`, `updatedAt` | Snapshot gói tại thời điểm đặt |
 | `BookingEvent` | `id` PK, `bookingId`, `status`, `at: Instant`, `actorId?` | Dòng thời gian (thay `timeline[]`) |
 | `BookingContact` 🔒 | `bookingId` PK/FK, `name`, `phone`, `allowZalo`, `allowWhatsApp`, `redactedAt?` | Chụp lúc yêu cầu (lưu tại `bookings/{id}/private/contact`); xoá số ngay khi huỷ/từ chối hoặc sau 30 ngày completed |
-| `Payment` | `id` PK, `subjectType: PaymentSubject`, `subjectId`, `payeeId?` (nhiếp ảnh gia hoặc chủ sự kiện nhận tiền), `provider: PaymentProvider`, `amount: Money`, `status: PaymentStatus`, `escrowStatus: EscrowStatus`, `releasedAt?`, `releaseAfter?`, `providerRef?`, `raw?: json`, `idempotencyKey`, `createdAt`, `updatedAt` | Dùng cho cọc và vé; `escrowStatus` theo dõi tiền treo |
+| `Payment` | `id` PK, `subjectType: PaymentSubject`, `subjectId`, `payeeId?` (nhiếp ảnh gia hoặc chủ sự kiện nhận tiền), `provider: PaymentProvider`, `amount: Money`, `status: PaymentStatus`, `escrowStatus: EscrowStatus`, `releasedAt?`, `releaseAfter?`, `dispute?: {reason, openedAt}` (do `open_dispute` ghi; chỉ máy chủ đọc), `payoutId?` (bản sao Firestore của lô đang mở; quan hệ: join `payout_items`, xoá khi lô `failed`), `providerRef?`, `raw?: json`, `idempotencyKey`, `eventId?` (vé: sự kiện của đăng ký, để đóng dấu `releaseAfter` và tìm khoản hoàn khi huỷ sự kiện), `createdAt`, `updatedAt` | Dùng cho cọc và vé; `escrowStatus` theo dõi tiền treo |
 | `LedgerEntry` | `id` PK, `type: LedgerEntryType`, `paymentId?`, `refundId?`, `payoutId?`, `subjectType?`, `subjectId?`, `accountOwnerId?`, `amount: Money` (có dấu), `note?`, `at: Instant` | **Bất biến, chỉ thêm**; số dư treo/chờ chi trả suy ra từ tổng |
-| `PayoutAccount` 🔒 | `id` PK, `userId` FK, `bankCode`, `accountNumberEnc`, `accountLast4`, `holderName`, `active`, `createdAt` | Tài khoản nhận tiền; số được mã hoá |
-| `Payout` | `id` PK, `payeeId` FK, `amount: Money`, `status: PayoutStatus`, `accountId` FK, `reference?`, `createdAt`, `scheduledAt?`, `paidAt?`, `failureReason?`, `approvedBy?` | Lô chi trả cho một người nhận |
+| `PayoutAccount` 🔒 | `id` PK, `userId` FK, `bankCode`, `accountNumberEnc`, `accountLast4`, `holderName`, `active`, `createdAt`, `deactivatedAt?` | Tài khoản nhận tiền; số được mã hoá; đổi tài khoản giữ bản cũ với `active = false` |
+| `Payout` | `id` PK, `payeeId` FK, `amount: Money`, `status: PayoutStatus`, `accountId` FK, `reference?`, `createdAt`, `scheduledAt?`, `paidAt?`, `failureReason?`, `holdReason?`, `createdBy` FK (nhân viên tạo lô), `items: PayoutItem[]` (Firestore nhúng; quan hệ: bảng `payout_items`), `approvedBy?` | Lô chi trả cho một người nhận |
+| `EarningItem` / `EarningsSummary` (đọc, S06.05) | `EarningItem`: `id` = `paymentId`, `payeeId`, `subjectType`, `subjectId`, `counterpartName`, `subjectLabel`, `day`, `amount: Money` (đã trừ hoàn tiền), `state: EarningState`, `holdReason?` (mã cố định, không phải chữ của khách), `paidOutAt?`, `updatedAt`. `EarningsSummary`: `payeeId`, `heldAmount`, `soonAmount`, `receivedAmount`, `lastPayout?`, `updatedAt` | **Hình chiếu** tính bởi `earningsOf`/`refresh_earnings` từ `Payment`, `Refund`, `Payout`; không phải bảng (máy chủ riêng tính bằng SQL) |
 | `PayoutItem` | `payoutId`, `paymentId`, `amount: Money` | Khoản nào nằm trong lô nào; PK ghép |
-| `Refund` | `id` PK, `paymentId` FK, `amount: Money`, `percent`, `status`, `manual`, `createdAt` | |
+| `Refund` | `id` PK, `paymentId` FK, `subjectType: PaymentSubject`, `amount: Money`, `percent`, `status`, `manual`, `createdAt`, `updatedAt` | `id` là khoá chống trùng gửi sang cổng (gửi lại cùng id không hoàn hai lần) |
 | `Review` | `bookingId` PK/FK, `customerId`, `photographerId`, `verdict: Verdict`, `hits: int (1..10)`, `intensity: double`, `reasons: ReviewReason[]`, `text`, `photoPostId?`, `createdAt` | Một đánh giá/booking |
 
 ### 2.5 Trò chuyện và thông báo
@@ -84,15 +85,16 @@ Ký hiệu: **PK** khoá chính, **FK** khoá ngoại, `?` có thể rỗng, `�
 | `ChatMember` | `chatId`, `userId`, `role: ChatMemberRole`, `mutedUntil?`, `unreadCount`, `lastReadAt?`, `joinedAt`, `removedAt?` | Thành viên nhóm sự kiện có vai `member`/`moderator` |
 | `ChatPin` | `chatId`, `messageId`, `pinnedBy`, `pinnedAt` | Tin ghim (thông báo của chủ sự kiện) |
 | `Message` | `id` PK, `chatId`, `senderId?`, `type: MessageType`, `body?`, `file?`, `point?`, `createdAt`, `deletedAt?` | `system` không có người gửi |
-| `Notification` | `id` PK, `userId`, `type`, `title`, `body`, `bookingId?`, `postId?`, `eventId?`, `readAt?`, `createdAt` | |
+| `Notification` | `id` PK (xác định: `n_{dedupeKey}` hoặc `g_{groupKey}`), `userId`, `type: NotificationType`, `tab: NotificationTab`, `category: NotificationCategory`, `title`, `body` (server dựng, tiếng Việt), `target` (đường dẫn app), `groupKey?`, `actors?: [{id, name, avatarUrl?}]` (≤ 3), `count`, `thumbUrl?`, `lastEventId?`, `readAt?`, `createdAt` | Hộp thư S17.01. Số chưa đọc **không** nằm trên `User` công khai: `users/{uid}/private/inbox` = `{unreadCount, unreadCountAt}`, chỉ chủ đọc, chỉ server ghi (quyết định 2026-10-06) |
+| `NotificationPrefs` 🔒 | `userId` PK, `channels: {booking, jobs, instant, events, chat, badges, promo}: {push, inApp}`, `quietHours: {enabled, from, to}` ("HH:mm", giờ VN), `reminders: {h24, h2}` | Mặc định: mọi nhóm bật, `promo` tắt, yên lặng 22:00–07:00, nhắc 24 giờ và 2 giờ; `booking.inApp` luôn true. Firestore: `users/{uid}/private/notification_prefs` |
 
 ### 2.6 Sự kiện
 
 | Thực thể | Trường chính | Ghi chú |
 |----------|--------------|---------|
-| `Event` | `id` PK, `hashtag` (duy nhất, chữ không dấu + số), `chatId?`, `host: {type: HostType, photographerId?}`, `createdBy`, `createdByRole`, `title`, `description`, `cover: FileRef`, `type: EventType`, `startsAt: Instant`, `endsAt: Instant`, `location: {name, meetingPoint?, point, geohash}`, `capacity`, `price: Money` (≥ 0; 0 = không thu phí), `registrationDeadline`, `status: EventStatus`, `registeredCount`, `heldCount`, `hostConsent: HostConsent`, `version`, `createdAt`, `updatedAt` | `isFree` = `price.amount == 0` |
+| `Event` | `id` PK, `hashtag` (duy nhất, chữ không dấu + số), `chatId?`, `host: {type: HostType, photographerId?}`, `createdBy`, `createdByRole`, `title`, `description`, `cover: FileRef`, `type: EventType`, `startsAt: Instant`, `endsAt: Instant`, `location: {name, meetingPoint?, point, geohash}`, `capacity`, `price: Money` (≥ 0; 0 = không thu phí), `registrationDeadline`, `status: EventStatus`, `registeredCount`, `heldCount`, `hostConsent: HostConsent`, `hostConsentExpiresAt?: Instant` (O1: lúc mời + 24 giờ), `faq: [{question, answer}]` (O2: chỉ sự kiện `platform`, staff nhập; ≤ 10, 120/500 ký tự), `version`, `createdAt`, `updatedAt` | `isFree` = `price.amount == 0` |
 | `EventPost` | `eventId`, `postId`, `source: EventPostSource`, `status: EventPostStatus`, `addedAt`, `moderatedBy?` | PK ghép; bài hiện trên timeline sự kiện |
-| `EventRegistration` | `id` PK, `eventId`, `userId`, `name`, `phone` 🔒, `quantity (1..4)`, `amount: Money`, `status: RegistrationStatus`, `holdExpiresAt?`, `ticketCode: TicketCode`, `paymentId?`, `checkedInAt?`, `cancelledAt?`, `refundPercent?`, `version` | `ticketCode` duy nhất |
+| `EventRegistration` | `id` PK, `eventId`, `userId`, `name`, `phone` 🔒, `quantity (1..4)`, `amount: Money`, `status: RegistrationStatus`, `holdExpiresAt?`, `ticketCode: TicketCode`, `paymentId?`, `checkedInAt?`, `cancelledAt?`, `refundPercent?`, `contactEligible: bool` (O3: true chỉ với vé trả tiền đã `paid`; vé không thu phí không mở liên hệ), `refundDue: bool` (sự kiện huỷ khi tiền vé còn treo; clock hoàn 100%), `refundId?`, `refundStatus?: pending\|done\|failed` (bản sao trạng thái khoản hoàn trên vé), `version` | `ticketCode` duy nhất. O4: huỷ vé trả tiền dưới 48 giờ không hoàn, tiền vẫn treo và chuyển cho chủ sau sự kiện |
 
 ### 2.7 Huy hiệu, gợi ý, vận hành
 
@@ -197,12 +199,13 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `SkillGroup` | `specialty`, `style`, `extra`, `language`, `audience`, `area` | |
 | `Specialty` (mã trong `taxonomy`) | `portrait`, `wedding`, `couple`, `family`, `graduation`, `event`, `product`, `travel`, `fashion`, `food`, `real_estate`, `newborn`, `street`, `commercial` | Danh mục mở, thêm không cần phát hành |
 | `DayState` | `off`, `booked`, `pending` | Rảnh = không có bản ghi |
-| `PostKind` | `work`, `real_shoot`, `event_share` | `event_share`: người tham gia đăng về sự kiện |
+| `PostKind` | `work`, `real_shoot`, `event_share` | `event_share`: người tham gia đăng về sự kiện; `photographerId` để rỗng nên bài không vào portfolio của ai |
 | `BookingStatus` | `draft`, `requested`, `accepted`, `declined`, `expired`, `cancelled`, `upcoming`, `completed`, `reviewed` | Máy trạng thái ở mục 5 |
 | `PaymentSubject` | `booking`, `event_registration` | |
 | `PaymentProvider` | `momo`, `vnpay` | |
 | `PaymentStatus` | `created`, `paid`, `failed`, `refunded`, `partially_refunded` | Trạng thái giao dịch với cổng |
 | `EscrowStatus` | `held`, `released`, `paid_out`, `partially_refunded`, `refunded`, `disputed` | Trạng thái tiền treo; xem mục 5 |
+| `EarningState` | `held`, `disputed`, `released`, `paid_out` | Trạng thái tiền của một dòng Thu nhập: `held`/`partially_refunded` → `held`; còn lại cùng tên; `refunded` không có dòng |
 | `LedgerEntryType` | `deposit_received`, `ticket_received`, `refund_issued`, `escrow_released`, `payout_paid`, `fee_charged`, `adjustment` | |
 | `PayoutStatus` | `pending`, `on_hold`, `processing`, `paid`, `failed` | |
 | `RefundStatus` | `pending`, `done`, `failed` | |
@@ -211,18 +214,20 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `EventPostSource` | `hashtag`, `explicit` | |
 | `EventPostStatus` | `visible`, `pending`, `hidden` | |
 | `MessageType` | `text`, `image`, `location`, `system` | |
-| `NotificationType` | `booking_requested`, `booking_accepted`, `booking_declined`, `booking_cancelled`, `booking_reminder`, `review_request`, `event_registered`, `event_cancelled`, `event_reminder`, `event_announcement`, `event_timeline_post`, `payout_paid`, `badge_awarded`, `message`, `system`, `quote_new`, `job_match`, `job_invited`, `quote_accepted`, `quote_not_selected`, `quote_withdrawn`, `job_expiring`, `job_expired`, `award_reviewed`, `artist_granted`, `artist_revoked` | Mười một mã cuối: spec 10-05 và spec chính 3h.2 |
+| `NotificationType` | `booking_request`, `booking_accepted`, `booking_declined`, `booking_cancelled`, `refund_done`, `shoot_reminder`, `payout_released`, `quote_new`, `quote_withdrawn`, `job_expiring`, `job_expired`, `job_match`, `job_invited`, `quote_accepted`, `quote_not_selected`, `job_selected`, `instant_assigned`, `instant_missed`, `event_soon`, `review_new`, `badge_new`, `award_reviewed`, `artist_granted`, `artist_revoked`, `chat_message`, `promo` | Danh sách của `packages/domain/src/notification.ts` (`NOTIFICATION_TYPES`, nguồn duy nhất cho nhóm S17.02, mục lọc và "quan trọng"); thay danh sách cũ (`booking_requested`, `booking_reminder`, `badge_awarded`, `message`, `system`…) |
+| `NotificationTab` | `activity`, `events`, `system` | Mục lọc S17.01, lưu trên mỗi dòng |
+| `NotificationCategory` | `booking`, `jobs`, `instant`, `events`, `chat`, `badges`, `promo` | Hàng của S17.02 |
 | `EventType` | `photo_walk`, `mini_session`, `workshop`, `cosplay`, `other` | |
 | `EventStatus` | `draft`, `open`, `full`, `closed`, `cancelled`, `completed` | |
 | `HostType` | `photographer`, `platform` | |
-| `HostConsent` | `not_required`, `pending`, `accepted`, `declined` | Tạo hộ nhiếp ảnh gia |
+| `HostConsent` | `not_required`, `pending`, `accepted`, `declined`, `expired` | Tạo hộ nhiếp ảnh gia (O1: 24 giờ để đồng ý) |
 | `RegistrationStatus` | `held`, `paid`, `cancelled`, `refunded` | |
 | `BadgeSource` | `review`, `system` | |
 | `BadgeAudience` | `photographer`, `customer`, `both` | |
 | `ReasonCode` | `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent` | |
 | `SignalType` | `impression`, `click`, `inquiry`, `booking` | |
 | `ContactChannel` | `in_app`, `call`, `zalo`, `whatsapp` | |
-| `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict`, `no_match`, `offer_expired`, `already_assigned`, `not_eligible`, `outside_service_area`, `price_changed` | Mã lỗi nghiệp vụ ổn định. Tầng HTTP của máy chủ riêng thêm hai mã giao vận `unauthenticated` (401) và `internal` (500); use case không dùng hai mã này; sáu mã cuối của Chụp ngay (`../2026-10-01-instant-booking-design.md` mục 6) |
+| `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict`, `no_match`, `offer_expired`, `already_assigned`, `not_eligible`, `outside_service_area`, `price_changed`, `reauth_required` | Mã lỗi nghiệp vụ ổn định; `reauth_required`: đổi tài khoản nhận tiền cần đăng nhập lại trong 5 phút. Tầng HTTP của máy chủ riêng thêm hai mã giao vận `unauthenticated` (401) và `internal` (500); use case không dùng hai mã này; sáu mã cuối của Chụp ngay (`../2026-10-01-instant-booking-design.md` mục 6) |
 
 | `ProviderType` | `individual`, `artist`, `studio` | `artist` = hạng NAG, chỉ server ghi (spec 10-05) |
 | `AwardResult` | `gold`, `silver`, `bronze`, `honorable`, `finalist`, `exhibited` | |
@@ -329,3 +334,4 @@ Quote:   submitted ─▶ withdrawn | accepted | not_selected | declined
 19. Mỗi `(jobId, photographerId)` tối đa một `Quote`; chỉ `Quote` của `JobPost.status = open` mới `submitted`/sửa được; `JobPost.awardedQuoteId` trỏ tới đúng một `Quote` `accepted`.
 20. `JobPost`, `Quote.message` không chứa số điện thoại, email hay link ngoài (lọc ở use case).
 21. `Quote` chỉ gửi được khi `JobPost.allowedProviders` khớp `providerType` của người gửi và ngày chụp không có `AvailabilityDay` `booked`/`off`.
+22. Chỉ `Payment` `released` vào lô; `escrowStatus = paid_out` ⇔ lô chứa nó `paid`; mỗi item một bút toán `payout_paid` âm cho người nhận.

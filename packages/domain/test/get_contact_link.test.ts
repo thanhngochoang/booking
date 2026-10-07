@@ -165,7 +165,7 @@ describe('getContactLink', () => {
 
   test('registrations with a reader follow the ticket rule', async () => {
     const reg = (over: Partial<RegistrationRecord>): RegistrationRecord => ({
-      id: 'r1', userId: 'c1', photographerId: 'p1', status: 'paid', eventEndsAt: new Date(NOW.getTime() - DAY), ...over,
+      id: 'r1', userId: 'c1', photographerId: 'p1', status: 'paid', eventEndsAt: new Date(NOW.getTime() - DAY), contactEligible: true, ...over,
     });
     const ask = (uid: string, r: RegistrationRecord) =>
       getContactLink(uid, { registrationId: 'r1', channel: 'call' }, harness({ registrations: [r] }).deps);
@@ -173,6 +173,7 @@ describe('getContactLink', () => {
     await assert.rejects(ask('c1', reg({ eventEndsAt: new Date(NOW.getTime() - 8 * DAY) })), isCode('contact_locked'));
     await assert.rejects(ask('c2', reg({})), isCode('permission_denied'));
     await assert.rejects(ask('c1', reg({ photographerId: null })), isCode('not_found'));
+    await assert.rejects(ask('c1', reg({ contactEligible: false })), isCode('contact_locked'));
   });
 
   test('a failing log write fails the call: no URL without an audit row', async () => {

@@ -4,6 +4,7 @@ import 'dart:ui' show SemanticsRole;
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// The two ways to browse a portfolio (S03.01, S24.01).
@@ -34,8 +35,8 @@ class PortfolioViewToggle extends StatelessWidget {
         : AppColors.foregroundSecondary;
     final l = context.l10n;
     final labels = {
-      PortfolioView.albums: (Icons.grid_view_rounded, l.portfolioViewAlbums),
-      PortfolioView.timeline: (Icons.schedule_rounded, l.portfolioViewTimeline),
+      PortfolioView.albums: (AppIcons.grid, l.portfolioViewAlbums),
+      PortfolioView.timeline: (AppIcons.schedule, l.portfolioViewTimeline),
     };
     return Stack(
       children: [
@@ -121,7 +122,7 @@ class _Segment extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 14, color: color),
+                    AppIcon(icon, size: 14, color: color),
                     const SizedBox(width: AppSpace.s1),
                     Flexible(
                       child: Text(

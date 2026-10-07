@@ -22,6 +22,7 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   phone_required: 422,
   deadline_passed: 422,
   limit_exceeded: 429,
+  reauth_required: 403,
   internal: 500,
 };
 

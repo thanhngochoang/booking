@@ -343,6 +343,32 @@ service cloud.firestore {
         && d.createdAt == request.time;
     }
 
+    // users/{uid}/private/notification_prefs (S17.02): channel switches, quiet hours, reminders.
+    // Booking in-app is always on.
+    function validChannel(c) {
+      return c is map && c.keys().hasOnly(['push', 'inApp']) && c.push is bool && c.inApp is bool;
+    }
+    function validHm(s) { return s is string && s.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'); }
+    function validNotificationPrefs() {
+      let d = request.resource.data;
+      let ch = d.channels;
+      return d.keys().hasOnly(['channels', 'quietHours', 'reminders', 'updatedAt'])
+        && ch is map
+        && ch.keys().hasOnly(['booking', 'jobs', 'instant', 'events', 'chat', 'badges', 'promo'])
+        && 'booking' in ch && validChannel(ch.booking) && ch.booking.inApp == true
+        && (!('jobs' in ch) || validChannel(ch.jobs))
+        && (!('instant' in ch) || validChannel(ch.instant))
+        && (!('events' in ch) || validChannel(ch.events))
+        && (!('chat' in ch) || validChannel(ch.chat))
+        && (!('badges' in ch) || validChannel(ch.badges))
+        && (!('promo' in ch) || validChannel(ch.promo))
+        && d.quietHours is map && d.quietHours.keys().hasOnly(['enabled', 'from', 'to'])
+        && d.quietHours.enabled is bool && validHm(d.quietHours.from) && validHm(d.quietHours.to)
+        && d.reminders is map && d.reminders.keys().hasOnly(['h24', 'h2'])
+        && d.reminders.h24 is bool && d.reminders.h2 is bool
+        && d.updatedAt == request.time;
+    }
+
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if isOwner(uid) && validRole() && validAvatar(uid) && onlyKeys(userClientFields());
@@ -350,9 +376,47 @@ service cloud.firestore {
 
       match /private/{docId} {
         allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid) && docId == 'contact' && validContact(uid);
+        // inbox (unreadCount) and badgeProgress are written by Cloud Functions only.
+        allow create, update: if isOwner(uid)
+          && ((docId == 'contact' && validContact(uid))
+              || (docId == 'notification_prefs' && validNotificationPrefs()));
         allow delete: if false;
       }
+
+      // Inbox rows: server-written; the owner may set readAt once, to the request time.
+      match /notifications/{id} {
+        allow read: if isOwner(uid);
+        allow update: if isOwner(uid) && resource.data.readAt == null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+          && request.resource.data.readAt == request.time;
+        allow create, delete: if false;
+      }
+
+      // Earned badges are public to signed-in users; only the server writes them.
+      match /badges/{badgeId} {
+        allow read: if signedIn();
+        allow write: if false;
+      }
+    }
+
+    // Badge catalogue.
+    match /badges/{badgeId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Push tokens: one document per install, owner only.
+    match /devices/{deviceId} {
+      allow read, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && deviceId.matches('^' + request.auth.uid + '_[A-Za-z0-9]{8,40}$')
+        && request.resource.data.keys().hasOnly(['userId', 'provider', 'token', 'platform', 'lastSeenAt'])
+        && request.resource.data.provider == 'fcm'
+        && request.resource.data.platform in ['android', 'ios']
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 0
+        && request.resource.data.token.size() < 4096;
     }
 
     match /photographers/{uid} {
@@ -421,6 +485,35 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // earnings/{uid}: the photographer's money summary and one row per payment (S06.05).
+    // Written only by the earnings triggers; the owner reads. Rows hold fixed hold-reason codes,
+    // never the customer's dispute text.
+    match /earnings/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+      match /items/{itemId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    // payoutAccounts/{uid}: masked view of the active payout account (S06.06): bank, last 4
+    // digits, holder. Written only by savePayoutAccount. The history under accounts/ holds the
+    // encrypted number and is server-only.
+    match /payoutAccounts/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+      match /accounts/{accountId} {
+        allow read, write: if false;
+      }
+    }
+
+    // payouts/{payoutId}: batches paid to a photographer. Server-only: rows hold staff free text
+    // (holdReason, failureReason, reference, createdBy); the app reads the summary instead.
+    match /payouts/{payoutId} {
+      allow read, write: if false;
+    }
+
     match /refunds/{refundId} {
       allow read, write: if false;
     }
@@ -441,8 +534,17 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Event group chat: every current member sees the others' names and avatars (no phone is ever stored here).
+      match /pins/{messageId} {
+        allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+        allow write: if false;
+      }
+
       match /members/{uid} {
-        allow read: if isOwner(uid);
+        allow read: if isOwner(uid)
+          || (signedIn()
+              && get(/databases/$(database)/documents/chats/$(chatId)).data.get('kind', '') == 'event_group'
+              && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members);
         allow update: if isOwner(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCount', 'lastReadAt'])
           && request.resource.data.unreadCount == 0
@@ -526,6 +628,80 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if false;
     }
+
+    // ---- photo events (plan 10c) ----
+    // Everything under events/ is written by Cloud Functions only. Clients read:
+    //  - an event unless it is a draft (a draft is read by its managers);
+    //  - a registration if it is theirs, or they manage the event;
+    //  - registrations/{id}/private/contact: the attendee, or a manager only for a ticket that
+    //    unlocks contact (contactEligible == true: a paid ticket, never a free one, O3) up to
+    //    7 days after the event ends. A free registration therefore exposes no phone to the host.
+    function staffIs(role) { return signedIn() && request.auth.token.get('staffRole', '') == role; }
+    function eventManager(e) {
+      return signedIn()
+        && ((e.host.type == 'photographer' && e.host.id == request.auth.uid)
+            || staffIs('admin')
+            || (staffIs('sales') && e.createdBy == request.auth.uid));
+    }
+    function eventDoc(eventId) {
+      return get(/databases/$(database)/documents/events/$(eventId)).data;
+    }
+    function registrationDoc(eventId, regId) {
+      return get(/databases/$(database)/documents/events/$(eventId)/registrations/$(regId)).data;
+    }
+    function ticketContactUnlockedFor(e, r) {
+      return r.status == 'paid'
+        && r.get('contactEligible', false) == true
+        && e.endAt != null
+        && request.time <= e.endAt + duration.value(7, 'd');
+    }
+
+    match /events/{eventId} {
+      // A never-published draft stays private even after it is cancelled (declined, expired or
+      // cancelled by its manager): a cancelled event is public only if it was published.
+      allow get: if signedIn()
+        && ((resource.data.status != 'draft'
+             && (resource.data.status != 'cancelled' || resource.data.publishedAt != null))
+            || eventManager(resource.data));
+      // A public list must filter status (S11.01 uses status in [open, full]); the creator and
+      // the named host list their own drafts with createdBy == uid or hostId == uid.
+      allow list: if signedIn()
+        && (resource.data.status in ['open', 'full', 'closed', 'completed']
+            || resource.data.createdBy == request.auth.uid
+            || resource.data.hostId == request.auth.uid);
+      allow write: if false;
+
+      // S11.05 timeline: visible rows for everyone signed in; pending and hidden rows for managers.
+      // Written only by Cloud Functions (onPostCreated, shareEventPost, moderateEventTimeline).
+      match /timeline/{postId} {
+        allow read: if signedIn()
+          && (resource.data.status == 'visible' || eventManager(eventDoc(eventId)));
+        allow write: if false;
+      }
+
+      match /registrations/{regId} {
+        allow read: if signedIn()
+          && (resource.data.userId == request.auth.uid || eventManager(eventDoc(eventId)));
+        allow write: if false;
+
+        match /private/{docId} {
+          allow read: if signedIn() && docId == 'contact'
+            && (registrationDoc(eventId, regId).userId == request.auth.uid
+                || (eventManager(eventDoc(eventId))
+                    && ticketContactUnlockedFor(eventDoc(eventId), registrationDoc(eventId, regId))));
+          allow write: if false;
+        }
+      }
+    }
+
+    // S11.04: "my tickets" is a collection-group query with userId == uid.
+    match /{path=**}/registrations/{regId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Uniqueness guards (hashtag, ticket code): server only.
+    match /event_hashtags/{key} { allow read, write: if false; }
+    match /ticket_codes/{code} { allow read, write: if false; }
 
     match /{document=**} {
       allow read, write: if false;

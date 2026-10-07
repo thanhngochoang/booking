@@ -1,3 +1,4 @@
+import { defineSecret } from 'firebase-functions/params';
 import type { DocumentOptions } from 'firebase-functions/v2/firestore';
 import type { CallableOptions } from 'firebase-functions/v2/https';
 import type { ScheduleOptions } from 'firebase-functions/v2/scheduler';
@@ -22,6 +23,33 @@ export const CALLABLE_OPTIONS = {
   minInstances: 0,
   enforceAppCheck: false,
 } as const satisfies CallableOptions;
+
+/**
+ * Callables that run contended transactions or payments (registerEvent, the ticket payment
+ * callables, cancelEvent's refunds): under 20 concurrent registrations the emulator needed more than
+ * the 10 s default (ledger, PR #32).
+ */
+export const PAYMENT_CALLABLE_OPTIONS = {
+  ...CALLABLE_OPTIONS,
+  timeoutSeconds: 30,
+} as const satisfies CallableOptions;
+
+/**
+ * The development Firebase project (`.firebaserc` alias `dev`). Fake payments are allowed there and
+ * on the emulator only (infra/fake_payments.ts); this is the single place the id is written.
+ */
+export const DEV_PROJECT_ID = 'booking-c1922';
+
+/** The project the functions run in: `GCLOUD_PROJECT`, else `FIREBASE_CONFIG.projectId`. */
+export function currentProjectId(env: Readonly<Record<string, string | undefined>> = process.env): string | undefined {
+  if (env.GCLOUD_PROJECT) return env.GCLOUD_PROJECT;
+  if (!env.FIREBASE_CONFIG) return undefined;
+  try {
+    return (JSON.parse(env.FIREBASE_CONFIG) as { projectId?: string }).projectId;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Options of every Firestore trigger (onPhotographerWrite, spec 2026-10-02 §2). `retry: true`:
@@ -86,3 +114,18 @@ export function storageUrlPrefixes(): string[] {
   return prefixes;
 }
 
+
+/**
+ * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
+ * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts and to
+ * nothing else; the emulator reads it from `.secret.local`.
+ */
+export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');
+
+/**
+ * `fake` runs the reference payout gateway (emulator, or `PAYOUTS_MODE=fake` in the dev project);
+ * anything else is `off`: no real bank adapter exists, so executing a payout is refused.
+ */
+export function payoutsMode(env: Readonly<Record<string, string | undefined>> = process.env): 'fake' | 'off' {
+  return env.FUNCTIONS_EMULATOR === 'true' || env.PAYOUTS_MODE === 'fake' ? 'fake' : 'off';
+}

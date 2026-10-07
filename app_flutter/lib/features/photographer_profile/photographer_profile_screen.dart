@@ -218,21 +218,16 @@ class _EditSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final entries = [
-      ('edit-intro', l.profileEditIntro, Icons.badge_outlined, '/setup/1'),
-      ('edit-packages', l.profileEditPackages, Icons.sell_outlined, '/setup/2'),
+      ('edit-intro', l.profileEditIntro, AppIcons.badge, '/setup/1'),
+      ('edit-packages', l.profileEditPackages, AppIcons.tag, '/setup/2'),
       (
         'edit-skills',
         l.profileEditSkills,
-        Icons.auto_awesome_outlined,
+        AppIcons.autoAwesome,
         '/profile/skills',
       ),
-      (
-        'edit-photo',
-        l.profileEditPhoto,
-        Icons.account_circle_outlined,
-        '/settings/profile',
-      ),
-      ('edit-contact', l.profileEditContact, Icons.call_outlined, '/setup/4'),
+      ('edit-photo', l.profileEditPhoto, AppIcons.profile, '/settings/profile'),
+      ('edit-contact', l.profileEditContact, AppIcons.phone, '/setup/4'),
     ];
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -255,9 +250,9 @@ class _EditSheet extends StatelessWidget {
             type: MaterialType.transparency,
             child: ListTile(
               key: Key(key),
-              leading: Icon(icon),
+              leading: AppIcon(icon),
               title: Text(label),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              trailing: const AppIcon(AppIcons.chevron),
               onTap: () => Navigator.of(context).pop(path),
             ),
           ),

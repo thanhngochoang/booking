@@ -340,7 +340,7 @@ class _DaySection extends StatelessWidget {
           AppButton.outline(
             l.calendarOpenEvent,
             key: const Key('open-event'),
-            icon: const Icon(Icons.event_outlined),
+            icon: const AppIcon(AppIcons.calendar),
             onPressed: () => context.push('/events/$eventId/manage'),
           ),
         ],
@@ -349,7 +349,7 @@ class _DaySection extends StatelessWidget {
           AppButton.outline(
             l.calendarOpenBooking,
             key: const Key('open-booking'),
-            icon: const Icon(Icons.receipt_long_outlined),
+            icon: const AppIcon(AppIcons.receipt),
             onPressed: () => context.push('/b/$bookingId'),
           ),
         ],

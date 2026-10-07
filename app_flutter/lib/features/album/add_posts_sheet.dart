@@ -205,7 +205,7 @@ class _AddPostsBodyState extends ConsumerState<_AddPostsBody> {
                   width: AppSpace.s12,
                   height: AppSpace.s12,
                 ),
-                icon: const Icon(Icons.close_rounded),
+                icon: const AppIcon(AppIcons.close),
                 onPressed: _busy ? null : () => Navigator.of(context).pop(),
               ),
             ],
@@ -325,8 +325,8 @@ class _AddPostsBodyState extends ConsumerState<_AddPostsBody> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const ExcludeSemantics(
-                          child: Icon(
-                            Icons.info_outline_rounded,
+                          child: AppIcon(
+                            AppIcons.info,
                             size: AppText.base,
                             color: AppColors.warning,
                           ),

@@ -18,6 +18,8 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
+import 'package:photobooking/data/push/notification_permission.dart';
+import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -30,6 +32,7 @@ import 'package:photobooking/l10n/app_localizations.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/fake_booking_repository.dart';
+import '../../support/fake_push.dart';
 
 Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
   UserRole role,
@@ -58,6 +61,12 @@ Widget _app(Widget home, FakeAuthRepository auth, FakeUserRepository users) =>
           FakeServicePackageRepository(),
         ),
         skillsRepositoryProvider.overrideWithValue(FakeSkillsRepository()),
+        // Push ports: no plugin runs in tests.
+        pushMessagingProvider.overrideWithValue(FakePushMessaging()),
+        notificationPermissionProvider.overrideWithValue(
+          FakeNotificationPermission(NotificationPermissionStatus.denied),
+        ),
+        deviceRegistryProvider.overrideWithValue(FakeDeviceRegistry()),
       ],
       child: MaterialApp(
         theme: buildDarkTheme(),
@@ -105,6 +114,8 @@ void main() {
     expect(find.text('Nhiếp ảnh gia'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing, reason: 'nothing switched yet');
 
+    // The Thu nhập row pushes the switch card below the fold.
+    await tester.ensureVisible(find.text('Chuyển qua chế độ đặt lịch'));
     await tester.tap(find.text('Chuyển qua chế độ đặt lịch'));
     await tester.pumpAndSettle();
     final uid = auth.currentUser!.uid;
@@ -192,6 +203,10 @@ void main() {
           builder: (_, _) => const Text('stub /me/awards'),
         ),
         GoRoute(
+          path: '/work/earnings',
+          builder: (_, _) => const Text('stub /work/earnings'),
+        ),
+        GoRoute(
           path: '/work/calendar',
           builder: (_, _) => const Text('calendar'),
         ),
@@ -248,6 +263,34 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Album của tôi'), findsNothing);
+  });
+
+  testWidgets('S09.01: photographers see Thu nhập and it opens S06.05', (
+    tester,
+  ) async {
+    final (auth, users) = await _signedIn(UserRole.photographer);
+    final intro = FakePhotographerIntroRepository()
+      ..seed(
+        auth.currentUser!.uid,
+        const PhotographerIntro(onboardingComplete: true),
+      );
+    await tester.pumpWidget(routed(auth, users, intro));
+    await tester.pumpAndSettle();
+    expect(find.text('Thu nhập'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('open-earnings')));
+    await tester.tap(find.byKey(const Key('open-earnings')));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /work/earnings'), findsOneWidget);
+  });
+
+  testWidgets('S09.01: customers do not see Thu nhập', (tester) async {
+    final (auth, users) = await _signedIn(UserRole.customer);
+    await tester.pumpWidget(
+      routed(auth, users, FakePhotographerIntroRepository()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Thu nhập'), findsNothing);
+    expect(find.byKey(const Key('open-earnings')), findsNothing);
   });
 
   /// The signed-in photographer's public profile with [type].

@@ -81,7 +81,7 @@ void main() {
       hostWidget(
         AppOptionTile(
           label: 'Thành phố Thủ Đức, Thành phố Hồ Chí Minh, Việt Nam',
-          leading: const Icon(Icons.my_location_outlined),
+          leading: const AppIcon(AppIcons.myLocation),
           selected: false,
           onTap: () {},
         ),

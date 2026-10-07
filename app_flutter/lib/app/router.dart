@@ -8,6 +8,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
 import 'package:photobooking/features/awards/my_awards_screen.dart';
+import 'package:photobooking/features/badges/badges_screen.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
@@ -19,8 +20,19 @@ import 'package:photobooking/features/chat/chat_list_screen.dart';
 import 'package:photobooking/features/chat/chat_screen.dart';
 import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
+import 'package:photobooking/features/earnings/earnings_screen.dart';
+import 'package:photobooking/features/earnings/payout_account_screen.dart';
+import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/event_manage/manage_event_screen.dart';
+import 'package:photobooking/features/event_chat/event_chat_screen.dart';
+import 'package:photobooking/features/event_manage/my_events_screen.dart';
+import 'package:photobooking/features/events/event_screen.dart';
+import 'package:photobooking/features/events/event_share_composer.dart';
+import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
+import 'package:photobooking/features/notifications/notification_settings_screen.dart';
+import 'package:photobooking/features/notifications/notifications_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
@@ -144,7 +156,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'profile',
             builder: (_, _) => const EditProfileScreen(),
           ),
+          GoRoute(
+            path: 'notifications',
+            builder: (_, _) => const NotificationSettingsScreen(),
+          ),
         ],
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsScreen(),
       ),
       GoRoute(
         path: '/profile/phone',
@@ -178,6 +198,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/work/calendar',
         redirect: (_, _) => photographersOnly(),
         builder: (_, _) => const MyCalendarScreen(),
+      ),
+      GoRoute(
+        path: '/work/earnings',
+        redirect: (_, _) => photographersOnly(),
+        builder: (_, _) => const EarningsScreen(),
+        routes: [
+          GoRoute(
+            path: 'account',
+            redirect: (_, _) => photographersOnly(),
+            builder: (_, _) => const PayoutAccountScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/setup/3',
@@ -240,6 +272,52 @@ final routerProvider = Provider<GoRouter>((ref) {
           serviceId: state.uri.queryParameters['serviceId'],
         ),
       ),
+      GoRoute(path: '/events', builder: (_, _) => const EventsListScreen()),
+      GoRoute(path: '/events/mine', builder: (_, _) => const MyEventsScreen()),
+      GoRoute(
+        path: '/events/new',
+        builder: (_, state) =>
+            CreateEventScreen(draftId: state.uri.queryParameters['draft']),
+      ),
+      GoRoute(
+        path: '/events/:eventId/manage',
+        builder: (_, state) =>
+            ManageEventScreen(eventId: state.pathParameters['eventId']!),
+      ),
+      GoRoute(
+        path: '/e/:eventId',
+        builder: (_, state) =>
+            EventScreen(eventId: state.pathParameters['eventId']!),
+        routes: [
+          // Back from "add phone": the register sheet opens over S11.02.
+          GoRoute(
+            path: 'join',
+            builder: (_, state) => EventScreen(
+              eventId: state.pathParameters['eventId']!,
+              openRegister: true,
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/e/:eventId/timeline',
+        builder: (_, state) => EventScreen(
+          eventId: state.pathParameters['eventId']!,
+          initialTab: EventTab.timeline,
+          initialReview: state.uri.queryParameters['review'] == '1',
+        ),
+      ),
+      // S11.05 share form and S11.06 group chat.
+      GoRoute(
+        path: '/e/:eventId/share',
+        builder: (_, state) =>
+            EventShareComposer(eventId: state.pathParameters['eventId']!),
+      ),
+      GoRoute(
+        path: '/e/:eventId/chat',
+        builder: (_, state) =>
+            EventChatScreen(eventId: state.pathParameters['eventId']!),
+      ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
       GoRoute(
@@ -248,6 +326,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           uid: state.pathParameters['uid']!,
           albumId: state.pathParameters['albumId']!,
         ),
+      ),
+      GoRoute(
+        path: '/u/:uid/badges',
+        builder: (_, state) => BadgesScreen(uid: state.pathParameters['uid']!),
       ),
       GoRoute(
         path: '/u/:uid',
@@ -285,6 +367,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   specialty: state.uri.queryParameters['specialty'],
                   style: state.uri.queryParameters['style'],
                   area: state.uri.queryParameters['area'],
+                  caption: state.uri.queryParameters['caption'],
                 ),
               ),
             ],
@@ -293,7 +376,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppTab.bookings.path,
-                builder: (_, _) => const BookingsTab(),
+                builder: (_, state) => BookingsTab(
+                  tab: state.uri.queryParameters['tab'],
+                  highlight: state.uri.queryParameters['highlight'],
+                ),
               ),
             ],
           ),

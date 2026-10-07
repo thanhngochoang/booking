@@ -66,6 +66,7 @@ PostSummary? postFromFirestore(String id, Map<String, dynamic> d) {
         : null,
     likeCount: _int(d['likeCount']),
     saveCount: _int(d['saveCount']),
+    eventId: _str(d['eventId']),
     createdAt: createdAt.toDate().toUtc(),
   );
 }
@@ -157,6 +158,12 @@ class FirestorePostRepository implements PostRepository {
     Query<Map<String, dynamic>> q = _posts;
     if (kind != null) {
       q = q.where('kind', isEqualTo: kind.code);
+    } else {
+      // Home never shows event shares: they live on the event timeline.
+      q = q.where(
+        'kind',
+        whereIn: [PostKind.work.code, PostKind.realShoot.code],
+      );
     }
     if (specialtyId != null) {
       q = q.where('specialty', isEqualTo: specialtyId);

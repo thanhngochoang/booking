@@ -12,6 +12,8 @@ import 'package:photobooking/app/app.dart';
 import 'package:photobooking/app/router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
+import 'package:photobooking/data/push/push_providers.dart';
+import 'package:photobooking/features/notifications/push_open_handler.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
@@ -67,6 +69,10 @@ class _Root extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    // Keeps this install's push token registered while signed in and allowed.
+    ref.watch(pushRegistrationProvider);
+    // A tap on a push opens its target (marks the inbox row read first).
+    ref.watch(pushOpenHandlerProvider);
     return MyApp(
       router: router,
       theme: buildLightTheme(),

@@ -9,6 +9,7 @@ import 'package:photobooking/features/home/home_screen.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
+import '../../support/icon_finders.dart';
 import '../../support/screen_host.dart';
 
 GoRouter _router() => GoRouter(
@@ -181,8 +182,7 @@ void main() {
             if (p.id == 'p2')
               fixturePhotographer(
                 'p2',
-                name:
-                    'Nguyễn Thị Hồng Nhung Phương Thảo Studio Chụp Ảnh Cưới Hỏi Sài Gòn',
+                name: 'Nguyễn Thị Hồng Nhung Phương Thảo Studio Chụp Ảnh Cưới Hỏi Sài Gòn',
                 specialties: const ['wedding'],
                 nextFreeDate: '2026-10-02',
                 providerType: ProviderType.artist,
@@ -300,7 +300,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('save-a')),
-        matching: find.byIcon(Icons.bookmark_border),
+        matching: outlineIcon(AppIcons.save),
       ),
       findsOneWidget,
     );
@@ -309,7 +309,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('save-a')),
-        matching: find.byIcon(Icons.bookmark),
+        matching: filledIcon(AppIcons.save),
       ),
       findsOneWidget,
       reason: 'shown before the write finishes',
@@ -324,7 +324,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('save-a')),
-        matching: find.byIcon(Icons.bookmark),
+        matching: filledIcon(AppIcons.save),
       ),
       findsOneWidget,
       reason: 'back to saved after the failed undo',

@@ -19,10 +19,10 @@ Ký hiệu: **Đã có** (đã trong code), **Mới**.
 ## 1. Nền tảng và khung
 
 ### AuroraBackground · Đã có
-Nền tối/sáng có ba vầng sáng (cyan, hồng, tím); sáng giảm còn 50%. `AuroraBackground({Widget? child})`. Mọi màn bọc trong nó với `Scaffold(backgroundColor: transparent)`. Test: hiển thị `child` trên cả hai theme.
+Nền tối/sáng có một vầng tím nhạt và hai vầng trung tính; sáng giảm còn 50%. `AuroraBackground({Widget? child})`. Mọi màn bọc trong nó với `Scaffold(backgroundColor: transparent)`. Test: hiển thị `child` trên cả hai theme.
 
 ### GlassCard · Đã có
-Thẻ kính mờ (blur 24, radius 28, bóng mềm). `GlassCard({required Widget child, bool highlight = true})`. `highlight: true` vẽ viền spectrum (`SpectrumBorder`); **chỉ một thẻ chính mỗi màn** dùng. Thẻ list dùng `highlight: false` (viền mảnh). Dùng ở S01.03, S06.01 (thẻ hôm nay), S09.02, S11.04 (thẻ vé).
+Thẻ kính mờ (blur 24, radius 28, bóng mềm). `GlassCard({required Widget child, bool highlight = true})`. `highlight: true` vẽ viền nổi bật (trung tính) (`HighlightBorder`); **chỉ một thẻ chính mỗi màn** dùng. Thẻ list dùng `highlight: false` (viền mảnh). Dùng ở S01.03, S06.01 (thẻ hôm nay), S09.02, S11.04 (thẻ vé).
 
 ### AuroraHero · Đã có
 Tiêu đề hai dòng, dòng hai tô gradient; có đệm dọc quanh dòng gradient để không cắt dấu tiếng Việt (`height 1.2`). `AuroraHero({lead, accent, tagline})`. Dùng ở S01.03.
@@ -78,7 +78,7 @@ Nút liên hệ gọn, bung kênh khi bấm. `ContactDial({required ContactAcces
 - Test: bung/đóng, một kênh, giảm chuyển động, thứ tự tiêu điểm.
 
 ### LocationPromptCard · Mới
-Thẻ xin vị trí đúng lúc. `LocationPromptCard({required LocationPromptState state, required VoidCallback onAllow, required VoidCallback onLater, VoidCallback? onChooseArea})`. Trạng thái `ask` (biểu tượng ghim, "Sự kiện gần bạn", mô tả, nút "Cho phép" + "Để sau"), `requesting` (nút loading), `denied` (thu thành chip "Chọn khu vực"). Viền spectrum chỉ khi `ask`. Dùng ở S02.03. Widget không gọi hộp thoại quyền; màn xử lý trong `onAllow`.
+Thẻ xin vị trí đúng lúc. `LocationPromptCard({required LocationPromptState state, required VoidCallback onAllow, required VoidCallback onLater, VoidCallback? onChooseArea})`. Trạng thái `ask` (biểu tượng ghim, "Sự kiện gần bạn", mô tả, nút "Cho phép" + "Để sau"), `requesting` (nút loading), `denied` (thu thành chip "Chọn khu vực"). Viền nổi bật (trung tính) chỉ khi `ask`. Dùng ở S02.03. Widget không gọi hộp thoại quyền; màn xử lý trong `onAllow`.
 
 ---
 
@@ -114,22 +114,25 @@ Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Ch
 `BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
 
 ### EventCard và DateBlock · Đã có
-`EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured`: ảnh bìa 16:9 với pill ("1,2 km · Còn 6 chỗ") và lớp phủ chữ. `size: compact` (hàng ngang S02.03) rộng 176dp. Có biến thể `EventCard.skeleton({EventCardSize size = row})`.  
+`EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured` (mock S11.01, 2026-10-07): ảnh bìa 16:10; `PhotoPill` sáng góc trên trái với chấm trạng thái (xanh còn nhiều chỗ, vàng từ một nửa, đỏ "Hết chỗ"); lớp phủ đáy ba dòng: "thứ dd/MM · HH:mm · địa điểm[ · khoảng cách]", tên đậm, "chủ · n/sức chứa đã đăng ký"; không có giá (giá nằm ở thẻ hàng). `EventTypeTag(label)`: tag loại dạng pill kính có viền (mock `.tag`), dùng ở S11.02 và `TicketCard`. `size: compact` (hàng ngang S02.03) rộng 176dp. Có biến thể `EventCard.skeleton({EventCardSize size = row})`.  
 `DateBlock({required DateTime day, DateBlockSize size = regular, DateBlockFormat format = regular, VoidCallback? onTap})` ô nền `primarySubtle`, số ngày Fraunces, tháng "T10" chữ hoa; biến thể `DateBlock.skeleton()`. Dùng ở S02.03, S11.01, S12.02 (xem trước), S12.03, S02.04.  
 Lớp view-data: `EventCardData(id, title, hostName, placeName, category, day, priceVnd, spotsLeft, coverUrl, distanceKm)` và hàm chuyển đổi `eventCardDataOf(Event e, AppLocalizations l)`.
 
 ### TicketCard · Đã có
-`TicketCard({required TicketCardData ticket, VoidCallback? onTap, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onShare})`. `GlassCard(highlight)` cho vé sắp diễn ra: tag loại, tên, ngày giờ · số vé, badge, **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M), mã vé chọn‑copy, hàng nút; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.  
-Lớp view-data: `TicketCardData(id, code, title, category, dateTime, ticketCount, state, qrData, locationName, coverUrl)`, `TicketState` (registered | attended | cancelled).
+`TicketCard({required TicketCardData ticket, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onOpenChat, VoidCallback? onPay, VoidCallback? onQrTap, …})`. `GlassCard(highlight)` cho vé sắp diễn ra (mock S11.04, 2026-10-07): `EventTypeTag` loại, tên, một dòng "thứ dd/MM · HH:mm · n vé", badge; hàng **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M) bên trái, bên phải lời nhắc "Đưa mã này cho chủ sự kiện khi đến điểm hẹn." và mã vé chọn‑copy; hàng "Chỉ đường" (viền) + "Thêm vào lịch" (phụ, nền kính có viền); "Vào nhóm chat" (viền, nhỏ, cả chiều rộng) khi có `onOpenChat`; nút chữ đỏ "Huỷ vé · hoàn {x}%" **dưới thẻ**; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `compact: true` là hàng gọn của mock S11.04 cho mọi vé trừ vé sắp diễn ra (chờ thanh toán, hết hạn, đã qua, đã huỷ, đã hoàn): `DateBlock`, tên, "n vé · địa điểm", badge; vé chờ thanh toán có nút nhỏ "Thanh toán tiếp" dưới chữ. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.  
+Lớp view-data: `TicketCardData(ticketCode, eventTitle, typeLabel, startsAt, quantity, state, placeName?)`, `TicketState` (upcoming | pendingPayment | past | attended | cancelled).
 
 ### StatusTimeline · Đã có
 Dòng thời gian 7 bước của booking. `StatusTimeline({required List<TimelineStep> steps})`. Bước đã xong chấm xanh, bước hiện tại viền primary + quầng, bước tới chấm trống; đường nối dọc; mỗi bước có tên + dòng phụ (thời điểm, hướng dẫn). `Semantics`: "Bước 2 trong 7, đang diễn ra". Dùng ở S05.02.
 
 ### StatTile · Mới
-Ô số liệu. `StatTile({required String value, required String label})`. Số Fraunces 22 `tabularFigures` ở trên, nhãn 10,5 một dòng bên dưới (`FittedBox(scaleDown)`), nền trong mờ `surfaceMuted`, viền mảnh, không mờ nền (ô nằm trong thẻ đã mờ). Hàng ô dùng `IntrinsicHeight` + `Expanded` để cùng một hàng và cùng chiều cao. Dùng ở S03.01 (thống kê), S06.01, S12.03. Nhãn màu `foregroundSecondary` (≥ 4,5:1).
+Ô số liệu. `StatTile({required String value, required String label, VoidCallback? onTap})`. Có `onTap` thì ô là nút (`Semantics(button)`, `InkWell` theo radius ô, cao ≥ 48dp, đọc "giá trị, nhãn"); không có thì tĩnh. S06.01 "Đang giữ" mở S06.05. Số Fraunces 22 `tabularFigures` ở trên, nhãn 10,5 một dòng bên dưới (`FittedBox(scaleDown)`), nền trong mờ `surfaceMuted`, viền mảnh, không mờ nền (ô nằm trong thẻ đã mờ). Hàng ô dùng `IntrinsicHeight` + `Expanded` để cùng một hàng và cùng chiều cao. Dùng ở S03.01 (thống kê), S06.01, S12.03. Nhãn màu `foregroundSecondary` (≥ 4,5:1).
 
 ### FreeTag và FreeBanner · Mới
 Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nhạt (`successSubtle` ở sáng, xanh 20% ở tối), chữ xanh đậm (≥ 4,5:1), nhãn “Không thu phí”, đặt ở chỗ giá của `EventCard` (thay “0₫”). `FreeBanner({String? body})` là dải đầy chiều rộng dưới ảnh bìa ở S11.02: biểu tượng tích + “Không thu phí” (đậm) + dòng phụ “Đăng ký để giữ chỗ, không cần thanh toán”. Không chỉ dựa vào màu (luôn có chữ). Dùng ở S02.03, S11.01, S11.02, S12.02 (xem trước), S02.04; S11.03 và S12.03 xử lý riêng (bỏ cổng, doanh thu “—”).
+
+### HashtagChip · Mới
+`HashtagChip({required String tag, int? count, VoidCallback? onTap})`. Viên thuốc `#Tag` (chữ primary trên nền `primarySubtle`, viền primary, Be Vietnam Pro 600) và "{n} bài" bên cạnh bằng chữ phụ; `tag` có hoặc không có `#` đều hiện đúng một `#`. Có `onTap` thì là nút cao ≥ 48dp (`Semantics(button)`), không có thì là nhãn tĩnh. Đọc "#Tag, {n} bài". Tag dài bị cắt bằng dấu chấm lửng một dòng. Dùng ở S11.05 (hashtag của sự kiện). Không có skeleton riêng (dùng hai khối `AppSkeleton`).  
 
 ### CapacityBar · Mới
 `CapacityBar({required int used, required int total, String? label})`. Thanh gradient 6dp trên nền ô nhập; chữ "{used} / {total} đã đăng ký" luôn kèm; `Semantics(value)` theo chữ. Dùng ở S11.02, S12.03 và tiến độ huy hiệu (S03.02).
@@ -210,18 +213,18 @@ Mỗi component hiển thị dữ liệu có **biến thể skeleton riêng** đ
 - Test mỗi skeleton: cùng kích thước với component thật ở 390dp và 320dp (so `tester.getSize`), golden sáng/tối, không ticker khi giảm chuyển động.
 
 ### NotificationRow · Đã có
-Dòng trong hộp thư S17.01. `NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, required VoidCallback onMuteKind})`. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `kind`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. Có biến thể `NotificationRow.skeleton()`. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S17.01.  
-Lớp view-data: `NotificationRowData(id, kind, title, body, timeLabel, unread, thumbUrl, groupAvatars)`, `NotificationKind` (booking, payment, chat, event, badge, system).
+Dòng trong hộp thư S17.01. `NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, VoidCallback? onMuteKind})`; `onMuteKind` null (loại quan trọng không tắt được) ẩn mục "Tắt loại thông báo này" và hành động ngữ nghĩa tương ứng. Bố cục: chấm tím chưa đọc (bên trái) · biểu tượng loại trong vòng tròn tô nhạt (một biểu tượng cho mỗi `kind`, tông theo ngữ nghĩa) · tiêu đề đậm + nội dung tối đa 2 dòng · thời gian tương đối ("5 phút") · thumbnail 40dp tuỳ chọn. Dòng gom hiện tiêu đề đã gộp ("3 nhiếp ảnh gia đã báo giá…") và tối đa 3 avatar nhỏ. Có biến thể `NotificationRow.skeleton()`. `Semantics`: nhãn gộp "Chưa đọc. {tiêu đề}. {nội dung}. {thời gian}" (chưa đọc không chỉ là màu); nhấn giữ hoặc hành động ngữ nghĩa `customActions` mở menu "Đánh dấu đã đọc / Tắt loại thông báo này", nên không có thao tác chỉ vuốt. Vùng chạm cả dòng ≥ 48dp. Dùng ở S17.01.  
+Lớp view-data: `NotificationRowData(id, icon, tone, title, body, timeLabel, unread, thumbUrl, groupAvatars)`: `icon` là `IconData` của `AppIcons` (một biểu tượng cho mỗi `type`), `tone` là `NotificationTone` (neutral tím · success xanh · action vàng, glyph mực đậm cố định ở cả hai theme · danger đỏ · muted xám). `NotificationKind` đã bỏ.
 
-### NotificationBell · Đã có
-Biểu tượng chuông có chấm số cho thanh đầu trang S02.01, S02.03, S06.01. `NotificationBell({required int unread, required VoidCallback onTap})`: chuông 36dp (vùng chạm 48dp), chấm số đỏ, "9+" từ mười trở lên, ẩn khi 0. `Semantics.label` theo ngữ cảnh: 0 → "Thông báo", n → "{n} thông báo chưa đọc" (đọc cả cụm, không đọc số trần). `unread` đọc từ `users/{uid}.unreadCount` qua `unreadCountProvider` (không lắng nghe danh sách). Khác `TabBadge` ở chỗ nhãn ngữ nghĩa mang nội dung "thông báo".
+### NotificationBell · Đã gỡ (10a, 2026-10-06)
+Widget đã xoá khỏi code; phần dưới giữ để tra cứu quyết định cũ. Biểu tượng chuông có chấm số cho thanh đầu trang S02.01, S02.03, S06.01. `NotificationBell({required int unread, required VoidCallback onTap})`: chuông 36dp (vùng chạm 48dp), chấm số đỏ, "9+" từ mười trở lên, ẩn khi 0. `Semantics.label` theo ngữ cảnh: 0 → "Thông báo", n → "{n} thông báo chưa đọc" (đọc cả cụm, không đọc số trần). `unread` đọc từ `users/{uid}.unreadCount` qua `unreadCountProvider` (không lắng nghe danh sách). Khác `TabBadge` ở chỗ nhãn ngữ nghĩa mang nội dung "thông báo".
 
 ### PermissionPrimer · Đã có
-Nội dung sheet S17.03, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required String benefit, required VoidCallback onEnable, required VoidCallback onLater})`. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy(store, now, snoozeFor)` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app qua `PrimerStore`. Không chứa logic quyền (controller của S17.03 gọi `NotificationPermissionPort`).  
+Nội dung sheet S17.03, bọc trong `AppBottomSheet`. `PermissionPrimer({required String title, required List<PrimerBenefit> benefits, String? note, required VoidCallback onEnable, required VoidCallback onLater, bool enabling = false})`; `PrimerBenefit(icon, text)` cho từng dòng lợi ích (3 dòng: lịch được nhận, nhắc giờ chụp, tin nhắn khi app ở nền), `note` là dòng nhỏ "Chọn \"Để sau\", chúng tôi sẽ hỏi lại sau 7 ngày.", `enabling` đặt nút chính ở trạng thái đang tải khi hộp thoại OS mở. Biểu tượng chuông, tiêu đề theo ngữ cảnh ("Bật thông báo để biết khi Minh Trí nhận lịch"), một dòng lợi ích, nút chính `AppButton.primary` "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" ghi thời điểm; `PermissionPrimerPolicy(store, now, snoozeFor)` chặn hỏi lại trong 7 ngày và không bao giờ hỏi khi mở app qua `PrimerStore`. Không chứa logic quyền (controller của S17.03 gọi `NotificationPermissionPort`).  
 Chính sách lưu hoãn: `PermissionPrimerPolicy`, `PrimerStore` (`lib/core/permission_primer_policy.dart`).
 
 ### TabBadge · Đã có
-Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget child})`: ẩn khi 0, "9+" từ mười trở lên, nền `error`, `Semantics.value` "{n} mục mới". Số lấy từ `tabBadgesProvider`. Dùng cho Công việc (yêu cầu chờ) và Khám phá (sự kiện mới).
+Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget child})`: ẩn khi 0, "9+" từ mười trở lên, nền `error`, `Semantics.value` mặc định "{n} mục mới", đổi được bằng `semanticsValue` (tab Hồ sơ đọc "{n} thông báo chưa đọc"). Số lấy từ `tabBadgesProvider`. Dùng cho Công việc (yêu cầu chờ) và Khám phá (sự kiện mới).
 
 ---
 
@@ -275,6 +278,9 @@ Nhãn chữ dạng viên thuốc nhỏ: `artist` "Nhiếp ảnh gia" (chữ, vi�
 
 #### AwardChip và AwardRow · Mới
 `AwardChip` (S03.01): thẻ 178dp, viền và nền vàng nhạt, đĩa biểu tượng giải vàng, kết quả (đậm) + "cuộc thi năm · hạng mục" một dòng. `AwardRow` (S25.01): đĩa biểu tượng (vàng khi `approved`, xám khi khác), tiêu đề "kết quả · cuộc thi năm", `StatusBadge` + dòng phụ (hạng mục hoặc lý do).
+
+#### EarningRow · Mới
+Hàng khoản thu của S06.05 (mock `.card`): trái là tiêu đề đậm "Tên khách · gói" (tối đa 2 dòng) và ngày `T7 12/10`; phải là số tiền ngắn (`450K`, `tabularFigures`, màu chữ thường, không dùng màu nhấn cho tiền) và `StatusBadge` trạng thái; dòng ghi chú tuỳ chọn bên dưới với biểu tượng (lý do tạm giữ, chữ cố định theo mã, không phải lời khách). `Semantics`: "tiêu đề, ngày, số tiền đầy đủ, ghi chú" (nút khi có `onTap`); ≥ 48dp. `EarningRow.skeleton()` cùng hình khối. Dùng ở S06.05.
 
 #### PortfolioViewToggle · Mới
 Nút gạt hai lựa chọn dạng viên thuốc (Album / Dòng thời gian), biểu tượng + chữ, `Semantics` vai trò tab có trạng thái chọn.
@@ -330,7 +336,8 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `AppOptionTile` | S02.05, S02.06 (sau: S04.02, S13.01) |
 | `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04 |
 | `StatusTimeline` | S05.02 |
-| `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02 |
+| `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
+| `EarningRow` | S06.05 |
 | `ContactDial`, `ContactLauncher` | S03.01, S05.02, S11.02, S06.01, S12.03 (S05.04) |
 | `PhoneField` | S04.03, S11.03, S04.05, S08.05, S09.03 |
 | `LocationPromptCard`, `LocationRepository` | S02.03, S02.04, S02.05 |
@@ -338,8 +345,9 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S06.02, S09.02, S08.02, S08.03, S08.04 |
 | `TabBadge` | thanh tab dưới (Công việc, Khám phá, Hồ sơ = thông báo chưa đọc) |
 | `NotificationRow` | S17.01 |
-| `NotificationBell` | không dùng nữa (2026-10-05: số chưa đọc là `TabBadge` của tab Hồ sơ; giữ widget cho tới khi plan thông báo gỡ) |
+| `NotificationBell` | đã gỡ (10a, 2026-10-06; số chưa đọc là `TabBadge` của tab Hồ sơ) |
 | `PermissionPrimer` | S17.03 |
+| `BadgeChip`, `BadgeRow` (`alwaysShowSeeAll`), `BadgeTile` | S03.01 và S09.01 (hàng tối đa 3 chip + "Tất cả" → S03.02), S03.02 |
 | `SignatureLoader`, `AsyncView`, `DotRingLoader` | mọi màn có tải dữ liệu |
 | `EscrowNotice` | S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
 | `MoneyBreakdown` | S04.03, S11.03, S06.05, S13.08 |
@@ -367,3 +375,100 @@ Người dùng quyết định: phân tích UI, thiết kế và viết các sha
 1. **Nhóm A** (kế hoạch `2026-10-02-shared-components-a.md`, **đã xong**): `SignatureLoader` + `AsyncView` (và chuyển mọi màn hiện có sang dùng chúng, bỏ spinner), skeleton cho từng component đã có (`AppSkeleton` + `SkeletonScope` + `.skeleton()` của mỗi component), `SectionHeader`, `OfflineBanner`, `EscrowNotice`, `MoneyBreakdown`, `PolicyTable`, `ReasonPicker`, `ProviderPicker`, `ConfirmSheet`, `CountdownRing`/`CountdownText`, `BookingCard`, `StatusTimeline`, `ChatBubble`, `ChatComposer`, `ConversationRow`.
 2. **Nhóm B1** (kế hoạch `2026-10-02-shared-components-b1.md`, **đã xong**): `DateBlock`, `EventCard` (row, featured, compact) + `eventCardDataOf`, `TicketCard` (với mã QR `qr_flutter`), `BadgeChip` + `BadgeRow` + `BadgeTile`, `NotificationRow` + `NotificationBell`, `PermissionPrimer` + `PermissionPrimerPolicy`. Chuyển màn Khám phá sang dùng `EventCard` và xoá `NearbyEventTile`.
 3. **Nhóm B2** (Chụp ngay & bản đồ, kế hoạch tiếp theo khi tới lượt): `SwipeDeck`, `MatchOverlay`, `OfferStack`, `MapPreview`.
+
+
+## Icons (Material Symbols Rounded)
+
+Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Rounded** (weight 400, optical size 24) trong mock, thư viện component và app. Ngoại lệ (giữ SVG/painter tuỳ biến): logo Zalo, WhatsApp, logo ứng dụng (`i-logo`), con dấu `i-seal` và dấu tick của `ProviderMark`.
+
+- **Gói**: `material_symbols_icons` (Flutter), chỉ `lib/core/theme/app_icons.dart` được import `Symbols.*`. Mock dùng font Google "Material Symbols Rounded" (`<span class="ms">tên</span>`, `.ms.on` = FILL 1).
+- **Danh mục**: `AppIcons.<ý nghĩa>` (xuất qua `core/core.dart`); feature không dùng `Icons.*`/`Symbols.*` (test `test/lint/features_use_app_icons_test.dart`).
+- **Widget**: `AppIcon(icon, {selected, size, color, semanticLabel})`: viền (FILL 0) mặc định, đặc (FILL 1) khi `selected` (tab đang chọn, đã lưu/đã thích, ô tuỳ chọn đang chọn). Cỡ: `AppIconSize.sm/md/lg` = 20/24/28.
+- **Bảng ánh xạ** (ý nghĩa, tên Material Symbols, symbol trong mock, `Icons.*` cũ). Đây là danh sách duy nhất mock và app cùng theo; cột "mock" để task cập nhật mock dùng.
+
+| AppIcons | Material Symbols | sprite cũ (đã bỏ) | Icons.* cũ |
+|---|---|---|---|
+| `AppIcons.home` | `home` | `i-home` | `Icons.home_outlined` |
+| `AppIcons.explore` | `explore` | `i-explore` | `Icons.explore_outlined` |
+| `AppIcons.search` | `search` | `i-search` | `Icons.search` |
+| `AppIcons.add` | `add` | `i-plus` | `Icons.add_rounded`, `Icons.add` |
+| `AppIcons.calendar` | `calendar_today` | `i-cal` | `Icons.event_outlined`, `Icons.calendar_today_outlined`, `Icons.calendar_today` |
+| `AppIcons.calendarCheck` | `event_available` | (mới, chưa có trong mock) | `Icons.event_available_outlined` |
+| `AppIcons.calendarRepeat` | `event_repeat` | (mới, chưa có trong mock) | `Icons.event_repeat_outlined` |
+| `AppIcons.profile` | `person` | `i-user` | `Icons.person_outline_rounded`, `Icons.person_outline`, `Icons.account_circle_outlined` |
+| `AppIcons.chat` | `chat_bubble` | `i-chat` | `Icons.chat_bubble_outline_rounded`, `Icons.chat_bubble_outline` |
+| `AppIcons.notifications` | `notifications` | `i-bell` | `Icons.notifications_none` |
+| `AppIcons.notificationsActive` | `notifications_active` | (mới, chưa có trong mock) | `Icons.notifications_active_outlined` |
+| `AppIcons.notificationsOff` | `notifications_off` | (mới, chưa có trong mock) | `Icons.notifications_off_outlined` |
+| `AppIcons.settings` | `settings` | `i-gear` | `Icons.settings_outlined` |
+| `AppIcons.favorite` | `favorite` | `i-heart` | `Icons.favorite_border`, `Icons.favorite` |
+| `AppIcons.save` | `bookmark` | `i-save` | `Icons.bookmark_border`, `Icons.bookmark` |
+| `AppIcons.share` | `ios_share` | `i-share` | `Icons.ios_share_rounded` |
+| `AppIcons.back` | `arrow_back` | `i-back` | `Icons.arrow_back_rounded`, `Icons.arrow_back` |
+| `AppIcons.forward` | `arrow_forward` | `i-arrow` | `Icons.arrow_forward_rounded` |
+| `AppIcons.arrowUp` | `arrow_upward` | (mới, chưa có trong mock) | `Icons.arrow_upward_rounded` |
+| `AppIcons.arrowDown` | `arrow_downward` | (mới, chưa có trong mock) | `Icons.arrow_downward_rounded` |
+| `AppIcons.check` | `check` | `i-check` | `Icons.check_rounded` |
+| `AppIcons.checkCircle` | `check_circle` | (mới, chưa có trong mock) | `Icons.check_circle_rounded` |
+| `AppIcons.doneAll` | `done_all` | (mới, chưa có trong mock) | `Icons.done_all` |
+| `AppIcons.close` | `close` | `i-x` | `Icons.close_rounded` |
+| `AppIcons.undo` | `undo` | `i-undo` | — |
+| `AppIcons.refresh` | `refresh` | (mới, chưa có trong mock) | `Icons.refresh_rounded` |
+| `AppIcons.more` | `more_horiz` | `i-more` | `Icons.more_horiz_rounded`, `Icons.more_horiz` |
+| `AppIcons.edit` | `edit` | (mới, chưa có trong mock) | `Icons.edit_outlined` |
+| `AppIcons.swap` | `swap_horiz` | `i-swap` | `Icons.swap_horiz_rounded` |
+| `AppIcons.dragHandle` | `drag_handle` | `i-grip` | `Icons.drag_handle_rounded` |
+| `AppIcons.chevron` | `chevron_right` | `i-chev` | `Icons.chevron_right_rounded`, `Icons.chevron_right` |
+| `AppIcons.chevronLeft` | `chevron_left` | (mới, chưa có trong mock) | `Icons.chevron_left_rounded` |
+| `AppIcons.expandMore` | `expand_more` | (mới, chưa có trong mock) | `Icons.expand_more_rounded` |
+| `AppIcons.visibility` | `visibility` | (mới, chưa có trong mock) | `Icons.visibility_outlined` |
+| `AppIcons.visibilityOff` | `visibility_off` | (mới, chưa có trong mock) | `Icons.visibility_off_outlined` |
+| `AppIcons.place` | `location_on` | `i-pin` | `Icons.place_outlined`, `Icons.location_on_outlined`, `Icons.location_on` |
+| `AppIcons.nearMe` | `near_me` | (mới, chưa có trong mock) | `Icons.near_me_outlined` |
+| `AppIcons.myLocation` | `my_location` | (mới, chưa có trong mock) | `Icons.my_location_outlined` |
+| `AppIcons.city` | `location_city` | (mới, chưa có trong mock) | `Icons.location_city_outlined` |
+| `AppIcons.camera` | `photo_camera` | `i-cam` | `Icons.camera_alt`, `Icons.camera_alt_outlined` |
+| `AppIcons.addPhoto` | `add_a_photo` | (mới, chưa có trong mock) | `Icons.add_a_photo_outlined` |
+| `AppIcons.image` | `image` | `i-img` | `Icons.photo_outlined` |
+| `AppIcons.album` | `photo_library` | `i-album` | `Icons.photo_library_outlined`, `Icons.collections_outlined` |
+| `AppIcons.grid` | `grid_view` | (mới, chưa có trong mock) | `Icons.grid_view_rounded` |
+| `AppIcons.list` | `format_list_bulleted` | `i-list` | — |
+| `AppIcons.description` | `description` | (mới, chưa có trong mock) | `Icons.description_outlined` |
+| `AppIcons.schedule` | `schedule` | (mới, chưa có trong mock) | `Icons.schedule_rounded`, `Icons.schedule`, `Icons.access_time` |
+| `AppIcons.mail` | `mail` | `i-mail` | — |
+| `AppIcons.alternateEmail` | `alternate_email` | (mới, chưa có trong mock) | `Icons.alternate_email_rounded` |
+| `AppIcons.lock` | `lock` | `i-lock` | `Icons.lock_outline_rounded`, `Icons.lock_outline` |
+| `AppIcons.lockReset` | `lock_reset` | (mới, chưa có trong mock) | `Icons.lock_reset_rounded` |
+| `AppIcons.phone` | `call` | `i-phone` | `Icons.phone_outlined`, `Icons.call_outlined` |
+| `AppIcons.payment` | `credit_card` | `i-card` | — |
+| `AppIcons.wallet` | `account_balance_wallet` | (mới, chưa có trong mock) | `Icons.account_balance_wallet` |
+| `AppIcons.receipt` | `receipt_long` | (mới, chưa có trong mock) | `Icons.receipt_long_outlined` |
+| `AppIcons.pin` | `pin` | (mới, chưa có trong mock) | `Icons.pin_outlined` |
+| `AppIcons.darkMode` | `dark_mode` | `i-moon` | `Icons.dark_mode_outlined` |
+| `AppIcons.lightMode` | `light_mode` | (mới, chưa có trong mock) | `Icons.light_mode_outlined` |
+| `AppIcons.autoMode` | `brightness_auto` | (mới, chưa có trong mock) | `Icons.brightness_auto_outlined` |
+| `AppIcons.badge` | `badge` | (mới, chưa có trong mock) | `Icons.badge_outlined` |
+| `AppIcons.tag` | `sell` | (mới, chưa có trong mock) | `Icons.sell_outlined` |
+| `AppIcons.star` | `star` | `i-star` | `Icons.star_rounded`, `Icons.star_outline_rounded`, `Icons.star` |
+| `AppIcons.instant` | `bolt` | `i-bolt` | `Icons.bolt` |
+| `AppIcons.ticket` | `confirmation_number` | `i-ticket` | — |
+| `AppIcons.award` | `workspace_premium` | `i-award` | `Icons.workspace_premium_outlined`, `Icons.workspace_premium` |
+| `AppIcons.medal` | `military_tech` | (mới, chưa có trong mock) | `Icons.military_tech` |
+| `AppIcons.verified` | `verified` | (mới, chưa có trong mock) | `Icons.verified` |
+| `AppIcons.work` | `work` | `i-brief` | `Icons.work_outline` |
+| `AppIcons.store` | `storefront` | (mới, chưa có trong mock) | `Icons.storefront_outlined` |
+| `AppIcons.people` | `group` | (mới, chưa có trong mock) | `Icons.people` |
+| `AppIcons.celebration` | `celebration` | (mới, chưa có trong mock) | `Icons.celebration` |
+| `AppIcons.trendingUp` | `trending_up` | (mới, chưa có trong mock) | `Icons.trending_up` |
+| `AppIcons.autoAwesome` | `auto_awesome` | (mới, chưa có trong mock) | `Icons.auto_awesome_outlined` |
+| `AppIcons.gradient` | `gradient` | (mới, chưa có trong mock) | `Icons.gradient_rounded` |
+| `AppIcons.face` | `face_retouching_natural` | (mới, chưa có trong mock) | `Icons.face_retouching_natural` |
+| `AppIcons.info` | `info` | `i-info` | `Icons.info_outline_rounded`, `Icons.info_outline` |
+| `AppIcons.error` | `error` | (mới, chưa có trong mock) | `Icons.error_outline` |
+| `AppIcons.warning` | `warning` | (mới, chưa có trong mock) | `Icons.warning_amber_rounded` |
+| `AppIcons.cloudOff` | `cloud_off` | (mới, chưa có trong mock) | `Icons.cloud_off_rounded`, `Icons.cloud_off_outlined` |
+| `AppIcons.pushPin` | `push_pin` | (mới, chưa có trong mock) | — |
+| `AppIcons.volumeOff` | `volume_off` | (mới, chưa có trong mock) | — |
+| `AppIcons.delete` | `delete` | (mới, chưa có trong mock) | `Icons.delete_outline` |
+| `AppIcons.personRemove` | `person_remove` | (mới, chưa có trong mock) | — |
+| `AppIcons.flag` | `flag` | (mới, chưa có trong mock) | `Icons.flag_outlined` |

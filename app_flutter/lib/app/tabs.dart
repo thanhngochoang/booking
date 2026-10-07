@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -43,31 +44,27 @@ class TabSpec {
 List<TabSpec> tabsFor(UserRole role) {
   final isPhotographer = role == UserRole.photographer;
   return [
-    const TabSpec(
-      tab: AppTab.home,
-      labelKey: 'tabHome',
-      icon: Icons.home_outlined,
-    ),
+    const TabSpec(tab: AppTab.home, labelKey: 'tabHome', icon: AppIcons.home),
     const TabSpec(
       tab: AppTab.explore,
       labelKey: 'tabExplore',
-      icon: Icons.explore_outlined,
+      icon: AppIcons.explore,
     ),
     TabSpec(
       tab: AppTab.action,
       labelKey: isPhotographer ? 'tabCreate' : 'tabFind',
-      icon: isPhotographer ? Icons.add : Icons.search,
+      icon: isPhotographer ? AppIcons.add : AppIcons.search,
       emphasized: true,
     ),
     TabSpec(
       tab: AppTab.bookings,
       labelKey: isPhotographer ? 'tabWork' : 'tabBookings',
-      icon: Icons.calendar_today_outlined,
+      icon: AppIcons.calendar,
     ),
     const TabSpec(
       tab: AppTab.profile,
       labelKey: 'tabProfile',
-      icon: Icons.person_outline,
+      icon: AppIcons.profile,
     ),
   ];
 }

@@ -8,11 +8,14 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
+import '../../support/event_world.dart' as ev;
 
 /// Thursday 08/10 09:00 in Vietnam.
 final _now = DateTime.utc(2026, 10, 8, 2);
@@ -75,7 +78,7 @@ List<Booking> _busy() => [
     service: 'Kỷ yếu nửa ngày',
     place: 'THPT Lê Quý Đôn',
   ),
-  _b('u1', BookingStatus.upcoming, day: '2026-10-15', deposit: 1550000),
+  _b('u1', BookingStatus.upcoming, day: '2026-10-15', deposit: 1590000),
   _b('r1', BookingStatus.requested, deadlineIn: const Duration(hours: 22)),
   _b(
     'r2',
@@ -109,6 +112,7 @@ Future<BookingsTabHandles> _pump(
   TestClock? clock,
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
+  List<EventDetail> events = const [],
 }) => pumpBookingsTab(
   tester,
   uid: detailPhotographerUid,
@@ -120,6 +124,7 @@ Future<BookingsTabHandles> _pump(
   portfolioPhotos: 8,
   packages: const [workPackage],
   completeness: 90,
+  events: events,
 );
 
 typedef FakeRepo = RecordingBookingRepository;
@@ -227,7 +232,8 @@ void main() {
     // Tiles: done this month, held deposits, upcoming shoots.
     await tester.scrollUntilVisible(find.text('Tháng này'), 200);
     expect(find.text('12,4M'), findsOneWidget);
-    expect(find.text('3,2M'), findsOneWidget);
+    // 3.240.000 truncated to two decimals, never rounded up.
+    expect(find.text('3,24M'), findsOneWidget);
     expect(find.text('2'), findsWidgets);
     expect(find.text('Đang giữ'), findsOneWidget);
     expect(find.text('Buổi sắp tới'), findsOneWidget);
@@ -248,6 +254,18 @@ void main() {
       (bookingId: 'r1', action: 'accept', reason: null),
     ]);
     expect(handles.location, '/b/r1');
+  });
+
+  testWidgets('the Đang giữ tile opens Thu nhập', (tester) async {
+    final repo = _repo(_busy());
+    final handles = await _pump(tester, repo);
+    await _settle(tester);
+
+    await tester.scrollUntilVisible(find.text('Tháng này'), 200);
+    await tester.tap(find.text('Đang giữ'));
+    await _settle(tester);
+
+    expect(handles.location, '/work/earnings');
   });
 
   testWidgets('S06.01 accept opens the chat', (tester) async {
@@ -427,5 +445,111 @@ void main() {
     await tester.tap(find.text('Gọi'));
     await _settle(tester);
     expect(handles.launcher.opened, [Uri.parse('tel:+84903123456')]);
+  });
+
+  group('S06.01 Sự kiện của tôi', () {
+    List<EventDetail> mine() => [
+      ev.detailOf(
+        'e1',
+        hostId: detailPhotographerUid,
+        createdBy: detailPhotographerUid,
+      ),
+      ev.detailOf(
+        'e2',
+        hostId: detailPhotographerUid,
+        createdBy: detailPhotographerUid,
+        status: EventStatus.draft,
+        registered: 0,
+        startsIn: const Duration(days: 5),
+      ),
+    ];
+
+    testWidgets('S06.01 shows Sự kiện của tôi with drafts tagged', (
+      tester,
+    ) async {
+      final h = await _pump(
+        tester,
+        _repo(_busy()),
+        events: mine(),
+        viewSize: const Size(390, 2400),
+      );
+      await _settle(tester);
+
+      final section = find.byKey(const Key('my-events-section'));
+      expect(section, findsOneWidget);
+      expect(
+        find.descendant(of: section, matching: find.text('Sự kiện của tôi')),
+        findsOneWidget,
+      );
+      // Upcoming first: e1 (in 3 days) above the draft (in 5 days).
+      expect(
+        tester.getTopLeft(find.byKey(const Key('my-event-e1'))).dy,
+        lessThan(tester.getTopLeft(find.byKey(const Key('my-event-e2'))).dy),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('my-event-tag-e2')),
+          matching: find.text('NHÁP'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('my-event-tag-e1')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('my-event-e2')));
+      await _settle(tester);
+      expect(h.location, '/events/new?draft=e2');
+    });
+
+    testWidgets('a published event opens S12.03; Xem tất cả opens the list', (
+      tester,
+    ) async {
+      final h = await _pump(
+        tester,
+        _repo(_busy()),
+        events: [
+          ...mine(),
+          for (var i = 3; i <= 4; i++)
+            ev.detailOf(
+              'e$i',
+              hostId: detailPhotographerUid,
+              createdBy: detailPhotographerUid,
+              startsIn: Duration(days: 6 + i),
+            ),
+        ],
+        viewSize: const Size(390, 2400),
+      );
+      await _settle(tester);
+      // Three shown, the fourth behind "Xem tất cả".
+      expect(find.byKey(const Key('my-event-e4')), findsNothing);
+      await tester.tap(find.byKey(const Key('my-event-e1')));
+      await _settle(tester);
+      expect(h.location, '/events/e1/manage');
+      h.router.go('/bookings');
+      await _settle(tester);
+      await tester.tap(find.text('Xem tất cả'));
+      await _settle(tester);
+      expect(h.location, '/events/mine');
+    });
+
+    testWidgets('S06.02 keeps the section under the empty state', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _repo(const []),
+        events: mine(),
+        viewSize: const Size(390, 1600),
+      );
+      await _settle(tester);
+      expect(_codeFinder(ScreenCodes.workEmpty), findsOneWidget);
+      expect(find.byKey(const Key('my-events-section')), findsOneWidget);
+    });
+
+    testWidgets('no events, no section', (tester) async {
+      await _pump(tester, _repo(_busy()), viewSize: const Size(390, 2400));
+      await _settle(tester);
+      expect(find.byKey(const Key('my-events-section')), findsNothing);
+      expect(find.text('Sự kiện của tôi'), findsNothing);
+    });
   });
 }

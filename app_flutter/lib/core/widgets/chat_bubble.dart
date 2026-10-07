@@ -1,6 +1,9 @@
 // lib/core/widgets/chat_bubble.dart
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
@@ -18,9 +21,13 @@ final class TextContent extends ChatBubbleContent {
 }
 
 /// Photo message.
+///
+/// [localPath] is a file on this device: a photo that is still being sent
+/// shows from there until the message lands and [url] takes over.
 final class ImageContent extends ChatBubbleContent {
-  const ImageContent(this.url);
+  const ImageContent(this.url, {this.localPath});
   final String url;
+  final String? localPath;
 }
 
 /// Location message with a label and map link.
@@ -105,14 +112,23 @@ class ChatBubble extends StatelessWidget {
         ),
       );
     } else if (content is ImageContent) {
-      final url = (content as ImageContent).url;
+      final image = content as ImageContent;
+      final local = image.localPath;
       bubbleBody = ClipRRect(
         borderRadius: bubbleRadius,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 160, maxHeight: 160),
           child: AspectRatio(
             aspectRatio: 1,
-            child: NetworkPhoto(url: url, fit: BoxFit.cover),
+            child: local != null && image.url.isEmpty
+                ? Image.file(
+                    File(local),
+                    fit: BoxFit.cover,
+                    cacheWidth: 320,
+                    errorBuilder: (_, _, _) =>
+                        ColoredBox(color: theme.colorScheme.secondary),
+                  )
+                : NetworkPhoto(url: image.url, fit: BoxFit.cover),
           ),
         ),
       );
@@ -123,7 +139,7 @@ class ChatBubble extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.location_on, size: 16, color: foreground),
+            AppIcon(AppIcons.place, size: 16, color: foreground),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
@@ -215,8 +231,8 @@ class ChatBubble extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.error_outline,
+                          const AppIcon(
+                            AppIcons.error,
                             size: 14,
                             color: AppColors.error,
                           ),
@@ -238,8 +254,8 @@ class ChatBubble extends StatelessWidget {
               if (mine && isSending) ...[
                 const Padding(
                   padding: EdgeInsets.only(right: 4, bottom: 6),
-                  child: Icon(
-                    Icons.access_time,
+                  child: AppIcon(
+                    AppIcons.schedule,
                     size: 13,
                     color: Colors.white70,
                   ),

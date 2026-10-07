@@ -7,15 +7,18 @@ EventCardData eventCardDataOf(EventSummary e, AppLocalizations l) {
   return EventCardData(
     id: e.id,
     title: e.title,
-    hostName: e.hostName,
-    hostVerified: e.hostVerified,
+    hostName: e.isPlatformHosted ? l.eventHostPlatform : e.hostName,
+    hostVerified: !e.isPlatformHosted && e.hostVerified,
     typeTag: e.type.tag,
     typeLabel: e.type.label(l),
     startsAt: e.startsAt,
+    hasDate: e.hasSchedule,
     placeName: e.locationName,
     priceVnd: e.priceVnd,
     seatsLeft: e.seatsLeft,
     soldOut: soldOut,
     coverUrl: e.coverUrl,
+    capacity: e.capacity,
+    registeredCount: e.registeredCount,
   );
 }

@@ -32,6 +32,18 @@ abstract class MediaUploader {
   Future<void> delete(String storagePath);
 }
 
+/// Turns the storage path of an uploaded object into a URL to show it from
+/// (chat images store the path, not a URL).
+abstract class MediaUrlResolver {
+  Future<String> downloadUrl(String storagePath);
+}
+
+class FakeMediaUrlResolver implements MediaUrlResolver {
+  @override
+  Future<String> downloadUrl(String storagePath) async =>
+      'https://storage.test/$storagePath';
+}
+
 class FakeMediaUploader implements MediaUploader {
   /// Names of images whose upload fails after a first progress event.
   final Set<String> failNames = {};

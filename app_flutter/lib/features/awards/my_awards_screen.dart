@@ -115,7 +115,7 @@ class MyAwardsScreen extends ConsumerWidget {
                 ? null
                 : IconButton(
                     tooltip: l.back,
-                    icon: const Icon(Icons.arrow_back_rounded),
+                    icon: const AppIcon(AppIcons.back),
                     onPressed: () => context.go('/profile'),
                   ),
             title: Text(l.s2501Title),
@@ -127,7 +127,7 @@ class MyAwardsScreen extends ConsumerWidget {
                   width: AppSpace.s12,
                   height: AppSpace.s12,
                 ),
-                icon: const Icon(Icons.info_outline_rounded),
+                icon: const AppIcon(AppIcons.info),
                 onPressed: () => _info(context),
               ),
             ],

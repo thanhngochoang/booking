@@ -57,7 +57,7 @@ void main() {
     expect(find.text('Số điện thoại'), findsOneWidget);
     final box = find.byKey(const Key('phone-code-box'));
     expect(tester.getSize(box).width, 72);
-    expect(find.byIcon(Icons.phone_outlined), findsNothing);
+    expect(find.byIcon(AppIcons.phone), findsNothing);
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.decoration!.prefixText, isNull);
     expect(field.decoration!.prefixIcon, isNull);

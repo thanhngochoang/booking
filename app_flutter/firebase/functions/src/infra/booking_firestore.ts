@@ -20,6 +20,7 @@ import type {
   BookingTx,
   Payment,
   PaymentStatus,
+  PaymentSubject,
   Refund,
   RefundStatus,
   LedgerEntry,
@@ -158,6 +159,8 @@ export function paymentToFirestore(p: Payment): DocumentData {
   return {
     subjectType: p.subjectType,
     subjectId: p.subjectId,
+    // Ticket payments carry their event (the event's escrow sweeps query it); bookings write null.
+    eventId: p.eventId ?? null,
     payerId: p.payerId,
     payeeId: p.payeeId,
     provider: p.provider,
@@ -169,6 +172,8 @@ export function paymentToFirestore(p: Payment): DocumentData {
     paidAt: toTimestamp(p.paidAt),
     releasedAt: toTimestamp(p.releasedAt),
     releaseAfter: toTimestamp(p.releaseAfter),
+    dispute: p.dispute ? { reason: p.dispute.reason, openedAt: toTimestamp(p.dispute.openedAt) } : null,
+    payoutId: p.payoutId ?? null,
     createdAt: toTimestamp(p.createdAt),
     updatedAt: toTimestamp(p.updatedAt),
   };
@@ -180,6 +185,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     id,
     subjectType: d.subjectType,
     subjectId: d.subjectId,
+    ...(typeof d.eventId === 'string' && d.eventId !== '' ? { eventId: d.eventId } : {}),
     payerId: d.payerId,
     payeeId: d.payeeId,
     provider: d.provider as PaymentProvider,
@@ -191,6 +197,11 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     paidAt: toIsoString(d.paidAt),
     releasedAt: toIsoString(d.releasedAt),
     releaseAfter: toIsoString(d.releaseAfter),
+    dispute:
+      d.dispute && typeof d.dispute === 'object' && typeof d.dispute.reason === 'string'
+        ? { reason: d.dispute.reason, openedAt: toIsoString(d.dispute.openedAt) ?? new Date(0).toISOString() }
+        : null,
+    payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
   };
@@ -199,6 +210,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
 export function refundToFirestore(r: Refund): DocumentData {
   return {
     paymentId: r.paymentId,
+    subjectType: r.subjectType ?? null,
     amount: r.amount,
     percent: r.percent,
     status: r.status,
@@ -215,6 +227,7 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
   return {
     id,
     paymentId: d.paymentId,
+    ...(d.subjectType === 'booking' || d.subjectType === 'event_registration' ? { subjectType: d.subjectType as PaymentSubject } : {}),
     amount: d.amount,
     percent: d.percent,
     status: d.status as RefundStatus,
@@ -489,6 +502,27 @@ export class FirestoreBookingStore implements BookingStore {
       if (b) res.push(b);
     }
     return res;
+  }
+
+  /**
+   * One page of `upcoming` bookings ordered by day, start and id (index `status, day, start, __name__`).
+   * Pass the previous `next` as `after`; `next` is null on the last page.
+   */
+  async findUpcomingPage(limit: number, after: unknown = null): Promise<{ bookings: Booking[]; next: unknown }> {
+    let q = this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'upcoming')
+      .orderBy('day')
+      .orderBy('start')
+      .orderBy('__name__');
+    if (after !== null) q = q.startAfter(after as never);
+    const snap = await q.limit(limit).get();
+    const bookings: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b) bookings.push(b);
+    }
+    return { bookings, next: snap.size < limit ? null : (snap.docs[snap.size - 1] ?? null) };
   }
 
   async findAutoCompletions(cutoff: Date, limit = 100): Promise<readonly Booking[]> {

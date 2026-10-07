@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 
@@ -16,6 +17,8 @@ EventCardData _sampleEvent({
   int seatsLeft = 3,
   bool soldOut = false,
   String? coverUrl,
+  int? capacity,
+  int? registeredCount,
 }) {
   return EventCardData(
     id: id,
@@ -30,33 +33,34 @@ EventCardData _sampleEvent({
     seatsLeft: seatsLeft,
     soldOut: soldOut,
     coverUrl: coverUrl,
+    capacity: capacity,
+    registeredCount: registeredCount,
   );
 }
 
 void main() {
-  testWidgets('row shows date block, title, host · place, tag, price and seats', (
-    tester,
-  ) async {
-    final event = _sampleEvent(
-      startsAt: DateTime.utc(2026, 10, 26, 10, 0),
-    );
+  testWidgets(
+    'row shows date block, title, host · place, tag, price and seats',
+    (tester) async {
+      final event = _sampleEvent(startsAt: DateTime.utc(2026, 10, 26, 10, 0));
 
-    await tester.pumpWidget(
-      hostWidget(EventCard(data: event, size: EventCardSize.row)),
-    );
+      await tester.pumpWidget(
+        hostWidget(EventCard(data: event, size: EventCardSize.row)),
+      );
 
-    // DateBlock shows day 26 and month T10
-    expect(find.text('26'), findsOneWidget);
-    expect(find.text('T10'), findsOneWidget);
+      // DateBlock shows day 26 and month T10
+      expect(find.text('26'), findsOneWidget);
+      expect(find.text('T10'), findsOneWidget);
 
-    expect(find.text('Mini session mùa thu'), findsOneWidget);
-    expect(find.text('Minh Trí · Công viên Bạch Đằng'), findsOneWidget);
-    expect(find.text('#minisession'), findsOneWidget);
-    expect(find.text('600K'), findsOneWidget);
-    expect(find.text('Còn 3 chỗ'), findsOneWidget);
-  });
+      expect(find.text('Mini session mùa thu'), findsOneWidget);
+      expect(find.text('Minh Trí · Công viên Bạch Đằng'), findsOneWidget);
+      expect(find.text('#minisession'), findsOneWidget);
+      expect(find.text('600K'), findsOneWidget);
+      expect(find.text('Còn 3 chỗ'), findsOneWidget);
+    },
+  );
 
-  testWidgets('free event shows FreeTag in row, featured and compact, never 0₫', (
+  testWidgets('free event shows FreeTag in row and compact, never 0₫', (
     tester,
   ) async {
     final freeEvent = _sampleEvent(priceVnd: 0);
@@ -66,7 +70,12 @@ void main() {
         hostWidget(EventCard(data: freeEvent, size: size)),
       );
 
-      expect(find.byType(FreeTag), findsOneWidget, reason: 'size: $size');
+      // The featured card shows no price at all (mock S11.01).
+      expect(
+        find.byType(FreeTag),
+        size == EventCardSize.featured ? findsNothing : findsOneWidget,
+        reason: 'size: $size',
+      );
       expect(find.textContaining('0₫'), findsNothing, reason: 'size: $size');
     }
   });
@@ -95,7 +104,10 @@ void main() {
       ),
     );
 
-    expect(find.text('1,2 km · Minh Trí · Công viên Bạch Đằng'), findsOneWidget);
+    expect(
+      find.text('1,2 km · Minh Trí · Công viên Bạch Đằng'),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -119,26 +131,84 @@ void main() {
     },
   );
 
-  testWidgets('featured shows cover and pill', (tester) async {
-    final event = _sampleEvent(
-      coverUrl: 'https://example.com/cover.jpg',
-      seatsLeft: 5,
-    );
+  testWidgets(
+    'featured matches mock S11.01: overlay lines, light pill top-left with a dot, 16:10',
+    (tester) async {
+      final event = _sampleEvent(
+        title: 'Photo walk phố cổ buổi sớm',
+        hostName: 'Quốc Bảo',
+        placeName: 'Phố cổ Hà Nội',
+        // CN 18/10 06:00 in Việt Nam.
+        startsAt: DateTime.utc(2026, 10, 17, 23, 0),
+        coverUrl: 'https://example.com/cover.jpg',
+        seatsLeft: 6,
+        capacity: 20,
+        registeredCount: 14,
+      );
 
-    await tester.pumpWidget(
-      hostWidget(
-        EventCard(
-          data: event,
-          size: EventCardSize.featured,
-          distanceLabel: '2,5 km',
+      await tester.pumpWidget(
+        hostWidget(EventCard(data: event, size: EventCardSize.featured)),
+      );
+
+      expect(find.text('CN 18/10 · 06:00 · Phố cổ Hà Nội'), findsOneWidget);
+      expect(find.text('Photo walk phố cổ buổi sớm'), findsOneWidget);
+      expect(find.text('Quốc Bảo · 14/20 đã đăng ký'), findsOneWidget);
+      // Price stays on the row cards.
+      expect(find.text('600.000₫'), findsNothing);
+      final pill = find.byKey(const Key('event-featured-pill'));
+      final photoPill = tester.widget<PhotoPill>(pill);
+      expect(photoPill.label, 'Còn 6 chỗ');
+      expect(photoPill.dot, PhotoPillDot.warn);
+      final card = tester.getRect(find.byType(EventCard));
+      final pillRect = tester.getRect(pill);
+      expect(pillRect.left - card.left, lessThan(card.width / 2));
+      expect(card.width / card.height, closeTo(16 / 10, 0.01));
+      // Title order: when/where, title, host · registered.
+      final when = tester.getRect(find.byKey(const Key('event-featured-when')));
+      final title = tester.getRect(find.text('Photo walk phố cổ buổi sớm'));
+      final who = tester.getRect(find.byKey(const Key('event-featured-who')));
+      expect(when.bottom, lessThanOrEqualTo(title.top));
+      expect(title.bottom, lessThanOrEqualTo(who.top));
+    },
+  );
+
+  testWidgets(
+    'featured: distance follows the place; dot green when roomy, red when full',
+    (tester) async {
+      await tester.pumpWidget(
+        hostWidget(
+          EventCard(
+            data: _sampleEvent(seatsLeft: 15, capacity: 20, registeredCount: 5),
+            size: EventCardSize.featured,
+            distanceLabel: '2,5 km',
+          ),
         ),
-      ),
-    );
+      );
+      expect(
+        find.textContaining('Công viên Bạch Đằng · 2,5 km'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<PhotoPill>(find.byKey(const Key('event-featured-pill')))
+            .dot,
+        PhotoPillDot.ok,
+      );
 
-    expect(find.text('2,5 km · Còn 5 chỗ'), findsOneWidget);
-    expect(find.text('Mini session mùa thu'), findsOneWidget);
-    expect(find.text('600.000₫'), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        hostWidget(
+          EventCard(
+            data: _sampleEvent(seatsLeft: 0, soldOut: true, capacity: 20),
+            size: EventCardSize.featured,
+          ),
+        ),
+      );
+      final full = tester.widget<PhotoPill>(
+        find.byKey(const Key('event-featured-pill')),
+      );
+      expect([full.label, full.dot], ['Hết chỗ', PhotoPillDot.bad]);
+    },
+  );
 
   testWidgets('compact is 176 dp wide', (tester) async {
     final event = _sampleEvent();
@@ -165,11 +235,7 @@ void main() {
 
     await tester.pumpWidget(
       hostWidget(
-        EventCard(
-          data: event,
-          size: EventCardSize.row,
-          distanceLabel: '800 m',
-        ),
+        EventCard(data: event, size: EventCardSize.row, distanceLabel: '800 m'),
       ),
     );
 
@@ -190,12 +256,7 @@ void main() {
     final event = _sampleEvent();
 
     await tester.pumpWidget(
-      hostWidget(
-        EventCard(
-          data: event,
-          onTap: () => tapped = true,
-        ),
-      ),
+      hostWidget(EventCard(data: event, onTap: () => tapped = true)),
     );
 
     await tester.tap(find.byType(EventCard));
@@ -205,7 +266,11 @@ void main() {
   testWidgets('skeleton size equal for each size at 390 and 320 dp', (
     tester,
   ) async {
-    final event = _sampleEvent(title: 'Workshop', hostName: 'Trí', placeName: 'Quận 1');
+    final event = _sampleEvent(
+      title: 'Workshop',
+      hostName: 'Trí',
+      placeName: 'Quận 1',
+    );
 
     for (final width in [390.0, 320.0]) {
       for (final size in EventCardSize.values) {
@@ -223,10 +288,20 @@ void main() {
             width: width,
           ),
         );
-        final skeletonSize = tester.getSize(find.byType(EventCard.skeleton(size: size).runtimeType));
+        final skeletonSize = tester.getSize(
+          find.byType(EventCard.skeleton(size: size).runtimeType),
+        );
 
-        expect(skeletonSize.width, realSize.width, reason: 'width for $size at $width');
-        expect(skeletonSize.height, closeTo(realSize.height, 2.0), reason: 'height for $size at $width');
+        expect(
+          skeletonSize.width,
+          realSize.width,
+          reason: 'width for $size at $width',
+        );
+        expect(
+          skeletonSize.height,
+          closeTo(realSize.height, 2.0),
+          reason: 'height for $size at $width',
+        );
       }
     }
   });

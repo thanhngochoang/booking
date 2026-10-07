@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
+import 'package:photobooking/features/events/tickets_tab.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -14,6 +15,8 @@ import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_fixtures.dart';
+import '../../support/event_world.dart';
+import '../../support/screen_host.dart';
 import '../../support/booking_world.dart';
 import '../../support/fake_booking_repository.dart';
 
@@ -350,5 +353,81 @@ void main() {
       await _settle(tester);
       expect(tester.takeException(), isNull, reason: '$brightness empty');
     }
+  });
+
+  group('Vé sự kiện (S11.04)', () {
+    Future<void> pumpTickets(
+      WidgetTester tester, {
+      String? initialTab,
+      String? highlight,
+      bool showTickets = true,
+    }) async {
+      tester.view.physicalSize = const Size(390, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final w = EventsWorld(
+        events: [detailOf('ev1', priceVnd: 0)],
+        registrations: [registrationOf('r1', 'ev1')],
+      );
+      await tester.pumpWidget(
+        screenApp(
+          home: MyBookingsScreen(
+            showTickets: showTickets,
+            initialTab: initialTab,
+            highlightTicketId: highlight,
+          ),
+          overrides: [
+            ...w.overrides,
+            bookingRepositoryProvider.overrideWithValue(
+              FakeBookingRepository(),
+            ),
+          ],
+        ),
+      );
+      await _settle(tester);
+    }
+
+    testWidgets('tab=events opens Vé sự kiện', (tester) async {
+      await pumpTickets(tester, initialTab: 'events');
+      expect(find.byType(EventTicketsTab), findsOneWidget);
+      // The ticket's title and its type tag (both "Photo walk" here).
+      expect(find.text('Photo walk'), findsNWidgets(2));
+      expect(find.byType(SegmentedTabs<BookingTab>), findsNothing);
+    });
+
+    testWidgets(
+      'without the query the shoots show first and the tab switches',
+      (tester) async {
+        await pumpTickets(tester);
+        expect(find.byType(EventTicketsTab), findsNothing);
+        expect(find.byType(SegmentedTabs<BookingTab>), findsOneWidget);
+        await tester.tap(find.text('Vé sự kiện'));
+        await _settle(tester);
+        expect(find.byType(EventTicketsTab), findsOneWidget);
+        await tester.tap(find.text('Buổi chụp'));
+        await _settle(tester);
+        expect(find.byType(EventTicketsTab), findsNothing);
+      },
+    );
+
+    testWidgets('?tab=events with a new highlight reopens the tickets tab', (
+      tester,
+    ) async {
+      await pumpTickets(tester, initialTab: 'events', highlight: 'r1');
+      await tester.tap(find.text('Buổi chụp'));
+      await _settle(tester);
+      expect(find.byType(EventTicketsTab), findsNothing);
+      // Registering again navigates to the same tab with another ticket.
+      await pumpTickets(tester, initialTab: 'events', highlight: 'r2');
+      expect(find.byType(EventTicketsTab), findsOneWidget);
+    });
+
+    testWidgets('the top tabs are off when showTickets is false', (
+      tester,
+    ) async {
+      await pumpTickets(tester, showTickets: false);
+      expect(find.text('Vé sự kiện'), findsNothing);
+      expect(find.text('Buổi chụp'), findsNothing);
+    });
   });
 }

@@ -6,6 +6,7 @@ import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/date_block.dart';
 import 'package:photobooking/core/widgets/free_tag.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
+import 'package:photobooking/core/widgets/photo_card.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 @immutable
@@ -18,11 +19,14 @@ class EventCardData {
     required this.typeTag,
     required this.typeLabel,
     required this.startsAt,
+    this.hasDate = true,
     this.placeName,
     required this.priceVnd,
     required this.seatsLeft,
     required this.soldOut,
     this.coverUrl,
+    this.capacity,
+    this.registeredCount,
   });
 
   final String id;
@@ -32,11 +36,20 @@ class EventCardData {
   final String typeTag;
   final String typeLabel;
   final DateTime startsAt;
+
+  /// False for a draft saved before its day was chosen: the card shows no
+  /// date ([startsAt] is then only a sort key).
+  final bool hasDate;
   final String? placeName;
   final int priceVnd;
   final int seatsLeft;
   final bool soldOut;
   final String? coverUrl;
+
+  /// Seats and seats taken, for the featured card's "14/20 đã đăng ký";
+  /// left out when null.
+  final int? capacity;
+  final int? registeredCount;
 }
 
 enum EventCardSize { row, featured, compact }
@@ -71,19 +84,21 @@ class EventCard extends StatelessWidget {
     final vn = toVn(data.startsAt);
     final isSoldOut = data.soldOut || data.seatsLeft == 0;
 
-    final dateSpoken = l.eventDateSpoken(
-      vn.weekday.toString(),
-      vn.day,
-      vn.month,
-    );
+    final dateSpoken = data.hasDate
+        ? l.eventDateSpoken(vn.weekday.toString(), vn.day, vn.month)
+        : l.eventDateUnset;
     final placeParts = [
       if (distanceLabel != null && distanceLabel!.isNotEmpty) distanceLabel!,
       if (data.hostName.isNotEmpty) data.hostName,
       if (data.placeName != null && data.placeName!.isNotEmpty) data.placeName!,
     ];
     final placeSpoken = placeParts.join(', ');
-    final priceSpoken = data.priceVnd == 0 ? l.freeTag : formatMoney(data.priceVnd);
-    final seatsSpoken = isSoldOut ? l.eventSoldOut : l.eventSeatsLeft(data.seatsLeft);
+    final priceSpoken = data.priceVnd == 0
+        ? l.freeTag
+        : formatMoney(data.priceVnd);
+    final seatsSpoken = isSoldOut
+        ? l.eventSoldOut
+        : l.eventSeatsLeft(data.seatsLeft);
 
     final semanticLabel = [
       data.title,
@@ -95,16 +110,28 @@ class EventCard extends StatelessWidget {
 
     final content = switch (size) {
       EventCardSize.row => _buildRow(context, theme, dark, vn, isSoldOut, l),
-      EventCardSize.featured => _buildFeatured(context, theme, dark, vn, isSoldOut, l),
-      EventCardSize.compact => _buildCompact(context, theme, dark, vn, isSoldOut, l),
+      EventCardSize.featured => _buildFeatured(
+        context,
+        theme,
+        dark,
+        vn,
+        isSoldOut,
+        l,
+      ),
+      EventCardSize.compact => _buildCompact(
+        context,
+        theme,
+        dark,
+        vn,
+        isSoldOut,
+        l,
+      ),
     };
 
     return Semantics(
       button: onTap != null,
       label: semanticLabel,
-      child: ExcludeSemantics(
-        child: content,
-      ),
+      child: ExcludeSemantics(child: content),
     );
   }
 
@@ -141,7 +168,9 @@ class EventCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DateBlock(day: data.startsAt),
+              data.hasDate
+                  ? DateBlock(day: data.startsAt)
+                  : const DateBlock.undated(),
               const SizedBox(width: AppSpace.s3),
               Expanded(
                 child: Column(
@@ -166,10 +195,7 @@ class EventCard extends StatelessWidget {
                         placeParts.join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: fgSec,
-                        ),
+                        style: TextStyle(fontSize: 12, color: fgSec),
                       ),
                     const SizedBox(height: 2),
                     Text(
@@ -200,19 +226,21 @@ class EventCard extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: fg,
-                        fontFeatures: const [
-                          FontFeature.tabularFigures(),
-                        ],
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   const SizedBox(height: 4),
                   Text(
-                    isSoldOut ? l.eventSoldOut : l.eventSeatsLeft(data.seatsLeft),
+                    isSoldOut
+                        ? l.eventSoldOut
+                        : l.eventSeatsLeft(data.seatsLeft),
                     key: const Key('event-seats'),
                     style: TextStyle(
                       fontSize: 11,
                       color: isSoldOut ? theme.colorScheme.error : fgSec,
-                      fontWeight: isSoldOut ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSoldOut
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ],
@@ -224,6 +252,10 @@ class EventCard extends StatelessWidget {
     );
   }
 
+  /// Mock S11.01 `.ph` hero: a 16:10 cover, the seat pill top-left (white,
+  /// with a status dot) and the `.ov` overlay at the bottom: `weekday dd/MM ·
+  /// HH:mm · place`, the bold title, then `host · n/cap đã đăng ký`. No price
+  /// (the rows carry it).
   Widget _buildFeatured(
     BuildContext context,
     ThemeData theme,
@@ -232,10 +264,27 @@ class EventCard extends StatelessWidget {
     bool isSoldOut,
     AppLocalizations l,
   ) {
-    final pillParts = [
+    String two(int n) => n.toString().padLeft(2, '0');
+    final place = data.placeName;
+    final whenWhere = [
+      if (data.hasDate) ...[formatDay(vn), '${two(vn.hour)}:${two(vn.minute)}'],
+      if (place != null && place.isNotEmpty) place,
       if (distanceLabel != null && distanceLabel!.isNotEmpty) distanceLabel!,
-      isSoldOut ? l.eventSoldOut : l.eventSeatsLeft(data.seatsLeft),
-    ];
+    ].join(' · ');
+    final cap = data.capacity;
+    final who = [
+      if (data.hostName.isNotEmpty) data.hostName,
+      if (cap != null && cap > 0)
+        l.eventRegisteredOf(data.registeredCount ?? 0, cap),
+    ].join(' · ');
+    // Red when full, yellow from half the seats taken (the mock's 14/20),
+    // green before that.
+    final dot = isSoldOut
+        ? PhotoPillDot.bad
+        : (cap != null && cap > 0 && data.seatsLeft * 2 > cap
+              ? PhotoPillDot.ok
+              : PhotoPillDot.warn);
+    const small = TextStyle(fontSize: AppText.xs2, color: AppColors.onScrim);
 
     return Material(
       color: Colors.transparent,
@@ -247,99 +296,91 @@ class EventCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: 16 / 10,
           child: Stack(
             fit: StackFit.expand,
             children: [
               if (data.coverUrl != null && data.coverUrl!.isNotEmpty)
-                NetworkPhoto(
-                  url: data.coverUrl!,
-                  fit: BoxFit.cover,
-                )
+                NetworkPhoto(url: data.coverUrl!, fit: BoxFit.cover)
               else
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
+                    color: dark
+                        ? AppColorsDark.surfaceMuted
+                        : AppColors.surfaceMuted,
                   ),
                 ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.8),
-                    ],
-                    stops: const [0.4, 1.0],
+              Positioned(
+                top: AppSpace.s2h,
+                left: AppSpace.s2h,
+                right: AppSpace.s2h,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: PhotoPill(
+                    key: const Key('event-featured-pill'),
+                    label: isSoldOut
+                        ? l.eventSoldOut
+                        : l.eventSeatsLeft(data.seatsLeft),
+                    dot: dot,
                   ),
                 ),
               ),
               Positioned(
-                top: 10,
-                right: 10,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(999),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [AppColors.scrim, Colors.transparent],
+                    ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    child: Text(
-                      pillParts.join(' · '),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.s3,
+                      36,
+                      AppSpace.s3,
+                      AppSpace.s3,
                     ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 12,
-                right: 12,
-                bottom: 12,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      data.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: AppFonts.display,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (whenWhere.isNotEmpty)
+                          Text(
+                            whenWhere,
+                            key: const Key('event-featured-when'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: small,
+                          ),
                         Text(
-                          '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.8),
+                          data.title,
+                          key: const Key('event-title'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: AppText.base,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.foregroundInverse,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (data.priceVnd == 0)
-                          const FreeTag()
-                        else
-                          Text(
-                            formatMoney(data.priceVnd),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                        if (who.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Text(
+                              who,
+                              key: const Key('event-featured-who'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: small,
                             ),
                           ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -380,10 +421,7 @@ class EventCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 4 / 3,
                 child: data.coverUrl != null && data.coverUrl!.isNotEmpty
-                    ? NetworkPhoto(
-                        url: data.coverUrl!,
-                        fit: BoxFit.cover,
-                      )
+                    ? NetworkPhoto(url: data.coverUrl!, fit: BoxFit.cover)
                     : DecoratedBox(
                         decoration: BoxDecoration(
                           color: dark
@@ -413,16 +451,18 @@ class EventCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: fgSec,
-                          ),
+                          data.hasDate
+                              ? '${vn.day.toString().padLeft(2, '0')}/${vn.month.toString().padLeft(2, '0')}'
+                              : '—',
+                          style: TextStyle(fontSize: 11, color: fgSec),
                         ),
                         const Spacer(),
                         Flexible(
                           child: data.priceVnd == 0
-                              ? const FittedBox(fit: BoxFit.scaleDown, child: FreeTag())
+                              ? const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: FreeTag(),
+                                )
                               : Text(
                                   formatMoney(data.priceVnd),
                                   style: TextStyle(
@@ -505,7 +545,7 @@ class _EventCardFeaturedSkeleton extends StatelessWidget {
     final outline = Theme.of(context).colorScheme.outlineVariant;
 
     return AspectRatio(
-      aspectRatio: 16 / 9,
+      aspectRatio: 16 / 10,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.card),
@@ -566,14 +606,63 @@ class _EventCardCompactSkeleton extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      AppSkeleton.box(width: 36, height: 11, radius: AppRadius.sm),
-                      AppSkeleton.box(width: 48, height: 12, radius: AppRadius.sm),
+                      AppSkeleton.box(
+                        width: 36,
+                        height: 11,
+                        radius: AppRadius.sm,
+                      ),
+                      AppSkeleton.box(
+                        width: 48,
+                        height: 12,
+                        radius: AppRadius.sm,
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Mock `.tag`: the event type as a small glass pill with a hairline
+/// ("Photo walk"), on S11.02 and on the S11.04 ticket.
+class EventTypeTag extends StatelessWidget {
+  const EventTypeTag(this.label, {super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        // Mock --glass-hi: 14% white on dark, white on light.
+        color: dark ? AppColorsDark.secondaryPressed : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(
+          color: dark ? AppColorsDark.border : AppColors.border,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s2,
+          vertical: 3,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: AppText.xs,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.4,
+            color: dark ? AppColorsDark.foreground : AppColors.foreground,
+          ),
         ),
       ),
     );

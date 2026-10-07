@@ -59,9 +59,15 @@ class SystemPayload {
     this.answer,
     this.answeredBy,
     this.answeredAt,
+    this.name,
+    this.userId,
   });
 
   final String kind;
+
+  /// `member_joined` (event group chat): who joined.
+  final String? name;
+  final String? userId;
   final String? status;
   final RescheduleProposal? proposal;
   final String? answer;
@@ -86,11 +92,15 @@ class SystemPayload {
       answer: map['answer'] as String?,
       answeredBy: map['answeredBy'] as String?,
       answeredAt: toDate(map['answeredAt']),
+      name: map['name'] as String?,
+      userId: map['userId'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() => {
     'kind': kind,
+    if (name != null) 'name': name,
+    if (userId != null) 'userId': userId,
     if (status != null) 'status': status,
     if (proposal != null) 'proposal': proposal!.toMap(),
     if (answer != null) 'answer': answer,
@@ -107,11 +117,21 @@ class SystemPayload {
           proposal == other.proposal &&
           answer == other.answer &&
           answeredBy == other.answeredBy &&
-          answeredAt == other.answeredAt;
+          answeredAt == other.answeredAt &&
+          name == other.name &&
+          userId == other.userId;
 
   @override
-  int get hashCode =>
-      Object.hash(kind, status, proposal, answer, answeredBy, answeredAt);
+  int get hashCode => Object.hash(
+    kind,
+    status,
+    proposal,
+    answer,
+    answeredBy,
+    answeredAt,
+    name,
+    userId,
+  );
 }
 
 @immutable
@@ -259,10 +279,18 @@ class ChatMessage {
     this.system,
     required this.createdAt,
     this.sendState = MessageSendState.sent,
+    this.senderName,
+    this.deletedAt,
   });
 
   final String id;
   final String? senderId;
+
+  /// The sender's display name, stored on group chat messages (never a phone).
+  final String? senderName;
+
+  /// A moderator deleted the message: it stays as a tombstone.
+  final DateTime? deletedAt;
   final MessageType type;
   final String? body;
   final String? imagePath;
@@ -315,6 +343,10 @@ class ChatMessage {
           : null,
       createdAt: toDate(data['createdAt']),
       sendState: MessageSendState.sent,
+      senderName: data['senderName'] as String?,
+      deletedAt: data['deletedAt'] is Timestamp
+          ? (data['deletedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -330,7 +362,9 @@ class ChatMessage {
           point == other.point &&
           system == other.system &&
           createdAt == other.createdAt &&
-          sendState == other.sendState;
+          sendState == other.sendState &&
+          senderName == other.senderName &&
+          deletedAt == other.deletedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -343,6 +377,8 @@ class ChatMessage {
     system,
     createdAt,
     sendState,
+    senderName,
+    deletedAt,
   );
 }
 

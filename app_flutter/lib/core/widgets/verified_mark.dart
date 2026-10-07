@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/provider_mark.dart';
 
@@ -24,11 +25,11 @@ class VerifiedMark extends StatelessWidget {
             dimension: size,
             child: DecoratedBox(
               decoration: const BoxDecoration(
-                color: AppColors.ctaStart,
+                color: AppColors.verified,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.check_rounded,
+              child: AppIcon(
+                AppIcons.check,
                 size: size * 0.72,
                 color: Colors.white,
               ),

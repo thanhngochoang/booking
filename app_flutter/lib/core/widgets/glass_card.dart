@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// Frosted panel with a hairline in the logo's spectrum.
+/// Frosted panel with a neutral hairline.
 class GlassCard extends StatelessWidget {
   const GlassCard({super.key, required this.child, this.highlight = true});
 
   final Widget child;
 
-  /// Spectrum hairline; without it the edge is the theme's plain hairline.
+  /// Highlight hairline; without it the edge is the theme's plain hairline.
   final bool highlight;
 
   static const _radius = BorderRadius.all(Radius.circular(28));
@@ -35,7 +35,7 @@ class GlassCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: CustomPaint(
-            foregroundPainter: SpectrumBorder(
+            foregroundPainter: HighlightBorder(
               _radius,
               highlight: highlight,
               plain: theme.colorScheme.outlineVariant,
@@ -60,8 +60,8 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-class SpectrumBorder extends CustomPainter {
-  const SpectrumBorder(
+class HighlightBorder extends CustomPainter {
+  const HighlightBorder(
     this.radius, {
     this.highlight = true,
     this.plain = AppColorsDark.border,
@@ -84,9 +84,9 @@ class SpectrumBorder extends CustomPainter {
         end: Alignment.bottomRight,
         colors: highlight
             ? [
-                AppColors.spectrumCyan.withValues(alpha: 0.7),
+                Colors.white.withValues(alpha: 0.28),
                 Colors.white.withValues(alpha: 0.12),
-                AppColors.spectrumPink.withValues(alpha: 0.7),
+                Colors.white.withValues(alpha: 0.28),
               ]
             : [plain, plain],
       ).createShader(rect);
@@ -94,6 +94,6 @@ class SpectrumBorder extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(SpectrumBorder old) =>
+  bool shouldRepaint(HighlightBorder old) =>
       old.radius != radius || old.highlight != highlight || old.plain != plain;
 }

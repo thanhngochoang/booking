@@ -156,6 +156,9 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 | `transition_booking` | Mọi chuyển trạng thái (nhận, từ chối, huỷ, hoàn thành) | `transitionBooking` |
 | `refund_payment` | Hoàn tiền theo chính sách, chỉ từ số tiền treo, ghi sổ cái | `refundDeposit` |
 | `release_escrow`, `create_payout`, `execute_payout` | Thả tiền treo sau khi hoàn thành, tạo và thực hiện lô chi trả | `releaseEscrow`, `executePayout` |
+| `save_payout_account` | Nhiếp ảnh gia khai/đổi tài khoản nhận tiền (đổi cần đăng nhập lại ≤ 5 phút) | `savePayoutAccount` |
+| `refresh_earnings` | Tính lại các dòng Thu nhập và ba tổng của một người nhận | `onPaymentWritten`, `onPayoutWritten` |
+| `hold_payout`, `resume_payout` | Nhân viên giữ/tiếp tục một lô chưa chạy; CLI `payouts` gọi `create`/`execute`/`hold`/`resume` | CLI `payouts` |
 | `open_dispute`, `resolve_dispute` | Khiếu nại trong cửa sổ, admin xử lý | `openDispute`, `resolveDispute` |
 | `link_event_posts`, `moderate_event_content`, `join_event_chat` | Timeline theo hashtag, kiểm duyệt, nhóm chat sự kiện | `linkEventPosts`, `moderateEventContent`, `joinEventChat` |
 | `expire_requests`, `schedule_reminders` | Hết hạn 24 giờ, nhắc lịch | cron |

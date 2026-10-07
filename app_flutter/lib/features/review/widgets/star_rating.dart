@@ -55,10 +55,9 @@ class StarRating extends StatelessWidget {
                     key: Key('star_$i'),
                     behavior: HitTestBehavior.opaque,
                     onTap: onChanged == null ? null : () => onChanged!(i),
-                    child: Icon(
-                      i <= effectiveValue
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
+                    child: AppIcon(
+                      AppIcons.star,
+                      selected: i <= effectiveValue,
                       size: size,
                       color: i <= effectiveValue ? activeColor : inactiveColor,
                     ),

@@ -9,6 +9,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/explore_badge.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/shell/tab_badges.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 class TabShell extends ConsumerWidget {
   const TabShell(this.shell, {super.key});
@@ -50,7 +51,14 @@ class TabShell extends ConsumerWidget {
                   NavigationDestination(
                     icon: TabBadge(
                       count: badges[s.tab] ?? 0,
-                      child: Icon(s.icon),
+                      semanticsValue: _badgeSemantics(s.tab, badges, l),
+                      child: AppIcon(s.icon),
+                    ),
+                    // Active tab: filled glyph; the theme colours it accent.
+                    selectedIcon: TabBadge(
+                      count: badges[s.tab] ?? 0,
+                      semanticsValue: _badgeSemantics(s.tab, badges, l),
+                      child: AppIcon(s.icon, selected: true),
                     ),
                     label: s.label(l),
                   ),
@@ -61,6 +69,16 @@ class TabShell extends ConsumerWidget {
     );
   }
 }
+
+/// The Hồ sơ badge counts unread notifications, so the screen reader says so
+/// instead of the generic "mục mới".
+String? _badgeSemantics(
+  AppTab tab,
+  Map<AppTab, int> badges,
+  AppLocalizations l,
+) => tab == AppTab.profile && (badges[tab] ?? 0) > 0
+    ? l.notificationUnreadCount(badges[tab]!)
+    : null;
 
 /// Mock `.tab.mid`: a 36dp gradient disc with a purple glow, the whole
 /// destination lifted 3dp, and an ink (not accent) label when active. The
@@ -101,7 +119,7 @@ class MiddleTabDestination extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.ctaMid.withValues(alpha: 0.45),
+                  color: AppColors.ctaStart.withValues(alpha: 0.45),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -112,7 +130,7 @@ class MiddleTabDestination extends StatelessWidget {
               height: 36,
               child: CtaSurface(
                 borderRadius: BorderRadius.circular(18),
-                child: Center(child: Icon(icon, color: Colors.white)),
+                child: Center(child: AppIcon(icon, color: Colors.white)),
               ),
             ),
           ),

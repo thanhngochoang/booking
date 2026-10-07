@@ -1,6 +1,6 @@
 """Builds docs/design/ui-components.html, the shared-component gallery.
 
-The page reuses the screen mock's <style> and icon sprite (docs/design/ui-mock.html), so both pages
+The page reuses the screen mock's <style> and the (brand-only) icon sprite (docs/design/ui-mock.html), so both pages
 always share one look. Each tile shows a component, its API line, the screens that use it and its
 skeleton. Run from the repo root: python3 scripts/tools/build_ui_components.py
 """
@@ -12,11 +12,59 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MOCK = ROOT / 'docs/design/ui-mock.html'
 OUT = ROOT / 'docs/design/ui-components.html'
+SPEC = ROOT / 'docs/superpowers/specs/components/shared-components.md'
 
 mock = MOCK.read_text(encoding='utf-8')
 STYLE = re.search(r'<style>(.*?)</style>', mock, re.S).group(1)
 SPRITE = re.search(r'<svg width="0" height="0".*?</svg>', mock, re.S).group(0)
 APT = re.search(r'<svg class="apt run" viewBox="0 0 100 100" aria-hidden="true">.*?</svg>', mock, re.S).group(0)
+
+
+# Icon family (2026-10-06): Material Symbols Rounded. Tile snippets below were written against the old sprite
+# ids; they are converted to <span class="ms"> at the end (same map as the mock, see shared-components.md "Icons").
+ICON_MAP = {'home': 'home', 'explore': 'explore', 'search': 'search', 'plus': 'add', 'cal': 'calendar_today', 'user': 'person',
+            'chat': 'chat_bubble', 'heart': 'favorite', 'save': 'bookmark', 'share': 'ios_share', 'back': 'arrow_back',
+            'pin': 'location_on', 'check': 'check', 'bell': 'notifications', 'cam': 'photo_camera', 'more': 'more_horiz',
+            'gear': 'settings', 'moon': 'dark_mode', 'mail': 'mail', 'lock': 'lock', 'arrow': 'arrow_forward', 'phone': 'call',
+            'card': 'credit_card', 'swap': 'swap_horiz', 'star': 'star', 'bolt': 'bolt', 'ticket': 'confirmation_number',
+            'award': 'workspace_premium', 'brief': 'work', 'x': 'close', 'undo': 'undo', 'info': 'info', 'grip': 'drag_handle',
+            'chev': 'chevron_right', 'album': 'photo_library', 'list': 'format_list_bulleted', 'img': 'image'}
+KEEP_SVG = {'whatsapp', 'zalo', 'logo', 'seal'}
+
+
+def to_ms(snippet):
+    def rep(m):
+        attrs, name = m.group(1), m.group(2)
+        if name in KEEP_SVG:
+            return m.group(0)
+        cls, sty = ['ms'], []
+        c = re.search(r'class="([^"]*)"', attrs)
+        if c:
+            cls += c.group(1).split()
+        st = re.search(r'style="([^"]*)"', attrs)
+        for d in (st.group(1).split(';') if st else []):
+            if ':' not in d:
+                continue
+            k, v = (x.strip() for x in d.split(':', 1))
+            if k == 'width':
+                sty.append('font-size:' + v)
+            elif k == 'stroke' and v not in ('currentColor', 'none'):
+                sty.append('color:' + v)
+            elif k == 'transform':
+                sty.append(d.strip())
+        a = f' style="{";".join(sty)}"' if sty else ''
+        return f'<span class="{" ".join(cls)}"{a}>{ICON_MAP[name]}</span>'
+    return re.sub(r'<svg([^>]*)><use href="#i-([\w-]+)"/></svg>', rep, snippet)
+
+
+def icon_rows():
+    """Rows of the mapping table in shared-components.md -> Icons: (AppIcons name, symbol, in mock?)."""
+    rows = []
+    for line in SPEC.read_text(encoding='utf-8').splitlines():
+        m = re.match(r'\| `AppIcons\.(\w+)` \| `(\w+)` \| (.+?) \|', line)
+        if m:
+            rows.append((m.group(1), m.group(2), m.group(3).startswith('`')))
+    return rows
 
 
 def wavy(n, a, r=40):
@@ -79,10 +127,21 @@ GALLERY_CSS = '''
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:620px){.pair{grid-template-columns:1fr}}
 .stage{border-radius:var(--r2);padding:12px;display:flex;flex-direction:column;gap:10px;justify-content:center;min-height:120px;position:relative;overflow:hidden;
-  background:radial-gradient(circle at 0% 0%,rgba(20,224,245,calc(.3*var(--glow))),transparent 55%),radial-gradient(circle at 100% 10%,rgba(255,69,208,calc(.26*var(--glow))),transparent 55%),var(--bg)}
+  background:radial-gradient(circle at 0% 0%,rgba(138,63,252,calc(.16*var(--glow))),transparent 55%),var(--bg)}
 .stage .lab{position:absolute;top:6px;right:8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .row3{display:flex;gap:16px;align-items:center;justify-content:space-around;flex-wrap:wrap}
 .row3 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
+/* Icons and 60-30-10 sections */
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.icell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border:1px solid var(--line);border-radius:var(--r2);background:var(--field);text-align:center;min-width:0}
+.icell .ms{font-size:28px;color:var(--ink)}
+.icell .ms.on{color:var(--accent)}
+.icell code{font-size:10.5px;color:var(--ink-2);overflow-wrap:anywhere}.icell small{font-size:10px;color:var(--ink-3);overflow-wrap:anywhere}
+.icell.new{border-style:dashed}
+.split{display:flex;height:56px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--line-2)}
+.split>div{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;min-width:0}
+.swl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.swl div{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--ink-2)}.swl i{height:34px;border-radius:8px;border:1px solid var(--line-2)}.swl code{font-size:10.5px}
 /* Skeleton: white only (no hues, dark theme included), white sweep; still under reduced motion. */
 :root{--sk-fill:rgba(255,255,255,.08);--sk-edge:transparent;--sk-shine:rgba(255,255,255,.14)}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--sk-fill:#E6E3DE;--sk-edge:transparent;--sk-shine:rgba(255,255,255,.85)}}
@@ -140,17 +199,17 @@ tile('dateblock', 'DateBlock',
 tile('eventcard', 'EventCard',
      'EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})',
      'S02.03, S02.04, S11.01, S12.02, S12.03',
-     '<div class="card"><div class="date"><b>26</b><span>T10</span></div><div class="t"><b>Mini session mùa thu</b><span class="meta">Minh Trí · Công viên Bạch Đằng</span><br><span class="etag">#minisession</span></div><div style="text-align:right"><b class="tn">600K</b><div class="meta x">Còn 3 chỗ</div></div></div><div class="card"><div class="date"><b>09</b><span>T11</span></div><div class="t"><b>Cosplay ngoài trời</b><span class="meta">Thu Hà</span></div><span class="tag free">Không thu phí</span></div>',
+     '<div class="card"><div class="date"><b>26</b><span>T10</span></div><div class="t"><b>Mini session mùa thu</b><span class="meta">Minh Trí · Công viên Bạch Đằng</span><br><span class="etag">#minisession</span></div><div style="text-align:right"><b class="tn">600K</b><div class="meta x">Còn 3 chỗ</div></div></div><div class="card"><div class="date"><b>09</b><span>T11</span></div><div class="t"><b>Cosplay ngoài trời</b><span class="meta">Thu Hà</span></div><span class="tag free">Không thu phí</span></div><div class="ph p4" style="aspect-ratio:16/10;border-radius:var(--r3)"><span class="pill"><i style="background:var(--warn)"></i>Còn 6 chỗ</span><div class="ov"><small>CN 20/10 · 06:00 · Phố cổ Hà Nội</small><b>Photo walk phố cổ buổi sớm</b><small>Quốc Bảo · 14/20 đã đăng ký</small></div></div>',
      f'<div class="card">{sk("46px","52px","14px")}<div class="t" style="display:flex;flex-direction:column;gap:6px">{sk("75%")}{sk("55%","10px")}{sk("30%","10px")}</div>{sk("36px","26px")}</div>' * 2)
 tile('ticketcard', 'TicketCard',
-     'TicketCard({required TicketCardData ticket, VoidCallback? onTap, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onShare})',
+     'TicketCard({required TicketCardData ticket, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onOpenChat, VoidCallback? onPay, bool compact = false}) · TicketCard.skeleton()',
      'S11.04',
-     '<div class="card hi" style="flex-direction:column;align-items:stretch;gap:12px;padding:16px"><div class="row"><div class="grow"><span class="tag">Photo walk</span><div style="font-family:var(--display);font-weight:600;font-size:17px;margin-top:6px">Photo walk phố cổ</div><div class="meta tn">CN 20/10 · 06:00 · 2 vé</div></div><span class="badge b-ok">Đã đăng ký</span></div><div class="row" style="gap:14px;align-items:center"><div class="qr" aria-hidden="true" style="width:112px;height:112px"></div><div style="display:flex;flex-direction:column;gap:6px"><b class="tn" style="font-size:15px;letter-spacing:1px">VE-7K2Q-0420</b><span class="meta" style="font-size:11px">Xuất trình mã này tại sự kiện</span></div></div><div class="row" style="gap:8px"><div class="btn out sm" style="flex:1">Chỉ đường</div><div class="btn out sm" style="flex:1">Thêm vào lịch</div></div></div>',
+     '<div class="card hi" style="flex-direction:column;align-items:stretch;gap:12px;padding:16px"><div class="row"><div class="grow"><span class="tag">Photo walk</span><div style="font-family:var(--display);font-weight:600;font-size:17px;margin-top:6px">Photo walk phố cổ</div><div class="meta tn">CN 20/10 · 06:00 · 2 vé</div></div><span class="badge b-ok">Đã đăng ký</span></div><div class="row" style="gap:12px;align-items:center"><div class="qr" aria-hidden="true"></div><div class="grow meta">Đưa mã này cho chủ sự kiện khi đến điểm hẹn.<br><br><b class="tn" style="color:var(--ink);font-size:13px">VE-7K2Q-0420</b></div></div><div class="row"><div class="btn out sm">Chỉ đường</div><div class="btn sec sm">Thêm vào lịch</div></div><div class="btn out sm" style="flex:none"><span class="ms" style="font-size:16px">chat_bubble</span>Vào nhóm chat</div></div><div class="btn txt sm">Huỷ vé · hoàn 100%</div>',
      f'<div class="card" style="flex-direction:column;align-items:stretch;gap:12px;padding:16px">{sk("40%","16px","999px")}{sk("80%","20px")}{sk("50%","12px")}<div class="row" style="gap:14px;align-items:center">{sk("112px","112px","12px")}<div class="grow" style="display:flex;flex-direction:column;gap:8px">{sk("60%","16px")}{sk("40%","12px")}</div></div><div class="row" style="gap:8px">{sk("50%","38px","14px")}{sk("50%","38px","14px")}</div></div>')
 tile('statustimeline', 'StatusTimeline', 'StatusTimeline({required List<TimelineStep> steps})  · TimelineStep(title, subtitle, state: done|current|upcoming|stopped)', 'S05.02',
      '<div style="display:flex;flex-direction:column"><div class="tl done"><i></i><div><b>Đã gửi & đặt cọc</b><span>Hôm nay 9:41 · 450.000₫</span></div></div><div class="tl now"><i></i><div><b>Chờ Minh Trí nhận</b><span>Thường trong 1 giờ</span></div></div><div class="tl"><i></i><div><b>Đã xác nhận</b></div></div></div>',
      ''.join(f'<div class="row" style="gap:10px">{skc(14)}<div class="grow" style="display:flex;flex-direction:column;gap:5px">{sk("55%")}{sk("35%","9px")}</div></div>' for _ in range(3)))
-tile('stattile', 'StatTile', 'StatTile({required String value, required String label})', 'S03.01, S06.01, S12.03',
+tile('stattile', 'StatTile', 'StatTile({required String value, required String label, VoidCallback? onTap}) · StatTile.skeleton()', 'S03.01, S06.01, S12.03, S06.05',
      '<div class="row" style="gap:8px"><div class="kpi"><b>12,4M</b><span>Tháng này</span></div><div class="kpi"><b>3,2M</b><span>Đang giữ</span></div><div class="kpi"><b>5</b><span>Buổi sắp tới</span></div></div>',
      f'<div class="row" style="gap:8px">' + ''.join(f'<div class="kpi" style="gap:6px">{sk("70%","20px")}{sk("80%","9px")}</div>' for _ in range(3)) + '</div>')
 tile('capacity', 'CapacityBar · CompletenessMeter', 'CapacityBar({registered, capacity}) · CompletenessMeter({int? percent, String? hint})', 'S11.02, S12.03, S08.02, S09.02',
@@ -195,6 +254,12 @@ tile('awards', 'AwardChip · AwardRow',
      '<div class="row" style="gap:8px;overflow:hidden"><div class="awd"><div class="mi"><svg><use href="#i-award"/></svg></div><div style="min-width:0"><b>Huy chương Vàng</b><span>VIPA 2024 · Phong cảnh</span></div></div></div><div class="awl"><div class="aw-ic"><svg><use href="#i-award"/></svg></div><div class="t"><b>Huy chương Vàng · VIPA 2024</b><span class="badge b-ok">Đã duyệt</span> Phong cảnh</div></div><div class="awl"><div class="aw-ic mute"><svg><use href="#i-award"/></svg></div><div class="t"><b>Khuyến khích · Ảnh Đẹp VN 2022</b><span class="badge b-pen">Chờ duyệt</span> gửi 03/10</div></div>',
      f'<div class="awd" style="gap:8px">{skc(30)}<div style="flex:1;display:flex;flex-direction:column;gap:4px">{sk("80%","12px")}{sk("60%","10px")}</div></div><div class="awl">{skc(30)}<div class="t" style="display:flex;flex-direction:column;gap:6px">{sk("60%","13px")}{sk("40%","10px")}</div></div>')
 
+tile('earningrow', 'EarningRow',
+     'EarningRow({required title, required meta, required amount, required amountLabel, required badge, note, noteIcon, onTap}) · EarningRow.skeleton()',
+     'S06.05',
+     '<div class="card"><div class="t"><b>Lan Anh · Chân dung 2h</b><span class="meta">T7 12/10</span></div><div style="text-align:right"><b class="tn" style="font-size:13px">450K</b><div style="margin-top:3px"><span class="badge b-pen">Đang giữ</span></div></div></div><div class="card" style="flex-direction:column;align-items:stretch;gap:4px"><div class="row"><div class="t"><b>Thu Hà · Kỷ yếu</b><span class="meta">T5 10/10</span></div><div style="text-align:right"><b class="tn" style="font-size:13px">900K</b><div style="margin-top:3px"><span class="badge b-bad">Đang khiếu nại</span></div></div></div><span class="meta">Lý do: Khách đã báo vấn đề, đang chờ xử lý</span></div>',
+     f'<div class="card"><div class="t" style="display:flex;flex-direction:column;gap:6px">{sk("70%","13px")}{sk("30%","10px")}</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">{sk("40px","14px")}{sk("64px","18px")}</div></div>')
+
 # --- Controls --------------------------------------------------------------------------------------
 tile('buttons', 'AppButton', 'AppButton.primary|outline|secondary|danger|text({label, onPressed, loading, size = regular|small|xsmall})', 'Mọi màn (một nút chính mỗi màn)',
      f'<div class="btn pri" style="flex:none">Đặt cọc 450.000₫</div><div class="row"><div class="btn out sm">Giữ lịch</div><div class="btn dng sm">Huỷ buổi chụp</div></div>{busy("Đặt cọc 450.000₫", block=True)}<div class="row">{busy("Giữ lịch", "out sm")}{busy("Huỷ buổi chụp", "dng sm")}</div>',
@@ -202,6 +267,9 @@ tile('buttons', 'AppButton', 'AppButton.primary|outline|secondary|danger|text({l
 tile('chips', 'AppChip · SegmentedTabs · AppOptionTile', 'AppChip({label, selected, onChanged, kind}) · SegmentedTabs<T>({options, value, onChanged}) · AppOptionTile({title, subtitle, selected, onTap})', 'S02.01, S02.06, S05.01, S04.01, S02.05',
      '<div class="chips"><span class="chip on">Dành cho bạn</span><span class="chip">Chân dung</span><span class="chip ac">T7 12/10</span></div><div class="seg"><span class="on">Sắp tới</span><span>Đang chờ</span><span>Đã xong</span></div><div class="opt on"><div class="th ph p3"></div><div class="grow"><b>Chân dung 2 giờ</b><span class="meta">40 ảnh · 1 địa điểm</span></div><span class="pr">1.500.000₫</span></div>',
      f'<div class="row" style="gap:6px">{sk("96px","30px","999px")}{sk("80px","30px","999px")}{sk("72px","30px","999px")}</div>{sk("100%","36px","16px")}<div class="opt">{sk("48px","48px","10px")}<div class="grow" style="display:flex;flex-direction:column;gap:6px">{sk("60%")}{sk("45%","9px")}</div>{sk("70px")}</div>')
+tile('hashtagchip', 'HashtagChip', 'HashtagChip({tag, count, onTap})', 'S11.05',
+     '<div class="row"><span class="chip on">#PhotoWalkPhoCo1020</span><span class="meta x tn">48 bài</span></div>',
+     f'<div class="row" style="gap:8px">{sk("150px","30px","999px")}{sk("40px","12px")}</div>')
 tile('stepprogress', 'StepProgress', 'StepProgress({current, total, label, showCount = true})', 'S04.01–S04.03, S08.01, S12.01, S12.02',
      '<div class="row"><div class="prog grow"><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="meta x tn">2 / 4</span></div>',
      '<div class="meta">Không có skeleton (không phụ thuộc dữ liệu).</div>')
@@ -242,15 +310,15 @@ tile('chat', 'ChatBubble · ChatComposer', 'ChatBubble({content, mine, state = s
 tile('conversationrow', 'ConversationRow', 'ConversationRow({name, avatarUrl, preview, timeLabel, unread = 0, badge, onTap})', 'S07.02',
      '<div class="crow"><span class="av m"></span><div class="grow"><b>Minh Trí</b> <span class="badge b-ok" style="margin-left:4px">Đã đặt</span><span class="pv">Đẹp rồi. 15:30 gặp ở cổng công viên.</span></div><div class="rt"><span class="meta x tn">9:41</span><span class="un">2</span></div></div><div class="crow rd"><span class="av m" style="background:var(--p4)"></span><div class="grow"><b>Quốc Bảo</b><span class="pv">Bạn: Cảm ơn anh, ảnh đẹp lắm!</span></div><div class="rt"><span class="meta x tn">T2</span></div></div>',
      ''.join(f'<div class="crow">{skc(40)}<div class="grow" style="display:flex;flex-direction:column;gap:6px">{sk("45%")}{sk("80%","10px")}</div>{sk("32px","10px")}</div>' for _ in range(2)))
-tile('notificationrow', 'NotificationRow · NotificationBell',
-     'NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, required VoidCallback onMuteKind}) · NotificationBell({required int unread, required VoidCallback onTap})',
-     'S17.01, S02.01, S02.03, S06.01',
-     '<div class="row" style="gap:12px;align-items:center;margin-bottom:8px"><div class="ic" role="img" aria-label="3 thông báo chưa đọc"><svg><use href="#i-bell"/></svg><span class="cnt" aria-hidden="true">3</span></div><span class="meta" style="font-size:12px">NotificationBell (3 chưa đọc)</span></div><div class="nrow" style="border-top:0"><i class="ud" aria-hidden="true"></i><div class="nic ok"><svg><use href="#i-cal"/></svg></div><div class="nt"><b>Minh Trí đã nhận lịch</b><span>T7 12/10 · 15:30, Bến Bạch Đằng.</span></div><div class="tm">1 giờ</div></div>',
+tile('notificationrow', 'NotificationRow',
+     'NotificationRow({required NotificationRowData item, required VoidCallback onTap, required VoidCallback onMarkRead, VoidCallback? onMuteKind}) · NotificationRowData({id, required IconData icon, NotificationTone tone = neutral, title, body, timeLabel, unread, thumbUrl, groupAvatars}) · NotificationTone { neutral, success, action, danger, muted }',
+     'S17.01',
+     '<div class="nrow" style="border-top:0"><i class="ud" aria-hidden="true"></i><div class="nic ok"><svg><use href="#i-cal"/></svg></div><div class="nt"><b>Minh Trí đã nhận lịch</b><span>T7 12/10 · 15:30, Bến Bạch Đằng.</span></div><div class="tm">1 giờ</div></div>',
      f'<div class="row" style="gap:12px;align-items:center;margin-bottom:8px">{skc(36)}<div class="grow">{sk("120px","12px")}</div></div><div class="nrow" style="border-top:0">{skc(34)}<div class="nt" style="display:flex;flex-direction:column;gap:6px">{sk("70%")}{sk("90%","10px")}</div>{sk("30px","10px")}</div>')
 tile('permissionprimer', 'PermissionPrimer',
-     'PermissionPrimer({required String title, required String benefit, required VoidCallback onEnable, required VoidCallback onLater})',
+     'PermissionPrimer({required String title, required List<PrimerBenefit> benefits, String? note, required VoidCallback onEnable, required VoidCallback onLater, bool enabling = false}) · PrimerBenefit(IconData icon, String text)',
      'S17.03',
-     '<div class="mini-sheet" style="text-align:center;align-items:center;gap:12px"><div class="grab"></div><div class="ic" style="width:48px;height:48px;background:var(--accent-soft);color:var(--accent)"><svg style="width:24px;height:24px"><use href="#i-bell"/></svg></div><div class="h3" style="font-size:16px;text-align:center">Bật thông báo để biết khi Minh Trí nhận lịch</div><div class="meta" style="font-size:12px;text-align:center">Biết ngay khi lịch được nhận, nhắc trước giờ chụp và tin nhắn mới.</div><div class="btn pri" style="width:100%">Bật thông báo</div><div class="btn txt" style="color:var(--ink);width:100%">Để sau</div></div>',
+     '<div class="mini-sheet" style="text-align:center;align-items:center;gap:12px"><div class="grab"></div><div class="ic" style="width:48px;height:48px;background:var(--accent-soft);color:var(--accent)"><svg style="width:24px;height:24px"><use href="#i-bell"/></svg></div><div class="h3" style="font-size:16px;text-align:center">Bật thông báo để biết khi Minh Trí nhận lịch</div><div class="meta" style="font-size:12px;text-align:left">Biết ngay khi lịch được nhận hoặc thay đổi<br>Nhắc trước giờ chụp, không lỡ hẹn<br>Tin nhắn mới khi app đang ở nền</div><div class="btn pri" style="width:100%">Bật thông báo</div><div class="btn txt" style="color:var(--ink);width:100%">Để sau</div><div class="meta" style="font-size:11px;text-align:center">Chọn "Để sau", chúng tôi sẽ hỏi lại sau 7 ngày.</div></div>',
      '<div class="meta">Nội dung sheet xin quyền không có dữ liệu tải từ mạng: không có skeleton (chỉ hiện sau khi người dùng thực hiện một hành động).</div>')
 
 # --- Instant booking --------------------------------------------------------------------------------
@@ -269,7 +337,36 @@ tile('states', 'EmptyState · ErrorState · OfflineBanner', 'EmptyState({title, 
      '<div class="toast" style="font-size:11.5px">Đang xem dữ liệu đã lưu</div><div class="empty" style="padding:6px"><div class="ill ph p4" style="border-radius:50%;width:64px;height:64px"></div><b>Chưa có buổi chụp sắp tới</b><div class="btn pri sm" style="flex:none;padding:0 18px">Tìm nhiếp ảnh gia</div></div>',
      '<div class="meta">Trạng thái kết quả, không có skeleton.</div>')
 
-nav = ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, *_ in T)
+WIDE = []  # (anchor, name, html) sections after the tiles
+
+
+def swatches(items):
+    return '<div class="swl">' + ''.join(
+        f'<div><i style="background:{c}"></i><b>{n}</b><code>{v}</code></div>' for n, c, v in items) + '</div>'
+
+
+_rows = icon_rows()
+_cells = ''.join(
+    f'<div class="icell{"" if inmock else " new"}"><span class="ms">{sym}</span><code>{html.escape(name)}</code><small>{sym}</small></div>'
+    for name, sym, inmock in _rows)
+WIDE.append(('icons', 'Icons · Material Symbols Rounded', f'''<div class="api">AppIcons.&lt;ý nghĩa&gt; · AppIcon(icon, {{selected, size, color, semanticLabel}}) · AppIconSize.sm/md/lg = 20/24/28</div>
+      <div class="use">Weight 400, optical size 24. Viền (FILL 0) mặc định, đặc (FILL 1) khi đang chọn, đã lưu, đã thích. Khung nét đứt: biểu tượng chưa có trong mock. Logo Zalo, WhatsApp, logo ứng dụng và con dấu giữ SVG. {len(_rows)} biểu tượng, bảng ánh xạ ở shared-components.md.</div>
+      <div class="igrid">{_cells}</div>
+      <div class="row3" style="margin-top:6px"><figure><span class="ms" style="font-size:20px">home</span>20 · sm</figure><figure><span class="ms" style="font-size:24px">home</span>24 · md</figure><figure><span class="ms" style="font-size:28px">home</span>28 · lg</figure><figure><span class="ms on" style="font-size:24px;color:var(--accent)">home</span>FILL 1 · đang chọn</figure><figure><span class="ms" style="font-size:24px;color:var(--ink-3)">home</span>tab chưa chọn</figure></div>'''))
+WIDE.append(('mau', 'Màu · quy tắc 60-30-10', f'''<div class="api">AppColors · CtaSurface · chỉ tím ở 10%</div>
+      <div class="use">60% nền và bề mặt, 30% kính trung tính, chữ phụ, đường kẻ (không màu), 10% tím cho nút chính, tab đang chọn, mục đang chọn, link, tiến trình. Phổ màu (cyan, tím, hồng, cam, vàng) chỉ trong loader. Màu trạng thái và vàng của dấu NAG/giải thưởng ngoài quy tắc.</div>
+      <div class="split" aria-label="Tỉ lệ 60-30-10 tối"><div style="flex:60;background:#0B0B10;color:#F7F7F7">60% nền · surface</div><div style="flex:30;background:#2A2833;color:#D6D6D6">30% trung tính</div><div style="flex:10;background:#B08AFF;color:#0B0B10">10%</div></div>
+      <div class="split" aria-label="Tỉ lệ 60-30-10 sáng" style="margin-top:6px"><div style="flex:60;background:#F4F1EC;color:#313131">60% nền · surface</div><div style="flex:30;background:#EDE9E3;color:#313131">30% trung tính</div><div style="flex:10;background:#8338F5;color:#fff">10%</div></div>
+      <h4 style="font-size:12px;color:var(--ink-3);margin-top:6px">60% · tối</h4>
+      {swatches([('bg', '#0B0B10', '0B0B10'), ('surface', '#17151F', '17151F')])}
+      <h4 style="font-size:12px;color:var(--ink-3)">30% · tối (trung tính)</h4>
+      {swatches([('glass / field', 'rgba(255,255,255,.08)', 'trắng 8%'), ('glass-hi', 'rgba(255,255,255,.14)', 'trắng 14%'), ('ink-2', '#D6D6D6', 'D6D6D6'), ('ink-3', '#AEAEAE', 'AEAEAE'), ('line', 'rgba(255,255,255,.12)', 'trắng 12%')])}
+      <h4 style="font-size:12px;color:var(--ink-3)">10% · tím</h4>
+      {swatches([('accent tối', '#B08AFF', 'B08AFF'), ('CTA tối', 'linear-gradient(90deg,#8A3FFC,#6E2FD6)', '8A3FFC → 6E2FD6'), ('accent sáng', '#8338F5', '8338F5'), ('CTA sáng', 'linear-gradient(135deg,#8338F5,#702BDB)', '8338F5 → 702BDB'), ('focus', '#14E0F5', 'cyan, chỉ viền focus')])}
+      <h4 style="font-size:12px;color:var(--ink-3)">60% · sáng và 30% · sáng</h4>
+      {swatches([('bg', '#F4F1EC', 'F4F1EC'), ('surface', '#FFFFFF', 'FFFFFF'), ('field', '#EDE9E3', 'EDE9E3'), ('ink', '#313131', '313131')])}'''))
+
+nav = ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, *_ in T) + ''.join(f'<a href="#{a}">{n.split(" · ")[0]}</a>' for a, n, _ in WIDE)
 tiles = []
 for a, n, api, use, real, skel in T:
     plain = ' plain' if a in ('signatureloader', 'signatureloader-vib', 'asyncview') else ''  # loaders sit on the bare screen background
@@ -279,12 +376,18 @@ for a, n, api, use, real, skel in T:
       <div class="use">Dùng ở: {use}</div>
       <div class="pair"><div class="stage{plain}"><span class="lab">Thật</span>{real}</div><div class="stage{plain}"><span class="lab">Skeleton</span>{skel}</div></div>
     </section>''')
+for a, n, body in WIDE:
+    tiles.append(f'''    <section class="tile" id="{a}" style="grid-column:1/-1">
+      <h3>{n}</h3>
+      {body}
+    </section>''')
 
 page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh gia" (Flutter). Sinh bởi scripts/tools/build_ui_components.py
      từ CSS và icon của docs/design/ui-mock.html; sửa script rồi chạy lại, không sửa file này bằng tay.
      Đặc tả: docs/superpowers/specs/components/shared-components.md -->
 <title>Nhiếp Ảnh Gia Components</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
 <style>{STYLE}{GALLERY_CSS}</style>
 {SPRITE}
 <div class="gwrap">
@@ -296,7 +399,7 @@ page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh
   <p>Mỗi ô là một widget trong <code>lib/core/widgets/</code>: tên, API, màn dùng nó, trạng thái thật và skeleton của nó. Danh sách và thẻ đang tải dùng skeleton của chính component; chờ cấp màn dùng SignatureLoader với một loại sóng (tròn khi tải dữ liệu, rung khi chờ một bên khác). Màn hình đầy đủ ở mock màn.</p>
   <nav class="gnav" aria-label="Component">{nav}</nav>
   <div class="ggrid">
-{chr(10).join(tiles)}
+{to_ms(chr(10).join(tiles))}
   </div>
 </div>
 <script>
@@ -309,4 +412,4 @@ page = f'''<!-- Gallery shared component của app "Cộng đồng nhiếp ảnh
 </script>
 '''
 OUT.write_text(page, encoding='utf-8')
-print(f'wrote {OUT.relative_to(ROOT)}: {len(T)} components')
+print(f'wrote {OUT.relative_to(ROOT)}: {len(T)} components, {len(WIDE)} sections, {len(_rows)} icons')

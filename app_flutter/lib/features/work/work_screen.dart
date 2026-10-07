@@ -15,6 +15,8 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/event_manage/my_events_section.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
 
@@ -22,8 +24,8 @@ import 'package:photobooking/features/work/work_empty.dart';
 class WorkScreen extends ConsumerStatefulWidget {
   const WorkScreen({super.key, this.showEvents = false});
 
-  /// "Sự kiện của tôi" (Decision 9): off until the photographer's events
-  /// (S12.03) exist.
+  /// "Sự kiện của tôi" (Decision 9): the photographer's next events, drafts
+  /// tagged "Nháp", under the month's numbers.
   final bool showEvents;
 
   @override
@@ -67,6 +69,9 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           );
       if (!mounted) return;
       setState(() => _accepting = null);
+      // Accepting is the reason to ask (S17.03); the chat opens after it.
+      await maybeAskForNotifications(context, ref, const PhotographerPrimer());
+      if (!mounted) return;
       final chatId = b.chatId;
       if (chatId != null) {
         await context.push('/chat/$chatId');
@@ -189,7 +194,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             IconButton(
               key: const Key('open-calendar'),
               tooltip: l10n.myCalendarTitle,
-              icon: const Icon(Icons.event_available_outlined),
+              icon: const AppIcon(AppIcons.calendarCheck),
               onPressed: () => context.push('/work/calendar'),
             ),
           ],
@@ -200,7 +205,14 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           onRetry: () =>
               ref.invalidate(myBookingsProvider(BookingRole.photographer)),
           isEmpty: (d) => d.isEmpty,
-          empty: (_) => const WorkEmptyState(),
+          empty: (_) => widget.showEvents
+              ? ListView(
+                  children: const [
+                    SizedBox(height: 480, child: WorkEmptyState()),
+                    MyEventsSection(),
+                  ],
+                )
+              : const WorkEmptyState(),
           data: (context, d) => _dashboard(context, d, features),
         ),
       ),
@@ -284,15 +296,19 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                 value: formatMoney(d.monthRevenueVnd, short: true),
                 label: l10n.workMonth,
               ),
-              // Tapping does nothing until S06.05 exists (no dead route).
               StatTile(
-                value: formatMoney(d.heldVnd, short: true),
+                value: formatMoney(d.heldVnd, short: true, decimals: 2),
                 label: l10n.workHeld,
+                onTap: () => context.push('/work/earnings'),
               ),
               StatTile(value: '${d.upcomingCount}', label: l10n.workUpcoming),
             ],
           ),
         ),
+        if (widget.showEvents) ...[
+          const SizedBox(height: AppSpace.s2),
+          const MyEventsSection(),
+        ],
         const SizedBox(height: AppSpace.s4),
       ],
     );
@@ -326,7 +342,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             child: AppButton.outline(
               l10n.workDirections,
               size: AppButtonSize.small,
-              icon: const Icon(Icons.near_me_outlined, size: 18),
+              icon: const AppIcon(AppIcons.nearMe, size: 18),
               onPressed: () => _onDirections(b),
             ),
           ),

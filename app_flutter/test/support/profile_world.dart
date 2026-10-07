@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/badges/badge_providers.dart';
+import 'package:photobooking/data/badges/badge_repository.dart';
 import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/album/album_repository.dart';
@@ -28,6 +30,7 @@ import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 
+import 'badges_world.dart';
 import 'discovery_world.dart';
 import 'fake_review_repository.dart';
 import 'screen_host.dart';
@@ -69,6 +72,9 @@ class ProfileWorld {
   final skills = FakeSkillsRepository();
   final contacts = FakePhotographerContactRepository();
   final reviews = FakeReviewRepository();
+
+  /// Badge catalogue of the app; nobody holds a badge unless a test earns one.
+  final badges = FakeBadgeRepository(catalog: badgeCatalogue());
 
   /// Approved awards of any photographer; empty unless a test adds some.
   FakeAwardRepository awards = FakeAwardRepository();
@@ -124,6 +130,7 @@ class ProfileWorld {
     reviewRepositoryProvider.overrideWithValue(reviews),
     albumRepositoryProvider.overrideWithValue(albums),
     awardRepositoryProvider.overrideWithValue(awards),
+    badgeRepositoryProvider.overrideWithValue(badges),
   ];
 
   Widget app(
@@ -147,6 +154,7 @@ class ProfileWorld {
           routes: [
             GoRoute(path: 'book', builder: stub),
             GoRoute(path: 'ask', builder: stub),
+            GoRoute(path: 'badges', builder: stub),
             GoRoute(
               path: 'albums/:albumId',
               builder: (_, s) => AlbumDetailScreen(

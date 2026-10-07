@@ -61,7 +61,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('evidence-p2')),
-        matching: find.byIcon(Icons.check_rounded),
+        matching: find.byIcon(AppIcons.check),
       ),
       findsOneWidget,
     );

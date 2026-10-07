@@ -62,7 +62,10 @@ export async function openDispute(
       throw new DomainError('conflict');
     }
 
-    const disputedPayment = disputeEscrowPayment(payment, now);
+    const disputedPayment = {
+      ...disputeEscrowPayment(payment, now),
+      dispute: { reason: reasonTrimmed, openedAt: now.toISOString() },
+    };
     await tx.setPayment(disputedPayment);
 
     const updatedBooking: Booking = {

@@ -2,9 +2,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/events/firestore_nearby_events_repository.dart';
 
-/// Reads events for Explore. The Firestore adapter (query by geohash prefix on
-/// `events (location.geohash, startAt)`) is part of the events plan.
+/// Reads events for Explore. The production adapter is
+/// [FirestoreNearbyEventsRepository] (geohash prefix ranges on `events`).
 abstract class NearbyEventsRepository {
   /// Public events starting at or after [from] whose geohash starts with one
   /// of [cells] (prefixes of length 2 to 5). Only prefixes are passed in: the
@@ -110,7 +111,7 @@ class FakeNearbyEventsRepository implements NearbyEventsRepository {
   }
 }
 
-/// The production default until the events backend exists: no events.
+/// Kept for previews and tests that want no events at all.
 class EmptyNearbyEventsRepository implements NearbyEventsRepository {
   const EmptyNearbyEventsRepository();
 
@@ -136,5 +137,5 @@ class EmptyNearbyEventsRepository implements NearbyEventsRepository {
 }
 
 final nearbyEventsRepositoryProvider = Provider<NearbyEventsRepository>(
-  (ref) => const EmptyNearbyEventsRepository(),
+  (ref) => FirestoreNearbyEventsRepository(),
 );

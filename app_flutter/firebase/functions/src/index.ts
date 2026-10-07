@@ -1,5 +1,6 @@
 import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onCall } from 'firebase-functions/v2/https';
+import { Timestamp } from 'firebase-admin/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { handleGetContactLink } from './callables/get_contact_link.js';
 import {
@@ -16,7 +17,17 @@ import {
   handleProposeReschedule,
   handleAnswerReschedule,
 } from './callables/chat.js';
-import { CALLABLE_OPTIONS, SCHEDULE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
+import {
+  CALLABLE_OPTIONS,
+  PAYMENT_CALLABLE_OPTIONS,
+  PAYOUT_ACCOUNT_KEY,
+  SCHEDULE_OPTIONS,
+  TRIGGER_OPTIONS,
+} from './config.js';
+import { handleSavePayoutAccount } from './callables/payout_account.js';
+import { handlePaymentWrite } from './triggers/payment_write.js';
+import { handlePayoutWrite } from './triggers/payout_write.js';
+import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
 import { liveSkillsDeps } from './infra/live_skills.js';
 import { liveBookingDeps } from './infra/live_booking.js';
@@ -37,7 +48,7 @@ import {
   handleReorderAlbums,
   handleUpdateAlbum,
 } from './callables/album.js';
-import { handlePostCreated } from './triggers/post_created.js';
+import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './triggers/post_created.js';
 import { liveAlbumDeps } from './infra/live_album.js';
 import {
   handleCreateAward,
@@ -48,6 +59,44 @@ import {
 import { handleAwardWrite } from './triggers/award_write.js';
 import { handleAwardPurge } from './scheduled/award_purge.js';
 import { liveAwardDeps } from './infra/live_award.js';
+import { evaluateUserBadges } from '@photobooking/domain';
+import { handleMarkAllNotificationsRead } from './callables/notification.js';
+import { FirestoreDeviceDirectory } from './infra/fcm_push.js';
+import { liveBadgeDeps } from './infra/live_badge.js';
+import { liveNotifyDeps } from './infra/live_notification.js';
+import { db } from './infra/admin.js';
+import { handleChatMemberWrite } from './triggers/chat_member_write.js';
+import { handleChatMessageCreated } from './triggers/chat_message_created.js';
+import { handleDeviceWrite } from './triggers/device_write.js';
+import { handleNotificationWrite } from './triggers/notification_write.js';
+import { handleServiceWrite } from './triggers/service_write.js';
+import { handleUserCreated } from './triggers/user_created.js';
+import { evaluatePostAuthor } from './triggers/post_created.js';
+import { handleReconcileBadges } from './scheduled/reconcile_badges.js';
+import { handlePruneNotifications } from './scheduled/prune_notifications.js';
+import { liveReminderDeps } from './scheduled/booking_clock.js';
+import {
+  handleCancelEvent,
+  handleCancelRegistration,
+  handleCheckInRegistration,
+  handleCheckTicketPayment,
+  handleConfirmFakeTicketPayment,
+  handlePublishEvent,
+  handleRegisterEvent,
+  handleRespondToHostConsent,
+  handleSaveEventDraft,
+  handleUpdateEvent,
+} from './callables/event.js';
+import { handleEventClock, handleReleaseEventHolds } from './scheduled/event_clock.js';
+import { liveEventCallableDeps, liveEventDeps, liveEventPaymentDeps } from './infra/live_event.js';
+import { handleModerateEventTimeline, handleShareEventPost } from './callables/event_timeline.js';
+import {
+  handleModerateEventChat,
+  handlePostEventAnnouncement,
+  handleSendEventMessage,
+} from './callables/event_chat.js';
+import { handleRegistrationWrite } from './triggers/registration_write.js';
+import { liveEventChatDeps, liveTimelineDeps } from './infra/live_event_social.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -60,7 +109,7 @@ export const createBooking = onCall(CALLABLE_OPTIONS, (request) => handleCreateB
 /** Deposit payment intent creation */
 export const createDeposit = onCall(CALLABLE_OPTIONS, (request) => handleCreateDeposit(request, liveBookingDeps()));
 
-/** Fake payment confirmation (dev/test) */
+/** Fake payment confirmation: emulator and dev project only (`fake_payments_disabled` elsewhere). */
 export const confirmFakePayment = onCall(CALLABLE_OPTIONS, (request) => handleConfirmFakePayment(request, liveBookingDeps()));
 
 /** Check deposit payment status */
@@ -73,8 +122,8 @@ export const transitionBooking = onCall(CALLABLE_OPTIONS, (request) => handleTra
 export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
 
 /** 15-minute booking lifecycle and escrow sweep clock */
-export const bookingClock = onSchedule(SCHEDULE_OPTIONS, async () => {
-  await handleBookingClock();
+export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 300 }, async () => {
+  await handleBookingClock(undefined, liveReminderDeps());
 });
 
 /**
@@ -89,6 +138,10 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
     liveSkillsDeps(uid, live?.updateTime),
   );
+  // `fast_reply` follows stats.responseMinutes (written by the server only).
+  if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {
+    await evaluateUserBadges(liveBadgeDeps(), uid);
+  }
 });
 
 /** Open chat inquiry between customer and photographer */
@@ -118,10 +171,10 @@ export const onBookingWrite = onDocumentWritten(
     const bookingId = event.params.bookingId;
     const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
     const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
-    await handleBookingWrite(
-      { id: bookingId, before, after },
-      liveChatDeps(),
-    );
+    await handleBookingWrite({ id: bookingId, before, after }, liveChatDeps(), undefined, {
+      notify: liveNotifyDeps(),
+      badges: liveBadgeDeps(),
+    });
   },
 );
 
@@ -141,6 +194,7 @@ export const onReviewWrite = onDocumentWritten(
       { bookingId, before, after },
       liveStatsStore(),
       new Date(),
+      liveBadgeDeps(),
     );
   },
 );
@@ -180,11 +234,16 @@ export const reorderAlbumPosts = onCall(CALLABLE_OPTIONS, (request) =>
   handleReorderAlbumPosts(request, liveAlbumDeps()),
 );
 
-/** A new post that names an album lands last in it, or is detached when the album is not usable. */
+/**
+ * A new post that names an album lands last in it, or is detached when the album is not usable; a post
+ * with hashtags (or an event) is put on the timeline of every open event it names (plan 10c).
+ */
 export const onPostCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'posts/{postId}' }, async (event) => {
-  // Most posts name no album: skip before building the live deps.
-  if (typeof event.data?.get('albumId') !== 'string') return;
-  await handlePostCreated(event.params.postId, liveAlbumDeps());
+  if (typeof event.data?.get('albumId') === 'string') await handlePostCreated(event.params.postId, liveAlbumDeps());
+  if (mayLinkEventPosts(event.data?.get('hashtags'), event.data?.get('eventId'))) {
+    await handleLinkEventPosts(event.params.postId, liveTimelineDeps());
+  }
+  await evaluatePostAuthor(event.data?.get('authorId'), liveBadgeDeps());
 });
 
 // ---- awards and the NAG tier (plan B1) ----
@@ -213,5 +272,250 @@ export const purgeAwardProofs = onSchedule(
   { ...SCHEDULE_OPTIONS, schedule: 'every day 03:00', timeoutSeconds: 300 },
   async () => {
     await handleAwardPurge();
+  },
+);
+
+// ---- notifications and badges (plan 10a) ----
+
+/** `{}` → `{marked}`: marks every unread inbox row read and zeroes the unread count. */
+export const markAllNotificationsRead = onCall(CALLABLE_OPTIONS, (request) =>
+  handleMarkAllNotificationsRead(request, liveNotifyDeps()),
+);
+
+/** Keeps `users/{uid}/private/inbox.unreadCount` equal to the number of unread rows. */
+export const onNotificationWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'users/{uid}/notifications/{id}' },
+  async (event) => {
+    await handleNotificationWrite(
+      event.params.uid,
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveNotifyDeps(),
+    );
+  },
+);
+
+/** A chat message notifies the other member (grouped per chat); system messages never do. */
+export const onChatMessageCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'chats/{chatId}/messages/{messageId}' },
+  async (event) => {
+    const message = event.data?.data();
+    if (message === undefined || message.type === 'system') return;
+    const chat = await db().collection('chats').doc(event.params.chatId).get();
+    // Event group chats (up to 500 members) never notify per message: there is no "other member".
+    if (chat.data()?.kind === 'event_group') return;
+    const members: unknown = chat.data()?.members;
+    await handleChatMessageCreated(
+      {
+        chatId: event.params.chatId,
+        messageId: event.params.messageId,
+        message,
+        members: Array.isArray(members) ? members.filter((m): m is string => typeof m === 'string') : [],
+      },
+      liveNotifyDeps(),
+    );
+  },
+);
+
+/** Reading a chat (member unreadCount → 0) marks its grouped inbox row read. */
+export const onChatMemberWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'chats/{chatId}/members/{uid}' },
+  async (event) => {
+    const after = event.data?.after.exists ? event.data.after.data() : undefined;
+    await handleChatMemberWrite({ chatId: event.params.chatId, uid: event.params.uid, after }, async (uid, chatId, at) => {
+      const ref = db().collection('users').doc(uid).collection('notifications').doc(`g_chat_${chatId}`);
+      return db().runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists || snap.data()?.readAt != null) return false;
+        tx.update(ref, { readAt: Timestamp.fromDate(at) });
+        return true;
+      });
+    });
+  },
+);
+
+/** One account per push token: other device docs with the same token are removed. */
+export const onDeviceWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'devices/{deviceId}' }, async (event) => {
+  const directory = new FirestoreDeviceDirectory(db());
+  await handleDeviceWrite(
+    event.params.deviceId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    {
+      otherDevicesWithToken: async (token, exceptId) => {
+        const snap = await db().collection('devices').where('token', '==', token).get();
+        return snap.docs.filter((d) => d.id !== exceptId).map((d) => d.id);
+      },
+      remove: (ids) => directory.remove(ids),
+    },
+  );
+});
+
+/** A new account earns `new_member`. */
+export const onUserCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'users/{uid}' }, async (event) => {
+  await handleUserCreated(event.params.uid, liveBadgeDeps());
+});
+
+/** Package changes can complete `complete_profile`. */
+export const onServiceWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'photographers/{uid}/services/{serviceId}' },
+  async (event) => {
+    await handleServiceWrite(
+      event.params.uid,
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveBadgeDeps(),
+    );
+  },
+);
+
+/** Nightly 03:30 Asia/Ho_Chi_Minh: syncs the badge catalogue and re-evaluates `new_member` holders. */
+export const reconcileBadges = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '30 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handleReconcileBadges();
+  },
+);
+
+/** Nightly 03:45: deletes read inbox rows older than 90 days. */
+export const pruneNotifications = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '45 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handlePruneNotifications();
+  },
+);
+
+// ---- earnings and payout account (plan 10b) ----
+
+/**
+ * `{bankCode, accountNumber, holderName}` → `{accountId, accountLast4}`. Photographers only; a
+ * change of an existing account needs a sign-in from the last 5 minutes (`reauth_required`).
+ * The number is stored AES-256-GCM encrypted with the secret PAYOUT_ACCOUNT_KEY.
+ */
+export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
+  handleSavePayoutAccount(request, livePayoutAccountDeps()),
+);
+
+/** A payment write refreshes the payee's earnings rows and totals. */
+export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payments/{paymentId}' }, async (event) => {
+  await handlePaymentWrite(
+    event.params.paymentId,
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    liveEarningsDeps(),
+  );
+});
+
+/** A payout write refreshes the rows of every payment in the batch and the last-payout card. */
+export const onPayoutWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payouts/{payoutId}' }, async (event) => {
+  await handlePayoutWrite(
+    event.data?.before.exists ? event.data.before.data() : undefined,
+    event.data?.after.exists ? event.data.after.data() : undefined,
+    liveEarningsDeps(),
+  );
+});
+
+// ---- photo events (plan 10c) ----
+
+/** `{eventId?, …fields, hostPhotographerId?}` → `{eventId, hashtag}`; creates or edits a draft. */
+export const saveEventDraft = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSaveEventDraft(request, liveEventCallableDeps()),
+);
+
+/** `{eventId}`: draft → open (needs the host's consent when staff created it for a photographer). */
+export const publishEvent = onCall(CALLABLE_OPTIONS, (request) => handlePublishEvent(request, liveEventDeps()));
+
+/** `{eventId, …fields}`: edits a published event. */
+export const updateEvent = onCall(CALLABLE_OPTIONS, (request) => handleUpdateEvent(request, liveEventDeps()));
+
+/** `{eventId}` → `{paidRegistrationIds, refunded, failed}`: cancels and refunds every paid ticket 100%. */
+export const cancelEvent = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 60 }, (request) =>
+  handleCancelEvent(request, liveEventPaymentDeps()),
+);
+
+/** `{eventId, accept}`: the photographer answers a staff-created draft (24 h). */
+export const respondToHostConsent = onCall(CALLABLE_OPTIONS, (request) =>
+  handleRespondToHostConsent(request, liveEventDeps()),
+);
+
+/**
+ * `{eventId, quantity, name, provider?}` → registration (free events: paid at once; paid events: a
+ * 10-minute hold with `paymentId`, `payUrl`, `holdExpiresAt`). 30 s: contended transactions.
+ */
+export const registerEvent = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleRegisterEvent(request, liveEventPaymentDeps()),
+);
+
+/** `{eventId, registrationId}` → `{status, refundPercent}` (paid ≥ 48 h before: refunded 100%). */
+export const cancelRegistration = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCancelRegistration(request, liveEventPaymentDeps()),
+);
+
+/** `{paymentId}` → `{status}`: fake ticket payment, emulator and dev project only. */
+export const confirmFakeTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleConfirmFakeTicketPayment(request, liveEventPaymentDeps()),
+);
+
+/** `{eventId, registrationId}` → `{paid, status}`: back from the gateway, or "Thanh toán tiếp". */
+export const checkTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCheckTicketPayment(request, liveEventPaymentDeps()),
+);
+
+/** `{eventId, ticketCode}` → `{name, quantity}` */
+export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCheckInRegistration(request, liveEventDeps()),
+);
+
+/**
+ * Every 5 minutes: closes registration, completes events (ticket money then waits 24 h for the
+ * bookingClock release), expires unanswered host invitations, retries refunds of cancelled events.
+ */
+export const eventClock = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 5 minutes', timeoutSeconds: 120 }, async () => {
+  await handleEventClock();
+});
+
+/** Every minute: expired 10-minute ticket holds give their seats back. */
+export const releaseEventHolds = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 1 minutes' }, async () => {
+  await handleReleaseEventHolds();
+});
+
+// ---- event timeline and group chat (plan 10c) ----
+
+/** `{eventId, postId, images, caption?}` → `{postId}`: a paid attendee or a manager shares photos to the timeline. */
+export const shareEventPost = onCall(CALLABLE_OPTIONS, (request) => handleShareEventPost(request, liveTimelineDeps()));
+
+/** `{eventId, postId, action: hide | show | approve}`: managers moderate the timeline. */
+export const moderateEventTimeline = onCall(CALLABLE_OPTIONS, (request) =>
+  handleModerateEventTimeline(request, liveTimelineDeps()),
+);
+
+/** `{eventId, message}` → `{id}`: a member posts to the event group chat (20 messages a minute). */
+export const sendEventMessage = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSendEventMessage(request, liveEventChatDeps()),
+);
+
+/** `{eventId, action, …}`: moderators pin, unpin, delete, mute, unmute, remove, or switch moderators-only. */
+export const moderateEventChat = onCall(CALLABLE_OPTIONS, (request) =>
+  handleModerateEventChat(request, liveEventChatDeps()),
+);
+
+/** `{eventId, text}` → `{messageId}`: S12.03 "Nhắn nhóm", a pinned moderator message. */
+export const postEventAnnouncement = onCall(CALLABLE_OPTIONS, (request) =>
+  handlePostEventAnnouncement(request, liveEventChatDeps()),
+);
+
+/** A registration that becomes paid joins the event group chat; cancelled or refunded leaves it. */
+export const onRegistrationWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'events/{eventId}/registrations/{regId}' },
+  async (event) => {
+    await handleRegistrationWrite(
+      {
+        eventId: event.params.eventId,
+        regId: event.params.regId,
+        before: event.data?.before.exists ? event.data.before.data() : undefined,
+        after: event.data?.after.exists ? event.data.after.data() : undefined,
+      },
+      liveEventChatDeps(),
+    );
   },
 );

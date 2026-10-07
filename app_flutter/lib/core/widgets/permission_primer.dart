@@ -1,25 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
+import 'package:photobooking/core/theme/app_theme.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
+
+/// One icon + text line of the primer's benefit list.
+@immutable
+class PrimerBenefit {
+  const PrimerBenefit(this.icon, this.text);
+
+  final IconData icon;
+  final String text;
+}
 
 class PermissionPrimer extends StatelessWidget {
   const PermissionPrimer({
     super.key,
     required this.title,
-    required this.benefit,
+    required this.benefits,
+    this.note,
     required this.onEnable,
     required this.onLater,
-    this.enableLabel,
-    this.laterLabel,
+    this.enabling = false,
   });
 
   final String title;
-  final String benefit;
+  final List<PrimerBenefit> benefits;
+
+  /// Small print under the buttons (e.g. when the question comes back).
+  final String? note;
   final VoidCallback onEnable;
   final VoidCallback onLater;
-  final String? enableLabel;
-  final String? laterLabel;
+
+  /// Puts the primary button in its loading state while the OS dialog is up.
+  final bool enabling;
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +66,10 @@ class PermissionPrimer extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Icon(
-                  Icons.notifications_active_outlined,
+                child: AppIcon(
+                  AppIcons.notificationsActive,
                   size: 28,
-                  color: theme.colorScheme.primary,
+                  color: context.mutedForeground,
                 ),
               ),
             ),
@@ -70,24 +85,42 @@ class PermissionPrimer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpace.s2),
-          Text(
-            benefit,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: AppText.sm,
-              color: fgSec,
+          const SizedBox(height: AppSpace.s4),
+          for (final b in benefits)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.s3),
+              child: Row(
+                key: const ValueKey('primer_benefit'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppIcon(b.icon, size: 20, color: theme.colorScheme.primary),
+                  const SizedBox(width: AppSpace.s3),
+                  Expanded(
+                    child: Text(
+                      b.text,
+                      style: TextStyle(fontSize: AppText.sm, color: fgSec),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpace.s6),
+          const SizedBox(height: AppSpace.s3),
           AppButton.primary(
-            enableLabel ?? l.primerEnableNotification,
+            l.primerEnableNotification,
+            loading: enabling,
             onPressed: onEnable,
           ),
           const SizedBox(height: AppSpace.s2),
-          AppButton.text(
-            laterLabel ?? l.primerLater,
-            onPressed: onLater,
-          ),
+          AppButton.text(l.primerLater, onPressed: enabling ? null : onLater),
+          if (note != null) ...[
+            const SizedBox(height: AppSpace.s2),
+            Text(
+              note!,
+              key: const ValueKey('primer_note'),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: AppText.xs, color: fgSec),
+            ),
+          ],
         ],
       ),
     );

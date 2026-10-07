@@ -32,7 +32,7 @@ Future<ExploreWorld> _open(
   return w;
 }
 
-ExploreWorld _nearbyWorld({bool routesReady = false}) => ExploreWorld(
+ExploreWorld _nearbyWorld({bool routesReady = true}) => ExploreWorld(
   status: LocationPermissionStatus.granted,
   routesReady: routesReady,
   prefsValues: {
@@ -143,11 +143,11 @@ void main() {
   });
 
   group('S02.04', () {
-    testWidgets('the location line has a 15dp accent pin', (tester) async {
+    testWidgets('the location line has a 15dp neutral pin', (tester) async {
       await _open(tester, world: _nearbyWorld());
-      final pin = tester.widget<Icon>(find.byKey(const Key('explore-pin')));
+      final pin = tester.widget<AppIcon>(find.byKey(const Key("explore-pin")));
       expect(pin.size, 15);
-      expect(pin.color, AppColorsDark.primary);
+      expect(pin.color, AppColorsDark.foregroundMuted);
     });
 
     testWidgets('event rows: accent day, #type tag, price and seats right', (
@@ -188,7 +188,7 @@ void main() {
     final router = GoRouter(
       routes: [GoRoute(path: '/', builder: (_, _) => const ExploreScreen())],
     );
-    final w = _nearbyWorld();
+    final w = _nearbyWorld(routesReady: false);
     await w.init();
     await tester.pumpWidget(
       screenRouterApp(router: router, overrides: w.overrides),

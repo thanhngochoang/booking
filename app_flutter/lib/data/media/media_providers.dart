@@ -12,3 +12,7 @@ final imagePickerProvider = Provider<ImagePickerPort>(
 final mediaUploaderProvider = Provider<MediaUploader>(
   (ref) => FirebaseMediaUploader(),
 );
+
+final mediaUrlResolverProvider = Provider<MediaUrlResolver>(
+  (ref) => FirebaseMediaUploader(),
+);

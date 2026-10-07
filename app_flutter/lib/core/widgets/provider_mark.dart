@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/verified_mark.dart';
 import 'package:photobooking/data/content/provider_type.dart';
@@ -50,8 +51,8 @@ class ProviderMark extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: _goldGradient,
               ),
-              child: Icon(
-                Icons.check_rounded,
+              child: AppIcon(
+                AppIcons.check,
                 size: d * 0.72,
                 color: AppColors.goldInk,
               ),
@@ -218,9 +219,9 @@ class ProviderTag extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            AppIcon(
               // Studio: briefcase, as the mock's `#i-brief`.
-              artist ? Icons.workspace_premium_outlined : Icons.work_outline,
+              artist ? AppIcons.award : AppIcons.work,
               size: AppText.xs2,
               color: color,
             ),

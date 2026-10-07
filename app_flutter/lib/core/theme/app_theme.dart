@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Controls (buttons, inputs, chips) share the login card's rounder shape.
 const controlRadius = AppRadius.xl;
 const controlHeight = 48.0;
+
+/// The muted foreground for idle glyphs (not for text: it is below AA on light).
+extension MutedForegroundX on BuildContext {
+  Color get mutedForeground => Theme.of(this).brightness == Brightness.dark
+      ? AppColorsDark.foregroundMuted
+      : AppColors.foregroundMuted;
+}
 
 /// Status bar icons that read on [theme]'s canvas, over a transparent bar.
 SystemUiOverlayStyle overlayStyleFor(ThemeData theme) =>
@@ -101,6 +109,12 @@ ThemeData _build({
     brightness: brightness,
     colorScheme: scheme,
     scaffoldBackgroundColor: background,
+    // Default back/close glyphs (BackButton, automatic AppBar leading) come
+    // from the Material Symbols family, not the bundled Material Icons.
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (_) => const AppIcon(AppIcons.back),
+      closeButtonIconBuilder: (_) => const AppIcon(AppIcons.close),
+    ),
     fontFamily: AppFonts.body,
     textTheme: TextTheme(
       displayLarge: display(AppText.xxl),

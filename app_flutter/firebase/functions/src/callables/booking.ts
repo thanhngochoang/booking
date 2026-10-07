@@ -15,6 +15,7 @@ import {
   type TransitionAction,
 } from '@photobooking/domain';
 import { toHttpsError } from './errors.js';
+import { assertFakePaymentsAllowed } from '../infra/fake_payments.js';
 import type { CallableInput } from './get_contact_link.js';
 
 function errorKind(e: unknown): { name?: string; errorCode?: string | number } {
@@ -63,9 +64,15 @@ export async function handleCreateDeposit(request: CallableInput, deps: BookingD
   }
 }
 
-export async function handleConfirmFakePayment(request: CallableInput, deps: BookingDeps): Promise<HandlePaymentResult> {
+export async function handleConfirmFakePayment(
+  request: CallableInput,
+  deps: BookingDeps,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<HandlePaymentResult> {
   const uid = request.auth?.uid;
   if (uid === undefined) throw new HttpsError('unauthenticated', 'permission_denied', { code: 'permission_denied' });
+  // Security: a payer may mark their own payment paid only on the emulator or the dev project.
+  assertFakePaymentsAllowed(env);
   try {
     const data = (request.data && typeof request.data === 'object' ? request.data : {}) as Record<string, unknown>;
     return await confirmFakePayment(deps, {

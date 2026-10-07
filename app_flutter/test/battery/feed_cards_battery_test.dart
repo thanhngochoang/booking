@@ -30,7 +30,7 @@ Widget _feed(List<PhotoRequest> log) => hostWidget(
                   label: 'Rảnh T7 này',
                   dot: PhotoPillDot.ok,
                 ),
-                action: const Icon(Icons.bookmark_border),
+                action: const AppIcon(AppIcons.save),
                 onTap: () {},
               ),
             ),
