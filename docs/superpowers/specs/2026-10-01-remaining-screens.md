@@ -721,7 +721,7 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 |--------|---------|--------------------------|---------|----------|---------|
 | `booking_accepted` | khách | `i-cal`, tông xanh | Đặt lịch | `/bookings/:id` (S05.02) | |
 | `booking_declined` | khách | `i-cal`, tông đỏ | Đặt lịch | `/bookings/:id` | Nêu hoàn cọc |
-| `booking_cancelled` | khách và NAG (bên còn lại; cả hai khi hệ thống huỷ) | `i-cal`, tông đỏ | Đặt lịch / Công việc | `/bookings/:id` | Quan trọng: luôn có dòng trong hộp thư, im giờ yên lặng không áp dụng; khách nhận kèm "Cọc hoàn {percent}%" |
+| `booking_cancelled` | khách và NAG (bên còn lại; cả hai khi hệ thống huỷ) | `i-cal`, tông đỏ | Đặt lịch / Công việc | `/bookings/:id` | Quan trọng: luôn có dòng trong hộp thư, im giờ yên lặng không áp dụng; khách nhận kèm "Hoàn {percent}% số đã trả" |
 | `shoot_reminder` | khách (và NAG) | `i-cam` | Đặt lịch / Công việc | `/bookings/:id` | Trước 24 giờ và/hoặc 2 giờ theo S17.02 |
 | `quote_new` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S15.03) | Gom theo `groupKey = job:<id>:quotes` |
 | `instant_assigned` | khách | `i-bolt` | Đặt lịch | `/instant/:id` (S13.05) | |

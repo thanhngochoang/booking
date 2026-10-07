@@ -79,11 +79,11 @@ describe('notifyBookingChange', () => {
   it('decline and expiry notify the customer with the refund percent', async () => {
     const cancel = { by: 'photographer' as const, at: 'x', refundPercent: 100 };
     await notifyBookingChange(w.deps, b({ status: 'requested' }), b({ status: 'declined', cancel }));
-    assert.equal(w.store.rowsOf('c1')[0]?.body, 'Cọc đã hoàn 100%. Xem các nhiếp ảnh gia còn rảnh.');
+    assert.equal(w.store.rowsOf('c1')[0]?.body, 'Đã hoàn 100% số đã trả. Xem các nhiếp ảnh gia còn rảnh.');
     const w2 = createNotifyWorld();
     await notifyBookingChange(w2.deps, b({ status: 'requested' }), b({ status: 'expired' }));
     assert.equal(w2.store.rowsOf('c1')[0]?.title, 'Nhiếp ảnh gia chưa trả lời kịp');
-    assert.equal(w2.store.rowsOf('c1')[0]?.body, 'Yêu cầu đã hết hạn. Cọc đã hoàn 100%.');
+    assert.equal(w2.store.rowsOf('c1')[0]?.body, 'Yêu cầu đã hết hạn. Đã hoàn 100% số đã trả.');
   });
 
   it('a customer cancel notifies the photographer only', async () => {
@@ -98,7 +98,7 @@ describe('notifyBookingChange', () => {
   it('a photographer cancel tells the customer the refund', async () => {
     const cancel = { by: 'photographer' as const, at: 'x', refundPercent: 100 };
     await notifyBookingChange(w.deps, b({ status: 'upcoming' }), b({ status: 'cancelled', cancel }));
-    assert.equal(w.store.rowsOf('c1')[0]?.body, 'T2 12/10 · 15:30. Cọc hoàn 100%.');
+    assert.equal(w.store.rowsOf('c1')[0]?.body, 'T2 12/10 · 15:30. Hoàn 100% số đã trả.');
   });
 
   it('a system cancel notifies both', async () => {
