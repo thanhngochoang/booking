@@ -1,8 +1,8 @@
 import type { EventDeps } from './event_ports.js';
+import { GROUP_READONLY_DAYS } from './event_chat.js';
 import { expireHostConsent } from './event_use_cases.js';
 
 const BATCH = 200;
-const CHAT_READ_ONLY_DAYS = 7;
 const DAY_MS = 86_400_000;
 
 /**
@@ -45,7 +45,7 @@ export async function runEventSweeps(
       const ev = await tx.getEvent(due.id);
       if (ev === null || (ev.status !== 'open' && ev.status !== 'full' && ev.status !== 'closed')) return false;
       if (ev.endAt === null || ev.endAt.getTime() > now.getTime()) return false;
-      if (ev.chatId !== null) tx.setChatReadOnlyAt(ev.chatId, new Date(now.getTime() + CHAT_READ_ONLY_DAYS * DAY_MS));
+      if (ev.chatId !== null) tx.setChatReadOnlyAt(ev.chatId, new Date(now.getTime() + GROUP_READONLY_DAYS * DAY_MS));
       tx.putEvent({ ...ev, status: 'completed', completedAt: now, version: ev.version + 1, updatedAt: now });
       return true;
     }));

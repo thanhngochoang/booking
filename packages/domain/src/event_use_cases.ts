@@ -222,9 +222,13 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
 
     const chatId = `event_${ev.id}`;
     const moderators = [...new Set([hostId, ev.createdBy].filter((x): x is string => x !== null))];
+    const creator = ev.createdBy === hostId ? null : await deps.people.user(ev.createdBy);
+    const memberProfiles = moderators.map((uid) => uid === hostId
+      ? { uid, name: ev.host.name ?? 'Ban tổ chức', avatarUrl: ev.host.avatarUrl }
+      : { uid, name: creator?.name ?? 'Ban tổ chức', avatarUrl: creator?.avatarUrl ?? null });
     const chat: EventGroupChatSeed = {
       id: chatId, kind: 'event_group', eventId: ev.id, title: ev.title,
-      members: moderators, moderators, memberCount: moderators.length, moderatorsOnly: false,
+      members: moderators, moderators, memberProfiles, memberCount: moderators.length, moderatorsOnly: false,
       lastMessageAt: null, lastMessagePreview: null, lastSenderId: null, readOnlyAt: null,
       createdAt: now, updatedAt: now,
     };

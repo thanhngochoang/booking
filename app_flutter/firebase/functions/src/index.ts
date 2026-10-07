@@ -42,7 +42,7 @@ import {
   handleReorderAlbums,
   handleUpdateAlbum,
 } from './callables/album.js';
-import { handlePostCreated } from './triggers/post_created.js';
+import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './triggers/post_created.js';
 import { liveAlbumDeps } from './infra/live_album.js';
 import {
   handleCreateAward,
@@ -81,6 +81,14 @@ import {
 } from './callables/event.js';
 import { handleEventClock } from './scheduled/event_clock.js';
 import { liveEventCallableDeps, liveEventDeps } from './infra/live_event.js';
+import { handleModerateEventTimeline, handleShareEventPost } from './callables/event_timeline.js';
+import {
+  handleModerateEventChat,
+  handlePostEventAnnouncement,
+  handleSendEventMessage,
+} from './callables/event_chat.js';
+import { handleRegistrationWrite } from './triggers/registration_write.js';
+import { liveEventChatDeps, liveTimelineDeps } from './infra/live_event_social.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
 
@@ -218,9 +226,15 @@ export const reorderAlbumPosts = onCall(CALLABLE_OPTIONS, (request) =>
   handleReorderAlbumPosts(request, liveAlbumDeps()),
 );
 
-/** A new post that names an album lands last in it, or is detached when the album is not usable. */
+/**
+ * A new post that names an album lands last in it, or is detached when the album is not usable; a post
+ * with hashtags (or an event) is put on the timeline of every open event it names (plan 10c).
+ */
 export const onPostCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: 'posts/{postId}' }, async (event) => {
   if (typeof event.data?.get('albumId') === 'string') await handlePostCreated(event.params.postId, liveAlbumDeps());
+  if (mayLinkEventPosts(event.data?.get('hashtags'), event.data?.get('eventId'))) {
+    await handleLinkEventPosts(event.params.postId, liveTimelineDeps());
+  }
   await evaluatePostAuthor(event.data?.get('authorId'), liveBadgeDeps());
 });
 
@@ -280,6 +294,8 @@ export const onChatMessageCreated = onDocumentCreated(
     const message = event.data?.data();
     if (message === undefined || message.type === 'system') return;
     const chat = await db().collection('chats').doc(event.params.chatId).get();
+    // Event group chats (up to 500 members) never notify per message: there is no "other member".
+    if (chat.data()?.kind === 'event_group') return;
     const members: unknown = chat.data()?.members;
     await handleChatMessageCreated(
       {
@@ -429,3 +445,44 @@ export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
 export const eventClock = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 5 minutes', timeoutSeconds: 120 }, async () => {
   await handleEventClock();
 });
+
+// ---- event timeline and group chat (plan 10c) ----
+
+/** `{eventId, postId, images, caption?}` → `{postId}`: a paid attendee or a manager shares photos to the timeline. */
+export const shareEventPost = onCall(CALLABLE_OPTIONS, (request) => handleShareEventPost(request, liveTimelineDeps()));
+
+/** `{eventId, postId, action: hide | show | approve}`: managers moderate the timeline. */
+export const moderateEventTimeline = onCall(CALLABLE_OPTIONS, (request) =>
+  handleModerateEventTimeline(request, liveTimelineDeps()),
+);
+
+/** `{eventId, message}` → `{id}`: a member posts to the event group chat (20 messages a minute). */
+export const sendEventMessage = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSendEventMessage(request, liveEventChatDeps()),
+);
+
+/** `{eventId, action, …}`: moderators pin, unpin, delete, mute, unmute, remove, or switch moderators-only. */
+export const moderateEventChat = onCall(CALLABLE_OPTIONS, (request) =>
+  handleModerateEventChat(request, liveEventChatDeps()),
+);
+
+/** `{eventId, text}` → `{messageId}`: S12.03 "Nhắn nhóm", a pinned moderator message. */
+export const postEventAnnouncement = onCall(CALLABLE_OPTIONS, (request) =>
+  handlePostEventAnnouncement(request, liveEventChatDeps()),
+);
+
+/** A registration that becomes paid joins the event group chat; cancelled or refunded leaves it. */
+export const onRegistrationWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'events/{eventId}/registrations/{regId}' },
+  async (event) => {
+    await handleRegistrationWrite(
+      {
+        eventId: event.params.eventId,
+        regId: event.params.regId,
+        before: event.data?.before.exists ? event.data.before.data() : undefined,
+        after: event.data?.after.exists ? event.data.after.data() : undefined,
+      },
+      liveEventChatDeps(),
+    );
+  },
+);

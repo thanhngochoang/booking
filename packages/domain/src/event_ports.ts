@@ -20,6 +20,8 @@ export interface EventGroupChatSeed {
   readonly title: string;
   readonly members: readonly string[];
   readonly moderators: readonly string[];
+  /** Name and avatar of each moderator, written as their member docs (the member list shows names only). */
+  readonly memberProfiles: ReadonlyArray<{ readonly uid: string; readonly name: string; readonly avatarUrl: string | null }>;
   readonly memberCount: number;
   readonly moderatorsOnly: boolean;
   readonly lastMessageAt: Date | null;

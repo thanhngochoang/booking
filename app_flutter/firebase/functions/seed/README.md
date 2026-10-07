@@ -102,5 +102,7 @@ npm run payouts -- create seed-photographer-an --actor seed-staff-admin   # batc
 | `seed-event-an-free-photowalk` | An | open, free ("Không thu phí"), starts in 8 days, capacity 20, 1 seat taken; group chat `event_seed-event-an-free-photowalk` (An, Lan) |
 | `seed-event-an-paid-workshop` | An | open, 250 000 VND per ticket, starts in 15 days, capacity 12 (registering answers `not_eligible` until the paid path lands) |
 | `seed-registration-lan-free-walk` | Lan | free registration to the walk: `paid`, `contactEligible: false`, ticket `VE-LANA-0000`, no `private/contact` snapshot (the host never gets Lan's phone) |
+| Timeline of the walk | Lan, Minh | `seed-post-lan-share` (`event_share`, visible) and `seed-post-minh-share` (pending: Minh holds no ticket, so it shows only in the managers' "Chờ duyệt" tab); `postCount` 1 |
+| Group chat of the walk | An, Lan | member docs (names only), a join line for Lan, An's announcement `seed-msg-announcement` pinned |
 
 Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability, and the registration its `ticket_codes/*` entry.

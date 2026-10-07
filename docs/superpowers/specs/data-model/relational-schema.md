@@ -869,7 +869,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `users/{uid}/private/notification_prefs` | `notification_prefs` | `quietHours.*`→`quiet_*`, `reminders.*`→`reminder_*` |
 | `events/{id}` | `events` | `location.*`→cột phẳng; `host.*`, `createdBy*` |
 | `events/{id}/registrations/{id}` | `event_registrations` | `phone` 🔒 |
-| *(mới)* `events/{id}/posts/{postId}` | `event_posts` | Liên kết timeline |
+| `events/{id}/timeline/{postId}` | `event_posts` | Liên kết timeline; tên `timeline`, không phải `posts`, để không trùng id bộ sưu tập `posts` (và index của nó); `status` visible/pending/hidden, `source` hashtag/explicit; `events.postCount` chỉ đếm hàng `visible`. Nhóm chat sự kiện `chats/event_{id}` (+ `members`, `messages`, `pins/{messageId}`) → `chats` kind `event_group`, `chat_members`, `messages`, `chat_pins` |
 | `badges/{id}`, `users/{uid}/badges/{id}`, `users/{uid}/private/badgeProgress` | `badge_definitions`, `user_badges`, `badge_progress` | |
 | `taxonomy/skills/items/{id}`, `taxonomy/areas/…` | `taxonomy_items` | |
 | `payoutAccounts/{uid}` + `accounts/{id}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá; `payoutAccounts/{uid}` là bản che (`account_last4`), không có bảng riêng |

@@ -534,8 +534,17 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Event group chat: every current member sees the others' names and avatars (no phone is ever stored here).
+      match /pins/{messageId} {
+        allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
+        allow write: if false;
+      }
+
       match /members/{uid} {
-        allow read: if isOwner(uid);
+        allow read: if isOwner(uid)
+          || (signedIn()
+              && get(/databases/$(database)/documents/chats/$(chatId)).data.get('kind', '') == 'event_group'
+              && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members);
         allow update: if isOwner(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCount', 'lastReadAt'])
           && request.resource.data.unreadCount == 0
@@ -661,6 +670,14 @@ service cloud.firestore {
             || resource.data.createdBy == request.auth.uid
             || resource.data.hostId == request.auth.uid);
       allow write: if false;
+
+      // S11.05 timeline: visible rows for everyone signed in; pending and hidden rows for managers.
+      // Written only by Cloud Functions (onPostCreated, shareEventPost, moderateEventTimeline).
+      match /timeline/{postId} {
+        allow read: if signedIn()
+          && (resource.data.status == 'visible' || eventManager(eventDoc(eventId)));
+        allow write: if false;
+      }
 
       match /registrations/{regId} {
         allow read: if signedIn()

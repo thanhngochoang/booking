@@ -825,7 +825,7 @@ function eventDocuments(now: Date): SeedDocument[] {
     updatedAt: now,
   };
   const docs: SeedDocument[] = [];
-  for (const e of [{ ...free, registeredCount: 1 }, paid]) {
+  for (const e of [{ ...free, registeredCount: 1, postCount: 1 }, paid]) {
     docs.push({ path: `events/${e.id}`, data: eventToFirestore(e) as Record<string, unknown> });
     docs.push({ path: `event_hashtags/${e.hashtagKey}`, data: { eventId: e.id } });
     docs.push({ path: `availability/${AN}/days/${e.dayKey}`, data: { state: 'booked', eventId: e.id, updatedAt: now } });
@@ -834,12 +834,61 @@ function eventDocuments(now: Date): SeedDocument[] {
       data: groupChatToFirestore({
         id: e.chatId as string, kind: 'event_group', eventId: e.id, title: e.title,
         members: e.id === free.id ? [AN, LAN] : [AN], moderators: [AN],
+        memberProfiles: [{ uid: AN, name: 'An Studio (seed)', avatarUrl: null }],
         memberCount: e.id === free.id ? 2 : 1, moderatorsOnly: false,
         lastMessageAt: null, lastMessagePreview: null, lastSenderId: null, readOnlyAt: null,
         createdAt: now, updatedAt: now,
       }) as Record<string, unknown>,
     });
   }
+  // Group chat of the free walk: both members, a join line and An's pinned announcement.
+  const chatPath = `chats/${free.chatId as string}`;
+  const memberDoc = (role: 'moderator' | 'member', name: string) => ({
+    role, name, avatarUrl: null, mutedUntil: null, joinedAt: now, removedAt: null, removedBy: null,
+    sentWindowStart: null, sentInWindow: 0,
+  });
+  docs.push({ path: `${chatPath}/members/${AN}`, data: memberDoc('moderator', 'An Studio (seed)') });
+  docs.push({ path: `chats/${paid.chatId as string}/members/${AN}`, data: memberDoc('moderator', 'An Studio (seed)') });
+  docs.push({ path: `${chatPath}/members/${LAN}`, data: memberDoc('member', 'Lan (seed)') });
+  docs.push({
+    path: `${chatPath}/messages/seed-msg-join-lan`,
+    data: {
+      senderId: null, senderName: null, type: 'system', body: null, imagePath: null, point: null,
+      system: { kind: 'member_joined', userId: LAN, name: 'Lan (seed)' }, clientId: 'seed-msg-join-lan',
+      createdAt: now, deletedAt: null,
+    },
+  });
+  docs.push({
+    path: `${chatPath}/messages/seed-msg-announcement`,
+    data: {
+      senderId: AN, senderName: 'An Studio (seed)', type: 'text', body: 'Tập trung đúng giờ, mang theo máy ảnh nhé!',
+      imagePath: null, point: null, system: null, clientId: 'seed-msg-announcement', createdAt: now, deletedAt: null,
+    },
+  });
+  docs.push({
+    path: `${chatPath}/pins/seed-msg-announcement`,
+    data: { body: 'Tập trung đúng giờ, mang theo máy ảnh nhé!', senderName: 'An Studio (seed)', pinnedBy: AN, pinnedAt: now },
+  });
+  // Timeline of the free walk: Lan's shared post (visible) and a stranger's (pending, for the review tab).
+  const share = (id: string, authorId: string, name: string) => ({
+    path: `posts/${id}`,
+    data: {
+      kind: 'event_share', authorId, photographerId: AN, serviceId: '', eventId: free.id,
+      imageUrls: [`https://seed.test/${id}/1.jpg`, `https://seed.test/${id}/2.jpg`],
+      imageMeta: [{ blurHash: null, w: 800, h: 1000 }, { blurHash: null, w: 800, h: 1000 }],
+      caption: `Ảnh của ${name} #${free.hashtag}`, hashtags: [free.hashtagKey], inPortfolio: false,
+      likeCount: 0, saveCount: 0, createdAt: now,
+    },
+  });
+  const row = (postId: string, authorId: string, name: string, status: 'visible' | 'pending') => ({
+    path: `events/${free.id}/timeline/${postId}`,
+    data: {
+      postId, source: 'explicit', status, authorId, authorName: name, isHost: false,
+      imageUrl: `https://seed.test/${postId}/1.jpg`, imageW: 800, imageH: 1000, imageCount: 2, addedAt: now, moderatedBy: null,
+    },
+  });
+  docs.push(share('seed-post-lan-share', LAN, 'Lan'), row('seed-post-lan-share', LAN, 'Lan (seed)', 'visible'));
+  docs.push(share('seed-post-minh-share', MINH, 'Minh'), row('seed-post-minh-share', MINH, 'Minh', 'pending'));
   docs.push({ path: `events/${free.id}/registrations/${registration.id}`, data: registrationToFirestore(registration) as Record<string, unknown> });
   docs.push({ path: `ticket_codes/${registration.ticketCode}`, data: { eventId: free.id, registrationId: registration.id } });
   return docs;

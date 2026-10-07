@@ -37,7 +37,7 @@ export function eventCallerOf(request: EventCallableInput): EventCaller {
   return { uid, staffRole: role === 'admin' || role === 'sales' ? role : null };
 }
 
-async function run<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+export async function runEventCallable<T>(operation: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (e) {
@@ -59,7 +59,7 @@ export async function handleSaveEventDraft(
   deps: EventCallableDeps,
 ): Promise<{ eventId: string; hashtag: string }> {
   const caller = eventCallerOf(request);
-  const result = await run('saveEventDraft', () => saveEventDraft(deps, caller, dataOf(request)));
+  const result = await runEventCallable('saveEventDraft', () => saveEventDraft(deps, caller, dataOf(request)));
   await tellHostInvited(deps, caller, result.eventId);
   return result;
 }
@@ -85,7 +85,7 @@ export async function handlePublishEvent(
   deps: EventDeps,
 ): Promise<Record<string, never>> {
   const caller = eventCallerOf(request);
-  await run('publishEvent', () => publishEvent(deps, caller, dataOf(request)));
+  await runEventCallable('publishEvent', () => publishEvent(deps, caller, dataOf(request)));
   return {};
 }
 
@@ -95,7 +95,7 @@ export async function handleUpdateEvent(
   deps: EventDeps,
 ): Promise<Record<string, never>> {
   const caller = eventCallerOf(request);
-  await run('updateEvent', () => updateEvent(deps, caller, dataOf(request)));
+  await runEventCallable('updateEvent', () => updateEvent(deps, caller, dataOf(request)));
   return {};
 }
 
@@ -105,7 +105,7 @@ export async function handleCancelEvent(
   deps: EventDeps,
 ): Promise<{ paidRegistrationIds: string[] }> {
   const caller = eventCallerOf(request);
-  return run('cancelEvent', () => cancelEvent(deps, caller, dataOf(request)));
+  return runEventCallable('cancelEvent', () => cancelEvent(deps, caller, dataOf(request)));
 }
 
 /** `{eventId, accept}` → `{}`; the hosting photographer only (checked in the domain). */
@@ -114,7 +114,7 @@ export async function handleRespondToHostConsent(
   deps: EventDeps,
 ): Promise<Record<string, never>> {
   const caller = eventCallerOf(request);
-  await run('respondToHostConsent', () => respondToHostConsent(deps, caller, dataOf(request)));
+  await runEventCallable('respondToHostConsent', () => respondToHostConsent(deps, caller, dataOf(request)));
   return {};
 }
 
@@ -130,7 +130,7 @@ export async function handleRegisterEvent(
   holdExpiresAt: string | null;
 }> {
   const caller = eventCallerOf(request);
-  const r: RegisterResult = await run('registerEvent', () => registerEvent(deps, caller, dataOf(request)));
+  const r: RegisterResult = await runEventCallable('registerEvent', () => registerEvent(deps, caller, dataOf(request)));
   return {
     registrationId: r.registrationId,
     status: r.status,
@@ -146,7 +146,7 @@ export async function handleCancelRegistration(
   deps: EventDeps,
 ): Promise<{ status: RegistrationStatus; refundPercent: number | null }> {
   const caller = eventCallerOf(request);
-  return run('cancelRegistration', () => cancelRegistration(deps, caller, dataOf(request)));
+  return runEventCallable('cancelRegistration', () => cancelRegistration(deps, caller, dataOf(request)));
 }
 
 /** `{eventId, ticketCode}` → `{name, quantity}` */
@@ -155,5 +155,5 @@ export async function handleCheckInRegistration(
   deps: EventDeps,
 ): Promise<{ name: string; quantity: number }> {
   const caller = eventCallerOf(request);
-  return run('checkInRegistration', () => checkInRegistration(deps, caller, dataOf(request)));
+  return runEventCallable('checkInRegistration', () => checkInRegistration(deps, caller, dataOf(request)));
 }

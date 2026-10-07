@@ -347,6 +347,22 @@ export class FirestoreEventStore implements EventStore {
         },
         putGroupChat: (chat) => {
           writes.push(() => fTx.set(fs.collection('chats').doc(chat.id), groupChatToFirestore(chat)));
+          // The moderators are members from the start; their member docs carry the names the list shows.
+          for (const p of chat.memberProfiles) {
+            writes.push(() =>
+              fTx.set(fs.collection('chats').doc(chat.id).collection('members').doc(p.uid), {
+                role: 'moderator',
+                name: p.name,
+                avatarUrl: p.avatarUrl,
+                mutedUntil: null,
+                joinedAt: Timestamp.fromDate(chat.createdAt),
+                removedAt: null,
+                removedBy: null,
+                sentWindowStart: null,
+                sentInWindow: 0,
+              }),
+            );
+          }
         },
         setChatReadOnlyAt: (chatId, at) => {
           writes.push(() =>

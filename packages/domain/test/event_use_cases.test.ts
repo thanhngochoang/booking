@@ -202,6 +202,7 @@ describe('publish', () => {
     assert.deepEqual(own?.moderators, ['ph1']);
     assert.deepEqual(own?.members, ['ph1']);
     assert.equal(own?.memberCount, 1);
+    assert.deepEqual(own?.memberProfiles.map((m) => m.uid), ['ph1']);
     await publishedEvent(w, {}, sales1, 'ev2_aaaaaaaaaaaaaaaaaaaa');
     assert.deepEqual(w.store.chats.get('event_ev2_aaaaaaaaaaaaaaaaaaaa')?.moderators, ['sales1']);
   });

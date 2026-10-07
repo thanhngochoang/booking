@@ -1726,3 +1726,101 @@ test('events: a cancelled never-published draft is private; a cancelled publishe
   await assertFails(getDocs(query(collection(evDb('v1'), 'events'), where('status', '==', 'cancelled'))));
   await assertFails(getDocs(query(collection(evDb('v1'), 'events'), where('status', 'in', ['open', 'cancelled']))));
 });
+
+// ---- Event timeline and group chat (plan 10c, Task 7) ----
+const tlRow = (status, over = {}) => ({
+  postId: 'tp1', source: 'hashtag', status, authorId: 'att1', authorName: 'Lan', isHost: false,
+  imageUrl: 'https://s.test/a.jpg', imageW: 10, imageH: 20, imageCount: 1, addedAt: Timestamp.now(), moderatedBy: null, ...over,
+});
+
+test('timeline: visitors read visible rows', async () => {
+  await evSeed('events/e1', evDoc());
+  await evSeed('events/e1/timeline/tp1', tlRow('visible'));
+  await assertSucceeds(getDoc(doc(evDb('v1'), 'events/e1/timeline/tp1')));
+  await assertSucceeds(getDocs(query(collection(evDb('v1'), 'events/e1/timeline'), where('status', '==', 'visible'))));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'events/e1/timeline/tp1')));
+});
+test('timeline: visitors cannot read pending or hidden rows', async () => {
+  await evSeed('events/e1/timeline/tp2', tlRow('pending', { postId: 'tp2' }));
+  await evSeed('events/e1/timeline/tp3', tlRow('hidden', { postId: 'tp3' }));
+  await assertFails(getDoc(doc(evDb('v1'), 'events/e1/timeline/tp2')));
+  await assertFails(getDoc(doc(evDb('att1'), 'events/e1/timeline/tp3')));
+  await assertFails(getDocs(query(collection(evDb('v1'), 'events/e1/timeline'), where('status', '==', 'pending'))));
+  await assertFails(getDocs(collection(evDb('v1'), 'events/e1/timeline')));
+});
+test('timeline: managers read pending and hidden rows', async () => {
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'events/e1/timeline/tp2')));
+  await assertSucceeds(getDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/timeline/tp3')));
+  await assertSucceeds(getDocs(query(collection(evDb('eh1'), 'events/e1/timeline'), where('status', '==', 'pending'))));
+  await assertFails(getDoc(doc(evDb('sales2', { staffRole: 'sales' }), 'events/e1/timeline/tp2')));
+});
+test('timeline: nobody writes rows', async () => {
+  await assertFails(setDoc(doc(evDb('eh1'), 'events/e1/timeline/new'), tlRow('visible', { postId: 'new' })));
+  await assertFails(updateDoc(doc(evDb('eh1'), 'events/e1/timeline/tp2'), { status: 'visible' }));
+  await assertFails(deleteDoc(doc(evDb('adm', { staffRole: 'admin' }), 'events/e1/timeline/tp2')));
+  await assertFails(updateDoc(doc(evDb('att1'), 'events/e1/timeline/tp1'), { status: 'hidden' }));
+});
+
+const grpChat = (members, over = {}) => ({
+  kind: 'event_group', eventId: 'e1', title: 'Photo walk', members, moderators: ['eh1'], memberCount: members.length,
+  moderatorsOnly: false, readOnlyAt: null, createdAt: Timestamp.now(), updatedAt: Timestamp.now(), ...over,
+});
+const grpMember = (name, over = {}) => ({
+  role: 'member', name, avatarUrl: null, mutedUntil: null, joinedAt: Timestamp.now(), removedAt: null, removedBy: null,
+  sentWindowStart: null, sentInWindow: 0, ...over,
+});
+
+test('chat pins: members read them, others cannot, nobody writes', async () => {
+  await evSeed('chats/event_e1', grpChat(['eh1', 'att1']));
+  await evSeed('chats/event_e1/pins/m1', { body: 'Họp 8h', senderName: 'An', pinnedBy: 'eh1', pinnedAt: Timestamp.now() });
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'chats/event_e1/pins/m1')));
+  await assertSucceeds(getDocs(collection(evDb('eh1'), 'chats/event_e1/pins')));
+  await assertFails(getDoc(doc(evDb('v1'), 'chats/event_e1/pins/m1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'chats/event_e1/pins/m1')));
+  await assertFails(setDoc(doc(evDb('eh1'), 'chats/event_e1/pins/m2'), { body: 'x' }));
+  await assertFails(deleteDoc(doc(evDb('eh1'), 'chats/event_e1/pins/m1')));
+});
+test('a removed member cannot read messages, pins or the chat', async () => {
+  await evSeed('chats/event_e2', grpChat(['eh1', 'att1']));
+  await evSeed('chats/event_e2/messages/m1', { senderId: 'att1', senderName: 'Lan', type: 'text', body: 'hi', createdAt: Timestamp.now() });
+  await evSeed('chats/event_e2/pins/m1', { body: 'hi', senderName: 'Lan', pinnedBy: 'eh1', pinnedAt: Timestamp.now() });
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'chats/event_e2/messages/m1')));
+  // the server removes att1: the uid leaves `members`, the member doc stays as history
+  await evSeed('chats/event_e2', grpChat(['eh1']));
+  await evSeed('chats/event_e2/members/att1', grpMember('Lan', { removedAt: Timestamp.now(), removedBy: 'eh1' }));
+  await assertFails(getDoc(doc(evDb('att1'), 'chats/event_e2/messages/m1')));
+  await assertFails(getDocs(collection(evDb('att1'), 'chats/event_e2/messages')));
+  await assertFails(getDoc(doc(evDb('att1'), 'chats/event_e2/pins/m1')));
+  await assertFails(getDoc(doc(evDb('att1'), 'chats/event_e2')));
+  await assertSucceeds(getDoc(doc(evDb('eh1'), 'chats/event_e2/messages/m1')));
+});
+test('group chat members read each other\'s member docs; 1-1 chats keep owner-only', async () => {
+  await evSeed('chats/event_e3', grpChat(['eh1', 'att1']));
+  await evSeed('chats/event_e3/members/eh1', grpMember('An', { role: 'moderator' }));
+  await evSeed('chats/event_e3/members/att1', grpMember('Lan'));
+  await assertSucceeds(getDoc(doc(evDb('att1'), 'chats/event_e3/members/eh1')));
+  await assertSucceeds(getDocs(collection(evDb('att1'), 'chats/event_e3/members')));
+  await assertFails(getDoc(doc(evDb('v1'), 'chats/event_e3/members/att1')));
+  await assertFails(setDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), grpMember('Hack', { role: 'moderator' })));
+  await evSeed('chats/chat_1on1', { kind: 'inquiry', members: ['userA', 'userB'] });
+  await evSeed('chats/chat_1on1/members/userA', { unreadCount: 1 });
+  await assertFails(getDoc(doc(evDb('userB'), 'chats/chat_1on1/members/userA')));
+  await assertSucceeds(getDoc(doc(evDb('userA'), 'chats/chat_1on1/members/userA')));
+});
+test('a group member marks the chat read but changes nothing else on their member doc', async () => {
+  await assertSucceeds(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { unreadCount: 0, lastReadAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { role: 'moderator' }));
+  await assertFails(updateDoc(doc(evDb('att1'), 'chats/event_e3/members/att1'), { mutedUntil: null }));
+});
+
+test('chat storage: a removed member cannot read chat images', async () => {
+  await evSeed('chats/event_e4', grpChat(['eh1', 'att1']));
+  const path = 'chats/event_e4/att1/pic.jpg';
+  await assertSucceeds(uploadBytes(ref(evStorage('att1'), path), photo(), jpeg));
+  await assertSucceeds(getBytes(ref(evStorage('eh1'), path)));
+  await assertFails(getBytes(ref(evStorage('v1'), path)));
+  await evSeed('chats/event_e4', grpChat(['eh1']));
+  await assertFails(getBytes(ref(evStorage('att1'), path)));
+  await assertFails(uploadBytes(ref(evStorage('att1'), 'chats/event_e4/att1/again.jpg'), photo(), jpeg));
+});
+function evStorage(uid) { return env.authenticatedContext(uid).storage(); }
