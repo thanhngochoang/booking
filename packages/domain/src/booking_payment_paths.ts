@@ -1,6 +1,6 @@
 /**
  * Transaction steps shared by the booking payment use cases (transfer handling, createPayment, the
- * payment sweep and the old deposit handler). Internal: not exported from index.ts.
+ * payment sweep). Internal: not exported from index.ts.
  * Callers do every transaction read before calling these (they only write).
  */
 

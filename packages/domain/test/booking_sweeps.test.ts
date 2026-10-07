@@ -1,11 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit } from '../src/booking_policy.js';
-import { createBookingWorld, newDraft } from './support/booking_world.js';
+import { createBookingWorld, newDraft, payDraft } from './support/booking_world.js';
 import { createPayment } from '../src/create_payment.js';
 import { createBookingDraft } from '../src/create_booking.js';
-import { createDeposit } from '../src/create_deposit.js';
-import { confirmFakePayment } from '../src/handle_payment.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
 
@@ -49,8 +47,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
 
     // Advance 25 hours (past 24h accept deadline)
     world.clock.advanceHours(25);
@@ -78,8 +75,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Advance to 2026-10-14 07:00 UTC (exactly 24h before start)
@@ -103,8 +99,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Advance to 2026-10-16 09:00 UTC (24h after end time)
@@ -127,8 +122,7 @@ describe('Task 5: runBookingSweeps', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Complete at 2026-10-15 09:30 UTC

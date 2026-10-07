@@ -1,10 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit, computeRefund } from '../src/booking_policy.js';
-import { createBookingWorld } from './support/booking_world.js';
+import { createBookingWorld, payDraft } from './support/booking_world.js';
 import { createBookingDraft } from '../src/create_booking.js';
-import { createDeposit } from '../src/create_deposit.js';
-import { confirmFakePayment } from '../src/handle_payment.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { openDispute } from '../src/open_dispute.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
@@ -23,8 +21,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
 
     const accepted = await transitionBooking(world.deps, {
       bookingId: draft.id,
@@ -50,8 +47,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
       start: '14:00', // 2026-10-15 07:00 UTC
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    const dep = await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Advance clock to 30 hours before start: 2026-10-14 01:00 UTC
@@ -98,8 +94,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Set time after shoot end (shoot ends 16:00 VN = 09:00 UTC)

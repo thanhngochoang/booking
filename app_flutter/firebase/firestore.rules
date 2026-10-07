@@ -486,6 +486,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // payment_notifications/{provider_txnId}: every transfer the payment provider reported, with
+    // its raw body (payer details included). Written by Cloud Functions only (paymentWebhook,
+    // reconciliation); never readable by clients.
+    match /payment_notifications/{notificationId} {
+      allow read, write: if false;
+    }
+
     // earnings/{uid}: the photographer's money summary and one row per payment (S06.05).
     // Written only by the earnings triggers; the owner reads. Rows hold fixed hold-reason codes,
     // never the customer's dispute text.

@@ -12,12 +12,10 @@ import {
 } from '@photobooking/domain';
 import {
   handleCreateBooking,
-  handleCreateDeposit,
-  handleConfirmFakePayment,
-  handleCheckDeposit,
   handleTransitionBooking,
   handleOpenDispute,
 } from '../../src/callables/booking.js';
+import { handleConfirmFakePayment, handleCreatePayment } from '../../src/callables/payment.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
 
 function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gateway: FakePaymentGateway } {
@@ -53,8 +51,8 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
   return { deps, store, gateway };
 }
 
-/** Fake payments run on the emulator (or the dev project) only. */
-const EMULATOR_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-nag' };
+/** Fake payments run on the emulator (or the dev project) only; the fake webhook needs its (test) secret. */
+const EMULATOR_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-nag', FAKE_PAYMENT_WEBHOOK_SECRET: 'unit-test-webhook-secret' };
 
 const httpsError = (code: string, detailsCode?: string) => (e: unknown) =>
   e instanceof HttpsError
@@ -67,9 +65,6 @@ describe('Booking callables', () => {
     const unauthed = { data: {} };
 
     await assert.rejects(handleCreateBooking(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
-    await assert.rejects(handleCreateDeposit(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
-    await assert.rejects(handleConfirmFakePayment(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
-    await assert.rejects(handleCheckDeposit(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
     await assert.rejects(handleTransitionBooking(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
     await assert.rejects(handleOpenDispute(unauthed, deps), httpsError('unauthenticated', 'permission_denied'));
   });
@@ -176,7 +171,7 @@ describe('Booking callables', () => {
     assert.equal(ok.status, 'draft');
   });
 
-  test('handleCreateDeposit initiates payment intent for draft', async () => {
+  test('a booking paid through createPayment and the fake transfer is accepted by the photographer', async () => {
     const { deps } = createTestDeps();
     const draft = await handleCreateBooking(
       {
@@ -191,113 +186,16 @@ describe('Booking callables', () => {
       },
       deps,
     );
-
-    const deposit = await handleCreateDeposit(
-      {
-        auth: { uid: 'c1' },
-        data: {
-          bookingId: draft.id,
-          provider: 'fake',
-        },
-      },
+    const payment = await handleCreatePayment(
+      { auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } },
       deps,
     );
-
-    assert.ok(deposit.paymentId);
-    assert.ok(deposit.payUrl);
-    assert.equal(deposit.provider, 'fake');
-  });
-
-  test('handleConfirmFakePayment transitions draft to requested', async () => {
-    const { deps } = createTestDeps();
-    const draft = await handleCreateBooking(
-      {
-        auth: { uid: 'c1' },
-        data: {
-          photographerId: 'p1',
-          serviceId: 'svc1',
-          day: '2026-10-15',
-          start: '09:00',
-          place: { name: 'Thảo Cầm Viên' },
-        },
-      },
-      deps,
-    );
-
-    const deposit = await handleCreateDeposit(
-      {
-        auth: { uid: 'c1' },
-        data: {
-          bookingId: draft.id,
-          provider: 'fake',
-        },
-      },
-      deps,
-    );
-
-    const paymentResult = await handleConfirmFakePayment(
-      {
-        auth: { uid: 'c1' },
-        data: { paymentId: deposit.paymentId },
-      },
+    const paid = await handleConfirmFakePayment(
+      { auth: { uid: 'c1' }, data: { paymentId: payment.paymentId, kind: 'exact' } },
       deps,
       EMULATOR_ENV,
     );
-
-    assert.equal(paymentResult.payment.status, 'paid');
-    assert.equal(paymentResult.booking?.status, 'requested');
-  });
-
-  test('handleCheckDeposit returns paid status', async () => {
-    const { deps } = createTestDeps();
-    const draft = await handleCreateBooking(
-      {
-        auth: { uid: 'c1' },
-        data: {
-          photographerId: 'p1',
-          serviceId: 'svc1',
-          day: '2026-10-15',
-          start: '09:00',
-          place: { name: 'Thảo Cầm Viên' },
-        },
-      },
-      deps,
-    );
-
-    const check1 = await handleCheckDeposit(
-      {
-        auth: { uid: 'c1' },
-        data: { bookingId: draft.id },
-      },
-      deps,
-    );
-    assert.equal(check1.paid, false);
-  });
-
-  test('handleTransitionBooking allows photographer to accept requested booking', async () => {
-    const { deps } = createTestDeps();
-    const draft = await handleCreateBooking(
-      {
-        auth: { uid: 'c1' },
-        data: {
-          photographerId: 'p1',
-          serviceId: 'svc1',
-          day: '2026-10-15',
-          start: '09:00',
-          place: { name: 'Thảo Cầm Viên' },
-        },
-      },
-      deps,
-    );
-    const deposit = await handleCreateDeposit(
-      { auth: { uid: 'c1' }, data: { bookingId: draft.id, provider: 'fake' } },
-      deps,
-    );
-    await handleConfirmFakePayment(
-      { auth: { uid: 'c1' }, data: { paymentId: deposit.paymentId } },
-      deps,
-      EMULATOR_ENV,
-    );
+    assert.deepEqual(paid, { outcome: 'paid' });
 
     const accepted = await handleTransitionBooking(
       {

@@ -5,10 +5,8 @@ import type { EarningsDeps } from '../../src/earnings_ports.js';
 import type { PayoutDeps } from '../../src/payout_ports.js';
 import { savePayoutAccount } from '../../src/save_payout_account.js';
 import { createBookingDraft } from '../../src/create_booking.js';
-import { createDeposit } from '../../src/create_deposit.js';
-import { confirmFakePayment } from '../../src/handle_payment.js';
 import { transitionBooking } from '../../src/transition_booking.js';
-import { createBookingWorld, type BookingWorld } from './booking_world.js';
+import { createBookingWorld, payDraft, type BookingWorld } from './booking_world.js';
 
 export const ADMIN = { uid: 'admin1', isAdmin: true } as const;
 
@@ -52,8 +50,7 @@ export async function paidBooking(w: PayoutWorld, day: string, start = '14:00'):
   const draft = await createBookingDraft(w.deps, {
     customerId: 'c1', photographerId: 'p1', serviceId: 'srv_01', day, start, place: { name: 'Nhà thờ Lớn' },
   });
-  const dep = await createDeposit(w.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-  await confirmFakePayment(w.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+  const dep = await payDraft(w, draft.id);
   await transitionBooking(w.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
   return { bookingId: draft.id, paymentId: dep.paymentId };
 }

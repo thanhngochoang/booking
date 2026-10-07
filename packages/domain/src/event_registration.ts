@@ -104,7 +104,7 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
       return { result: resultOf(live), soldOut: false, intent: null };
     }
     if (live !== null) {
-      // Same hold, another tap: reuse the provider's payment, or open a second intent (like createDeposit).
+      // Same hold, another tap: reuse the provider's payment, or open a second intent.
       // Without a provider ("Thanh toán tiếp") the hold keeps the provider of its current payment.
       const current = provider === null && live.paymentId !== null ? await tx.getPayment(live.paymentId) : null;
       const chosen = provider ?? current?.provider ?? null;

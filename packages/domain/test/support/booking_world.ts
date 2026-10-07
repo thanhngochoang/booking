@@ -6,6 +6,8 @@ import type { Clock, IdGenerator } from '../../src/ports.js';
 import type { Booking } from '../../src/booking.js';
 import type { TransferNotification } from '../../src/booking_ports.js';
 import { createBookingDraft } from '../../src/create_booking.js';
+import { createPayment } from '../../src/create_payment.js';
+import { handleTransferNotification } from '../../src/handle_transfer.js';
 
 export class ControllableClock implements Clock {
   constructor(private currentTime: Date = new Date('2026-10-10T10:00:00.000Z')) {}
@@ -141,4 +143,14 @@ export function transferOf(
     receivedAt: p.receivedAt ?? world.clock.now().toISOString(),
     raw: JSON.stringify({ amount: p.amount, content: p.content }),
   };
+}
+
+/**
+ * Pays a draft in full the way a customer does: a bank-QR payment (createPayment), then one
+ * transfer of the exact amount with its code. Returns the payment id.
+ */
+export async function payDraft(world: BookingWorld, bookingId: string, customerId = 'c1'): Promise<{ readonly paymentId: string }> {
+  const { paymentId, checkout } = await createPayment(world.deps, { bookingId, customerId, method: 'bank_qr' });
+  await handleTransferNotification(world.deps, transferOf(world, { content: checkout.transferCode, amount: checkout.amount }));
+  return { paymentId };
 }

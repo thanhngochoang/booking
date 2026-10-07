@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptsOrders, bookingContactUnlocked, computeDeposit, isId, isInternationalE164, isVnE164 } from '@photobooking/domain';
+import { acceptsOrders, bookingContactUnlocked, computeDeposit, isId, isInternationalE164, isVnE164, transferCodeFor } from '@photobooking/domain';
 import { SEED_PASSWORD, SEED_PHOTOGRAPHERS, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
@@ -82,6 +82,15 @@ describe('seed fixtures', () => {
     const completedPayment = docs.find((d) => d.path === 'payments/seed-payment-seed-booking-completed-recent');
     assert.ok(completedPayment);
     assert.equal((completedPayment.data as { escrowStatus: string }).escrowStatus, 'released');
+
+    // Booking payments look like createPayment's: bank QR with the code of their id, fully received.
+    for (const d of docs.filter((x) => x.path.startsWith('payments/seed-payment-seed-booking-'))) {
+      const pay = d.data as { method?: string; transferCode?: string; receivedAmount?: number; amount: number; expiresAt?: Date; createdAt: Date };
+      assert.equal(pay.method, 'bank_qr', d.path);
+      assert.equal(pay.transferCode, transferCodeFor(d.path.slice('payments/'.length)), d.path);
+      assert.equal(pay.receivedAmount, pay.amount, d.path);
+      assert.equal(pay.expiresAt?.getTime(), pay.createdAt.getTime() + 15 * 60_000, d.path);
+    }
 
     // Availability exists
     const anBookedDay = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-20');

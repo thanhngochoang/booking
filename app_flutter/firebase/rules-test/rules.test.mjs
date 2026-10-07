@@ -1037,6 +1037,30 @@ test('payments, refunds, and ledger_entries are denied to clients', async () => 
   await assertFails(setDoc(doc(db, 'ledger_entries/le1'), { amount: 100 }));
 });
 
+test('payment_notifications is denied to clients', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'payment_notifications/fake_txn1'), {
+      provider: 'fake', txnId: 'txn1', raw: '{"payer":{"name":"NGUYEN VAN A"}}', outcome: 'paid', paymentId: 'pay1',
+    });
+  });
+  for (const db of [env.authenticatedContext('c1').firestore(), env.unauthenticatedContext().firestore()]) {
+    await assertFails(getDoc(doc(db, 'payment_notifications/fake_txn1')));
+    await assertFails(getDocs(collection(db, 'payment_notifications')));
+    await assertFails(setDoc(doc(db, 'payment_notifications/fake_txn2'), { provider: 'fake', txnId: 'txn2', outcome: 'paid' }));
+    await assertFails(deleteDoc(doc(db, 'payment_notifications/fake_txn1')));
+  }
+});
+
+test('clients can never write the checkout mirror or payableUntil of a booking', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'bookings/b_co1'), { customerId: 'c1', photographerId: 'p1', status: 'draft' });
+  });
+  const cDb = env.authenticatedContext('c1').firestore();
+  await assertSucceeds(getDoc(doc(cDb, 'bookings/b_co1')));
+  await assertFails(updateDoc(doc(cDb, 'bookings/b_co1'), { checkout: { paymentId: 'pay1', amount: 1 } }));
+  await assertFails(updateDoc(doc(cDb, 'bookings/b_co1'), { payableUntil: new Date('2030-01-01T00:00:00Z') }));
+});
+
 test('booking events are readable by both parties and nobody else', async () => {
   await env.withSecurityRulesDisabled(async (c) => {
     const f = c.firestore();
