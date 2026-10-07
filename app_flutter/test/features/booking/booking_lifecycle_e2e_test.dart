@@ -78,7 +78,10 @@ class _ServerLikeRepository extends RecordingBookingRepository {
     required String paymentId,
     FakeTransferKind kind = FakeTransferKind.exact,
   }) async {
-    final res = await super.confirmFakePayment(paymentId: paymentId, kind: kind);
+    final res = await super.confirmFakePayment(
+      paymentId: paymentId,
+      kind: kind,
+    );
     final id = paymentId.replaceFirst('pay_', '');
     final b = bookings[id]!;
     seedContact(
@@ -187,8 +190,11 @@ Future<String> _customerBooks(
   await _settle(tester);
   await _tapButton(tester, 'Tiếp tục · 1.500.000₫');
   await _tapButton(tester, 'Thanh toán 1.500.000₫');
-  // S04.04 waits for the transfer; the fake gateway delivers it.
-  await repo.confirmFakePayment(paymentId: 'pay_booking_1');
+  // S04.04 waits for the transfer; the test bank's simulator sends it.
+  await _settle(tester);
+  await tester.tap(find.text('Giả lập chuyển khoản'));
+  await _settle(tester);
+  await tester.tap(find.widgetWithText(AppButton, 'Chuyển đúng'));
   await _settle(tester);
 
   final id = repo.createCalls.isEmpty ? '' : 'booking_1';

@@ -1891,35 +1891,96 @@ class AppLocalizationsVi extends AppLocalizations {
   String get payTitle => 'Thanh toán';
 
   @override
-  String get payPendingTitle => 'Đang chờ xác nhận thanh toán';
+  String get payQrTitle => 'Chuyển khoản QR';
 
   @override
-  String payPendingBody(String provider) {
-    return '$provider chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.';
+  String payQrCountdown(String time) {
+    return 'Còn $time';
   }
 
   @override
-  String get payProviderFake => 'Cổng thử nghiệm';
-
-  @override
-  String payProviderNamed(String name) {
-    return 'Cổng $name';
+  String payQrCountdownSemantics(int minutes, int seconds) {
+    return 'QR còn hiệu lực $minutes phút $seconds giây';
   }
 
   @override
-  String get payProviderGeneric => 'Cổng thanh toán';
+  String get payQrExpiredPill => 'Hết hạn';
 
   @override
-  String get payAwaitingDeposit => 'Chờ cọc';
+  String get payQrExpired => 'QR đã hết hạn';
+
+  @override
+  String get payQrBank => 'Ngân hàng';
+
+  @override
+  String get payQrBankNote => 'Tài khoản thu hộ của trung gian thanh toán';
+
+  @override
+  String get payQrAccount => 'Số tài khoản';
+
+  @override
+  String get payQrContent => 'Nội dung';
+
+  @override
+  String get payQrCopy => 'Sao chép';
+
+  @override
+  String get payQrCopied => 'Đã sao chép nội dung chuyển khoản';
+
+  @override
+  String get payQrHint =>
+      'Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.';
+
+  @override
+  String get payQrNew => 'Tạo QR mới';
+
+  @override
+  String get payQrOpenBank => 'Mở app ngân hàng';
+
+  @override
+  String payQrSemantics(String amount, String code) {
+    return 'Mã VietQR $amount, nội dung $code';
+  }
+
+  @override
+  String payQrWho(String name, String service) {
+    return '$name · $service';
+  }
+
+  @override
+  String get payWalletWaiting => 'Đang chờ xác nhận';
+
+  @override
+  String payWalletReopen(String name) {
+    return 'Mở lại $name';
+  }
+
+  @override
+  String get fakeTransferTitle => 'Giả lập chuyển khoản (thử nghiệm)';
+
+  @override
+  String get fakeTransferExact => 'Chuyển đúng';
+
+  @override
+  String get fakeTransferUnder => 'Chuyển thiếu';
+
+  @override
+  String get fakeTransferOver => 'Chuyển thừa';
+
+  @override
+  String get fakeTransferWrong => 'Sai nội dung';
+
+  @override
+  String get fakeTransferOpen => 'Giả lập chuyển khoản';
+
+  @override
+  String get payAwaitingDeposit => 'Chờ thanh toán';
 
   @override
   String get payCheckAgain => 'Kiểm tra lại';
 
   @override
   String get payNotYet => 'Chưa nhận được xác nhận, thử lại sau ít phút';
-
-  @override
-  String get payChangeProvider => 'Đổi cổng thanh toán';
 
   @override
   String get fakePaymentTitle => 'Cổng thanh toán giả (chỉ để thử)';

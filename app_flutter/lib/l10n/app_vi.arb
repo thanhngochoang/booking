@@ -855,25 +855,51 @@
     }
   },
   "payTitle": "Thanh toán",
-  "payPendingTitle": "Đang chờ xác nhận thanh toán",
-  "payPendingBody": "{provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.",
-  "@payPendingBody": {
-    "placeholders": {
-      "provider": {"type": "String"}
-    }
+  "payQrTitle": "Chuyển khoản QR",
+  "@payQrTitle": {"description": "S04.04 (mock): app bar title of the VietQR checkout."},
+  "payQrCountdown": "Còn {time}",
+  "@payQrCountdown": {
+    "description": "S04.04 (mock): countdown pill, time is mm:ss.",
+    "placeholders": {"time": {"type": "String"}}
   },
-  "payProviderFake": "Cổng thử nghiệm",
-  "payProviderNamed": "Cổng {name}",
-  "@payProviderNamed": {
-    "placeholders": {
-      "name": {"type": "String"}
-    }
+  "payQrCountdownSemantics": "QR còn hiệu lực {minutes} phút {seconds} giây",
+  "@payQrCountdownSemantics": {
+    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
   },
-  "payProviderGeneric": "Cổng thanh toán",
-  "payAwaitingDeposit": "Chờ cọc",
+  "payQrExpiredPill": "Hết hạn",
+  "payQrExpired": "QR đã hết hạn",
+  "payQrBank": "Ngân hàng",
+  "payQrBankNote": "Tài khoản thu hộ của trung gian thanh toán",
+  "payQrAccount": "Số tài khoản",
+  "payQrContent": "Nội dung",
+  "payQrCopy": "Sao chép",
+  "payQrCopied": "Đã sao chép nội dung chuyển khoản",
+  "payQrHint": "Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.",
+  "payQrNew": "Tạo QR mới",
+  "payQrOpenBank": "Mở app ngân hàng",
+  "payQrSemantics": "Mã VietQR {amount}, nội dung {code}",
+  "@payQrSemantics": {
+    "placeholders": {"amount": {"type": "String"}, "code": {"type": "String"}}
+  },
+  "payQrWho": "{name} · {service}",
+  "@payQrWho": {
+    "description": "S04.04 (mock): photographer and package under the amount.",
+    "placeholders": {"name": {"type": "String"}, "service": {"type": "String"}}
+  },
+  "payWalletWaiting": "Đang chờ xác nhận",
+  "payWalletReopen": "Mở lại {name}",
+  "@payWalletReopen": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "fakeTransferTitle": "Giả lập chuyển khoản (thử nghiệm)",
+  "fakeTransferExact": "Chuyển đúng",
+  "fakeTransferUnder": "Chuyển thiếu",
+  "fakeTransferOver": "Chuyển thừa",
+  "fakeTransferWrong": "Sai nội dung",
+  "fakeTransferOpen": "Giả lập chuyển khoản",
+  "payAwaitingDeposit": "Chờ thanh toán",
   "payCheckAgain": "Kiểm tra lại",
   "payNotYet": "Chưa nhận được xác nhận, thử lại sau ít phút",
-  "payChangeProvider": "Đổi cổng thanh toán",
   "fakePaymentTitle": "Cổng thanh toán giả (chỉ để thử)",
   "fakePaymentSuccess": "Thanh toán thành công",
   "fakePaymentCancel": "Huỷ",

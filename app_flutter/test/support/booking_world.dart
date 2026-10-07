@@ -137,6 +137,10 @@ Future<BookingWorldHandles> pumpBookingRoute(
   Map<DateTime, AvailabilityDay> days = const {},
   UserContact? contact = const UserContact(phone: '+84903123456'),
   DateTime? now,
+
+  /// A clock the test moves by hand; read on every call, so it wins over
+  /// [now] for [clockProvider] (the countdown on S04.04 follows it).
+  TestClock? clock,
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
   bool failPackages = false,
@@ -298,7 +302,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
         (ref) => Stream.value(AuthUser(uid: signedInUid)),
       ),
     userRepositoryProvider.overrideWithValue(userRepo),
-    clockProvider.overrideWithValue(() => effectiveNow),
+    clockProvider.overrideWithValue(() => clock?.now ?? effectiveNow),
     calendarTodayProvider.overrideWithValue(effectiveNow),
     bookingRepositoryProvider.overrideWithValue(effectiveBookings),
     availabilityRepositoryProvider.overrideWithValue(availRepo),

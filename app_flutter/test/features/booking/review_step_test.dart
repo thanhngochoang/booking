@@ -322,7 +322,6 @@ void main() {
     (tester) async {
       await navigateToReviewStep(tester);
 
-      expect(find.byType(ProviderPicker), findsNothing);
       expect(find.byType(PayMethodSelector), findsOneWidget);
       PayMethodSelector selector() =>
           tester.widget<PayMethodSelector>(find.byType(PayMethodSelector));

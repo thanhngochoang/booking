@@ -20,6 +20,7 @@ import 'package:photobooking/features/booking/steps/review_step.dart';
 import 'package:photobooking/features/booking/steps/service_step.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../support/booking_world.dart';
 import '../../support/content_fixtures.dart';
@@ -139,11 +140,14 @@ void main() {
       await _tapButton(tester, 'Thanh toán 1.500.000₫');
       await _pumpWhileWaiting(tester);
 
-      // No sheet: S04.04 waits for the transfer, which the fake gateway
-      // delivers (S04.04's own simulator button comes with its rewrite).
+      // No sheet yet: S04.04 shows the QR and waits for the transfer.
       expect(find.byType(FakePaymentSheet), findsNothing);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
-      await repo.confirmFakePayment(paymentId: 'pay_booking_1');
+      expect(find.byType(QrImageView), findsOneWidget);
+      // The test bank's simulator sends the exact amount.
+      await tester.tap(find.text('Giả lập chuyển khoản'));
+      await _pumpWhileWaiting(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Chuyển đúng'));
       await _pumpWhileWaiting(tester);
 
       // S04.04 saw the status leave draft and moved on to S05.02.

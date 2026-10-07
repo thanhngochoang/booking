@@ -3388,40 +3388,154 @@ abstract class AppLocalizations {
   /// **'Thanh toán'**
   String get payTitle;
 
-  /// No description provided for @payPendingTitle.
+  /// S04.04 (mock): app bar title of the VietQR checkout.
   ///
   /// In vi, this message translates to:
-  /// **'Đang chờ xác nhận thanh toán'**
-  String get payPendingTitle;
+  /// **'Chuyển khoản QR'**
+  String get payQrTitle;
 
-  /// No description provided for @payPendingBody.
+  /// S04.04 (mock): countdown pill, time is mm:ss.
   ///
   /// In vi, this message translates to:
-  /// **'{provider} chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.'**
-  String payPendingBody(String provider);
+  /// **'Còn {time}'**
+  String payQrCountdown(String time);
 
-  /// No description provided for @payProviderFake.
+  /// No description provided for @payQrCountdownSemantics.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng thử nghiệm'**
-  String get payProviderFake;
+  /// **'QR còn hiệu lực {minutes} phút {seconds} giây'**
+  String payQrCountdownSemantics(int minutes, int seconds);
 
-  /// No description provided for @payProviderNamed.
+  /// No description provided for @payQrExpiredPill.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng {name}'**
-  String payProviderNamed(String name);
+  /// **'Hết hạn'**
+  String get payQrExpiredPill;
 
-  /// No description provided for @payProviderGeneric.
+  /// No description provided for @payQrExpired.
   ///
   /// In vi, this message translates to:
-  /// **'Cổng thanh toán'**
-  String get payProviderGeneric;
+  /// **'QR đã hết hạn'**
+  String get payQrExpired;
+
+  /// No description provided for @payQrBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng'**
+  String get payQrBank;
+
+  /// No description provided for @payQrBankNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản thu hộ của trung gian thanh toán'**
+  String get payQrBankNote;
+
+  /// No description provided for @payQrAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản'**
+  String get payQrAccount;
+
+  /// No description provided for @payQrContent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung'**
+  String get payQrContent;
+
+  /// No description provided for @payQrCopy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép'**
+  String get payQrCopy;
+
+  /// No description provided for @payQrCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép nội dung chuyển khoản'**
+  String get payQrCopied;
+
+  /// No description provided for @payQrHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.'**
+  String get payQrHint;
+
+  /// No description provided for @payQrNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo QR mới'**
+  String get payQrNew;
+
+  /// No description provided for @payQrOpenBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở app ngân hàng'**
+  String get payQrOpenBank;
+
+  /// No description provided for @payQrSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã VietQR {amount}, nội dung {code}'**
+  String payQrSemantics(String amount, String code);
+
+  /// S04.04 (mock): photographer and package under the amount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {service}'**
+  String payQrWho(String name, String service);
+
+  /// No description provided for @payWalletWaiting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ xác nhận'**
+  String get payWalletWaiting;
+
+  /// No description provided for @payWalletReopen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở lại {name}'**
+  String payWalletReopen(String name);
+
+  /// No description provided for @fakeTransferTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giả lập chuyển khoản (thử nghiệm)'**
+  String get fakeTransferTitle;
+
+  /// No description provided for @fakeTransferExact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển đúng'**
+  String get fakeTransferExact;
+
+  /// No description provided for @fakeTransferUnder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển thiếu'**
+  String get fakeTransferUnder;
+
+  /// No description provided for @fakeTransferOver.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển thừa'**
+  String get fakeTransferOver;
+
+  /// No description provided for @fakeTransferWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sai nội dung'**
+  String get fakeTransferWrong;
+
+  /// No description provided for @fakeTransferOpen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giả lập chuyển khoản'**
+  String get fakeTransferOpen;
 
   /// No description provided for @payAwaitingDeposit.
   ///
   /// In vi, this message translates to:
-  /// **'Chờ cọc'**
+  /// **'Chờ thanh toán'**
   String get payAwaitingDeposit;
 
   /// No description provided for @payCheckAgain.
@@ -3435,12 +3549,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa nhận được xác nhận, thử lại sau ít phút'**
   String get payNotYet;
-
-  /// No description provided for @payChangeProvider.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đổi cổng thanh toán'**
-  String get payChangeProvider;
 
   /// No description provided for @fakePaymentTitle.
   ///

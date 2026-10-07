@@ -66,6 +66,7 @@ export 'package:photobooking/core/payments.dart';
 export 'package:photobooking/core/widgets/booking_card.dart';
 export 'package:photobooking/core/widgets/confirm_sheet.dart';
 export 'package:photobooking/core/widgets/countdown.dart';
+export 'package:photobooking/core/widgets/countdown_pill.dart';
 export 'package:photobooking/core/widgets/escrow_notice.dart';
 export 'package:photobooking/core/widgets/money_breakdown.dart';
 export 'package:photobooking/core/widgets/policy_table.dart';
