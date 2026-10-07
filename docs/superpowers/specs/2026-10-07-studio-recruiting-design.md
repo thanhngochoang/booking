@@ -102,11 +102,12 @@ Phần này mở rộng S26 §5.2 (`assignBooking`). Mỗi phần tử `assignme
 | Trường | Ghi chú |
 |---|---|
 | `assigneeKind` | `member` \| `collaborator` |
-| `agreedFee` | VND; bắt buộc khi giao CTV, gợi ý sẵn `defaultFee` |
 | `offerExpiresAt` | = giao + 6 giờ, nhưng không muộn hơn `assignDeadline` |
 | `acceptedAt?`, `declinedAt?` | |
 
-Booking thêm `assigneeAccepted: bool`.
+Booking thêm `assigneeKind` và `assigneeAccepted: bool`.
+
+**Thù lao không nằm trên booking.** Khách đọc được toàn bộ document booking, nên nếu để thù lao ở đó thì khách sẽ thấy chi phí của studio. Vì vậy thù lao, trạng thái offer và bản ghi trả tiền nằm ở `collab_jobs/{bookingId}_{collaboratorId}`. Chỉ studio và CTV đó đọc được document này. Thù lao (`agreedFee`, VND) bắt buộc khi giao cho CTV, gợi ý sẵn `defaultFee`. (Sửa 2026-10-07 theo plan S27.)
 
 - **Sheet S26.04 (giao thợ):** danh sách chọn gồm thành viên và CTV `active`, chia hai nhóm "Thành viên" và "Cộng tác viên". Khi chọn CTV thì có thêm ô "Thù lao" (VND).
 - **S27.07 (CTV nhận việc):** CTV mở sheet thấy tóm tắt buổi chụp (không có liên hệ khách), thù lao và hạn trả lời, rồi bấm "Nhận việc" hoặc "Từ chối".
@@ -117,7 +118,7 @@ Booking thêm `assigneeAccepted: bool`.
 
 ### 5.1 Thù lao ngoài app
 
-`bookings/{id}.collaboratorPay`: `{amount, status: 'due' | 'paid_reported' | 'received' | 'disputed', paidAt?, method?: 'bank' | 'cash' | 'other', receivedAt?}`.
+`collab_jobs/{bookingId}_{collaboratorId}.pay`: `{amount, status: 'due' | 'paid_reported' | 'received' | 'disputed', paidAt?, method?: 'bank' | 'cash' | 'other', receivedAt?}`. Khách không đọc được.
 
 - Khi mốc 1 được nhả cho studio, trạng thái thành `due` và studio nhận nhắc: "Trả {tên} {số tiền}".
 - Studio bấm **"Đã trả"** (chọn ngày và cách trả). CTV bấm **"Đã nhận"**, hoặc **"Chưa nhận"** (`disputed`).
