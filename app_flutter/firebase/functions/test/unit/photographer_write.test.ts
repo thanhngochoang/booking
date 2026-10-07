@@ -4,6 +4,7 @@ import { FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore'
 import type { ScoreSkillsDeps, SkillsScoreUpdate } from '@photobooking/domain';
 import { REGION, TRIGGER_OPTIONS } from '../../src/config.js';
 import { firestoreSkillsScoreWriter, isStaleWriteError, skillsUpdateFields } from '../../src/infra/skills_firestore.js';
+import { liveAcceptingOrdersWriter } from '../../src/infra/live_skills.js';
 import { handlePhotographerWrite, syncAcceptingOrders, type AcceptingOrdersWriter } from '../../src/triggers/photographer_write.js';
 
 const serverTime = (v: unknown) => v instanceof FieldValue && v.isEqual(FieldValue.serverTimestamp());
@@ -174,5 +175,34 @@ describe('syncAcceptingOrders', () => {
     const { writer, calls } = recorder();
     assert.equal(await syncAcceptingOrders({ uid: 'p1', before: { verified: true }, after: undefined }, writer), 'deleted');
     assert.equal(calls.length, 0);
+  });
+});
+
+describe('liveAcceptingOrdersWriter', () => {
+  const fakeFirestore = (update: (data: unknown) => Promise<void>) =>
+    ({ collection: () => ({ doc: () => ({ update }) }) }) as unknown as Firestore;
+
+  test('updates (never sets) the flag on the photographer doc', async () => {
+    const seen: unknown[] = [];
+    await liveAcceptingOrdersWriter(fakeFirestore(async (d) => void seen.push(d))).set('p1', true);
+    assert.deepEqual(seen, [{ acceptingOrders: true }]);
+  });
+
+  test('NOT_FOUND (doc deleted between event and write) is a no-op, not a retried failure', async () => {
+    const writer = liveAcceptingOrdersWriter(
+      fakeFirestore(async () => {
+        throw Object.assign(new Error('NOT_FOUND'), { code: 5 });
+      }),
+    );
+    await assert.doesNotReject(writer.set('p1', false));
+  });
+
+  test('other errors still propagate so the trigger retries', async () => {
+    const writer = liveAcceptingOrdersWriter(
+      fakeFirestore(async () => {
+        throw Object.assign(new Error('UNAVAILABLE'), { code: 14 });
+      }),
+    );
+    await assert.rejects(writer.set('p1', true), /UNAVAILABLE/);
   });
 });

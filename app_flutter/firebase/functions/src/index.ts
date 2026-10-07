@@ -127,8 +127,9 @@ export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 30
 });
 
 /**
- * Scores `photographers/{uid}.skills` ("Độ khớp hồ sơ") and removes evidence that is not the
- * photographer's own post (spec 2026-10-02-photographer-write-function-design.md). Events older than
+ * Scores `photographers/{uid}.skills` ("Độ khớp hồ sơ"), removes evidence that is not the
+ * photographer's own post (spec 2026-10-02-photographer-write-function-design.md) and keeps the
+ * derived `acceptingOrders` flag in sync (verified and onboarded). Events older than
  * 1 hour and permanent Firestore errors end without a retry (handlePhotographerEvent).
  */
 export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'photographers/{uid}' }, async (event) => {
