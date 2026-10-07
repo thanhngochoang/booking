@@ -8,6 +8,7 @@ import {
   FakePaymentGateway,
   type ServiceRecord,
   type CustomerContactRecord,
+  computeDeposit,
 } from '@photobooking/domain';
 import {
   handleCreateBooking,
@@ -93,8 +94,8 @@ describe('Booking callables', () => {
     assert.equal(result.customerId, 'c1');
     assert.equal(result.photographerId, 'p1');
     assert.equal(result.status, 'draft');
-    assert.equal(result.deposit, 300_000);
-    assert.equal(result.remaining, 700_000);
+    assert.equal(result.deposit, computeDeposit(1_000_000).deposit);
+    assert.equal(result.remaining, 0);
   });
 
   test('createBooking refuses a closed provider with failed-precondition and details.code not_accepting_orders', async () => {
@@ -325,8 +326,8 @@ describe('Booking callables', () => {
       end: '11:00',
       place: { name: 'Thảo Cầm Viên' },
       status: 'completed',
-      deposit: 300_000,
-      remaining: 700_000,
+      deposit: 1_000_000,
+      remaining: 0,
       escrowStatus: 'held',
       completedAt: '2026-10-01T09:00:00.000Z',
       version: 1,
@@ -341,7 +342,7 @@ describe('Booking callables', () => {
       payerId: 'c1',
       payeeId: 'p1',
       provider: 'fake',
-      amount: 300_000,
+      amount: 1_000_000,
       status: 'paid',
       escrowStatus: 'held',
       idempotencyKey: 'dep_b_completed_fake',

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { computeDeposit } from '../src/booking_policy.js';
 import { describe, it } from 'node:test';
 import { DomainError } from '../src/errors.js';
 import { PLATFORM_PAYEE } from '../src/payout.js';
@@ -20,6 +21,9 @@ async function releasedPayment(w: ReturnType<typeof createPayoutWorld>, day: str
   release(w, b.paymentId);
   return b.paymentId;
 }
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('payout use cases', () => {
   it('a non-admin is permission_denied', async () => {
@@ -120,8 +124,8 @@ describe('payout use cases', () => {
     assert.equal(po.status, 'pending');
     assert.equal(po.createdBy, ADMIN.uid);
     assert.equal(po.amount, po.items.reduce((s, i) => s + i.amount, 0));
-    assert.equal(po.amount, 500_000);
-    assert.equal(po.items.find((i) => i.paymentId === a)?.amount, 300_000);
+    assert.equal(po.amount, PAID + (PAID - 100_000));
+    assert.equal(po.items.find((i) => i.paymentId === a)?.amount, PAID);
     assert.equal(w.store.payments.get(a)?.payoutId, po.id);
   });
 
@@ -149,7 +153,7 @@ describe('payout use cases', () => {
     const entries = [...w.store.ledgerEntries.values()].filter((e) => e.type === 'payout_paid');
     assert.equal(entries.length, 2);
     for (const e of entries) {
-      assert.equal(e.amount, -300_000);
+      assert.equal(e.amount, -PAID);
       assert.equal(e.accountOwnerId, 'p1');
       assert.equal(e.payoutId, po.id);
     }
@@ -260,11 +264,11 @@ describe('payout use cases', () => {
     await releasedPayment(w, '2026-10-15');
     await paidBooking(w, '2026-10-16'); // held: not due
     assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), [
-      { payeeId: 'p1', amount: 300_000, hasAccount: false },
+      { payeeId: 'p1', amount: PAID, hasAccount: false },
     ]);
     await addAccount(w);
     assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), [
-      { payeeId: 'p1', amount: 300_000, hasAccount: true },
+      { payeeId: 'p1', amount: PAID, hasAccount: true },
     ]);
     await createPayout(w.payoutDeps, ADMIN, 'p1');
     assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), []);

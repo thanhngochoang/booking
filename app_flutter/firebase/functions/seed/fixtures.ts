@@ -6,6 +6,7 @@ import {
   acceptsOrders,
   NOTIFICATION_TYPES,
   accountLast4,
+  computeDeposit,
   encodeGeohash,
   formatVnDate,
   hashtagBase,
@@ -231,7 +232,7 @@ function escrowOf(b: SeedBooking): string {
 function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
   const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
   if (service === undefined) throw new Error(`unknown seed service ${b.serviceId}`);
-  const deposit = Math.floor(service.price * 0.3);
+  const { deposit, remaining } = computeDeposit(service.price);
   const steps = TIMELINE[b.status] ?? [b.status];
   const last = b.completedDaysAgo === null
     ? new Date(SEED_CREATED_AT.getTime() + (steps.length - 1) * HOUR_MS)
@@ -256,7 +257,7 @@ function bookingData(b: SeedBooking, now: Date): Record<string, unknown> {
     note: 'Seed booking',
     status: b.status,
     deposit: { amount: deposit, provider: 'fake', paymentId: b.id.replace('seed-booking-', 'seed-payment-'), paidAt: createdAt },
-    remaining: service.price - deposit,
+    remaining,
     depositProvider: 'fake',
     depositPaidAt: createdAt,
     escrowStatus,
@@ -384,7 +385,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
     const service = SEED_SERVICES.find((s) => s.id === b.serviceId);
     if (!service) continue;
     const bData = bookingData(b, now);
-    const deposit = Math.floor(service.price * 0.3);
+    const { deposit } = computeDeposit(service.price);
     const createdAt = bData.createdAt as Date;
     const updatedAt = bData.updatedAt as Date;
 
@@ -524,7 +525,7 @@ const SEED_ROWS: readonly SeedRow[] = [
   { uid: LAN, id: 'n_shoot_reminder_seed-booking-upcoming_h24', ageHours: 5, read: true, target: '/b/seed-booking-upcoming',
     content: { type: 'shoot_reminder', hours: 24, service: 'Chân dung 2 giờ', counterpart: 'An Studio (seed)', day: 'T7 10/10', start: '08:00' } },
   { uid: LAN, id: 'n_refund_done_seed-booking-cancelled', ageHours: 30, read: true, target: '/b/seed-booking-cancelled',
-    content: { type: 'refund_done', amount: 450_000, bookingId: 'seed-booking-cancelled' } },
+    content: { type: 'refund_done', amount: computeDeposit(1_500_000).deposit, bookingId: 'seed-booking-cancelled' } },
   { uid: LAN, id: 'n_booking_declined_seed-booking-declined', ageHours: 12 * 24, read: true, target: '/b/seed-booking-declined',
     content: { type: 'booking_declined', reason: 'declined', photographer: 'Bình (seed)', percent: 100 } },
   { uid: LAN, id: `g_chat_${SEED_CHAT}`, ageHours: 2, read: false, target: `/chat/${SEED_CHAT}`,

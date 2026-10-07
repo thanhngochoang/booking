@@ -1,11 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { computeDeposit } from '../src/booking_policy.js';
 import { createBookingWorld } from './support/booking_world.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { createDeposit } from '../src/create_deposit.js';
 import { confirmFakePayment } from '../src/handle_payment.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('Task 5: runBookingSweeps', () => {
   it('cleans up unpaid draft after 30 minutes and frees calendar day', async () => {
@@ -55,7 +59,7 @@ describe('Task 5: runBookingSweeps', () => {
 
     const b = await world.store.getBooking(draft.id);
     assert.equal(b?.status, 'expired');
-    assert.equal(b?.depositRefunded, 300_000);
+    assert.equal(b?.depositRefunded, PAID);
 
     // Day is freed
     const day = await world.store.getAvailabilityDay('p1', '2026-10-15');

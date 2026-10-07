@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptsOrders, bookingContactUnlocked, isId, isInternationalE164, isVnE164 } from '@photobooking/domain';
+import { acceptsOrders, bookingContactUnlocked, computeDeposit, isId, isInternationalE164, isVnE164 } from '@photobooking/domain';
 import { SEED_PASSWORD, SEED_PHOTOGRAPHERS, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
@@ -47,10 +47,11 @@ describe('seed fixtures', () => {
     }
   });
 
-  test('money follows the deposit rule: floor(30%) and the rest, integer VND', () => {
+  test('money follows the up-front rule: the whole price is paid, nothing remains, integer VND', () => {
     for (const d of seedDocuments(NOW).filter((x) => x.path.startsWith('bookings/') && !x.path.includes('/private/'))) {
       const data = d.data as { service: { price: number }; deposit: { amount: number }; remaining: number };
-      assert.equal(data.deposit.amount, Math.floor(data.service.price * 0.3), d.path);
+      assert.equal(data.deposit.amount, computeDeposit(data.service.price).deposit, d.path);
+      assert.equal(data.remaining, 0, d.path);
       assert.equal(data.deposit.amount + data.remaining, data.service.price, d.path);
       assert.ok(Number.isInteger(data.remaining), d.path);
     }
@@ -167,13 +168,13 @@ describe('seed payouts and earnings', () => {
 
   test('the earnings projection equals the payments', () => {
     const e = get('earnings/seed-photographer-an');
-    const dep = (price: number) => Math.floor(price * 0.3);
+    const dep = (price: number) => computeDeposit(price).deposit;
     // held: accepted + upcoming + disputed; soon: completed-recent; received: completed-old.
     assert.equal(e?.heldAmount, 3 * dep(1_500_000));
     assert.equal(e?.soonAmount, dep(1_500_000));
     assert.equal(e?.receivedAmount, dep(1_500_000));
     assert.equal((e?.lastPayout as { status: string }).status, 'paid');
     assert.equal(get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old')?.state, 'paid_out');
-    assert.equal(get('earnings/seed-photographer-binh')?.heldAmount, Math.floor(1_200_000 * 0.3));
+    assert.equal(get('earnings/seed-photographer-binh')?.heldAmount, dep(1_200_000));
   });
 });

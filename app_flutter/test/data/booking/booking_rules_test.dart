@@ -9,18 +9,20 @@ import 'package:photobooking/data/booking/booking_status.dart';
 
 void main() {
   group('BookingRules', () {
-    test('computeDeposit calculates 30% floor and exact balance', () {
+    test('computeDeposit is the whole price', () {
+      expect(BookingRules.upfrontPercent, 100);
+
       final res1 = BookingRules.computeDeposit(1000000);
-      expect(res1.deposit, 300000);
-      expect(res1.remaining, 700000);
+      expect(res1.deposit, 1000000);
+      expect(res1.remaining, 0);
 
       final res2 = BookingRules.computeDeposit(1500000);
-      expect(res2.deposit, 450000);
-      expect(res2.remaining, 1050000);
+      expect(res2.deposit, 1500000);
+      expect(res2.remaining, 0);
 
       final res3 = BookingRules.computeDeposit(1234567);
-      expect(res3.deposit, (1234567 * 0.3).floor());
-      expect(res3.deposit + res3.remaining, 1234567);
+      expect(res3.deposit, 1234567);
+      expect(res3.remaining, 0);
     });
 
     test('parseBookingDateTime parses Asia/Ho_Chi_Minh timezone correctly', () {
@@ -241,9 +243,9 @@ void main() {
         // Read booking_policy.json
         final file = File('../packages/domain/test/fixtures/booking_policy.json');
         final jsonMap = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-        final depositCases = jsonMap['depositCases'] as List<dynamic>;
+        final upfrontCases = jsonMap['upfrontCases'] as List<dynamic>;
 
-        for (final item in depositCases) {
+        for (final item in upfrontCases) {
           final c = item as Map<String, dynamic>;
           final price = c['price'] as int;
           final expectedDeposit = c['deposit'] as int;

@@ -3,7 +3,8 @@
  * Pure TypeScript (no external dependencies).
  */
 
-export const DEPOSIT_PERCENT = 30;
+/** Customers pay the whole price when they book (payments spec M2); no deposit any more. */
+export const UPFRONT_PERCENT = 100;
 export const DISPUTE_WINDOW_HOURS = 24;
 export const ACCEPT_DEADLINE_HOURS = 24;
 export const DRAFT_EXPIRY_MINUTES = 30;
@@ -19,14 +20,17 @@ export const MAX_DISPUTE_REASON_LENGTH = 500;
 export const MAX_CANCEL_REASON_LENGTH = 200;
 export const MAX_BOOKING_DAYS_AHEAD = 365;
 
-/** Deposit calculation: floor(price * 0.30), remainder to complete price. */
+/**
+ * The up-front payment for a service price: the whole price, nothing left to pay later.
+ * The name and the `deposit`/`remaining` fields stay for now (Decision 1 of #129);
+ * `remaining` is always 0.
+ */
 export function computeDeposit(price: number): { deposit: number; remaining: number } {
   if (price < 0) {
     throw new Error('Price must be non-negative');
   }
-  const deposit = Math.floor((price * DEPOSIT_PERCENT) / 100);
-  const remaining = price - deposit;
-  return { deposit, remaining };
+  const deposit = Math.floor((price * UPFRONT_PERCENT) / 100);
+  return { deposit, remaining: price - deposit };
 }
 
 /**

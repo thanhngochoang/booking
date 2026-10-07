@@ -1,10 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { computeDeposit } from '../src/booking_policy.js';
 import { createBookingWorld } from './support/booking_world.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { createDeposit } from '../src/create_deposit.js';
 import { confirmFakePayment, handlePaymentNotification, checkDeposit } from '../src/handle_payment.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('Task 4: createDeposit and payment handling', () => {
   it('creates deposit payment intent and transitions on fake confirm', async () => {
@@ -108,7 +112,7 @@ describe('Task 4: createDeposit and payment handling', () => {
     assert.equal(res.booking, null);
     assert.equal(res.payment.status, 'refunded');
     assert.equal(res.payment.escrowStatus, 'refunded');
-    assert.equal(res.refund?.amount, 300_000);
+    assert.equal(res.refund?.amount, PAID);
     assert.equal(res.refund?.percent, 100);
 
     // Balanced ledger entries

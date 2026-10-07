@@ -175,7 +175,7 @@ void main() {
   );
 
   testWidgets(
-    'shows the summary card, note and phone side by side, price, deposit 30 % and remaining',
+    'shows the summary card, note and phone side by side, price, the whole price up front and no remaining',
     (tester) async {
       await navigateToReviewStep(tester);
 
@@ -183,10 +183,11 @@ void main() {
       expect(find.text('Minh Trí · Gói Chân Dung'), findsOneWidget);
       expect(find.text('Bến Bạch Đằng'), findsOneWidget);
 
-      // Money breakdown: 1.500.000, deposit 450.000 (30%), remaining 1.050.000
+      // Money breakdown: the whole price 1.500.000 is paid up front
+      final upfront = depositFor(1500000);
+      expect(upfront.deposit, 1500000);
+      expect(upfront.remaining, 0);
       expect(find.text('1.500.000₫'), findsWidgets);
-      expect(find.text('450.000₫'), findsWidgets);
-      expect(find.text('1.050.000₫'), findsWidgets);
 
       // Phone field is prefilled with saved formatted phone: '903 123 456'
       final phoneFieldFinder = find.byType(PhoneField);
@@ -202,19 +203,18 @@ void main() {
 
       // Deposit button
       expect(
-        find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'),
+        find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫'),
         findsOneWidget,
       );
     },
   );
 
-  testWidgets('deposit plus remaining equals the price for an odd price', (
+  testWidgets('the whole price is paid up front for an odd price', (
     tester,
   ) async {
     final oddMath = depositFor(1234567);
-    expect(oddMath.deposit, 370370);
-    expect(oddMath.remaining, 864197);
-    expect(oddMath.deposit + oddMath.remaining, 1234567);
+    expect(oddMath.deposit, 1234567);
+    expect(oddMath.remaining, 0);
 
     await navigateToReviewStep(
       tester,
@@ -222,9 +222,11 @@ void main() {
       packages: [oddPackage],
     );
 
-    expect(find.text('370.370₫'), findsWidgets);
-    expect(find.text('864.197₫'), findsWidgets);
-    expect(find.widgetWithText(AppButton, 'Đặt cọc 370.370₫'), findsOneWidget);
+    expect(find.text('1.234.567₫'), findsWidgets);
+    expect(
+      find.widgetWithText(AppButton, 'Đặt cọc 1.234.567₫'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows the escrow notice and the cancellation policy text', (
@@ -292,7 +294,7 @@ void main() {
         findsOneWidget,
       );
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
       expect(tester.widget<AppButton>(payBtn).onPressed, isNull);
     },
   );

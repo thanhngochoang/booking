@@ -99,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap Đặt cọc
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
       await tester.tap(payBtn);
       await tester.pumpAndSettle();
 
@@ -124,7 +124,7 @@ void main() {
     final fakeRepo = FakeBookingRepository();
     await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
     await tester.tap(payBtn);
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
@@ -142,7 +142,7 @@ void main() {
       realPayments: false,
     );
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
@@ -169,7 +169,7 @@ void main() {
         realPayments: false,
       );
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
       await tester.tap(payBtn);
       await tester.pumpAndSettle();
 
@@ -194,7 +194,7 @@ void main() {
         realPayments: true,
       );
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
       await tester.tap(payBtn);
       await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
@@ -221,7 +221,7 @@ void main() {
     await tester.enterText(phoneFinder, '0987654321');
     await tester.pumpAndSettle();
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
@@ -240,7 +240,7 @@ void main() {
 
     await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
@@ -257,7 +257,7 @@ void main() {
 
       final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
       await tester.tap(payBtn);
       await tester.pumpAndSettle();
 
@@ -303,7 +303,7 @@ void main() {
     // Update package list for when provider is invalidated
     packageList = [updatedPackage, bookingPackage2];
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 
@@ -324,7 +324,7 @@ void main() {
 
       await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+      final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
       await tester.tap(payBtn);
       await tester.pumpAndSettle();
 
@@ -356,7 +356,7 @@ void main() {
 
       await navigateToReviewStep(tester, bookings: fakeRepo);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'));
+      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫'));
       await tester.pumpAndSettle();
 
       expect(
@@ -389,7 +389,7 @@ void main() {
       final before = reads;
       expect(before, greaterThan(0));
 
-      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'));
+      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫'));
       await tester.pumpAndSettle();
 
       expect(reads, greaterThan(before));
@@ -404,7 +404,7 @@ void main() {
 
     await navigateToReviewStep(tester, bookings: fakeRepo);
 
-    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 450.000₫');
+    final payBtn = find.widgetWithText(AppButton, 'Đặt cọc 1.500.000₫');
     await tester.tap(payBtn);
     await tester.pumpAndSettle();
 

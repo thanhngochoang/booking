@@ -168,12 +168,12 @@ void main() {
     expect(container.read(bookingFlowControllerProvider(args)).start, isNull);
   });
 
-  test('deposit and remaining always add up to the price', () {
+  test('the whole price is paid up front: deposit is the price, remaining is 0', () {
     const testPrices = [1, 4, 1500000, 1234567];
     for (final price in testPrices) {
       final (:deposit, :remaining) = depositFor(price);
-      expect(deposit + remaining, price);
-      expect(deposit, (price * 0.3).floor());
+      expect(deposit, price);
+      expect(remaining, 0);
     }
   });
 

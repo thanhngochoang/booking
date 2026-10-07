@@ -64,8 +64,8 @@ class _ServerLikeRepository extends RecordingBookingRepository {
         durationMinutes: 120,
       ),
       end: '17:30',
-      deposit: 450000,
-      remaining: 1050000,
+      deposit: 1500000,
+      remaining: 0,
       createdAt: clock.now,
       updatedAt: clock.now,
     );
@@ -185,7 +185,7 @@ Future<String> _customerBooks(
   await tester.enterText(find.byType(TextField), 'Bến Bạch Đằng');
   await _settle(tester);
   await _tapButton(tester, 'Tiếp tục · 1.500.000₫');
-  await _tapButton(tester, 'Đặt cọc 450.000₫');
+  await _tapButton(tester, 'Đặt cọc 1.500.000₫');
   await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
   await _settle(tester);
 

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { computeDeposit, computeRefund } from '../src/booking_policy.js';
 import { describe, it } from 'node:test';
 import {
   HOLD_REASON_DISPUTE,
@@ -48,6 +49,9 @@ const payout = (over: Partial<Payout> = {}): Payout => ({
 });
 const item = (p: Payment, refunded = 0, po: Payout | null = null) =>
   earningItemOf({ payment: p, refunded, subject, payout: po, now: NOW });
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('earning rows', () => {
   it('held and partially refunded payments are Đang giữ with the kept amount', () => {
@@ -132,7 +136,7 @@ describe('earnings summary', () => {
     w.clock.setTime(new Date('2026-10-16T08:00:00.000Z'));
     assert.equal((await runBookingSweeps(w.deps)).releasedEscrows, 1);
     const batch = await createPayout(w.payoutDeps, ADMIN, 'p1');
-    assert.equal(batch.amount, 150_000);
+    assert.equal(batch.amount, PAID - computeRefund(PAID, 50));
     await executePayout(w.payoutDeps, ADMIN, batch.id);
 
     // B and C complete; C is disputed; B is released after the window.
@@ -163,7 +167,7 @@ describe('earnings summary', () => {
 
     assert.deepEqual(
       [summary.heldAmount, summary.soonAmount, summary.receivedAmount],
-      [600_000, 300_000, 150_000],
+      [2 * PAID, PAID, PAID - computeRefund(PAID, 50)],
     );
     assert.deepEqual([summary.heldAmount, summary.soonAmount, summary.receivedAmount], [held, soon, received]);
     assert.equal(w.earningsStore.items.get(`p1/${c.paymentId}`)?.holdReason, HOLD_REASON_DISPUTE);

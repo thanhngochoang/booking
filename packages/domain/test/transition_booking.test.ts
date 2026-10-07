@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { computeDeposit, computeRefund } from '../src/booking_policy.js';
 import { createBookingWorld } from './support/booking_world.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { createDeposit } from '../src/create_deposit.js';
@@ -7,6 +8,9 @@ import { confirmFakePayment } from '../src/handle_payment.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { openDispute } from '../src/open_dispute.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('Task 5: transitionBooking and openDispute', () => {
   it('accepts requested booking and marks availability day as booked', async () => {
@@ -61,7 +65,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
     });
 
     assert.equal(cancelled.status, 'cancelled');
-    assert.equal(cancelled.depositRefunded, 150_000);
+    assert.equal(cancelled.depositRefunded, computeRefund(PAID, 50));
     assert.equal(cancelled.escrowStatus, 'partially_refunded');
 
     // Day is freed

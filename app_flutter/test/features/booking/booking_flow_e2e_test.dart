@@ -139,7 +139,7 @@ void main() {
       // S04.03: nothing has been written to the server yet.
       expect(find.byType(ReviewStep), findsOneWidget);
       expect(repo.log, isEmpty);
-      await _tapButton(tester, 'Đặt cọc 450.000₫');
+      await _tapButton(tester, 'Đặt cọc 1.500.000₫');
       await tester.pumpAndSettle();
 
       // The fake gateway sheet.
