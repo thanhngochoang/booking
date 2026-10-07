@@ -3,6 +3,7 @@ import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
 import { isId } from './ids.js';
 import { isValidHashtag } from './event_hashtag.js';
+import type { RefundStatus } from './escrow.js';
 import type { UserContactRecord } from './ports.js';
 
 export const EVENT_TYPES = ['photo_walk', 'mini_session', 'workshop', 'cosplay', 'other'] as const;
@@ -129,6 +130,13 @@ export interface RegistrationDoc {
    * (cleared when it lands; the event clock retries leftovers). Absent means false.
    */
   readonly refundDue?: boolean;
+  /**
+   * The refund of this ticket's money (customer cancel ≥ 48 h, host cancel, or a payment that came
+   * after the hold ended) and its gateway state: the app says "Đang hoàn" until it is `done`;
+   * `failed` stays with staff (manual), like bookings. Absent or null: no refund.
+   */
+  readonly refundId?: string | null;
+  readonly refundStatus?: RefundStatus | null;
   readonly event: {
     readonly title: string;
     readonly type: EventType;

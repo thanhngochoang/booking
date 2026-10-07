@@ -119,7 +119,7 @@ Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Ch
 Lớp view-data: `EventCardData(id, title, hostName, placeName, category, day, priceVnd, spotsLeft, coverUrl, distanceKm)` và hàm chuyển đổi `eventCardDataOf(Event e, AppLocalizations l)`.
 
 ### TicketCard · Đã có
-`TicketCard({required TicketCardData ticket, VoidCallback? onTap, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onShare})`. `GlassCard(highlight)` cho vé sắp diễn ra: tag loại, tên, ngày giờ · số vé, badge, **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M), mã vé chọn‑copy, hàng nút; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.  
+`TicketCard({required TicketCardData ticket, VoidCallback? onTap, VoidCallback? onCancel, VoidCallback? onDirections, VoidCallback? onAddToCalendar, VoidCallback? onShare})`. `GlassCard(highlight)` cho vé sắp diễn ra: tag loại, tên, ngày giờ · số vé, badge, **mã QR** 112dp trên nền trắng (`qr_flutter`, mã hoá `ticketCode`, sửa lỗi mức M), mã vé chọn‑copy, hàng nút; vé đã qua mờ và không QR. Có biến thể `TicketCard.skeleton()`. `compact: true` là hàng gọn của mock S11.04 cho mọi vé trừ vé sắp diễn ra (chờ thanh toán, hết hạn, đã qua, đã huỷ, đã hoàn): `DateBlock`, tên, "n vé · địa điểm", badge; vé chờ thanh toán có nút nhỏ "Thanh toán tiếp" dưới chữ. `Semantics` của QR: "Mã vé {code}". Dùng ở S11.04.  
 Lớp view-data: `TicketCardData(id, code, title, category, dateTime, ticketCount, state, qrData, locationName, coverUrl)`, `TicketState` (registered | attended | cancelled).
 
 ### StatusTimeline · Đã có

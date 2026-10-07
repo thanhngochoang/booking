@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/vn_time.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
+import 'package:photobooking/core/widgets/date_block.dart';
 import 'package:photobooking/core/widgets/glass_card.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -25,6 +27,8 @@ class TicketCardData {
   final String ticketCode;
   final String eventTitle;
   final String typeTag;
+
+  /// Vietnam wall-clock time of the start (`toVn` of the instant).
   final DateTime startsAt;
   final int quantity;
   final TicketState state;
@@ -46,9 +50,15 @@ class TicketCard extends StatelessWidget {
     this.statusLabel,
     this.cancelLabel,
     this.payLabel,
+    this.compact = false,
   });
 
   final TicketCardData ticket;
+
+  /// The mock's S11.04 row for every ticket but the upcoming one: date block,
+  /// title, "n vé · place" and the badge; [onPay] adds a small "Thanh toán
+  /// tiếp" under the text of a pending ticket. No QR, no other buttons.
+  final bool compact;
   final VoidCallback? onCancel;
   final VoidCallback? onDirections;
   final VoidCallback? onAddToCalendar;
@@ -151,6 +161,93 @@ class TicketCard extends StatelessWidget {
         ticket.state == TicketState.attended ||
         ticket.state == TicketState.cancelled;
 
+    final badge = DecoratedBox(
+      decoration: BoxDecoration(
+        color: statusBg,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s2,
+          vertical: AppSpace.s1,
+        ),
+        child: Text(
+          badgeLabel.toUpperCase(),
+          key: const Key('ticket-badge'),
+          maxLines: compact ? 2 : 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: compact ? TextAlign.end : TextAlign.start,
+          style: TextStyle(
+            fontSize: AppText.xs,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: statusFg,
+          ),
+        ),
+      ),
+    );
+
+    if (compact) {
+      final place = ticket.placeName;
+      final meta = place == null || place.isEmpty
+          ? l.ticketCount(ticket.quantity)
+          : '${l.ticketCount(ticket.quantity)} · $place';
+      final row = GlassCard(
+        key: const Key('ticket-compact'),
+        highlight: false,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.s3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DateBlock(day: fromVnWallClock(ticket.startsAt)),
+              const SizedBox(width: AppSpace.s3),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ticket.eventTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: AppText.md,
+                        fontWeight: FontWeight.w700,
+                        color: fg,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpace.s1),
+                    Text(
+                      meta,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: AppText.sm, color: fgSec),
+                    ),
+                    if (isPending && onPay != null) ...[
+                      const SizedBox(height: AppSpace.s2),
+                      AppButton.primary(
+                        payLabel ?? l.ticketPay,
+                        key: const Key('ticket-pay'),
+                        onPressed: onPay,
+                        size: AppButtonSize.small,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 112),
+                child: badge,
+              ),
+            ],
+          ),
+        ),
+      );
+      return isDimmed ? Opacity(opacity: 0.55, child: row) : row;
+    }
+
     Widget cardContent = GlassCard(
       highlight: highlighted ?? isUpcoming,
       child: Padding(
@@ -176,32 +273,7 @@ class TicketCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpace.s2),
-                Flexible(
-                  flex: 2,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: statusBg,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s2,
-                        vertical: AppSpace.s1,
-                      ),
-                      child: Text(
-                        badgeLabel.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: AppText.xs,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                          color: statusFg,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                Flexible(flex: 2, child: badge),
               ],
             ),
             const SizedBox(height: AppSpace.s3),

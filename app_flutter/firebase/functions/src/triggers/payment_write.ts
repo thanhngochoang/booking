@@ -1,5 +1,5 @@
 import * as logger from 'firebase-functions/logger';
-import { refreshEarnings, type EarningsDeps } from '@photobooking/domain';
+import { PLATFORM_PAYEE, refreshEarnings, type EarningsDeps } from '@photobooking/domain';
 
 type Doc = { payeeId?: unknown } | undefined;
 
@@ -14,7 +14,7 @@ export async function handlePaymentWrite(
 ): Promise<string | null> {
   const payeeId = payeeOf(after) ?? payeeOf(before);
   // Platform-hosted event tickets: the platform keeps the money; it has no earnings page.
-  if (payeeId === undefined || payeeId === 'platform') return null;
+  if (payeeId === undefined || payeeId === PLATFORM_PAYEE) return null;
   await refreshEarnings(deps, { payeeId, paymentIds: [paymentId] });
   logger.info('onPaymentWritten', { payeeId });
   return payeeId;

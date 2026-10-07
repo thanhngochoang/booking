@@ -20,6 +20,21 @@ enum RegistrationStatus {
   bool get isActive => this == held || this == paid;
 }
 
+/// The gateway state of a ticket's refund (`registrations.refundStatus`):
+/// "Đang hoàn" until it is [done]; [failed] stays with staff, so the money
+/// is still on its way for the customer.
+enum TicketRefundStatus {
+  pending,
+  done,
+  failed;
+
+  String get code => name;
+
+  /// Null for a missing or unknown code (no refund).
+  static TicketRefundStatus? fromCode(String? code) =>
+      values.where((s) => s.name == code).firstOrNull;
+}
+
 /// The event as it was when the ticket was bought (S11.04 shows it without
 /// reading the event).
 @immutable
@@ -66,6 +81,7 @@ class EventRegistration {
     this.refundPercent,
     this.contactEligible = false,
     this.refundDue = false,
+    this.refundStatus,
   });
 
   final String id;
@@ -96,6 +112,11 @@ class EventRegistration {
   /// The event was cancelled while this ticket's money was held: the 100%
   /// refund is on its way ("Đang hoàn" until the status is `refunded`).
   final bool refundDue;
+
+  /// The refund of this ticket's money, once the server made one (a refunded
+  /// ticket, or a cancelled one whose payment arrived after the hold). Null
+  /// on an older refunded ticket: treated as done.
+  final TicketRefundStatus? refundStatus;
   final EventTicketSnapshot event;
   final DateTime createdAt;
 

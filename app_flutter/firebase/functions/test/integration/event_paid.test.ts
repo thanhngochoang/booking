@@ -131,6 +131,8 @@ describe('paid tickets on the emulators', () => {
     const late = await call('confirmFakeTicketPayment', first, { paymentId: r.paymentId });
     assert.deepEqual(late.result, { status: 'cancelled' });
     assert.equal((await data(`payments/${r.paymentId}`)).status, 'refunded');
+    // The cancelled ticket shows the refund ("Đã huỷ · đã hoàn tiền").
+    assert.equal((await data(`events/${eventId}/registrations/${r.registrationId}`)).refundStatus, 'done');
   });
 
   test('cancel event refunds and removes members', async () => {
@@ -144,11 +146,13 @@ describe('paid tickets on the emulators', () => {
     assert.equal(res.status, 200, res.text);
     assert.deepEqual(res.result, { paidRegistrationIds: [r.registrationId], refunded: 1, failed: 0 });
     const reg = await data(`events/${eventId}/registrations/${r.registrationId}`);
-    assert.deepEqual([reg.status, reg.refundPercent, reg.refundDue], ['refunded', 100, false]);
+    assert.deepEqual([reg.status, reg.refundPercent, reg.refundDue, reg.refundStatus], ['refunded', 100, false, 'done']);
     const payment = await data(`payments/${r.paymentId}`);
     assert.deepEqual([payment.status, payment.escrowStatus], ['refunded', 'refunded']);
     const refunds = await db.collection('refunds').where('paymentId', '==', r.paymentId).get();
-    assert.deepEqual(refunds.docs.map((d) => [d.data().percent, d.data().reason]), [[100, 'event_cancelled']]);
+    assert.deepEqual(refunds.docs.map((d) => [d.data().percent, d.data().reason, d.data().subjectType, d.data().status]),
+      [[100, 'event_cancelled', 'event_registration', 'done']]);
+    assert.equal(reg.refundId, refunds.docs[0]?.id);
     await waitFor(async () => ((await data(`chats/event_${eventId}`)).members as string[] | undefined)?.includes(buyer) === false);
     assert.equal((await db.doc(`events/${eventId}/registrations/${r.registrationId}/private/contact`).get()).exists, false);
   });

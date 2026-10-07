@@ -5,6 +5,18 @@ const _vnOffset = Duration(hours: 7);
 /// Use its `year/month/day/hour/weekday`; do not compare it with real instants.
 DateTime toVn(DateTime instant) => instant.toUtc().add(_vnOffset);
 
+/// The instant (UTC) of a Vietnam wall-clock time whose fields are read as
+/// is: the inverse of [toVn].
+DateTime fromVnWallClock(DateTime vn) => DateTime.utc(
+  vn.year,
+  vn.month,
+  vn.day,
+  vn.hour,
+  vn.minute,
+  vn.second,
+  vn.millisecond,
+).subtract(_vnOffset);
+
 bool isVnWeekend(DateTime instant) {
   final d = toVn(instant).weekday;
   return d == DateTime.saturday || d == DateTime.sunday;

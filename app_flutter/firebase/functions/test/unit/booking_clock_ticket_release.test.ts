@@ -2,8 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   FakePaymentGateway,
+  FakePayoutGateway,
   MemoryBookingStore,
   MemoryEventStore,
+  MemoryPayoutStore,
+  createPayout,
+  listDuePayees,
+  savePayoutAccount,
+  type PayoutDeps,
   confirmFakeTicketPayment,
   publishEvent,
   registerEvent,
@@ -72,6 +78,21 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
   };
 }
 
+const ADMIN = { uid: 'admin1', isAdmin: true } as const;
+
+function payoutDeps(store: MemoryBookingStore, now: Date): PayoutDeps {
+  const payoutStore = new MemoryPayoutStore(store);
+  payoutStore.seedRole('ph1', 'photographer');
+  let next = 1;
+  return {
+    store: payoutStore,
+    cipher: { encrypt: async (p) => `enc:${p}`, decrypt: async (e) => e.slice(4) },
+    clock: { now: () => now },
+    ids: { newId: () => `po_${next++}` },
+    gateway: new FakePayoutGateway(),
+  };
+}
+
 describe('bookingClock and ticket money', () => {
   it('bookingClock releases a ticket payment after the window to the host', async () => {
     const ticket = await completedTicket({ uid: 'ph1', staffRole: null });
@@ -104,5 +125,33 @@ describe('bookingClock and ticket money', () => {
     await handleBookingClock(bookingDeps(store, new Date(END.getTime() + 25 * HOUR)));
     const [entry] = [...store.ledgerEntries.values()];
     assert.deepEqual([entry?.type, entry?.accountOwnerId], ['escrow_released', 'platform']);
+  });
+
+  it('a released ticket payment is paid out to the host exactly once', async () => {
+    const ticket = await completedTicket({ uid: 'ph1', staffRole: null });
+    const store = new MemoryBookingStore();
+    store.payments.set(ticket.id, ticket);
+    const at = new Date(END.getTime() + 25 * HOUR);
+    await handleBookingClock(bookingDeps(store, at));
+    const deps = payoutDeps(store, at);
+    await savePayoutAccount(deps, { uid: 'ph1', authTime: at }, { bankCode: 'VCB', accountNumber: '0123456789', holderName: 'Lan' });
+    assert.deepEqual(await listDuePayees(deps, ADMIN), [{ payeeId: 'ph1', amount: 200_000, hasAccount: true }]);
+    const po = await createPayout(deps, ADMIN, 'ph1');
+    assert.deepEqual(po.items, [{ paymentId: ticket.id, amount: 200_000 }]);
+    assert.equal(store.payments.get(ticket.id)?.payoutId, po.id);
+    assert.deepEqual(await listDuePayees(deps, ADMIN), []);
+    await assert.rejects(createPayout(deps, ADMIN, 'ph1'), /not_eligible/);
+  });
+
+  it('a platform event\'s released ticket money never enters a provider payout', async () => {
+    const ticket = await completedTicket({ uid: 'ad1', staffRole: 'admin' });
+    const store = new MemoryBookingStore();
+    store.payments.set(ticket.id, ticket);
+    const at = new Date(END.getTime() + 25 * HOUR);
+    await handleBookingClock(bookingDeps(store, at));
+    assert.equal(store.payments.get(ticket.id)?.escrowStatus, 'released');
+    const deps = payoutDeps(store, at);
+    assert.deepEqual(await listDuePayees(deps, ADMIN), []);
+    await assert.rejects(createPayout(deps, ADMIN, 'platform'), /not_eligible/);
   });
 });

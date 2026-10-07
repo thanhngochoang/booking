@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { DomainError } from '../src/errors.js';
+import { PLATFORM_PAYEE } from '../src/payout.js';
 import {
   createPayout,
   executePayout,
@@ -55,18 +56,44 @@ describe('payout use cases', () => {
     assert.deepEqual(po.items.map((i) => i.paymentId), [ok]);
   });
 
-  it('event-ticket payments are not batched (nor counted as due) until S06.05 shows them', async () => {
+  /** A released ticket payment of the same shape the event flow writes (payee = host or platform). */
+  async function releasedTicket(w: ReturnType<typeof createPayoutWorld>, day: string, payeeId: string, amount = 250_000): Promise<string> {
+    const id = await releasedPayment(w, day);
+    const p = w.store.payments.get(id);
+    assert.ok(p);
+    w.store.payments.set(id, {
+      ...p, subjectType: 'event_registration', subjectId: `reg_${day}`, eventId: 'ev1', payeeId, amount,
+      idempotencyKey: `tkt_reg_${day}_momo`,
+    });
+    return id;
+  }
+
+  it('a released ticket payment is batched in the host\'s payout exactly once', async () => {
     const w = createPayoutWorld();
     await addAccount(w);
-    const ev = await releasedPayment(w, '2026-10-15');
-    const ticket = w.store.payments.get(ev);
-    assert.ok(ticket);
-    w.store.payments.set(ev, { ...ticket, subjectType: 'event_registration' });
-    await refused(createPayout(w.payoutDeps, ADMIN, 'p1'), 'not_eligible');
+    const booking = await releasedPayment(w, '2026-10-15');
+    const bookingAmount = w.store.payments.get(booking)?.amount ?? 0;
+    const ticket = await releasedTicket(w, '2026-10-16', 'p1');
+    assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), [{ payeeId: 'p1', amount: bookingAmount + 250_000, hasAccount: true }]);
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    assert.deepEqual(po.items.map((i) => i.paymentId).sort(), [booking, ticket].sort());
+    assert.equal(po.items.find((i) => i.paymentId === ticket)?.amount, 250_000);
+    assert.equal(w.store.payments.get(ticket)?.payoutId, po.id);
+    // Batched once: nothing is due any more and a second payout has nothing to take.
     assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), []);
+    await refused(createPayout(w.payoutDeps, ADMIN, 'p1'), 'not_eligible');
+  });
+
+  it('a platform-event ticket payment never enters a payout', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    const platform = await releasedTicket(w, '2026-10-15', PLATFORM_PAYEE);
+    assert.deepEqual(await listDuePayees(w.payoutDeps, ADMIN), []);
+    await refused(createPayout(w.payoutDeps, ADMIN, PLATFORM_PAYEE), 'not_eligible');
     const ok = await releasedPayment(w, '2026-10-16');
     const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
     assert.deepEqual(po.items.map((i) => i.paymentId), [ok]);
+    assert.equal(w.store.payments.get(platform)?.payoutId, undefined);
   });
 
   it('a cipher failure fails execute before the payout turns processing', async () => {

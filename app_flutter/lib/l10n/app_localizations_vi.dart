@@ -4725,4 +4725,18 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payMethodLabel => 'Phương thức thanh toán';
+
+  @override
+  String get ticketCancelledRefunded => 'Đã huỷ · đã hoàn tiền';
+
+  @override
+  String get ticketCancelledRefunding => 'Đã huỷ · đang hoàn tiền';
+
+  @override
+  String get ticketPayFailed =>
+      'Chưa thanh toán được. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get ticketPayFakeDisabled =>
+      'Thanh toán thử chỉ dùng được trên bản thử nghiệm.';
 }

@@ -323,6 +323,7 @@ class EventsWorld {
     this.hostChannels = const ContactChannels(call: true),
     this.onboardingComplete = false,
     this.now,
+    this.clock,
     this.nearbyEvents,
     this.areaOrigin,
     this.prefsValues = const {},
@@ -331,14 +332,14 @@ class EventsWorld {
   }) : picker = FakeImagePicker(pickerAnswers),
        timeline = FakeEventTimelineRepository(
          items: timelineItems,
-         clock: () => now ?? eventNow,
+         clock: clock ?? () => now ?? eventNow,
        ),
        chat = FakeEventChatRepository(uid: uid),
        repo = FakeEventRepository(
          uid: uid,
          events: events,
          registrations: registrations,
-         clock: () => now ?? eventNow,
+         clock: clock ?? () => now ?? eventNow,
        ),
        nearby = FakeNearbyEventsRepository(
          nearbyEvents ?? [for (final e in events) e.summary],
@@ -352,6 +353,9 @@ class EventsWorld {
   final ContactChannels hostChannels;
   final bool onboardingComplete;
   final DateTime? now;
+
+  /// A moving clock (countdowns); overrides [now] when set.
+  final DateTime Function()? clock;
   final List<EventSummary>? nearbyEvents;
 
   /// A saved area for "Gần tôi": `(lat, lng)`; none when null.
@@ -380,7 +384,7 @@ class EventsWorld {
   String get location => router.state.uri.toString();
 
   List<Override> get overrides => [
-    clockProvider.overrideWithValue(() => now ?? eventNow),
+    clockProvider.overrideWithValue(clock ?? () => now ?? eventNow),
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     currentProfileProvider.overrideWith(
       (ref) => Stream.value(

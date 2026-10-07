@@ -785,6 +785,29 @@ void main() {
       final mine = await repo.watchMyTickets().first;
       expect(mine.single.refundDue, isTrue);
     });
+
+    test('a refund state parses; an unknown one is no state', () async {
+      final doc = registrationDoc(amount: 250000)
+        ..['status'] = 'refunded'
+        ..['refundId'] = 'rf1'
+        ..['refundStatus'] = 'pending';
+      await db.doc('events/ev1/registrations/r-u1').set(doc);
+      expect(
+        (await repo.watchMyTickets().first).single.refundStatus,
+        TicketRefundStatus.pending,
+      );
+      await db.doc('events/ev1/registrations/r-u1').update({
+        'refundStatus': 'done',
+      });
+      expect(
+        (await repo.watchMyTickets().first).single.refundStatus,
+        TicketRefundStatus.done,
+      );
+      await db.doc('events/ev1/registrations/r-u1').update({
+        'refundStatus': 'bogus',
+      });
+      expect((await repo.watchMyTickets().first).single.refundStatus, isNull);
+    });
   });
 
   group('cover upload', () {

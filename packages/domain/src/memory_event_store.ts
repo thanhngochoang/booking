@@ -166,6 +166,10 @@ export class MemoryEventStore implements EventStore {
         read('heldTicketPayments', `evpays:${eventId}`);
         return this.heldTicketPaymentsNow(eventId);
       },
+      getRefund: async (id) => {
+        read('getRefund', `refund:${id}`);
+        return this.refunds.get(id) ?? null;
+      },
       putEvent: (e) => write(() => { this.events.set(e.id, e); }, `event:${e.id}`),
       putHashtag: (k, eventId) => write(() => { this.hashtags.set(k, eventId); }, `hashtag:${k}`),
       deleteHashtag: (k) => write(() => { this.hashtags.delete(k); }, `hashtag:${k}`),
@@ -214,6 +218,14 @@ export class MemoryEventStore implements EventStore {
 
   async paidUnrefundedOfCancelled(limit: number): Promise<RegistrationDoc[]> {
     return [...this.registrations.values()].filter((r) => r.refundDue === true).slice(0, limit);
+  }
+
+  async pendingTicketRefunds(before: Date, limit: number): Promise<Refund[]> {
+    return [...this.refunds.values()]
+      .filter((r) => r.subjectType === 'event_registration' && r.status === 'pending'
+        && new Date(r.createdAt).getTime() <= before.getTime())
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(0, limit);
   }
 
   async dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {

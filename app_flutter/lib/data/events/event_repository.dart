@@ -602,6 +602,8 @@ class FakeEventRepository implements EventRepository {
       paymentId: r.paymentId,
       cancelledAt: now,
       refundPercent: percent,
+      // The fake gateway pays back at once.
+      refundStatus: percent == 100 ? TicketRefundStatus.done : null,
     );
     final s = e.summary;
     final wasHeld = r.status == RegistrationStatus.held;
@@ -635,6 +637,7 @@ class FakeEventRepository implements EventRepository {
     int? refundPercent,
     bool? contactEligible,
     bool? refundDue,
+    TicketRefundStatus? refundStatus,
   }) => EventRegistration(
     id: r.id,
     eventId: r.eventId,
@@ -654,6 +657,7 @@ class FakeEventRepository implements EventRepository {
     refundPercent: refundPercent ?? r.refundPercent,
     contactEligible: contactEligible ?? r.contactEligible,
     refundDue: refundDue ?? r.refundDue,
+    refundStatus: refundStatus ?? r.refundStatus,
   );
 
   /// The hold at [i] gives its seats back (expired or paid too late).
@@ -688,6 +692,10 @@ class FakeEventRepository implements EventRepository {
     if (r.holdExpired(now)) {
       // Paid too late: the server refunds 100% and frees the seats.
       _release(i, now);
+      _registrations[i] = _with(
+        _registrations[i],
+        refundStatus: TicketRefundStatus.done,
+      );
       _changes.add(null);
       return RegistrationStatus.cancelled;
     }

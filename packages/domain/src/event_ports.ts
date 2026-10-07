@@ -57,6 +57,8 @@ export interface EventTx {
    * `partially_refunded` (late-cancelled tickets included; refunded and unpaid intents excluded).
    */
   heldTicketPayments(eventId: string): Promise<Payment[]>;
+  /** `refunds/{id}`. */
+  getRefund(id: string): Promise<Refund | null>;
   putEvent(e: EventRecord): void;
   putHashtag(key: string, eventId: string): void;
   deleteHashtag(key: string): void;
@@ -87,6 +89,11 @@ export interface EventStore {
   expiredHoldsAll(now: Date, limit: number): Promise<RegistrationDoc[]>;
   /** Registrations with `refundDue == true`: tickets of a cancelled event still to refund. */
   paidUnrefundedOfCancelled(limit: number): Promise<RegistrationDoc[]>;
+  /**
+   * Ticket refunds (`subjectType == event_registration`) still `pending` that were created at or
+   * before `before`: the transaction committed but the gateway call never ran or never got recorded.
+   */
+  pendingTicketRefunds(before: Date, limit: number): Promise<Refund[]>;
 }
 
 export interface EventPeople {

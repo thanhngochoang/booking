@@ -20,6 +20,7 @@ import type {
   BookingTx,
   Payment,
   PaymentStatus,
+  PaymentSubject,
   Refund,
   RefundStatus,
   LedgerEntry,
@@ -209,6 +210,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
 export function refundToFirestore(r: Refund): DocumentData {
   return {
     paymentId: r.paymentId,
+    subjectType: r.subjectType ?? null,
     amount: r.amount,
     percent: r.percent,
     status: r.status,
@@ -225,6 +227,7 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
   return {
     id,
     paymentId: d.paymentId,
+    ...(d.subjectType === 'booking' || d.subjectType === 'event_registration' ? { subjectType: d.subjectType as PaymentSubject } : {}),
     amount: d.amount,
     percent: d.percent,
     status: d.status as RefundStatus,

@@ -2169,5 +2169,13 @@
   "payMethodMomo": "MoMo",
   "payMethodZaloPay": "ZaloPay",
   "payMethodLabel": "Phương thức thanh toán",
-  "@payMethodLabel": {"description": "Semantics label of the payment method group on S11.03."}
+  "@payMethodLabel": {"description": "Semantics label of the payment method group on S11.03."},
+  "ticketCancelledRefunded": "Đã huỷ · đã hoàn tiền",
+  "@ticketCancelledRefunded": {"description": "S11.04: a cancelled ticket whose payment came after the hold and was refunded."},
+  "ticketCancelledRefunding": "Đã huỷ · đang hoàn tiền",
+  "@ticketCancelledRefunding": {"description": "S11.04: as above while the refund is still on its way."},
+  "ticketPayFailed": "Chưa thanh toán được. Kiểm tra mạng rồi thử lại.",
+  "@ticketPayFailed": {"description": "SnackBar when the ticket payment sheet fails."},
+  "ticketPayFakeDisabled": "Thanh toán thử chỉ dùng được trên bản thử nghiệm.",
+  "@ticketPayFakeDisabled": {"description": "SnackBar when the server refuses fake payments (fake_payments_disabled)."}
 }

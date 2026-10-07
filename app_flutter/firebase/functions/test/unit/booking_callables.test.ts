@@ -49,7 +49,7 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
 }
 
 /** Fake payments run on the emulator (or the dev project) only. */
-const EMULATOR_ENV = { FUNCTIONS_EMULATOR: 'true' };
+const EMULATOR_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-nag' };
 
 const httpsError = (code: string, detailsCode?: string) => (e: unknown) =>
   e instanceof HttpsError

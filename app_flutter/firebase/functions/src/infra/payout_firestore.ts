@@ -1,6 +1,7 @@
 import { Timestamp, type DocumentData, type Firestore, type Transaction } from 'firebase-admin/firestore';
 import {
   PAYOUT_STATUSES,
+  isPayoutPayable,
   type LedgerEntry,
   type Payment,
   type Payout,
@@ -131,7 +132,7 @@ export class FirestorePayoutStore implements PayoutStore {
     const totals = new Map<string, number>();
     for (const d of snap.docs) {
       const p = paymentFromFirestore(d.id, d.data());
-      if (p === null || p.payoutId || !p.payeeId || p.subjectType !== 'booking') continue; // TODO(10c Task 9)
+      if (p === null || !isPayoutPayable(p)) continue;
       const net = p.amount - (await this.refundedOf(p.id, (q) => q.get()));
       if (net > 0) totals.set(p.payeeId, (totals.get(p.payeeId) ?? 0) + net);
     }
@@ -178,9 +179,8 @@ export class FirestorePayoutStore implements PayoutStore {
           );
           return snap.docs.flatMap((d) => {
             const p = paymentFromFirestore(d.id, d.data());
-            // TODO(10c Task 9): only booking payments are batched until event-ticket earnings rows
-            // exist on S06.05; a payout must not hold money the screen does not show.
-            return p === null || p.payoutId || p.subjectType !== 'booking' ? [] : [p];
+            // Bookings and event tickets (payee = host); the platform payee never matches a provider.
+            return p === null || !isPayoutPayable(p) ? [] : [p];
           });
         },
         getPayments: async (ids) => {

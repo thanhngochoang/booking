@@ -176,9 +176,9 @@ describe('event callables', () => {
     await handleSaveEventDraft({ ...ph1, data: draft() }, deps());
     await handlePublishEvent({ ...ph1, data: { eventId: EVENT_ID } }, deps());
     now = new Date('2026-10-12T00:00:00.000Z'); // after the deadline (start - 12 h)
-    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 1, completed: 0, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 1, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0 });
     now = new Date('2026-10-12T06:00:00.000Z');
-    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 0, completed: 1, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 0, completed: 1, consentExpired: 0, refunded: 0, refundsResent: 0 });
     assert.equal(store.events.get(EVENT_ID)?.status, 'completed');
   });
 });

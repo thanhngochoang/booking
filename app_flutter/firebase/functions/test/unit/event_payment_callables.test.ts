@@ -24,7 +24,7 @@ import { handleEventClock, handleReleaseEventHolds } from '../../src/scheduled/e
 
 const ID = (n: number): string => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n).padStart(2, '0')}`;
 const EVENT_ID = ID(1);
-const EMULATOR = { FUNCTIONS_EMULATOR: 'true' };
+const EMULATOR = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-nag' };
 const DEV = { GCLOUD_PROJECT: DEV_PROJECT_ID };
 const PROD = { GCLOUD_PROJECT: 'booking-prod-1' };
 
@@ -33,9 +33,17 @@ const disabled = (e: unknown) =>
   && (e.details as { code?: string }).code === 'fake_payments_disabled';
 
 describe('fake payment gate', () => {
-  it('is allowed on the emulator', () => {
+  it('is allowed on the emulator with a demo-* or the dev project', () => {
     assert.equal(fakePaymentsAllowed(EMULATOR), true);
-    assert.equal(fakePaymentsAllowed({ ...EMULATOR, GCLOUD_PROJECT: 'demo-nag' }), true);
+    assert.equal(fakePaymentsAllowed({ ...EMULATOR, GCLOUD_PROJECT: DEV_PROJECT_ID }), true);
+  });
+
+  it('FUNCTIONS_EMULATOR=true on another project id (or none) is refused', () => {
+    assert.equal(fakePaymentsAllowed({ FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'booking-prod-1' }), false);
+    assert.equal(fakePaymentsAllowed({ FUNCTIONS_EMULATOR: 'true', FIREBASE_CONFIG: JSON.stringify({ projectId: 'booking-prod-1' }) }), false);
+    assert.equal(fakePaymentsAllowed({ FUNCTIONS_EMULATOR: 'true' }), false);
+    assert.equal(fakePaymentsAllowed({ FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'nodemo-x' }), false);
+    assert.throws(() => assertFakePaymentsAllowed({ FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'booking-prod-1' }), disabled);
   });
 
   it('is allowed on the dev project (GCLOUD_PROJECT or FIREBASE_CONFIG)', () => {
@@ -47,6 +55,7 @@ describe('fake payment gate', () => {
   it('is refused on any other project, and with no project at all', () => {
     assert.equal(fakePaymentsAllowed(PROD), false);
     assert.equal(fakePaymentsAllowed({}), false);
+    assert.equal(fakePaymentsAllowed({ GCLOUD_PROJECT: 'demo-nag' }), false);
     assert.equal(fakePaymentsAllowed({ FUNCTIONS_EMULATOR: 'false', GCLOUD_PROJECT: 'booking-c1922-copy' }), false);
     assert.throws(() => assertFakePaymentsAllowed(PROD), disabled);
   });

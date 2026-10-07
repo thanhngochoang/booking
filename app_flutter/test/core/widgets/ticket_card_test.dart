@@ -294,4 +294,76 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Thanh toán'), findsNothing);
   });
+
+  group('compact (mock S11.04 rows)', () {
+    testWidgets('date block, title, n vé · place and the badge; no QR', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(
+              state: TicketState.pendingPayment,
+              quantity: 1,
+              placeName: 'Công viên Bạch Đằng',
+            ),
+            compact: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byKey(const Key('ticket-compact')), findsOneWidget);
+      expect(find.byType(DateBlock), findsOneWidget);
+      // 14:30 in Vietnam on 12/10: the block reads 12 / T10.
+      expect(find.text('12'), findsOneWidget);
+      expect(find.text('T10'), findsOneWidget);
+      expect(find.text('Workshop Chân dung Mùa thu'), findsOneWidget);
+      expect(find.text('1 vé · Công viên Bạch Đằng'), findsOneWidget);
+      expect(find.text('CHỜ THANH TOÁN'), findsOneWidget);
+      expect(find.byType(QrImageView), findsNothing);
+      expect(find.byKey(const Key('ticket-pay')), findsNothing);
+    });
+
+    testWidgets('a pending row offers a small pay action', (tester) async {
+      var paid = 0;
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(state: TicketState.pendingPayment),
+            compact: true,
+            onPay: () => paid++,
+            payLabel: 'Thanh toán tiếp',
+          ),
+        ),
+      );
+      await tester.pump();
+      final pay = find.byKey(const Key('ticket-pay'));
+      expect(tester.widget<AppButton>(pay).size, AppButtonSize.small);
+      expect(tester.getSize(pay).height, greaterThanOrEqualTo(48));
+      await tester.tap(find.text('Thanh toán tiếp'));
+      expect(paid, 1);
+    });
+
+    testWidgets('fits 320dp at 1.3 text scale with a long badge', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(
+              state: TicketState.cancelled,
+              title: 'Photo walk phố cổ buổi sớm cùng nhiếp ảnh gia',
+            ),
+            compact: true,
+            statusLabel: 'Đã huỷ · đang hoàn tiền',
+          ),
+          width: 320,
+          textScale: 1.3,
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.text('ĐÃ HUỶ · ĐANG HOÀN TIỀN'), findsOneWidget);
+    });
+  });
 }

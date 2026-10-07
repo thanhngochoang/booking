@@ -49,6 +49,8 @@ export type RefundStatus = (typeof REFUND_STATUSES)[number];
 export interface Refund {
   readonly id: string;
   readonly paymentId: string;
+  /** The payment's subject (the event clock re-sends ticket refunds left `pending`). */
+  readonly subjectType?: PaymentSubject;
   readonly amount: number;
   readonly percent: number;
   readonly status: RefundStatus;
@@ -171,6 +173,7 @@ export function applyRefundToPayment(params: {
   const refund: Refund = {
     id: refundId,
     paymentId: payment.id,
+    subjectType: payment.subjectType,
     amount: refundAmount,
     percent,
     status: 'pending',

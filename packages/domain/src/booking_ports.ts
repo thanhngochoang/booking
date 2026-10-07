@@ -86,6 +86,10 @@ export interface PaymentGateway {
     readonly returnUrl?: string;
   }): Promise<{ readonly payUrl: string; readonly providerRef?: string }>;
 
+  /**
+   * `refundId` is an idempotency key: the real adapter MUST send it to the provider so that a
+   * repeated call (the event clock re-sends a ticket refund left `pending`) never pays twice.
+   */
   issueRefund(params: {
     readonly paymentId: string;
     readonly refundId: string;

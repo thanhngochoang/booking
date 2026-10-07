@@ -5,12 +5,16 @@ type Env = Readonly<Record<string, string | undefined>>;
 
 /**
  * Fake payment confirmation (`confirmFakePayment`, `confirmFakeTicketPayment`) lets the payer mark
- * their own payment paid, so it exists only where no real money moves: the emulator, or the dev
- * project. Everywhere else (production, any other project) it is refused.
+ * their own payment paid, so it exists only where no real money moves: the dev project, or the
+ * emulator running a `demo-*` project. Everywhere else (production, any other project) it is
+ * refused. `FUNCTIONS_EMULATOR` alone is not enough: it is not a reserved key, so a stray
+ * `.env.<project>` could set it on a deployed project; the project id (`GCLOUD_PROJECT`, reserved,
+ * set by the platform) must agree.
  */
 export function fakePaymentsAllowed(env: Env = process.env): boolean {
-  if (env.FUNCTIONS_EMULATOR === 'true') return true;
-  return currentProjectId(env) === DEV_PROJECT_ID;
+  const project = currentProjectId(env);
+  if (project === DEV_PROJECT_ID) return true;
+  return env.FUNCTIONS_EMULATOR === 'true' && project !== undefined && project.startsWith('demo-');
 }
 
 /** Call before any read or write of a fake-payment callable. */

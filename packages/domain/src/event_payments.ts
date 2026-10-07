@@ -22,6 +22,7 @@ import {
 import type { EventDeps, EventPaymentDeps, EventTx } from './event_ports.js';
 import { cancelEvent } from './event_use_cases.js';
 import { isId } from './ids.js';
+import { PLATFORM_PAYEE } from './payout.js';
 import { isVnE164 } from './phone.js';
 
 const HOUR_MS = 3_600_000;
@@ -49,7 +50,7 @@ export function parseTicketProvider(v: unknown): PaymentProvider | null {
 
 /** The host photographer is paid; a platform-hosted event's money stays with the platform. */
 export const ticketPayeeOf = (ev: Pick<EventRecord, 'host'>): string =>
-  ev.host.type === 'photographer' && ev.host.id !== null ? ev.host.id : 'platform';
+  ev.host.type === 'photographer' && ev.host.id !== null ? ev.host.id : PLATFORM_PAYEE;
 
 /** A fresh, unpaid ticket payment (`status created`, escrow `held` like a booking deposit intent). */
 export function newTicketPayment(params: {
@@ -101,34 +102,68 @@ export async function issueTicketIntent(deps: EventPaymentDeps, payment: Payment
   return intent.payUrl;
 }
 
-/** Gateway refund after the money moved in the ledger; a failure is left to staff (`manual`), like bookings. */
-async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, provider: PaymentProvider): Promise<Refund> {
+/** The event clock sends a ticket refund again once it has been `pending` this long. */
+export const TICKET_REFUND_RESEND_AFTER_MINUTES = 10;
+
+/**
+ * Gateway refund after the money moved in the ledger, keyed by the refund id: the gateway treats a
+ * repeated id as the same refund, so sending it again never pays twice. A failure is left to staff
+ * (`failed`, `manual`), like bookings. The outcome is written only while the refund is still
+ * `pending` (a parallel send that already finished wins) and mirrored on the registration, which
+ * says "Đang hoàn" until it is `done`.
+ */
+async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, payment: Payment): Promise<Refund> {
   let result: { success: boolean; providerRef?: string };
   try {
     result = await deps.gateway.issueRefund({
       paymentId: refund.paymentId,
       refundId: refund.id,
       amount: refund.amount,
-      provider,
+      provider: payment.provider,
       providerRef: refund.providerRef,
     });
   } catch {
     result = { success: false };
   }
-  const updated: Refund = {
-    ...refund,
-    status: result.success ? 'done' : 'failed',
-    manual: !result.success,
-    providerRef: result.providerRef ?? refund.providerRef,
-    updatedAt: deps.clock.now().toISOString(),
-  };
-  await deps.events.runTransaction(async (tx) => {
+  return deps.events.runTransaction(async (tx) => {
+    const cur = await tx.getRefund(refund.id);
+    const reg = payment.eventId === undefined ? null : await tx.getRegistration(payment.eventId, payment.subjectId);
+    if (cur !== null && cur.status !== 'pending') return cur;
+    const now = deps.clock.now();
+    const updated: Refund = {
+      ...(cur ?? refund),
+      status: result.success ? 'done' : 'failed',
+      manual: !result.success,
+      providerRef: result.providerRef ?? refund.providerRef,
+      updatedAt: now.toISOString(),
+    };
     tx.putRefund(updated);
+    if (reg !== null && reg.refundId === refund.id && reg.refundStatus !== updated.status) {
+      tx.putRegistration({ ...reg, refundStatus: updated.status, updatedAt: now, version: reg.version + 1 });
+    }
+    return updated;
   });
-  return updated;
 }
 
-type PendingRefund = { refund: Refund; provider: PaymentProvider };
+/**
+ * The event clock: sends a ticket refund left `pending` again (the process stopped between the
+ * refund transaction and the gateway call, or before the outcome was saved). Idempotent: only a
+ * still-`pending` ticket refund is sent, under its own id; `failed` ones stay with staff.
+ */
+export async function resendTicketRefund(deps: EventPaymentDeps, refundId: string): Promise<boolean> {
+  const found = await deps.events.runTransaction(async (tx) => {
+    const r = await tx.getRefund(refundId);
+    if (r === null || r.status !== 'pending') return null;
+    const p = await tx.getPayment(r.paymentId);
+    if (p === null || p.subjectType !== 'event_registration') return null;
+    return { refund: r, payment: p };
+  });
+  if (found === null) return false;
+  await dispatchTicketRefund(deps, found.refund, found.payment);
+  return true;
+}
+
+type PendingRefund = { refund: Refund; payment: Payment };
 
 function obj(raw: unknown): Record<string, unknown> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new DomainError('invalid_argument');
@@ -204,11 +239,21 @@ export async function handleTicketPayment(
       tx.putPayment(res.payment);
       tx.putRefund(res.refund);
       tx.putLedgerEntry(res.ledgerEntry);
-      box.pending = { refund: res.refund, provider: p.provider };
+      box.pending = { refund: res.refund, payment: res.payment };
+      // The customer sees this refund on the ticket ("Đã huỷ · đang hoàn tiền") when nothing else
+      // was paid for it: a lapsed hold, or a cancelled registration whose own intent this was.
+      const mark = reg !== null && (reg.status === 'held' || (reg.status === 'cancelled' && reg.paymentId === p.id))
+        ? { refundId: res.refund.id, refundStatus: 'pending' as const }
+        : null;
       // A lapsed hold the sweep has not reached yet gives its seats back now.
       if (reg !== null && reg.status === 'held' && ev !== null) {
-        releaseHoldWrites(tx, ev, [reg], now);
-        return { registration: { ...reg, status: 'cancelled' as const, cancelledAt: now }, refunded: true };
+        releaseHoldWrites(tx, ev, [{ ...reg, ...mark }], now);
+        return { registration: { ...reg, ...mark, status: 'cancelled' as const, cancelledAt: now }, refunded: true };
+      }
+      if (reg !== null && mark !== null) {
+        const marked = { ...reg, ...mark, updatedAt: now, version: reg.version + 1 };
+        tx.putRegistration(marked);
+        return { registration: marked, refunded: true };
       }
       return { registration: reg, refunded: true };
     }
@@ -224,7 +269,7 @@ export async function handleTicketPayment(
     tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
     return { registration: ticket, refunded: false };
   });
-  if (box.pending !== null) await dispatchTicketRefund(deps, box.pending.refund, box.pending.provider);
+  if (box.pending !== null) await dispatchTicketRefund(deps, box.pending.refund, box.pending.payment);
   return out;
 }
 
@@ -306,17 +351,17 @@ export async function refundTicket(
     tx.putLedgerEntry(res.ledgerEntry);
     tx.putRegistration({
       ...reg, status: 'refunded', refundPercent: percent, refundDue: false, cancelledAt: reg.cancelledAt ?? now,
-      updatedAt: now, version: reg.version + 1,
+      refundId: res.refund.id, refundStatus: 'pending', updatedAt: now, version: reg.version + 1,
     });
     tx.deleteRegistrationContact(eventId, regId);
     if (reg.status === 'paid' && ev !== null) {
       const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
       tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
     }
-    box.pending = { refund: res.refund, provider: p.provider };
+    box.pending = { refund: res.refund, payment: res.payment };
     return 'refunded';
   });
-  if (box.pending !== null) await dispatchTicketRefund(deps, box.pending.refund, box.pending.provider);
+  if (box.pending !== null) await dispatchTicketRefund(deps, box.pending.refund, box.pending.payment);
   return out;
 }
 

@@ -49,17 +49,21 @@ async function newPayment(id: string, payeeId: string, bookingId: string, escrow
 }
 
 describe('earnings on the emulators', () => {
-  test('payouts batch only booking payments (event tickets wait for 10c Task 9)', async () => {
-    await newPayment('int-pay-ev', AN, 'seed-event-1', 'released');
-    await db.doc('payments/int-pay-ev').update({ subjectType: 'event_ticket' });
+  test('payouts batch released ticket payments of the host, never the platform payee', async () => {
+    await newPayment('int-pay-ev', AN, 'seed-event-1', 'released', 250_000);
+    await db.doc('payments/int-pay-ev').update({ subjectType: 'event_registration', eventId: 'seed-event-1' });
+    await newPayment('int-pay-pf', 'platform', 'seed-event-1', 'released', 250_000);
+    await db.doc('payments/int-pay-pf').update({ subjectType: 'event_registration', eventId: 'seed-event-1' });
     const store = new FirestorePayoutStore(db);
     const payable = await store.runTransaction((tx) => tx.listPayablePayments(AN));
-    assert.ok(!payable.some((p) => p.id === 'int-pay-ev'));
+    assert.ok(payable.some((p) => p.id === 'int-pay-ev'));
+    assert.deepEqual(await store.runTransaction((tx) => tx.listPayablePayments('platform')), []);
     const due = await store.listDuePayees();
+    assert.ok(!due.some((d) => d.payeeId === 'platform'));
     const before = due.find((d) => d.payeeId === AN)?.amount ?? 0;
-    await db.doc('payments/int-pay-ev').update({ amount: before + 999_000_000 });
-    assert.equal((await store.listDuePayees()).find((d) => d.payeeId === AN)?.amount ?? 0, before);
     await db.doc('payments/int-pay-ev').delete();
+    assert.equal((await store.listDuePayees()).find((d) => d.payeeId === AN)?.amount ?? 0, before - 250_000);
+    await db.doc('payments/int-pay-pf').delete();
   });
 
   test('a released payment appears in Sắp nhận', async () => {

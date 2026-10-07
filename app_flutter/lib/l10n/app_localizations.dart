@@ -8355,6 +8355,30 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Phương thức thanh toán'**
   String get payMethodLabel;
+
+  /// S11.04: a cancelled ticket whose payment came after the hold and was refunded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ · đã hoàn tiền'**
+  String get ticketCancelledRefunded;
+
+  /// S11.04: as above while the refund is still on its way.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã huỷ · đang hoàn tiền'**
+  String get ticketCancelledRefunding;
+
+  /// SnackBar when the ticket payment sheet fails.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thanh toán được. Kiểm tra mạng rồi thử lại.'**
+  String get ticketPayFailed;
+
+  /// SnackBar when the server refuses fake payments (fake_payments_disabled).
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán thử chỉ dùng được trên bản thử nghiệm.'**
+  String get ticketPayFakeDisabled;
 }
 
 class _AppLocalizationsDelegate

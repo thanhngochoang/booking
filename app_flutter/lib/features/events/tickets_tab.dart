@@ -76,15 +76,24 @@ TicketView ticketViewOf(
         refundPercentIfCancelled: over ? null : refund,
       );
     case RegistrationStatus.cancelled:
+      // A payment that came after the hold is refunded in full: say so.
       return (
         state: TicketState.cancelled,
-        statusLabel: (r.refundPercent ?? 0) > 0 ? l.ticketRefunding : null,
+        statusLabel: switch (r.refundStatus) {
+          null => (r.refundPercent ?? 0) > 0 ? l.ticketRefunding : null,
+          TicketRefundStatus.done => l.ticketCancelledRefunded,
+          _ => l.ticketCancelledRefunding,
+        },
         refundPercentIfCancelled: null,
       );
     case RegistrationStatus.refunded:
+      // "Đang hoàn" until the gateway says done (a failed refund is with
+      // staff: the money has not come back yet). No state: an older refund.
+      final back =
+          r.refundStatus == null || r.refundStatus == TicketRefundStatus.done;
       return (
         state: TicketState.cancelled,
-        statusLabel: l.ticketRefunded,
+        statusLabel: back ? l.ticketRefunded : l.ticketRefunding,
         refundPercentIfCancelled: null,
       );
   }
@@ -261,11 +270,12 @@ class _TicketTile extends ConsumerWidget {
       var paymentId = r.paymentId;
       String? payUrl;
       if (ref.read(realPaymentsProvider)) {
+        // No provider: the server keeps the one of the hold's payment (the
+        // method the customer chose on S11.03).
         final again = await repo.register(
           r.eventId,
           quantity: r.quantity,
           name: r.userName,
-          provider: PayMethod.bankQr.provider,
         );
         paymentId = again.paymentId ?? paymentId;
         payUrl = again.payUrl;
@@ -305,6 +315,9 @@ class _TicketTile extends ConsumerWidget {
         placeName: r.event.locationName,
       ),
       highlighted: highlighted,
+      // Mock S11.04: only the upcoming ticket is the big card; the others
+      // (pending, expired, past, cancelled, refunded) are compact rows.
+      compact: view.state != TicketState.upcoming,
       statusLabel: view.statusLabel,
       cancelLabel: pct == null
           ? null

@@ -103,12 +103,16 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     if (live !== null && !(paidEvent && live.status === 'held')) {
       return { result: resultOf(live), soldOut: false, intent: null };
     }
-    if (paidEvent && provider === null) throw new DomainError('invalid_argument');
-    if (live !== null && provider !== null) {
+    if (live !== null) {
       // Same hold, another tap: reuse the provider's payment, or open a second intent (like createDeposit).
-      const existing = await tx.paymentByIdempotencyKey(ticketIdempotencyKey(live.id, provider));
+      // Without a provider ("Thanh toán tiếp") the hold keeps the provider of its current payment.
+      const current = provider === null && live.paymentId !== null ? await tx.getPayment(live.paymentId) : null;
+      const chosen = provider ?? current?.provider ?? null;
+      if (chosen === null) throw new DomainError('invalid_argument');
+      const existing = current ?? await tx.paymentByIdempotencyKey(ticketIdempotencyKey(live.id, chosen));
       const payment = existing ?? newTicketPayment({
-        id: deps.ids.newId(), event: ev, registrationId: live.id, payerId: caller.uid, provider, amount: live.amount, now,
+        id: deps.ids.newId(), event: ev, registrationId: live.id, payerId: caller.uid, provider: chosen,
+        amount: live.amount, now,
       });
       if (existing === null) tx.putPayment(payment);
       const reg = live.paymentId === payment.id
@@ -117,6 +121,7 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
       if (reg !== live) tx.putRegistration(reg);
       return { result: resultOf(reg), soldOut: false, intent: payment };
     }
+    if (paidEvent && provider === null) throw new DomainError('invalid_argument');
     const codes = ticketCodeCandidates(ev.startAt as Date, deps.random, 5);
     const taken = await Promise.all(codes.map((c) => tx.ticketCodeTaken(c)));
     const code = codes.find((_, i) => !taken[i]);
@@ -220,7 +225,12 @@ export async function cancelRegistration(
   if (!decided.refund) return { status: decided.status, refundPercent: decided.refundPercent };
   if (deps.gateway === undefined) throw new DomainError('not_eligible');
   const done = await refundTicket({ ...deps, gateway: deps.gateway }, eventId, regId, 100, 'customer_cancel');
-  if (done === 'skipped') throw new DomainError('conflict');
+  if (done === 'skipped') {
+    // A host cancel (or a second tap) refunded it first: the ticket is refunded either way.
+    const now = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));
+    if (now?.status === 'refunded') return { status: 'refunded', refundPercent: now.refundPercent };
+    throw new DomainError('conflict');
+  }
   return { status: 'refunded', refundPercent: 100 };
 }
 

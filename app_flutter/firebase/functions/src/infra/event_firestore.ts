@@ -8,6 +8,7 @@ import {
 } from 'firebase-admin/firestore';
 import {
   MAX_TX_ATTEMPTS,
+  REFUND_STATUSES,
   RetryableConflict,
   type AvailabilityRecord,
   type EventFaq,
@@ -17,6 +18,8 @@ import {
   type EventStore,
   type EventTx,
   type Payment,
+  type Refund,
+  type RefundStatus,
   type RegistrationContact,
   type RegistrationDoc,
   type RegistrationReader,
@@ -28,6 +31,7 @@ import {
   ledgerEntryToFirestore,
   paymentFromFirestore,
   paymentToFirestore,
+  refundFromFirestore,
   refundToFirestore,
 } from './booking_firestore.js';
 
@@ -182,6 +186,8 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     cancelledAt: ts(r.cancelledAt),
     refundPercent: r.refundPercent,
     refundDue: r.refundDue === true,
+    refundId: r.refundId ?? null,
+    refundStatus: r.refundStatus ?? null,
     event: {
       title: r.event.title,
       type: r.event.type,
@@ -217,6 +223,8 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     cancelledAt: toDate(d.cancelledAt),
     refundPercent: num(d.refundPercent),
     ...(d.refundDue === true ? { refundDue: true } : {}),
+    ...(str(d.refundId) !== null ? { refundId: str(d.refundId) as string } : {}),
+    ...((REFUND_STATUSES as readonly unknown[]).includes(d.refundStatus) ? { refundStatus: d.refundStatus as RefundStatus } : {}),
     event: {
       title: String(ev.title ?? ''),
       type: (str(ev.type) ?? 'other') as RegistrationDoc['event']['type'],
@@ -346,6 +354,10 @@ export class FirestoreEventStore implements EventStore {
             .map((d) => paymentFromFirestore(d.id, d.data()))
             .filter((p): p is Payment => p !== null && p.subjectType === 'event_registration');
         },
+        getRefund: async (id) => {
+          const s = await fTx.get(fs.collection(REFUNDS_COLLECTION).doc(id));
+          return s.exists ? refundFromFirestore(s.id, s.data()) : null;
+        },
         putEvent: (e) => {
           writes.push(() => fTx.set(eventRef(e.id), eventToFirestore(e)));
         },
@@ -466,6 +478,18 @@ export class FirestoreEventStore implements EventStore {
     return snap.docs
       .filter((d) => d.ref.parent.parent?.parent.id === EVENTS_COLLECTION)
       .map((d) => registrationFromFirestore(d.id, d.data()));
+  }
+
+  /** `refunds` where `subjectType == event_registration`, `status == pending`, `createdAt <= before` (composite index). */
+  async pendingTicketRefunds(before: Date, limit: number): Promise<Refund[]> {
+    const snap = await this.firestore.collection(REFUNDS_COLLECTION)
+      .where('subjectType', '==', 'event_registration')
+      .where('status', '==', 'pending')
+      .where('createdAt', '<=', Timestamp.fromDate(before))
+      .orderBy('createdAt')
+      .limit(limit)
+      .get();
+    return snap.docs.flatMap((d) => refundFromFirestore(d.id, d.data()) ?? []);
   }
 
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {

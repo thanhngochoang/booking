@@ -17,7 +17,7 @@ describe('runEventSweeps', () => {
     await register(w, cu1, 'aaaaaaaaaaaaaaaaaaaaa'); // a is now full
     assert.equal(w.store.events.get('aaaaaaaaaaaaaaaaaaaaa')?.status, 'full');
     w.clock.set(DEADLINE);
-    assert.deepEqual(await runEventSweeps(w.deps), { closed: 2, completed: 0, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await runEventSweeps(w.deps), { closed: 2, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0 });
     assert.equal(w.store.events.get('aaaaaaaaaaaaaaaaaaaaa')?.status, 'closed');
     assert.equal(w.store.events.get('bbbbbbbbbbbbbbbbbbbbb')?.status, 'closed');
   });
@@ -26,7 +26,7 @@ describe('runEventSweeps', () => {
     const w = createEventWorld();
     await publishedEvent(w);
     w.clock.set(new Date(DEADLINE.getTime() - 1));
-    assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0 });
   });
 
   test('past end completes and stamps completedAt', async () => {
@@ -48,7 +48,7 @@ describe('runEventSweeps', () => {
     w.store.seedEvent(eventRecord({ id: 'c', hashtagKey: 'c', status: 'cancelled' }));
     await saveEventDraft(w.deps, ph1, rawEvent('ddddddddddddddddddddd'));
     w.clock.set(after(new Date(END), 86_400_000));
-    assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0 });
     assert.equal(w.store.events.get('c')?.status, 'cancelled');
     assert.equal(w.store.events.get('ddddddddddddddddddddd')?.status, 'draft');
   });
@@ -57,9 +57,9 @@ describe('runEventSweeps', () => {
     const w = createEventWorld();
     await publishedEvent(w);
     w.clock.set(after(new Date(END)));
-    assert.deepEqual(await runEventSweeps(w.deps), { closed: 1, completed: 1, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await runEventSweeps(w.deps), { closed: 1, completed: 1, consentExpired: 0, refunded: 0, refundsResent: 0 });
     const writes = w.store.writes;
-    assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0, refunded: 0 });
+    assert.deepEqual(await runEventSweeps(w.deps), { closed: 0, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0 });
     assert.equal(w.store.writes, writes);
   });
 

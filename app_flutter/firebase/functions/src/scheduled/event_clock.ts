@@ -4,11 +4,12 @@ import { liveEventDeps, liveEventPaymentDeps } from '../infra/live_event.js';
 
 /**
  * Closes registration, completes events (stamping `releaseAfter` on held ticket money), expires
- * unanswered host invitations and retries refunds of cancelled events.
+ * unanswered host invitations, retries refunds of cancelled events and sends again ticket refunds
+ * left `pending` (the gateway keys them by refund id).
  */
 export async function handleEventClock(
   deps: EventDeps & { readonly gateway?: EventPaymentDeps['gateway'] } = liveEventPaymentDeps(),
-): Promise<{ closed: number; completed: number; consentExpired: number; refunded: number }> {
+): Promise<{ closed: number; completed: number; consentExpired: number; refunded: number; refundsResent: number }> {
   try {
     const results = await runEventSweeps(deps, (eventId, step, error) => {
       logger.error('eventClock step failed', { eventId, step, error: error instanceof Error ? error.name : 'unknown' });

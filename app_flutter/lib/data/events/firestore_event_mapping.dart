@@ -142,6 +142,7 @@ EventRegistration? registrationFromFirestore(
         : null,
     contactEligible: d['contactEligible'] == true,
     refundDue: d['refundDue'] == true,
+    refundStatus: TicketRefundStatus.fromCode(_str(d['refundStatus'])),
     event: EventTicketSnapshot(
       title: _str(ev['title']) ?? '',
       type: EventType.fromCode(_str(ev['type'])),

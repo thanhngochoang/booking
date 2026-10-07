@@ -7,6 +7,7 @@ import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
+import 'package:photobooking/data/events/event_repository.dart';
 
 /// Opens the payment step of a held ticket: in fake mode (emulator, dev) the
 /// [TicketPaymentSheet]; with real payments the gateway's [payUrl]. The
@@ -57,14 +58,28 @@ class _TicketPaymentSheetState extends ConsumerState<TicketPaymentSheet> {
   bool _loading = false;
 
   Future<void> _confirm() async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     RegistrationStatus? status;
     try {
       status = await ref
           .read(eventRepositoryProvider)
           .confirmFakeTicketPayment(widget.paymentId);
-    } catch (_) {
-      // The registration stream shows the real state (still held, expired).
+    } catch (e) {
+      // The registration stream shows the real state (still held, expired);
+      // the customer is told the payment did not go through.
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              eventErrorCodeOf(e) == 'fake_payments_disabled'
+                  ? l.ticketPayFakeDisabled
+                  : l.ticketPayFailed,
+            ),
+          ),
+        );
     }
     if (mounted) {
       Navigator.of(context).pop(status);

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Timestamp } from 'firebase-admin/firestore';
-import type { EventRecord, RegistrationDoc } from '@photobooking/domain';
+import type { EventRecord, Refund, RegistrationDoc } from '@photobooking/domain';
+import { refundFromFirestore, refundToFirestore } from '../../src/infra/booking_firestore.js';
 import {
+  FirestoreEventStore,
   eventFromFirestore,
   eventToFirestore,
   firestoreRegistrationReader,
@@ -106,6 +108,49 @@ describe('Firestore mapping for events', () => {
     assert.ok(doc.event.startAt instanceof Timestamp);
     assert.equal('phone' in doc, false);
     assert.deepEqual(registrationFromFirestore('r1', doc), r);
+  });
+
+  it('a refunded ticket keeps its refund id and state; a refund keeps its subject', () => {
+    const r = registration({ status: 'refunded', amount: 250000, refundPercent: 100, refundId: 'rf1', refundStatus: 'pending' });
+    const doc = registrationToFirestore(r);
+    assert.deepEqual([doc.refundId, doc.refundStatus], ['rf1', 'pending']);
+    assert.deepEqual(registrationFromFirestore('r1', doc), r);
+    assert.equal(registrationFromFirestore('r1', { ...doc, refundStatus: 'bogus' }).refundStatus, undefined);
+    const plain = registrationToFirestore(registration());
+    assert.deepEqual([plain.refundId, plain.refundStatus], [null, null]);
+    const refund: Refund = {
+      id: 'rf1', paymentId: 'p1', subjectType: 'event_registration', amount: 250000, percent: 100, status: 'pending',
+      manual: false, reason: 'customer_cancel', createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
+    };
+    assert.deepEqual(refundFromFirestore('rf1', refundToFirestore(refund)), refund);
+    const old = refundToFirestore({ ...refund, subjectType: undefined });
+    assert.equal(old.subjectType, null);
+    assert.equal('subjectType' in (refundFromFirestore('rf1', old) ?? {}), false);
+  });
+
+  it('pending ticket refunds are read by subject, status and age', async () => {
+    const asked: unknown[] = [];
+    const refundDoc = refundToFirestore({
+      id: 'rf1', paymentId: 'p1', subjectType: 'event_registration', amount: 1, percent: 100, status: 'pending',
+      manual: false, createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
+    });
+    const q = {
+      where: (...args: unknown[]) => { asked.push(['where', ...args]); return q; },
+      orderBy: (...args: unknown[]) => { asked.push(['orderBy', ...args]); return q; },
+      limit: (n: number) => { asked.push(['limit', n]); return q; },
+      get: async () => ({ docs: [{ id: 'rf1', data: () => refundDoc }] }),
+    };
+    const firestore = { collection: (name: string) => { asked.push(['collection', name]); return q; } };
+    const before = D('2026-10-06T04:00:00.000Z');
+    const got = await new FirestoreEventStore(firestore as never).pendingTicketRefunds(before, 50);
+    assert.deepEqual(got.map((r) => r.id), ['rf1']);
+    assert.deepEqual(asked.slice(0, 4), [
+      ['collection', 'refunds'],
+      ['where', 'subjectType', '==', 'event_registration'],
+      ['where', 'status', '==', 'pending'],
+      ['where', 'createdAt', '<=', Timestamp.fromDate(before)],
+    ]);
+    assert.deepEqual(asked.slice(4), [['orderBy', 'createdAt'], ['limit', 50]]);
   });
 
   it('registration reader returns the host and end time', async () => {
