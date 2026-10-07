@@ -7,14 +7,25 @@ import type { EscrowStatus, PaymentProvider } from './booking.js';
 import { computeRefund } from './booking_policy.js';
 import { DomainError } from './errors.js';
 
+/**
+ * `expired`: nobody paid in time (or the QR was replaced). `needs_review` is reserved for staff
+ * (S23.02); no code path writes it on a Payment yet.
+ */
 export const PAYMENT_STATUSES = [
   'created',
   'paid',
-  'failed',
+  'expired',
+  'needs_review',
   'refunded',
   'partially_refunded',
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+/** Methods a customer can pay with today. */
+export const PAYMENT_METHODS = ['bank_qr', 'momo', 'zalopay'] as const;
+/** Card methods are in the product plan but never accepted yet. */
+export const RESERVED_PAYMENT_METHODS = ['domestic_card', 'intl_card'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export type PaymentSubject = 'booking' | 'event_registration';
 
@@ -32,6 +43,14 @@ export interface Payment {
   readonly escrowStatus: EscrowStatus;
   readonly idempotencyKey: string;
   readonly providerRef?: string;
+  /** Checkout payments: how the customer pays. */
+  readonly method?: PaymentMethod;
+  /** Bank QR: the memo to type, `PB XXXXXX` (see payment_code.ts). */
+  readonly transferCode?: string;
+  /** ISO-8601 UTC; transfers received at or after it are refunded. */
+  readonly expiresAt?: string;
+  /** Sum of the transfers received so far, VND (can differ from `amount` while under-paid or over-paid). */
+  readonly receivedAmount?: number;
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;
@@ -62,7 +81,7 @@ export interface Refund {
 }
 
 export const LEDGER_ENTRY_TYPES = [
-  'deposit_received',
+  'payment_received',
   'ticket_received',
   'refund_issued',
   'escrow_released',
@@ -71,6 +90,20 @@ export const LEDGER_ENTRY_TYPES = [
   'adjustment',
 ] as const;
 export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number];
+
+/** Old name of `payment_received`, still found in dev data; readers count it, nothing writes it. */
+export const LEGACY_PAYMENT_RECEIVED_TYPE = 'deposit_received';
+
+/**
+ * Refund reasons that give back money which was never part of the payment's amount
+ * (the over-payment, the under-payment of an expired QR, a late or duplicate transfer).
+ */
+export const EXCESS_REFUND_REASONS = [
+  'overpaid_excess',
+  'underpaid_expired',
+  'late_transfer',
+  'extra_transfer',
+] as const;
 
 export interface LedgerEntry {
   readonly id: string;
@@ -87,7 +120,7 @@ export interface LedgerEntry {
 }
 
 /**
- * Creates a paid deposit Payment and corresponding LedgerEntry (`deposit_received`).
+ * Creates a paid Payment for the booking and its LedgerEntry (`payment_received`).
  */
 export function createDepositPayment(params: {
   readonly paymentId: string;
@@ -121,13 +154,13 @@ export function createDepositPayment(params: {
 
   const ledgerEntry: LedgerEntry = {
     id: params.ledgerEntryId,
-    type: 'deposit_received',
+    type: 'payment_received',
     paymentId: params.paymentId,
     subjectType: 'booking',
     subjectId: params.bookingId,
     accountOwnerId: 'platform_escrow',
     amount: params.amount,
-    note: `Deposit for booking ${params.bookingId}`,
+    note: `Payment for booking ${params.bookingId}`,
     at,
   };
 
@@ -255,8 +288,12 @@ export function disputeEscrowPayment(payment: Payment, now: Date): Payment {
 }
 
 /**
- * Verifies Invariant 11:
- * Total payment amount == sum(received) - sum(refund_issued)
+ * Verifies Invariant 11 for one payment:
+ * - ledger refunds add up to the refund records;
+ * - an `expired` payment received nothing net (every transfer was given back);
+ * - any other payment: sum(received) minus the refunds of excess money (`EXCESS_REFUND_REASONS`)
+ *   equals `payment.amount`. Refunds for a cancellation are not counted here.
+ * Both `payment_received` and the legacy `deposit_received` count as received.
  */
 export function verifyPaymentLedgerInvariant(
   payment: Payment,
@@ -268,14 +305,23 @@ export function verifyPaymentLedgerInvariant(
 
   for (const entry of entries) {
     if (entry.paymentId === payment.id) {
-      if (entry.type === 'deposit_received' || entry.type === 'ticket_received') {
+      const type: string = entry.type;
+      if (type === 'payment_received' || type === LEGACY_PAYMENT_RECEIVED_TYPE || type === 'ticket_received') {
         received += entry.amount;
-      } else if (entry.type === 'refund_issued') {
+      } else if (type === 'refund_issued') {
         refunded += Math.abs(entry.amount);
       }
     }
   }
 
   const totalRefundAmount = refunds.reduce((sum, r) => sum + r.amount, 0);
-  return received === payment.amount && refunded === totalRefundAmount;
+  if (refunded !== totalRefundAmount) return false;
+
+  if (payment.status === 'expired') {
+    return received === refunded;
+  }
+  const excessRefunded = refunds
+    .filter((r) => r.reason !== undefined && (EXCESS_REFUND_REASONS as readonly string[]).includes(r.reason))
+    .reduce((sum, r) => sum + r.amount, 0);
+  return received - excessRefunded === payment.amount;
 }

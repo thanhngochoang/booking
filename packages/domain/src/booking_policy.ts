@@ -8,6 +8,14 @@ export const UPFRONT_PERCENT = 100;
 export const DISPUTE_WINDOW_HOURS = 24;
 export const ACCEPT_DEADLINE_HOURS = 24;
 export const DRAFT_EXPIRY_MINUTES = 30;
+/** A checkout payment (QR) is valid this long after it is created. */
+export const PAYMENT_EXPIRY_MINUTES = 15;
+/** The reconciliation job re-checks `created` payments older than this. */
+export const PAYMENT_RECONCILE_AFTER_MINUTES = 3;
+/** A draft stays payable until the latest QR's expiry plus this. */
+export const DRAFT_PAYMENT_GRACE_MINUTES = 5;
+/** At most this many payments (QRs) per booking. */
+export const MAX_PAYMENT_ATTEMPTS = 3;
 export const AUTO_COMPLETE_DELAY_HOURS = 24;
 export const ESCROW_RELEASE_DELAY_HOURS = 24;
 export const BOOKING_CONTACT_RETENTION_DAYS = 30;

@@ -79,7 +79,7 @@ describe('Task 4: createDeposit and payment handling', () => {
     assert.equal(res2.booking?.status, 'requested');
 
     const entries = await world.store.getLedgerEntriesForPayment(depositResult.paymentId);
-    // Exactly 1 deposit_received entry, never 2
+    // Exactly 1 payment_received entry, never 2
     assert.equal(entries.length, 1);
   });
 

@@ -432,7 +432,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
     docs.push({
       path: `ledger_entries/seed-ledger-${b.id}-dep`,
       data: {
-        type: 'deposit_received',
+        type: 'payment_received',
         paymentId,
         subjectType: 'booking',
         subjectId: b.id,

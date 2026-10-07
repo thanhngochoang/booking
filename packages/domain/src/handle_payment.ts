@@ -105,13 +105,13 @@ export async function handlePaymentNotification(
     await tx.setPayment(updatedPayment);
     await tx.addLedgerEntry({
       id: deps.ids.newId(),
-      type: 'deposit_received',
+      type: 'payment_received',
       paymentId: payment.id,
       subjectType: 'booking',
       subjectId: booking.id,
       accountOwnerId: 'platform_escrow',
       amount: payment.amount,
-      note: `Deposit for booking ${booking.id}`,
+      note: `Payment for booking ${booking.id}`,
       at: now.toISOString(),
     });
 

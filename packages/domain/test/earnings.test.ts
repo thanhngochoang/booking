@@ -157,7 +157,7 @@ describe('earnings summary', () => {
     const heldIds = ids.filter((id) => ['held', 'partially_refunded', 'disputed'].includes(status(id) ?? ''));
     const releasedIds = ids.filter((id) => status(id) === 'released');
     const held =
-      sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'deposit_received') +
+      sum((e) => heldIds.includes(e.paymentId ?? '') && (e.type === 'payment_received' || (e.type as string) === 'deposit_received')) +
       sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'refund_issued') -
       sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'escrow_released');
     const soon =
