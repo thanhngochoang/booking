@@ -1,6 +1,11 @@
 // test/features/booking/booking_sheet_test.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 
@@ -140,4 +145,41 @@ void main() {
     expect(find.byKey(const Key('app-sheet')), findsOneWidget);
     expect(find.byType(SlideTransition), findsNothing);
   });
+
+  testWidgets(
+    'a closed provider opens the sheet on the "chưa nhận đặt lịch" message, with no way to submit',
+    (tester) async {
+      const closed = PhotographerProfile(
+        summary: PhotographerSummary(
+          id: 'p1',
+          displayName: 'Minh Trí',
+          ratingAvg: 4.9,
+          reviewCount: 25,
+          areaLabel: 'Quận 3',
+          startingPriceVnd: 1500000,
+          acceptingOrders: false,
+        ),
+        intro: PhotographerIntro(
+          bio: 'Chuyên chân dung ngoại cảnh.',
+          onboardingComplete: true,
+        ),
+      );
+      await pumpBookingRoute(
+        tester,
+        path: '/u/p1/book',
+        extraOverrides: [
+          photographerProfileProvider('p1').overrideWithValue(const AsyncData(closed)),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('app-sheet')), findsOneWidget);
+      expect(
+        find.text('Nhiếp ảnh gia này chưa nhận đặt lịch.'),
+        findsOneWidget,
+      );
+      expect(find.text('Gói Chân Dung'), findsNothing);
+      expect(find.textContaining('Tiếp tục'), findsNothing);
+    },
+  );
 }
