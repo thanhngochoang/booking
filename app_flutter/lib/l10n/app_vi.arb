@@ -2188,5 +2188,6 @@
   "createEventFaqAdd": "Thêm câu hỏi",
   "createEventFaqRemove": "Xoá câu hỏi {n}",
   "@createEventFaqRemove": {"placeholders": {"n": {"type": "int"}}},
-  "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời."
+  "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời.",
+  "bookNotAcceptingOrders": "Nhiếp ảnh gia này chưa nhận đặt lịch."
 }

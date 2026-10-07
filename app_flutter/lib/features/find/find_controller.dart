@@ -170,7 +170,7 @@ class FindResultsController extends AsyncNotifier<FindResults> {
       _query(f, geohash6, cursor),
     );
     var usedFallback = previous.usedFallback || page.usedFallback;
-    collected.addAll(_byRating(page.items, f));
+    collected.addAll(_visible(page.items, f));
     for (
       var i = 1;
       i < maxEmptyPages && collected.isEmpty && page.nextCursor != null;
@@ -180,7 +180,7 @@ class FindResultsController extends AsyncNotifier<FindResults> {
         _query(f, geohash6, page.nextCursor),
       );
       usedFallback = usedFallback || page.usedFallback;
-      collected.addAll(_byRating(page.items, f));
+      collected.addAll(_visible(page.items, f));
     }
     return FindResults(
       items: [...previous.items, ...collected],
@@ -203,12 +203,17 @@ class FindResultsController extends AsyncNotifier<FindResults> {
         cursor: cursor,
       );
 
-  List<RecommendedPhotographer> _byRating(
+  /// Drops providers who cannot be booked yet, then applies the rating floor.
+  List<RecommendedPhotographer> _visible(
     List<RecommendedPhotographer> items,
     FindFilters f,
-  ) => f.minRating == null
-      ? items
-      : items.where((i) => i.photographer.ratingAvg >= f.minRating!).toList();
+  ) => items
+      .where(
+        (i) =>
+            i.photographer.acceptingOrders &&
+            (f.minRating == null || i.photographer.ratingAvg >= f.minRating!),
+      )
+      .toList();
 
   Future<void> loadMore() async {
     final current = state.value;

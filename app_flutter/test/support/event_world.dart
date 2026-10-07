@@ -418,6 +418,7 @@ class EventsWorld {
             ratingAvg: hostRating,
             reviewCount: 12,
             verified: true,
+            acceptingOrders: true,
           ),
         ),
       ),

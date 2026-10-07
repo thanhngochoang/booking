@@ -347,6 +347,27 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a closed provider refused by the server shows "Nhiếp ảnh gia này chưa nhận đặt lịch."',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      fakeRepo.nextError = BookingErrorCode.notAcceptingOrders;
+
+      await navigateToReviewStep(tester, bookings: fakeRepo);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Nhiếp ảnh gia này chưa nhận đặt lịch.'),
+        findsOneWidget,
+      );
+      expect(find.text('Thử lại'), findsNothing);
+      expect(find.text('Thanh toán chưa mở trên máy chủ này.'), findsNothing);
+      expect(fakeRepo.depositCalls, isEmpty);
+    },
+  );
+
   testWidgets('not_eligible shows Thanh toán chưa mở trên máy chủ này', (
     tester,
   ) async {

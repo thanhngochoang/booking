@@ -170,6 +170,53 @@ void main() {
       },
     );
 
+    test('closed providers are left out of the results', () async {
+      final world = DiscoveryWorld(
+        photographers: [
+          fixturePhotographer('open1'),
+          fixturePhotographer('shut1', acceptingOrders: false),
+          fixturePhotographer('open2'),
+        ],
+      );
+      final (c, _, _) = await _make(world: world);
+      final r = await c.read(findResultsProvider.future);
+      expect(_ids(r).toSet(), {'open1', 'open2'});
+    });
+
+    test('a page of only closed providers loads the next page', () async {
+      final world = DiscoveryWorld(
+        photographers: [
+          for (var i = 0; i < 20; i++)
+            fixturePhotographer(
+              'a${i.toString().padLeft(2, '0')}',
+              reviews: 1000,
+              completed: 500,
+              acceptingOrders: false,
+            ),
+          for (var i = 0; i < 3; i++)
+            fixturePhotographer('b$i', reviews: 10, completed: 5),
+        ],
+      );
+      final (c, _, _) = await _make(world: world);
+      final r = await c.read(findResultsProvider.future);
+      expect(_ids(r), hasLength(3));
+      expect(_ids(r).every((id) => id.startsWith('b')), isTrue);
+    });
+
+    test('the rating filter and the closed filter combine', () async {
+      final world = DiscoveryWorld(
+        photographers: [
+          fixturePhotographer('ok', rating: 4.9),
+          fixturePhotographer('low', rating: 4.0),
+          fixturePhotographer('shut', rating: 4.9, acceptingOrders: false),
+        ],
+      );
+      final (c, _, _) = await _make(world: world);
+      c.read(findFiltersProvider.notifier).setMinRating(4.5);
+      final r = await c.read(findResultsProvider.future);
+      expect(_ids(r), ['ok']);
+    });
+
     test('loadMore appends the next page once', () async {
       final world = DiscoveryWorld(
         photographers: [

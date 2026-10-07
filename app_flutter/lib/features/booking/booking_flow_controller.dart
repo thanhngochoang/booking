@@ -337,6 +337,12 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         );
       case BookingErrorCode.notEligible:
         state = state.copyWith(phase: SubmitPhase.idle, error: BookingErrorCode.notEligible);
+      case BookingErrorCode.notAcceptingOrders:
+        state = state.copyWith(
+          bookingId: null,
+          phase: SubmitPhase.idle,
+          error: BookingErrorCode.notAcceptingOrders,
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:

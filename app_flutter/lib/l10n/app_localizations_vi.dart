@@ -4768,4 +4768,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get createEventErrFaq => 'Nhập đủ cả câu hỏi và câu trả lời.';
+
+  @override
+  String get bookNotAcceptingOrders => 'Nhiếp ảnh gia này chưa nhận đặt lịch.';
 }

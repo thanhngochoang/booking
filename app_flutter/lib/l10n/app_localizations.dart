@@ -8421,6 +8421,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Nhập đủ cả câu hỏi và câu trả lời.'**
   String get createEventErrFaq;
+
+  /// No description provided for @bookNotAcceptingOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia này chưa nhận đặt lịch.'**
+  String get bookNotAcceptingOrders;
 }
 
 class _AppLocalizationsDelegate
