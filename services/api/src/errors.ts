@@ -18,6 +18,8 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   day_taken: 409,
   sold_out: 409,
   price_changed: 409,
+  // The booking's state refuses another payment ("Tạo QR mới" used MAX_PAYMENT_ATTEMPTS times).
+  payment_attempts_exceeded: 409,
   not_eligible: 403,
   not_accepting_orders: 403,
   phone_required: 422,
