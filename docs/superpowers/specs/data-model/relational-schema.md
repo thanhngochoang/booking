@@ -247,6 +247,8 @@ create table bookings (
   remaining_amount bigint not null check (remaining_amount >= 0),
   currency         char(3) not null default 'VND',
   deposit_provider text check (deposit_provider in ('momo','vnpay')),
+  checkout         jsonb,                         -- chỉ draft: BookingCheckout do create_payment ghi (QR, hạn, mã chuyển khoản)
+  payable_until    timestamptz,                   -- chỉ draft: job dọn xoá draft từ lúc này
   deposit_paid_at  timestamptz, deposit_refunded_at timestamptz,
   accept_deadline  timestamptz,
   cancelled_by     text check (cancelled_by in ('customer','photographer','system')),
@@ -255,7 +257,7 @@ create table bookings (
   version          int not null default 1,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
-  check (deposit_amount + remaining_amount = service_price)
+  check (deposit_amount + remaining_amount = service_price)   -- từ #129: deposit_amount = giá, remaining_amount = 0
 );
 create index ix_bookings_customer on bookings (customer_id, status, day);
 create index ix_bookings_photographer on bookings (photographer_id, status, day);
@@ -288,9 +290,13 @@ create table payments (
   subject_id      text not null,
   payee_id        text references users(id),      -- nhiếp ảnh gia / chủ sự kiện nhận tiền; null = nền tảng
   provider        text not null check (provider in ('momo','vnpay')),
+  method          text check (method in ('bank_qr','momo','zalopay','domestic_card','intl_card')),  -- cách khách trả; null với vé cũ
   amount          bigint not null check (amount >= 0),
   currency        char(3) not null default 'VND',
-  status          text not null check (status in ('created','paid','failed','refunded','partially_refunded')),
+  status          text not null check (status in ('created','paid','expired','needs_review','refunded','partially_refunded')),
+  transfer_code   text,                           -- 'PB XXXXXX', duy nhất trên mọi khoản có mã (ux_payments_transfer_code)
+  expires_at      timestamptz,                    -- created_at + 15 phút; chuyển từ lúc này là chuyển muộn
+  received_amount bigint check (received_amount >= 0),  -- tổng đã tính vào amount (thiếu thì cộng dồn)
   escrow_status   text not null default 'held' check (escrow_status in ('held','released','paid_out','partially_refunded','refunded','disputed')),
   release_after   timestamptz,                    -- hết cửa sổ khiếu nại
   released_at     timestamptz,
@@ -304,6 +310,8 @@ create table payments (
   updated_at      timestamptz not null default now()
 );
 create index ix_payments_subject on payments (subject_type, subject_id);
+create unique index ux_payments_transfer_code on payments (transfer_code) where transfer_code is not null;
+create index ix_payments_reconcile on payments (status, created_at) where status = 'created' and method is not null;  -- job đối soát và hết hạn
 create index ix_payments_event on payments (event_id, status, escrow_status) where event_id is not null;
 create index ix_payments_release on payments (escrow_status, release_after) where escrow_status = 'held';
 
@@ -315,10 +323,23 @@ create table refunds (
   percent    smallint check (percent between 0 and 100),
   status     text not null check (status in ('pending','done','failed')),
   manual     boolean not null default false,
+  reason     text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer
+  provider_ref text,                              -- giao dịch của cổng mà tiền được hoàn từ đó
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index ix_refunds_resend on refunds (subject_type, status, created_at);
+
+create table payment_notifications (              -- 🔒 chỉ máy chủ; khoá chống trùng của webhook
+  id          text primary key,                   -- '{provider}_{txn_id}'
+  provider    text not null,
+  txn_id      text not null,                      -- mã giao dịch của tổ chức trung gian
+  raw         text,                               -- nội dung gốc của webhook
+  received_at timestamptz not null,               -- giờ nhận tiền (UTC) do bên cổng báo
+  outcome     text not null check (outcome in ('paid','paid_with_refund','partial','refunded','needs_review')),
+  payment_id  text references payments(id),       -- null khi needs_review (không khớp khoản nào)
+  unique (provider, txn_id)
+);
 
 create table payout_accounts (                    -- 🔒
   id                 text primary key,
@@ -357,7 +378,7 @@ create table payout_items (
 
 create table ledger_entries (                     -- bất biến, chỉ thêm
   id              text primary key,
-  type            text not null check (type in ('deposit_received','ticket_received','refund_issued','escrow_released','payout_paid','fee_charged','adjustment')),
+  type            text not null check (type in ('payment_received','deposit_received','ticket_received','refund_issued','escrow_released','payout_paid','fee_charged','adjustment')),
   payment_id      text references payments(id),
   refund_id       text references refunds(id),
   payout_id       text references payouts(id),
@@ -877,7 +898,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `jobs/{id}`, `jobs/{id}/quotes/{photographerId}`, `jobs/{id}/invites/{photographerId}` | `jobs` + `job_references`, `quotes`, `job_invites` | `schedule.*`, `area.*`, `budget.*`, `wants.*` → cột phẳng; id báo giá Firestore là uid, bảng dùng `id` riêng + `unique (job_id, photographer_id)` |
 | `bookings/{id}/milestones/{kind}`, `bookings/{id}/deliveries/{round}` | `booking_milestones`, `booking_deliveries` + `booking_delivery_previews` | Đề xuất (spec 10-05) |
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
-| `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử |
+| `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received` |
+| `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
 | `reviews/{bookingId}` | `reviews` | |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột |
 | `users/{uid}/notifications/{id}` | `notifications` | `actors[]`→`actors jsonb`; `users/{uid}/private/inbox.unreadCount` không có cột (đếm `read_at is null`) |
@@ -911,7 +933,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 ## 5. Thứ tự xuất/nhập (phụ thuộc khoá ngoại)
 
-`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `photographers` và bảng con → `services` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `bookings`(+con) → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
+`files` (không `owner_user_id`) → `users` → cập nhật `files.owner_user_id` → `taxonomy_items` → `photographers` và bảng con → `services` → `badge_definitions` → `posts`(+`post_images`, `post_hashtags`) → `bookings`(+con) → `chats` → cập nhật `bookings.chat_id` → `payments`, `refunds`, `payment_notifications`, `payout_accounts`, `payouts`, `payout_items`, `ledger_entries` → `reviews` → `events` → `event_registrations`, `event_posts` → `availability_days` → `messages`, `chat_members`, `chat_pins` → `likes/saves/follows` → `notifications`, `user_badges`, `badge_progress` → `recommendation_logs`, `audit_log`.
 
 Công cụ `tools/export` xuất mỗi bảng thành NDJSON `<bảng>.ndjson` (một đối tượng/dòng, khoá `snake_case`, thời điểm ISO‑8601 UTC, tiền số nguyên) kèm `manifest.json` (số dòng, SHA‑256 từng tệp, phiên bản lược đồ). Nhập kiểm tra khoá ngoại theo thứ tự trên và so khớp số dòng/checksum.
 

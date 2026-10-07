@@ -1,6 +1,6 @@
 # Đặt lịch, thanh toán, hội thoại, liên hệ
 
-Màn: S04.01, S04.02, S04.03, S04.04, S05.02, S05.03, S07.01, S05.01, S05.04, S04.05. Quy ước chung ở [README.md](README.md). Máy trạng thái booking và chính sách cọc ở spec gốc mục 6–8.
+Màn: S04.01, S04.02, S04.03, S04.04, S05.02, S05.03, S07.01, S05.01, S05.04, S04.05. Quy ước chung ở [README.md](README.md). Máy trạng thái booking ở spec gốc mục 6–8; thanh toán 100% và chuyển sai ở [spec thanh toán](../2026-10-06-payments-payouts-design.md) mục 3.
 
 ---
 
@@ -12,8 +12,8 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 - **Thông tin**: khách · sub‑project 4 · Chưa có.
 - **Điều kiện vào**: khách đăng nhập và **có số điện thoại hợp lệ**. Thiếu thì mở S04.05 trước, lưu xong quay lại đúng bước (`returnTo`). Vào từ S02.02 ("Đặt gói này") thì bỏ bước 1; vào từ S02.06 ("Đặt T7") thì có sẵn ngày và dịch vụ.
-- **Trạng thái luồng** giữ trong controller: `serviceId`, `date`, `start`, `end`, `place`, `note`, `phone`, `provider`. Quay lại không mất lựa chọn. Đóng sheet khi đã chọn gì đó hỏi xác nhận "Bỏ yêu cầu đặt lịch?". Không lưu nháp lên server cho tới khi tạo `draft` ở bước 4.
-- **Tiền**: tổng giá gói luôn nằm trên nút chính; cọc 30%, phần còn lại trả tại buổi chụp.
+- **Trạng thái luồng** giữ trong controller: `serviceId`, `date`, `start`, `end`, `place`, `note`, `phone`, `method` (mặc định `bank_qr`). Quay lại không mất lựa chọn. Đóng sheet khi đã chọn gì đó hỏi xác nhận "Bỏ yêu cầu đặt lịch?". Không lưu nháp lên server cho tới khi tạo `draft` ở bước 4.
+- **Tiền**: tổng giá gói luôn nằm trên nút chính; khách trả 100% khi đặt, tiền được giữ và chuyển cho thợ theo 2 mốc.
 
 ### S04.01 · Bước 1 · Chọn gói
 
@@ -36,29 +36,36 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 - Bản đồ nhỏ + ô địa chỉ + chip gợi ý của nhiếp ảnh gia và địa điểm trong bộ lọc; mặc định theo bộ lọc hoặc gợi ý. Địa điểm tuỳ chọn tự do cần tên (≥ 3 ký tự). Nút "Tiếp tục".
 
-### S04.03 · Bước 4 · Xem lại và đặt cọc
+### S04.03 · Bước 4 · Xem lại và thanh toán
 
-- **Mục đích**: ai · gì · khi nào · ở đâu · bao nhiêu trên một màn, rồi trả cọc.
-- **Bố cục**: `BookingCard` tóm tắt (thumb, gói, ngày giờ, địa điểm); hàng **Ghi chú** + **SĐT của bạn** cùng chiều cao (SĐT lấy từ hồ sơ, sửa được, `PhoneField`); bảng tiền (giá gói, "Đặt cọc hôm nay (30%)" in đậm, "Còn lại trả tại buổi chụp"); `EscrowNotice` "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành."; chính sách huỷ (3 dòng rút gọn); chọn cổng MoMo / VNPay (radio); nút "Đặt cọc {số tiền}".
-- **Dữ liệu**: tạo booking `draft` rồi gọi `createDeposit({bookingId, provider})`; trước khi gọi kiểm tra lại `availability`.
-- **Trạng thái**: đang gọi cổng → nút loading và vô hiệu mọi điều khiển; lỗi `day_taken` → quay S04.02 với ngày đó gạch và báo; lỗi `phone_required` → S04.05; lỗi mạng → giữ nguyên, "Thử lại"; cổng trả về → mở trang thanh toán (WebView/deeplink).
-- **Tương tác**: ghi chú tối đa 300 ký tự có đếm; SĐT kiểm tra định dạng khi rời ô.
-- **Chuỗi**: `s07_title` "Xem lại", `s07_note` "Ghi chú", `s07_phone` "SĐT của bạn", `s07_deposit` "Đặt cọc hôm nay (30%)", `s07_remaining` "Còn lại trả tại buổi chụp", `s07_policy` "Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.", `s07_escrow` "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.", `s07_pay` "Đặt cọc {amount}".
-- **Phân tích**: `book_step{n}`, `book_submit{provider}`, `book_error{code}`.
-- **Chấp nhận**: không gọi cổng khi SĐT sai hoặc thiếu; client không tin kết quả redirect, chỉ tin `bookings.status`; số tiền cọc làm tròn đến đồng, `cọc + còn lại = giá`.
+- **Mục đích**: ai · gì · khi nào · ở đâu · bao nhiêu trên một màn, rồi trả **100%** giá gói (không còn cọc).
+- **Bố cục** (theo mock): `BookingCard` tóm tắt (thumb, gói, ngày giờ, địa điểm); hàng **Ghi chú** + **SĐT của bạn** cùng chiều cao (SĐT lấy từ hồ sơ, sửa được, `PhoneField`); `MoneyBreakdown` đúng **hai hàng**: "Gói {tên}" (giá gói) và "Thanh toán 100%" (đậm, bằng giá gói); **một** dòng chữ phụ "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả." (không còn `EscrowNotice` riêng và không còn khối chính sách huỷ 3 dòng); `PayMethodSelector` (radio, nhãn nhóm "Phương thức thanh toán"): hàng đầy chiều rộng "Chuyển khoản QR" (biểu tượng `qr_code_2`, phụ đề "Miễn phí · xác nhận ngay", **chọn sẵn**), hàng dưới chia đôi "MoMo" và "ZaloPay"; nút chính "Thanh toán {số tiền}".
+- **Dữ liệu**: tạo booking `draft` rồi gọi `createPayment({bookingId, method})` (`method` ∈ `bank_qr`, `momo`, `zalopay`; trả về `checkout`, bản sao nằm ở `bookings/{id}.checkout`); trước khi gọi kiểm tra lại `availability`. Số tiền thanh toán = `Booking.deposit` (giữ tên trường, nay là toàn bộ giá; `remaining` luôn 0, xem `domain-model.md` mục 3.2).
+- **Trạng thái**: đang gọi → nút loading và vô hiệu mọi điều khiển (kể cả radio); lỗi `day_taken` → quay S04.02 với ngày đó gạch và báo "Hôm đó vừa có người đặt"; lỗi `phone_required` → S04.05; lỗi `payment_attempts_exceeded` (khoản thứ 4 của một booking) → "Đã tạo QR 3 lần. Hãy đặt lại từ đầu."; lỗi mạng → giữ nguyên, "Không gửi được. Kiểm tra mạng rồi thử lại."; thanh toán chưa mở trên máy chủ → "Thanh toán chưa mở trên máy chủ này."; thành công → sang S04.04 (không mở cổng ngoài ở bước này).
+- **Tương tác**: ghi chú tối đa 300 ký tự có đếm; SĐT kiểm tra định dạng khi rời ô; chọn phương thức không gọi máy chủ, chỉ đổi `method` gửi đi.
+- **Chuỗi** (khoá `app_vi.arb`): `bookReview` "Xem lại", `bookNote` "Ghi chú", `bookYourPhone` "SĐT của bạn", `bookPackageLine` "Gói {name}", `bookDepositToday` "Thanh toán 100%", `bookPolicy` "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.", `payMethodLabel` "Phương thức thanh toán", `payMethodBankQr` "Chuyển khoản QR", `payMethodBankQrNote` "Miễn phí · xác nhận ngay", `payMethodMomo` "MoMo", `payMethodZaloPay` "ZaloPay", `bookPay` "Thanh toán {amount}", `payAttemptsExceeded` "Đã tạo QR 3 lần. Hãy đặt lại từ đầu.", `bookPaymentsOff` "Thanh toán chưa mở trên máy chủ này.", `bookNetworkError` "Không gửi được. Kiểm tra mạng rồi thử lại.". Tên khoá `bookDepositToday` giữ lại cho đỡ đổi hàng loạt, giá trị đã bỏ chữ "cọc".
+- **Phân tích**: `book_step{n}`, `book_submit{method}`, `book_error{code}`.
+- **Chấp nhận**: không gọi `createPayment` khi SĐT sai hoặc thiếu; client không tin kết quả redirect, chỉ tin `bookings.status`; hai hàng tiền cộng đúng giá gói (số đồng, không làm tròn); không còn chữ "cọc" trên màn.
 
 ---
 
-## S04.04 · Chờ thanh toán
+## S04.04 · Chờ thanh toán (VietQR / ví)
 
-- **Thông tin**: `/b/:id/pay` · khách · sub‑project 4 · Chưa có.
-- **Mục đích**: xử lý trường hợp cổng chưa báo `paid` sau 5 phút.
-- **Điểm vào → ra**: từ S04.03 sau khi quay lại từ cổng mà chưa `paid`. `paid` → tự chuyển S05.02; "Về chi tiết" → S05.02.
-- **Bố cục**: vòng chờ (gradient), tiêu đề "Đang chờ xác nhận thanh toán", giải thích, `BookingCard` thu gọn kèm badge "Chờ cọc", nút chính "Kiểm tra lại", nút phụ "Đổi cổng thanh toán".
-- **Dữ liệu**: lắng nghe `bookings/{id}`; "Kiểm tra lại" gọi Function hỏi cổng.
-- **Trạng thái**: `paid` → chuyển; sau 30 phút `draft` bị dọn → báo "Yêu cầu đã hết hạn" và về S04.01; lỗi mạng → vẫn lắng nghe khi có mạng lại.
-- **Chuỗi**: `s08_title` "Đang chờ xác nhận thanh toán", `s08_body` "Cổng thanh toán chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.", `s08_check` "Kiểm tra lại", `s08_changeProvider` "Đổi cổng thanh toán".
-- **Chấp nhận**: không tạo thanh toán thứ hai khi "Kiểm tra lại"; vòng chờ dừng khi giảm chuyển động bật (thay bằng biểu tượng tĩnh).
+- **Thông tin**: `/b/:id/pay` · khách · sub‑project 4 · Đã làm (#129).
+- **Mục đích**: trả một khoản đang `created` của booking `draft`: chuyển khoản VietQR có đếm ngược, hoặc chờ ví (MoMo, ZaloPay) báo về. Màn không bao giờ tin redirect; chỉ `bookings.status` (và `checkout`) làm màn chuyển.
+- **Điểm vào → ra**: từ S04.03 sau `createPayment`; link `/b/{id}/pay` (booking `draft` cũ chưa có `checkout` thì màn gọi `createPayment` một lần với `bank_qr`). Booking rời `draft` (đã `requested`) → tự chuyển S05.02 (`?paid=1` hiện toast); booking biến mất (`draft` bị dọn) → trạng thái trống "Yêu cầu đã hết hạn" với "Đặt lại" (về S04.01 của đúng nhiếp ảnh gia và gói) hoặc "Về trang chủ".
+- **Bố cục, chuyển khoản QR** (`QrCheckoutView`, toàn màn, thanh trên "Chuyển khoản QR"): khối QR (thẻ trắng bo góc, giữ nền sáng ở chế độ tối để máy quét đọc được); số tiền lớn; dòng "{tên} · {gói}" kèm badge "Chờ thanh toán"; `CountdownPill` "Còn mm:ss"; khung 3 hàng khoá/giá trị: "Ngân hàng" → tên ngân hàng (chú thích "Tài khoản thu hộ của trung gian thanh toán"), "Số tài khoản" → số đã che, "Nội dung" → `PB XXXXXX` kèm chip "Sao chép" (nút sao chép duy nhất); dòng chữ phụ "Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động."; chân: viền "Tạo QR mới" (≈38% chiều rộng) và chính "Mở app ngân hàng" (≈62%; mở `checkout.bankAppsUrl` qua `externalLauncherProvider`, **ẩn** khi `bankAppsUrl` rỗng, lúc đó "Tạo QR mới" chiếm cả hàng).
+- **Bố cục, ví** (`WalletWaitingView`, thanh trên "Thanh toán"): `SignatureLoader` sóng rung ("vibration", đang chờ bên khác), "Đang chờ xác nhận", số tiền, dòng "{tên} · {gói}" kèm badge "Chờ thanh toán"; chân: viền "Kiểm tra lại" (gọi `checkPayment`) và chính "Mở lại {MoMo|ZaloPay}" (mở `checkout.payUrl`, ẩn khi rỗng). Không có "Đổi cổng thanh toán".
+- **Dữ liệu**: lắng nghe `bookings/{id}` (có `checkout`: `paymentId`, `method`, `amount`, `expiresAt`, `transferCode`, `attempt`, `qrPayload?`, `bankName?`, `accountMasked?`, `payUrl?`, `bankAppsUrl?`); đếm ngược theo đồng hồ chèn vào (`clockProvider`) nên chạm 0 ngay cả khi chưa job nào chạy. "Tạo QR mới" gọi lại `createPayment` cùng phương thức: khoản cũ thành `expired` (đã nhận gì thì hoàn), khoản mới có 15 phút; luồng booking mang về `checkout` mới.
+- **Trạng thái**:
+  - Hết giờ (đếm ngược 0): QR mờ kèm "QR đã hết hạn", pill đổi "Hết hạn", chip "Sao chép" ẩn, chân chỉ còn **một** nút chính "Tạo QR mới".
+  - "Tạo QR mới" đang chạy → loading và vô hiệu; quá 3 khoản → "Đã tạo QR 3 lần. Hãy đặt lại từ đầu."; lỗi khác → "Yêu cầu đã hết hạn, thử lại nhé.".
+  - "Kiểm tra lại" mà chưa có tiền → "Chưa nhận được xác nhận, thử lại sau ít phút"; lỗi mạng → "Không gửi được. Kiểm tra mạng rồi thử lại.".
+  - Bản thử (`REAL_PAYMENTS` tắt): nút chữ nhỏ "Giả lập chuyển khoản" mở sheet "Giả lập chuyển khoản (thử nghiệm)" với bốn nút "Chuyển đúng", "Chuyển thiếu", "Chuyển thừa", "Sai nội dung" (mỗi nút gọi `confirmFakePayment({paymentId, kind})`); bản thật không vẽ gì.
+  - Thiếu/thừa/sai nội dung xử lý ở máy chủ theo spec thanh toán mục 3.3; màn chỉ nhìn `bookings`.
+- **Chuỗi** (khoá `app_vi.arb`): `payQrTitle` "Chuyển khoản QR", `payTitle` "Thanh toán", `payQrCountdown` "Còn {time}", `payQrCountdownSemantics` "QR còn hiệu lực {minutes} phút {seconds} giây", `payQrExpiredPill` "Hết hạn", `payQrExpired` "QR đã hết hạn", `payQrBank` "Ngân hàng", `payQrBankNote` "Tài khoản thu hộ của trung gian thanh toán", `payQrAccount` "Số tài khoản", `payQrContent` "Nội dung", `payQrCopy` "Sao chép", `payQrCopied` "Đã sao chép nội dung chuyển khoản", `payQrHint` "Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.", `payQrNew` "Tạo QR mới", `payQrOpenBank` "Mở app ngân hàng", `payQrSemantics` "Mã VietQR {amount}, nội dung {code}", `payQrWho` "{name} · {service}", `payAwaitingDeposit` "Chờ thanh toán", `payWalletWaiting` "Đang chờ xác nhận", `payWalletReopen` "Mở lại {name}", `payCheckAgain` "Kiểm tra lại", `payNotYet` "Chưa nhận được xác nhận, thử lại sau ít phút", `payExpiredTitle` "Yêu cầu đã hết hạn", `payExpiredBody` "Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.", `payBookAgain` "Đặt lại", `payGoHome` "Về trang chủ", `fakeTransferOpen` "Giả lập chuyển khoản", `fakeTransferTitle` "Giả lập chuyển khoản (thử nghiệm)", `fakeTransferExact` "Chuyển đúng", `fakeTransferUnder` "Chuyển thiếu", `fakeTransferOver` "Chuyển thừa", `fakeTransferWrong` "Sai nội dung". Tên khoá `payAwaitingDeposit` giữ lại, giá trị đã đổi.
+- **Truy cập**: `CountdownPill` đổi nhãn mỗi giây nhưng chỉ là vùng live ở các mốc 5:00, 1:00, 0:10 và 0 (đọc "QR còn hiệu lực 5 phút 0 giây"), để trình đọc màn hình không bị ngắt mỗi giây; thẻ QR đọc "Mã VietQR {số tiền}, nội dung {mã}" (hoặc "QR đã hết hạn"); nút "Sao chép" cao tối thiểu 48dp.
+- **Chấp nhận**: chỉ có một nút chính mỗi trạng thái; chuyển đúng số tiền và nội dung → booking `requested` và màn tự sang S05.02; "Kiểm tra lại" không tạo khoản thứ hai; "Tạo QR mới" làm QR cũ hết hiệu lực, tiền chuyển vào QR cũ được hoàn tự động; đếm ngược chạm 0 thì màn hiện trạng thái hết hạn dù chưa có job nào chạy.
 
 ---
 
@@ -67,8 +74,8 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 - **Thông tin**: `/b/:id` · cả hai · sub‑project 4 · Chưa có.
 - **Mục đích**: một màn cho mọi trạng thái của booking, kèm hành động đúng lúc.
 - **Điểm vào → ra**: S05.01, S06.01, push, link `/b/{id}`, sau S04.03/S04.04. "Liên hệ" bung khay S05.04; "Nhắn tin" → S07.01; "Huỷ" → S05.03; "Đổi lịch" (menu `…`) → tin hệ thống trong S07.01; "Đánh giá" → S05.05.
-- **Bố cục**: toast kết quả (sau cọc); `EscrowNotice` (khách: "Cọc {số tiền} đang được giữ an toàn"; NAG: "Cọc {số tiền} đang được giữ, chuyển cho bạn sau khi hoàn thành"); `BookingCard` (thumb, gói, ngày giờ, địa điểm, badge); `StatusTimeline` 7 bước, bước hiện tại nổi; hàng hai nút: "Nhắn tin" (viền) + `ContactDial` "Liên hệ"; "Đổi lịch" nằm trong menu `…` ở thanh trên; nút chữ đỏ "Huỷ yêu cầu · hoàn cọc {x}%".
-- **Dữ liệu**: `bookingProvider(id)` lắng nghe thời gian thực; chat lấy `chatId`. Phía NAG hiển thị số khách chỉ sau cọc (qua `ContactDial`).
+- **Bố cục**: toast kết quả (sau thanh toán: "Đã thanh toán {số tiền}, tiền được giữ an toàn."); `EscrowNotice` (khách: "Đã thanh toán {số tiền}, tiền được giữ an toàn"; NAG: "{số tiền} đang được giữ, chuyển cho bạn theo 2 mốc"); `BookingCard` (thumb, gói, ngày giờ, địa điểm, badge); `StatusTimeline` 7 bước, bước hiện tại nổi; hàng hai nút: "Nhắn tin" (viền) + `ContactDial` "Liên hệ"; "Đổi lịch" nằm trong menu `…` ở thanh trên; nút chữ đỏ "Huỷ yêu cầu · hoàn {x}%".
+- **Dữ liệu**: `bookingProvider(id)` lắng nghe thời gian thực; chat lấy `chatId`. Phía NAG hiển thị số khách chỉ sau khi khách thanh toán (qua `ContactDial`).
 - **Trạng thái**: theo `status` (xem bảng): hành động hiện khác nhau; hôm diễn ra → nút "Chỉ đường"; sau `endTime` NAG có "Hoàn thành".
 
 | Trạng thái | Hành động khách | Hành động NAG |
@@ -79,7 +86,7 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 | `completed` | Đánh giá (S05.05) | — |
 | `reviewed` | Xem đánh giá | — |
 
-- **Chuỗi**: `s09_title` "Buổi chụp #{code}", `s09_contact` "Liên hệ", `s09_reschedule` "Đổi lịch", `s09_cancel` "Huỷ yêu cầu · hoàn cọc {pct}%", `s09_directions` "Chỉ đường".
+- **Chuỗi**: `s09_title` "Buổi chụp #{code}", `s09_contact` "Liên hệ", `s09_reschedule` "Đổi lịch", `s09_cancel` "Huỷ yêu cầu · hoàn {pct}%", `s09_directions` "Chỉ đường".
 - **Phân tích**: `booking_open{status}`, `contact_tapped{channel, source:"S05.02"}`, `booking_action{action}`.
 - **Chấp nhận**: timeline đúng thứ tự và thời điểm; số hoàn trên nút huỷ khớp bảng chính sách theo giờ hiện tại; trạng thái đổi theo thời gian thực không cần tải lại.
 
@@ -89,7 +96,7 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 - **Thông tin**: `/b/:id/cancel` (sheet) · khách · sub‑project 4 · Chưa có.
 - **Mục đích**: huỷ có hiểu rõ hệ quả tiền.
-- **Bố cục**: tiêu đề "Huỷ buổi chụp?"; bảng hoàn cọc 3 dòng (≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%) với **dòng đang áp dụng được tô**; "Bạn sẽ nhận lại {số tiền}"; chip lý do (Đổi kế hoạch, Tìm được thợ khác, Lý do khác); hai nút: "Giữ lịch" (viền, bên trái) và "Huỷ buổi chụp" (đỏ, bên phải).
+- **Bố cục**: tiêu đề "Huỷ buổi chụp?"; bảng hoàn tiền 3 dòng tính trên số đã trả (≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%) với **dòng đang áp dụng được tô**; "Bạn sẽ nhận lại {số tiền}"; chip lý do (Đổi kế hoạch, Tìm được thợ khác, Lý do khác); hai nút: "Giữ lịch" (viền, bên trái) và "Huỷ buổi chụp" (đỏ, bên phải).
 - **Dữ liệu**: tính hoàn từ `start` và giờ máy chủ; gọi `transitionBooking(cancelled)`.
 - **Trạng thái**: đang gọi → nút loading; lỗi → SnackBar, giữ sheet; huỷ thành công → đóng, S05.02 hiện `cancelled`, toast "Đã huỷ. Hoàn {số tiền} trong 3–5 ngày".
 - **Chuỗi**: `s10_title` "Huỷ buổi chụp?", `s10_refund` "Bạn sẽ nhận lại {amount}", `s10_keep` "Giữ lịch", `s10_confirm` "Huỷ buổi chụp".
@@ -141,7 +148,7 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 
 - **Thông tin**: không có route (popover) · cả hai · sub‑project 2 · Chưa có.
 - **Mục đích**: gọi hoặc nhắn qua kênh ngoài, **chỉ sau khi đã đặt**, và chỉ lộ lựa chọn khi cần.
-- **Điều kiện hiện**: booking `requested` (đã cọc)/`accepted`/`upcoming`/`completed` (30 ngày), hoặc vé sự kiện `paid` (tới 7 ngày sau sự kiện). Chưa đủ điều kiện thì S03.01, S11.02 chỉ có nút "Nhắn tin hỏi trước" (mở chat `inquiry`, không bung); `declined/expired/cancelled/refunded` khoá lại.
+- **Điều kiện hiện**: booking `requested` (đã thanh toán)/`accepted`/`upcoming`/`completed` (30 ngày), hoặc vé sự kiện `paid` (tới 7 ngày sau sự kiện). Chưa đủ điều kiện thì S03.01, S11.02 chỉ có nút "Nhắn tin hỏi trước" (mở chat `inquiry`, không bung); `declined/expired/cancelled/refunded` khoá lại.
 - **Điểm vào**: nút "Liên hệ" ở S05.02 (và S11.02 khi đã có vé), `ContactDial` trên thẻ ở S06.01, S12.03.
 - **Bố cục**: nút nhỏ lúc nghỉ; khi bấm, **một khay** (radius 28, căn phải theo nút) trồi lên phía trên với ba biểu tượng tròn 44dp xếp ngang: Gọi, Zalo, WhatsApp, mỗi biểu tượng có nhãn chữ bên dưới. Zalo và WhatsApp dùng đúng biểu tượng của hãng, đơn sắc (spec chính 3b.6). "Nhắn tin trong app" không nằm trong khay, đã có nút "Nhắn tin" riêng bên cạnh nút Liên hệ.
 - **Dữ liệu**: kênh bật từ `photographers/{uid}.contactChannels` (hoặc `customerContact` ở S06.01/S12.03); URL lấy lúc chạm bằng `getContactLink({bookingId | registrationId, channel})`, lỗi `contact_locked` nếu chưa đủ điều kiện. Không hiển thị số, ứng dụng không lưu số.
@@ -158,8 +165,8 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 - **Thông tin**: `/profile/phone?returnTo=…` (sheet; bản đầu là trang đầy đủ, chuyển vào `AppBottomSheet` khi widget đó có) · khách · sub‑project 2 · Chưa có.
 - **Mục đích**: có số điện thoại để đặt lịch (xác minh làm sau).
 - **Điểm vào → ra**: tự mở khi khách bấm đặt lịch/đăng ký mà hồ sơ thiếu số (S02.02, S03.01, S02.06, S11.02); hàng "Số điện thoại" ở S09.02 cũng mở. Lưu xong → quay lại `returnTo`.
-- **Bố cục**: tiêu đề "Thêm số điện thoại để đặt lịch", giải thích vì sao; `PhoneField` (tiền tố +84, định dạng `903 123 456`); ví dụ; hai công tắc "Cho phép liên hệ qua Zalo" (bật sẵn) và "WhatsApp" (tắt sẵn); ghi chú riêng tư "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc."; nút "Lưu và tiếp tục".
+- **Bố cục**: tiêu đề "Thêm số điện thoại để đặt lịch", giải thích vì sao; `PhoneField` (tiền tố +84, định dạng `903 123 456`); ví dụ; hai công tắc "Cho phép liên hệ qua Zalo" (bật sẵn) và "WhatsApp" (tắt sẵn); ghi chú riêng tư "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán."; nút "Lưu và tiếp tục".
 - **Dữ liệu**: ghi `users/{uid}/private/contact` (`phone` E.164, `allowZalo`, `allowWhatsApp`, `phoneVerified:false`).
 - **Trạng thái**: sai định dạng → lỗi dưới ô ("Số cần 10 chữ số, bắt đầu bằng 0"); lưu lỗi → SnackBar, giữ sheet; đóng không lưu → huỷ luồng đặt, trở lại màn trước.
-- **Chuỗi**: `s33_title` "Thêm số điện thoại để đặt lịch", `s33_body` "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.", `s33_phone` "Số điện thoại", `s33_example` "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.", `s33_allowZalo` "Cho phép liên hệ qua Zalo", `s33_allowWhatsApp` "Cho phép liên hệ qua WhatsApp", `s33_privacy` "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.", `s33_save` "Lưu và tiếp tục", `s33_errorFormat` "Số điện thoại chưa đúng. Ví dụ: 903 123 456".
+- **Chuỗi**: `s33_title` "Thêm số điện thoại để đặt lịch", `s33_body` "Nhiếp ảnh gia sẽ gọi hoặc nhắn Zalo/WhatsApp cho bạn để chốt chi tiết.", `s33_phone` "Số điện thoại", `s33_example` "Ví dụ: 0903 123 456. Chưa cần mã xác minh; bước xác minh sẽ bổ sung sau.", `s33_allowZalo` "Cho phép liên hệ qua Zalo", `s33_allowWhatsApp` "Cho phép liên hệ qua WhatsApp", `s33_privacy` "Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.", `s33_save` "Lưu và tiếp tục", `s33_errorFormat` "Số điện thoại chưa đúng. Ví dụ: 903 123 456".
 - **Chấp nhận**: hợp lệ mới bật nút; chấp nhận `0903123456`, `+84 903 123 456`, từ chối `090312345`, `0123456789`; hồ sơ có số thì sheet không hiện nữa; mọi nhánh server vẫn chặn khi thiếu số.

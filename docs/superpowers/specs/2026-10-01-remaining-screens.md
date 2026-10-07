@@ -90,8 +90,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
-| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S07 |
-| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ đã làm (4b) · về S05.02 (4c) | S08 |
+| S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) | S07 |
+| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
