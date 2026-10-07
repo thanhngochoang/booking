@@ -3,6 +3,7 @@
 
 import {
   BADGE_CATALOG,
+  acceptsOrders,
   NOTIFICATION_TYPES,
   accountLast4,
   encodeGeohash,
@@ -281,6 +282,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
   }
   for (const p of SEED_PHOTOGRAPHERS) {
+    const onboardingComplete = true;
     docs.push({
       path: `photographers/${p.uid}`,
       data: {
@@ -288,8 +290,10 @@ export function seedDocuments(now: Date): SeedDocument[] {
         specialties: [...p.specialties],
         serviceArea: { city: p.city, radiusKm: p.radiusKm },
         contactChannels: { ...p.channels },
-        onboardingComplete: true,
+        onboardingComplete,
         verified: p.verified,
+        // Derived like the onPhotographerWrite trigger does: Bình shows "Chưa nhận đơn".
+        acceptingOrders: acceptsOrders({ verified: p.verified, onboardingComplete }),
         ...(p.verified ? { verifiedAt: at } : {}),
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),

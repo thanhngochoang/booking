@@ -3,9 +3,12 @@
  */
 
 import type { Firestore } from 'firebase-admin/firestore';
+import { db } from './admin.js';
+import { acceptsOrders } from '@photobooking/domain';
 import type {
   CustomerContactReader,
   CustomerContactRecord,
+  ProviderOrderGate,
   ServiceCatalog,
   ServiceRecord,
 } from '@photobooking/domain';
@@ -49,5 +52,20 @@ export class FirestoreCustomerContactReader implements CustomerContactReader {
       allowWhatsApp: d.allowWhatsApp === true,
       name: typeof d.name === 'string' ? d.name : undefined,
     };
+  }
+}
+
+/**
+ * Live gate for createBooking: the rule is computed from `verified` and `onboardingComplete`
+ * (never from the derived `acceptingOrders` field, which a lagging trigger could leave stale).
+ * A missing profile cannot take orders.
+ */
+export class FirestoreProviderOrderGate implements ProviderOrderGate {
+  constructor(private readonly firestore: Firestore = db()) {}
+
+  async acceptsOrders(photographerId: string): Promise<boolean> {
+    const snap = await this.firestore.collection('photographers').doc(photographerId).get();
+    if (!snap.exists) return false;
+    return acceptsOrders(snap.data());
   }
 }

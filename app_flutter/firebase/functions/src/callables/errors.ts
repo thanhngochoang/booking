@@ -16,6 +16,8 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   not_eligible: 'failed-precondition',
   // A fresh sign-in is needed; the client re-authenticates and retries once.
   reauth_required: 'failed-precondition',
+  // The provider has not finished verification or setup; createBooking refuses (S03.01 "Chưa nhận đơn").
+  not_accepting_orders: 'failed-precondition',
 };
 
 /**

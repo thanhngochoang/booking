@@ -72,6 +72,7 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
     store,
     services: { getService: async () => null },
     contacts: { get: async () => null },
+    providers: { acceptsOrders: async () => true },
     gateway: new FakePaymentGateway(),
     clock: { now: () => now },
     ids: { newId: () => `led_${next++}` },

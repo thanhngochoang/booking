@@ -29,7 +29,7 @@ import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
-import { liveSkillsDeps } from './infra/live_skills.js';
+import { liveAcceptingOrdersWriter, liveSkillsDeps } from './infra/live_skills.js';
 import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
@@ -127,8 +127,9 @@ export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 30
 });
 
 /**
- * Scores `photographers/{uid}.skills` ("Độ khớp hồ sơ") and removes evidence that is not the
- * photographer's own post (spec 2026-10-02-photographer-write-function-design.md). Events older than
+ * Scores `photographers/{uid}.skills` ("Độ khớp hồ sơ"), removes evidence that is not the
+ * photographer's own post (spec 2026-10-02-photographer-write-function-design.md) and keeps the
+ * derived `acceptingOrders` flag in sync (verified and onboarded). Events older than
  * 1 hour and permanent Firestore errors end without a retry (handlePhotographerEvent).
  */
 export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'photographers/{uid}' }, async (event) => {
@@ -137,6 +138,7 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   const live = after?.exists === true ? after : undefined;
   await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
     liveSkillsDeps(uid, live?.updateTime),
+    liveAcceptingOrdersWriter(),
   );
   // `fast_reply` follows stats.responseMinutes (written by the server only).
   if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {

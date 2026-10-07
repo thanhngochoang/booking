@@ -2908,6 +2908,24 @@ abstract class AppLocalizations {
   /// **'Nhiếp ảnh gia chưa đăng gói'**
   String get profileNoServices;
 
+  /// No description provided for @profileOrdersClosedTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận đơn'**
+  String get profileOrdersClosedTag;
+
+  /// No description provided for @profileOrdersClosedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} chưa mở nhận đơn nên chưa đặt lịch hay xin báo giá được. Bạn vẫn nhắn hỏi được.'**
+  String profileOrdersClosedNote(String name);
+
+  /// No description provided for @profileOrdersClosedButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận đặt lịch'**
+  String get profileOrdersClosedButton;
+
   /// No description provided for @profileFollow.
   ///
   /// In vi, this message translates to:
@@ -8421,6 +8439,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Nhập đủ cả câu hỏi và câu trả lời.'**
   String get createEventErrFaq;
+
+  /// No description provided for @bookNotAcceptingOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia này chưa nhận đặt lịch.'**
+  String get bookNotAcceptingOrders;
 }
 
 class _AppLocalizationsDelegate

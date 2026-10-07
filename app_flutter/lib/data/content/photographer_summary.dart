@@ -10,6 +10,7 @@ class PhotographerSummary {
     this.avatarUrl,
     this.coverUrl,
     this.verified = false,
+    this.acceptingOrders = false,
     this.specialtyIds = const [],
     this.styleIds = const [],
     this.areaLabel,
@@ -32,6 +33,10 @@ class PhotographerSummary {
   final String? avatarUrl;
   final String? coverUrl;
   final bool verified;
+
+  /// True when the provider can be booked (verified and onboarded); set by the
+  /// server. Closed providers show "Chưa nhận đơn" and are left out of Find.
+  final bool acceptingOrders;
 
   /// Taxonomy codes (`portrait`, `wedding`, ...), strongest first.
   final List<String> specialtyIds;

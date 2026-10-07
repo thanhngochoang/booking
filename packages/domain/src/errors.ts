@@ -13,6 +13,7 @@ export const ERROR_CODES = [
   'price_changed',
   'not_eligible',
   'reauth_required',
+  'not_accepting_orders',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

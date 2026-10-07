@@ -77,6 +77,52 @@ void main() {
     return FirestoreServiceRepository(db: db);
   });
 
+  group('photographerSummaryFrom acceptingOrders', () {
+    bool? accepting(Map<String, dynamic> d) =>
+        photographerSummaryFrom(id: 'p', photographer: d).acceptingOrders;
+
+    test('acceptingOrders comes from the stored flag', () {
+      expect(
+        accepting({
+          'acceptingOrders': true,
+          'verified': false,
+          'onboardingComplete': false,
+        }),
+        isTrue,
+      );
+      expect(
+        accepting({
+          'acceptingOrders': false,
+          'verified': true,
+          'onboardingComplete': true,
+        }),
+        isFalse,
+      );
+    });
+    test('missing flag falls back to verified and onboardingComplete', () {
+      expect(accepting({'verified': true, 'onboardingComplete': true}), isTrue);
+      expect(
+        accepting({'verified': true, 'onboardingComplete': false}),
+        isFalse,
+      );
+      expect(accepting({}), isFalse);
+    });
+    test('a non-bool flag falls back too', () {
+      expect(
+        accepting({
+          'acceptingOrders': 'yes',
+          'verified': true,
+          'onboardingComplete': true,
+        }),
+        isTrue,
+      );
+      expect(
+        accepting({'acceptingOrders': 1, 'verified': true}),
+        isFalse,
+      );
+    });
+  });
+
   group('photographerSummaryFrom provider type', () {
     PhotographerSummary from(Map<String, dynamic> d) =>
         photographerSummaryFrom(id: 'p', photographer: d);

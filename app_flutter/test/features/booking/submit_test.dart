@@ -5,6 +5,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/features/booking/fake_payment_sheet.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
@@ -344,6 +345,54 @@ void main() {
       // Second attempt reuses draft booking_1: no second createBooking, but one deposit call
       expect(fakeRepo.createCalls.length, 1);
       expect(fakeRepo.depositCalls.length, 1);
+    },
+  );
+
+  testWidgets(
+    'a closed provider refused by the server shows "Nhiếp ảnh gia này chưa nhận đặt lịch."',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      fakeRepo.nextError = BookingErrorCode.notAcceptingOrders;
+
+      await navigateToReviewStep(tester, bookings: fakeRepo);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Nhiếp ảnh gia này chưa nhận đặt lịch.'),
+        findsOneWidget,
+      );
+      expect(find.text('Thử lại'), findsNothing);
+      expect(find.text('Thanh toán chưa mở trên máy chủ này.'), findsNothing);
+      expect(fakeRepo.depositCalls, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'after a not_accepting_orders refusal the photographer profile is re-read',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      fakeRepo.nextError = BookingErrorCode.notAcceptingOrders;
+      var reads = 0;
+
+      await navigateToReviewStep(
+        tester,
+        bookings: fakeRepo,
+        extraOverrides: [
+          photographerProfileProvider('p1').overrideWith((ref) async {
+            reads++;
+            return bookingProfile;
+          }),
+        ],
+      );
+      final before = reads;
+      expect(before, greaterThan(0));
+
+      await tester.tap(find.widgetWithText(AppButton, 'Đặt cọc 450.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(reads, greaterThan(before));
     },
   );
 

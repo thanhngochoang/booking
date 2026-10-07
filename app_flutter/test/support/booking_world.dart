@@ -97,6 +97,7 @@ const bookingProfileSummary = PhotographerSummary(
   reviewCount: 25,
   areaLabel: 'Quận 3',
   startingPriceVnd: 1500000,
+  acceptingOrders: true,
 );
 
 const bookingProfile = PhotographerProfile(

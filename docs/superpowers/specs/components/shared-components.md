@@ -276,6 +276,9 @@ Bản đồ nhỏ có ghim nhãn chữ và nút "Về vị trí của tôi" (moc
 #### ProviderTag · Mới
 Nhãn chữ dạng viên thuốc nhỏ: `artist` "Nhiếp ảnh gia" (chữ, viền và nền vàng nhạt, biểu tượng giải), `studio` "Studio" (viền mảnh, biểu tượng cặp). Hậu tố tuỳ chọn ("· 7 giải", "· Hoàn Kiếm"). Không vẽ cho `individual`.
 
+#### OrdersClosedTag · Mới
+Nhãn "Chưa nhận đơn" (`profileOrdersClosedTag`) ở S03.01 cho thợ có `acceptingOrders == false` (#133): viên thuốc nhỏ viền nét đứt (`colorScheme.outline`), biểu tượng khoá `AppIcons.lock`, chữ phụ; đặt dưới tên như `ProviderTag`, không có tích xanh. Đi kèm `ordersClosedButtonStyle` (chữ 60% `ink-2`, viền 60% `line-2`) cho nút viền vô hiệu "Chưa nhận đặt lịch". Không vẽ cho chủ hồ sơ.
+
 #### AwardChip và AwardRow · Mới
 `AwardChip` (S03.01): thẻ 178dp, viền và nền vàng nhạt, đĩa biểu tượng giải vàng, kết quả (đậm) + "cuộc thi năm · hạng mục" một dòng. `AwardRow` (S25.01): đĩa biểu tượng (vàng khi `approved`, xám khi khác), tiêu đề "kết quả · cuộc thi năm", `StatusBadge` + dòng phụ (hạng mục hoặc lý do).
 

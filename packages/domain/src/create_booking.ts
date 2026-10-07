@@ -23,6 +23,11 @@ export async function createBookingDraft(
     throw new DomainError('not_found');
   }
 
+  // Providers who cannot take orders yet are not bookable (identity-verification-design.md §3)
+  if (!(await deps.providers.acceptsOrders(input.photographerId))) {
+    throw new DomainError('not_accepting_orders');
+  }
+
   if (input.expectedPrice !== undefined && input.expectedPrice !== service.price) {
     throw new DomainError('price_changed');
   }

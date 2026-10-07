@@ -11,6 +11,7 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -330,11 +331,16 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         ref.invalidate(profilePackagesProvider(args.photographerId));
       case BookingErrorCode.deadlinePassed:
       case BookingErrorCode.notFound:
+      case BookingErrorCode.notAcceptingOrders:
         state = state.copyWith(
           bookingId: null,
           phase: SubmitPhase.idle,
           error: err,
         );
+        if (err == BookingErrorCode.notAcceptingOrders) {
+          // The profile under the sheet must show "Chưa nhận đơn" on return.
+          ref.invalidate(photographerProfileProvider(args.photographerId));
+        }
       case BookingErrorCode.notEligible:
         state = state.copyWith(phase: SubmitPhase.idle, error: BookingErrorCode.notEligible);
       case BookingErrorCode.network:

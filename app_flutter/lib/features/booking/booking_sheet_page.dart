@@ -133,6 +133,10 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookPaymentsOff)),
         );
+      case BookingErrorCode.notAcceptingOrders:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookNotAcceptingOrders)),
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
@@ -294,7 +298,19 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
               ),
               const Divider(height: 1),
               Flexible(
-                child: switch (state.step) {
+                child: profile != null && !profile.summary.acceptingOrders
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s6,
+                        ),
+                        child: EmptyState(
+                          title: l10n.bookNotAcceptingOrders,
+                          body: '',
+                          actionLabel: l10n.bookClose,
+                          onAction: _dismiss,
+                        ),
+                      )
+                    : switch (state.step) {
                   BookingStep.service => ServiceStep(args: widget.args),
                   BookingStep.datetime => DateTimeStep(args: widget.args),
                   BookingStep.place => PlaceStep(args: widget.args),

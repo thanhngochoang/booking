@@ -417,6 +417,68 @@ void main() {
       expect(find.byKey(const Key('photo-book')), findsOneWidget);
     });
   });
+
+  group('orders closed (S03.01-new)', () {
+    DiscoveryWorld closedWorld() => DiscoveryWorld(
+      photographers: [
+        for (final p in discoveryPhotographers())
+          if (p.id == 'p1')
+            fixturePhotographer(
+              'p1',
+              name: 'Minh Trí',
+              acceptingOrders: false,
+              specialties: const ['portrait', 'wedding'],
+              areaLabel: 'Quận 3',
+            )
+          else
+            p,
+      ],
+    );
+
+    testWidgets(
+      'a post by a closed provider shows a disabled "Chưa nhận đặt lịch" instead of "Đặt lịch"',
+      (tester) async {
+        await _open(tester, closedWorld());
+        expect(find.byKey(const Key('photo-book')), findsNothing);
+        expect(find.byKey(const Key('photo-book-closed')), findsOneWidget);
+        expect(
+          tester
+              .widget<AppButton>(find.byKey(const Key('photo-book-closed')))
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<AppButton>(find.byKey(const Key('photo-book-closed')))
+              .style,
+          isNotNull,
+          reason: 'mock .btn.out.dis look',
+        );
+        expect(
+          _in('photo-book-closed', find.text('Chưa nhận đặt lịch')),
+          findsOneWidget,
+        );
+        expect(
+          _in('photo-book-closed', find.byType(OutlinedButton)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppFooterBar),
+            matching: find.byType(CtaSurface),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('"Xem hồ sơ" still works', (tester) async {
+      await _open(tester, closedWorld());
+      await tester.tap(find.byKey(const Key('photo-profile')));
+      await tester.pumpAndSettle();
+      expect(find.text('profile p1 '), findsOneWidget);
+    });
+  });
 }
 
 Future<GoRouter> _openWithEventRoute(

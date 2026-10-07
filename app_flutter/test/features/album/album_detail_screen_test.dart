@@ -130,6 +130,24 @@ void main() {
     expect(find.text('stub /u/p1/book'), findsOneWidget);
   });
 
+  testWidgets(
+    'a provider not accepting orders gets the locked "Chưa nhận đặt lịch" bar',
+    (tester) async {
+      final w = await _world(tester);
+      w.profiles.add(
+        PhotographerProfile(
+          summary: fixturePhotographer('p1', acceptingOrders: false),
+          intro: const PhotographerIntro(onboardingComplete: true),
+        ),
+      );
+      await tester.pumpWidget(w.app('/u/p1/albums/al1'));
+      await tester.pumpAndSettle();
+      expect(_key('profile-book'), findsNothing);
+      expect(_key('profile-book-closed'), findsOneWidget);
+      expect(find.text('Chưa nhận đặt lịch'), findsOneWidget);
+    },
+  );
+
   testWidgets('a visitor sees no owner actions; share copies the link', (
     tester,
   ) async {

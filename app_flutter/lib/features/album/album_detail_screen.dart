@@ -182,6 +182,15 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
     final owner = a != null && me == a.photographerId;
     final visible =
         a != null && a.photographerId == widget.uid && (owner || a.visible);
+    // S03.01-new: a provider not accepting orders gets the locked bar; while
+    // the profile loads (or is missing) the bar stays as before.
+    final acceptingOrders =
+        ref
+            .watch(photographerProfileProvider(widget.uid))
+            .value
+            ?.summary
+            .acceptingOrders ??
+        true;
     return ScreenCode(
       ScreenCodes.albumDetail,
       child: AuroraBackground(
@@ -260,6 +269,7 @@ class _AlbumDetailScreenState extends ConsumerState<AlbumDetailScreen> {
               ? ProfileBottomBar(
                   photographerId: widget.uid,
                   owner: false,
+                  acceptingOrders: acceptingOrders,
                   onEdit: () {},
                 )
               : null,

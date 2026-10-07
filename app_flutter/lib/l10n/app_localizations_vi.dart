@@ -1621,6 +1621,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileNoServices => 'Nhiếp ảnh gia chưa đăng gói';
 
   @override
+  String get profileOrdersClosedTag => 'Chưa nhận đơn';
+
+  @override
+  String profileOrdersClosedNote(String name) {
+    return '$name chưa mở nhận đơn nên chưa đặt lịch hay xin báo giá được. Bạn vẫn nhắn hỏi được.';
+  }
+
+  @override
+  String get profileOrdersClosedButton => 'Chưa nhận đặt lịch';
+
+  @override
   String get profileFollow => 'Theo dõi';
 
   @override
@@ -4768,4 +4779,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get createEventErrFaq => 'Nhập đủ cả câu hỏi và câu trả lời.';
+
+  @override
+  String get bookNotAcceptingOrders => 'Nhiếp ảnh gia này chưa nhận đặt lịch.';
 }

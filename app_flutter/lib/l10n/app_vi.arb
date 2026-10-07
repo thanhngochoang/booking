@@ -725,6 +725,10 @@
   "profileBookFrom": "Đặt lịch · từ {price}",
   "@profileBookFrom": {"placeholders": {"price": {"type": "String"}}},
   "profileNoServices": "Nhiếp ảnh gia chưa đăng gói",
+  "profileOrdersClosedTag": "Chưa nhận đơn",
+  "profileOrdersClosedNote": "{name} chưa mở nhận đơn nên chưa đặt lịch hay xin báo giá được. Bạn vẫn nhắn hỏi được.",
+  "@profileOrdersClosedNote": {"placeholders": {"name": {"type": "String"}}},
+  "profileOrdersClosedButton": "Chưa nhận đặt lịch",
   "profileFollow": "Theo dõi",
   "profileFollowing": "Đang theo dõi",
   "profileStatReviews": "{count} đánh giá",
@@ -2188,5 +2192,6 @@
   "createEventFaqAdd": "Thêm câu hỏi",
   "createEventFaqRemove": "Xoá câu hỏi {n}",
   "@createEventFaqRemove": {"placeholders": {"n": {"type": "int"}}},
-  "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời."
+  "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời.",
+  "bookNotAcceptingOrders": "Nhiếp ảnh gia này chưa nhận đặt lịch."
 }

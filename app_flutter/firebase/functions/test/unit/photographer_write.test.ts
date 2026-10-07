@@ -4,7 +4,8 @@ import { FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore'
 import type { ScoreSkillsDeps, SkillsScoreUpdate } from '@photobooking/domain';
 import { REGION, TRIGGER_OPTIONS } from '../../src/config.js';
 import { firestoreSkillsScoreWriter, isStaleWriteError, skillsUpdateFields } from '../../src/infra/skills_firestore.js';
-import { handlePhotographerWrite } from '../../src/triggers/photographer_write.js';
+import { liveAcceptingOrdersWriter } from '../../src/infra/live_skills.js';
+import { handlePhotographerWrite, syncAcceptingOrders, type AcceptingOrdersWriter } from '../../src/triggers/photographer_write.js';
 
 const serverTime = (v: unknown) => v instanceof FieldValue && v.isEqual(FieldValue.serverTimestamp());
 
@@ -133,5 +134,75 @@ describe('onPhotographerWrite plumbing', () => {
     };
     assert.equal(await handlePhotographerWrite({ uid: 'p1', before: { skills: {} }, after: undefined }, deps), 'deleted');
     assert.equal(await handlePhotographerWrite({ uid: 'p1', before: undefined, after: { skills: 'portrait' } }, deps), 'malformed');
+  });
+});
+
+describe('syncAcceptingOrders', () => {
+  function recorder(): { writer: AcceptingOrdersWriter; calls: [string, boolean][] } {
+    const calls: [string, boolean][] = [];
+    return { calls, writer: { set: async (uid, flag) => void calls.push([uid, flag]) } };
+  }
+
+  test('writes true for a verified, finished profile', async () => {
+    const { writer, calls } = recorder();
+    const outcome = await syncAcceptingOrders({ uid: 'p1', before: undefined, after: { verified: true, onboardingComplete: true } }, writer);
+    assert.equal(outcome, 'written');
+    assert.deepEqual(calls, [['p1', true]]);
+  });
+
+  test('writes false when verified is removed', async () => {
+    const { writer, calls } = recorder();
+    const outcome = await syncAcceptingOrders(
+      {
+        uid: 'p1',
+        before: { verified: true, onboardingComplete: true, acceptingOrders: true },
+        after: { verified: false, onboardingComplete: true, acceptingOrders: true },
+      },
+      writer,
+    );
+    assert.equal(outcome, 'written');
+    assert.deepEqual(calls, [['p1', false]]);
+  });
+
+  test('writes nothing when the stored flag already matches (the re-fire of its own write)', async () => {
+    const { writer, calls } = recorder();
+    const after = { verified: true, onboardingComplete: true, acceptingOrders: true };
+    assert.equal(await syncAcceptingOrders({ uid: 'p1', before: undefined, after }, writer), 'unchanged');
+    assert.equal(calls.length, 0);
+  });
+
+  test('writes nothing for a deleted document', async () => {
+    const { writer, calls } = recorder();
+    assert.equal(await syncAcceptingOrders({ uid: 'p1', before: { verified: true }, after: undefined }, writer), 'deleted');
+    assert.equal(calls.length, 0);
+  });
+});
+
+describe('liveAcceptingOrdersWriter', () => {
+  const fakeFirestore = (update: (data: unknown) => Promise<void>) =>
+    ({ collection: () => ({ doc: () => ({ update }) }) }) as unknown as Firestore;
+
+  test('updates (never sets) the flag on the photographer doc', async () => {
+    const seen: unknown[] = [];
+    await liveAcceptingOrdersWriter(fakeFirestore(async (d) => void seen.push(d))).set('p1', true);
+    assert.deepEqual(seen, [{ acceptingOrders: true }]);
+  });
+
+  test('NOT_FOUND (doc deleted between event and write) is a no-op, not a retried failure', async () => {
+    const writer = liveAcceptingOrdersWriter(
+      fakeFirestore(async () => {
+        throw Object.assign(new Error('NOT_FOUND'), { code: 5 });
+      }),
+    );
+    await assert.doesNotReject(writer.set('p1', false));
+  });
+
+  test('other errors still propagate so the trigger retries', async () => {
+    const writer = liveAcceptingOrdersWriter(
+      fakeFirestore(async () => {
+        throw Object.assign(new Error('UNAVAILABLE'), { code: 14 });
+      }),
+    );
+    await assert.rejects(writer.set('p1', true), /UNAVAILABLE/);
   });
 });

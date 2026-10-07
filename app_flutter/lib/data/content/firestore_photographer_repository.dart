@@ -47,6 +47,10 @@ PhotographerSummary photographerSummaryFrom({
     avatarUrl: _str(user?['avatarUrl']),
     coverUrl: _str(photographer['coverUrl']),
     verified: photographer['verified'] == true,
+    acceptingOrders: photographer['acceptingOrders'] is bool
+        ? photographer['acceptingOrders'] as bool
+        : photographer['verified'] == true &&
+              photographer['onboardingComplete'] == true,
     specialtyIds: skillIds.isNotEmpty ? skillIds : flat,
     styleIds: skillStyles.isNotEmpty ? skillStyles : flatStyles,
     areaLabel: _str(area['city']),

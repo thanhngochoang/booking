@@ -1,12 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/fake_booking_repository.dart';
 
 void main() {
+  test('bookingErrorOf maps not_accepting_orders to notAcceptingOrders', () {
+    expect(
+      bookingErrorOf(const BookingException('not_accepting_orders')),
+      BookingErrorCode.notAcceptingOrders,
+    );
+  });
+
   group('FakeBookingRepository', () {
     late FakeBookingRepository repo;
 

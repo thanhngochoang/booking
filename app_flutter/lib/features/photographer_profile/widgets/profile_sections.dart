@@ -384,9 +384,14 @@ class ServicesSliver extends ConsumerWidget {
     super.key,
     required this.photographerId,
     required this.owner,
+    required this.acceptingOrders,
   });
   final String photographerId;
   final bool owner;
+
+  /// False: visitors still see the packages, but a tap books nothing
+  /// (S03.01-new; the server refuses the booking too).
+  final bool acceptingOrders;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -403,6 +408,8 @@ class ServicesSliver extends ConsumerWidget {
           service: value[i],
           onTap: owner
               ? () => context.push('/setup/2')
+              : !acceptingOrders
+              ? null
               : () => startBooking(
                   context,
                   ref,
@@ -426,7 +433,9 @@ class ServicesSliver extends ConsumerWidget {
 class _ServiceTile extends StatelessWidget {
   const _ServiceTile({required this.service, required this.onTap});
   final ServiceSummary service;
-  final VoidCallback onTap;
+
+  /// Null: shown, not tappable.
+  final VoidCallback? onTap;
 
   /// List cards use the card radius; no blur on list rows.
   static const _radius = BorderRadius.all(Radius.circular(AppRadius.card));

@@ -1,6 +1,6 @@
 import type { DocumentData } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
-import { scorePhotographerSkills, type ScoreSkillsDeps, type ScoreSkillsOutcome } from '@photobooking/domain';
+import { acceptingOrdersPatch, scorePhotographerSkills, type ScoreSkillsDeps, type ScoreSkillsOutcome } from '@photobooking/domain';
 
 /** The two snapshots of one `photographers/{uid}` write; `after` undefined when it was deleted. */
 export interface PhotographerWriteInput {
@@ -21,6 +21,26 @@ export async function handlePhotographerWrite(input: PhotographerWriteInput, dep
     logger.info('onPhotographerWrite', { uid: input.uid, outcome });
   }
   return outcome;
+}
+
+/** Writes the derived `photographers/{uid}.acceptingOrders` flag (Admin SDK; clients cannot). */
+export interface AcceptingOrdersWriter {
+  set(uid: string, acceptingOrders: boolean): Promise<void>;
+}
+
+/**
+ * Keeps `acceptingOrders` equal to `verified && onboardingComplete`. The trigger fires again on
+ * its own write; that second event finds the flag equal and writes nothing, so it cannot loop.
+ */
+export async function syncAcceptingOrders(
+  input: PhotographerWriteInput,
+  writer: AcceptingOrdersWriter,
+): Promise<'written' | 'unchanged' | 'deleted'> {
+  if (input.after === undefined) return 'deleted';
+  const patch = acceptingOrdersPatch(input.after);
+  if (patch === null) return 'unchanged';
+  await writer.set(input.uid, patch.acceptingOrders);
+  return 'written';
 }
 
 /** Events older than this are dropped instead of retried (deployed with `retry: true`). */
@@ -48,6 +68,7 @@ export interface PhotographerEventInput extends PhotographerWriteInput {
 export async function handlePhotographerEvent(
   input: PhotographerEventInput,
   deps: () => ScoreSkillsDeps,
+  acceptingOrders: AcceptingOrdersWriter,
   now: Date = new Date(),
 ): Promise<ScoreSkillsOutcome | 'expired' | 'failed'> {
   const age = now.getTime() - Date.parse(input.time);
@@ -56,7 +77,10 @@ export async function handlePhotographerEvent(
     return 'expired';
   }
   try {
-    return await handlePhotographerWrite(input, deps());
+    const outcome = await handlePhotographerWrite(input, deps());
+    const sync = await syncAcceptingOrders(input, acceptingOrders);
+    if (sync === 'written') logger.info('onPhotographerWrite: acceptingOrders synced', { uid: input.uid });
+    return outcome;
   } catch (e) {
     if (!isPermanentFirestoreError(e)) throw e;
     logger.error('onPhotographerWrite: permanent Firestore error; not retried', { uid: input.uid, code: (e as { code: number }).code });
