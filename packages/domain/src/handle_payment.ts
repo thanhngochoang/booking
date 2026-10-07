@@ -1,13 +1,14 @@
 /**
- * Payment confirmation and notification handlers.
- * Handles duplicate payments, late payments on cleaned-up drafts, and deposit checking.
+ * Old deposit flow (payment id based). Kept until the Functions callables move to createPayment /
+ * handleTransferNotification (#129 Task 4), then deleted. Its normal and late paths live in
+ * booking_payment_paths.ts, shared with handle_transfer.ts.
  */
 
 import type { Booking } from './booking.js';
-import { computeAcceptDeadline, parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
+import { markPaid, moveDraftToRequested, paymentReceivedEntry, refundLatePayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
-import { createDepositPayment, applyRefundToPayment, type Payment, type Refund } from './escrow.js';
+import type { Payment, Refund } from './escrow.js';
 import { dispatchRefund } from './refunds.js';
 
 export interface HandlePaymentResult {
@@ -29,6 +30,7 @@ export async function handlePaymentNotification(
   let pendingRefund: { refund: Refund; provider: Payment['provider'] } | undefined;
 
   const result = await deps.store.runTransaction(async (tx) => {
+    pendingRefund = undefined;
     const payment = await tx.getPayment(params.paymentId);
     if (!payment) {
       throw new DomainError('not_found');
@@ -46,99 +48,20 @@ export async function handlePaymentNotification(
     }
 
     const booking = await tx.getBooking(payment.subjectId);
+    const paid = markPaid(payment, now, params.providerRef);
+    await tx.addLedgerEntry(paymentReceivedEntry(deps, payment, payment.amount, now));
 
     // Case: Late payment after draft clean up or cancellation -> 100% refund immediately
     if (!booking || booking.status !== 'draft') {
-      const depositPayment = createDepositPayment({
-        paymentId: payment.id,
-        bookingId: payment.subjectId,
-        customerId: payment.payerId,
-        photographerId: payment.payeeId,
-        provider: payment.provider,
-        amount: payment.amount,
-        idempotencyKey: payment.idempotencyKey,
-        providerRef: params.providerRef ?? payment.providerRef,
-        ledgerEntryId: deps.ids.newId(),
-        now,
-      });
-
-      await tx.setPayment(depositPayment.payment);
-      await tx.addLedgerEntry(depositPayment.ledgerEntry);
-
-      // Issue 100% refund
-      const refundResult = applyRefundToPayment({
-        payment: depositPayment.payment,
-        refundId: deps.ids.newId(),
-        percent: 100,
-        ledgerEntryId: deps.ids.newId(),
-        reason: 'late_payment_draft_expired',
-        now,
-      });
-
-      await tx.setPayment(refundResult.payment);
-      await tx.addRefund(refundResult.refund);
-      await tx.addLedgerEntry(refundResult.ledgerEntry);
-
-      pendingRefund = { refund: refundResult.refund, provider: payment.provider };
-
-      return {
-        payment: refundResult.payment,
-        booking: null,
-        refunded: true,
-        refund: refundResult.refund,
-      };
+      const late = await refundLatePayment(tx, deps, paid, now);
+      pendingRefund = { refund: late.refund, provider: payment.provider };
+      return { payment: late.payment, booking: null, refunded: true, refund: late.refund };
     }
 
     // Normal case: Move booking from draft to requested
-    const startsAt = parseVnDateTime(booking.day, booking.start);
-    const acceptDeadline = computeAcceptDeadline(now, startsAt);
-
-    const updatedPayment: Payment = {
-      ...payment,
-      status: 'paid',
-      escrowStatus: 'held',
-      providerRef: params.providerRef ?? payment.providerRef,
-      paidAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    await tx.setPayment(updatedPayment);
-    await tx.addLedgerEntry({
-      id: deps.ids.newId(),
-      type: 'payment_received',
-      paymentId: payment.id,
-      subjectType: 'booking',
-      subjectId: booking.id,
-      accountOwnerId: 'platform_escrow',
-      amount: payment.amount,
-      note: `Payment for booking ${booking.id}`,
-      at: now.toISOString(),
-    });
-
-    const updatedBooking: Booking = {
-      ...booking,
-      status: 'requested',
-      depositProvider: payment.provider,
-      depositPaidAt: now.toISOString(),
-      acceptDeadline: acceptDeadline.toISOString(),
-      escrowStatus: 'held',
-      version: booking.version + 1,
-      updatedAt: now.toISOString(),
-    };
-
-    await tx.setBooking(updatedBooking);
-    await tx.addBookingEvent({
-      id: deps.ids.newId(),
-      bookingId: booking.id,
-      status: 'requested',
-      at: now.toISOString(),
-    });
-
-    return {
-      payment: updatedPayment,
-      booking: updatedBooking,
-      refunded: false,
-    };
+    await tx.setPayment(paid);
+    const updatedBooking = await moveDraftToRequested(tx, deps, booking, paid, now);
+    return { payment: paid, booking: updatedBooking, refunded: false };
   });
 
   // If a late-payment refund was created in the transaction, dispatch to gateway outside tx

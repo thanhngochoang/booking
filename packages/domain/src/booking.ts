@@ -3,6 +3,8 @@
  * Follows data-model/domain-model.md §2.4, §4, §5.
  */
 
+import type { PaymentMethod } from './escrow.js';
+
 export const BOOKING_STATUSES = [
   'draft',
   'requested',
@@ -60,6 +62,28 @@ export interface BookingEventRecord {
   readonly actorId?: string;
 }
 
+/**
+ * What the customer needs to pay the current payment (S04.04), mirrored on the booking by
+ * `createPayment` so the app can draw the QR or open the wallet without reading `payments`.
+ */
+export interface BookingCheckout {
+  readonly paymentId: string;
+  readonly method: PaymentMethod;
+  /** VND, the full price. */
+  readonly amount: number;
+  /** ISO-8601 UTC; the QR is refused from this instant on. */
+  readonly expiresAt: string;
+  /** `PB XXXXXX`, the memo to type. */
+  readonly transferCode: string;
+  /** 1-based count of payments made for this booking (at most MAX_PAYMENT_ATTEMPTS). */
+  readonly attempt: number;
+  readonly qrPayload?: string;
+  readonly bankName?: string;
+  readonly accountMasked?: string;
+  readonly payUrl?: string;
+  readonly bankAppsUrl?: string;
+}
+
 export interface Booking {
   readonly id: string;
   readonly customerId: string;
@@ -84,6 +108,13 @@ export interface Booking {
   readonly completedAt?: string;
   readonly reviewedAt?: string;
   readonly chatId?: string;
+  /** Draft only: the payment the customer is paying now. */
+  readonly checkout?: BookingCheckout;
+  /**
+   * Draft only, ISO-8601 UTC: the draft sweep deletes the draft from this instant on.
+   * `createdAt + DRAFT_EXPIRY_MINUTES`, pushed to `expiresAt + DRAFT_PAYMENT_GRACE_MINUTES` by each new payment.
+   */
+  readonly payableUntil?: string;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;

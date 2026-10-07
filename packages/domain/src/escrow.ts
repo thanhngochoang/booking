@@ -26,6 +26,9 @@ export const PAYMENT_METHODS = ['bank_qr', 'momo', 'zalopay'] as const;
 /** Card methods are in the product plan but never accepted yet. */
 export const RESERVED_PAYMENT_METHODS = ['domestic_card', 'intl_card'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+/** True for a method a customer can pay with today (reserved card methods are false). */
+export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
+  typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 
 export type PaymentSubject = 'booking' | 'event_registration';
 
@@ -49,7 +52,11 @@ export interface Payment {
   readonly transferCode?: string;
   /** ISO-8601 UTC; transfers received at or after it are refunded. */
   readonly expiresAt?: string;
-  /** Sum of the transfers received so far, VND (can differ from `amount` while under-paid or over-paid). */
+  /**
+   * VND counted toward `amount` so far: the running total while under-paid, `amount` once paid.
+   * Money sent straight back on arrival (a late or extra transfer, the excess over `amount`) is not
+   * counted; the ledger has every transfer.
+   */
   readonly receivedAmount?: number;
   readonly paidAt?: string;
   readonly releasedAt?: string;

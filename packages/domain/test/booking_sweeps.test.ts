@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit } from '../src/booking_policy.js';
-import { createBookingWorld } from './support/booking_world.js';
+import { createBookingWorld, newDraft } from './support/booking_world.js';
+import { createPayment } from '../src/create_payment.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { createDeposit } from '../src/create_deposit.js';
 import { confirmFakePayment } from '../src/handle_payment.js';
@@ -146,5 +147,45 @@ describe('Task 5: runBookingSweeps', () => {
 
     const b = await world.store.getBooking(draft.id);
     assert.equal(b?.escrowStatus, 'released');
+  });
+
+  it('drafts are deleted when payableUntil has passed', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await newDraft(world);
+    assert.equal(draft.payableUntil, '2026-10-10T10:30:00.000Z');
+
+    world.clock.advanceMinutes(29);
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
+
+    world.clock.advanceMinutes(1); // payableUntil <= now
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 1);
+    assert.equal(await world.store.getBooking(draft.id), null);
+    assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
+  });
+
+  it('a draft with a live QR past 30 minutes is kept', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await newDraft(world);
+    world.clock.advanceMinutes(20);
+    await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
+    // QR expires 10:35, payableUntil 10:40
+
+    world.clock.setTime(new Date('2026-10-10T10:31:00.000Z'));
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
+
+    world.clock.setTime(new Date('2026-10-10T10:40:00.000Z'));
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 1);
+    assert.equal(await world.store.getBooking(draft.id), null);
+  });
+
+  it('a draft without payableUntil (old data) is not swept', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const draft = await newDraft(world);
+    world.store.bookings.set(draft.id, { ...draft, payableUntil: undefined });
+    world.clock.advanceHours(5);
+
+    assert.equal((await runBookingSweeps(world.deps)).cleanedDrafts, 0);
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
   });
 });
