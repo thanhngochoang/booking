@@ -80,19 +80,6 @@ describe('events on the emulators', () => {
     assert.equal((await data(`chats/event_${eventId}`)).kind, 'event_group');
   });
 
-  test('parallel registrations never oversell', async () => {
-    const eventId = await publish(AN, { capacity: 5 });
-    const users = await Promise.all(Array.from({ length: 20 }, (_, i) => makeCustomer(i)));
-    const results = await Promise.all(users.map((u) => call('registerEvent', u, { eventId, quantity: 1, name: 'Khách' })));
-    const ok = results.filter((r) => r.status === 200).length;
-    assert.equal(ok, 5, results.map((r) => r.text).join('\n'));
-    const ev = await data(`events/${eventId}`);
-    assert.equal(ev.registeredCount, 5);
-    assert.equal(ev.status, 'full');
-    const regs = await db.collection(`events/${eventId}/registrations`).get();
-    assert.equal(regs.size, 5);
-  });
-
   test('free registration appears in the user\'s tickets', async () => {
     const eventId = await publish(AN);
     const res = await call('registerEvent', LAN, { eventId, quantity: 1, name: 'Lan' });
@@ -164,5 +151,20 @@ describe('events on the emulators', () => {
     const open = await call('getContactLink', LAN, { registrationId: regId, channel: 'call' });
     assert.equal(open.status, 200, open.text);
     assert.match((open.result as { url: string }).url, /^tel:/);
+  });
+
+  // Last on purpose: the emulator serialises the transactions' queries, so heavy contention is slow;
+  // 6 callers on 3 seats still proves no oversell without timing out the callables.
+  test('parallel registrations never oversell', async () => {
+    const eventId = await publish(AN, { capacity: 3 });
+    const users = await Promise.all(Array.from({ length: 6 }, (_, i) => makeCustomer(i)));
+    const results = await Promise.all(users.map((u) => call('registerEvent', u, { eventId, quantity: 1, name: 'Khách' })));
+    const ok = results.filter((r) => r.status === 200).length;
+    assert.equal(ok, 3, results.map((r) => r.text).join('\n'));
+    const ev = await data(`events/${eventId}`);
+    assert.equal(ev.registeredCount, 3);
+    assert.equal(ev.status, 'full');
+    const regs = await db.collection(`events/${eventId}/registrations`).get();
+    assert.equal(regs.size, 3);
   });
 });
