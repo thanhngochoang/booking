@@ -8259,6 +8259,102 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Check‑in'**
   String get manageCheckinLink;
+
+  /// S11.03 paid: the total line of the money table.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng thanh toán'**
+  String get registerTotal;
+
+  /// S11.03 paid: tickets times the ticket price.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} vé × {price}'**
+  String registerLine(int n, String price);
+
+  /// S11.03 paid: the primary button.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán {amount}'**
+  String registerPay(String amount);
+
+  /// S11.03 paid: seats are held while the customer pays (mm:ss).
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ chỗ còn {time}'**
+  String registerHold(String time);
+
+  /// No description provided for @registerHoldExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỗ giữ đã hết hạn'**
+  String get registerHoldExpired;
+
+  /// No description provided for @registerPolicy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.'**
+  String get registerPolicy;
+
+  /// No description provided for @escrowNoticeTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.'**
+  String get escrowNoticeTicket;
+
+  /// No description provided for @ticketPayContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán tiếp'**
+  String get ticketPayContinue;
+
+  /// No description provided for @ticketHoldExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get ticketHoldExpired;
+
+  /// No description provided for @ticketRefundAmount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận lại {amount}'**
+  String ticketRefundAmount(String amount);
+
+  /// No description provided for @ticketNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.'**
+  String get ticketNoRefund;
+
+  /// No description provided for @fakeTicketPayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán thử'**
+  String get fakeTicketPayTitle;
+
+  /// S11.03 (mock): pay by bank transfer QR.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản QR'**
+  String get payMethodBankQr;
+
+  /// No description provided for @payMethodMomo.
+  ///
+  /// In vi, this message translates to:
+  /// **'MoMo'**
+  String get payMethodMomo;
+
+  /// No description provided for @payMethodZaloPay.
+  ///
+  /// In vi, this message translates to:
+  /// **'ZaloPay'**
+  String get payMethodZaloPay;
+
+  /// Semantics label of the payment method group on S11.03.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phương thức thanh toán'**
+  String get payMethodLabel;
 }
 
 class _AppLocalizationsDelegate

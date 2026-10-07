@@ -106,6 +106,36 @@ void main() {
         EventJoinState.ended,
       );
     });
+    test('a lapsed hold lets the viewer register again', () {
+      final lapsed = EventRegistration(
+        id: 'r1',
+        eventId: 'e1',
+        userId: 'u1',
+        userName: 'Lan',
+        ticketCode: '',
+        quantity: 1,
+        amount: 250000,
+        status: RegistrationStatus.held,
+        holdExpiresAt: eventNow.subtract(const Duration(minutes: 1)),
+        event: EventTicketSnapshot(
+          title: 'Photo walk',
+          type: EventType.photoWalk,
+          startsAt: open.summary.startsAt,
+          endsAt: open.endsAt,
+        ),
+        createdAt: eventNow,
+      );
+      expect(
+        eventJoinState(
+          open,
+          lapsed,
+          uid: 'u1',
+          now: eventNow,
+          paymentsReady: true,
+        ),
+        EventJoinState.join,
+      );
+    });
     test(
       'paid event before payments → Sắp mở thanh toán; free is not held back',
       () {
@@ -134,7 +164,7 @@ void main() {
         findsNothing,
         reason: 'detailOf has no meeting point',
       );
-      expect(find.text('Sắp mở thanh toán'), findsOneWidget);
+      expect(find.text('Đăng ký tham gia'), findsOneWidget);
       expect(find.text('250.000₫'), findsOneWidget);
       expect(find.text('mỗi người'), findsOneWidget);
     });
@@ -156,11 +186,38 @@ void main() {
       expect(find.text('mỗi người'), findsNothing);
     });
 
-    testWidgets('a paid event before payments shows a disabled button', (
+    testWidgets(
+      'the price bar shows mỗi người and the join button for paid events',
+      (tester) async {
+        final w = EventsWorld(events: [detailOf('ev1')]);
+        await w.pump(tester, path: '/e/ev1', size: _sw);
+        final b = tester.widget<AppButton>(_byKey('event-join'));
+        expect(b.label, 'Đăng ký tham gia');
+        expect(b.onPressed, isNotNull);
+        expect(find.text('Sắp mở thanh toán'), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(EventJoinBar),
+            matching: find.text('mỗi người'),
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(_byKey('event-join'));
+        await settle(tester);
+        expect(find.text('Thanh toán 250.000₫'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a build without payments shows a disabled button', (
       tester,
     ) async {
       final w = EventsWorld(events: [detailOf('ev1')]);
-      await w.pump(tester, path: '/e/ev1', size: _sw);
+      await w.pump(
+        tester,
+        path: '/e/ev1',
+        size: _sw,
+        extra: [eventPaymentsReadyProvider.overrideWithValue(false)],
+      );
       final b = tester.widget<AppButton>(_byKey('event-join'));
       expect(b.label, 'Sắp mở thanh toán');
       expect(b.onPressed, isNull);

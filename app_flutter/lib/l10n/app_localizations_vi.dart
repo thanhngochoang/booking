@@ -4666,4 +4666,63 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get manageCheckinLink => 'Check‑in';
+
+  @override
+  String get registerTotal => 'Tổng thanh toán';
+
+  @override
+  String registerLine(int n, String price) {
+    return '$n vé × $price';
+  }
+
+  @override
+  String registerPay(String amount) {
+    return 'Thanh toán $amount';
+  }
+
+  @override
+  String registerHold(String time) {
+    return 'Giữ chỗ còn $time';
+  }
+
+  @override
+  String get registerHoldExpired => 'Chỗ giữ đã hết hạn';
+
+  @override
+  String get registerPolicy =>
+      'Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.';
+
+  @override
+  String get escrowNoticeTicket =>
+      'Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.';
+
+  @override
+  String get ticketPayContinue => 'Thanh toán tiếp';
+
+  @override
+  String get ticketHoldExpired => 'Hết hạn';
+
+  @override
+  String ticketRefundAmount(String amount) {
+    return 'Bạn nhận lại $amount';
+  }
+
+  @override
+  String get ticketNoRefund =>
+      'Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.';
+
+  @override
+  String get fakeTicketPayTitle => 'Thanh toán thử';
+
+  @override
+  String get payMethodBankQr => 'Chuyển khoản QR';
+
+  @override
+  String get payMethodMomo => 'MoMo';
+
+  @override
+  String get payMethodZaloPay => 'ZaloPay';
+
+  @override
+  String get payMethodLabel => 'Phương thức thanh toán';
 }

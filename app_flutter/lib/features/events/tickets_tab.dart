@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/features/events/event_links.dart';
+import 'package:photobooking/features/events/ticket_payment_sheet.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Hours before the start up to which cancelling a paid ticket refunds all of
@@ -24,7 +26,8 @@ typedef TicketView = ({
 });
 
 /// Pure: how one registration is drawn. `refundPercentIfCancelled` is null
-/// for a free ticket (no percent is shown), else 100 or 0.
+/// for a free ticket (no percent is shown), else 100 or 0 (the server's
+/// `ticketRefundPercent`, computed here for the label; the server decides).
 TicketView ticketViewOf(
   EventRegistration r, {
   required DateTime now,
@@ -36,8 +39,23 @@ TicketView ticketViewOf(
                 const Duration(hours: _fullRefundHours)
             ? 100
             : 0);
+  // The event was cancelled with this ticket's money held: refund on its way.
+  if (r.refundDue && r.status != RegistrationStatus.refunded) {
+    return (
+      state: TicketState.cancelled,
+      statusLabel: l.ticketRefunding,
+      refundPercentIfCancelled: null,
+    );
+  }
   switch (r.status) {
     case RegistrationStatus.held:
+      if (r.holdExpired(now)) {
+        return (
+          state: TicketState.cancelled,
+          statusLabel: l.ticketHoldExpired,
+          refundPercentIfCancelled: null,
+        );
+      }
       return (
         state: TicketState.pendingPayment,
         statusLabel: null,
@@ -149,6 +167,23 @@ class EventTicketsTab extends ConsumerWidget {
         }
         final i = index - hint;
         final r = ordered[i];
+        final expiresAt = r.holdExpiresAt;
+        if (views[r.id]!.state == TicketState.pendingPayment &&
+            expiresAt != null) {
+          // "Thanh toán tiếp" while the hold runs, "Hết hạn" once it ends.
+          return CountdownText(
+            key: ValueKey(r.id),
+            deadline: expiresAt,
+            now: ref.read(clockProvider),
+            builder: (context, left) => _TicketTile(
+              registration: r,
+              view: left > Duration.zero
+                  ? views[r.id]!
+                  : ticketViewOf(r, now: expiresAt, l: l),
+              highlighted: r.id == emphasised,
+            ),
+          );
+        }
         return _TicketTile(
           key: ValueKey(r.id),
           registration: r,
@@ -179,8 +214,8 @@ class _TicketTile extends ConsumerWidget {
     final pct = view.refundPercentIfCancelled;
     final body = switch (pct) {
       null => l.ticketCancelFreeBody,
-      0 => l.ticketCancelNoRefundBody,
-      _ => l.ticketCancelRefundBody(pct),
+      0 => l.ticketNoRefund,
+      _ => l.ticketRefundAmount(formatMoney(r.amount * pct ~/ 100)),
     };
     final done = await showConfirmSheet(
       context,
@@ -210,12 +245,55 @@ class _TicketTile extends ConsumerWidget {
     }
   }
 
+  /// "Thanh toán tiếp": the same hold's payment step. Asks the server first
+  /// (the gateway may already have it); then the fake sheet, or with real
+  /// payments the gateway's pay URL for the same hold.
+  Future<void> _continuePayment(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final r = registration;
+    final repo = ref.read(eventRepositoryProvider);
+    try {
+      final check = await repo.checkTicketPayment(r.eventId, r.id);
+      if (check.paid || check.status != RegistrationStatus.held) {
+        return; // the stream redraws the card
+      }
+      var paymentId = r.paymentId;
+      String? payUrl;
+      if (ref.read(realPaymentsProvider)) {
+        final again = await repo.register(
+          r.eventId,
+          quantity: r.quantity,
+          name: r.userName,
+          provider: PayMethod.bankQr.provider,
+        );
+        paymentId = again.paymentId ?? paymentId;
+        payUrl = again.payUrl;
+      }
+      if (paymentId == null || !context.mounted) {
+        return;
+      }
+      await openTicketPayment(
+        context,
+        ref,
+        paymentId: paymentId,
+        amountVnd: r.amount,
+        payUrl: payUrl,
+      );
+    } catch (_) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l.registerError)));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final r = registration;
     final pct = view.refundPercentIfCancelled;
     final launcher = ref.read(externalLauncherProvider);
+    final pending = view.state == TicketState.pendingPayment;
     final card = TicketCard(
       ticket: TicketCardData(
         ticketCode: r.ticketCode,
@@ -234,6 +312,8 @@ class _TicketTile extends ConsumerWidget {
       qrHeroTag: 'ticket-qr-${r.id}',
       onQrTap: () => _showQr(context, r),
       onCancel: () => _cancel(context, ref),
+      onPay: pending ? () => _continuePayment(context, ref) : null,
+      payLabel: l.ticketPayContinue,
       // The group chat opens once the ticket is paid (a free ticket is paid at once).
       onOpenChat: r.status == RegistrationStatus.paid
           ? () => context.push('/e/${r.eventId}/chat')

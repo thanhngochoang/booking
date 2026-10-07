@@ -1,6 +1,7 @@
 // lib/core/widgets/provider_picker.dart
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
@@ -42,8 +43,52 @@ class ProviderPicker extends StatelessWidget {
   }
 }
 
+/// Single choice of a ticket payment method (mock S11.03): "Chuyển khoản QR"
+/// takes the wider slot, then MoMo and ZaloPay. Same buttons as
+/// [ProviderPicker]; each method maps onto a gateway code ([PayMethod.provider]).
+class PayMethodPicker extends StatelessWidget {
+  const PayMethodPicker({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final PayMethod value;
+  final ValueChanged<PayMethod> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    Widget button(PayMethod m, String label, int flex) => Expanded(
+      flex: flex,
+      child: _ProviderButton(
+        key: Key('pay-method-${m.name}'),
+        label: label,
+        selected: value == m,
+        onTap: enabled ? () => onChanged(m) : null,
+      ),
+    );
+    return Semantics(
+      container: true,
+      label: l.payMethodLabel,
+      child: Row(
+        children: [
+          button(PayMethod.bankQr, l.payMethodBankQr, 44),
+          const SizedBox(width: AppSpace.s2),
+          button(PayMethod.momo, l.payMethodMomo, 28),
+          const SizedBox(width: AppSpace.s2),
+          button(PayMethod.zaloPay, l.payMethodZaloPay, 28),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProviderButton extends StatelessWidget {
   const _ProviderButton({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -51,7 +96,7 @@ class _ProviderButton extends StatelessWidget {
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +141,7 @@ class _ProviderButton extends StatelessWidget {
                   ),
                   child: Text(
                     label,
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: textColor,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,

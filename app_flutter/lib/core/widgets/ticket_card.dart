@@ -45,6 +45,7 @@ class TicketCard extends StatelessWidget {
     this.highlighted,
     this.statusLabel,
     this.cancelLabel,
+    this.payLabel,
   });
 
   final TicketCardData ticket;
@@ -71,6 +72,9 @@ class TicketCard extends StatelessWidget {
 
   /// Replaces "Huỷ vé" (e.g. "Huỷ vé · hoàn 100%").
   final String? cancelLabel;
+
+  /// Replaces "Thanh toán" on a pending ticket (e.g. "Thanh toán tiếp").
+  final String? payLabel;
 
   static Widget skeleton() => const _TicketCardSkeleton();
 
@@ -283,7 +287,8 @@ class TicketCard extends StatelessWidget {
             ] else if (isPending && onPay != null) ...[
               const SizedBox(height: AppSpace.s4),
               AppButton.primary(
-                l.ticketPay,
+                payLabel ?? l.ticketPay,
+                key: const Key('ticket-pay'),
                 onPressed: onPay,
                 size: AppButtonSize.small,
               ),

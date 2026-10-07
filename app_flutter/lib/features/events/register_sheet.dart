@@ -5,18 +5,26 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/booking/payments_mode.dart';
+import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/events/register_controller.dart';
+import 'package:photobooking/features/events/ticket_payment_sheet.dart';
 
 /// What the sheet closed with, besides a success.
 enum _Exit { soldOut, needsPhone, changePhone }
 
-/// S11.03: register for a free event (paid tickets arrive with the payment
-/// step, plan 10c Task 10). Returns the outcome after the server accepted it;
-/// then the app opens the tickets tab with the new ticket highlighted.
+/// S11.03: register for an event. Free: "Xác nhận đăng ký" makes the ticket at
+/// once. Paid: the money table, escrow notice, policy and payment method, then
+/// "Thanh toán {amount}" holds the seats for 10 minutes ("Giữ chỗ còn mm:ss")
+/// and opens the payment step (fake sheet, or the gateway's pay URL); the
+/// registration stream decides: `paid` closes the sheet, an expired hold says
+/// "Chỗ giữ đã hết hạn" and the button starts again. Returns the outcome of a
+/// valid ticket; then the app opens the tickets tab with it highlighted.
 ///
 /// A full event closes the sheet with a SnackBar; a missing phone number goes
 /// to S04.05 and comes back to `/e/{id}/join`, which reopens this sheet.
@@ -79,7 +87,11 @@ class RegisterSheet extends ConsumerStatefulWidget {
 class _RegisterSheetState extends ConsumerState<RegisterSheet> {
   late final RegisterArgs _args;
   late final TextEditingController _name;
+  late final AppLifecycleListener _lifecycle;
   bool _edited = false;
+
+  RegisterController get _controller =>
+      ref.read(registerControllerProvider(_args).notifier);
 
   @override
   void initState() {
@@ -89,23 +101,76 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
     _args = RegisterArgs(
       eventId: widget.event.id,
       seatsLeft: widget.event.summary.seatsLeft,
+      priceVnd: widget.event.summary.isFree ? 0 : widget.event.summary.priceVnd,
       initialName: prefill.length > registerNameMaxLength
           ? prefill.substring(0, registerNameMaxLength)
           : prefill,
     );
     _name = TextEditingController(text: _args.initialName);
+    // Back from the gateway app (real payments): ask whether it was paid.
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        if (ref.read(realPaymentsProvider)) {
+          _controller.check();
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _name.dispose();
     super.dispose();
+  }
+
+  /// Opens the payment step for the hold the server just returned.
+  Future<void> _pay(RegisterOutcome hold) async {
+    final paymentId = hold.paymentId;
+    if (paymentId == null) {
+      return;
+    }
+    final status = await openTicketPayment(
+      context,
+      ref,
+      paymentId: paymentId,
+      amountVnd: _controller.totalVnd,
+      payUrl: hold.payUrl,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (status == RegistrationStatus.paid) {
+      _controller.paid();
+    } else if (status == RegistrationStatus.cancelled) {
+      _controller.expired();
+    }
+  }
+
+  /// The registration stream decides the paid flow: `paid` closes the sheet,
+  /// a released hold (cancelled by the server) is expired.
+  void _onRegistration(EventRegistration? r) {
+    final hold = ref.read(registerControllerProvider(_args)).hold;
+    if (hold == null || r == null || r.id != hold.registrationId) {
+      return;
+    }
+    if (r.status == RegistrationStatus.paid) {
+      _controller.paid();
+    } else if (r.status == RegistrationStatus.cancelled ||
+        r.status == RegistrationStatus.refunded) {
+      _controller.expired();
+    }
   }
 
   void _listen(RegisterState? prev, RegisterState next) {
     final outcome = next.outcome;
     if (outcome != null && prev?.outcome == null) {
       Navigator.of(context).pop(outcome);
+      return;
+    }
+    final hold = next.hold;
+    if (hold != null && prev?.submitting == true && !next.submitting) {
+      _pay(hold);
       return;
     }
     final code = next.errorCode;
@@ -130,6 +195,12 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
     final l = context.l10n;
     final theme = Theme.of(context);
     ref.listen(registerControllerProvider(_args), _listen);
+    if (_args.paid) {
+      ref.listen(
+        myEventRegistrationProvider(widget.event.id),
+        (_, next) => _onRegistration(next.value),
+      );
+    }
     // The profile may still be loading when the sheet opens: fill the name
     // once it arrives, unless the person already typed one.
     ref.listen(currentProfileProvider, (_, next) {
@@ -203,9 +274,9 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
                 ),
                 _Stepper(
                   value: state.quantity,
-                  canDecrement: !state.submitting && state.quantity > 1,
+                  canDecrement: !controller.locked && state.quantity > 1,
                   canIncrement:
-                      !state.submitting &&
+                      !controller.locked &&
                       state.quantity < controller.maxQuantity,
                   onDecrement: controller.decrement,
                   onIncrement: controller.increment,
@@ -259,6 +330,7 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
                 ),
               ],
             ),
+            if (_args.paid) ..._paidSection(context, state, controller),
             if (error != null) ...[
               const SizedBox(height: AppSpace.s2),
               Semantics(
@@ -272,7 +344,9 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
             ],
             const SizedBox(height: AppSpace.s4),
             AppButton.primary(
-              l.registerFree,
+              _args.paid
+                  ? l.registerPay(formatMoney(controller.totalVnd))
+                  : l.registerFree,
               key: const Key('register-submit'),
               loading: state.submitting,
               onPressed: state.nameValid && !state.submitting
@@ -284,6 +358,92 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
       ),
     );
   }
+
+  /// Mock S11.03 (paid): "{n} vé × {price}", "Tổng thanh toán", the escrow
+  /// notice (Decision 29), the policy line, the payment method, and the hold.
+  List<Widget> _paidSection(
+    BuildContext context,
+    RegisterState state,
+    RegisterController controller,
+  ) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final total = controller.totalVnd;
+    final hold = state.hold;
+    final expiresAt = hold?.holdExpiresAt;
+    return [
+      const SizedBox(height: AppSpace.s3),
+      MoneyBreakdown(
+        key: const Key('register-money'),
+        lines: [
+          MoneyLine(
+            label: l.registerLine(state.quantity, formatMoney(_args.priceVnd)),
+            vnd: total,
+          ),
+          MoneyLine(
+            label: l.registerTotal,
+            vnd: total,
+            style: MoneyLineStyle.strong,
+          ),
+        ],
+      ),
+      const SizedBox(height: AppSpace.s3),
+      EscrowNotice(text: l.escrowNoticeTicket),
+      const SizedBox(height: AppSpace.s2),
+      Text(
+        l.registerPolicy,
+        key: const Key('register-policy'),
+        style: theme.textTheme.bodySmall,
+      ),
+      const SizedBox(height: AppSpace.s3),
+      PayMethodPicker(
+        value: state.method,
+        enabled: !state.submitting,
+        onChanged: controller.setMethod,
+      ),
+      if (hold != null && expiresAt != null) ...[
+        const SizedBox(height: AppSpace.s3),
+        CountdownText(
+          key: const Key('register-hold'),
+          deadline: expiresAt,
+          now: ref.read(clockProvider),
+          onExpired: controller.expired,
+          builder: (context, left) => Semantics(
+            liveRegion: true,
+            child: Text(
+              l.registerHold(_mmss(left)),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ),
+      ] else if (state.holdExpired) ...[
+        const SizedBox(height: AppSpace.s3),
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            l.registerHoldExpired,
+            key: const Key('register-hold-expired'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: theme.colorScheme.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ];
+  }
+}
+
+String _mmss(Duration left) {
+  final s = left.inSeconds < 0 ? 0 : left.inSeconds;
+  final m = (s ~/ 60).toString().padLeft(2, '0');
+  final r = (s % 60).toString().padLeft(2, '0');
+  return '$m:$r';
 }
 
 class _Stepper extends StatelessWidget {

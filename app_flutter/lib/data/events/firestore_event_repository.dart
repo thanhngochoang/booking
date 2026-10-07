@@ -283,13 +283,21 @@ class FirestoreEventRepository implements EventRepository {
 
   // ---- callables ----------------------------------------------------------
 
-  Future<Object?> _call(String name, Map<String, Object?> data) async {
+  /// Callables that run contended transactions or payments get 30 s on the
+  /// server (`registerEvent`, `cancelRegistration`, the ticket payment
+  /// callables) and 60 s for `cancelEvent`'s refunds; the client waits a
+  /// little longer than that.
+  static const _paymentTimeout = Duration(seconds: 35);
+  static const _cancelEventTimeout = Duration(seconds: 65);
+
+  Future<Object?> _call(
+    String name,
+    Map<String, Object?> data, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     try {
       final r = await _functions
-          .httpsCallable(
-            name,
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
+          .httpsCallable(name, options: HttpsCallableOptions(timeout: timeout))
           .call<Object?>(data);
       return r.data;
     } on FirebaseFunctionsException catch (e) {
@@ -337,7 +345,9 @@ class FirestoreEventRepository implements EventRepository {
 
   @override
   Future<void> cancelEvent(String eventId) async {
-    await _call('cancelEvent', {'eventId': eventId});
+    await _call('cancelEvent', {
+      'eventId': eventId,
+    }, timeout: _cancelEventTimeout);
   }
 
   @override
@@ -361,7 +371,7 @@ class FirestoreEventRepository implements EventRepository {
         'quantity': quantity,
         'name': name,
         'provider': ?provider?.code,
-      }),
+      }, timeout: _paymentTimeout),
     );
     final id = data['registrationId'];
     if (id is! String) {
@@ -386,12 +396,39 @@ class FirestoreEventRepository implements EventRepository {
       await _call('cancelRegistration', {
         'eventId': eventId,
         'registrationId': registrationId,
-      }),
+      }, timeout: _paymentTimeout),
     );
     final percent = data['refundPercent'];
     return (
       status: RegistrationStatus.fromCode(data['status'] as String?),
       refundPercent: percent is num ? percent.toInt() : null,
+    );
+  }
+
+  @override
+  Future<RegistrationStatus> confirmFakeTicketPayment(String paymentId) async {
+    final data = _asMap(
+      await _call('confirmFakeTicketPayment', {
+        'paymentId': paymentId,
+      }, timeout: _paymentTimeout),
+    );
+    return RegistrationStatus.fromCode(data['status'] as String?);
+  }
+
+  @override
+  Future<({bool paid, RegistrationStatus status})> checkTicketPayment(
+    String eventId,
+    String registrationId,
+  ) async {
+    final data = _asMap(
+      await _call('checkTicketPayment', {
+        'eventId': eventId,
+        'registrationId': registrationId,
+      }, timeout: _paymentTimeout),
+    );
+    return (
+      paid: data['paid'] == true,
+      status: RegistrationStatus.fromCode(data['status'] as String?),
     );
   }
 

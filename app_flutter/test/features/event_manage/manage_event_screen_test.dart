@@ -65,6 +65,27 @@ bool _scanEnabled(WidgetTester tester) =>
 /// Badges are set in capitals (mock `.badge`).
 String _badge(String label) => label.toUpperCase();
 
+/// [r] with the fields the paid path adds (late cancel, event refund).
+EventRegistration _with(
+  EventRegistration r, {
+  RegistrationStatus? status,
+  int? refundPercent,
+  bool refundDue = false,
+}) => EventRegistration(
+  id: r.id,
+  eventId: r.eventId,
+  userId: r.userId,
+  userName: r.userName,
+  ticketCode: r.ticketCode,
+  quantity: r.quantity,
+  amount: r.amount,
+  status: status ?? r.status,
+  event: r.event,
+  createdAt: r.createdAt,
+  refundPercent: refundPercent,
+  refundDue: refundDue,
+);
+
 Future<void> _tap(WidgetTester tester, Finder f) async {
   await tester.ensureVisible(f);
   await tester.pump();
@@ -115,6 +136,75 @@ void main() {
       _kpi(tester, 'manage-kpi-revenue'),
       formatMoney(500000, short: true),
     );
+  });
+
+  testWidgets('revenue sums paid tickets only', (tester) async {
+    final w = _host(
+      registrations: [
+        registrationOf('r1', 'ev1', quantity: 4, amount: 3000000),
+        registrationOf('r2', 'ev1', userId: 'u2', amount: 500000),
+        registrationOf(
+          'r3',
+          'ev1',
+          userId: 'u3',
+          status: RegistrationStatus.held,
+          amount: 250000,
+        ),
+        _with(
+          registrationOf('r4', 'ev1', userId: 'u4', amount: 250000),
+          status: RegistrationStatus.refunded,
+          refundPercent: 100,
+        ),
+        _with(
+          registrationOf('r5', 'ev1', userId: 'u5', amount: 250000),
+          status: RegistrationStatus.cancelled,
+          refundPercent: 0,
+        ),
+      ],
+    );
+    await _open(tester, w);
+    expect(_kpi(tester, 'manage-kpi-revenue'), '3,5M');
+  });
+
+  testWidgets('held rows say Chờ trả', (tester) async {
+    final w = _host(
+      registrations: [
+        registrationOf(
+          'r1',
+          'ev1',
+          status: RegistrationStatus.held,
+          amount: 250000,
+        ),
+      ],
+    );
+    await _open(tester, w);
+    expect(find.text(_badge('Chờ trả')), findsOneWidget);
+    expect(find.text(_badge('Đã trả')), findsNothing);
+  });
+
+  testWidgets('cancel sheet totals refunds', (tester) async {
+    final w = _host(
+      registrations: [
+        registrationOf('r1', 'ev1', quantity: 2, amount: 500000),
+        // Cancelled late (no refund, money held for the host): a host cancel
+        // gives it back too.
+        _with(
+          registrationOf('r2', 'ev1', userId: 'u2', amount: 250000),
+          status: RegistrationStatus.cancelled,
+          refundPercent: 0,
+        ),
+        registrationOf(
+          'r3',
+          'ev1',
+          userId: 'u3',
+          status: RegistrationStatus.held,
+          amount: 250000,
+        ),
+      ],
+    );
+    await _open(tester, w);
+    await _tap(tester, find.text('Huỷ sự kiện · hoàn tiền mọi vé'));
+    expect(find.text('3 vé · hoàn ${formatMoney(750000)}'), findsOneWidget);
   });
 
   testWidgets('participants show code and contact only for paid rows', (

@@ -73,14 +73,15 @@ class ManageStats {
   final int registered;
   final int capacity;
 
-  /// Money from paid tickets still held (not cancelled or refunded).
+  /// Money from paid tickets (not held, cancelled, refunded or refund-due).
   final int revenueVnd;
   final int daysLeft;
 
   /// Seats taken by active registrations.
   final int tickets;
 
-  /// What cancelling the event gives back: every paid ticket in full.
+  /// What cancelling the event gives back: every paid ticket in full, and
+  /// the held money of tickets cancelled late without a refund.
   final int refundVnd;
   final int checkedIn;
 
@@ -90,15 +91,26 @@ class ManageStats {
     DateTime now,
   ) {
     var revenue = 0;
+    var refund = 0;
     var tickets = 0;
     var checkedIn = 0;
     for (final r in regs) {
+      // A ticket cancelled late keeps its money held for the host (O4); a
+      // host cancel gives it back too, so it counts in the refund total.
+      if (r.status == RegistrationStatus.cancelled &&
+          r.amount > 0 &&
+          r.refundPercent == 0) {
+        refund += r.amount;
+      }
       if (!r.isActive) {
         continue;
       }
       tickets += r.quantity;
       if (r.status == RegistrationStatus.paid) {
-        revenue += r.amount;
+        if (!r.refundDue) {
+          revenue += r.amount;
+        }
+        refund += r.amount;
         if (r.isCheckedIn) {
           checkedIn += r.quantity;
         }
@@ -113,7 +125,7 @@ class ManageStats {
       revenueVnd: revenue,
       daysLeft: left < 0 ? 0 : left,
       tickets: tickets,
-      refundVnd: revenue,
+      refundVnd: refund,
       checkedIn: checkedIn,
     );
   }

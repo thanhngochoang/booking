@@ -2137,5 +2137,37 @@
   "chatRestoreHint": "Vào lại ngay nếu còn vé; nếu không, khi mua vé mới.",
   "@chatRestoreHint": {"description": "S11.06 member list: note under the Đã mời ra section."},
   "manageCheckinLink": "Check‑in",
-  "@manageCheckinLink": {"description": "S12.03: link at the right of the Người tham gia header; opens the check-in scanner."}
+  "@manageCheckinLink": {"description": "S12.03: link at the right of the Người tham gia header; opens the check-in scanner."},
+  "registerTotal": "Tổng thanh toán",
+  "@registerTotal": {"description": "S11.03 paid: the total line of the money table."},
+  "registerLine": "{n} vé × {price}",
+  "@registerLine": {
+    "description": "S11.03 paid: tickets times the ticket price.",
+    "placeholders": {"n": {"type": "int"}, "price": {"type": "String"}}
+  },
+  "registerPay": "Thanh toán {amount}",
+  "@registerPay": {
+    "description": "S11.03 paid: the primary button.",
+    "placeholders": {"amount": {"type": "String"}}
+  },
+  "registerHold": "Giữ chỗ còn {time}",
+  "@registerHold": {
+    "description": "S11.03 paid: seats are held while the customer pays (mm:ss).",
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "registerHoldExpired": "Chỗ giữ đã hết hạn",
+  "registerPolicy": "Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.",
+  "escrowNoticeTicket": "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.",
+  "ticketPayContinue": "Thanh toán tiếp",
+  "ticketHoldExpired": "Hết hạn",
+  "ticketRefundAmount": "Bạn nhận lại {amount}",
+  "@ticketRefundAmount": {"placeholders": {"amount": {"type": "String"}}},
+  "ticketNoRefund": "Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.",
+  "fakeTicketPayTitle": "Thanh toán thử",
+  "payMethodBankQr": "Chuyển khoản QR",
+  "@payMethodBankQr": {"description": "S11.03 (mock): pay by bank transfer QR."},
+  "payMethodMomo": "MoMo",
+  "payMethodZaloPay": "ZaloPay",
+  "payMethodLabel": "Phương thức thanh toán",
+  "@payMethodLabel": {"description": "Semantics label of the payment method group on S11.03."}
 }

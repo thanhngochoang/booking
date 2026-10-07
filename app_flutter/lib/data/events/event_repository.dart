@@ -120,6 +120,18 @@ abstract class EventRepository {
     String registrationId,
   );
 
+  /// Fake gateway mode (emulator and dev project only; the server refuses it
+  /// elsewhere with `fake_payments_disabled`): the payer confirms a ticket
+  /// payment. Returns the registration's status afterwards (`paid`, or
+  /// `cancelled` when the hold had already lapsed and the money is refunded).
+  Future<RegistrationStatus> confirmFakeTicketPayment(String paymentId);
+
+  /// Asks the gateway about a held ticket's payment and applies it if paid.
+  Future<({bool paid, RegistrationStatus status})> checkTicketPayment(
+    String eventId,
+    String registrationId,
+  );
+
   Future<({String name, int quantity})> checkIn(
     String eventId,
     String ticketCode,
@@ -461,18 +473,29 @@ class FakeEventRepository implements EventRepository {
     if (quantity > 4) {
       throw const EventError('limit_exceeded');
     }
+    registerProviders.add(provider);
+    final now = _clock();
+    // A lapsed hold is not active any more: the server releases it on the
+    // next tap and starts a new hold.
+    final lapsed = _registrations.indexWhere(
+      (r) => r.eventId == eventId && r.userId == me && r.holdExpired(now),
+    );
+    if (lapsed >= 0) {
+      _release(lapsed, now);
+    }
     final active = _registrations
         .where((r) => r.eventId == eventId && r.userId == me && r.isActive)
         .firstOrNull;
     if (active != null) {
+      final held = active.status == RegistrationStatus.held;
       return RegisterOutcome(
         registrationId: active.id,
         status: active.status,
         paymentId: active.paymentId,
+        payUrl: held ? 'https://pay.test/${active.id}' : null,
         holdExpiresAt: active.holdExpiresAt,
       );
     }
-    final now = _clock();
     if (e.summary.status != EventStatus.open &&
         e.summary.status != EventStatus.full) {
       throw const EventError('not_eligible');
@@ -590,6 +613,134 @@ class FakeEventRepository implements EventRepository {
     );
     _changes.add(null);
     return (status: status, refundPercent: percent);
+  }
+
+  /// The provider of every `register` call, in order.
+  final List<PaymentProviderCode?> registerProviders = [];
+
+  /// Payment ids confirmed through [confirmFakeTicketPayment].
+  final List<String> fakeConfirmed = [];
+
+  /// Payment ids the "gateway" reports as paid to [checkTicketPayment].
+  final Set<String> gatewayPaid = {};
+
+  /// Calls of [checkTicketPayment], as `eventId/registrationId`.
+  final List<String> paymentChecks = [];
+
+  EventRegistration _with(
+    EventRegistration r, {
+    RegistrationStatus? status,
+    String? ticketCode,
+    DateTime? cancelledAt,
+    int? refundPercent,
+    bool? contactEligible,
+    bool? refundDue,
+  }) => EventRegistration(
+    id: r.id,
+    eventId: r.eventId,
+    userId: r.userId,
+    userName: r.userName,
+    ticketCode: ticketCode ?? r.ticketCode,
+    quantity: r.quantity,
+    amount: r.amount,
+    status: status ?? r.status,
+    event: r.event,
+    createdAt: r.createdAt,
+    userAvatarUrl: r.userAvatarUrl,
+    paymentId: r.paymentId,
+    holdExpiresAt: r.holdExpiresAt,
+    checkedInAt: r.checkedInAt,
+    cancelledAt: cancelledAt ?? r.cancelledAt,
+    refundPercent: refundPercent ?? r.refundPercent,
+    contactEligible: contactEligible ?? r.contactEligible,
+    refundDue: refundDue ?? r.refundDue,
+  );
+
+  /// The hold at [i] gives its seats back (expired or paid too late).
+  void _release(int i, DateTime now) {
+    final r = _registrations[i];
+    _registrations[i] = _with(
+      r,
+      status: RegistrationStatus.cancelled,
+      cancelledAt: now,
+    );
+    final e = _events[r.eventId];
+    if (e != null) {
+      final s = e.summary;
+      _events[r.eventId] = _withStatus(
+        e,
+        s.status == EventStatus.full ? EventStatus.open : s.status,
+        held: s.heldCount - r.quantity,
+      );
+    }
+  }
+
+  RegistrationStatus _applyPayment(String paymentId) {
+    final i = _registrations.indexWhere((r) => r.paymentId == paymentId);
+    if (i < 0) {
+      throw const EventError('not_found');
+    }
+    final r = _registrations[i];
+    if (r.status != RegistrationStatus.held) {
+      return r.status;
+    }
+    final now = _clock();
+    if (r.holdExpired(now)) {
+      // Paid too late: the server refunds 100% and frees the seats.
+      _release(i, now);
+      _changes.add(null);
+      return RegistrationStatus.cancelled;
+    }
+    _registrations[i] = _with(
+      r,
+      status: RegistrationStatus.paid,
+      ticketCode: r.ticketCode.isEmpty
+          ? 'VE-PAID-${(++_seq).toString().padLeft(4, '0')}'
+          : r.ticketCode,
+      contactEligible: true,
+    );
+    final e = _events[r.eventId];
+    if (e != null) {
+      final s = e.summary;
+      _events[r.eventId] = _withStatus(
+        e,
+        s.status,
+        registered: s.registeredCount + r.quantity,
+        held: s.heldCount - r.quantity,
+      );
+    }
+    _changes.add(null);
+    return RegistrationStatus.paid;
+  }
+
+  @override
+  Future<RegistrationStatus> confirmFakeTicketPayment(String paymentId) async {
+    _maybeFail();
+    fakeConfirmed.add(paymentId);
+    return _applyPayment(paymentId);
+  }
+
+  @override
+  Future<({bool paid, RegistrationStatus status})> checkTicketPayment(
+    String eventId,
+    String registrationId,
+  ) async {
+    _maybeFail();
+    paymentChecks.add('$eventId/$registrationId');
+    final r = _registrations
+        .where((x) => x.id == registrationId && x.eventId == eventId)
+        .firstOrNull;
+    if (r == null || r.userId != uid) {
+      throw const EventError('not_found');
+    }
+    final pay = r.paymentId;
+    if (r.status == RegistrationStatus.held &&
+        pay != null &&
+        gatewayPaid.contains(pay)) {
+      final status = _applyPayment(pay);
+      return (paid: status == RegistrationStatus.paid, status: status);
+    }
+    return (paid: r.status == RegistrationStatus.paid, status: r.status);
   }
 
   @override

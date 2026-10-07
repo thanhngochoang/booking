@@ -713,6 +713,80 @@ void main() {
     );
   });
 
+  group('ticket payments', () {
+    test(
+      'confirmFakeTicketPayment sends the payment id and parses the status',
+      () async {
+        answer({'status': 'paid'});
+        expect(
+          await repo.confirmFakeTicketPayment('pay1'),
+          RegistrationStatus.paid,
+        );
+        verify(() => callable.call<Object?>({'paymentId': 'pay1'})).called(1);
+        verify(
+          () => functions.httpsCallable(
+            'confirmFakeTicketPayment',
+            options: any(named: 'options'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('checkTicketPayment sends event and registration', () async {
+      answer({'paid': false, 'status': 'held'});
+      final r = await repo.checkTicketPayment('ev1', 'r1');
+      expect((r.paid, r.status), (false, RegistrationStatus.held));
+      verify(
+        () =>
+            callable.call<Object?>({'eventId': 'ev1', 'registrationId': 'r1'}),
+      ).called(1);
+    });
+
+    test('fake payments refused by the server surface their code', () async {
+      when(() => callable.call<Object?>(any())).thenThrow(
+        FirebaseFunctionsException(
+          message: 'fake_payments_disabled',
+          code: 'failed-precondition',
+          details: {'code': 'fake_payments_disabled'},
+        ),
+      );
+      await expectLater(
+        repo.confirmFakeTicketPayment('pay1'),
+        throwsA(
+          isA<EventError>().having(
+            (e) => e.code,
+            'code',
+            'fake_payments_disabled',
+          ),
+        ),
+      );
+    });
+
+    test(
+      'registerEvent and the payment callables wait longer than 30 s',
+      () async {
+        answer({'registrationId': 'r1', 'status': 'paid'});
+        await repo.register('ev1', quantity: 1, name: 'Lan');
+        final options =
+            verify(
+                  () => functions.httpsCallable(
+                    'registerEvent',
+                    options: captureAny(named: 'options'),
+                  ),
+                ).captured.single
+                as HttpsCallableOptions;
+        expect(options.timeout, greaterThan(const Duration(seconds: 30)));
+      },
+    );
+
+    test('a refund-due ticket parses refundDue', () async {
+      final doc = registrationDoc(amount: 250000)..['refundDue'] = true;
+      await db.doc('events/ev1/registrations/r-u1').set(doc);
+      final mine = await repo.watchMyTickets().first;
+      expect(mine.single.refundDue, isTrue);
+    });
+  });
+
   group('cover upload', () {
     test('the upload path is eventCovers/uid/eventId', () async {
       final eventId = 'e' * 24;

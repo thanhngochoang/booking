@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
@@ -18,6 +20,8 @@ EventRegistration _reg(
   DateTime? checkedInAt,
   int? refundPercent,
   int quantity = 1,
+  DateTime? holdExpiresAt,
+  bool refundDue = false,
 }) {
   final start = eventNow.add(startsIn);
   return EventRegistration(
@@ -31,6 +35,9 @@ EventRegistration _reg(
     status: status,
     checkedInAt: checkedInAt,
     refundPercent: refundPercent,
+    holdExpiresAt: holdExpiresAt,
+    refundDue: refundDue,
+    paymentId: amount > 0 ? 'pay-$id' : null,
     event: EventTicketSnapshot(
       title: 'Photo walk $id',
       type: EventType.photoWalk,
@@ -50,20 +57,48 @@ Future<EventsWorld> _open(
   String? highlight,
   double textScale = 1,
   Size size = const Size(390, 1400),
+  DateTime? now,
+  int priceVnd = 0,
+  List<Override> extra = const [],
 }) async {
   final w = EventsWorld(
-    events: [detailOf('ev1', priceVnd: 0)],
+    events: [detailOf('ev1', priceVnd: priceVnd)],
     registrations: regs,
+    now: now,
   );
   await w.pump(
     tester,
     path: '/bookings',
     size: size,
     textScale: textScale,
+    extra: extra,
     bookings: (_) => Scaffold(body: EventTicketsTab(highlightId: highlight)),
   );
   return w;
 }
+
+/// [r] as the server rewrites it.
+EventRegistration _as(
+  EventRegistration r,
+  RegistrationStatus status, {
+  bool refundDue = false,
+  int? refundPercent,
+}) => EventRegistration(
+  id: r.id,
+  eventId: r.eventId,
+  userId: r.userId,
+  userName: r.userName,
+  ticketCode: r.ticketCode,
+  quantity: r.quantity,
+  amount: r.amount,
+  status: status,
+  event: r.event,
+  createdAt: r.createdAt,
+  paymentId: r.paymentId,
+  holdExpiresAt: r.holdExpiresAt,
+  refundPercent: refundPercent,
+  refundDue: refundDue,
+);
 
 List<TicketCard> _cards(WidgetTester t) =>
     t.widgetList<TicketCard>(find.byType(TicketCard)).toList();
@@ -98,6 +133,27 @@ void main() {
         l: l,
       );
       expect(v.state, TicketState.pendingPayment);
+    });
+    test('a lapsed hold is Hết hạn; refundDue is Đang hoàn', () {
+      final lapsed = ticketViewOf(
+        _reg(
+          'a',
+          status: RegistrationStatus.held,
+          amount: 1000,
+          holdExpiresAt: eventNow,
+        ),
+        now: eventNow,
+        l: l,
+      );
+      expect(lapsed.state, TicketState.cancelled);
+      expect(lapsed.statusLabel, 'Hết hạn');
+      final due = ticketViewOf(
+        _reg('b', amount: 1000, refundDue: true),
+        now: eventNow,
+        l: l,
+      );
+      expect(due.state, TicketState.cancelled);
+      expect(due.statusLabel, 'Đang hoàn');
     });
     test('checked in is attended, even before the end', () {
       final v = ticketViewOf(
@@ -203,14 +259,62 @@ void main() {
     expect(find.byType(QrImageView), findsNothing);
   });
 
-  testWidgets('a held ticket says Chờ thanh toán, with no pay button yet', (
+  testWidgets('held ticket offers Thanh toán tiếp then Hết hạn', (
     tester,
   ) async {
-    await _open(tester, [
-      _reg('h', status: RegistrationStatus.held, amount: 1000),
-    ]);
+    final live = _reg(
+      'h',
+      status: RegistrationStatus.held,
+      amount: 500000,
+      holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
+    );
+    final lapsed = _reg(
+      'x',
+      status: RegistrationStatus.held,
+      amount: 250000,
+      startsIn: const Duration(days: 5),
+      holdExpiresAt: eventNow.subtract(const Duration(minutes: 1)),
+    );
+    final w = await _open(tester, [live, lapsed], priceVnd: 250000);
     expect(find.text('CHỜ THANH TOÁN'), findsOneWidget);
-    expect(find.text('Thanh toán'), findsNothing);
+    expect(find.text('HẾT HẠN'), findsOneWidget);
+    expect(find.text('Thanh toán tiếp'), findsOneWidget);
+
+    await tester.tap(find.text('Thanh toán tiếp'));
+    await settle(tester);
+    expect(w.repo.paymentChecks, ['ev1/h']);
+    expect(find.text('Thanh toán thử'), findsOneWidget);
+    expect(find.text('500.000₫'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ticket-pay-confirm')));
+    await settle(tester);
+    expect(w.repo.fakeConfirmed, ['pay-h']);
+    expect(
+      w.repo.registrations.firstWhere((r) => r.id == 'h').status,
+      RegistrationStatus.paid,
+    );
+    expect(find.text('ĐÃ ĐĂNG KÝ'), findsOneWidget);
+  });
+
+  testWidgets('Thanh toán tiếp with real payments opens the pay URL', (
+    tester,
+  ) async {
+    final w = await _open(
+      tester,
+      [
+        _reg(
+          'h',
+          status: RegistrationStatus.held,
+          amount: 250000,
+          holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
+        ),
+      ],
+      priceVnd: 250000,
+      extra: [realPaymentsProvider.overrideWithValue(true)],
+    );
+    await tester.tap(find.text('Thanh toán tiếp'));
+    await settle(tester);
+    expect(w.launcher.opened.map((u) => u.toString()), ['https://pay.test/h']);
+    expect(find.text('Thanh toán thử'), findsNothing);
   });
 
   testWidgets('free tickets say Huỷ vé without a percent', (tester) async {
@@ -253,6 +357,61 @@ void main() {
     await settle(tester);
     expect(w.repo.registrations.single.status, RegistrationStatus.cancelled);
     expect(find.text('Đã huỷ vé'), findsOneWidget);
+  });
+
+  testWidgets('cancel 3 days before shows hoàn 100% and the amount', (
+    tester,
+  ) async {
+    final w = await _open(tester, [
+      _reg('a', amount: 500000, quantity: 2),
+    ], priceVnd: 250000);
+    expect(find.text('Huỷ vé · hoàn 100%'), findsOneWidget);
+    await tester.tap(find.text('Huỷ vé · hoàn 100%'));
+    await settle(tester);
+    expect(find.text('Bạn nhận lại 500.000₫'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('app-sheet')),
+        matching: find.widgetWithText(AppButton, 'Huỷ vé'),
+      ),
+    );
+    await settle(tester);
+    expect(w.repo.registrations.single.status, RegistrationStatus.refunded);
+    expect(find.text('ĐÃ HOÀN TIỀN'), findsOneWidget);
+  });
+
+  testWidgets('cancel within 48 hours warns there is no refund', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      [_reg('a', amount: 250000)],
+      priceVnd: 250000,
+      now: eventNow.add(const Duration(days: 2)),
+    );
+    expect(find.text('Huỷ vé · không hoàn tiền'), findsOneWidget);
+    await tester.tap(find.text('Huỷ vé · không hoàn tiền'));
+    await settle(tester);
+    expect(
+      find.text('Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets("a cancelled event's ticket shows Đang hoàn, then Đã hoàn tiền", (
+    tester,
+  ) async {
+    final due = _reg('a', amount: 250000, refundDue: true);
+    final w = await _open(tester, [due], priceVnd: 250000);
+    expect(find.text('ĐANG HOÀN'), findsOneWidget);
+    expect(find.byType(QrImageView), findsNothing);
+    expect(find.textContaining('Huỷ vé'), findsNothing);
+    w.repo.putRegistration(
+      _as(due, RegistrationStatus.refunded, refundPercent: 100),
+    );
+    await settle(tester);
+    expect(find.text('ĐANG HOÀN'), findsNothing);
+    expect(find.text('ĐÃ HOÀN TIỀN'), findsOneWidget);
   });
 
   testWidgets('empty state links to events', (tester) async {

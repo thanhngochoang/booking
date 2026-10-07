@@ -65,6 +65,7 @@ class EventRegistration {
     this.cancelledAt,
     this.refundPercent,
     this.contactEligible = false,
+    this.refundDue = false,
   });
 
   final String id;
@@ -91,10 +92,21 @@ class EventRegistration {
   /// O3). A free registration is never contact-eligible, so no screen may show
   /// a phone number for it.
   final bool contactEligible;
+
+  /// The event was cancelled while this ticket's money was held: the 100%
+  /// refund is on its way ("Đang hoàn" until the status is `refunded`).
+  final bool refundDue;
   final EventTicketSnapshot event;
   final DateTime createdAt;
 
   bool get isActive => status.isActive;
   bool get isFree => amount == 0;
   bool get isCheckedIn => checkedInAt != null;
+
+  /// A `held` registration whose 10 minutes ran out (the server releases it
+  /// within a minute; until then the app already treats it as expired).
+  bool holdExpired(DateTime now) =>
+      status == RegistrationStatus.held &&
+      holdExpiresAt != null &&
+      !now.isBefore(holdExpiresAt!);
 }

@@ -20,9 +20,10 @@ enum EventJoinState {
   paymentsSoon,
 }
 
-/// Paid tickets need the payment step (plan 10c Task 10, Decision 27); until
-/// then a paid event shows its price and a disabled "Sắp mở thanh toán".
-final eventPaymentsReadyProvider = Provider<bool>((_) => false);
+/// Paid tickets have their payment step since plan 10c Task 10 (Decision 27).
+/// A build can still switch it off: a paid event then shows its price and a
+/// disabled "Sắp mở thanh toán".
+final eventPaymentsReadyProvider = Provider<bool>((_) => true);
 
 /// Pure: which action the bar shows. A cancelled event wins over everything;
 /// managers and ticket holders see their own action even when the event is
@@ -42,7 +43,10 @@ EventJoinState eventJoinState(
   if (event.isManagedBy(uid, role)) {
     return EventJoinState.manage;
   }
-  if (registration != null && registration.isActive) {
+  // A lapsed hold no longer holds a seat: the viewer may register again.
+  if (registration != null &&
+      registration.isActive &&
+      !registration.holdExpired(now)) {
     return EventJoinState.viewTicket;
   }
   if (s.status == EventStatus.completed || !now.isBefore(event.endsAt)) {

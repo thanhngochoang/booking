@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
+import 'package:photobooking/features/events/register_sheet.dart';
 
 import '../../support/event_world.dart';
 
@@ -18,10 +21,17 @@ Future<EventsWorld> _open(
   bool hasPhone = true,
   double textScale = 1,
   Size size = _size,
+  List<Override> extra = const [],
 }) async {
   final w = EventsWorld(events: [event ?? _free()]);
   w.repo.hasPhone = hasPhone;
-  await w.pump(tester, path: '/e/ev1', size: size, textScale: textScale);
+  await w.pump(
+    tester,
+    path: '/e/ev1',
+    size: size,
+    textScale: textScale,
+    extra: extra,
+  );
   await tester.tap(find.byKey(const Key('event-join')));
   await settle(tester);
   return w;
@@ -33,6 +43,31 @@ Future<void> _plus(WidgetTester tester, int times) async {
     await tester.pump();
   }
 }
+
+/// A paid event: 250.000₫ a ticket.
+EventDetail _paid({int registered = 5}) =>
+    detailOf('ev1', priceVnd: 250000, registered: registered);
+
+/// [r] as the server rewrites it.
+EventRegistration _as(EventRegistration r, RegistrationStatus status) =>
+    EventRegistration(
+      id: r.id,
+      eventId: r.eventId,
+      userId: r.userId,
+      userName: r.userName,
+      ticketCode: status == RegistrationStatus.paid ? 'VE-PAID-0001' : '',
+      quantity: r.quantity,
+      amount: r.amount,
+      status: status,
+      event: r.event,
+      createdAt: r.createdAt,
+      paymentId: r.paymentId,
+      holdExpiresAt: r.holdExpiresAt,
+      contactEligible: status == RegistrationStatus.paid,
+    );
+
+Finder _inSheet(Finder f) =>
+    find.descendant(of: find.byType(RegisterSheet), matching: f);
 
 String _quantity(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(const Key('register-quantity'))).data!;
@@ -211,6 +246,196 @@ void main() {
     final w = EventsWorld(events: [_free()]);
     await w.pump(tester, path: '/e/ev1/join', size: _size);
     expect(find.byKey(const Key('register-submit')), findsOneWidget);
+  });
+
+  group('paid (S11.03)', () {
+    testWidgets('paid sheet shows the money table, escrow notice and policy', (
+      tester,
+    ) async {
+      await _open(tester, event: _paid());
+      await _plus(tester, 1);
+      expect(find.text('2 vé × 250.000₫'), findsOneWidget);
+      expect(find.text('Tổng thanh toán'), findsOneWidget);
+      expect(find.text('500.000₫'), findsNWidgets(2));
+      expect(
+        find.text(
+          'Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Chuyển khoản QR'), findsOneWidget);
+      expect(find.text('MoMo'), findsOneWidget);
+      expect(find.text('ZaloPay'), findsOneWidget);
+      expect(find.text('Thanh toán 500.000₫'), findsOneWidget);
+      expect(find.text('Xác nhận đăng ký'), findsNothing);
+      // Section order follows the mock: money, escrow, policy, method, button.
+      double y(Finder f) => tester.getTopLeft(f).dy;
+      expect(
+        y(find.text('Tổng thanh toán')),
+        lessThan(y(find.byType(EscrowNotice))),
+      );
+      expect(
+        y(find.byType(EscrowNotice)),
+        lessThan(y(find.byKey(const Key('register-policy')))),
+      );
+      expect(
+        y(find.byKey(const Key('register-policy'))),
+        lessThan(y(find.text('MoMo'))),
+      );
+      expect(
+        y(find.text('MoMo')),
+        lessThan(y(find.byKey(const Key('register-submit')))),
+      );
+    });
+
+    testWidgets('the method maps onto the gateway codes', (tester) async {
+      final w = await _open(tester, event: _paid());
+      await tester.tap(find.byKey(const Key('pay-method-momo')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(w.repo.registerProviders.last, PaymentProviderCode.momo);
+    });
+
+    testWidgets('Thanh toán starts the hold countdown', (tester) async {
+      final w = await _open(tester, event: _paid());
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      final r = w.repo.registrations.single;
+      expect(r.status, RegistrationStatus.held);
+      expect(r.amount, 250000);
+      // Default method "Chuyển khoản QR" goes through the VNPay gateway code.
+      expect(w.repo.registerProviders.single, PaymentProviderCode.vnpay);
+      expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
+      // The quantity is fixed while the seats are held.
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const Key('register-plus')))
+            .onPressed,
+        isNull,
+      );
+      // Closing the fake sheet keeps the hold; the button reopens it.
+      expect(find.text('Thanh toán thử'), findsOneWidget);
+      await tester.tap(find.widgetWithText(AppButton, 'Huỷ'));
+      await settle(tester);
+      expect(find.text('Thanh toán thử'), findsNothing);
+      expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(find.text('Thanh toán thử'), findsOneWidget);
+      expect(w.repo.registrations, hasLength(1));
+    });
+
+    testWidgets('fake mode confirms through the ticket payment sheet', (
+      tester,
+    ) async {
+      final w = await _open(tester, event: _paid());
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(find.text('Thanh toán thử'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('ticket-pay-confirm')));
+      await settle(tester);
+      final r = w.repo.registrations.single;
+      expect(w.repo.fakeConfirmed, [r.paymentId]);
+      expect(r.status, RegistrationStatus.paid);
+      expect(find.byType(RegisterSheet), findsNothing);
+    });
+
+    testWidgets('paid registration opens the tickets tab', (tester) async {
+      final w = await _open(
+        tester,
+        event: _paid(),
+        extra: [realPaymentsProvider.overrideWithValue(true)],
+      );
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      final held = w.repo.registrations.single;
+      // The gateway confirms: the registration stream turns the ticket paid.
+      w.repo.putRegistration(_as(held, RegistrationStatus.paid));
+      await settle(tester);
+      expect(find.byType(RegisterSheet), findsNothing);
+      expect(w.location, '/bookings?tab=events&highlight=${held.id}');
+      expect(find.text('Đã đăng ký'), findsOneWidget);
+    });
+
+    testWidgets('real mode opens payUrl', (tester) async {
+      final w = await _open(
+        tester,
+        event: _paid(),
+        extra: [realPaymentsProvider.overrideWithValue(true)],
+      );
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      final id = w.repo.registrations.single.id;
+      expect(w.launcher.opened.map((u) => u.toString()), [
+        'https://pay.test/$id',
+      ]);
+      expect(find.text('Thanh toán thử'), findsNothing);
+      expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
+    });
+
+    testWidgets('an expired hold says Chỗ giữ đã hết hạn', (tester) async {
+      final w = await _open(
+        tester,
+        event: _paid(),
+        extra: [realPaymentsProvider.overrideWithValue(true)],
+      );
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      final held = w.repo.registrations.single;
+      // The server releases the hold after 10 minutes.
+      w.repo.putRegistration(_as(held, RegistrationStatus.cancelled));
+      await settle(tester);
+      expect(find.text('Chỗ giữ đã hết hạn'), findsOneWidget);
+      expect(find.textContaining('Giữ chỗ còn'), findsNothing);
+      expect(_inSheet(find.text('Thanh toán 250.000₫')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(w.repo.registrations, hasLength(2));
+      expect(find.text('Chỗ giữ đã hết hạn'), findsNothing);
+    });
+
+    testWidgets('a gateway error can be retried', (tester) async {
+      final w = await _open(tester, event: _paid());
+      w.repo
+        ..failWith = const EventError('internal')
+        ..failOnce = true;
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(find.byKey(const Key('register-error')), findsOneWidget);
+      expect(find.text('Thanh toán 250.000₫'), findsWidgets);
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(w.repo.registrations.single.status, RegistrationStatus.held);
+    });
+
+    testWidgets('sold_out goes back to S11.02', (tester) async {
+      final w = await _open(tester, event: _paid());
+      w.repo.failWith = const EventError('sold_out');
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(find.byType(RegisterSheet), findsNothing);
+      expect(w.location, '/e/ev1');
+    });
+
+    testWidgets('paid sheet fits 320dp at 1.3 text scale', (tester) async {
+      await _open(
+        tester,
+        event: _paid(),
+        textScale: 1.3,
+        size: const Size(320, 640),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byKey(const Key('register-submit')));
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   testWidgets('fits 320dp at 1.3 text scale', (tester) async {
