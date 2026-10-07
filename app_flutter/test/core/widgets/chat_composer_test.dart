@@ -99,4 +99,26 @@ void main() {
       expect(tester.takeException(), isNull);
     }
   });
+
+  testWidgets('a custom hint replaces the default while the composer is on', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(ChatComposer(onSend: (_) {}, hint: 'Nhắn cho nhóm…')),
+    );
+    expect(find.text('Nhắn cho nhóm…'), findsOneWidget);
+    expect(find.text('Nhập tin nhắn…'), findsNothing);
+    await tester.pumpWidget(
+      hostWidget(
+        ChatComposer(
+          onSend: (_) {},
+          hint: 'Nhắn cho nhóm…',
+          enabled: false,
+          disabledReason: 'Chỉ điều hành được nhắn',
+        ),
+      ),
+    );
+    expect(find.text('Chỉ điều hành được nhắn'), findsOneWidget);
+    expect(find.text('Nhắn cho nhóm…'), findsNothing);
+  });
 }

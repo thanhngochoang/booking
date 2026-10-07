@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/staff_role.dart';
+import 'package:photobooking/data/events/event_chat.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
@@ -302,15 +303,39 @@ void main() {
       expect(find.text('Đăng ký để vào nhóm'), findsOneWidget);
     });
 
-    testWidgets('chat tab is open for a ticket holder', (tester) async {
+    testWidgets('chat tab opens the group chat for a ticket holder', (
+      tester,
+    ) async {
       final w = EventsWorld(
         events: [_free('ev1')],
         registrations: [registrationOf('r1', 'ev1')],
       );
+      w.chat
+        ..setChat(
+          const GroupChatThread(
+            id: 'event_ev1',
+            eventId: 'ev1',
+            title: 'Photo walk',
+            memberCount: 6,
+          ),
+        )
+        ..setMe(const GroupMemberState(role: GroupRole.member));
       await w.pump(tester, path: '/e/ev1', size: _sw);
       await tester.tap(find.text('Nhóm chat'));
       await settle(tester);
+      expect(w.location, '/e/ev1/chat');
+      expect(find.text('6 thành viên'), findsOneWidget);
       expect(find.text('Đăng ký để vào nhóm'), findsNothing);
+    });
+
+    testWidgets('a manager opens the group chat from the chat tab', (
+      tester,
+    ) async {
+      final w = EventsWorld(events: [_free('ev1')], uid: 'p1');
+      await w.pump(tester, path: '/e/ev1', size: _sw);
+      await tester.tap(find.text('Nhóm chat'));
+      await settle(tester);
+      expect(w.location, '/e/ev1/chat');
     });
 
     testWidgets('/timeline opens the Timeline tab with its own code', (
@@ -324,7 +349,10 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Timeline sắp mở'), findsOneWidget);
+      expect(
+        find.text('Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a draft link shows Sự kiện không còn', (tester) async {

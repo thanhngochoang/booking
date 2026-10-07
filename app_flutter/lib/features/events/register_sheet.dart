@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/events/register_controller.dart';
@@ -37,7 +38,18 @@ Future<RegisterOutcome?> showRegisterSheet(
   if (result is RegisterOutcome) {
     messenger
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l.registerDone)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l.registerDone),
+          // A paid (or free) ticket opens the event's group chat.
+          action: result.status == RegistrationStatus.paid
+              ? SnackBarAction(
+                  label: l.registerOpenChat,
+                  onPressed: () => router.push('/e/${event.id}/chat'),
+                )
+              : null,
+        ),
+      );
     router.go('/bookings?tab=events&highlight=${result.registrationId}');
     return result;
   }

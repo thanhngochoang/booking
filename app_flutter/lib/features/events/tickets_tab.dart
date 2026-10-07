@@ -234,6 +234,10 @@ class _TicketTile extends ConsumerWidget {
       qrHeroTag: 'ticket-qr-${r.id}',
       onQrTap: () => _showQr(context, r),
       onCancel: () => _cancel(context, ref),
+      // The group chat opens once the ticket is paid (a free ticket is paid at once).
+      onOpenChat: r.status == RegistrationStatus.paid
+          ? () => context.push('/e/${r.eventId}/chat')
+          : null,
       onDirections: () => launcher.open(
         eventDirectionsUri(
           lat: r.event.lat,

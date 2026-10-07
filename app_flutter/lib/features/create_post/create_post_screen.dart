@@ -25,7 +25,12 @@ class CreatePostScreen extends ConsumerStatefulWidget {
     required this.onAddService,
     required this.onPublished,
     this.onOpenEvents,
+    this.initialCaption,
   });
+
+  /// Text the caption starts with ("#Tag " from an event timeline). Added in
+  /// front of what is already typed, unless it is there already.
+  final String? initialCaption;
 
   /// "Thêm gói", shown when the photographer has no package yet.
   final VoidCallback onAddService;
@@ -56,6 +61,35 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       final now = ref.read(postComposerProvider);
       _caption.text = now.caption;
       _location.text = now.locationName ?? '';
+    });
+    _applyInitialCaption();
+  }
+
+  @override
+  void didUpdateWidget(CreatePostScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.initialCaption != old.initialCaption) {
+      _applyInitialCaption();
+    }
+  }
+
+  /// "#Tag " in front of the caption (once: a caption that has the tag is left as it is).
+  void _applyInitialCaption() {
+    final prefill = widget.initialCaption;
+    if (prefill == null || prefill.trim().isEmpty) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final current = ref.read(postComposerProvider).caption;
+      if (current.toLowerCase().contains(prefill.trim().toLowerCase())) {
+        return;
+      }
+      final next = '$prefill$current';
+      _caption.text = next;
+      ref.read(postComposerProvider.notifier).setCaption(next);
     });
   }
 

@@ -9,9 +9,11 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
+import 'package:photobooking/data/events/event_social_providers.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/event_manage/announce_sheet.dart';
 import 'package:photobooking/features/event_manage/cancel_event_sheet.dart';
 import 'package:photobooking/features/event_manage/checkin_sheet.dart';
 import 'package:photobooking/features/event_manage/manage_event_controller.dart';
@@ -154,6 +156,14 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
       if (mounted) {
         setState(() => _scanning = false);
       }
+    }
+  }
+
+  /// "Nhắn nhóm": pins an announcement at the top of the group chat.
+  Future<void> _announce() async {
+    final pinned = await showAnnounceSheet(context, eventId: widget.eventId);
+    if (pinned && mounted) {
+      _say(context.l10n.manageAnnounceDone);
     }
   }
 
@@ -321,14 +331,13 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
                 children: [
                   Expanded(
                     flex: 40,
-                    child: Tooltip(
-                      message: l.manageBroadcastSoon,
-                      child: AppButton.outline(
-                        l.manageBroadcast,
-                        key: const Key('manage-broadcast'),
-                        // The group chat arrives with the next task.
-                        onPressed: null,
-                      ),
+                    child: AppButton.outline(
+                      l.manageBroadcast,
+                      key: const Key('manage-broadcast'),
+                      // The group chat exists from the moment the event is published.
+                      onPressed: e.summary.status == EventStatus.draft || busy
+                          ? null
+                          : _announce,
                     ),
                   ),
                   const SizedBox(width: AppSpace.s2),
@@ -410,6 +419,10 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
               ),
             ],
           ),
+          if (e.summary.status != EventStatus.draft) ...[
+            const SizedBox(height: AppSpace.s3),
+            _PendingPostsRow(eventId: e.id),
+          ],
           const SizedBox(height: AppSpace.s3),
           SectionHeader(title: l.manageParticipants),
           AsyncView<List<EventRegistration>>(
@@ -471,6 +484,68 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// "Bài chờ duyệt · n": opens the timeline in review mode.
+class _PendingPostsRow extends ConsumerWidget {
+  const _PendingPostsRow({required this.eventId});
+
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final n = ref.watch(timelinePendingCountProvider(eventId)).value ?? 0;
+    return Semantics(
+      button: true,
+      label: '${l.managePending}, $n',
+      excludeSemantics: true,
+      onTap: () => context.push('/e/$eventId/timeline?review=1'),
+      child: Material(
+        key: const Key('manage-pending-row'),
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          onTap: () => context.push('/e/$eventId/timeline?review=1'),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
+              child: Row(
+                children: [
+                  const AppIcon(AppIcons.image),
+                  const SizedBox(width: AppSpace.s3),
+                  Expanded(
+                    child: Text(
+                      l.managePending,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$n',
+                    key: const Key('manage-pending-count'),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s1),
+                  const AppIcon(AppIcons.chevron),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

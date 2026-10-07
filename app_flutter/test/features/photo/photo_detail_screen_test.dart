@@ -1,16 +1,20 @@
 // test/features/photo/photo_detail_screen_test.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/features/photo/photo_detail_screen.dart';
 
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
+import '../../support/event_world.dart';
 import '../../support/icon_finders.dart';
 import '../../support/screen_host.dart';
 
@@ -40,6 +44,7 @@ Future<GoRouter> _open(
   DiscoveryWorld w, {
   String start = '/p/a',
   double textScale = 1,
+  List<Override> extra = const [],
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -49,7 +54,7 @@ Future<GoRouter> _open(
   await tester.pumpWidget(
     screenRouterApp(
       router: router,
-      overrides: w.overrides,
+      overrides: [...w.overrides, ...extra],
       textScale: textScale,
     ),
   );
@@ -362,4 +367,92 @@ void main() {
       },
     );
   }
+
+  group('a photo shared to an event', () {
+    final share = fixturePost(
+      'es',
+      kind: PostKind.eventShare,
+      authorId: 'u7',
+      photographerId: 'p1',
+      serviceId: '',
+      eventId: 'ev1',
+      caption: 'Sáng nay đẹp quá #PhotoWalkev1',
+      hashtags: const ['photowalkev1'],
+    );
+
+    Future<GoRouter> openShare(WidgetTester tester) => _open(
+      tester,
+      DiscoveryWorld(posts: [share]),
+      start: '/p/es',
+      extra: [
+        eventRepositoryProvider.overrideWithValue(
+          FakeEventRepository(events: [detailOf('ev1')]),
+        ),
+      ],
+    );
+
+    testWidgets('an event_share post shows the event chip and no package', (
+      tester,
+    ) async {
+      await openShare(tester);
+      expect(find.text('Sáng nay đẹp quá #PhotoWalkev1'), findsOneWidget);
+      expect(find.text('Sự kiện: Photo walk'), findsOneWidget);
+      expect(find.byKey(const Key('service-card')), findsNothing);
+      expect(find.byKey(const Key('photo-book')), findsNothing);
+      expect(find.byKey(const Key('photo-profile')), findsNothing);
+      expect(find.byKey(const Key('follow')), findsNothing);
+      expect(find.byKey(const Key('photo-share-author')), findsOneWidget);
+    });
+
+    testWidgets('the chip opens the event', (tester) async {
+      final router = await _openWithEventRoute(tester, share);
+      await tester.tap(find.byKey(const Key('photo-event-chip')));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.toString(), '/e/ev1');
+    });
+
+    testWidgets('a work post has no event chip', (tester) async {
+      await _open(tester, DiscoveryWorld());
+      expect(find.byKey(const Key('photo-event-chip')), findsNothing);
+      expect(find.byKey(const Key('photo-book')), findsOneWidget);
+    });
+  });
+}
+
+Future<GoRouter> _openWithEventRoute(
+  WidgetTester tester,
+  PostSummary share,
+) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final w = DiscoveryWorld(posts: [share]);
+  await w.init();
+  final router = GoRouter(
+    initialLocation: '/p/es',
+    routes: [
+      GoRoute(
+        path: '/p/:id',
+        builder: (_, s) => PhotoDetailScreen(postId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/e/:id',
+        builder: (_, s) => Text('event ${s.pathParameters['id']}'),
+      ),
+      GoRoute(path: '/home', builder: (_, _) => const Text('home')),
+    ],
+  );
+  await tester.pumpWidget(
+    screenRouterApp(
+      router: router,
+      overrides: [
+        ...w.overrides,
+        eventRepositoryProvider.overrideWithValue(
+          FakeEventRepository(events: [detailOf('ev1')]),
+        ),
+      ],
+    ),
+  );
+  await tester.pumpAndSettle();
+  return router;
 }

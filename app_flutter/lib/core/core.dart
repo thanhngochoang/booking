@@ -42,6 +42,7 @@ export 'package:photobooking/core/widgets/error_state.dart';
 export 'package:photobooking/core/widgets/evidence_picker.dart';
 export 'package:photobooking/core/widgets/free_tag.dart';
 export 'package:photobooking/core/widgets/glass_card.dart';
+export 'package:photobooking/core/widgets/hashtag_chip.dart';
 export 'package:photobooking/core/widgets/image_backdrop.dart';
 export 'package:photobooking/core/widgets/level_selector.dart';
 export 'package:photobooking/core/widgets/location_prompt_card.dart';

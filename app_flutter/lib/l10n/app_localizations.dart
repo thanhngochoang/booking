@@ -7911,6 +7911,336 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa chọn ngày'**
   String get eventDateUnset;
+
+  /// S11.05: how many visible posts the event timeline holds, next to the hashtag chip.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} bài'**
+  String timelineCount(int n);
+
+  /// S11.05 bottom button; {tag} is the event hashtag with its #.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng ảnh với {tag}'**
+  String timelinePost(String tag);
+
+  /// No description provided for @timelineEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!'**
+  String get timelineEmpty;
+
+  /// No description provided for @timelinePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ duyệt'**
+  String get timelinePending;
+
+  /// No description provided for @timelineVisibleTab.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng'**
+  String get timelineVisibleTab;
+
+  /// No description provided for @timelinePendingEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có bài nào chờ duyệt.'**
+  String get timelinePendingEmpty;
+
+  /// No description provided for @timelineClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline đã đóng đăng mới'**
+  String get timelineClosed;
+
+  /// No description provided for @timelineHide.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn khỏi timeline'**
+  String get timelineHide;
+
+  /// No description provided for @timelineApprove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt'**
+  String get timelineApprove;
+
+  /// No description provided for @timelineReport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo'**
+  String get timelineReport;
+
+  /// No description provided for @timelineReportSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp có'**
+  String get timelineReportSoon;
+
+  /// No description provided for @timelineHostSuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'chủ sự kiện'**
+  String get timelineHostSuffix;
+
+  /// No description provided for @timelineMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get timelineMore;
+
+  /// No description provided for @timelineModerateFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thực hiện được. Thử lại nhé.'**
+  String get timelineModerateFailed;
+
+  /// No description provided for @timelineItemLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh của {name}'**
+  String timelineItemLabel(String name);
+
+  /// No description provided for @timelineMenuHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhấn giữ để mở menu'**
+  String get timelineMenuHint;
+
+  /// No description provided for @shareTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ ảnh sự kiện'**
+  String get shareTitle;
+
+  /// No description provided for @shareSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng'**
+  String get shareSend;
+
+  /// No description provided for @shareCaptionHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết chú thích…'**
+  String get shareCaptionHint;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đăng được ảnh. Kiểm tra mạng rồi thử lại.'**
+  String get shareFailed;
+
+  /// No description provided for @shareClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Timeline đã đóng đăng mới.'**
+  String get shareClosed;
+
+  /// No description provided for @shareDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng lên timeline'**
+  String get shareDone;
+
+  /// No description provided for @shareDiscardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ bài đang soạn?'**
+  String get shareDiscardTitle;
+
+  /// No description provided for @shareKeepEditing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục soạn'**
+  String get shareKeepEditing;
+
+  /// S11.06 app bar subtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} thành viên'**
+  String chatMembers(int n);
+
+  /// No description provided for @chatPinned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim'**
+  String get chatPinned;
+
+  /// No description provided for @eventChatInput.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn cho nhóm…'**
+  String get eventChatInput;
+
+  /// No description provided for @eventChatClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhóm đã đóng'**
+  String get eventChatClosed;
+
+  /// No description provided for @chatMutedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang bị tắt tiếng trong nhóm'**
+  String get chatMutedNote;
+
+  /// No description provided for @chatModOnly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ điều hành được nhắn'**
+  String get chatModOnly;
+
+  /// No description provided for @chatJoined.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} đã vào nhóm'**
+  String chatJoined(String name);
+
+  /// No description provided for @chatPin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim'**
+  String get chatPin;
+
+  /// No description provided for @chatUnpin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ ghim'**
+  String get chatUnpin;
+
+  /// No description provided for @chatDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get chatDelete;
+
+  /// No description provided for @chatDeleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn đã bị xoá'**
+  String get chatDeleted;
+
+  /// No description provided for @chatMute24h.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt tiếng 24 giờ'**
+  String get chatMute24h;
+
+  /// No description provided for @chatUnmute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật tiếng'**
+  String get chatUnmute;
+
+  /// No description provided for @chatRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ khỏi nhóm'**
+  String get chatRemove;
+
+  /// No description provided for @chatRemoveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ {name} khỏi nhóm?'**
+  String chatRemoveTitle(String name);
+
+  /// No description provided for @chatMemberList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên'**
+  String get chatMemberList;
+
+  /// No description provided for @chatMemberModerator.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều hành'**
+  String get chatMemberModerator;
+
+  /// No description provided for @chatMemberMuted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang bị tắt tiếng'**
+  String get chatMemberMuted;
+
+  /// No description provided for @chatMuteGroup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tắt tiếng nhóm'**
+  String get chatMuteGroup;
+
+  /// No description provided for @chatUnmuteGroup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật tiếng nhóm'**
+  String get chatUnmuteGroup;
+
+  /// No description provided for @chatRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhắn quá nhanh. Thử lại sau ít giây nhé.'**
+  String get chatRateLimited;
+
+  /// No description provided for @chatActionFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thực hiện được. Thử lại nhé.'**
+  String get chatActionFailed;
+
+  /// No description provided for @chatLockedAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem sự kiện'**
+  String get chatLockedAction;
+
+  /// No description provided for @chatMessageOf.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name}: {text}'**
+  String chatMessageOf(String name, String text);
+
+  /// No description provided for @manageAnnounceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim thông báo vào nhóm'**
+  String get manageAnnounceTitle;
+
+  /// No description provided for @manageAnnounceHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Viết thông báo cho cả nhóm'**
+  String get manageAnnounceHint;
+
+  /// No description provided for @manageAnnounceSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghim'**
+  String get manageAnnounceSend;
+
+  /// No description provided for @manageAnnounceDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ghim thông báo vào nhóm'**
+  String get manageAnnounceDone;
+
+  /// No description provided for @manageAnnounceFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không ghim được thông báo. Thử lại nhé.'**
+  String get manageAnnounceFailed;
+
+  /// No description provided for @managePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài chờ duyệt'**
+  String get managePending;
+
+  /// S02.02: the chip under the caption of a photo shared to an event.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện: {title}'**
+  String postEventChip(String title);
 }
 
 class _AppLocalizationsDelegate

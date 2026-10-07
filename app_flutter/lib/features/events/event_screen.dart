@@ -10,11 +10,14 @@ import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/events/event_info_tab.dart';
 import 'package:photobooking/features/events/event_join_bar.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/events/register_sheet.dart';
+import 'package:photobooking/features/events/timeline_controller.dart';
+import 'package:photobooking/features/events/timeline_tab.dart';
 
 /// The three tabs of an event (Decision 26): `/e/:id` opens "Thông tin",
 /// `/e/:id/timeline` opens "Timeline".
@@ -27,10 +30,14 @@ class EventScreen extends ConsumerStatefulWidget {
     required this.eventId,
     this.initialTab = EventTab.info,
     this.openRegister = false,
+    this.initialReview = false,
   });
 
   final String eventId;
   final EventTab initialTab;
+
+  /// Open the timeline on "Chờ duyệt" (managers; `/e/:id/timeline?review=1`).
+  final bool initialReview;
 
   /// Coming back from "add phone" (`/e/:id/join`): open S11.03 at once.
   final bool openRegister;
@@ -94,6 +101,41 @@ class _EventScreenState extends ConsumerState<EventScreen> {
 
   Future<void> _openRegister(EventDetail event) =>
       showRegisterSheet(context, event: event);
+
+  /// "Đăng ảnh với #Tag": photographers write a post (S10.01), everyone else
+  /// shares photos here.
+  void _post(EventDetail e, TimelinePostMode mode) {
+    if (mode == TimelinePostMode.photographer) {
+      context.go(timelineCaptionRoute(e.hashtag));
+    } else {
+      context.push('/e/${e.id}/share');
+    }
+  }
+
+  /// Pull to refresh on the Timeline tab: both lists reload.
+  Widget _refreshable(
+    EventDetail e, {
+    required bool enabled,
+    required Widget child,
+  }) {
+    if (!enabled) {
+      return child;
+    }
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          for (final status in [TimelineStatus.visible, TimelineStatus.pending])
+            ref
+                .read(
+                  timelineControllerProvider((eventId: e.id, status: status))
+                      .notifier,
+                )
+                .refresh(),
+        ]);
+      },
+      child: child,
+    );
+  }
 
   void _viewTicket(EventRegistration? r) {
     final highlight = r == null ? '' : '&highlight=${r.id}';
@@ -200,6 +242,13 @@ class _EventScreenState extends ConsumerState<EventScreen> {
     final cancelled = state == EventJoinState.cancelled;
     final member = manager || (reg?.status == RegistrationStatus.paid);
     final timeline = _tab == EventTab.timeline;
+    final postMode = timelinePostMode(
+      e,
+      manager: manager,
+      paidAttendee: isPaidAttendee(reg),
+      role: ref.watch(currentProfileProvider).value?.role,
+      now: now,
+    );
     final theme = Theme.of(context);
 
     final cover = s.coverUrl;
@@ -210,7 +259,14 @@ class _EventScreenState extends ConsumerState<EventScreen> {
         SegmentOption(value: EventTab.chat, label: l.eventTabChat),
       ],
       value: _tab,
-      onChanged: (t) => setState(() => _tab = t),
+      onChanged: (t) {
+        // Members open the group chat on its own screen (S11.06).
+        if (t == EventTab.chat && member) {
+          context.push('/e/${e.id}/chat');
+          return;
+        }
+        setState(() => _tab = t);
+      },
     );
 
     final scaffold = Scaffold(
@@ -237,94 +293,103 @@ class _EventScreenState extends ConsumerState<EventScreen> {
               ],
             )
           : null,
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          if (!timeline)
-            _Cover(
-              url: cover,
-              onBack: _back,
-              onShare: _share,
-              shareTooltip: l.eventShareTooltip,
-              backTooltip: l.back,
-            ),
-          if (cancelled) _CancelledStrip(text: l.eventCancelled),
-          if (s.isFree && !cancelled && !timeline) const FreeBanner(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpace.s4,
-              AppSpace.s3,
-              AppSpace.s4,
-              AppSpace.s6,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!timeline) ...[
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s2,
-                          vertical: 3,
+      body: _refreshable(
+        e,
+        enabled: timeline,
+        child: ListView(
+          physics: timeline ? const AlwaysScrollableScrollPhysics() : null,
+          padding: EdgeInsets.zero,
+          children: [
+            if (!timeline)
+              _Cover(
+                url: cover,
+                onBack: _back,
+                onShare: _share,
+                shareTooltip: l.eventShareTooltip,
+                backTooltip: l.back,
+              ),
+            if (cancelled) _CancelledStrip(text: l.eventCancelled),
+            if (s.isFree && !cancelled && !timeline) const FreeBanner(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s4,
+                AppSpace.s3,
+                AppSpace.s4,
+                AppSpace.s6,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!timeline) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
-                        child: Text(
-                          s.type.label(l),
-                          style: const TextStyle(
-                            fontSize: AppText.xs,
-                            fontWeight: FontWeight.w600,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s2,
+                            vertical: 3,
+                          ),
+                          child: Text(
+                            s.type.label(l),
+                            style: const TextStyle(
+                              fontSize: AppText.xs,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpace.s2),
-                  Text(
-                    s.title,
-                    key: const Key('event-title'),
-                    style: const TextStyle(
-                      fontFamily: AppFonts.display,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      height: 1.15,
+                    const SizedBox(height: AppSpace.s2),
+                    Text(
+                      s.title,
+                      key: const Key('event-title'),
+                      style: const TextStyle(
+                        fontFamily: AppFonts.display,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: AppSpace.s3),
+                  ],
+                  tabs,
                   const SizedBox(height: AppSpace.s3),
+                  switch (_tab) {
+                    EventTab.info => EventInfoTab(
+                      event: e,
+                      registration: reg,
+                      isManager: manager,
+                    ),
+                    EventTab.timeline => TimelineTab(
+                      event: e,
+                      isManager: manager,
+                      initialReview: widget.initialReview,
+                    ),
+                    // A member never lands here: the tab opens S11.06.
+                    EventTab.chat => _Panel(
+                      title: l.eventChatLocked,
+                      body: l.eventChatLockedBody,
+                      icon: AppIcons.lock,
+                    ),
+                  },
                 ],
-                tabs,
-                const SizedBox(height: AppSpace.s3),
-                switch (_tab) {
-                  EventTab.info => EventInfoTab(
-                    event: e,
-                    registration: reg,
-                    isManager: manager,
-                  ),
-                  EventTab.timeline => _Panel(
-                    title: l.eventTimelineSoon,
-                    icon: AppIcons.image,
-                  ),
-                  EventTab.chat when member => _Panel(
-                    title: l.eventChatSoon,
-                    icon: AppIcons.chat,
-                  ),
-                  EventTab.chat => _Panel(
-                    title: l.eventChatLocked,
-                    body: l.eventChatLockedBody,
-                    icon: AppIcons.lock,
-                  ),
-                },
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: cancelled
           ? null
+          : postMode != TimelinePostMode.none && timeline
+          ? TimelinePostBar(
+              mode: postMode,
+              hashtag: e.hashtag,
+              onPost: () => _post(e, postMode),
+            )
           : EventJoinBar(
               event: e,
               state: state,

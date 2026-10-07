@@ -263,6 +263,21 @@ void main() {
     expect(w.location, '/events');
   });
 
+  testWidgets('a paid ticket has Vào nhóm chat that opens the group chat', (
+    tester,
+  ) async {
+    final w = await _open(tester, [_reg('a')]);
+    expect(find.text('Vào nhóm chat'), findsOneWidget);
+    await tester.tap(find.text('Vào nhóm chat'));
+    await settle(tester);
+    expect(w.location, '/e/ev1/chat');
+  });
+
+  testWidgets('a held ticket has no group chat yet', (tester) async {
+    await _open(tester, [_reg('a', status: RegistrationStatus.held)]);
+    expect(find.text('Vào nhóm chat'), findsNothing);
+  });
+
   testWidgets('tapping a card opens the event', (tester) async {
     final w = await _open(tester, [_reg('a')]);
     await tester.tap(find.text('Photo walk a'));

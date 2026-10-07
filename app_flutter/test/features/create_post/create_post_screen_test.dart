@@ -34,6 +34,7 @@ class _Create {
     this.withService = true,
     MediaUploader? uploader,
     Map<String, Object> prefsValues = const {},
+    this.initialCaption,
   }) : world = CreatePostWorld(prefsValues: prefsValues),
        picker = FakeImagePicker(
          picks ??
@@ -47,6 +48,7 @@ class _Create {
   final FakeImagePicker picker;
   final MediaUploader uploader;
   final bool withService;
+  final String? initialCaption;
   late final FakePostPublisher publisher;
   late List<Override> overrides;
   final published = <String>[];
@@ -67,6 +69,7 @@ class _Create {
   }
 
   Widget screen() => CreatePostScreen(
+    initialCaption: initialCaption,
     onAddService: () => addServiceTaps++,
     onPublished: published.add,
   );
@@ -583,6 +586,80 @@ void main() {
     expect(_state(tester).serviceId, isNull);
     expect(_enabled(tester, 'create-publish'), isFalse);
     expect(find.text('Chọn gói dịch vụ cho bài đăng'), findsOneWidget);
+  });
+
+  group('S10.01 opened from an event timeline', () {
+    String field(WidgetTester tester) => tester
+        .widget<TextField>(find.byKey(const Key('create-caption')))
+        .controller!
+        .text;
+
+    testWidgets('the caption starts with #Tag and a space', (tester) async {
+      await _open(tester, create: _Create(initialCaption: '#PhotoWalk1020 '));
+      expect(field(tester), '#PhotoWalk1020 ');
+      expect(_state(tester).caption, '#PhotoWalk1020 ');
+    });
+
+    testWidgets('it goes in front of what was already typed', (tester) async {
+      final c = _Create(
+        initialCaption: '#PhotoWalk1020 ',
+        prefsValues: {'postDraft:$_uid': '{"caption":"Hello"}'},
+      );
+      await _open(tester, create: c);
+      expect(field(tester), '#PhotoWalk1020 Hello');
+    });
+
+    testWidgets('a caption that has the tag (any case) is left alone', (
+      tester,
+    ) async {
+      final c = _Create(
+        initialCaption: '#PhotoWalk1020 ',
+        prefsValues: {'postDraft:$_uid': '{"caption":"Đẹp #photowalk1020"}'},
+      );
+      await _open(tester, create: c);
+      expect(field(tester), 'Đẹp #photowalk1020');
+    });
+
+    testWidgets('/action?caption= prefills a photographer\'s post', (
+      tester,
+    ) async {
+      final w = CreatePostWorld();
+      await w.init();
+      w.services.add(fixtureService('s1', photographerId: w.uid));
+      final router = GoRouter(
+        initialLocation: AppTab.action.path,
+        routes: [
+          GoRoute(
+            path: AppTab.action.path,
+            builder: (_, s) =>
+                ActionTab(caption: s.uri.queryParameters['caption']),
+          ),
+          GoRoute(path: '/events/new', builder: (_, _) => const Text('events')),
+        ],
+      );
+      await tester.pumpWidget(
+        screenRouterApp(router: router, overrides: w.overrides),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('create-caption')))
+            .controller!
+            .text,
+        '',
+      );
+      router.go(
+        '${AppTab.action.path}?caption=${Uri.encodeQueryComponent('#Tag1 ')}',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('create-caption')))
+            .controller!
+            .text,
+        '#Tag1 ',
+      );
+    });
   });
 
   group('S10.01 Bài đăng / Sự kiện', () {

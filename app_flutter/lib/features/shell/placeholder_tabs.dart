@@ -42,12 +42,22 @@ Future<void> _openSetupIfUnfinished(BuildContext context, WidgetRef ref) async {
 }
 
 class ActionTab extends ConsumerWidget {
-  const ActionTab({super.key, this.specialty, this.style, this.area});
+  const ActionTab({
+    super.key,
+    this.specialty,
+    this.style,
+    this.area,
+    this.caption,
+  });
 
   /// Filters carried by the link `/action?specialty=…&style=…&area=…`.
   final String? specialty;
   final String? style;
   final String? area;
+
+  /// `/action?caption=%23Tag%20`: a photographer's post opens with this text
+  /// (the timeline's "Đăng ảnh với #Tag").
+  final String? caption;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,6 +73,7 @@ class ActionTab extends ConsumerWidget {
       );
     }
     return CreatePostScreen(
+      initialCaption: caption,
       onAddService: () => context.push('/setup/2'),
       onOpenEvents: () => context.push('/events/new'),
       onPublished: (postId) {

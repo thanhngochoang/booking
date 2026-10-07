@@ -118,6 +118,8 @@ class FirestoreChatRepository implements ChatRepository {
         .asyncMap((snap) async {
           final items = <ChatListItem>[];
           for (final doc in snap.docs) {
+            // Event group chats have their own screen (S11.06), never a row here.
+            if (doc.data()['kind'] == 'event_group') continue;
             final thread = ChatThread.fromFirestore(doc);
             int unread = 0;
             try {

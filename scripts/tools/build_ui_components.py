@@ -267,6 +267,9 @@ tile('buttons', 'AppButton', 'AppButton.primary|outline|secondary|danger|text({l
 tile('chips', 'AppChip · SegmentedTabs · AppOptionTile', 'AppChip({label, selected, onChanged, kind}) · SegmentedTabs<T>({options, value, onChanged}) · AppOptionTile({title, subtitle, selected, onTap})', 'S02.01, S02.06, S05.01, S04.01, S02.05',
      '<div class="chips"><span class="chip on">Dành cho bạn</span><span class="chip">Chân dung</span><span class="chip ac">T7 12/10</span></div><div class="seg"><span class="on">Sắp tới</span><span>Đang chờ</span><span>Đã xong</span></div><div class="opt on"><div class="th ph p3"></div><div class="grow"><b>Chân dung 2 giờ</b><span class="meta">40 ảnh · 1 địa điểm</span></div><span class="pr">1.500.000₫</span></div>',
      f'<div class="row" style="gap:6px">{sk("96px","30px","999px")}{sk("80px","30px","999px")}{sk("72px","30px","999px")}</div>{sk("100%","36px","16px")}<div class="opt">{sk("48px","48px","10px")}<div class="grow" style="display:flex;flex-direction:column;gap:6px">{sk("60%")}{sk("45%","9px")}</div>{sk("70px")}</div>')
+tile('hashtagchip', 'HashtagChip', 'HashtagChip({tag, count, onTap})', 'S11.05',
+     '<div class="row"><span class="chip on">#PhotoWalkPhoCo1020</span><span class="meta x tn">48 bài</span></div>',
+     f'<div class="row" style="gap:8px">{sk("150px","30px","999px")}{sk("40px","12px")}</div>')
 tile('stepprogress', 'StepProgress', 'StepProgress({current, total, label, showCount = true})', 'S04.01–S04.03, S08.01, S12.01, S12.02',
      '<div class="row"><div class="prog grow"><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="meta x tn">2 / 4</span></div>',
      '<div class="meta">Không có skeleton (không phụ thuộc dữ liệu).</div>')

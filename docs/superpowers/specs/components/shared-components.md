@@ -131,6 +131,9 @@ Dòng thời gian 7 bước của booking. `StatusTimeline({required List<Timeli
 ### FreeTag và FreeBanner · Mới
 Dùng khi sự kiện có `price == 0`. `FreeTag()` là tag nhỏ nền xanh nhạt (`successSubtle` ở sáng, xanh 20% ở tối), chữ xanh đậm (≥ 4,5:1), nhãn “Không thu phí”, đặt ở chỗ giá của `EventCard` (thay “0₫”). `FreeBanner({String? body})` là dải đầy chiều rộng dưới ảnh bìa ở S11.02: biểu tượng tích + “Không thu phí” (đậm) + dòng phụ “Đăng ký để giữ chỗ, không cần thanh toán”. Không chỉ dựa vào màu (luôn có chữ). Dùng ở S02.03, S11.01, S11.02, S12.02 (xem trước), S02.04; S11.03 và S12.03 xử lý riêng (bỏ cổng, doanh thu “—”).
 
+### HashtagChip · Mới
+`HashtagChip({required String tag, int? count, VoidCallback? onTap})`. Viên thuốc `#Tag` (chữ primary trên nền `primarySubtle`, viền primary, Be Vietnam Pro 600) và "{n} bài" bên cạnh bằng chữ phụ; `tag` có hoặc không có `#` đều hiện đúng một `#`. Có `onTap` thì là nút cao ≥ 48dp (`Semantics(button)`), không có thì là nhãn tĩnh. Đọc "#Tag, {n} bài". Tag dài bị cắt bằng dấu chấm lửng một dòng. Dùng ở S11.05 (hashtag của sự kiện). Không có skeleton riêng (dùng hai khối `AppSkeleton`).  
+
 ### CapacityBar · Mới
 `CapacityBar({required int used, required int total, String? label})`. Thanh gradient 6dp trên nền ô nhập; chữ "{used} / {total} đã đăng ký" luôn kèm; `Semantics(value)` theo chữ. Dùng ở S11.02, S12.03 và tiến độ huy hiệu (S03.02).
 
@@ -464,3 +467,8 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.error` | `error` | (mới, chưa có trong mock) | `Icons.error_outline` |
 | `AppIcons.warning` | `warning` | (mới, chưa có trong mock) | `Icons.warning_amber_rounded` |
 | `AppIcons.cloudOff` | `cloud_off` | (mới, chưa có trong mock) | `Icons.cloud_off_rounded`, `Icons.cloud_off_outlined` |
+| `AppIcons.pushPin` | `push_pin` | (mới, chưa có trong mock) | — |
+| `AppIcons.volumeOff` | `volume_off` | (mới, chưa có trong mock) | — |
+| `AppIcons.delete` | `delete` | (mới, chưa có trong mock) | `Icons.delete_outline` |
+| `AppIcons.personRemove` | `person_remove` | (mới, chưa có trong mock) | — |
+| `AppIcons.flag` | `flag` | (mới, chưa có trong mock) | `Icons.flag_outlined` |

@@ -40,6 +40,7 @@ class PostSummary {
     this.albumPosition,
     this.likeCount = 0,
     this.saveCount = 0,
+    this.eventId,
     required this.createdAt,
   }) : assert(images.length > 0, 'a post has at least one image');
 
@@ -69,6 +70,9 @@ class PostSummary {
   final int? albumPosition;
   final int likeCount;
   final int saveCount;
+
+  /// The event an `event_share` post was shared to (S11.05); null otherwise.
+  final String? eventId;
   final DateTime createdAt;
 
   PostImage get cover => images.first;

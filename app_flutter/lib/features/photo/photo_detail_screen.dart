@@ -8,7 +8,9 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
+import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photo/photo_detail_controller.dart';
@@ -198,6 +200,7 @@ class _Content extends ConsumerWidget {
     final following = ref.watch(
       followProvider.select((m) => m[post.photographerId] ?? false),
     );
+    final isShare = post.kind == PostKind.eventShare;
     final active = service != null && service.active;
     final stack =
         MediaQuery.textScalerOf(context).scale(_stackBodyPx) > _stackAbovePx;
@@ -247,7 +250,9 @@ class _Content extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (author != null)
+                    if (isShare)
+                      _ShareAuthor(authorId: post.authorId)
+                    else if (author != null)
                       Row(
                         children: [
                           AppAvatar(
@@ -287,6 +292,10 @@ class _Content extends ConsumerWidget {
                     if (post.caption.isNotEmpty) ...[
                       const SizedBox(height: AppSpace.s3),
                       Text(post.caption),
+                    ],
+                    if (isShare && post.eventId != null) ...[
+                      const SizedBox(height: AppSpace.s2),
+                      _EventChip(eventId: post.eventId!),
                     ],
                     if (post.kind == PostKind.realShoot && author != null) ...[
                       const SizedBox(height: AppSpace.s2),
@@ -395,25 +404,79 @@ class _Content extends ConsumerWidget {
             ],
           ),
         ),
-        AppFooterBar(
-          child: stack
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    profileButton,
-                    const SizedBox(height: AppSpace.s2),
-                    bookButton,
-                  ],
-                )
-              : Row(
-                  children: [
-                    Expanded(flex: 4, child: profileButton),
-                    const SizedBox(width: AppSpace.s2),
-                    Expanded(flex: 6, child: bookButton),
-                  ],
-                ),
+        if (!isShare)
+          AppFooterBar(
+            child: stack
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      profileButton,
+                      const SizedBox(height: AppSpace.s2),
+                      bookButton,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(flex: 4, child: profileButton),
+                      const SizedBox(width: AppSpace.s2),
+                      Expanded(flex: 6, child: bookButton),
+                    ],
+                  ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Who shared a photo to an event: a name and an avatar, no follow button.
+class _ShareAuthor extends ConsumerWidget {
+  const _ShareAuthor({required this.authorId});
+  final String authorId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(partyProfileProvider(authorId)).value;
+    final name = profile?.displayName ?? '';
+    return Row(
+      key: const Key('photo-share-author'),
+      children: [
+        AppAvatar(url: profile?.avatarUrl, name: name, decorative: true),
+        const SizedBox(width: AppSpace.s3),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
       ],
+    );
+  }
+}
+
+/// "Sự kiện: {title}" under the caption of a photo shared to an event; opens it.
+class _EventChip extends ConsumerWidget {
+  const _EventChip({required this.eventId});
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final event = ref.watch(eventProvider(eventId)).value;
+    if (event == null) {
+      return const SizedBox.shrink();
+    }
+    final label = context.l10n.postEventChip(event.summary.title);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: AppChip(
+        key: const Key('photo-event-chip'),
+        label: label,
+        selected: false,
+        kind: AppChipKind.context,
+        leading: const AppIcon(AppIcons.calendar, size: _iconSize),
+        onChanged: (_) => context.push('/e/$eventId'),
+      ),
     );
   }
 }

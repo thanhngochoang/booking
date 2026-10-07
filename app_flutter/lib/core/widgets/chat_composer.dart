@@ -19,9 +19,13 @@ class ChatComposer extends StatefulWidget {
     this.enabled = true,
     this.disabledReason,
     this.busy = false,
+    this.hint,
   });
 
   final ValueChanged<String> onSend;
+
+  /// Placeholder while the composer is on; defaults to the 1-1 chat's.
+  final String? hint;
   final VoidCallback? onPickImage;
   final bool enabled;
   final String? disabledReason;
@@ -134,7 +138,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: widget.enabled
-                      ? 'Nhập tin nhắn…'
+                      ? (widget.hint ?? 'Nhập tin nhắn…')
                       : (widget.disabledReason ?? 'Cuộc trò chuyện đã đóng'),
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: secondary,

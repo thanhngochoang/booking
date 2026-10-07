@@ -100,6 +100,11 @@ abstract final class AppIcons {
   static const IconData error = Symbols.error_rounded;
   static const IconData warning = Symbols.warning_rounded;
   static const IconData cloudOff = Symbols.cloud_off_rounded;
+  static const IconData pushPin = Symbols.push_pin_rounded;
+  static const IconData volumeOff = Symbols.volume_off_rounded;
+  static const IconData delete = Symbols.delete_rounded;
+  static const IconData personRemove = Symbols.person_remove_rounded;
+  static const IconData flag = Symbols.flag_rounded;
 }
 
 /// Icon sizes (logical pixels).

@@ -135,6 +135,19 @@ void main() {
     expect(find.byKey(const Key('register-submit')), findsNothing);
   });
 
+  testWidgets('success offers Vào nhóm chat on the SnackBar', (tester) async {
+    final w = await _open(tester);
+    await tester.tap(find.byKey(const Key('register-submit')));
+    await settle(tester);
+    expect(
+      find.widgetWithText(SnackBarAction, 'Vào nhóm chat'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(SnackBarAction, 'Vào nhóm chat'));
+    await settle(tester);
+    expect(w.location, '/e/ev1/chat');
+  });
+
   testWidgets('sold_out closes the sheet and says Hết chỗ', (tester) async {
     final w = await _open(tester);
     w.repo.failWith = const EventError('sold_out');

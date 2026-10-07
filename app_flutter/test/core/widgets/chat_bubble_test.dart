@@ -5,6 +5,7 @@ import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/chat_bubble.dart';
 import 'package:photobooking/core/widgets/cta_surface.dart';
+import 'package:photobooking/core/widgets/network_photo.dart';
 
 import 'widget_host.dart';
 
@@ -61,6 +62,35 @@ void main() {
 
     expect(find.text('Bến Bạch Đằng, Quận 1'), findsOneWidget);
     expect(find.byIcon(AppIcons.place), findsOneWidget);
+  });
+
+  testWidgets('a photo still being sent shows from the file, not the network', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const ChatBubble(
+          content: ImageContent('', localPath: '/tmp/none.jpg'),
+          mine: true,
+          state: BubbleSendState.sending,
+        ),
+      ),
+    );
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.byType(NetworkPhoto), findsNothing);
+    // Once the message lands, the URL takes over.
+    await tester.pumpWidget(
+      hostWidget(
+        const ChatBubble(
+          content: ImageContent(
+            'https://example.com/a.jpg',
+            localPath: '/tmp/none.jpg',
+          ),
+          mine: true,
+        ),
+      ),
+    );
+    expect(find.byType(NetworkPhoto), findsOneWidget);
   });
 
   testWidgets('system bubble is centered and displays text with actions', (

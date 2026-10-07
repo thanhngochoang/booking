@@ -4475,4 +4475,185 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get eventDateUnset => 'Chưa chọn ngày';
+
+  @override
+  String timelineCount(int n) {
+    return '$n bài';
+  }
+
+  @override
+  String timelinePost(String tag) {
+    return 'Đăng ảnh với $tag';
+  }
+
+  @override
+  String get timelineEmpty => 'Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!';
+
+  @override
+  String get timelinePending => 'Chờ duyệt';
+
+  @override
+  String get timelineVisibleTab => 'Đã đăng';
+
+  @override
+  String get timelinePendingEmpty => 'Không có bài nào chờ duyệt.';
+
+  @override
+  String get timelineClosed => 'Timeline đã đóng đăng mới';
+
+  @override
+  String get timelineHide => 'Ẩn khỏi timeline';
+
+  @override
+  String get timelineApprove => 'Duyệt';
+
+  @override
+  String get timelineReport => 'Báo cáo';
+
+  @override
+  String get timelineReportSoon => 'Sắp có';
+
+  @override
+  String get timelineHostSuffix => 'chủ sự kiện';
+
+  @override
+  String get timelineMore => 'Xem thêm';
+
+  @override
+  String get timelineModerateFailed => 'Không thực hiện được. Thử lại nhé.';
+
+  @override
+  String timelineItemLabel(String name) {
+    return 'Ảnh của $name';
+  }
+
+  @override
+  String get timelineMenuHint => 'Nhấn giữ để mở menu';
+
+  @override
+  String get shareTitle => 'Chia sẻ ảnh sự kiện';
+
+  @override
+  String get shareSend => 'Đăng';
+
+  @override
+  String get shareCaptionHint => 'Viết chú thích…';
+
+  @override
+  String get shareFailed => 'Không đăng được ảnh. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get shareClosed => 'Timeline đã đóng đăng mới.';
+
+  @override
+  String get shareDone => 'Đã đăng lên timeline';
+
+  @override
+  String get shareDiscardTitle => 'Bỏ bài đang soạn?';
+
+  @override
+  String get shareKeepEditing => 'Tiếp tục soạn';
+
+  @override
+  String chatMembers(int n) {
+    return '$n thành viên';
+  }
+
+  @override
+  String get chatPinned => 'Ghim';
+
+  @override
+  String get eventChatInput => 'Nhắn cho nhóm…';
+
+  @override
+  String get eventChatClosed => 'Nhóm đã đóng';
+
+  @override
+  String get chatMutedNote => 'Bạn đang bị tắt tiếng trong nhóm';
+
+  @override
+  String get chatModOnly => 'Chỉ điều hành được nhắn';
+
+  @override
+  String chatJoined(String name) {
+    return '$name đã vào nhóm';
+  }
+
+  @override
+  String get chatPin => 'Ghim';
+
+  @override
+  String get chatUnpin => 'Bỏ ghim';
+
+  @override
+  String get chatDelete => 'Xoá';
+
+  @override
+  String get chatDeleted => 'Tin nhắn đã bị xoá';
+
+  @override
+  String get chatMute24h => 'Tắt tiếng 24 giờ';
+
+  @override
+  String get chatUnmute => 'Bật tiếng';
+
+  @override
+  String get chatRemove => 'Gỡ khỏi nhóm';
+
+  @override
+  String chatRemoveTitle(String name) {
+    return 'Gỡ $name khỏi nhóm?';
+  }
+
+  @override
+  String get chatMemberList => 'Thành viên';
+
+  @override
+  String get chatMemberModerator => 'Điều hành';
+
+  @override
+  String get chatMemberMuted => 'Đang bị tắt tiếng';
+
+  @override
+  String get chatMuteGroup => 'Tắt tiếng nhóm';
+
+  @override
+  String get chatUnmuteGroup => 'Bật tiếng nhóm';
+
+  @override
+  String get chatRateLimited => 'Bạn nhắn quá nhanh. Thử lại sau ít giây nhé.';
+
+  @override
+  String get chatActionFailed => 'Không thực hiện được. Thử lại nhé.';
+
+  @override
+  String get chatLockedAction => 'Xem sự kiện';
+
+  @override
+  String chatMessageOf(String name, String text) {
+    return '$name: $text';
+  }
+
+  @override
+  String get manageAnnounceTitle => 'Ghim thông báo vào nhóm';
+
+  @override
+  String get manageAnnounceHint => 'Viết thông báo cho cả nhóm';
+
+  @override
+  String get manageAnnounceSend => 'Ghim';
+
+  @override
+  String get manageAnnounceDone => 'Đã ghim thông báo vào nhóm';
+
+  @override
+  String get manageAnnounceFailed => 'Không ghim được thông báo. Thử lại nhé.';
+
+  @override
+  String get managePending => 'Bài chờ duyệt';
+
+  @override
+  String postEventChip(String title) {
+    return 'Sự kiện: $title';
+  }
 }

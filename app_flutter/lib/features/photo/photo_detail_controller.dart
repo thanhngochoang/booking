@@ -38,6 +38,11 @@ final postDetailProvider = FutureProvider.autoDispose
       if (post == null) {
         return null;
       }
+      // A photo shared to an event has no package and is not the host's work:
+      // nothing to look up beside the post itself (S11.05).
+      if (post.kind == PostKind.eventShare) {
+        return PostDetail(post: post);
+      }
       final (authors, service, others) = await (
         _orNull(
           ref.watch(photographerRepositoryProvider).summaries([

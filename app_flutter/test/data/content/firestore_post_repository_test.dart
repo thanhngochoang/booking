@@ -27,6 +27,7 @@ Map<String, dynamic> postDoc(PostSummary p) => {
   'inPortfolio': p.inPortfolio,
   if (p.albumId != null) 'albumId': p.albumId,
   if (p.albumPosition != null) 'albumPosition': p.albumPosition,
+  if (p.eventId != null) 'eventId': p.eventId,
   'likeCount': p.likeCount,
   'saveCount': p.saveCount,
   'createdAt': Timestamp.fromDate(p.createdAt),
@@ -46,6 +47,64 @@ void main() {
   });
   engagementContract('firestore', () async {
     return FirestoreEngagementRepository(db: FakeFirebaseFirestore());
+  });
+
+  group('event shares (S11.05)', () {
+    PostSummary share(String id, {Duration age = const Duration(hours: 1)}) =>
+        fixturePost(
+          id,
+          kind: PostKind.eventShare,
+          authorId: 'u7',
+          serviceId: '',
+          eventId: 'ev1',
+          age: age,
+        );
+
+    test('home feed excludes event_share', () async {
+      final db = await seededDb([
+        fixturePost('w1', age: const Duration(hours: 3)),
+        fixturePost(
+          'r1',
+          kind: PostKind.realShoot,
+          authorId: 'u1',
+          age: const Duration(hours: 2),
+        ),
+        share('s1'),
+      ]);
+      final repo = FirestorePostRepository(db: db);
+      final page = await repo.feed();
+      expect(page.posts.map((p) => p.id), ['r1', 'w1']);
+      // Asking for the kind still finds them (the timeline link, tests).
+      final shares = await repo.feed(kind: PostKind.eventShare);
+      expect(shares.posts.map((p) => p.id), ['s1']);
+    });
+
+    test('an event_share post parses without a package', () {
+      final p = postFromFirestore('s2', {
+        'kind': 'event_share',
+        'authorId': 'u7',
+        'photographerId': 'p1',
+        'serviceId': '',
+        'eventId': 'ev1',
+        'imageUrls': ['https://img.test/1.jpg'],
+        'caption': 'Buổi sáng #PhotoWalk1013',
+        'hashtags': ['photowalk1013'],
+        'createdAt': Timestamp.fromDate(DateTime.utc(2026, 10, 9, 10)),
+      })!;
+      expect(p.kind, PostKind.eventShare);
+      expect(p.serviceId, '');
+      expect(p.eventId, 'ev1');
+      expect(p.authorId, 'u7');
+      expect(p.photographerId, 'p1');
+    });
+
+    test('a post without an event has no eventId', () async {
+      final db = await seededDb([fixturePost('w1')]);
+      expect(
+        (await FirestorePostRepository(db: db).byId('w1'))!.eventId,
+        isNull,
+      );
+    });
   });
 
   group('album fields', () {

@@ -24,8 +24,10 @@ import 'package:photobooking/features/earnings/earnings_screen.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
 import 'package:photobooking/features/event_manage/manage_event_screen.dart';
+import 'package:photobooking/features/event_chat/event_chat_screen.dart';
 import 'package:photobooking/features/event_manage/my_events_screen.dart';
 import 'package:photobooking/features/events/event_screen.dart';
+import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
@@ -302,7 +304,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => EventScreen(
           eventId: state.pathParameters['eventId']!,
           initialTab: EventTab.timeline,
+          initialReview: state.uri.queryParameters['review'] == '1',
         ),
+      ),
+      // S11.05 share form and S11.06 group chat.
+      GoRoute(
+        path: '/e/:eventId/share',
+        builder: (_, state) =>
+            EventShareComposer(eventId: state.pathParameters['eventId']!),
+      ),
+      GoRoute(
+        path: '/e/:eventId/chat',
+        builder: (_, state) =>
+            EventChatScreen(eventId: state.pathParameters['eventId']!),
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
@@ -353,6 +367,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   specialty: state.uri.queryParameters['specialty'],
                   style: state.uri.queryParameters['style'],
                   area: state.uri.queryParameters['area'],
+                  caption: state.uri.queryParameters['caption'],
                 ),
               ),
             ],

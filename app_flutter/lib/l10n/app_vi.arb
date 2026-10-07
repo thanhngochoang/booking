@@ -2047,5 +2047,88 @@
   "eventDateUnset": "Chưa chọn ngày",
   "@eventDateUnset": {
     "description": "EventCard/DateBlock: spoken in place of the date of a draft whose day is not chosen yet."
+  },
+  "timelineCount": "{n} bài",
+  "@timelineCount": {
+    "description": "S11.05: how many visible posts the event timeline holds, next to the hashtag chip.",
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "timelinePost": "Đăng ảnh với {tag}",
+  "@timelinePost": {
+    "description": "S11.05 bottom button; {tag} is the event hashtag with its #.",
+    "placeholders": {"tag": {"type": "String"}}
+  },
+  "timelineEmpty": "Chưa có ảnh nào. Hãy là người đầu tiên chia sẻ!",
+  "timelinePending": "Chờ duyệt",
+  "timelineVisibleTab": "Đã đăng",
+  "timelinePendingEmpty": "Không có bài nào chờ duyệt.",
+  "timelineClosed": "Timeline đã đóng đăng mới",
+  "timelineHide": "Ẩn khỏi timeline",
+  "timelineApprove": "Duyệt",
+  "timelineReport": "Báo cáo",
+  "timelineReportSoon": "Sắp có",
+  "timelineHostSuffix": "chủ sự kiện",
+  "timelineMore": "Xem thêm",
+  "timelineModerateFailed": "Không thực hiện được. Thử lại nhé.",
+  "timelineItemLabel": "Ảnh của {name}",
+  "@timelineItemLabel": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "timelineMenuHint": "Nhấn giữ để mở menu",
+  "shareTitle": "Chia sẻ ảnh sự kiện",
+  "shareSend": "Đăng",
+  "shareCaptionHint": "Viết chú thích…",
+  "shareFailed": "Không đăng được ảnh. Kiểm tra mạng rồi thử lại.",
+  "shareClosed": "Timeline đã đóng đăng mới.",
+  "shareDone": "Đã đăng lên timeline",
+  "shareDiscardTitle": "Bỏ bài đang soạn?",
+  "shareKeepEditing": "Tiếp tục soạn",
+  "chatMembers": "{n} thành viên",
+  "@chatMembers": {
+    "description": "S11.06 app bar subtitle.",
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "chatPinned": "Ghim",
+  "eventChatInput": "Nhắn cho nhóm…",
+  "eventChatClosed": "Nhóm đã đóng",
+  "chatMutedNote": "Bạn đang bị tắt tiếng trong nhóm",
+  "chatModOnly": "Chỉ điều hành được nhắn",
+  "chatJoined": "{name} đã vào nhóm",
+  "@chatJoined": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "chatPin": "Ghim",
+  "chatUnpin": "Bỏ ghim",
+  "chatDelete": "Xoá",
+  "chatDeleted": "Tin nhắn đã bị xoá",
+  "chatMute24h": "Tắt tiếng 24 giờ",
+  "chatUnmute": "Bật tiếng",
+  "chatRemove": "Gỡ khỏi nhóm",
+  "chatRemoveTitle": "Gỡ {name} khỏi nhóm?",
+  "@chatRemoveTitle": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "chatMemberList": "Thành viên",
+  "chatMemberModerator": "Điều hành",
+  "chatMemberMuted": "Đang bị tắt tiếng",
+  "chatMuteGroup": "Tắt tiếng nhóm",
+  "chatUnmuteGroup": "Bật tiếng nhóm",
+  "chatRateLimited": "Bạn nhắn quá nhanh. Thử lại sau ít giây nhé.",
+  "chatActionFailed": "Không thực hiện được. Thử lại nhé.",
+  "chatLockedAction": "Xem sự kiện",
+  "chatMessageOf": "{name}: {text}",
+  "@chatMessageOf": {
+    "placeholders": {"name": {"type": "String"}, "text": {"type": "String"}}
+  },
+  "manageAnnounceTitle": "Ghim thông báo vào nhóm",
+  "manageAnnounceHint": "Viết thông báo cho cả nhóm",
+  "manageAnnounceSend": "Ghim",
+  "manageAnnounceDone": "Đã ghim thông báo vào nhóm",
+  "manageAnnounceFailed": "Không ghim được thông báo. Thử lại nhé.",
+  "managePending": "Bài chờ duyệt",
+  "postEventChip": "Sự kiện: {title}",
+  "@postEventChip": {
+    "description": "S02.02: the chip under the caption of a photo shared to an event.",
+    "placeholders": {"title": {"type": "String"}}
   }
 }

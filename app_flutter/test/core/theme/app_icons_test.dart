@@ -84,6 +84,11 @@ const _entries = <String, IconData>{
   'error': AppIcons.error,
   'warning': AppIcons.warning,
   'cloudOff': AppIcons.cloudOff,
+  'pushPin': AppIcons.pushPin,
+  'volumeOff': AppIcons.volumeOff,
+  'delete': AppIcons.delete,
+  'personRemove': AppIcons.personRemove,
+  'flag': AppIcons.flag,
 };
 
 void main() {

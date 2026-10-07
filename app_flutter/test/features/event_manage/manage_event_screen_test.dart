@@ -11,6 +11,7 @@ import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/event_create/create_event_screen.dart';
 import 'package:photobooking/features/event_manage/checkin_sheet.dart';
@@ -428,17 +429,100 @@ void main() {
     expect(find.byKey(const Key('manage-empty-share')), findsNothing);
   });
 
-  testWidgets('Nhắn nhóm waits for the group chat', (tester) async {
+  testWidgets('Nhắn nhóm pins an announcement', (tester) async {
     final w = _host();
     await _open(tester, w);
+    // One primary action: the scan button; Nhắn nhóm is secondary.
+    expect(find.byType(CtaSurface), findsOneWidget);
+    await tester.tap(find.byKey(const Key('manage-broadcast')));
+    await settle(tester);
+    expect(find.text('Ghim thông báo vào nhóm'), findsOneWidget);
+    // Empty: nothing to send.
     expect(
       tester
-          .widget<AppButton>(find.byKey(const Key('manage-broadcast')))
+          .widget<AppButton>(find.byKey(const Key('announce-send')))
           .onPressed,
       isNull,
     );
-    // One primary action: the scan button.
-    expect(find.byType(CtaSurface), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('announce-text')),
+      '  Tập trung 7h45 nhé  ',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('announce-send')));
+    await settle(tester);
+    expect(w.chat.announcements.single, 'Tập trung 7h45 nhé');
+    expect(find.text('Đã ghim thông báo vào nhóm'), findsOneWidget);
+    expect(find.text('Ghim thông báo vào nhóm'), findsNothing);
+  });
+
+  testWidgets('a failed announcement stays open with the reason', (
+    tester,
+  ) async {
+    final w = _host();
+    w.chat.failWith = StateError('offline');
+    await _open(tester, w);
+    await tester.tap(find.byKey(const Key('manage-broadcast')));
+    await settle(tester);
+    await tester.enterText(find.byKey(const Key('announce-text')), 'Xin chào');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('announce-send')));
+    await settle(tester);
+    expect(find.byKey(const Key('announce-error')), findsOneWidget);
+    expect(find.text('Ghim thông báo vào nhóm'), findsOneWidget);
+    w.chat.failWith = null;
+    await tester.tap(find.byKey(const Key('announce-send')));
+    await settle(tester);
+    expect(w.chat.announcements.single, 'Xin chào');
+  });
+
+  testWidgets('closing the announcement sheet with text asks first', (
+    tester,
+  ) async {
+    final w = _host();
+    await _open(tester, w);
+    await tester.tap(find.byKey(const Key('manage-broadcast')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('announce-close'))); // empty: closes
+    await settle(tester);
+    expect(find.text('Ghim thông báo vào nhóm'), findsNothing);
+    await tester.tap(find.byKey(const Key('manage-broadcast')));
+    await settle(tester);
+    await tester.enterText(find.byKey(const Key('announce-text')), 'Dở dang');
+    await tester.tap(find.byKey(const Key('announce-close')));
+    await settle(tester);
+    expect(find.text('Bỏ bài đang soạn?'), findsOneWidget);
+    await tester.tap(find.text('Tiếp tục soạn'));
+    await settle(tester);
+    expect(find.text('Ghim thông báo vào nhóm'), findsOneWidget);
+    expect(w.chat.announcements, isEmpty);
+  });
+
+  testWidgets('Bài chờ duyệt shows the count and opens the review mode', (
+    tester,
+  ) async {
+    final w = EventsWorld(
+      uid: 'p1',
+      role: UserRole.photographer,
+      onboardingComplete: true,
+      events: [detailOf('ev1')],
+      timelineItems: {
+        'ev1': [
+          timelineItemOf('w1', 'Chờ 1', status: TimelineStatus.pending),
+          timelineItemOf('w2', 'Chờ 2', status: TimelineStatus.pending),
+          timelineItemOf('v1', 'Đã đăng'),
+        ],
+      },
+    );
+    await _open(tester, w);
+    expect(find.text('Bài chờ duyệt'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('manage-pending-count'))).data,
+      '2',
+    );
+    await tester.tap(find.byKey(const Key('manage-pending-row')));
+    await settle(tester);
+    expect(w.location, '/e/ev1/timeline?review=1');
   });
 
   testWidgets('a draft resumes in S12.01', (tester) async {

@@ -26,6 +26,7 @@ PostSummary fixturePost(
   List<String> hashtags = const ['chandung'],
   String? albumId,
   int? albumPosition,
+  String? eventId,
 }) => PostSummary(
   id: id,
   kind: kind,
@@ -51,6 +52,7 @@ PostSummary fixturePost(
   albumPosition: albumPosition,
   likeCount: likes,
   saveCount: saves,
+  eventId: eventId,
   createdAt: fixtureNow.subtract(age),
 );
 

@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
-class FirebaseMediaUploader implements MediaUploader {
+class FirebaseMediaUploader implements MediaUploader, MediaUrlResolver {
   FirebaseMediaUploader({FirebaseStorage? storage})
     : _storage = storage ?? FirebaseStorage.instance;
   final FirebaseStorage _storage;
@@ -53,4 +53,8 @@ class FirebaseMediaUploader implements MediaUploader {
       }
     }
   }
+
+  @override
+  Future<String> downloadUrl(String storagePath) =>
+      _storage.ref(storagePath).getDownloadURL();
 }

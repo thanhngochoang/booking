@@ -15,7 +15,13 @@ import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/events/event_chat_repository.dart';
 import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/events/event_social_providers.dart';
+import 'package:photobooking/data/events/event_timeline.dart';
+import 'package:photobooking/data/events/event_timeline_repository.dart';
+import 'package:photobooking/features/event_chat/event_chat_screen.dart';
+import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
@@ -235,6 +241,9 @@ EventDetail detailOf(
   List<EventFaq> faq = const [],
   Duration startsIn = const Duration(days: 3),
   bool schedule = true,
+  String? hashtag,
+  int postCount = 0,
+  DateTime? completedAt,
 }) {
   final s = summaryOf(
     id,
@@ -251,7 +260,9 @@ EventDetail detailOf(
   return EventDetail(
     summary: s,
     description: 'Đi bộ chụp ảnh',
-    hashtag: 'PhotoWalk$id',
+    hashtag: hashtag ?? 'PhotoWalk$id',
+    postCount: postCount,
+    completedAt: completedAt,
     endsAt: s.endsAt!,
     registrationDeadline: s.startsAt.subtract(const Duration(hours: 12)),
     createdBy: createdBy,
@@ -316,7 +327,13 @@ class EventsWorld {
     this.areaOrigin,
     this.prefsValues = const {},
     List<List<PickedImage>> pickerAnswers = const [],
+    Map<String, List<TimelineItem>> timelineItems = const {},
   }) : picker = FakeImagePicker(pickerAnswers),
+       timeline = FakeEventTimelineRepository(
+         items: timelineItems,
+         clock: () => now ?? eventNow,
+       ),
+       chat = FakeEventChatRepository(uid: uid),
        repo = FakeEventRepository(
          uid: uid,
          events: events,
@@ -352,6 +369,8 @@ class EventsWorld {
   );
 
   final FakeEventRepository repo;
+  final FakeEventTimelineRepository timeline;
+  final FakeEventChatRepository chat;
   final FakeNearbyEventsRepository nearby;
   final launcher = FakeExternalLauncher();
   final contactRepo = FakePhotographerContactRepository();
@@ -376,6 +395,8 @@ class EventsWorld {
     ),
     currentContactProvider.overrideWithValue(AsyncData(contact)),
     eventRepositoryProvider.overrideWithValue(repo),
+    eventTimelineRepositoryProvider.overrideWithValue(timeline),
+    eventChatRepositoryProvider.overrideWithValue(chat),
     if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs!),
     imagePickerProvider.overrideWithValue(picker),
     ticketScannerProvider.overrideWithValue(scanner),
@@ -476,7 +497,18 @@ class EventsWorld {
           builder: (_, s) => EventScreen(
             eventId: s.pathParameters['eventId']!,
             initialTab: EventTab.timeline,
+            initialReview: s.uri.queryParameters['review'] == '1',
           ),
+        ),
+        GoRoute(
+          path: '/e/:eventId/share',
+          builder: (_, s) =>
+              EventShareComposer(eventId: s.pathParameters['eventId']!),
+        ),
+        GoRoute(
+          path: '/e/:eventId/chat',
+          builder: (_, s) =>
+              EventChatScreen(eventId: s.pathParameters['eventId']!),
         ),
         GoRoute(
           path: '/bookings',
@@ -484,6 +516,8 @@ class EventsWorld {
         ),
         for (final p in [
           '/home',
+          '/action',
+          '/p/:postId',
           '/profile/phone',
           '/u/:uid',
           '/u/:uid/ask',
@@ -510,3 +544,24 @@ Future<void> settle(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 100));
   }
 }
+
+/// A timeline row for tests.
+TimelineItem timelineItemOf(
+  String id,
+  String author, {
+  TimelineStatus status = TimelineStatus.visible,
+  bool host = false,
+  int minutesAgo = 0,
+  int imageCount = 1,
+}) => TimelineItem(
+  postId: id,
+  authorId: 'a-$id',
+  authorName: author,
+  imageUrl: 'https://img.test/$id.jpg',
+  imageW: 800,
+  imageH: 1000,
+  imageCount: imageCount,
+  isHost: host,
+  status: status,
+  addedAt: eventNow.subtract(Duration(minutes: minutesAgo)),
+);

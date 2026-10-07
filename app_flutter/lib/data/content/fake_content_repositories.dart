@@ -63,7 +63,11 @@ class FakePostRepository implements PostRepository {
       throw failWith!;
     }
     final filtered = _newestFirst
-        .where((p) => kind == null || p.kind == kind)
+        .where(
+          (p) => kind == null
+              ? p.kind != PostKind.eventShare
+              : p.kind == kind,
+        )
         .where((p) => specialtyId == null || p.specialtyId == specialtyId)
         .toList();
     return _page(filtered, cursor, limit);
