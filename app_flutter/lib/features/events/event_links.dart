@@ -4,11 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+const _supportEmail = String.fromEnvironment('SUPPORT_EMAIL');
+
 /// The support address S11.02 shows on platform-hosted events until the
-/// support inbox (S23.06) exists (owner decision O2). Null hides the line:
-/// no address the project owns has been given yet (owner question in the 10c
-/// handover ledger). Set it here once the owner confirms one.
-const String? eventSupportEmail = null;
+/// support inbox (S23.06) exists (owner decision O2). Build config, set later
+/// by the owner: `--dart-define=SUPPORT_EMAIL=...`. Unset hides the line.
+const String? eventSupportEmail = _supportEmail == '' ? null : _supportEmail;
 
 /// `yyyyMMddTHHmmssZ`, the form Google Calendar takes.
 String _calendarStamp(DateTime instant) {
