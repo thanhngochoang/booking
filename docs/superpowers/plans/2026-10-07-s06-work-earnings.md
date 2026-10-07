@@ -18,7 +18,9 @@
 
 **Branch:** `plan/134-s06-work-earnings`, PR into `develop` titled `feat(payouts): S06 daily payouts, tax line, payout account lookup and OTP [#134]`.
 
-**Not in this plan:** S06.07 "Nộp bàn giao" is built by the delivery plan of #130 (spec bàn giao §5); the "cọc" → "đã thanh toán" copy on S06.01/S06.03 belongs to #129 (100% payment); the S21.02 screen itself is #135.
+**Execution wave:** 2 (cross-plan review 2026-10-07). **Blocked by:** #129 (S04, wave 1: payment model, `policyRefundTotal`, ledger renames), #148 (S09, wave 1: `verifyStartReadyProvider` in `lib/features/settings/settings_links.dart`), #138 (S17, wave 1: the hooks `notifyPayoutAccountNeeded`/`notifyPayoutAccountChanged` and their copy). Each is soft: if one has not merged, create exactly what this plan's Contract quotes from it and ledger it. **Owns (others consume):** `account_lookup.ts` (`AccountNameLookup`, `NameLookupResult`, `FakeAccountNameLookup`; #141 consumes), `OtpCodeField` (core; #135 consumes), the moved re-auth sheet `lib/features/account/widgets/reauth_sheet.dart` (#141 consumes), `assignedBookingsProvider`/`myWorkBookingsProvider` (#136 consumes), the S06.02 closed-state keys `workClosed*` (#135 consumes), `payoutLineOf`/`PayoutItem` (#130 extends with `milestone`).
+
+**Not in this plan:** S06.07 "Nộp bàn giao" is built by the delivery plan (#152, split from #130) (spec bàn giao §5); the "cọc" → "đã thanh toán" copy on S06.01/S06.03 belongs to #129 (100% payment); the S21.02 screen itself is #135.
 
 ## Contract with existing code
 
@@ -56,16 +58,16 @@ Checked 2026-10-07 on `develop` 812afd6. Each task's Step 1 re-checks its part; 
 5. **Payout statuses gain `needs_approval`.** A payout is created `needs_approval` when it is the first one to its account (no `paid` payout with that `accountId`) or the account's `nameStatus` is `pending_review`; `on_hold` (`holdReason: 'repeated_failure'`) when the last three payouts to that account all `failed`; else `pending`. Staff approve with the CLI (`npm run payouts -- approve <payoutId> --actor <uid>`); no callable and no dashboard (S23.02 is #83). Approving also sets a `pending_review` account to `staff_confirmed`.
 6. **Daily job:** `createPayouts` runs every day at 10:00 Asia/Ho_Chi_Minh (spec §6.1 "đề xuất 10:00"), `maxInstances: 1`, `retryCount: 0`, timeout 540 s, `secrets: [PAYOUT_ACCOUNT_KEY]`. In `payoutsMode() === 'off'` it logs and returns without creating anything (no real bank adapter). It (a) creates one payout per due payee with an active account, (b) executes every `pending` payout (approved ones included), one failure never stopping the others. Payees without an account get the `payout_account_needed` notice once (dedupe per payee). Running twice the same day creates nothing new: batched payments carry `payoutId`.
 7. **72 hours:** the first account is active at once; a change deactivates the old account immediately and the new one is `active` with `activeFrom = now + 72 h`. `createPayout` and `executePayout` refuse (`not_eligible`) while `activeFrom > now`, so no money moves to either account during the wait (spec §6.2 "tạm dừng chi"). Open payouts (`pending`, `on_hold`, `needs_approval`) are re-pointed to the new account and every re-pointed `pending` one becomes `needs_approval` (first payout to the new account). `resumePayout` returns to `needs_approval` instead of `pending` when its account has no paid payout.
-8. **OTP replaces re-authentication** for a change (spec §6.2): `savePayoutAccount` no longer throws `reauth_required`; `showReauthSheet` and the `payoutAccountReauth*` strings are removed; `reauth_required` stays in `ERROR_CODES` (unused, harmless). The OTP goes to `photographers/{uid}/private/contact.phone` (every set-up photographer has one, S08.05); missing → `phone_required`. #135 (S21.01) may switch the reader to the verified phone; the port stays.
+8. **OTP replaces re-authentication** for a change (spec §6.2): `savePayoutAccount` no longer throws `reauth_required`; S06.06 stops calling `showReauthSheet`. The sheet is **moved, not deleted** (cross-plan review finding 24): `lib/features/earnings/widgets/reauth_sheet.dart` → `lib/features/account/widgets/reauth_sheet.dart` (same `Future<bool> showReauthSheet(BuildContext context)`), because #141's S22.02 account deletion uses it on `reauth_required`; its keys are renamed `payoutAccountReauth*` → `reauth*` with generic copy (`reauthTitle` "Xác nhận lại để tiếp tục", `reauthBody` "Vì an toàn, hãy đăng nhập lại trước khi tiếp tục.", `reauthPassword` "Mật khẩu", `reauthGo` "Xác nhận", `reauthWrong` "Mật khẩu chưa đúng"). `reauth_required` stays in `ERROR_CODES` (#141 uses it). The OTP goes to `photographers/{uid}/private/contact.phone` (every set-up photographer has one, S08.05); missing → `phone_required`. #135 (S21.01) may switch the reader to the verified phone; the port stays.
 9. **OTP rules:** 6 digits, valid 5 minutes, 5 wrong tries per code, resend after 60 s, 5 sends per Vietnam day; the code is bound to the account being saved (`targetHash` of `bankCode:number`) and single-use. Stored as salted SHA-256 in `otp_challenges/{uid}_payout_account` (server-only). It must NOT live under `users/{uid}/private/`, whose rule lets the owner read any doc.
 10. **Fake OTP:** `FakeOtpSender` is allowed exactly where fake payments are (`fakePaymentsAllowed`: dev project or emulator on a `demo-*` project); it logs the code with `logger.info('fake otp', {uid, code})` so a tester reads it in the emulator UI (:4000 → Logs). Elsewhere `requestPayoutOtp` answers `not_eligible` (no SMS vendor yet; Deferred).
-11. **Name lookup:** a separate port `AccountNameLookup.lookup({bankCode, accountNumber})` → `found {holderName}` | `unsupported` | `not_found`. The fake echoes the caller's verified name (so testers can match their own account) except: number ending `4321` → found `TRAN VAN B` (mock S06.06-mismatch), `9999` → `unsupported`, `0404` → `not_found`. In `off` mode the lookup answers `unsupported` (staff compares). Lookups are limited to 20 per uid per Vietnam day (`payout_lookups/{uid}`, server-only): the lookup reveals a stranger's name for any number, so it must not become an oracle.
+11. **Name lookup:** a separate port `AccountNameLookup.lookup({bankCode, accountNumber})` → `found {holderName}` | `unsupported` | `not_found`, in `packages/domain/src/account_lookup.ts` together with its one fake `FakeAccountNameLookup` (this plan creates the file; #141 S22.04 consumes both and adds no second fake; cross-plan review finding 8). The fake echoes the caller's verified name (so testers can match their own account) except: number ending `4321` → found `TRAN VAN B` (mock S06.06-mismatch), `9999` → `unsupported`, `0404` → `not_found`. In `off` mode the lookup answers `unsupported` (staff compares). Lookups are limited to 20 per uid per Vietnam day (`payout_lookups/{uid}`, server-only): the lookup reveals a stranger's name for any number, so it must not become an oracle.
 12. **Match decision** (`holderNameDecision`, pure): both names through `normalizeHolderName`; found + verified name equal → `matched`; found + different → `mismatch` (save refused `name_mismatch`); `not_found` → refused `not_found`; `unsupported` + verified name → `review` (saved `pending_review`, holder = verified name); no verified name + found → `review` (holder = looked-up name); no verified name + `unsupported` → `unverifiable` (refused `not_eligible`). The verified name is `users/{uid}/private/identity.legalName` (identity spec §3, written by #135); seed writes it for An. Studio business names (S21.04) are #135's.
-13. **Notifications owned here:** `payout_account_needed` (category `booking`, tab `system`, not critical; target `/work/earnings/account`) and `payout_account_changed` (category `booking`, tab `system`, **critical**; same target). Email to the old address is Deferred. `payout_released` is emitted by #138 from `onPayoutWritten`; nothing here.
+13. **Notifications emitted here, defined by #138:** `payout_account_needed` (category `booking`, tab `system`, not critical; target `/work/earnings/account`) and `payout_account_changed` (category `booking`, tab `system`, **critical**; same target). #138 (S17) owns their copy, visuals, targets and dedupe keys in its catalogue and the hooks `notifyPayoutAccountNeeded` / `notifyPayoutAccountChanged` (`notification_hooks.ts`); this plan is their only emitter, through `livePayoutNotices()` (cross-plan review: one owner per notification type, one emitter per hook). Email to the old address is Deferred. `payout_released` is emitted by #138 from `onPayoutWritten`; nothing here.
 14. **S06.05 rows expand on tap** (mock caption "Chạm một khoản để bung chi tiết"); the old tap-to-open-booking is dropped (the mock has no link). Paid rows show "Đã chuyển theo mốc · Hoa hồng (only when > 0) · Thuế khấu trừ (n%) · Thực nhận" from the payout item; other rows show "Số tiền · Thuế khấu trừ (n%) · Thực nhận dự kiến" from the policy (estimate). No tax line for studios.
-15. **Milestones are read, not built:** the earnings projection reads `bookings/{id}/milestones` (spec 2026-10-05 §4.2; written later by #129/#130). With docs present the row meta shows "mốc {done}/{total}" or "đủ {total} mốc"; absent → day only. Partial release amounts per milestone are the job of the plan that introduces milestones (Deferred).
+15. **Milestones are read, not built:** the earnings projection reads `bookings/{id}/milestones` (spec 2026-10-05 §4.2; written by #152 (delivery plan, split from #130) `2026-10-07-s05-delivery-two-layer.md`, which owns `splitMilestones` and the milestone model). With docs present the row meta shows "mốc {done}/{total}" or "đủ {total} mốc"; absent → day only. #130 (wave 3, after this plan) owns the per-milestone payout change on top of this plan's code: `listDuePayees`/`listPayablePayments` switch to `payableAmount > 0`, `runDailyPayouts` builds one `PayoutItem` per released milestone with `payoutLineOf(milestone.amount, …)`, pinned by its test 'shoot milestone paid while delivery held' (cross-plan review finding 30). Nothing here anticipates it.
 16. **S06.06 lookup trigger:** when a bank is chosen and the number is valid, the controller looks up after 800 ms of no typing (and at once on submit); results are cached per `bankCode:number` for the screen's life. Save is enabled only for `matched` or `review`.
-17. **S06.02 condition:** the closed variant shows when the own photographer doc says `acceptingOrders == false` (fallback `verified == true && onboardingComplete == true`, same as `photographerSummaryFrom`). The button pushes `/verify/start` only while `verifyStartReadyProvider` is true; it is `false` until #135 registers the route and flips it (one-line change named in #135's contract). While false the button is hidden and the text stays. The mock's segmented control on S06.02 is not added (S06.01 has none; out of scope, ledgered).
+17. **S06.02 condition:** the closed variant shows when the own photographer doc says `acceptingOrders == false` (fallback `verified == true && onboardingComplete == true`, same as `photographerSummaryFrom`). The button pushes `/verify/start` only while `verifyStartReadyProvider` is true. That provider is #148's (`lib/features/settings/settings_links.dart`, wave 1; cross-plan review finding 1): read it from there; if #148 has not merged, create it at that path exactly as `final verifyStartReadyProvider = Provider<bool>((ref) => false);`. It stays `false` until #135 registers the route and flips it. The route is the literal `/verify/start` (no path constant). While false the button is hidden and the text stays. The mock's segmented control on S06.02 is not added (S06.01 has none; out of scope, ledgered).
 18. **S06.01 assigned bookings:** a second stream `bookings where assigneeId == uid` (single-field index, no composite) merged with the own stream, own document wins on duplicate id. A booking is "assigned" when `photographerId != uid`. Assigned bookings count for "Hôm nay" and "Buổi sắp tới" but never for "Yêu cầu mới", "Tháng này" or "Đang giữ" (the money goes to the studio). The label is "Giao bởi {Studio}" with the studio name from `partyProfileProvider(photographerId)`. The rules gain read for `assigneeId == auth.uid` (studio spec §8; #136 keeps it). A denied or failing assignee stream is treated as empty (logged once) so S06.01 never breaks for everyone.
 19. **No Booking model change:** "assigned" is derived from `photographerId != uid`, so `booking.freezed.dart` is not regenerated.
 
@@ -127,8 +129,8 @@ export type OtpVerdict = 'ok' | 'required' | 'expired' | 'too_many' | 'wrong';
 /** required = missing, consumed or bound to another account. */
 export function checkOtp(c: OtpChallenge | null, given: { codeHash: string; targetHash: string }, now: Date): OtpVerdict;
 
-// payout_ports.ts (additions) — AccountNameLookup and NameLookupResult live in account_lookup.ts (shared with #141 S22.04;
-// whichever plan lands first creates that file with this exact shape) and are re-exported here.
+// account_lookup.ts (new, created by this plan; #141 S22.04 consumes it unchanged) — re-exported from payout_ports.ts
+// (NameLookupResult moves here from payout_account.ts; payout_account.ts re-exports it)
 export interface AccountNameLookup { lookup(r: { bankCode: string; accountNumber: string }): Promise<NameLookupResult> }
 export interface VerifiedNameReader { legalName(uid: string): Promise<string | null> }
 export interface OtpSender { send(r: { phone: string; code: string; purpose: 'payout_account' }): Promise<void> }
@@ -136,7 +138,7 @@ export interface OtpPhoneReader { phoneOf(uid: string): Promise<string | null> }
 export interface OtpCrypto { sha256Hex(input: string): Promise<string>; random(n: number): Uint8Array }
 export interface PayoutNotices {
   accountNeeded(payeeId: string, amount: number): Promise<void>;
-  accountChanged(uid: string, v: { bankCode: string; accountLast4: string; activeFrom: string }): Promise<void>;
+  accountChanged(uid: string, v: { accountId: string; bankCode: string; accountLast4: string; activeFrom: string }): Promise<void>;
 }
 // PayoutTx gains (all reads before writes inside a transaction):
 //   getPayeeType(uid): Promise<ProviderType>
@@ -167,21 +169,23 @@ export async function lookupPayoutAccountName(deps: PayoutAccountDeps, caller: C
 export async function requestPayoutOtp(deps: PayoutAccountDeps, caller: Caller, raw: unknown):
   Promise<{ phoneLast4: string; expiresInSeconds: number; resendInSeconds: number }>;
 
-// fake_account_name_lookup.ts, fake_otp_sender.ts (new)
+// account_lookup.ts (same file as the port): the only fake lookup of the domain
+/** Echoes echoName (the caller's verified or normalised display name) except: number ending 4321 → found 'TRAN VAN B',
+ *  9999 → unsupported, 0404 → not_found. (0000 is the payout gateway's failure number, never a lookup rule.) */
 export class FakeAccountNameLookup implements AccountNameLookup { constructor(echoName: string | null) }
+// fake_otp_sender.ts (new)
 export class FakeOtpSender implements OtpSender { readonly sent: { phone: string; code: string }[] }
 
-// payout_notifications.ts (new)
-export async function notifyPayoutAccountNeeded(deps: NotifyDeps, e: { payeeId: string; amount: number }): Promise<NotifyResult>;
-export async function notifyPayoutAccountChanged(deps: NotifyDeps, e: { uid: string; bankCode: string; accountLast4: string; activeFrom: string }): Promise<NotifyResult>;
+// consumed from #138 (packages/domain/src/notification_hooks.ts; copy, dedupe and target are #138's). If #138 has not
+// merged, create these two hooks and their catalogue rows exactly as S17's Contract lists them.
+export function notifyPayoutAccountNeeded(deps: NotifyDeps, e: { payeeId: string; amount: number }): Promise<NotifyResult>;
+export function notifyPayoutAccountChanged(deps: NotifyDeps, e: { uid: string; accountId: string; bankCode: string; accountLast4: string; activeFrom: string /* ISO */ }): Promise<NotifyResult>;
 
 // errors.ts ERROR_CODES gains 'name_mismatch', 'otp_required', 'otp_invalid', 'otp_expired'
 // escrow.ts LEDGER_ENTRY_TYPES gains 'tax_withheld', 'platform_fee'
 ```
 
-Notification copy (added to `NotificationContent` and `renderNotification`, verbatim):
-- `{ type: 'payout_account_needed'; amount: number }` → title `Thêm tài khoản để nhận ${formatVnd(amount)}`, body `Tiền của bạn đã sẵn sàng chuyển. Thêm tài khoản nhận tiền để nhận mỗi ngày.`; dedupe `payout_account_needed_{payeeId}`.
-- `{ type: 'payout_account_changed'; bank: string; last4: string; activeFrom: string /* 'HH:mm dd/MM' VN */ }` → title `Tài khoản nhận tiền đã đổi`, body `${bank} •••• ${last4} có hiệu lực lúc ${activeFrom}. Không phải bạn đổi? Liên hệ hỗ trợ ngay.`; dedupe `payout_account_changed_{accountId}`.
+Notification copy: #138's catalogue (moved there by the cross-plan review with this plan's text unchanged: `payout_account_needed` "Thêm tài khoản để nhận {amount}" / "Tiền của bạn đã sẵn sàng chuyển. Thêm tài khoản nhận tiền để nhận mỗi ngày.", dedupe `payout_account_needed_{payeeId}`; `payout_account_changed` "Tài khoản nhận tiền đã đổi" / "{bank} •••• {last4} có hiệu lực lúc {HH:mm dd/MM}. Không phải bạn đổi? Liên hệ hỗ trợ ngay.", dedupe `payout_account_changed_{accountId}`). This plan adds no `NotificationContent` member and no `renderNotification` branch.
 
 ### Callables (region `asia-southeast1`, `CALLABLE_OPTIONS`; errors via `toHttpsError`, `details.code`)
 
@@ -236,9 +240,10 @@ Stream<List<Booking>> watchAssignedBookings(String uid); // assigneeId == uid, d
 final assignedBookingsProvider = StreamProvider.autoDispose<List<Booking>>(...); // error → empty list (logged)
 final myWorkBookingsProvider = Provider.autoDispose<AsyncValue<List<Booking>>>(...); // own ∪ assigned, own wins
 // data/photographer/photographer_intro.dart: PhotographerIntro gains `final bool acceptingOrders;` (mapping as Decision 17)
-// features/verification/verification_routes.dart (new)
-final verifyStartReadyProvider = Provider<bool>((ref) => false); // #135 flips to true
-const verifyStartPath = '/verify/start';
+// consumed from #148: lib/features/settings/settings_links.dart (create it with exactly this line if #148 has not merged)
+final verifyStartReadyProvider = Provider<bool>((ref) => false); // #135 flips to true; the route is the literal '/verify/start'
+// features/account/widgets/reauth_sheet.dart (moved from features/earnings/widgets/, Decision 8; #141 consumes)
+Future<bool> showReauthSheet(BuildContext context);
 // features/booking/booking_view_rules.dart
 WorkDashboard workDashboard(List<Booking> mine, DateTime now, {required String uid});
 // core: BookingSummary gains `final String? tag;` (BookingCard draws a pill with AppIcons.store);
@@ -260,7 +265,7 @@ l10n keys (key: exact text). Changed values: `earningsSoon`: "Chờ chi trả"; 
 - `payoutAccountPendingTitle`: "Tài khoản mới có hiệu lực lúc {time}" · `payoutAccountPendingBody`: "Trong lúc chờ, tạm dừng chi. Lần chi đầu vào tài khoản mới do staff duyệt." · `payoutAccountPendingBadge`: "Chờ hiệu lực" · `payoutAccountReviewNote`: "Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu." · `payoutAccountChangeSaved`: "Đã đổi tài khoản. Có hiệu lực sau 72 giờ"
 - `workAssignedBy`: "Giao bởi {studio}" · `workClosedTitle`: "Mở nhận đơn để khách đặt được bạn" · `workClosedBody`: "Bạn vẫn đăng portfolio, tạo gói và trò chuyện. Khách chỉ đặt lịch và xin báo giá sau khi bạn xác minh: số điện thoại, phí xác minh, danh tính và quy định nhận việc." · `workClosedNote`: "Staff duyệt trong 24 giờ sau khi bạn gửi" · `workClosedStart`: "Bắt đầu nhận đơn"
 
-Notification visuals/targets (append): `notificationVisualOf('payout_account_needed')` → `(AppIcons.payment, NotificationTone.action)`; `'payout_account_changed'` → `(AppIcons.lock, NotificationTone.action)`. `safeTarget` allows `/work/earnings` and `/work/earnings/account` (no query); skip a line if #138 already added it.
+Notification visuals/targets: #138's (its App contract lists `payout_account_needed` → `(AppIcons.payment, action)`, `payout_account_changed` → `(AppIcons.lock, action)` and the allowlisted `/work/earnings`, `/work/earnings/account`). This plan only checks they exist; if #138 has not merged, add exactly those lines.
 
 ## Review Focus
 
@@ -272,7 +277,9 @@ Notification visuals/targets (append): `notificationVisualOf('payout_account_nee
 
 ## Chi phí Google
 
-Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Firestore: nam5 upper bound $0.06/100K reads, $0.18/100K writes, **chưa xác nhận** for Singapore; Functions Tier 2 inside the free tier at these volumes; Scheduler $0.10/job/month beyond 3 free per billing account; SMS VN $0.15 **chưa xác nhận**). Scale: (b) 1,000 MAU, 100 photographers, ~300 bookings/month; (c) 10,000 MAU, 1,000 photographers, ~3,000 bookings/month.
+Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Firestore: nam5 upper bound $0.06/100K reads, $0.18/100K writes, **chưa xác nhận** for Singapore; Scheduler $0.10/job/month beyond 3 free per billing account; SMS VN $0.15 **chưa xác nhận**, with Firebase Auth's 10 free SMS/day as in cost spec §12).
+
+**Functions (one rule for every plan, cost spec §12):** at (b) new invocations and CPU fit the free tier (2M invocations, 180,000 vCPU-s, 360,000 GiB-s per month) → $0; at (c) the app already uses the free tier up (§12 (c): 2.5M invocations, ~500K vCPU-s), so this plan's Functions work is charged at Tier 2: $0.40/M invocations, $0.0000336/vCPU-s, $0.0000035/GiB-s. Scale: (b) 1,000 MAU, 100 photographers, ~300 bookings/month; (c) 10,000 MAU, 1,000 photographers, ~3,000 bookings/month.
 
 | User action / job | Reads | Writes | Notes |
 |---|---|---|---|
@@ -283,10 +290,10 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
 | S06.06 save | ~8 (+ open payouts) | 3–6 | as in 10b plus identity + challenge |
 | `createPayouts` daily | per due payment ≈ 2 (listDuePayees: payment + refunds query) + per payee ≈ 6 + per payout execute ≈ 3 × (2 + n) | per payout ≈ 3 + 2n + up to 3n ledger | plus existing `onPayoutWritten`/`onPaymentWritten` refreshes, each now +2 reads (payee type, milestones query) |
 
-- New callables: `lookupPayoutAccountName` (b) ~60/month, (c) ~600; `requestPayoutOtp` (b) ~2, (c) ~20; 256 MiB, 10 s. Negligible against the 2M free invocations.
-- New scheduled job: `createPayouts`, daily (30 runs/month), the repo's 7th job → **+$0.10/month** (Scheduler). Reads per run ≈ 10 per paid-out payment: (b) ~300 payments/month → ~3K reads + refresh triggers ~20K reads/month; (c) ~3,000 payments → ~30K + ~200K reads/month. Frequency is daily, not minutes.
-- No new Storage path. No Maps. SMS: none now (fake). When a real OTP adapter lands: (b) ~2 × $0.15 = $0.30, (c) ~20 × $0.15 = $3/month (**chưa xác nhận**). Name lookup and payouts are charged by the payment intermediary (outside Google).
-- **Conclusion:** (b) ≈ **+$0.12/month** (Scheduler $0.10 + ~25K reads), (c) ≈ **+$0.30/month** (Scheduler + ~260K reads ≈ $0.16 + writes ≈ $0.05); +$3/month at (c) once real SMS OTP exists. Below the $5 threshold.
+- New callables: `lookupPayoutAccountName` (b) ~60/month, (c) ~600; `requestPayoutOtp` (b) ~2, (c) ~20; 256 MiB, 10 s. Under the Functions rule: $0 at (b); at (c) ~620 calls × 0.2 vCPU-s ≈ 124 vCPU-s plus `createPayouts` 30 runs × ~30 vCPU-s ≈ 900 vCPU-s → ≈ $0.03.
+- New scheduled job: `createPayouts`, daily (30 runs/month), the repo's 7th job (in the wave order this plan lands before #132, whose `rollNextFreeDates` is the 8th) → **+$0.10/month** (Scheduler). Reads per run ≈ 10 per paid-out payment: (b) ~300 payments/month → ~3K reads + refresh triggers ~20K reads/month; (c) ~3,000 payments → ~30K + ~200K reads/month. Frequency is daily, not minutes.
+- No new Storage path. No Maps. SMS: none now (fake). When a real OTP adapter lands: (b) ~2, (c) ~20 SMS/month, inside Firebase Auth's 10 free SMS/day (300/month, shared with #135's S21.01 phone checks, which already count on that allowance) → $0 alone; at most (b) $0.30, (c) $3/month if the allowance is used up (**chưa xác nhận**). Name lookup and payouts are charged by the payment intermediary (outside Google).
+- **Conclusion:** (b) ≈ **+$0.12/month** (Scheduler $0.10 + ~25K reads), (c) ≈ **+$0.33/month** (Scheduler + ~260K reads ≈ $0.16 + writes ≈ $0.05 + Functions ≈ $0.03); up to +$3/month at (c) once real SMS OTP exists and the free SMS allowance is used up. Below the $5 threshold.
 
 ## Tasks
 
@@ -340,7 +347,7 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
   `daily_payouts.test.ts`:
   - `creates one payout per due payee and executes it the same run` (report `created 1, paid 1` for an account with a paid history).
   - `a first payout waits for approval and is not executed` (report `needsApproval 1, executed 0`).
-  - `a payee without an account calls notices.accountNeeded with the payee and the amount and creates no payout` (report `noAccount 1`; the one-row-per-payee dedupe is pinned in Task 3's `payout_notifications.test.ts`).
+  - `a payee without an account calls notices.accountNeeded with the payee and the amount and creates no payout` (report `noAccount 1`; the one-row-per-payee dedupe `payout_account_needed_{payeeId}` is #138's and pinned by its `notification_hooks.test.ts`).
   - `a payee inside the 72 hours is skipped (notActive 1)`.
   - `running twice creates nothing new` (second report `created 0`, gateway calls unchanged).
   - `one payee's failure does not stop the others` (store throws for p2 → `errors 1`, p1 paid, `onError` called with p2's id and step `create`).
@@ -386,12 +393,12 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
 ### Task 3: Domain — payout account v2: name lookup, match, OTP, 72 hours, notices
 
 **Files:**
-- Create: `packages/domain/src/payout_otp.ts`, `payout_account_use_cases.ts`, `fake_account_name_lookup.ts`, `fake_otp_sender.ts`, `payout_notifications.ts`; tests `packages/domain/test/payout_otp.test.ts`, `payout_account_use_cases.test.ts`, `payout_notifications.test.ts`
-- Modify: `packages/domain/src/payout_account.ts`, `save_payout_account.ts`, `payout_ports.ts`, `errors.ts`, `notification.ts`, `notification_render.ts`, `memory_payout_store.ts`, `index.ts`, `test/support/payout_world.ts`, `test/save_payout_account.test.ts`, `test/payout_account.test.ts`, `test/notification_render.test.ts`
+- Create: `packages/domain/src/payout_otp.ts`, `payout_account_use_cases.ts`, `account_lookup.ts` (port + `FakeAccountNameLookup`), `fake_otp_sender.ts`; tests `packages/domain/test/payout_otp.test.ts`, `payout_account_use_cases.test.ts`, `account_lookup.test.ts`
+- Modify: `packages/domain/src/payout_account.ts`, `save_payout_account.ts`, `payout_ports.ts`, `errors.ts`, `memory_payout_store.ts`, `index.ts`, `test/support/payout_world.ts`, `test/save_payout_account.test.ts`, `test/payout_account.test.ts` (no notification module: the copy and hooks are #138's)
 
 **Interfaces:**
 - Consumes: Task 2 `PayoutAccount.nameStatus/activeFrom`, `PayoutNotices`, statuses.
-- Produces: `holderNameDecision`, `isAccountActiveAt`, `ACCOUNT_CHANGE_DELAY_HOURS`, `NAME_LOOKUPS_PER_DAY`, OTP model and `checkOtp`/`otpCodeFrom`, ports `AccountNameLookup`, `VerifiedNameReader`, `OtpSender`, `OtpPhoneReader`, `OtpCrypto`, `PayoutTx` OTP/quota methods, `savePayoutAccount` v2, `lookupPayoutAccountName`, `requestPayoutOtp`, `FakeAccountNameLookup`, `FakeOtpSender`, `notifyPayoutAccountNeeded`, `notifyPayoutAccountChanged`, error codes `name_mismatch`, `otp_required`, `otp_invalid`, `otp_expired`, notification types `payout_account_needed`, `payout_account_changed` (Contract). `payout_world.ts` gains `names: Map<uid, legalName>`, `phones: Map<uid, phone>`, a `FakeOtpSender`, a deterministic `OtpCrypto` (sha256 via a tiny pure test hash is fine, or `node:crypto` in the test support only — never in `src/`), and `addAccount(w, number?)` going through `savePayoutAccount` again.
+- Produces: `holderNameDecision`, `isAccountActiveAt`, `ACCOUNT_CHANGE_DELAY_HOURS`, `NAME_LOOKUPS_PER_DAY`, OTP model and `checkOtp`/`otpCodeFrom`, ports `AccountNameLookup`, `VerifiedNameReader`, `OtpSender`, `OtpPhoneReader`, `OtpCrypto`, `PayoutTx` OTP/quota methods, `savePayoutAccount` v2, `lookupPayoutAccountName`, `requestPayoutOtp`, `FakeAccountNameLookup` (in `account_lookup.ts`), `FakeOtpSender`, error codes `name_mismatch`, `otp_required`, `otp_invalid`, `otp_expired` (Contract). Consumes #138's `notifyPayoutAccountNeeded`/`notifyPayoutAccountChanged` (signatures in Contract) only through the `PayoutNotices` port. `payout_world.ts` gains `names: Map<uid, legalName>`, `phones: Map<uid, phone>`, a `FakeOtpSender`, a deterministic `OtpCrypto` (sha256 via a tiny pure test hash is fine, or `node:crypto` in the test support only — never in `src/`), and `addAccount(w, number?)` going through `savePayoutAccount` again.
 
 - [ ] **Step 1:** Contract check; ledger differences.
 - [ ] **Step 2: Failing tests.**
@@ -419,10 +426,8 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
   - `requestPayoutOtp without a current account is not_eligible`; `without a phone is phone_required`.
   - `a resend within 60 s is limit_exceeded; the 6th send of the day is limit_exceeded`.
   - `a resend replaces the code (old code is otp_required at save)`.
-  `payout_notifications.test.ts` (with `createNotifyWorld`):
-  - `account needed: title "Thêm tài khoản để nhận 1.500.000₫", target /work/earnings/account, one row for two calls`.
-  - `account changed: critical (inbox even when the booking channel is off), body names bank, last 4 and "HH:mm dd/MM"`.
-  `notification_render.test.ts`: both new copies verbatim.
+  `account_lookup.test.ts`: `FakeAccountNameLookup echoes its name`; `4321 → found TRAN VAN B; 9999 → unsupported; 0404 → not_found`; `a null echo name → unsupported`.
+  (The two notices' copy, dedupe and critical flag are pinned by #138's `notification_hooks.test.ts`.)
 - [ ] **Step 3:** `npm test` → fail.
 - [ ] **Step 4: Implement.** `savePayoutAccount` v2: validate keys (`otpCode` optional, 6 digits), bank, number; read the verified name and run the lookup **outside** the transaction; decide (`holderNameDecision`), refuse per Decision 12; encrypt; then one transaction that reads everything first and returns a refusal code instead of throwing when an attempt must be persisted:
   ```ts
@@ -458,7 +463,7 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
   if (outcome.refused !== null) throw new DomainError(outcome.refused);
   if (current-changed) await deps.notices.accountChanged(...).catch(() => undefined); // never fails the save
   ```
-  `lookupPayoutAccountName`: role check and quota in one transaction (`count >= 20` on the same VN day → `limit_exceeded`; else increment), then the lookup and the verified name outside it; return the decision. `requestPayoutOtp`: role, current account (else `not_eligible`), phone (else `phone_required`), resend/day limits from the stored challenge, new code via `otpCodeFrom(deps.otp.crypto.random(4))`, salt = 16 random bytes hex, store hashes, send **after** the commit, return `{ phoneLast4, expiresInSeconds: 300, resendInSeconds: 60 }`. Notification types per Decision 13 and Contract copy (`formatVnTime`/`formatVnDate` → `HH:mm dd/MM`).
+  `lookupPayoutAccountName`: role check and quota in one transaction (`count >= 20` on the same VN day → `limit_exceeded`; else increment), then the lookup and the verified name outside it; return the decision. `requestPayoutOtp`: role, current account (else `not_eligible`), phone (else `phone_required`), resend/day limits from the stored challenge, new code via `otpCodeFrom(deps.otp.crypto.random(4))`, salt = 16 random bytes hex, store hashes, send **after** the commit, return `{ phoneLast4, expiresInSeconds: 300, resendInSeconds: 60 }`. The account-changed notice goes through `deps.notices.accountChanged(uid, {accountId, bankCode, accountLast4, activeFrom})` (Decision 13; #138 formats `HH:mm dd/MM`).
 - [ ] **Step 5:** `npm test && npm run lint` green.
 - [ ] **Step 6: Commit** `feat(domain): payout account name match, OTP and 72-hour change [#134]`.
 
@@ -478,12 +483,13 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
     mode: 'fake' | 'off' = payoutsMode(),
   ): Promise<DailyPayoutReport | null>; // null and a log line when mode is off
   // infra/live_payout.ts
-  export function livePayoutNotices(): PayoutNotices; // notifyPayoutAccountNeeded/Changed with liveNotifyDeps(); errors logged by code only
+  export function livePayoutNotices(): PayoutNotices; // calls #138's notifyPayoutAccountNeeded/Changed with liveNotifyDeps(); errors logged by code only
   ```
   Logging: `logger.info('createPayouts', report)`; per-item errors `logger.error('createPayouts item failed', { id, step, code })` — never an account number.
 
 - [ ] **Step 1:** Contract check of the Functions files; ledger differences.
 - [ ] **Step 2: Failing tests:**
+  - `live_payout.test.ts` (new or existing): `livePayoutNotices forwards payee, amount and account id to the #138 hooks` (hooks stubbed).
   - `create_payouts.test.ts`: `off mode creates nothing and returns null`; `fake mode runs the daily payouts and logs the report` (in-memory `PayoutDeps` from the domain's memory stores); `a thrown error of one payee is logged with the payee id and code only`.
   - `payout_cli.test.ts`: `approve needs --actor and an admin`; `approve moves needs_approval to pending`; `run-daily is refused in off mode`; `run-daily prints the report`; `due shows needs_approval payouts as open`.
   - `earnings_firestore.test.ts`: `item round-trips fee, tax, net, rates, estimated and milestones`; `old items without the fields read net = amount, estimated true`.
@@ -600,8 +606,8 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
 
 **Files:**
 - Create: `app_flutter/lib/core/widgets/otp_code_field.dart` (export in `lib/core/core.dart`), `lib/features/earnings/widgets/name_lookup_card.dart`, `lib/features/earnings/widgets/payout_otp_sheet.dart`, tests `test/core/widgets/otp_code_field_test.dart`, `test/features/earnings/payout_otp_sheet_test.dart`
-- Modify: `lib/features/earnings/payout_account_controller.dart`, `payout_account_screen.dart`, `widgets/account_inputs.dart`, `lib/l10n/app_vi.arb`, `lib/features/notifications/notification_visuals.dart` and `notification_targets.dart` (append the two payout types and the two `/work/earnings` paths, Contract), `test/features/earnings/payout_account_controller_test.dart`, `test/features/earnings/payout_account_screen_test.dart`, `test/features/notifications/notification_visuals_test.dart`, `test/features/notifications/notification_targets_test.dart`, `test/support/earnings_world.dart`
-- Delete: `lib/features/earnings/widgets/reauth_sheet.dart` (and its strings; `AuthRepository.reauthenticate` stays)
+- Modify: `lib/features/earnings/payout_account_controller.dart`, `payout_account_screen.dart`, `widgets/account_inputs.dart`, `lib/l10n/app_vi.arb` (keys `payoutAccountReauth*` renamed `reauth*`, Decision 8), `test/features/earnings/payout_account_controller_test.dart`, `test/features/earnings/payout_account_screen_test.dart`, `test/support/earnings_world.dart` (notification visuals and targets are #138's; only add them if #138 has not merged, Contract)
+- Move (`git mv`): `lib/features/earnings/widgets/reauth_sheet.dart` → `lib/features/account/widgets/reauth_sheet.dart` (and its test, if any, → `test/features/account/reauth_sheet_test.dart`); `AuthRepository.reauthenticate` stays (Decision 8; #141 uses the sheet)
 
 **Interfaces:**
 - Consumes: Task 6 repository and models.
@@ -626,22 +632,23 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
   - `OtpCodeField`: `accepts only 6 digits`; `calls onCompleted at the 6th digit`; `shows errorText`; `has AutofillHints.oneTimeCode`.
   - Controller: `a valid number looks up after 800 ms, once` (fake async; `lookupCalls == 1` after typing three more digits within 800 ms); `the same bank and number is not looked up twice`; `save is invalid until the lookup is matched or review`; `first account saves without asking for OTP`; `a change asks for OTP with the ticket, then saves with the code` (`saves` ends with `:otp`); `wrong code keeps the sheet open (askOtp sees wrong)`; `phone_required → phoneRequired`; `not_eligible from requestAccountOtp → otpUnavailable`; `name_mismatch from save → mismatch`; `the typed number is cleared after a successful save`.
   - Screen: `matched lookup shows the name and "Khớp tên đã xác minh"`; `mismatch shows the two names, the warning text and a disabled "Lưu tài khoản"`; `review shows "Ngân hàng chưa hỗ trợ tra tên" and enables save`; `not_found / unverifiable / limit show their texts and disable save`; `no holder name field exists`; `change form shows the intro with the current bank and last 4 and the lock note`; `OTP sheet: resend is disabled for 60 s then enabled` (bounded pumps); `after a change the read view shows "Chờ hiệu lực" and "Tài khoản mới có hiệu lực lúc 10:15, 13/10"`; `a pending_review account shows the staff note`; `fits 320 dp at 1.3× text` (form, mismatch, OTP sheet).
-  - Notifications: `payout_account_needed is a payment icon in the action tone; payout_account_changed a lock in the action tone`; `safeTarget allows /work/earnings and /work/earnings/account and refuses them with a query`.
+  - Re-auth sheet (moved): `showReauthSheet shows "Xác nhận lại để tiếp tục" and returns true after a successful reauthenticate` (`test/features/account/reauth_sheet_test.dart`).
 - [ ] **Step 3:** Run → fail.
-- [ ] **Step 4: Implement.** Save flow for a change: `requestAccountOtp` → `askOtp(ticket)` (the screen opens `showPayoutOtpSheet`, whose `onSubmit` calls `saveAccount(..., otpCode)` and maps errors to `PayoutOtpSubmit`; `onResend` calls `requestAccountOtp` again) → `changed`. Time label `HH:mm, dd/MM` in Vietnam time (`toVn`). Remove the change confirm sheet (the OTP sheet is the confirmation) and the re-auth path; delete `reauth_sheet.dart` and the removed keys; run `flutter gen-l10n`.
+- [ ] **Step 4: Implement.** Save flow for a change: `requestAccountOtp` → `askOtp(ticket)` (the screen opens `showPayoutOtpSheet`, whose `onSubmit` calls `saveAccount(..., otpCode)` and maps errors to `PayoutOtpSubmit`; `onResend` calls `requestAccountOtp` again) → `changed`. Time label `HH:mm, dd/MM` in Vietnam time (`toVn`). Remove the change confirm sheet (the OTP sheet is the confirmation) and the re-auth call from S06.06; move `reauth_sheet.dart` to `lib/features/account/widgets/` with the renamed `reauth*` keys (Decision 8); run `flutter gen-l10n`.
 - [ ] **Step 5:** `flutter analyze`; `flutter test --no-pub --timeout 60s test/core/widgets/otp_code_field_test.dart`, then `test/features/earnings` green.
 - [ ] **Step 6: Commit** `feat(earnings): S06.06 name lookup, mismatch, OTP change and 72-hour pending view [#134]`.
 
 ### Task 9: S06.01 "Giao bởi {Studio}" and S06.02 "Bắt đầu nhận đơn"
 
 **Files:**
-- Create: `app_flutter/lib/features/verification/verification_routes.dart`
+- Create (only if #148 has not merged): `app_flutter/lib/features/settings/settings_links.dart` with `verifyStartReadyProvider` exactly as Contract
 - Modify: `lib/core/widgets/booking_card.dart` (`BookingSummary.tag`), `lib/core/widgets/empty_state.dart` (`note`), `lib/core/theme/app_icons.dart` (`verifiedUser`), `lib/features/booking/booking_view_rules.dart` (`workDashboard(..., uid:)`, `bookingSummaryFor(..., tag:)`), `lib/features/work/work_dashboard.dart` (uses `myWorkBookingsProvider` and the uid), `lib/features/work/work_screen.dart` (tag on the today card), `lib/features/work/work_empty.dart` (closed variant), `lib/l10n/app_vi.arb`, `docs/superpowers/specs/components/shared-components.md` (icons table row `verifiedUser` · `verified_user`; `BookingCard` tag; `EmptyState` note)
 - Test: `test/core/widgets/booking_card_test.dart`, `test/core/widgets/empty_state_test.dart`, `test/features/work/work_screen_test.dart`, `test/features/work/work_empty_test.dart`, `test/features/booking/` (the `workDashboard` rules test file)
 
 **Interfaces:**
 - Consumes: `myWorkBookingsProvider`, `PhotographerIntro.acceptingOrders` (Task 6), `partyProfileProvider`.
-- Produces: `verifyStartReadyProvider` (`false`), `verifyStartPath`, `BookingSummary.tag`, `EmptyState.note`, `AppIcons.verifiedUser`, l10n `workAssignedBy`, `workClosed*`.
+- Consumes also: `verifyStartReadyProvider` (#148, `lib/features/settings/settings_links.dart`).
+- Produces: `BookingSummary.tag`, `EmptyState.note`, `AppIcons.verifiedUser`, l10n `workAssignedBy`, `workClosed*` (the S06.02 closed-state keys #135 reuses).
 - **Backend wiring:** own bookings listener (unchanged) + `bookings where assigneeId == uid` listener (rule from Task 5, written by #136 later); own `photographers/{uid}` via `myIntroProvider` (`FirestorePhotographerIntroRepository`). On the emulator: Bình (`binh.unverified@seed.test`, `acceptingOrders: false`) with no bookings sees the closed variant; An sees the old empty state when empty. No seed data has `assigneeId` until #136 (a widget test covers the label).
 - **Mock parity:** `#S06.02` (illustration disc with `verified_user`, title, body, tertiary note "Staff duyệt trong 24 giờ sau khi bạn gửi", small primary "Bắt đầu nhận đơn"); `#S06.01-assigned` (pill "Giao bởi {Studio}" with the storefront icon under the card title; KPIs exclude the assigned booking's money). The S06.02 segmented control is not added (Decision 17).
 
@@ -664,7 +671,7 @@ Unit prices from `docs/superpowers/specs/2026-10-07-google-cloud-costs.md` (Fire
 - Create: `docs/superpowers/handover/ledger-s06-work-earnings.md`
 
 - [ ] **Step 1:** Edit the docs (Vietnamese specs, English code names); check every string in `photographer.md` against `app_vi.arb` and the mock.
-- [ ] **Step 2:** Write the ledger: rulings (Decisions 1–19 and anything ledgered during the tasks), deferred list below, skipped suites (rules tests and `test/integration/create_payouts.test.ts` written, not run), deploy-order notes: (1) rules before the app (the `assigneeId` query is denied until the rule is deployed; the app tolerates it); (2) `createPayouts` binds the existing `PAYOUT_ACCOUNT_KEY`, so a Blaze project needs that secret (ledger 10b) before deploy; nothing deploys to `booking-c1922` (Spark); (3) Scheduler jobs go from 6 to 7; (4) for #135: flip `verifyStartReadyProvider` to true with the `/verify/start` route, write `users/{uid}/private/identity.legalName` on approval, and exclude `identity` from the owner-read rule of `users/{uid}/private/{docId}`; (5) for #136: `assigneeId` read rule already exists, add the sub-collection rules.
+- [ ] **Step 2:** Write the ledger: rulings (Decisions 1–19 and anything ledgered during the tasks), deferred list below, skipped suites (rules tests and `test/integration/create_payouts.test.ts` written, not run), deploy-order notes: (1) rules before the app (the `assigneeId` query is denied until the rule is deployed; the app tolerates it); (2) `createPayouts` binds the existing `PAYOUT_ACCOUNT_KEY`, so a Blaze project needs that secret (ledger 10b) before deploy; nothing deploys to `booking-c1922` (Spark); (3) Scheduler jobs go from 6 to 7 (this is the 7th; #132's `rollNextFreeDates`, later in the waves, is the 8th); (4) for #135: flip `verifyStartReadyProvider` (in #148's `settings_links.dart`) to true with the `/verify/start` route, write `users/{uid}/private/identity.legalName` on approval, and exclude `identity` from the owner-read rule of `users/{uid}/private/{docId}`; (5) for #136: `assigneeId` read rule already exists, add the sub-collection rules.
 - [ ] **Step 3: Commit** `docs(spec): S06 payouts, payout account v2 and work tab states [#134]`.
 
 ## Deferred

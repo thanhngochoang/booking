@@ -6,6 +6,8 @@
 
 **Branch:** `plan/146-s08-provider-setup` from `origin/develop` (claimed with `scripts/project.py claim 146`), PR into `develop` titled `fix(setup): S08 setup steps match the mock, studio variant [#146]`.
 
+**Execution wave:** 1 (cross-plan review 2026-10-07). **Blocked by:** none.
+
 ## Global Constraints
 
 - CLAUDE.md "UI matches the mock": the mock is the authority for layout, section order, copy, component types and states; the spec for behaviour; when the spec is newer, update the mock and say so (each such case is listed in Decisions).
@@ -84,7 +86,8 @@ None (D6 package covers are a product feature, listed under Deferred, not a ques
 ## Chi phí Google
 
 - Firestore reads/writes per action: unchanged (step 1 still reads `users/{uid}` once and `photographers/{uid}` intro once with `get`; saves are the existing writes; no listener added).
-- Functions, scheduled jobs, Storage paths, paid APIs: none added.
+- **Functions (one rule for every plan, cost spec §12):** at (b) new invocations and CPU fit the free tier (2M invocations, 180,000 vCPU-s, 360,000 GiB-s per month) → $0; at (c) the app already uses the free tier up (§12 (c): 2.5M invocations, ~500K vCPU-s), so this plan's Functions work is charged at Tier 2: $0.40/M invocations, $0.0000336/vCPU-s, $0.0000035/GiB-s. This plan adds no Functions work.
+- Scheduled jobs, Storage paths, paid APIs: none added.
 - Conclusion: **+$0/month at (b) 1,000 MAU and (c) 10,000 MAU.**
 
 ## Tasks

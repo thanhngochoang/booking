@@ -16,7 +16,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-07-studio-recruiting-design.md` (authoritative, owner-approved: R1–R8, §3–§9); `docs/research/2026-10-07-studio-collaborators.md` (§3.3 design B+); `docs/superpowers/specs/2026-10-06-studio-members-design.md` (S26: T1–T12, §3.3 rules, §5.2 assignment, §5.5 job, §5.7 contact, §6 reviews); `2026-10-06-identity-verification-design.md` (`acceptingOrders`, `businessVerified`); `2026-10-07-google-cloud-costs.md` §14; main spec `2026-10-01-remaining-screens.md` §2, §3h; mock `docs/design/ui-mock.html` (S27 frames added by Task 1).
 
-**Issue:** #151 (S27 · Studio tuyển thợ). **Blocked by:** #136 (S26 studio members, `assignBooking`, two-sided reviews), #135 (S21 verification: `verified`, `businessVerified`, `/verify/start`), #130 (tomato/brick reviews: the % cà chua shown on studios and applicants).
+**Issue:** #151 (S27 · Studio tuyển thợ). **Execution wave:** 5 (cross-plan review 2026-10-07). **Blocked by:** #136 (S26, wave 4: studio members, `assignBooking`, two-sided reviews, studio day capacity), #135 (S21, wave 3: `verified`, `businessVerified`, `/verify/start`, `rate_limited`, `vnDayKey`), #130 (reviews wave 2: % cà chua), #139 (S15–S16, wave 4: `contact_filter.ts` `findContactLeak`, `DomainError.field`, the S06.01 tabs), #144 (S20, wave 3: `BlockGate`), #138 (S17, wave 1: the ten S27 notification hooks, copy and targets), #148 (S09, wave 1: settings order).
 
 **Branch:** `plan/151-s27-studio-recruiting` from `origin/develop` after #136, #135 and #130 are merged; PR into `develop` titled `feat(recruit): S27 studio recruiting and per-job collaborators [#151]`.
 
@@ -51,6 +51,8 @@ The S26 plan was written in parallel; it was asked to make the assignment model 
 - Spec R5: "**Tiền công CTV do studio trả ngoài app.** App chỉ ghi "Đã trả / Đã nhận", gắn cờ khi studio không trả và không bảo lãnh thù lao. Tiền booking vẫn 100% về studio theo hai mốc (S26 T11). Nền tảng không chi hộ, không khấu trừ thuế cho CTV." No `payments`, `refunds`, `ledger_entries` or payout write is added by this plan.
 - Spec R6–R8: non-exclusive; both sides consent; each assigned shoot is accepted within 6 hours, declining is not a violation; customer contact opens to a collaborator only when assigned **and** accepted **and** paid, closes when replaced or 7 days after the booking is completed/cancelled.
 - Brief ruling 5: anything that creates an assignment calls `ProviderOrderGate.acceptsOrders` (error `not_accepting_orders`, HTTP 403 in the API); here: posting (studio), applying, collaborating (both sides) and assigning to a collaborator.
+- Blocks (cross-plan review finding 22): `applyToRecruitPost` (studio ↔ applicant), `inviteCollaborator` and `respondCollabInvite` (studio ↔ collaborator) call #144's `BlockGate.isBlockedEitherWay(a, b)` → `blocked` (`failed-precondition`); collaborator assignment goes through S26's `assignBooking`, which already calls #129's `orderBlocker(deps, {customerId, providerId: assignee})` (customer ↔ collaborator), plus a studio ↔ collaborator `BlockGate` check here.
+- Notifications: #138 owns the ten S27 types, their copy (this plan's table, moved there), targets and dedupe keys; this plan only calls #138's hooks (Decision 24).
 - CLAUDE.md: business rules in `packages/domain` (no Firebase/Node imports, `purity.test.ts`); Functions thin, region `asia-southeast1`; Firebase only in `lib/data/**` adapters, `firebase_options.dart`, `main.dart`; ids opaque (`isId`), times UTC instants, money integer VND, enums as string codes (`data-model/README.md`); `AppColors`/`AppSpace`/`AppRadius`/`AppIcons` only; strings in `lib/l10n/app_vi.arb` + `flutter gen-l10n`; `package:photobooking/...` imports, features import `core/core.dart`; one `AppButton.primary` per screen (decline is never the gradient button; destructive confirmation is red inside a confirm sheet); `AsyncView` for every `AsyncValue`; every screen/sheet wrapped in `ScreenCode`.
 - Commits: Conventional Commits, subject ends with `[#151]`, body ends with `Co-Authored-By: TonyH <thanhngochoangbk@gmail.com>` (never the Claude line).
 - Env for Flutter commands (from `app_flutter/`): `source ../scripts/env.sh && export HOME="$PWD/../.home" && export PATH="$PWD/../.flutter/bin:$PATH"`.
@@ -67,10 +69,10 @@ The S26 plan was written in parallel; it was asked to make the assignment model 
 7. **Match keys and filters.** `onPhotographerWrite` keeps the server-only field `photographers/{uid}.recruitMatchKeys` = `a=<area>|s=<specialty>` for every provider area × specialty (empty for studios and for `role != photographer`). Each post stores `matchKeys` (its areas × specialties, ≤ 20) and `filterKeys` (every non-empty combination of `k=<kind>`, `a=<area>`, `s=<specialty>` in that order, joined by `|`, ≤ 59), so any filter of S27.01 is one `array-contains` on `filterKeys` with one composite index. The list loads 20 posts per page with `get` (newest first); the client orders the loaded posts by match score (2 = an area and a specialty match the viewer, 1 = one of them, 0 = none) then date; "Xem thêm" appends and re-sorts. Score 2 shows the tag "Hợp với bạn".
 8. **Fan-out.** `onRecruitPostCreated` (Firestore `onDocumentCreated` on `recruitPosts/{postId}`) queries `photographers where recruitMatchKeys array-contains-any post.matchKeys limit 200` (≤ 20 values, single-field index), drops the studio itself, then notifies each one through the daily cap (3 per provider per VN day, `notices` counter, checked and incremented in one transaction; capped ones are skipped, not queued). Renew and edit never re-notify. The 200 cap takes Firestore's default order; ranking is deferred.
 9. **Closing and expiry cascade.** `closeRecruitPost` declines every `applied` application of the post (`recruit_application_result` declined); expiry (sweep) marks them `expired`. Both decrement each applicant's `openApplicationCount` and the post's `openPostCount` once. Pages of 200 per run; the sweep continues next run.
-10. **Error codes.** Reuse S26's `membership_conflict`, `cooldown`, `studio_full`, `member_busy`, `rate_limited` (add the missing ones with the same transport mapping S26 used: conflicts → `failed-precondition`, `rate_limited` → `resource-exhausted`). New: `collab_full` (`resource-exhausted`), `recruit_blocked` (`failed-precondition`). Contact in text → `invalid_argument` with a field (Decision 11). Post not `open` → `deadline_passed`; a second application to the same post → `conflict`; 3 open posts or 10 open applications → `limit_exceeded`; offer past its expiry → `deadline_passed`; unverified caller or counterpart → `not_accepting_orders`; wrong provider type → `invalid_argument`.
-11. **Contact filter = the jobs plan's.** The job-posts plan (`2026-10-07-s15-s16-job-posts.md`, Decision 15) adds `packages/domain/src/contact_filter.ts` `findContactInfo(text): boolean` and an optional `field` on `DomainError` (`new DomainError('invalid_argument', 'title.contact')`, `toHttpsError` adds `details.field`). Whichever plan lands first creates them exactly as that Decision 15 specifies (same file, signature, regexes and `details.field`); the other reuses them. This plan also refuses the bare word "zalo" (case-insensitive) in its own fields through a local check `hasZaloWord(text)` in `recruit.ts`. Applied to post `title`, `requirements` and application `message`; refusal `invalid_argument` with field `title.contact`, `requirements.contact`, `message.contact`. Chat messages are not filtered by this plan (the booking chat a collaborator joins exists only after payment and acceptance, when contact is open anyway; Deferred).
+10. **Error codes.** Reuse S26's `membership_conflict`, `cooldown`, `studio_full`, `member_busy`, `rate_limited` (add the missing ones with the same transport mapping S26 used: conflicts → `failed-precondition`, `rate_limited` → `resource-exhausted`). New: `collab_full` (`resource-exhausted`), `recruit_blocked` (`failed-precondition`). Contact in text → `invalid_argument` with a field (Decision 11). Daily quotas use #135's `rate_limited` while count limits use `limit_exceeded`: two names for two refusals, accepted (cross-plan review finding 42). Post not `open` → `deadline_passed`; a second application to the same post → `conflict`; 3 open posts or 10 open applications → `limit_exceeded`; offer past its expiry → `deadline_passed`; unverified caller or counterpart → `not_accepting_orders`; wrong provider type → `invalid_argument`.
+11. **Contact filter = the jobs plan's (cross-plan review finding 2).** The job-posts plan (`2026-10-07-s15-s16-job-posts.md`, Decision 15, wave 4 — merged before this plan) creates `packages/domain/src/contact_filter.ts` with exactly `findContactLeak(text: string): 'phone' | 'email' | 'link' | 'zalo' | null` and an optional `field` on `DomainError` (`new DomainError('invalid_argument', 'title.contact')`, `toHttpsError` adds `details.field`). This plan consumes them and refuses any non-null result (`findContactLeak(text) !== null`); the bare word "zalo" is already its `'zalo'` result, so there is no local `hasZaloWord`. If #139 has not merged, create the module exactly as #139's Decision 15 and its regex sample specify. Applied to post `title`, `requirements` and application `message`; refusal `invalid_argument` with field `title.contact`, `requirements.contact`, `message.contact`. Chat messages are not filtered by this plan (the booking chat a collaborator joins exists only after payment and acceptance, when contact is open anyway; Deferred).
 12. **Who collaborates.** Studio: `providerType == 'studio'` and `acceptsOrders`. Collaborator: role `photographer`, `providerType ∈ {individual, artist}` and `acceptsOrders`. An active member of the same studio cannot become its collaborator (`membership_conflict`), and an active collaborator cannot be accepted as a member of the same studio until the collaboration is ended (`membership_conflict`; the S26 activation check gains this through the port, Task 3). Being a member of studio A and a collaborator of studio B is allowed (R6).
-13. **Offers.** `assignBooking` with `assigneeKind: 'collaborator'` requires an `active` collaboration, `agreedFee` integer 1.000–100.000.000 and a multiple of 1.000, the collaborator free that day (same availability check as members) and `ProviderOrderGate`. `offerExpiresAt = now < assignDeadline ? min(now + 6 h, assignDeadline) : min(now + 6 h, startAt)`; if that is less than 15 minutes away → `deadline_passed` (assign a member instead). At offer time the booking gets `assigneeId`, `assigneeKind: 'collaborator'`, `assigneeAccepted: false`; no calendar block, no chat membership, no customer notification. On **accept**: availability re-checked (`day_taken` leaves the offer pending), calendar blocked, chat joined, `assigneeAccepted: true`, customer gets S26's `booking_assigned`. On **decline or expiry**: `assigneeId`, `assigneeKind` cleared, `assigneeAccepted: false`, studio notified; S26's deadline and `assignOverdue` (T6, T8) carry on unchanged. A new `assignBooking` while an offer is pending marks the old job `replaced`.
+13. **Offers.** `assignBooking` with `assigneeKind: 'collaborator'` requires an `active` collaboration, studio ↔ collaborator not blocked either way (#144), `agreedFee` integer 1.000–100.000.000 and a multiple of 1.000, the collaborator free that day (same availability check as members) and `ProviderOrderGate`. `offerExpiresAt = now < assignDeadline ? min(now + 6 h, assignDeadline) : min(now + 6 h, startAt)`; if that is less than 15 minutes away → `deadline_passed` (assign a member instead). At offer time the booking gets `assigneeId`, `assigneeKind: 'collaborator'`, `assigneeAccepted: false`; no calendar block, no chat membership, no customer notification. On **accept**: availability re-checked (`day_taken` leaves the offer pending), calendar blocked, the booking moves from S26's `studio_day_load.unassignedIds` to `assignedIds` (Decision 26), chat joined, `assigneeAccepted: true`, customer gets S26's `booking_assigned`. On **decline or expiry**: `assigneeId`, `assigneeKind` cleared, `assigneeAccepted: false`, studio notified; S26's deadline and `assignOverdue` (T6, T8) carry on unchanged. A new `assignBooking` while an offer is pending marks the old job `replaced`.
 14. **Collaborator returns an accepted job** ("Trả việc", S26): the job becomes `returned`, no pay record; the S26 flow continues.
 15. **Pay record.** When the booking's first milestone is released to the studio (port `shotReleased(bookingId)`: the field the payments implementation writes; if milestone release is not implemented when this runs, "booking status past `shot`" — ledger which) the sweep sets `payStatus: 'due'`, `pay.dueAt = now`, and notifies the studio. Studio "Đã trả" → `paid_reported` (date ≤ today, method `bank|cash|other`); collaborator "Đã nhận" → `received`, "Chưa nhận" → `disputed`. A job still `due` 7 days after `dueAt`, or `disputed`, adds one entry to the studio's `unpaidFlags` (once per job per reason, `overdueFlaggedAt`/`disputeFlaggedAt`). Three entries within 90 days set `recruitBlockedUntil = now + 30 days` (Needs the owner 1): no new posts, invites or collaborator assignments (`recruit_blocked`); running posts and accepted jobs continue. Flags never clear automatically. A booking cancelled before the shoot cancels a pending/accepted job with no pay record.
 16. **Collab chat.** Kind `collab`, id `collab_{studioId}_{collaboratorId}`, studio in the `customerId` slot and collaborator in the `photographerId` slot, so `roleInChat`, `assertCanSend` and `sendMessage` work unchanged (inquiry limits apply only to `inquiry`). Created lazily by the callable `openCollabChat` ("Nhắn tin" in S27.06) when the collaboration is `active` (or `ended` less than 30 days ago, read-only). `endCollaboration` sets `readOnlyAt = now` after commit; a later activation clears it. The app shows no `ContactDial` and no booking bar in collab chats.
@@ -81,8 +83,9 @@ The S26 plan was written in parallel; it was asked to make the assignment model 
 21. **Member-kind acceptance** runs inside the recruit transaction: `RecruitTx.getMemberState` returns what `checkMemberActivation` needs, the domain calls it (exact S26 errors, spec §3.3 "Lỗi nào thì báo đúng lỗi đó"), then `RecruitTx.putMember` writes the `studio_members` record with S26's mapping (`initiatedBy: 'member'`, `applicationId` extra field) and S26's counters. The S26 notification `studio_join_approved` is sent, plus `recruit_application_result`.
 22. **Posts are edited only while `open`; `kind` is fixed after creation.** Renew: once, only while `open` and `renewed == false`, `expiresAt += 30 days`; an expired post cannot be renewed (post a new one). The studio snapshot (`name`, `avatarUrl`, `businessVerified`) is denormalised at create, update and renew.
 23. **Withdraw** an application only while `applied`; it decrements the counter and does not refund the daily apply quota. One application per post forever (`conflict` after withdraw).
-24. **Notifications.** All ten S27 types use category `jobs`, tab `activity`; `collab_assignment_offer` is critical (6-hour deadline: always in the inbox, never quiet). `recruit_application_new` groups per post (`groupKey = recruit:<postId>:apps`). Staff side of `collab_pay_disputed` is the flag only until S23 has an inbox (Deferred).
+24. **Notifications through #138's hooks.** #138 owns the ten S27 types (category `jobs`, tab `activity`; `collab_assignment_offer` critical; `recruit_application_new` grouped per post), their copy (this plan's table, moved into #138's catalogue by the cross-plan review), dedupe keys and targets — `/recruit/:id`, `/studio/recruit?post=…`, `/collab`, `/collab?offer=…`, with those two query parameters explicitly allowed by #138's `safeTarget` (cross-plan review finding 29). This plan is the only emitter and adds no copy: use cases and triggers call #138's hooks after the commit (signatures in Contract). `notifyRecruitMatches` keeps its fan-out cap (3 per provider per VN day, 200 recipients) and calls `notifyRecruitPostNew` per recipient. Staff side of `collab_pay_disputed` is the flag only until S23 has an inbox (Deferred).
 25. **Tax reminder** ("Khoản từ 5.000.000đ/lần…") shows in S27.06 (studio) while any due/reported job is ≥ 5.000.000₫ and the studio has not dismissed it; dismissal is remembered in SharedPreferences `collabTaxNoticeSeen:<uid>` (per-device convenience).
+26. **Owner 2026-10-07: collaborators and studio capacity.** S26's capacity rule (S26 Decision 26: a studio takes one booking per free member per day) counts members only. An `active` collaborator adds no capacity before a booking exists, and a pending offer does not either: the booking stays in `studio_day_load.unassignedIds` until the collaborator accepts; on acceptance it moves to `assignedIds` and the collaborator's own day is booked, exactly like an assigned member. So a studio whose members are all busy cannot take a new booking on the strength of its collaborators; collaborators let it staff bookings it has already taken. A declined or expired offer leaves the booking unassigned (capacity unchanged).
 
 ## Needs the owner
 
@@ -112,8 +115,8 @@ The S26 plan was written in parallel; it was asked to make the assignment model 
 ### Domain (`packages/domain/src`)
 
 ```ts
-// contact_filter.ts (shared with the jobs plan, Decision 11)
-export function findContactInfo(text: string): boolean;
+// contact_filter.ts (created by the jobs plan #139, consumed here; Decision 11)
+export function findContactLeak(text: string): 'phone' | 'email' | 'link' | 'zalo' | null;
 // errors.ts: class DomainError { constructor(readonly code: ErrorCode, readonly field?: string) }
 
 // recruit_areas.ts
@@ -218,7 +221,22 @@ export function runRecruitSweeps(deps: RecruitDeps & { assign: AssignDeps }): Pr
 // { postsExpired, applicationsExpired, invitesExpired, offersExpired, payDue, payFlagged }
 ```
 
-Notification types (added to `NOTIFICATION_TYPES` as `meta('jobs', 'activity')`, `collab_assignment_offer` critical) and `NotificationContent` (copy in `renderNotification`, verbatim):
+Notifications (consumed from #138, `packages/domain/src/notification_hooks.ts`; Decision 24). The ten types, their copy (the table below, moved into #138's catalogue unchanged), category `jobs`/tab `activity`, `collab_assignment_offer` critical, dedupe keys and targets are #138's; signatures quoted so each task has them:
+
+```ts
+export function notifyRecruitPostNew(deps: NotifyDeps, e: { recipientId: string; studioId: string; postId: string; title: string }): Promise<NotifyResult>;
+export function notifyRecruitApplicationNew(deps: NotifyDeps, e: { studioId: string; postId: string; title: string; applicantId: string }): Promise<NotifyResult>; // grouped recruit:{postId}:apps
+export function notifyRecruitApplicationResult(deps: NotifyDeps, e: { applicantId: string; studioId: string; postId: string; title: string; outcome: 'collaborator' | 'member' | 'declined' | 'expired' }): Promise<NotifyResult>;
+export function notifyCollabInvite(deps: NotifyDeps, e: { collaboratorId: string; studioId: string; invitedAt: string }): Promise<NotifyResult>;
+export function notifyCollabInviteResult(deps: NotifyDeps, e: { studioId: string; collaboratorId: string; invitedAt: string; outcome: 'accepted' | 'declined' | 'expired' }): Promise<NotifyResult>;
+export function notifyCollabAssignmentOffer(deps: NotifyDeps, e: { collaboratorId: string; studioId: string; bookingId: string; service: string; day: string; start: string; fee: number; deadline: string }): Promise<NotifyResult>;
+export function notifyCollabAssignmentResult(deps: NotifyDeps, e: { studioId: string; collaboratorId: string; bookingId: string; outcome: 'accepted' | 'declined' | 'expired'; service: string; day: string; start: string; deadline: string }): Promise<NotifyResult>;
+export function notifyCollabPayDue(deps: NotifyDeps, e: { studioId: string; collaboratorId: string; bookingId: string; amount: number; service: string; day: string }): Promise<NotifyResult>;
+export function notifyCollabPayReported(deps: NotifyDeps, e: { collaboratorId: string; studioId: string; bookingId: string; amount: number; method: 'bank' | 'cash' | 'other' }): Promise<NotifyResult>;
+export function notifyCollabPayDisputed(deps: NotifyDeps, e: { studioId: string; collaboratorId: string; bookingId: string; amount: number; service: string; day: string }): Promise<NotifyResult>;
+```
+
+Copy as moved to #138 (listed for this plan's tests only):
 
 | type | content fields | title | body |
 |---|---|---|---|
@@ -233,7 +251,7 @@ Notification types (added to `NOTIFICATION_TYPES` as `meta('jobs', 'activity')`,
 | `collab_pay_reported` | studio, amount, method | "Studio báo đã trả thù lao" | "{studio} báo đã trả {amount} ({method}). Bấm Đã nhận hoặc Chưa nhận." (method: "chuyển khoản" / "tiền mặt" / "cách khác") |
 | `collab_pay_disputed` | name, amount, service, day | "Cộng tác viên chưa nhận thù lao" | "{name} báo chưa nhận {amount} cho buổi {service} {day}." |
 
-Targets: `recruit_post_new`, `recruit_application_result` → `/recruit/{postId}`; `recruit_application_new` → `/studio/recruit?post={postId}`; `collab_invite`, `collab_invite_result`, `collab_pay_*` → `/collab`; `collab_assignment_offer` → `/collab?offer={bookingId}`; `collab_assignment_result` → `/b/{bookingId}`. Dedupe keys `<type>:<id>[:<outcome>]`.
+Targets: `recruit_post_new`, `recruit_application_result` → `/recruit/{postId}`; `recruit_application_new` → `/studio/recruit?post={postId}`; `collab_invite`, `collab_invite_result`, `collab_pay_*` → `/collab`; `collab_assignment_offer` → `/collab?offer={bookingId}`; `collab_assignment_result` → `/b/{bookingId}`. Dedupe keys `<type>:<id>[:<outcome>]` (#138's). All four target shapes, including the `post` and `offer` query parameters, are allowlisted by #138.
 
 ### Callables (`asia-southeast1`, `CALLABLE_OPTIONS`, thin: auth → domain → `toHttpsError`)
 
@@ -310,7 +328,7 @@ abstract class RecruitRepository {
 enum CollabStatus { invited, requested, active, declined, cancelled, expired, ended }
 enum OfferStatus { pending, accepted, declined, expired, replaced, returned, cancelled }
 enum PayStatus { none, due, paidReported, received, disputed }     // codes: none, due, paid_reported, received, disputed
-enum PayMethod { bank, cash, other }
+enum CollabPayMethod { bank, cash, other } // not `PayMethod`: core/payments.dart (#129) already declares that name (cross-plan review finding 9)
 class Collaboration { studioId, collaboratorId, studioName, studioAvatarUrl, collaboratorName, collaboratorAvatarUrl, status,
   defaultFee, activeAt, expiresAt, endedAt; }
 class CollabJob { bookingId, studioId, collaboratorId, studioName, collaboratorName, day, start, end, serviceName, placeName,
@@ -326,7 +344,7 @@ abstract class CollabRepository {
   Future<void> end({String? studioId, String? collaboratorId});
   Future<void> setDefaultFee(String collaboratorId, int? fee);
   Future<OfferStatus> respondOffer(String bookingId, {required bool accept});
-  Future<void> reportPaid(String bookingId, String collaboratorId, {required DateTime paidOn, required PayMethod method});
+  Future<void> reportPaid(String bookingId, String collaboratorId, {required DateTime paidOn, required CollabPayMethod method});
   Future<void> confirmPay(String bookingId, {required bool received});
   Future<String> openChat({String? studioId, String? collaboratorId});
 }
@@ -516,7 +534,7 @@ Unit prices from `2026-10-07-google-cloud-costs.md`: Firestore at the nam5 upper
 
 **New callables and triggers** — 16 new callables + `assignBooking` extended, 1 new trigger (`onRecruitPostCreated`), 2 extended triggers (`onPhotographerWrite`, `onBookingWrite`: a few extra reads, writes only on change). Calls/month: (b) ≈ 15 posts + 120 applications + 120 responses + 30 invites + 27 offers + 54 pay marks + chat opens ≈ 400 callable calls + ~375 extra `onNotificationWrite` runs; (c) ≈ 4,000 callable calls + ~22,500 notification-trigger runs. 256 MiB, 60 s timeout (defaults). All inside the free 2M calls and 180K vCPU-s (c: ≈ 27K calls × 0.2 vCPU-s ≈ 5,400 vCPU-s).
 
-**Scheduled jobs** — none new. The S26 15-minute job (2,976 runs/month) runs 6 extra queries per run (posts, applications, invites, offers, pay due, pay overdue): ≥ 6 reads per run even when empty ≈ 18K reads/month at any scale, plus the documents it processes.
+**Scheduled jobs** — none new. The S26 15-minute job (2,880 runs/month, 30 days as in every other plan) runs 6 extra queries per run (posts, applications, invites, offers, pay due, pay overdue): ≥ 6 reads per run even when empty ≈ 18K reads/month at any scale, plus the documents it processes.
 
 **Storage** — no new path (applications reference existing portfolio posts; the CSV stays on the device). **Paid APIs** — none (no Maps, SMS, Cloud Tasks, Secret Manager).
 
@@ -531,8 +549,10 @@ Unit prices from `2026-10-07-google-cloud-costs.md`: Firestore at the nam5 upper
 | Collab jobs and pay | ~1K r / 0.7K w | ~9K r / 6.5K w |
 | Sweeps (piggyback) | ~18K r | ~19K r |
 | **Firestore** | ~42K r, 3.3K w ≈ **$0.03** | ~363K r, 90K w ≈ $0.22 + $0.16 = **$0.38** |
-| Functions | $0 (free tier) | $0 (free tier; ≈ $0.2 if the rest of the app already used it up) |
-| **Added per month** | **≈ $0.03** | **≈ $0.4–0.6** |
+| Functions (rule below) | $0 (free tier) | ≈ $0.2 (Tier 2: ~4K callables + ~22.5K trigger runs) |
+| **Added per month** | **≈ $0.03** | **≈ $0.6** |
+
+**Functions (one rule for every plan, cost spec §12):** at (b) new invocations and CPU fit the free tier (2M invocations, 180,000 vCPU-s, 360,000 GiB-s per month) → $0; at (c) the app already uses the free tier up (§12 (c): 2.5M invocations, ~500K vCPU-s), so this plan's Functions work is charged at Tier 2: $0.40/M invocations, $0.0000336/vCPU-s, $0.0000035/GiB-s.
 
 Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list pages of 20 with `get`, listeners only on small bounded sets, a 200-recipient fan-out cap and a 3-per-day notification cap, no new schedule.
 
@@ -543,11 +563,11 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
 | File | Responsibility |
 |---|---|
 | `docs/design/ui-mock.html`, `docs/superpowers/specs/2026-10-01-remaining-screens.md` §2, `app_flutter/lib/core/screen_codes.dart`, `CLAUDE.md` | Task 1: frames, code table, constants |
-| `packages/domain/src/contact_filter.ts` (only if the jobs plan has not added it), `recruit_areas.ts`, `recruit.ts`, `recruit_ports.ts`, `recruit_use_cases.ts`, `memory_recruit_store.ts`, `recruit_notify.ts`; `errors.ts`, `notification.ts`, `notification_render.ts`, `index.ts` (modify) | Task 2 |
+| `packages/domain/src/contact_filter.ts` (consumed from #139; created here only if #139 has not merged), `recruit_areas.ts`, `recruit.ts`, `recruit_ports.ts`, `recruit_use_cases.ts`, `memory_recruit_store.ts`, `recruit_notify.ts`; `errors.ts`, `index.ts` (modify; no notification module: #138's) | Task 2 |
 | `packages/domain/src/studio_collaboration.ts`, `collab_use_cases.ts`; `studio_membership.ts` (S26, extract checker), `chat.ts` (kind `collab`), `open_collab_chat.ts` | Task 3 |
 | `packages/domain/src/collab_jobs.ts`, `recruit_sweeps.ts`; S26 assignment module, `get_contact_link.ts` (modify) | Task 4 |
 | `app_flutter/firebase/functions/src/infra/recruit_firestore.ts`, `live_recruit.ts`, `callables/recruit.ts`, `callables/collab.ts`, `triggers/recruit_post_created.ts`; `index.ts`, `callables/errors.ts`, `triggers/photographer_write.ts`, `triggers/booking_write.ts`, S26 job handler, `seed/fixtures.ts`, `seed/README.md`; `firestore.rules`, `firestore.indexes.json`, `rules-test/rules.test.mjs` | Task 5 |
-| `app_flutter/lib/data/recruit/*`, `lib/data/collab/*`, `lib/data/chat/chat.dart`, `lib/core/theme/app_icons.dart`, `features/notifications/notification_visuals.dart`, `test/support/recruit_world.dart` | Task 6 |
+| `app_flutter/lib/data/recruit/*`, `lib/data/collab/*`, `lib/data/chat/chat.dart`, `lib/core/theme/app_icons.dart` (icons #138's visuals use), `test/support/recruit_world.dart` | Task 6 |
 | `app_flutter/lib/features/recruit/recruit_list_view.dart`, `recruit_list_screen.dart`, `recruit_list_controller.dart`, `recruit_card.dart`, `recruit_detail_screen.dart`, `recruit_apply_sheet.dart`, `collab_terms_card.dart`; `features/work/work_screen.dart`, `features/photographer_profile/widgets/profile_header.dart`, `lib/app/router.dart` | Task 7 |
 | `app_flutter/lib/features/recruit/recruit_edit_screen.dart`, `recruit_edit_controller.dart`, `studio_recruit_screen.dart`, `studio_recruit_controller.dart` | Task 8 |
 | `app_flutter/lib/features/collab/collab_screen.dart`, `collab_studio_view.dart`, `collab_member_view.dart`, `collab_offer_sheet.dart`, `collab_paid_sheet.dart`, `collab_fee_sheet.dart`, `collab_controller.dart`; S26 assign and invite sheets, S05.02 block, `work_screen.dart`, `settings_screen.dart`, chat list/screen | Task 9 |
@@ -590,16 +610,16 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
 
 **Files:**
 - Create: `packages/domain/src/recruit_areas.ts`, `recruit.ts`, `recruit_ports.ts`, `recruit_use_cases.ts`, `memory_recruit_store.ts`, `recruit_notify.ts`; `contact_filter.ts` + `test/contact_filter.test.ts` only if absent (Decision 11: copy the jobs plan's Decision 15 regexes and its test table verbatim)
-- Modify: `packages/domain/src/errors.ts` (codes; `DomainError.field` if absent), `notification.ts`, `notification_render.ts`, `index.ts`
-- Test: `packages/domain/test/recruit_areas.test.ts`, `recruit.test.ts`, `recruit_use_cases.test.ts`, `recruit_notify.test.ts`, `notification_render.test.ts` (extend), `test/support/recruit_world.ts`
+- Modify: `packages/domain/src/errors.ts` (codes; `DomainError.field` if absent), `index.ts` (no notification copy: #138's)
+- Test: `packages/domain/test/recruit_areas.test.ts`, `recruit.test.ts`, `recruit_use_cases.test.ts`, `recruit_notify.test.ts`, `test/support/recruit_world.ts`
 
 **Interfaces:**
-- Consumes: `ProviderOrderGate`, `NotifyDeps`/`notify`, `isId`, `vnDayKey` (S21), `findContactInfo` + `DomainError.field` (jobs plan or created here, Decision 11), S26's `checkMemberActivation` (only its type here; Task 3 calls it).
+- Consumes: `ProviderOrderGate`, `NotifyDeps`/`notify`, `isId`, `vnDayKey` (S21), `findContactLeak(text: string): 'phone' | 'email' | 'link' | 'zalo' | null` + `DomainError.field` (#139's, Decision 11), #144's `BlockGate.isBlockedEitherWay(a: string, b: string): Promise<boolean>`, #138's ten hooks (Contract signatures), S26's `checkMemberActivation` (only its type here; Task 3 calls it).
 - Produces: everything under "Domain" for `recruit_areas.ts`, `recruit.ts`, `recruit_ports.ts`, `recruit_use_cases.ts`, `recruit_notify.ts` in the Contract; all ten notification types with their content and copy (emitted by Tasks 2–4); error codes of Decision 10. `RecruitWorld` (test support): in-memory `RecruitStore`, people map, order gate map, owned posts, fake notify recorder, fixed clock.
 
 - [ ] **Step 1: Contract check** of the files in "Contract with existing code" and "What this plan expects from S26"; write the real S26 names into the ledger draft.
 - [ ] **Step 2: Failing tests:**
-  - `recruit.test.ts` (contact): `findContactInfo refuses recruit samples` ("0912 345 678", "+84 912345678", "a@b.vn", "www.abc.com", "studio.vn", "zalo.me/0912345678"); `hasZaloWord finds "Zalo" in any case`; `ignores prices, years, lens sizes and times` ("800.000₫/buổi", "2026", "70-200mm", "15:30–19:30", "f2.8") → false.
+  - `recruit.test.ts` (contact, #139's `findContactLeak`; copy #139's `contact_filter.test.ts` table and add these recruit rows): "0912 345 678" → phone, "+84 912345678" → phone, "a@b.vn" → email, "www.abc.com" → link, "studio.vn" → link, "zalo.me/0912345678" → link, "Zalo" → zalo; `ignores prices, years, lens sizes and times` ("800.000₫/buổi", "2026", "70-200mm", "15:30–19:30", "f2.8") → null; `an application message with any leak is invalid_argument with field message.contact`; `applying to a studio that blocked the applicant (either way) is blocked`.
   - `recruit_areas.test.ts`: `RECRUIT_AREAS has the 12 builtInAreas ids in order`; `recruitCityOf folds accents and aliases` ("TP.HCM", "Hồ Chí Minh", "Sài Gòn" → hcm; "Hà Nội" → hn; "Đà Nẵng" → dn; "Paris" → null); `areas by centre and radius` (centre Quận 1, 5 km → hcm-q1, hcm-q3, hcm-binh-thanh…); `areas by city when no centre`; `recruitMatchKeysOf is empty for studios and for customers`.
   - `recruit.test.ts`: `validateRecruitPostInput` table (title 7 → invalid, 8 ok, 81 invalid; 0/5 specialties invalid, unknown id invalid, duplicate invalid; 0/6 areas invalid; per_shoot amount 999, 1.500, 100.001.000 invalid, 800.000 ok; negotiable ok; requirements 601 invalid; phone in title or requirements → `invalid_argument` with field `title.contact` / `requirements.contact`; "liên hệ zalo nhé" → `requirements.contact`); `recruitFilterKeys has every non-empty combination and no duplicates` (1 kind × 2 areas × 2 specialties → 17 keys incl. `k=collaborator|a=hcm-q3|s=wedding`); `takeDaily resets at VN midnight` (16:59:59Z and 17:00:00Z are different VN days) and `throws rate_limited when full`.
   - `recruit_use_cases.test.ts`:
@@ -610,13 +630,13 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
     - respond (decline only; both accept branches are Task 3): `decline sets declined, respondedAt, decrements counters, counts one studio action, notifies the applicant`; `respond after the application expired is deadline_passed`; `only the posting studio may respond (permission_denied)`.
     - `every exit path from applied decrements openApplicationCount exactly once` (decline, withdraw, close, expire in sequence over four applications; counter ends at 0, never negative).
   - `recruit_notify.test.ts`: `notifies matching providers except the studio`; `a provider gets at most 3 recruit_post_new per VN day` (4th post same day → capped); `the cap resets the next VN day`; `stops at 200 recipients`; `a replayed trigger sends nothing twice` (dedupe key `recruit_post_new:<postId>`).
-  - `notification_render.test.ts`: one case per new type and outcome with the exact strings of the Contract table.
+  - `recruit_notify.test.ts` also: `each use case calls the matching #138 hook with the Contract fields` (copy pinned by #138).
 - [ ] **Step 3:** `cd packages/domain && npm test` → the new tests fail.
 - [ ] **Step 4: Implement.** Memory store: refuse a read after a write inside a transaction (copy the `memory_event_store.ts` guard). Use cases read everything first, then write. Sample (apply):
   ```ts
   export async function applyToRecruitPost(deps: RecruitDeps, uid: string, raw: unknown) {
     const input = parseApplyInput(raw);                    // ids, message ≤ 400, ≤ 3 samples, acceptTerms bool
-    if (findContactInfo(input.message) || hasZaloWord(input.message)) throw new DomainError('invalid_argument', 'message.contact');
+    if (findContactLeak(input.message) !== null) throw new DomainError('invalid_argument', 'message.contact'); // 'zalo' included
     const me = await deps.people.provider(uid);
     if (!me || me.role !== 'photographer' || me.providerType === 'studio') throw new DomainError('invalid_argument');
     if (!(await deps.orders.acceptsOrders(uid))) throw new DomainError('not_accepting_orders');
@@ -738,7 +758,7 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
 
 **Files:**
 - Create: `app_flutter/firebase/functions/src/infra/recruit_firestore.ts` (`FirestoreRecruitStore`, people reader, owned-posts reader, milestone reader, `matchingProviders`), `src/infra/live_recruit.ts` (`liveRecruitDeps()`), `src/callables/recruit.ts`, `src/callables/collab.ts`, `src/triggers/recruit_post_created.ts`
-- Modify: `src/index.ts` (16 callables + 1 trigger; S26 job calls `handleRecruitSweeps`), `src/callables/errors.ts` (codes of Decision 10), `src/triggers/photographer_write.ts` (`syncRecruitMatchKeys`), `src/triggers/booking_write.ts` (`syncCollabJob`, `flagPoaching`), the S26 Firestore assignment adapter (collab job + recruit counters inside the assign transaction), `src/infra/chat_firestore.ts` (map kind `collab`; `setReadOnly(chatId, at)`), `seed/fixtures.ts`, `seed/README.md`; `app_flutter/firebase/firestore.rules`, `firestore.indexes.json`, `rules-test/rules.test.mjs`
+- Modify: `src/index.ts` (16 callables + 1 trigger; the S26 15-minute `bookingClock` gains the step `recruitSweeps` = `handleRecruitSweeps()` at the end of its step list, own try/catch, dependency in the optional `BookingClockExtras.recruit` — clock rule of #129), `src/callables/errors.ts` (codes of Decision 10), `src/triggers/photographer_write.ts` (`syncRecruitMatchKeys`), `src/triggers/booking_write.ts` (`syncCollabJob`, `flagPoaching`), the S26 Firestore assignment adapter (collab job + recruit counters inside the assign transaction), `src/infra/chat_firestore.ts` (map kind `collab`; `setReadOnly(chatId, at)`), `seed/fixtures.ts`, `seed/README.md`; `app_flutter/firebase/firestore.rules`, `firestore.indexes.json`, `rules-test/rules.test.mjs`
 - Test: `functions/test/unit/recruit_callables.test.ts`, `collab_callables.test.ts`, `recruit_post_created.test.ts`, `recruit_firestore_mapping.test.ts`, `photographer_write.test.ts` (extend), `booking_write` test (extend or create `booking_write_collab.test.ts`), `errors.test.ts`, `seed_fixtures.test.ts`
 
 **Interfaces:**
@@ -750,7 +770,8 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
   - `recruit_post_created.test.ts`: `calls notifyRecruitMatches once per created post`; `an expired event (older than MAX_EVENT_AGE_MS) does nothing`.
   - `photographer_write.test.ts`: `syncRecruitMatchKeys writes keys for an individual in TP.HCM with wedding`; `writes [] for a studio`; `writes nothing when the keys already match` (re-fire); `writes nothing for a deleted doc`; `a customer-mode role writes []`.
   - booking write: `a cancelled studio booking cancels its pending collab job`; `a completed booking sets closedAt`; `a second personal booking with a customer the collaborator served for a studio writes one staff flag; a third writes nothing new`.
-  - mapping: `round-trips every S27 doc, including null fields and nested pay`.
+  - mapping: `round-trips every S27 doc, including null fields and nested pay`; extend #131's shared `chat round-trips every field` test with a `collab`-kind chat and #129's shared `booking round-trips every field` test with `assigneeKind: 'collaborator'` and `assigneeAccepted` (cross-plan review finding 41).
+  - capacity (S26 Decision 26, owner 2026-10-07): `a pending collaborator offer leaves the booking in unassignedIds; acceptance moves it to assignedIds and books the collaborator's day`; `an active collaborator adds no capacity: a studio whose members are all busy refuses a new booking (day_taken)`.
   - `errors.test.ts`: `collab_full → resource-exhausted`, `recruit_blocked → failed-precondition`, `a field error carries details.field` (if not already covered by the jobs plan) (+ any S26 code added here).
   - `seed_fixtures.test.ts`: `seeds one open collaborator post by Cúc Studio with matchKeys and filterKeys from the domain`; `seeds an applied application by An`; `seeds an active collaboration Cúc–Dũng with defaultFee 600000 and both counters`.
 - [ ] **Step 2:** `cd app_flutter/firebase/functions && npm test` → fail.
@@ -795,8 +816,8 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
 
 **Files:**
 - Create: `app_flutter/lib/data/recruit/recruit_post.dart`, `recruit_repository.dart` (+ `FakeRecruitRepository`), `firestore_recruit_repository.dart`, `recruit_providers.dart`; `lib/data/collab/collaboration.dart`, `collab_repository.dart` (+ `FakeCollabRepository`), `firestore_collab_repository.dart`, `collab_providers.dart`, `collab_csv.dart`; `test/support/recruit_world.dart`
-- Modify: `lib/data/chat/chat.dart` (+ its Firestore parser: `ChatKind.collab`), `lib/core/theme/app_icons.dart` (`handshake`, `campaign`, `eventRepeat`), `lib/features/notifications/notification_visuals.dart`, `lib/l10n/app_vi.arb` (error keys + `chatKindCollab`)
-- Test: `test/data/recruit/recruit_mapping_test.dart`, `recruit_filter_test.dart`, `recruit_error_test.dart`, `test/data/collab/collab_mapping_test.dart`, `collab_csv_test.dart`, `test/data/chat/` (kind parse case), `test/features/notifications/notification_visuals_test.dart` (extend), `test/data/recruit/area_sync_test.dart`
+- Modify: `lib/data/chat/chat.dart` (+ its Firestore parser: `ChatKind.collab`), `lib/core/theme/app_icons.dart` (`handshake`, `campaign`, `eventRepeat`; #138's visuals of the S27 types use them), `lib/l10n/app_vi.arb` (error keys + `chatKindCollab`)
+- Test: `test/data/recruit/recruit_mapping_test.dart`, `recruit_filter_test.dart`, `recruit_error_test.dart`, `test/data/collab/collab_mapping_test.dart`, `collab_csv_test.dart`, `test/data/chat/` (kind parse case), `test/data/recruit/area_sync_test.dart`
 
 **Interfaces:**
 - Consumes: Firestore shapes and callables of Task 5.
@@ -872,7 +893,7 @@ Below the $5 threshold at (c); no mitigation needed. Cost guards built in: list 
 
 **Files:**
 - Create: `app_flutter/lib/features/collab/collab_screen.dart`, `collab_studio_view.dart`, `collab_member_view.dart`, `collab_controller.dart`, `collab_offer_sheet.dart`, `collab_paid_sheet.dart`, `collab_fee_sheet.dart`, `collab_accept_sheet.dart`
-- Modify: the S26 assign sheet (S26.04: groups + fee field), the S26 invite sheet (S26.02: collaborator mode), the S05.02 "Thợ chụp cho bạn" block, S05.02/S06.01 studio-side offer state, `lib/features/work/work_screen.dart` (label), `lib/features/settings/settings_screen.dart` (rows), chat list row + chat screen (`ChatKind.collab`), `lib/app/router.dart`, `lib/l10n/app_vi.arb`
+- Modify: the S26 assign sheet (S26.04: groups + fee field), the S26 invite sheet (S26.02: collaborator mode), the S05.02 "Thợ chụp cho bạn" block, S05.02/S06.01 studio-side offer state, `lib/features/work/work_screen.dart` (label), `lib/features/settings/settings_screen.dart` (add rows "Cộng tác" `settings-collab` (photographer) and "Tin tuyển" `settings-recruit` (studio) to group Tài khoản per S09's order (#148 Decision 12): after "Studio của tôi"/"Thành viên studio", before "Xem hồ sơ công khai"), chat list row + chat screen (`ChatKind.collab`), `lib/app/router.dart`, `lib/l10n/app_vi.arb`
 - Test: `test/features/collab/collab_studio_test.dart`, `collab_member_test.dart`, `collab_offer_sheet_test.dart`, the S26 assign/invite sheet tests (extend), `test/features/booking/booking_detail_*` (extend), `test/features/work/work_screen_test.dart`, `test/features/settings/settings_test.dart`, `test/features/chat/` (extend)
 
 **Interfaces:**
