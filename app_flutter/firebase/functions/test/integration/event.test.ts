@@ -48,7 +48,10 @@ async function makeCustomer(n: number): Promise<string> {
   return uid;
 }
 
-async function publish(host: string, over: Record<string, unknown> = {}, daysAhead = 5): Promise<string> {
+// Publishing reserves the host's availability day, so every event gets its own day.
+let nextDay = 30;
+
+async function publish(host: string, over: Record<string, unknown> = {}, daysAhead = nextDay++): Promise<string> {
   const eventId = newUlid(Date.now());
   const path = `eventCovers/${host}/${eventId}/cover.jpg`;
   const start = new Date(Date.now() + daysAhead * DAY);
