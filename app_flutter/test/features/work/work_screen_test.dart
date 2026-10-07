@@ -8,11 +8,14 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
+import '../../support/event_world.dart' as ev;
 
 /// Thursday 08/10 09:00 in Vietnam.
 final _now = DateTime.utc(2026, 10, 8, 2);
@@ -109,6 +112,7 @@ Future<BookingsTabHandles> _pump(
   TestClock? clock,
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
+  List<EventDetail> events = const [],
 }) => pumpBookingsTab(
   tester,
   uid: detailPhotographerUid,
@@ -120,6 +124,7 @@ Future<BookingsTabHandles> _pump(
   portfolioPhotos: 8,
   packages: const [workPackage],
   completeness: 90,
+  events: events,
 );
 
 typedef FakeRepo = RecordingBookingRepository;
@@ -440,5 +445,111 @@ void main() {
     await tester.tap(find.text('Gọi'));
     await _settle(tester);
     expect(handles.launcher.opened, [Uri.parse('tel:+84903123456')]);
+  });
+
+  group('S06.01 Sự kiện của tôi', () {
+    List<EventDetail> mine() => [
+      ev.detailOf(
+        'e1',
+        hostId: detailPhotographerUid,
+        createdBy: detailPhotographerUid,
+      ),
+      ev.detailOf(
+        'e2',
+        hostId: detailPhotographerUid,
+        createdBy: detailPhotographerUid,
+        status: EventStatus.draft,
+        registered: 0,
+        startsIn: const Duration(days: 5),
+      ),
+    ];
+
+    testWidgets('S06.01 shows Sự kiện của tôi with drafts tagged', (
+      tester,
+    ) async {
+      final h = await _pump(
+        tester,
+        _repo(_busy()),
+        events: mine(),
+        viewSize: const Size(390, 2400),
+      );
+      await _settle(tester);
+
+      final section = find.byKey(const Key('my-events-section'));
+      expect(section, findsOneWidget);
+      expect(
+        find.descendant(of: section, matching: find.text('Sự kiện của tôi')),
+        findsOneWidget,
+      );
+      // Upcoming first: e1 (in 3 days) above the draft (in 5 days).
+      expect(
+        tester.getTopLeft(find.byKey(const Key('my-event-e1'))).dy,
+        lessThan(tester.getTopLeft(find.byKey(const Key('my-event-e2'))).dy),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('my-event-tag-e2')),
+          matching: find.text('NHÁP'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('my-event-tag-e1')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('my-event-e2')));
+      await _settle(tester);
+      expect(h.location, '/events/new?draft=e2');
+    });
+
+    testWidgets('a published event opens S12.03; Xem tất cả opens the list', (
+      tester,
+    ) async {
+      final h = await _pump(
+        tester,
+        _repo(_busy()),
+        events: [
+          ...mine(),
+          for (var i = 3; i <= 4; i++)
+            ev.detailOf(
+              'e$i',
+              hostId: detailPhotographerUid,
+              createdBy: detailPhotographerUid,
+              startsIn: Duration(days: 6 + i),
+            ),
+        ],
+        viewSize: const Size(390, 2400),
+      );
+      await _settle(tester);
+      // Three shown, the fourth behind "Xem tất cả".
+      expect(find.byKey(const Key('my-event-e4')), findsNothing);
+      await tester.tap(find.byKey(const Key('my-event-e1')));
+      await _settle(tester);
+      expect(h.location, '/events/e1/manage');
+      h.router.go('/bookings');
+      await _settle(tester);
+      await tester.tap(find.text('Xem tất cả'));
+      await _settle(tester);
+      expect(h.location, '/events/mine');
+    });
+
+    testWidgets('S06.02 keeps the section under the empty state', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _repo(const []),
+        events: mine(),
+        viewSize: const Size(390, 1600),
+      );
+      await _settle(tester);
+      expect(_codeFinder(ScreenCodes.workEmpty), findsOneWidget);
+      expect(find.byKey(const Key('my-events-section')), findsOneWidget);
+    });
+
+    testWidgets('no events, no section', (tester) async {
+      await _pump(tester, _repo(_busy()), viewSize: const Size(390, 2400));
+      await _settle(tester);
+      expect(find.byKey(const Key('my-events-section')), findsNothing);
+      expect(find.text('Sự kiện của tôi'), findsNothing);
+    });
   });
 }

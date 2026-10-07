@@ -84,6 +84,16 @@ class SettingsScreen extends ConsumerWidget {
                           onTap: () => context.push('/u/${profile.uid}'),
                         ),
                       ],
+                      if (ref.watch(staffRoleProvider).value != null) ...[
+                        const _RowDivider(),
+                        ListTile(
+                          key: const Key('settings-manage-events'),
+                          leading: const AppIcon(AppIcons.celebration),
+                          title: Text(l.settingsManageEvents),
+                          trailing: const AppIcon(AppIcons.chevron),
+                          onTap: () => context.push('/events/mine'),
+                        ),
+                      ],
                     ],
                   ),
                 ),

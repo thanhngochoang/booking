@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
@@ -12,6 +14,7 @@ import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/create_post/post_composer.dart';
+import 'package:photobooking/features/shell/placeholder_tabs.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/create_post_world.dart';
@@ -580,6 +583,49 @@ void main() {
     expect(_state(tester).serviceId, isNull);
     expect(_enabled(tester, 'create-publish'), isFalse);
     expect(find.text('Chọn gói dịch vụ cho bài đăng'), findsOneWidget);
+  });
+
+  group('S10.01 Bài đăng / Sự kiện', () {
+    testWidgets('S10.01 Sự kiện tab opens /events/new', (tester) async {
+      final w = CreatePostWorld();
+      await w.init();
+      final router = GoRouter(
+        initialLocation: AppTab.action.path,
+        routes: [
+          GoRoute(
+            path: AppTab.action.path,
+            builder: (_, _) => const ActionTab(),
+          ),
+          GoRoute(
+            path: '/events/new',
+            builder: (_, s) => Text('stub ${s.uri}'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        screenRouterApp(router: router, overrides: w.overrides),
+      );
+      await tester.pumpAndSettle();
+
+      final tabs = find.byKey(const Key('create-post-tabs'));
+      expect(tabs, findsOneWidget);
+      expect(
+        find.descendant(of: tabs, matching: find.text('Bài đăng')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.descendant(of: tabs, matching: find.text('Sự kiện')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('stub /events/new'), findsOneWidget);
+    });
+
+    testWidgets('without an events entry the tabs are not shown', (
+      tester,
+    ) async {
+      await _open(tester);
+      expect(find.byKey(const Key('create-post-tabs')), findsNothing);
+    });
   });
 }
 

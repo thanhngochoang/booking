@@ -3851,10 +3851,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get eventsMyTickets => 'Vé của tôi';
 
   @override
-  String get eventsMinePlaceholder =>
-      'Danh sách sự kiện bạn tổ chức sẽ hiện ở đây.';
-
-  @override
   String get eventJoin => 'Đăng ký tham gia';
 
   @override
@@ -4065,4 +4061,411 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ticketQrClose => 'Đóng';
+
+  @override
+  String get createEventTitle => 'Tạo sự kiện';
+
+  @override
+  String get createEventInfo => 'Thông tin sự kiện';
+
+  @override
+  String get createEventCover => 'Thêm ảnh bìa 16:10';
+
+  @override
+  String get createEventCoverChange => 'Đổi ảnh bìa';
+
+  @override
+  String get createEventName => 'Tên sự kiện';
+
+  @override
+  String get createEventNameRequired => 'Tên sự kiện · bắt buộc';
+
+  @override
+  String get createEventType => 'Loại sự kiện';
+
+  @override
+  String get createEventDesc => 'Mô tả';
+
+  @override
+  String get createEventHost => 'Tổ chức bởi';
+
+  @override
+  String get createEventHostPlatform => 'Nền tảng';
+
+  @override
+  String get createEventHostLater => 'Tổ chức hộ một nhiếp ảnh gia sẽ có sau.';
+
+  @override
+  String get createEventContinue => 'Tiếp tục';
+
+  @override
+  String get createEventSaveDraftAsk => 'Lưu nháp?';
+
+  @override
+  String get createEventDraftKeep => 'Lưu';
+
+  @override
+  String get createEventDraftDiscard => 'Bỏ';
+
+  @override
+  String get createEventSchedule => 'Lịch và vé';
+
+  @override
+  String get createEventDay => 'Ngày';
+
+  @override
+  String get createEventStart => 'Giờ bắt đầu';
+
+  @override
+  String get createEventEnd => 'Kết thúc';
+
+  @override
+  String get createEventCapacity => 'Sức chứa';
+
+  @override
+  String get createEventCapacityUnit => 'người';
+
+  @override
+  String get createEventPlace => 'Địa điểm';
+
+  @override
+  String get createEventMeeting => 'Điểm hẹn';
+
+  @override
+  String get createEventArea => 'Khu vực';
+
+  @override
+  String get createEventAreaPick => 'Chọn khu vực';
+
+  @override
+  String get createEventUseLocation => 'Dùng vị trí hiện tại';
+
+  @override
+  String get createEventLocationUsed => 'Đã lấy vị trí hiện tại';
+
+  @override
+  String get createEventHashtag => 'Hashtag sự kiện';
+
+  @override
+  String get createEventHashtagTaken => 'Hashtag này đã có sự kiện khác dùng';
+
+  @override
+  String get createEventPrice => 'Giá mỗi người (₫)';
+
+  @override
+  String get createEventDeadline => 'Hạn đăng ký';
+
+  @override
+  String get createEventDeadlineAuto => 'Tự động';
+
+  @override
+  String get createEventFreeHint => 'Để giá bằng 0 nếu không thu phí.';
+
+  @override
+  String get createEventEscrowHint =>
+      'Tiền vé được giữ trên ứng dụng và chuyển cho bạn sau khi sự kiện kết thúc.';
+
+  @override
+  String get createEventPreview => 'Xem trước';
+
+  @override
+  String get createEventSaveDraft => 'Lưu nháp';
+
+  @override
+  String get createEventPublish => 'Đăng sự kiện';
+
+  @override
+  String get createEventPublished => 'Đã đăng sự kiện';
+
+  @override
+  String get createEventDraftSaved => 'Đã lưu nháp';
+
+  @override
+  String get createEventDayTaken => 'Bạn đã có lịch hôm đó';
+
+  @override
+  String createEventErrorSummary(int n) {
+    return 'Cần sửa $n mục trước khi đăng';
+  }
+
+  @override
+  String get createEventPickDay => 'Chọn ngày';
+
+  @override
+  String get createEventPickTime => 'Chọn giờ';
+
+  @override
+  String get createEventErrCover => 'Thêm ảnh bìa cho sự kiện';
+
+  @override
+  String get createEventErrTitle => 'Nhập tên sự kiện';
+
+  @override
+  String get createEventErrTitleLong => 'Tên sự kiện tối đa 80 ký tự';
+
+  @override
+  String get createEventErrType => 'Chọn loại sự kiện';
+
+  @override
+  String get createEventErrDescLong => 'Mô tả tối đa 1000 ký tự';
+
+  @override
+  String get createEventErrDay => 'Chọn ngày diễn ra';
+
+  @override
+  String get createEventErrStart => 'Chọn giờ bắt đầu';
+
+  @override
+  String get createEventErrEnd => 'Chọn giờ kết thúc';
+
+  @override
+  String get createEventErrEndBeforeStart =>
+      'Giờ kết thúc phải sau giờ bắt đầu';
+
+  @override
+  String get createEventErrSameDay => 'Sự kiện diễn ra trong một ngày';
+
+  @override
+  String get createEventErrStartSoon =>
+      'Giờ bắt đầu phải sau bây giờ ít nhất 2 giờ';
+
+  @override
+  String get createEventErrCapacity => 'Sức chứa từ 1 đến 500 người';
+
+  @override
+  String get createEventErrPlace => 'Nhập tên địa điểm';
+
+  @override
+  String get createEventErrPlacePoint =>
+      'Chọn khu vực hoặc dùng vị trí hiện tại';
+
+  @override
+  String get createEventErrPrice =>
+      'Giá tiền là bội số của 1.000₫, tối đa 100.000.000₫';
+
+  @override
+  String get createEventErrPriceRequired => 'Nhập giá, để 0 nếu không thu phí';
+
+  @override
+  String get createEventErrDeadline => 'Hạn đăng ký phải trước giờ bắt đầu';
+
+  @override
+  String get createEventErrHashtag => 'Hashtag gồm 3–40 chữ không dấu hoặc số';
+
+  @override
+  String get createEventFailed =>
+      'Không đăng được sự kiện. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get createEventSaveFailed =>
+      'Không lưu được nháp. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get createEventCoverFailed => 'Không tải được ảnh bìa. Thử lại nhé.';
+
+  @override
+  String get createEventSetupTitle => 'Hoàn thiện hồ sơ để tạo sự kiện';
+
+  @override
+  String get createEventSetupBody =>
+      'Bạn cần hoàn tất hồ sơ nhiếp ảnh gia trước khi tổ chức sự kiện.';
+
+  @override
+  String get createEventSetupCta => 'Hoàn thiện hồ sơ';
+
+  @override
+  String get createEventNotAllowed =>
+      'Chỉ nhiếp ảnh gia và nhân viên mới tạo được sự kiện.';
+
+  @override
+  String get eventStatusDraft => 'Nháp';
+
+  @override
+  String get eventStatusOpen => 'Đang mở';
+
+  @override
+  String get eventStatusFull => 'Hết chỗ';
+
+  @override
+  String get eventStatusClosed => 'Đã đóng';
+
+  @override
+  String get eventStatusCancelled => 'Đã huỷ';
+
+  @override
+  String get eventStatusCompleted => 'Đã kết thúc';
+
+  @override
+  String get manageTitle => 'Quản lý sự kiện';
+
+  @override
+  String get manageRegistered => 'Đã đăng ký';
+
+  @override
+  String get manageRevenue => 'Doanh thu';
+
+  @override
+  String get manageDaysLeft => 'Ngày còn lại';
+
+  @override
+  String get manageParticipants => 'Người tham gia';
+
+  @override
+  String get manageEmpty => 'Chưa có người đăng ký';
+
+  @override
+  String get manageShare => 'Chia sẻ sự kiện';
+
+  @override
+  String get manageViewPage => 'Xem trang sự kiện';
+
+  @override
+  String get manageBroadcast => 'Nhắn nhóm';
+
+  @override
+  String get manageBroadcastSoon => 'Nhắn nhóm sắp mở';
+
+  @override
+  String get manageScan => 'Quét mã check‑in';
+
+  @override
+  String get manageCancel => 'Huỷ sự kiện · hoàn tiền mọi vé';
+
+  @override
+  String get manageCancelTitle => 'Huỷ sự kiện này?';
+
+  @override
+  String manageCancelBody(int n, String amount) {
+    return '$n vé · hoàn $amount';
+  }
+
+  @override
+  String get manageNoRefund => 'Không có khoản hoàn';
+
+  @override
+  String get manageCancelConfirm => 'Huỷ sự kiện';
+
+  @override
+  String get manageCancelKeep => 'Giữ sự kiện';
+
+  @override
+  String get manageCancelDone => 'Đã huỷ sự kiện';
+
+  @override
+  String get manageCancelFailed => 'Không huỷ được sự kiện. Thử lại nhé.';
+
+  @override
+  String get manageGone => 'Không tìm thấy sự kiện';
+
+  @override
+  String get managePaid => 'Đã trả';
+
+  @override
+  String get manageUnpaid => 'Chờ trả';
+
+  @override
+  String get manageCheckedIn => 'Đã vào';
+
+  @override
+  String manageTicketQty(int n) {
+    return '$n vé';
+  }
+
+  @override
+  String manageTicketCode(int n, String code) {
+    return '$n vé · $code';
+  }
+
+  @override
+  String get manageNoMoney => '—';
+
+  @override
+  String get manageScanClosed => 'Đã hết giờ check‑in';
+
+  @override
+  String get manageInviteTitle => 'Lời mời tổ chức sự kiện';
+
+  @override
+  String manageInviteBody(String time) {
+    return 'Nhân viên đã tạo sự kiện này cho bạn. Hãy trả lời trước $time, quá hạn sự kiện sẽ bị huỷ.';
+  }
+
+  @override
+  String get manageInviteAccept => 'Chấp nhận';
+
+  @override
+  String get manageInviteDecline => 'Từ chối';
+
+  @override
+  String get manageInviteAccepted => 'Đã chấp nhận, nhân viên sẽ đăng sự kiện';
+
+  @override
+  String get manageInviteDeclined => 'Đã từ chối lời mời';
+
+  @override
+  String get manageInviteFailed => 'Không gửi được câu trả lời. Thử lại nhé.';
+
+  @override
+  String checkinOk(String name, int count) {
+    return 'Đã vào · $name · $count vé';
+  }
+
+  @override
+  String get checkinInvalid => 'Vé không hợp lệ';
+
+  @override
+  String get checkinUsed => 'Vé đã dùng';
+
+  @override
+  String get checkinManual => 'Nhập mã vé';
+
+  @override
+  String get checkinManualHint => 'Mã vé, ví dụ VE-7K2Q-0420';
+
+  @override
+  String get checkinManualSubmit => 'Kiểm tra';
+
+  @override
+  String get checkinNext => 'Quét tiếp';
+
+  @override
+  String get checkinScanTitle => 'Quét mã vé';
+
+  @override
+  String get checkinCameraOff =>
+      'Không mở được camera. Nhập mã vé để check‑in.';
+
+  @override
+  String get checkinFailed => 'Không check‑in được. Thử lại nhé.';
+
+  @override
+  String get myEventsTitle => 'Sự kiện của tôi';
+
+  @override
+  String get myEventsDraft => 'Nháp';
+
+  @override
+  String get myEventsEmpty => 'Bạn chưa tổ chức sự kiện nào';
+
+  @override
+  String get myEventsEmptyBody => 'Sự kiện bạn tạo sẽ hiện ở đây.';
+
+  @override
+  String get myEventsSeeAll => 'Xem tất cả';
+
+  @override
+  String get settingsManageEvents => 'Quản lý sự kiện';
+
+  @override
+  String get createPostTabPost => 'Bài đăng';
+
+  @override
+  String get createPostTabEvent => 'Sự kiện';
+
+  @override
+  String get createEventLocationFailed =>
+      'Không lấy được vị trí. Hãy chọn khu vực nhé.';
+
+  @override
+  String get createEventDeadlineReset => 'Dùng hạn tự động';
 }

@@ -413,6 +413,18 @@ class FirestoreEventRepository implements EventRepository {
     _coverPaths[done.url] = done.storagePath;
     return done.url;
   }
+
+  @override
+  String? coverPathOf(String url) => _coverPaths[url];
+
+  @override
+  Future<void> deleteCover(String path) async {
+    try {
+      await uploader.delete(path);
+    } catch (_) {
+      // An object we could not delete stays behind; nothing depends on it.
+    }
+  }
 }
 
 bool _validId(String id) => id.isNotEmpty && !id.contains('/');

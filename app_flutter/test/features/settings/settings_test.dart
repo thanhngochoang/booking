@@ -64,6 +64,7 @@ Future<Widget> _app({
         builder: (_, s) => Text('phone ${s.uri}'),
       ),
       GoRoute(path: '/profile/skills', builder: (_, _) => const Text('skills')),
+      GoRoute(path: '/events/mine', builder: (_, _) => const Text('my events')),
       GoRoute(
         path: '/u/:uid',
         builder: (_, s) => Text('public ${s.pathParameters['uid']}'),
@@ -675,6 +676,30 @@ void main() {
       await tester.tap(find.byKey(const Key('profile-public')));
       await tester.pumpAndSettle();
       expect(find.text('public $uid'), findsOneWidget);
+    });
+
+    testWidgets('staff see Quản lý sự kiện in S09.02', (tester) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      auth.staff = StaffRole.sales;
+      await open(tester, auth, users);
+      final row = find.byKey(const Key('settings-manage-events'));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: row, matching: find.text('Quản lý sự kiện')),
+        findsOneWidget,
+      );
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('my events'), findsOneWidget);
+    });
+
+    testWidgets('people without a staff role do not see Quản lý sự kiện', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.photographer);
+      await open(tester, auth, users);
+      expect(find.byKey(const Key('settings-manage-events')), findsNothing);
     });
 
     testWidgets('sign-out button opens confirmation sheet; keep cancels', (

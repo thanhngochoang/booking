@@ -15,6 +15,7 @@ import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/booking/booking_view_rules.dart';
 import 'package:photobooking/features/booking/decline_sheet.dart';
+import 'package:photobooking/features/event_manage/my_events_section.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/work/work_dashboard.dart';
 import 'package:photobooking/features/work/work_empty.dart';
@@ -23,8 +24,8 @@ import 'package:photobooking/features/work/work_empty.dart';
 class WorkScreen extends ConsumerStatefulWidget {
   const WorkScreen({super.key, this.showEvents = false});
 
-  /// "Sự kiện của tôi" (Decision 9): off until the photographer's events
-  /// (S12.03) exist.
+  /// "Sự kiện của tôi" (Decision 9): the photographer's next events, drafts
+  /// tagged "Nháp", under the month's numbers.
   final bool showEvents;
 
   @override
@@ -204,7 +205,14 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           onRetry: () =>
               ref.invalidate(myBookingsProvider(BookingRole.photographer)),
           isEmpty: (d) => d.isEmpty,
-          empty: (_) => const WorkEmptyState(),
+          empty: (_) => widget.showEvents
+              ? ListView(
+                  children: const [
+                    SizedBox(height: 480, child: WorkEmptyState()),
+                    MyEventsSection(),
+                  ],
+                )
+              : const WorkEmptyState(),
           data: (context, d) => _dashboard(context, d, features),
         ),
       ),
@@ -297,6 +305,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ],
           ),
         ),
+        if (widget.showEvents) ...[
+          const SizedBox(height: AppSpace.s2),
+          const MyEventsSection(),
+        ],
         const SizedBox(height: AppSpace.s4),
       ],
     );

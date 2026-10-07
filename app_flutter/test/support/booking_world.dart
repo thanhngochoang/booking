@@ -12,6 +12,9 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/events/event_detail.dart';
+import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
@@ -574,6 +577,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
   List<Override> extraOverrides = const [],
+
+  /// Events the signed-in user created (S06.01 "Sự kiện của tôi").
+  List<EventDetail> events = const [],
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
   tester.view.physicalSize = viewSize;
@@ -614,6 +620,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
         '/setup/2',
         '/profile/skills',
         '/u/:uid',
+        '/events/mine',
+        '/events/new',
+        '/events/:id/manage',
       ])
         GoRoute(path: p, builder: stub),
     ],
@@ -635,6 +644,13 @@ Future<BookingsTabHandles> pumpBookingsTab(
     postRepositoryProvider.overrideWithValue(posts),
     myPackagesProvider.overrideWith((ref) => Stream.value(packages)),
     skillsRepositoryProvider.overrideWithValue(skills),
+    eventRepositoryProvider.overrideWithValue(
+      FakeEventRepository(
+        uid: uid,
+        events: events,
+        clock: () => effectiveClock.now,
+      ),
+    ),
     ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];

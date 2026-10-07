@@ -128,6 +128,14 @@ abstract class EventRepository {
   /// its download URL. The path is remembered: [saveDraft] sends it as
   /// `coverPath` for a draft that carries the returned URL.
   Future<String> uploadCover(String eventId, PickedImage image);
+
+  /// The storage path [uploadCover] gave [url], or null for a URL it did not
+  /// make (a cover saved in an earlier session: its path is on the draft).
+  String? coverPathOf(String url);
+
+  /// Removes a cover file that no saved draft points at any more. Best effort:
+  /// a failure leaves an orphan file and is not reported.
+  Future<void> deleteCover(String path);
 }
 
 /// In-memory repository for tests and previews. Enforces what the server does:
@@ -620,5 +628,16 @@ class FakeEventRepository implements EventRepository {
     final url = 'https://storage.test/$path';
     coverPaths[url] = path;
     return url;
+  }
+
+  @override
+  String? coverPathOf(String url) => coverPaths[url];
+
+  /// Paths [deleteCover] removed.
+  final List<String> deletedCovers = [];
+
+  @override
+  Future<void> deleteCover(String path) async {
+    deletedCovers.add(path);
   }
 }

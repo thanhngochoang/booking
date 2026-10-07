@@ -28,10 +28,21 @@ import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/location/location_repository.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/event_manage/manage_event_screen.dart';
+import 'package:photobooking/features/event_manage/my_events_screen.dart';
+import 'package:photobooking/features/event_manage/ticket_scanner.dart';
+import 'package:photobooking/features/settings/theme_mode_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
+import 'fake_ticket_scanner.dart';
 import 'screen_host.dart';
 
 import 'package:photobooking/core/core.dart';
@@ -251,12 +262,17 @@ EventRegistration registrationOf(
   int amount = 0,
   bool contactEligible = false,
   DateTime? createdAt,
+  String userName = 'Lan',
+  String? ticketCode,
+  DateTime? checkedInAt,
 }) => EventRegistration(
   id: id,
   eventId: eventId,
   userId: userId,
-  userName: 'Lan',
-  ticketCode: status == RegistrationStatus.paid ? 'VE-AB2C-1013' : '',
+  userName: userName,
+  ticketCode:
+      ticketCode ?? (status == RegistrationStatus.paid ? 'VE-AB2C-1013' : ''),
+  checkedInAt: checkedInAt,
   quantity: quantity,
   amount: amount,
   status: status,
@@ -289,7 +305,10 @@ class EventsWorld {
     this.now,
     this.nearbyEvents,
     this.areaOrigin,
-  }) : repo = FakeEventRepository(
+    this.prefsValues = const {},
+    List<List<PickedImage>> pickerAnswers = const [],
+  }) : picker = FakeImagePicker(pickerAnswers),
+       repo = FakeEventRepository(
          uid: uid,
          events: events,
          registrations: registrations,
@@ -311,6 +330,17 @@ class EventsWorld {
 
   /// A saved area for "Gần tôi": `(lat, lng)`; none when null.
   final ({double lat, double lng})? areaOrigin;
+
+  /// SharedPreferences contents at the start (`eventDraft:<uid>` …).
+  final Map<String, Object> prefsValues;
+  SharedPreferences? prefs;
+
+  final FakeImagePicker picker;
+  final scanner = FakeTicketScanner();
+  final locationRepo = FakeLocationRepository(
+    status: LocationPermissionStatus.granted,
+    position: (lat: 10.8, lng: 106.7),
+  );
 
   final FakeEventRepository repo;
   final FakeNearbyEventsRepository nearby;
@@ -337,6 +367,10 @@ class EventsWorld {
     ),
     currentContactProvider.overrideWithValue(AsyncData(contact)),
     eventRepositoryProvider.overrideWithValue(repo),
+    if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs!),
+    imagePickerProvider.overrideWithValue(picker),
+    ticketScannerProvider.overrideWithValue(scanner),
+    locationRepositoryProvider.overrideWithValue(locationRepo),
     nearbyEventsRepositoryProvider.overrideWithValue(nearby),
     externalLauncherProvider.overrideWithValue(launcher),
     photographerContactRepositoryProvider.overrideWithValue(contactRepo),
@@ -380,7 +414,14 @@ class EventsWorld {
     double textScale = 1,
     Widget Function(GoRouterState)? bookings,
     List<Override> extra = const [],
+
+    /// The real S12 screens (create, manage, mine) instead of stubs.
+    bool organizer = false,
   }) async {
+    if (prefs == null) {
+      SharedPreferences.setMockInitialValues(prefsValues);
+      prefs = await SharedPreferences.getInstance();
+    }
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -391,9 +432,23 @@ class EventsWorld {
       initialLocation: path,
       routes: [
         GoRoute(path: '/events', builder: (_, _) => const EventsListScreen()),
-        GoRoute(path: '/events/mine', builder: stub),
-        GoRoute(path: '/events/new', builder: stub),
-        GoRoute(path: '/events/:id/manage', builder: stub),
+        GoRoute(
+          path: '/events/mine',
+          builder: organizer ? (_, _) => const MyEventsScreen() : stub,
+        ),
+        GoRoute(
+          path: '/events/new',
+          builder: organizer
+              ? (_, s) =>
+                    CreateEventScreen(draftId: s.uri.queryParameters['draft'])
+              : stub,
+        ),
+        GoRoute(
+          path: '/events/:id/manage',
+          builder: organizer
+              ? (_, s) => ManageEventScreen(eventId: s.pathParameters['id']!)
+              : stub,
+        ),
         GoRoute(
           path: '/e/:eventId',
           builder: (_, s) => EventScreen(eventId: s.pathParameters['eventId']!),
@@ -418,7 +473,13 @@ class EventsWorld {
           path: '/bookings',
           builder: bookings == null ? stub : (_, s) => bookings(s),
         ),
-        for (final p in ['/home', '/profile/phone', '/u/:uid', '/u/:uid/ask'])
+        for (final p in [
+          '/home',
+          '/profile/phone',
+          '/u/:uid',
+          '/u/:uid/ask',
+          '/setup',
+        ])
           GoRoute(path: p, builder: stub),
       ],
     );

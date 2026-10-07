@@ -22,9 +22,11 @@ import 'package:photobooking/features/chat/inquiry_entry.dart';
 import 'package:photobooking/features/contact/add_phone_screen.dart';
 import 'package:photobooking/features/earnings/earnings_screen.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
+import 'package:photobooking/features/event_create/create_event_screen.dart';
+import 'package:photobooking/features/event_manage/manage_event_screen.dart';
+import 'package:photobooking/features/event_manage/my_events_screen.dart';
 import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
-import 'package:photobooking/features/events/my_events_placeholder.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
@@ -269,9 +271,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/events', builder: (_, _) => const EventsListScreen()),
+      GoRoute(path: '/events/mine', builder: (_, _) => const MyEventsScreen()),
       GoRoute(
-        path: '/events/mine',
-        builder: (_, _) => const MyEventsPlaceholder(),
+        path: '/events/new',
+        builder: (_, state) =>
+            CreateEventScreen(draftId: state.uri.queryParameters['draft']),
+      ),
+      GoRoute(
+        path: '/events/:eventId/manage',
+        builder: (_, state) =>
+            ManageEventScreen(eventId: state.pathParameters['eventId']!),
       ),
       GoRoute(
         path: '/e/:eventId',

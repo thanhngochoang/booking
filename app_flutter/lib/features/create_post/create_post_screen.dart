@@ -18,12 +18,13 @@ import 'package:photobooking/features/create_post/post_composer.dart';
 /// Mock S10.01: "Đăng bài" bar · two-column photo grid with a "+" tile · caption
 /// · the package field (accent border, required) · place and style side by
 /// side · "Album · tuỳ chọn" field (S24.05) · sticky footer with "Đăng". The
-/// "Bài đăng / Sự kiện" tabs arrive with the events plan.
+/// "Bài đăng / Sự kiện" tabs sit under the bar; "Sự kiện" leads to S12.01.
 class CreatePostScreen extends ConsumerStatefulWidget {
   const CreatePostScreen({
     super.key,
     required this.onAddService,
     required this.onPublished,
+    this.onOpenEvents,
   });
 
   /// "Thêm gói", shown when the photographer has no package yet.
@@ -31,6 +32,10 @@ class CreatePostScreen extends ConsumerStatefulWidget {
 
   /// Receives the id of the new post.
   final ValueChanged<String> onPublished;
+
+  /// "Sự kiện" of the "Bài đăng / Sự kiện" tabs: opens S12.01. Without it the
+  /// tabs are not shown.
+  final VoidCallback? onOpenEvents;
 
   @override
   ConsumerState<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -223,6 +228,22 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.onOpenEvents != null) ...[
+                SegmentedTabs<int>(
+                  key: const Key('create-post-tabs'),
+                  options: [
+                    SegmentOption(value: 0, label: l.createPostTabPost),
+                    SegmentOption(value: 1, label: l.createPostTabEvent),
+                  ],
+                  value: 0,
+                  onChanged: (v) {
+                    if (v == 1) {
+                      widget.onOpenEvents!();
+                    }
+                  },
+                ),
+                const SizedBox(height: AppSpace.s3),
+              ],
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),

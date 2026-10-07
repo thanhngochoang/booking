@@ -64,6 +64,7 @@ class ActionTab extends ConsumerWidget {
     }
     return CreatePostScreen(
       onAddService: () => context.push('/setup/2'),
+      onOpenEvents: () => context.push('/events/new'),
       onPublished: (postId) {
         ref.read(homeFeedProvider.notifier).pinToTop(postId);
         context.go(AppTab.home.path);
@@ -93,7 +94,7 @@ class BookingsTab extends ConsumerWidget {
             initialTab: tab,
             highlightTicketId: highlight,
           )
-        : const WorkScreen();
+        : const WorkScreen(showEvents: true);
   }
 }
 
