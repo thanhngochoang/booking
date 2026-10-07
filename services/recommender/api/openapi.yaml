@@ -7,6 +7,7 @@ info:
     Ứng dụng KHÔNG gọi thẳng dịch vụ này: gọi hàm Firebase callable `recommend`
     (xác thực, App Check, giới hạn tần suất), hàm đó gọi dịch vụ bằng danh tính dịch vụ.
     Hợp đồng ổn định theo phiên bản đường dẫn (/v1). Thuật toán đổi bên trong, hợp đồng không đổi.
+    Lưu ý (#133): ứng viên của Tìm thợ (S02.06) phải có `acceptingOrders == true`; hiện app lọc phía máy khách, dịch vụ từ xa sẽ lọc khi được nối vào.
 servers:
   - url: https://recommender-REPLACE_ME.a.run.app
     description: Cloud Run (riêng tư, IAM)

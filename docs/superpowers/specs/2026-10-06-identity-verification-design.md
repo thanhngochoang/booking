@@ -92,6 +92,8 @@ Callable khác: `submitVerification`, `reviewVerification` (staff), `revokeVerif
 
 `acceptingOrders`/`verified` được kiểm tra trên server ở: tạo booking (`createBookingDraft`, Chụp ngay), gửi báo giá, mời báo giá, `assignBooking` (thành viên phải đã xác minh), chi trả (tài khoản nhận tiền phải khớp danh tính, spec thanh toán §6). Rules: client không ghi được các trường này.
 
+Cổng chung là port `ProviderOrderGate` (`packages/domain`, đọc `verified` + `onboardingComplete` của `photographers/{uid}`) và mã lỗi `not_accepting_orders` (Functions: `failed-precondition`); đã dùng ở `createBookingDraft` (#133), các cổng sau (Chụp ngay, báo giá, `assignBooking`) dùng lại chính nó.
+
 ## 8. Màn hình
 
 | Mã | Màn | Route | Ai |
