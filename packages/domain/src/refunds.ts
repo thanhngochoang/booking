@@ -68,23 +68,10 @@ export function transferRefund(params: {
   return { refund, ledgerEntry };
 }
 
-/**
- * Sends a refund to the gateway (`refundId` is the idempotency key) and records the result.
- * Call it outside the transaction that created the refund.
- */
-export async function dispatchRefund(
-  deps: BookingDeps,
-  refund: Refund,
-  provider: PaymentProvider,
-): Promise<Refund> {
-  const gatewayResult = await deps.gateway.issueRefund({
-    paymentId: refund.paymentId,
-    refundId: refund.id,
-    amount: refund.amount,
-    provider,
-    providerRef: refund.providerRef,
-  });
+type GatewayRefundResult = Awaited<ReturnType<BookingDeps['gateway']['issueRefund']>>;
 
+/** Records the gateway's answer on the refund: `done`, or `failed` + `manual` for staff. */
+async function recordDispatch(deps: BookingDeps, refund: Refund, gatewayResult: GatewayRefundResult): Promise<Refund> {
   const now = deps.clock.now();
   const updatedRefund: Refund = {
     ...refund,
@@ -99,4 +86,51 @@ export async function dispatchRefund(
   });
 
   return updatedRefund;
+}
+
+/**
+ * Sends a refund to the gateway (`refundId` is the idempotency key) and records the result.
+ * Call it outside the transaction that created the refund. A gateway throw propagates.
+ */
+export async function dispatchRefund(
+  deps: BookingDeps,
+  refund: Refund,
+  provider: PaymentProvider,
+): Promise<Refund> {
+  const gatewayResult = await deps.gateway.issueRefund({
+    paymentId: refund.paymentId,
+    refundId: refund.id,
+    amount: refund.amount,
+    provider,
+    providerRef: refund.providerRef,
+  });
+  return recordDispatch(deps, refund, gatewayResult);
+}
+
+/**
+ * Sends each refund in turn; a gateway that throws is treated like one that answers
+ * `success: false` (the refund becomes `failed` + `manual`, never stays `pending`), and the next
+ * refunds still go out. Used by the payment paths, whose own result must not depend on the gateway.
+ */
+export async function dispatchRefunds(
+  deps: BookingDeps,
+  items: readonly { readonly refund: Refund; readonly provider: PaymentProvider }[],
+): Promise<Refund[]> {
+  const done: Refund[] = [];
+  for (const { refund, provider } of items) {
+    let gatewayResult: GatewayRefundResult;
+    try {
+      gatewayResult = await deps.gateway.issueRefund({
+        paymentId: refund.paymentId,
+        refundId: refund.id,
+        amount: refund.amount,
+        provider,
+        providerRef: refund.providerRef,
+      });
+    } catch (e) {
+      gatewayResult = { success: false, error: e instanceof Error ? e.message : 'gateway_error' };
+    }
+    done.push(await recordDispatch(deps, refund, gatewayResult));
+  }
+  return done;
 }

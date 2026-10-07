@@ -325,6 +325,41 @@ describe('handleTransferNotification', () => {
     assert.equal((await payment(world, paymentId)).status, 'refunded');
     assert.equal(await balanced(world, paymentId), true);
   });
+
+  it('a transfer received before a payment was created never matches it', async () => {
+    const world = createBookingWorld();
+    const { draft, paymentId, code } = await openCheckout(world);
+
+    const n = transferOf(world, { content: code, amount: PRICE, receivedAt: '2026-10-10T09:59:59.000Z' });
+    const res = await handleTransferNotification(world.deps, n);
+
+    assert.deepEqual(res, { outcome: 'needs_review' });
+    assert.equal((await payment(world, paymentId)).receivedAmount, 0);
+    assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
+    assert.equal(world.store.ledgerEntries.size, 0);
+  });
+
+  it('a refund that throws is marked failed and the next refund still goes out', async () => {
+    const world = createBookingWorld();
+    const { draft, paymentId, code } = await openCheckout(world);
+    await world.store.deleteBooking(draft.id);
+    world.gateway.refundThrowCount = 1;
+
+    // Two refunds: the excess, then the late-path full refund.
+    const res = await handleTransferNotification(world.deps, transferOf(world, { content: code, amount: PRICE + 30_000 }));
+
+    assert.deepEqual(res, { outcome: 'refunded', paymentId });
+    const refunds = await world.store.getRefundsForPayment(paymentId);
+    assert.deepEqual(
+      refunds.map((r) => [r.amount, r.reason, r.status, r.manual]),
+      [
+        [30_000, 'overpaid_excess', 'failed', true],
+        [PRICE, 'late_payment_draft_expired', 'done', false],
+      ],
+    );
+    assert.equal(world.gateway.refundCalls.length, 2);
+    assert.equal(await balanced(world, paymentId), true);
+  });
 });
 
 describe('checkPayment', () => {

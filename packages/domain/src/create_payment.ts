@@ -16,7 +16,7 @@ import { DomainError } from './errors.js';
 import { isPaymentMethod, type Payment, type Refund } from './escrow.js';
 import { isId } from './ids.js';
 import { transferCodeFor } from './payment_code.js';
-import { dispatchRefund } from './refunds.js';
+import { dispatchRefunds } from './refunds.js';
 import { requireCustomerPhone } from './require_phone.js';
 
 /** Tries at drawing a payment id whose transfer code no open payment uses (#129 Decision 5). */
@@ -28,12 +28,15 @@ export interface CreatePaymentResult {
   readonly checkout: BookingCheckout;
 }
 
-/** A new payment id whose transfer code is not used by any open (`created`) payment. */
+/**
+ * A new payment id whose transfer code no payment of any status uses, so a transfer to an old QR
+ * can never reach another customer's payment.
+ */
 async function freshPaymentId(deps: BookingDeps): Promise<{ readonly id: string; readonly code: string }> {
   for (let i = 0; i < CODE_TRIES; i++) {
     const id = deps.ids.newId();
     const code = transferCodeFor(id);
-    const taken = (await deps.store.findPaymentsByTransferCode(code)).some((p) => p.status === 'created');
+    const taken = (await deps.store.findPaymentsByTransferCode(code)).length > 0;
     if (!taken) return { id, code };
   }
   throw new DomainError('conflict');
@@ -150,9 +153,8 @@ export async function createPayment(
     return { paymentId, checkout };
   });
 
-  for (const { refund, provider } of pendingRefunds) {
-    await dispatchRefund(deps, refund, provider);
-  }
+  // The new QR is committed: a refund the gateway refuses or throws on is left `failed` for staff.
+  await dispatchRefunds(deps, pendingRefunds);
 
   return result;
 }

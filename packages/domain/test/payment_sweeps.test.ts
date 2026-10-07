@@ -5,6 +5,7 @@ import { createPayment } from '../src/create_payment.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { runPaymentSweeps } from '../src/payment_sweeps.js';
 import { verifyPaymentLedgerInvariant, type Payment } from '../src/escrow.js';
+import type { BookingTx } from '../src/booking_ports.js';
 
 const PRICE = 1_000_000;
 
@@ -39,7 +40,7 @@ describe('runPaymentSweeps', () => {
 
     const res = await runPaymentSweeps(world.deps);
 
-    assert.deepEqual(res, { reconciled: 1, expired: 0, refunded: 0 });
+    assert.deepEqual(res, { reconciled: 1, expired: 0, refunded: 0, reconcileFailed: 0, expireFailed: 0 });
     assert.equal((await payment(world, paymentId)).status, 'paid');
     assert.equal((await world.store.getBooking(draft.id))?.status, 'requested');
     assert.equal(await balanced(world, paymentId), true);
@@ -53,7 +54,7 @@ describe('runPaymentSweeps', () => {
 
     const res = await runPaymentSweeps(world.deps);
 
-    assert.deepEqual(res, { reconciled: 0, expired: 0, refunded: 0 });
+    assert.deepEqual(res, { reconciled: 0, expired: 0, refunded: 0, reconcileFailed: 0, expireFailed: 0 });
     assert.equal((await payment(world, paymentId)).status, 'created');
     assert.equal((await world.store.getBooking(draft.id))?.status, 'draft');
   });
@@ -66,12 +67,12 @@ describe('runPaymentSweeps', () => {
     world.clock.advanceMinutes(14);
 
     const early = await runPaymentSweeps(world.deps);
-    assert.deepEqual(early, { reconciled: 0, expired: 0, refunded: 0 });
+    assert.deepEqual(early, { reconciled: 0, expired: 0, refunded: 0, reconcileFailed: 0, expireFailed: 0 });
 
     world.clock.advanceMinutes(1); // 15 minutes: expiresAt reached
     const res = await runPaymentSweeps(world.deps);
 
-    assert.deepEqual(res, { reconciled: 0, expired: 2, refunded: 1 });
+    assert.deepEqual(res, { reconciled: 0, expired: 2, refunded: 1, reconcileFailed: 0, expireFailed: 0 });
     const p = await payment(world, under.paymentId);
     assert.equal(p.status, 'expired');
     assert.equal(p.escrowStatus, 'refunded');
@@ -103,8 +104,8 @@ describe('runPaymentSweeps', () => {
     const first = await runPaymentSweeps(world.deps);
     const second = await runPaymentSweeps(world.deps);
 
-    assert.deepEqual(first, { reconciled: 0, expired: 1, refunded: 1 });
-    assert.deepEqual(second, { reconciled: 0, expired: 0, refunded: 0 });
+    assert.deepEqual(first, { reconciled: 0, expired: 1, refunded: 1, reconcileFailed: 0, expireFailed: 0 });
+    assert.deepEqual(second, { reconciled: 0, expired: 0, refunded: 0, reconcileFailed: 0, expireFailed: 0 });
     assert.equal(world.store.refunds.size, 1);
     assert.equal(world.gateway.refundCalls.length, 1);
     assert.equal(await balanced(world, paymentId), true);
@@ -118,7 +119,7 @@ describe('runPaymentSweeps', () => {
 
     const res = await runPaymentSweeps(world.deps);
 
-    assert.deepEqual(res, { reconciled: 1, expired: 1, refunded: 0 });
+    assert.deepEqual(res, { reconciled: 1, expired: 1, refunded: 0, reconcileFailed: 0, expireFailed: 0 });
     assert.equal((await payment(world, paymentId)).status, 'expired');
     assert.deepEqual(
       (await world.store.getRefundsForPayment(paymentId)).map((r) => [r.amount, r.reason]),
@@ -149,8 +150,68 @@ describe('runPaymentSweeps', () => {
 
     const res = await runPaymentSweeps(world.deps);
 
-    assert.deepEqual(res, { reconciled: 0, expired: 0, refunded: 0 });
+    assert.deepEqual(res, { reconciled: 0, expired: 0, refunded: 0, reconcileFailed: 0, expireFailed: 0 });
     assert.equal(world.gateway.queryTransfersCalls.length, 0);
     assert.equal((await payment(world, 'legacy')).status, 'created');
+  });
+
+  it('a query that throws for one payment still reconciles the next and counts the failure', async () => {
+    const world = createBookingWorld();
+    const broken = await openCheckout(world);
+    const fine = await openCheckout(world, { customerId: 'c2', day: '2026-10-16' });
+    world.gateway.pushTransfer(broken.paymentId, transferOf(world, { content: broken.code, amount: PRICE }));
+    world.gateway.pushTransfer(fine.paymentId, transferOf(world, { content: fine.code, amount: PRICE }));
+    world.gateway.queryThrowIds.add(broken.paymentId);
+    world.clock.advanceMinutes(4);
+
+    const res = await runPaymentSweeps(world.deps);
+
+    assert.deepEqual(res, { reconciled: 1, expired: 0, refunded: 0, reconcileFailed: 1, expireFailed: 0 });
+    assert.equal((await payment(world, broken.paymentId)).status, 'created');
+    assert.equal((await payment(world, fine.paymentId)).status, 'paid');
+  });
+
+  it('an expiry whose refund dispatch throws still expires the next payment', async () => {
+    const world = createBookingWorld();
+    const a = await openCheckout(world);
+    const b = await openCheckout(world, { customerId: 'c2', day: '2026-10-16' });
+    await handleTransferNotification(world.deps, transferOf(world, { content: a.code, amount: 300_000 }));
+    await handleTransferNotification(world.deps, transferOf(world, { content: b.code, amount: 200_000 }));
+    world.gateway.refundThrowCount = 1;
+    world.clock.advanceMinutes(16);
+
+    const res = await runPaymentSweeps(world.deps);
+
+    assert.deepEqual(res, { reconciled: 0, expired: 2, refunded: 2, reconcileFailed: 0, expireFailed: 0 });
+    assert.equal((await payment(world, a.paymentId)).status, 'expired');
+    assert.equal((await payment(world, b.paymentId)).status, 'expired');
+    assert.deepEqual(
+      [...world.store.refunds.values()].map((r) => [r.amount, r.status, r.manual]),
+      [
+        [300_000, 'failed', true],
+        [200_000, 'done', false],
+      ],
+    );
+  });
+
+  it('an expiry whose transaction throws is counted and the next payment still expires', async () => {
+    const world = createBookingWorld();
+    const a = await openCheckout(world);
+    const b = await openCheckout(world, { customerId: 'c2', day: '2026-10-16' });
+    world.clock.advanceMinutes(16);
+    const store = world.store;
+    const original = store.runTransaction.bind(store);
+    let calls = 0;
+    store.runTransaction = async <T>(fn: (tx: BookingTx) => Promise<T>): Promise<T> => {
+      calls += 1;
+      if (calls === 1) throw new Error('simulated store outage');
+      return original(fn);
+    };
+
+    const res = await runPaymentSweeps(world.deps);
+
+    assert.deepEqual(res, { reconciled: 0, expired: 1, refunded: 0, reconcileFailed: 0, expireFailed: 1 });
+    assert.equal((await payment(world, a.paymentId)).status, 'created');
+    assert.equal((await payment(world, b.paymentId)).status, 'expired');
   });
 });

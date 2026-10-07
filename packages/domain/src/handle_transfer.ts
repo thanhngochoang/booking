@@ -17,7 +17,7 @@ import { markPaid, moveDraftToRequested, paymentReceivedEntry, refundLatePayment
 import { DomainError } from './errors.js';
 import type { Payment, Refund } from './escrow.js';
 import { transferCodesIn } from './payment_code.js';
-import { dispatchRefund, transferRefund } from './refunds.js';
+import { dispatchRefunds, transferRefund } from './refunds.js';
 import { decideTransfer } from './transfer_rules.js';
 
 export interface TransferResult {
@@ -42,12 +42,17 @@ function validNotification(n: TransferNotification): boolean {
 }
 
 /**
- * The payment a memo names: the first transfer code in it that belongs to a booking payment.
- * Among payments sharing that code, the open one wins, else the most recently created.
+ * The payment a memo names: the first transfer code in it that belongs to a booking payment
+ * created no later than the transfer was received (a transfer never pays a payment that did not
+ * exist yet). Codes are unique across payments (createPayment); for older data sharing a code,
+ * the open one wins, else the most recently created.
  */
-async function matchPayment(deps: BookingDeps, content: string): Promise<Payment | null> {
+async function matchPayment(deps: BookingDeps, content: string, receivedAt: string): Promise<Payment | null> {
+  const receivedMs = Date.parse(receivedAt);
   for (const code of transferCodesIn(content)) {
-    const candidates = (await deps.store.findPaymentsByTransferCode(code)).filter((p) => p.subjectType === 'booking');
+    const candidates = (await deps.store.findPaymentsByTransferCode(code)).filter(
+      (p) => p.subjectType === 'booking' && Date.parse(p.createdAt) <= receivedMs,
+    );
     if (candidates.length === 0) continue;
     const open = candidates.find((p) => p.status === 'created');
     if (open) return open;
@@ -137,7 +142,7 @@ export async function handleTransferNotification(deps: BookingDeps, n: TransferN
   const known = await deps.store.getTransferRecord(recordId);
   if (known) return { outcome: 'duplicate', ...(known.paymentId ? { paymentId: known.paymentId } : {}) };
 
-  const matched = await matchPayment(deps, n.content);
+  const matched = await matchPayment(deps, n.content, n.receivedAt);
   const now = deps.clock.now();
   let pending: Refund[] = [];
 
@@ -168,9 +173,13 @@ export async function handleTransferNotification(deps: BookingDeps, n: TransferN
     return { outcome: applied.outcome, paymentId: payment.id, provider: payment.provider };
   });
 
-  for (const refund of pending) {
-    await dispatchRefund(deps, refund, result.provider ?? n.provider);
-  }
+  // The transfer is recorded: a refund the gateway refuses or throws on is left `failed` for staff,
+  // since a provider retry of this notification is a duplicate and would never re-send it.
+  const provider = result.provider ?? n.provider;
+  await dispatchRefunds(
+    deps,
+    pending.map((refund) => ({ refund, provider })),
+  );
 
   return { outcome: result.outcome, ...(result.paymentId ? { paymentId: result.paymentId } : {}) };
 }

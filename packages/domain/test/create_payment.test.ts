@@ -259,9 +259,11 @@ describe('createPayment', () => {
     assert.equal(res.checkout.transferCode, transferCodeFor(res.paymentId));
   });
 
-  it('reuses a code held only by a closed payment', async () => {
+  it('never reuses a code held by a closed payment', async () => {
     const world = createBookingWorld();
     const draft = await newDraft(world);
+    assert.equal(draft.id, 'id_001');
+    const takenCode = transferCodeFor('id_002');
     const at = world.clock.now().toISOString();
     world.store.payments.set('other_expired', {
       id: 'other_expired',
@@ -274,13 +276,33 @@ describe('createPayment', () => {
       status: 'expired',
       escrowStatus: 'refunded',
       idempotencyKey: 'pay_b_other_1',
-      transferCode: transferCodeFor('id_002'),
+      transferCode: takenCode,
       createdAt: at,
       updatedAt: at,
     });
 
     const res = await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
 
-    assert.equal(res.paymentId, 'id_002');
+    assert.notEqual(res.paymentId, 'id_002');
+    assert.notEqual(res.checkout.transferCode, takenCode);
+  });
+
+  it('a new QR is returned even when refunding the previous payment throws', async () => {
+    const world = createBookingWorld();
+    const draft = await newDraft(world);
+    const first = await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
+    await handleTransferNotification(world.deps, transferOf(world, { content: first.checkout.transferCode, amount: 400_000 }));
+    world.gateway.refundThrowCount = 1;
+
+    const second = await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
+
+    assert.equal(second.checkout.attempt, 2);
+    assert.equal((await world.store.getBooking(draft.id))?.checkout?.paymentId, second.paymentId);
+    const refunds = await world.store.getRefundsForPayment(first.paymentId);
+    assert.deepEqual(
+      refunds.map((r) => [r.amount, r.reason, r.status, r.manual]),
+      [[400_000, 'underpaid_expired', 'failed', true]],
+    );
+    assert.equal(world.gateway.issuedRefunds.size, 0);
   });
 });

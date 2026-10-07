@@ -31,6 +31,10 @@ export class FakePaymentGateway implements PaymentGateway {
   /** Every `issueRefund` call, by refund id (repeats included). */
   readonly refundCalls: string[] = [];
   refundFailureId?: string;
+  /** The next this-many `issueRefund` calls throw (a provider outage), after being recorded in `refundCalls`. */
+  refundThrowCount = 0;
+  /** `queryTransfers` throws for these payment ids. */
+  readonly queryThrowIds = new Set<string>();
 
   async createDepositIntent(params: {
     readonly paymentId: string;
@@ -53,6 +57,10 @@ export class FakePaymentGateway implements PaymentGateway {
     readonly providerRef?: string;
   }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }> {
     this.refundCalls.push(params.refundId);
+    if (this.refundThrowCount > 0) {
+      this.refundThrowCount -= 1;
+      throw new Error('simulated_gateway_outage');
+    }
     if (this.refundFailureId === params.refundId) {
       return { success: false, error: 'simulated_refund_failure' };
     }
@@ -109,6 +117,7 @@ export class FakePaymentGateway implements PaymentGateway {
     readonly providerRef?: string;
   }): Promise<readonly TransferNotification[]> {
     this.queryTransfersCalls.push(params.paymentId);
+    if (this.queryThrowIds.has(params.paymentId)) throw new Error('simulated_gateway_outage');
     return [...(this.transfers.get(params.paymentId) ?? [])];
   }
 
