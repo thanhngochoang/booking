@@ -533,7 +533,9 @@ void main() {
       registrations: [registrationOf('r1', 'ev1')],
     );
     await _open(tester, w);
-    await _tap(tester, find.text('Huỷ sự kiện · hoàn tiền mọi vé'));
+    // Nothing to refund: the link says only "Huỷ sự kiện".
+    expect(find.text('Huỷ sự kiện · hoàn tiền mọi vé'), findsNothing);
+    await _tap(tester, find.byKey(const Key('manage-cancel')));
     expect(find.text('1 vé · Không có khoản hoàn'), findsOneWidget);
     expect(find.textContaining('0₫'), findsNothing);
     await _tap(tester, find.text('Giữ sự kiện'));

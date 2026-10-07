@@ -325,7 +325,8 @@ void main() {
       expect(_byKey('event-host-profile'), findsNothing);
       expect(find.text('Câu hỏi thường gặp'), findsOneWidget);
       expect(find.text('Mang máy gì?'), findsOneWidget);
-      expect(find.textContaining('Gửi email tới'), findsOneWidget);
+      // No support address the project owns yet: the line stays hidden.
+      expect(find.textContaining('Gửi email tới'), findsNothing);
     });
 
     testWidgets('a paid registration turns the inquiry into ContactDial', (

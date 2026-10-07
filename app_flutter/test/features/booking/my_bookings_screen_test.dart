@@ -390,7 +390,8 @@ void main() {
     testWidgets('tab=events opens Vé sự kiện', (tester) async {
       await pumpTickets(tester, initialTab: 'events');
       expect(find.byType(EventTicketsTab), findsOneWidget);
-      expect(find.text('Photo walk'), findsOneWidget);
+      // The ticket's title and its type tag (both "Photo walk" here).
+      expect(find.text('Photo walk'), findsNWidgets(2));
       expect(find.byType(SegmentedTabs<BookingTab>), findsNothing);
     });
 

@@ -252,7 +252,6 @@ class _EventScreenState extends ConsumerState<EventScreen> {
       role: ref.watch(currentProfileProvider).value?.role,
       now: now,
     );
-    final theme = Theme.of(context);
 
     final cover = s.coverUrl;
     final tabs = SegmentedTabs<EventTab>(
@@ -326,25 +325,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                   if (!timeline) ...[
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary,
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s2,
-                            vertical: 3,
-                          ),
-                          child: Text(
-                            s.type.label(l),
-                            style: const TextStyle(
-                              fontSize: AppText.xs,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: EventTypeTag(s.type.label(l)),
                     ),
                     const SizedBox(height: AppSpace.s2),
                     Text(
@@ -429,12 +410,12 @@ class _Cover extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top + AppSpace.s2;
     Widget round(Key key, String tip, IconData icon, VoidCallback onTap) =>
         Material(
-          color: Colors.black.withValues(alpha: 0.45),
+          color: AppColors.overlay,
           shape: const CircleBorder(),
           child: IconButton(
             key: key,
             tooltip: tip,
-            icon: AppIcon(icon, color: Colors.white),
+            icon: AppIcon(icon, color: AppColors.onScrim),
             onPressed: onTap,
           ),
         );

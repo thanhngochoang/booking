@@ -197,7 +197,7 @@ class _ChatComposerState extends State<ChatComposer> {
                       height: 40,
                       child: Center(
                         child: AppIcon(
-                          AppIcons.arrowUp,
+                          AppIcons.forward,
                           size: 20,
                           color: Colors.white,
                         ),

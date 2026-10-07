@@ -78,6 +78,7 @@ String eventFieldErrorText(AppLocalizations l, EventField field, String code) {
     (EventField.price, 'required') => l.createEventErrPriceRequired,
     (EventField.price, _) => l.createEventErrPrice,
     (EventField.deadline, _) => l.createEventErrDeadline,
+    (EventField.faq, _) => l.createEventErrFaq,
   };
 }
 
@@ -912,6 +913,21 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
       ),
       const SizedBox(height: AppSpace.s1),
       Text(l.createEventEscrowHint, style: theme.textTheme.bodySmall),
+      // Owner decision O2: platform events answer questions with a FAQ on
+      // S11.02 (no inquiry chat); only staff create them.
+      if (widget.platform) ...[
+        const SizedBox(height: AppSpace.s4),
+        KeyedSubtree(
+          key: _keys[EventField.faq],
+          child: _FaqEditor(
+            initial: f.faq ?? const [],
+            enabled: !busy,
+            error: errorOf(EventField.faq),
+            focusNode: _nodes[EventField.faq]!,
+            onChanged: ctl.setFaq,
+          ),
+        ),
+      ],
       if (showPreview) ...[
         const SizedBox(height: AppSpace.s4),
         Text(l.createEventPreview, style: theme.textTheme.labelMedium),
@@ -930,6 +946,164 @@ class _CreateEventFormState extends ConsumerState<_CreateEventForm> {
         ),
       ],
     ];
+  }
+}
+
+/// S12.02, staff only: "Câu hỏi thường gặp", a compact list of question and
+/// answer pairs with remove buttons and "Thêm câu hỏi" (at most
+/// [eventFaqMax]). Owns its text controllers; every edit reports all rows.
+class _FaqEditor extends StatefulWidget {
+  const _FaqEditor({
+    required this.initial,
+    required this.enabled,
+    required this.error,
+    required this.focusNode,
+    required this.onChanged,
+  });
+
+  final List<EventFaq> initial;
+  final bool enabled;
+  final String? error;
+
+  /// Focused by the error summary: the first question.
+  final FocusNode focusNode;
+  final ValueChanged<List<EventFaq>> onChanged;
+
+  @override
+  State<_FaqEditor> createState() => _FaqEditorState();
+}
+
+class _FaqRow {
+  _FaqRow(this.id, EventFaq f)
+    : question = TextEditingController(text: f.question),
+      answer = TextEditingController(text: f.answer);
+
+  final int id;
+  final TextEditingController question;
+  final TextEditingController answer;
+
+  void dispose() {
+    question.dispose();
+    answer.dispose();
+  }
+}
+
+class _FaqEditorState extends State<_FaqEditor> {
+  var _next = 0;
+  late final List<_FaqRow> _rows = [
+    for (final f in widget.initial) _FaqRow(_next++, f),
+  ];
+
+  @override
+  void dispose() {
+    for (final r in _rows) {
+      r.dispose();
+    }
+    super.dispose();
+  }
+
+  void _report() => widget.onChanged([
+    for (final r in _rows)
+      EventFaq(question: r.question.text, answer: r.answer.text),
+  ]);
+
+  void _add() {
+    setState(
+      () =>
+          _rows.add(_FaqRow(_next++, const EventFaq(question: '', answer: ''))),
+    );
+    _report();
+  }
+
+  void _remove(_FaqRow row) {
+    setState(() => _rows.remove(row));
+    row.dispose();
+    _report();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return Column(
+      key: const Key('create-event-faq'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(l.eventFaqTitle, style: theme.textTheme.titleSmall),
+        ),
+        const SizedBox(height: AppSpace.s1),
+        Text(
+          l.createEventFaqHint(eventFaqMax),
+          style: theme.textTheme.bodySmall,
+        ),
+        for (final (i, r) in _rows.indexed) ...[
+          const SizedBox(height: AppSpace.s3),
+          Row(
+            key: ValueKey('create-event-faq-row-${r.id}'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      key: Key('create-event-faq-q-$i'),
+                      controller: r.question,
+                      focusNode: i == 0 ? widget.focusNode : null,
+                      enabled: widget.enabled,
+                      maxLength: eventFaqQuestionMax,
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (_) => _report(),
+                      decoration: InputDecoration(
+                        labelText: l.createEventFaqQuestion(i + 1),
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpace.s2),
+                    TextField(
+                      key: Key('create-event-faq-a-$i'),
+                      controller: r.answer,
+                      enabled: widget.enabled,
+                      minLines: 1,
+                      maxLines: 4,
+                      maxLength: eventFaqAnswerMax,
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (_) => _report(),
+                      decoration: InputDecoration(
+                        labelText: l.createEventFaqAnswer,
+                        counterText: '',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                key: Key('create-event-faq-remove-$i'),
+                tooltip: l.createEventFaqRemove(i + 1),
+                onPressed: widget.enabled ? () => _remove(r) : null,
+                icon: const AppIcon(AppIcons.close),
+              ),
+            ],
+          ),
+        ],
+        if (widget.error case final e?) _FieldError(e),
+        if (_rows.length < eventFaqMax) ...[
+          const SizedBox(height: AppSpace.s2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.outline(
+              l.createEventFaqAdd,
+              key: const Key('create-event-faq-add'),
+              icon: const AppIcon(AppIcons.add, size: 16),
+              onPressed: widget.enabled ? _add : null,
+              size: AppButtonSize.xsmall,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -1178,7 +1352,9 @@ class _CoverTile extends StatelessWidget {
       excludeSemantics: true,
       onTap: enabled ? onTap : null,
       child: AspectRatio(
-        aspectRatio: 16 / 10,
+        // Mock S12.01 draws the empty tile 16:8 (the photo itself is 16:10,
+        // shown whole once chosen).
+        aspectRatio: has ? 16 / 10 : 16 / 8,
         // Mock S12.01: an empty tile has a 1px dashed `--line-2` border; a
         // chosen photo keeps a plain one.
         child: CustomPaint(

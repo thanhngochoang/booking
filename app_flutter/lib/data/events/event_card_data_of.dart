@@ -18,5 +18,7 @@ EventCardData eventCardDataOf(EventSummary e, AppLocalizations l) {
     seatsLeft: e.seatsLeft,
     soldOut: soldOut,
     coverUrl: e.coverUrl,
+    capacity: e.capacity,
+    registeredCount: e.registeredCount,
   );
 }

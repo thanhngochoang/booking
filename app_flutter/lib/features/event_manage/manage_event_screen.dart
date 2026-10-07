@@ -490,7 +490,8 @@ class _ManageEventScreenState extends ConsumerState<ManageEventScreen> {
                   foregroundColor: theme.colorScheme.error,
                   minimumSize: const Size(48, 48),
                 ),
-                child: Text(l.manageCancel),
+                // Nothing to refund on a free event: "Huỷ sự kiện" alone.
+                child: Text(free ? l.manageCancelConfirm : l.manageCancel),
               ),
             ),
           ],
@@ -586,36 +587,34 @@ class _ParticipantsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final label = linkLabel;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+    // The list already pads 16dp: no extra inset (mock `.sec`).
+    return Row(
+      children: [
+        Expanded(
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          if (label != null)
-            TextButton(
-              key: const Key('manage-checkin-link'),
-              onPressed: onLink,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(AppSpace.s12, AppSpace.s12),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2),
-                textStyle: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+        ),
+        if (label != null)
+          TextButton(
+            key: const Key('manage-checkin-link'),
+            onPressed: onLink,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(AppSpace.s12, AppSpace.s12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2),
+              textStyle: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
-              child: Text(label),
             ),
-        ],
-      ),
+            child: Text(label),
+          ),
+      ],
     );
   }
 }

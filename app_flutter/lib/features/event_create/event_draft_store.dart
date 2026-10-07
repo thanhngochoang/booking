@@ -38,6 +38,7 @@ class EventForm {
     this.lng,
     this.deadlineDay,
     this.hashtag,
+    this.faq,
   });
 
   /// Resume a server draft in the form.
@@ -66,6 +67,7 @@ class EventForm {
       lng: d.place?.lng,
       deadlineDay: deadline?.day,
       hashtag: d.hashtag,
+      faq: d.faq,
     );
   }
 
@@ -97,6 +99,25 @@ class EventForm {
   /// Without the `#`; null until the server made one.
   final String? hashtag;
 
+  /// Staff only, platform events (owner decision O2): the questions and
+  /// answers as typed, half-filled rows included. Null while the FAQ was
+  /// never touched (nothing is sent); an empty list clears it on the server.
+  final List<EventFaq>? faq;
+
+  /// The rows with both a question and an answer, trimmed: what is sent.
+  List<EventFaq>? get completeFaq => faq == null
+      ? null
+      : [
+          for (final f in faq!)
+            if (f.question.trim().isNotEmpty && f.answer.trim().isNotEmpty)
+              EventFaq(question: f.question.trim(), answer: f.answer.trim()),
+        ];
+
+  /// Some row has a question without an answer, or the other way round.
+  bool get hasIncompleteFaq => (faq ?? const <EventFaq>[]).any(
+    (f) => f.question.trim().isEmpty != f.answer.trim().isEmpty,
+  );
+
   /// Nothing typed yet: the back button leaves without asking.
   bool get isBlank =>
       title.trim().isEmpty &&
@@ -111,7 +132,10 @@ class EventForm {
       placeName.trim().isEmpty &&
       meetingPoint.trim().isEmpty &&
       areaId == null &&
-      deadlineDay == null;
+      deadlineDay == null &&
+      (faq ?? const <EventFaq>[]).every(
+        (f) => f.question.trim().isEmpty && f.answer.trim().isEmpty,
+      );
 
   EventForm copyWith({
     Object? eventId = _keep,
@@ -132,6 +156,7 @@ class EventForm {
     Object? lng = _keep,
     Object? deadlineDay = _keep,
     Object? hashtag = _keep,
+    List<EventFaq>? faq,
   }) => EventForm(
     eventId: identical(eventId, _keep) ? this.eventId : eventId as String?,
     title: title ?? this.title,
@@ -157,6 +182,7 @@ class EventForm {
         ? this.deadlineDay
         : deadlineDay as DateTime?,
     hashtag: identical(hashtag, _keep) ? this.hashtag : hashtag as String?,
+    faq: faq ?? this.faq,
   );
 
   DateTime? _at(int? minute) => day == null || minute == null
@@ -216,6 +242,7 @@ class EventForm {
       priceVnd: priceVnd,
       registrationDeadline: deadline,
       hashtag: hashtag,
+      faq: completeFaq,
       cleared: {
         if (existing && cover == null) 'cover',
         if (existing && place == null) 'place',
@@ -244,6 +271,7 @@ class EventForm {
     'lng': ?lng,
     'deadlineDay': ?deadlineDay?.toIso8601String(),
     'hashtag': ?hashtag,
+    'faq': ?faq?.map((f) => f.toJson()).toList(),
   };
 
   /// Reads what [toJson] wrote; anything unreadable is left empty.
@@ -257,6 +285,7 @@ class EventForm {
     }
 
     final rawType = j['type'];
+    final rawFaq = j['faq'];
     return EventForm(
       eventId: text(j['eventId']),
       title: j['title'] is String ? j['title']! as String : '',
@@ -280,6 +309,12 @@ class EventForm {
       lng: real(j['lng']),
       deadlineDay: date(j['deadlineDay']),
       hashtag: text(j['hashtag']),
+      faq: rawFaq is List
+          ? [
+              for (final f in rawFaq)
+                if (f is Map) EventFaq.fromJson(f.cast<String, Object?>()),
+            ]
+          : null,
     );
   }
 

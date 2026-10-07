@@ -615,6 +615,25 @@ void main() {
       },
     );
 
+    test('saveDraft sends the FAQ rows (O2)', () async {
+      answer({'eventId': 'e' * 24, 'hashtag': 'X'});
+      await repo.saveDraft(
+        const EventDraft(
+          faq: [EventFaq(question: 'Mang gì?', answer: 'Máy bất kỳ')],
+        ),
+      );
+      verify(
+        () => callable.call<Object?>({
+          'faq': [
+            {'question': 'Mang gì?', 'answer': 'Máy bất kỳ'},
+          ],
+        }),
+      ).called(1);
+      // Clearing every row sends an empty list (the server then keeps none).
+      await repo.saveDraft(const EventDraft(faq: []));
+      verify(() => callable.call<Object?>({'faq': <Object?>[]})).called(1);
+    });
+
     test('an empty draft sends an empty payload', () async {
       answer({'eventId': 'e' * 24, 'hashtag': 'X'});
       await repo.saveDraft(const EventDraft());

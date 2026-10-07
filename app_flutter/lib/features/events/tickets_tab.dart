@@ -11,6 +11,7 @@ import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
+import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/events/ticket_payment_sheet.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -99,8 +100,6 @@ TicketView ticketViewOf(
   }
 }
 
-String _typeTag(EventRegistration r) => r.event.type.code.replaceAll('_', '');
-
 /// S11.04: the customer's event tickets, inside S05.01 "Vé sự kiện".
 class EventTicketsTab extends ConsumerWidget {
   const EventTicketsTab({super.key, this.highlightId});
@@ -160,21 +159,12 @@ class EventTicketsTab extends ConsumerWidget {
         ? highlightId
         : upcoming.firstOrNull?.id;
 
-    final hint = upcoming.isNotEmpty ? 1 : 0;
     return ListView.separated(
       key: const PageStorageKey('event-tickets'),
       padding: const EdgeInsets.all(AppSpace.s4),
-      itemCount: ordered.length + hint,
+      itemCount: ordered.length,
       separatorBuilder: (_, _) => const SizedBox(height: AppSpace.s3),
-      itemBuilder: (context, index) {
-        if (hint == 1 && index == 0) {
-          return Text(
-            l.ticketShowHint,
-            key: const Key('tickets-hint'),
-            style: Theme.of(context).textTheme.bodySmall,
-          );
-        }
-        final i = index - hint;
+      itemBuilder: (context, i) {
         final r = ordered[i];
         final expiresAt = r.holdExpiresAt;
         if (views[r.id]!.state == TicketState.pendingPayment &&
@@ -308,7 +298,7 @@ class _TicketTile extends ConsumerWidget {
       ticket: TicketCardData(
         ticketCode: r.ticketCode,
         eventTitle: r.event.title,
-        typeTag: _typeTag(r),
+        typeLabel: r.event.type.label(l),
         startsAt: toVn(r.event.startsAt),
         quantity: r.quantity,
         state: view.state,

@@ -2177,5 +2177,16 @@
   "ticketPayFailed": "Chưa thanh toán được. Kiểm tra mạng rồi thử lại.",
   "@ticketPayFailed": {"description": "SnackBar when the ticket payment sheet fails."},
   "ticketPayFakeDisabled": "Thanh toán thử chỉ dùng được trên bản thử nghiệm.",
-  "@ticketPayFakeDisabled": {"description": "SnackBar when the server refuses fake payments (fake_payments_disabled)."}
+  "@ticketPayFakeDisabled": {"description": "SnackBar when the server refuses fake payments (fake_payments_disabled)."},
+  "eventRegisteredOf": "{registered}/{capacity} đã đăng ký",
+  "@eventRegisteredOf": {"description": "Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).", "placeholders": {"registered": {"type": "int"}, "capacity": {"type": "int"}}},
+  "createEventFaqHint": "Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa {max} câu.",
+  "@createEventFaqHint": {"placeholders": {"max": {"type": "int"}}},
+  "createEventFaqQuestion": "Câu hỏi {n}",
+  "@createEventFaqQuestion": {"placeholders": {"n": {"type": "int"}}},
+  "createEventFaqAnswer": "Trả lời",
+  "createEventFaqAdd": "Thêm câu hỏi",
+  "createEventFaqRemove": "Xoá câu hỏi {n}",
+  "@createEventFaqRemove": {"placeholders": {"n": {"type": "int"}}},
+  "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời."
 }

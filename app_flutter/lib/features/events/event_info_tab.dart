@@ -115,23 +115,28 @@ class EventInfoTab extends ConsumerWidget {
               Text(f.answer, style: theme.textTheme.bodySmall),
             ],
           ],
-          const SizedBox(height: AppSpace.s4),
-          InkWell(
-            key: const Key('event-support'),
-            onTap: () => open(eventSupportUri()),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l.eventSupportLine(eventSupportEmail),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.primary,
+          if ((eventSupportEmail, eventSupportUri()) case (
+            final email?,
+            final mailto?,
+          )) ...[
+            const SizedBox(height: AppSpace.s4),
+            InkWell(
+              key: const Key('event-support'),
+              onTap: () => open(mailto),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l.eventSupportLine(email),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ],
     );

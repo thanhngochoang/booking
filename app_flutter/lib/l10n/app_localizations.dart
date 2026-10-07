@@ -8379,6 +8379,48 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thanh toán thử chỉ dùng được trên bản thử nghiệm.'**
   String get ticketPayFakeDisabled;
+
+  /// Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).
+  ///
+  /// In vi, this message translates to:
+  /// **'{registered}/{capacity} đã đăng ký'**
+  String eventRegisteredOf(int registered, int capacity);
+
+  /// No description provided for @createEventFaqHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa {max} câu.'**
+  String createEventFaqHint(int max);
+
+  /// No description provided for @createEventFaqQuestion.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi {n}'**
+  String createEventFaqQuestion(int n);
+
+  /// No description provided for @createEventFaqAnswer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả lời'**
+  String get createEventFaqAnswer;
+
+  /// No description provided for @createEventFaqAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm câu hỏi'**
+  String get createEventFaqAdd;
+
+  /// No description provided for @createEventFaqRemove.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá câu hỏi {n}'**
+  String createEventFaqRemove(int n);
+
+  /// No description provided for @createEventErrFaq.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập đủ cả câu hỏi và câu trả lời.'**
+  String get createEventErrFaq;
 }
 
 class _AppLocalizationsDelegate

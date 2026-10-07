@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_draft.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_repository.dart';
@@ -31,7 +32,10 @@ enum EventField {
   place(2),
   hashtag(2),
   price(2),
-  deadline(2);
+  deadline(2),
+
+  /// Staff only, platform events (owner decision O2).
+  faq(2);
 
   const EventField(this.step);
 
@@ -47,6 +51,11 @@ const eventCapacityMax = 500;
 const eventPriceMax = 100000000;
 const eventPriceStep = 1000;
 const eventPublishLead = Duration(hours: 2);
+
+/// Domain `EVENT_FAQ_MAX`, `FAQ_QUESTION_MAX`, `FAQ_ANSWER_MAX`.
+const eventFaqMax = 10;
+const eventFaqQuestionMax = 120;
+const eventFaqAnswerMax = 500;
 
 final _hashtagPattern = RegExp(r'^[A-Za-z0-9]{3,40}$');
 
@@ -154,6 +163,9 @@ Map<EventField, String> eventFormErrors(
   if (form.placeName.trim().isNotEmpty &&
       (form.lat == null || form.lng == null)) {
     errors[EventField.place] = 'point';
+  }
+  if (form.hasIncompleteFaq) {
+    errors[EventField.faq] = 'incomplete';
   }
   return errors;
 }
@@ -375,6 +387,13 @@ class CreateEventController extends Notifier<CreateEventState> {
           : DateTime.utc(day.year, day.month, day.day),
     ),
     field: EventField.deadline,
+  );
+
+  /// The FAQ rows as typed (owner decision O2); half-filled rows stay in the
+  /// form and are flagged, only complete ones are sent.
+  void setFaq(List<EventFaq> rows) => _edit(
+    state.form.copyWith(faq: List.unmodifiable(rows)),
+    field: EventField.faq,
   );
 
   /// Without the `#`; empty keeps the generated one.

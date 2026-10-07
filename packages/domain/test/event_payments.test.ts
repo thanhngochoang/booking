@@ -5,7 +5,7 @@ import type { EventCaller } from '../src/event.js';
 import type { EventPaymentDeps } from '../src/event_ports.js';
 import {
   cancelEventWithRefunds, checkTicketPayment, confirmFakeTicketPayment, handleTicketPayment, refundTicket,
-  releaseEventHolds, ticketRefundPercent,
+  releaseEventHolds, resendTicketRefund, ticketRefundPercent,
 } from '../src/event_payments.js';
 import { cancelRegistration, registerEvent } from '../src/event_registration.js';
 import { runEventSweeps } from '../src/event_sweeps.js';
@@ -434,6 +434,61 @@ describe('refund state on the ticket', () => {
     assert.equal((await runEventSweeps(w.pay)).refundsResent, 0);
     assert.equal(w.store.refunds.size, 1);
     assert.deepEqual(w.store.ledgerOf(paymentId).map((e) => e.type), ['ticket_received', 'refund_issued']);
+  });
+
+  /** A cancel whose outcome transaction crashed: the refund is left `pending`. */
+  async function pendingRefund(w: PaidWorld): Promise<{ id: string; refundId: string }> {
+    const id = await bought(w, cu1);
+    w.clock.set(new Date(new Date(START).getTime() - 72 * HOUR));
+    await assert.rejects(cancelRegistration(crashAt(w, 3), cu1, { eventId: EV, registrationId: id }), /crash/);
+    const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
+    assert.equal(refund?.status, 'pending');
+    return { id, refundId: must(refund).id };
+  }
+
+  test('two resends in parallel: a late failure never overwrites the done refund', async () => {
+    const w = await paidWorld();
+    const { id, refundId } = await pendingRefund(w);
+    // Both sends pass the pending check before either outcome is written; the
+    // first succeeds, the second (same id) comes back failed after it.
+    const gates: Array<() => void> = [];
+    const real = w.gateway.issueRefund.bind(w.gateway);
+    let calls = 0;
+    w.gateway.issueRefund = async (p) => {
+      const n = ++calls;
+      await new Promise<void>((resolve) => gates.push(resolve));
+      return n === 1 ? real(p) : { success: false };
+    };
+    const a = resendTicketRefund(w.pay, refundId);
+    const b = resendTicketRefund(w.pay, refundId);
+    while (gates.length < 2) await new Promise((r) => setImmediate(r));
+    must(gates[0])();
+    assert.equal(await a, true);
+    assert.equal(w.store.refunds.get(refundId)?.status, 'done');
+    must(gates[1])();
+    assert.equal(await b, true);
+    // The outcome is written only while the refund is pending: done stays done.
+    assert.deepEqual(
+      [w.store.refunds.get(refundId)?.status, w.store.refunds.get(refundId)?.manual, reg(w, id).refundStatus],
+      ['done', false, 'done'],
+    );
+    assert.equal(w.gateway.issuedRefunds.size, 1);
+  });
+
+  test('a resend re-checks pending: a done or failed refund is never sent again', async () => {
+    const w = await paidWorld();
+    const { refundId } = await pendingRefund(w);
+    assert.equal(await resendTicketRefund(w.pay, refundId), true);
+    assert.equal(w.store.refunds.get(refundId)?.status, 'done');
+    const sent = w.gateway.refundCalls.length;
+    // The clock picked it up while still pending, but it is done by now.
+    assert.equal(await resendTicketRefund(w.pay, refundId), false);
+    assert.equal(w.gateway.refundCalls.length, sent);
+    // A failed one stays with staff too.
+    w.store.refunds.set(refundId, { ...must(w.store.refunds.get(refundId)), status: 'failed', manual: true });
+    assert.equal(await resendTicketRefund(w.pay, refundId), false);
+    assert.equal(w.gateway.refundCalls.length, sent);
+    assert.equal(w.store.refunds.get(refundId)?.status, 'failed');
   });
 
   test('a refund that never reached the gateway is sent by the clock', async () => {

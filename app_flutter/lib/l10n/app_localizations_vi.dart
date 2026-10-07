@@ -4739,4 +4739,33 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get ticketPayFakeDisabled =>
       'Thanh toán thử chỉ dùng được trên bản thử nghiệm.';
+
+  @override
+  String eventRegisteredOf(int registered, int capacity) {
+    return '$registered/$capacity đã đăng ký';
+  }
+
+  @override
+  String createEventFaqHint(int max) {
+    return 'Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa $max câu.';
+  }
+
+  @override
+  String createEventFaqQuestion(int n) {
+    return 'Câu hỏi $n';
+  }
+
+  @override
+  String get createEventFaqAnswer => 'Trả lời';
+
+  @override
+  String get createEventFaqAdd => 'Thêm câu hỏi';
+
+  @override
+  String createEventFaqRemove(int n) {
+    return 'Xoá câu hỏi $n';
+  }
+
+  @override
+  String get createEventErrFaq => 'Nhập đủ cả câu hỏi và câu trả lời.';
 }

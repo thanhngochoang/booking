@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_draft.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_repository.dart';
@@ -257,8 +258,54 @@ void main() {
         lng: 105.8,
         deadlineDay: DateTime.utc(2026, 10, 19),
         hashtag: 'PhotoWalk1020',
+        faq: const [EventFaq(question: 'Mang gì?', answer: 'Máy bất kỳ')],
       );
       expect(EventForm.fromJson(f.toJson()), f);
+    });
+
+    test(
+      'FAQ (O2): only complete rows are sent, trimmed; untouched sends none',
+      () {
+        expect(const EventForm(title: 'x').toDraft().faq, isNull);
+        const f = EventForm(
+          faq: [
+            EventFaq(question: ' Mang gì? ', answer: ' Máy bất kỳ '),
+            EventFaq(question: '', answer: ''),
+          ],
+        );
+        expect(f.toDraft().faq, const [
+          EventFaq(question: 'Mang gì?', answer: 'Máy bất kỳ'),
+        ]);
+        expect(f.hasIncompleteFaq, isFalse);
+        // All rows removed from a draft that had some: an empty list clears it.
+        expect(const EventForm(faq: []).toDraft().faq, isEmpty);
+        expect(const EventForm(faq: []).toDraft().toCallable()['faq'], isEmpty);
+        // A FAQ resumed from the server comes back into the form.
+        expect(
+          EventForm.fromDraft(
+            const EventDraft(
+              faq: [EventFaq(question: 'Q', answer: 'A')],
+            ),
+          ).faq,
+          const [EventFaq(question: 'Q', answer: 'A')],
+        );
+      },
+    );
+
+    test('a half-filled FAQ row is an error on step 2', () {
+      const half = EventForm(
+        faq: [EventFaq(question: 'Mang gì?', answer: '')],
+      );
+      expect(half.hasIncompleteFaq, isTrue);
+      expect(eventFormErrors(half, now: now)[EventField.faq], 'incomplete');
+      expect(EventField.faq.step, 2);
+      expect(
+        eventFormErrors(
+          const EventForm(),
+          now: now,
+        ).containsKey(EventField.faq),
+        isFalse,
+      );
     });
   });
 

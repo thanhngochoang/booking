@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/staff_role.dart';
 import 'package:photobooking/data/events/event_card_data_of.dart';
+import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
@@ -497,11 +498,103 @@ void main() {
     testWidgets('staff preview shows the platform as host', (tester) async {
       await toStepTwo(tester, staff: StaffRole.admin);
       await _fillStepTwo(tester);
+      // Staff have the FAQ above it: the preview stays the last block.
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('create-event-preview')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       final shown = tester
           .widget<EventCard>(find.byKey(const Key('create-event-preview')))
           .data;
       expect(shown.hostName, 'Do ứng dụng tổ chức');
       expect(shown.hostVerified, isFalse);
+    });
+
+    testWidgets(
+      'staff enter the FAQ of a platform event; rows are saved (O2)',
+      (tester) async {
+        final w = await toStepTwo(tester, staff: StaffRole.admin);
+        await _fillStepTwo(tester);
+        expect(find.text('Câu hỏi thường gặp'), findsOneWidget);
+        Future<void> tap(String key) async {
+          await tester.ensureVisible(find.byKey(Key(key)));
+          await settle(tester);
+          await tester.tap(find.byKey(Key(key)));
+          await settle(tester);
+        }
+
+        await tap('create-event-faq-add');
+        await tester.enterText(
+          find.byKey(const Key('create-event-faq-q-0')),
+          'Cần mang máy gì?',
+        );
+        await tester.enterText(
+          find.byKey(const Key('create-event-faq-a-0')),
+          'Máy bất kỳ, kể cả điện thoại.',
+        );
+        await tap('create-event-faq-add');
+        await tester.enterText(
+          find.byKey(const Key('create-event-faq-q-1')),
+          'Có gửi xe không?',
+        );
+        await settle(tester);
+        // A question without an answer is flagged under the list.
+        expect(find.text('Nhập đủ cả câu hỏi và câu trả lời.'), findsOneWidget);
+        await tap('create-event-faq-remove-1');
+        expect(find.text('Nhập đủ cả câu hỏi và câu trả lời.'), findsNothing);
+        expect(find.byKey(const Key('create-event-faq-q-1')), findsNothing);
+
+        await tap('create-event-save');
+        expect(w.repo.savedDrafts.last.faq, const [
+          EventFaq(
+            question: 'Cần mang máy gì?',
+            answer: 'Máy bất kỳ, kể cả điện thoại.',
+          ),
+        ]);
+      },
+    );
+
+    testWidgets('the add button stops at 10 questions', (tester) async {
+      await toStepTwo(tester, staff: StaffRole.sales);
+      for (var i = 0; i < 10; i++) {
+        await tester.ensureVisible(
+          find.byKey(const Key('create-event-faq-add')),
+        );
+        await settle(tester);
+        await tester.tap(find.byKey(const Key('create-event-faq-add')));
+        await settle(tester);
+      }
+      expect(find.byKey(const Key('create-event-faq-add')), findsNothing);
+    });
+
+    testWidgets('the FAQ fits 320dp at 1.3 text scale', (tester) async {
+      final w = _photographer(staff: StaffRole.admin);
+      await _open(tester, w, size: const Size(320, 1000), textScale: 1.3);
+      await _stepOne(tester);
+      await _next(tester);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('create-event-faq-add')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.byKey(const Key('create-event-faq-add')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('create-event-faq-add')));
+      await settle(tester);
+      expect(find.byKey(const Key('create-event-faq-q-0')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('photographers have no FAQ field and send none', (
+      tester,
+    ) async {
+      final w = await toStepTwo(tester);
+      await _fillStepTwo(tester);
+      expect(find.byKey(const Key('create-event-faq')), findsNothing);
+      await tester.tap(find.byKey(const Key('create-event-save')));
+      await settle(tester);
+      expect(w.repo.savedDrafts.last.faq, isNull);
     });
 
     testWidgets('a taken hashtag shows the error under the field', (

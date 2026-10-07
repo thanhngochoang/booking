@@ -146,6 +146,22 @@ void main() {
       (id: 'b', size: EventCardSize.row),
       (id: 'c', size: EventCardSize.row),
     ]);
+    // Mock S11.01 overlay: host · registered/capacity on the featured card.
+    final featured = find.byKey(const Key('event-card-a'));
+    expect(
+      find.descendant(
+        of: featured,
+        matching: find.text('Quốc Bảo · 5/20 đã đăng ký'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: featured,
+        matching: find.textContaining('· Công viên Bạch Đằng'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a free event shows Không thu phí and no 0₫', (tester) async {

@@ -47,6 +47,10 @@ import 'package:photobooking/l10n/app_localizations.dart';
       return (icon: AppIcons.instant, tone: NotificationTone.muted);
     case 'event_soon':
       return (icon: AppIcons.ticket, tone: NotificationTone.neutral);
+    case 'event_host_invited':
+      // Staff created an event for this photographer: accept or decline
+      // within 24 h (owner decision O1), so it needs action.
+      return (icon: AppIcons.ticket, tone: NotificationTone.action);
     case 'award_reviewed':
       return (
         icon: AppIcons.award,

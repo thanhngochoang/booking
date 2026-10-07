@@ -36,7 +36,7 @@ TicketCardData _testTicket({
   return TicketCardData(
     ticketCode: code,
     eventTitle: title,
-    typeTag: 'workshop',
+    typeLabel: 'Workshop',
     startsAt: DateTime(2026, 10, 12, 14, 30),
     quantity: quantity,
     state: state,
@@ -60,6 +60,60 @@ void main() {
       expect(selectableFinder, findsOneWidget);
       final selectable = tester.widget<SelectableText>(selectableFinder);
       expect(selectable.data, 'TCK-2026-X1');
+    },
+  );
+
+  testWidgets(
+    'upcoming matches mock S11.04: tag pill, one meta line, QR row with hint and code, two buttons, cancel under the card',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          TicketCard(
+            ticket: _testTicket(),
+            onDirections: () {},
+            onAddToCalendar: () {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The type is a pill with words, not a #hashtag.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('ticket-type')),
+          matching: find.text('Workshop'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('#'), findsNothing);
+      // One meta line: weekday dd/MM · HH:mm · n vé; no place line.
+      expect(find.text('T2 12/10 · 14:30 · 2 vé'), findsOneWidget);
+      expect(find.text('Hồ Gươm, Hà Nội'), findsNothing);
+      // QR on the left, hint and code on its right in one row.
+      final qr = tester.getRect(find.byType(QrImageView));
+      final hint = tester.getRect(
+        find.text('Đưa mã này cho chủ sự kiện khi đến điểm hẹn.'),
+      );
+      final code = tester.getRect(find.byType(SelectableText));
+      expect(hint.left, greaterThan(qr.right));
+      expect(code.left, greaterThan(qr.right));
+      expect(code.top, greaterThan(hint.bottom));
+      // "Chỉ đường" outline and "Thêm vào lịch" secondary, side by side.
+      final directions = tester.getRect(
+        find.byKey(const Key('ticket-directions')),
+      );
+      final calendar = tester.getRect(find.byKey(const Key('ticket-calendar')));
+      expect(directions.top, calendar.top);
+      expect(calendar.left, greaterThan(directions.right));
+      final sec = tester.widget<AppButton>(
+        find.byKey(const Key('ticket-calendar')),
+      );
+      expect(sec.style?.backgroundColor?.resolve({}), isNotNull);
+      // The cancel sits below the card, outside it.
+      final card = tester.getRect(find.byType(GlassCard));
+      final cancel = tester.getRect(find.byKey(const Key('ticket-cancel')));
+      expect(cancel.top, greaterThanOrEqualTo(card.bottom));
     },
   );
 

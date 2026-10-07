@@ -5,9 +5,10 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// The support address S11.02 shows on platform-hosted events until the
-/// support inbox (S23.06) exists (owner decision O2). Placeholder address:
-/// the owner confirms the real one.
-const eventSupportEmail = 'hotro@photobooking.vn';
+/// support inbox (S23.06) exists (owner decision O2). Null hides the line:
+/// no address the project owns has been given yet (owner question in the 10c
+/// handover ledger). Set it here once the owner confirms one.
+const String? eventSupportEmail = null;
 
 /// `yyyyMMddTHHmmssZ`, the form Google Calendar takes.
 String _calendarStamp(DateTime instant) {
@@ -55,8 +56,9 @@ String eventShareLink(String eventId) => '/e/$eventId';
 Future<void> copyEventLink(String eventId) =>
     Clipboard.setData(ClipboardData(text: eventShareLink(eventId)));
 
-/// `mailto:` for the support line.
-Uri eventSupportUri() => Uri(scheme: 'mailto', path: eventSupportEmail);
+/// `mailto:` for the support line; null while [eventSupportEmail] is unset.
+Uri? eventSupportUri([String? email = eventSupportEmail]) =>
+    email == null ? null : Uri(scheme: 'mailto', path: email);
 
 /// "Chủ nhật 20/10 · 06:00–09:00" in Vietnam time (events are one day).
 String eventWhenLabel(AppLocalizations l, DateTime startsAt, DateTime endsAt) {
