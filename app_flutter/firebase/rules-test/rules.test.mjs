@@ -52,6 +52,16 @@ test('client can create its photographer doc unverified, but never verify itself
   await assertFails(setDoc(doc(env.authenticatedContext('p2').firestore(), 'photographers/p2'), { verified: true }));
   await assertSucceeds(updateDoc(doc(db, 'photographers/p1'), { onboardingComplete: true }));
 });
+test('acceptingOrders is server-only: not creatable, not changeable, unchanged keys pass', async () => {
+  await asPhotographer('ao1'); await asPhotographer('ao2');
+  const db = env.authenticatedContext('ao1').firestore();
+  await assertFails(setDoc(doc(db, 'photographers/ao1'), { onboardingComplete: false, verified: false, acceptingOrders: true }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/ao2'), { onboardingComplete: true, verified: true, acceptingOrders: true, bio: 'x' }));
+  const owner = env.authenticatedContext('ao2').firestore();
+  await assertFails(updateDoc(doc(owner, 'photographers/ao2'), { acceptingOrders: false }));
+  await assertSucceeds(updateDoc(doc(owner, 'photographers/ao2'), { bio: 'y' }));
+});
 test('users docs never hold an email address (readable by every signed-in user)', async () => {
   const db = env.authenticatedContext('e1').firestore();
   await assertFails(setDoc(doc(db, 'users/e1'), { displayName: 'E', email: 'e@x.vn' }));

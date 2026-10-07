@@ -35,11 +35,15 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
   const deps: BookingDeps = {
     store,
     services: {
-      getService: async (_photographerId, id) => servicesMap.get(id) ?? null,
+      getService: async (photographerId, id) => {
+        const svc = servicesMap.get(id);
+        return svc === undefined ? null : { ...svc, photographerId };
+      },
     },
     contacts: {
       get: async (uid) => contactsMap.get(uid) ?? null,
     },
+    providers: { acceptsOrders: async (id) => id !== 'closed1' },
     gateway,
     clock: { now: () => new Date('2026-10-01T10:00:00.000Z') },
     ids: { newId: () => `id_${idCounter++}` },
@@ -91,6 +95,26 @@ describe('Booking callables', () => {
     assert.equal(result.status, 'draft');
     assert.equal(result.deposit, 300_000);
     assert.equal(result.remaining, 700_000);
+  });
+
+  test('createBooking refuses a closed provider with failed-precondition and details.code not_accepting_orders', async () => {
+    const { deps } = createTestDeps();
+    await assert.rejects(
+      handleCreateBooking(
+        {
+          auth: { uid: 'c1' },
+          data: {
+            photographerId: 'closed1',
+            serviceId: 'svc1',
+            day: '2026-10-15',
+            start: '09:00',
+            place: { name: 'Thảo Cầm Viên, Quận 1' },
+          },
+        },
+        deps,
+      ),
+      httpsError('failed-precondition', 'not_accepting_orders'),
+    );
   });
 
   test('handleCreateBooking rejects invalid input with invalid_argument', async () => {

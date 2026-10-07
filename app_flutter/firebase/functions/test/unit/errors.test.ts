@@ -27,6 +27,7 @@ describe('toHttpsError', () => {
       price_changed: 'failed-precondition',
       not_eligible: 'failed-precondition',
       reauth_required: 'failed-precondition',
+      not_accepting_orders: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });
@@ -35,6 +36,12 @@ describe('toHttpsError', () => {
     const e = toHttpsError(new DomainError('reauth_required'));
     assert.equal(e.code, 'failed-precondition');
     assert.deepEqual(e.details, { code: 'reauth_required' });
+  });
+
+  test('not_accepting_orders maps to failed-precondition', () => {
+    const e = toHttpsError(new DomainError('not_accepting_orders'));
+    assert.equal(e.code, 'failed-precondition');
+    assert.deepEqual(e.details, { code: 'not_accepting_orders' });
   });
 
   test('unexpected errors become internal and leak nothing', () => {

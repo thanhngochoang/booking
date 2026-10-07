@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bookingContactUnlocked, isId, isInternationalE164, isVnE164 } from '@photobooking/domain';
+import { acceptsOrders, bookingContactUnlocked, isId, isInternationalE164, isVnE164 } from '@photobooking/domain';
 import { SEED_PASSWORD, SEED_PHOTOGRAPHERS, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
@@ -12,6 +12,17 @@ function bookingDoc(id: string): { status: string; timeline: { status: string; a
 }
 
 describe('seed fixtures', () => {
+  test('seed photographers carry acceptingOrders equal to the rule (An true, Bình false)', () => {
+    const accepting = (uid: string) =>
+      (seedDocuments(NOW).find((d) => d.path === `photographers/${uid}`)?.data as { acceptingOrders?: boolean }).acceptingOrders;
+    for (const p of SEED_PHOTOGRAPHERS) {
+      const doc = seedDocuments(NOW).find((d) => d.path === `photographers/${p.uid}`)?.data as Record<string, unknown>;
+      assert.equal(doc.acceptingOrders, acceptsOrders(doc), p.uid);
+    }
+    assert.equal(accepting('seed-photographer-an'), true);
+    assert.equal(accepting('seed-photographer-binh'), false);
+  });
+
   test('every path segment is a valid opaque id', () => {
     for (const d of seedDocuments(NOW)) {
       for (const segment of d.path.split('/')) assert.ok(isId(segment), d.path);

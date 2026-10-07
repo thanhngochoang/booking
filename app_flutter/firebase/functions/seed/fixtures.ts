@@ -3,6 +3,7 @@
 
 import {
   BADGE_CATALOG,
+  acceptsOrders,
   NOTIFICATION_TYPES,
   accountLast4,
   encodeGeohash,
@@ -290,6 +291,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
         contactChannels: { ...p.channels },
         onboardingComplete: true,
         verified: p.verified,
+        // Derived like the onPhotographerWrite trigger does: Bình shows "Chưa nhận đơn".
+        acceptingOrders: acceptsOrders({ verified: p.verified, onboardingComplete: true }),
         ...(p.verified ? { verifiedAt: at } : {}),
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),

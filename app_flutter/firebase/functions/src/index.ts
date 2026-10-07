@@ -29,7 +29,7 @@ import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
 import { liveContactDeps } from './infra/live.js';
-import { liveSkillsDeps } from './infra/live_skills.js';
+import { liveAcceptingOrdersWriter, liveSkillsDeps } from './infra/live_skills.js';
 import { liveBookingDeps } from './infra/live_booking.js';
 import { liveChatDeps } from './infra/live_chat.js';
 import { handleBookingClock } from './scheduled/booking_clock.js';
@@ -137,6 +137,7 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   const live = after?.exists === true ? after : undefined;
   await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
     liveSkillsDeps(uid, live?.updateTime),
+    liveAcceptingOrdersWriter(),
   );
   // `fast_reply` follows stats.responseMinutes (written by the server only).
   if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {

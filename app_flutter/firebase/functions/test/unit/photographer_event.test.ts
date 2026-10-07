@@ -1,7 +1,7 @@
 import { describe, test, type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
 import type { ScoreSkillsDeps } from '@photobooking/domain';
-import { handlePhotographerEvent, isPermanentFirestoreError, MAX_EVENT_AGE_MS } from '../../src/triggers/photographer_write.js';
+import { handlePhotographerEvent, type AcceptingOrdersWriter, isPermanentFirestoreError, MAX_EVENT_AGE_MS } from '../../src/triggers/photographer_write.js';
 
 // Final review item 5: onPhotographerWrite is deployed with retry: true; permanent failures and
 // old events must end instead of being retried for ~7 days.
@@ -35,6 +35,8 @@ function captureErrorLogs(t: TestContext): string[] {
   return lines;
 }
 
+const noSync: AcceptingOrdersWriter = { set: async () => {} };
+
 describe('onPhotographerWrite event policy', () => {
   test('permanent Firestore codes are INVALID_ARGUMENT (3) and PERMISSION_DENIED (7) only', () => {
     assert.equal(isPermanentFirestoreError({ code: 3 }), true);
@@ -44,11 +46,32 @@ describe('onPhotographerWrite event policy', () => {
 
   test('an event older than 1 hour is dropped with an error log (uid only), before any Firestore access', async (t) => {
     const logs = captureErrorLogs(t);
-    const outcome = await handlePhotographerEvent(input(MAX_EVENT_AGE_MS + 1), () => assert.fail('no deps for an old event'), NOW);
+    const outcome = await handlePhotographerEvent(input(MAX_EVENT_AGE_MS + 1), () => assert.fail('no deps for an old event'), noSync, NOW);
     assert.equal(outcome, 'expired');
     assert.equal(logs.length, 1);
     assert.match(logs[0] ?? '', /p1/);
     assert.doesNotMatch(logs[0] ?? '', /portrait|schemaVersion/);
+  });
+
+  test('an expired event does not sync acceptingOrders', async (t) => {
+    captureErrorLogs(t);
+    const calls: unknown[] = [];
+    const writer: AcceptingOrdersWriter = { set: async (...a) => void calls.push(a) };
+    const old = { ...input(MAX_EVENT_AGE_MS + 1), after: { skills, verified: true, onboardingComplete: true } };
+    assert.equal(await handlePhotographerEvent(old, () => assert.fail('no deps'), writer, NOW), 'expired');
+    assert.equal(calls.length, 0);
+  });
+
+  test('a handled event also syncs acceptingOrders', async () => {
+    const calls: unknown[] = [];
+    const writer: AcceptingOrdersWriter = { set: async (...a) => void calls.push(a) };
+    const deps: ScoreSkillsDeps = {
+      posts: { owned: async () => new Set<string>() },
+      writer: { write: async () => 'written', reread: () => assert.fail('no reread') },
+    };
+    const ev = { ...input(0), after: { skills, verified: true, onboardingComplete: true } };
+    await handlePhotographerEvent(ev, () => deps, writer, NOW);
+    assert.deepEqual(calls, [['p1', true]]);
   });
 
   test('an event just under 1 hour old is still handled', async () => {
@@ -57,14 +80,14 @@ describe('onPhotographerWrite event policy', () => {
       posts: { owned: async () => new Set<string>() },
       writer: { write: async (u) => (writes.push(u), 'written'), reread: () => assert.fail('no reread') },
     };
-    assert.equal(await handlePhotographerEvent(input(MAX_EVENT_AGE_MS - 1_000), () => deps, NOW), 'written');
+    assert.equal(await handlePhotographerEvent(input(MAX_EVENT_AGE_MS - 1_000), () => deps, noSync, NOW), 'written');
     assert.equal(writes.length, 1);
   });
 
   test('a permanent Firestore error is logged (uid and code, no message) and not rethrown', async (t) => {
     const logs = captureErrorLogs(t);
     const error = Object.assign(new Error('secret detail +84912000001'), { code: 7 });
-    assert.equal(await handlePhotographerEvent(input(0), () => failingDeps(error), NOW), 'failed');
+    assert.equal(await handlePhotographerEvent(input(0), () => failingDeps(error), noSync, NOW), 'failed');
     assert.equal(logs.length, 1);
     assert.match(logs[0] ?? '', /p1/);
     assert.match(logs[0] ?? '', /7/);
@@ -73,7 +96,7 @@ describe('onPhotographerWrite event policy', () => {
 
   test('a transient error is rethrown so Functions retries the event', async () => {
     const error = Object.assign(new Error('unavailable'), { code: 14 });
-    await assert.rejects(handlePhotographerEvent(input(0), () => failingDeps(error), NOW), /unavailable/);
+    await assert.rejects(handlePhotographerEvent(input(0), () => failingDeps(error), noSync, NOW), /unavailable/);
   });
 
   test('a missing or unparsable event time is handled (never dropped as old)', async () => {
@@ -81,6 +104,6 @@ describe('onPhotographerWrite event policy', () => {
       posts: { owned: async () => new Set<string>() },
       writer: { write: async () => 'written', reread: () => assert.fail('no reread') },
     };
-    assert.equal(await handlePhotographerEvent({ ...input(0), time: 'not a time' }, () => deps, NOW), 'written');
+    assert.equal(await handlePhotographerEvent({ ...input(0), time: 'not a time' }, () => deps, noSync, NOW), 'written');
   });
 });

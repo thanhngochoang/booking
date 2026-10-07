@@ -77,6 +77,7 @@ describe('fake payment gate', () => {
       store: counting,
       services: { getService: async () => null },
       contacts: { get: async () => null },
+      providers: { acceptsOrders: async () => true },
       gateway: new FakePaymentGateway(),
       clock: { now: () => new Date('2026-10-01T10:00:00.000Z') },
       ids: { newId: () => 'id_1' },
