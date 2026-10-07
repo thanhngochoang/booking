@@ -6,6 +6,18 @@ import { callCallable, emulatorProject, signIn } from '../../seed/emulator_clien
 import { SEED_PASSWORD } from '../../seed/fixtures.js';
 
 export const DAY = 86_400_000;
+const HOUR = 3_600_000;
+const VN_OFFSET = 7 * HOUR;
+
+/**
+ * 09:00 Vietnam time, `days` Vietnam days from today. Test events last 3 h and an event must start
+ * and end on the same Vietnam day (validateEventFields), so a start of "now + n days" fails when the
+ * suite runs between 21:00 and 24:00 in Vietnam (14:00-17:00 UTC). A fixed morning start does not.
+ */
+export function eventStartInDays(days: number, now = Date.now()): Date {
+  const vnMidnight = Math.floor((now + VN_OFFSET) / DAY) * DAY - VN_OFFSET;
+  return new Date(vnMidnight + days * DAY + 9 * HOUR);
+}
 
 export const bucketUrl = (path: string): string =>
   `http://127.0.0.1:9199/v0/b/${emulatorProject()}.firebasestorage.app/o/${encodeURIComponent(path)}?alt=media&token=t`;
@@ -47,7 +59,7 @@ let nextDay = 60;
 export async function publishFreeEvent(env: SocialEnv, host: string): Promise<{ eventId: string; hashtag: string }> {
   const eventId = newUlid(Date.now());
   const path = `eventCovers/${host}/${eventId}/cover.jpg`;
-  const start = new Date(Date.now() + nextDay++ * DAY);
+  const start = eventStartInDays(nextDay++);
   const saved = await callAs(env, 'saveEventDraft', host, {
     eventId, title: `Photo walk ${eventId.slice(-6)}`, type: 'photo_walk',
     coverUrl: bucketUrl(path), coverPath: path,
