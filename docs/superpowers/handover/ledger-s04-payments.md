@@ -29,6 +29,8 @@ Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s04-payments
 - Ruling 6: transfer codes unique across all payments (any status) + matchPayment ignores payments created after receivedAt — overrides Decision 5 "open payments" — cost if wrong: one extra lookup per createPayment.
 - Ruling 7: refund dispatch throws in this unit's paths mark the refund failed+manual (same as success:false) and the rest continue; no new pending-refund retry sweep — cost if wrong: network blips need staff handling until a retry sweep exists.
 - Ruling 8: CountdownPill liveRegion only at countdown.dart's announce thresholds and at zero — overrides plan's "Semantics(liveRegion: true)" — cost if wrong: screen-reader users hear fewer updates.
+- Ruling 10: refunds get a structured `fromEscrow` marker (true only for applyRefundToPayment cancellations/declines; false for transfer refunds); release, payouts and earnings sum only escrow refunds — never the free-text reason — cost if wrong: a field rename later.
+- Ruling 11: createPayment fails closed with the existing `not_eligible` code (app shows bookPaymentsOff) wherever fakePaymentsAllowed() is false and no real gateway is wired — cost if wrong: production booking stays blocked until the intermediary unit, which is the intended state.
 
 Pre-flight table rows that cite Rulings 1–3 (same file):
 
@@ -107,6 +109,17 @@ Verbatim from the SDD ledger, grouped by task. Lines tagged FINAL REVIEW TRIAGE 
 - Task 8: minor (deferred, FINAL REVIEW TRIAGE): packages/domain/src/notification_render.ts:71,75,82,87 push bodies still say "Cọc…"
 - Task 8: minor (deferred): no-cọc test misses NFD/unaccented forms; test names still say "deposit"
 
+### Final review (58ecebd)
+- Final review minors (deferred): on-time transfer refunded as late after sweep expired it; wallet view no expiry state; replaced draft leaves open payment; legacy drafts without payableUntil hold days.
+- Final review triage: (d) NaN dates stays deferred; (e) day_taken closed (own-draft replace covers it).
+
+## Final review fixes
+- Critical 1 (Ruling 10): `Refund.fromEscrow` is set by every writer: `applyRefundToPayment` → true (cancel, decline, expiry, dispute, and the paid-but-draft-gone path `late_payment_draft_expired`, whose money was marked paid and held before escrow gave it back; that payment ends escrow `refunded` and is never released, so the value does not change any amount), `transferRefund` → false (`overpaid_excess`, `extra_transfer`, `late_transfer`, `underpaid_expired`). `escrowRefundedTotal` / `isEscrowRefund` (domain) and `escrowRefundedOfDocs` (Functions) sum only escrow refunds; release (`runBookingSweeps`), payouts (`FirestorePayoutStore`, `MemoryPayoutStore`) and earnings (`FirestoreEarningsStore`, `MemoryEarningsStore`) use them. Firestore writes the field and reads a missing one as true (rows written before it). Data model docs list the field.
+- Important 2: booking payments count in earnings only when `paid`, `partially_refunded` or `refunded` (`earningItemOf`, plus the booking `getSubject` of both earnings stores); completion and `openDispute` pick only the `paid`/`partially_refunded` payment (`isSettledPayment`).
+- Important 3 (Ruling 11): `handleCreatePayment(request, deps, env)` refuses with `not_eligible` before any read or write unless `checkoutGatewayAvailable(env)` (today = `fakePaymentsAllowed`); the dev project and `demo-*` emulators work as before.
+- Important 4: "Tạo QR mới" stays busy until the screen shows the created checkout (same payment id or a later attempt, checked on return and in `didUpdateWidget`); an error frees it. `FakeBookingRepository.deferCheckoutUpdates` / `releaseCheckoutUpdates` simulate a slow snapshot, and the fake numbers attempts after the shown checkout like the server.
+- Important 5: push bodies say "Đã hoàn {p}% số đã trả", "Hoàn {p}% số đã trả" and "Khoản thanh toán buổi chụp …"; no user-visible "cọc" is left in `packages/domain/src` or the Functions sources; main spec §S17 row updated.
+
 ## Not run (sandbox)
 - The Firestore rules emulator tests (`app_flutter/firebase/rules-test`, including the new "payment_notifications is denied to clients" test) and the Functions integration tests (`npm run test:integration`, including the payment webhook flow against the emulators) were written but not run in the sandbox; CI runs them on push. The other checks (domain and Functions unit tests, typecheck, lint, Flutter analyze and tests) ran inside the sandbox during each task.
 
@@ -115,6 +128,7 @@ Verbatim from the SDD ledger, grouped by task. Lines tagged FINAL REVIEW TRIAGE 
 
 ## Notes for the next unit
 - Task 3: handoff to T4: reconcile query must skip legacy/ticket created payments; underpaid_expired refund is one refund without providerRef (real adapter may need per-transfer refunds → defer to intermediary unit). (the sweep skips payments without a transfer code, so tickets and legacy payments are left alone)
-- Push bodies in `packages/domain/src/notification_render.ts` (lines ~71–87) still say "Cọc…" (Task 8 triage item).
+- Push bodies no longer say "Cọc…" (fixed in the final review wave). `remaining-screens.md` ~697 still has "Cọc {số tiền}" on the photographer escrow line (Task 9 minor).
+- Production cannot open payments until the real intermediary's gateway is wired and `checkoutGatewayAvailable` says so (Ruling 11).
 - Stored names stay `deposit`/`remaining`/`depositProvider`/`depositPaidAt` (Decision 1); `deposit` is the full price and `remaining` is 0. Arb keys such as `bookDepositToday`, `payAwaitingDeposit` keep their names with new values.
 - The dev webhook is public with a committed test secret (fake money only); the real provider unit must use `defineSecret` and its own signature scheme.
