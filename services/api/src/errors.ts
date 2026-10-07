@@ -19,6 +19,7 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   sold_out: 409,
   price_changed: 409,
   not_eligible: 403,
+  not_accepting_orders: 403,
   phone_required: 422,
   deadline_passed: 422,
   limit_exceeded: 429,
