@@ -1,8 +1,10 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import {
-  cancelEvent,
+  cancelEventWithRefunds,
   cancelRegistration,
+  checkTicketPayment,
+  confirmFakeTicketPayment,
   checkInRegistration,
   publishEvent,
   registerEvent,
@@ -11,10 +13,12 @@ import {
   updateEvent,
   type EventCaller,
   type EventDeps,
+  type EventPaymentDeps,
   type RegisterResult,
   type RegistrationStatus,
 } from '@photobooking/domain';
 import { toHttpsError } from './errors.js';
+import { assertFakePaymentsAllowed } from '../infra/fake_payments.js';
 
 /** The part of a callable request the event handlers use (a `CallableRequest` fits). */
 export interface EventCallableInput {
@@ -99,13 +103,22 @@ export async function handleUpdateEvent(
   return {};
 }
 
-/** `{eventId}` → `{paidRegistrationIds}` (refunds of paid tickets arrive with the paid path) */
+/**
+ * `{eventId}` → `{paidRegistrationIds, refunded, failed}`: cancels, then refunds every ticket whose
+ * money is held (100%); a refund that fails here is retried by eventClock.
+ */
 export async function handleCancelEvent(
   request: EventCallableInput,
-  deps: EventDeps,
-): Promise<{ paidRegistrationIds: string[] }> {
+  deps: EventPaymentDeps,
+): Promise<{ paidRegistrationIds: string[]; refunded: number; failed: number }> {
   const caller = eventCallerOf(request);
-  return runEventCallable('cancelEvent', () => cancelEvent(deps, caller, dataOf(request)));
+  return runEventCallable('cancelEvent', () =>
+    cancelEventWithRefunds(deps, caller, dataOf(request), (registrationId, e) => {
+      logger.warn('cancelEvent refund left for the clock', {
+        registrationId,
+        error: e instanceof Error ? e.name : 'unknown',
+      });
+    }));
 }
 
 /** `{eventId, accept}` → `{}`; the hosting photographer only (checked in the domain). */
@@ -118,10 +131,13 @@ export async function handleRespondToHostConsent(
   return {};
 }
 
-/** `{eventId, quantity, name}` → `{registrationId, status, paymentId, payUrl, holdExpiresAt}` */
+/**
+ * `{eventId, quantity, name, provider?}` → `{registrationId, status, paymentId, payUrl, holdExpiresAt}`.
+ * Paid events need `provider` (`momo` | `vnpay` | `fake`) and return a 10-minute hold with a pay URL.
+ */
 export async function handleRegisterEvent(
   request: EventCallableInput,
-  deps: EventDeps,
+  deps: EventPaymentDeps,
 ): Promise<{
   registrationId: string;
   status: RegistrationStatus;
@@ -140,10 +156,10 @@ export async function handleRegisterEvent(
   };
 }
 
-/** `{eventId, registrationId}` → `{status, refundPercent}` */
+/** `{eventId, registrationId}` → `{status, refundPercent}`; a paid ticket ≥ 48 h before is refunded 100%. */
 export async function handleCancelRegistration(
   request: EventCallableInput,
-  deps: EventDeps,
+  deps: EventPaymentDeps,
 ): Promise<{ status: RegistrationStatus; refundPercent: number | null }> {
   const caller = eventCallerOf(request);
   return runEventCallable('cancelRegistration', () => cancelRegistration(deps, caller, dataOf(request)));
@@ -156,4 +172,27 @@ export async function handleCheckInRegistration(
 ): Promise<{ name: string; quantity: number }> {
   const caller = eventCallerOf(request);
   return runEventCallable('checkInRegistration', () => checkInRegistration(deps, caller, dataOf(request)));
+}
+
+/**
+ * `{paymentId}` → `{status}`: fake gateway mode, the payer confirms their own ticket payment.
+ * Refused with `fake_payments_disabled` outside the emulator and the dev project (security gate).
+ */
+export async function handleConfirmFakeTicketPayment(
+  request: EventCallableInput,
+  deps: EventPaymentDeps,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): Promise<{ status: RegistrationStatus }> {
+  const caller = eventCallerOf(request);
+  assertFakePaymentsAllowed(env);
+  return runEventCallable('confirmFakeTicketPayment', () => confirmFakeTicketPayment(deps, caller, dataOf(request)));
+}
+
+/** `{eventId, registrationId}` → `{paid, status}`: asks the gateway and applies a payment it reports. */
+export async function handleCheckTicketPayment(
+  request: EventCallableInput,
+  deps: EventPaymentDeps,
+): Promise<{ paid: boolean; status: RegistrationStatus }> {
+  const caller = eventCallerOf(request);
+  return runEventCallable('checkTicketPayment', () => checkTicketPayment(deps, caller, dataOf(request)));
 }

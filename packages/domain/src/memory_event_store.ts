@@ -1,4 +1,5 @@
 import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
+import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import {
   RetryableConflict,
   type AvailabilityRecord,
@@ -19,6 +20,11 @@ export class MemoryEventStore implements EventStore {
   readonly availabilityDays = new Map<string, AvailabilityRecord>(); // `${uid}/${dayKey}`
   readonly chats = new Map<string, EventGroupChatSeed>();
   readonly chatReadOnlyAt = new Map<string, Date>();
+  readonly payments = new Map<string, Payment>();
+  readonly refunds = new Map<string, Refund>();
+  readonly ledger: LedgerEntry[] = [];
+  /** Test hook: the next transaction attempts throw this before committing (a crash or outage). */
+  failNext: { error: Error; times: number } | null = null;
   /** Committed write count. */
   writes = 0;
   /** Number of transaction attempts that were retried. */
@@ -48,6 +54,23 @@ export class MemoryEventStore implements EventStore {
     this.availabilityDays.set(`${uid}/${dayKey}`, rec);
   }
 
+  seedPayment(p: Payment): void {
+    this.payments.set(p.id, p);
+  }
+
+  refundsOf(paymentId: string): Refund[] {
+    return [...this.refunds.values()].filter((r) => r.paymentId === paymentId);
+  }
+
+  ledgerOf(paymentId: string): LedgerEntry[] {
+    return this.ledger.filter((e) => e.paymentId === paymentId);
+  }
+
+  private heldTicketPaymentsNow(eventId: string): Payment[] {
+    return [...this.payments.values()].filter((p) => p.subjectType === 'event_registration' && p.eventId === eventId
+      && p.status === 'paid' && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded'));
+  }
+
   registrationsOf(eventId: string): RegistrationDoc[] {
     return [...this.registrations.values()].filter((r) => r.eventId === eventId);
   }
@@ -64,6 +87,11 @@ export class MemoryEventStore implements EventStore {
   }
 
   private async attempt<T>(fn: (tx: EventTx) => Promise<T>): Promise<T> {
+    if (this.failNext !== null) {
+      const f = this.failNext;
+      this.failNext = f.times > 1 ? { ...f, times: f.times - 1 } : null;
+      throw f.error;
+    }
     const staged: Array<() => void> = [];
     // Optimistic concurrency: remember the revision of everything read, check it again at commit.
     const seen = new Map<string, number>();
@@ -83,6 +111,8 @@ export class MemoryEventStore implements EventStore {
     const key = (eventId: string, regId: string): string => `${eventId}/${regId}`;
     const regsKey = (eventId: string): string => `regs:${eventId}`;
     const regWrite = (r: RegistrationDoc): string[] => [`reg:${key(r.eventId, r.id)}`, regsKey(r.eventId)];
+    const payWrite = (p: Payment): string[] =>
+      [`pay:${p.id}`, `paykey:${p.idempotencyKey}`, ...(p.eventId === undefined ? [] : [`evpays:${p.eventId}`])];
 
     const tx: EventTx = {
       getEvent: async (id) => {
@@ -124,6 +154,18 @@ export class MemoryEventStore implements EventStore {
         read('availability', `av:${uid}/${dayKey}`);
         return this.availabilityDays.get(`${uid}/${dayKey}`) ?? null;
       },
+      getPayment: async (id) => {
+        read('getPayment', `pay:${id}`);
+        return this.payments.get(id) ?? null;
+      },
+      paymentByIdempotencyKey: async (k) => {
+        read('paymentByIdempotencyKey', `paykey:${k}`);
+        return [...this.payments.values()].find((p) => p.idempotencyKey === k) ?? null;
+      },
+      heldTicketPayments: async (eventId) => {
+        read('heldTicketPayments', `evpays:${eventId}`);
+        return this.heldTicketPaymentsNow(eventId);
+      },
       putEvent: (e) => write(() => { this.events.set(e.id, e); }, `event:${e.id}`),
       putHashtag: (k, eventId) => write(() => { this.hashtags.set(k, eventId); }, `hashtag:${k}`),
       deleteHashtag: (k) => write(() => { this.hashtags.delete(k); }, `hashtag:${k}`),
@@ -131,6 +173,10 @@ export class MemoryEventStore implements EventStore {
         write(() => { this.ticketCodes.set(code, { eventId, registrationId }); }, `code:${code}`),
       putRegistration: (r) => write(() => { this.registrations.set(key(r.eventId, r.id), r); }, ...regWrite(r)),
       putRegistrationContact: (eventId, regId, c) => write(() => { this.contacts.set(key(eventId, regId), c); }),
+      deleteRegistrationContact: (eventId, regId) => write(() => { this.contacts.delete(key(eventId, regId)); }),
+      putPayment: (p) => write(() => { this.payments.set(p.id, p); }, ...payWrite(p)),
+      putRefund: (r) => write(() => { this.refunds.set(r.id, r); }, `refund:${r.id}`),
+      putLedgerEntry: (e) => write(() => { this.ledger.push(e); }),
       setAvailabilityBooked: (uid, dayKey, eventId) =>
         write(() => { this.availabilityDays.set(`${uid}/${dayKey}`, { state: 'booked', eventId }); }, `av:${uid}/${dayKey}`),
       deleteAvailability: (uid, dayKey) =>
@@ -158,6 +204,16 @@ export class MemoryEventStore implements EventStore {
       .filter((e) => (e.status === 'open' || e.status === 'full' || e.status === 'closed')
         && e.endAt !== null && e.endAt.getTime() <= now.getTime())
       .slice(0, limit);
+  }
+
+  async expiredHoldsAll(now: Date, limit: number): Promise<RegistrationDoc[]> {
+    return [...this.registrations.values()]
+      .filter((r) => r.status === 'held' && r.holdExpiresAt !== null && r.holdExpiresAt.getTime() <= now.getTime())
+      .slice(0, limit);
+  }
+
+  async paidUnrefundedOfCancelled(limit: number): Promise<RegistrationDoc[]> {
+    return [...this.registrations.values()].filter((r) => r.refundDue === true).slice(0, limit);
   }
 
   async dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {

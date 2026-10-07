@@ -134,6 +134,12 @@ describe('earnings triggers', () => {
     assert.equal(w.earnings.summaries.get('p1')?.soonAmount, 0);
   });
 
+  it('platform ticket money has no earnings page (payee platform is skipped)', async () => {
+    const w = world();
+    assert.equal(await handlePaymentWrite('pay1', undefined, { payeeId: 'platform' }, w.deps), null);
+    assert.equal(w.earnings.summaries.has('platform'), false);
+  });
+
   it('a payout write refreshes every payment in it and takes paidOutAt from the payout', async () => {
     const w = world();
     withBooking(w, payment({ escrowStatus: 'paid_out', payoutId: 'po1', updatedAt: '2026-10-10T09:00:00.000Z' }));

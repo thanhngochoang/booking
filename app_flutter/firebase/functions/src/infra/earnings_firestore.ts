@@ -1,6 +1,7 @@
 import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
 import {
   EARNING_STATES,
+  formatVnDate,
   type EarningItem,
   type EarningState,
   type EarningSubject,
@@ -79,6 +80,22 @@ export class FirestoreEarningsStore implements EarningsStore {
           return snap.docs.reduce((n, d) => n + (typeof d.data().amount === 'number' ? (d.data().amount as number) : 0), 0);
         },
         getSubject: async (p): Promise<EarningSubject | null> => {
+          if (p.subjectType === 'event_registration') {
+            // A ticket: the attendee, the event title and its day (snapshot on the registration).
+            // An unpaid intent (escrow `held` from creation, like a deposit intent) is not money yet.
+            if (p.eventId === undefined || p.status !== 'paid') return null;
+            const r = (await fTx.get(
+              this.db.collection('events').doc(p.eventId).collection('registrations').doc(p.subjectId),
+            )).data();
+            if (r === undefined) return null;
+            const ev = (r.event ?? {}) as { title?: unknown; startAt?: unknown };
+            const start = ev.startAt instanceof Timestamp ? ev.startAt.toDate() : null;
+            return {
+              counterpartName: typeof r.userName === 'string' ? r.userName : '',
+              label: typeof ev.title === 'string' ? ev.title : '',
+              day: start === null ? '' : formatVnDate(start),
+            };
+          }
           if (p.subjectType !== 'booking') return null;
           const b = await fTx.get(this.db.collection(BOOKINGS_COLLECTION).doc(p.subjectId));
           const d = b.data();

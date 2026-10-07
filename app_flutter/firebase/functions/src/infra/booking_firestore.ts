@@ -158,6 +158,8 @@ export function paymentToFirestore(p: Payment): DocumentData {
   return {
     subjectType: p.subjectType,
     subjectId: p.subjectId,
+    // Ticket payments carry their event (the event's escrow sweeps query it); bookings write null.
+    eventId: p.eventId ?? null,
     payerId: p.payerId,
     payeeId: p.payeeId,
     provider: p.provider,
@@ -182,6 +184,7 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     id,
     subjectType: d.subjectType,
     subjectId: d.subjectId,
+    ...(typeof d.eventId === 'string' && d.eventId !== '' ? { eventId: d.eventId } : {}),
     payerId: d.payerId,
     payeeId: d.payeeId,
     provider: d.provider as PaymentProvider,

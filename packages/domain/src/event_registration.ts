@@ -1,14 +1,15 @@
 import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
+import type { PaymentGateway } from './booking_ports.js';
+import type { Payment } from './escrow.js';
 import {
   CHECKIN_GRACE_HOURS,
-  FREE_CANCEL_HOURS,
+  HOLD_MINUTES,
   TICKETS_PER_REGISTRATION,
   isEventManager,
   statusAfterSeats,
   type EventCaller,
   type EventRecord,
-  type RegistrationContact,
   type RegistrationDoc,
   type RegistrationStatus,
 } from './event.js';
@@ -16,7 +17,14 @@ import { parseVnDateTime } from './booking_policy.js';
 import type { EventDeps } from './event_ports.js';
 import { RetryableConflict } from './event_ports.js';
 import { isId } from './ids.js';
-import type { UserContactRecord } from './ports.js';
+import {
+  issueTicketIntent,
+  newTicketPayment,
+  parseTicketProvider,
+  refundTicket,
+  ticketIdempotencyKey,
+  ticketRefundPercent,
+} from './event_payments.js';
 import { requireCustomerPhone } from './require_phone.js';
 import { isTicketCode, ticketCodeCandidates } from './ticket_code.js';
 
@@ -54,19 +62,15 @@ const resultOf = (r: RegistrationDoc): RegisterResult => ({
  * start, nothing after (cancelling is still allowed then; the money stays held for the host).
  */
 export function cancellationRefundPercent(startAt: Date, now: Date): 0 | 100 {
-  return startAt.getTime() - now.getTime() >= FREE_CANCEL_HOURS * HOUR_MS ? 100 : 0;
+  return ticketRefundPercent(startAt, now);
 }
 
-/**
- * The private contact snapshot of a ticket that unlocks contact (a paid ticket after payment, O3).
- * Task 9 writes it when the payment lands; free registrations never get one.
- */
-export function registrationContactOf(name: string, phone: string, record: UserContactRecord | null): RegistrationContact {
-  const r = (record ?? {}) as { allowZalo?: unknown; allowWhatsApp?: unknown };
-  return { name, phone, allowZalo: r.allowZalo === true, allowWhatsApp: r.allowWhatsApp === true };
-}
+/** Register needs the payment gateway only for paid events (Decision 27 → Task 9). */
+export type RegisterDeps = EventDeps & { readonly gateway?: PaymentGateway };
 
-export async function registerEvent(deps: EventDeps, caller: EventCaller, raw: unknown): Promise<RegisterResult> {
+type RegisterOut = { result: RegisterResult | null; soldOut: boolean; intent: Payment | null };
+
+export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw: unknown): Promise<RegisterResult> {
   const r = obj(raw);
   const eventId = idOf(r.eventId);
   const q = r.quantity;
@@ -76,9 +80,10 @@ export async function registerEvent(deps: EventDeps, caller: EventCaller, raw: u
   const name = r.name.normalize('NFC').trim();
   const n = graphemeCount(name);
   if (n < 1 || n > NAME_MAX) throw new DomainError('invalid_argument');
+  const provider = parseTicketProvider(r.provider);
   const profile = await deps.people.user(caller.uid);
 
-  const out = await deps.events.runTransaction(async (tx) => {
+  const out = await deps.events.runTransaction(async (tx): Promise<RegisterOut> => {
     const now = deps.clock.now();
     const ev = await tx.getEvent(eventId);
     if (!ev || ev.status === 'draft') throw new DomainError('not_found');
@@ -89,10 +94,29 @@ export async function registerEvent(deps: EventDeps, caller: EventCaller, raw: u
       || ev.registrationDeadline === null || now.getTime() >= ev.registrationDeadline.getTime()) {
       throw new DomainError('deadline_passed');
     }
+    const paidEvent = (ev.price ?? 0) > 0;
+    if (paidEvent && deps.gateway === undefined) throw new DomainError('not_eligible');
     const active = await tx.activeRegistrationOf(ev.id, caller.uid);
-    if (active) return { result: resultOf(active), soldOut: false };
-    if ((ev.price ?? 0) > 0) throw new DomainError('not_eligible'); // Decision 27; Task 9 replaces this
     const stale = await tx.expiredHolds(ev.id, now);
+    // A lapsed hold is not "the active registration": a new tap starts a new hold (Task 1 carry).
+    const live = active !== null && !stale.some((s) => s.id === active.id) ? active : null;
+    if (live !== null && !(paidEvent && live.status === 'held')) {
+      return { result: resultOf(live), soldOut: false, intent: null };
+    }
+    if (paidEvent && provider === null) throw new DomainError('invalid_argument');
+    if (live !== null && provider !== null) {
+      // Same hold, another tap: reuse the provider's payment, or open a second intent (like createDeposit).
+      const existing = await tx.paymentByIdempotencyKey(ticketIdempotencyKey(live.id, provider));
+      const payment = existing ?? newTicketPayment({
+        id: deps.ids.newId(), event: ev, registrationId: live.id, payerId: caller.uid, provider, amount: live.amount, now,
+      });
+      if (existing === null) tx.putPayment(payment);
+      const reg = live.paymentId === payment.id
+        ? live
+        : { ...live, paymentId: payment.id, updatedAt: now, version: live.version + 1 };
+      if (reg !== live) tx.putRegistration(reg);
+      return { result: resultOf(reg), soldOut: false, intent: payment };
+    }
     const codes = ticketCodeCandidates(ev.startAt as Date, deps.random, 5);
     const taken = await Promise.all(codes.map((c) => tx.ticketCodeTaken(c)));
     const code = codes.find((_, i) => !taken[i]);
@@ -109,17 +133,27 @@ export async function registerEvent(deps: EventDeps, caller: EventCaller, raw: u
         const released = { ...ev, heldCount: held };
         tx.putEvent({ ...released, status: statusAfterSeats(released, now), version: ev.version + 1, updatedAt: now });
       }
-      return { result: null, soldOut: true }; // a throw would abort the release above
+      return { result: null, soldOut: true, intent: null }; // a throw would abort the release above
     }
     const regId = deps.ids.newId();
     const start = ev.startAt as Date;
     const loc = ev.location as NonNullable<EventRecord['location']>;
+    const payment = paidEvent && provider !== null
+      ? newTicketPayment({
+        id: deps.ids.newId(), event: ev, registrationId: regId, payerId: caller.uid, provider,
+        amount: q * (ev.price as number), now,
+      })
+      : null;
     const reg: RegistrationDoc = {
       id: regId, eventId: ev.id, userId: caller.uid, userName: name,
       userAvatarUrl: profile?.avatarUrl ?? null,
-      quantity: q, amount: 0, status: 'paid', holdExpiresAt: null,
-      ticketCode: code, paymentId: null,
-      contactEligible: false, // O3: a free ticket opens the group chat only, never phone/Zalo/WhatsApp
+      quantity: q,
+      amount: payment?.amount ?? 0,
+      // Free: a ticket at once. Paid: seats held 10 minutes while the customer pays (Decision 9).
+      status: payment === null ? 'paid' : 'held',
+      holdExpiresAt: payment === null ? null : new Date(now.getTime() + HOLD_MINUTES * 60_000),
+      ticketCode: code, paymentId: payment?.id ?? null,
+      contactEligible: false, // O3: free never unlocks contact; a paid ticket does once the payment lands
       checkedInAt: null, cancelledAt: null, refundPercent: null,
       event: {
         title: ev.title, type: ev.type, startAt: start, endAt: ev.endAt as Date,
@@ -129,23 +163,28 @@ export async function registerEvent(deps: EventDeps, caller: EventCaller, raw: u
     };
     tx.putTicketCode(code, ev.id, regId);
     tx.putRegistration(reg);
-    const next = { ...ev, heldCount: held, registeredCount: ev.registeredCount + q, hashtagLocked: true };
+    if (payment !== null) tx.putPayment(payment);
+    const next = payment === null
+      ? { ...ev, heldCount: held, registeredCount: ev.registeredCount + q, hashtagLocked: true }
+      : { ...ev, heldCount: held + q, hashtagLocked: true };
     tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
-    return { result: resultOf(reg), soldOut: false };
+    return { result: resultOf(reg), soldOut: false, intent: payment };
   });
   if (out.soldOut || out.result === null) throw new DomainError('sold_out');
-  return out.result;
+  if (out.intent === null || deps.gateway === undefined) return out.result;
+  const payUrl = await issueTicketIntent({ ...deps, gateway: deps.gateway }, out.intent);
+  return { ...out.result, payUrl };
 }
 
 export async function cancelRegistration(
-  deps: EventDeps,
+  deps: RegisterDeps,
   caller: EventCaller,
   raw: unknown,
 ): Promise<{ status: RegistrationStatus; refundPercent: number | null }> {
   const r = obj(raw);
   const eventId = idOf(r.eventId);
   const regId = idOf(r.registrationId);
-  return deps.events.runTransaction(async (tx) => {
+  const decided = await deps.events.runTransaction(async (tx) => {
     const now = deps.clock.now();
     const reg = await tx.getRegistration(eventId, regId);
     if (reg === null) throw new DomainError('not_found');
@@ -153,21 +192,36 @@ export async function cancelRegistration(
     const ev = await tx.getEvent(eventId);
     if (ev === null) throw new DomainError('not_found');
     if (reg.status === 'cancelled' || reg.status === 'refunded') {
-      return { status: reg.status, refundPercent: reg.refundPercent };
+      return { status: reg.status, refundPercent: reg.refundPercent, refund: false };
     }
     if (reg.checkedInAt !== null) throw new DomainError('conflict');
     if (ev.startAt === null || now.getTime() >= ev.startAt.getTime()) throw new DomainError('not_eligible');
     if (ev.status === 'cancelled' || ev.status === 'completed') throw new DomainError('not_eligible');
-    // A paid ticket's refund or no-refund cancel (O4, `cancellationRefundPercent`) lands with Task 9.
-    if (reg.amount > 0) throw new DomainError('not_eligible');
+    if (reg.status === 'paid' && reg.amount > 0) {
+      // ≥ 48 h: refunded in its own transaction below (refundTicket). Later: O4, no refund, seat back,
+      // the money stays held and goes to the host with the other tickets after the event.
+      if (ticketRefundPercent(ev.startAt, now) === 100) return { status: reg.status, refundPercent: null, refund: true };
+      tx.putRegistration({
+        ...reg, status: 'cancelled', cancelledAt: now, refundPercent: 0, updatedAt: now, version: reg.version + 1,
+      });
+      tx.deleteRegistrationContact(eventId, regId);
+      const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
+      tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
+      return { status: 'cancelled' as const, refundPercent: 0, refund: false };
+    }
 
     tx.putRegistration({ ...reg, status: 'cancelled', cancelledAt: now, updatedAt: now, version: reg.version + 1 });
     const next = reg.status === 'held'
-      ? { ...ev, heldCount: ev.heldCount - reg.quantity }
+      ? { ...ev, heldCount: Math.max(0, ev.heldCount - reg.quantity) }
       : { ...ev, registeredCount: ev.registeredCount - reg.quantity };
     tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
-    return { status: 'cancelled' as const, refundPercent: null };
+    return { status: 'cancelled' as const, refundPercent: null, refund: false };
   });
+  if (!decided.refund) return { status: decided.status, refundPercent: decided.refundPercent };
+  if (deps.gateway === undefined) throw new DomainError('not_eligible');
+  const done = await refundTicket({ ...deps, gateway: deps.gateway }, eventId, regId, 100, 'customer_cancel');
+  if (done === 'skipped') throw new DomainError('conflict');
+  return { status: 'refunded', refundPercent: 100 };
 }
 
 export async function checkInRegistration(

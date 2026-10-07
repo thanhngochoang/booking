@@ -17,7 +17,13 @@ import {
   handleProposeReschedule,
   handleAnswerReschedule,
 } from './callables/chat.js';
-import { CALLABLE_OPTIONS, PAYOUT_ACCOUNT_KEY, SCHEDULE_OPTIONS, TRIGGER_OPTIONS } from './config.js';
+import {
+  CALLABLE_OPTIONS,
+  PAYMENT_CALLABLE_OPTIONS,
+  PAYOUT_ACCOUNT_KEY,
+  SCHEDULE_OPTIONS,
+  TRIGGER_OPTIONS,
+} from './config.js';
 import { handleSavePayoutAccount } from './callables/payout_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
@@ -73,14 +79,16 @@ import {
   handleCancelEvent,
   handleCancelRegistration,
   handleCheckInRegistration,
+  handleCheckTicketPayment,
+  handleConfirmFakeTicketPayment,
   handlePublishEvent,
   handleRegisterEvent,
   handleRespondToHostConsent,
   handleSaveEventDraft,
   handleUpdateEvent,
 } from './callables/event.js';
-import { handleEventClock } from './scheduled/event_clock.js';
-import { liveEventCallableDeps, liveEventDeps } from './infra/live_event.js';
+import { handleEventClock, handleReleaseEventHolds } from './scheduled/event_clock.js';
+import { liveEventCallableDeps, liveEventDeps, liveEventPaymentDeps } from './infra/live_event.js';
 import { handleModerateEventTimeline, handleShareEventPost } from './callables/event_timeline.js';
 import {
   handleModerateEventChat,
@@ -101,7 +109,7 @@ export const createBooking = onCall(CALLABLE_OPTIONS, (request) => handleCreateB
 /** Deposit payment intent creation */
 export const createDeposit = onCall(CALLABLE_OPTIONS, (request) => handleCreateDeposit(request, liveBookingDeps()));
 
-/** Fake payment confirmation (dev/test) */
+/** Fake payment confirmation: emulator and dev project only (`fake_payments_disabled` elsewhere). */
 export const confirmFakePayment = onCall(CALLABLE_OPTIONS, (request) => handleConfirmFakePayment(request, liveBookingDeps()));
 
 /** Check deposit payment status */
@@ -420,20 +428,37 @@ export const publishEvent = onCall(CALLABLE_OPTIONS, (request) => handlePublishE
 /** `{eventId, …fields}`: edits a published event. */
 export const updateEvent = onCall(CALLABLE_OPTIONS, (request) => handleUpdateEvent(request, liveEventDeps()));
 
-/** `{eventId}` → `{paidRegistrationIds}` */
-export const cancelEvent = onCall(CALLABLE_OPTIONS, (request) => handleCancelEvent(request, liveEventDeps()));
+/** `{eventId}` → `{paidRegistrationIds, refunded, failed}`: cancels and refunds every paid ticket 100%. */
+export const cancelEvent = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 60 }, (request) =>
+  handleCancelEvent(request, liveEventPaymentDeps()),
+);
 
 /** `{eventId, accept}`: the photographer answers a staff-created draft (24 h). */
 export const respondToHostConsent = onCall(CALLABLE_OPTIONS, (request) =>
   handleRespondToHostConsent(request, liveEventDeps()),
 );
 
-/** `{eventId, quantity, name}` → registration (free events: paid at once). */
-export const registerEvent = onCall(CALLABLE_OPTIONS, (request) => handleRegisterEvent(request, liveEventDeps()));
+/**
+ * `{eventId, quantity, name, provider?}` → registration (free events: paid at once; paid events: a
+ * 10-minute hold with `paymentId`, `payUrl`, `holdExpiresAt`). 30 s: contended transactions.
+ */
+export const registerEvent = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleRegisterEvent(request, liveEventPaymentDeps()),
+);
 
-/** `{eventId, registrationId}` */
-export const cancelRegistration = onCall(CALLABLE_OPTIONS, (request) =>
-  handleCancelRegistration(request, liveEventDeps()),
+/** `{eventId, registrationId}` → `{status, refundPercent}` (paid ≥ 48 h before: refunded 100%). */
+export const cancelRegistration = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCancelRegistration(request, liveEventPaymentDeps()),
+);
+
+/** `{paymentId}` → `{status}`: fake ticket payment, emulator and dev project only. */
+export const confirmFakeTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleConfirmFakeTicketPayment(request, liveEventPaymentDeps()),
+);
+
+/** `{eventId, registrationId}` → `{paid, status}`: back from the gateway, or "Thanh toán tiếp". */
+export const checkTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCheckTicketPayment(request, liveEventPaymentDeps()),
 );
 
 /** `{eventId, ticketCode}` → `{name, quantity}` */
@@ -441,9 +466,17 @@ export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
   handleCheckInRegistration(request, liveEventDeps()),
 );
 
-/** Every 5 minutes: closes registration, completes events, expires unanswered host invitations. */
+/**
+ * Every 5 minutes: closes registration, completes events (ticket money then waits 24 h for the
+ * bookingClock release), expires unanswered host invitations, retries refunds of cancelled events.
+ */
 export const eventClock = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 5 minutes', timeoutSeconds: 120 }, async () => {
   await handleEventClock();
+});
+
+/** Every minute: expired 10-minute ticket holds give their seats back. */
+export const releaseEventHolds = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 1 minutes' }, async () => {
+  await handleReleaseEventHolds();
 });
 
 // ---- event timeline and group chat (plan 10c) ----

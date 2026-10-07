@@ -1,4 +1,6 @@
+import type { PaymentGateway } from './booking_ports.js';
 import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
+import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import type { Clock, IdGenerator, UserContactReader } from './ports.js';
 import type { RandomBytes } from './ids.js';
 
@@ -47,12 +49,25 @@ export interface EventTx {
   /** held, `holdExpiresAt <= now`. */
   expiredHolds(eventId: string, now: Date): Promise<RegistrationDoc[]>;
   availability(photographerId: string, dayKey: string): Promise<AvailabilityRecord | null>;
+  /** `payments/{id}` (the same collection as booking deposits). */
+  getPayment(id: string): Promise<Payment | null>;
+  paymentByIdempotencyKey(key: string): Promise<Payment | null>;
+  /**
+   * Ticket payments of the event whose money is held: `status == paid` and escrow `held` or
+   * `partially_refunded` (late-cancelled tickets included; refunded and unpaid intents excluded).
+   */
+  heldTicketPayments(eventId: string): Promise<Payment[]>;
   putEvent(e: EventRecord): void;
   putHashtag(key: string, eventId: string): void;
   deleteHashtag(key: string): void;
   putTicketCode(code: string, eventId: string, registrationId: string): void;
   putRegistration(r: RegistrationDoc): void;
   putRegistrationContact(eventId: string, regId: string, c: RegistrationContact): void;
+  /** The phone snapshot goes when the ticket stops unlocking contact (cancelled or refunded). */
+  deleteRegistrationContact(eventId: string, regId: string): void;
+  putPayment(p: Payment): void;
+  putRefund(r: Refund): void;
+  putLedgerEntry(e: LedgerEntry): void;
   setAvailabilityBooked(photographerId: string, dayKey: string, eventId: string): void;
   deleteAvailability(photographerId: string, dayKey: string): void;
   putGroupChat(chat: EventGroupChatSeed): void;
@@ -68,6 +83,10 @@ export interface EventStore {
   dueForCompletion(now: Date, limit: number): Promise<EventRecord[]>;
   /** O1: drafts with `hostConsent = pending` and `hostConsentExpiresAt <= now`. */
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]>;
+  /** `held` registrations of any event with `holdExpiresAt <= now` (the 1-minute hold sweep). */
+  expiredHoldsAll(now: Date, limit: number): Promise<RegistrationDoc[]>;
+  /** Registrations with `refundDue == true`: tickets of a cancelled event still to refund. */
+  paidUnrefundedOfCancelled(limit: number): Promise<RegistrationDoc[]>;
 }
 
 export interface EventPeople {
@@ -85,4 +104,9 @@ export interface EventDeps {
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly random: RandomBytes;
+}
+
+/** Paid tickets: the booking payment gateway (fake in phase 1; VietQR/intermediary later, #129). */
+export interface EventPaymentDeps extends EventDeps {
+  readonly gateway: PaymentGateway;
 }

@@ -22,6 +22,8 @@ export interface Payment {
   readonly id: string;
   readonly subjectType: PaymentSubject;
   readonly subjectId: string;
+  /** Ticket payments only: the event of the registration (`subjectId`), for the event's escrow sweeps. */
+  readonly eventId?: string;
   readonly payerId: string;
   readonly payeeId: string;
   readonly provider: PaymentProvider;

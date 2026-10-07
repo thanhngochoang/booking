@@ -3,6 +3,7 @@ import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
 import { isId } from './ids.js';
 import { isValidHashtag } from './event_hashtag.js';
+import type { UserContactRecord } from './ports.js';
 
 export const EVENT_TYPES = ['photo_walk', 'mini_session', 'workshop', 'cosplay', 'other'] as const;
 export const EVENT_STATUSES = ['draft', 'open', 'full', 'closed', 'cancelled', 'completed'] as const;
@@ -123,6 +124,11 @@ export interface RegistrationDoc {
   readonly checkedInAt: Date | null;
   readonly cancelledAt: Date | null;
   readonly refundPercent: number | null;
+  /**
+   * The event was cancelled while this ticket's money was held: a 100% refund is still to run
+   * (cleared when it lands; the event clock retries leftovers). Absent means false.
+   */
+  readonly refundDue?: boolean;
   readonly event: {
     readonly title: string;
     readonly type: EventType;
@@ -144,6 +150,15 @@ export interface RegistrationContact {
   readonly phone: string;
   readonly allowZalo: boolean;
   readonly allowWhatsApp: boolean;
+}
+
+/**
+ * The private contact snapshot of a ticket that unlocks contact (a paid ticket after payment, O3).
+ * Written when the payment lands; free registrations never get one.
+ */
+export function registrationContactOf(name: string, phone: string, record: UserContactRecord | null): RegistrationContact {
+  const r = (record ?? {}) as { allowZalo?: unknown; allowWhatsApp?: unknown };
+  return { name, phone, allowZalo: r.allowZalo === true, allowWhatsApp: r.allowWhatsApp === true };
 }
 
 export const isFreeEvent = (e: Pick<EventRecord, 'price'>): boolean => (e.price ?? 0) === 0;

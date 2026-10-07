@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { MemoryEventStore, type EventDeps } from '@photobooking/domain';
+import { FakePaymentGateway, MemoryEventStore, type EventDeps, type EventPaymentDeps } from '@photobooking/domain';
 import {
   eventCallerOf,
   handleCancelEvent,
@@ -26,7 +26,8 @@ describe('event callables', () => {
   let now: Date;
   let invited: Array<{ hostId: string; eventId: string; title: string; expiresAt: string }>;
 
-  const deps = (): EventCallableDeps => ({
+  const deps = (): EventCallableDeps & EventPaymentDeps => ({
+    gateway: new FakePaymentGateway(),
     events: store,
     people: {
       photographer: async (uid) =>
@@ -175,9 +176,9 @@ describe('event callables', () => {
     await handleSaveEventDraft({ ...ph1, data: draft() }, deps());
     await handlePublishEvent({ ...ph1, data: { eventId: EVENT_ID } }, deps());
     now = new Date('2026-10-12T00:00:00.000Z'); // after the deadline (start - 12 h)
-    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 1, completed: 0, consentExpired: 0 });
+    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 1, completed: 0, consentExpired: 0, refunded: 0 });
     now = new Date('2026-10-12T06:00:00.000Z');
-    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 0, completed: 1, consentExpired: 0 });
+    assert.deepEqual(await handleEventClock(deps() as EventDeps), { closed: 0, completed: 1, consentExpired: 0, refunded: 0 });
     assert.equal(store.events.get(EVENT_ID)?.status, 'completed');
   });
 });

@@ -146,6 +146,20 @@ describe('syncEventChatMembership', () => {
     assert.ok(w.store.chats.get(CHAT)?.members.includes('cu1'));
   });
 
+  test('a hold taken before a moderator removal and paid after it does not re-admit (N4)', async () => {
+    const w = createChatWorld();
+    const holdAt = w.clock.now();
+    const hold = registrationDoc({ id: 'rg_hold', userId: 'cu1', eventId: EV, status: 'held', createdAt: holdAt });
+    w.clock.advance(60_000);
+    await moderateEventChat(w.deps, mod, { eventId: EV, action: 'remove', userId: 'cu1' });
+    w.clock.advance(60_000);
+    // The payment lands after the removal; the ticket keeps the hold time as createdAt.
+    w.store.seedPaid(EV, 'cu1', 'rg_hold', { createdAt: holdAt });
+    assert.equal(await syncEventChatMembership(w.deps, { before: hold, after: { ...hold, status: 'paid' } }), 'none');
+    assert.equal(w.store.chats.get(CHAT)?.members.includes('cu1'), false);
+    assert.equal(w.store.members.get(`${CHAT}/cu1`)?.removedBy, 'ph1');
+  });
+
   test('an event without a chat is ignored', async () => {
     const w = createChatWorld();
     assert.equal(await syncEventChatMembership(w.deps, { before: null, after: registrationDoc({ eventId: 'nochat', status: 'paid' }) }), 'none');

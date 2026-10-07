@@ -8,6 +8,7 @@ import {
   type EventFields,
   type EventHost,
   type EventRecord,
+  type RegistrationDoc,
 } from './event.js';
 import { DomainError } from './errors.js';
 import { GROUP_READONLY_DAYS } from './event_chat.js';
@@ -309,13 +310,20 @@ export async function cancelEvent(
     if (ev.status === 'cancelled' || ev.status === 'completed') throw new DomainError('not_eligible');
     if (ev.endAt !== null && now.getTime() >= ev.endAt.getTime()) throw new DomainError('not_eligible');
     const regs = await tx.activeRegistrations(ev.id);
+    // Task 9: every ticket whose money is still held is refunded after this transaction, including
+    // tickets cancelled late without a refund (O4): the host does not keep money for a cancelled event.
+    const heldMoney = await tx.heldTicketPayments(ev.id);
+    const activeIds = new Set(regs.map((x) => x.id));
+    const lateIds = [...new Set(heldMoney.map((p) => p.subjectId))].filter((id) => !activeIds.has(id));
+    const late = (await Promise.all(lateIds.map((id) => tx.getRegistration(ev.id, id))))
+      .filter((x): x is RegistrationDoc => x !== null && x.status === 'cancelled');
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
     const day = hostId !== null && ev.dayKey !== null && ev.status !== 'draft'
       ? await tx.availability(hostId, ev.dayKey)
       : null;
 
-    // Tickets that were paid for are refunded by Task 9 in their own transactions; they stay `paid`
-    // (and counted) until that refund lands, so a crash midway never loses track of them.
+    // Paid tickets stay `paid` (and counted) with `refundDue` until their refund lands in its own
+    // transaction, so a crash midway never loses track of them (the event clock retries).
     const paid = regs.filter((x) => x.status === 'paid' && x.amount > 0);
     const rest = regs.filter((x) => !(x.status === 'paid' && x.amount > 0));
     let registered = ev.registeredCount;
@@ -324,6 +332,9 @@ export async function cancelEvent(
       tx.putRegistration({ ...x, status: 'cancelled', cancelledAt: now, updatedAt: now, version: x.version + 1 });
       if (x.status === 'paid') registered -= x.quantity;
       else held -= x.quantity;
+    }
+    for (const x of [...paid, ...late]) {
+      tx.putRegistration({ ...x, refundDue: true, updatedAt: now, version: x.version + 1 });
     }
     if (hostId !== null && ev.dayKey !== null && day !== null && day.eventId === ev.id) {
       tx.deleteAvailability(hostId, ev.dayKey);
@@ -340,7 +351,7 @@ export async function cancelEvent(
       version: ev.version + 1,
       updatedAt: now,
     });
-    return { paidRegistrationIds: paid.map((x) => x.id) };
+    return { paidRegistrationIds: [...paid, ...late].map((x) => x.id) };
   });
 }
 

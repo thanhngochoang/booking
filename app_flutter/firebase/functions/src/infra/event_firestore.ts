@@ -16,10 +16,20 @@ import {
   type EventRecord,
   type EventStore,
   type EventTx,
+  type Payment,
   type RegistrationContact,
   type RegistrationDoc,
   type RegistrationReader,
 } from '@photobooking/domain';
+import {
+  LEDGER_COLLECTION,
+  PAYMENTS_COLLECTION,
+  REFUNDS_COLLECTION,
+  ledgerEntryToFirestore,
+  paymentFromFirestore,
+  paymentToFirestore,
+  refundToFirestore,
+} from './booking_firestore.js';
 
 export const EVENTS_COLLECTION = 'events';
 export const EVENT_HASHTAGS = 'event_hashtags';
@@ -171,6 +181,7 @@ export function registrationToFirestore(r: RegistrationDoc): DocumentData {
     checkedInAt: ts(r.checkedInAt),
     cancelledAt: ts(r.cancelledAt),
     refundPercent: r.refundPercent,
+    refundDue: r.refundDue === true,
     event: {
       title: r.event.title,
       type: r.event.type,
@@ -205,6 +216,7 @@ export function registrationFromFirestore(id: string, d: DocumentData): Registra
     checkedInAt: toDate(d.checkedInAt),
     cancelledAt: toDate(d.cancelledAt),
     refundPercent: num(d.refundPercent),
+    ...(d.refundDue === true ? { refundDue: true } : {}),
     event: {
       title: String(ev.title ?? ''),
       type: (str(ev.type) ?? 'other') as RegistrationDoc['event']['type'],
@@ -314,6 +326,26 @@ export class FirestoreEventStore implements EventStore {
           };
           return rec;
         },
+        getPayment: async (id) => {
+          const s = await fTx.get(fs.collection(PAYMENTS_COLLECTION).doc(id));
+          return s.exists ? paymentFromFirestore(s.id, s.data()) : null;
+        },
+        paymentByIdempotencyKey: async (key) => {
+          const snap = await fTx.get(fs.collection(PAYMENTS_COLLECTION).where('idempotencyKey', '==', key).limit(1));
+          const doc = snap.docs[0];
+          return doc === undefined ? null : paymentFromFirestore(doc.id, doc.data());
+        },
+        heldTicketPayments: async (eventId) => {
+          const snap = await fTx.get(
+            fs.collection(PAYMENTS_COLLECTION)
+              .where('eventId', '==', eventId)
+              .where('status', '==', 'paid')
+              .where('escrowStatus', 'in', ['held', 'partially_refunded']),
+          );
+          return snap.docs
+            .map((d) => paymentFromFirestore(d.id, d.data()))
+            .filter((p): p is Payment => p !== null && p.subjectType === 'event_registration');
+        },
         putEvent: (e) => {
           writes.push(() => fTx.set(eventRef(e.id), eventToFirestore(e)));
         },
@@ -338,6 +370,18 @@ export class FirestoreEventStore implements EventStore {
               allowWhatsApp: c.allowWhatsApp,
             }),
           );
+        },
+        deleteRegistrationContact: (eventId, regId) => {
+          writes.push(() => fTx.delete(regRef(eventId, regId).collection('private').doc('contact')));
+        },
+        putPayment: (p) => {
+          writes.push(() => fTx.set(fs.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p)));
+        },
+        putRefund: (r) => {
+          writes.push(() => fTx.set(fs.collection(REFUNDS_COLLECTION).doc(r.id), refundToFirestore(r)));
+        },
+        putLedgerEntry: (e) => {
+          writes.push(() => fTx.set(fs.collection(LEDGER_COLLECTION).doc(e.id), ledgerEntryToFirestore(e)));
         },
         setAvailabilityBooked: (uid, dayKey, eventId) => {
           writes.push(() => fTx.set(dayRef(uid, dayKey), { state: 'booked', eventId, updatedAt: Timestamp.now() }));
@@ -402,6 +446,26 @@ export class FirestoreEventStore implements EventStore {
         .where('endAt', '<=', Timestamp.fromDate(now)),
       limit,
     );
+  }
+
+  /** Collection group `registrations` (status, holdExpiresAt): index in firestore.indexes.json. */
+  async expiredHoldsAll(now: Date, limit: number): Promise<RegistrationDoc[]> {
+    const snap = await this.firestore.collectionGroup('registrations')
+      .where('status', '==', 'held')
+      .where('holdExpiresAt', '<=', Timestamp.fromDate(now))
+      .limit(limit)
+      .get();
+    return snap.docs
+      .filter((d) => d.ref.parent.parent?.parent.id === EVENTS_COLLECTION)
+      .map((d) => registrationFromFirestore(d.id, d.data()));
+  }
+
+  /** Collection group `registrations` where `refundDue == true` (single-field override). */
+  async paidUnrefundedOfCancelled(limit: number): Promise<RegistrationDoc[]> {
+    const snap = await this.firestore.collectionGroup('registrations').where('refundDue', '==', true).limit(limit).get();
+    return snap.docs
+      .filter((d) => d.ref.parent.parent?.parent.id === EVENTS_COLLECTION)
+      .map((d) => registrationFromFirestore(d.id, d.data()));
   }
 
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {

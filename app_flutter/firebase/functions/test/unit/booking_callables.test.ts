@@ -48,6 +48,9 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
   return { deps, store, gateway };
 }
 
+/** Fake payments run on the emulator (or the dev project) only. */
+const EMULATOR_ENV = { FUNCTIONS_EMULATOR: 'true' };
+
 const httpsError = (code: string, detailsCode?: string) => (e: unknown) =>
   e instanceof HttpsError
   && e.code === code
@@ -213,6 +216,7 @@ describe('Booking callables', () => {
         data: { paymentId: deposit.paymentId },
       },
       deps,
+      EMULATOR_ENV,
     );
 
     assert.equal(paymentResult.payment.status, 'paid');
@@ -267,6 +271,7 @@ describe('Booking callables', () => {
     await handleConfirmFakePayment(
       { auth: { uid: 'c1' }, data: { paymentId: deposit.paymentId } },
       deps,
+      EMULATOR_ENV,
     );
 
     const accepted = await handleTransitionBooking(

@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import { RetryableConflict } from '../src/event_ports.js';
 import {
-  cancelRegistration, cancellationRefundPercent, checkInRegistration, registerEvent, registrationContactOf,
+  cancelRegistration, cancellationRefundPercent, checkInRegistration, registerEvent,
 } from '../src/event_registration.js';
+import { registrationContactOf } from '../src/event.js';
 import { cancelEvent } from '../src/event_use_cases.js';
 import { ticketCodeCandidates } from '../src/ticket_code.js';
 import {
@@ -117,7 +118,7 @@ describe('registerEvent', () => {
     await assert.rejects(register(w, cu1, 'ev1_aaaaaaaaaaaaaaaaaaaa'), code('not_found'));
   });
 
-  test('paid events are not_eligible until payments (Decision 27)', async () => {
+  test('paid events are not_eligible without a payment gateway (Decision 27)', async () => {
     const w = createEventWorld();
     await publishedEvent(w, { price: 150_000 });
     await assert.rejects(register(w, cu1, 'ev1_aaaaaaaaaaaaaaaaaaaa'), code('not_eligible'));

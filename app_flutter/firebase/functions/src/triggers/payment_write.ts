@@ -13,7 +13,8 @@ export async function handlePaymentWrite(
   deps: EarningsDeps,
 ): Promise<string | null> {
   const payeeId = payeeOf(after) ?? payeeOf(before);
-  if (payeeId === undefined) return null;
+  // Platform-hosted event tickets: the platform keeps the money; it has no earnings page.
+  if (payeeId === undefined || payeeId === 'platform') return null;
   await refreshEarnings(deps, { payeeId, paymentIds: [paymentId] });
   logger.info('onPaymentWritten', { payeeId });
   return payeeId;

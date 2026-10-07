@@ -1,9 +1,10 @@
-import { newUlid, notify, type EventDeps } from '@photobooking/domain';
+import { newUlid, notify, type EventDeps, type EventPaymentDeps } from '@photobooking/domain';
 import { storageUrlPrefixes } from '../config.js';
 import type { EventCallableDeps } from '../callables/event.js';
 import { db } from './admin.js';
 import { firestoreEventPeople, FirestoreEventStore, ownCoverUpload } from './event_firestore.js';
 import { firestoreUserContactReader } from './firestore.js';
+import { getSharedFakeGateway } from './live_booking.js';
 import { liveNotifyDeps } from './live_notification.js';
 
 export function liveEventDeps(): EventDeps {
@@ -20,9 +21,14 @@ export function liveEventDeps(): EventDeps {
   };
 }
 
+/** Paid tickets use the booking payment wiring (the same gateway instance as deposits). */
+export function liveEventPaymentDeps(): EventPaymentDeps {
+  return { ...liveEventDeps(), gateway: getSharedFakeGateway() };
+}
+
 export function liveEventCallableDeps(): EventCallableDeps {
   return {
-    ...liveEventDeps(),
+    ...liveEventPaymentDeps(),
     notifyHostInvited: async (hostId, eventId, title, expiresAt) => {
       await notify(liveNotifyDeps(), {
         userId: hostId,

@@ -25,6 +25,33 @@ export const CALLABLE_OPTIONS = {
 } as const satisfies CallableOptions;
 
 /**
+ * Callables that run contended transactions or payments (registerEvent, the ticket payment
+ * callables, cancelEvent's refunds): under 20 concurrent registrations the emulator needed more than
+ * the 10 s default (ledger, PR #32).
+ */
+export const PAYMENT_CALLABLE_OPTIONS = {
+  ...CALLABLE_OPTIONS,
+  timeoutSeconds: 30,
+} as const satisfies CallableOptions;
+
+/**
+ * The development Firebase project (`.firebaserc` alias `dev`). Fake payments are allowed there and
+ * on the emulator only (infra/fake_payments.ts); this is the single place the id is written.
+ */
+export const DEV_PROJECT_ID = 'booking-c1922';
+
+/** The project the functions run in: `GCLOUD_PROJECT`, else `FIREBASE_CONFIG.projectId`. */
+export function currentProjectId(env: Readonly<Record<string, string | undefined>> = process.env): string | undefined {
+  if (env.GCLOUD_PROJECT) return env.GCLOUD_PROJECT;
+  if (!env.FIREBASE_CONFIG) return undefined;
+  try {
+    return (JSON.parse(env.FIREBASE_CONFIG) as { projectId?: string }).projectId;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Options of every Firestore trigger (onPhotographerWrite, spec 2026-10-02 §2). `retry: true`:
  * a failed read or write is retried; the use case is idempotent (precondition + loop guard).
  */
