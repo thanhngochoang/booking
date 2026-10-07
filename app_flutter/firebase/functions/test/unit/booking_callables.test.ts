@@ -189,6 +189,7 @@ describe('Booking callables', () => {
     const payment = await handleCreatePayment(
       { auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } },
       deps,
+      EMULATOR_ENV,
     );
     const paid = await handleConfirmFakePayment(
       { auth: { uid: 'c1' }, data: { paymentId: payment.paymentId, kind: 'exact' } },

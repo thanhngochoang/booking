@@ -14,7 +14,7 @@ import {
   type CreatePaymentResult,
   type TransferOutcome,
 } from '@photobooking/domain';
-import { assertFakePaymentsAllowed } from '../infra/fake_payments.js';
+import { assertFakePaymentsAllowed, checkoutGatewayAvailable } from '../infra/fake_payments.js';
 import { FAKE_SIGNATURE_HEADER, fakeWebhookSecret, signFakeWebhook } from '../infra/fake_webhook.js';
 import { handlePaymentWebhook } from '../http/payment_webhook.js';
 import { handleCallableError } from './booking.js';
@@ -43,10 +43,19 @@ function uidOf(request: CallableInput): string {
 const dataOf = (request: CallableInput): Record<string, unknown> =>
   (request.data && typeof request.data === 'object' ? request.data : {}) as Record<string, unknown>;
 
-/** `{bookingId, method}` → `{paymentId, checkout}`; the booking's `checkout` mirrors it. */
-export async function handleCreatePayment(request: CallableInput, deps: BookingDeps): Promise<CreatePaymentResult> {
+/**
+ * `{bookingId, method}` → `{paymentId, checkout}`; the booking's `checkout` mirrors it.
+ * Refused with `not_eligible` (the app shows `bookPaymentsOff`) before any read or write wherever
+ * no real gateway is wired and fake payments are not allowed (`checkoutGatewayAvailable`).
+ */
+export async function handleCreatePayment(
+  request: CallableInput,
+  deps: BookingDeps,
+  env: Env = process.env,
+): Promise<CreatePaymentResult> {
   const uid = uidOf(request);
   try {
+    if (!checkoutGatewayAvailable(env)) throw new DomainError('not_eligible');
     const data = dataOf(request);
     return await createPayment(deps, { bookingId: String(data.bookingId ?? ''), customerId: uid, method: data.method });
   } catch (e) {

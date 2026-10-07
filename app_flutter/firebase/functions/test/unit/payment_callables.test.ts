@@ -25,11 +25,11 @@ describe('payment callables', () => {
   it('createPayment returns the checkout and rejects unauthenticated callers', async () => {
     const w = paymentWorld();
     const draft = await newDraft(w.deps);
-    await assert.rejects(handleCreatePayment({ data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps), httpsError('unauthenticated', 'permission_denied'));
+    await assert.rejects(handleCreatePayment({ data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps, WEBHOOK_ENV), httpsError('unauthenticated', 'permission_denied'));
     await assert.rejects(handleCheckPayment({ data: { bookingId: draft.id } }, w.deps), httpsError('unauthenticated', 'permission_denied'));
     await assert.rejects(handleConfirmFakePayment({ data: { paymentId: 'x' } }, w.deps, WEBHOOK_ENV), httpsError('unauthenticated', 'permission_denied'));
 
-    const res = await handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps);
+    const res = await handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps, WEBHOOK_ENV);
     assert.ok(res.paymentId);
     assert.equal(res.checkout.paymentId, res.paymentId);
     assert.equal(res.checkout.method, 'bank_qr');
@@ -43,24 +43,51 @@ describe('payment callables', () => {
 
     // A method outside PAYMENT_METHODS (a reserved card method) is invalid_argument.
     await assert.rejects(
-      handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'intl_card' } }, w.deps),
+      handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'intl_card' } }, w.deps, WEBHOOK_ENV),
       httpsError('invalid-argument', 'invalid_argument'),
     );
     // Another customer's booking is refused.
     await assert.rejects(
-      handleCreatePayment({ auth: { uid: 'c2' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps),
+      handleCreatePayment({ auth: { uid: 'c2' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps, WEBHOOK_ENV),
       httpsError('permission-denied', 'permission_denied'),
     );
+  });
+
+  it('createPayment fails closed (not_eligible) where no real gateway is wired and fakes are not allowed', async () => {
+    const w = paymentWorld();
+    const draft = await newDraft(w.deps);
+    const before = await w.store.getBooking(draft.id);
+    for (const env of [PROD_ENV, {}, { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'booking-prod-1' }]) {
+      await assert.rejects(
+        handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps, env),
+        httpsError('failed-precondition', 'not_eligible'),
+      );
+    }
+    // Nothing was written and the fake gateway never produced a QR.
+    assert.equal(w.store.payments.size, 0);
+    assert.equal(w.gateway.createPaymentCalls.length, 0);
+    assert.deepEqual(await w.store.getBooking(draft.id), before);
+
+    // The emulator (demo-*) and the dev project open payments as before.
+    const emu = await handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps, WEBHOOK_ENV);
+    assert.equal(emu.checkout.bankName, 'BIDV');
+    const devDraft = await newDraft(w.deps, '2026-10-20');
+    const dev = await handleCreatePayment(
+      { auth: { uid: 'c1' }, data: { bookingId: devDraft.id, method: 'bank_qr' } },
+      w.deps,
+      { GCLOUD_PROJECT: 'booking-c1922' },
+    );
+    assert.ok(dev.paymentId);
   });
 
   it('payment_attempts_exceeded maps to failed-precondition with details.code', async () => {
     const w = paymentWorld();
     const draft = await newDraft(w.deps);
     for (let i = 0; i < 3; i++) {
-      await handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: i === 1 ? 'momo' : 'bank_qr' } }, w.deps);
+      await handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: i === 1 ? 'momo' : 'bank_qr' } }, w.deps, WEBHOOK_ENV);
     }
     await assert.rejects(
-      handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps),
+      handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, w.deps, WEBHOOK_ENV),
       httpsError('failed-precondition', 'payment_attempts_exceeded'),
     );
   });
