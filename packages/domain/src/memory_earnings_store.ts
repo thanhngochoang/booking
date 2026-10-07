@@ -1,5 +1,6 @@
 import type { EarningItem, EarningSubject, EarningsSummary } from './earnings.js';
 import type { EarningsStore, EarningsTx } from './earnings_ports.js';
+import { isEscrowRefund, isSettledPayment } from './escrow.js';
 import type { MemoryBookingStore } from './memory_booking_store.js';
 import type { MemoryPayoutStore } from './memory_payout_store.js';
 
@@ -41,12 +42,13 @@ export class MemoryEarningsStore implements EarningsStore {
         refundedTotal: async (paymentId) => {
           read('refundedTotal');
           let sum = 0;
-          for (const r of this.booking.refunds.values()) if (r.paymentId === paymentId) sum += r.amount;
+          for (const r of this.booking.refunds.values()) if (r.paymentId === paymentId && isEscrowRefund(r)) sum += r.amount;
           return sum;
         },
         getSubject: async (p): Promise<EarningSubject | null> => {
           read('getSubject');
           if (p.subjectType !== 'booking') return null;
+          if (!isSettledPayment(p) && p.status !== 'refunded') return null;
           const b = this.booking.bookings.get(p.subjectId);
           if (!b) return null;
           return {

@@ -11,6 +11,7 @@ import {
 } from 'firebase-admin/firestore';
 import {
   PAYMENT_METHODS,
+  escrowRefundedTotal,
   isPaymentMethod,
   type Booking,
   type BookingCheckout,
@@ -291,6 +292,7 @@ export function refundToFirestore(r: Refund): DocumentData {
     percent: r.percent,
     status: r.status,
     manual: r.manual,
+    fromEscrow: r.fromEscrow,
     reason: r.reason ?? null,
     providerRef: r.providerRef ?? null,
     createdAt: toTimestamp(r.createdAt),
@@ -308,11 +310,26 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
     percent: d.percent,
     status: d.status as RefundStatus,
     manual: d.manual ?? false,
+    // Stored before the marker existed: a cancellation/decline/dispute refund, out of escrow.
+    fromEscrow: d.fromEscrow !== false,
     ...(d.reason ? { reason: d.reason } : {}),
     ...(d.providerRef ? { providerRef: d.providerRef } : {}),
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
   };
+}
+
+/**
+ * What escrow gave back for one payment, from its `refunds` documents: release, payouts and
+ * earnings subtract this. Money sent straight back on arrival (`fromEscrow: false`) is left out;
+ * a document without the marker counts. The free-text `reason` is never read.
+ */
+export function escrowRefundedOfDocs(docs: readonly DocumentData[]): number {
+  return escrowRefundedTotal(
+    docs
+      .filter((d) => typeof d.amount === 'number')
+      .map((d) => ({ amount: d.amount as number, fromEscrow: d.fromEscrow !== false })),
+  );
 }
 
 export function ledgerEntryToFirestore(e: LedgerEntry): DocumentData {

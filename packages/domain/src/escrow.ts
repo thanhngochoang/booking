@@ -81,10 +81,36 @@ export interface Refund {
   readonly percent: number;
   readonly status: RefundStatus;
   readonly manual: boolean;
+  /**
+   * True when the money came out of what escrow held for the payee: a cancellation, decline,
+   * expiry or dispute share, or a paid payment whose draft was gone (`applyRefundToPayment`).
+   * False for money sent straight back on arrival, which never entered escrow (`transferRefund`:
+   * the excess of an over-transfer, a second or late transfer, an under-paid payment that expired).
+   * Release, payouts and earnings subtract only escrow refunds. Never derived from `reason`.
+   * Rows stored before the field existed are read as true (see `isEscrowRefund`).
+   */
+  readonly fromEscrow: boolean;
   readonly reason?: string;
   readonly providerRef?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/**
+ * A payment the customer has actually paid (and that still holds some of it): only these are
+ * scheduled for release, disputed or shown as earnings. A `created` QR payment already has escrow
+ * `held` from creation but is not money yet.
+ */
+export const isSettledPayment = (p: Pick<Payment, 'status'>): boolean =>
+  p.status === 'paid' || p.status === 'partially_refunded';
+
+/** True unless the refund is marked as money that never entered escrow (a missing marker counts). */
+export const isEscrowRefund = (r: Pick<Refund, 'fromEscrow'> | { readonly fromEscrow?: boolean }): boolean =>
+  r.fromEscrow !== false;
+
+/** What escrow gave back to the payer: the sum of the escrow refunds (release subtracts this). */
+export function escrowRefundedTotal(refunds: readonly (Pick<Refund, 'amount'> & { readonly fromEscrow?: boolean })[]): number {
+  return refunds.reduce((sum, r) => (isEscrowRefund(r) ? sum + r.amount : sum), 0);
 }
 
 export const LEDGER_ENTRY_TYPES = [
@@ -207,6 +233,7 @@ export function applyRefundToPayment(params: {
     percent,
     status: 'pending',
     manual: false,
+    fromEscrow: true,
     reason,
     createdAt: at,
     updatedAt: at,

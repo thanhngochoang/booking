@@ -1,6 +1,6 @@
 /** Earnings read model (S06.05): one row per payment and the three totals. Pure functions. */
 
-import type { Payment, PaymentSubject } from './escrow.js';
+import { isSettledPayment, type Payment, type PaymentSubject } from './escrow.js';
 import type { Payout, PayoutStatus } from './payout.js';
 
 export const EARNING_STATES = ['held', 'disputed', 'released', 'paid_out'] as const;
@@ -59,7 +59,11 @@ export function earningStateOf(p: Payment): EarningState | null {
   }
 }
 
-/** The row for a payment, or null when it has no payee, no money state or nothing left after refunds. */
+/**
+ * The row for a payment, or null when it has no payee, is not paid yet (a `created` QR payment has
+ * escrow `held` from creation), has no money state or nothing left after refunds. `refunded` is
+ * what escrow gave back (escrow refunds only).
+ */
 export function earningItemOf(i: {
   payment: Payment;
   refunded: number;
@@ -70,7 +74,8 @@ export function earningItemOf(i: {
   const { payment, refunded, subject, payout, now } = i;
   const state = earningStateOf(payment);
   const net = payment.amount - refunded;
-  if (!payment.payeeId || state === null || net <= 0) return null;
+  const paid = isSettledPayment(payment) || payment.status === 'refunded';
+  if (!payment.payeeId || !paid || state === null || net <= 0) return null;
 
   let holdReason: string | null = null;
   if (state === 'disputed') holdReason = HOLD_REASON_DISPUTE;

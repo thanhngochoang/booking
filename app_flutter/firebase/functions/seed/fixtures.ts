@@ -474,6 +474,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
           percent: 100,
           status: 'completed',
           manual: false,
+          fromEscrow: true,
           createdAt: updatedAt,
           updatedAt,
         },

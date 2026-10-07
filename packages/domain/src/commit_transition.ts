@@ -8,7 +8,7 @@ import type { TransitionDecision } from './booking_machine.js';
 import { parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { DomainError } from './errors.js';
-import { applyRefundToPayment, type Payment, type Refund } from './escrow.js';
+import { applyRefundToPayment, isSettledPayment, type Payment, type Refund } from './escrow.js';
 import { dispatchRefund } from './refunds.js';
 
 export async function commitTransition(
@@ -88,9 +88,12 @@ export async function commitTransition(
         pendingRefund = { refund: refundResult.refund, provider: payment.provider };
       }
     } else if (nextStatus === 'completed') {
-      // Completed booking: deposit releases after 24h dispute window
+      // Completed booking: the paid payment releases after the 24h dispute window (never a
+      // `created` or stray row, whose escrow is `held` from creation).
       const payments = await deps.store.getPaymentsForBooking(current.id);
-      const payment = payments.find((p) => p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded');
+      const payment = payments.find(
+        (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded'),
+      );
       if (payment) {
         const releaseAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         const updatedPayment = {

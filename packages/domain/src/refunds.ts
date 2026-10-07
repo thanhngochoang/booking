@@ -48,6 +48,8 @@ export function transferRefund(params: {
     percent: 100,
     status: 'pending',
     manual: false,
+    // Sent straight back on arrival: this money never entered escrow.
+    fromEscrow: false,
     reason,
     providerRef: params.providerRef,
     createdAt: at,

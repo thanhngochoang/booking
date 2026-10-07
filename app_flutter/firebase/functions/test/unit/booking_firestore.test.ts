@@ -7,6 +7,7 @@ import {
   paymentFromFirestore,
   refundToFirestore,
   refundFromFirestore,
+  escrowRefundedOfDocs,
   ledgerEntryToFirestore,
   ledgerEntryFromFirestore,
   transferRecordToFirestore,
@@ -110,6 +111,7 @@ describe('Firestore <-> Domain booking mappers', () => {
       percent: 50,
       status: 'pending',
       manual: false,
+      fromEscrow: true,
       reason: 'customer_late_cancel',
       providerRef: 'fake_ref',
       createdAt: '2026-10-12T10:00:00.000Z',
@@ -119,6 +121,14 @@ describe('Firestore <-> Domain booking mappers', () => {
     const refundDoc = refundToFirestore(sampleRefund);
     const restoredRefund = refundFromFirestore('ref_01', refundDoc);
     assert.deepEqual(restoredRefund, sampleRefund);
+    assert.equal(refundDoc.fromEscrow, true);
+    const passThrough = { ...sampleRefund, fromEscrow: false, reason: 'overpaid_excess' };
+    assert.equal(refundToFirestore(passThrough).fromEscrow, false);
+    assert.deepEqual(refundFromFirestore('ref_01', refundToFirestore(passThrough)), passThrough);
+    // A refund stored before the marker existed came out of escrow.
+    const legacyDoc = { ...refundDoc };
+    delete legacyDoc.fromEscrow;
+    assert.equal(refundFromFirestore('ref_01', legacyDoc)?.fromEscrow, true);
 
     const sampleEntry: LedgerEntry = {
       id: 'led_01',
@@ -336,3 +346,21 @@ async function sampleDraft(): Promise<Booking> {
     updatedAt: '2026-10-10T08:00:00.000Z',
   };
 }
+
+describe('escrowRefundedOfDocs (release, payouts and earnings read refunds through it)', () => {
+  it('sums escrow refunds only; a document without the marker counts as escrow', () => {
+    const docs: DocumentData[] = [
+      { paymentId: 'p', amount: 500_000, fromEscrow: true, reason: 'Bận' },
+      { paymentId: 'p', amount: 200_000, fromEscrow: false, reason: 'overpaid_excess' },
+      { paymentId: 'p', amount: 1_000_000, fromEscrow: false, reason: 'extra_transfer' },
+      { paymentId: 'p', amount: 100_000, reason: 'customer_late_cancel' },
+      { paymentId: 'p', amount: 'bad' },
+    ];
+    assert.equal(escrowRefundedOfDocs(docs), 600_000);
+    assert.equal(escrowRefundedOfDocs([]), 0);
+  });
+
+  it('never reads the free-text reason', () => {
+    assert.equal(escrowRefundedOfDocs([{ amount: 300_000, reason: 'overpaid_excess' }]), 300_000);
+  });
+});

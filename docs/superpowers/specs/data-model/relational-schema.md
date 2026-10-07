@@ -323,6 +323,7 @@ create table refunds (
   percent    smallint check (percent between 0 and 100),
   status     text not null check (status in ('pending','done','failed')),
   manual     boolean not null default false,
+  from_escrow boolean not null default true,      -- false: tiền trả lại ngay khi nhận (thừa, chuyển lần hai, trễ), chưa từng vào ký quỹ
   reason     text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer
   provider_ref text,                              -- giao dịch của cổng mà tiền được hoàn từ đó
   created_at timestamptz not null default now(),

@@ -1,6 +1,6 @@
 import { MemoryBookingStore } from './memory_booking_store.js';
 import { isPayoutPayable, type Payout, type PayoutStatus } from './payout.js';
-import type { Payment } from './escrow.js';
+import { isEscrowRefund, type Payment } from './escrow.js';
 import type { PayoutAccount, PayoutAccountView } from './payout_account.js';
 import type { PayoutStore, PayoutTx } from './payout_ports.js';
 
@@ -36,7 +36,7 @@ export class MemoryPayoutStore implements PayoutStore {
 
   private refunded(paymentId: string): number {
     let sum = 0;
-    for (const r of this.booking.refunds.values()) if (r.paymentId === paymentId) sum += r.amount;
+    for (const r of this.booking.refunds.values()) if (r.paymentId === paymentId && isEscrowRefund(r)) sum += r.amount;
     return sum;
   }
 

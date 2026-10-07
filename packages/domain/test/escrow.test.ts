@@ -312,6 +312,7 @@ describe('Task 3: Escrow & ledger maths', () => {
         percent: 100,
         status: 'done',
         manual: false,
+        fromEscrow: false,
         reason,
         createdAt: at,
         updatedAt: at,

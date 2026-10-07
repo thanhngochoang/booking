@@ -4,7 +4,7 @@
 
 import { AUTO_COMPLETE_DELAY_HOURS } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
-import { releaseEscrowPayment } from './escrow.js';
+import { escrowRefundedTotal, releaseEscrowPayment } from './escrow.js';
 import { transitionBooking } from './transition_booking.js';
 
 export interface BookingSweepResults {
@@ -90,8 +90,8 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     await deps.store.runTransaction(async (tx) => {
       const p = await tx.getPayment(payment.id);
       if (p && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded')) {
-        const refunds = await deps.store.getRefundsForPayment(p.id);
-        const totalRefunded = refunds.reduce((sum, r) => sum + r.amount, 0);
+        // Only what escrow gave back: an over-transfer's excess or a second transfer never entered it.
+        const totalRefunded = escrowRefundedTotal(await deps.store.getRefundsForPayment(p.id));
 
         const res = releaseEscrowPayment({
           payment: p,
