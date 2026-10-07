@@ -12,6 +12,7 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/profile_world.dart';
@@ -768,6 +769,203 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
+    }
+  });
+
+  group('orders closed (S03.01-new)', () {
+    const note =
+        'Bảo Ngọc chưa mở nhận đơn nên chưa đặt lịch hay xin báo giá được. '
+        'Bạn vẫn nhắn hỏi được.';
+
+    PhotographerSummary closed({
+      String id = 'p1',
+      ProviderType type = ProviderType.individual,
+    }) => fixturePhotographer(
+      id,
+      name: 'Bảo Ngọc',
+      verified: false,
+      acceptingOrders: false,
+      providerType: type,
+      studioDistrict: type == ProviderType.studio ? 'Quận 10' : null,
+    );
+
+    Finder inBar(Finder f) =>
+        find.descendant(of: find.byType(ProfileBottomBar), matching: f);
+
+    testWidgets(
+      'a closed provider shows the dashed tag "Chưa nhận đơn" under the name and no verified mark',
+      (tester) async {
+        final w = await _world(tester, photographers: [closed()]);
+        await tester.pumpWidget(w.app('/u/p1'));
+        await tester.pumpAndSettle();
+        expect(find.byType(OrdersClosedTag), findsOneWidget);
+        expect(find.text('Chưa nhận đơn'), findsOneWidget);
+        expect(find.byType(VerifiedMark), findsNothing);
+        expect(find.byType(ProviderMark), findsNothing);
+        final name = tester.getRect(find.text('Bảo Ngọc', findRichText: true));
+        final tag = tester.getRect(find.byType(OrdersClosedTag));
+        expect(tag.top, greaterThanOrEqualTo(name.bottom - 1));
+        expect(tag.left, closeTo(name.left, 1));
+        expect(_key('profile-follow'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a closed studio shows the Studio tag first, then the closed tag',
+      (tester) async {
+        final w = await _world(
+          tester,
+          photographers: [closed(type: ProviderType.studio)],
+        );
+        await tester.pumpWidget(w.app('/u/p1'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.getTopLeft(_key('profile-provider-tag')).dy,
+          lessThan(tester.getTopLeft(find.byType(OrdersClosedTag)).dy),
+        );
+      },
+    );
+
+    testWidgets(
+      'the note names the provider: "{name} chưa mở nhận đơn nên chưa đặt lịch hay xin báo giá được. Bạn vẫn nhắn hỏi được."',
+      (tester) async {
+        final w = await _world(tester, photographers: [closed()]);
+        await tester.pumpWidget(w.app('/u/p1'));
+        await tester.pumpAndSettle();
+        expect(find.text(note), findsOneWidget);
+        final noteTop = tester.getTopLeft(find.text(note)).dy;
+        expect(
+          noteTop,
+          greaterThan(tester.getBottomLeft(find.byType(StatTileRow)).dy),
+        );
+        expect(noteTop, lessThan(tester.getTopLeft(find.text(profileBio)).dy));
+        expect(
+          find.descendant(
+            of: _key('profile-orders-closed-note'),
+            matching: find.byIcon(AppIcons.info),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'the bottom bar has a disabled outline "Chưa nhận đặt lịch" and no primary button',
+      (tester) async {
+        final w = await _world(tester, photographers: [closed()]);
+        await tester.pumpWidget(w.app('/u/p1'));
+        await tester.pumpAndSettle();
+        expect(_key('profile-book-closed'), findsOneWidget);
+        expect(
+          tester.widget<AppButton>(_key('profile-book-closed')).onPressed,
+          isNull,
+        );
+        expect(
+          find.descendant(
+            of: _key('profile-book-closed'),
+            matching: find.text('Chưa nhận đặt lịch'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _key('profile-book-closed'),
+            matching: find.byType(OutlinedButton),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<AppButton>(_key('profile-book-closed')).style,
+          isNotNull,
+          reason: 'mock .btn.out.dis look',
+        );
+        expect(_key('profile-book'), findsNothing);
+        expect(inBar(find.byType(FilledButton)), findsNothing);
+        expect(inBar(find.byType(CtaSurface)), findsNothing);
+        expect(find.text('Nhiếp ảnh gia chưa đăng gói'), findsNothing);
+      },
+    );
+
+    testWidgets('the inquiry button still opens /u/:uid/ask', (tester) async {
+      final w = await _world(tester, photographers: [closed()]);
+      await tester.pumpWidget(w.app('/u/p1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ContactDial));
+      await tester.pumpAndSettle();
+      expect(find.text('stub /u/p1/ask'), findsOneWidget);
+    });
+
+    testWidgets('tapping a package on the Gói tab does not open booking', (
+      tester,
+    ) async {
+      final w = await _world(tester, photographers: [closed()]);
+      await tester.pumpWidget(w.app('/u/p1?tab=services'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cặp đôi nửa ngày'), findsOneWidget);
+      await tester.ensureVisible(_key('service-s2'));
+      await tester.tap(_key('service-s2'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(w.router.state.uri.path, '/u/p1');
+      expect(find.textContaining('stub'), findsNothing);
+    });
+
+    testWidgets(
+      'the owner of a closed profile sees "Chỉnh sửa hồ sơ" and no tag or note',
+      (tester) async {
+        final w = await _world(tester, role: UserRole.photographer);
+        w.profiles.add(
+          PhotographerProfile(
+            summary: fixturePhotographer(
+              w.uid,
+              name: 'Bảo Ngọc',
+              acceptingOrders: false,
+            ),
+            intro: const PhotographerIntro(
+              bio: profileBio,
+              onboardingComplete: true,
+            ),
+          ),
+        );
+        await tester.pumpWidget(w.app('/u/${w.uid}'));
+        await tester.pumpAndSettle();
+        expect(find.text('Chỉnh sửa hồ sơ'), findsOneWidget);
+        expect(find.byType(OrdersClosedTag), findsNothing);
+        expect(find.text(note), findsNothing);
+        expect(_key('profile-book-closed'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'an open provider shows no tag, no note and the primary "Đặt lịch · từ …"',
+      (tester) async {
+        final w = await _world(tester);
+        await tester.pumpWidget(w.app('/u/p1'));
+        await tester.pumpAndSettle();
+        expect(find.byType(OrdersClosedTag), findsNothing);
+        expect(find.textContaining('chưa mở nhận đơn'), findsNothing);
+        expect(_key('profile-book-closed'), findsNothing);
+        expect(find.text('Đặt lịch · từ 1,5M'), findsOneWidget);
+        expect(_enabled(tester, 'profile-book'), isTrue);
+      },
+    );
+
+    for (final b in Brightness.values) {
+      testWidgets('closed variant fits 320dp at 1.3x text (${b.name})', (
+        tester,
+      ) async {
+        final w = await _world(
+          tester,
+          width: 320,
+          photographers: [closed(type: ProviderType.studio)],
+        );
+        await tester.pumpWidget(w.app('/u/p1', brightness: b, textScale: 1.3));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await _toTabs(tester);
+        await tester.tap(find.text('Gói'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
     }
   });
 }

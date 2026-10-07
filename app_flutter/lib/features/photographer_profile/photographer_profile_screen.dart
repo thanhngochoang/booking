@@ -187,6 +187,7 @@ class _PhotographerProfileScreenState
                 ProfileSection.services => ServicesSliver(
                   photographerId: widget.uid,
                   owner: owner,
+                  acceptingOrders: p.summary.acceptingOrders,
                 ),
                 ProfileSection.calendar => CalendarSliver(
                   photographerId: widget.uid,
@@ -202,6 +203,7 @@ class _PhotographerProfileScreenState
       bottomNavigationBar: ProfileBottomBar(
         photographerId: widget.uid,
         owner: owner,
+        acceptingOrders: p.summary.acceptingOrders,
         onEdit: _edit,
       ),
     );

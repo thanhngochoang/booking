@@ -210,23 +210,33 @@ class _Content extends ConsumerWidget {
       key: const Key('photo-profile'),
       onPressed: () => context.push('/u/${post.photographerId}'),
     );
-    final bookButton = AppButton.primary(
-      active ? l.photoBook : l.photoOtherPackages,
-      key: const Key('photo-book'),
-      onPressed: () {
-        final s = service;
-        if (s != null && s.active) {
-          startBooking(
-            context,
-            ref,
-            photographerId: post.photographerId,
-            serviceId: s.id,
+    // A provider not accepting orders (S03.01-new): locked, no gradient. An
+    // unknown author keeps the book button (the server still refuses it).
+    final closed = author?.acceptingOrders == false;
+    final bookButton = closed
+        ? AppButton.outline(
+            l.profileOrdersClosedButton,
+            key: const Key('photo-book-closed'),
+            onPressed: null,
+            style: ordersClosedButtonStyle(context),
+          )
+        : AppButton.primary(
+            active ? l.photoBook : l.photoOtherPackages,
+            key: const Key('photo-book'),
+            onPressed: () {
+              final s = service;
+              if (s != null && s.active) {
+                startBooking(
+                  context,
+                  ref,
+                  photographerId: post.photographerId,
+                  serviceId: s.id,
+                );
+              } else {
+                context.push('/u/${post.photographerId}?tab=services');
+              }
+            },
           );
-        } else {
-          context.push('/u/${post.photographerId}?tab=services');
-        }
-      },
-    );
 
     return Column(
       children: [

@@ -12,16 +12,22 @@ import 'package:photobooking/features/photographer_profile/profile_section.dart'
 /// The fixed bar of S03.01. Visitors: the in-app inquiry (the only contact
 /// before a booking, spec 3b.1) and "Đặt lịch · từ …". Owner: "Chỉnh sửa
 /// hồ sơ". Sits below the scroll view, so it never covers the last item.
+/// A provider not accepting orders (S03.01-new) gets a disabled outline
+/// "Chưa nhận đặt lịch" instead of the gradient button; the inquiry stays.
 class ProfileBottomBar extends ConsumerWidget {
   const ProfileBottomBar({
     super.key,
     required this.photographerId,
     required this.owner,
+    required this.acceptingOrders,
     required this.onEdit,
   });
 
   final String photographerId;
   final bool owner;
+
+  /// False shows the locked bar to visitors; the owner's bar is unchanged.
+  final bool acceptingOrders;
   final VoidCallback onEdit;
 
   @override
@@ -30,7 +36,7 @@ class ProfileBottomBar extends ConsumerWidget {
     final theme = Theme.of(context);
     final packages = ref.watch(profilePackagesProvider(photographerId));
     final from = startingPriceOf(packages.value ?? const []);
-    final none = !owner && packages.hasValue && from == null;
+    final none = !owner && acceptingOrders && packages.hasValue && from == null;
     final Widget bar = owner
         ? AppButton.primary(
             l.profileEdit,
@@ -48,19 +54,26 @@ class ProfileBottomBar extends ConsumerWidget {
               ),
               const SizedBox(width: AppSpace.s3),
               Expanded(
-                child: AppButton.primary(
-                  from == null
-                      ? l.profileBook
-                      : l.profileBookFrom(formatMoney(from, short: true)),
-                  key: const Key('profile-book'),
-                  onPressed: from == null
-                      ? null
-                      : () => startBooking(
-                          context,
-                          ref,
-                          photographerId: photographerId,
-                        ),
-                ),
+                child: !acceptingOrders
+                    ? AppButton.outline(
+                        l.profileOrdersClosedButton,
+                        key: const Key('profile-book-closed'),
+                        onPressed: null,
+                        style: ordersClosedButtonStyle(context),
+                      )
+                    : AppButton.primary(
+                        from == null
+                            ? l.profileBook
+                            : l.profileBookFrom(formatMoney(from, short: true)),
+                        key: const Key('profile-book'),
+                        onPressed: from == null
+                            ? null
+                            : () => startBooking(
+                                context,
+                                ref,
+                                photographerId: photographerId,
+                              ),
+                      ),
               ),
             ],
           );

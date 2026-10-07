@@ -15,7 +15,9 @@ import 'package:photobooking/features/photographer_profile/profile_section.dart'
 import 'package:photobooking/features/photographer_profile/widgets/awards_strip.dart';
 
 /// Top of S03.01: photo, avatar over it, name + check, genres · area, follow,
-/// the four stats, bio, skill tags, equipment, and the owner's meter.
+/// the four stats, bio, skill tags, equipment, and the owner's meter. A
+/// visitor of a provider not accepting orders (S03.01-new) also sees the
+/// dashed "Chưa nhận đơn" tag under the name and a note after the stats.
 class ProfileHeader extends ConsumerWidget {
   const ProfileHeader({super.key, required this.profile, required this.owner});
 
@@ -41,6 +43,7 @@ class ProfileHeader extends ConsumerWidget {
         : s.specialtyIds;
     final studio = s.providerType == ProviderType.studio;
     final artist = s.providerType == ProviderType.artist;
+    final closed = !owner && !s.acceptingOrders;
     final meta = [
       for (final id in genres.take(2)) catalog.label(SkillGroup.specialty, id),
       ?(studio ? (s.studioDistrict ?? s.areaLabel) : s.areaLabel),
@@ -115,6 +118,13 @@ class ProfileHeader extends ConsumerWidget {
                                     showAwards: false,
                                   ),
                                 ),
+                              if (closed)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: AppSpace.s1),
+                                  child: OrdersClosedTag(
+                                    key: Key('profile-orders-closed-tag'),
+                                  ),
+                                ),
                               if (meta.isNotEmpty)
                                 Text(meta, style: theme.textTheme.bodySmall),
                             ],
@@ -169,6 +179,7 @@ class ProfileHeader extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (closed) _OrdersClosedNote(name: s.displayName),
               if (artist)
                 AwardsStrip(photographerId: s.id, reserveWhileLoading: true),
               if (profile.intro.bio.isNotEmpty) ...[
@@ -206,6 +217,40 @@ class ProfileHeader extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Mock `.lockn`: an info icon and why booking is closed, in tertiary ink.
+class _OrdersClosedNote extends StatelessWidget {
+  const _OrdersClosedNote({required this.name});
+
+  final String name;
+
+  /// Mock `.lockn` text size, as [StatTile]'s label.
+  static const _textSize = 10.5;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).brightness == Brightness.dark
+        ? AppColorsDark.foregroundMuted
+        : AppColors.foregroundMuted;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s3),
+      child: Row(
+        key: const Key('profile-orders-closed-note'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon(AppIcons.info, size: AppText.base2, color: muted),
+          const SizedBox(width: AppSpace.s1 * 1.5),
+          Expanded(
+            child: Text(
+              context.l10n.profileOrdersClosedNote(name),
+              style: TextStyle(fontSize: _textSize, height: 1.4, color: muted),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
