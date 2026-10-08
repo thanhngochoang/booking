@@ -103,12 +103,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · ẩn Sự kiện của tôi | S19 |
-| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ đã làm (4c) | S22 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi | S19 |
+| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134), nút mở khi có S21.02 (#135) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
-| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ✅ đã làm (10b) · chỉnh theo spec thanh toán 10-06 ở #56–#58 | S43 |
-| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ đã làm (10b) · chỉnh theo spec thanh toán 10-06 ở #56–#58 | S44 |
+| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày | S43 |
+| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ (10b, #134) · tra tên, OTP, 72 giờ (cổng giả) | S44 |
 | S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) · ảnh, gửi lại ảnh (#131) | S11 |
@@ -696,11 +696,11 @@ Khách khiếu nại trong cửa sổ khiếu nại → khoản thành `disputed
 - Nhiếp ảnh gia khai **tài khoản nhận tiền** (ngân hàng) ở S06.06 trước khi nhận được tiền; thiếu thì khoản vẫn tích luỹ ở `released` và ứng dụng nhắc thêm tài khoản.
 - Giai đoạn đầu `admin` duyệt từng lô và chuyển khoản thủ công (xuất tệp đối soát); sau đó tự động qua API chi hộ của ngân hàng/cổng. Mỗi lô `Payout` gồm nhiều khoản `released`, trạng thái `pending → processing → paid` (hoặc `failed`, `on_hold`).
 - v1 không thu hoa hồng, nhưng sổ cái có sẵn bút toán `fee` để bật sau.
-- Chi trả chạy qua CLI của nhân viên (`npm run payouts`) với cổng giả cho tới khi có nhà cung cấp ngân hàng và S23; ứng dụng chỉ đọc kết quả ở S06.05.
+- Chi trả chạy mỗi ngày bằng job `createPayouts` (10:00 giờ Việt Nam) với cổng giả cho tới khi có nhà cung cấp ngân hàng; nhân viên duyệt lần chi đầu bằng CLI `npm run payouts -- approve` cho tới khi có S23; ứng dụng chỉ đọc kết quả ở S06.05. Thuế khấu trừ và hoa hồng tính theo từng khoản (spec thanh toán §6 và §7).
 
 ### 3g.5 Sổ cái (ledger)
 
-Mọi biến động tiền là một **bút toán bất biến** (append‑only) trong `ledger_entries`: `deposit_received`, `ticket_received`, `refund_issued`, `escrow_released`, `payout_paid`, `fee_charged`, `adjustment`. Số dư treo của một khoản = tổng bút toán; không sửa/xoá bút toán, chỉ thêm bút toán đảo. Đối soát hằng ngày: tổng `*_received` − `refund_issued` phải khớp báo cáo của cổng. Dữ liệu và bảng ở [data-model](data-model/).
+Mọi biến động tiền là một **bút toán bất biến** (append‑only) trong `ledger_entries`: `deposit_received`, `ticket_received`, `refund_issued`, `escrow_released`, `payout_paid`, `tax_withheld`, `platform_fee`, `fee_charged`, `adjustment`. Số dư treo của một khoản = tổng bút toán; không sửa/xoá bút toán, chỉ thêm bút toán đảo. Đối soát hằng ngày: tổng `*_received` − `refund_issued` phải khớp báo cáo của cổng. Dữ liệu và bảng ở [data-model](data-model/).
 
 ### 3g.6 Hiển thị trong ứng dụng
 
