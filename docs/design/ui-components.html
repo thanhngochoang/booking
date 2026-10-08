@@ -41,7 +41,7 @@
   --cta:linear-gradient(135deg,#8338F5,#702BDB); --btn:linear-gradient(135deg,#8338F5,#702BDB); --btn-ink:#fff; --btn-shadow:0 4px 12px rgba(131,56,245,.25); --free-bg:#E3F5DF; --free-ink:#127001; --sheet-bg:rgba(255,255,255,.92); --scrim:rgba(0,0,0,.25); --glow:.5; --bezel:#1B1A18; --shadow:rgba(0,0,0,.18); color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding-inline:16px}
-.wrap{max-width:1240px;margin:0 auto;padding-block:32px 72px}
+body>.wrap{max-width:1240px;margin:0 auto;padding-block:32px 72px}
 h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,5vw,52px);line-height:1.2;margin:0;text-wrap:balance;letter-spacing:-.01em}
 h2{font-family:var(--display);font-weight:600;font-size:clamp(24px,3vw,34px);margin:64px 0 0;text-wrap:balance}
 h3{font-size:15px;font-weight:600;margin:0}
@@ -153,6 +153,8 @@ p{max-width:64ch;color:var(--ink-2);margin:10px 0}
 .btn.txt{color:var(--bad);font-weight:500}.btn.sm{height:38px;font-size:12px;border-radius:14px}.btn.xs{height:30px;font-size:11px;padding:0 12px;flex:none;border-radius:12px}
 /* nút nằm trực tiếp trong cột (sheet, body) giữ đúng chiều cao, không co giãn theo nội dung */
 .sheet>.btn,.body>.btn,.scr>.btn{flex:none}
+/* cũng vậy khi nút nằm trực tiếp trong khối cột (card hoặc div có flex-direction:column): flex:1 làm nút co còn ~21px */
+[style*="flex-direction:column"]>.btn{flex:none}
 .foot{flex:none;display:flex;gap:8px;padding:10px 14px 12px;border-top:1px solid var(--line);background:var(--surface)}
 .card{border:1px solid var(--line);border-radius:var(--r3);background:var(--glass);padding:10px;display:flex;gap:10px;align-items:center}
 .card.hi{border:1px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(var(--line-2),var(--line-2)) border-box;border-radius:var(--r4)}
