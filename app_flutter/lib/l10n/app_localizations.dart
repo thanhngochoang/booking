@@ -1267,8 +1267,14 @@ abstract class AppLocalizations {
   /// No description provided for @packageDeliveryLabel.
   ///
   /// In vi, this message translates to:
-  /// **'Giao sau (ngày)'**
+  /// **'Giao sau'**
   String get packageDeliveryLabel;
+
+  /// No description provided for @packageDeliverySuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngày'**
+  String get packageDeliverySuffix;
 
   /// No description provided for @packagePhotos.
   ///

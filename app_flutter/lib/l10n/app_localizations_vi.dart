@@ -638,7 +638,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get packageEditedLabel => 'Số ảnh hậu kỳ';
 
   @override
-  String get packageDeliveryLabel => 'Giao sau (ngày)';
+  String get packageDeliveryLabel => 'Giao sau';
+
+  @override
+  String get packageDeliverySuffix => 'ngày';
 
   @override
   String packagePhotos(int count) {

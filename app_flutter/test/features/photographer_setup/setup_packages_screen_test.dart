@@ -141,6 +141,27 @@ void main() {
     expect(find.text('Đã lưu gói.'), findsOneWidget);
   });
 
+  testWidgets('the delivery field reads "Giao sau" with the unit "ngày"', (
+    tester,
+  ) async {
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(_key('package-delivery'));
+    expect(field.decoration!.labelText, 'Giao sau');
+    expect(field.decoration!.suffixText, 'ngày');
+  });
+
+  testWidgets('each package row has a hide button "Ẩn gói {name}"', (
+    tester,
+  ) async {
+    final w = await _world(seed: const [_portrait]);
+    await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Ẩn gói Chân dung 2 giờ'), findsOneWidget);
+    expect(_key('package-hide-a'), findsOneWidget);
+  });
+
   testWidgets('hiding asks first; "Giữ lại" keeps the package', (tester) async {
     final w = await _world(seed: const [_portrait]);
     await tester.pumpWidget(w.app(location: '/setup/2', routes: _routes));
