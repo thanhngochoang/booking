@@ -225,7 +225,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S27.05 | Tin của studio và ứng viên | `/studio/recruit` | studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.06 | Cộng tác (studio và thợ) | `/collab` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.07 | Nhận việc cộng tác (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
-| **S28** | **Studio trên web** (dashboard Phase 1.5; mã màn do spec #167, #169 cấp) | | | | | |
+| **S28** | **Studio trên web** (dashboard Phase 1.5, chỉ chủ studio) | | | | | |
+| S28.01 | Tổng quan studio: chờ giao thợ, khách xin đổi thợ, cần bàn giao, buổi chụp hôm nay | `/studio` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.02 | Lịch tuần theo thành viên (hàng "Chưa giao thợ", cộng tác viên) | `/studio/calendar` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.03 | Booking: danh sách và chi tiết (giao thợ, đổi thợ, trả lời yêu cầu đổi, đã chụp xong) | `/studio/bookings` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.04 | Nộp bàn giao từ máy tính (kéo thả, nén trong trình duyệt, link ảnh gốc) | `/studio/bookings/:id/delivery` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.05 | Thành viên: thành viên, lời mời, yêu cầu gia nhập, mời thợ, cộng tác viên (chỉ đọc) | `/studio/members` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
 
 Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 

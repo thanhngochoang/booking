@@ -211,6 +211,26 @@ tr.sel td{background:var(--accent-soft)}
 .conv{display:flex;flex-direction:column;min-width:0}
 .convh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line)}
 .compose{display:flex;gap:10px;align-items:flex-end;padding:12px 20px;border-top:1px solid var(--line)}
+/* lịch studio, tải ảnh */
+.cal{display:grid;grid-template-columns:150px repeat(7,1fr);border:1px solid var(--line);border-radius:var(--r2);overflow:hidden;background:var(--glass);font-size:12px}
+.cal>div{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;min-height:52px;min-width:0}
+.cal .chd{min-height:0;font-weight:600;font-size:12.5px}.cal .chd small{display:block;font-weight:400;color:var(--ink-3);font-size:11px}
+.cal .chd.today{background:var(--accent-soft)}
+.cal .ch0{min-height:0}
+.cal .rh{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12.5px}.cal .rh .av{width:22px;height:22px}
+.cal .rh.warn{color:var(--bad-ink)}
+.cal .off{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--field) 6px 12px)}
+.bk{display:block;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:6px;padding:4px 6px;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk.bad{background:rgba(233,30,17,.14);border-left-color:var(--bad)}
+.bk.mute{background:var(--field);border-left-color:var(--line-2);color:var(--ink-3)}
+.up{display:flex;flex-direction:column;gap:12px}
+.drop{display:flex;gap:14px;align-items:center;border:1.5px dashed var(--line-2);border-radius:var(--r2);padding:18px;font-size:13.5px}
+.drop>.ms{font-size:32px;color:var(--accent)}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.tile{aspect-ratio:4/3;max-width:100%;border-radius:12px;background:linear-gradient(150deg,#8FB6C9,#1E3A4A);position:relative}
+.tile .st{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:600;background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:2px 8px}
+.tile .st.ok{background:rgba(26,159,2,.85)}.tile .st.bad{background:var(--bad-d)}
+.frow{display:flex;gap:12px;align-items:stretch}
 /* studio placeholder */
 .ph-empty{flex:1;border:1.5px dashed var(--line-2);border-radius:var(--r2);display:grid;place-items:center;text-align:center;color:var(--ink-3);font-size:13.5px;padding:24px}
 .foot{margin-top:56px;font-size:13px;color:var(--ink-3)}
@@ -964,10 +984,10 @@ tr.sel td{background:var(--accent-soft)}
 
   <!-- ============ S28 ============ -->
   <h2 id="S28">S28 · Studio trên web</h2>
-  <p>Chỉ chủ studio (tài khoản có <code>providerType = studio</code>). Dùng tốt từ 768 px. Màn cụ thể do spec #167 (vận hành) và #169 (kinh doanh) thêm vào đây.</p>
+  <p>Chỉ chủ studio (tài khoản có <code>providerType = studio</code>). Dùng tốt từ 768 px. Spec vận hành: <code>screens/studio-web-operations.md</code> (#167); kinh doanh (#169) thêm sau.</p>
 
-  <div class="shot">
-    <div class="frame"><div class="desk" data-code="S28 · khung">
+  <div class="shot" id="S28.01">
+    <div class="frame"><div class="desk" data-code="S28.01">
       <nav class="side" aria-label="Điều hướng studio">
         <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Studio Mây</div>
         <div class="nav on"><span class="ms">space_dashboard</span>Tổng quan</div>
@@ -975,7 +995,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="nav"><span class="ms">calendar_month</span>Lịch</div>
         <div class="nav"><span class="ms">event_available</span>Booking<span class="cnt late">1</span></div>
         <div class="nav"><span class="ms">cloud_upload</span>Bàn giao<span class="cnt">2</span></div>
-        <div class="nav"><span class="ms">groups</span>Thành viên</div>
+        <div class="nav"><span class="ms">groups</span>Thành viên<span class="cnt">1</span></div>
         <div class="grp">Kinh doanh</div>
         <div class="nav"><span class="ms">sell</span>Gói dịch vụ</div>
         <div class="nav"><span class="ms">request_quote</span>Báo giá</div>
@@ -987,13 +1007,154 @@ tr.sel td{background:var(--accent-soft)}
       <div class="main">
         <div class="bar"><div class="search"><span class="ms">search</span>Tìm booking theo mã hoặc tên khách…</div><span class="role">chủ studio</span></div>
         <div class="content">
-          <div class="ttl"><div><h3>Tổng quan</h3><div class="sub">Khung StudioShell</div></div></div>
-          <div class="ph-empty">Nội dung các mục studio thuộc spec #167 và #169.<br>Số đỏ là việc quá hạn (ví dụ booking chưa giao thợ quá hạn giao).</div>
+          <div class="ttl"><div><h3>Hôm nay</h3><div class="sub">Thứ Năm, 08/10/2026</div></div></div>
+          <div class="qgrid">
+            <div class="q late"><div class="h"><span class="ms">person_search</span>Chờ giao thợ</div><div class="big">2</div><div class="meta"><span class="chip c-bad">1 quá hạn</span>gần nhất: hạn 14:00 mai</div></div>
+            <div class="q"><div class="h"><span class="ms">swap_horiz</span>Khách xin đổi thợ</div><div class="big">1</div><div class="meta">còn 4 giờ 20 phút</div></div>
+            <div class="q"><div class="h"><span class="ms">cloud_upload</span>Cần bàn giao</div><div class="big">2</div><div class="meta">hạn sớm nhất 10/10</div></div>
+            <div class="q"><div class="h"><span class="ms">group_add</span>Lời mời, xin gia nhập</div><div class="big">1</div><div class="meta">1 yêu cầu gia nhập</div></div>
+          </div>
+          <div class="tbl"><table>
+            <thead><tr><th>Buổi chụp hôm nay</th><th>Khách</th><th>Gói</th><th>Thợ</th><th>Địa điểm</th></tr></thead>
+            <tbody>
+              <tr><td class="num">08:00–10:00</td><td>Hà Vy</td><td>Gia đình · 40 ảnh</td><td><div class="who"><span class="av"></span>Hoàng Vũ</div></td><td>Công viên Thống Nhất</td></tr>
+              <tr><td class="num">15:30–17:30</td><td>Phạm Quân</td><td>Chân dung · 25 ảnh</td><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span>Minh Trí</div></td><td>Hồ Gươm</td></tr>
+              <tr><td class="num">17:00–19:00</td><td>Lê Minh</td><td>Cặp đôi · 30 ảnh</td><td><span class="chip c-bad">Chưa giao · quá hạn</span></td><td>Phố cổ</td></tr>
+            </tbody></table></div>
         </div>
       </div>
     </div></div>
-    <div class="cap"><span class="n">S28 · khung StudioShell</span><b>Cùng cấu trúc với trang staff</b><span>Không bắt buộc xác thực hai lớp. Thành viên studio không vào được dashboard (dùng app).</span></div>
+    <div class="cap"><span class="n">S28.01 · Tổng quan studio</span><b>Bốn việc cần làm, rồi các buổi chụp trong ngày</b><span>Mỗi thẻ mở danh sách booking đã lọc. Phần "7 ngày tới" (số buổi so với thợ rảnh) nằm dưới bảng hôm nay.</span></div>
   </div>
+
+  <div class="shot" id="S28.02">
+    <div class="frame"><div class="desk" data-code="S28.02">
+      <nav class="side" aria-label="Điều hướng studio">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Studio Mây</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Vận hành</div>
+        <div class="nav on"><span class="ms">calendar_month</span>Lịch</div>
+        <div class="nav"><span class="ms">event_available</span>Booking<span class="cnt late">1</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm booking…</div><span class="role">chủ studio</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Lịch</h3><div class="sub">Tuần 05/10 – 11/10</div></div><div style="display:flex;gap:8px"><span class="fl"><span class="ms">chevron_left</span></span><span class="fl">Hôm nay</span><span class="fl"><span class="ms">chevron_right</span></span></div></div>
+          <div class="cal">
+            <div class="ch0"></div><div class="chd">T2 05<small>2 · 2 rảnh</small></div><div class="chd">T3 06<small>1 · 3 rảnh</small></div><div class="chd">T4 07<small>0 · 2 rảnh</small></div><div class="chd today">T5 08<small>4 · 1 rảnh</small></div><div class="chd">T6 09<small>1 · 2 rảnh</small></div><div class="chd">T7 10<small>4 · 1 rảnh</small></div><div class="chd">CN 11<small>4 · 0 rảnh <span class="chip c-mut">Đủ chỗ</span></small></div>
+            <div class="rh warn">Chưa giao thợ</div><div></div><div></div><div></div><div><span class="bk bad">17:00 Lê Minh</span></div><div></div><div><span class="bk bad">09:00 Thu Hà</span></div><div></div>
+            <div class="rh"><span class="av"></span>Hoàng Vũ</div><div><span class="bk">08:00 Trần Lan</span></div><div></div><div><span class="bk mute">Bận · việc riêng</span></div><div><span class="bk">08:00 Hà Vy</span></div><div class="off"></div><div><span class="bk">07:00 Cưới Tuấn</span></div><div><span class="bk">15:00 Kỷ yếu</span></div>
+            <div class="rh"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span>Minh Trí</div><div></div><div><span class="bk">10:00 Gia đình Hải</span></div><div></div><div><span class="bk">15:30 Phạm Quân</span></div><div></div><div><span class="bk">14:00 Chân dung</span></div><div><span class="bk">09:00 Hằng</span></div>
+            <div class="rh"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span>Thu Trang</div><div><span class="bk">16:00 Nam</span></div><div></div><div><span class="bk mute">Bận · việc riêng</span></div><div></div><div><span class="bk">09:00 Quỳnh</span></div><div><span class="bk">08:00 Cưới Phát</span></div><div><span class="bk">16:00 Lâm</span></div>
+            <div class="rh"><span class="av" style="background:linear-gradient(150deg,#8FB6C9,#1E3A4A)"></span>Đức Huy <span class="chip c-mut">CTV</span></div><div></div><div></div><div></div><div><span class="bk">13:00 Khánh</span></div><div></div><div></div><div><span class="bk">08:00 Mai</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S28.02 · Lịch tuần</span><b>Mỗi hàng một thợ, hàng trên cùng là booking chưa giao</b><span>Việc riêng của thợ chỉ hiện "Bận · việc riêng", không lộ khách hay giá. Bấm một booking mở chi tiết S28.03 ngay trên lịch; chưa có kéo thả.</span></div>
+  </div>
+
+  <div class="shot" id="S28.03">
+    <div class="frame"><div class="desk" data-code="S28.03">
+      <nav class="side" aria-label="Điều hướng studio">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Studio Mây</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Vận hành</div>
+        <div class="nav"><span class="ms">calendar_month</span>Lịch</div>
+        <div class="nav on"><span class="ms">event_available</span>Booking<span class="cnt late">1</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm booking…</div><span class="role">chủ studio</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Booking</h3></div></div>
+          <div class="tabs" role="tablist"><span class="on">Chờ giao thợ <b>2</b></span><span>Sắp tới <b>14</b></span><span>Đã chụp, chờ bàn giao <b>2</b></span><span>Đang sửa</span><span>Đã xong</span><span>Đã huỷ</span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Ngày giờ</th><th>Khách</th><th>Gói</th><th>Thợ</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td class="num">T5 08/10 17:00</td><td>Lê Minh</td><td>Cặp đôi · 2.800.000₫</td><td><span class="chip c-bad">Quá hạn giao</span></td></tr>
+                <tr><td class="num">T7 10/10 09:00</td><td>Thu Hà</td><td>Gia đình · 2.500.000₫</td><td><span class="chip c-mut">Hạn 09:00 mai</span></td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Lê Minh · Cặp đôi</h4><div class="hint">T5 08/10 17:00–19:00 · Phố cổ · đã thanh toán 2.800.000₫</div></div>
+              <div class="pb">
+                <div class="banner warn"><span class="ms">schedule</span><div><b>Quá hạn giao thợ 3 giờ</b><div class="hint">Khách đang thấy nút "Huỷ và hoàn 100%". Giao ngay để buổi chụp chạy tiếp.</div></div></div>
+                <b style="font-size:13px">Chọn thợ</b>
+                <div class="sugg on"><span class="ms on">radio_button_checked</span><div><b>Thu Trang</b> · 96% cà chua<div class="hint">Rảnh 17:00–19:00</div></div></div>
+                <div class="sugg"><span class="ms">radio_button_unchecked</span><div><b>Đức Huy</b> <span class="chip c-mut">CTV</span> · 91%<div class="hint">Rảnh · cần nhập thù lao</div></div></div>
+                <div class="sugg" style="opacity:.5"><span class="ms">radio_button_unchecked</span><div><b>Minh Trí</b> · 98%<div class="hint">Bận 15:30–17:30</div></div></div>
+              </div>
+              <div class="pf"><span class="btn pri">Giao cho Thu Trang</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S28.03 · Booking · giao thợ</span><b>Bản web của S26.04, cùng callable với app</b><span>Một nút chính theo trạng thái: Giao thợ → Đã chụp xong → Nộp bàn giao. Khách xin đổi thợ thì chi tiết có "Giao người khác" và nút đỏ "Từ chối…" (khách được huỷ hoàn 100%).</span></div>
+  </div>
+
+  <div class="shot" id="S28.04">
+    <div class="frame"><div class="desk" data-code="S28.04">
+      <nav class="side" aria-label="Điều hướng studio">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Studio Mây</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Vận hành</div>
+        <div class="nav"><span class="ms">event_available</span>Booking<span class="cnt late">1</span></div>
+        <div class="nav on"><span class="ms">cloud_upload</span>Bàn giao<span class="cnt">2</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm booking…</div><span class="role">chủ studio</span></div>
+        <div class="content">
+          <div class="ttl"><div><div class="hint"><span class="link">Booking</span> / Trần Thị Lan</div><h3>Bàn giao · vòng 1</h3><div class="sub">Gia đình · chụp T2 05/10 · hạn giao 10/10 · 40 ảnh, 1 vòng sửa</div></div></div>
+          <div class="up">
+            <div class="drop"><span class="ms">add_photo_alternate</span><div><b>Kéo ảnh mẫu vào đây</b> hoặc <span class="link">chọn ảnh</span><div class="hint">3–20 ảnh · tự nén về 1600 px, bỏ thông tin máy ảnh · đóng dấu sau khi tải</div></div></div>
+            <div class="grid6">
+              <div class="tile" style="background:linear-gradient(140deg,#E2C9B0,#7A5238)"><span class="st ok">Đã đóng dấu</span></div>
+              <div class="tile"><span class="st ok">Đã đóng dấu</span></div>
+              <div class="tile" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"><span class="st ok">Đã đóng dấu</span></div>
+              <div class="tile" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"><span class="st">Đang tải 64%</span></div>
+              <div class="tile" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"><span class="st">Đang nén</span></div>
+              <div class="tile" style="background:linear-gradient(160deg,#B9A08C,#4A3527)"><span class="st bad">Không đọc được</span></div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fld" style="flex:2"><label for="dl-link">Link ảnh gốc</label><div class="inp" id="dl-link">https://drive.google.com/drive/folders/1Lan-gia-dinh-0810</div><div class="hint">Khách chỉ mở được link sau khi duyệt bàn giao</div></div>
+            <div class="fld" style="flex:1"><label for="dl-count">Số ảnh bàn giao</label><div class="inp num" id="dl-count">42</div></div>
+            <div style="display:flex;align-items:flex-end"><span class="btn pri">Gửi bàn giao</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S28.04 · Nộp bàn giao</span><b>Kéo thả từ máy tính, nén ngay trong trình duyệt</b><span>Tải bằng URL ký 15 phút (≤ 2 MiB mỗi ảnh), tối đa 4 ảnh cùng lúc; server đọc lại và đóng dấu như khi nộp từ app. Nút gửi bật khi có ít nhất 3 ảnh đã đóng dấu và có link.</span></div>
+  </div>
+
+  <div class="shot" id="S28.05">
+    <div class="frame"><div class="desk" data-code="S28.05">
+      <nav class="side" aria-label="Điều hướng studio">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Studio Mây</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Vận hành</div>
+        <div class="nav"><span class="ms">calendar_month</span>Lịch</div>
+        <div class="nav on"><span class="ms">groups</span>Thành viên<span class="cnt">1</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm booking…</div><span class="role">chủ studio</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Thành viên</h3><div class="sub">3/30 thợ · còn 3 thao tác hôm nay</div></div><span class="btn pri"><span class="ms">person_add</span>Mời thợ</span></div>
+          <div class="tabs" role="tablist"><span class="on">Thành viên <b>3</b></span><span>Đang chờ <b>2</b></span><span>Cộng tác viên <b>1</b></span></div>
+          <div class="tbl"><table>
+            <thead><tr><th>Thợ</th><th>Cà chua</th><th>Việc đang giao</th><th>Thành viên từ</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div class="who"><span class="av"></span><div>Hoàng Vũ<small>Đà Nẵng · đã xác minh</small></div></div></td><td class="num">97%</td><td class="num">4</td><td>06/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+              <tr><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span><div>Minh Trí<small>TP.HCM · NAG</small></div></div></td><td class="num">98%</td><td class="num">3</td><td>07/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+              <tr><td><div class="who"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div>Thu Trang<small>Hà Nội · đã xác minh</small></div></div></td><td class="num">96%</td><td class="num">3</td><td>08/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+            </tbody></table></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S28.05 · Thành viên</span><b>Bản web của S26.01 và S26.02</b><span>Tab Đang chờ: lời mời đã gửi (Huỷ) và yêu cầu gia nhập (Duyệt / Từ chối). Tab Cộng tác viên chỉ đọc, "Mở trong app". "Bỏ khỏi studio…" là nút đỏ trong hộp, bị khoá khi thợ còn việc được giao.</span></div>
+  </div>
+
 
   <div class="foot">
     <b>Bảng mã màn trên trang này</b>
@@ -1016,7 +1177,11 @@ tr.sel td{background:var(--accent-soft)}
         <tr><td>S23.15</td><td>Chờ duyệt lần hai</td><td><code>/staff/approvals</code></td><td>ai có quyền duyệt</td></tr>
         <tr><td>S23.16</td><td>Tài khoản bị khoá</td><td><code>/staff/suspensions</code></td><td>admin · support</td></tr>
         <tr><td>S23.17</td><td>Cờ tuyển thợ</td><td><code>/staff/recruit-flags</code></td><td>admin · support</td></tr>
-        <tr><td>S28</td><td>Studio trên web (khung)</td><td><code>/studio</code></td><td>chủ studio</td></tr>
+        <tr><td>S28.01</td><td>Tổng quan studio</td><td><code>/studio</code></td><td>chủ studio</td></tr>
+        <tr><td>S28.02</td><td>Lịch tuần</td><td><code>/studio/calendar</code></td><td>chủ studio</td></tr>
+        <tr><td>S28.03</td><td>Booking</td><td><code>/studio/bookings</code></td><td>chủ studio</td></tr>
+        <tr><td>S28.04</td><td>Nộp bàn giao</td><td><code>/studio/bookings/:id/delivery</code></td><td>chủ studio</td></tr>
+        <tr><td>S28.05</td><td>Thành viên</td><td><code>/studio/members</code></td><td>chủ studio</td></tr>
       </tbody>
     </table></div>
   </div>
