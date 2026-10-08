@@ -8,6 +8,7 @@ import type { EarningsDeps } from '../../src/earnings_ports.js';
 import type { PayoutAccountDeps, PayoutDeps, PayoutNotices } from '../../src/payout_ports.js';
 import type { NameStatus, PayoutAccount } from '../../src/payout_account.js';
 import { requestPayoutOtp } from '../../src/payout_account_use_cases.js';
+import { OTP_RESEND_SECONDS } from '../../src/payout_otp.js';
 import { savePayoutAccount } from '../../src/save_payout_account.js';
 import type { Payout } from '../../src/payout.js';
 import { DEFAULT_PAYOUT_POLICY } from '../../src/payout_policy.js';
@@ -143,8 +144,23 @@ export async function otpFor(
 }
 
 /**
+ * Fixtures must not hit the OTP and lookup limits for fixture reasons: wait out the 60 s resend
+ * (moves the clock), and forget today's sends and lookups (store shortcut).
+ */
+function clearFixtureLimits(w: PayoutWorld, uid: string): void {
+  const challenge = w.payoutStore.otpChallenges.get(uid);
+  if (challenge !== undefined) {
+    const wait = Date.parse(challenge.sentAt) + OTP_RESEND_SECONDS * 1000 - w.clock.now().getTime();
+    if (wait > 0) w.clock.setTime(new Date(w.clock.now().getTime() + wait));
+    w.payoutStore.otpChallenges.set(uid, { ...challenge, sendsToday: 0 });
+  }
+  w.payoutStore.lookupQuotas.delete(uid);
+}
+
+/**
  * Adds (or changes to) a VCB account through `savePayoutAccount` v2, with an OTP when the user
- * already has one. The user is made a photographer with a verified name and a phone if needed.
+ * already has one (after `clearFixtureLimits`). The user is made a photographer with a verified
+ * name and a phone if needed.
  * `nameStatus` / `activeFrom` are fixture overrides written on the saved account and its view
  * afterwards (e.g. a `pending_review` account, or one still inside the 72 hours).
  */
@@ -159,6 +175,7 @@ export async function addAccount(
   if (!w.phones.has(uid)) w.phones.set(uid, '0912345678');
   const target = { bankCode: 'VCB', accountNumber };
   const hasCurrent = [...w.payoutStore.accounts.values()].some((a) => a.userId === uid && a.active);
+  clearFixtureLimits(w, uid);
   const input = hasCurrent ? { ...target, otpCode: await otpFor(w, target, uid) } : target;
   const saved = await savePayoutAccount(accountDepsFor(w, uid), { uid }, input);
   const key = `${uid}/${saved.accountId}`;

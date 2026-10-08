@@ -133,8 +133,22 @@ describe('requestPayoutOtp', () => {
     const w = createPayoutWorld();
     w.payoutStore.seedRole('c1', 'customer');
     w.phones.set('c1', '0900000000');
-    await refused(requestPayoutOtp(w.accountDeps, { uid: 'c1' }, target), 'permission_denied');
-    await refused(requestPayoutOtp(w.accountDeps, P1, { ...target, holderName: 'X' }), 'invalid_argument');
+    let phoneReads = 0;
+    let randomCalls = 0;
+    const deps = {
+      ...w.accountDeps,
+      otp: {
+        ...w.accountDeps.otp,
+        phones: { phoneOf: (uid: string) => ((phoneReads += 1), w.accountDeps.otp.phones.phoneOf(uid)) },
+        crypto: {
+          sha256Hex: (x: string) => w.accountDeps.otp.crypto.sha256Hex(x),
+          random: (n: number) => ((randomCalls += 1), w.accountDeps.otp.crypto.random(n)),
+        },
+      },
+    };
+    await refused(requestPayoutOtp(deps, { uid: 'c1' }, target), 'permission_denied');
+    assert.deepEqual([phoneReads, randomCalls], [0, 0], 'the role is checked before the phone or the code');
+    await refused(requestPayoutOtp(deps, P1, { ...target, holderName: 'X' }), 'invalid_argument');
     assert.deepEqual(w.otpSender.sent, []);
   });
 

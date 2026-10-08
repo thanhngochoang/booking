@@ -69,8 +69,9 @@ export function livePayoutAccountDeps(): PayoutAccountDeps {
     cipher: lazy,
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
-    // Fail closed until #134 Task 5 wires the fake lookup, the identity reader and the OTP
-    // adapters: no verified name + unsupported lookup = every save is refused (not_eligible).
+    // Fail closed until #134 Task 5 wires the fake lookup, the identity reader, the OTP adapters
+    // and the payout_lookups quota: a save stops at the quota stub (internal), and even past it no
+    // verified name + an unsupported lookup would be refused (not_eligible).
     lookup: { lookup: async () => ({ status: 'unsupported' }) },
     names: { legalName: async () => null },
     otp: {

@@ -18,6 +18,7 @@ import {
   type PayoutAccount,
 } from './payout_account.js';
 import { checkOtp, otpCodeHashInput, otpTargetHashInput } from './payout_otp.js';
+import { chargeLookup, isSameAccount } from './payout_account_use_cases.js';
 import type { PayoutAccountDeps } from './payout_ports.js';
 
 export interface Caller {
@@ -74,6 +75,15 @@ export async function savePayoutAccount(
   if (target === null) throw new DomainError('invalid_argument');
   const { bank, number, otpCode } = target;
 
+  // Before any external call: photographer only, not the account already active, a change carries
+  // a code; then one lookup is charged to the 20 a day (the save must not be an uncapped oracle).
+  const seenId = await chargeLookup(deps, caller.uid, async (tx) => {
+    const current = await tx.getActiveAccount(caller.uid);
+    if (await isSameAccount(deps.cipher, current, bank.code, number)) throw new DomainError('conflict');
+    if (current !== null && otpCode === undefined) throw new DomainError('otp_required');
+    return current?.id ?? null;
+  });
+
   // Outside the transaction: the verified name and the bank lookup (a slow external call).
   const verifiedName = await deps.names.legalName(caller.uid);
   const lookup = await deps.lookup.lookup({ bankCode: bank.code, accountNumber: number });
@@ -90,6 +100,8 @@ export async function savePayoutAccount(
     const now = deps.clock.now();
     const at = now.toISOString();
     const current = await tx.getActiveAccount(caller.uid);
+    // Changed since the checks above (a concurrent save): refuse, the client retries.
+    if ((current?.id ?? null) !== seenId) throw new DomainError('conflict');
     const processing = current ? await tx.listPayouts(caller.uid, ['processing']) : [];
     const open = current ? await tx.listPayouts(caller.uid, ['pending', 'needs_approval', 'on_hold']) : [];
     const challenge = current ? await tx.getOtpChallenge(caller.uid) : null;

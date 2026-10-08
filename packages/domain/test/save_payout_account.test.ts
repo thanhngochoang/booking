@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { DomainError } from '../src/errors.js';
 import type { Payout, PayoutStatus } from '../src/payout.js';
 import { normalizeHolderName } from '../src/payout_account.js';
+import { lookupPayoutAccountName, requestPayoutOtp } from '../src/payout_account_use_cases.js';
 import { savePayoutAccount } from '../src/save_payout_account.js';
 import { resumePayout } from '../src/payout_use_cases.js';
 import { ADMIN, createPayoutWorld, otpFor, type PayoutWorld } from './support/payout_world.js';
@@ -20,6 +21,27 @@ const second = { bankCode: 'TCB', accountNumber: '5555666677' };
 /** p1 saves their first account (VCB 0123456789). */
 async function withFirst(w: PayoutWorld) {
   return savePayoutAccount(w.accountDeps, P1, first);
+}
+
+/** Everything a save writes except the lookup quota (which a refused save may still charge). */
+function accountState(w: PayoutWorld): string {
+  return JSON.stringify([
+    [...w.payoutStore.accounts.values()],
+    [...w.payoutStore.accountViews.values()],
+    [...w.payoutStore.payouts.values()],
+    [...w.payoutStore.otpChallenges.values()],
+  ]);
+}
+
+/** Counts the external calls a save makes (the bank lookup and the identity read). */
+function counted(w: PayoutWorld) {
+  const calls = { lookup: 0, names: 0 };
+  const deps = {
+    ...w.accountDeps,
+    lookup: { lookup: (r: { bankCode: string; accountNumber: string }) => ((calls.lookup += 1), w.accountDeps.lookup.lookup(r)) },
+    names: { legalName: (uid: string) => ((calls.names += 1), w.accountDeps.names.legalName(uid)) },
+  };
+  return { deps, calls };
 }
 
 function wrongCode(code: string): string {
@@ -86,12 +108,56 @@ describe('savePayoutAccount v2', () => {
 
   it('mismatch is name_mismatch and writes nothing; not_found is not_found; unverifiable is not_eligible', async () => {
     const w = createPayoutWorld();
+    const before = accountState(w);
     await refused(savePayoutAccount(w.accountDeps, P1, { ...first, accountNumber: '0123454321' }), 'name_mismatch');
     await refused(savePayoutAccount(w.accountDeps, P1, { ...first, accountNumber: '0123450404' }), 'not_found');
     w.names.delete('p1');
     await refused(savePayoutAccount(w.accountDeps, P1, { ...first, accountNumber: '0123459999' }), 'not_eligible');
+    assert.equal(accountState(w), before);
+    // Only the lookups are charged (Ruling 5).
+    assert.equal(w.payoutStore.lookupQuotas.get('p1')?.count, 3);
+  });
+
+  it("the save's lookup counts toward the 20 a day", async () => {
+    const w = createPayoutWorld();
+    for (let i = 0; i < 19; i += 1) await lookupPayoutAccountName(w.accountDeps, P1, first);
+    const { deps, calls } = counted(w);
+    await savePayoutAccount(deps, P1, first); // the 20th lookup
+    assert.deepEqual(w.payoutStore.lookupQuotas.get('p1'), { day: '2026-10-10', count: 20 });
+    await refused(lookupPayoutAccountName(w.accountDeps, P1, first), 'limit_exceeded');
+    const code = await otpFor(w, second);
+    const before = accountState(w);
+    await refused(savePayoutAccount(deps, P1, { ...second, otpCode: code }), 'limit_exceeded');
+    assert.equal(calls.lookup, 1, 'the refused save never reaches the bank');
+    assert.equal(accountState(w), before, 'nor spends the code');
+  });
+
+  it("a customer's save never reaches the lookup or the identity read", async () => {
+    const w = createPayoutWorld();
+    w.payoutStore.seedRole('c1', 'customer');
+    const { deps, calls } = counted(w);
+    await refused(savePayoutAccount(deps, { uid: 'c1' }, first), 'permission_denied');
+    await refused(savePayoutAccount(deps, { uid: 'ghost' }, first), 'permission_denied');
+    assert.deepEqual(calls, { lookup: 0, names: 0 });
     assert.equal(w.payoutStore.writes, 0);
-    assert.equal(w.payoutStore.accounts.size, 0);
+  });
+
+  it('changing to the account already active is conflict before any OTP or lookup is spent', async () => {
+    const w = createPayoutWorld();
+    await withFirst(w);
+    const { deps, calls } = counted(w);
+    const quota = w.payoutStore.lookupQuotas.get('p1');
+    const before = accountState(w);
+    await refused(savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123.456.789' }), 'conflict');
+    await refused(savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '0123456789', otpCode: '123456' }), 'conflict');
+    await refused(requestPayoutOtp(deps, P1, { bankCode: 'VCB', accountNumber: '0123456789' }), 'conflict');
+    assert.deepEqual(calls, { lookup: 0, names: 0 });
+    assert.deepEqual(w.payoutStore.lookupQuotas.get('p1'), quota);
+    assert.equal(accountState(w), before);
+    assert.deepEqual(w.otpSender.sent, []);
+    // Same number at another bank, or same last four with another number, is a real change.
+    await refused(savePayoutAccount(deps, P1, { bankCode: 'TCB', accountNumber: '0123456789' }), 'otp_required');
+    await refused(savePayoutAccount(deps, P1, { bankCode: 'VCB', accountNumber: '9999456789' }), 'otp_required');
   });
 
   it('unsupported bank with a verified name saves pending_review with the verified name as holder', async () => {
@@ -185,6 +251,13 @@ describe('savePayoutAccount v2', () => {
     await withFirst(w);
     const code = await otpFor(w, second);
     const two = await savePayoutAccount(w.accountDeps, P1, { ...second, otpCode: code });
+    // The same account again is now `conflict` (Ruling 7); to reach the OTP check, put the first
+    // account back in place (fixture shortcut) and replay the used code for the second one.
+    const fresh = w.payoutStore.accounts.get(`p1/${two.accountId}`);
+    const old = [...w.payoutStore.accounts.values()].find((a) => a.id !== two.accountId);
+    assert.ok(fresh && old);
+    w.payoutStore.accounts.set(`p1/${fresh.id}`, { ...fresh, active: false });
+    w.payoutStore.accounts.set(`p1/${old.id}`, { ...old, active: true });
     await refused(savePayoutAccount(w.accountDeps, P1, { ...second, otpCode: code }), 'otp_required');
     assert.equal(w.payoutStore.accountViews.get('p1')?.accountId, two.accountId);
   });
@@ -193,10 +266,10 @@ describe('savePayoutAccount v2', () => {
     const w = createPayoutWorld();
     await withFirst(w);
     const code = await otpFor(w, second); // requested for TCB 5555666677
-    const writes = w.payoutStore.writes;
+    const before = accountState(w);
     await refused(savePayoutAccount(w.accountDeps, P1, { bankCode: 'TCB', accountNumber: '5555666688', otpCode: code }), 'otp_required');
     await refused(savePayoutAccount(w.accountDeps, P1, { bankCode: 'MB', accountNumber: '5555666677', otpCode: code }), 'otp_required');
-    assert.equal(w.payoutStore.writes, writes);
+    assert.equal(accountState(w), before);
     assert.equal(w.payoutStore.otpChallenges.get('p1')?.attempts, 0);
   });
 
@@ -269,9 +342,9 @@ describe('savePayoutAccount v2', () => {
       createdBy: 'admin', createdAt: at, updatedAt: at,
     });
     const code = await otpFor(w, second);
-    const writes = w.payoutStore.writes;
+    const before = accountState(w);
     await refused(savePayoutAccount(w.accountDeps, P1, { ...second, otpCode: code }), 'conflict');
-    assert.equal(w.payoutStore.writes, writes);
+    assert.equal(accountState(w), before);
     assert.equal(w.payoutStore.accounts.get(`p1/${one.accountId}`)?.active, true);
     assert.equal(w.payoutStore.otpChallenges.get('p1')?.consumedAt, null);
   });
@@ -284,7 +357,9 @@ describe('savePayoutAccount v2', () => {
     ]);
     assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
     const failed = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
-    assert.ok(failed.reason instanceof DomainError && failed.reason.code === 'otp_required');
+    // The second save passed its checks before the first committed: the main transaction sees
+    // another current account and refuses (the client retries and then needs an OTP).
+    assert.ok(failed.reason instanceof DomainError && failed.reason.code === 'conflict', String(failed.reason));
     assert.equal([...w.payoutStore.accounts.values()].filter((a) => a.active).length, 1);
   });
 
@@ -319,11 +394,12 @@ describe('savePayoutAccount v2', () => {
       },
       (key, value: unknown) => (key === 'accountNumberEnc' ? undefined : value),
     );
-    for (const n of numbers) {
-      for (const text of [errorText, stored]) {
-        assert.equal(text.includes(n), false, `${n} leaked`);
-        assert.equal(text.includes(n.slice(0, 6)), false, `${n.slice(0, 6)} leaked`);
+    // Messages name the index, never the number (test output is a log too).
+    numbers.forEach((n, i) => {
+      for (const [where, text] of [['errors', errorText], ['store', stored]] as const) {
+        assert.equal(text.includes(n), false, `number #${i} leaked in ${where}`);
+        assert.equal(text.includes(n.slice(0, 6)), false, `prefix of number #${i} leaked in ${where}`);
       }
-    }
+    });
   });
 });

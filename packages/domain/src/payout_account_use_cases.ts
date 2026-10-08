@@ -22,8 +22,43 @@ import {
   otpCodeHashInput,
   otpTargetHashInput,
 } from './payout_otp.js';
-import type { PayoutAccountDeps } from './payout_ports.js';
+import type { PayoutAccount } from './payout_account.js';
+import type { AccountCipher, PayoutAccountDeps, PayoutTx } from './payout_ports.js';
 import type { Caller } from './save_payout_account.js';
+
+/** The target is the account already active (same bank, same number): nothing to change. */
+export async function isSameAccount(
+  cipher: AccountCipher,
+  current: PayoutAccount | null,
+  bankCode: string,
+  number: string,
+): Promise<boolean> {
+  if (current === null || current.bankCode !== bankCode || current.accountLast4 !== number.slice(-4)) return false;
+  return (await cipher.decrypt(current.accountNumberEnc)) === number;
+}
+
+/**
+ * One transaction before any bank lookup (`lookupPayoutAccountName` and `savePayoutAccount`): the
+ * caller must be a photographer, then `guard` (refusals that must not spend a lookup), then one
+ * lookup is charged to the caller's Vietnam day; the 21st is `limit_exceeded` and charges nothing.
+ * Returns what `guard` returned.
+ */
+export async function chargeLookup<T>(
+  deps: Pick<PayoutAccountDeps, 'store' | 'clock'>,
+  uid: string,
+  guard: (tx: PayoutTx) => Promise<T>,
+): Promise<T> {
+  return deps.store.runTransaction(async (tx) => {
+    if ((await tx.getUserRole(uid)) !== 'photographer') throw new DomainError('permission_denied');
+    const guarded = await guard(tx);
+    const day = formatVnDate(deps.clock.now());
+    const quota = await tx.getLookupQuota(uid);
+    const count = quota !== null && quota.day === day ? quota.count : 0;
+    if (count >= NAME_LOOKUPS_PER_DAY) throw new DomainError('limit_exceeded');
+    tx.putLookupQuota(uid, { day, count: count + 1 });
+    return guarded;
+  });
+}
 
 /**
  * raw: exactly {bankCode, accountNumber}. Counts one lookup for the caller's Vietnam day (the 21st
@@ -38,14 +73,7 @@ export async function lookupPayoutAccountName(
   const target = parseAccountTarget(raw, false);
   if (target === null) throw new DomainError('invalid_argument');
 
-  await deps.store.runTransaction(async (tx) => {
-    if ((await tx.getUserRole(caller.uid)) !== 'photographer') throw new DomainError('permission_denied');
-    const day = formatVnDate(deps.clock.now());
-    const quota = await tx.getLookupQuota(caller.uid);
-    const count = quota !== null && quota.day === day ? quota.count : 0;
-    if (count >= NAME_LOOKUPS_PER_DAY) throw new DomainError('limit_exceeded');
-    tx.putLookupQuota(caller.uid, { day, count: count + 1 });
-  });
+  await chargeLookup(deps, caller.uid, async () => undefined);
 
   const stored = await deps.names.legalName(caller.uid);
   const verifiedName = stored !== null && stored.trim() !== '' ? stored.trim() : null;
@@ -61,7 +89,8 @@ export async function lookupPayoutAccountName(
 /**
  * raw: exactly {bankCode, accountNumber} (the account the code will be allowed to save). Only for
  * a change (a current account exists), to the photographer's phone; resend after 60 s, 5 sends per
- * Vietnam day. Stores salted hashes only; the code goes out after the commit.
+ * Vietnam day; never for the account already active (`conflict`). Stores salted hashes only; the
+ * code goes out after the commit.
  */
 export async function requestPayoutOtp(
   deps: PayoutAccountDeps,
@@ -71,18 +100,17 @@ export async function requestPayoutOtp(
   const target = parseAccountTarget(raw, false);
   if (target === null) throw new DomainError('invalid_argument');
 
-  const phone = (await deps.otp.phones.phoneOf(caller.uid))?.trim() ?? '';
-  const phoneDigits = phone.replace(/[^0-9]/g, '');
-  const code = otpCodeFrom(deps.otp.crypto.random(4));
-  const salt = hexOf(deps.otp.crypto.random(OTP_SALT_BYTES));
-  const codeHash = await deps.otp.crypto.sha256Hex(otpCodeHashInput(salt, code));
-  const targetHash = await deps.otp.crypto.sha256Hex(otpTargetHashInput(salt, target.bank.code, target.number));
-
-  await deps.store.runTransaction(async (tx) => {
+  const sent = await deps.store.runTransaction(async (tx) => {
+    // The role first: nothing is read or generated for anyone else.
     if ((await tx.getUserRole(caller.uid)) !== 'photographer') throw new DomainError('permission_denied');
-    if ((await tx.getActiveAccount(caller.uid)) === null) throw new DomainError('not_eligible');
-    if (phoneDigits === '') throw new DomainError('phone_required');
+    const current = await tx.getActiveAccount(caller.uid);
+    if (current === null) throw new DomainError('not_eligible');
+    // No code for the account already active: saving it would be refused anyway.
+    if (await isSameAccount(deps.cipher, current, target.bank.code, target.number)) throw new DomainError('conflict');
     const previous = await tx.getOtpChallenge(caller.uid);
+    const phone = (await deps.otp.phones.phoneOf(caller.uid))?.trim() ?? '';
+    const phoneDigits = phone.replace(/[^0-9]/g, '');
+    if (phoneDigits === '') throw new DomainError('phone_required');
     const now = deps.clock.now();
     const day = formatVnDate(now);
     if (previous !== null) {
@@ -93,12 +121,16 @@ export async function requestPayoutOtp(
         throw new DomainError('limit_exceeded');
       }
     }
+    // A new code and a new salt replace the previous challenge (Ruling 6): the old code is then
+    // checked against the new hash, so it is a counted wrong try (`otp_invalid`), not `otp_required`.
+    const code = otpCodeFrom(deps.otp.crypto.random(4));
+    const salt = hexOf(deps.otp.crypto.random(OTP_SALT_BYTES));
     tx.putOtpChallenge({
       uid: caller.uid,
       purpose: 'payout_account',
-      codeHash,
+      codeHash: await deps.otp.crypto.sha256Hex(otpCodeHashInput(salt, code)),
       salt,
-      targetHash,
+      targetHash: await deps.otp.crypto.sha256Hex(otpTargetHashInput(salt, target.bank.code, target.number)),
       expiresAt: new Date(now.getTime() + OTP_TTL_SECONDS * 1000).toISOString(),
       attempts: 0,
       sentAt: now.toISOString(),
@@ -106,8 +138,9 @@ export async function requestPayoutOtp(
       sendsToday: previous !== null && previous.sendDay === day ? previous.sendsToday + 1 : 1,
       consumedAt: null,
     });
+    return { phone, phoneDigits, code };
   });
 
-  await deps.otp.sender.send({ phone, code, purpose: 'payout_account' });
-  return { phoneLast4: phoneDigits.slice(-4), expiresInSeconds: OTP_TTL_SECONDS, resendInSeconds: OTP_RESEND_SECONDS };
+  await deps.otp.sender.send({ phone: sent.phone, code: sent.code, purpose: 'payout_account' });
+  return { phoneLast4: sent.phoneDigits.slice(-4), expiresInSeconds: OTP_TTL_SECONDS, resendInSeconds: OTP_RESEND_SECONDS };
 }
