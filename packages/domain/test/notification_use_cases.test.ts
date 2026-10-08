@@ -193,3 +193,40 @@ describe('pruneReadNotifications', () => {
     assert.equal(await pruneReadNotifications(w.deps), 0);
   });
 });
+
+describe('grouped names', () => {
+  const quote = (actorId: string, name: string, eventId: string): NotifyRequest => ({
+    userId: 'u1',
+    content: { type: 'quote_new', jobTitle: 'Chụp kỷ yếu', count: 1, names: [name] },
+    target: '/jobs/j1/applications',
+    dedupeKey: 'ignored',
+    groupKey: 'job:j1:quotes',
+    eventId,
+    actor: { id: actorId, name, avatarUrl: null },
+  });
+
+  it("grouped render receives the actors' names newest first", async () => {
+    const w = createNotifyWorld();
+    await notify(w.deps, quote('p3', 'Hà', 'p3_1'));
+    await notify(w.deps, quote('p2', 'Lan Chi', 'p2_1'));
+    assert.equal(w.store.rowsOf('u1')[0]?.body, 'Lan Chi và Hà. Xem và so sánh báo giá.');
+    await notify(w.deps, quote('p1', 'Minh Trí', 'p1_1'));
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.title, '3 nhiếp ảnh gia đã báo giá cho việc “Chụp kỷ yếu”');
+    assert.equal(row?.body, 'Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá.');
+    assert.equal(w.push.sent[2]?.msg.body, row?.body);
+  });
+
+  it('chat_message grouped copy unchanged', async () => {
+    const w = createNotifyWorld();
+    await notify(w.deps, chat(1, 'Lan', 'm1'));
+    assert.deepEqual(
+      { title: w.store.rowsOf('u1')[0]?.title, body: w.store.rowsOf('u1')[0]?.body },
+      { title: 'Lan', body: 'tin 1' },
+    );
+    await notify(w.deps, chat(2, 'Lan', 'm2'));
+    const row = w.store.rowsOf('u1')[0];
+    assert.deepEqual({ title: row?.title, body: row?.body }, { title: 'Lan', body: '2 tin nhắn mới' });
+    assert.equal('names' in (row ?? {}), false);
+  });
+});

@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { bookingNotices } from '../src/booking_notifications.js';
 import { computeRefund } from '../src/booking_policy.js';
 import { createBookingDraft } from '../src/create_booking.js';
 import { createPayment } from '../src/create_payment.js';
@@ -14,6 +15,7 @@ import { runBookingSweeps } from '../src/booking_sweeps.js';
 import { openDispute } from '../src/open_dispute.js';
 import { createPayout } from '../src/payout_use_cases.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
+import { dispatchRefund, dispatchRefunds } from '../src/refunds.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { transferOf } from './support/booking_world.js';
 import { ADMIN, addAccount, createPayoutWorld, type PayoutWorld } from './support/payout_world.js';
@@ -162,5 +164,63 @@ describe('unpaid booking payments', () => {
     await openDispute(w.deps, { bookingId, customerId: 'c1', reason: 'Thiếu ảnh' });
     assert.equal(w.store.payments.get(paymentId)?.escrowStatus, 'disputed');
     assert.equal(w.store.payments.get(stray.id)?.escrowStatus, 'held');
+  });
+});
+
+describe('booking refund_done marker (depositRefundedAt)', () => {
+  const manualRefund = (paymentId: string, id: string, fromEscrow = true): Refund => ({
+    id, paymentId, subjectType: 'booking', amount: 100_000, percent: 10, status: 'pending', manual: false, fromEscrow,
+    reason: 'test', createdAt: '2026-10-14T01:00:00.000Z', updatedAt: '2026-10-14T01:00:00.000Z',
+  });
+
+  it('a booking escrow refund that becomes done sets depositRefundedAt once', async () => {
+    const w = createPayoutWorld();
+    const { bookingId, paymentId } = await bookingPaidWith(w, [PRICE]);
+    w.clock.setTime(new Date('2026-10-14T01:00:00.000Z'));
+    await transitionBooking(w.deps, { bookingId, action: 'cancel', actorId: 'c1', reason: 'Bận' });
+    const after = w.store.bookings.get(bookingId);
+    assert.ok(after);
+    assert.equal(after.depositRefundedAt, '2026-10-14T01:00:00.000Z');
+    assert.equal(after.updatedAt, '2026-10-14T01:00:00.000Z');
+    assert.equal(after.depositRefunded, computeRefund(PRICE, 50));
+    // The booking trigger now sees the marker appear and sends refund_done.
+    assert.deepEqual(bookingNotices({ ...after, depositRefundedAt: undefined }, after), [{ to: 'customer', kind: 'refund' }]);
+
+    // A later escrow refund of the same payment leaves the first instant.
+    w.clock.setTime(new Date('2026-10-14T05:00:00.000Z'));
+    const extra = await dispatchRefund(w.deps, manualRefund(paymentId, 'r_extra'), 'fake');
+    assert.equal(extra.status, 'done');
+    assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, '2026-10-14T01:00:00.000Z');
+    assert.equal(w.store.bookings.get(bookingId)?.version, after.version);
+  });
+
+  it('a refund with fromEscrow false does not set it', async () => {
+    const w = createPayoutWorld();
+    const { bookingId, paymentId } = await bookingPaidWith(w, [1_200_000]);
+    const excess = [...w.store.refunds.values()].filter((r) => r.paymentId === paymentId);
+    assert.deepEqual(excess.map((r) => [r.status, r.fromEscrow]), [['done', false]]);
+    assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, undefined);
+    await dispatchRefund(w.deps, manualRefund(paymentId, 'r_pass', false), 'fake');
+    assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, undefined);
+  });
+
+  it('a failed refund does not set it', async () => {
+    const w = createPayoutWorld();
+    const { bookingId, paymentId } = await bookingPaidWith(w, [PRICE]);
+    w.gateway.refundFailureId = 'r_fail';
+    assert.equal((await dispatchRefund(w.deps, manualRefund(paymentId, 'r_fail'), 'fake')).status, 'failed');
+    w.gateway.refundThrowCount = 1;
+    const [thrown] = await dispatchRefunds(w.deps, [{ refund: manualRefund(paymentId, 'r_throw'), provider: 'fake' }]);
+    assert.equal(thrown?.status, 'failed');
+    assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, undefined);
+  });
+
+  it('a done refund whose booking is gone writes only the refund', async () => {
+    const w = createPayoutWorld();
+    const { bookingId, paymentId } = await bookingPaidWith(w, [PRICE]);
+    w.store.bookings.delete(bookingId);
+    assert.equal((await dispatchRefund(w.deps, manualRefund(paymentId, 'r_gone'), 'fake')).status, 'done');
+    assert.equal(w.store.bookings.has(bookingId), false);
+    assert.equal(w.store.refunds.get('r_gone')?.status, 'done');
   });
 });

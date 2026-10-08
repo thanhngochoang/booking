@@ -45,7 +45,8 @@ export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<Noti
         const carried = prev && prev.readAt === null ? prev : null;
         const count = (carried?.count ?? 0) + 1;
         const actors = [req.actor, ...(carried?.actors ?? []).filter((a) => a.id !== req.actor?.id)].slice(0, 3);
-        const t = renderNotification({ ...req.content, count } as NotificationContent);
+        // Grouped copy may name the row's actors, newest first (S17 Decision 3); chat ignores `names`.
+        const t = renderNotification({ ...req.content, count, names: actors.map((a) => a.name) } as NotificationContent);
         const next: NotificationRow = {
           ...base,
           id,

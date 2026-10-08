@@ -60,6 +60,7 @@ export * from './notification_ports.js';
 export * from './memory_notification_store.js';
 export * from './notification_use_cases.js';
 export * from './booking_notifications.js';
+export * from './notification_hooks.js';
 export * from './badge.js';
 export * from './badge_ports.js';
 export * from './memory_badge_store.js';
