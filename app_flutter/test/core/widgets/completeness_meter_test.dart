@@ -102,4 +102,17 @@ void main() {
       expect(find.byType(BackdropFilter), findsNothing);
     }
   });
+
+  testWidgets('unscored in a 160dp row (S09.02 Kỹ năng) at 1.3x does not '
+      'overflow', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const SizedBox(width: 160, child: CompletenessMeter(percent: null)),
+        width: 320,
+        textScale: 1.3,
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('Chưa có điểm'), findsOneWidget);
+  });
 }

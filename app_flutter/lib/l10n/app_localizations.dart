@@ -592,6 +592,66 @@ abstract class AppLocalizations {
   /// **'Xem trước nút'**
   String get settingsButtonPreview;
 
+  /// No description provided for @settingsMode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chế độ'**
+  String get settingsMode;
+
+  /// No description provided for @settingsButtonGradientShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gradient'**
+  String get settingsButtonGradientShort;
+
+  /// No description provided for @settingsStudioAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ studio'**
+  String get settingsStudioAddress;
+
+  /// No description provided for @settingsStudioAddressEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có địa chỉ'**
+  String get settingsStudioAddressEmpty;
+
+  /// No description provided for @settingsVerify.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh & nhận đơn'**
+  String get settingsVerify;
+
+  /// No description provided for @settingsVerifyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh danh tính để bắt đầu nhận đơn'**
+  String get settingsVerifyBody;
+
+  /// No description provided for @settingsMyStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio của tôi'**
+  String get settingsMyStudio;
+
+  /// No description provided for @settingsMyStudioBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio đang ở, việc được giao, lời mời'**
+  String get settingsMyStudioBody;
+
+  /// No description provided for @settingsStudioMembers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên studio'**
+  String get settingsStudioMembers;
+
+  /// No description provided for @settingsStudioMembersBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời thợ, giao việc cho thành viên'**
+  String get settingsStudioMembersBody;
+
   /// No description provided for @settingsDeveloper.
   ///
   /// In vi, this message translates to:

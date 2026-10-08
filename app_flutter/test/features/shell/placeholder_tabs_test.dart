@@ -94,55 +94,6 @@ void main() {
     expect(find.byType(MyBookingsScreen), findsOneWidget);
     expect(find.text('Chưa có buổi chụp sắp tới'), findsOneWidget);
   });
-  testWidgets('profile tab signs out', (tester) async {
-    final (auth, users) = await _signedIn(UserRole.customer);
-    await tester.pumpWidget(_app(const ProfileTab(), auth, users));
-    await tester.pumpAndSettle();
-    expect(find.text('Minh'), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('sign-out')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('sign-out')));
-    await tester.pumpAndSettle();
-    expect(auth.currentUser, isNull);
-  });
-  testWidgets('photographer switches to customer and back from profile', (
-    tester,
-  ) async {
-    final (auth, users) = await _signedIn(UserRole.photographer);
-    await tester.pumpWidget(_app(const ProfileTab(), auth, users));
-    await tester.pumpAndSettle();
-    expect(find.text('Nhiếp ảnh gia'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing, reason: 'nothing switched yet');
-
-    // The Thu nhập row pushes the switch card below the fold.
-    await tester.ensureVisible(find.text('Chuyển qua chế độ đặt lịch'));
-    await tester.tap(find.text('Chuyển qua chế độ đặt lịch'));
-    await tester.pumpAndSettle();
-    final uid = auth.currentUser!.uid;
-    expect((await users.watch(uid).first)?.role, UserRole.customer);
-    expect(find.text('Khách hàng'), findsOneWidget);
-    expect(find.text('Đã chuyển qua chế độ đặt lịch.'), findsOneWidget);
-    expect(users.photographerDocs, contains(uid), reason: 'kept for later');
-
-    await tester.tap(find.text('Chuyển qua chế độ nhiếp ảnh'));
-    await tester.pumpAndSettle();
-    expect((await users.watch(uid).first)?.role, UserRole.photographer);
-    expect(find.text('Đã chuyển qua chế độ nhiếp ảnh.'), findsOneWidget);
-  });
-  testWidgets('a failed switch keeps the role and says so', (tester) async {
-    final auth = FakeAuthRepository();
-    final users = FakeUserRepository(failSetRole: true);
-    final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');
-    await users.ensureProfile(u);
-    await tester.pumpWidget(_app(const ProfileTab(), auth, users));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('switch-role')));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Không đổi được chế độ. Kiểm tra mạng rồi thử lại.'),
-      findsOneWidget,
-    );
-  });
   for (final size in const [Size(320, 640), Size(430, 932)]) {
     testWidgets('bookings tab fits $size at text scale 1.3', (tester) async {
       tester.view.physicalSize = size;
@@ -160,23 +111,16 @@ void main() {
     });
   }
 
-  testWidgets('S09.01: switch is the small primary, shared avatar, h3 title', (
-    tester,
-  ) async {
+  testWidgets('S09.01: large avatar; mode switch and sign-out live in '
+      'S09.02', (tester) async {
     final (auth, users) = await _signedIn(UserRole.customer);
     await tester.pumpWidget(_app(const ProfileTab(), auth, users));
     await tester.pumpAndSettle();
-    final sw = find.byKey(const Key('switch-role'));
-    expect(tester.widget<AppButton>(sw).size, AppButtonSize.small);
-    expect(
-      find.descendant(of: sw, matching: find.byType(CtaSurface)),
-      findsOneWidget,
-    );
     final avatar = tester.widget<AppAvatar>(find.byType(AppAvatar));
     expect(avatar.size, AppAvatarSize.lg);
-    final title = tester.widget<Text>(find.text('Tôi là nhiếp ảnh gia'));
-    expect(title.style?.fontSize, 17);
-    expect(title.style?.fontFamily, AppFonts.display);
+    expect(find.byKey(const Key('switch-role')), findsNothing);
+    expect(find.byKey(const Key('sign-out')), findsNothing);
+    expect(find.text('Tôi là nhiếp ảnh gia'), findsNothing);
   });
 
   Widget routed(
@@ -431,20 +375,6 @@ void main() {
     await tester.pumpWidget(routed(auth, users, intro));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('continue-setup')), findsNothing);
-  });
-
-  testWidgets('switching to photographer opens setup while it is unfinished', (
-    tester,
-  ) async {
-    final (auth, users) = await _signedIn(UserRole.customer);
-    await tester.pumpWidget(
-      routed(auth, users, FakePhotographerIntroRepository()),
-    );
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('switch-role')));
-    await tester.tap(find.byKey(const Key('switch-role')));
-    await tester.pumpAndSettle();
-    expect(find.text('setup'), findsOneWidget);
   });
 
   testWidgets('photographers open their calendar from the work tab', (

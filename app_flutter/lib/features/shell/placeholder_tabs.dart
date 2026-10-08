@@ -7,39 +7,17 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/badges/badge_providers.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
-import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
-import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/awards/award_nudge.dart';
 import 'package:photobooking/features/booking/my_bookings_screen.dart';
 import 'package:photobooking/features/create_post/create_post_screen.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/home/home_controller.dart';
-import 'package:photobooking/features/onboarding/role_controller.dart';
 import 'package:photobooking/features/work/work_screen.dart';
 
 UserRole _role(WidgetRef ref) =>
     ref.watch(currentProfileProvider).value?.role ?? UserRole.customer;
-
-/// After switching to photographer: open the setup while it is unfinished
-/// (spec S09.01). Without a router above (some widget tests) it does nothing.
-Future<void> _openSetupIfUnfinished(BuildContext context, WidgetRef ref) async {
-  final uid = ref.read(authRepositoryProvider).currentUser?.uid;
-  if (uid == null) {
-    return;
-  }
-  PhotographerIntro? intro;
-  try {
-    intro = await ref.read(photographerIntroRepositoryProvider).get(uid);
-  } catch (_) {
-    return; // offline: the card on this tab still offers it
-  }
-  if (!context.mounted || (intro?.onboardingComplete ?? false)) {
-    return;
-  }
-  GoRouter.maybeOf(context)?.push('/setup');
-}
 
 class ActionTab extends ConsumerWidget {
   const ActionTab({
@@ -120,22 +98,6 @@ class ProfileTab extends ConsumerWidget {
     final setupOpen =
         isPhotographer &&
         !(ref.watch(myIntroProvider).value?.onboardingComplete ?? true);
-    final switching = ref.watch(roleSwitchControllerProvider).isLoading;
-    ref.listen(roleSwitchControllerProvider, (prev, next) {
-      // Only a finished switch the user started: loading -> data/error.
-      if (next.isLoading || !(prev?.isLoading ?? false)) return;
-      final message = next.hasError
-          ? l.profileSwitchError
-          : next.value == UserRole.photographer
-          ? l.profileSwitchedToPhotographer
-          : l.profileSwitchedToCustomer;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(message)));
-      if (!next.hasError && next.value == UserRole.photographer) {
-        _openSetupIfUnfinished(context, ref);
-      }
-    });
     final avatar = profile?.avatarUrl;
     return ScreenCode(
       ScreenCodes.profile,
@@ -155,8 +117,8 @@ class ProfileTab extends ConsumerWidget {
           ],
         ),
         body: SafeArea(
-          // Scrolls on short or landscape screens; sign-out still sits at the
-          // bottom when there is room.
+          // Scrolls on short or landscape screens. Mode switch and sign-out
+          // live in S09.02 (gear).
           child: LayoutBuilder(
             builder: (context, box) => SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpace.s5),
@@ -230,67 +192,6 @@ class ProfileTab extends ConsumerWidget {
                         const _EarningsRow(),
                         AwardNudgeRow(uid: profile!.uid),
                       ],
-                      const SizedBox(height: AppSpace.s6),
-                      GlassCard(
-                        highlight: false,
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpace.s4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // The card offers the other mode, so its text
-                              // names the mode you'd switch to.
-                              Text(
-                                isPhotographer
-                                    ? l.profileOfferCustomerTitle
-                                    : l.profileOfferPhotographerTitle,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontSize: 17,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpace.s2),
-                              Text(
-                                isPhotographer
-                                    ? l.profileOfferCustomerBody
-                                    : l.profileOfferPhotographerBody,
-                                style: theme.textTheme.bodySmall,
-                              ),
-                              const SizedBox(height: AppSpace.s3),
-                              AppButton.primary(
-                                isPhotographer
-                                    ? l.profileSwitchToCustomer
-                                    : l.profileSwitchToPhotographer,
-                                key: const Key('switch-role'),
-                                size: AppButtonSize.small,
-                                icon: const AppIcon(AppIcons.swap),
-                                loading: switching,
-                                onPressed: profile == null
-                                    ? null
-                                    : () => ref
-                                          .read(
-                                            roleSwitchControllerProvider
-                                                .notifier,
-                                          )
-                                          .switchTo(
-                                            isPhotographer
-                                                ? UserRole.customer
-                                                : UserRole.photographer,
-                                          ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      const SizedBox(height: AppSpace.s5),
-                      AppButton.outline(
-                        l.signOut,
-                        key: const Key('sign-out'),
-                        onPressed: switching
-                            ? null
-                            : () =>
-                                  ref.read(pushRegistrationProvider).signOut(),
-                      ),
                     ],
                   ),
                 ),

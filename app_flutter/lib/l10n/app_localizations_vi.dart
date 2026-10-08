@@ -267,6 +267,36 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsButtonPreview => 'Xem trước nút';
 
   @override
+  String get settingsMode => 'Chế độ';
+
+  @override
+  String get settingsButtonGradientShort => 'Gradient';
+
+  @override
+  String get settingsStudioAddress => 'Địa chỉ studio';
+
+  @override
+  String get settingsStudioAddressEmpty => 'Chưa có địa chỉ';
+
+  @override
+  String get settingsVerify => 'Xác minh & nhận đơn';
+
+  @override
+  String get settingsVerifyBody => 'Xác minh danh tính để bắt đầu nhận đơn';
+
+  @override
+  String get settingsMyStudio => 'Studio của tôi';
+
+  @override
+  String get settingsMyStudioBody => 'Studio đang ở, việc được giao, lời mời';
+
+  @override
+  String get settingsStudioMembers => 'Thành viên studio';
+
+  @override
+  String get settingsStudioMembersBody => 'Mời thợ, giao việc cho thành viên';
+
+  @override
   String get settingsDeveloper => 'Dành cho nhà phát triển';
 
   @override
