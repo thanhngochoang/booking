@@ -784,6 +784,102 @@ abstract class AppLocalizations {
   /// **'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.'**
   String get profileSwitchError;
 
+  /// S09.01 counts row: label under the number of the user's own posts.
+  ///
+  /// In vi, this message translates to:
+  /// **'bài đăng'**
+  String get profilePostsCount;
+
+  /// S09.01 counts row: shown only once S19 exists (savedListsReadyProvider).
+  ///
+  /// In vi, this message translates to:
+  /// **'đang theo dõi'**
+  String get profileFollowingCount;
+
+  /// S09.01 counts row: shown only once S19 exists (savedListsReadyProvider).
+  ///
+  /// In vi, this message translates to:
+  /// **'đã lưu'**
+  String get profileSavedCount;
+
+  /// S09.01 kind chip: all of the user's posts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả · {n}'**
+  String profileFilterAll(int n);
+
+  /// S09.01 kind chip: work posts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tác phẩm · {n}'**
+  String profileFilterWork(int n);
+
+  /// S09.01 kind chip: photos shared after a real shoot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp · {n}'**
+  String profileFilterRealShoot(int n);
+
+  /// S09.01 kind chip: event shares.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện · {n}'**
+  String profileFilterEventShare(int n);
+
+  /// S09.01 corner tag on a real-shoot tile under "Tất cả".
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chụp'**
+  String get profileTagRealShoot;
+
+  /// S09.01 corner tag on an event-share tile under "Tất cả".
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện'**
+  String get profileTagEventShare;
+
+  /// No description provided for @profileEmptyPhotographerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có bài đăng'**
+  String get profileEmptyPhotographerTitle;
+
+  /// No description provided for @profileEmptyPhotographerAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài đầu tiên'**
+  String get profileEmptyPhotographerAction;
+
+  /// No description provided for @profileEmptyCustomerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có ảnh nào'**
+  String get profileEmptyCustomerTitle;
+
+  /// No description provided for @profileEmptyCustomerBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây'**
+  String get profileEmptyCustomerBody;
+
+  /// No description provided for @profilePostsError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được bài đăng.'**
+  String get profilePostsError;
+
+  /// S09.01 row under the grid when the next page failed; tapping it asks again.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải thêm được. Thử lại'**
+  String get profilePostsMoreError;
+
+  /// S09.01 spoken label of a grid tile whose post has no caption.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài đăng {n}'**
+  String profilePostTile(int n);
+
   /// No description provided for @statusRequested.
   ///
   /// In vi, this message translates to:

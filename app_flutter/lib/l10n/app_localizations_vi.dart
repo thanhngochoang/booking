@@ -369,6 +369,65 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.';
 
   @override
+  String get profilePostsCount => 'bài đăng';
+
+  @override
+  String get profileFollowingCount => 'đang theo dõi';
+
+  @override
+  String get profileSavedCount => 'đã lưu';
+
+  @override
+  String profileFilterAll(int n) {
+    return 'Tất cả · $n';
+  }
+
+  @override
+  String profileFilterWork(int n) {
+    return 'Tác phẩm · $n';
+  }
+
+  @override
+  String profileFilterRealShoot(int n) {
+    return 'Buổi chụp · $n';
+  }
+
+  @override
+  String profileFilterEventShare(int n) {
+    return 'Sự kiện · $n';
+  }
+
+  @override
+  String get profileTagRealShoot => 'Buổi chụp';
+
+  @override
+  String get profileTagEventShare => 'Sự kiện';
+
+  @override
+  String get profileEmptyPhotographerTitle => 'Chưa có bài đăng';
+
+  @override
+  String get profileEmptyPhotographerAction => 'Đăng bài đầu tiên';
+
+  @override
+  String get profileEmptyCustomerTitle => 'Chưa có ảnh nào';
+
+  @override
+  String get profileEmptyCustomerBody =>
+      'Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây';
+
+  @override
+  String get profilePostsError => 'Không tải được bài đăng.';
+
+  @override
+  String get profilePostsMoreError => 'Không tải thêm được. Thử lại';
+
+  @override
+  String profilePostTile(int n) {
+    return 'Bài đăng $n';
+  }
+
+  @override
   String get statusRequested => 'Đã gửi';
 
   @override

@@ -20,6 +20,15 @@ class FakePostRepository implements PostRepository {
   /// When set, [byPhotographer] waits for it (keeps a read in flight).
   Future<void>? holdByPhotographer;
 
+  /// The cursor of every [byAuthor] call, in order (null = first page).
+  final byAuthorCursors = <String?>[];
+
+  /// When set, [byAuthor] waits for it (keeps a read in flight).
+  Future<void>? holdByAuthor;
+
+  /// When set, [byAuthor] calls for a next page (with a cursor) throw it.
+  Object? failByAuthorNextPagesWith;
+
   void add(PostSummary post) => _posts.add(post);
 
   /// Removes a post if present; used when a draft id is published again.
@@ -97,8 +106,13 @@ class FakePostRepository implements PostRepository {
     String? cursor,
     int limit = 20,
   }) async {
+    byAuthorCursors.add(cursor);
+    await holdByAuthor;
     if (failWith != null) {
       throw failWith!;
+    }
+    if (cursor != null && failByAuthorNextPagesWith != null) {
+      throw failByAuthorNextPagesWith!;
     }
     if (uid.isEmpty || uid.contains('/')) {
       return const PostPage();
