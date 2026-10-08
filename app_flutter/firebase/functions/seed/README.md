@@ -62,10 +62,11 @@ Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data
 
 | Data | Owner | Notes |
 |---|---|---|
-| `payoutAccounts/{uid}` + `accounts/seed-account-an-1` | An | VCB, `0123456789` (stored encrypted with the emulator key in `.secret.local`; the owner view shows `•••• 6789`), holder `NGUYEN VAN AN` |
-| Payout `seed-payout-an-1` | An | `paid`; its payment (`seed-payment-seed-booking-completed-old`) is `paid_out`, with a `payout_paid` ledger entry |
+| `payoutAccounts/{uid}` + `accounts/seed-account-an-1` | An | VCB, `0123456789` (stored encrypted with the emulator key in `.secret.local`; the owner view shows `•••• 6789`), holder `NGUYEN VAN AN`; `nameStatus: matched`, active from the seed start (`SEED_CREATED_AT`) |
+| `users/{uid}/private/identity` | An | identity legalName (An): `Nguyễn Văn An`, `method`/`provider` `fake` (test value; the doc's full shape is #135's) |
+| Payout `seed-payout-an-1` | An | `paid`, the first payout to the account (approved by `seed-staff-admin`); 1 500 000 gross, tax 7% 105 000, net 1 395 000; its payment (`seed-payment-seed-booking-completed-old`) is `paid_out`, with `payout_paid` −1 395 000 and `tax_withheld` −105 000 ledger entries |
 | `seed-booking-disputed` | Lan ↔ An | completed 10 hours before seeding; payment `disputed`, reason "Ảnh giao thiếu so với gói" |
-| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 3 × 450 000, soon 450 000, received 450 000) |
+| `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 3 × 1 500 000, soon 1 500 000, received 1 500 000; the paid row carries its tax and net) |
 | Payout account | Bình | none (the S06.05 add-account card) |
 
 ## Chats (S07)
@@ -148,16 +149,23 @@ must be able to sign. `--actor` is the uid of a user with the admin claim. The d
 ## Staff CLI for payouts
 
 `npm run payouts -- --help` lists the commands: `due` (payees with released money and open
-payouts), `show <payoutId>` (the account is printed masked, `•••• 6789`), and
-`create <payeeId>`, `execute <payoutId>`, `hold <payoutId> "<reason>"`, `resume <payoutId>`, each
-with `--actor <uid>` of an admin (`seed-staff-admin` locally). Against the emulators set
+payouts, `needs_approval` included), `show <payoutId>` (the account is printed masked, `•••• 6789`), and
+`create <payeeId>`, `approve <payoutId>`, `execute <payoutId>`, `hold <payoutId> "<reason>"`,
+`resume <payoutId>`, `run-daily`, each with `--actor <uid>` of an admin (`seed-staff-admin` locally). Against the emulators set
 `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`; the key comes from `.secret.local`.
 Against a real project set `GOOGLE_APPLICATION_CREDENTIALS` and `PAYOUT_ACCOUNT_KEY`. `execute`
-works only with the fake gateway (emulators or `PAYOUTS_MODE=fake`): no real bank adapter exists.
+and `run-daily` work only with the fake gateway (emulators or `PAYOUTS_MODE=fake`): no real bank
+adapter exists.
+
+Daily payouts on the emulator: `npm run payouts -- run-daily --actor seed-staff-admin` does what the
+daily `createPayouts` job (10:00 Vietnam time) does and prints its report; approve a first payout
+with `npm run payouts -- approve <id> --actor seed-staff-admin`, then run it again to send it.
 
 ```bash
 npm run payouts -- due
 npm run payouts -- create seed-photographer-an --actor seed-staff-admin   # batches An's released payment (completed-recent)
+npm run payouts -- run-daily --actor seed-staff-admin
+npm run payouts -- approve <payoutId> --actor seed-staff-admin
 ```
 
 ## Photo events (plan 10c)

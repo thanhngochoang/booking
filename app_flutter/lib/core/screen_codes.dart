@@ -31,6 +31,7 @@ abstract final class ScreenCodes {
   static const bookReview = 'S04.03';
   static const awaitingPayment = 'S04.04';
   static const addPhone = 'S04.05';
+  static const bookPlace = 'S04.06';
   // S05 Theo dõi buổi chụp (khách).
   static const bookings = 'S05.01';
   static const bookingDetail = 'S05.02';
@@ -56,6 +57,8 @@ abstract final class ScreenCodes {
   static const skillsPart2 = 'S08.03';
   static const skillEvidence = 'S08.04';
   static const setupContact = 'S08.05';
+  static const myAddons = 'S08.06';
+  static const editAddon = 'S08.07';
   // S09 Hồ sơ cá nhân & cài đặt.
   static const profile = 'S09.01';
   static const settings = 'S09.02';
@@ -173,6 +176,7 @@ abstract final class ScreenCodes {
     bookReview,
     awaitingPayment,
     addPhone,
+    bookPlace,
     bookings,
     bookingDetail,
     cancelBooking,
@@ -194,6 +198,8 @@ abstract final class ScreenCodes {
     skillsPart2,
     skillEvidence,
     setupContact,
+    myAddons,
+    editAddon,
     profile,
     settings,
     editProfile,

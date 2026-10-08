@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/work/work_empty.dart';
 
 import '../../support/booking_world.dart';
@@ -14,6 +17,10 @@ Future<BookingsTabHandles> _pump(
   required int photos,
   bool package = true,
   int? completeness = 90,
+  PhotographerIntro intro = const PhotographerIntro(acceptingOrders: true),
+  List<Override> extraOverrides = const [],
+  double textScale = 1.0,
+  Size viewSize = const Size(390, 844),
 }) async {
   final handles = await pumpBookingsTab(
     tester,
@@ -23,6 +30,10 @@ Future<BookingsTabHandles> _pump(
     portfolioPhotos: photos,
     packages: package ? const [workPackage] : const [],
     completeness: completeness,
+    intro: intro,
+    extraOverrides: extraOverrides,
+    textScale: textScale,
+    viewSize: viewSize,
   );
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 100));
@@ -136,5 +147,82 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(handles.location, '/work/calendar');
+  });
+
+  group('S06.02 closed variant (Decision 17)', () {
+    const closed = PhotographerIntro(onboardingComplete: true);
+
+    testWidgets('a photographer not accepting orders sees "Mở nhận đơn để '
+        'khách đặt được bạn", the body and the note', (tester) async {
+      await _pump(tester, photos: 8, intro: closed);
+
+      expect(find.text('Mở nhận đơn để khách đặt được bạn'), findsOneWidget);
+      expect(
+        find.text(
+          'Bạn vẫn đăng portfolio, tạo gói và trò chuyện. Khách chỉ đặt lịch '
+          'và xin báo giá sau khi bạn xác minh: số điện thoại, phí xác minh, '
+          'danh tính và quy định nhận việc.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Staff duyệt trong 24 giờ sau khi bạn gửi'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(AppIcons.verifiedUser), findsOneWidget);
+      expect(find.text('Buổi chụp tiếp theo bắt đầu từ đây'), findsNothing);
+    });
+
+    testWidgets('"Bắt đầu nhận đơn" is hidden while verifyStartReadyProvider '
+        'is false', (tester) async {
+      await _pump(tester, photos: 8, intro: closed);
+
+      expect(find.text('Bắt đầu nhận đơn'), findsNothing);
+      expect(find.text('Mở nhận đơn để khách đặt được bạn'), findsOneWidget);
+      expect(_primaryLabels(tester), isEmpty);
+    });
+
+    testWidgets('with the flag overridden to true it pushes /verify/start', (
+      tester,
+    ) async {
+      final handles = await _pump(
+        tester,
+        photos: 8,
+        intro: closed,
+        extraOverrides: [verifyStartReadyProvider.overrideWithValue(true)],
+      );
+
+      expect(_primaryLabels(tester), ['Bắt đầu nhận đơn']);
+      await _tapPrimary(tester, 'Bắt đầu nhận đơn');
+      expect(handles.location, '/verify/start');
+    });
+
+    testWidgets('an accepting photographer keeps the old empty state '
+        '("Buổi chụp tiếp theo bắt đầu từ đây")', (tester) async {
+      await _pump(
+        tester,
+        photos: 8,
+        intro: const PhotographerIntro(acceptingOrders: true),
+        extraOverrides: [verifyStartReadyProvider.overrideWithValue(true)],
+      );
+
+      expect(find.text('Buổi chụp tiếp theo bắt đầu từ đây'), findsOneWidget);
+      expect(find.text('Bắt đầu nhận đơn'), findsNothing);
+      expect(_primaryLabels(tester), ['Chia sẻ hồ sơ']);
+    });
+
+    testWidgets('closed variant fits 320 dp at 1.3× text', (tester) async {
+      await _pump(
+        tester,
+        photos: 8,
+        intro: closed,
+        extraOverrides: [verifyStartReadyProvider.overrideWithValue(true)],
+        textScale: 1.3,
+        viewSize: const Size(320, 640),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Bắt đầu nhận đơn'), findsOneWidget);
+    });
   });
 }

@@ -11,6 +11,7 @@ import {
 import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
+import { handleCreatePayouts } from './scheduled/create_payouts.js';
 import {
   handleOpenInquiry,
   handleSendMessage,
@@ -19,6 +20,7 @@ import {
 } from './callables/chat.js';
 import {
   CALLABLE_OPTIONS,
+  CREATE_PAYOUTS_OPTIONS,
   PAYMENT_CALLABLE_OPTIONS,
   PAYMENT_CLOCK_OPTIONS,
   PAYOUT_ACCOUNT_KEY,
@@ -26,7 +28,11 @@ import {
   TRIGGER_OPTIONS,
   WEBHOOK_OPTIONS,
 } from './config.js';
-import { handleSavePayoutAccount } from './callables/payout_account.js';
+import {
+  handleLookupPayoutAccountName,
+  handleRequestPayoutOtp,
+  handleSavePayoutAccount,
+} from './callables/payout_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
 import { handlePayoutWrite } from './triggers/payout_write.js';
 import { liveEarningsDeps, livePayoutAccountDeps } from './infra/live_payout.js';
@@ -411,12 +417,33 @@ export const pruneNotifications = onSchedule(
 // ---- earnings and payout account (plan 10b) ----
 
 /**
- * `{bankCode, accountNumber, holderName}` → `{accountId, accountLast4}`. Photographers only; a
- * change of an existing account needs a sign-in from the last 5 minutes (`reauth_required`).
- * The number is stored AES-256-GCM encrypted with the secret PAYOUT_ACCOUNT_KEY.
+ * S06.06 `{bankCode, accountNumber}` → `{decision, holderName, verifiedName}`: the bank's holder
+ * name compared with the verified name. Photographers only, 20 lookups per Vietnam day
+ * (`limit_exceeded`), shared with the save. Fake lookup on the emulator/dev only, else unsupported.
+ */
+export const lookupPayoutAccountName = onCall(CALLABLE_OPTIONS, (request) =>
+  handleLookupPayoutAccountName(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
+);
+
+/**
+ * S06.06 `{bankCode, accountNumber}` → `{phoneLast4, expiresInSeconds, resendInSeconds}`: the OTP a
+ * change of account needs (`not_eligible` outside the emulator/dev: no SMS vendor yet). Binds the
+ * account key only to tell the account already active (`conflict`) by decrypting it.
+ */
+export const requestPayoutOtp = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
+  handleRequestPayoutOtp(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
+);
+
+/**
+ * S06.06 v2 `{bankCode, accountNumber, otpCode?}` → `{accountId, accountLast4, activeFrom,
+ * nameStatus}`. Photographers only; the holder name comes from the bank and must match the
+ * verified name (`name_mismatch`, `not_found`, `not_eligible`); a change needs the OTP
+ * (`otp_required`, `otp_invalid`, `otp_expired`, `limit_exceeded`) and is active 72 hours later;
+ * the account already active is `conflict`. The number is stored AES-256-GCM encrypted with the
+ * secret PAYOUT_ACCOUNT_KEY.
  */
 export const savePayoutAccount = onCall({ ...CALLABLE_OPTIONS, secrets: [PAYOUT_ACCOUNT_KEY] }, (request) =>
-  handleSavePayoutAccount(request, livePayoutAccountDeps()),
+  handleSavePayoutAccount(request, livePayoutAccountDeps(request.auth?.uid ?? '')),
 );
 
 /** A payment write refreshes the payee's earnings rows and totals. */
@@ -441,6 +468,11 @@ export const onPayoutWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document:
     liveEarningsDeps(),
     liveNotifyDeps(),
   );
+});
+
+/** Daily 10:00 Asia/Ho_Chi_Minh: batch released money per payee and send it (fake gateway only; off elsewhere). */
+export const createPayouts = onSchedule(CREATE_PAYOUTS_OPTIONS, async () => {
+  await handleCreatePayouts();
 });
 
 // ---- photo events (plan 10c) ----

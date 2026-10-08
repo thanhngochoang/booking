@@ -12,16 +12,40 @@ abstract class EarningsRepository {
   /// The masked active account, null while none is registered.
   Stream<PayoutAccountView?> watchAccount(String uid);
 
-  /// Registers or changes the payout account. Throws [PayoutAccountError].
-  Future<({String accountId, String accountLast4})> saveAccount({
+  /// Asks the bank for the holder name and compares it with the verified name.
+  /// Throws [PayoutAccountError] (`limit_exceeded` after 20 a day).
+  Future<PayoutNameLookup> lookupAccountName({
     required String bankCode,
     required String accountNumber,
-    required String holderName,
+  });
+
+  /// Sends an OTP for changing to this account. Throws [PayoutAccountError].
+  Future<PayoutOtpTicket> requestAccountOtp({
+    required String bankCode,
+    required String accountNumber,
+  });
+
+  /// Registers (no [otpCode]) or changes (with [otpCode]) the payout account.
+  /// A change is active from [activeFrom] (72 h later). Throws
+  /// [PayoutAccountError].
+  Future<({String accountId, String accountLast4, DateTime activeFrom})>
+  saveAccount({
+    required String bankCode,
+    required String accountNumber,
+    String? otpCode,
   });
 }
 
-/// In-memory repository for tests and previews.
+String _last4(String number) =>
+    number.length <= 4 ? number : number.substring(number.length - 4);
+
+/// In-memory repository for tests and previews. Records calls as
+/// `bankCode:last4` (saves `bankCode:last4[:otp]`), never a full number.
 class FakeEarningsRepository implements EarningsRepository {
+  FakeEarningsRepository({DateTime Function()? clock})
+    : _clock = clock ?? (() => DateTime.now().toUtc());
+
+  final DateTime Function() _clock;
   final _summary = StreamController<EarningsSummary>.broadcast();
   final _items = StreamController<List<EarningItem>>.broadcast();
   final _account = StreamController<PayoutAccountView?>.broadcast();
@@ -29,9 +53,35 @@ class FakeEarningsRepository implements EarningsRepository {
   List<EarningItem> _lastItems = const [];
   PayoutAccountView? _lastAccount;
   String? _failNext;
+  String? _failNextLookup;
+  String? _failNextOtp;
 
-  /// `bankCode:last4` of each successful save; never a full number.
+  /// `bankCode:last4` of each successful save, plus `:otp` when one was given.
   final List<String> saves = [];
+
+  /// `bankCode:last4` of each lookup, failed ones included.
+  final List<String> lookupCalls = [];
+
+  /// `bankCode:last4` of each OTP request, failed ones included.
+  final List<String> otpCalls = [];
+
+  /// Lookup answers keyed `bankCode:number`; any other key gets
+  /// [defaultLookup].
+  final Map<String, PayoutNameLookup> nextLookup = {};
+
+  /// A matched lookup for the signed-in tester "Minh Trí".
+  PayoutNameLookup defaultLookup = const PayoutNameLookup(
+    decision: PayoutNameDecision.matched,
+    holderName: 'NGUYEN MINH TRI',
+    verifiedName: 'Nguyễn Minh Trí',
+  );
+
+  /// The ticket [requestAccountOtp] answers with.
+  PayoutOtpTicket otpTicket = const PayoutOtpTicket(
+    phoneLast4: '0001',
+    expiresInSeconds: 300,
+    resendInSeconds: 60,
+  );
 
   void emitSummary(EarningsSummary s) {
     _lastSummary = s;
@@ -49,6 +99,10 @@ class FakeEarningsRepository implements EarningsRepository {
   }
 
   void failNextSave(String code) => _failNext = code;
+
+  void failNextLookup(String code) => _failNextLookup = code;
+
+  void failNextOtp(String code) => _failNextOtp = code;
 
   @override
   Stream<EarningsSummary> watchSummary(String uid) async* {
@@ -72,28 +126,74 @@ class FakeEarningsRepository implements EarningsRepository {
   }
 
   @override
-  Future<({String accountId, String accountLast4})> saveAccount({
+  Future<PayoutNameLookup> lookupAccountName({
     required String bankCode,
     required String accountNumber,
-    required String holderName,
+  }) async {
+    lookupCalls.add('$bankCode:${_last4(accountNumber)}');
+    final fail = _failNextLookup;
+    if (fail != null) {
+      _failNextLookup = null;
+      throw PayoutAccountError(fail);
+    }
+    return nextLookup['$bankCode:$accountNumber'] ?? defaultLookup;
+  }
+
+  @override
+  Future<PayoutOtpTicket> requestAccountOtp({
+    required String bankCode,
+    required String accountNumber,
+  }) async {
+    otpCalls.add('$bankCode:${_last4(accountNumber)}');
+    final fail = _failNextOtp;
+    if (fail != null) {
+      _failNextOtp = null;
+      throw PayoutAccountError(fail);
+    }
+    return otpTicket;
+  }
+
+  /// A first account is active at once; a change 72 h later. The name status
+  /// is `pending_review` when the key's [nextLookup] answer is `review`.
+  @override
+  Future<({String accountId, String accountLast4, DateTime activeFrom})>
+  saveAccount({
+    required String bankCode,
+    required String accountNumber,
+    String? otpCode,
   }) async {
     final fail = _failNext;
     if (fail != null) {
       _failNext = null;
       throw PayoutAccountError(fail);
     }
-    final last4 = accountNumber.substring(accountNumber.length - 4);
-    saves.add('$bankCode:$last4');
+    final last4 = _last4(accountNumber);
+    saves.add(['$bankCode:$last4', ?otpCode].join(':'));
     final id = 'acc-${saves.length}';
+    final now = _clock();
+    final activeFrom = _lastAccount == null
+        ? now
+        : now.add(const Duration(hours: 72));
+    final lookup = nextLookup['$bankCode:$accountNumber'] ?? defaultLookup;
+    final review = lookup.decision == PayoutNameDecision.review;
     setAccount(
       PayoutAccountView(
         accountId: id,
         bankCode: bankCode,
         accountLast4: last4,
-        holderName: holderName,
-        updatedAt: DateTime.now().toUtc(),
+        // As the server: a review account carries the verified name.
+        holderName:
+            (review
+                ? lookup.verifiedName ?? lookup.holderName
+                : lookup.holderName ?? lookup.verifiedName) ??
+            '',
+        updatedAt: now,
+        activeFrom: activeFrom,
+        nameStatus: review
+            ? PayoutNameStatus.pendingReview
+            : PayoutNameStatus.matched,
       ),
     );
-    return (accountId: id, accountLast4: last4);
+    return (accountId: id, accountLast4: last4, activeFrom: activeFrom);
   }
 }

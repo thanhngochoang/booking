@@ -10,7 +10,11 @@ import 'package:photobooking/data/earnings/earnings_repository.dart';
 
 bool _validId(String id) => id.isNotEmpty && !id.contains('/');
 
-int _int(Object? v) => v is num ? v.toInt() : 0;
+int _int(Object? v, [int fallback = 0]) => v is num ? v.toInt() : fallback;
+
+int? _intOrNull(Object? v) => v is num ? v.toInt() : null;
+
+String? _strOrNull(Object? v) => v is String ? v : null;
 
 String _str(Object? v) => v is String ? v : '';
 
@@ -34,10 +38,13 @@ EarningsSummary earningsSummaryFrom(
 }
 
 /// Parses an `earnings/{uid}/items/{id}` doc; null for an unknown state code.
+/// A row written before the breakdown existed reads fee 0, tax 0,
+/// net = amount, estimated, no milestones.
 EarningItem? earningItemFrom(String id, Map<String, dynamic> d) {
   final state = EarningState.fromCode(d['state']);
   if (state == null) return null;
   final reason = d['holdReason'];
+  final amount = _int(d['amount']);
   return EarningItem(
     id: id,
     subjectType: _str(d['subjectType']),
@@ -45,14 +52,23 @@ EarningItem? earningItemFrom(String id, Map<String, dynamic> d) {
     counterpartName: _str(d['counterpartName']),
     subjectLabel: _str(d['subjectLabel']),
     day: _str(d['day']),
-    amountVnd: _int(d['amount']),
+    amountVnd: amount,
     state: state,
     holdReason: reason is String && reason.isNotEmpty ? reason : null,
     paidOutAt: _time(d['paidOutAt']),
+    feeVnd: _int(d['platformFee']),
+    taxVnd: _int(d['taxWithheld']),
+    netVnd: _int(d['netAmount'], amount),
+    feeRateBp: _int(d['feeRateBp']),
+    taxRateBp: _int(d['taxRateBp']),
+    estimated: d['estimated'] != false,
+    milestonesDone: _intOrNull(d['milestonesDone']),
+    milestonesTotal: _intOrNull(d['milestonesTotal']),
   );
 }
 
-/// Parses `payoutAccounts/{uid}`. Reads only the masked fields.
+/// Parses `payoutAccounts/{uid}`. Reads only the masked fields. A view written
+/// before the name check reads `matched`, active from `updatedAt`.
 PayoutAccountView? payoutAccountViewFrom(Map<String, dynamic>? d) {
   if (d == null) return null;
   final id = d['accountId'];
@@ -65,16 +81,35 @@ PayoutAccountView? payoutAccountViewFrom(Map<String, dynamic>? d) {
       holder is! String) {
     return null;
   }
+  final updatedAt =
+      _time(d['updatedAt']) ??
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   return PayoutAccountView(
     accountId: id,
     bankCode: bank,
     accountLast4: last4,
     holderName: holder,
-    updatedAt:
-        _time(d['updatedAt']) ??
-        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    updatedAt: updatedAt,
+    activeFrom: _time(d['activeFrom']) ?? updatedAt,
+    nameStatus: PayoutNameStatus.fromCode(d['nameStatus']),
   );
 }
+
+/// Refusal codes of the payout account callables the app tells apart.
+const _payoutAccountCodes = {
+  'name_mismatch',
+  'not_found',
+  'not_eligible',
+  'otp_required',
+  'otp_invalid',
+  'otp_expired',
+  'limit_exceeded',
+  'phone_required',
+  'reauth_required',
+  'conflict',
+  'invalid_argument',
+  'permission_denied',
+};
 
 /// Maps a callable failure to a [PayoutAccountError] code.
 String payoutAccountErrorCodeOf(Object error) {
@@ -87,11 +122,13 @@ String payoutAccountErrorCodeOf(Object error) {
     final raw = details is Map && details['code'] is String
         ? details['code'] as String
         : (error.message ?? error.code);
+    if (_payoutAccountCodes.contains(raw)) return raw;
     return switch (raw) {
-      'reauth_required' => 'reauth_required',
-      'conflict' => 'conflict',
-      'invalid_argument' || 'invalid-argument' => 'invalid_argument',
-      'permission_denied' || 'permission-denied' => 'permission_denied',
+      'invalid-argument' => 'invalid_argument',
+      'permission-denied' || 'unauthenticated' => 'permission_denied',
+      'not-found' => 'not_found',
+      'resource-exhausted' => 'limit_exceeded',
+      'aborted' => 'conflict',
       'unavailable' || 'deadline-exceeded' || 'network' => 'network',
       _ => 'unknown',
     };
@@ -100,7 +137,8 @@ String payoutAccountErrorCodeOf(Object error) {
 }
 
 /// Reads the owner-only projection (`earnings`, `payoutAccounts`); the account
-/// is saved through the `savePayoutAccount` callable.
+/// is looked up, confirmed by OTP and saved through the callables
+/// `lookupPayoutAccountName`, `requestPayoutOtp` and `savePayoutAccount`.
 class FirestoreEarningsRepository implements EarningsRepository {
   FirestoreEarningsRepository({
     FirebaseFirestore? db,
@@ -154,38 +192,86 @@ class FirestoreEarningsRepository implements EarningsRepository {
         .map((s) => payoutAccountViewFrom(s.data()));
   }
 
-  @override
-  Future<({String accountId, String accountLast4})> saveAccount({
-    required String bankCode,
-    required String accountNumber,
-    required String holderName,
-  }) async {
+  /// Calls [name]; any failure leaves as a [PayoutAccountError] carrying only
+  /// the code, never the arguments or the message.
+  Future<Map<Object?, Object?>> _call(
+    String name,
+    Map<String, Object> payload,
+  ) async {
     try {
       final r = await _functions
           .httpsCallable(
-            'savePayoutAccount',
+            name,
             options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
           )
-          .call<Object?>({
-            'bankCode': bankCode,
-            'accountNumber': accountNumber,
-            'holderName': holderName,
-          });
+          .call<Object?>(payload);
       final data = r.data;
-      if (data is Map &&
-          data['accountId'] is String &&
-          data['accountLast4'] is String) {
-        return (
-          accountId: data['accountId'] as String,
-          accountLast4: data['accountLast4'] as String,
-        );
-      }
+      if (data is Map) return data;
       throw const PayoutAccountError('unknown');
     } on PayoutAccountError {
       rethrow;
     } catch (e) {
-      // Only the code leaves this method: never the arguments or the message.
       throw PayoutAccountError(payoutAccountErrorCodeOf(e));
     }
+  }
+
+  @override
+  Future<PayoutNameLookup> lookupAccountName({
+    required String bankCode,
+    required String accountNumber,
+  }) async {
+    final d = await _call('lookupPayoutAccountName', {
+      'bankCode': bankCode,
+      'accountNumber': accountNumber,
+    });
+    return PayoutNameLookup(
+      decision: PayoutNameDecision.fromCode(d['decision']),
+      holderName: _strOrNull(d['holderName']),
+      verifiedName: _strOrNull(d['verifiedName']),
+    );
+  }
+
+  @override
+  Future<PayoutOtpTicket> requestAccountOtp({
+    required String bankCode,
+    required String accountNumber,
+  }) async {
+    final d = await _call('requestPayoutOtp', {
+      'bankCode': bankCode,
+      'accountNumber': accountNumber,
+    });
+    final last4 = d['phoneLast4'];
+    if (last4 is! String) throw const PayoutAccountError('unknown');
+    return PayoutOtpTicket(
+      phoneLast4: last4,
+      expiresInSeconds: _int(d['expiresInSeconds'], 300),
+      resendInSeconds: _int(d['resendInSeconds'], 60),
+    );
+  }
+
+  @override
+  Future<({String accountId, String accountLast4, DateTime activeFrom})>
+  saveAccount({
+    required String bankCode,
+    required String accountNumber,
+    String? otpCode,
+  }) async {
+    final d = await _call('savePayoutAccount', {
+      'bankCode': bankCode,
+      'accountNumber': accountNumber,
+      'otpCode': ?otpCode,
+    });
+    final id = d['accountId'];
+    final last4 = d['accountLast4'];
+    if (id is! String || last4 is! String) {
+      throw const PayoutAccountError('unknown');
+    }
+    final from = d['activeFrom'];
+    // The save went through; a missing time reads "now" and the account view
+    // listener carries the stored one.
+    final activeFrom =
+        (from is String ? DateTime.tryParse(from)?.toUtc() : null) ??
+        DateTime.now().toUtc();
+    return (accountId: id, accountLast4: last4, activeFrom: activeFrom);
   }
 }

@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import {
+  ACCOUNT_CHANGE_DELAY_HOURS,
+  NAME_LOOKUPS_PER_DAY,
   accountLast4,
+  holderNameDecision,
   normalizeAccountNumber,
   normalizeHolderName,
 } from '../src/payout_account.js';
@@ -65,5 +68,53 @@ describe('payout account input rules', () => {
     assert.equal(bankByCode('vcb'), null);
     assert.equal(bankByCode('XXX'), null);
     assert.equal(bankByCode(5), null);
+  });
+});
+
+describe('holderNameDecision', () => {
+  const found = (holderName: string) => ({ status: 'found' as const, holderName });
+
+  it('the policy numbers: 72 hours, 20 lookups a day', () => {
+    assert.equal(ACCOUNT_CHANGE_DELAY_HOURS, 72);
+    assert.equal(NAME_LOOKUPS_PER_DAY, 20);
+  });
+
+  it('found "Nguyễn Văn An" vs verified "NGUYEN VAN AN" → matched', () => {
+    assert.equal(holderNameDecision(found('Nguyễn Văn An'), 'NGUYEN VAN AN'), 'matched');
+    assert.equal(holderNameDecision(found('NGUYEN VAN AN'), 'Nguyễn Văn An'), 'matched');
+  });
+
+  it('found "TRAN VAN B" vs "NGUYEN VAN AN" → mismatch', () => {
+    assert.equal(holderNameDecision(found('TRAN VAN B'), 'NGUYEN VAN AN'), 'mismatch');
+    assert.equal(holderNameDecision(found('NGUYEN VAN ANH'), 'Nguyễn Văn An'), 'mismatch');
+  });
+
+  it('not_found → not_found', () => {
+    assert.equal(holderNameDecision({ status: 'not_found' }, 'NGUYEN VAN AN'), 'not_found');
+    assert.equal(holderNameDecision({ status: 'not_found' }, null), 'not_found');
+  });
+
+  it('unsupported + verified → review', () => {
+    assert.equal(holderNameDecision({ status: 'unsupported' }, 'Nguyễn Văn An'), 'review');
+  });
+
+  it('found + no verified → review', () => {
+    assert.equal(holderNameDecision(found('TRAN VAN B'), null), 'review');
+    assert.equal(holderNameDecision(found('TRAN VAN B'), '   '), 'review');
+  });
+
+  it('unsupported + no verified → unverifiable', () => {
+    assert.equal(holderNameDecision({ status: 'unsupported' }, null), 'unverifiable');
+    assert.equal(holderNameDecision({ status: 'unsupported' }, ''), 'unverifiable');
+  });
+
+  it('extra spaces and lower case still match', () => {
+    assert.equal(holderNameDecision(found('  nguyen   van an '), 'Nguyễn Văn An'), 'matched');
+    assert.equal(holderNameDecision(found('đỗ thị hồng'), 'DO  THI HONG'), 'matched');
+  });
+
+  it('a blank bank name counts as no name (unsupported)', () => {
+    assert.equal(holderNameDecision(found('   '), 'NGUYEN VAN AN'), 'review');
+    assert.equal(holderNameDecision(found(''), null), 'unverifiable');
   });
 });

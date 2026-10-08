@@ -17,6 +17,7 @@ const _on = BookingFeatures(chat: true, reschedule: true, review: true);
 Booking _b(
   BookingStatus status, {
   String id = 'b1',
+  String photographerId = 'p1',
   String day = '2026-10-12',
   String start = '15:30',
   String end = '17:30',
@@ -33,6 +34,7 @@ Booking _b(
 }) {
   return makeTestBooking(
     id: id,
+    photographerId: photographerId,
     status: status,
     day: day,
     start: start,
@@ -523,122 +525,221 @@ void main() {
     final now = DateTime.utc(2026, 10, 12, 2, 0);
 
     test("today is the earliest accepted/upcoming booking on today's date", () {
-      final d = workDashboard([
-        _b(BookingStatus.accepted, id: 'late', start: '15:30', end: '17:30'),
-        _b(BookingStatus.upcoming, id: 'early', start: '10:00', end: '11:00'),
-        _b(BookingStatus.accepted, id: 'tomorrow', day: '2026-10-13'),
-        _b(BookingStatus.completed, id: 'old', day: '2026-10-12'),
-      ], now);
+      final d = workDashboard(
+        [
+          _b(BookingStatus.accepted, id: 'late', start: '15:30', end: '17:30'),
+          _b(BookingStatus.upcoming, id: 'early', start: '10:00', end: '11:00'),
+          _b(BookingStatus.accepted, id: 'tomorrow', day: '2026-10-13'),
+          _b(BookingStatus.completed, id: 'old', day: '2026-10-12'),
+        ],
+        now,
+        uid: 'p1',
+      );
       expect(d.today?.id, 'early');
       expect(d.upcomingCount, 3);
     });
 
     test('requests sorted by deadline, expired ones excluded', () {
-      final d = workDashboard([
-        _b(
-          BookingStatus.requested,
-          id: 'r_late',
-          acceptDeadline: now.add(const Duration(hours: 20)),
-        ),
-        _b(
-          BookingStatus.requested,
-          id: 'r_soon',
-          acceptDeadline: now.add(const Duration(hours: 2)),
-        ),
-        _b(
-          BookingStatus.requested,
-          id: 'r_past',
-          acceptDeadline: now.subtract(const Duration(minutes: 1)),
-        ),
-        _b(BookingStatus.expired, id: 'expired'),
-      ], now);
+      final d = workDashboard(
+        [
+          _b(
+            BookingStatus.requested,
+            id: 'r_late',
+            acceptDeadline: now.add(const Duration(hours: 20)),
+          ),
+          _b(
+            BookingStatus.requested,
+            id: 'r_soon',
+            acceptDeadline: now.add(const Duration(hours: 2)),
+          ),
+          _b(
+            BookingStatus.requested,
+            id: 'r_past',
+            acceptDeadline: now.subtract(const Duration(minutes: 1)),
+          ),
+          _b(BookingStatus.expired, id: 'expired'),
+        ],
+        now,
+        uid: 'p1',
+      );
       expect([for (final b in d.requests) b.id], ['r_soon', 'r_late']);
     });
 
     test('month revenue counts completed this Vietnamese month only '
         '(boundary 00:00 +07:00)', () {
-      final d = workDashboard([
-        // 01/10 00:00 VN = 30/09 17:00 UTC → this month.
-        _b(
-          BookingStatus.completed,
-          id: 'in1',
-          price: 1000000,
-          escrow: EscrowStatus.released,
-          completedAt: DateTime.utc(2026, 9, 30, 17, 0),
-        ),
-        // 30/09 23:59 VN → last month.
-        _b(
-          BookingStatus.completed,
-          id: 'out',
-          price: 5000000,
-          escrow: EscrowStatus.released,
-          completedAt: DateTime.utc(2026, 9, 30, 16, 59),
-        ),
-        _b(
-          BookingStatus.reviewed,
-          id: 'in2',
-          price: 2000000,
-          escrow: EscrowStatus.released,
-          completedAt: DateTime.utc(2026, 10, 5),
-        ),
-        _b(BookingStatus.upcoming, id: 'not_done', price: 9000000),
-      ], now);
+      final d = workDashboard(
+        [
+          // 01/10 00:00 VN = 30/09 17:00 UTC → this month.
+          _b(
+            BookingStatus.completed,
+            id: 'in1',
+            price: 1000000,
+            escrow: EscrowStatus.released,
+            completedAt: DateTime.utc(2026, 9, 30, 17, 0),
+          ),
+          // 30/09 23:59 VN → last month.
+          _b(
+            BookingStatus.completed,
+            id: 'out',
+            price: 5000000,
+            escrow: EscrowStatus.released,
+            completedAt: DateTime.utc(2026, 9, 30, 16, 59),
+          ),
+          _b(
+            BookingStatus.reviewed,
+            id: 'in2',
+            price: 2000000,
+            escrow: EscrowStatus.released,
+            completedAt: DateTime.utc(2026, 10, 5),
+          ),
+          _b(BookingStatus.upcoming, id: 'not_done', price: 9000000),
+        ],
+        now,
+        uid: 'p1',
+      );
       expect(d.monthRevenueVnd, 3000000);
     });
 
     test('held sums deposit minus refunded for held, partially refunded and '
         'disputed', () {
-      final d = workDashboard([
-        _b(BookingStatus.accepted, id: 'h', deposit: 450000),
-        _b(
-          BookingStatus.cancelled,
-          id: 'p',
-          deposit: 300000,
-          escrow: EscrowStatus.partiallyRefunded,
-          refunded: 150000,
-        ),
-        _b(
-          BookingStatus.completed,
-          id: 'd',
-          deposit: 200000,
-          escrow: EscrowStatus.disputed,
-        ),
-        _b(
-          BookingStatus.completed,
-          id: 'r',
-          deposit: 999000,
-          escrow: EscrowStatus.released,
-        ),
-        _b(
-          BookingStatus.declined,
-          id: 'f',
-          deposit: 999000,
-          escrow: EscrowStatus.refunded,
-          refunded: 999000,
-        ),
-      ], now);
+      final d = workDashboard(
+        [
+          _b(BookingStatus.accepted, id: 'h', deposit: 450000),
+          _b(
+            BookingStatus.cancelled,
+            id: 'p',
+            deposit: 300000,
+            escrow: EscrowStatus.partiallyRefunded,
+            refunded: 150000,
+          ),
+          _b(
+            BookingStatus.completed,
+            id: 'd',
+            deposit: 200000,
+            escrow: EscrowStatus.disputed,
+          ),
+          _b(
+            BookingStatus.completed,
+            id: 'r',
+            deposit: 999000,
+            escrow: EscrowStatus.released,
+          ),
+          _b(
+            BookingStatus.declined,
+            id: 'f',
+            deposit: 999000,
+            escrow: EscrowStatus.refunded,
+            refunded: 999000,
+          ),
+        ],
+        now,
+        uid: 'p1',
+      );
       expect(d.heldVnd, 450000 + 150000 + 200000);
     });
 
     test('isEmpty when nothing is happening even if old completed bookings '
         'exist', () {
-      final d = workDashboard([
-        _b(
-          BookingStatus.completed,
-          day: '2026-09-01',
-          escrow: EscrowStatus.released,
-          completedAt: DateTime.utc(2026, 9, 1, 12),
-        ),
-        _b(BookingStatus.cancelled, escrow: EscrowStatus.refunded),
-      ], now);
+      final d = workDashboard(
+        [
+          _b(
+            BookingStatus.completed,
+            day: '2026-09-01',
+            escrow: EscrowStatus.released,
+            completedAt: DateTime.utc(2026, 9, 1, 12),
+          ),
+          _b(BookingStatus.cancelled, escrow: EscrowStatus.refunded),
+        ],
+        now,
+        uid: 'p1',
+      );
       expect(d.isEmpty, isTrue);
-      expect(workDashboard(const [], now).isEmpty, isTrue);
+      expect(workDashboard(const [], now, uid: 'p1').isEmpty, isTrue);
       expect(
-        workDashboard([
-          _b(BookingStatus.accepted, day: '2026-10-20'),
-        ], now).isEmpty,
+        workDashboard(
+          [_b(BookingStatus.accepted, day: '2026-10-20')],
+          now,
+          uid: 'p1',
+        ).isEmpty,
         isFalse,
       );
+    });
+    group('assigned by a studio (Decision 18)', () {
+      // photographerId is the studio; the viewer is p1.
+      Booking assigned(
+        BookingStatus status, {
+        String id = 'a1',
+        String day = '2026-10-12',
+        String start = '09:00',
+        String end = '10:00',
+        DateTime? acceptDeadline,
+        DateTime? completedAt,
+        EscrowStatus? escrow = EscrowStatus.held,
+      }) => _b(
+        status,
+        id: id,
+        photographerId: 'studio1',
+        day: day,
+        start: start,
+        end: end,
+        price: 7000000,
+        deposit: 2100000,
+        acceptDeadline: acceptDeadline,
+        completedAt: completedAt,
+        escrow: escrow,
+      );
+
+      test('an assigned booking today becomes the today card', () {
+        final d = workDashboard(
+          [
+            _b(BookingStatus.accepted, id: 'own', start: '15:30', end: '17:30'),
+            assigned(BookingStatus.accepted, id: 'a1', start: '09:00'),
+          ],
+          now,
+          uid: 'p1',
+        );
+        expect(d.today?.id, 'a1');
+        expect(d.isEmpty, isFalse);
+      });
+
+      test('assigned bookings count in Buổi sắp tới', () {
+        final d = workDashboard(
+          [
+            _b(BookingStatus.upcoming, id: 'own', day: '2026-10-15'),
+            assigned(BookingStatus.accepted, id: 'a1', day: '2026-10-14'),
+            assigned(BookingStatus.upcoming, id: 'a2', day: '2026-10-16'),
+          ],
+          now,
+          uid: 'p1',
+        );
+        expect(d.upcomingCount, 3);
+      });
+
+      test('assigned bookings never count in requests, Tháng này or Đang '
+          'giữ', () {
+        final d = workDashboard(
+          [
+            assigned(
+              BookingStatus.requested,
+              id: 'a_req',
+              acceptDeadline: now.add(const Duration(hours: 5)),
+            ),
+            assigned(
+              BookingStatus.completed,
+              id: 'a_done',
+              escrow: EscrowStatus.released,
+              completedAt: DateTime.utc(2026, 10, 5),
+            ),
+            assigned(BookingStatus.accepted, id: 'a_held', day: '2026-10-20'),
+          ],
+          now,
+          uid: 'p1',
+        );
+        expect(d.requests, isEmpty);
+        expect(d.monthRevenueVnd, 0);
+        expect(d.heldVnd, 0);
+        expect(d.upcomingCount, 1);
+      });
     });
   });
 

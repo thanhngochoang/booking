@@ -10,6 +10,7 @@ class PhotographerIntro {
     this.bio = '',
     this.equipment = const [],
     this.onboardingComplete = false,
+    this.acceptingOrders = false,
   });
 
   final String bio;
@@ -18,21 +19,33 @@ class PhotographerIntro {
   /// Set by setup step 4/4 (plan 2b); read here, never written.
   final bool onboardingComplete;
 
+  /// Customers can book and ask for quotes (server-written `acceptingOrders`;
+  /// a document without it reads `verified && onboardingComplete`, as
+  /// `photographerSummaryFrom`). Read here, never written.
+  final bool acceptingOrders;
+
   @override
   bool operator ==(Object other) =>
       other is PhotographerIntro &&
       other.bio == bio &&
       listEquals(other.equipment, equipment) &&
-      other.onboardingComplete == onboardingComplete;
+      other.onboardingComplete == onboardingComplete &&
+      other.acceptingOrders == acceptingOrders;
 
   @override
-  int get hashCode =>
-      Object.hash(bio, Object.hashAll(equipment), onboardingComplete);
+  int get hashCode => Object.hash(
+    bio,
+    Object.hashAll(equipment),
+    onboardingComplete,
+    acceptingOrders,
+  );
 }
 
 PhotographerIntro introFromFirestore(Map<String, dynamic> d) {
   final bio = d['bio'];
   final equipment = d['equipment'];
+  final onboardingComplete = d['onboardingComplete'] == true;
+  final accepting = d['acceptingOrders'];
   return PhotographerIntro(
     bio: bio is String ? bio : '',
     equipment: [
@@ -40,7 +53,10 @@ PhotographerIntro introFromFirestore(Map<String, dynamic> d) {
         for (final e in equipment)
           if (e is String) e,
     ],
-    onboardingComplete: d['onboardingComplete'] == true,
+    onboardingComplete: onboardingComplete,
+    acceptingOrders: accepting is bool
+        ? accepting
+        : d['verified'] == true && onboardingComplete,
   );
 }
 
@@ -118,6 +134,7 @@ class FakePhotographerIntroRepository implements PhotographerIntroRepository {
       bio: bio,
       equipment: List.unmodifiable(equipment),
       onboardingComplete: old.onboardingComplete,
+      acceptingOrders: old.acceptingOrders,
     );
     _changes.add(uid);
   }

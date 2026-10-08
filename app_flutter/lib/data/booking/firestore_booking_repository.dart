@@ -70,6 +70,21 @@ class FirestoreBookingRepository implements BookingRepository {
   }
 
   @override
+  Stream<List<Booking>> watchAssignedBookings(String uid) {
+    // Single-field equality: the automatic index serves it.
+    return _bookingsCol
+        .where('assigneeId', isEqualTo: uid)
+        .snapshots()
+        .map(
+          (qs) => qs.docs
+              .map((d) => bookingFromFirestore(d.id, d.data()))
+              .whereType<Booking>()
+              .where((b) => b.status != BookingStatus.draft)
+              .toList(),
+        );
+  }
+
+  @override
   Stream<BookingContactSnapshot?> watchBookingContact(String bookingId) {
     return _bookingsCol
         .doc(bookingId)

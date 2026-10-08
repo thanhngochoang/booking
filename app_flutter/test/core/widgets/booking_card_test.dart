@@ -1,6 +1,7 @@
 // test/core/widgets/booking_card_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 import 'package:photobooking/core/widgets/booking_card.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -124,5 +125,42 @@ void main() {
         expect(skeletonSize.height, realSize.height);
       }
     }
+  });
+
+  testWidgets('draws the tag pill when BookingSummary.tag is set; nothing '
+      'otherwise', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(const BookingCard(data: _sampleSummary)),
+    );
+    expect(find.byKey(const Key('booking-card-tag')), findsNothing);
+
+    await tester.pumpWidget(
+      hostWidget(
+        const BookingCard(
+          data: BookingSummary(
+            photographerName: 'Minh Trí',
+            serviceName: 'Chân dung 2 giờ',
+            day: '2026-10-12',
+            start: '15:30',
+            end: '17:30',
+            placeName: 'Bến Bạch Đằng',
+            tag: 'Giao bởi Studio Ánh Dương',
+          ),
+        ),
+      ),
+    );
+    final pill = find.byKey(const Key('booking-card-tag'));
+    expect(pill, findsOneWidget);
+    expect(
+      find.descendant(
+        of: pill,
+        matching: find.text('Giao bởi Studio Ánh Dương'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: pill, matching: find.byIcon(AppIcons.store)),
+      findsOneWidget,
+    );
   });
 }
