@@ -1,8 +1,11 @@
 import 'dart:typed_data';
 
 /// Drops APP1 (Exif, XMP), APP3–APP15, COM, and APP2 unless it starts with
-/// "ICC_PROFILE\0". Keeps everything from SOS on untouched. Returns [bytes]
-/// itself when nothing was dropped. Throws [FormatException] if not a JPEG.
+/// "ICC_PROFILE\0", in every part of the file: before the first scan, between
+/// the scans of a progressive/multi-scan JPEG, and everything after EOI
+/// (secondary images, vendor trailers). Entropy-coded data is copied untouched.
+/// Returns [bytes] itself when nothing was dropped. Throws [FormatException]
+/// if the data is not a complete, well-formed JPEG (SOI to EOI).
 Uint8List stripJpegMetadata(Uint8List bytes) {
   if (bytes.length < 4 || bytes[0] != 0xFF || bytes[1] != 0xD8) {
     throw const FormatException('not a JPEG');
@@ -10,23 +13,58 @@ Uint8List stripJpegMetadata(Uint8List bytes) {
   final out = BytesBuilder(copy: false)..add(const [0xFF, 0xD8]);
   var i = 2;
   var dropped = false;
-  while (i + 4 <= bytes.length) {
+  while (i + 2 <= bytes.length) {
     if (bytes[i] != 0xFF) throw const FormatException('bad marker');
     final marker = bytes[i + 1];
     if (marker == 0xFF) {
       i++; // fill byte
       continue;
     }
-    if (marker == 0xDA) {
-      // SOS: the rest is scan data, copied untouched.
+    if (marker == 0xD9) {
+      // EOI: the file ends here, whatever follows is dropped.
+      if (i + 2 < bytes.length) dropped = true;
       if (!dropped) return bytes;
-      out.add(Uint8List.sublistView(bytes, i));
+      out.add(const [0xFF, 0xD9]);
       return out.toBytes();
     }
+    if (marker == 0x00 || marker == 0xD8) {
+      throw const FormatException('bad marker');
+    }
+    if (marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+      // Standalone markers (TEM, RSTn) carry no length.
+      out.add(Uint8List.sublistView(bytes, i, i + 2));
+      i += 2;
+      continue;
+    }
+    if (i + 4 > bytes.length) throw const FormatException('truncated');
     final len = (bytes[i + 2] << 8) | bytes[i + 3];
     final end = i + 2 + len;
     if (len < 2 || end > bytes.length) {
       throw const FormatException('bad length');
+    }
+    if (marker == 0xDA) {
+      // SOS: keep the header, then the entropy-coded data up to the next real
+      // marker (FF00 stuffing, RSTn and FF fill bytes belong to the data).
+      var j = end;
+      while (j < bytes.length) {
+        if (bytes[j] != 0xFF) {
+          j++;
+          continue;
+        }
+        if (j + 1 >= bytes.length) throw const FormatException('truncated');
+        final next = bytes[j + 1];
+        if (next == 0x00 || (next >= 0xD0 && next <= 0xD7)) {
+          j += 2;
+        } else if (next == 0xFF) {
+          j++;
+        } else {
+          break;
+        }
+      }
+      if (j >= bytes.length) throw const FormatException('no EOI');
+      out.add(Uint8List.sublistView(bytes, i, j));
+      i = j;
+      continue;
     }
     final isIcc = marker == 0xE2 && _ascii(bytes, i + 4, 'ICC_PROFILE\u0000');
     final drop =
@@ -41,10 +79,12 @@ Uint8List stripJpegMetadata(Uint8List bytes) {
     }
     i = end;
   }
-  throw const FormatException('no scan data');
+  throw const FormatException('no EOI');
 }
 
-/// True if any segment [stripJpegMetadata] would drop is present.
+/// True if any segment [stripJpegMetadata] would drop is present (including
+/// data after EOI). Throws [FormatException] on input that is not a complete
+/// JPEG, like [stripJpegMetadata].
 bool jpegHasMetadata(Uint8List bytes) =>
     !identical(stripJpegMetadata(bytes), bytes);
 
@@ -92,8 +132,9 @@ int encoderBound({
 }) {
   final long = width > height ? width : height;
   final short = width > height ? height : width;
-  if (long <= longSide) return short;
-  return (short * longSide / long).round();
+  if (long <= longSide) return short < 1 ? 1 : short;
+  final bound = (short * longSide / long).round();
+  return bound < 1 ? 1 : bound;
 }
 
 bool _ascii(Uint8List bytes, int at, String text) {

@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/data/media/image_picker_port.dart';
@@ -88,7 +87,8 @@ Future<({Uint8List bytes, int width, int height})> encodeForPurpose(
     }
     final long = size.width > size.height ? size.width : size.height;
     if (long * 100 > purpose.longSide * 102) {
-      bound = (bound * purpose.longSide / long).floor();
+      final shrunk = (bound * purpose.longSide / long).floor();
+      bound = shrunk < 1 ? 1 : shrunk;
       continue;
     }
     if (bytes.length > purpose.maxBytes) {

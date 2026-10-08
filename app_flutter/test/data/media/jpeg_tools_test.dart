@@ -63,6 +63,152 @@ void main() {
     });
   });
 
+  group('stripJpegMetadata across scans and trailers', () {
+    test('drops an Exif APP1 between the scans of a two-scan JPEG', () {
+      final src = jpegWith(
+        progressive: true,
+        secondScan: true,
+        exifBetweenScans: true,
+        icc: true,
+      );
+      expect(containsAscii(src, 'GPSLatitude'), isTrue);
+      final out = stripJpegMetadata(src);
+      expect(containsAscii(out, 'GPSLatitude'), isFalse);
+      expect(containsAscii(out, 'ICC_PROFILE'), isTrue);
+      expect(jpegHasMetadata(out), isFalse);
+      // Both scans survive byte for byte.
+      final clean = jpegWith(progressive: true, secondScan: true, icc: true);
+      expect(out, orderedEquals(clean));
+    });
+
+    test('output ends at EOI when bytes follow it', () {
+      final src = jpegWith(
+        icc: true,
+        trailer: [0xFF, 0xD8, ...exifSegment(), 0x00, 0x01],
+      );
+      expect(jpegHasMetadata(src), isTrue);
+      final out = stripJpegMetadata(src);
+      expect(out.sublist(out.length - 2), [0xFF, 0xD9]);
+      expect(containsAscii(out, 'GPSLatitude'), isFalse);
+      expect(out, orderedEquals(jpegWith(icc: true)));
+    });
+
+    test('trailing zero padding after EOI is dropped too', () {
+      final out = stripJpegMetadata(jpegWith(trailer: [0, 0, 0]));
+      expect(out, orderedEquals(jpegWith()));
+    });
+
+    test('single-scan and two-scan output is unchanged when nothing drops', () {
+      final one = jpegWith(icc: true);
+      final two = jpegWith(secondScan: true, progressive: true);
+      expect(identical(stripJpegMetadata(one), one), isTrue);
+      expect(identical(stripJpegMetadata(two), two), isTrue);
+    });
+
+    test(
+      'FF00 stuffing, restart markers and FF fill bytes stay in the data',
+      () {
+        final src = jpegWith(exif: true);
+        // Insert fill bytes (FF FF FF) before EOI.
+        final eoi = src.length - 2;
+        final padded = Uint8List.fromList([
+          ...src.sublist(0, eoi),
+          0xFF,
+          0xFF,
+          0xFF,
+          0xD9,
+        ]);
+        final out = stripJpegMetadata(padded);
+        expect(
+          out.sublist(sosOffset(out)),
+          orderedEquals(padded.sublist(sosOffset(padded))),
+        );
+      },
+    );
+  });
+
+  group('malformed input', () {
+    Uint8List soi(List<int> rest) => Uint8List.fromList([0xFF, 0xD8, ...rest]);
+
+    test('segment length below 2', () {
+      expect(
+        () => stripJpegMetadata(soi([0xFF, 0xE1, 0x00, 0x01, 0xFF, 0xD9])),
+        throwsFormatException,
+      );
+    });
+
+    test('segment length past the end', () {
+      expect(
+        () => stripJpegMetadata(soi([0xFF, 0xE1, 0x7F, 0xFF, 1, 2, 3, 4])),
+        throwsFormatException,
+      );
+    });
+
+    test('a byte other than FF where a marker should be', () {
+      expect(
+        () => stripJpegMetadata(soi([0x12, 0x34, 0x56, 0x78, 0x9A])),
+        throwsFormatException,
+      );
+    });
+
+    test('a run of FF fill bytes is skipped and a long run terminates', () {
+      final out = stripJpegMetadata(
+        soi([
+          0xFF,
+          0xFF,
+          0xFF,
+          0xFF,
+          0xE0,
+          0x00,
+          0x02,
+          0xFF,
+          0xDA,
+          0x00,
+          0x02,
+          1,
+          2,
+          0xFF,
+          0xD9,
+        ]),
+      );
+      expect(out.last, 0xD9);
+      expect(
+        () => stripJpegMetadata(soi(List<int>.filled(500, 0xFF))),
+        throwsFormatException,
+      );
+    });
+
+    test('truncated mid-segment, mid-scan and without EOI', () {
+      final src = jpegWith(exif: true);
+      for (final cut in [5, 7, 12, src.length - 10, src.length - 1]) {
+        expect(
+          () => stripJpegMetadata(Uint8List.sublistView(src, 0, cut)),
+          throwsFormatException,
+          reason: 'cut at $cut',
+        );
+      }
+      expect(
+        () => stripJpegMetadata(soi([0xFF, 0xDA, 0x00, 0x02, 1, 2, 0xFF])),
+        throwsFormatException,
+      );
+    });
+
+    test('jpegHasMetadata throws on non-JPEG input', () {
+      expect(
+        () => jpegHasMetadata(Uint8List.fromList([1, 2, 3, 4, 5])),
+        throwsFormatException,
+      );
+    });
+
+    test('jpegSize is null for a truncated SOF and for a bad length', () {
+      final src = jpegWith();
+      final sof = src.indexOfSof();
+      expect(jpegSize(Uint8List.sublistView(src, 0, sof + 6)), isNull);
+      expect(jpegSize(soi([0xFF, 0xE1, 0x00, 0x00, 1, 2, 3])), isNull);
+      expect(jpegSize(soi(List<int>.filled(500, 0xFF))), isNull);
+    });
+  });
+
   test('jpegHasMetadata is true before and false after stripping', () {
     final src = jpegWith(exif: true, icc: true);
     expect(jpegHasMetadata(src), isTrue);
@@ -99,6 +245,8 @@ void main() {
   });
 
   test('encoderBound', () {
+    expect(encoderBound(width: 10000, height: 1, longSide: 100), 1);
+    expect(encoderBound(width: 0, height: 0, longSide: 100), 1);
     expect(encoderBound(width: 4000, height: 3000, longSide: 2048), 1536);
     expect(encoderBound(width: 3000, height: 4000, longSide: 2048), 1536);
     expect(encoderBound(width: 1200, height: 900, longSide: 2048), 900);

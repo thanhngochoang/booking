@@ -24,6 +24,9 @@ Uint8List jpegWith({
   int width = 1600,
   int height = 1200,
   bool progressive = false,
+  bool secondScan = false,
+  bool exifBetweenScans = false,
+  List<int> trailer = const [],
 }) {
   final out = <int>[0xFF, 0xD8];
   if (app0) {
@@ -90,9 +93,32 @@ Uint8List jpegWith({
   out.addAll(_segment(0xC4, [0, ...List<int>.filled(16, 0), 0]));
   out.addAll(_segment(_sos, [1, 1, 0, 0, 63, 0]));
   out.addAll([0x12, 0xFF, 0x00, 0x34, 0xFF, 0xD0, 0x56, 0xFF, 0x00, 0x78]);
+  if (secondScan) {
+    if (exifBetweenScans) {
+      out.addAll(
+        _segment(0xE1, [
+          ...ascii.encode('Exif'),
+          0,
+          0,
+          ...ascii.encode('GPSLatitude'),
+        ]),
+      );
+    }
+    out.addAll(_segment(_sos, [1, 1, 0, 0, 63, 0]));
+    out.addAll([0x9A, 0xFF, 0x00, 0xBC, 0xFF, 0xD1, 0xDE]);
+  }
   out.addAll([0xFF, 0xD9]);
+  out.addAll(trailer);
   return Uint8List.fromList(out);
 }
+
+/// An APP1 segment with a GPS marker, for trailing data after EOI.
+List<int> exifSegment() => _segment(0xE1, [
+  ...ascii.encode('Exif'),
+  0,
+  0,
+  ...ascii.encode('GPSLatitude'),
+]);
 
 /// Index of the SOS marker in [bytes] (for comparing scan data).
 int sosOffset(Uint8List bytes) {
