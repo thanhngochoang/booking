@@ -18,6 +18,7 @@ class BookingSummary {
     required this.placeName,
     this.status,
     this.statusLabel,
+    this.tag,
   });
 
   final String photographerName;
@@ -29,6 +30,9 @@ class BookingSummary {
   final String placeName;
   final BookingStatus? status;
   final String? statusLabel;
+
+  /// A pill under the title (S06.01 "Giao bởi {Studio}"); null draws none.
+  final String? tag;
 }
 
 enum BookingCardSize { normal, compact }
@@ -129,6 +133,10 @@ class BookingCard extends StatelessWidget {
                         color: fg,
                       ),
                     ),
+                    if (data.tag case final tag?) ...[
+                      const SizedBox(height: 4),
+                      _TagPill(tag, color: fgSec, border: outline),
+                    ],
                     const SizedBox(height: 4),
                     if (isNormal) ...[
                       Text(
@@ -208,6 +216,56 @@ class BookingCard extends StatelessWidget {
     }
 
     return DecoratedBox(decoration: decoration, child: cardContent);
+  }
+}
+
+/// Mock `.ptag`: small outlined pill with the storefront icon.
+class _TagPill extends StatelessWidget {
+  const _TagPill(this.label, {required this.color, required this.border})
+    : super(key: const Key('booking-card-tag'));
+
+  final String label;
+  final Color color;
+  final Color border;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          border: Border.all(color: border),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s1 + 2,
+            2,
+            AppSpace.s2,
+            2,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon(AppIcons.store, size: 11, color: color),
+              const SizedBox(width: AppSpace.s1),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

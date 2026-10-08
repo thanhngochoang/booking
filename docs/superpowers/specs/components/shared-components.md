@@ -111,7 +111,7 @@ Thẻ so sánh. `PhotographerCard({required PhotographerSummary data, List<Reaso
 Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Chip nhỏ nền kính, chữ 10,5, một dòng; dư thì bỏ bớt, không cuộn. `Semantics` đọc "Gợi ý vì: …". Mã lý do `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent`.
 
 ### BookingCard · Đã có
-`BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
+`BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. `BookingSummary.tag` (String?, mặc định null) vẽ một viên thuốc viền nhỏ với `AppIcons.store` dưới dòng tên, ví dụ "Giao bởi Studio Ánh Dương" ở S06.01 (buổi studio giao); không có thì không vẽ gì. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
 
 ### EventCard và DateBlock · Đã có
 `EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured` (mock S11.01, 2026-10-07): ảnh bìa 16:10; `PhotoPill` sáng góc trên trái với chấm trạng thái (xanh còn nhiều chỗ, vàng từ một nửa, đỏ "Hết chỗ"); lớp phủ đáy ba dòng: "thứ dd/MM · HH:mm · địa điểm[ · khoảng cách]", tên đậm, "chủ · n/sức chứa đã đăng ký"; không có giá (giá nằm ở thẻ hàng). `EventTypeTag(label)`: tag loại dạng pill kính có viền (mock `.tag`), dùng ở S11.02 và `TicketCard`. `size: compact` (hàng ngang S02.03) rộng 176dp. Có biến thể `EventCard.skeleton({EventCardSize size = row})`.  
@@ -200,7 +200,7 @@ Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch). `As
 `SectionHeader({required String title, String? actionLabel, VoidCallback? onAction, String? trailing})`. Tiêu đề Fraunces 17 + hành động chữ primary 12 bên phải (≥ 48dp vùng chạm). `Semantics(header)`. Dùng khắp nơi cho "Xem tất cả", "Tất cả".
 
 ### EmptyState · Đã có
-Minh hoạ tròn, tiêu đề, mô tả, một nút `AppButton.primary` (tuỳ chọn). Mọi trạng thái trống có đúng một hành động nuôi vòng lặp (xem S06.02, S02.03…).
+Minh hoạ tròn, tiêu đề, mô tả (`body`, tuỳ chọn), dòng ghi chú nhỏ dưới mô tả (`note`, tuỳ chọn, ví dụ "Staff duyệt trong 24 giờ sau khi bạn gửi" ở S06.02), một nút `AppButton.primary` (tuỳ chọn). Mọi trạng thái trống có đúng một hành động nuôi vòng lặp (xem S06.02, S02.03…).
 
 ### ErrorState và OfflineBanner · Đã có
 `ErrorState({required String message, VoidCallback? onRetry})` tiêu đề ngắn + "Thử lại". `OfflineBanner()` dải mảnh "Đang xem dữ liệu đã lưu" trên đầu danh sách khi offline. Thông điệp lấy từ ánh xạ mã lỗi → tiếng Việt (`errorMessage(Object, AppLocalizations)`). Dùng ở mọi màn có dữ liệu mạng.
@@ -495,6 +495,7 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.verified` | `verified` | (mới, chưa có trong mock) | `Icons.verified` |
 | `AppIcons.work` | `work` | `i-brief` | `Icons.work_outline` |
 | `AppIcons.store` | `storefront` | (mới, chưa có trong mock) | `Icons.storefront_outlined` |
+| `AppIcons.verifiedUser` | `verified_user` | (mới, chưa có trong mock) | `Icons.verified_user` |
 | `AppIcons.people` | `group` | (mới, chưa có trong mock) | `Icons.people` |
 | `AppIcons.celebration` | `celebration` | (mới, chưa có trong mock) | `Icons.celebration` |
 | `AppIcons.trendingUp` | `trending_up` | (mới, chưa có trong mock) | `Icons.trending_up` |

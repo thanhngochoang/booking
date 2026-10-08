@@ -1258,6 +1258,16 @@
   "workEmptySkills": "Hoàn thiện kỹ năng",
   "workEmptyBodyShare": "Hồ sơ đã sẵn sàng. Chia sẻ để khách quen tìm và đặt bạn.",
   "workEmptyShare": "Chia sẻ hồ sơ",
+  "workAssignedBy": "Giao bởi {studio}",
+  "@workAssignedBy": {
+    "placeholders": {
+      "studio": {"type": "String"}
+    }
+  },
+  "workClosedTitle": "Mở nhận đơn để khách đặt được bạn",
+  "workClosedBody": "Bạn vẫn đăng portfolio, tạo gói và trò chuyện. Khách chỉ đặt lịch và xin báo giá sau khi bạn xác minh: số điện thoại, phí xác minh, danh tính và quy định nhận việc.",
+  "workClosedNote": "Staff duyệt trong 24 giờ sau khi bạn gửi",
+  "workClosedStart": "Bắt đầu nhận đơn",
   "declineReasonBusy": "Kín lịch hôm đó",
   "declineReasonArea": "Ngoài khu vực phục vụ",
   "declineReasonService": "Gói không phù hợp nhu cầu",

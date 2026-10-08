@@ -302,7 +302,15 @@ const _heldEscrow = {
   EscrowStatus.disputed,
 };
 
-WorkDashboard workDashboard(List<Booking> mine, DateTime now) {
+/// [mine] holds the photographer's own bookings and the ones a studio
+/// assigned to [uid] (Decision 18): those (`photographerId != uid`) count for
+/// "Hôm nay" and "Buổi sắp tới" only; the money and the answer are the
+/// studio's, so they never reach requests, "Tháng này" or "Đang giữ".
+WorkDashboard workDashboard(
+  List<Booking> mine,
+  DateTime now, {
+  required String uid,
+}) {
   final todayKey = vnDateKey(now);
   final vnNow = toVn(now);
 
@@ -315,9 +323,14 @@ WorkDashboard workDashboard(List<Booking> mine, DateTime now) {
       if (b.day == todayKey) b,
   ]..sort((a, b) => startsAtOf(a).compareTo(startsAtOf(b)));
 
+  final own = [
+    for (final b in mine)
+      if (b.photographerId == uid) b,
+  ];
+
   final requests =
       [
-        for (final b in mine)
+        for (final b in own)
           if (b.status == BookingStatus.requested &&
               (b.acceptDeadline == null || now.isBefore(b.acceptDeadline!)))
             b,
@@ -331,7 +344,7 @@ WorkDashboard workDashboard(List<Booking> mine, DateTime now) {
 
   var month = 0;
   var held = 0;
-  for (final b in mine) {
+  for (final b in own) {
     if (b.status == BookingStatus.draft) continue;
     final done = b.completedAt;
     if ((b.status == BookingStatus.completed ||
@@ -381,6 +394,7 @@ BookingSummary bookingSummaryFor(
   Booking b, {
   required String name,
   String? thumbUrl,
+  String? tag,
 }) {
   final day = parseDayKey(b.day);
   return BookingSummary(
@@ -392,6 +406,7 @@ BookingSummary bookingSummaryFor(
     end: b.end,
     placeName: b.place.name,
     status: b.status,
+    tag: tag,
   );
 }
 

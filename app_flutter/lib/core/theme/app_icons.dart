@@ -91,6 +91,7 @@ abstract final class AppIcons {
   static const IconData verified = Symbols.verified_rounded;
   static const IconData work = Symbols.work_rounded;
   static const IconData store = Symbols.storefront_rounded;
+  static const IconData verifiedUser = Symbols.verified_user_rounded;
   static const IconData people = Symbols.group_rounded;
   static const IconData celebration = Symbols.celebration_rounded;
   static const IconData trendingUp = Symbols.trending_up_rounded;

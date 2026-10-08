@@ -4528,6 +4528,36 @@ abstract class AppLocalizations {
   /// **'Chia sẻ hồ sơ'**
   String get workEmptyShare;
 
+  /// No description provided for @workAssignedBy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao bởi {studio}'**
+  String workAssignedBy(String studio);
+
+  /// No description provided for @workClosedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở nhận đơn để khách đặt được bạn'**
+  String get workClosedTitle;
+
+  /// No description provided for @workClosedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn vẫn đăng portfolio, tạo gói và trò chuyện. Khách chỉ đặt lịch và xin báo giá sau khi bạn xác minh: số điện thoại, phí xác minh, danh tính và quy định nhận việc.'**
+  String get workClosedBody;
+
+  /// No description provided for @workClosedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff duyệt trong 24 giờ sau khi bạn gửi'**
+  String get workClosedNote;
+
+  /// No description provided for @workClosedStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu nhận đơn'**
+  String get workClosedStart;
+
   /// No description provided for @declineReasonBusy.
   ///
   /// In vi, this message translates to:

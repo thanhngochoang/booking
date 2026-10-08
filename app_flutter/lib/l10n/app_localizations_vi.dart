@@ -2562,6 +2562,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String get workEmptyShare => 'Chia sẻ hồ sơ';
 
   @override
+  String workAssignedBy(String studio) {
+    return 'Giao bởi $studio';
+  }
+
+  @override
+  String get workClosedTitle => 'Mở nhận đơn để khách đặt được bạn';
+
+  @override
+  String get workClosedBody =>
+      'Bạn vẫn đăng portfolio, tạo gói và trò chuyện. Khách chỉ đặt lịch và xin báo giá sau khi bạn xác minh: số điện thoại, phí xác minh, danh tính và quy định nhận việc.';
+
+  @override
+  String get workClosedNote => 'Staff duyệt trong 24 giờ sau khi bạn gửi';
+
+  @override
+  String get workClosedStart => 'Bắt đầu nhận đơn';
+
+  @override
   String get declineReasonBusy => 'Kín lịch hôm đó';
 
   @override
