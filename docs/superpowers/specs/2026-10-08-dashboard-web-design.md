@@ -2,7 +2,7 @@
 
 - **Issue:** #161 (spec), áp dụng luôn cho #162 (nền tảng). Epic #83, milestone Phase 1.5.
 - **Ngày:** 2026-10-08. **Trạng thái:** chờ chủ dự án duyệt.
-- **Mock:** `docs/design/dashboard-mock.html` (màn S23.08–S23.11 và khung studio). Mở bằng trình duyệt, nút "Debug" hiện mã màn, thêm `#S23.09` vào URL để nhảy tới màn.
+- **Mock:** `docs/design/dashboard-mock.html` (màn S23.08–S23.11 và khung studio). Mở bằng trình duyệt, nút "Debug" hiện mã màn, thêm `#S23.09` vào URL để nhảy tới màn. Bản xuất bản: https://claude.ai/artifact/PG6UzagCjTxGfGUn9HRKJi (riêng tư; tệp trong repo là bản gốc để sửa).
 - **Spec liên quan:** spec chính `2026-10-01-remaining-screens.md` (§2 bảng mã, §3i.6 S23), `data-model/README.md` (quy ước, ma trận quyền), `2026-10-06-payments-payouts-design.md`, `2026-10-06-identity-verification-design.md`, `2026-10-06-studio-members-design.md`.
 - **Spec màn của từng ticket** (viết sau spec này, dùng chung mọi quy định ở đây):
 

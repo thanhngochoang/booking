@@ -186,8 +186,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ⬜ có mock, có plan (#141) | — |
 | **S23** | **Vận hành nội bộ (staff)** | | | | | |
 | S23.01 | Hàng đợi khiếu nại: xem bằng chứng hai bên, quyết định thả / hoàn / chia | nội bộ | admin · support (quyết định) · finance (xem) | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ đang thiết kế · chưa có mock | — |
-| S23.02 | Duyệt lô chi trả và đối soát cổng | nội bộ | admin · finance | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ đang thiết kế · chưa có mock | — |
-| S23.03 | Hoàn tiền thủ công (cổng không hoàn tự động) | nội bộ | admin · finance | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ đang thiết kế · chưa có mock | — |
+| S23.02 | Chi trả: duyệt lần chi đầu, tạm giữ, thất bại, đang xử lý quá lâu | `/staff/payouts` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.03 | Hoàn tiền: thất bại, chờ quá lâu, ghi nhận hoàn thủ công, tiền giữ lâu | `/staff/refunds` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
 | S23.04 | Duyệt xác minh (danh tính, doanh nghiệp; cấp dấu tích xanh và quyền nhận đơn) | nội bộ | admin · support | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ đang thiết kế · chưa có mock | — |
 | S23.05 | Kiểm duyệt báo cáo (người dùng, bài, tin nhắn, sự kiện) | nội bộ | admin · support | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ đang thiết kế · chưa có mock | — |
 | S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · support · sales | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ đang thiết kế · chưa có mock | — |
@@ -196,6 +196,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.09 | Tổng quan staff: hàng đợi, số việc, việc quá hạn | `/staff` (web) | mọi staff | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
 | S23.10 | Staff: cấp, đổi, bỏ vai trò; đặt lại xác thực hai lớp | `/staff/team` (web) | admin | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
 | S23.11 | Nhật ký kiểm toán | `/staff/audit` (web) | admin | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
+| S23.12 | Chuyển khoản chưa khớp (`needs_review`): gán, hoàn cho người chuyển, đóng | `/staff/transfers` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.13 | Báo cáo thuế theo tháng, xuất CSV | `/staff/tax` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.14 | Đối soát sao kê ngày (chỉ thiết kế, làm khi chọn tổ chức trung gian) | `/staff/reconciliation` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ chỉ thiết kế, chưa có mock | — |
+| S23.15 | Chờ duyệt lần hai (thao tác tiền từ 10 triệu) | `/staff/approvals` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
 | **S24** | **Portfolio album** | | | | | |
 | S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ✅ đã làm (c2) · khớp mock | — |
 | S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
