@@ -67,8 +67,8 @@ Cách đọc cột "Trạng thái":
 | `expireUnpaid` | (b) nội bộ | `expireOpenPayment(tx, deps, payment, now)` (`booking_payment_paths.ts`, không export từ `index.ts`) | Bản export dùng chung: V1. |
 | `sendRefundOnce`, `mergeRefundOutcome` | (c) | — | V2. |
 | `BookingDraftInput`, `buildBookingDraft` | (c) | `createBookingDraft` dựng booking ngay trong hàm | **#152 (S05 bàn giao), Task 2** tạo (việc nhỏ). |
-| `OrderGateDeps`, `orderBlocker`, `assertOrderAllowed` | (c) | `createBookingDraft` gọi thẳng `deps.providers.acceptsOrders` | **#144 (S20), Task 2** tạo (việc nhỏ). |
-| Decision 9 (1): `createPayment` kiểm lại cổng nhận đơn | (c) | — | **#144 (S20), Task 2**: `createPayment` gọi `assertOrderAllowed`. |
+| `OrderGateDeps`, `orderBlocker`, `assertOrderAllowed` | (c) | `createBookingDraft` gọi thẳng `deps.providers.acceptsOrders` | **#198 (N1, `2026-10-08-n1-order-gate.md`)** tạo. |
+| Decision 9 (1): `createPayment` kiểm lại cổng nhận đơn | (c) | — | **#198 (N1)**: `createPayment` gọi `assertOrderAllowed`. |
 | Decision 9 (2): tiền tới cho bản nháp của thợ đã ngừng nhận đơn → hoàn 100% (`provider_not_accepting`) | (c) | — | **#135 (S21), Task 2** (việc nhỏ trong `handle_transfer.ts`). |
 | `BookingDeps.cipher` | (c) | — | V2. |
 | `BookingStore.findExpiredDrafts(now, limit?)` | (a) | `booking_ports.ts` | Trả bản nháp có `payableUntil <= now`; bản nháp không có trường thì không bao giờ bị dọn. |
@@ -124,7 +124,7 @@ Cách đọc cột "Trạng thái":
 | Việc | Plan nhận | Chỗ thêm |
 |---|---|---|
 | `BookingDraftInput`, `buildBookingDraft` (hàm thuần; `createBookingDraft` dựng booking bằng nó) | #152 S05 bàn giao (đợt 3) | Task 2: Files, Interfaces, Step 2 |
-| `OrderGateDeps`, `orderBlocker`, `assertOrderAllowed`; `createBookingDraft` và `createPayment` gọi `assertOrderAllowed` | #144 S20 (đợt 3) | Contract §Gates, Task 2 |
+| `OrderGateDeps`, `orderBlocker`, `assertOrderAllowed`; `createBookingDraft` và `createPayment` gọi `assertOrderAllowed` | #198 N1 | `2026-10-08-n1-order-gate.md` |
 | Tiền tới cho bản nháp của thợ đã ngừng nhận đơn → hoàn 100%, lý do `provider_not_accepting` | #135 S21 (đợt 3) | Task 2 |
 | `refund_done` của booking: đặt `depositRefundedAt` khi một refund booking thành `done` | #138 S17 (đợt 1) | Task 2 |
 

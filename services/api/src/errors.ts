@@ -22,10 +22,19 @@ export const HTTP_STATUS: Record<ApiErrorCode, number> = {
   payment_attempts_exceeded: 409,
   not_eligible: 403,
   not_accepting_orders: 403,
+  // The customer and the provider blocked each other (either way): no new order or payment.
+  blocked: 403,
   phone_required: 422,
   deadline_passed: 422,
   limit_exceeded: 429,
   reauth_required: 403,
+  // S06.06 payout account v2: the bank holder name is not the verified name.
+  name_mismatch: 422,
+  // An OTP is needed (missing, used or for another account): like reauth_required, fresh proof is asked.
+  otp_required: 403,
+  // Wrong or expired OTP: the request is well-formed but its value is refused.
+  otp_invalid: 422,
+  otp_expired: 422,
   internal: 500,
 };
 
