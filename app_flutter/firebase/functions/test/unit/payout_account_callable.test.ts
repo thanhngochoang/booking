@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { MemoryPayoutStore, type PayoutAccountDeps } from '@photobooking/domain';
+import { FakeAccountNameLookup, FakeOtpSender, MemoryPayoutStore, type PayoutAccountDeps } from '@photobooking/domain';
 import { handleSavePayoutAccount } from '../../src/callables/payout_account.js';
 import { aesGcmCipher } from '../../src/infra/account_cipher.js';
 
 const NOW = new Date('2026-10-10T12:00:00.000Z');
 const KEY = Buffer.alloc(32, 3).toString('base64');
-const INPUT = { bankCode: 'VCB', accountNumber: '0123 456 789', holderName: 'Nguyễn Văn An' };
+const INPUT = { bankCode: 'VCB', accountNumber: '0123 456 789' };
 
 describe('savePayoutAccount callable', () => {
   let store: MemoryPayoutStore;
@@ -17,6 +17,14 @@ describe('savePayoutAccount callable', () => {
     cipher: aesGcmCipher(KEY),
     clock: { now: () => NOW },
     ids: { newId: () => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n++).padStart(2, '0')}` },
+    lookup: new FakeAccountNameLookup('Nguyễn Văn An'),
+    names: { legalName: async () => 'Nguyễn Văn An' },
+    otp: {
+      sender: new FakeOtpSender(),
+      phones: { phoneOf: async () => '0912345678' },
+      crypto: { sha256Hex: async (s) => s, random: (k) => new Uint8Array(k) },
+    },
+    notices: { accountNeeded: async () => undefined, accountChanged: async () => undefined },
   });
   const authTime = (ageSeconds: number): number => Math.floor(NOW.getTime() / 1000) - ageSeconds;
 
@@ -40,17 +48,13 @@ describe('savePayoutAccount callable', () => {
     assert.deepEqual(store.accountViews.get('p1')?.accountLast4, '6789');
   });
 
-  it('auth_time reaches the use case as authTime', async () => {
+  it('a change needs an OTP whatever the token auth_time (v2; Task 5 adds the OTP callables)', async () => {
     await handleSavePayoutAccount({ auth: { uid: 'p1' }, data: INPUT }, deps());
-    // A change with a fresh sign-in passes, a stale one asks for re-authentication.
     const change = { ...INPUT, accountNumber: '9876543210' };
     await assert.rejects(
-      handleSavePayoutAccount({ auth: { uid: 'p1', token: { auth_time: authTime(3600) } }, data: change }, deps()),
-      (e: unknown) => e instanceof HttpsError && e.code === 'failed-precondition' && (e.details as { code: string }).code === 'reauth_required',
+      handleSavePayoutAccount({ auth: { uid: 'p1', token: { auth_time: authTime(60) } }, data: change }, deps()),
+      (e: unknown) => e instanceof HttpsError && e.code === 'failed-precondition' && (e.details as { code: string }).code === 'otp_required',
     );
-    await assert.rejects(handleSavePayoutAccount({ auth: { uid: 'p1' }, data: change }, deps()), (e: unknown) => e instanceof HttpsError && e.message === 'reauth_required');
-    const ok = await handleSavePayoutAccount({ auth: { uid: 'p1', token: { auth_time: authTime(60) } }, data: change }, deps());
-    assert.equal(ok.accountLast4, '3210');
   });
 
   it('a refused save logs only the code', async (t) => {

@@ -357,6 +357,7 @@ describe('payout use cases', () => {
     const w = createPayoutWorld();
     await paidBeforeAccount(w);
     await addAccount(w, '9988776655');
+    w.clock.advanceHours(72); // the new account's wait after the change
     await releasedPayment(w, '2026-10-15');
     const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
     assert.equal(po.status, 'needs_approval');
@@ -619,6 +620,7 @@ describe('payout use cases', () => {
     const old = await addAccount(w, '0123450000');
     for (let i = 0; i < 3; i += 1) payoutHistory(w, old, 'failed');
     const fresh = await addAccount(w, '9988776655');
+    w.clock.advanceHours(72); // the new account's wait after the change
     payoutHistory(w, fresh, 'paid');
     await releasedPayment(w, '2026-10-15');
     assert.equal((await createPayout(w.payoutDeps, ADMIN, 'p1')).status, 'pending');

@@ -61,11 +61,24 @@ export function livePayoutAccountDeps(): PayoutAccountDeps {
     encrypt: (plain) => (cipher ??= aesGcmCipher(PAYOUT_ACCOUNT_KEY.value())).encrypt(plain),
     decrypt: (enc) => (cipher ??= aesGcmCipher(PAYOUT_ACCOUNT_KEY.value())).decrypt(enc),
   };
+  const notWired = async (): Promise<never> => {
+    throw new DomainError('not_eligible');
+  };
   return {
     store: new FirestorePayoutStore(db()),
     cipher: lazy,
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
+    // Fail closed until #134 Task 5 wires the fake lookup, the identity reader and the OTP
+    // adapters: no verified name + unsupported lookup = every save is refused (not_eligible).
+    lookup: { lookup: async () => ({ status: 'unsupported' }) },
+    names: { legalName: async () => null },
+    otp: {
+      sender: { send: notWired },
+      phones: { phoneOf: async () => null },
+      crypto: { sha256Hex: notWired, random: () => { throw new DomainError('not_eligible'); } },
+    },
+    notices: livePayoutNotices(),
   };
 }
 

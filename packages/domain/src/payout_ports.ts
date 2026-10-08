@@ -1,9 +1,28 @@
+import type {
+  AccountNameLookup,
+  OtpCrypto,
+  OtpPhoneReader,
+  OtpSender,
+  PayoutNotices,
+  VerifiedNameReader,
+} from './account_lookup.js';
 import type { LedgerEntry, Payment } from './escrow.js';
 import type { Payout, PayoutStatus } from './payout.js';
 import type { PayoutAccount, PayoutAccountView } from './payout_account.js';
+import type { OtpChallenge } from './payout_otp.js';
 import type { PayoutPolicy } from './payout_policy.js';
 import type { Clock, IdGenerator } from './ports.js';
 import type { ProviderType } from './provider_type.js';
+
+export type {
+  AccountNameLookup,
+  NameLookupResult,
+  OtpCrypto,
+  OtpPhoneReader,
+  OtpSender,
+  PayoutNotices,
+  VerifiedNameReader,
+} from './account_lookup.js';
 
 /** Encrypts the account number at rest; the adapter owns the key (AES-256-GCM in Functions). */
 export interface AccountCipher {
@@ -35,6 +54,12 @@ export interface PayoutTx {
   getPayout(id: string): Promise<Payout | null>;
   setPayment(p: Payment): void;
   addLedgerEntry(e: LedgerEntry): void;
+  /** `otp_challenges/{uid}_payout_account` (server-only). */
+  getOtpChallenge(uid: string): Promise<OtpChallenge | null>;
+  putOtpChallenge(c: OtpChallenge): void;
+  /** `payout_lookups/{uid}` (server-only): name lookups on one Vietnam day. */
+  getLookupQuota(uid: string): Promise<{ day: string; count: number } | null>;
+  putLookupQuota(uid: string, q: { day: string; count: number }): void;
 }
 
 export interface PayoutStore {
@@ -46,17 +71,6 @@ export interface PayoutStore {
   listDuePayees(): Promise<{ payeeId: string; amount: number; hasAccount: boolean }[]>;
   /** Outside a transaction: ids of payouts in these statuses, oldest `createdAt` first, at most `limit`. */
   listPayoutIdsByStatus(statuses: readonly PayoutStatus[], limit: number): Promise<string[]>;
-}
-
-/** Notices the payout use cases send (#138 owns their copy, dedupe and targets). */
-export interface PayoutNotices {
-  /** Money is due but the payee has no account yet. */
-  accountNeeded(payeeId: string, amount: number): Promise<void>;
-  /** The payout account changed (critical; goes to the owner). */
-  accountChanged(
-    uid: string,
-    v: { accountId: string; bankCode: string; accountLast4: string; activeFrom: string },
-  ): Promise<void>;
 }
 
 export interface PayoutGateway {
@@ -74,14 +88,24 @@ export interface PayoutGateway {
   }): Promise<{ status: 'paid' | 'failed'; reference?: string; failureReason?: string }>;
 }
 
-export interface PayoutAccountDeps {
+/** What every payout use case needs. */
+export interface PayoutCoreDeps {
   readonly store: PayoutStore;
   readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }
 
-export interface PayoutDeps extends PayoutAccountDeps {
+/** The photographer's account use cases (S06.06): lookup, OTP, save. */
+export interface PayoutAccountDeps extends PayoutCoreDeps {
+  readonly lookup: AccountNameLookup;
+  readonly names: VerifiedNameReader;
+  readonly otp: { readonly sender: OtpSender; readonly phones: OtpPhoneReader; readonly crypto: OtpCrypto };
+  readonly notices: PayoutNotices;
+}
+
+/** Staff and daily payout use cases. */
+export interface PayoutDeps extends PayoutCoreDeps {
   readonly gateway: PayoutGateway;
   readonly policy: PayoutPolicy;
   readonly notices: PayoutNotices;

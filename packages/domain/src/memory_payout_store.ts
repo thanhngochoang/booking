@@ -2,6 +2,7 @@ import { MemoryBookingStore } from './memory_booking_store.js';
 import { isPayoutPayable, type Payout, type PayoutStatus } from './payout.js';
 import { isEscrowRefund, type Payment } from './escrow.js';
 import type { PayoutAccount, PayoutAccountView } from './payout_account.js';
+import type { OtpChallenge } from './payout_otp.js';
 import type { PayoutStore, PayoutTx } from './payout_ports.js';
 import { providerTypeOf, type ProviderType } from './provider_type.js';
 
@@ -19,6 +20,10 @@ export class MemoryPayoutStore implements PayoutStore {
   readonly accounts = new Map<string, PayoutAccount>();
   readonly accountViews = new Map<string, PayoutAccountView>();
   readonly payouts = new Map<string, Payout>();
+  /** uid → the payout-account OTP challenge (hashes only). */
+  readonly otpChallenges = new Map<string, OtpChallenge>();
+  /** uid → name lookups on one Vietnam day. */
+  readonly lookupQuotas = new Map<string, { day: string; count: number }>();
   /** Committed write count. */
   writes = 0;
   private queue: Promise<unknown> = Promise.resolve();
@@ -149,6 +154,18 @@ export class MemoryPayoutStore implements PayoutStore {
         },
         setPayment: (p) => stage(() => void this.booking.payments.set(p.id, { ...p })),
         addLedgerEntry: (e) => stage(() => void this.booking.ledgerEntries.set(e.id, { ...e })),
+        getOtpChallenge: async (uid) => {
+          read('getOtpChallenge');
+          const c = this.otpChallenges.get(uid);
+          return c ? { ...c } : null;
+        },
+        putOtpChallenge: (c) => stage(() => void this.otpChallenges.set(c.uid, { ...c })),
+        getLookupQuota: async (uid) => {
+          read('getLookupQuota');
+          const q = this.lookupQuotas.get(uid);
+          return q ? { ...q } : null;
+        },
+        putLookupQuota: (uid, q) => stage(() => void this.lookupQuotas.set(uid, { ...q })),
       };
       const result = await fn(tx);
       for (const apply of staged) apply();

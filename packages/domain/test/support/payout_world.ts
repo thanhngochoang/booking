@@ -1,9 +1,14 @@
+import { createHash } from 'node:crypto';
 import { MemoryEarningsStore } from '../../src/memory_earnings_store.js';
 import { MemoryPayoutStore } from '../../src/memory_payout_store.js';
 import { FakePayoutGateway } from '../../src/fake_payout_gateway.js';
+import { FakeAccountNameLookup, type OtpCrypto } from '../../src/account_lookup.js';
+import { FakeOtpSender } from '../../src/fake_otp_sender.js';
 import type { EarningsDeps } from '../../src/earnings_ports.js';
-import type { PayoutDeps, PayoutNotices } from '../../src/payout_ports.js';
-import { accountLast4, type NameStatus, type PayoutAccount } from '../../src/payout_account.js';
+import type { PayoutAccountDeps, PayoutDeps, PayoutNotices } from '../../src/payout_ports.js';
+import type { NameStatus, PayoutAccount } from '../../src/payout_account.js';
+import { requestPayoutOtp } from '../../src/payout_account_use_cases.js';
+import { savePayoutAccount } from '../../src/save_payout_account.js';
 import type { Payout } from '../../src/payout.js';
 import { DEFAULT_PAYOUT_POLICY } from '../../src/payout_policy.js';
 import { createBookingDraft } from '../../src/create_booking.js';
@@ -29,15 +34,50 @@ export class RecordingPayoutNotices implements PayoutNotices {
   }
 }
 
+/**
+ * Deterministic OTP crypto for tests: real SHA-256 (node:crypto, test support only — never in
+ * `src/`) and a counter-seeded byte stream instead of a CSPRNG.
+ */
+export class TestOtpCrypto implements OtpCrypto {
+  private counter = 0;
+
+  async sha256Hex(input: string): Promise<string> {
+    return createHash('sha256').update(input, 'utf8').digest('hex');
+  }
+
+  random(n: number): Uint8Array {
+    const out = new Uint8Array(n);
+    let filled = 0;
+    while (filled < n) {
+      this.counter += 1;
+      const block = createHash('sha256').update(`otp-test-${this.counter}`).digest();
+      const take = Math.min(block.length, n - filled);
+      out.set(block.subarray(0, take), filled);
+      filled += take;
+    }
+    return out;
+  }
+}
+
 export interface PayoutWorld extends BookingWorld {
   readonly payoutStore: MemoryPayoutStore;
   readonly earningsStore: MemoryEarningsStore;
-  readonly payoutDeps: PayoutDeps;
+  /** Staff/daily payout deps and p1's account deps in one object. */
+  readonly payoutDeps: PayoutDeps & PayoutAccountDeps;
+  /** p1's account deps (the fake lookup echoes p1's verified name). */
+  readonly accountDeps: PayoutAccountDeps;
   readonly earningsDeps: EarningsDeps;
   readonly payGateway: FakePayoutGateway;
   readonly notices: RecordingPayoutNotices;
+  /** uid → verified legal name (`users/{uid}/private/identity.legalName`). */
+  readonly names: Map<string, string>;
+  /** uid → phone (`photographers/{uid}/private/contact.phone`). */
+  readonly phones: Map<string, string>;
+  readonly otpSender: FakeOtpSender;
+  readonly otpCrypto: TestOtpCrypto;
 }
 
+/** p1 is a photographer named Nguyễn Văn An with phone 0912345678 (test values). */
 export function createPayoutWorld(start = new Date('2026-10-10T10:00:00.000Z')): PayoutWorld {
   const base = createBookingWorld(start);
   const payoutStore = new MemoryPayoutStore(base.store);
@@ -45,7 +85,11 @@ export function createPayoutWorld(start = new Date('2026-10-10T10:00:00.000Z')):
   const earningsStore = new MemoryEarningsStore(base.store, payoutStore, new Map([['c1', 'Khách Hàng Một']]));
   const payGateway = new FakePayoutGateway();
   const notices = new RecordingPayoutNotices();
-  const payoutDeps: PayoutDeps = {
+  const names = new Map([['p1', 'Nguyễn Văn An']]);
+  const phones = new Map([['p1', '0912345678']]);
+  const otpSender = new FakeOtpSender();
+  const otpCrypto = new TestOtpCrypto();
+  const payoutDeps: PayoutDeps & PayoutAccountDeps = {
     store: payoutStore,
     cipher: {
       encrypt: async (p) => `enc:${[...p].reverse().join('')}`,
@@ -56,21 +100,53 @@ export function createPayoutWorld(start = new Date('2026-10-10T10:00:00.000Z')):
     gateway: payGateway,
     policy: DEFAULT_PAYOUT_POLICY,
     notices,
+    lookup: echoLookup(names, 'p1'),
+    names: { legalName: async (uid) => names.get(uid) ?? null },
+    otp: { sender: otpSender, phones: { phoneOf: async (uid) => phones.get(uid) ?? null }, crypto: otpCrypto },
   };
   return {
     ...base,
     payoutStore,
     earningsStore,
     payoutDeps,
+    accountDeps: payoutDeps,
     earningsDeps: { store: earningsStore, clock: base.clock, policy: DEFAULT_PAYOUT_POLICY },
     payGateway,
     notices,
+    names,
+    phones,
+    otpSender,
+    otpCrypto,
   };
 }
 
+/** The fake lookup for `uid`, echoing their verified name as it is when the lookup runs. */
+function echoLookup(names: Map<string, string>, uid: string): PayoutAccountDeps['lookup'] {
+  return { lookup: (r) => new FakeAccountNameLookup(names.get(uid) ?? null).lookup(r) };
+}
+
+/** Account deps for another photographer (the live adapter is also built per caller). */
+export function accountDepsFor(w: PayoutWorld, uid: string): PayoutAccountDeps {
+  return { ...w.accountDeps, lookup: echoLookup(w.names, uid) };
+}
+
+/** Requests an OTP for this target and returns the code the fake sender got. */
+export async function otpFor(
+  w: PayoutWorld,
+  target: { bankCode: string; accountNumber: string },
+  uid = 'p1',
+): Promise<string> {
+  await requestPayoutOtp(accountDepsFor(w, uid), { uid }, target);
+  const last = w.otpSender.sent.at(-1);
+  if (last === undefined) throw new Error('no otp sent');
+  return last.code;
+}
+
 /**
- * Writes an active account (and its owner view) straight into the memory store, replacing the
- * user's current one. Until Task 3's savePayoutAccount v2: `nameStatus` 'matched', active from now.
+ * Adds (or changes to) a VCB account through `savePayoutAccount` v2, with an OTP when the user
+ * already has one. The user is made a photographer with a verified name and a phone if needed.
+ * `nameStatus` / `activeFrom` are fixture overrides written on the saved account and its view
+ * afterwards (e.g. a `pending_review` account, or one still inside the 72 hours).
  */
 export async function addAccount(
   w: PayoutWorld,
@@ -78,32 +154,26 @@ export async function addAccount(
   opts: { uid?: string; nameStatus?: NameStatus; activeFrom?: string } = {},
 ): Promise<PayoutAccount> {
   const uid = opts.uid ?? 'p1';
-  const at = w.clock.now().toISOString();
-  for (const [key, a] of w.payoutStore.accounts) {
-    if (a.userId === uid && a.active) w.payoutStore.accounts.set(key, { ...a, active: false, deactivatedAt: at });
-  }
+  if (!w.payoutStore.roles.has(uid)) w.payoutStore.seedRole(uid, 'photographer');
+  if (!w.names.has(uid)) w.names.set(uid, 'Nguyễn Văn An');
+  if (!w.phones.has(uid)) w.phones.set(uid, '0912345678');
+  const target = { bankCode: 'VCB', accountNumber };
+  const hasCurrent = [...w.payoutStore.accounts.values()].some((a) => a.userId === uid && a.active);
+  const input = hasCurrent ? { ...target, otpCode: await otpFor(w, target, uid) } : target;
+  const saved = await savePayoutAccount(accountDepsFor(w, uid), { uid }, input);
+  const key = `${uid}/${saved.accountId}`;
+  const stored = w.payoutStore.accounts.get(key);
+  if (stored === undefined) throw new Error('account not saved');
   const account: PayoutAccount = {
-    id: w.ids.newId(),
-    userId: uid,
-    bankCode: 'VCB',
-    accountNumberEnc: await w.payoutDeps.cipher.encrypt(accountNumber),
-    accountLast4: accountLast4(accountNumber),
-    holderName: 'NGUYEN VAN AN',
-    active: true,
-    createdAt: at,
-    nameStatus: opts.nameStatus ?? 'matched',
-    activeFrom: opts.activeFrom ?? at,
+    ...stored,
+    ...(opts.nameStatus === undefined ? {} : { nameStatus: opts.nameStatus }),
+    ...(opts.activeFrom === undefined ? {} : { activeFrom: opts.activeFrom }),
   };
-  w.payoutStore.accounts.set(`${uid}/${account.id}`, account);
-  w.payoutStore.accountViews.set(uid, {
-    accountId: account.id,
-    bankCode: account.bankCode,
-    accountLast4: account.accountLast4,
-    holderName: account.holderName,
-    updatedAt: at,
-    nameStatus: account.nameStatus,
-    activeFrom: account.activeFrom,
-  });
+  w.payoutStore.accounts.set(key, account);
+  const view = w.payoutStore.accountViews.get(uid);
+  if (view !== undefined) {
+    w.payoutStore.accountViews.set(uid, { ...view, nameStatus: account.nameStatus, activeFrom: account.activeFrom });
+  }
   return account;
 }
 

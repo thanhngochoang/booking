@@ -271,6 +271,20 @@ export class FirestorePayoutStore implements PayoutStore {
           writes.push((t) => t.set(this.db.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p))),
         addLedgerEntry: (e: LedgerEntry) =>
           writes.push((t) => t.set(this.db.collection(LEDGER_COLLECTION).doc(e.id), ledgerEntryToFirestore(e))),
+        // otp_challenges / payout_lookups adapters come with the account callables (#134 Task 5).
+        // Until then they fail closed: nothing reads or writes those collections.
+        getOtpChallenge: async () => {
+          throw new Error('otp_challenges adapter not wired');
+        },
+        putOtpChallenge: () => {
+          throw new Error('otp_challenges adapter not wired');
+        },
+        getLookupQuota: async () => {
+          throw new Error('payout_lookups adapter not wired');
+        },
+        putLookupQuota: () => {
+          throw new Error('payout_lookups adapter not wired');
+        },
       };
       const result = await fn(tx);
       for (const w of writes) w(fTx);
