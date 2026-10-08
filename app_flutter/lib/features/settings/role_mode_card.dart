@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,10 +27,40 @@ Future<bool> _setupUnfinished(WidgetRef ref) async {
   }
 }
 
+/// Goes to Hồ sơ (dropping Cài đặt), then opens setup over it, so Back from
+/// S08.01 returns to Hồ sơ. `push` builds on the router's current stack, so
+/// it waits until the `go` has landed (or a redirect sent it elsewhere).
+Future<void> _openSetupOverProfile(GoRouter router) async {
+  final delegate = router.routerDelegate;
+  final path = AppTab.profile.path;
+  final from = delegate.currentConfiguration;
+  final landed = Completer<void>();
+  void check() {
+    final now = delegate.currentConfiguration;
+    if (!landed.isCompleted && (now.uri.path == path || now != from)) {
+      landed.complete();
+    }
+  }
+
+  delegate.addListener(check);
+  router.go(path);
+  check();
+  try {
+    // A redirect back to where it was would never notify; do not hang.
+    await landed.future.timeout(const Duration(seconds: 2), onTimeout: () {});
+  } finally {
+    delegate.removeListener(check);
+  }
+  if (delegate.currentConfiguration.uri.path == path) {
+    unawaited(router.push('/setup'));
+  }
+}
+
 /// S09.02 "Chế độ": offers the other mode and switches to it. It owns the
 /// one listener on [roleSwitchControllerProvider], so a finished switch shows
-/// one SnackBar, then opens setup (a photographer who has not finished it)
-/// or goes back to Hồ sơ in the new mode.
+/// one SnackBar, then goes back to Hồ sơ in the new mode, with setup opened
+/// over it for a photographer who has not finished it. Cài đặt cannot be
+/// left while the switch runs (see `SettingsScreen`), so neither is lost.
 class RoleModeCard extends ConsumerWidget {
   const RoleModeCard({super.key});
 
@@ -43,6 +75,8 @@ class RoleModeCard extends ConsumerWidget {
       // Only a finished switch the user started: loading -> data/error.
       if (next.isLoading || !(prev?.isLoading ?? false)) return;
       final messenger = ScaffoldMessenger.of(context);
+      // Captured now: Cài đặt (and this card) is gone once the `go` lands.
+      final router = GoRouter.of(context);
       if (next.hasError) {
         messenger
           ..hideCurrentSnackBar()
@@ -63,10 +97,10 @@ class RoleModeCard extends ConsumerWidget {
           ),
         );
       if (role == UserRole.photographer && await _setupUnfinished(ref)) {
-        if (context.mounted) context.go('/setup');
+        await _openSetupOverProfile(router);
         return;
       }
-      if (context.mounted) context.go(AppTab.profile.path);
+      router.go(AppTab.profile.path);
     });
     return GlassCard(
       highlight: false,

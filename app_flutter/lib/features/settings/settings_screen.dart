@@ -125,170 +125,190 @@ class SettingsScreen extends ConsumerWidget {
         ),
     ];
 
+    // Mid-switch, Cài đặt cannot be left (system back or the AppBar arrow),
+    // so the mode card's SnackBar, error and redirect are never lost.
+    final canGoBack = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
     return ScreenCode(
       ScreenCodes.settings,
       child: AuroraBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(title: Text(l.settingsTitle)),
-          body: SafeArea(
-            top: false,
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpace.s5),
-              children: [
-                _SectionLabel(
-                  l.settingsAccount,
-                  key: const Key('settings-group-account'),
-                ),
-                guard(
-                  GlassCard(
-                    highlight: false,
-                    child: Column(
-                      children: [
-                        for (final (i, row) in accountRows.indexed) ...[
-                          if (i > 0) const _RowDivider(),
-                          row,
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(
-                  l.settingsMode,
-                  key: const Key('settings-group-mode'),
-                ),
-                const RoleModeCard(),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(
-                  l.settingsAppearance,
-                  key: const Key('settings-group-appearance'),
-                ),
-                guard(
-                  SegmentedTabs<ThemeMode>(
-                    key: const Key('settings-theme'),
-                    options: [
-                      SegmentOption(value: ThemeMode.dark, label: l.themeDark),
-                      SegmentOption(
-                        value: ThemeMode.light,
-                        label: l.themeLight,
-                      ),
-                      SegmentOption(
-                        value: ThemeMode.system,
-                        label: l.themeSystem,
-                      ),
-                    ],
-                    value: mode,
-                    onChanged: (v) =>
-                        ref.read(themeModeProvider.notifier).set(v),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(
-                  l.settingsButtonStyle,
-                  key: const Key('settings-group-buttonStyle'),
-                ),
-                guard(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SegmentedTabs<ButtonStyleMode>(
-                        key: const Key('settings-button-style'),
-                        options: [
-                          SegmentOption(
-                            value: ButtonStyleMode.gradient,
-                            label: l.settingsButtonGradientShort,
-                          ),
-                          SegmentOption(
-                            value: ButtonStyleMode.avatar,
-                            label: l.buttonStyleAvatar,
-                            enabled: hasAvatar,
-                          ),
-                        ],
-                        value: buttonStyle,
-                        onChanged: (v) =>
-                            ref.read(buttonStyleProvider.notifier).set(v),
-                      ),
-                      if (!hasAvatar) ...[
-                        const SizedBox(height: AppSpace.s2),
-                        Text(
-                          l.buttonStyleAvatarNeedsPhoto,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                      const SizedBox(height: AppSpace.s4),
-                      Semantics(
-                        label: l.settingsButtonPreview,
-                        child: ExcludeSemantics(
-                          child: AppButton.primary(
-                            l.settingsButtonPreview,
-                            size: AppButtonSize.small,
-                            onPressed: () {},
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(
-                  l.notificationTitle,
-                  key: const Key('settings-group-notifications'),
-                ),
-                guard(
-                  GlassCard(
-                    highlight: false,
-                    child: _LinkTile(
-                      key: const Key('settings-notifications'),
-                      icon: AppIcons.notifications,
-                      title: l.notificationTitle,
-                      subtitle: l.settingsNotificationsBody,
-                      path: '/settings/notifications',
-                    ),
-                  ),
-                ),
-                if (kDebugMode) ...[
-                  const SizedBox(height: AppSpace.s6),
+        child: PopScope(
+          canPop: !switching,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              leading: switching && canGoBack
+                  ? IconButton(
+                      key: const Key('settings-back-disabled'),
+                      onPressed: null,
+                      icon: const BackButtonIcon(),
+                      tooltip: MaterialLocalizations.of(context)
+                          .backButtonTooltip,
+                    )
+                  : null,
+              title: Text(l.settingsTitle),
+            ),
+            body: SafeArea(
+              top: false,
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpace.s5),
+                children: [
                   _SectionLabel(
-                    l.settingsDeveloper,
-                    key: const Key('settings-group-debug'),
+                    l.settingsAccount,
+                    key: const Key('settings-group-account'),
                   ),
                   guard(
                     GlassCard(
                       highlight: false,
-                      child: SwitchListTile(
-                        key: const Key('show-screen-codes'),
-                        secondary: const AppIcon(AppIcons.pin),
-                        title: Text(l.settingsShowScreenCodes),
-                        subtitle: Text(l.settingsShowScreenCodesBody),
-                        value: showCodes,
-                        onChanged: (v) =>
-                            ref.read(showScreenCodesProvider.notifier).set(v),
+                      child: Column(
+                        children: [
+                          for (final (i, row) in accountRows.indexed) ...[
+                            if (i > 0) const _RowDivider(),
+                            row,
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.settingsMode,
+                    key: const Key('settings-group-mode'),
+                  ),
+                  const RoleModeCard(),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.settingsAppearance,
+                    key: const Key('settings-group-appearance'),
+                  ),
+                  guard(
+                    SegmentedTabs<ThemeMode>(
+                      key: const Key('settings-theme'),
+                      options: [
+                        SegmentOption(
+                          value: ThemeMode.dark,
+                          label: l.themeDark,
+                        ),
+                        SegmentOption(
+                          value: ThemeMode.light,
+                          label: l.themeLight,
+                        ),
+                        SegmentOption(
+                          value: ThemeMode.system,
+                          label: l.themeSystem,
+                        ),
+                      ],
+                      value: mode,
+                      onChanged: (v) =>
+                          ref.read(themeModeProvider.notifier).set(v),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.settingsButtonStyle,
+                    key: const Key('settings-group-buttonStyle'),
+                  ),
+                  guard(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SegmentedTabs<ButtonStyleMode>(
+                          key: const Key('settings-button-style'),
+                          options: [
+                            SegmentOption(
+                              value: ButtonStyleMode.gradient,
+                              label: l.settingsButtonGradientShort,
+                            ),
+                            SegmentOption(
+                              value: ButtonStyleMode.avatar,
+                              label: l.buttonStyleAvatar,
+                              enabled: hasAvatar,
+                            ),
+                          ],
+                          value: buttonStyle,
+                          onChanged: (v) =>
+                              ref.read(buttonStyleProvider.notifier).set(v),
+                        ),
+                        if (!hasAvatar) ...[
+                          const SizedBox(height: AppSpace.s2),
+                          Text(
+                            l.buttonStyleAvatarNeedsPhoto,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                        const SizedBox(height: AppSpace.s4),
+                        Semantics(
+                          label: l.settingsButtonPreview,
+                          child: ExcludeSemantics(
+                            child: AppButton.primary(
+                              l.settingsButtonPreview,
+                              size: AppButtonSize.small,
+                              onPressed: () {},
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.notificationTitle,
+                    key: const Key('settings-group-notifications'),
+                  ),
+                  guard(
+                    GlassCard(
+                      highlight: false,
+                      child: _LinkTile(
+                        key: const Key('settings-notifications'),
+                        icon: AppIcons.notifications,
+                        title: l.notificationTitle,
+                        subtitle: l.settingsNotificationsBody,
+                        path: '/settings/notifications',
+                      ),
+                    ),
+                  ),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: AppSpace.s6),
+                    _SectionLabel(
+                      l.settingsDeveloper,
+                      key: const Key('settings-group-debug'),
+                    ),
+                    guard(
+                      GlassCard(
+                        highlight: false,
+                        child: SwitchListTile(
+                          key: const Key('show-screen-codes'),
+                          secondary: const AppIcon(AppIcons.pin),
+                          title: Text(l.settingsShowScreenCodes),
+                          subtitle: Text(l.settingsShowScreenCodesBody),
+                          value: showCodes,
+                          onChanged: (v) =>
+                              ref.read(showScreenCodesProvider.notifier).set(v),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpace.s6),
+                  KeyedSubtree(
+                    key: const Key('settings-group-signOut'),
+                    child: guard(
+                      Center(
+                        child: TextButton(
+                          key: const Key('settings-sign-out'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.error,
+                            minimumSize: const Size.fromHeight(36),
+                          ),
+                          onPressed: () => _confirmSignOut(context, ref),
+                          child: Text(
+                            l.signOut,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
-                const SizedBox(height: AppSpace.s6),
-                KeyedSubtree(
-                  key: const Key('settings-group-signOut'),
-                  child: guard(
-                    Center(
-                      child: TextButton(
-                        key: const Key('settings-sign-out'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: theme.colorScheme.error,
-                          minimumSize: const Size.fromHeight(36),
-                        ),
-                        onPressed: () => _confirmSignOut(context, ref),
-                        child: Text(
-                          l.signOut,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

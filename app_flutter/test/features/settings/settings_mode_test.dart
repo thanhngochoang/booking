@@ -41,6 +41,25 @@ class _HeldUsers extends FakeUserRepository {
   }
 }
 
+/// A profile stream that lags the write: [setRole] succeeds at once but the
+/// stream only shows the new role after [release].
+class _LaggingUsers extends FakeUserRepository {
+  bool lag = false;
+  (String, UserRole)? _pending;
+
+  @override
+  Future<void> setRole(String uid, UserRole role) async {
+    if (!lag) return super.setRole(uid, role);
+    _pending = (uid, role);
+  }
+
+  Future<void> release() async {
+    final p = _pending;
+    _pending = null;
+    if (p != null) await super.setRole(p.$1, p.$2);
+  }
+}
+
 Future<(FakeAuthRepository, FakeUserRepository)> _signedIn(
   UserRole role, {
   FakeUserRepository? users,
@@ -57,13 +76,14 @@ Future<Widget> _app(
   FakeAuthRepository auth,
   FakeUserRepository users, {
   FakePhotographerIntroRepository? intro,
+  String initial = '/settings',
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   Widget stub(BuildContext _, GoRouterState s) =>
       Scaffold(body: Text('stub ${s.uri}'));
   final router = GoRouter(
-    initialLocation: '/settings',
+    initialLocation: initial,
     routes: [
       GoRoute(path: '/profile', builder: stub),
       GoRoute(
@@ -177,6 +197,12 @@ void main() {
     expect((await users.watch(uid).first)?.role, UserRole.photographer);
     expect(find.text('stub /setup'), findsOneWidget);
     expect(find.text('Đã chuyển qua chế độ nhiếp ảnh.'), findsOneWidget);
+
+    // Setup sits over Hồ sơ: Back (system or arrow) returns there.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('stub /profile'), findsOneWidget);
+    expect(find.byType(SettingsScreen), findsNothing);
   });
 
   testWidgets('switching to photographer with setup complete goes back to '
@@ -263,5 +289,119 @@ void main() {
     held.hold!.complete();
     await tester.pumpAndSettle();
     expect(find.text('stub /profile'), findsOneWidget);
+  });
+
+  testWidgets('during the switch, back does not leave Cài đặt', (tester) async {
+    final held = _HeldUsers();
+    final (auth, users) = await _signedIn(UserRole.customer, users: held);
+    final intro = FakePhotographerIntroRepository()
+      ..seed(
+        auth.currentUser!.uid,
+        const PhotographerIntro(onboardingComplete: true),
+      );
+    await tester.pumpWidget(
+      await _app(auth, users, intro: intro, initial: '/profile'),
+    );
+    await tester.pumpAndSettle();
+    GoRouter.of(tester.element(find.text('stub /profile'))).push('/settings');
+    await tester.pumpAndSettle();
+    expect(find.byType(BackButton), findsOneWidget, reason: 'pushed');
+
+    held.hold = Completer<void>();
+    await _tapSwitch(tester);
+    await tester.pump();
+    // The arrow is shown but disabled, and system back is refused.
+    expect(find.byType(BackButton), findsNothing);
+    final arrow = tester.widget<IconButton>(
+      find.byKey(const Key('settings-back-disabled')),
+    );
+    expect(arrow.onPressed, isNull);
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(SettingsScreen), findsOneWidget);
+
+    held.hold!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('stub /profile'), findsOneWidget);
+    expect(find.text('Đã chuyển qua chế độ nhiếp ảnh.'), findsOneWidget);
+  });
+
+  testWidgets('a failed switch can be left again after its message', (
+    tester,
+  ) async {
+    final auth = FakeAuthRepository();
+    final users = FakeUserRepository(failSetRole: true);
+    await users.ensureProfile(
+      await auth.registerWithEmail('a@b.vn', 'password1', 'Minh'),
+    );
+    await tester.pumpWidget(await _app(auth, users, initial: '/profile'));
+    await tester.pumpAndSettle();
+    GoRouter.of(tester.element(find.text('stub /profile'))).push('/settings');
+    await tester.pumpAndSettle();
+    await _tapSwitch(tester);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Không đổi được chế độ. Kiểm tra mạng rồi thử lại.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsScreen), findsNothing);
+    expect(find.text('stub /profile'), findsOneWidget);
+  });
+
+  group('the profile stream lags the switch', () {
+    testWidgets('to photographer: the SnackBar and /setup follow the '
+        "controller's value", (tester) async {
+      final lagging = _LaggingUsers();
+      final (auth, users) = await _signedIn(UserRole.customer, users: lagging);
+      final uid = auth.currentUser!.uid;
+      await tester.pumpWidget(
+        await _app(
+          auth,
+          users,
+          intro: FakePhotographerIntroRepository()
+            ..seed(uid, const PhotographerIntro()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      lagging.lag = true;
+      await _tapSwitch(tester);
+      await tester.pumpAndSettle();
+      expect(
+        (await users.watch(uid).first)?.role,
+        UserRole.customer,
+        reason: 'the stream has not caught up',
+      );
+      expect(find.text('Đã chuyển qua chế độ nhiếp ảnh.'), findsOneWidget);
+      expect(find.text('Đã chuyển qua chế độ đặt lịch.'), findsNothing);
+      expect(find.text('stub /setup'), findsOneWidget);
+
+      await lagging.release();
+      await tester.pumpAndSettle();
+      expect(find.text('stub /setup'), findsOneWidget);
+    });
+
+    testWidgets("to customer: the SnackBar names Đặt lịch and goes to "
+        '/profile', (tester) async {
+      final lagging = _LaggingUsers();
+      final (auth, users) = await _signedIn(
+        UserRole.photographer,
+        users: lagging,
+      );
+      await tester.pumpWidget(await _app(auth, users));
+      await tester.pumpAndSettle();
+      lagging.lag = true;
+      await _tapSwitch(tester);
+      await tester.pumpAndSettle();
+      expect(
+        (await users.watch(auth.currentUser!.uid).first)?.role,
+        UserRole.photographer,
+      );
+      expect(find.text('Đã chuyển qua chế độ đặt lịch.'), findsOneWidget);
+      expect(find.text('stub /profile'), findsOneWidget);
+      await lagging.release();
+      await tester.pumpAndSettle();
+    });
   });
 }
