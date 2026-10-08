@@ -11,6 +11,13 @@ class FakeChatRepository implements ChatRepository {
   bool online = true;
   ChatErrorCode? failNext;
 
+  /// Fails only the next [sendImagePath] (the upload before it succeeds), the
+  /// "network dropped on the callable" case.
+  ChatErrorCode? failNextSendImage;
+
+  /// When set, [uploadChatImage] waits for it before it uploads.
+  Future<void>? uploadGate;
+
   final Map<String, ChatThread> threads = {};
   final Map<String, List<ChatMessage>> messages = {};
   final Map<String, int> unreadCounts = {}; // chatId -> count for currentUserId
@@ -21,6 +28,10 @@ class FakeChatRepository implements ChatRepository {
 
   /// Every successful [sendImagePath], in order.
   final List<({String chatId, String path, String clientId})> imageSends = [];
+
+  /// Every [sendImagePath] call, failed ones included.
+  final List<({String chatId, String path, String clientId})>
+  imageSendAttempts = [];
 
   final Map<String, StreamController<ChatThread?>> _threadControllers = {};
   final Map<String, StreamController<List<ChatMessage>>> _messageControllers =
@@ -278,6 +289,7 @@ class FakeChatRepository implements ChatRepository {
     required String clientId,
   }) async {
     _checkPreconditions();
+    await uploadGate;
     final path = 'chats/$chatId/$currentUserId/$clientId.jpg';
     uploads.add((chatId: chatId, clientId: clientId, image: image, path: path));
     return path;
@@ -289,7 +301,17 @@ class FakeChatRepository implements ChatRepository {
     String storagePath, {
     required String clientId,
   }) async {
+    imageSendAttempts.add((
+      chatId: chatId,
+      path: storagePath,
+      clientId: clientId,
+    ));
     _checkPreconditions();
+    if (failNextSendImage != null) {
+      final code = failNextSendImage!;
+      failNextSendImage = null;
+      throw ChatException(code, 'Simulated send failure: $code');
+    }
     final msg = ChatMessage(
       id: clientId,
       senderId: currentUserId,

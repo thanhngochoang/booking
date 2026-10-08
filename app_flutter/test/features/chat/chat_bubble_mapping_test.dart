@@ -141,5 +141,84 @@ void main() {
       expect(sys.text, 'Đã đổi lịch thành công');
       expect(sys.actions, isEmpty);
     });
+
+    testWidgets('an image uses the resolved URL, never the storage path', (
+      tester,
+    ) async {
+      late AppLocalizations l10n;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
+          home: Builder(
+            builder: (context) {
+              l10n = AppLocalizations.of(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      final msg = ChatMessage(
+        id: 'm1',
+        senderId: 'u1',
+        type: MessageType.image,
+        imagePath: 'chats/c1/u1/img1.jpg',
+        createdAt: DateTime(2026, 10, 5),
+      );
+
+      final resolved =
+          bubbleContentOf(
+                msg,
+                imageUrl: 'https://storage.test/chats/c1/u1/img1.jpg',
+                l: l10n,
+                senderName: 'A',
+              )
+              as ImageContent;
+      expect(resolved.url, 'https://storage.test/chats/c1/u1/img1.jpg');
+      expect(resolved.localPath, isNull);
+
+      // Not resolved yet: empty, the storage path is never a URL.
+      final unresolved =
+          bubbleContentOf(msg, l: l10n, senderName: 'A') as ImageContent;
+      expect(unresolved.url, isEmpty);
+    });
+
+    testWidgets('a pending image uses the local file', (tester) async {
+      late AppLocalizations l10n;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('vi'),
+          home: Builder(
+            builder: (context) {
+              l10n = AppLocalizations.of(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      final msg = ChatMessage(
+        id: 'm1',
+        senderId: 'u1',
+        type: MessageType.image,
+        imagePath: '/tmp/photo.jpg',
+        createdAt: DateTime(2026, 10, 5),
+        sendState: MessageSendState.sending,
+      );
+
+      final content =
+          bubbleContentOf(
+                msg,
+                localPath: '/tmp/photo.jpg',
+                l: l10n,
+                senderName: 'A',
+              )
+              as ImageContent;
+
+      expect(content.localPath, '/tmp/photo.jpg');
+      expect(content.url, isEmpty);
+    });
   });
 }

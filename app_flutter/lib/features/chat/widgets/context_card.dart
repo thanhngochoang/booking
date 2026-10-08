@@ -59,10 +59,10 @@ class _BookingContextCard extends ConsumerWidget {
         data: (context, booking) {
           if (booking == null) return const SizedBox.shrink();
 
-          final photographerName =
-              profileAsync.value?.displayName ?? 'Nhiếp ảnh gia';
-          final thumbUrl = profileAsync.value?.avatarUrl;
           final l10n = AppLocalizations.of(context);
+          final photographerName =
+              profileAsync.value?.displayName ?? l10n.profileRolePhotographer;
+          final thumbUrl = profileAsync.value?.avatarUrl;
           final statusLabel = booking.status.label(l10n);
 
           final summary = bookingSummaryOf(

@@ -12,13 +12,14 @@ BubbleSendState sendStateOf(MessageSendState s) => switch (s) {
 ChatBubbleContent bubbleContentOf(
   ChatMessage m, {
   String? imageUrl,
+  String? localPath,
   required AppLocalizations l,
   required String senderName,
   List<Widget> systemActions = const [],
 }) {
   return switch (m.type) {
     MessageType.text => TextContent(m.body ?? ''),
-    MessageType.image => ImageContent(imageUrl ?? m.imagePath ?? ''),
+    MessageType.image => ImageContent(imageUrl ?? '', localPath: localPath),
     MessageType.location => LocationContent(
         label: l.chatLocationOf(senderName),
         mapUrl: m.point != null

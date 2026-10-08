@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
@@ -179,5 +181,165 @@ void main() {
 
     final updated = fakeChat.messages[chatId]!.first;
     expect(updated.system?.answer, 'accepted');
+  });
+
+  group('photos', () {
+    const photo = PickedImage(
+      path: '/tmp/photo.jpg',
+      name: 'photo.jpg',
+      sizeBytes: 100,
+    );
+
+    ChatController withPhoto() {
+      container.updateOverrides([
+        chatRepositoryProvider.overrideWithValue(fakeChat),
+        authRepositoryProvider.overrideWithValue(fakeAuth),
+        imagePickerProvider.overrideWithValue(
+          FakeImagePicker([
+            [photo],
+            [photo],
+          ]),
+        ),
+        locationRepositoryProvider.overrideWithValue(fakeLocation),
+        clockProvider.overrideWithValue(() => DateTime(2026, 10, 5, 12, 0)),
+      ]);
+      return container.read(chatControllerProvider(chatId).notifier);
+    }
+
+    ChatMessage pending() =>
+        container.read(chatControllerProvider(chatId)).pendingMessages.single;
+
+    test('sending a photo uploads then posts the path', () async {
+      final controller = withPhoto();
+
+      await controller.pickAndSendImage();
+
+      expect(fakeChat.uploads, hasLength(1));
+      final up = fakeChat.uploads.single;
+      expect(up.path, 'chats/$chatId/cust1/${up.clientId}.jpg');
+      expect(fakeChat.imageSends, hasLength(1));
+      expect(fakeChat.imageSends.single.path, up.path);
+      expect(fakeChat.imageSends.single.clientId, up.clientId);
+      expect(pending().id, up.clientId);
+    });
+
+    test('an upload failure marks the bubble failed', () async {
+      final controller = withPhoto();
+      fakeChat.failNext = ChatErrorCode.network;
+
+      await controller.pickAndSendImage();
+
+      expect(pending().sendState, MessageSendState.failed);
+      expect(fakeChat.imageSends, isEmpty);
+      expect(
+        container.read(chatControllerProvider(chatId)).isUploadingImage,
+        false,
+      );
+    });
+
+    test('retry after an upload failure uploads again then posts', () async {
+      final controller = withPhoto();
+      fakeChat.failNext = ChatErrorCode.network;
+      await controller.pickAndSendImage();
+      expect(fakeChat.uploads, isEmpty);
+
+      await controller.retryMessage(pending());
+
+      expect(fakeChat.uploads, hasLength(1));
+      expect(fakeChat.imageSends, hasLength(1));
+      expect(fakeChat.imageSends.single.path, fakeChat.uploads.single.path);
+    });
+
+    test(
+      'retry after a send failure posts the same path without uploading',
+      () async {
+        final controller = withPhoto();
+        fakeChat.failNextSendImage = ChatErrorCode.network;
+        await controller.pickAndSendImage();
+        expect(pending().sendState, MessageSendState.failed);
+        expect(fakeChat.uploads, hasLength(1));
+
+        await controller.retryMessage(pending());
+
+        expect(fakeChat.uploads, hasLength(1));
+        expect(fakeChat.imageSendAttempts, hasLength(2));
+        expect(
+          fakeChat.imageSendAttempts[1].path,
+          fakeChat.imageSendAttempts[0].path,
+        );
+        expect(
+          fakeChat.imageSendAttempts[1].clientId,
+          fakeChat.imageSendAttempts[0].clientId,
+        );
+        expect(fakeChat.imageSends, hasLength(1));
+        expect(fakeChat.imageSends.single.path, fakeChat.uploads.single.path);
+      },
+    );
+
+    test('localFileFor returns the picked file of a sent photo', () async {
+      final controller = withPhoto();
+      await controller.pickAndSendImage();
+      final id = pending().id;
+
+      expect(controller.localFileFor(id), '/tmp/photo.jpg');
+      expect(controller.localFileFor('someone-elses'), isNull);
+
+      // Still there once the stream has the message and pending is cleared.
+      controller.syncWithStream(fakeChat.messages[chatId]!);
+      expect(
+        container.read(chatControllerProvider(chatId)).pendingMessages,
+        isEmpty,
+      );
+      expect(controller.localFileFor(id), '/tmp/photo.jpg');
+    });
+
+    test('an image this screen did not pick stays failed on retry', () async {
+      final controller = withPhoto();
+      final foreign = ChatMessage(
+        id: 'old',
+        senderId: 'cust1',
+        type: MessageType.image,
+        imagePath: 'chats/$chatId/cust1/old.jpg',
+        createdAt: DateTime(2026, 10, 5),
+        sendState: MessageSendState.failed,
+      );
+
+      await controller.retryMessage(foreign);
+
+      expect(fakeChat.uploads, isEmpty);
+      expect(fakeChat.imageSendAttempts, isEmpty);
+    });
+
+    test('a not_eligible failure on a closed inquiry sets errorCode', () async {
+      final controller = withPhoto();
+      fakeChat.failNext = ChatErrorCode.notEligible;
+
+      await controller.sendText('Xin chào lại');
+
+      final state = container.read(chatControllerProvider(chatId));
+      expect(state.errorCode, ChatErrorCode.notEligible);
+      expect(state.errorSeq, 1);
+      expect(state.pendingMessages.single.sendState, MessageSendState.failed);
+
+      fakeChat.failNext = ChatErrorCode.notEligible;
+      await controller.retryMessage(state.pendingMessages.single);
+      expect(container.read(chatControllerProvider(chatId)).errorSeq, 2);
+    });
+
+    test('no state write after dispose', () async {
+      final gate = Completer<void>();
+      fakeChat.uploadGate = gate.future;
+      final controller = withPhoto();
+      final sub = container.listen(chatControllerProvider(chatId), (_, _) {});
+
+      final sending = controller.pickAndSendImage();
+      await Future<void>.delayed(Duration.zero);
+      expect(sub.read().isUploadingImage, true);
+
+      container.dispose();
+      gate.complete();
+
+      await sending; // must not throw
+    });
   });
 }
