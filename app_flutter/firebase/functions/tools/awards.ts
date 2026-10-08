@@ -10,7 +10,11 @@
 // with the admin claim.
 
 import { fileURLToPath } from 'node:url';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { mkdir } from 'node:fs/promises';
 import { reviewAward, type Award, type AwardDeps, type AwardProof, type ReviewAction } from '@photobooking/domain';
+import { assertLocalEmulators, LOCAL_HOST } from '../seed/local_guard.js';
 
 export const HELP = `${'usage: awards list | show <id> | approve <id> --actor <uid> | needs-info|reject|revoke <id> "<note>" --actor <uid>'}
 
@@ -20,7 +24,53 @@ Environment:
   STORAGE_BUCKET                  bucket of the proof files (or FIREBASE_STORAGE_BUCKET); required by \`show\`
   FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST
                                   use these instead of credentials to work against the emulators
---actor must be a user with the custom claim staffRole = admin.`;
+  FIREBASE_STORAGE_EMULATOR_HOST  with the emulators: show downloads proof files to $TMPDIR/awards/<id>/ (no key needed)
+--actor must be a user with the custom claim staffRole = admin.
+
+scripts/awards-local.sh sets all of this for the local emulators.`;
+
+const EMULATOR_HOST_VARS = ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST'] as const;
+
+/** Refuses a mixed environment: once any emulator host is set, all of them must be local. */
+export function guardEnv(env: Readonly<Record<string, string | undefined>>): void {
+  if (!EMULATOR_HOST_VARS.some((k) => env[k] !== undefined && env[k] !== '')) return;
+  assertLocalEmulators({ allowAnyProject: true }, env as NodeJS.ProcessEnv);
+  const storage = env.FIREBASE_STORAGE_EMULATOR_HOST;
+  if (storage !== undefined && storage !== '' && !LOCAL_HOST.test(storage)) {
+    throw new Error(`Refusing to run: FIREBASE_STORAGE_EMULATOR_HOST must point at a local emulator (got ${storage}).`);
+  }
+}
+
+/** 'emulator' when FIREBASE_STORAGE_EMULATOR_HOST is set, else 'project'. */
+export type ProofMode = 'emulator' | 'project';
+
+export function proofModeFromEnv(env: Readonly<Record<string, string | undefined>>): ProofMode {
+  const host = env.FIREBASE_STORAGE_EMULATOR_HOST;
+  return host !== undefined && host !== '' ? 'emulator' : 'project';
+}
+
+/** "waiting 3d 4h" / "waiting 5h" / "waiting 12m", from createdAt to now (never negative). */
+export function formatWaiting(createdAt: Date, now: Date): string {
+  const minutes = Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / 60_000));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  if (days > 0) return `waiting ${days}d ${hours}h`;
+  if (hours > 0) return `waiting ${hours}h`;
+  return `waiting ${minutes}m`;
+}
+
+/** The `file` lines of `show`: signed URLs against a project, local downloads on the emulators. */
+export async function proofFileLines(
+  mode: ProofMode,
+  files: readonly string[],
+  deps: { sign(path: string): Promise<string>; download(path: string): Promise<string> },
+): Promise<string[]> {
+  const lines: string[] = [];
+  for (const f of files) {
+    lines.push(mode === 'emulator' ? `file: ${await deps.download(f)}` : `file (15 min): ${await deps.sign(f)}`);
+  }
+  return lines;
+}
 
 /** Bucket that holds the proof files; `show` cannot guess it outside Cloud Functions. */
 export function bucketNameFromEnv(env: Readonly<Record<string, string | undefined>>): string {
@@ -81,7 +131,9 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
 export interface CliIo {
   print(line: string): void;
   listPending(): Promise<Award[]>;
-  show(awardId: string): Promise<{ award: Award; proof: AwardProof | null; urls: string[] } | null>;
+  /** Project mode fills `urls` (signed, 15 min); emulator mode fills `files` (local paths). */
+  show(awardId: string): Promise<{ award: Award; proof: AwardProof | null; urls: string[]; files: string[] } | null>;
+  now(): Date;
   /** The actor of a decision must pass it (the real CLI checks the admin claim). */
   isAdmin(uid: string): Promise<boolean>;
 }
@@ -90,9 +142,10 @@ export async function runCli(argv: readonly string[], deps: AwardDeps, io: CliIo
   const args = parseArgs(argv);
   if (args.command === 'list') {
     const pending = (await io.listPending()).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const now = io.now();
     for (const a of pending) {
       io.print(
-        `${a.id}  ${a.createdAt.toISOString()}  ${a.photographerId}  ${a.result}  ${a.year}  ${a.competition}`,
+        `${a.id}  ${a.createdAt.toISOString()}  ${formatWaiting(a.createdAt, now)}  ${a.photographerId}  ${a.result}  ${a.year}  ${a.competition}`,
       );
     }
     return;
@@ -104,6 +157,7 @@ export async function runCli(argv: readonly string[], deps: AwardDeps, io: CliIo
     io.print(JSON.stringify(found.award, null, 2));
     for (const l of found.proof?.links ?? []) io.print(`link: ${l}`);
     for (const u of found.urls) io.print(`file (15 min): ${u}`);
+    for (const f of found.files) io.print(`file: ${f}`);
     return;
   }
   if (args.actor === null) throw new Error(`${args.command} needs --actor <uid> of an admin. ${USAGE}`);
@@ -124,6 +178,8 @@ async function main(): Promise<void> {
     console.log(HELP);
     return;
   }
+  guardEnv(process.env);
+  const mode = proofModeFromEnv(process.env);
   const { getAuth } = await import('firebase-admin/auth');
   const { getStorage } = await import('firebase-admin/storage');
   const { db } = await import('../src/infra/admin.js');
@@ -147,16 +203,31 @@ async function main(): Promise<void> {
       const ad = a?.data();
       if (ad === undefined) return null;
       const proof = p?.data() === undefined ? null : proofFromDoc(id, p.data() ?? {});
+      const proofFiles = proof?.files ?? [];
+      // Only resolve the bucket when there is something to fetch (the seed's proof has links only).
+      const bucket = proofFiles.length > 0 ? getStorage().bucket(bucketNameFromEnv(process.env)) : null;
       const urls: string[] = [];
-      const files = proof?.files ?? [];
-      const bucket = files.length > 0 ? getStorage().bucket(bucketNameFromEnv(process.env)) : null;
-      for (const f of files) {
-        if (bucket === null) break;
-        const [url] = await bucket.file(f).getSignedUrl({ action: 'read', expires: Date.now() + 15 * 60 * 1000 });
-        urls.push(url);
-      }
-      return { award: awardFromDoc(id, ad), proof, urls };
+      const files: string[] = [];
+      await proofFileLines(mode, proofFiles, {
+        sign: async (f) => {
+          const [url] = await (bucket as NonNullable<typeof bucket>)
+            .file(f)
+            .getSignedUrl({ action: 'read', expires: Date.now() + 15 * 60 * 1000 });
+          urls.push(url);
+          return url;
+        },
+        download: async (f) => {
+          const dir = path.join(os.tmpdir(), 'awards', id);
+          await mkdir(dir, { recursive: true });
+          const destination = path.join(dir, path.basename(f));
+          await (bucket as NonNullable<typeof bucket>).file(f).download({ destination });
+          files.push(destination);
+          return destination;
+        },
+      });
+      return { award: awardFromDoc(id, ad), proof, urls, files };
     },
+    now: () => new Date(),
     isAdmin: async (uid) => (await getAuth().getUser(uid)).customClaims?.staffRole === 'admin',
   };
   await runCli(process.argv.slice(2), deps, io);
