@@ -6,7 +6,9 @@ import 'package:photobooking/core/widgets/app_skeleton.dart';
 
 /// One choice of a single-choice list (mock `.opt`, S02.05; later S04.02, S13.01):
 /// a bordered glass card with a radio. Selected = accent border, accent-soft
-/// fill and a filled radio. No blur, so it is safe in long lists.
+/// fill and a filled radio. No blur, so it is safe in long lists. The [icon]
+/// variant (S08.01, Settings provider-type sheet) puts a 40dp icon tile on
+/// the left and the radio on the right.
 class AppOptionTile extends StatelessWidget {
   static Widget skeleton({Key? key, bool withThumb = false}) =>
       _AppOptionTileSkeleton(key: key, withThumb: withThumb);
@@ -31,7 +33,8 @@ class AppOptionTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// Optional icon between the radio and the label.
+  /// Optional icon between the radio and the label (radio-left layout only;
+  /// see [icon]).
   final Widget? leading;
 
   /// Mock `.opt .oi` (S08.01-type): a 40dp rounded tile on the left holding

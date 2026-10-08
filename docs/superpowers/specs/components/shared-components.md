@@ -191,7 +191,7 @@ Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch). `As
 `StepProgress({required int current, required int total, String? label, bool showCount = true})`. Thanh `total` đoạn, các đoạn tới `current` tô gradient; chữ "n / N" bên cạnh; `Semantics(value: 'Bước n trên N')`. Dùng ở S04.01–S04.03, S08.01, S12.01, S12.02, S08.05, S08.02. Theo mock (thành phần "Bước nhiều trang"), màn nhiều bước đặt "n / N" ở góc phải thanh tiêu đề và thanh tiến độ ngay dưới thanh tiêu đề, ngoài vùng cuộn: khi đó dùng `showCount: false` (S08.05).
 
 ### AppOptionTile · Mới
-`AppOptionTile({required String label, required bool selected, required VoidCallback onTap, Widget? leading})`. Một lựa chọn trong danh sách chọn một (mock `.opt`): viền 1px `outline`, radius 16, nền kính không blur (dùng được trong danh sách dài), radio 18dp viền 2px; đã chọn = viền + chấm radio primary, nền `primarySubtle`. Cao ≥ 48dp; `Semantics(checked, inMutuallyExclusiveGroup, selected)`. Dùng ở S02.05 và S02.06 (các sheet dịch vụ, giá, đánh giá); sau này S04.02, S13.01.
+`AppOptionTile({required String label, required bool selected, required VoidCallback onTap, Widget? leading, IconData? icon, String? description})`. Một lựa chọn trong danh sách chọn một (mock `.opt`): viền 1px `outline`, radius 16, nền kính không blur (dùng được trong danh sách dài), radio 18dp viền 2px; đã chọn = viền + chấm radio primary, nền `primarySubtle`. Cao ≥ 48dp; `Semantics(checked, inMutuallyExclusiveGroup, selected)`. `icon` (mock `.opt .oi`): ô 40dp bo góc bên trái chứa biểu tượng (nền field; đã chọn thì nền primary, biểu tượng onPrimary) và radio chuyển sang bên phải; không dùng cùng `leading`. Dùng ở S02.05 và S02.06 (các sheet dịch vụ, giá, đánh giá), `icon` ở S08.01 (Hình thức) và sheet chọn hình thức trong Cài đặt; sau này S04.02, S13.01.
 
 ### AppFooterBar · Mới
 `AppFooterBar({required Widget child})`. Hàng nút dính đáy của màn biểu mẫu (mock `.foot`): nền `surface`, viền mảnh phía trên, đệm 10/16/12, có `SafeArea` dưới; đặt ngoài vùng cuộn. Màn nhiều bước: "Quay lại" `outline` rộng 36% + nút chính. Dùng ở S08.05, S09.03.
@@ -362,7 +362,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `AppBottomSheet` | S04.01–S04.03, S05.03, S11.03, S06.03, S04.05, S02.05, S08.04 |
 | `StepProgress` | S04.01–S04.03, S08.01, S12.01, S12.02, S08.05, S08.02 |
 | `AppFooterBar` | S08.05, S09.03 |
-| `AppOptionTile` | S02.05, S02.06 (sau: S04.02, S13.01) |
+| `AppOptionTile` | S02.05, S02.06, S08.01 và sheet hình thức ở Cài đặt (`icon`) (sau: S04.02, S13.01) |
 | `AvailabilityCalendar` | S03.01, S02.06, S04.02, S06.04 |
 | `StatusTimeline` | S05.02 |
 | `CapacityBar`, `StatTile` | S03.01, S11.02, S06.01, S12.03, S03.02, S06.05 (`StatTile`) |
