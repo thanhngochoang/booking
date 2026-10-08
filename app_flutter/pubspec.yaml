@@ -87,6 +87,7 @@ flutter:
   assets:
     - assets/brand/logo.png
     - assets/social/
+    - assets/icons/
   fonts:
     - family: Be Vietnam Pro
       fonts:

@@ -29,7 +29,7 @@ ICON_MAP = {'home': 'home', 'explore': 'explore', 'search': 'search', 'plus': 'a
             'card': 'credit_card', 'swap': 'swap_horiz', 'star': 'star', 'bolt': 'bolt', 'ticket': 'confirmation_number',
             'award': 'workspace_premium', 'brief': 'work', 'x': 'close', 'undo': 'undo', 'info': 'info', 'grip': 'drag_handle',
             'chev': 'chevron_right', 'album': 'photo_library', 'list': 'format_list_bulleted', 'img': 'image'}
-KEEP_SVG = {'whatsapp', 'zalo', 'logo', 'seal'}
+KEEP_SVG = {'whatsapp', 'zalo', 'logo', 'seal', 'tomato', 'brick'}
 
 
 def to_ms(snippet):
@@ -212,6 +212,21 @@ tile('statustimeline', 'StatusTimeline', 'StatusTimeline({required List<Timeline
 tile('stattile', 'StatTile', 'StatTile({required String value, required String label, VoidCallback? onTap}) · StatTile.skeleton()', 'S03.01, S06.01, S12.03, S06.05',
      '<div class="row" style="gap:8px"><div class="kpi"><b>12,4M</b><span>Tháng này</span></div><div class="kpi"><b>3,2M</b><span>Đang giữ</span></div><div class="kpi"><b>5</b><span>Buổi sắp tới</span></div></div>',
      f'<div class="row" style="gap:8px">' + ''.join(f'<div class="kpi" style="gap:6px">{sk("70%","20px")}{sk("80%","9px")}</div>' for _ in range(3)) + '</div>')
+tile('verdictpad', 'VerdictPad · VerdictLevel',
+     'VerdictPad({required VerdictKind? kind, required int hits, required onChanged(kind, hits), compact = false, enabled = true}) · VerdictLevel({kind, hits, label, onReset}) · verdictLevelLabel(l10n, kind, hits)',
+     'S05.05 (khối thợ và khối studio dùng compact)',
+     '<div class="vpad" role="group" aria-label="Đánh giá buổi chụp"><div class="vbtn t on" role="slider" aria-label="Ném cà chua, 7 trên 10"><span class="hit">×7</span><svg><use href="#i-tomato"/></svg>Hài lòng</div><div class="vbtn b" role="slider" aria-label="Ném gạch, 0 trên 10"><svg><use href="#i-brick"/></svg>Chưa hài lòng</div></div>'
+     '<div class="vlvl"><div class="sec"><b style="font-family:var(--body);font-size:13px">Rất hài lòng</b><span>Làm lại</span></div><div class="vtrack"><i style="width:91%"></i></div><span class="meta x">Chạm tiếp để tăng mức độ, tối đa 10</span></div>'
+     '<div class="vpad cp"><div class="vbtn t" role="slider" aria-label="Ném cà chua, 0 trên 10"><svg><use href="#i-tomato"/></svg>Hài lòng</div><div class="vbtn b on" role="slider" aria-label="Ném gạch, 2 trên 10"><span class="hit">×2</span><svg><use href="#i-brick"/></svg>Chưa hài lòng</div></div>'
+     '<div class="vlvl"><div class="sec"><b style="font-family:var(--body);font-size:13px">Hơi tiếc</b><span>Làm lại</span></div><div class="vtrack b"><i style="width:58%"></i></div></div>',
+     '<div class="meta">Không có skeleton: pad là điều khiển, không tải dữ liệu. Chạm: phe mới ×1, chạm tiếp +1, tối đa 10; đổi phe về ×1. Một cú nảy mỗi lần chạm, không hiệu ứng lặp.</div>')
+tile('verdictbadge', 'VerdictBadge · TomatoRatioBar · MetaLine · VerdictIcon',
+     'VerdictBadge({kind, hits}) · TomatoRatioBar({tomatoCount, brickCount}) · MetaLine(List<MetaPart>, {style, maxLines = 1}) · MetaPart.text(s) | MetaPart.tomato(pct) · VerdictIcon(kind, {size = 16, color})',
+     'S03.01 (tab Đánh giá, thẻ thợ, hàng kết quả), S02.01, S02.02, S02.06, S12.02, S15.03',
+     '<div class="row" style="gap:12px"><b class="tn tm l" style="font-family:var(--display);font-size:26px;font-weight:600"><svg style="width:24px;height:24px"><use href="#i-tomato"/></svg>97%</b><div class="grow"><div class="vratio" role="img" aria-label="56 cà chua, 2 gạch"><i style="flex:56"></i><i style="flex:2"></i></div><div class="meta tn" style="margin-top:5px">56 cà chua · 2 gạch · 58 đánh giá</div></div></div>'
+     '<div class="row" style="gap:8px"><span class="vbdg t"><svg><use href="#i-tomato"/></svg>×10</span><span class="vbdg b"><svg><use href="#i-brick"/></svg>×3</span></div>'
+     '<div class="meta">Chân dung · Quận 3 · <span class="tm"><svg><use href="#i-tomato"/></svg>97%</span> · 112 buổi</div>',
+     '<div style="display:flex;flex-direction:column;gap:8px">' + sk("100%", "8px", "999px") + sk("45%", "11px") + '</div>')
 tile('capacity', 'CapacityBar · CompletenessMeter', 'CapacityBar({registered, capacity}) · CompletenessMeter({int? percent, String? hint})', 'S11.02, S12.03, S08.02, S09.02',
      '<div><div class="row" style="justify-content:space-between"><b style="font-size:12.5px">14 / 20 đã đăng ký</b><span class="meta x">Còn 6 chỗ</span></div><div class="cbar" style="margin-top:6px"><i style="width:70%"></i></div></div><div><div class="row" style="justify-content:space-between"><b style="font-size:12.5px">Độ khớp hồ sơ</b><b class="tn">72%</b></div><div class="cbar" style="margin-top:6px"><i style="width:72%"></i></div></div>',
      f'<div style="display:flex;flex-direction:column;gap:6px">{sk("60%")}{sk("100%","6px","3px")}</div><div style="display:flex;flex-direction:column;gap:6px">{sk("50%")}{sk("100%","6px","3px")}</div>')

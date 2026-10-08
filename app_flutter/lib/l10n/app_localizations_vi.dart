@@ -2755,6 +2755,74 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewBrick => 'Chưa hài lòng';
 
   @override
+  String reviewHits(int n) {
+    return '×$n';
+  }
+
+  @override
+  String get reviewTomatoLevel1 => 'Ổn';
+
+  @override
+  String get reviewTomatoLevel2 => 'Hài lòng';
+
+  @override
+  String get reviewTomatoLevel3 => 'Rất hài lòng';
+
+  @override
+  String get reviewTomatoLevel4 => 'Tuyệt vời!';
+
+  @override
+  String get reviewBrickLevel1 => 'Hơi tiếc';
+
+  @override
+  String get reviewBrickLevel2 => 'Chưa ưng';
+
+  @override
+  String get reviewBrickLevel3 => 'Thất vọng';
+
+  @override
+  String get reviewBrickLevel4 => 'Rất thất vọng';
+
+  @override
+  String get reviewReset => 'Làm lại';
+
+  @override
+  String get reviewTapMore => 'Chạm tiếp để tăng mức độ, tối đa 10';
+
+  @override
+  String get reviewPadLabel => 'Đánh giá buổi chụp';
+
+  @override
+  String reviewA11yTomato(int n) {
+    return 'Ném cà chua, $n trên 10';
+  }
+
+  @override
+  String reviewA11yBrick(int n) {
+    return 'Ném gạch, $n trên 10';
+  }
+
+  @override
+  String reviewsRatioCounts(int tomato, int brick, int count) {
+    return '$tomato cà chua · $brick gạch · $count đánh giá';
+  }
+
+  @override
+  String reviewsRatioSemantics(int tomato, int brick) {
+    return '$tomato cà chua, $brick gạch';
+  }
+
+  @override
+  String verdictBadgeTomato(int n) {
+    return 'Cà chua, $n trên 10';
+  }
+
+  @override
+  String verdictBadgeBrick(int n) {
+    return 'Gạch, $n trên 10';
+  }
+
+  @override
   String get reviewTextHint => 'Chia sẻ cảm nhận của bạn về buổi chụp...';
 
   @override
