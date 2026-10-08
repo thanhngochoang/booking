@@ -105,7 +105,7 @@ When the plan and a spec or the mock disagree, follow CLAUDE.md (mock wins for l
    ```bash
    gh pr create --base develop --head plan/35-ca-chua-gach-domain --title "feat(review): tomato/brick domain, functions and SQL [#35]" --body "…"
    ```
-   **PR title convention.** Every unit PR is titled `<type>(<scope>): <summary> [#<issue>]`, because the title becomes the merge commit message on `develop`, and `[#<issue>]` ties the history back to the project.
+   **PR title convention.** Every unit PR is titled `<type>(<scope>): <summary> [#<issue>]`, because the title becomes the squash commit's subject on `develop`, and `[#<issue>]` ties the history back to the project.
    - `type`: `feat` for new screens or behaviour, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `build`, `ci`. Choose by what the PR mostly does.
    - `scope`: one lowercase area, matching the commit scopes already in the log. Examples: `booking`, `chat`, `review`, `explore`, `profile`, `core`, `data`, `domain`, `functions`, `rules`, `api`, `l10n`.
    - `summary`: English, imperative or noun phrase, no final period. Put the screen codes first when the unit builds screens (`S05.01–S05.03 booking detail and lists`).
@@ -138,7 +138,7 @@ The gates, in order:
 4. every CI check on the PR passed (it waits while they run);
 5. GitHub says it is mergeable and not blocked.
 
-Then it merges with a merge commit (the repo's style), deletes the branch (not a stack branch), sets the issue Done and closes it.
+Then it squash-merges (the repository allows only squash merges), deletes the branch (not a stack branch), sets the issue Done and closes it.
 
 What each exit code means and what to do:
 - **2, behind or conflicting with develop**: `git fetch`, `git rebase origin/develop`, then resolve.
