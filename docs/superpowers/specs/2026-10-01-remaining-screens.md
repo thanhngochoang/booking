@@ -710,7 +710,7 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 - **Điểm vào** (đổi 2026-10-05): **không có chuông ở đầu trang**. Số chưa đọc hiện bằng `TabBadge` trên tab **Hồ sơ** (mục 3d.3), giống chấm số của tab Khám phá; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01; push mở thẳng màn đích. Cài đặt (S09.02) → "Thông báo" → S17.02; biểu tượng bánh răng ở S17.01 → S17.02. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01.
 - **Chấm số**: đọc từ `users/{uid}/private/inbox.unreadCount` (tài liệu riêng của chủ, không nằm trên `users/{uid}` công khai, 2026-10-06), "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
 - **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng lưu trường `tab` (`activity` · `events` · `system`) do server gán theo `type`, và bộ lọc truy vấn theo `tab`, **không** theo `type`: một `shoot_reminder` là "Đặt lịch" với khách nhưng "Công việc" với NAG, nên `activity` là một mục với nhãn đổi theo vai trò (2026-10-06). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
-- **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới. Dòng gộp nêu tối đa 3 tên người gửi mới nhất (ví dụ "Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá."); một dòng đã đọc thì dòng kế tiếp bắt đầu lại từ 1 người.
+- **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới. Nội dung dòng gộp nêu tên 2 người gửi mới nhất kèm "N người khác" (ví dụ "Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá."); avatar chồng tối đa 3 người; một dòng đã đọc thì dòng kế tiếp bắt đầu lại từ 1 người.
 - **Chạm** = đánh dấu đã đọc + đi tới `target` (deep link). **Nhấn giữ** mở menu "Đánh dấu đã đọc / Tắt loại thông báo này" (không có thao tác chỉ vuốt). Hành động đầu trang: "Đánh dấu tất cả đã đọc".
 - **Phân trang**: 30 mục mỗi trang, skeleton khi tải. Empty state có một hành động ("Khám phá nhiếp ảnh gia" cho khách, "Mở Công việc" cho NAG).
 - **Lời mời Chụp ngay không là thông báo trong hộp thư**: chúng mở thẳng màn toàn hình S14.02 (giữ nguyên spec Chụp ngay). Hộp thư chỉ ghi một dòng "Bạn đã bỏ lỡ một lời mời" sau khi hết hạn.
@@ -759,7 +759,7 @@ Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notific
 | `dispute_message` | bên kia của khiếu nại | `chat` · tím | Đặt lịch / Công việc | `/disputes/:id` | Đặt lịch và thanh toán | Gom theo khiếu nại (`dispute:<id>`), "{n} tin nhắn mới" |
 | `support_reply` | người hỏi | `supportAgent` · tím | Đặt lịch / Công việc | `/disputes/:id` hoặc `/help/chat` | Đặt lịch và thanh toán | Quan trọng |
 | `refund_account_needed` | khách | `payment` · vàng | Đặt lịch | `/me/payments` | Đặt lịch và thanh toán | Quan trọng; sau 24 giờ tiền tự về tài khoản đã chuyển nếu có (#141) |
-| `quote_new` | khách | `work` · tím | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | Gom theo `groupKey = job:<id>:quotes`, nêu tối đa 3 tên; mỗi thợ chỉ tính một lần cho một việc |
+| `quote_new` | khách | `work` · tím | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | Gom theo `groupKey = job:<id>:quotes`, nội dung nêu 2 tên mới nhất kèm "N người khác", avatar chồng tối đa 3; mỗi thợ chỉ tính một lần cho một việc |
 | `quote_withdrawn` | khách | `work` · tím | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | Gồm rút tự động khi thợ kín lịch |
 | `job_expiring` | khách | `calendar` · vàng | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | 24 giờ trước hạn, khi có ≥ 1 báo giá |
 | `job_expired` | khách | `calendar` · xám | Đặt lịch | `/jobs/:id` (S15.02) | Việc đăng tuyển | |
@@ -823,7 +823,7 @@ Mỗi hook được liệt kê trong sổ bàn giao `docs/superpowers/handover/l
 ```
 users/{uid}/notifications/{id}
   type, title, body
-  target            # đường dẫn deep link, ví dụ "/bookings/01J…"
+  target            # đường dẫn deep link, ví dụ "/b/01J…"
   tab, category     # `activity|events|system` và nhóm S17.02, server gán theo `type`
   groupKey?         # gom dòng (xem 3h.1)
   actors?           # tối đa 3 {id, name, avatarUrl?} để vẽ avatar; tổng số nằm trong `count`
