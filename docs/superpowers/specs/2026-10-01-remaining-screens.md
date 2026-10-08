@@ -119,8 +119,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.04 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | ✅ đã làm (2c) · khớp mock (#146) | S40 |
 | S08.05 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · khớp mock, có bản studio (#146) | S34 |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
-| S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | 🟡 code cũ (thẻ hồ sơ + đổi vai trò) · **lệch mock**: mock mới là lưới bài đăng, đổi vai trò và đăng xuất đã sang S09.02 | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | 🟡 **lệch mock**: thiếu nhóm Chế độ, Số điện thoại, Đăng xuất; giao diện và kiểu nút đổi sang `SegmentedTabs` | S31 |
+| S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng xác minh/studio ẩn tới #135/#136 | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |
@@ -874,6 +874,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 
 ### 3i.2 S19 · Lưu & theo dõi
 - **Vì sao cần**: S09.01 có hàng số "đang theo dõi · đã lưu" đang ẩn vì chưa có danh sách; nút lưu ở S02.02 và tín hiệu "đã lưu" của gợi ý (mục 3e.7) cần nơi xem lại.
+- **Ô số ở S09.01 (từ #148)**: hai ô "đang theo dõi" và "đã lưu" đã có sẵn trong `ProfileTab`, ẩn sau `savedListsReadyProvider` (`lib/features/settings/settings_links.dart`, mặc định false). Khi `/me/following` và `/me/saved` có, plan S19 bật cờ, nối số thật (hai ô đang hiện "—" vì chưa có nguồn số) và cho ô mở danh sách tương ứng.
 - **Quy tắc**: lưu bài và lưu nhiếp ảnh gia là hai danh sách riêng; theo dõi chỉ áp dụng cho nhiếp ảnh gia; bài mới của người mình theo dõi ưu tiên trong feed "Dành cho bạn"; danh sách người theo dõi chỉ chủ hồ sơ xem; số đếm công khai.
 
 ### 3i.3 S20 · Báo cáo & chặn
