@@ -33,8 +33,14 @@ export const PAYOUT_ACCOUNTS_COLLECTION = 'payoutAccounts';
 const ts = (iso: string): Timestamp => Timestamp.fromDate(new Date(iso));
 const iso = (v: unknown): string | undefined => (v instanceof Timestamp ? v.toDate().toISOString() : undefined);
 
+/** The payout gateway in use: only the fake reference adapter exists (owner ruling 2). */
+export const PAYOUT_PROVIDER = 'fake';
+
 export function payoutToFirestore(p: Payout): DocumentData {
   return {
+    // The key the gateway must send to the bank so a retry never pays twice (PayoutGateway.transfer).
+    idempotencyKey: p.id,
+    provider: PAYOUT_PROVIDER,
     payeeId: p.payeeId,
     accountId: p.accountId,
     amount: p.amount,

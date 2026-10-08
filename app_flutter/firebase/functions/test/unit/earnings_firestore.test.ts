@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
@@ -16,12 +17,20 @@ import {
   earningItemFromFirestore,
   earningItemToFirestore,
   earningsSummaryToFirestore,
+  milestonesOfDocs,
 } from '../../src/infra/earnings_firestore.js';
-import { accountFromFirestore, accountToFirestore, payoutFromFirestore, payoutToFirestore } from '../../src/infra/payout_firestore.js';
+import {
+  accountFromFirestore,
+  accountToFirestore,
+  accountViewToFirestore,
+  payoutFromFirestore,
+  payoutToFirestore,
+} from '../../src/infra/payout_firestore.js';
 import { handlePaymentWrite } from '../../src/triggers/payment_write.js';
 import { handlePayoutWrite } from '../../src/triggers/payout_write.js';
 
 const T = '2026-10-10T08:00:00.000Z';
+const EARLY = '2026-09-01T00:00:00.000Z';
 const payment = (over: Partial<Payment> = {}): Payment => ({
   id: 'pay1',
   subjectType: 'booking',
@@ -57,7 +66,7 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
     assert.equal(back?.payoutId, null);
   });
 
-  it('earnings mapping round-trips an item', () => {
+  it('item round-trips fee, tax, net, rates, estimated and milestones', () => {
     const item: EarningItem = {
       id: 'pay1',
       payeeId: 'p1',
@@ -87,6 +96,29 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
     assert.deepEqual(earningItemFromFirestore('pay1', earningItemToFirestore(held)), held);
   });
 
+  it('old items without the fields read net = amount, estimated true', () => {
+    const old = {
+      payeeId: 'p1', subjectType: 'booking', subjectId: 'b1', counterpartName: 'Lan', subjectLabel: 'Chân dung 2 giờ',
+      day: '2026-10-09', amount: 450_000, state: 'released', holdReason: null, paidOutAt: null, updatedAt: Timestamp.fromDate(new Date(T)),
+    };
+    const i = earningItemFromFirestore('pay1', old);
+    assert.equal(i.platformFee, 0);
+    assert.equal(i.taxWithheld, 0);
+    assert.equal(i.netAmount, 450_000);
+    assert.equal(i.feeRateBp, 0);
+    assert.equal(i.taxRateBp, 0);
+    assert.equal(i.estimated, true);
+    assert.equal(i.milestonesDone, null);
+    assert.equal(i.milestonesTotal, null);
+  });
+
+  it('milestones count the released documents; no documents is null', () => {
+    assert.equal(milestonesOfDocs([]), null);
+    assert.deepEqual(milestonesOfDocs([{ status: 'released' }, { status: 'held' }]), { done: 1, total: 2 });
+    assert.deepEqual(milestonesOfDocs([{ status: 'released' }, { status: 'released' }]), { done: 2, total: 2 });
+    assert.deepEqual(milestonesOfDocs([{}]), { done: 0, total: 1 });
+  });
+
   it('the summary document carries Timestamps and the last payout', () => {
     const doc = earningsSummaryToFirestore({
       payeeId: 'p1', heldAmount: 1, soonAmount: 2, receivedAmount: 3,
@@ -111,6 +143,93 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
     };
     assert.deepEqual(accountFromFirestore('a1', accountToFirestore(a)), a);
     assert.deepEqual(Object.keys(accountToFirestore(a)).filter((k) => /number/i.test(k)), ['accountNumberEnc']);
+  });
+});
+
+describe('payout and account mapping (S06 tax, approval, 72 hours)', () => {
+  const taxed: Payout = {
+    id: 'po2', payeeId: 'p1', accountId: 'a2', amount: 750_000, status: 'needs_approval',
+    items: [
+      { paymentId: 'pay1', amount: 450_000, fee: 0, tax: 31_500, net: 418_500 },
+      { paymentId: 'pay2', amount: 300_000, fee: 0, tax: 21_000, net: 279_000 },
+    ],
+    platformFee: 0, taxWithheld: 52_500, amountNet: 697_500, feeRateBp: 0, taxRateBp: 700, firstPayout: true,
+    createdBy: 'system:createPayouts', createdAt: T, updatedAt: T,
+  };
+
+  it('payout round-trips money fields and needs_approval', () => {
+    const doc = payoutToFirestore(taxed);
+    assert.equal(doc.status, 'needs_approval');
+    assert.equal(doc.approvedBy, null);
+    assert.equal(doc.approvedAt, null);
+    // The gateway idempotency key is the payout id; only the fake gateway exists (owner ruling 2).
+    assert.equal(doc.idempotencyKey, 'po2');
+    assert.equal(doc.provider, 'fake');
+    assert.deepEqual(payoutFromFirestore('po2', doc), taxed);
+    const approved: Payout = { ...taxed, status: 'pending', approvedBy: 's1', approvedAt: T };
+    assert.ok(payoutToFirestore(approved).approvedAt instanceof Timestamp);
+    assert.deepEqual(payoutFromFirestore('po2', payoutToFirestore(approved)), approved);
+    const held: Payout = { ...taxed, status: 'on_hold', holdReason: 'repeated_failure' };
+    assert.deepEqual(payoutFromFirestore('po2', payoutToFirestore(held)), held);
+  });
+
+  it('an old payout reads fee 0, tax 0, net = amount, firstPayout false', () => {
+    const ts = Timestamp.fromDate(new Date(T));
+    const old = {
+      payeeId: 'p1', accountId: 'a1', amount: 450_000, status: 'paid', items: [{ paymentId: 'pay1', amount: 450_000 }],
+      reference: 'FAKE-po1', failureReason: null, holdReason: null, createdBy: 'admin1',
+      createdAt: ts, updatedAt: ts, processingAt: ts, paidAt: ts,
+    };
+    const p = payoutFromFirestore('po1', old);
+    assert.deepEqual(p?.items, [{ paymentId: 'pay1', amount: 450_000, fee: 0, tax: 0, net: 450_000 }]);
+    assert.equal(p?.platformFee, 0);
+    assert.equal(p?.taxWithheld, 0);
+    assert.equal(p?.amountNet, 450_000);
+    assert.equal(p?.feeRateBp, 0);
+    assert.equal(p?.taxRateBp, 0);
+    assert.equal(p?.firstPayout, false);
+    assert.equal(p?.approvedBy, undefined);
+    assert.equal(p?.approvedAt, undefined);
+  });
+
+  it('an old account reads nameStatus matched and activeFrom = createdAt', () => {
+    const old = {
+      userId: 'p1', bankCode: 'VCB', accountNumberEnc: 'v1:a:b:c', accountLast4: '6789', holderName: 'NGUYEN VAN AN',
+      active: true, createdAt: Timestamp.fromDate(new Date(EARLY)),
+    };
+    const a = accountFromFirestore('a1', old);
+    assert.equal(a?.nameStatus, 'matched');
+    assert.equal(a?.activeFrom, EARLY);
+    assert.equal(accountFromFirestore('a1', { ...old, nameStatus: 'bogus' })?.nameStatus, 'matched');
+    const review = accountFromFirestore('a1', accountToFirestore({ ...(a as PayoutAccount), nameStatus: 'pending_review', activeFrom: T }));
+    assert.equal(review?.nameStatus, 'pending_review');
+    assert.equal(review?.activeFrom, T);
+  });
+
+  it('the owner view carries nameStatus and activeFrom, never the number', () => {
+    const doc = accountViewToFirestore({
+      accountId: 'a2', bankCode: 'VCB', accountLast4: '6789', holderName: 'NGUYEN VAN AN', updatedAt: T,
+      nameStatus: 'staff_confirmed', activeFrom: T,
+    });
+    assert.equal(doc.nameStatus, 'staff_confirmed');
+    assert.ok(doc.activeFrom instanceof Timestamp);
+    assert.deepEqual(Object.keys(doc).filter((k) => /number/i.test(k)), []);
+  });
+
+  it('the payout history queries have their composite indexes', () => {
+    const json = JSON.parse(readFileSync(new URL('../../../firestore.indexes.json', import.meta.url), 'utf8')) as {
+      indexes: { collectionGroup: string; queryScope: string; fields: { fieldPath: string; order: string }[] }[];
+    };
+    const shapes = json.indexes
+      .filter((i) => i.collectionGroup === 'payouts' && i.queryScope === 'COLLECTION')
+      .map((i) => i.fields.map((f) => `${f.fieldPath} ${f.order}`).join(', '));
+    // lastFinishedPayouts: accountId ==, status in [paid, failed], orderBy createdAt desc.
+    assert.ok(shapes.includes('accountId ASCENDING, status ASCENDING, createdAt DESCENDING'), shapes.join(' | '));
+    // hasApprovedOrPaidPayout: accountId ==, status in [pending, processing], approvedBy != null.
+    assert.ok(shapes.includes('accountId ASCENDING, status ASCENDING, approvedBy ASCENDING'), shapes.join(' | '));
+    // The CLI's open payouts (status in, orderBy createdAt) and the earnings' latest payout.
+    assert.ok(shapes.includes('status ASCENDING, createdAt ASCENDING'), shapes.join(' | '));
+    assert.ok(shapes.includes('payeeId ASCENDING, createdAt DESCENDING'), shapes.join(' | '));
   });
 });
 

@@ -92,6 +92,12 @@ export function earningsSummaryToFirestore(s: EarningsSummary): DocumentData {
   };
 }
 
+/** Released / all docs of `bookings/{id}/milestones` (written by the delivery flow, #152); none → null. */
+export function milestonesOfDocs(docs: readonly DocumentData[]): { done: number; total: number } | null {
+  if (docs.length === 0) return null;
+  return { done: docs.filter((d) => d.status === 'released').length, total: docs.length };
+}
+
 /** Earnings projection in Firestore; writes are buffered until all reads are done. */
 export class FirestoreEarningsStore implements EarningsStore {
   constructor(private readonly db: Firestore) {}
@@ -143,8 +149,13 @@ export class FirestoreEarningsStore implements EarningsStore {
             if (typeof name === 'string') counterpartName = name;
           }
           const label: unknown = d.serviceSnapshot?.name;
-          // Milestones (bookings/{id}/milestones) are not read yet: null.
-          return { counterpartName, label: typeof label === 'string' ? label : '', day: String(d.day ?? ''), milestones: null };
+          const milestones = await fTx.get(b.ref.collection('milestones'));
+          return {
+            counterpartName,
+            label: typeof label === 'string' ? label : '',
+            day: String(d.day ?? ''),
+            milestones: milestonesOfDocs(milestones.docs.map((m) => m.data())),
+          };
         },
         getPayout: async (id): Promise<Payout | null> => {
           const snap = await fTx.get(this.db.collection(PAYOUTS_COLLECTION).doc(id));

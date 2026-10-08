@@ -11,6 +11,7 @@ import {
 import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
+import { handleCreatePayouts } from './scheduled/create_payouts.js';
 import {
   handleOpenInquiry,
   handleSendMessage,
@@ -19,6 +20,7 @@ import {
 } from './callables/chat.js';
 import {
   CALLABLE_OPTIONS,
+  CREATE_PAYOUTS_OPTIONS,
   PAYMENT_CALLABLE_OPTIONS,
   PAYMENT_CLOCK_OPTIONS,
   PAYOUT_ACCOUNT_KEY,
@@ -441,6 +443,11 @@ export const onPayoutWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document:
     liveEarningsDeps(),
     liveNotifyDeps(),
   );
+});
+
+/** Daily 10:00 Asia/Ho_Chi_Minh: batch released money per payee and send it (fake gateway only; off elsewhere). */
+export const createPayouts = onSchedule(CREATE_PAYOUTS_OPTIONS, async () => {
+  await handleCreatePayouts();
 });
 
 // ---- photo events (plan 10c) ----

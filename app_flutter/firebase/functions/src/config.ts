@@ -142,10 +142,24 @@ export function storageUrlPrefixes(): string[] {
 
 /**
  * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
- * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts and to
- * nothing else; the emulator reads it from `.secret.local`.
+ * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts
+ * (`savePayoutAccount`) and the job that decrypts to send (`createPayouts`), nothing else; the
+ * emulator reads it from `.secret.local`.
  */
 export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');
+
+/**
+ * `createPayouts` (payments spec M5, §6.1 "đề xuất 10:00"): daily at 10:00 Vietnam time, one
+ * instance, no retry (a second run the same day creates nothing new anyway), up to 540 s, with the
+ * account key to decrypt the number it sends to.
+ */
+export const CREATE_PAYOUTS_OPTIONS: ScheduleOptions = {
+  ...SCHEDULE_OPTIONS,
+  schedule: '0 10 * * *',
+  timeZone: 'Asia/Ho_Chi_Minh',
+  timeoutSeconds: 540,
+  secrets: [PAYOUT_ACCOUNT_KEY],
+};
 
 /**
  * `fake` runs the reference payout gateway (emulator, or `PAYOUTS_MODE=fake` in the dev project);

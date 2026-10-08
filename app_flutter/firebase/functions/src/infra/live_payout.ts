@@ -9,6 +9,7 @@ import {
   notifyPayoutAccountNeeded,
   type AccountCipher,
   type EarningsDeps,
+  type NotifyDeps,
   type PayoutAccountDeps,
   type PayoutDeps,
   type PayoutGateway,
@@ -21,20 +22,45 @@ import { FirestoreEarningsStore } from './earnings_firestore.js';
 import { liveNotifyDeps } from './live_notification.js';
 import { FirestorePayoutStore } from './payout_firestore.js';
 
-/** The payout notices through #138's hooks; a failure is logged by code only and never thrown. */
-export function livePayoutNotices(): PayoutNotices {
+/** A log-safe code for an error: the domain code, else the error's class name; never its message. */
+export function errorCodeOf(e: unknown): string {
+  return isDomainError(e) ? e.code : e instanceof Error ? e.name : 'unknown';
+}
+
+/** #138's hooks for the two payout notices (S17 owns their copy, dedupe and target). */
+export interface PayoutNoticeHooks {
+  readonly needed: typeof notifyPayoutAccountNeeded;
+  readonly changed: typeof notifyPayoutAccountChanged;
+}
+
+/**
+ * The payout notices through #138's hooks (this plan is their only emitter). A failure is logged
+ * by its code only and never thrown: a notice never fails a payout run or an account save.
+ */
+export function livePayoutNotices(
+  hooks: PayoutNoticeHooks = { needed: notifyPayoutAccountNeeded, changed: notifyPayoutAccountChanged },
+  notifyDeps: () => NotifyDeps = liveNotifyDeps,
+): PayoutNotices {
   const logged = async (what: string, run: () => Promise<unknown>): Promise<void> => {
     try {
       await run();
     } catch (e) {
-      logger.error('payout notice failed', { what, code: isDomainError(e) ? e.code : e instanceof Error ? e.name : 'unknown' });
+      logger.error('payout notice failed', { what, code: errorCodeOf(e) });
     }
   };
   return {
     accountNeeded: (payeeId, amount) =>
-      logged('payout_account_needed', () => notifyPayoutAccountNeeded(liveNotifyDeps(), { payeeId, amount })),
+      logged('payout_account_needed', () => hooks.needed(notifyDeps(), { payeeId, amount })),
     accountChanged: (uid, v) =>
-      logged('payout_account_changed', () => notifyPayoutAccountChanged(liveNotifyDeps(), { uid, ...v })),
+      logged('payout_account_changed', () =>
+        hooks.changed(notifyDeps(), {
+          uid,
+          accountId: v.accountId,
+          bankCode: v.bankCode,
+          accountLast4: v.accountLast4,
+          activeFrom: v.activeFrom,
+        }),
+      ),
   };
 }
 
@@ -83,7 +109,10 @@ export function livePayoutAccountDeps(): PayoutAccountDeps {
   };
 }
 
-/** Staff CLI wiring: the key comes from the caller (environment or `.secret.local`). */
+/**
+ * Staff CLI and `createPayouts` wiring: the key comes from the caller (the CLI: environment or
+ * `.secret.local`; the job: the bound `PAYOUT_ACCOUNT_KEY` secret).
+ */
 export function livePayoutDeps(keyB64: string, gateway: PayoutGateway = payoutGateway()): PayoutDeps {
   return {
     store: new FirestorePayoutStore(db()),
