@@ -28,6 +28,7 @@ Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s05-tomato-b
 - Ruling 3: a review created with countedAt already set (seed or importer) sends no verdict notice and runs no badge check; live submits always create with countedAt null — importers (#136 studio docs must keep countedAt null; Phase 2 migration) run badge evaluation themselves — cost if wrong: an imported review never notifies.
 - Ruling 4: compact pad uses new key reviewBrickShort "Chưa ưng" (mock #S05.05-studio wins); regular pad keeps "Chưa hài lòng" — cost if wrong: one string.
 - Ruling 5: S05.05 brick follows the plan over the shortened mock frame — share section on both sides, single primary until a photo is picked (Decision 9), field label "Nhận xét" with hint by side; Task 7 updates mock #S05.05-brick to match — cost if wrong: mock and app differ until fixed.
+- Ruling 6: skip the gh issue comments on #139/#140 that Task 7's brief asked for — both plans already use the new names (ledger Decision 14) — cost if wrong: an emitter misses a rename note.
 
 Importer obligation of Ruling 3: the #136 studio review docs (`{bookingId}_studio`) must be created with `countedAt` null so the trigger counts them, notifies and checks badges; a Phase 2 importer that writes reviews with `countedAt` set must run `evaluateUserBadges` for subject and customer itself.
 
