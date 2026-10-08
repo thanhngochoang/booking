@@ -117,11 +117,15 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
+    final subtle = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(controlRadius + 4),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.all(AppSpace.s4),
         decoration: BoxDecoration(
           color: selected
@@ -135,10 +139,24 @@ class _RoleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            AppIcon(
-              icon,
-              selected: selected,
-              color: selected ? scheme.primary : context.mutedForeground,
+            // Mock `.opt .ic`: 36dp round tile, accent-soft with an accent
+            // icon when selected, field colour otherwise.
+            Container(
+              key: const ValueKey('role-icon-tile'),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? subtle : scheme.secondary,
+              ),
+              child: Center(
+                child: AppIcon(
+                  icon,
+                  size: 20,
+                  selected: selected,
+                  color: selected ? scheme.primary : scheme.onSurface,
+                ),
+              ),
             ),
             const SizedBox(width: AppSpace.s3),
             Expanded(
