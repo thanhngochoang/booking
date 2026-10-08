@@ -2617,6 +2617,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get chatsEmptyAction => 'Tìm nhiếp ảnh gia';
 
   @override
+  String chatsYouPrefix(String text) {
+    return 'Bạn: $text';
+  }
+
+  @override
   String inquiryNotEligible(String name) {
     return '$name chưa nhận tin hỏi trước';
   }

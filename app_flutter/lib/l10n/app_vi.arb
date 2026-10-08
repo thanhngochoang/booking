@@ -1297,6 +1297,12 @@
   "chatsTitle": "Tin nhắn",
   "chatsEmptyTitle": "Chưa có cuộc trò chuyện nào",
   "chatsEmptyAction": "Tìm nhiếp ảnh gia",
+  "chatsYouPrefix": "Bạn: {text}",
+  "@chatsYouPrefix": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
   "inquiryNotEligible": "{name} chưa nhận tin hỏi trước",
   "@inquiryNotEligible": {
     "placeholders": {

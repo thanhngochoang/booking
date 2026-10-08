@@ -4630,6 +4630,12 @@ abstract class AppLocalizations {
   /// **'Tìm nhiếp ảnh gia'**
   String get chatsEmptyAction;
 
+  /// No description provided for @chatsYouPrefix.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn: {text}'**
+  String chatsYouPrefix(String text);
+
   /// No description provided for @inquiryNotEligible.
   ///
   /// In vi, this message translates to:

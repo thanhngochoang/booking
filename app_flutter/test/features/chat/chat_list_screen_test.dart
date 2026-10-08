@@ -58,21 +58,15 @@ void main() {
     router = GoRouter(
       initialLocation: '/chats',
       routes: [
-        GoRoute(
-          path: '/chats',
-          builder: (_, _) => const ChatListScreen(),
-        ),
+        GoRoute(path: '/chats', builder: (_, _) => const ChatListScreen()),
         GoRoute(
           path: '/chat/:id',
-          builder: (_, s) => Scaffold(
-            body: Text('chat ${s.pathParameters['id']}'),
-          ),
+          builder: (_, s) =>
+              Scaffold(body: Text('chat ${s.pathParameters['id']}')),
         ),
         GoRoute(
           path: '/action',
-          builder: (_, _) => const Scaffold(
-            body: Text('action screen'),
-          ),
+          builder: (_, _) => const Scaffold(body: Text('action screen')),
         ),
       ],
     );
@@ -82,9 +76,7 @@ void main() {
       authStateProvider.overrideWith(
         (ref) => Stream.value(AuthUser(uid: currentUid)),
       ),
-      currentProfileProvider.overrideWith(
-        (ref) => fakeUsers.watch(currentUid),
-      ),
+      currentProfileProvider.overrideWith((ref) => fakeUsers.watch(currentUid)),
       userRepositoryProvider.overrideWithValue(fakeUsers),
       clockProvider.overrideWithValue(() => _testNow),
       chatRepositoryProvider.overrideWithValue(fakeChat),
@@ -124,9 +116,7 @@ void main() {
 
     await pumpChatList(
       tester,
-      extraOverrides: [
-        myChatsProvider.overrideWith((ref) => never.stream),
-      ],
+      extraOverrides: [myChatsProvider.overrideWith((ref) => never.stream)],
     );
 
     await tester.pump(const Duration(milliseconds: 200));
@@ -148,6 +138,7 @@ void main() {
       customerId: 'c1',
       photographerId: 'p1',
       bookingId: 'b1',
+      bookingStatus: 'accepted',
       lastMessageAt: DateTime.utc(2026, 10, 5, 9, 41),
       lastMessagePreview: 'Đẹp rồi. 15:30 gặp ở cổng công viên Bạch Đằng.',
     );
@@ -181,8 +172,8 @@ void main() {
     // Unread count
     expect(find.text('2'), findsOneWidget);
 
-    // Booking has StatusBadge
-    expect(find.text('Đã đặt'), findsOneWidget);
+    // Booking has StatusBadge with the real booking status
+    expect(find.text('ĐÃ NHẬN'), findsOneWidget);
     expect(find.byType(StatusBadge), findsOneWidget);
 
     // Order: Minh Trí (09:41) is above Hồng Nhung (08:30)
@@ -282,9 +273,9 @@ void main() {
       kind: ChatKind.booking,
       customerId: 'c1',
       photographerId: 'p1',
+      bookingStatus: 'upcoming',
       lastMessageAt: DateTime.utc(2026, 10, 5, 9, 41),
-      lastMessagePreview:
-          'Một tin nhắn xem trước cực kỳ dài để kiểm tra độ co giãn trên màn nhỏ và chữ lớn',
+      lastMessagePreview: 'Một tin nhắn xem trước cực kỳ dài để kiểm tra độ co giãn trên màn nhỏ và chữ lớn',
     );
     fakeChat.seedThread(t1);
     fakeChat.seedUnread(t1.id, 99);
@@ -300,7 +291,232 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Minh Trí'), findsOneWidget);
-      expect(find.text('Đã đặt'), findsOneWidget);
+      expect(find.text('SẮP TỚI'), findsOneWidget);
     }
+  });
+
+  testWidgets('fits 320dp at 1.3x text with a long name and a badge', (
+    tester,
+  ) async {
+    await fakeUsers.ensureProfile(
+      const AuthUser(
+        uid: 'p3',
+        displayName: 'Nguyễn Thị Hồng Nhung Anh Thư Phương Trinh Studio',
+      ),
+    );
+    fakeChat.seedThread(
+      ChatThread(
+        id: 'chat_long',
+        kind: ChatKind.booking,
+        customerId: 'c1',
+        photographerId: 'p3',
+        bookingStatus: 'completed',
+        lastMessageAt: DateTime.utc(2026, 10, 5, 9, 41),
+        lastMessagePreview: 'Xin chào',
+        lastSenderId: 'c1',
+      ),
+    );
+    fakeChat.seedUnread('chat_long', 12);
+
+    for (final brightness in [Brightness.dark, Brightness.light]) {
+      await pumpChatList(
+        tester,
+        brightness: brightness,
+        textScale: 1.3,
+        viewSize: const Size(320, 640),
+      );
+      await settle(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('HOÀN THÀNH'), findsOneWidget);
+      expect(find.text('Bạn: Xin chào'), findsOneWidget);
+    }
+  });
+
+  group('row content', () {
+    ChatThread thread({
+      String id = 'chat_1',
+      ChatKind kind = ChatKind.inquiry,
+      String photographerId = 'p1',
+      String? bookingStatus,
+      DateTime? lastMessageAt,
+      String? preview,
+      String? lastSenderId,
+      DateTime? createdAt,
+    }) => ChatThread(
+      id: id,
+      kind: kind,
+      customerId: 'c1',
+      photographerId: photographerId,
+      bookingStatus: bookingStatus,
+      lastMessageAt: lastMessageAt ?? DateTime.utc(2026, 10, 5, 9, 0),
+      lastMessagePreview: preview,
+      lastSenderId: lastSenderId,
+      createdAt: createdAt,
+    );
+
+    testWidgets("the badge follows the chat's bookingStatus", (tester) async {
+      fakeChat.seedThread(
+        thread(
+          id: 'a',
+          kind: ChatKind.booking,
+          photographerId: 'p1',
+          bookingStatus: 'upcoming',
+          preview: 'm',
+        ),
+      );
+      fakeChat.seedThread(
+        thread(
+          id: 'b',
+          kind: ChatKind.booking,
+          photographerId: 'p2',
+          bookingStatus: 'completed',
+          lastMessageAt: DateTime.utc(2026, 10, 5, 8, 0),
+          preview: 'm',
+        ),
+      );
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(find.text('SẮP TỚI'), findsOneWidget);
+      expect(find.text('HOÀN THÀNH'), findsOneWidget);
+      expect(find.text('ĐÃ ĐẶT'), findsNothing);
+
+      fakeChat.seedThread(
+        thread(
+          id: 'a',
+          kind: ChatKind.booking,
+          photographerId: 'p1',
+          bookingStatus: 'accepted',
+          preview: 'm',
+        ),
+      );
+      await settle(tester);
+      expect(find.text('ĐÃ NHẬN'), findsOneWidget);
+      expect(find.text('SẮP TỚI'), findsNothing);
+    });
+
+    testWidgets('no badge for an inquiry or a chat without bookingStatus', (
+      tester,
+    ) async {
+      fakeChat.seedThread(thread(id: 'a', preview: 'hỏi'));
+      fakeChat.seedThread(
+        thread(
+          id: 'b',
+          kind: ChatKind.booking,
+          photographerId: 'p2',
+          lastMessageAt: DateTime.utc(2026, 10, 5, 8, 0),
+          preview: 'cũ',
+        ),
+      );
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(find.byType(StatusBadge), findsNothing);
+    });
+
+    testWidgets(
+      'a closed inquiry shows "Cuộc trò chuyện đã đóng. Gửi tin để mở lại."',
+      (tester) async {
+        fakeChat.seedThread(
+          thread(
+            preview: 'Tin cũ',
+            lastMessageAt: _testNow.subtract(const Duration(days: 14)),
+          ),
+        );
+        await pumpChatList(tester);
+        await settle(tester);
+        expect(
+          find.text('Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'),
+          findsOneWidget,
+        );
+        expect(find.text('Tin cũ'), findsNothing);
+      },
+    );
+
+    testWidgets('an open inquiry shows its last message', (tester) async {
+      fakeChat.seedThread(
+        thread(
+          preview: 'Gói cưới còn lịch không?',
+          lastMessageAt: _testNow.subtract(const Duration(days: 13)),
+        ),
+      );
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(find.text('Gói cưới còn lịch không?'), findsOneWidget);
+      expect(
+        find.text('Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('my last message is prefixed "Bạn: "', (tester) async {
+      fakeChat.seedThread(
+        thread(id: 'mine', preview: 'Em gửi ảnh mẫu', lastSenderId: 'c1'),
+      );
+      fakeChat.seedThread(
+        thread(
+          id: 'theirs',
+          photographerId: 'p2',
+          preview: 'Dạ vâng ạ',
+          lastSenderId: 'p2',
+          lastMessageAt: DateTime.utc(2026, 10, 5, 8, 0),
+        ),
+      );
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(find.text('Bạn: Em gửi ảnh mẫu'), findsOneWidget);
+      expect(find.text('Dạ vâng ạ'), findsOneWidget);
+    });
+
+    testWidgets(
+      'an empty preview of a booking chat shows the status sentence',
+      (tester) async {
+        fakeChat.seedThread(
+          thread(
+            kind: ChatKind.booking,
+            bookingStatus: 'completed',
+            preview: '',
+          ),
+        );
+        await pumpChatList(tester);
+        await settle(tester);
+        expect(find.text('Buổi chụp đã hoàn thành.'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'counterpart names fall back to "Nhiếp ảnh gia"/"Khách hàng" from l10n',
+      (tester) async {
+        fakeChat.seedThread(thread(photographerId: 'p-unknown', preview: 'x'));
+        await pumpChatList(tester);
+        await settle(tester);
+        expect(find.text('Nhiếp ảnh gia'), findsOneWidget);
+
+        fakeChat.seedThread(
+          ChatThread(
+            id: 'chat_for_photographer',
+            kind: ChatKind.inquiry,
+            customerId: 'c-unknown',
+            photographerId: 'p1',
+            lastMessageAt: DateTime.utc(2026, 10, 5, 9, 0),
+            lastMessagePreview: 'y',
+          ),
+        );
+        await pumpChatList(tester, currentUid: 'p1');
+        await settle(tester);
+        expect(find.text('Khách hàng'), findsOneWidget);
+      },
+    );
+
+    testWidgets('reading a chat clears its unread number', (tester) async {
+      fakeChat.seedThread(thread(preview: 'Tin mới'));
+      fakeChat.seedUnread('chat_1', 3);
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(find.text('3'), findsOneWidget);
+
+      await fakeChat.markRead('chat_1');
+      await settle(tester);
+      expect(find.text('3'), findsNothing);
+    });
   });
 }
