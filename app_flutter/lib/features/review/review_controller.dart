@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/ulid.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
@@ -381,6 +382,10 @@ class ReviewController extends Notifier<ReviewState> {
               photos: photos,
             );
         _filesAttached = true;
+        // The server created the real-shoot post: S09.01 reads it again.
+        if (ref.mounted) {
+          ref.read(ownPostsChangedProvider.notifier).bump();
+        }
       }
       state = state.copyWith(phase: ReviewPhase.done);
       return true;

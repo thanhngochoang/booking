@@ -250,6 +250,7 @@ void main() {
           for (final p in e.uploader.uploaded) 'https://storage.test/$p',
         ]);
         expect((await e.posts.byId(draftId))!.hashtags, ['chandung']);
+        expect(e.c.read(ownPostsChangedProvider), 1, reason: 'S09.01');
       },
     );
 

@@ -56,11 +56,51 @@ Future<void> _openSetupOverProfile(GoRouter router) async {
   }
 }
 
-/// S09.02 "Chế độ": offers the other mode and switches to it. It owns the
-/// one listener on [roleSwitchControllerProvider], so a finished switch shows
-/// one SnackBar, then goes back to Hồ sơ in the new mode, with setup opened
-/// over it for a photographer who has not finished it. Cài đặt cannot be
-/// left while the switch runs (see `SettingsScreen`), so neither is lost.
+/// S09.02's one listener on [roleSwitchControllerProvider]: a finished
+/// switch the user started shows one SnackBar, then goes back to Hồ sơ in
+/// the new mode, with setup opened over it for a photographer who has not
+/// finished it. Called from `SettingsScreen.build`, not from [RoleModeCard]:
+/// the card is a lazily built list child, so scrolling it out of the cache
+/// extent mid-switch would dispose it and drop the SnackBar and redirect.
+/// Cài đặt cannot be left while the switch runs (see `SettingsScreen`), so
+/// neither is lost.
+void listenToRoleSwitch(BuildContext context, WidgetRef ref) {
+  final l = context.l10n;
+  ref.listen(roleSwitchControllerProvider, (prev, next) async {
+    // Only a finished switch the user started: loading -> data/error.
+    if (next.isLoading || !(prev?.isLoading ?? false)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    // Captured now: Cài đặt is gone once the `go` lands.
+    final router = GoRouter.of(context);
+    if (next.hasError) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l.profileSwitchError)));
+      return;
+    }
+    // The controller's value, not the profile stream, which may lag.
+    final role = next.value;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            role == UserRole.photographer
+                ? l.profileSwitchedToPhotographer
+                : l.profileSwitchedToCustomer,
+          ),
+        ),
+      );
+    if (role == UserRole.photographer && await _setupUnfinished(ref)) {
+      await _openSetupOverProfile(router);
+      return;
+    }
+    router.go(AppTab.profile.path);
+  });
+}
+
+/// S09.02 "Chế độ": offers the other mode and switches to it. What follows a
+/// finished switch is handled by [listenToRoleSwitch] on the screen.
 class RoleModeCard extends ConsumerWidget {
   const RoleModeCard({super.key});
 
@@ -71,37 +111,6 @@ class RoleModeCard extends ConsumerWidget {
     final profile = ref.watch(currentProfileProvider).value;
     final isPhotographer = profile?.role == UserRole.photographer;
     final switching = ref.watch(roleSwitchControllerProvider).isLoading;
-    ref.listen(roleSwitchControllerProvider, (prev, next) async {
-      // Only a finished switch the user started: loading -> data/error.
-      if (next.isLoading || !(prev?.isLoading ?? false)) return;
-      final messenger = ScaffoldMessenger.of(context);
-      // Captured now: Cài đặt (and this card) is gone once the `go` lands.
-      final router = GoRouter.of(context);
-      if (next.hasError) {
-        messenger
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(l.profileSwitchError)));
-        return;
-      }
-      // The controller's value, not the profile stream, which may lag.
-      final role = next.value;
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              role == UserRole.photographer
-                  ? l.profileSwitchedToPhotographer
-                  : l.profileSwitchedToCustomer,
-            ),
-          ),
-        );
-      if (role == UserRole.photographer && await _setupUnfinished(ref)) {
-        await _openSetupOverProfile(router);
-        return;
-      }
-      router.go(AppTab.profile.path);
-    });
     return GlassCard(
       highlight: false,
       child: Padding(

@@ -160,6 +160,36 @@ void main() {
     expect(s.requireValue.posts, hasLength(5));
   });
 
+  test('a failed refresh during a next page stops its spinner and offers '
+      'the retry row', () async {
+    final (c, repo, _) = await _open((uid) => _posts(uid, 25));
+    c.listen(profilePostsProvider(null), (_, _) {});
+    await c.read(profilePostsProvider(null).future);
+    final gate = Completer<void>();
+    repo.holdByAuthor = gate.future;
+    final notifier = c.read(profilePostsProvider(null).notifier);
+    final more = notifier.loadMore();
+    expect(c.read(profilePostsProvider(null)).requireValue.loadingMore, isTrue);
+    repo.failWith = Exception('offline');
+    final refreshed = notifier.refresh();
+    gate.complete();
+    expect(await refreshed, isFalse);
+    await more;
+    var s = c.read(profilePostsProvider(null)).requireValue;
+    expect(s.posts, hasLength(20));
+    expect(s.loadingMore, isFalse);
+    expect(s.moreError, isTrue);
+    expect(s.nextCursor, 'm19');
+
+    repo
+      ..holdByAuthor = null
+      ..failWith = null;
+    await notifier.loadMore();
+    s = c.read(profilePostsProvider(null)).requireValue;
+    expect(s.posts, hasLength(25));
+    expect(s.moreError, isFalse);
+  });
+
   test('a failed retry with nothing shown stays an error', () async {
     final (c, repo, _) = await _open((uid) => _posts(uid, 5));
     repo.failWith = Exception('offline');
@@ -194,5 +224,37 @@ void main() {
       PostKind.realShoot: 1,
       PostKind.eventShare: 2,
     });
+  });
+
+  test('a new post of the user reloads the grid and the counts', () async {
+    final (c, repo, uid) = await _open((uid) => _posts(uid, 3));
+    c.listen(profilePostsProvider(null), (_, _) {});
+    c.listen(profilePostCountsProvider, (_, _) {});
+    expect(
+      (await c.read(profilePostsProvider(null).future)).posts,
+      hasLength(3),
+    );
+    expect((await c.read(profilePostCountsProvider.future)).total, 3);
+    expect(repo.byAuthorCursors, [null]);
+
+    // What a publish does: the post exists, then the signal is bumped.
+    repo.add(
+      fixturePost(
+        'fresh',
+        kind: PostKind.eventShare,
+        photographerId: 'p9',
+        authorId: uid,
+        age: const Duration(seconds: 1),
+      ),
+    );
+    c.read(ownPostsChangedProvider.notifier).bump();
+
+    final grid = await c.read(profilePostsProvider(null).future);
+    expect(grid.posts.first.id, 'fresh');
+    expect(grid.posts, hasLength(4));
+    expect(repo.byAuthorCursors, [null, null], reason: 'first page again');
+    final counts = await c.read(profilePostCountsProvider.future);
+    expect(counts.total, 4);
+    expect(counts.of(PostKind.eventShare), 1);
   });
 }

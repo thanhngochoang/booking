@@ -31,7 +31,11 @@ class ProfilePostsState {
 
 /// The signed-in user's own posts (`authorId` = uid) for S09.01, one list
 /// per filter (null = all kinds), read with one-shot pages of [pageSize]
-/// (no listener on `posts`). autoDispose: re-read on each visit.
+/// (no listener on `posts`). The shell keeps Hồ sơ mounted, so a revisit
+/// does not re-read: the list reloads from its first page when the user
+/// creates a post ([ownPostsChangedProvider]) or pulls to refresh. The list
+/// of a filter not on screen is disposed (autoDispose) and read again when
+/// its chip is chosen.
 class ProfilePostsController extends AsyncNotifier<ProfilePostsState> {
   ProfilePostsController(this.kind);
 
@@ -49,6 +53,7 @@ class ProfilePostsController extends AsyncNotifier<ProfilePostsState> {
   @override
   Future<ProfilePostsState> build() async {
     _generation++;
+    ref.watch(ownPostsChangedProvider);
     _uid = (await ref.watch(authStateProvider.future))?.uid;
     return _firstPage();
   }
@@ -124,6 +129,17 @@ class ProfilePostsController extends AsyncNotifier<ProfilePostsState> {
     }
     if (next.hasValue || !state.hasValue) {
       state = next;
+    } else if (state.requireValue.loadingMore) {
+      // The next page in flight belongs to the old generation and will never
+      // land: stop its spinner and offer the retry row instead.
+      final shown = state.requireValue;
+      state = AsyncData(
+        ProfilePostsState(
+          posts: shown.posts,
+          nextCursor: shown.nextCursor,
+          moreError: true,
+        ),
+      );
     }
     return next.hasValue;
   }
@@ -153,9 +169,11 @@ class ProfilePostCounts {
 }
 
 /// Four `count()` aggregations in parallel: all posts and one per kind
-/// (about one read each, never the documents themselves).
+/// (about one read each, never the documents themselves). Counted again
+/// when the user creates a post ([ownPostsChangedProvider]).
 final profilePostCountsProvider = FutureProvider.autoDispose<ProfilePostCounts>(
   (ref) async {
+    ref.watch(ownPostsChangedProvider);
     final uid = (await ref.watch(authStateProvider.future))?.uid;
     if (uid == null) {
       return const ProfilePostCounts(total: 0, byKind: {});

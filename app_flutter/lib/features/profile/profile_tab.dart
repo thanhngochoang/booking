@@ -254,7 +254,6 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
           child: isPhotographer
               ? EmptyState(
                   title: l.profileEmptyPhotographerTitle,
-                  body: '',
                   actionLabel: l.profileEmptyPhotographerAction,
                   onAction: () => context.go('/action'),
                 )

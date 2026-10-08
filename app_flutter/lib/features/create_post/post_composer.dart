@@ -524,6 +524,9 @@ class PostComposerController extends Notifier<ComposerState> {
           albumId: albumId,
         ),
       );
+      if (ref.mounted) {
+        ref.read(ownPostsChangedProvider.notifier).bump();
+      }
       await prefs.remove(_draftKey(uid));
       if (albumId != null) {
         await prefs.setString(lastAlbumKey(uid), albumId);

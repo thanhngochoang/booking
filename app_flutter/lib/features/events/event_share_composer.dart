@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_repository.dart';
@@ -121,6 +122,8 @@ class ShareController extends Notifier<ShareState> {
           status: TimelineStatus.visible,
         )),
       );
+      // And on the author's Hồ sơ grid and counts (S09.01).
+      ref.read(ownPostsChangedProvider.notifier).bump();
     }
     return true;
   }

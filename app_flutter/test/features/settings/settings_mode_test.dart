@@ -291,6 +291,39 @@ void main() {
     expect(find.text('stub /profile'), findsOneWidget);
   });
 
+  testWidgets('the card scrolled out of the list mid-switch still gets its '
+      'SnackBar and redirect', (tester) async {
+    // A short phone, so the list scrolls well past the card.
+    tester.view
+      ..physicalSize = const Size(390, 480)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final held = _HeldUsers();
+    final (auth, users) = await _signedIn(UserRole.photographer, users: held);
+    await tester.pumpWidget(await _app(auth, users));
+    await tester.pumpAndSettle();
+    held.hold = Completer<void>();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('switch-role')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await _tapSwitch(tester);
+    await tester.pump();
+
+    // Far enough down that the lazily built card is disposed (once the tap's
+    // ink splash, which keeps it alive, has faded).
+    final list = tester.state<ScrollableState>(find.byType(Scrollable).first);
+    list.position.jumpTo(list.position.maxScrollExtent);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(RoleModeCard, skipOffstage: false), findsNothing);
+
+    held.hold!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('stub /profile'), findsOneWidget);
+    expect(find.text('Đã chuyển qua chế độ đặt lịch.'), findsOneWidget);
+  });
+
   testWidgets('during the switch, back does not leave Cài đặt', (tester) async {
     final held = _HeldUsers();
     final (auth, users) = await _signedIn(UserRole.customer, users: held);

@@ -32,4 +32,12 @@ void main() {
     );
     expect(find.byType(FilledButton), findsNothing);
   });
+  testWidgets('without a body only the title line is drawn', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: EmptyState(title: 'a')),
+      ),
+    );
+    expect(find.byType(Text), findsOneWidget);
+  });
 }

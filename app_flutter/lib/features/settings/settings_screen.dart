@@ -60,6 +60,8 @@ class SettingsScreen extends ConsumerWidget {
     final isStaff = ref.watch(staffRoleProvider).value != null;
     // While the mode switches, only the mode card reacts.
     final switching = ref.watch(roleSwitchControllerProvider).isLoading;
+    // Here, not in the card: the card can scroll out and be disposed.
+    listenToRoleSwitch(context, ref);
     Widget guard(Widget child) =>
         AbsorbPointer(absorbing: switching, child: child);
 
@@ -126,7 +128,7 @@ class SettingsScreen extends ConsumerWidget {
     ];
 
     // Mid-switch, Cài đặt cannot be left (system back or the AppBar arrow),
-    // so the mode card's SnackBar, error and redirect are never lost.
+    // so the mode switch's SnackBar, error and redirect are never lost.
     final canGoBack = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
     return ScreenCode(
       ScreenCodes.settings,
