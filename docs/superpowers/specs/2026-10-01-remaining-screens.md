@@ -94,6 +94,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · bước địa điểm chưa có bản đồ | S07 |
 | S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
+| S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: ⬜ có mock, chưa có plan | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
 | S05.01 | Danh sách đặt lịch | `/bookings` (khách) | khách | 4 | ✅ đã làm (4c) · Vé sự kiện đã bật (10c) | S14 |
 | S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e | S09 |
@@ -119,6 +120,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.03 | Kỹ năng, phần 2 (phong cách, kỹ năng thêm, ngôn ngữ, khách phù hợp) | cùng màn S08.02, cuộn xuống | NAG | 2 | ✅ đã làm (2c) · khớp mock (#146) | S39 |
 | S08.04 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | ✅ đã làm (2c) · khớp mock (#146) | S40 |
 | S08.05 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · khớp mock, có bản studio (#146) | S34 |
+| S08.06 | Dịch vụ đi kèm: "{n}/10 dịch vụ đang bật", danh sách theo loại, công tắc bật/tắt | `/me/addons` | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | ⬜ có mock, chưa có plan | — |
+| S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | ⬜ có mock, chưa có plan | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
 | S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng xác minh/studio ẩn tới #135/#136 | S31 |

@@ -1,6 +1,6 @@
 # Nhiếp ảnh gia: công việc, lịch, đăng bài, thiết lập, kỹ năng
 
-Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S08.04. Quy ước chung ở [README.md](README.md). Mọi màn ở đây chỉ vào được với vai trò `photographer`.
+Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S08.04, S08.06, S08.07. Quy ước chung ở [README.md](README.md). Mọi màn ở đây chỉ vào được với vai trò `photographer`.
 
 ---
 
@@ -141,6 +141,31 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 - **Chuỗi**: `s40_title` "Minh chứng · {name}", `s40_body` "Chọn 1–3 ảnh trong portfolio thể hiện rõ thể loại này. Ảnh minh chứng giúp xếp hạng đáng tin hơn.", `s40_done` "Xong", `s40_empty` "Đăng bài trước".
 - **Phân tích**: `skill_evidence_set{skillId, count}`.
 - **Chấp nhận**: chỉ chọn được bài của chính mình; bài bị xoá thì gỡ khỏi minh chứng và hạ nhắc nhở ở S08.02.
+
+---
+
+## S08.06 · Dịch vụ đi kèm
+
+> **Mới 2026-10-08**: [spec dịch vụ đi kèm](../2026-10-08-booking-addons-design.md) mục 4; mock `#S08.06`.
+
+- **Thông tin**: `/me/addons` · thợ ảnh · studio (dịch vụ là của studio) · spec 10-08 · Chưa có.
+- **Mục đích**: nhà cung cấp tự khai các dịch vụ thêm (trang điểm, chỉnh ảnh, xe đưa đón, trang phục, khác) để khách chọn ở S04.01.
+- **Điểm vào → ra**: Cài đặt (nhóm Nhận việc, cạnh "Gói dịch vụ"); "Thêm dịch vụ đi kèm" ở bước gói S08.01. Chạm dòng → S08.07 (sửa); "Thêm dịch vụ" → S08.07 (thêm).
+- **Bố cục**: thanh trên "Dịch vụ đi kèm"; dòng "{n}/10 dịch vụ đang bật"; danh sách nhóm theo loại (nhãn nhóm nhỏ), mỗi dòng: icon theo loại trong ô tròn, tên, giá + cách tính ("800.000₫ / người", "300.000₫ · một lần"), "Áp dụng: mọi gói" hoặc tên gói (một dòng, cắt "…"), công tắc bật/tắt; chân màn: nút chính "Thêm dịch vụ".
+- **Dữ liệu**: `photographers/{uid}/addons` (chủ đọc cả dịch vụ đã tắt, tối đa 10 tài liệu); bật/tắt và mọi thay đổi qua callable `saveAddon`, không ghi trực tiếp.
+- **Trạng thái**: trống → "Chưa có dịch vụ đi kèm" / "Thêm trang điểm, chỉnh ảnh hay xe đưa đón để khách chọn khi đặt lịch."; bật dịch vụ thứ 11 (`addon_limit`) → công tắc trả về tắt và báo "Bạn đã bật đủ 10 dịch vụ. Tắt bớt một dịch vụ để bật dịch vụ này."; chưa được duyệt nhận đơn (S21) vẫn khai được nhưng khách chưa thấy (như gói).
+- **Chấp nhận**: đếm n/10 đúng số dịch vụ đang bật; tắt một dịch vụ thì khách không thấy ở S04.01 nhưng booking đã đặt giữ nguyên dòng dịch vụ.
+
+---
+
+## S08.07 · Thêm/sửa dịch vụ đi kèm (sheet)
+
+- **Thông tin**: sheet trên S08.06 · thợ ảnh · studio · spec 10-08 · Chưa có. Mock `#S08.07`.
+- **Mục đích**: tạo hoặc sửa một dịch vụ đi kèm.
+- **Bố cục**: tiêu đề "Thêm dịch vụ đi kèm" (sửa: "Sửa dịch vụ đi kèm") + nút đóng; "Loại" (chip chọn một, cuộn ngang: Trang điểm, Chỉnh ảnh, Đưa đón, Trang phục, Khác); "Tên dịch vụ"; "Mô tả · không bắt buộc"; "Cách tính" (`SegmentedTabs`: Một lần · Theo người · Theo số lượng); hàng "Giá / {đơn vị} (₫)" + "Tối đa" (1–10, ẩn khi Một lần); "Áp dụng cho" Mọi gói / Chọn gói (Chọn gói mở danh sách gói có ô tick); dòng nhắc "Bạn chịu trách nhiệm với khách về dịch vụ này, kể cả khi thuê người ngoài."; nút chính "Lưu". Sửa: thêm chữ đỏ "Xoá dịch vụ" → sheet xác nhận nút đỏ, "Booking đã đặt vẫn giữ dịch vụ này.".
+- **Dữ liệu**: `saveAddon({addonId?, kind, name, description?, price, unit, maxQty, serviceIds, active})`, `deleteAddon({addonId})`. Đơn vị hiển thị của Theo số lượng theo loại (chỉnh ảnh → ảnh, trang phục → bộ, còn lại → lần) cho tới khi model có trường đơn vị.
+- **Trạng thái**: lỗi dưới ô: "Tên 2–60 ký tự", "Giá từ 10.000₫ tới 50.000.000₫", "Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung" (`contact_leak`, tên và mô tả), "Bạn đã bật đủ 10 dịch vụ. Tắt bớt một dịch vụ để bật dịch vụ này." (`addon_limit`); đang lưu → nút loading, khoá form.
+- **Chấp nhận**: Một lần luôn lưu `maxQty = 1`; mô tả ≤ 200 ký tự; xoá chỉ sau xác nhận và không đổi booking đã đặt.
 
 ---
 
