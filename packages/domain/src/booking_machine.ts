@@ -13,7 +13,6 @@ export type TransitionAction =
   | 'cancel'
   | 'upcoming'
   | 'complete'
-  | 'review'
   | 'expire';
 
 export type ActorRole = 'customer' | 'photographer' | 'system';
@@ -214,16 +213,8 @@ export function decideTransition(
       return { nextStatus: 'completed', refundPercent: 0 };
     }
 
-    case 'review': {
-      if (booking.status !== 'completed') {
-        throw new DomainError('conflict');
-      }
-      if (actor.role !== 'customer') {
-        throw new DomainError('permission_denied');
-      }
-      return { nextStatus: 'reviewed', refundPercent: 0 };
-    }
-
+    // Includes the retired 'review' action: a review goes through submitReview, which
+    // sets reviewedAt; `reviewed` stays a readable legacy status only.
     default:
       throw new DomainError('invalid_argument');
   }
