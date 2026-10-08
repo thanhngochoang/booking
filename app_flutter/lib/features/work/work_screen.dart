@@ -353,7 +353,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
 }
 
 /// One new request (mock S06.01): customer, package, when and where, price,
-/// the note and the deposit, contact, and the two answers.
+/// the note and the payment, contact, and the two answers.
 class _RequestCard extends ConsumerWidget {
   const _RequestCard({
     super.key,

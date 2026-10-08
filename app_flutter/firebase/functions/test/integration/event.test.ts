@@ -12,6 +12,7 @@ import { handleEventClock } from '../../src/scheduled/event_clock.js';
 import { firestoreEventPeople, ownCoverUpload } from '../../src/infra/event_firestore.js';
 import { firestoreUserContactReader } from '../../src/infra/firestore.js';
 import { storageUrlPrefixes } from '../../src/config.js';
+import { eventStartInDays } from './event_social_support.js';
 
 // The real event callables on the Functions emulator through FirestoreEventStore. Needs the
 // emulators; CI runs it (npm run test:integration). Each test builds its own events.
@@ -19,7 +20,6 @@ import { storageUrlPrefixes } from '../../src/config.js';
 let app: App;
 let db: Firestore;
 const tokens = new Map<string, string>();
-const DAY = 86_400_000;
 
 before(async () => {
   await resetEmulators();
@@ -54,7 +54,7 @@ let nextDay = 30;
 async function publish(host: string, over: Record<string, unknown> = {}, daysAhead = nextDay++): Promise<string> {
   const eventId = newUlid(Date.now());
   const path = `eventCovers/${host}/${eventId}/cover.jpg`;
-  const start = new Date(Date.now() + daysAhead * DAY);
+  const start = eventStartInDays(daysAhead);
   const res = await call('saveEventDraft', host, {
     eventId, title: `Photo walk ${eventId.slice(-6)}`, type: 'photo_walk',
     coverUrl: bucketUrl(path), coverPath: path,

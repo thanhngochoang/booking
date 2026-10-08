@@ -1,6 +1,6 @@
 import { defineSecret } from 'firebase-functions/params';
 import type { DocumentOptions } from 'firebase-functions/v2/firestore';
-import type { CallableOptions } from 'firebase-functions/v2/https';
+import type { CallableOptions, HttpsOptions } from 'firebase-functions/v2/https';
 import type { ScheduleOptions } from 'firebase-functions/v2/scheduler';
 
 /**
@@ -33,6 +33,21 @@ export const PAYMENT_CALLABLE_OPTIONS = {
   ...CALLABLE_OPTIONS,
   timeoutSeconds: 30,
 } as const satisfies CallableOptions;
+
+/**
+ * The payment provider's webhook (`paymentWebhook`, onRequest). Public: the provider calls it without
+ * a Firebase identity, so every request is authenticated by its signature (infra/fake_webhook.ts for
+ * the fake provider) before anything is read. 30 s like the payment callables (one transfer runs a
+ * contended transaction and may dispatch refunds).
+ */
+export const WEBHOOK_OPTIONS = {
+  region: REGION,
+  memory: '256MiB',
+  timeoutSeconds: 30,
+  maxInstances: 10,
+  minInstances: 0,
+  invoker: 'public',
+} as const satisfies HttpsOptions;
 
 /**
  * The development Firebase project (`.firebaserc` alias `dev`). Fake payments are allowed there and
@@ -76,6 +91,16 @@ export const SCHEDULE_OPTIONS = {
   maxInstances: 1,
   minInstances: 0,
   retryCount: 0,
+} as const satisfies ScheduleOptions;
+
+/**
+ * The payment clock (payments spec §3.3): reconciliation of open payments and QR expiry every
+ * 5 minutes. One instance, and a run ends before the next one starts.
+ */
+export const PAYMENT_CLOCK_OPTIONS = {
+  ...SCHEDULE_OPTIONS,
+  schedule: 'every 5 minutes',
+  timeoutSeconds: 240,
 } as const satisfies ScheduleOptions;
 
 /**

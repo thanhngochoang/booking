@@ -26,11 +26,11 @@ describe('renderNotification', () => {
   it('booking_declined has a declined and an expired variant', () => {
     assert.deepEqual(renderNotification({ type: 'booking_declined', reason: 'declined', photographer: 'Lan Chi', percent: 100 }), {
       title: 'Lan Chi không nhận được lịch',
-      body: 'Cọc đã hoàn 100%. Xem các nhiếp ảnh gia còn rảnh.',
+      body: 'Đã hoàn 100% số đã trả. Xem các nhiếp ảnh gia còn rảnh.',
     });
     assert.deepEqual(renderNotification({ type: 'booking_declined', reason: 'expired', photographer: 'Lan Chi', percent: 100 }), {
       title: 'Lan Chi chưa trả lời kịp',
-      body: 'Yêu cầu đã hết hạn. Cọc đã hoàn 100%.',
+      body: 'Yêu cầu đã hết hạn. Đã hoàn 100% số đã trả.',
     });
   });
 
@@ -38,7 +38,7 @@ describe('renderNotification', () => {
     const base = { type: 'booking_cancelled', name: 'An', day: 'T7 10/10', start: '15:30' } as const;
     assert.deepEqual(renderNotification({ ...base, by: 'party', percent: 50 }), {
       title: 'An đã huỷ lịch',
-      body: 'T7 10/10 · 15:30. Cọc hoàn 50%.',
+      body: 'T7 10/10 · 15:30. Hoàn 50% số đã trả.',
     });
     assert.deepEqual(renderNotification({ ...base, by: 'party', percent: null }), {
       title: 'An đã huỷ lịch',
@@ -53,7 +53,7 @@ describe('renderNotification', () => {
   it('refund_done shows 450.000₫ and #A0C2', () => {
     assert.deepEqual(renderNotification({ type: 'refund_done', amount: 450000, bookingId: 'bk_x9a0c2' }), {
       title: 'Đã hoàn 450.000₫',
-      body: 'Khoản cọc buổi chụp #A0C2 đã về tài khoản của bạn.',
+      body: 'Khoản thanh toán buổi chụp #A0C2 đã về tài khoản của bạn.',
     });
   });
 

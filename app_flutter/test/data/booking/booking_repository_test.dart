@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -49,17 +50,23 @@ void main() {
         place: const BookingPlace(name: 'Hà Nội'),
       );
 
-      final dep = await repo.createDeposit(
+      final checkout = await repo.createPayment(
         bookingId: draft.id,
-        provider: 'fake',
+        method: PayMethod.bankQr,
       );
-      expect(dep.paymentId, 'pay_${draft.id}');
+      expect(checkout.paymentId, 'pay_${draft.id}');
+      expect((await repo.getBooking(draft.id))?.checkout?.paymentId,
+          checkout.paymentId);
 
-      final conf = await repo.confirmFakePayment(paymentId: dep.paymentId);
-      expect(conf.booking?.status, BookingStatus.requested);
-      expect(conf.booking?.escrowStatus, EscrowStatus.held);
+      final outcome = await repo.confirmFakePayment(
+        paymentId: checkout.paymentId,
+      );
+      expect(outcome, 'paid');
+      final paid = await repo.getBooking(draft.id);
+      expect(paid?.status, BookingStatus.requested);
+      expect(paid?.escrowStatus, EscrowStatus.held);
 
-      final check = await repo.checkDeposit(bookingId: draft.id);
+      final check = await repo.checkPayment(bookingId: draft.id);
       expect(check.paid, true);
     });
 
@@ -143,6 +150,38 @@ void main() {
       expect(b?.place.lat, 21.0285);
       expect(b?.place.lng, 105.8542);
       expect(b?.escrowStatus, EscrowStatus.held);
+    });
+
+    test('maps the checkout mirror, or null when absent or malformed', () {
+      final base = <String, dynamic>{
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'serviceId': 's1',
+        'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+        'status': 'draft',
+        'deposit': 1000000,
+        'remaining': 0,
+      };
+      expect(bookingFromFirestore('b', base)?.checkout, isNull);
+
+      final withCheckout = bookingFromFirestore('b', {
+        ...base,
+        'checkout': {
+          'paymentId': 'pay_1',
+          'method': 'bank_qr',
+          'amount': 1000000,
+          'expiresAt': Timestamp.fromDate(DateTime.utc(2026, 10, 7, 3, 15)),
+          'transferCode': 'PB 7F3K2Q',
+          'attempt': 1,
+        },
+      });
+      expect(withCheckout?.checkout?.paymentId, 'pay_1');
+      expect(withCheckout?.checkout?.expiresAt, DateTime.utc(2026, 10, 7, 3, 15));
+
+      // A broken mirror never breaks the booking itself.
+      final broken = bookingFromFirestore('b', {...base, 'checkout': {'x': 1}});
+      expect(broken, isNotNull);
+      expect(broken?.checkout, isNull);
     });
 
     test('returns null for missing required fields', () {

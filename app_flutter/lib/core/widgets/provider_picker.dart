@@ -5,47 +5,9 @@ import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
-/// Single-choice payment provider selector for deposits and bookings (mock S04.03, S11.03).
-///
-/// Shows two outlined buttons (MoMo and VNPay) side-by-side. The selected button
-/// is highlighted with primary border, subtle primary background and primary text.
-class ProviderPicker extends StatelessWidget {
-  const ProviderPicker({
-    super.key,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final PaymentProviderCode value;
-  final ValueChanged<PaymentProviderCode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ProviderButton(
-            label: 'MoMo',
-            selected: value == PaymentProviderCode.momo,
-            onTap: () => onChanged(PaymentProviderCode.momo),
-          ),
-        ),
-        const SizedBox(width: AppSpace.s2),
-        Expanded(
-          child: _ProviderButton(
-            label: 'VNPay',
-            selected: value == PaymentProviderCode.vnpay,
-            onTap: () => onChanged(PaymentProviderCode.vnpay),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Single choice of a ticket payment method (mock S11.03): "Chuyển khoản QR"
-/// takes the wider slot, then MoMo and ZaloPay. Same buttons as
-/// [ProviderPicker]; each method maps onto a gateway code ([PayMethod.provider]).
+/// takes the wider slot, then MoMo and ZaloPay; each method maps onto a
+/// gateway code ([PayMethod.provider]).
 class PayMethodPicker extends StatelessWidget {
   const PayMethodPicker({
     super.key,

@@ -1,12 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createBookingWorld } from './support/booking_world.js';
+import { computeDeposit, computeRefund } from '../src/booking_policy.js';
+import { createBookingWorld, payDraft } from './support/booking_world.js';
 import { createBookingDraft } from '../src/create_booking.js';
-import { createDeposit } from '../src/create_deposit.js';
-import { confirmFakePayment } from '../src/handle_payment.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { openDispute } from '../src/open_dispute.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
+
+/** The customer pays the whole price up front. */
+const PAID = computeDeposit(1_000_000).deposit;
 
 describe('Task 5: transitionBooking and openDispute', () => {
   it('accepts requested booking and marks availability day as booked', async () => {
@@ -19,8 +21,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
 
     const accepted = await transitionBooking(world.deps, {
       bookingId: draft.id,
@@ -46,8 +47,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
       start: '14:00', // 2026-10-15 07:00 UTC
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    const dep = await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Advance clock to 30 hours before start: 2026-10-14 01:00 UTC
@@ -61,7 +61,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
     });
 
     assert.equal(cancelled.status, 'cancelled');
-    assert.equal(cancelled.depositRefunded, 150_000);
+    assert.equal(cancelled.depositRefunded, computeRefund(PAID, 50));
     assert.equal(cancelled.escrowStatus, 'partially_refunded');
 
     // Day is freed
@@ -94,8 +94,7 @@ describe('Task 5: transitionBooking and openDispute', () => {
       start: '14:00',
       place: { name: 'Nhà thờ Lớn' },
     });
-    const dep = await createDeposit(world.deps, { bookingId: draft.id, customerId: 'c1', provider: 'fake' });
-    await confirmFakePayment(world.deps, { paymentId: dep.paymentId, customerId: 'c1' });
+    await payDraft(world, draft.id);
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
 
     // Set time after shoot end (shoot ends 16:00 VN = 09:00 UTC)

@@ -3,7 +3,7 @@
  */
 
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
-import type { Payment, Refund, LedgerEntry } from './escrow.js';
+import type { Payment, PaymentMethod, Refund, LedgerEntry } from './escrow.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 
 export interface ServiceRecord {
@@ -40,6 +40,53 @@ export interface AvailabilityDayRecord {
   readonly bookingId?: string;
 }
 
+/**
+ * One incoming transfer as the payment provider reports it (webhook or reconciliation query),
+ * already authenticated by the adapter. `txnId` is the provider's transaction id.
+ */
+export interface TransferNotification {
+  readonly provider: PaymentProvider;
+  readonly txnId: string;
+  /** VND, positive integer. */
+  readonly amount: number;
+  /** The memo the sender typed; matched with `transferCodesIn`. */
+  readonly content: string;
+  /** ISO-8601 UTC, when the provider received the money (decides late transfers). */
+  readonly receivedAt: string;
+  /** The provider's body as received, kept on the transfer record only. */
+  readonly raw?: string;
+  readonly payer?: { readonly bankCode?: string; readonly accountMasked?: string; readonly name?: string };
+}
+
+/** What the provider gives back for a new payment; the app shows it on S04.04. */
+export interface PaymentInstructions {
+  readonly providerRef?: string;
+  readonly qrPayload?: string;
+  readonly bankName?: string;
+  readonly accountMasked?: string;
+  readonly payUrl?: string;
+  readonly bankAppsUrl?: string;
+}
+
+/**
+ * The result of handling one transfer: `paid` (the payment reached its amount), `paid_with_refund`
+ * (and the part above it went back), `partial` (still short), `refunded` (the whole transfer went
+ * back: late, extra, or the draft is gone), `needs_review` (no payment matched; staff decide),
+ * `duplicate` (this transaction was handled before; nothing changed).
+ */
+export type TransferOutcome = 'paid' | 'paid_with_refund' | 'partial' | 'refunded' | 'needs_review' | 'duplicate';
+
+/** One handled transfer, id `${provider}_${txnId}` (the idempotency key of the notification). */
+export interface TransferRecord {
+  readonly id: string;
+  readonly provider: PaymentProvider;
+  readonly txnId: string;
+  readonly raw?: string;
+  readonly receivedAt: string;
+  readonly outcome: Exclude<TransferOutcome, 'duplicate'>;
+  readonly paymentId?: string;
+}
+
 export interface BookingTx {
   getBooking(id: string): Promise<Booking | null>;
   getAvailabilityDay(photographerId: string, day: string): Promise<AvailabilityDayRecord | null>;
@@ -61,6 +108,9 @@ export interface BookingTx {
   addRefund(refund: Refund): Promise<void>;
   addLedgerEntry(entry: LedgerEntry): Promise<void>;
   addBookingEvent(event: BookingEventRecord): Promise<void>;
+  getTransferRecord(id: string): Promise<TransferRecord | null>;
+  /** Written in the same transaction as the payment and ledger changes, so a repeat is a no-op. */
+  saveTransferRecord(record: TransferRecord): Promise<void>;
 }
 
 export interface BookingStore {
@@ -74,8 +124,19 @@ export interface BookingStore {
   getRefundsForPayment(paymentId: string): Promise<readonly Refund[]>;
   getLedgerEntriesForPayment(paymentId: string): Promise<readonly LedgerEntry[]>;
   getContactSnapshot(bookingId: string): Promise<BookingContactSnapshot | null>;
+  /**
+   * Every payment whose `transferCode` is `code`, any status. Codes are unique among open
+   * (`created`) payments only, so closed ones can share a code.
+   */
+  findPaymentsByTransferCode(code: string): Promise<readonly Payment[]>;
+  getTransferRecord(id: string): Promise<TransferRecord | null>;
   // Sweep queries
-  findUnpaidDraftsOlderThan(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
+  /** Booking payments in `created` with `createdAt <= createdBefore`. */
+  findPaymentsToReconcile(createdBefore: Date, limit?: number): Promise<readonly Payment[]>;
+  /** Payments in `created` with `expiresAt <= now`. */
+  findOverduePayments(now: Date, limit?: number): Promise<readonly Payment[]>;
+  /** Drafts with `payableUntil <= now`; drafts without the field are never returned. */
+  findExpiredDrafts(now: Date, limit?: number): Promise<readonly Booking[]>;
   findExpiredRequests(now: Date, limit?: number): Promise<readonly Booking[]>;
   findUpcomingTransitions(now: Date, limit?: number): Promise<readonly Booking[]>;
   findAutoCompletions(cutoff: Date, limit?: number): Promise<readonly Booking[]>;
@@ -83,6 +144,31 @@ export interface BookingStore {
 }
 
 export interface PaymentGateway {
+  /** The provider this gateway talks to; stored on the payments it creates. */
+  readonly provider: PaymentProvider;
+
+  /**
+   * Opens a payment with the provider and returns how the customer pays it. The adapter MUST send
+   * `idempotencyKey` so a retried call never opens a second payment.
+   */
+  createPayment(params: {
+    readonly paymentId: string;
+    readonly bookingId: string;
+    readonly amount: number;
+    readonly method: PaymentMethod;
+    readonly transferCode: string;
+    readonly expiresAt: string;
+    readonly idempotencyKey: string;
+  }): Promise<PaymentInstructions>;
+
+  /** Transfers the provider has received for this payment (reconciliation, "Kiểm tra lại"). */
+  queryTransfers(params: {
+    readonly paymentId: string;
+    readonly transferCode: string;
+    readonly providerRef?: string;
+  }): Promise<readonly TransferNotification[]>;
+
+  /** Ticket payments (until #137); bookings pay through `createPayment`. */
   createDepositIntent(params: {
     readonly paymentId: string;
     readonly bookingId: string;
@@ -103,6 +189,7 @@ export interface PaymentGateway {
     readonly providerRef?: string;
   }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }>;
 
+  /** Ticket payments (until #137); bookings pay through `createPayment`. */
   checkPaymentStatus(params: {
     readonly paymentId: string;
     readonly provider: PaymentProvider;

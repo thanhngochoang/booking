@@ -233,10 +233,10 @@ Chấm số trên icon thanh tab. `TabBadge({required int count, required Widget
 Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa có đặc tả. Viết thành widget dùng chung trước khi làm màn (thứ tự ở mục 7).
 
 #### EscrowNotice · Đã có
-`EscrowNotice({required String text})`: biểu tượng khoá + chữ trên nền `primarySubtle` (lớp `.esc` của mock), `Semantics(container)`. Chữ theo spec chính 3g.6: khách "Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành."; nhiếp ảnh gia "Cọc {số tiền} đang được giữ, chuyển cho bạn sau khi hoàn thành". Dùng ở S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07.
+`EscrowNotice({required String text})`: biểu tượng khoá + chữ trên nền `primarySubtle` (lớp `.esc` của mock), `Semantics(container)`. Chữ (không còn "cọc" từ #129, khách trả 100%): khách "Đã thanh toán {số tiền}, tiền được giữ an toàn" (S05.02); nhiếp ảnh gia "{số tiền} đang được giữ, chuyển cho bạn theo 2 mốc"; vé "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc." (S11.03). S04.03 không dùng `EscrowNotice`: câu giữ tiền nằm trong dòng chữ phụ dưới bảng tiền. Dùng ở S05.02, S11.03, S11.04, S06.05, S13.01, S13.07.
 
 #### MoneyBreakdown · Đã có
-`MoneyBreakdown({required List<MoneyLine> lines})`, `MoneyLine({required String label, required int vnd, MoneyLineStyle style = normal /*normal | strong | muted*/})`. Các hàng nhãn trái, số phải `tabularFigures`, định dạng `formatMoney`; hàng `strong` đậm (cọc hôm nay, tổng thanh toán), `muted` chữ phụ (còn lại trả tại buổi chụp). Dùng ở S04.03 (giá gói, cọc 30%, còn lại), S11.03 (số vé × giá, tổng), S06.05 (các khoản), S13.08 (hoàn, phí).
+`MoneyBreakdown({required List<MoneyLine> lines})`, `MoneyLine({required String label, required int vnd, MoneyLineStyle style = normal /*normal | strong | muted*/})`. Các hàng nhãn trái, số phải `tabularFigures`, định dạng `formatMoney`; hàng `strong` đậm ("Thanh toán 100%", tổng thanh toán), `muted` chữ phụ. Không còn hàng cọc hay "còn lại trả tại buổi chụp": S04.03 chỉ có hai hàng, "Gói {tên}" và "Thanh toán 100%". Dùng ở S04.03 (giá gói, thanh toán 100%), S11.03 (số vé × giá, tổng), S06.05 (các khoản), S13.08 (hoàn, phí).
 
 #### PolicyTable · Đã có
 `PolicyTable({required List<PolicyRow> rows, required int activeIndex})`, `PolicyRow({required String when, required String outcome})`. Các hàng chọn đơn không bấm được, hàng đang áp dụng tô `AppOptionTile` đã chọn; đọc màn hình "Đang áp dụng: …". Dùng ở S05.03 (huỷ ≥ 48 giờ 100% · 24–48 giờ 50% · < 24 giờ 0%), S13.08 (mốc huỷ chụp ngay).
@@ -244,11 +244,15 @@ Các mẫu dưới đây lặp lại ở nhiều màn trong mock nhưng chưa c�
 #### ReasonPicker · Đã có
 `ReasonPicker({required List<String> reasons, required int? selected, required ValueChanged<int> onSelected, ReasonPickerStyle style = chips /*chips | radio*/, String? otherLabel, ValueChanged<String>? onOtherText, int otherMinLength = 0, int otherMaxLength = 200})`. Kiểu `chips` (S05.03 huỷ, S13.08) hoặc `radio` (S06.03 từ chối) dùng `AppOptionTile`; chọn "Lý do khác" hiện ô nhập ngắn có đếm, kiểm độ dài tối thiểu.
 
-#### ProviderPicker · Đã có
-`ProviderPicker({required PaymentProviderCode value, required ValueChanged<PaymentProviderCode> onChanged})`: hai nút viền nhỏ MoMo / VNPay chọn đơn (mock S04.03, S11.03). Một chỗ duy nhất đổi khi thêm cổng.
+#### PayMethodSelector và PayMethodPicker · Đã có
+`PayMethodSelector({required PayMethod value, required ValueChanged<PayMethod> onChanged, bool enabled = true})` (S04.03, #129): danh sách radio chọn đơn, nhóm `Semantics` "Phương thức thanh toán". Hàng đầy chiều rộng "Chuyển khoản QR" (biểu tượng `qr_code_2`, phụ đề "Miễn phí · xác nhận ngay"), dưới là hai ô nửa chiều rộng "MoMo" và "ZaloPay" (biểu tượng ví, không phụ đề); luôn có một lựa chọn (mặc định `bank_qr`); `enabled = false` khi đang tạo thanh toán thì chạm không có tác dụng. Khoá phím `pay-method-{code}`. `PayMethod` (`bankQr`, `momo`, `zaloPay`) có `code` khớp `PaymentMethod` ở miền (`bank_qr`, `momo`, `zalopay`). Thẻ `domestic_card`, `intl_card` chưa hiện (cờ cấu hình tắt).
+`PayMethodPicker` (S11.03, vé sự kiện) giữ nguyên, mỗi lựa chọn ánh xạ sang một mã cổng qua `PayMethod.provider`; chuyển vé sang `createPayment` thuộc #137.
 
 #### ConfirmSheet · Đã có
 `Future<bool> showConfirmSheet(BuildContext, {required String title, String? body, Widget? content, required String confirmLabel, required String keepLabel, bool danger = true, Future<void> Function()? onConfirm})`: sheet xác nhận chuẩn, nút an toàn (viền) bên trái, nút xác nhận (đỏ khi `danger`) bên phải, đang chạy `onConfirm` thì nút xác nhận hiện `SignatureLoader(inline)` và khoá sheet; lỗi hiện SnackBar trong sheet. Quy tắc CLAUDE.md "huỷ/từ chối là nút đỏ trong sheet xác nhận" đi qua widget này. Dùng ở S05.03, S06.03, S12.03 (huỷ sự kiện), S13.08, S09.02 (đăng xuất), S04.01 (bỏ yêu cầu đặt lịch).
+
+#### CountdownPill · Đã có
+`CountdownPill({required Duration remaining})` (S04.04, #129): viên thuốc nhỏ (mock `.st.live`) "Còn mm:ss", về 0 thì đổi thành "Hết hạn" chữ màu lỗi. Không tự đếm: chủ màn giữ đồng hồ và truyền `remaining`. `Semantics.label` đổi mỗi giây ("QR còn hiệu lực {m} phút {s} giây") nhưng `liveRegion` chỉ bật ở các mốc 5:00, 1:00, 0:10 và 0 (`isCountdownAnnounceSecond`, dùng chung với `CountdownRing`), để trình đọc màn hình không bị ngắt mỗi giây (WCAG 4.1.3).
 
 #### CountdownRing và CountdownText · Đã có
 `CountdownRing({required DateTime deadline, required Duration total, double size = 96})`: vòng tiến độ + số lớn ở giữa và đơn vị nhỏ (mock `.cd`), cập nhật mỗi giây khi còn < 1 giờ, mỗi phút khi dài hơn; `Semantics(role: timer)` đọc "Còn {n} giây"; giảm chuyển động: vòng nhảy theo giây, không nội suy. `CountdownText` cùng logic cho chữ trong nút ("Nhận · còn 22 giờ"). Dùng ở S14.02 (60 giây), S13.03, S13.06 (thời gian buổi chụp), S06.01 (hạn nhận yêu cầu).
@@ -352,11 +356,13 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `PermissionPrimer` | S17.03 |
 | `BadgeChip`, `BadgeRow` (`alwaysShowSeeAll`), `BadgeTile` | S03.01 và S09.01 (hàng tối đa 3 chip + "Tất cả" → S03.02), S03.02 |
 | `SignatureLoader`, `AsyncView`, `DotRingLoader` | mọi màn có tải dữ liệu |
-| `EscrowNotice` | S04.03, S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
+| `EscrowNotice` | S05.02, S11.03, S11.04, S06.05, S13.01, S13.07 |
 | `MoneyBreakdown` | S04.03, S11.03, S06.05, S13.08 |
 | `PolicyTable` | S05.03, S13.08 |
 | `ReasonPicker` | S05.03, S06.03, S13.08 |
-| `ProviderPicker` | S04.03, S04.04, S11.03 |
+| `PayMethodSelector` | S04.03 |
+| `PayMethodPicker` | S11.03 |
+| `CountdownPill` | S04.04 |
 | `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08 |
 | `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02 |
 | `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06 |

@@ -2,12 +2,9 @@
  * Scheduled clock sweep runners (invoked every 15 minutes by bookingClock).
  */
 
-import {
-  DRAFT_EXPIRY_MINUTES,
-  AUTO_COMPLETE_DELAY_HOURS,
-} from './booking_policy.js';
+import { AUTO_COMPLETE_DELAY_HOURS } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
-import { releaseEscrowPayment } from './escrow.js';
+import { escrowRefundedTotal, releaseEscrowPayment } from './escrow.js';
 import { transitionBooking } from './transition_booking.js';
 
 export interface BookingSweepResults {
@@ -21,17 +18,17 @@ export interface BookingSweepResults {
 export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepResults> {
   const now = deps.clock.now();
 
-  // 1. Clean unpaid drafts older than 30 minutes
+  // 1. Delete unpaid drafts whose payableUntil has passed (30 minutes, longer while a QR is live)
   let cleanedDrafts = 0;
-  const draftCutoff = new Date(now.getTime() - DRAFT_EXPIRY_MINUTES * 60 * 1000);
-  const oldDrafts = await deps.store.findUnpaidDraftsOlderThan(draftCutoff);
+  const oldDrafts = await deps.store.findExpiredDrafts(now);
   for (const draft of oldDrafts) {
     await deps.store.runTransaction(async (tx) => {
       const b = await tx.getBooking(draft.id);
-      if (b && b.status === 'draft') {
+      if (b && b.status === 'draft' && b.payableUntil && Date.parse(b.payableUntil) <= now.getTime()) {
+        // Every read before the first write (Firestore transactions refuse reads after writes).
+        const day = await tx.getAvailabilityDay(draft.photographerId, draft.day);
         await tx.deleteBooking(draft.id);
         await tx.deleteContactSnapshot(draft.id);
-        const day = await tx.getAvailabilityDay(draft.photographerId, draft.day);
         if (day && day.bookingId === draft.id) {
           await tx.deleteAvailabilityDay(draft.photographerId, draft.day);
         }
@@ -93,8 +90,8 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     await deps.store.runTransaction(async (tx) => {
       const p = await tx.getPayment(payment.id);
       if (p && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded')) {
-        const refunds = await deps.store.getRefundsForPayment(p.id);
-        const totalRefunded = refunds.reduce((sum, r) => sum + r.amount, 0);
+        // Only what escrow gave back: an over-transfer's excess or a second transfer never entered it.
+        const totalRefunded = escrowRefundedTotal(await deps.store.getRefundsForPayment(p.id));
 
         const res = releaseEscrowPayment({
           payment: p,

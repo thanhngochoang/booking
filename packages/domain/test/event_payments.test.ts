@@ -515,7 +515,7 @@ describe('refund state on the ticket', () => {
     const p = pay(w, reg(w, id).paymentId);
     w.store.seedPayment({ ...p, subjectType: 'booking' });
     w.store.refunds.set('rf_booking', {
-      id: 'rf_booking', paymentId: p.id, subjectType: 'booking', amount: 1, percent: 100, status: 'pending', manual: false,
+      id: 'rf_booking', paymentId: p.id, subjectType: 'booking', amount: 1, percent: 100, status: 'pending', manual: false, fromEscrow: true,
       createdAt: new Date(w.clock.now().getTime() - HOUR).toISOString(), updatedAt: w.clock.now().toISOString(),
     });
     assert.equal((await runEventSweeps(w.pay)).refundsResent, 0);

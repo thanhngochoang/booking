@@ -8,7 +8,7 @@ import { DISPUTE_WINDOW_HOURS, MIN_DISPUTE_REASON_LENGTH, MAX_DISPUTE_REASON_LEN
 import type { BookingDeps } from './booking_ports.js';
 import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
-import { disputeEscrowPayment } from './escrow.js';
+import { disputeEscrowPayment, isSettledPayment } from './escrow.js';
 import { isId } from './ids.js';
 
 export interface OpenDisputeInput {
@@ -55,8 +55,9 @@ export async function openDispute(
     }
 
     const payments = await deps.store.getPaymentsForBooking(booking.id);
+    // The paid payment only: a `created` or stray row has escrow `held` from creation.
     const payment = payments.find(
-      (p) => p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded',
+      (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded'),
     );
     if (!payment) {
       throw new DomainError('conflict');

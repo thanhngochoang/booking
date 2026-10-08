@@ -71,7 +71,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
     final packagesAsync = ref.watch(profilePackagesProvider(widget.args.photographerId));
 
     final price = state.priceVnd ?? 0;
-    final (:deposit, :remaining) = depositFor(price);
+    final payNow = depositFor(price).deposit;
 
     final phoneError = _phoneTouched && (phoneFromField(_phoneController.text) == null)
         ? l10n.phoneInvalid
@@ -136,7 +136,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                     children: [
                       BookingCard.skeleton(),
                       const SizedBox(height: AppSpace.s4),
-                      MoneyBreakdown.skeleton(lines: 3),
+                      MoneyBreakdown.skeleton(lines: 2),
                     ],
                   ),
                   data: (context, profile) {
@@ -199,19 +199,12 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                             ),
                             MoneyLine(
                               label: l10n.bookDepositToday,
-                              vnd: deposit,
+                              vnd: payNow,
                               style: MoneyLineStyle.strong,
-                            ),
-                            MoneyLine(
-                              label: l10n.bookRemaining,
-                              vnd: remaining,
-                              style: MoneyLineStyle.muted,
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpace.s3),
-                        EscrowNotice(text: l10n.escrowNoticeDeposit),
-                        const SizedBox(height: AppSpace.s3),
+                        const SizedBox(height: AppSpace.s2),
                         Text(
                           l10n.bookPolicy,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -220,9 +213,10 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
                           ),
                         ),
                         const SizedBox(height: AppSpace.s3),
-                        ProviderPicker(
-                          value: state.provider,
-                          onChanged: controller.setProvider,
+                        PayMethodSelector(
+                          value: state.method,
+                          onChanged: controller.setMethod,
+                          enabled: !state.busy,
                         ),
                         const SizedBox(height: AppSpace.s2),
                       ],
@@ -234,7 +228,7 @@ class _ReviewStepState extends ConsumerState<ReviewStep> {
             Padding(
               padding: const EdgeInsets.all(AppSpace.s4),
               child: AppButton.primary(
-                l10n.bookPay(formatMoney(deposit)),
+                l10n.bookPay(formatMoney(payNow)),
                 loading: state.busy,
                 onPressed: (state.canContinue && phoneError == null)
                     ? controller.submit

@@ -438,11 +438,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get phonePrivacy =>
-      'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.';
+      'Số của bạn chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.';
 
   @override
   String get editProfilePhoneHint =>
-      'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn đặt cọc.';
+      'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.';
 
   @override
   String get addPhoneSave => 'Lưu và tiếp tục';
@@ -1721,10 +1721,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get offlineBanner => 'Đang xem dữ liệu đã lưu';
 
   @override
-  String get escrowNoticeDeposit =>
-      'Tiền cọc được giữ an toàn trên ứng dụng và chỉ chuyển cho nhiếp ảnh gia sau khi buổi chụp hoàn thành.';
-
-  @override
   String get settingsSignOutConfirmBody =>
       'Bạn có chắc chắn muốn đăng xuất không?';
 
@@ -1880,53 +1876,111 @@ class AppLocalizationsVi extends AppLocalizations {
   String get bookYourPhone => 'SĐT của bạn';
 
   @override
-  String get bookDepositToday => 'Đặt cọc hôm nay (30%)';
-
-  @override
-  String get bookRemaining => 'Còn lại trả tại buổi chụp';
+  String get bookDepositToday => 'Thanh toán 100%';
 
   @override
   String get bookPolicy =>
-      'Huỷ trước 48 giờ hoàn cọc 100%. Nhiếp ảnh gia phải nhận trong 24 giờ, nếu không tự hoàn cọc.';
+      'Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả.';
 
   @override
   String bookPay(String amount) {
-    return 'Đặt cọc $amount';
+    return 'Thanh toán $amount';
   }
 
   @override
   String get payTitle => 'Thanh toán';
 
   @override
-  String get payPendingTitle => 'Đang chờ xác nhận thanh toán';
+  String get payQrTitle => 'Chuyển khoản QR';
 
   @override
-  String payPendingBody(String provider) {
-    return '$provider chưa báo về. Thường mất dưới một phút. Bạn có thể rời màn này, yêu cầu vẫn được giữ.';
+  String payQrCountdown(String time) {
+    return 'Còn $time';
   }
 
   @override
-  String get payProviderFake => 'Cổng thử nghiệm';
-
-  @override
-  String payProviderNamed(String name) {
-    return 'Cổng $name';
+  String payQrCountdownSemantics(int minutes, int seconds) {
+    return 'QR còn hiệu lực $minutes phút $seconds giây';
   }
 
   @override
-  String get payProviderGeneric => 'Cổng thanh toán';
+  String get payQrExpiredPill => 'Hết hạn';
 
   @override
-  String get payAwaitingDeposit => 'Chờ cọc';
+  String get payQrExpired => 'QR đã hết hạn';
+
+  @override
+  String get payQrBank => 'Ngân hàng';
+
+  @override
+  String get payQrBankNote => 'Tài khoản thu hộ của trung gian thanh toán';
+
+  @override
+  String get payQrAccount => 'Số tài khoản';
+
+  @override
+  String get payQrContent => 'Nội dung';
+
+  @override
+  String get payQrCopy => 'Sao chép';
+
+  @override
+  String get payQrCopied => 'Đã sao chép nội dung chuyển khoản';
+
+  @override
+  String get payQrHint =>
+      'Chuyển đúng số tiền và nội dung. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động.';
+
+  @override
+  String get payQrNew => 'Tạo QR mới';
+
+  @override
+  String get payQrOpenBank => 'Mở app ngân hàng';
+
+  @override
+  String payQrSemantics(String amount, String code) {
+    return 'Mã VietQR $amount, nội dung $code';
+  }
+
+  @override
+  String payQrWho(String name, String service) {
+    return '$name · $service';
+  }
+
+  @override
+  String get payWalletWaiting => 'Đang chờ xác nhận';
+
+  @override
+  String payWalletReopen(String name) {
+    return 'Mở lại $name';
+  }
+
+  @override
+  String get fakeTransferTitle => 'Giả lập chuyển khoản (thử nghiệm)';
+
+  @override
+  String get fakeTransferExact => 'Chuyển đúng';
+
+  @override
+  String get fakeTransferUnder => 'Chuyển thiếu';
+
+  @override
+  String get fakeTransferOver => 'Chuyển thừa';
+
+  @override
+  String get fakeTransferWrong => 'Sai nội dung';
+
+  @override
+  String get fakeTransferOpen => 'Giả lập chuyển khoản';
+
+  @override
+  String get payAwaitingDeposit => 'Chờ thanh toán';
 
   @override
   String get payCheckAgain => 'Kiểm tra lại';
 
   @override
   String get payNotYet => 'Chưa nhận được xác nhận, thử lại sau ít phút';
-
-  @override
-  String get payChangeProvider => 'Đổi cổng thanh toán';
 
   @override
   String get fakePaymentTitle => 'Cổng thanh toán giả (chỉ để thử)';
@@ -1947,7 +2001,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String escrowNoticeHeld(String amount) {
-    return 'Cọc $amount đang được giữ an toàn';
+    return 'Đã thanh toán $amount, tiền được giữ an toàn';
   }
 
   @override
@@ -1969,7 +2023,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payExpiredBody =>
-      'Chưa nhận được tiền cọc trong 30 phút nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
+      'Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
 
   @override
   String get payRetry => 'Đặt lại';
@@ -2014,9 +2068,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get bookNetworkError => 'Không gửi được. Kiểm tra mạng rồi thử lại.';
 
   @override
-  String get fakePayTitle => 'Cổng thanh toán giả (chỉ để thử)';
-
-  @override
   String get fakePayBody => 'Bản dùng thử: không có tiền thật nào được trừ.';
 
   @override
@@ -2029,7 +2080,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get actionRetry => 'Thử lại';
 
   @override
-  String get timelineSent => 'Đã gửi & đặt cọc';
+  String get timelineSent => 'Đã gửi & thanh toán';
 
   @override
   String timelineSentDetail(String when, String amount) {
@@ -2081,7 +2132,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get timelineDeclined => 'Đã từ chối';
 
   @override
-  String get timelineExpired => 'Hết hạn, đã hoàn cọc';
+  String get timelineExpired => 'Hết hạn, đã hoàn tiền';
 
   @override
   String timelineCancelled(String amount) {
@@ -2109,13 +2160,13 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String detailPaidToast(String amount, String name) {
-    return 'Cọc $amount đang được giữ an toàn. $name sẽ trả lời trong 24 giờ.';
+  String detailPaidToast(String amount) {
+    return 'Đã thanh toán $amount, tiền được giữ an toàn.';
   }
 
   @override
   String escrowNoticeHeldPhotographer(String amount) {
-    return 'Cọc $amount đang được giữ, chuyển cho bạn sau khi hoàn thành';
+    return '$amount đang được giữ, chuyển cho bạn theo 2 mốc';
   }
 
   @override
@@ -2132,7 +2183,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String detailCancelCustomer(int pct) {
-    return 'Huỷ yêu cầu · hoàn cọc $pct%';
+    return 'Huỷ yêu cầu · hoàn $pct%';
   }
 
   @override
@@ -2245,7 +2296,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String cancelRefundPhotographer(String name) {
-    return '$name được hoàn cọc 100%';
+    return '$name được hoàn 100%';
   }
 
   @override
@@ -2264,7 +2315,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String cancelDonePhotographer(String name) {
-    return 'Đã huỷ. $name được hoàn cọc 100%';
+    return 'Đã huỷ. $name được hoàn 100%';
   }
 
   @override
@@ -2306,7 +2357,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get bookingsEmptyPendingBody =>
-      'Yêu cầu đã đặt cọc, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.';
+      'Yêu cầu đã thanh toán, đang chờ nhiếp ảnh gia nhận sẽ hiện ở đây.';
 
   @override
   String get bookingsEmptyDone => 'Chưa có buổi nào xong';
@@ -2370,7 +2421,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String workDepositPaid(String amount) {
-    return 'đã cọc $amount';
+    return 'đã trả $amount';
   }
 
   @override
@@ -2380,7 +2431,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String workRequestExpired(String name) {
-    return 'Yêu cầu $name đã hết hạn, đã hoàn cọc';
+    return 'Yêu cầu $name đã hết hạn, đã hoàn tiền';
   }
 
   @override
@@ -2429,12 +2480,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String declineRefundNote(String name, String amount) {
-    return '$name được hoàn cọc $amount và nhận lý do này.';
+    return '$name được hoàn 100% ($amount) và nhận lý do này.';
   }
 
   @override
   String declineDoneToast(String name) {
-    return 'Đã từ chối. $name được hoàn cọc.';
+    return 'Đã từ chối. $name được hoàn 100%.';
   }
 
   @override
@@ -2485,7 +2536,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get chatSysRequested =>
-      'Đã đặt cọc. Chờ nhiếp ảnh gia nhận trong 24 giờ.';
+      'Đã thanh toán. Chờ nhiếp ảnh gia nhận trong 24 giờ.';
 
   @override
   String get chatSysAccepted => 'Nhiếp ảnh gia đã nhận buổi chụp.';
@@ -3734,7 +3785,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get earningsEmptyBody =>
-      'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán cọc cho bạn.';
+      'Khoản đầu tiên hiện ở đây khi khách đặt lịch và thanh toán.';
 
   @override
   String get earningsMore => 'Xem thêm';
@@ -4733,6 +4784,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payMethodZaloPay => 'ZaloPay';
+
+  @override
+  String get payMethodBankQrNote => 'Miễn phí · xác nhận ngay';
+
+  @override
+  String get payAttemptsExceeded => 'Đã tạo QR 3 lần. Hãy đặt lại từ đầu.';
 
   @override
   String get payMethodLabel => 'Phương thức thanh toán';

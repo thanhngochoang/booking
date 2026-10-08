@@ -49,7 +49,7 @@ Liên quan: spec chính `../2026-10-01-remaining-screens.md` (mục 3f tóm tắ
 
 ### 2.3 Tiền tệ
 
-`bigint` đơn vị nhỏ nhất của tiền (VNĐ không có phần thập phân nên là số đồng), kèm `currency char(3)` mặc định `'VND'`. Miền dùng `Money(amount, currency)`. Không dùng số thực. Phép chia (cọc 30%) làm tròn xuống đến đồng và phần dư thuộc phần "còn lại": `deposit = floor(price × 0,30)`, `remaining = price − deposit`.
+`bigint` đơn vị nhỏ nhất của tiền (VNĐ không có phần thập phân nên là số đồng), kèm `currency char(3)` mặc định `'VND'`. Miền dùng `Money(amount, currency)`. Không dùng số thực. Khách trả **100% khi đặt** (`UPFRONT_PERCENT = 100`, từ #129): số tiền thanh toán là đúng giá gói, nên không còn phép chia và không còn phần dư. Phép chia theo phần trăm nếu có (hoa hồng, hoàn tiền theo chính sách huỷ) làm tròn xuống đến đồng. Cách tính cọc cũ (`deposit = floor(price × 0,30)`, `remaining = price − deposit`) chỉ còn trong dữ liệu dev cũ; trường `deposit` nay giữ **toàn bộ giá** và `remaining` luôn bằng 0 (tên trường đổi thành `terms.price` cùng việc làm hai mốc chuyển tiền, #130 và #134).
 
 ### 2.4 Enum
 
@@ -151,8 +151,8 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 |----------|------|----------------|
 | `set_role`, `set_staff_role` | Chọn vai trò; đặt quyền nhân viên (chỉ admin) | `setRole`, `setStaffRole` |
 | `complete_photographer_profile` | Hoàn tất thiết lập, tính `completeness`, `starting_price` | `onPhotographerWrite` |
-| `create_booking_deposit` | Tạo booking `draft`, giữ ngày, tạo giao dịch cọc | `createDeposit` |
-| `handle_payment_notification` | Nhận IPN, cập nhật `payments`, chuyển `requested`/`paid` | `paymentWebhook` |
+| `create_booking_draft`, `create_payment` | Tạo booking `draft` và giữ ngày; mỗi lần chọn/đổi phương thức tạo một `Payment` `created` (hạn 15 phút, tối đa 3 khoản mỗi booking), sinh mã chuyển khoản, ghi bản sao `checkout` vào booking | `createBooking`, `createPayment` |
+| `handle_transfer_notification`, `check_payment`, `run_payment_sweeps` | Nhận webhook của tổ chức trung gian (đã kiểm chữ ký ở Functions), khớp khoản theo mã chuyển khoản, ghi `payment_received`, chuyển `draft → requested`, hoàn phần thừa/thiếu/muộn; hỏi lại cổng; đối soát 5 phút một lần và hết hạn khoản | `paymentWebhook`, `checkPayment`, `paymentClock` |
 | `transition_booking` | Mọi chuyển trạng thái (nhận, từ chối, huỷ, hoàn thành) | `transitionBooking` |
 | `refund_payment` | Hoàn tiền theo chính sách, chỉ từ số tiền treo, ghi sổ cái | `refundDeposit` |
 | `release_escrow`, `create_payout`, `execute_payout` | Thả tiền treo sau khi hoàn thành, tạo và thực hiện lô chi trả | `releaseEscrow`, `executePayout` |

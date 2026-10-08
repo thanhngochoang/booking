@@ -4,7 +4,7 @@
  */
 
 import type { Booking } from './booking.js';
-import { addMinutesToTime, computeDeposit } from './booking_policy.js';
+import { DRAFT_EXPIRY_MINUTES, addMinutesToTime, computeDeposit } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
@@ -89,6 +89,7 @@ export async function createBookingDraft(
       status: 'draft',
       deposit,
       remaining,
+      payableUntil: new Date(now.getTime() + DRAFT_EXPIRY_MINUTES * 60_000).toISOString(),
       version: 1,
       createdAt,
       updatedAt: createdAt,

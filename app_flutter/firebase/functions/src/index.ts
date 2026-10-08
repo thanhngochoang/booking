@@ -1,16 +1,16 @@
 import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
-import { onCall } from 'firebase-functions/v2/https';
+import { onCall, onRequest } from 'firebase-functions/v2/https';
 import { Timestamp } from 'firebase-admin/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { handleGetContactLink } from './callables/get_contact_link.js';
 import {
   handleCreateBooking,
-  handleCreateDeposit,
-  handleConfirmFakePayment,
-  handleCheckDeposit,
   handleTransitionBooking,
   handleOpenDispute,
 } from './callables/booking.js';
+import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment } from './callables/payment.js';
+import { servePaymentWebhook } from './http/payment_webhook.js';
+import { handlePaymentClock } from './scheduled/payment_clock.js';
 import {
   handleOpenInquiry,
   handleSendMessage,
@@ -20,9 +20,11 @@ import {
 import {
   CALLABLE_OPTIONS,
   PAYMENT_CALLABLE_OPTIONS,
+  PAYMENT_CLOCK_OPTIONS,
   PAYOUT_ACCOUNT_KEY,
   SCHEDULE_OPTIONS,
   TRIGGER_OPTIONS,
+  WEBHOOK_OPTIONS,
 } from './config.js';
 import { handleSavePayoutAccount } from './callables/payout_account.js';
 import { handlePaymentWrite } from './triggers/payment_write.js';
@@ -106,14 +108,34 @@ export const getContactLink = onCall(CALLABLE_OPTIONS, (request) => handleGetCon
 /** Booking creation draft */
 export const createBooking = onCall(CALLABLE_OPTIONS, (request) => handleCreateBooking(request, liveBookingDeps()));
 
-/** Deposit payment intent creation */
-export const createDeposit = onCall(CALLABLE_OPTIONS, (request) => handleCreateDeposit(request, liveBookingDeps()));
+/**
+ * `{bookingId, method}` → `{paymentId, checkout}`: opens a payment of the full price (S04.03
+ * "Thanh toán", S04.04 "Tạo QR mới"); replaces `createDeposit`.
+ */
+export const createPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleCreatePayment(request, liveBookingDeps()));
 
-/** Fake payment confirmation: emulator and dev project only (`fake_payments_disabled` elsewhere). */
-export const confirmFakePayment = onCall(CALLABLE_OPTIONS, (request) => handleConfirmFakePayment(request, liveBookingDeps()));
+/** `{bookingId}` → `{paid, booking}`: "Kiểm tra lại" asks the provider; replaces `checkDeposit`. */
+export const checkPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handleCheckPayment(request, liveBookingDeps()));
 
-/** Check deposit payment status */
-export const checkDeposit = onCall(CALLABLE_OPTIONS, (request) => handleCheckDeposit(request, liveBookingDeps()));
+/**
+ * `{paymentId, kind?}` → `{outcome}`: a simulated bank transfer (`exact` | `under` | `over` |
+ * `wrong_content`) signed and run through the webhook handler. Emulator and dev project only
+ * (`fake_payments_disabled` elsewhere).
+ */
+export const confirmFakePayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleConfirmFakePayment(request, liveBookingDeps()),
+);
+
+/**
+ * `POST /paymentWebhook?provider=fake`: the provider reports a transfer; authenticated by its
+ * signature over the raw body (the fake provider exists only where fake payments are allowed).
+ */
+export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) => servePaymentWebhook(req, res, liveBookingDeps()));
+
+/** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
+export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
+  await handlePaymentClock(liveBookingDeps());
+});
 
 /** Booking lifecycle transition */
 export const transitionBooking = onCall(CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));

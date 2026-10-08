@@ -28,6 +28,7 @@ describe('toHttpsError', () => {
       not_eligible: 'failed-precondition',
       reauth_required: 'failed-precondition',
       not_accepting_orders: 'failed-precondition',
+      payment_attempts_exceeded: 'failed-precondition',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

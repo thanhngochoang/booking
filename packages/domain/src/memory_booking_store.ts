@@ -3,7 +3,7 @@
  */
 
 import type { Booking, BookingContactSnapshot, BookingEventRecord } from './booking.js';
-import type { AvailabilityDayRecord, BookingStore, BookingTx } from './booking_ports.js';
+import type { AvailabilityDayRecord, BookingStore, BookingTx, TransferRecord } from './booking_ports.js';
 import { parseVnDateTime } from './booking_policy.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 
@@ -15,6 +15,7 @@ export class MemoryBookingStore implements BookingStore {
   readonly refunds = new Map<string, Refund>();
   readonly ledgerEntries = new Map<string, LedgerEntry>();
   readonly events: BookingEventRecord[] = [];
+  readonly transferRecords = new Map<string, TransferRecord>();
 
   private availabilityKey(photographerId: string, day: string): string {
     return `${photographerId}_${day}`;
@@ -59,6 +60,10 @@ export class MemoryBookingStore implements BookingStore {
       },
       addBookingEvent: async (event) => {
         this.events.push({ ...event });
+      },
+      getTransferRecord: async (id) => this.getTransferRecord(id),
+      saveTransferRecord: async (record) => {
+        this.transferRecords.set(record.id, { ...record });
       },
     };
 
@@ -150,10 +155,45 @@ export class MemoryBookingStore implements BookingStore {
     return res;
   }
 
-  async findUnpaidDraftsOlderThan(cutoff: Date, limit = 100): Promise<readonly Booking[]> {
+  async findPaymentsByTransferCode(code: string): Promise<readonly Payment[]> {
+    return [...this.payments.values()].filter((p) => p.transferCode === code).map((p) => ({ ...p }));
+  }
+
+  async getTransferRecord(id: string): Promise<TransferRecord | null> {
+    const r = this.transferRecords.get(id);
+    return r ? { ...r } : null;
+  }
+
+  async findPaymentsToReconcile(createdBefore: Date, limit = 100): Promise<readonly Payment[]> {
+    const res: Payment[] = [];
+    for (const p of this.payments.values()) {
+      if (
+        p.subjectType === 'booking' &&
+        p.status === 'created' &&
+        new Date(p.createdAt).getTime() <= createdBefore.getTime()
+      ) {
+        res.push({ ...p });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findOverduePayments(now: Date, limit = 100): Promise<readonly Payment[]> {
+    const res: Payment[] = [];
+    for (const p of this.payments.values()) {
+      if (p.status === 'created' && p.expiresAt && new Date(p.expiresAt).getTime() <= now.getTime()) {
+        res.push({ ...p });
+        if (res.length >= limit) break;
+      }
+    }
+    return res;
+  }
+
+  async findExpiredDrafts(now: Date, limit = 100): Promise<readonly Booking[]> {
     const res: Booking[] = [];
     for (const b of this.bookings.values()) {
-      if (b.status === 'draft' && new Date(b.createdAt).getTime() <= cutoff.getTime()) {
+      if (b.status === 'draft' && b.payableUntil && new Date(b.payableUntil).getTime() <= now.getTime()) {
         res.push({ ...b });
         if (res.length >= limit) break;
       }

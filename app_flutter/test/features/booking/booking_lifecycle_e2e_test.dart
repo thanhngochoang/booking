@@ -64,8 +64,8 @@ class _ServerLikeRepository extends RecordingBookingRepository {
         durationMinutes: 120,
       ),
       end: '17:30',
-      deposit: 450000,
-      remaining: 1050000,
+      deposit: 1500000,
+      remaining: 0,
       createdAt: clock.now,
       updatedAt: clock.now,
     );
@@ -74,10 +74,14 @@ class _ServerLikeRepository extends RecordingBookingRepository {
   }
 
   @override
-  Future<ConfirmPaymentResponse> confirmFakePayment({
+  Future<String> confirmFakePayment({
     required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
   }) async {
-    final res = await super.confirmFakePayment(paymentId: paymentId);
+    final res = await super.confirmFakePayment(
+      paymentId: paymentId,
+      kind: kind,
+    );
     final id = paymentId.replaceFirst('pay_', '');
     final b = bookings[id]!;
     seedContact(
@@ -185,8 +189,12 @@ Future<String> _customerBooks(
   await tester.enterText(find.byType(TextField), 'Bến Bạch Đằng');
   await _settle(tester);
   await _tapButton(tester, 'Tiếp tục · 1.500.000₫');
-  await _tapButton(tester, 'Đặt cọc 450.000₫');
-  await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
+  await _tapButton(tester, 'Thanh toán 1.500.000₫');
+  // S04.04 waits for the transfer; the test bank's simulator sends it.
+  await _settle(tester);
+  await tester.tap(find.text('Giả lập chuyển khoản'));
+  await _settle(tester);
+  await tester.tap(find.widgetWithText(AppButton, 'Chuyển đúng'));
   await _settle(tester);
 
   final id = repo.createCalls.isEmpty ? '' : 'booking_1';
@@ -203,8 +211,11 @@ Future<String> _paidRequest(_ServerLikeRepository repo) async {
     start: '15:30',
     place: const BookingPlace(name: 'Bến Bạch Đằng'),
   );
-  final dep = await repo.createDeposit(bookingId: b.id, provider: 'momo');
-  await repo.confirmFakePayment(paymentId: dep.paymentId);
+  final checkout = await repo.createPayment(
+    bookingId: b.id,
+    method: PayMethod.bankQr,
+  );
+  await repo.confirmFakePayment(paymentId: checkout.paymentId);
   repo.transitions.clear();
   return b.id;
 }
@@ -334,7 +345,7 @@ void main() {
       action: 'decline',
       reason: 'Kín lịch hôm đó',
     ));
-    expect(find.text('Đã từ chối. Khách hàng được hoàn cọc.'), findsOneWidget);
+    expect(find.text('Đã từ chối. Khách hàng được hoàn 100%.'), findsOneWidget);
 
     await pumpBookingDetail(
       tester,

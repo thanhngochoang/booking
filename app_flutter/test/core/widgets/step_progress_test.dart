@@ -49,7 +49,7 @@ void main() {
   testWidgets('fits 320dp at 1.3x text', (tester) async {
     await tester.pumpWidget(
       hostWidget(
-        const StepProgress(current: 3, total: 4, label: 'Xem lại và đặt cọc'),
+        const StepProgress(current: 3, total: 4, label: 'Xem lại & thanh toán'),
         width: 320,
         textScale: 1.3,
       ),

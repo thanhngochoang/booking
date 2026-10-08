@@ -11,9 +11,9 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 - **Thông tin**: `/bookings` (NAG) · sub‑project 5 · Chưa có (hiện là empty trong `BookingsTab`).
 - **Mục đích**: biết hôm nay làm gì, trả lời yêu cầu mới, thấy doanh thu.
 - **Điểm vào → ra**: tab Công việc (chấm số = số yêu cầu chờ). Thẻ hôm nay → S05.02; "Nhận"/"Từ chối" (→ S06.03); biểu tượng lịch → S06.04; "Sự kiện của tôi" → S12.03; `ContactDial` liên hệ khách.
-- **Bố cục**: tiêu đề "Thứ 5, 10/10" + biểu tượng lịch; **thẻ buổi hôm nay** (`BookingCard` lớn, viền nổi bật (trung tính), ảnh phủ chữ, nút "Nhắn tin" và "Chỉ đường"); section "Yêu cầu mới" kèm số; thẻ yêu cầu (avatar khách, gói, ngày giờ, địa điểm, giá, ghi chú trích, "đã cọc 450K", `ContactDial`, nút "Từ chối" và "Nhận · còn 22 giờ"); hàng `StatTile` ×3 (Tháng này · **Đang giữ** · Buổi sắp tới) trên một hàng, nhãn một dòng; "Đang giữ" là tiền cọc đang treo, chạm → S06.05; section "Sự kiện của tôi".
-- **Dữ liệu**: `workDashboardProvider` gộp booking `requested/accepted/upcoming` của NAG, doanh thu tháng từ `payments`, sự kiện của chủ; thời gian thực. Số khách chỉ hiện sau cọc.
-- **Trạng thái**: không có buổi hôm nay → ẩn thẻ; không yêu cầu → "Không có yêu cầu mới"; toàn bộ trống → S06.02; yêu cầu quá `acceptDeadline` → thẻ biến mất và toast "Yêu cầu {tên} đã hết hạn, đã hoàn cọc"; offline đọc cache, nút Nhận/Từ chối vô hiệu.
+- **Bố cục**: tiêu đề "Thứ 5, 10/10" + biểu tượng lịch; **thẻ buổi hôm nay** (`BookingCard` lớn, viền nổi bật (trung tính), ảnh phủ chữ, nút "Nhắn tin" và "Chỉ đường"); section "Yêu cầu mới" kèm số; thẻ yêu cầu (avatar khách, gói, ngày giờ, địa điểm, giá, ghi chú trích, "đã trả 450K", `ContactDial`, nút "Từ chối" và "Nhận · còn 22 giờ"); hàng `StatTile` ×3 (Tháng này · **Đang giữ** · Buổi sắp tới) trên một hàng, nhãn một dòng; "Đang giữ" là tiền khách đã trả đang được giữ, chạm → S06.05; section "Sự kiện của tôi".
+- **Dữ liệu**: `workDashboardProvider` gộp booking `requested/accepted/upcoming` của NAG, doanh thu tháng từ `payments`, sự kiện của chủ; thời gian thực. Số khách chỉ hiện sau khi khách thanh toán.
+- **Trạng thái**: không có buổi hôm nay → ẩn thẻ; không yêu cầu → "Không có yêu cầu mới"; toàn bộ trống → S06.02; yêu cầu quá `acceptDeadline` → thẻ biến mất và toast "Yêu cầu {tên} đã hết hạn, đã hoàn tiền"; offline đọc cache, nút Nhận/Từ chối vô hiệu.
 - **Tương tác**: "Nhận" gọi `transitionBooking(accepted)` rồi mở chat; đếm ngược cập nhật mỗi phút (mỗi giây khi còn < 1 giờ).
 - **Chuỗi**: `s19_today` "Hôm nay", `s19_requests` "Yêu cầu mới", `s19_accept` "Nhận · còn {time}", `s19_decline` "Từ chối", `s19_month` "Tháng này", `s19_held` "Đang giữ", `s19_upcoming` "Buổi sắp tới", `s19_myEvents` "Sự kiện của tôi".
 - **Phân tích**: `request_accept`, `request_decline_open`, `work_calendar_open`.
@@ -66,12 +66,12 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 ## S06.03 · Từ chối yêu cầu
 
 - **Thông tin**: `/b/:id/decline` (sheet) · sub‑project 5 · Chưa có.
-- **Mục đích**: từ chối có lý do, khách được hoàn cọc.
-- **Bố cục**: tiêu đề "Từ chối yêu cầu của {tên}?"; lý do chọn đơn (Kín lịch hôm đó, Ngoài khu vực phục vụ, Gói không phù hợp nhu cầu, Lý do khác → ô nhập ngắn); dòng "{tên} được hoàn cọc {số tiền} và nhận lý do này."; "Quay lại" (viền) + "Từ chối" (đỏ).
+- **Mục đích**: từ chối có lý do, khách được hoàn tiền.
+- **Bố cục**: tiêu đề "Từ chối yêu cầu của {tên}?"; lý do chọn đơn (Kín lịch hôm đó, Ngoài khu vực phục vụ, Gói không phù hợp nhu cầu, Lý do khác → ô nhập ngắn); dòng "{tên} được hoàn 100% ({số tiền}) và nhận lý do này."; "Quay lại" (viền) + "Từ chối" (đỏ).
 - **Trạng thái**: chưa chọn lý do → nút đỏ vô hiệu; "Lý do khác" cần ≥ 5 ký tự; đang gọi → loading; thành công → toast và thẻ biến khỏi S06.01.
-- **Chuỗi**: `s23_title` "Từ chối yêu cầu của {name}?", `s23_reasonBusy` "Kín lịch hôm đó", `s23_reasonArea` "Ngoài khu vực phục vụ", `s23_reasonService` "Gói không phù hợp nhu cầu", `s23_reasonOther` "Lý do khác", `s23_refundNote` "{name} được hoàn cọc {amount} và nhận lý do này.", `s23_confirm` "Từ chối".
+- **Chuỗi**: `s23_title` "Từ chối yêu cầu của {name}?", `s23_reasonBusy` "Kín lịch hôm đó", `s23_reasonArea` "Ngoài khu vực phục vụ", `s23_reasonService` "Gói không phù hợp nhu cầu", `s23_reasonOther` "Lý do khác", `s23_refundNote` "{name} được hoàn 100% ({amount}) và nhận lý do này.", `s23_confirm` "Từ chối".
 - **Phân tích**: `request_decline{reason}`.
-- **Chấp nhận**: `declined` + hoàn cọc 100%; khách nhận push kèm lý do; lý do tự do được lọc/giới hạn độ dài.
+- **Chấp nhận**: `declined` + hoàn 100% số đã trả; khách nhận push kèm lý do; lý do tự do được lọc/giới hạn độ dài.
 
 ---
 

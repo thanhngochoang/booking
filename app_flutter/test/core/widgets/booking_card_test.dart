@@ -39,7 +39,7 @@ void main() {
         end: '17:30',
         placeName: 'Bến Bạch Đằng',
         status: BookingStatus.requested,
-        statusLabel: 'Chờ cọc',
+        statusLabel: 'Chờ thanh toán',
       );
 
       await tester.pumpWidget(
@@ -51,7 +51,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Chờ cọc'), findsOneWidget);
+      expect(find.text('Chờ thanh toán'), findsOneWidget);
     },
   );
 

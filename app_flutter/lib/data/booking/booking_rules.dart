@@ -5,14 +5,15 @@ import 'package:photobooking/data/booking/booking_status.dart';
 class BookingRules {
   const BookingRules._();
 
-  static const int depositPercent = 30;
+  static const int upfrontPercent = 100;
   static const int disputeWindowHours = 24;
   static const int draftExpiryMinutes = 30;
   static const int maxBookingDaysAhead = 365;
 
-  /// Computes deposit and remaining for a service price (integer VND).
+  /// Up-front payment for a service price (integer VND): the whole price, so
+  /// `remaining` is always 0. The name and fields stay for now (Decision 1 of #129).
   static ({int deposit, int remaining}) computeDeposit(int price) {
-    final deposit = (price * 0.3).floor();
+    final deposit = price * upfrontPercent ~/ 100;
     final remaining = price - deposit;
     return (deposit: deposit, remaining: remaining);
   }
@@ -198,7 +199,7 @@ const int kNoteMaxLength = 300;
 const int kPlaceMinLength = 3;
 const int kPlaceMaxLength = 120;
 
-/// Calculates deposit and remaining from price.
+/// Up-front payment and remaining (always 0) from price.
 ({int deposit, int remaining}) depositFor(int price) =>
     BookingRules.computeDeposit(price);
 

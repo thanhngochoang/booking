@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
@@ -19,6 +20,7 @@ import 'package:photobooking/features/booking/steps/review_step.dart';
 import 'package:photobooking/features/booking/steps/service_step.dart';
 import 'package:photobooking/features/find/find_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../support/booking_world.dart';
 import '../../support/content_fixtures.dart';
@@ -52,25 +54,21 @@ class _OrderedBookingRepository extends FakeBookingRepository {
   }
 
   @override
-  Future<CreateDepositResponse> createDeposit({
+  Future<BookingCheckout> createPayment({
     required String bookingId,
-    required String provider,
-    String? returnUrl,
+    required PayMethod method,
   }) {
-    log.add('createDeposit($provider)');
-    return super.createDeposit(
-      bookingId: bookingId,
-      provider: provider,
-      returnUrl: returnUrl,
-    );
+    log.add('createPayment(${method.code})');
+    return super.createPayment(bookingId: bookingId, method: method);
   }
 
   @override
-  Future<ConfirmPaymentResponse> confirmFakePayment({
+  Future<String> confirmFakePayment({
     required String paymentId,
+    FakeTransferKind kind = FakeTransferKind.exact,
   }) {
     log.add('confirmFakePayment');
-    return super.confirmFakePayment(paymentId: paymentId);
+    return super.confirmFakePayment(paymentId: paymentId, kind: kind);
   }
 }
 
@@ -139,12 +137,17 @@ void main() {
       // S04.03: nothing has been written to the server yet.
       expect(find.byType(ReviewStep), findsOneWidget);
       expect(repo.log, isEmpty);
-      await _tapButton(tester, 'Đặt cọc 450.000₫');
-      await tester.pumpAndSettle();
+      await _tapButton(tester, 'Thanh toán 1.500.000₫');
+      await _pumpWhileWaiting(tester);
 
-      // The fake gateway sheet.
-      expect(find.byType(FakePaymentSheet), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán thành công'));
+      // No sheet yet: S04.04 shows the QR and waits for the transfer.
+      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
+      expect(find.byType(QrImageView), findsOneWidget);
+      // The test bank's simulator sends the exact amount.
+      await tester.tap(find.text('Giả lập chuyển khoản'));
+      await _pumpWhileWaiting(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Chuyển đúng'));
       await _pumpWhileWaiting(tester);
 
       // S04.04 saw the status leave draft and moved on to S05.02.
@@ -152,13 +155,13 @@ void main() {
       expect(find.byType(PaymentPendingScreen), findsNothing);
       expect(find.byType(BookingDetailScreen), findsOneWidget);
       expect(
-        find.textContaining('Minh Trí sẽ trả lời trong 24 giờ'),
+        find.textContaining('tiền được giữ an toàn.'),
         findsOneWidget,
       );
 
       expect(repo.log, [
         'createBooking',
-        'createDeposit(momo)',
+        'createPayment(bank_qr)',
         'confirmFakePayment',
       ]);
       final created = repo.createCalls.single;

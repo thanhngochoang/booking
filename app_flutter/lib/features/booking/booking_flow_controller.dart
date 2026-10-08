@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
+import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
@@ -23,15 +24,13 @@ sealed class SubmitOutcome {
 }
 
 final class GoToPayment extends SubmitOutcome {
-  const GoToPayment({
-    required this.bookingId,
-    required this.paymentId,
-    required this.payUrl,
-  });
+  const GoToPayment({required this.bookingId, required this.checkout});
 
   final String bookingId;
-  final String paymentId;
-  final Uri payUrl;
+
+  /// What `createPayment` returned: a wallet has [BookingCheckout.payUrl]
+  /// to open; a bank QR has none (S04.04 shows the QR itself).
+  final BookingCheckout checkout;
 }
 
 final class NeedPhone extends SubmitOutcome {
@@ -215,8 +214,8 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     state = state.copyWith(phone: e164, clearPhone: e164 == null);
   }
 
-  void setProvider(PaymentProviderCode p) {
-    state = state.copyWith(provider: p);
+  void setMethod(PayMethod m) {
+    state = state.copyWith(method: m);
   }
 
   void next() {
@@ -286,18 +285,14 @@ class BookingFlowController extends Notifier<BookingFlowState> {
               .id;
 
       state = state.copyWith(bookingId: bookingId, phase: SubmitPhase.paying);
-      final checkout = await repo.createDeposit(
+      final checkout = await repo.createPayment(
         bookingId: bookingId,
-        provider: s.provider.code,
+        method: s.method,
       );
 
       state = state.copyWith(paymentId: checkout.paymentId, phase: SubmitPhase.done);
       _outcomesController.add(
-        GoToPayment(
-          bookingId: bookingId,
-          paymentId: checkout.paymentId,
-          payUrl: Uri.parse(checkout.payUrl),
-        ),
+        GoToPayment(bookingId: bookingId, checkout: checkout),
       );
     } catch (e) {
       _handleError(bookingErrorOf(e));
@@ -314,7 +309,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
           clearDay: true,
           clearStart: true,
           takenDays: takenDays,
-          bookingId: null,
+          clearBookingId: true,
           phase: SubmitPhase.idle,
           error: BookingErrorCode.dayTaken,
         );
@@ -324,7 +319,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.priceChanged:
         state = state.copyWith(
           step: BookingStep.service,
-          bookingId: null,
+          clearBookingId: true,
           phase: SubmitPhase.idle,
           error: BookingErrorCode.priceChanged,
         );
@@ -333,7 +328,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.notFound:
       case BookingErrorCode.notAcceptingOrders:
         state = state.copyWith(
-          bookingId: null,
+          clearBookingId: true,
           phase: SubmitPhase.idle,
           error: err,
         );
@@ -343,6 +338,13 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         }
       case BookingErrorCode.notEligible:
         state = state.copyWith(phase: SubmitPhase.idle, error: BookingErrorCode.notEligible);
+      case BookingErrorCode.paymentAttemptsExceeded:
+        // The draft already has its three payments: the next try books anew.
+        state = state.copyWith(
+          clearBookingId: true,
+          phase: SubmitPhase.idle,
+          error: err,
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:

@@ -5,7 +5,7 @@ import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 
 /// Escrow notice container (spec .esc): shows a lock icon and safety copy
-/// explaining escrow deposit protection.
+/// explaining that the payment is held in escrow.
 class EscrowNotice extends StatelessWidget {
   const EscrowNotice({super.key, required this.text});
 

@@ -10,7 +10,7 @@ import {
   parseVnDateTime,
   formatVnDate,
   formatVnTime,
-  DEPOSIT_PERCENT,
+  UPFRONT_PERCENT,
   DISPUTE_WINDOW_HOURS,
   ACCEPT_DEADLINE_HOURS,
   DRAFT_EXPIRY_MINUTES,
@@ -29,7 +29,7 @@ describe('Task 1: Booking policy and math', () => {
   });
 
   it('constants match specs', () => {
-    assert.equal(DEPOSIT_PERCENT, 30);
+    assert.equal(UPFRONT_PERCENT, 100);
     assert.equal(DISPUTE_WINDOW_HOURS, 24);
     assert.equal(ACCEPT_DEADLINE_HOURS, 24);
     assert.equal(DRAFT_EXPIRY_MINUTES, 30);
@@ -38,22 +38,11 @@ describe('Task 1: Booking policy and math', () => {
     assert.equal(BOOKING_CONTACT_RETENTION_DAYS, 30);
   });
 
-  it('computeDeposit: deposit is floor(30%), remaining = price - deposit', () => {
-    const testCases = [
-      { price: 1_000_000, expectedDeposit: 300_000, expectedRemaining: 700_000 },
-      { price: 1_250_000, expectedDeposit: 375_000, expectedRemaining: 875_000 },
-      { price: 999_999, expectedDeposit: 299_999, expectedRemaining: 700_000 },
-      { price: 1, expectedDeposit: 0, expectedRemaining: 1 },
-      { price: 3, expectedDeposit: 0, expectedRemaining: 3 },
-      { price: 4, expectedDeposit: 1, expectedRemaining: 3 },
-    ];
-
-    for (const tc of testCases) {
-      const res = computeDeposit(tc.price);
-      assert.equal(res.deposit, tc.expectedDeposit);
-      assert.equal(res.remaining, tc.expectedRemaining);
-      assert.equal(res.deposit + res.remaining, tc.price);
-    }
+  it('computeDeposit: the whole price is paid up front', () => {
+    assert.deepEqual(computeDeposit(1_000_000), { deposit: 1_000_000, remaining: 0 });
+    assert.deepEqual(computeDeposit(1_234_567), { deposit: 1_234_567, remaining: 0 });
+    assert.deepEqual(computeDeposit(0), { deposit: 0, remaining: 0 });
+    assert.throws(() => computeDeposit(-1));
   });
 
   it('refundPercent: follows policy table based on hours before start', () => {
@@ -71,6 +60,11 @@ describe('Task 1: Booking policy and math', () => {
     assert.equal(computeRefund(300_000, 50), 150_000);
     assert.equal(computeRefund(300_000, 0), 0);
     assert.equal(computeRefund(375_001, 50), 187_500);
+  });
+
+  it('computeRefund on the full price', () => {
+    const { deposit } = computeDeposit(1_500_000);
+    assert.equal(computeRefund(deposit, 50), 750_000);
   });
 
   it('computeAcceptDeadline: min(paidAt + 24h, startsAt)', () => {

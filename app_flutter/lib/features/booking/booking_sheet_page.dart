@@ -10,7 +10,6 @@ import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
-import 'package:photobooking/features/booking/fake_payment_sheet.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
@@ -84,25 +83,14 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
   void _handleOutcome(SubmitOutcome outcome) {
     if (!mounted) return;
     switch (outcome) {
-      case GoToPayment(:final bookingId, :final paymentId, :final payUrl):
-        final realPayments = ref.read(realPaymentsProvider);
-        if (!realPayments) {
-          final state = ref.read(bookingFlowControllerProvider(widget.args));
-          final deposit = state.depositVnd ?? 0;
-          showAppSheet<void>(
-            context,
-            builder: (_) => FakePaymentSheet(
-              paymentId: paymentId,
-              amountVnd: deposit,
-            ),
-          ).then((_) {
-            if (!mounted) return;
-            context.replace('/b/$bookingId/pay');
-          });
-        } else {
-          ref.read(externalLauncherProvider).open(payUrl);
-          context.replace('/b/$bookingId/pay');
+      case GoToPayment(:final bookingId, :final checkout):
+        // A wallet's own page opens first; S04.04 stays under it and waits for
+        // the booking to leave draft. A bank QR has no page: S04.04 shows it.
+        final payUrl = checkout.payUrl;
+        if (ref.read(realPaymentsProvider) && payUrl != null) {
+          ref.read(externalLauncherProvider).open(Uri.parse(payUrl));
         }
+        context.replace('/b/$bookingId/pay');
       case NeedPhone():
         final state = ref.read(bookingFlowControllerProvider(widget.args));
         final date = state.day != null ? parseDayKey(state.day!) : null;
@@ -136,6 +124,10 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
       case BookingErrorCode.notAcceptingOrders:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookNotAcceptingOrders)),
+        );
+      case BookingErrorCode.paymentAttemptsExceeded:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.payAttemptsExceeded)),
         );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
