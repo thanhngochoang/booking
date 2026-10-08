@@ -22,7 +22,7 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 - **Thông tin**: `/login` · không cần đăng nhập · sub‑project 1 · **Đã có** (`LoginScreen`).
 - **Mục đích**: đăng nhập bằng email, Google, Facebook.
-- **Bố cục**: `AuroraBackground`, logo, `AuroraHero` ("Bắt trọn / mọi khoảnh khắc", tagline "Tìm thợ ảnh hợp gu, đặt lịch chỉ vài chạm."), `GlassCard` viền nổi bật (trung tính) chứa tiêu đề, ô email, ô mật khẩu (nút hiện/ẩn), nút chính "Đăng nhập", chia "hoặc", hai nút Google (trắng) và Facebook (xanh) cạnh nhau khi đủ rộng, xếp dọc khi hẹp; liên kết "Đăng ký".
+- **Bố cục**: `AuroraBackground`, logo, `AuroraHero` ("Bắt trọn / mọi khoảnh khắc", tagline "Tìm thợ ảnh hợp gu, đặt lịch chỉ vài chạm."), `GlassCard` viền nổi bật (trung tính) chứa tiêu đề, ô email, ô mật khẩu (nút hiện/ẩn), nút chính "Đăng nhập", chia "hoặc", hai nút Google (trắng) và Facebook (xanh) cạnh nhau khi đủ rộng, xếp dọc khi hẹp; liên kết "Đăng ký". Khớp mock (#149).
 - **Chuỗi (đã có)**: `loginHeadlineLead` "Bắt trọn", `loginHeadlineAccent` "mọi khoảnh khắc", `loginTagline`, `loginWelcome` "Chào bạn!", `loginWelcomeBody` "Đăng nhập để tiếp tục", `emailLabel`, `passwordLabel`, `loginButton` "Đăng nhập", `loginOrDivider` "hoặc", `socialGoogle`, `socialFacebook`, `noAccountPrompt` "Chưa có tài khoản?", `registerLink` "Đăng ký", `showPassword`/`hidePassword`.
 - **Hành vi hiện tại**: kiểm tra email và mật khẩu; một nút chạy thì nút khác vô hiệu; lỗi hiện qua SnackBar theo `AuthError`.
 - **Thay đổi cần làm**: dòng gradient của `AuroraHero` đã sửa để không cắt dấu tiếng Việt; thêm `ScreenCode`; cho phép trình quản lý mật khẩu và dán (đã có `autofillHints`).
@@ -93,6 +93,7 @@ Màn: S05.05, S01.03, S01.05, S09.01, S09.02, S03.02, S01.04, S09.03. Quy ước
 
 - **Thông tin**: `/register` · không cần đăng nhập · sub‑project 1 · **Đã có** (`RegisterScreen`).
 - **Mục đích**: tạo tài khoản bằng email và mật khẩu.
+- **Bố cục**: không có thanh tiêu đề; nút Đăng ký không có biểu tượng.
 - **Chuỗi (đã có)**: `registerHeadlineLead` "Tham gia", `registerHeadlineAccent` "cộng đồng ảnh", `registerTagline`, `registerTitle` "Tạo tài khoản", `registerWelcomeBody`, `displayNameLabel`, `emailLabel`, `passwordLabel`, `passwordConfirmLabel`, `registerButton` "Đăng ký", `haveAccountPrompt` "Đã có tài khoản?", `loginButton`.
 - **Hành vi hiện tại**: tạo tài khoản email, kiểm tra hợp lệ (`auth_form_validators`), lỗi theo `AuthError`.
 - **Thay đổi cần làm**: thêm `ScreenCode`; sau đăng ký chuyển S01.05. Số điện thoại **không** hỏi ở đây (chỉ hỏi khi đặt lịch, S04.05).
