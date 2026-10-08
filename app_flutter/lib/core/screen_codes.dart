@@ -21,6 +21,7 @@ abstract final class ScreenCodes {
   static const exploreNearby = 'S02.04';
   static const pickArea = 'S02.05';
   static const findPhotographer = 'S02.06';
+  static const exploreSearch = 'S02.07';
   // S03 Xem hồ sơ nhiếp ảnh gia.
   static const photographerProfile = 'S03.01';
   static const badges = 'S03.02';
@@ -119,6 +120,7 @@ abstract final class ScreenCodes {
   static const deleteAccount = 'S22.02';
   static const privacy = 'S22.03';
   static const refundAccount = 'S22.04';
+  static const restoreAccount = 'S22.05';
   // S23 Vận hành nội bộ (staff).
   static const staffDisputes = 'S23.01';
   static const staffPayouts = 'S23.02';
@@ -142,6 +144,14 @@ abstract final class ScreenCodes {
   static const myStudio = 'S26.03';
   static const assignPhotographer = 'S26.04';
   static const requestPhotographerChange = 'S26.05';
+  // S27 Studio tuyển thợ.
+  static const recruitList = 'S27.01';
+  static const recruitDetail = 'S27.02';
+  static const recruitApply = 'S27.03';
+  static const recruitEdit = 'S27.04';
+  static const studioRecruit = 'S27.05';
+  static const collaboration = 'S27.06';
+  static const collabOffer = 'S27.07';
 
   static const all = <String>[
     splash,
@@ -155,6 +165,7 @@ abstract final class ScreenCodes {
     exploreNearby,
     pickArea,
     findPhotographer,
+    exploreSearch,
     photographerProfile,
     badges,
     bookService,
@@ -233,6 +244,7 @@ abstract final class ScreenCodes {
     deleteAccount,
     privacy,
     refundAccount,
+    restoreAccount,
     staffDisputes,
     staffPayouts,
     staffManualRefunds,
@@ -252,5 +264,12 @@ abstract final class ScreenCodes {
     myStudio,
     assignPhotographer,
     requestPhotographerChange,
+    recruitList,
+    recruitDetail,
+    recruitApply,
+    recruitEdit,
+    studioRecruit,
+    collaboration,
+    collabOffer,
   ];
 }
