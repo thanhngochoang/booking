@@ -189,6 +189,28 @@ tr.sel td{background:var(--accent-soft)}
 .banner{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px}
 .banner.warn{background:rgba(230,198,23,.14);border:1px solid rgba(230,198,23,.4)}
 .banner.warn>.ms{color:var(--warn)}
+/* khiếu nại 3 cột, hộp thư */
+.cols3{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:12px}
+.col{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;overflow:hidden;font-size:13px}
+.ch{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.quote{margin:0;font-size:13px;color:var(--ink);border-left:2px solid var(--line-2);padding-left:10px}
+.kv.sm{grid-template-columns:86px 1fr;font-size:12.5px}
+.col .thumb{width:72px;height:54px}
+.col .tbl{flex:none}
+.col .tbl th,.col .tbl td{padding:7px 8px;font-size:12px}
+.msgs{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow:hidden}
+.msg{background:var(--field);border-radius:12px;padding:8px 10px;font-size:12.5px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;max-width:92%}
+.msg.st{align-self:flex-end;background:var(--accent-soft)}
+.msg.sys{align-self:center;background:none;color:var(--ink-3);font-size:11.5px}
+.inbox{flex:1;min-height:0;display:grid;grid-template-columns:360px 1fr}
+.threads{border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.th{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.th>div{flex:1;min-width:0}.th small{display:block;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th.on{background:var(--accent-soft)}
+.fl.on{border-color:var(--accent);color:var(--ink);font-weight:600}
+.conv{display:flex;flex-direction:column;min-width:0}
+.convh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.compose{display:flex;gap:10px;align-items:flex-end;padding:12px 20px;border-top:1px solid var(--line)}
 /* studio placeholder */
 .ph-empty{flex:1;border:1.5px dashed var(--line-2);border-radius:var(--r2);display:grid;place-items:center;text-align:center;color:var(--ink-3);font-size:13.5px;padding:24px}
 .foot{margin-top:56px;font-size:13px;color:var(--ink-3)}
@@ -505,6 +527,91 @@ tr.sel td{background:var(--accent-soft)}
     <div class="cap"><span class="n">S23.07 · Giải thưởng · tab Chờ duyệt</span><b>Minh chứng riêng tư mở qua URL ký; tiến độ NAG ngay trong chi tiết</b><span>Đã xác minh thì banner đổi thành "Duyệt giải này sẽ cấp hạng NAG". Ghi chú bắt buộc khi Cần bổ sung, Từ chối, Thu hồi.</span></div>
   </div>
 
+  <h2 id="khieunai" style="font-size:22px;margin-top:40px">Khiếu nại &amp; hộp thư (#165) · admin, support</h2>
+  <p>Spec: <code>screens/staff-disputes-support.md</code>. Finance chỉ xem số tiền và kết quả; sales chỉ thấy hội thoại trợ giúp. Staff luôn ký "Hỗ trợ" với người dùng.</p>
+
+  <div class="shot" id="S23.01">
+    <div class="frame"><div class="desk" data-code="S23.01 · chi tiết">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav on"><span class="ms">gavel</span>Khiếu nại<span class="cnt">4</span></div>
+        <div class="nav"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav"><span class="ms">support_agent</span>Hộp thư<span class="cnt">5</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã…</div><span class="role">support</span></div>
+        <div class="content" style="gap:12px">
+          <div class="ttl"><div><div class="hint"><span class="link">Khiếu nại</span> / #K7Q2</div><h3>#K7Q2 · Khác ảnh mẫu</h3><div class="sub">Mở 06/10 21:14 bởi khách · 38 giờ · <span class="chip c-bad">Thợ chưa giải trình</span></div></div></div>
+          <div class="cols3">
+            <div class="col">
+              <b class="ch">Sự việc</b>
+              <p class="quote">"Ảnh gốc gửi về chỉ có 18/40 ảnh, nhiều ảnh mờ và khác hẳn ảnh mẫu đã duyệt. Tôi nhắn hai lần chưa thấy trả lời."</p>
+              <div class="thumbs"><span class="thumb"><span class="ms">lock</span></span><span class="thumb" style="background:linear-gradient(140deg,#E2C9B0,#7A5238)"><span class="ms">lock</span></span><span class="thumb" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"><span class="ms">lock</span></span></div>
+              <dl class="kv sm"><dt>Booking</dt><dd>Chụp gia đình · T7 04/10 15:30</dd><dt>Thợ</dt><dd>Hoàng Vũ · cá nhân</dd><dt>Bàn giao</dt><dd>Giao 05/10 · hạn 5 ngày · 1/2 vòng sửa</dd><dt>Trạng thái</dt><dd>approved · còn 10 giờ kiểm tra</dd></dl>
+              <span class="btn sec" style="height:34px"><span class="ms">forum</span>Xem chat booking</span>
+            </div>
+            <div class="col">
+              <b class="ch">Tiền</b>
+              <div class="tbl"><table><thead><tr><th>Mốc</th><th>Số tiền</th><th>Trạng thái</th></tr></thead><tbody>
+                <tr><td>1 · chụp</td><td class="num">1.250.000₫</td><td><span class="chip c-ok">Đã chuyển</span></td></tr>
+                <tr class="sel"><td>2 · bàn giao</td><td class="num">1.250.000₫</td><td><span class="chip c-bad">Khiếu nại</span></td></tr>
+              </tbody></table></div>
+              <div class="seg"><span>Thả cho thợ</span><span>Hoàn cho khách</span><span class="on">Chia</span></div>
+              <div class="fld"><span>Hoàn cho khách</span><div class="inp" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 10px"><b>60%</b><span class="num">hoàn 750.000₫ · thợ 500.000₫</span></div></div>
+              <div class="fld"><label for="dp-note">Ghi chú gửi hai bên (5–500 ký tự)</label><div class="inp area" id="dp-note">Thiếu 22 ảnh so với gói và nhiều ảnh mờ; hoàn 60% mốc bàn giao.</div></div>
+              <span class="btn pri" style="width:100%">Gửi quyết định</span>
+            </div>
+            <div class="col chat">
+              <div class="tabs"><span class="on">Hội thoại</span><span>Ghi chú nội bộ</span></div>
+              <div class="msgs">
+                <div class="msg sys">Khiếu nại đã mở · mốc 2 được giữ lại</div>
+                <div class="msg"><span class="chip c-mut">Khách</span>Ảnh gốc gửi về chỉ có 18/40 ảnh…</div>
+                <div class="msg st"><span class="chip c-pen">Hỗ trợ</span>Chào chị, bên mình đã nhận và đang liên hệ thợ. Chị gửi thêm ảnh mẫu đã duyệt giúp mình nhé.</div>
+                <div class="msg"><span class="chip c-mut">Khách</span>Mình đã gửi 3 ảnh ở trên.</div>
+              </div>
+              <div class="inp" style="min-height:44px;color:var(--ink-3)">Trả lời với tên "Hỗ trợ"…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.01 · Khiếu nại · trang chi tiết</span><b>Sự việc · Tiền theo mốc · Hội thoại ba bên</b><span>Số tiền tính sẵn theo làm tròn xuống. Hoàn từ 10 triệu đổi nút thành "Gửi duyệt lần hai". "Xem chat booking" chỉ đọc, ghi nhật ký. Hàng đợi (/staff/disputes) cùng mẫu bảng với S23.04; quá hạn sau 72 giờ.</span></div>
+  </div>
+
+  <div class="shot" id="S23.06">
+    <div class="frame"><div class="desk" data-code="S23.06">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">gavel</span>Khiếu nại<span class="cnt">4</span></div>
+        <div class="nav on"><span class="ms">support_agent</span>Hộp thư<span class="cnt">5</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã…</div><span class="role">support</span></div>
+        <div class="inbox">
+          <div class="threads">
+            <div class="filters" style="padding:12px"><span class="fl on">Chờ trả lời 3</span><span class="fl">Của tôi</span><span class="fl">Đang mở</span><span class="fl">Đã đóng</span></div>
+            <div class="th on"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div><b>Nguyễn Thanh Hà</b><small>Mình muốn đổi ngày chụp nhưng thợ chưa trả…</small></div><span class="chip c-bad">Chờ 14 giờ</span></div>
+            <div class="th"><span class="av"></span><div><b>Khiếu nại #K7Q2</b><small>Mình đã gửi 3 ảnh ở trên.</small></div><span class="chip c-mut">Chờ 2 giờ</span></div>
+            <div class="th"><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><div><b>Studio Mây</b><small>Cho hỏi khi nào được chi lần đầu?</small></div><span class="chip c-mut">Chờ 40 phút</span></div>
+          </div>
+          <div class="conv">
+            <div class="convh"><div><b>Nguyễn Thanh Hà</b> <span class="chip c-mut">khách</span><div class="hint">Trợ giúp · 2 booking · không có khiếu nại</div></div><div style="display:flex;gap:8px"><span class="btn sec" style="height:34px">Nhận xử lý</span><span class="btn gh" style="height:34px">Đóng hội thoại</span></div></div>
+            <div class="msgs" style="padding:16px 20px">
+              <div class="msg"><span class="chip c-mut">Khách · 07/10 21:02</span>Mình muốn đổi ngày chụp từ T7 sang CN nhưng thợ chưa trả lời yêu cầu đổi lịch 2 hôm rồi.</div>
+              <div class="msg"><span class="chip c-mut">Khách · 07/10 21:05</span>Nếu không đổi được thì mình có huỷ được không, còn 3 ngày nữa.</div>
+            </div>
+            <div class="compose"><div class="inp area" style="flex:1;color:var(--ink-3)">Trả lời với tên "Hỗ trợ"… (Enter gửi, Shift+Enter xuống dòng)</div><span class="btn pri">Gửi</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.06 · Hộp thư hỗ trợ</span><b>Chờ trả lời lên trước, nhận xử lý để không trả lời trùng</b><span>Hội thoại đang mở làm mới mỗi 10 giây (chỉ lấy tin mới). Ghi chú nội bộ người dùng không thấy. Quá hạn sau 12 giờ chờ.</span></div>
+  </div>
+
   <h2 id="khung" style="font-size:22px;margin-top:40px">Khung (#161/#162)</h2>
   <div class="shot" id="S23.08">
     <div class="frame"><div class="desk" data-code="S23.08">
@@ -769,9 +876,11 @@ tr.sel td{background:var(--accent-soft)}
     <div class="frame" style="box-shadow:none"><table>
       <thead><tr><th>Mã</th><th>Màn</th><th>Route</th><th>Vai trò</th></tr></thead>
       <tbody>
+        <tr><td>S23.01</td><td>Khiếu nại</td><td><code>/staff/disputes</code></td><td>admin · support · finance (xem)</td></tr>
         <tr><td>S23.02</td><td>Chi trả</td><td><code>/staff/payouts</code></td><td>admin · finance</td></tr>
         <tr><td>S23.03</td><td>Hoàn tiền</td><td><code>/staff/refunds</code></td><td>admin · finance</td></tr>
         <tr><td>S23.04</td><td>Duyệt xác minh</td><td><code>/staff/verifications</code></td><td>admin · support</td></tr>
+        <tr><td>S23.06</td><td>Hộp thư hỗ trợ</td><td><code>/staff/inbox</code></td><td>admin · support · sales</td></tr>
         <tr><td>S23.07</td><td>Duyệt giải thưởng</td><td><code>/staff/awards</code></td><td>admin · support</td></tr>
         <tr><td>S23.08</td><td>Đăng nhập dashboard &amp; xác thực hai lớp</td><td><code>/login</code></td><td>staff · chủ studio</td></tr>
         <tr><td>S23.09</td><td>Tổng quan staff</td><td><code>/staff</code></td><td>mọi staff</td></tr>

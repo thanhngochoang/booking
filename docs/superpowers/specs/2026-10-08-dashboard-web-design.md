@@ -247,7 +247,7 @@ audit_log/{ulid}
 |---|---|---|
 | `award_proof` | `awardProofs/{uid}/{awardId}/{file}` | `award.review` |
 | `business_doc` | `businessDocs/{uid}/{file}` (S21) | `verification.review` |
-| `dispute_evidence` | `disputeEvidence/{disputeId}/{file}` (S18) | `dispute.resolve` |
+| `dispute_evidence` | `disputeEvidence/{uid}/{disputeId}/{fileId}` (S18); chỉ ký khi đường dẫn nằm trong `disputes/{id}.evidencePaths` | `dispute.view` |
 
 Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | reset-mfa <uid>` (Admin SDK, chạy với service account) để tạo admin đầu tiên và chữa cháy.
 
