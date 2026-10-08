@@ -74,9 +74,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S01** | **Vào app & tài khoản** | | | | | |
 | S01.01 | Splash (khôi phục phiên, tải hồ sơ) | `/splash` | — | 1 · **đã có** | ✅ đã làm | S66 |
 | S01.02 | Lỗi phiên (không tải được hồ sơ) | `/session-error` | — | 1 · **đã có** | ✅ đã làm | S67 |
-| S01.03 | Đăng nhập | `/login` | — | 1 · **đã có** | ✅ đã làm | S28 |
-| S01.04 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm | S41 |
-| S01.05 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm | S29 |
+| S01.03 | Đăng nhập | `/login` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149); mock thêm dòng Đăng ký | S28 |
+| S01.04 | Đăng ký | `/register` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S41 |
+| S01.05 | Chọn vai trò | `/onboarding/role` | — | 1 · **đã có** | ✅ đã làm · khớp mock (#149) | S29 |
 | **S02** | **Khám phá & tìm thợ** | | | | | |
 | S02.01 | Trang chủ | `/home` | cả hai | 3 | ✅ đã làm (3b4) | S01 |
 | S02.02 | Chi tiết ảnh | `/p/:postId` | cả hai | 3 | ✅ đã làm (3b4) · vuốt trong phạm vi album hoãn (plan C, quyết định 9: S24.01 mở `/p/:id` như Dòng thời gian) | S02 |
