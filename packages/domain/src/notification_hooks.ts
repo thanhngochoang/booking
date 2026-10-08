@@ -46,7 +46,11 @@ function vnTimeDay(iso: string): string {
 
 // ── #139 job posts and quotes ────────────────────────────────────────────────────────────────
 
-/** Grouped per job: the customer's row counts quotes and names the latest three photographers. */
+/**
+ * Grouped per job: the customer's row counts quotes and names the latest three photographers. The event
+ * id is the photographer (not the quote version), so a re-quote right after their own quote is a
+ * duplicate: the customer sees the updated quote in S15.03 without a second count.
+ */
 export async function notifyQuoteNew(
   deps: NotifyDeps,
   e: { customerId: string; jobId: string; jobTitle: string; photographerId: string; quoteVersion: number },
@@ -58,7 +62,7 @@ export async function notifyQuoteNew(
     target: `/jobs/${e.jobId}/applications`,
     dedupeKey: `quote_new_${e.jobId}`,
     groupKey: `job:${e.jobId}:quotes`,
-    eventId: `${e.photographerId}_${e.quoteVersion}`,
+    eventId: e.photographerId,
     ...from(p),
   });
 }
@@ -452,7 +456,11 @@ export async function notifyBookingAssigned(
   return notifyAll(deps, [req(e.customerId, 'customer'), req(e.assigneeId, 'assignee')]);
 }
 
-/** To the customer, the old and the new assignee. The same pair twice is a duplicate by design. */
+/**
+ * To the customer, the old and the new assignee. The key holds the old → new pair, so a retry of the
+ * same pair is a duplicate; `reassignedAt` (the reassignment instant, when the emitter passes it) tells
+ * a later A → B after B → A apart from a retry.
+ */
 export async function notifyBookingReassigned(
   deps: NotifyDeps,
   e: {
@@ -463,6 +471,7 @@ export async function notifyBookingReassigned(
     newAssigneeId: string;
     day: string;
     start: string;
+    reassignedAt?: string;
   },
 ): Promise<NotifyResult[]> {
   const s = await actorOf(deps, e.studioId, STUDIO);
@@ -471,7 +480,7 @@ export async function notifyBookingReassigned(
     userId,
     content: { type: 'booking_reassigned', to, studio: s.name, assignee: a.name, day: e.day, start: e.start },
     target: `/b/${e.bookingId}`,
-    dedupeKey: `booking_reassigned_${e.bookingId}_${e.newAssigneeId}_${to}`,
+    dedupeKey: `booking_reassigned_${e.bookingId}_${e.oldAssigneeId}_${e.newAssigneeId}${e.reassignedAt ? `_${e.reassignedAt}` : ''}_${to}`,
     ...from(s),
   });
   return notifyAll(deps, [req(e.customerId, 'customer'), req(e.oldAssigneeId, 'old'), req(e.newAssigneeId, 'new')]);
@@ -680,10 +689,10 @@ export async function notifyDisputeResolved(
   );
 }
 
-/** Grouped per dispute, the sender as actor. */
+/** Grouped per dispute, the sender as actor; `messageId`, when given, makes a retried message a duplicate. */
 export async function notifyDisputeMessage(
   deps: NotifyDeps,
-  e: { disputeId: string; recipientIds: readonly string[]; senderId: string; preview: string },
+  e: { disputeId: string; recipientIds: readonly string[]; senderId: string; preview: string; messageId?: string },
 ): Promise<NotifyResult[]> {
   const s = await actorOf(deps, e.senderId, PARTY);
   return notifyAll(
@@ -694,6 +703,7 @@ export async function notifyDisputeMessage(
       target: `/disputes/${e.disputeId}`,
       dedupeKey: `dispute_message:${e.disputeId}`,
       groupKey: `dispute:${e.disputeId}`,
+      ...(e.messageId !== undefined ? { eventId: e.messageId } : {}),
       ...from(s),
     })),
   );

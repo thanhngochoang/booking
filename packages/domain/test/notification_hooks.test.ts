@@ -263,9 +263,9 @@ const CASES: readonly HookCase[] = [
     run: (d) =>
       notifyBookingReassigned(d, { bookingId: 'b1', customerId: 'c1', studioId: 's1', oldAssigneeId: 'a1', newAssigneeId: 'a2', day: DAY, start: '15:30' }),
     rows: [
-      row('c1', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a2_customer', 'Studio Mây đã đổi thợ chụp'),
-      row('a1', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a2_old', 'Buổi T2 12/10 · 15:30 đã giao cho người khác'),
-      row('a2', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a2_new', 'Studio Mây giao cho bạn buổi T2 12/10 · 15:30'),
+      row('c1', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a1_a2_customer', 'Studio Mây đã đổi thợ chụp'),
+      row('a1', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a1_a2_old', 'Buổi T2 12/10 · 15:30 đã giao cho người khác'),
+      row('a2', 'booking_reassigned', '/b/b1', 'n_booking_reassigned_b1_a1_a2_new', 'Studio Mây giao cho bạn buổi T2 12/10 · 15:30'),
     ],
   },
   {
@@ -486,12 +486,14 @@ describe('notifyQuoteNew (grouped)', () => {
     assert.equal(w.push.sent.length, 1);
   });
 
-  it('a new quoteVersion of the same photographer counts again', async () => {
+  it('a new quoteVersion of the same photographer does not count again', async () => {
     await quote(w.deps, 'p1', 1);
-    assert.equal(await quote(w.deps, 'p1', 2), 'grouped');
+    assert.equal(await quote(w.deps, 'p1', 2), 'duplicate');
     const r = w.store.rowsOf('c1')[0];
-    assert.equal(r?.count, 2);
+    assert.equal(r?.count, 1);
     assert.deepEqual(r?.actors.map((a) => a.id), ['p1']);
+    assert.equal(r?.title, 'Minh Trí đã báo giá cho việc “Chụp kỷ yếu”');
+    assert.equal(w.push.sent.length, 1);
   });
 
   it('after reading, the next quote restarts at 1 with one actor', async () => {
@@ -565,6 +567,34 @@ describe('special hooks', () => {
     assert.equal(r?.count, 2);
     assert.equal(r?.body, '2 tin nhắn mới');
     assert.deepEqual(r?.actors.map((a) => a.id), ['p1']);
+  });
+
+  it('notifyDisputeMessage with the same messageId twice counts once and pushes once', async () => {
+    const msg = { disputeId: 'd1', recipientIds: ['c1'], senderId: 'p1', preview: 'Đã gửi lại ảnh', messageId: 'dm1' };
+    assert.deepEqual(await notifyDisputeMessage(w.deps, msg), ['created']);
+    assert.deepEqual(await notifyDisputeMessage(w.deps, msg), ['duplicate']);
+    const r = w.store.rowsOf('c1')[0];
+    assert.equal(r?.count, 1);
+    assert.equal(r?.body, 'Đã gửi lại ảnh');
+    assert.equal(r?.lastEventId, 'dm1');
+    assert.equal(w.push.sent.length, 1);
+    assert.deepEqual(await notifyDisputeMessage(w.deps, { ...msg, messageId: 'dm2', preview: 'Còn gì nữa?' }), ['grouped']);
+    assert.equal(w.store.rowsOf('c1')[0]?.count, 2);
+  });
+
+  it('notifyBookingReassigned: a repeated A→B is a duplicate, A→B after B→A is not', async () => {
+    const base = { bookingId: 'b1', customerId: 'c1', studioId: 's1', day: DAY, start: '15:30' };
+    const ab1 = { ...base, oldAssigneeId: 'a1', newAssigneeId: 'a2', reassignedAt: '2026-10-10T10:00:00.000Z' };
+    assert.deepEqual(await notifyBookingReassigned(w.deps, ab1), ['created', 'created', 'created']);
+    assert.deepEqual(await notifyBookingReassigned(w.deps, ab1), ['duplicate', 'duplicate', 'duplicate']);
+    const ba = { ...base, oldAssigneeId: 'a2', newAssigneeId: 'a1', reassignedAt: '2026-10-10T11:00:00.000Z' };
+    assert.deepEqual(await notifyBookingReassigned(w.deps, ba), ['created', 'created', 'created']);
+    const ab2 = { ...ab1, reassignedAt: '2026-10-10T12:00:00.000Z' };
+    assert.deepEqual(await notifyBookingReassigned(w.deps, ab2), ['created', 'created', 'created']);
+    assert.equal(w.store.rowsOf('c1').length, 3);
+    assert.equal(w.store.rowsOf('a1').length, 3);
+    assert.equal(w.store.rowsOf('a2').length, 3);
+    assert.ok(w.store.rowsOf('c1').some((r) => r.id === 'n_booking_reassigned_b1_a1_a2_2026-10-10T12_00_00.000Z_customer'));
   });
 
   it('notifyRecruitApplicationNew groups per post', async () => {
