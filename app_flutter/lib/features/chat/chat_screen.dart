@@ -7,6 +7,7 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_providers.dart';
+import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
@@ -132,6 +133,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final bookingFeatures = ref.watch(bookingFeaturesProvider);
     final now = ref.watch(clockProvider)();
 
+    ref.listen(chatControllerProvider(widget.chatId), (prev, next) {
+      final code = next.errorCode;
+      if (code == null || next.errorSeq == prev?.errorSeq) return;
+      _showError(code);
+    });
+
     return ScreenCode(
       ScreenCodes.chat,
       child: Scaffold(
@@ -159,9 +166,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           data: (context, thread) {
             if (thread == null) {
-              return const Center(
-                child: Text('Không tìm thấy cuộc trò chuyện'),
-              );
+              return Center(child: Text(l10n.chatNotFound));
             }
 
             // Sync controller with stream messages
@@ -204,8 +209,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             final counterpartName =
                 counterpartProfile?.displayName ??
                 (currentUserId == thread.customerId
-                    ? 'Nhiếp ảnh gia'
-                    : 'Khách hàng');
+                    ? l10n.profileRolePhotographer
+                    : l10n.profileRoleCustomer);
 
             // Has pending proposal?
             final hasPendingProposal = allMessages.any(
@@ -219,10 +224,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 thread.readOnlyAt != null && now.isAfter(thread.readOnlyAt!);
 
             // Closed inquiry?
-            final isClosedInquiry =
-                thread.kind == ChatKind.inquiry &&
-                thread.lastMessageAt != null &&
-                now.difference(thread.lastMessageAt!).inDays >= 14;
+            final isClosedInquiry = thread.isClosedInquiryAt(now);
 
             // Inquiry 3-message limit reached?
             final isCustomer = currentUserId == thread.customerId;
@@ -300,7 +302,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                           .watch(authStateProvider)
                                           .value
                                           ?.displayName ??
-                                      'Tôi')
+                                      l10n.chatMe)
                                 : counterpartName;
 
                             final systemActions = _buildSystemActions(
@@ -312,8 +314,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               l10n,
                             );
 
+                            // A photo of mine sent from this screen keeps its
+                            // local file, so it does not flash empty while the
+                            // download URL resolves; any other photo shows its
+                            // resolved URL (the stored value is only a path).
+                            final isImage = msg.type == MessageType.image;
+                            final localPath = !isImage
+                                ? null
+                                : msg.sendState != MessageSendState.sent
+                                ? msg.imagePath
+                                : controller.localFileFor(msg.id);
+                            final imageUrl =
+                                isImage &&
+                                    localPath == null &&
+                                    msg.imagePath != null
+                                ? ref
+                                      .watch(
+                                        chatImageUrlProvider(msg.imagePath!),
+                                      )
+                                      .value
+                                : null;
+
                             final content = bubbleContentOf(
                               msg,
+                              imageUrl: imageUrl,
+                              localPath: localPath,
                               l: l10n,
                               senderName: senderName,
                               systemActions: systemActions,
@@ -387,7 +412,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     AppLocalizations l10n,
   ) {
     if (thread == null) {
-      return AppBar(title: const Text('...'));
+      return AppBar();
     }
 
     final counterpartId = currentUserId == thread.customerId
@@ -398,8 +423,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         .value;
     final counterpartName =
         counterpartProfile?.displayName ??
-        (currentUserId == thread.customerId ? 'Nhiếp ảnh gia' : 'Khách hàng');
+        (currentUserId == thread.customerId
+            ? l10n.profileRolePhotographer
+            : l10n.profileRoleCustomer);
     final avatarUrl = counterpartProfile?.avatarUrl;
+    final canViewProfile =
+        thread.kind == ChatKind.inquiry && currentUserId == thread.customerId;
+    final hasMenu = thread.bookingId != null || canViewProfile;
 
     return AppBar(
       title: Row(
@@ -417,23 +447,60 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
       actions: [
-        if (thread.bookingId != null)
+        if (hasMenu)
           PopupMenuButton<String>(
             icon: const AppIcon(AppIcons.more),
             onSelected: (val) {
-              if (val == 'view_booking') {
-                context.push('/b/${thread.bookingId}');
+              switch (val) {
+                case 'view_booking':
+                  context.push('/b/${thread.bookingId}');
+                case 'view_profile':
+                  context.push('/u/${thread.photographerId}');
               }
             },
             itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'view_booking',
-                child: Text(l10n.chatViewBooking),
-              ),
+              if (thread.bookingId != null)
+                PopupMenuItem(
+                  value: 'view_booking',
+                  child: Text(l10n.chatViewBooking),
+                ),
+              if (canViewProfile)
+                PopupMenuItem(
+                  value: 'view_profile',
+                  child: Text(l10n.chatViewProfile),
+                ),
             ],
           ),
       ],
     );
+  }
+
+  /// The snackbar for a refusal reported by the controller.
+  void _showError(ChatErrorCode code) {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final thread = ref.read(chatThreadProvider(widget.chatId)).value;
+    final now = ref.read(clockProvider)();
+    final message = switch (code) {
+      ChatErrorCode.notEligible
+          when thread != null && thread.isClosedInquiryAt(now) =>
+        l10n.chatInquiriesOff,
+      ChatErrorCode.limitExceeded when thread != null => l10n.chatInquiryCap(
+        _counterpartName(thread, l10n),
+      ),
+      _ => l10n.chatActionFailed,
+    };
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _counterpartName(ChatThread thread, AppLocalizations l10n) {
+    final uid = ref.read(authStateProvider).value?.uid ?? '';
+    final isCustomer = uid == thread.customerId;
+    final id = isCustomer ? thread.photographerId : thread.customerId;
+    return ref.read(partyProfileProvider(id)).value?.displayName ??
+        (isCustomer ? l10n.profileRolePhotographer : l10n.profileRoleCustomer);
   }
 
   List<Widget> _buildSystemActions(

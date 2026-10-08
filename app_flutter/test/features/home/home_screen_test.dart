@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -495,6 +496,15 @@ void main() {
     'S02.01 shows the chat icon with the unread count and opens the list',
     (tester) async {
       final w = DiscoveryWorld();
+      w.chat.seedThread(
+        ChatThread(
+          id: 'chat1',
+          kind: ChatKind.inquiry,
+          customerId: 'u1',
+          photographerId: 'p1',
+          lastMessageAt: DateTime.utc(2026, 10, 5),
+        ),
+      );
       w.chat.seedUnread('chat1', 3);
       await _pump(tester, w);
 

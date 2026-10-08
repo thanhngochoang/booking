@@ -10,6 +10,7 @@ import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
@@ -66,6 +67,7 @@ void main() {
     Brightness brightness = Brightness.dark,
     double textScale = 1.0,
     Size viewSize = const Size(390, 844),
+    DateTime? now,
   }) async {
     final b = booking ?? _booking();
     final fakeBookingRepo = RecordingBookingRepository()..seedBooking(b);
@@ -78,7 +80,9 @@ void main() {
       brightness: brightness,
       textScale: textScale,
       viewSize: viewSize,
+      now: now,
       extraOverrides: [
+        mediaUrlResolverProvider.overrideWithValue(FakeMediaUrlResolver()),
         chatRepositoryProvider.overrideWithValue(fakeChat),
         imagePickerProvider.overrideWithValue(fakePicker),
         locationRepositoryProvider.overrideWithValue(fakeLocation),
@@ -537,4 +541,237 @@ void main() {
       }
     },
   );
+
+  group('photos', () {
+    const bookingThread = ChatThread(
+      id: 'c1_p1',
+      kind: ChatKind.booking,
+      customerId: 'c1',
+      photographerId: 'p1',
+      bookingId: 'b1',
+    );
+    const photo = PickedImage(path: '/tmp/photo.jpg', name: 'photo.jpg');
+
+    ImageContent bubbleImage(WidgetTester tester) =>
+        tester.widget<ChatBubble>(find.byType(ChatBubble)).content
+            as ImageContent;
+
+    testWidgets('an incoming image shows the resolved download URL', (
+      tester,
+    ) async {
+      fakeChat.seedThread(bookingThread);
+      fakeChat.seedMessages('c1_p1', [
+        ChatMessage(
+          id: 'm1',
+          senderId: 'p1',
+          type: MessageType.image,
+          imagePath: 'chats/c1_p1/p1/m1.jpg',
+          createdAt: DateTime(2026, 10, 5, 10, 0),
+        ),
+      ]);
+
+      await pumpScreen(tester);
+
+      expect(bubbleImage(tester).url, 'https://storage.test/chats/c1_p1/p1/m1.jpg');
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is NetworkPhoto &&
+              w.url == 'https://storage.test/chats/c1_p1/p1/m1.jpg',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('my sent image keeps the local file after the message arrives', (
+      tester,
+    ) async {
+      fakeChat.seedThread(bookingThread);
+      fakePicker = FakeImagePicker([
+        [photo],
+      ]);
+
+      await pumpScreen(tester);
+      await tester.tap(find.bySemanticsLabel('Chọn ảnh'));
+      await tester.pumpAndSettle();
+
+      // The stream now holds the message (with its storage path) and the
+      // pending copy is gone.
+      expect(fakeChat.messages['c1_p1'], hasLength(1));
+      expect(fakeChat.messages['c1_p1']!.single.imagePath, startsWith('chats/'));
+      expect(find.byType(ChatBubble), findsOneWidget);
+      final image = bubbleImage(tester);
+      expect(image.localPath, '/tmp/photo.jpg');
+      expect(image.url, isEmpty);
+      expect(find.byType(NetworkPhoto), findsNothing);
+    });
+
+    testWidgets('a failed photo shows "Gửi lại" and tapping it resends', (
+      tester,
+    ) async {
+      fakeChat.seedThread(bookingThread);
+      fakePicker = FakeImagePicker([
+        [photo],
+      ]);
+      fakeChat.failNextSendImage = ChatErrorCode.network;
+
+      await pumpScreen(tester);
+      await tester.tap(find.bySemanticsLabel('Chọn ảnh'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gửi lại'), findsOneWidget);
+      expect(fakeChat.messages['c1_p1'], isNull);
+
+      await tester.tap(find.text('Gửi lại'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gửi lại'), findsNothing);
+      expect(fakeChat.uploads, hasLength(1)); // not uploaded again
+      expect(fakeChat.messages['c1_p1'], hasLength(1));
+    });
+  });
+
+  group('inquiry', () {
+    final stale = worldBookingToday.subtract(const Duration(days: 15));
+    ChatThread closedInquiry() => ChatThread(
+      id: 'c1_p1',
+      kind: ChatKind.inquiry,
+      customerId: 'c1',
+      photographerId: 'p1',
+      lastMessageAt: stale,
+      createdAt: stale,
+    );
+
+    testWidgets(
+      'a closed inquiry shows "Cuộc trò chuyện đã đóng. Gửi tin để mở lại." and the composer stays enabled',
+      (tester) async {
+        fakeChat.seedThread(closedInquiry());
+
+        await pumpScreen(tester);
+
+        expect(
+          find.text('Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'),
+          findsOneWidget,
+        );
+        expect(tester.widget<TextField>(find.byType(TextField)).enabled, true);
+      },
+    );
+
+    testWidgets('an inquiry with no message closes from createdAt', (
+      tester,
+    ) async {
+      fakeChat.seedThread(
+        ChatThread(
+          id: 'c1_p1',
+          kind: ChatKind.inquiry,
+          customerId: 'c1',
+          photographerId: 'p1',
+          createdAt: stale,
+        ),
+      );
+
+      await pumpScreen(tester);
+
+      expect(
+        find.text('Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a refused reopen shows "Nhiếp ảnh gia đang tạm tắt nhận tin hỏi trước."',
+      (tester) async {
+        fakeChat.seedThread(closedInquiry());
+        fakeChat.failNext = ChatErrorCode.notEligible;
+
+        await pumpScreen(tester);
+        await tester.enterText(find.byType(TextField), 'Chào bạn');
+        await tester.pump();
+        await tester.tap(find.bySemanticsLabel('Gửi tin nhắn'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Nhiếp ảnh gia đang tạm tắt nhận tin hỏi trước.'),
+          findsOneWidget,
+        );
+        expect(find.text('Gửi lại'), findsOneWidget);
+      },
+    );
+
+    testWidgets('the … menu shows "Xem hồ sơ" for a customer in an inquiry and opens /u/:photographerId', (
+      tester,
+    ) async {
+      fakeChat.seedThread(
+        const ChatThread(
+          id: 'c1_p1',
+          kind: ChatKind.inquiry,
+          customerId: 'c1',
+          photographerId: 'p1',
+        ),
+      );
+
+      await pumpScreen(tester);
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      expect(find.text('Xem hồ sơ'), findsOneWidget);
+
+      await tester.tap(find.text('Xem hồ sơ'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is ScreenCode && w.code == ScreenCodes.photographerProfile,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no … menu for the photographer in an inquiry', (
+      tester,
+    ) async {
+      fakeChat.currentUserId = 'p1';
+      fakeChat.seedThread(
+        const ChatThread(
+          id: 'c1_p1',
+          kind: ChatKind.inquiry,
+          customerId: 'c1',
+          photographerId: 'p1',
+        ),
+      );
+
+      await pumpScreen(tester, signedInUid: 'p1');
+
+      expect(find.byType(PopupMenuButton<String>), findsNothing);
+    });
+
+    testWidgets('a booking chat keeps "Xem buổi chụp" in the … menu', (
+      tester,
+    ) async {
+      fakeChat.seedThread(
+        const ChatThread(
+          id: 'c1_p1',
+          kind: ChatKind.booking,
+          customerId: 'c1',
+          photographerId: 'p1',
+          bookingId: 'b1',
+        ),
+      );
+
+      await pumpScreen(tester);
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Xem buổi chụp'), findsOneWidget);
+      expect(find.text('Xem hồ sơ'), findsNothing);
+    });
+  });
+
+  testWidgets('a missing chat shows "Không tìm thấy cuộc trò chuyện"', (
+    tester,
+  ) async {
+    await pumpScreen(tester, chatId: 'gone');
+
+    expect(find.text('Không tìm thấy cuộc trò chuyện'), findsOneWidget);
+    expect(find.text('...'), findsNothing);
+  });
 }

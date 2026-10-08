@@ -1295,6 +1295,10 @@
   },
   "chatReadOnly": "Cuộc trò chuyện chỉ còn để đọc.",
   "chatClosed": "Cuộc trò chuyện đã đóng. Gửi tin để mở lại.",
+  "chatNotFound": "Không tìm thấy cuộc trò chuyện",
+  "chatMe": "Tôi",
+  "chatViewProfile": "Xem hồ sơ",
+  "chatInquiriesOff": "Nhiếp ảnh gia đang tạm tắt nhận tin hỏi trước.",
   "chatOffline": "Không có kết nối. Bạn vẫn xem được tin cũ.",
   "chatLocationOf": "Vị trí của {name}",
   "@chatLocationOf": {
@@ -1330,6 +1334,12 @@
   "chatsTitle": "Tin nhắn",
   "chatsEmptyTitle": "Chưa có cuộc trò chuyện nào",
   "chatsEmptyAction": "Tìm nhiếp ảnh gia",
+  "chatsYouPrefix": "Bạn: {text}",
+  "@chatsYouPrefix": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
   "inquiryNotEligible": "{name} chưa nhận tin hỏi trước",
   "@inquiryNotEligible": {
     "placeholders": {

@@ -18,6 +18,8 @@ export interface Chat {
   readonly customerId: string;
   readonly photographerId: string;
   readonly bookingId: string | null;
+  /** BookingStatus code of bookingId, mirrored for the chat list; null for inquiries. */
+  readonly bookingStatus: string | null;
   readonly photographerRepliedAt: Date | null;
   readonly customerMessagesBeforeReply: number;
   readonly lastMessageAt: Date | null;
@@ -89,11 +91,13 @@ export function previewOf(
   return '';
 }
 
+/** Closed when now >= (lastMessageAt ?? createdAt) + INQUIRY_CLOSE_DAYS days; never for booking chats. */
 export function isInquiryClosed(chat: Chat, now: Date): boolean {
-  if (chat.kind !== 'inquiry' || chat.lastMessageAt === null) {
+  if (chat.kind !== 'inquiry') {
     return false;
   }
-  const closeTime = chat.lastMessageAt.getTime() + INQUIRY_CLOSE_DAYS * 24 * 60 * 60 * 1000;
+  const since = (chat.lastMessageAt ?? chat.createdAt).getTime();
+  const closeTime = since + INQUIRY_CLOSE_DAYS * 24 * 60 * 60 * 1000;
   return now.getTime() >= closeTime;
 }
 
@@ -143,6 +147,7 @@ export function afterMessage(chat: Chat, m: Message, now: Date): Chat {
 export function validateMessageInput(
   raw: unknown,
   senderId?: string,
+  chatId?: string,
 ): {
   type: 'text' | 'image' | 'location';
   body: string | null;
@@ -184,10 +189,13 @@ export function validateMessageInput(
       throw new DomainError('invalid_argument');
     }
     const parts = imagePath.split('/');
-    if (parts.length < 4) {
+    if (parts.length !== 4) {
       throw new DomainError('invalid_argument');
     }
     if (senderId !== undefined && parts[2] !== senderId) {
+      throw new DomainError('invalid_argument');
+    }
+    if (chatId !== undefined && parts[1] !== chatId) {
       throw new DomainError('invalid_argument');
     }
     return {

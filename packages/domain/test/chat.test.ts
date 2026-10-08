@@ -20,6 +20,7 @@ describe('chat model and rules (Task 1)', () => {
     customerId: 'cust1',
     photographerId: 'phot1',
     bookingId: null,
+    bookingStatus: null,
     photographerRepliedAt: null,
     customerMessagesBeforeReply: 0,
     lastMessageAt: null,
@@ -78,9 +79,6 @@ describe('chat model and rules (Task 1)', () => {
     const tLate = new Date('2026-10-16T10:00:00Z');
     assert.equal(isInquiryClosed(chatWithMsg, tLate), true);
 
-    // If lastMessageAt is null, chat is newly opened and not closed
-    assert.equal(isInquiryClosed(baseChat, tLate), false);
-
     // Reopened with a new message at tLate
     const reopened: Chat = {
       ...chatWithMsg,
@@ -95,6 +93,44 @@ describe('chat model and rules (Task 1)', () => {
       bookingId: 'book_1',
     };
     assert.equal(isInquiryClosed(bookingChat, tLate), false);
+  });
+
+  it('an inquiry with no message closes 14 days after createdAt', () => {
+    // baseChat.createdAt = 2026-10-01T00:00:00Z, no message yet
+    assert.equal(isInquiryClosed(baseChat, new Date('2026-10-14T23:59:59.999Z')), false);
+    assert.equal(isInquiryClosed(baseChat, new Date('2026-10-15T00:00:00Z')), true);
+  });
+
+  it('an inquiry closes exactly at lastMessageAt + 14 days', () => {
+    const chat: Chat = { ...baseChat, lastMessageAt: new Date('2026-10-03T10:00:00Z') };
+    assert.equal(isInquiryClosed(chat, new Date('2026-10-17T09:59:59.999Z')), false);
+    assert.equal(isInquiryClosed(chat, new Date('2026-10-17T10:00:00Z')), true);
+  });
+
+  it('a booking chat is never a closed inquiry', () => {
+    const chat: Chat = { ...baseChat, kind: 'booking', bookingId: 'book_1', bookingStatus: 'accepted' };
+    assert.equal(isInquiryClosed(chat, new Date('2027-01-01T00:00:00Z')), false);
+  });
+
+  it('an image path in another chat is invalid_argument', () => {
+    assert.throws(
+      () =>
+        validateMessageInput(
+          { type: 'image', imagePath: 'chats/other/u1/x.jpg', clientId: 'k1' },
+          'u1',
+          'c1',
+        ),
+      (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
+    );
+  });
+
+  it('an image path of the sender in this chat is accepted', () => {
+    const v = validateMessageInput(
+      { type: 'image', imagePath: 'chats/c1/u1/x.jpg', clientId: 'k1' },
+      'u1',
+      'c1',
+    );
+    assert.equal(v.imagePath, 'chats/c1/u1/x.jpg');
   });
 
   it('assertCanSend: outsider permission_denied; read-only not_eligible at exactly readOnlyAt; customer\'s 4th unanswered inquiry message limit_exceeded; photographer always allowed; after the photographer replied the customer is unlimited; booking chats have no cap', () => {
