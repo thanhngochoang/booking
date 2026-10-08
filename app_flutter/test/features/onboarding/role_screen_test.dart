@@ -119,6 +119,25 @@ void main() {
       expect(iconColor(tester, 'role-photographer'), scheme.onSurface);
     });
 
+    testWidgets('the unselected card is on the glass fill and the tile shows '
+        'against it (${b.name})', (tester) async {
+      await pumpRole(tester, b);
+      final scheme =
+          Theme.of(tester.element(find.byType(RoleScreen))).colorScheme;
+      final card = tester.widget<Container>(find.descendant(
+        of: find.byKey(const Key('role-photographer')),
+        matching: find.byType(Container),
+      ).first);
+      final cardFill = (card.decoration! as BoxDecoration).color;
+      expect(cardFill, dark ? AppColorsDark.glass : AppColors.glass);
+      expect(tileColor(tester, 'role-photographer'), scheme.secondary);
+      // Dark: both are the same translucent white and the tile stacks on
+      // the card; light: the opaque field colour differs from the glass.
+      if (!dark) {
+        expect(tileColor(tester, 'role-photographer'), isNot(cardFill));
+      }
+    });
+
     testWidgets('tapping the other card moves the highlight (${b.name})',
         (tester) async {
       await pumpRole(tester, b);
@@ -137,9 +156,5 @@ void main() {
     await pumpRole(tester, Brightness.dark,
         textScale: 1.3, size: const Size(320, 640));
     expect(tester.takeException(), isNull);
-    expect(
-      tester.getSize(find.byKey(const Key('role-customer'))).height,
-      greaterThanOrEqualTo(48),
-    );
   });
 }

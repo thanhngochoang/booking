@@ -130,7 +130,7 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? scheme.primary.withValues(alpha: 0.14)
-              : scheme.secondary,
+              : (dark ? AppColorsDark.glass : AppColors.glass),
           border: Border.all(
             color: selected ? scheme.primary : scheme.outlineVariant,
             width: selected ? 2 : 1,
