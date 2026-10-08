@@ -1,5 +1,7 @@
 # S04 · Đặt lịch & thanh toán (100% upfront, VietQR, one payment model) Implementation Plan
 
+> **Đã thay thế (2026-10-08):** #129 đã làm theo `2026-10-07-s04-payments.md` (PR #154). Xem bảng đối chiếu `2026-10-08-s04-reconciliation.md`. Không chạy plan này.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **Rules emulator tests and Functions integration tests (2026-10-02, user):** this plan changes `firestore.rules`, indexes and adds Functions (one HTTP function). Write the rules tests and the integration tests; do not run them, CI runs them. Record the skips in the ledger.
