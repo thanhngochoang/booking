@@ -45,11 +45,14 @@ service firebase.storage {
     }
 
     // Chat images (purpose chat, 1280 px): chats/{chatId}/{uid}/{file}. Only chat members may
-    // read. The sender uploads under their own uid (1.5 MiB), update/delete disallowed.
+    // read. The sender uploads under their own uid (1.5 MiB), update/delete disallowed;
+    // `resource == null` also refuses an overwrite where the Storage emulator reports it as a
+    // create (the app names each file with a fresh client id).
     match /chats/{chatId}/{uid}/{file} {
       allow read: if signedIn()
         && request.auth.uid in firestore.get(/databases/(default)/documents/chats/$(chatId)).data.members;
       allow create: if isOwner(uid)
+        && resource == null
         && jpegUpTo(1536 * 1024)
         && request.auth.uid in firestore.get(/databases/(default)/documents/chats/$(chatId)).data.members;
       allow update, delete: if false;

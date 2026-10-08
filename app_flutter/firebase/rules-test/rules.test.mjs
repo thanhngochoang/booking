@@ -1925,7 +1925,8 @@ test('chat storage: a member uploads up to 1.5 MiB of JPEG, nothing else', async
   // not a member, or someone else's folder
   await assertFails(uploadBytes(ref(evStorage('v1'), 'chats/event_e5/v1/a.jpg'), photo(), jpeg));
   await assertFails(uploadBytes(ref(evStorage('eh1'), 'chats/event_e5/att1/a.jpg'), photo(), jpeg));
-  // no delete (an overwrite is reported as a create by the Storage emulator, so it is not asserted)
+  // no delete, and an existing image cannot be overwritten (`resource == null`)
   await assertFails(deleteObject(ref(st, 'chats/event_e5/att1/ok.jpg')));
+  await assertFails(uploadBytes(ref(st, 'chats/event_e5/att1/ok.jpg'), photo(), jpeg));
 });
 function evStorage(uid) { return env.authenticatedContext(uid).storage(); }

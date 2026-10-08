@@ -57,6 +57,24 @@ void main() {
     expect(rules, isNot(contains('image/(')));
   });
 
+  test('every writable allow rule uses jpegUpTo', () {
+    // `allow <methods>: if <expr>;`, possibly over several lines.
+    final statements = RegExp(r'allow\s+([\w\s,]+?)\s*:\s*if\s+([^;]*);')
+        .allMatches(rules)
+        .where((m) => RegExp(r'\b(create|update|write)\b').hasMatch(m.group(1)!))
+        .where((m) => m.group(2)!.trim() != 'false')
+        .toList();
+    // Five upload paths today; a new one must come with its own jpegUpTo line.
+    expect(statements, isNotEmpty);
+    for (final m in statements) {
+      expect(
+        m.group(0)!,
+        contains('jpegUpTo('),
+        reason: 'writable rule without the JPEG type and size guard: ${m.group(0)}',
+      );
+    }
+  });
+
   test('users/{uid}/** is closed', () {
     expect(rules, isNot(contains('match /users/')));
   });
