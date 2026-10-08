@@ -8,19 +8,23 @@ import {
   computeDeposit,
   intensityOf,
   isId,
+  isInquiryClosed,
   isInternationalE164,
   isTicketCode,
   isVnE164,
   mentionsPunctual,
+  previewOf,
   reviewDocId,
   TOMATO_PCT_MIN_REVIEWS,
   transferCodeFor,
 } from '@photobooking/domain';
+import { fromFirestoreChat } from '../../src/infra/chat_firestore.js';
 import {
   AN,
   CUC,
   DUNG,
   LAN,
+  MINH,
   SEED_EVENT_SOON,
   SEED_PASSWORD,
   SEED_PHOTOGRAPHERS,
@@ -359,5 +363,61 @@ describe('seed reviews (tomato/brick)', () => {
     assert.equal(row.data.tab, 'system');
     // Not the dedupe id of a real notice for the unreviewed recent shoot (Lan can still review it).
     assert.notEqual(row.path, `users/${AN}/notifications/n_review_tomato_seed-booking-completed-recent_${AN}`);
+  });
+
+  test('seed has a booking chat with bookingStatus equal to its booking', () => {
+    const chat = docs.find((d) => d.path === `chats/${LAN}_${AN}`)?.data;
+    assert.ok(chat);
+    assert.equal(chat.kind, 'booking');
+    assert.equal(chat.bookingId, 'seed-booking-upcoming');
+    assert.equal(chat.bookingStatus, bookingDoc('seed-booking-upcoming').status);
+    assert.deepEqual(chat.members, [LAN, AN]);
+    const messages = docs.filter((d) => d.path.startsWith(`chats/${LAN}_${AN}/messages/`));
+    assert.equal(messages.length, 3);
+    assert.ok(messages.every((m) => m.data.type === 'text'));
+    assert.equal(chat.lastSenderId, AN);
+    const last = messages[messages.length - 1]?.data;
+    assert.equal(chat.lastMessagePreview, previewOf({ type: 'text', body: last?.body as string }));
+    assert.equal(last?.senderId, AN);
+  });
+
+  test('a closed inquiry older than 14 days', () => {
+    const doc = docs.find((d) => d.path === `chats/${LAN}_${CUC}`)?.data;
+    assert.ok(doc);
+    assert.equal(doc.kind, 'inquiry');
+    assert.equal(doc.bookingStatus, null);
+    const chat = fromFirestoreChat(`${LAN}_${CUC}`, doc);
+    assert.equal(isInquiryClosed(chat, NOW), true);
+    assert.equal(docs.filter((d) => d.path.startsWith(`chats/${LAN}_${CUC}/messages/`)).length, 2);
+    assert.equal(NOW.getTime() - (chat.lastMessageAt as Date).getTime(), 20 * 86_400_000);
+  });
+
+  test('an open inquiry with one unread message for the photographer', () => {
+    const doc = docs.find((d) => d.path === `chats/${MINH}_${DUNG}`)?.data;
+    assert.ok(doc);
+    const chat = fromFirestoreChat(`${MINH}_${DUNG}`, doc);
+    assert.equal(chat.kind, 'inquiry');
+    assert.equal(chat.lastSenderId, MINH);
+    assert.equal(isInquiryClosed(chat, NOW), false);
+    assert.equal(docs.filter((d) => d.path.startsWith(`chats/${MINH}_${DUNG}/messages/`)).length, 1);
+    const unread = (uid: string) =>
+      docs.find((d) => d.path === `chats/${MINH}_${DUNG}/members/${uid}`)?.data.unreadCount;
+    assert.equal(unread(DUNG), 1);
+    assert.equal(unread(MINH), 0);
+  });
+
+  test('members docs with unreadCount for both sides', () => {
+    for (const [cid, pid, lan, an] of [
+      [LAN, AN, 2, 0],
+      [LAN, CUC, 0, 0],
+      [MINH, DUNG, 0, 1],
+    ] as const) {
+      const id = `${cid}_${pid}`;
+      const customer = docs.find((d) => d.path === `chats/${id}/members/${cid}`)?.data;
+      const provider = docs.find((d) => d.path === `chats/${id}/members/${pid}`)?.data;
+      assert.ok(customer && provider, id);
+      assert.equal(customer.unreadCount, lan, `${id} customer`);
+      assert.equal(provider.unreadCount, an, `${id} photographer`);
+    }
   });
 });

@@ -12,7 +12,7 @@ import { MemoryChatStore } from '@photobooking/domain';
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 
 describe('chat_firestore mapping and trigger unit tests', () => {
-  it('Chat and Message survive a Firestore round trip (Timestamp, GeoPoint, nulls)', () => {
+  it('chat round-trips every field', () => {
     const chat: Chat = {
       id: 'cust1_phot1',
       kind: 'booking',
@@ -87,6 +87,36 @@ describe('chat_firestore mapping and trigger unit tests', () => {
     assert.equal(firestoreSysMsg.senderId, null);
     const restoredSysMsg = fromFirestoreMessage('cust1_phot1', 'msg_sys_01', firestoreSysMsg);
     assert.deepEqual(restoredSysMsg, sysMsg);
+  });
+
+  it('a missing or non-string bookingStatus reads as null', () => {
+    const base = toFirestoreChat({
+      id: 'cust1_phot1',
+      kind: 'inquiry',
+      customerId: 'cust1',
+      photographerId: 'phot1',
+      bookingId: null,
+      bookingStatus: null,
+      photographerRepliedAt: null,
+      customerMessagesBeforeReply: 0,
+      lastMessageAt: null,
+      lastMessagePreview: null,
+      lastSenderId: null,
+      readOnlyAt: null,
+      rescheduleUsed: false,
+      createdAt: new Date('2026-10-01T10:00:00.000Z'),
+      updatedAt: new Date('2026-10-01T10:00:00.000Z'),
+    });
+    const withoutField = { ...base };
+    delete withoutField.bookingStatus;
+    assert.equal(fromFirestoreChat('cust1_phot1', withoutField).bookingStatus, null);
+    for (const bad of [null, 3, true, { code: 'upcoming' }, ['upcoming']]) {
+      assert.equal(fromFirestoreChat('cust1_phot1', { ...base, bookingStatus: bad }).bookingStatus, null);
+    }
+    assert.equal(
+      fromFirestoreChat('cust1_phot1', { ...base, bookingStatus: 'accepted' }).bookingStatus,
+      'accepted',
+    );
   });
 
   it('the trigger writes chatId only when it changed', async () => {

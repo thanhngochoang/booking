@@ -21,7 +21,11 @@ import {
   titleKeyOf,
   transferCodeFor,
   PAYMENT_EXPIRY_MINUTES,
+  afterMessage,
+  chatIdFor,
+  type Chat,
   type EarningItem,
+  type Message,
   type EventRecord,
   type RegistrationDoc,
   type NotificationContent,
@@ -33,6 +37,7 @@ import {
   type Verdict,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
+import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
@@ -603,6 +608,73 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...notificationAndBadgeDocuments(now));
   docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
+  docs.push(...directChatDocuments(now, docs));
+  return docs;
+}
+
+/**
+ * The three 1-1 conversations of S07 (`chats/{customer}_{photographer}`): a booking chat that
+ * mirrors its booking, an inquiry closed for 20 days, and an open inquiry with one unread
+ * message. Chat fields are folded from the messages with the domain's `afterMessage`, and
+ * `bookingStatus` is read from the seeded booking, so nothing here is a hand-written status.
+ */
+function directChatDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
+  const docs: SeedDocument[] = [];
+  const ago = (ms: number): Date => new Date(now.getTime() - ms);
+
+  const addChat = (
+    base: Pick<Chat, 'kind' | 'customerId' | 'photographerId' | 'bookingId' | 'bookingStatus'>,
+    texts: readonly { readonly from: string; readonly body: string; readonly at: Date }[],
+    unread: Readonly<Record<string, number>>,
+  ): void => {
+    const first = texts[0];
+    if (first === undefined) throw new Error('a seed chat needs a message');
+    const id = chatIdFor(base.customerId, base.photographerId);
+    let chat: Chat = {
+      id, ...base,
+      photographerRepliedAt: null, customerMessagesBeforeReply: 0,
+      lastMessageAt: null, lastMessagePreview: null, lastSenderId: null,
+      readOnlyAt: null, rescheduleUsed: false, createdAt: first.at, updatedAt: first.at,
+    };
+    texts.forEach((t, i) => {
+      const m: Message = {
+        id: `seed-msg-${id}-${i + 1}`, chatId: id, senderId: t.from, type: 'text', body: t.body,
+        imagePath: null, point: null, system: null, createdAt: t.at,
+      };
+      chat = afterMessage(chat, m, t.at);
+      docs.push({ path: `chats/${id}/messages/${m.id}`, data: toFirestoreMessage(m) });
+    });
+    // The chat document comes before its messages and members, like the callables write them.
+    docs.unshift({ path: `chats/${id}`, data: toFirestoreChat(chat) });
+    for (const uid of [base.customerId, base.photographerId]) {
+      docs.push({ path: `chats/${id}/members/${uid}`, data: { unreadCount: unread[uid] ?? 0, lastReadAt: null } });
+    }
+  };
+
+  const booking = existing.find((d) => d.path === 'bookings/seed-booking-upcoming');
+  if (booking === undefined) throw new Error('seed booking seed-booking-upcoming is missing');
+  addChat(
+    { kind: 'booking', customerId: LAN, photographerId: AN, bookingId: 'seed-booking-upcoming', bookingStatus: String(booking.data.status) },
+    [
+      { from: LAN, body: 'Chào anh An, em muốn hỏi thêm về buổi chụp chân dung.', at: ago(5 * HOUR_MS) },
+      { from: AN, body: 'Chào Lan, anh nhận được lịch rồi nhé.', at: ago(4 * HOUR_MS) },
+      { from: AN, body: 'Hẹn bạn sáng thứ Bảy ở Công viên Thống Nhất.', at: ago(3 * HOUR_MS) },
+    ],
+    { [LAN]: 2 },
+  );
+  addChat(
+    { kind: 'inquiry', customerId: LAN, photographerId: CUC, bookingId: null, bookingStatus: null },
+    [
+      { from: LAN, body: 'Studio còn nhận chụp ảnh gia đình không ạ?', at: ago(20 * DAY_MS + HOUR_MS) },
+      { from: CUC, body: 'Dạ còn ạ, bạn cho studio biết ngày dự kiến nhé.', at: ago(20 * DAY_MS) },
+    ],
+    {},
+  );
+  addChat(
+    { kind: 'inquiry', customerId: MINH, photographerId: DUNG, bookingId: null, bookingStatus: null },
+    [{ from: MINH, body: 'Anh Dũng ơi, anh có nhận chụp ảnh cưới ở Huế không?', at: ago(3 * HOUR_MS) }],
+    { [DUNG]: 1 },
+  );
   return docs;
 }
 
