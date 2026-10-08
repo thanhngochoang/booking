@@ -279,6 +279,40 @@ describe('S17 copy table', () => {
     assert.equal(renderNotification({ type: 'job_expired', jobTitle: 'ả'.repeat(40) }).title, `Việc “${'ả'.repeat(40)}” đã hết hạn`);
   });
 
+  it('payout_released without items omits the count clause', () => {
+    assert.equal(
+      renderNotification({ type: 'payout_released', amount: 500_000, count: 0 }).body,
+      'Tiền đã vào tài khoản nhận tiền. Xem chi tiết trong Thu nhập.',
+    );
+  });
+
+  it('dispute_message and support_reply previews are cut to 80 graphemes; recruit titles to 40', () => {
+    const long = 'ả'.repeat(90);
+    const cut80 = `${'ả'.repeat(80)}…`;
+    assert.equal(renderNotification({ type: 'support_reply', preview: long }).body, cut80);
+    assert.equal(renderNotification({ type: 'dispute_message', sender: 'An', preview: long, count: 1 }).body, cut80);
+    assert.equal(renderNotification({ type: 'support_reply', preview: 'ả'.repeat(80) }).body, 'ả'.repeat(80));
+    const title = 'ả'.repeat(45);
+    const t40 = `${'ả'.repeat(40)}…`;
+    assert.equal(renderNotification({ type: 'recruit_post_new', studio: 'Studio Mây', title }).body, `Studio Mây: ${t40}`);
+    assert.equal(
+      renderNotification({ type: 'recruit_application_new', names: ['An'], title, count: 1 }).body,
+      `An ứng tuyển “${t40}”`,
+    );
+    assert.equal(
+      renderNotification({ type: 'recruit_application_new', names: ['An'], title, count: 3 }).body,
+      `3 người ứng tuyển “${t40}”`,
+    );
+    assert.equal(
+      renderNotification({ type: 'recruit_application_result', outcome: 'declined', studio: 'Studio Mây', title }).body,
+      `Studio Mây chưa nhận ứng tuyển “${t40}”.`,
+    );
+    assert.equal(
+      renderNotification({ type: 'recruit_application_result', outcome: 'expired', studio: 'Studio Mây', title }).body,
+      `Ứng tuyển “${t40}” đã hết hạn sau 7 ngày.`,
+    );
+  });
+
   it('booking_declined, booking_cancelled and refund_done no longer contain "Cọc" and match the mock S17.01 strings', () => {
     const rendered = [
       renderNotification({ type: 'booking_declined', reason: 'declined', photographer: 'Lan Chi', percent: 100 }),

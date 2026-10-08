@@ -40,6 +40,7 @@ export async function handlePayoutWrite(
       return payeeId;
     }
     try {
+      // No items → count 0: the copy then omits the count clause.
       await notifyPayoutReleased(notify, { payoutId, payeeId, amount, count: idsOf(after).length });
     } catch (e) {
       logger.error('onPayoutWritten payout_released failed', { payoutId, error: e instanceof Error ? e.name : 'unknown' });

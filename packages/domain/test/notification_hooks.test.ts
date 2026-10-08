@@ -656,6 +656,14 @@ describe('special hooks', () => {
     assert.equal(w.store.rowsOf('p2')[0]?.body, 'XYZ •••• 1111 có hiệu lực lúc 09:30 12/10. Không phải bạn đổi? Liên hệ hỗ trợ ngay.');
   });
 
+  it('notifyPayoutAccountChanged with an unparseable activeFrom shows it as given and never throws', async () => {
+    assert.equal(
+      await notifyPayoutAccountChanged(w.deps, { uid: 'p3', accountId: 'acc3', bankCode: 'VCB', accountLast4: '6789', activeFrom: 'sắp tới' }),
+      'created',
+    );
+    assert.equal(w.store.rowsOf('p3')[0]?.body, 'Vietcombank •••• 6789 có hiệu lực lúc sắp tới. Không phải bạn đổi? Liên hệ hỗ trợ ngay.');
+  });
+
   it('notifyBookingAssigned sends to customer and assignee with their own copy', async () => {
     await notifyBookingAssigned(w.deps, { bookingId: 'b1', customerId: 'c1', studioId: 's1', assigneeId: 'a1', day: DAY, start: '15:30' });
     assert.deepEqual(
@@ -733,6 +741,7 @@ describe('prefs and critical flags apply to the new types', () => {
       const w = seededWorld();
       w.clock.setTime(NIGHT);
       await c.run(w.deps);
+      assert.equal(w.push.sent.length, c.rows.length, `${c.name} pushed at 23:00`);
       for (const s of w.push.sent) {
         const critical = NOTIFICATION_TYPES[s.msg.data.type as NotificationType].critical;
         assert.equal(s.msg.channel, critical ? 'default' : 'quiet', `${c.name} ${s.msg.data.type}`);

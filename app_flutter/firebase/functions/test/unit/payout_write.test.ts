@@ -60,6 +60,14 @@ describe('handlePayoutWrite', () => {
     assert.equal(w.store.rowsOf('p1')[0]?.title, 'Đã chuyển 500.000₫ cho bạn');
   });
 
+  it('a paid payout without items omits the count clause (never "Tiền của 0 khoản")', async () => {
+    for (const over of [{ items: undefined }, { items: [] }]) {
+      const w = setup();
+      await handlePayoutWrite('po1', doc('pending'), doc('paid', over), w.earnings, w.notify);
+      assert.equal(w.store.rowsOf('p1')[0]?.body, 'Tiền đã vào tài khoản nhận tiền. Xem chi tiết trong Thu nhập.');
+    }
+  });
+
   it('paid → paid (rewrite) sends nothing', async () => {
     const w = setup();
     await handlePayoutWrite('po1', doc('paid'), doc('paid', { updatedAt: 'later' }), w.earnings, w.notify);

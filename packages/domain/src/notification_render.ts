@@ -125,7 +125,7 @@ export function chatPreview(kind: 'text' | 'image' | 'location', text: string): 
 /** A name from a grouped row's actors, or the generic fallback when the row has fewer names than count. */
 const nameAt = (names: readonly string[], i: number, fallback: string): string => names[i] ?? fallback;
 
-/** Job titles in copy: 40 graphemes and typographic quotes. */
+/** Job and recruit-post titles in copy: 40 graphemes and typographic quotes. */
 const job = (title: string): string => `“${truncateGraphemes(title, 40)}”`;
 
 const quote80 = (text: string): string => `“${truncateGraphemes(text, 80)}”`;
@@ -216,7 +216,9 @@ export function renderNotification(c: NotificationContent): { title: string; bod
     case 'payout_released':
       return {
         title: `Đã chuyển ${formatVnd(c.amount)} cho bạn`,
-        body: `Tiền của ${c.count} khoản đã vào tài khoản nhận tiền. Xem chi tiết trong Thu nhập.`,
+        body: c.count > 0
+          ? `Tiền của ${c.count} khoản đã vào tài khoản nhận tiền. Xem chi tiết trong Thu nhập.`
+          : 'Tiền đã vào tài khoản nhận tiền. Xem chi tiết trong Thu nhập.',
       };
     case 'quote_new': {
       const first = nameAt(c.names, 0, PHOTOGRAPHER);
@@ -405,9 +407,12 @@ export function renderNotification(c: NotificationContent): { title: string; bod
       };
     }
     case 'dispute_message':
-      return { title: `${c.sender} nhắn trong khiếu nại`, body: c.count > 1 ? `${c.count} tin nhắn mới` : c.preview };
+      return {
+        title: `${c.sender} nhắn trong khiếu nại`,
+        body: c.count > 1 ? `${c.count} tin nhắn mới` : truncateGraphemes(c.preview, 80),
+      };
     case 'support_reply':
-      return { title: 'Hỗ trợ đã trả lời', body: c.preview };
+      return { title: 'Hỗ trợ đã trả lời', body: truncateGraphemes(c.preview, 80) };
     case 'refund_account_needed':
       return {
         title: 'Chọn tài khoản nhận hoàn',
@@ -416,22 +421,22 @@ export function renderNotification(c: NotificationContent): { title: string; bod
           : `Bạn được hoàn ${formatVnd(c.amount)}. Chọn tài khoản để nhận tiền.`,
       };
     case 'recruit_post_new':
-      return { title: 'Tin tuyển hợp với bạn', body: `${c.studio}: ${c.title}` };
+      return { title: 'Tin tuyển hợp với bạn', body: `${c.studio}: ${truncateGraphemes(c.title, 40)}` };
     case 'recruit_application_new':
       return {
         title: 'Ứng viên mới',
         body:
           c.count > 1
-            ? `${c.count} người ứng tuyển “${c.title}”`
-            : `${nameAt(c.names, 0, PHOTOGRAPHER)} ứng tuyển “${c.title}”`,
+            ? `${c.count} người ứng tuyển ${job(c.title)}`
+            : `${nameAt(c.names, 0, PHOTOGRAPHER)} ứng tuyển ${job(c.title)}`,
       };
     case 'recruit_application_result':
       if (c.outcome === 'collaborator') return { title: 'Studio đã nhận bạn', body: `${c.studio} nhận bạn làm cộng tác viên.` };
       if (c.outcome === 'member') return { title: 'Studio đã nhận bạn', body: `${c.studio} nhận bạn vào studio.` };
       if (c.outcome === 'declined') {
-        return { title: 'Ứng tuyển chưa được nhận', body: `${c.studio} chưa nhận ứng tuyển “${c.title}”.` };
+        return { title: 'Ứng tuyển chưa được nhận', body: `${c.studio} chưa nhận ứng tuyển ${job(c.title)}.` };
       }
-      return { title: 'Ứng tuyển đã hết hạn', body: `Ứng tuyển “${c.title}” đã hết hạn sau 7 ngày.` };
+      return { title: 'Ứng tuyển đã hết hạn', body: `Ứng tuyển ${job(c.title)} đã hết hạn sau 7 ngày.` };
     case 'collab_invite':
       return { title: 'Lời mời cộng tác', body: `${c.studio} mời bạn cộng tác theo việc. Hết hạn sau 7 ngày.` };
     case 'collab_invite_result': {

@@ -37,9 +37,10 @@ async function notifyAll(deps: NotifyDeps, reqs: readonly NotifyRequest[]): Prom
   return settled.map((r) => (r as PromiseFulfilledResult<NotifyResult>).value);
 }
 
-/** ISO instant → 'HH:mm dd/MM' in Vietnam time. */
+/** ISO instant → 'HH:mm dd/MM' in Vietnam time; an unparseable string is shown as given (never throws). */
 function vnTimeDay(iso: string): string {
   const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return iso;
   const [, m, d] = formatVnDate(at).split('-');
   return `${formatVnTime(at)} ${d}/${m}`;
 }
