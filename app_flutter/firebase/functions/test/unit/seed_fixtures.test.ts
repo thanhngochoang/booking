@@ -12,13 +12,18 @@ import {
   isInternationalE164,
   isTicketCode,
   isVnE164,
+  MemoryNotificationStore,
+  MemoryPushSender,
+  MemoryUserDirectory,
   mentionsPunctual,
+  type NotificationRow,
   previewOf,
   reviewDocId,
   TOMATO_PCT_MIN_REVIEWS,
   transferCodeFor,
 } from '@photobooking/domain';
 import { fromFirestoreChat } from '../../src/infra/chat_firestore.js';
+import { handleChatMessageCreated } from '../../src/triggers/chat_message_created.js';
 import {
   AN,
   CUC,
@@ -149,12 +154,12 @@ describe('seed notifications and badges', () => {
     docs.filter((d) => d.path.startsWith(`users/${uid}/notifications/`) && d.data.readAt === null).length;
 
   test('the stored unread count matches the unread rows', () => {
-    for (const uid of ['seed-customer-lan', 'seed-photographer-an']) {
+    for (const uid of ['seed-customer-lan', 'seed-photographer-an', 'seed-photographer-cuc', 'seed-photographer-dung']) {
       const inbox = docs.find((d) => d.path === `users/${uid}/private/inbox`);
       assert.equal(inbox?.data.unreadCount, unreadOf(uid));
     }
-    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-customer-lan/notifications/')).length, 5);
-    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-photographer-an/notifications/')).length, 2);
+    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-customer-lan/notifications/')).length, 6);
+    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-photographer-an/notifications/')).length, 3);
   });
 
   test('the catalogue, earned badges and progress are seeded; no prefs doc', () => {
@@ -418,6 +423,57 @@ describe('seed reviews (tomato/brick)', () => {
       assert.ok(customer && provider, id);
       assert.equal(customer.unreadCount, lan, `${id} customer`);
       assert.equal(provider.unreadCount, an, `${id} photographer`);
+    }
+  });
+});
+
+describe('seed chats and the inbox', () => {
+  // applySeed writes the chat messages with the Admin SDK, so onChatMessageCreated runs for each of
+  // them after the seed returns. The seeded inbox must already hold what those runs would write, or
+  // they add rows and counts later (a chat row for a 20-day-old message; Lan's 2 unread becoming 4).
+  test('replaying onChatMessageCreated over the seeded messages writes nothing', async () => {
+    const docs = seedDocuments(NOW);
+    const store = new MemoryNotificationStore();
+    for (const d of docs) {
+      const m = /^users\/([^/]+)\/notifications\/([^/]+)$/.exec(d.path);
+      if (m === null) continue;
+      const row = { id: m[2], userId: m[1], ...d.data } as unknown as NotificationRow;
+      store.rows.set(`${row.userId}/${row.id}`, row);
+    }
+    const users = new MemoryUserDirectory();
+    for (const u of SEED_USERS) users.users.set(u.uid, { name: u.displayName, avatarUrl: null });
+    const push = new MemoryPushSender();
+    const deps = { store, push, users, clock: { now: () => NOW } };
+    let replayed = 0;
+    for (const d of docs) {
+      const m = /^chats\/([^/]+)\/messages\/([^/]+)$/.exec(d.path);
+      if (m === null) continue;
+      const chat = docs.find((c) => c.path === `chats/${m[1]}`)?.data;
+      if (chat?.kind === 'event_group') continue;
+      await handleChatMessageCreated(
+        { chatId: m[1] as string, messageId: m[2] as string, message: d.data, members: chat?.members as string[] },
+        deps,
+      );
+      replayed += 1;
+    }
+    assert.equal(replayed, 6);
+    assert.equal(store.writes, 0, [...store.rows.values()].filter((r) => r.createdAt === NOW).map((r) => `${r.userId}/${r.id}`).join(', '));
+    assert.equal(push.sent.length, 0);
+  });
+
+  test('chat rows match the members unread counts', () => {
+    const docs = seedDocuments(NOW);
+    for (const d of docs) {
+      const m = /^chats\/([^/]+)\/members\/([^/]+)$/.exec(d.path);
+      if (m === null || !(m[1] as string).includes('_') || (m[1] as string).startsWith('event_')) continue;
+      const row = docs.find((r) => r.path === `users/${m[2]}/notifications/g_chat_${m[1]}`)?.data;
+      const unread = d.data.unreadCount as number;
+      if (unread > 0) {
+        assert.equal(row?.readAt, null, `${d.path} unread row`);
+        assert.equal(row?.count, unread, `${d.path} count`);
+      } else {
+        assert.ok(row === undefined || row.readAt !== null, `${d.path} has no unread row`);
+      }
     }
   });
 });

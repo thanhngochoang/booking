@@ -23,6 +23,7 @@ import {
   PAYMENT_EXPIRY_MINUTES,
   afterMessage,
   chatIdFor,
+  chatPreview,
   type Chat,
   type EarningItem,
   type Message,
@@ -612,70 +613,132 @@ export function seedDocuments(now: Date): SeedDocument[] {
   return docs;
 }
 
+interface SeedChatText {
+  readonly from: string;
+  readonly body: string;
+  /** Milliseconds before seed time. */
+  readonly agoMs: number;
+}
+
+interface SeedDirectChat {
+  readonly kind: 'booking' | 'inquiry';
+  readonly customerId: string;
+  readonly photographerId: string;
+  /** The seeded booking it mirrors (`bookingStatus` is read from it), or null for an inquiry. */
+  readonly bookingId: string | null;
+  readonly texts: readonly SeedChatText[];
+  /** Unread messages per member; a member left out has 0. */
+  readonly unread: Readonly<Record<string, number>>;
+}
+
 /**
  * The three 1-1 conversations of S07 (`chats/{customer}_{photographer}`): a booking chat that
- * mirrors its booking, an inquiry closed for 20 days, and an open inquiry with one unread
- * message. Chat fields are folded from the messages with the domain's `afterMessage`, and
- * `bookingStatus` is read from the seeded booking, so nothing here is a hand-written status.
+ * mirrors its booking, an inquiry closed for 20 days, and an open inquiry with one unread message.
+ */
+const SEED_DIRECT_CHATS: readonly SeedDirectChat[] = [
+  {
+    kind: 'booking', customerId: LAN, photographerId: AN, bookingId: 'seed-booking-upcoming',
+    texts: [
+      { from: LAN, body: 'Chào anh An, em muốn hỏi thêm về buổi chụp chân dung.', agoMs: 5 * HOUR_MS },
+      { from: AN, body: 'Chào Lan, anh nhận được lịch rồi nhé.', agoMs: 4 * HOUR_MS },
+      { from: AN, body: 'Hẹn bạn sáng thứ Bảy ở Công viên Thống Nhất.', agoMs: 3 * HOUR_MS },
+    ],
+    unread: { [LAN]: 2 },
+  },
+  {
+    kind: 'inquiry', customerId: LAN, photographerId: CUC, bookingId: null,
+    texts: [
+      { from: LAN, body: 'Studio còn nhận chụp ảnh gia đình không ạ?', agoMs: 20 * DAY_MS + HOUR_MS },
+      { from: CUC, body: 'Dạ còn ạ, bạn cho studio biết ngày dự kiến nhé.', agoMs: 20 * DAY_MS },
+    ],
+    unread: {},
+  },
+  {
+    kind: 'inquiry', customerId: MINH, photographerId: DUNG, bookingId: null,
+    texts: [{ from: MINH, body: 'Anh Dũng ơi, anh có nhận chụp ảnh cưới ở Huế không?', agoMs: 3 * HOUR_MS }],
+    unread: { [DUNG]: 1 },
+  },
+];
+
+const seedMessageId = (chatId: string, i: number): string => `seed-msg-${chatId}-${i + 1}`;
+
+/**
+ * Chat fields are folded from the messages with the domain's `afterMessage`, and `bookingStatus`
+ * is read from the seeded booking, so nothing here is a hand-written status.
  */
 function directChatDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
   const docs: SeedDocument[] = [];
-  const ago = (ms: number): Date => new Date(now.getTime() - ms);
-
-  const addChat = (
-    base: Pick<Chat, 'kind' | 'customerId' | 'photographerId' | 'bookingId' | 'bookingStatus'>,
-    texts: readonly { readonly from: string; readonly body: string; readonly at: Date }[],
-    unread: Readonly<Record<string, number>>,
-  ): void => {
-    const first = texts[0];
+  for (const c of SEED_DIRECT_CHATS) {
+    const first = c.texts[0];
     if (first === undefined) throw new Error('a seed chat needs a message');
-    const id = chatIdFor(base.customerId, base.photographerId);
+    let bookingStatus: string | null = null;
+    if (c.bookingId !== null) {
+      const booking = existing.find((d) => d.path === `bookings/${c.bookingId}`);
+      if (booking === undefined) throw new Error(`seed booking ${c.bookingId} is missing`);
+      bookingStatus = String(booking.data.status);
+    }
+    const id = chatIdFor(c.customerId, c.photographerId);
+    const at0 = new Date(now.getTime() - first.agoMs);
     let chat: Chat = {
-      id, ...base,
+      id, kind: c.kind, customerId: c.customerId, photographerId: c.photographerId,
+      bookingId: c.bookingId, bookingStatus,
       photographerRepliedAt: null, customerMessagesBeforeReply: 0,
       lastMessageAt: null, lastMessagePreview: null, lastSenderId: null,
-      readOnlyAt: null, rescheduleUsed: false, createdAt: first.at, updatedAt: first.at,
+      readOnlyAt: null, rescheduleUsed: false, createdAt: at0, updatedAt: at0,
     };
-    texts.forEach((t, i) => {
+    const messages: SeedDocument[] = [];
+    c.texts.forEach((t, i) => {
+      const at = new Date(now.getTime() - t.agoMs);
       const m: Message = {
-        id: `seed-msg-${id}-${i + 1}`, chatId: id, senderId: t.from, type: 'text', body: t.body,
-        imagePath: null, point: null, system: null, createdAt: t.at,
+        id: seedMessageId(id, i), chatId: id, senderId: t.from, type: 'text', body: t.body,
+        imagePath: null, point: null, system: null, createdAt: at,
       };
-      chat = afterMessage(chat, m, t.at);
-      docs.push({ path: `chats/${id}/messages/${m.id}`, data: toFirestoreMessage(m) });
+      chat = afterMessage(chat, m, at);
+      messages.push({ path: `chats/${id}/messages/${m.id}`, data: toFirestoreMessage(m) });
     });
     // The chat document comes before its messages and members, like the callables write them.
-    docs.unshift({ path: `chats/${id}`, data: toFirestoreChat(chat) });
-    for (const uid of [base.customerId, base.photographerId]) {
-      docs.push({ path: `chats/${id}/members/${uid}`, data: { unreadCount: unread[uid] ?? 0, lastReadAt: null } });
+    docs.push({ path: `chats/${id}`, data: toFirestoreChat(chat) }, ...messages);
+    for (const uid of [c.customerId, c.photographerId]) {
+      docs.push({ path: `chats/${id}/members/${uid}`, data: { unreadCount: c.unread[uid] ?? 0, lastReadAt: null } });
     }
-  };
-
-  const booking = existing.find((d) => d.path === 'bookings/seed-booking-upcoming');
-  if (booking === undefined) throw new Error('seed booking seed-booking-upcoming is missing');
-  addChat(
-    { kind: 'booking', customerId: LAN, photographerId: AN, bookingId: 'seed-booking-upcoming', bookingStatus: String(booking.data.status) },
-    [
-      { from: LAN, body: 'Chào anh An, em muốn hỏi thêm về buổi chụp chân dung.', at: ago(5 * HOUR_MS) },
-      { from: AN, body: 'Chào Lan, anh nhận được lịch rồi nhé.', at: ago(4 * HOUR_MS) },
-      { from: AN, body: 'Hẹn bạn sáng thứ Bảy ở Công viên Thống Nhất.', at: ago(3 * HOUR_MS) },
-    ],
-    { [LAN]: 2 },
-  );
-  addChat(
-    { kind: 'inquiry', customerId: LAN, photographerId: CUC, bookingId: null, bookingStatus: null },
-    [
-      { from: LAN, body: 'Studio còn nhận chụp ảnh gia đình không ạ?', at: ago(20 * DAY_MS + HOUR_MS) },
-      { from: CUC, body: 'Dạ còn ạ, bạn cho studio biết ngày dự kiến nhé.', at: ago(20 * DAY_MS) },
-    ],
-    {},
-  );
-  addChat(
-    { kind: 'inquiry', customerId: MINH, photographerId: DUNG, bookingId: null, bookingStatus: null },
-    [{ from: MINH, body: 'Anh Dũng ơi, anh có nhận chụp ảnh cưới ở Huế không?', at: ago(3 * HOUR_MS) }],
-    { [DUNG]: 1 },
-  );
+  }
   return docs;
+}
+
+/**
+ * The grouped `g_chat_{chatId}` inbox row each member already has for the messages they received,
+ * exactly as onChatMessageCreated would have left it. applySeed writes the messages with the Admin
+ * SDK, so that trigger runs for every one of them after seeding; with these rows in place each run is
+ * a duplicate (same last or recent event id) and writes nothing, instead of adding a fresh unread row
+ * for a 20-day-old message. Unread rows hold the member's unread messages; read rows only dedupe
+ * their last event, so a member who has read everything may have received one message at most.
+ */
+function seedChatInboxRows(): SeedRow[] {
+  const rows: SeedRow[] = [];
+  for (const c of SEED_DIRECT_CHATS) {
+    const id = chatIdFor(c.customerId, c.photographerId);
+    for (const uid of [c.customerId, c.photographerId]) {
+      const received = c.texts.map((t, i) => ({ ...t, id: seedMessageId(id, i) })).filter((t) => t.from !== uid);
+      const last = received[received.length - 1];
+      if (last === undefined) continue;
+      const unread = c.unread[uid] ?? 0;
+      if (unread > received.length) throw new Error(`${id}: ${uid} has more unread than received messages`);
+      if (unread === 0 && received.length > 1) throw new Error(`${id}: a read chat row only dedupes its last message`);
+      const sender = SEED_USERS.find((u) => u.uid === last.from);
+      if (sender === undefined) throw new Error(`unknown seed sender ${last.from}`);
+      const count = Math.max(unread, 1);
+      rows.push({
+        uid, id: `g_chat_${id}`, ageHours: last.agoMs / HOUR_MS, read: unread === 0, target: `/chat/${id}`,
+        content: { type: 'chat_message', sender: sender.displayName, preview: chatPreview('text', last.body), count },
+        actor: { id: sender.uid, name: sender.displayName, avatarUrl: null },
+        group: {
+          key: `chat:${id}`, count, lastEventId: last.id,
+          recentEventIds: unread === 0 ? [last.id] : received.slice(-unread).map((t) => t.id).reverse(),
+        },
+      });
+    }
+  }
+  return rows;
 }
 
 interface SeedRow {
@@ -685,10 +748,17 @@ interface SeedRow {
   readonly target: string;
   readonly ageHours: number;
   readonly read: boolean;
-  readonly group?: { readonly key: string; readonly count: number; readonly lastEventId: string };
+  /** Defaults to An for Lan's rows and Lan for everyone else's. */
+  readonly actor?: { readonly id: string; readonly name: string; readonly avatarUrl: string | null };
+  readonly group?: {
+    readonly key: string;
+    readonly count: number;
+    readonly lastEventId: string;
+    /** Newest first; defaults to `[lastEventId]`. */
+    readonly recentEventIds?: readonly string[];
+  };
 }
 
-const SEED_CHAT = `${LAN}_${AN}`;
 const ACTOR_AN = { id: AN, name: 'An Studio (seed)', avatarUrl: null };
 const ACTOR_LAN = { id: LAN, name: 'Lan (seed)', avatarUrl: null };
 
@@ -701,9 +771,6 @@ const SEED_ROWS: readonly SeedRow[] = [
     content: { type: 'refund_done', amount: computeDeposit(1_500_000).deposit, bookingId: 'seed-booking-cancelled' } },
   { uid: LAN, id: 'n_booking_declined_seed-booking-declined', ageHours: 12 * 24, read: true, target: '/b/seed-booking-declined',
     content: { type: 'booking_declined', reason: 'declined', photographer: 'Bình (seed)', percent: 100 } },
-  { uid: LAN, id: `g_chat_${SEED_CHAT}`, ageHours: 2, read: false, target: `/chat/${SEED_CHAT}`,
-    content: { type: 'chat_message', sender: 'An Studio (seed)', preview: 'Chào bạn', count: 2 },
-    group: { key: `chat:${SEED_CHAT}`, count: 2, lastEventId: 'seed-message-2' } },
   { uid: AN, id: 'n_booking_request_seed-booking-requested-an', ageHours: 3, read: false, target: '/bookings',
     content: { type: 'booking_request', customer: 'Lan (seed)', service: 'Chân dung 2 giờ', day: 'T7 25/10', start: '16:00' } },
   // A sample verdict notice (S17 `review_tomato`); its id is no real dedupe key, so Lan's review of
@@ -716,10 +783,10 @@ const SEED_ROWS: readonly SeedRow[] = [
 function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
   const docs: SeedDocument[] = [];
   const unread = new Map<string, number>();
-  for (const r of SEED_ROWS) {
+  for (const r of [...SEED_ROWS, ...seedChatInboxRows()]) {
     const meta = NOTIFICATION_TYPES[r.content.type as NotificationType];
     const at = new Date(now.getTime() - r.ageHours * HOUR_MS);
-    if (!r.read) unread.set(r.uid, (unread.get(r.uid) ?? 0) + 1);
+    unread.set(r.uid, (unread.get(r.uid) ?? 0) + (r.read ? 0 : 1));
     docs.push({
       path: `users/${r.uid}/notifications/${r.id}`,
       data: {
@@ -729,17 +796,17 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
         ...renderNotification(r.content),
         target: r.target,
         groupKey: r.group?.key ?? null,
-        actors: [r.uid === LAN ? ACTOR_AN : ACTOR_LAN],
+        actors: [r.actor ?? (r.uid === LAN ? ACTOR_AN : ACTOR_LAN)],
         count: r.group?.count ?? 1,
         thumbUrl: null,
         lastEventId: r.group?.lastEventId ?? null,
-        recentEventIds: r.group ? [r.group.lastEventId] : [],
+        recentEventIds: r.group ? [...(r.group.recentEventIds ?? [r.group.lastEventId])] : [],
         createdAt: at,
         readAt: r.read ? new Date(at.getTime() + HOUR_MS / 2) : null,
       },
     });
   }
-  for (const uid of [LAN, AN]) {
+  for (const uid of unread.keys()) {
     docs.push({ path: `users/${uid}/private/inbox`, data: { unreadCount: unread.get(uid) ?? 0, unreadCountAt: now } });
   }
 

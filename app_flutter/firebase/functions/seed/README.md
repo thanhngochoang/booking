@@ -80,13 +80,16 @@ Three 1-1 conversations, built by `directChatDocuments` in `fixtures.ts` (chat f
 
 Each chat has `members/{uid}` docs with `unreadCount` for both sides (0 where nothing is unread).
 
+Each member who received a message also has the grouped inbox row `g_chat_{chatId}` that `onChatMessageCreated` would have left (same last and recent message ids; unread with the member's unread count, read otherwise). The seed writes the messages with the Admin SDK, so that trigger still runs for each one after seeding; with the rows in place every run is a duplicate and writes nothing.
+
 ## Notifications and badges
 
 | Data | Owner | Notes |
 |---|---|---|
-| Inbox rows (`users/{uid}/notifications/*`) | Lan | 5 rows: booking accepted (unread), 24 h reminder (read), refund (read), declined (read, 12 days old), grouped chat with 2 messages (unread) |
-| Inbox rows | An | booking request (unread), a sample `review_tomato` notice "Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9" (read) |
-| `users/{uid}/private/inbox` | Lan, An | `unreadCount` 2 and 1, matching the unread rows |
+| Inbox rows (`users/{uid}/notifications/*`) | Lan | 6 rows: booking accepted (unread), 24 h reminder (read), refund (read), declined (read, 12 days old), grouped chat with An, 2 messages (unread), chat with Cúc (read, 20 days old) |
+| Inbox rows | An | booking request (unread), a sample `review_tomato` notice "Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9" (read), chat with Lan (read) |
+| Inbox rows | Cúc, Dũng | chat with Lan (read); chat with Minh (unread) |
+| `users/{uid}/private/inbox` | Lan, An, Cúc, Dũng | `unreadCount` 2, 1, 0 and 1, matching the unread rows |
 | Earned badges | An | `top_rated`, `shoots_10`, `complete_profile`; progress `punctual` 3/5, `shoots_50` 12/50 |
 | Earned badges | Lan | `loyal_customer`; progress `sharer` 0/5, `detailed_reviewer` 3/5 |
 | `badges/{id}` | all | the 12-badge catalogue |
