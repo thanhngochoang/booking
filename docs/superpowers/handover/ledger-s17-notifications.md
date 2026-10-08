@@ -6,6 +6,7 @@ Plan: `docs/superpowers/plans/2026-10-07-s17-notifications.md`, Tasks 1–6. Bra
 - Mock (Task 1): frame `#S17.03-ticket` in `docs/design/ui-mock.html` (the primer sheet over the tickets tab after buying a ticket; ruling 2 keeps the "Photo walk" tag) and one sentence on the S17.01 caption about grouped quote rows and the event reminder.
 - Domain (Task 2): `NOTIFICATION_TYPES` meta for 50 new types (instant ×5, `review_tomato`/`review_brick`, `delivery_*` ×5, studio ×6, assignment ×7, payout account ×2, verification and business ×6, dispute, support and refund account ×5, recruit and collab ×10); one copy table in `notification_render.ts` (verbatim Contract text); `notify`'s grouped branch passes `names` (the stored actors, newest first, at most 3) so `quote_new` and `recruit_application_new` can name them; `notification_hooks.ts` with one exported hook per catalogue event; booking copies without "cọc" (`booking_declined`, `booking_cancelled`, `refund_done`: "số bạn đã trả", "Tiền buổi chụp #… đã về tài khoản của bạn."); `recordDispatch` in `refunds.ts` now sets the booking's `depositRefundedAt` when an escrow refund becomes `done` (once, version unchanged), so the booking `refund_done` notice finally fires (the old S04 plan owed it, #129 left it unfired); test-only `packages/domain/test/client_targets.ts`, a TypeScript port of the app allowlist that checks every hook target.
 - Functions (Task 3): `event_notices.ts` `sendEventSoonNotices` run by `handleEventClock` as its last step in its own try/catch (`EventClockExtras.notify`, result gains `soonEvents` and `soonSent`, `refundsResent` kept); `Event.soonNoticeAt` and `EventStore.dueForSoonNotice` (Firestore: `status in [open, full, closed]`, `soonNoticeAt == null`, `startAt` in (now, now + 48 h]); `handlePayoutWrite(payoutId, before, after, deps, notify?)` sends `payout_released` when a payout becomes `paid`; CLI `npm run clock -- events|bookings` (emulators only); seed night walk 36 h ahead with Lan's paid ticket, so `npm run clock -- events` produces the `event_soon` row; composite index `events (status, soonNoticeAt, startAt)`.
+- Final review fixes (Rulings 7 and 8): `notify` keeps `recentEventIds` (last 20 event ids, newest first) on grouped rows and treats a repeat inside the unread row's list as a duplicate (`lastEventId` kept; a read row restarts with a fresh list); row ids replace `/` as well as `:` with `_`; `Event.soonNotifiedRegIds` (server-only) lets an `event_soon` retry send only to registrations not yet reminded, cleared when `soonNoticeAt` is set; copy caps `dispute_message`/`support_reply` previews at 80 graphemes and recruit titles at 40; `payout_released` without items omits "Tiền của N khoản"; `vnTimeDay` shows an unparseable `activeFrom` as given.
 - App (Tasks 4 and 5): `notificationVisualOf` gives every type an icon and tone (`AppIcons.supportAgent` added); `safeTarget` accepts exactly the patterns of `CLIENT_TARGET_PATTERNS` (refuses repeated query keys and plain `/studio/recruit`; the one-query targets are `/u/:uid?tab=reviews`, `/studio/recruit?post=<id>` and `/collab?offer=<id>`), which also fixes `event_host_invited` opening "Nội dung này không còn"; `CustomerTicketPrimer(eventTitle)` and `EventTicketsTab` asks once per highlighted upcoming ticket (free ticket and paid ticket both land on `/bookings?tab=events&highlight={regId}`); l10n `primerTitleCustomerTicket`, `primerTicketBenefit1`.
 
 ## Docs changed in Task 6
@@ -16,7 +17,7 @@ Plan: `docs/superpowers/plans/2026-10-07-s17-notifications.md`, Tasks 1–6. Bra
 - S17 strings in the specs were checked against `app_vi.arb` and the mock (`#S17.01`, `#S17.03`, `#S17.03-ticket`): primer titles and benefits, "Để sau", the 7-day note, the four S17.01 rows of the plan's Global Constraints.
 
 ## Rulings
-Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s17-notifications/progress-plan-138-s17-thong-bao.md`), in order. Rulings 3 to 6 change hook inputs or keys of the plan's hooks table; the table below (Hooks) shows the built form.
+Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s17-notifications/progress-plan-138-s17-thong-bao.md`), in order. Rulings 3 to 6 change hook inputs or keys of the plan's hooks table; the table below (Hooks) shows the built form. Rulings 7 and 8 come from the final whole-branch review; Ruling 8 supersedes the #139 part of Ruling 6 ("first quote only"), the #136 `reassignedAt` part stays.
 
 - Ruling 1: Task 2 writes `test/client_targets.ts` from the plan's App contract target list (the patterns Task 4 will add), not from today's Dart code; Task 4 must make Dart `safeTarget` accept exactly that list — cost if wrong: one list edited twice.
 - Ruling 2: keep the "Photo walk" tag on the mock ticket card — it mirrors the real S11.04 ticket card the primer sits over; reviewer approved — cost if wrong: one tag removed from the mock.
@@ -24,6 +25,9 @@ Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s17-notifica
 - Ruling 4: quote_new group eventId per photographer (re-quote never increases count) — overrides plan test "new quoteVersion counts again" — cost if wrong: customer gets no separate notice for an edited quote (still visible in S15.03).
 - Ruling 5: booking_reassigned dedupe key includes old assignee — cost if wrong: none.
 - Ruling 6: #139 must call notifyQuoteNew only for a photographer's first quote on a job (notify compares only the last eventId; p1,p2,p1 would recount) — hand-off in Task 6 ledger; #136 passes reassignedAt to notifyBookingReassigned — cost if wrong: an inflated count when the emitter ignores the rule.
+- Ruling 7: event reminder retries send only to registrations not yet notified — event keeps a server-only list of notified registration ids (`soonNotifiedRegIds`) until the marker is set — cost if wrong: a few hundred ids on an event doc.
+- Ruling 8: grouped rows keep a bounded list of recent eventIds (last 20) and a repeat within it is a duplicate (fixes p1,p2,p1 recount; supersedes the #139 "first quote only" obligation of Ruling 6) — cost if wrong: slightly larger notification docs.
+- Ruling 9: owner question added — change_answered (declined/expired) and late booking_reassigned grant the same 100% cancel right as assign_overdue but are not critical.
 
 Pre-flight and review notes behind them (same file): the pre-flight scan found that Task 2 writes the TypeScript allowlist port before Task 4 adds the Dart patterns (Ruling 1); Task 2 review 1 approved with three plan-mandated Important findings (a dispute message without retry dedupe, a quote version inflating the group, a reassignment key that drops the old assignee), fixed in round 1 (Rulings 3, 4, 5; commits 478dec0..a976693); a note for Task 4, done: Dart `safeTarget` refuses duplicate query keys (`queryParametersAll`) and plain `/studio/recruit`.
 
@@ -31,7 +35,7 @@ Pre-flight and review notes behind them (same file): the pre-flight scan found t
 1. Hooks, not call sites, for features that do not exist yet: each hook is an exported domain function `(deps, event) => Promise<NotifyResult | NotifyResult[]>` that picks recipients, copy content, target, dedupe or group key and actor. Owners call it after their write commits (never inside a transaction); a failure is logged and retried by the trigger, never rolls back the business write.
 2. `quote_accepted` replaces `job_selected` (kept in `NOTIFICATION_TYPES` for old rows, generic copy, no hook).
 3. Grouped copy can name actors: `notify` passes `names` along with `count`; `quote_new` uses them, `chat_message` ignores them; a read grouped row restarts with one actor.
-4. `event_soon`: one reminder per paid ticket when the event starts within 48 hours; the `eventClock` step queries `status in [open, full, closed]`, `soonNoticeAt == null`, `now < startAt <= now + 48 h`, notifies every `paid` registration (dedupe `event_soon_{eventId}_{regId}`), then sets `soonNoticeAt` only if every send succeeded. Tickets bought after the event-level pass get no reminder. Title by Vietnam calendar days (≥ 2 "bắt đầu sau {n} ngày", 1 "bắt đầu ngày mai", 0 "bắt đầu hôm nay"), target `/e/{eventId}`, thumbnail the event cover.
+4. `event_soon`: one reminder per paid ticket when the event starts within 48 hours; the `eventClock` step queries `status in [open, full, closed]`, `soonNoticeAt == null`, `now < startAt <= now + 48 h`, notifies every `paid` registration (dedupe `event_soon_{eventId}_{regId}`), then sets `soonNoticeAt` only if every send succeeded. Since Ruling 7 each run records the registrations whose send settled in `soonNotifiedRegIds`, a retry sends only to the others, and the marker is set (list cleared) once every paid registration is in the list. Tickets bought after the event-level pass get no reminder. Title by Vietnam calendar days (≥ 2 "bắt đầu sau {n} ngày", 1 "bắt đầu ngày mai", 0 "bắt đầu hôm nay"), target `/e/{eventId}`, thumbnail the event cover.
 5. `payout_released` is sent by `onPayoutWritten` when `status` becomes `paid`, to the payee, dedupe `payout_released_{payoutId}`, amount `amountNet` when present else `amount`, target `/work/earnings`; critical.
 6. Categories of the new types: reviews → `badges`/`system`; delivery → `booking`/`activity`; studio membership → `booking`/`system`; studio assignment → `booking`/`activity`; payout account and verification → `booking`/`system`; disputes, support, refund account → `booking`/`activity`; Chụp ngay → `instant`/`activity`; recruiting and collaborators → `jobs`/`activity`. Critical follows spec §3h.5 (money, cancellations, decisions on the right to work, the time-boxed collaborator offer, `assign_overdue`). No new S17.02 row.
 7. "Cọc" copy replaced in `booking_declined`, `booking_cancelled` and `refund_done` with the mock S17.01 text (#129 left different server wording; no "cọc" remains); Task 2 also made the booking `refund_done` fire (see Built).
@@ -61,7 +65,7 @@ All hooks live in `packages/domain/src/notification_hooks.ts`, take `deps: Notif
 
 Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc callable, với `liveNotifyDeps()`; bạn là chủ phát duy nhất của các hook này** (không plan nào khác gọi chúng).
 
-- **Chỉ gọi `notifyQuoteNew` cho báo giá đầu tiên của một thợ trên một việc** (Ruling 6): `notify` chỉ so `eventId` cuối của dòng gom, nên chuỗi p1, p2, p1 sẽ đếm p1 lần hai. Báo giá sửa của cùng thợ không gọi lại hook; khách vẫn thấy bản sửa ở S15.03.
+- Gọi `notifyQuoteNew` cho mỗi báo giá (kể cả báo giá sửa): dòng gom nhớ 20 `eventId` gần nhất (`recentEventIds`, Ruling 8, thay nghĩa vụ "chỉ báo giá đầu tiên" của Ruling 6), nên thợ đã có trong dòng chưa đọc là bản trùng (p1, p2, p1 đếm 2); khách thấy bản sửa ở S15.03. Sau khi khách đọc dòng, báo giá tiếp theo mở dòng mới (đếm 1).
 - `quoteVersion` còn trong đầu vào để giữ chữ ký của plan, hook không dùng nó để gom (`eventId` = `photographerId`).
 
 ### #140 · Chụp ngay (S13, S14)
@@ -118,7 +122,7 @@ Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc calla
 
 Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc callable, với `liveNotifyDeps()`; bạn là chủ phát duy nhất của các hook này** (không plan nào khác gọi chúng).
 
-- **Truyền `reassignedAt`** (ISO, lúc đổi thợ) cho `notifyBookingReassigned` (Ruling 5, Ruling 6): khoá chống trùng là cặp thợ cũ → thợ mới; không có `reassignedAt` thì A → B lặp lại là bản trùng.
+- **Truyền `reassignedAt`** (ISO, lúc đổi thợ) cho `notifyBookingReassigned` (Ruling 5, Ruling 6; phần này của Ruling 6 vẫn giữ): khoá chống trùng là cặp thợ cũ → thợ mới; không có `reassignedAt` thì A → B lặp lại là bản trùng.
 - `notifyBookingAssigned`, `notifyBookingReassigned`, `notifyAssignOverdue` gửi nhiều người nhận trong một lần gọi; một người nhận lỗi không chặn người khác, hook ném một lỗi ở cuối (trigger thử lại, khoá chống trùng chặn gửi đôi).
 
 ### #134 · Chi trả và tài khoản nhận tiền (S06)
@@ -156,6 +160,8 @@ Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc calla
 Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc callable, với `liveNotifyDeps()`; bạn là chủ phát duy nhất của các hook này** (không plan nào khác gọi chúng).
 
 - **Truyền `messageId`** cho `notifyDisputeMessage` (Ruling 3): dùng làm `eventId` của dòng gom, nên tin nhắn bị thử lại không đếm hai lần.
+- **Hoàn tiền khiếu nại phải ghi `depositRefunded`**: hoàn escrow trên một booking còn sống (`recordDispatch` trong `refunds.ts`) chỉ đặt `depositRefundedAt`, không đặt `depositRefunded > 0`; `bookingNotices` chỉ gửi `refund_done` khi cả hai có, nên không có thông báo mà dấu `depositRefundedAt` đã bị dùng (lần sau không gửi nữa). Luồng hoàn tiền của khiếu nại phải đặt `depositRefunded` (số đã hoàn) cùng lúc hoặc trước `depositRefundedAt`.
+- Gửi `preview` thô: bản sao tự cắt 80 ký tự (grapheme) cho `dispute_message` và `support_reply`.
 - `notifyDisputeOpened` trả `null` khi `providerId === 'platform'` (sự kiện nền tảng, không có ai để báo); `providerName` của `notifyDisputeResolved` là "ứng dụng" với sự kiện nền tảng (chủ phát quyết định).
 
 ### #141 · Thanh toán và tài khoản (S22)
@@ -185,6 +191,7 @@ Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc calla
 
 Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc callable, với `liveNotifyDeps()`; bạn là chủ phát duy nhất của các hook này** (không plan nào khác gọi chúng).
 
+- `title` thô: bản sao tự cắt 40 ký tự (grapheme) cho ba loại `recruit_*`.
 - Giới hạn gửi (3 thông báo mỗi thợ mỗi ngày, 200 người nhận) nằm ở `notifyRecruitMatches` của #151, nó gọi `notifyRecruitPostNew` cho từng người nhận.
 - Hai đích có query (`/studio/recruit?post=<id>`, `/collab?offer=<id>`) là hai đích duy nhất app chấp nhận query; route phải được #151 đăng ký trong cùng plan.
 
@@ -209,6 +216,8 @@ Quy tắc chung: **gọi sau khi giao dịch ghi xong, từ trigger hoặc calla
 ## Owner questions (still open)
 1. Ticket holders get no notice when an event is cancelled (refund) or its start moves: spec §3h.2 has no `event_cancelled` / `event_changed`. Default applied: not in this unit; propose both in a follow-up issue (category `events`, `event_cancelled` critical). Related: `soonNoticeAt` is not reset when an event's start moves, so a holder gets no second reminder for the new date (suggested follow-up: reset it in `updateEvent` when `startAt` changes, together with `event_changed`).
 
+2. (Ruling 9) `change_answered` (declined/expired) and a late `booking_reassigned` grant the customer the same 100% cancel right as `assign_overdue`, but only `assign_overdue` is critical, so a user with the booking channel off misses the first two. Default applied: not critical (plan §3h.5 list unchanged); the owner decides whether to make them critical.
+
 ## Deferred
 From the plan:
 - Emitting the hook types: quotes and jobs → #139; Chụp ngay (and its primer call sites, high-priority invitation push) → #140; tomato/brick reviews → #130 and delivery → #152 (split from #130); studio membership and assignment → #136; payout account → #134; verification → #135; disputes and support → #142; refund account → #141; recruiting and collaborators → #151.
@@ -220,20 +229,25 @@ From the plan:
 - Go backend (phase 2, #90): an adapter for `NotificationStore` and `PushSender`; the hooks are reusable as is.
 
 ## Minor findings (deferred)
-Verbatim from the SDD ledger, grouped by task. Tasks 1 and 6 have none.
+Verbatim from the SDD ledger, grouped by task (items fixed later are marked). Tasks 1 and 6 have none.
 
 ### Task 2
-- Task 2: minor (deferred): grouped dedupe compares only the last eventId (existing notify; plan forbids changing it here)
+- Task 2: minor (deferred): grouped dedupe compares only the last eventId (existing notify; plan forbids changing it here) — fixed in the final review fix wave
 - Task 2: minor (deferred): hook table test asserts titles not bodies
-- Task 2: minor (deferred): quiet-hours sweep doesn't assert push non-empty
+- Task 2: minor (deferred): quiet-hours sweep doesn't assert push non-empty — fixed in the final review fix wave
 - Task 2: minor (deferred): notifyAll duplicates booking_notifications block
-- Task 2: minor (deferred): vnTimeDay no input guard
+- Task 2: minor (deferred): vnTimeDay no input guard — fixed in the final review fix wave
 
 ### Task 3
-- Task 3: minor (deferred): event_payment_callables.test.ts:213 calls handleEventClock without notify extras (builds live deps in a unit test)
+- Task 3: minor (deferred): event_payment_callables.test.ts:213 calls handleEventClock without notify extras (builds live deps in a unit test) — fixed in the final review fix wave
 - Task 3: minor (deferred): sweep failure skips the reminder step that tick
 - Task 3: minor (deferred): permanently failing recipient re-scans the event every tick (cost)
 - Task 3: minor (deferred): soonNoticeAt not reset when start moves (owner question event_changed)
+
+### Final review (deferred)
+- Allowlist parity is two hand-copied lists (`packages/domain/test/client_targets.ts` and Dart `safeTarget` in `notification_targets.dart`); nothing generates one from the other, a change must edit both.
+- The integration test `event_soon.test.ts` runs on the emulator, which does not need composite indexes, so it cannot verify `events (status, soonNoticeAt, startAt)`; only a deploy shows a missing index (the clock step logs and continues).
+- `onPayoutWritten` has no event-age cutoff: a trigger retried long after the write still sends `payout_released` (dedupe stops doubles, not lateness).
 
 ### Task 4
 - Task 4: minor (deferred): targetNeedsExistenceCheck true for /b/x/delivery (no read happens in practice)
@@ -244,7 +258,8 @@ Verbatim from the SDD ledger, grouped by task. Tasks 1 and 6 have none.
 - Task 5: minor (deferred): _primerAskedFor set during build
 
 ## Notes for the next unit
-- Task 2 left one probe open that Ruling 6 answers by contract: `notify`'s grouped duplicate check compares only the row's last `eventId`, so p1, p2, p1 gives count 3 for 2 photographers (memory store probe). If #139 cannot guarantee "first quote only", the fix is in `notify` (treat an `eventId` already among the unread row's actors as a duplicate, or keep a set of event ids).
+- Task 2 left one probe open (p1, p2, p1 gave count 3 for 2 photographers); Ruling 6 first answered it by contract, Ruling 8 fixed it in `notify` (`recentEventIds`, last 20, newest first). An older row without the field reads `[]` and still dedupes on `lastEventId`. A read row keeps treating its own `lastEventId` as a duplicate (a retried trigger), so the restart counts any other event.
+- Final fix: `soonNotifiedRegIds` is written by `eventToFirestore` on every event write (`[]` when absent) and lives on the public event doc; the ids are opaque registration ids. It is filled only while a reminder pass is partial and cleared when `soonNoticeAt` is set.
 - Task 3: the memory event store treats a missing `soonNoticeAt` as null, Firestore does not match it (deploy note 2); the seed night walk (`seed-event-an-night-walk`) takes An's availability for the day 36 hours ahead, so publishing another An event on that day in the emulator answers `day_taken` (the seed now skips a day path a seed booking already wrote); `make(...)` in `seed/fixtures.ts` takes `hoursAhead` instead of `daysAhead`; `sendEventSoonNotices` names its second parameter `notifyDeps`; its transaction re-reads the event and skips one that is no longer open, full or closed or already marked.
 - Task 4: `targetNeedsExistenceCheck` is `startsWith('/b/')` so it is true for `/b/x/delivery`, but `FirestoreNotificationRepository.targetExists` only reads for a 3-part `/b/id` or `/chat/id`, so no read happens in practice.
 - Task 5: the primer only fires on the tickets tab built by `my_bookings_screen.dart` (segment Vé sự kiện); `EventsWorld.pump` in `test/support/event_world.dart` grants notification permission by default so existing events tests never show the sheet.
