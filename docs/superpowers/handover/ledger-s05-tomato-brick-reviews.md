@@ -29,8 +29,16 @@ Verbatim from the SDD progress ledger (`.superpowers/sdd/2026-10-07-s05-tomato-b
 - Ruling 4: compact pad uses new key reviewBrickShort "Chưa ưng" (mock #S05.05-studio wins); regular pad keeps "Chưa hài lòng" — cost if wrong: one string.
 - Ruling 5: S05.05 brick follows the plan over the shortened mock frame — share section on both sides, single primary until a photo is picked (Decision 9), field label "Nhận xét" with hint by side; Task 7 updates mock #S05.05-brick to match — cost if wrong: mock and app differ until fixed.
 - Ruling 6: skip the gh issue comments on #139/#140 that Task 7's brief asked for — both plans already use the new names (ledger Decision 14) — cost if wrong: an emitter misses a rename note.
+- Ruling 7: keep C = 0.6 (spec §7.1 sets it) and raise it as an owner question — cost if wrong: low-hit tomato providers rank below newcomers until changed.
+- Ruling 8: tomatoPct stays rounded for display, badge and filter alike (94.5% counts as 95%), documented in the ledger — cost if wrong: a provider at 94.5–94.9% gets the badge.
 
 Importer obligation of Ruling 3: the #136 studio review docs (`{bookingId}_studio`) must be created with `countedAt` null so the trigger counts them, notifies and checks badges; a Phase 2 importer that writes reviews with `countedAt` set must run `evaluateUserBadges` for subject and customer itself.
+
+## Needs the owner
+1. Ranking prior (Ruling 7). Spec §7.1 sets `smoothedScore = (v · score + m · C) / (v + m)` with `m = 10`, `C = 0.6`. `C = 0.6` is above the score of a 1–2-hit tomato (`intensityOf(1) = 0.4`, `intensityOf(2) = 0.58`), so a provider with only happy customers who tap lightly ranks below a newcomer: 30 tomato reviews averaging 2 hits smooth to (30 · 0.58 + 10 · 0.6) / 40 ≈ 0.585, below an unreviewed provider's 0.6. Options: (a) lower the prior to `C ≤ 0.4` (the score of a one-hit tomato), so reviews never rank below no reviews unless they include bricks; (b) smooth the tomato share instead (`(tomatoCount + m · C') / (reviewCount + m)`) and use `score` only as a tiebreak. Default until answered: keep `C = 0.6` as the spec says.
+
+## Rounding of tomatoPct (Ruling 8)
+`tomatoPct` is the rounded integer percent everywhere: display, the `top_rated` badge (≥ 95) and the Find filter (80 / 90 / 95). A provider at 94.5–94.9% shows 95%, gets the badge and passes the 95%+ filter; this is intended (one number, read the same everywhere).
 
 ## Decisions of the plan (summary)
 1. No migration of star reviews (spec D7 wins): no production project, dev is on Spark so no Function ever wrote a review there; readers are tolerant of a legacy star doc (`rating >= 4` reads as tomato, else brick, one hit, no reasons); `addVerdict` ignores a legacy `reviewCount`; the adapter deletes `stats.rating` and `stats.ratingSum` on the first verdict write; seed rewritten.
@@ -69,28 +77,42 @@ Importer obligation of Ruling 3: the #136 studio review docs (`{bookingId}_studi
 Verbatim; "FINAL TRIAGE" marks the ones the controller picks up in the final review.
 
 ### Task 1
-- minor (deferred): misformatted test lines; round2 defined twice; no test pinning permission_denied before conflict; legacy 'review' action in booking_machine (no caller found)
+- minor (deferred): misformatted test lines; round2 defined twice; no test pinning permission_denied before conflict; legacy 'review' action in booking_machine (no caller found) — **fixed** in the final review (c30d1df): the action is gone and `transitionBooking` refuses it with `invalid_argument`
 
 ### Task 2
-- minor (deferred, FINAL TRIAGE): seed detailed_reviewer progress for Lan should be 3/5 not 0/5 (fixtures.ts:704)
+- minor (deferred, FINAL TRIAGE): seed detailed_reviewer progress for Lan should be 3/5 not 0/5 (fixtures.ts:704) — **fixed** (797d9f5)
 - minor (deferred): import-skip test doesn't assert no badge evaluation; legacy rating 4/3 boundary untested; hits/intensity mismatch on malformed doc; index switch lands before Task 3 (same PR)
 
 ### Task 3
 - minor (deferred, FINAL TRIAGE): photographer_summary.dart imports data/review/review.dart (cloud_firestore) → Firebase edge into core barrel; move kTomatoPctMinReviews to core/format.dart
-- minor (deferred): app legacy reader defaults missing rating to 5/tomato while server reads brick; hits clamp vs reset; reasons kept on tomato
-- minor (deferred): transitional brick branch untested; detailActions completed+reviewedAt untested; hits cast throws on non-number
+- minor (deferred): app legacy reader defaults missing rating to 5/tomato while server reads brick; hits clamp vs reset; reasons kept on tomato — **fixed** (78acc5c): the app reader follows the server
+- minor (deferred): transitional brick branch untested; detailActions completed+reviewedAt untested; hits cast throws on non-number — the last one **fixed** (78acc5c)
 
 ### Task 4
 - minor (deferred → Task 5 note): VerdictLevel hint shown on #S05.05 but omitted on #S05.05-brick (mock frames disagree); consider showHint param
-- minor (deferred): slider semantics no value/increasedValue; studio compact pads read identically (semanticsSubject, #136); icon stroke 1.8 vs mock 1.6/1.9; MetaLine tomato part reads "97%" only
+- minor (deferred): slider semantics no value/increasedValue; studio compact pads read identically (semanticsSubject, #136); icon stroke 1.8 vs mock 1.6/1.9; MetaLine tomato part reads "97%" only — the last one **fixed** ("97% cà chua")
 
 ### Task 5
 - minor (deferred): tap hint hidden on brick (owner could show on both); no double-submit test; submit doesn't re-check missing; over-max text message; thin 320dp brick test; hint visibility test; review_submit analytics not emitted (no analytics port yet); "Làm lại" no-op looks tappable while submitting
 
 ### Task 6
-- minor (deferred): l10n keys profileStatNew/photographerReviewsNew instead of contract tomatoNew/tomatoNewReviews; tomato part reads "97%" in semantics; reviews_sliver_test format churn; order test trivially seeded; _ReasonChip/_ReviewsHeader literals from mock; Find chip filled when selected (mock unfilled)
+- minor (deferred): l10n keys profileStatNew/photographerReviewsNew instead of contract tomatoNew/tomatoNewReviews; tomato part reads "97%" in semantics (**fixed**); reviews_sliver_test format churn; order test trivially seeded; _ReasonChip/_ReviewsHeader literals from mock; Find chip filled when selected (mock unfilled)
 
-Status at Task 7 of two lines above: the Task 3 "FINAL TRIAGE" item is already resolved (`kTomatoPctMinReviews` lives in `lib/core/format.dart`, `lib/data/review/review.dart` re-exports it, and `photographer_summary.dart` imports only `core/core.dart`); the Task 4 `showHint` suggestion was done in Task 5 (tomato side only). The Task 2 seed item (Lan's `detailed_reviewer` progress) is still open.
+Status at Task 7 of two lines above: the Task 3 "FINAL TRIAGE" item is already resolved (`kTomatoPctMinReviews` lives in `lib/core/format.dart`, `lib/data/review/review.dart` re-exports it, and `photographer_summary.dart` imports only `core/core.dart`); the Task 4 `showHint` suggestion was done in Task 5 (tomato side only). The Task 2 seed item (Lan's `detailed_reviewer` progress) is still open. Fixed in the final review (797d9f5).
+
+## Final review (98bc3bd) and its fixes
+Verdict "with fixes". Fixed on this branch:
+- I1 screen readers heard a bare "97%" (the icon is decorative): new arb keys `tomatoPctA11y` "{pct}% cà chua", `tomatoPctCountA11y` "{pct}% cà chua, {count} đánh giá", `findTomatoChipA11y` "Từ {pct}% cà chua"; `MetaLine` speaks one label through `metaPartsSemantics`, which the `PhotographerCard` header label also uses; the profile `StatTile` gets `semanticsValue`, the reviews header a `semanticsLabel`, and `AppChip` a new `semanticsLabel` for the Find chip.
+- M3 Lan's seeded `detailed_reviewer` progress is 3/5 (her three reviews of ≥ 50 graphemes); the seed README's `sharer` 2/5 was also wrong (0/5).
+- M4 the legacy `review` transition: removed from `TransitionAction` and `decideTransition`; `transitionBooking` answers `invalid_argument`; `reviewed` stays a readable status.
+- M5 review rows show "{ngày} · {gói}" from `bookingDay` (Decision 4), falling back to the Vietnam day of `createdAt`.
+- M6 the app's tolerant reader matches the server's: no rating → one brick, out-of-range or fractional or non-numeric `hits` → 1, non-numeric `intensity` → `intensityOf(hits)`, reasons only on a brick and de-duplicated.
+- M10 `findFallbackNote` → "Đang xếp theo điểm cà chua và khoảng cách" (the fallback ranks by `smoothedScore`, not the share); specs updated.
+- I2 → Ruling 7 and "Needs the owner" 1; M8 → Ruling 8.
+
+Remaining minors (not fixed):
+- Light theme: the `×n` hit count in `VerdictBadge` (side colour on its own tint) has a contrast of about 3.7:1, under 4.5:1 for small text.
+- `lib/core/review_meta.dart` imports `lib/data/content/photographer_summary.dart`, a `core` → `data` edge (no Firebase import, but against the layering); move `reviewMetaPart` to a feature-level file or pass the three values it needs.
 
 ## Deferred by the plan
 - Studio second review block, studio reason codes and `reviews/{bookingId}_studio` writes → #136 (S26), on the model of Decision 2.
