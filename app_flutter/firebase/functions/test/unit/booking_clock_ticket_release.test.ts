@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  FakeBlockGate,
   FakePaymentGateway,
   FakePayoutGateway,
   MemoryBookingStore,
@@ -77,6 +78,7 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
     services: { getService: async () => null },
     contacts: { get: async () => null },
     providers: { acceptsOrders: async () => true },
+    blocks: new FakeBlockGate(),
     gateway: new FakePaymentGateway(),
     clock: { now: () => now },
     ids: { newId: () => `led_${next++}` },

@@ -9,6 +9,7 @@ import {
 } from '@photobooking/domain';
 import { db } from './admin.js';
 import { FirestoreBookingStore } from './booking_firestore.js';
+import { liveBlockGate } from './live_safety.js';
 import { FirestoreCustomerContactReader, FirestoreProviderOrderGate, FirestoreServiceCatalog } from './booking_readers.js';
 
 let sharedFakeGateway: FakePaymentGateway | undefined;
@@ -27,6 +28,7 @@ export function liveBookingDeps(): BookingDeps {
     services: new FirestoreServiceCatalog(firestore),
     contacts: new FirestoreCustomerContactReader(firestore),
     providers: new FirestoreProviderOrderGate(firestore),
+    blocks: liveBlockGate(),
     gateway: getSharedFakeGateway(),
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },

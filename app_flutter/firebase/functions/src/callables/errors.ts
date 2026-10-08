@@ -18,6 +18,8 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   reauth_required: 'failed-precondition',
   // The provider has not finished verification or setup; createBooking refuses (S03.01 "Chưa nhận đơn").
   not_accepting_orders: 'failed-precondition',
+  // The customer and the provider blocked each other (either way); new orders and payments are refused.
+  blocked: 'failed-precondition',
   // "Tạo QR mới" was used MAX_PAYMENT_ATTEMPTS times; the app asks to book again from the start.
   payment_attempts_exceeded: 'failed-precondition',
   // S06.06 payout account v2 (name check and OTP): the client shows the matching message.
