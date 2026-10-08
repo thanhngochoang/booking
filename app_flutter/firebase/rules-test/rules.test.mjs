@@ -1672,6 +1672,62 @@ test('payouts are server-only: the payee cannot read or write them', async () =>
   await assertFails(setDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po2'), { payeeId: 'pp1' }));
   await assertFails(updateDoc(doc(env.authenticatedContext('pp1').firestore(), 'payouts/po1'), { status: 'failed' }));
 });
+// ---- S06 #134: assignee booking read (Decision 18) and the payout account v2 server-only docs ----
+test('the assignee can read a booking with assigneeId == uid', async () => {
+  await seedDoc('bookings/b_as1', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm1', status: 'upcoming' });
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('asm1').firestore(), 'bookings/b_as1')));
+  // The customer and the studio still read it.
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('asc1').firestore(), 'bookings/b_as1')));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('asstudio1').firestore(), 'bookings/b_as1')));
+  // Reading is all: the assignee cannot write the booking.
+  await assertFails(updateDoc(doc(env.authenticatedContext('asm1').firestore(), 'bookings/b_as1'), { status: 'completed' }));
+});
+test('a stranger cannot read a booking assigned to someone else', async () => {
+  await seedDoc('bookings/b_as2', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm1', status: 'upcoming' });
+  await assertFails(getDoc(doc(env.authenticatedContext('asm2').firestore(), 'bookings/b_as2')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'bookings/b_as2')));
+  // A booking without assigneeId is not readable by a stranger either.
+  await seedDoc('bookings/b_as3', { customerId: 'asc1', photographerId: 'asstudio1', status: 'upcoming' });
+  await assertFails(getDoc(doc(env.authenticatedContext('asm2').firestore(), 'bookings/b_as3')));
+});
+test('an assignee query (where assigneeId == uid) is allowed; an unfiltered one is not', async () => {
+  await seedDoc('bookings/b_as4', { customerId: 'asc1', photographerId: 'asstudio1', assigneeId: 'asm3', status: 'upcoming' });
+  const db = env.authenticatedContext('asm3').firestore();
+  const snap = await assertSucceeds(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm3'))));
+  assert.ok(snap.docs.some((d) => d.id === 'b_as4'));
+  await assertFails(getDocs(query(collection(db, 'bookings'), where('assigneeId', '==', 'asm1'))));
+  await assertFails(getDocs(collection(db, 'bookings')));
+});
+test('nobody reads or writes otp_challenges', async () => {
+  await seedDoc('otp_challenges/otp1_payout_account', { uid: 'otp1', purpose: 'payout_account', codeHash: 'h', salt: 's', targetHash: 't', attempts: 0 });
+  const owner = env.authenticatedContext('otp1').firestore();
+  await assertFails(getDoc(doc(owner, 'otp_challenges/otp1_payout_account')));
+  await assertFails(getDocs(query(collection(owner, 'otp_challenges'), where('uid', '==', 'otp1'))));
+  await assertFails(setDoc(doc(owner, 'otp_challenges/otp1_payout_account'), { attempts: 0 }));
+  await assertFails(updateDoc(doc(owner, 'otp_challenges/otp1_payout_account'), { attempts: 0 }));
+  await assertFails(deleteDoc(doc(owner, 'otp_challenges/otp1_payout_account')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'otp_challenges/otp1_payout_account')));
+});
+test('nobody reads or writes payout_lookups', async () => {
+  await seedDoc('payout_lookups/pl1', { day: '2026-10-10', count: 20 });
+  const owner = env.authenticatedContext('pl1').firestore();
+  await assertFails(getDoc(doc(owner, 'payout_lookups/pl1')));
+  await assertFails(setDoc(doc(owner, 'payout_lookups/pl1'), { day: '2026-10-10', count: 0 }));
+  await assertFails(updateDoc(doc(owner, 'payout_lookups/pl1'), { count: 0 }));
+  await assertFails(deleteDoc(doc(owner, 'payout_lookups/pl1')));
+  await assertFails(getDoc(doc(env.authenticatedContext('pl2').firestore(), 'payout_lookups/pl1')));
+});
+test('the owner still cannot write payoutAccounts', async () => {
+  await seedDoc('payoutAccounts/pa3', {
+    accountId: 'a1', bankCode: 'VCB', accountLast4: '6789', holderName: 'NGUYEN VAN AN', updatedAt: Timestamp.now(),
+    nameStatus: 'matched', activeFrom: Timestamp.now(),
+  });
+  const db = env.authenticatedContext('pa3').firestore();
+  await assertSucceeds(getDoc(doc(db, 'payoutAccounts/pa3')));
+  await assertFails(updateDoc(doc(db, 'payoutAccounts/pa3'), { nameStatus: 'staff_confirmed' }));
+  await assertFails(updateDoc(doc(db, 'payoutAccounts/pa3'), { activeFrom: Timestamp.now() }));
+  await assertFails(setDoc(doc(db, 'payoutAccounts/pa3/accounts/a9'), { accountNumberEnc: 'v1:x:y:z', userId: 'pa3', active: true }));
+});
 test('payments stay closed', async () => {
   await seedDoc('payments/pay9', { payeeId: 'pp1', amount: 5 });
   await assertFails(getDoc(doc(env.authenticatedContext('pp1').firestore(), 'payments/pay9')));

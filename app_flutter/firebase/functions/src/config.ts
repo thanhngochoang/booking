@@ -143,7 +143,8 @@ export function storageUrlPrefixes(): string[] {
 /**
  * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
  * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts
- * (`savePayoutAccount`) and the job that decrypts to send (`createPayouts`), nothing else; the
+ * (`savePayoutAccount`), the callable that decrypts the active account to refuse a code for it
+ * (`requestPayoutOtp`) and the job that decrypts to send (`createPayouts`), nothing else; the
  * emulator reads it from `.secret.local`.
  */
 export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');

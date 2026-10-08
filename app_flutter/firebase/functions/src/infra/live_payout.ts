@@ -14,12 +14,15 @@ import {
   type PayoutDeps,
   type PayoutGateway,
   type PayoutNotices,
+  type VerifiedNameReader,
 } from '@photobooking/domain';
 import { PAYOUT_ACCOUNT_KEY, payoutsMode } from '../config.js';
 import { aesGcmCipher } from './account_cipher.js';
 import { db } from './admin.js';
 import { FirestoreEarningsStore } from './earnings_firestore.js';
 import { liveNotifyDeps } from './live_notification.js';
+import { FirestorePhotographerPhoneReader, nodeOtpCrypto, otpSender } from './otp.js';
+import { FirestoreVerifiedNameReader, accountNameLookup, lookupMode } from './payout_lookup.js';
 import { FirestorePayoutStore } from './payout_firestore.js';
 
 /** A log-safe code for an error: the domain code, else the error's class name; never its message. */
@@ -80,30 +83,44 @@ function sharedFake(): FakePayoutGateway {
   return fake;
 }
 
-/** Callable wiring; the key is read lazily, so only a function that binds the secret can call it. */
-export function livePayoutAccountDeps(): PayoutAccountDeps {
+/**
+ * Callable wiring for the caller `uid` (`lookupPayoutAccountName`, `requestPayoutOtp`,
+ * `savePayoutAccount`). The key is read lazily, so only a function that binds the secret can
+ * decrypt or encrypt. The caller's verified name is read at most once per call, and only when the
+ * use case asks for it (after its role and quota transaction, Ruling 5): the fake lookup echoes it.
+ */
+export function livePayoutAccountDeps(uid: string, mode: 'fake' | 'off' = lookupMode()): PayoutAccountDeps {
   let cipher: AccountCipher | undefined;
   const lazy: AccountCipher = {
     encrypt: (plain) => (cipher ??= aesGcmCipher(PAYOUT_ACCOUNT_KEY.value())).encrypt(plain),
     decrypt: (enc) => (cipher ??= aesGcmCipher(PAYOUT_ACCOUNT_KEY.value())).decrypt(enc),
   };
-  const notWired = async (): Promise<never> => {
-    throw new DomainError('not_eligible');
+  const firestore = db();
+  const reader = new FirestoreVerifiedNameReader(firestore);
+  const read = new Map<string, Promise<string | null>>();
+  const names: VerifiedNameReader = {
+    legalName: (who) => {
+      let name = read.get(who);
+      if (name === undefined) {
+        name = reader.legalName(who);
+        read.set(who, name);
+      }
+      return name;
+    },
   };
   return {
-    store: new FirestorePayoutStore(db()),
+    store: new FirestorePayoutStore(firestore),
     cipher: lazy,
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
-    // Fail closed until #134 Task 5 wires the fake lookup, the identity reader, the OTP adapters
-    // and the payout_lookups quota: a save stops at the quota stub (internal), and even past it no
-    // verified name + an unsupported lookup would be refused (not_eligible).
-    lookup: { lookup: async () => ({ status: 'unsupported' }) },
-    names: { legalName: async () => null },
+    lookup: {
+      lookup: async (r) => accountNameLookup(mode, mode === 'fake' ? await names.legalName(uid) : null).lookup(r),
+    },
+    names,
     otp: {
-      sender: { send: notWired },
-      phones: { phoneOf: async () => null },
-      crypto: { sha256Hex: notWired, random: () => { throw new DomainError('not_eligible'); } },
+      sender: otpSender(process.env, uid),
+      phones: new FirestorePhotographerPhoneReader(firestore),
+      crypto: nodeOtpCrypto,
     },
     notices: livePayoutNotices(),
   };

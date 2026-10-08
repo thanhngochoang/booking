@@ -6,6 +6,7 @@ import {
   providerTypeOf,
   type LedgerEntry,
   type NameStatus,
+  type OtpChallenge,
   type Payment,
   type Payout,
   type PayoutItem,
@@ -29,6 +30,13 @@ import { PHOTOGRAPHERS_COLLECTION } from './review_firestore.js';
 
 export const PAYOUTS_COLLECTION = 'payouts';
 export const PAYOUT_ACCOUNTS_COLLECTION = 'payoutAccounts';
+/** Server-only (rules deny all): one OTP challenge per uid and purpose, salted hashes only. */
+export const OTP_CHALLENGES_COLLECTION = 'otp_challenges';
+/** Server-only (rules deny all): `{day, count}` of name lookups per uid and Vietnam day. */
+export const PAYOUT_LOOKUPS_COLLECTION = 'payout_lookups';
+
+/** `otp_challenges/{uid}_payout_account` (never under users/{uid}/private, which the owner reads). */
+export const otpChallengeDocId = (uid: string): string => `${uid}_payout_account`;
 
 const ts = (iso: string): Timestamp => Timestamp.fromDate(new Date(iso));
 const iso = (v: unknown): string | undefined => (v instanceof Timestamp ? v.toDate().toISOString() : undefined);
@@ -160,6 +168,51 @@ export function accountViewToFirestore(v: PayoutAccountView): DocumentData {
   };
 }
 
+export function otpChallengeToFirestore(c: OtpChallenge): DocumentData {
+  return {
+    uid: c.uid,
+    purpose: c.purpose,
+    codeHash: c.codeHash,
+    salt: c.salt,
+    targetHash: c.targetHash,
+    expiresAt: ts(c.expiresAt),
+    attempts: c.attempts,
+    sentAt: ts(c.sentAt),
+    sendDay: c.sendDay,
+    sendsToday: c.sendsToday,
+    consumedAt: c.consumedAt === null ? null : ts(c.consumedAt),
+  };
+}
+
+/** A missing or malformed challenge reads as none (a save then needs a new code: fail closed). */
+export function otpChallengeFromFirestore(d: DocumentData | undefined): OtpChallenge | null {
+  if (d === undefined || d.purpose !== 'payout_account') return null;
+  const expiresAt = iso(d.expiresAt);
+  const sentAt = iso(d.sentAt);
+  const consumedAt = d.consumedAt === null || d.consumedAt === undefined ? null : iso(d.consumedAt);
+  if (
+    typeof d.uid !== 'string' || typeof d.codeHash !== 'string' || typeof d.salt !== 'string' ||
+    typeof d.targetHash !== 'string' || typeof d.sendDay !== 'string' ||
+    typeof d.attempts !== 'number' || typeof d.sendsToday !== 'number' ||
+    expiresAt === undefined || sentAt === undefined || consumedAt === undefined
+  ) {
+    return null;
+  }
+  return {
+    uid: d.uid,
+    purpose: 'payout_account',
+    codeHash: d.codeHash,
+    salt: d.salt,
+    targetHash: d.targetHash,
+    expiresAt,
+    attempts: d.attempts,
+    sentAt,
+    sendDay: d.sendDay,
+    sendsToday: d.sendsToday,
+    consumedAt,
+  };
+}
+
 /**
  * Payout accounts, payouts, payments and ledger entries in Firestore. Writes are buffered until
  * the callback has finished all its reads (Firestore needs reads before writes), then applied.
@@ -277,20 +330,20 @@ export class FirestorePayoutStore implements PayoutStore {
           writes.push((t) => t.set(this.db.collection(PAYMENTS_COLLECTION).doc(p.id), paymentToFirestore(p))),
         addLedgerEntry: (e: LedgerEntry) =>
           writes.push((t) => t.set(this.db.collection(LEDGER_COLLECTION).doc(e.id), ledgerEntryToFirestore(e))),
-        // otp_challenges / payout_lookups adapters come with the account callables (#134 Task 5).
-        // Until then they fail closed: nothing reads or writes those collections.
-        getOtpChallenge: async () => {
-          throw new Error('otp_challenges adapter not wired');
+        getOtpChallenge: async (uid) => {
+          const snap = await fTx.get(this.db.collection(OTP_CHALLENGES_COLLECTION).doc(otpChallengeDocId(uid)));
+          return otpChallengeFromFirestore(snap.data());
         },
-        putOtpChallenge: () => {
-          throw new Error('otp_challenges adapter not wired');
+        putOtpChallenge: (c) =>
+          writes.push((t) =>
+            t.set(this.db.collection(OTP_CHALLENGES_COLLECTION).doc(otpChallengeDocId(c.uid)), otpChallengeToFirestore(c)),
+          ),
+        getLookupQuota: async (uid) => {
+          const d = (await fTx.get(this.db.collection(PAYOUT_LOOKUPS_COLLECTION).doc(uid))).data();
+          return d !== undefined && typeof d.day === 'string' && typeof d.count === 'number' ? { day: d.day, count: d.count } : null;
         },
-        getLookupQuota: async () => {
-          throw new Error('payout_lookups adapter not wired');
-        },
-        putLookupQuota: () => {
-          throw new Error('payout_lookups adapter not wired');
-        },
+        putLookupQuota: (uid, q) =>
+          writes.push((t) => t.set(this.db.collection(PAYOUT_LOOKUPS_COLLECTION).doc(uid), { day: q.day, count: q.count })),
       };
       const result = await fn(tx);
       for (const w of writes) w(fTx);

@@ -20,7 +20,7 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   not_accepting_orders: 'failed-precondition',
   // "Tạo QR mới" was used MAX_PAYMENT_ATTEMPTS times; the app asks to book again from the start.
   payment_attempts_exceeded: 'failed-precondition',
-  // S06.06 payout account v2: the client shows the matching message (Task 5 pins these in tests).
+  // S06.06 payout account v2 (name check and OTP): the client shows the matching message.
   name_mismatch: 'failed-precondition',
   otp_required: 'failed-precondition',
   otp_invalid: 'failed-precondition',

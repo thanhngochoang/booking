@@ -49,6 +49,15 @@ describe('toHttpsError', () => {
     assert.deepEqual(e.details, { code: 'not_accepting_orders' });
   });
 
+  test('the four new codes map to failed-precondition', () => {
+    for (const code of ['name_mismatch', 'otp_required', 'otp_invalid', 'otp_expired'] as const) {
+      const e = toHttpsError(new DomainError(code));
+      assert.equal(e.code, 'failed-precondition', code);
+      assert.equal(e.message, code);
+      assert.deepEqual(e.details, { code });
+    }
+  });
+
   test('unexpected errors become internal and leak nothing', () => {
     const e = toHttpsError(new Error('Firestore said +84912000001'));
     assert.equal(e.code, 'internal');
