@@ -48,6 +48,7 @@ import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
+import 'fake_push.dart';
 import 'fake_ticket_scanner.dart';
 import 'screen_host.dart';
 
@@ -534,7 +535,13 @@ class EventsWorld {
     await tester.pumpWidget(
       screenRouterApp(
         router: router,
-        overrides: [...overrides, ...extra],
+        // Granted, so no screen under test shows the S17.03 primer unless a
+        // test passes its own permission in [extra].
+        overrides: [
+          ...overrides,
+          ...grantedNotificationPermissionUnless(extra),
+          ...extra,
+        ],
         textScale: textScale,
       ),
     );

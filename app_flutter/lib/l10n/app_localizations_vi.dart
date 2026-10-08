@@ -3648,6 +3648,15 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String primerTitleCustomerTicket(String event) {
+    return 'Bật thông báo để được nhắc trước khi $event bắt đầu';
+  }
+
+  @override
+  String get primerTicketBenefit1 =>
+      'Nhắc trước khi sự kiện bắt đầu, kèm giờ và điểm tập trung';
+
+  @override
   String get primerTitleCustomerInstant =>
       'Bật thông báo để biết khi có người nhận chụp ngay';
 
