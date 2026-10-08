@@ -32,6 +32,21 @@ abstract class PostRepository {
     int limit = 20,
   });
 
+  /// Posts whose `authorId` is [uid], newest first (`createdAt` desc, then id
+  /// desc); [kind] narrows to one kind. Same clamping and cursor rules as
+  /// [feed]. An id that cannot name a document gives an empty page.
+  Future<PostPage> byAuthor(
+    String uid, {
+    PostKind? kind,
+    String? cursor,
+    int limit = 20,
+  });
+
+  /// How many posts [uid] authored (all kinds, or one [kind]), counted by the
+  /// server (`count()` aggregation, about one read per 1000 posts). 0 for an id
+  /// that cannot name a document. Throws on transport failure.
+  Future<int> countByAuthor(String uid, {PostKind? kind});
+
   /// The posts of one album in `albumPosition` order, [limit] clamped to
   /// 1..[kMaxPageSize]. Same cursor rules as [feed].
   Future<PostPage> byAlbum(String albumId, {String? cursor, int limit = 24});

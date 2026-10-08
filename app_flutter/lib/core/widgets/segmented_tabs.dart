@@ -6,9 +6,17 @@ import 'package:photobooking/core/theme/app_theme.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 class SegmentOption<T> {
-  const SegmentOption({required this.value, required this.label});
+  const SegmentOption({
+    required this.value,
+    required this.label,
+    this.enabled = true,
+  });
   final T value;
   final String label;
+
+  /// A disabled segment is greyed, cannot be tapped and is announced as
+  /// disabled.
+  final bool enabled;
 }
 
 /// A row of equal segments of which exactly one is selected: S03.01, S02.03, S05.01,
@@ -34,6 +42,9 @@ class SegmentedTabs<T> extends StatelessWidget {
     final secondary = dark
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
+    final disabledColor = dark
+        ? AppColorsDark.foregroundDisabled
+        : AppColors.foregroundDisabled;
     final radius = BorderRadius.circular(controlRadius);
     return Material(
       color: scheme.secondary,
@@ -48,11 +59,12 @@ class SegmentedTabs<T> extends StatelessWidget {
                 selected: o.value == value,
                 inMutuallyExclusiveGroup: true,
                 label: o.label,
+                enabled: o.enabled,
                 excludeSemantics: true,
-                onTap: () => onChanged(o.value),
+                onTap: o.enabled ? () => onChanged(o.value) : null,
                 child: InkWell(
                   borderRadius: radius,
-                  onTap: () => onChanged(o.value),
+                  onTap: o.enabled ? () => onChanged(o.value) : null,
                   child: SizedBox(
                     height: 48,
                     child: Padding(
@@ -80,7 +92,9 @@ class SegmentedTabs<T> extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: AppText.base,
                                   fontWeight: FontWeight.w600,
-                                  color: o.value == value
+                                  color: !o.enabled
+                                      ? disabledColor
+                                      : o.value == value
                                       ? scheme.primary
                                       : secondary,
                                 ),

@@ -79,6 +79,18 @@ class _FailingPosts implements PostRepository {
   }
 
   @override
+  Future<PostPage> byAuthor(
+    String uid, {
+    PostKind? kind,
+    String? cursor,
+    int limit = 20,
+  }) async => throw StateError('offline');
+
+  @override
+  Future<int> countByAuthor(String uid, {PostKind? kind}) async =>
+      throw StateError('offline');
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 

@@ -91,6 +91,38 @@ class FakePostRepository implements PostRepository {
   }
 
   @override
+  Future<PostPage> byAuthor(
+    String uid, {
+    PostKind? kind,
+    String? cursor,
+    int limit = 20,
+  }) async {
+    if (failWith != null) {
+      throw failWith!;
+    }
+    if (uid.isEmpty || uid.contains('/')) {
+      return const PostPage();
+    }
+    final filtered = _newestFirst
+        .where((p) => p.authorId == uid && (kind == null || p.kind == kind))
+        .toList();
+    return _page(filtered, cursor, limit);
+  }
+
+  @override
+  Future<int> countByAuthor(String uid, {PostKind? kind}) async {
+    if (failWith != null) {
+      throw failWith!;
+    }
+    if (uid.isEmpty || uid.contains('/')) {
+      return 0;
+    }
+    return _posts
+        .where((p) => p.authorId == uid && (kind == null || p.kind == kind))
+        .length;
+  }
+
+  @override
   Future<PostPage> byAlbum(
     String albumId, {
     String? cursor,
