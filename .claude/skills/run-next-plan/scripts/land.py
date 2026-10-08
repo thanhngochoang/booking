@@ -12,7 +12,7 @@ Gates, in order (each failing gate exits with its own code and a reason):
   4. every CI check on the PR passed (waits while pending)   (exit 3: fix the failure)
   5. GitHub reports the PR mergeable and not blocked         (exit 2 if behind/dirty,
                                                               exit 5 if blocked by rules)
-Then: merge with a merge commit (house style), delete the branch (not a shared
+Then: squash-merge (the repository allows nothing else), delete the branch (not a shared
 stack branch), set the project item Done and close the issue.
 
 Usage:
@@ -170,9 +170,8 @@ def cmd_land(a):
         print(f"all gates passed for PR {a.pr} ({st['mergeStateStatus']}); dry run, not merging")
         return
     keep = ["--delete-branch"] if not claim.get("stack") else []  # a shared stack branch stays
-    r = board.sh("gh", "pr", "merge", a.pr, "--merge", *keep, check=False)
-    if r.returncode != 0 and "Merge commits are not allowed" in r.stderr:
-        r = board.sh("gh", "pr", "merge", a.pr, "--squash", *keep, check=False)
+    # The repository allows squash merges only; the PR title becomes the commit subject.
+    r = board.sh("gh", "pr", "merge", a.pr, "--squash", *keep, check=False)
     if r.returncode != 0:
         print(f"merge refused: {r.stderr.strip()}")
         sys.exit(5)
