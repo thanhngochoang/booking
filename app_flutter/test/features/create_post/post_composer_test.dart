@@ -254,6 +254,27 @@ void main() {
     );
 
     test(
+      'post photos use the portfolio purpose and imageMeta carries the uploaded size',
+      () async {
+        final e = await _ready(photos: 2);
+        e.uploader
+          ..doneWidth = 2048
+          ..doneHeight = 1365;
+        await e.ctl.publish();
+        expect(e.uploader.purposes.keys, hasLength(2));
+        expect(
+          e.uploader.purposes.values,
+          everyElement(ImagePurpose.portfolio),
+        );
+        final d = e.publisher.published.single;
+        expect(d.images.map((i) => (i.width, i.height)), [
+          (2048, 1365),
+          (2048, 1365),
+        ]);
+      },
+    );
+
+    test(
       'afterwards the form is empty with a new post id, and the draft is gone',
       () async {
         final e = await _ready();

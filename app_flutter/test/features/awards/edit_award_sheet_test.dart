@@ -157,6 +157,18 @@ void main() {
     expect(_enabled(tester), isTrue);
   });
 
+  testWidgets('award proofs use the document purpose', (tester) async {
+    final w = await _open(tester);
+    w.picker.answers.add([_pic]);
+    await _fill(tester);
+    await _openProof(tester);
+    await tester.tap(_key('award-add-image'));
+    await tester.pumpAndSettle();
+    expect(w.uploader.purposes, {
+      w.uploader.uploaded.single: ImagePurpose.document,
+    });
+  });
+
   testWidgets('closing without saving deletes uploaded files', (tester) async {
     final w = await _open(tester);
     w.picker.answers.add([_pic]);

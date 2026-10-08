@@ -78,6 +78,12 @@ class FakeMediaUploader implements MediaUploader {
   /// The most uploads that were open at the same time.
   int maxConcurrent = 0;
   Object? deleteFailure;
+
+  /// Size reported by every done event, like the compressor's output.
+  /// A test sets these to null to model an uploader that did not measure.
+  int? doneWidth = 1000;
+  int? doneHeight = 750;
+  int? doneSizeBytes = 100000;
   int _open = 0;
 
   @override
@@ -105,6 +111,9 @@ class FakeMediaUploader implements MediaUploader {
         UploadedMedia(
           url: 'https://storage.test/$storagePath',
           storagePath: storagePath,
+          width: doneWidth,
+          height: doneHeight,
+          sizeBytes: doneSizeBytes,
         ),
       );
     } finally {

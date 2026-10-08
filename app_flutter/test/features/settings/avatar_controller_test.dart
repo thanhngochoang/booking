@@ -93,6 +93,14 @@ void main() {
     expect(uploader.uploaded.single, isNot(first));
   });
 
+  test('avatar upload uses the avatar purpose', () async {
+    final (c, _, uploader) = await _setup([
+      [_a],
+    ]);
+    await c.read(avatarControllerProvider.notifier).change();
+    expect(uploader.purposes, {uploader.uploaded.single: ImagePurpose.avatar});
+  });
+
   test('a cancelled pick changes nothing', () async {
     final (c, users, uploader) = await _setup([[]]);
     await c.read(avatarControllerProvider.notifier).change();

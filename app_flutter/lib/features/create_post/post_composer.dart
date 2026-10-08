@@ -510,7 +510,14 @@ class PostComposerController extends Notifier<ComposerState> {
           photographerId: uid,
           serviceId: s.serviceId!,
           specialtyId: s.specialtyId,
-          images: [for (final i in s.images) PostImage(url: i.media!.url)],
+          images: [
+            for (final i in s.images)
+              PostImage(
+                url: i.media!.url,
+                width: i.media!.width,
+                height: i.media!.height,
+              ),
+          ],
           caption: s.caption.trim(),
           locationName: s.locationName,
           styleId: s.styleId,

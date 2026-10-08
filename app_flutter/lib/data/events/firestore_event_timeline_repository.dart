@@ -177,7 +177,13 @@ class FirestoreEventTimelineRepository implements EventTimelineRepository {
             .lastWhere((e) => e.isDone)
             .then((e) => e.media!);
         uploaded.add(media);
-        sizes.add(await _measureSafely(image));
+        final w = media.width;
+        final h = media.height;
+        // The size of the compressed file comes with the upload; measuring
+        // the picked file is the fallback for an uploader that did not say.
+        sizes.add(
+          w != null && h != null ? (w: w, h: h) : await _measureSafely(image),
+        );
       }
       await callEventFunction(_functions, 'shareEventPost', {
         'eventId': eventId,

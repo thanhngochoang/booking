@@ -211,7 +211,7 @@ class FirestoreChatRepository implements ChatRepository {
         'Unauthenticated',
       );
     }
-    final storagePath = 'chats/$chatId/$uid/$clientId.webp';
+    final storagePath = 'chats/$chatId/$uid/$clientId.jpg';
     try {
       await _mediaUploader
           .upload(image, storagePath: storagePath, purpose: ImagePurpose.chat)

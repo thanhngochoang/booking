@@ -224,6 +224,19 @@ void main() {
       },
     );
 
+    test('review share photos use the share purpose', () async {
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      final container = createContainer(picker: picker);
+      await pumpEventQueue();
+      await container
+          .read(reviewControllerProvider('b1').notifier)
+          .pickPhotos();
+      expect(fakeUploader.purposes, hasLength(1));
+      expect(fakeUploader.purposes.values.single, ImagePurpose.share);
+    });
+
     test('a failed tile blocks sharing but not review-only', () async {
       fakeUploader.failNames.add('fail.jpg');
       final picker = FakeImagePicker([
