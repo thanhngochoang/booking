@@ -72,6 +72,9 @@ export async function savePayoutAccount(
       holderName,
       active: true,
       createdAt: at,
+      // Until savePayoutAccount v2 (name lookup, OTP, 72 hours): matched and active at once.
+      nameStatus: 'matched',
+      activeFrom: at,
     };
     tx.putAccount(account);
     for (const p of open) tx.putPayout({ ...p, accountId, updatedAt: at });
@@ -81,6 +84,8 @@ export async function savePayoutAccount(
       accountLast4: last4,
       holderName,
       updatedAt: at,
+      nameStatus: account.nameStatus,
+      activeFrom: account.activeFrom,
     });
     return { accountId, accountLast4: last4 };
   });

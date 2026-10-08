@@ -1,18 +1,42 @@
+import * as logger from 'firebase-functions/logger';
 import {
+  DEFAULT_PAYOUT_POLICY,
   FakePayoutGateway,
   DomainError,
+  isDomainError,
   newUlid,
+  notifyPayoutAccountChanged,
+  notifyPayoutAccountNeeded,
   type AccountCipher,
   type EarningsDeps,
   type PayoutAccountDeps,
   type PayoutDeps,
   type PayoutGateway,
+  type PayoutNotices,
 } from '@photobooking/domain';
 import { PAYOUT_ACCOUNT_KEY, payoutsMode } from '../config.js';
 import { aesGcmCipher } from './account_cipher.js';
 import { db } from './admin.js';
 import { FirestoreEarningsStore } from './earnings_firestore.js';
+import { liveNotifyDeps } from './live_notification.js';
 import { FirestorePayoutStore } from './payout_firestore.js';
+
+/** The payout notices through #138's hooks; a failure is logged by code only and never thrown. */
+export function livePayoutNotices(): PayoutNotices {
+  const logged = async (what: string, run: () => Promise<unknown>): Promise<void> => {
+    try {
+      await run();
+    } catch (e) {
+      logger.error('payout notice failed', { what, code: isDomainError(e) ? e.code : e instanceof Error ? e.name : 'unknown' });
+    }
+  };
+  return {
+    accountNeeded: (payeeId, amount) =>
+      logged('payout_account_needed', () => notifyPayoutAccountNeeded(liveNotifyDeps(), { payeeId, amount })),
+    accountChanged: (uid, v) =>
+      logged('payout_account_changed', () => notifyPayoutAccountChanged(liveNotifyDeps(), { uid, ...v })),
+  };
+}
 
 /** The payout gateway: the reference adapter in fake mode; otherwise one that refuses (no real bank adapter exists). */
 export function payoutGateway(mode: 'fake' | 'off' = payoutsMode()): PayoutGateway {
@@ -53,9 +77,11 @@ export function livePayoutDeps(keyB64: string, gateway: PayoutGateway = payoutGa
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
     gateway,
+    policy: DEFAULT_PAYOUT_POLICY,
+    notices: livePayoutNotices(),
   };
 }
 
 export function liveEarningsDeps(): EarningsDeps {
-  return { store: new FirestoreEarningsStore(db()), clock: { now: () => new Date() } };
+  return { store: new FirestoreEarningsStore(db()), clock: { now: () => new Date() }, policy: DEFAULT_PAYOUT_POLICY };
 }

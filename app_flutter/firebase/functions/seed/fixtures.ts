@@ -16,6 +16,8 @@ import {
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  providerTypeOf,
+  DEFAULT_PAYOUT_POLICY,
   renderNotification,
   summarizeEarnings,
   titleKeyOf,
@@ -918,7 +920,14 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     accountId: a.id,
     amount,
     status: 'paid',
-    items: [{ paymentId: paidId, amount }],
+    // As the seeded doc reads today (written before tax: fee 0, tax 0, net = amount); Task 4 seeds the tax.
+    items: [{ paymentId: paidId, amount, fee: 0, tax: 0, net: amount }],
+    platformFee: 0,
+    taxWithheld: 0,
+    amountNet: amount,
+    feeRateBp: 0,
+    taxRateBp: 0,
+    firstPayout: false,
     createdBy: ADMIN,
     createdAt: new Date(paidAt.getTime() - HOUR_MS).toISOString(),
     updatedAt: paidAt.toISOString(),
@@ -952,8 +961,10 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     const item = earningItemOf({
       payment,
       refunded,
-      subject: { counterpartName: 'Lan (seed)', label: service.name, day: booking.date },
+      subject: { counterpartName: 'Lan (seed)', label: service.name, day: booking.date, milestones: null },
       payout: payment.payoutId === SEED_PAYOUT_AN ? payout : null,
+      payeeType: providerTypeOf(SEED_PHOTOGRAPHERS.find((sp) => sp.uid === payment.payeeId)?.providerType),
+      policy: DEFAULT_PAYOUT_POLICY,
       now,
     });
     if (item === null) continue;

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { computeDeposit } from '../src/booking_policy.js';
 import { describe, it } from 'node:test';
 import { refreshEarnings } from '../src/refresh_earnings.js';
-import { createPayoutWorld, paidBooking, release } from './support/payout_world.js';
+import { approvePayout, createPayout, executePayout } from '../src/payout_use_cases.js';
+import { ADMIN, addAccount, createPayoutWorld, paidBooking, release } from './support/payout_world.js';
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
@@ -53,5 +54,46 @@ describe('refreshEarnings', () => {
     const s = await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId] });
     assert.equal(w.earningsStore.items.size, 0);
     assert.equal(s.heldAmount, 0);
+  });
+
+  it("a paid-out row carries the payout item's fee, tax and net", async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    const a = await paidBooking(w, '2026-10-15');
+    release(w, a.paymentId);
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    await approvePayout(w.payoutDeps, ADMIN, po.id);
+    await executePayout(w.payoutDeps, ADMIN, po.id);
+    const s = await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId] });
+    const row = w.earningsStore.items.get(`p1/${a.paymentId}`);
+    const it = po.items[0];
+    assert.ok(it);
+    assert.equal(row?.state, 'paid_out');
+    assert.equal(row?.estimated, false);
+    assert.deepEqual([row?.amount, row?.platformFee, row?.taxWithheld, row?.netAmount], [it.amount, it.fee, it.tax, it.net]);
+    assert.equal(s.receivedAmount, PAID, 'Đã nhận stays gross');
+  });
+
+  it("a studio's held row has no tax estimate", async () => {
+    const w = createPayoutWorld();
+    w.payoutStore.seedPayeeType('p1', 'studio');
+    const a = await paidBooking(w, '2026-10-15');
+    await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId] });
+    const row = w.earningsStore.items.get(`p1/${a.paymentId}`);
+    assert.equal(row?.estimated, true);
+    assert.equal(row?.taxWithheld, 0);
+    assert.equal(row?.netAmount, PAID);
+  });
+
+  it('milestones from the subject reach the row; null when absent', async () => {
+    const w = createPayoutWorld();
+    const a = await paidBooking(w, '2026-10-15');
+    const b = await paidBooking(w, '2026-10-16');
+    w.earningsStore.milestones.set(a.bookingId, { done: 2, total: 2 });
+    await refreshEarnings(w.earningsDeps, { payeeId: 'p1', paymentIds: [a.paymentId, b.paymentId] });
+    const rowA = w.earningsStore.items.get(`p1/${a.paymentId}`);
+    const rowB = w.earningsStore.items.get(`p1/${b.paymentId}`);
+    assert.deepEqual([rowA?.milestonesDone, rowA?.milestonesTotal], [2, 2]);
+    assert.deepEqual([rowB?.milestonesDone, rowB?.milestonesTotal], [null, null]);
   });
 });

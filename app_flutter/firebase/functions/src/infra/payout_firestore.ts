@@ -1,10 +1,14 @@
 import { Timestamp, type DocumentData, type Firestore, type Transaction } from 'firebase-admin/firestore';
 import {
+  NAME_STATUSES,
   PAYOUT_STATUSES,
   isPayoutPayable,
+  providerTypeOf,
   type LedgerEntry,
+  type NameStatus,
   type Payment,
   type Payout,
+  type PayoutItem,
   type PayoutAccount,
   type PayoutAccountView,
   type PayoutStatus,
@@ -21,6 +25,8 @@ import {
   paymentToFirestore,
 } from './booking_firestore.js';
 
+import { PHOTOGRAPHERS_COLLECTION } from './review_firestore.js';
+
 export const PAYOUTS_COLLECTION = 'payouts';
 export const PAYOUT_ACCOUNTS_COLLECTION = 'payoutAccounts';
 
@@ -33,7 +39,15 @@ export function payoutToFirestore(p: Payout): DocumentData {
     accountId: p.accountId,
     amount: p.amount,
     status: p.status,
-    items: p.items.map((i) => ({ paymentId: i.paymentId, amount: i.amount })),
+    items: p.items.map((i) => ({ paymentId: i.paymentId, amount: i.amount, fee: i.fee, tax: i.tax, net: i.net })),
+    platformFee: p.platformFee,
+    taxWithheld: p.taxWithheld,
+    amountNet: p.amountNet,
+    feeRateBp: p.feeRateBp,
+    taxRateBp: p.taxRateBp,
+    firstPayout: p.firstPayout,
+    approvedBy: p.approvedBy ?? null,
+    approvedAt: p.approvedAt ? ts(p.approvedAt) : null,
     reference: p.reference ?? null,
     failureReason: p.failureReason ?? null,
     holdReason: p.holdReason ?? null,
@@ -46,25 +60,39 @@ export function payoutToFirestore(p: Payout): DocumentData {
 }
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v !== '' ? v : undefined);
+const int = (v: unknown, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
 
+/** A payout written before tax existed reads fee 0, tax 0, net = amount, firstPayout false. */
 export function payoutFromFirestore(id: string, d: DocumentData | undefined): Payout | null {
   if (d === undefined || typeof d.payeeId !== 'string') return null;
   const status = (PAYOUT_STATUSES as readonly unknown[]).includes(d.status) ? (d.status as PayoutStatus) : 'pending';
-  const items: { paymentId: string; amount: number }[] = [];
+  const items: PayoutItem[] = [];
   if (Array.isArray(d.items)) {
-    for (const i of d.items as { paymentId?: unknown; amount?: unknown }[]) {
-      if (typeof i?.paymentId === 'string' && typeof i.amount === 'number') items.push({ paymentId: i.paymentId, amount: i.amount });
+    for (const i of d.items as { paymentId?: unknown; amount?: unknown; fee?: unknown; tax?: unknown; net?: unknown }[]) {
+      if (typeof i?.paymentId === 'string' && typeof i.amount === 'number') {
+        items.push({ paymentId: i.paymentId, amount: i.amount, fee: int(i.fee, 0), tax: int(i.tax, 0), net: int(i.net, i.amount) });
+      }
     }
   }
+  const amount = typeof d.amount === 'number' ? d.amount : 0;
   const processingAt = iso(d.processingAt);
   const paidAt = iso(d.paidAt);
+  const approvedAt = iso(d.approvedAt);
   return {
     id,
     payeeId: d.payeeId,
     accountId: String(d.accountId ?? ''),
-    amount: typeof d.amount === 'number' ? d.amount : 0,
+    amount,
     status,
     items,
+    platformFee: int(d.platformFee, 0),
+    taxWithheld: int(d.taxWithheld, 0),
+    amountNet: int(d.amountNet, amount),
+    feeRateBp: int(d.feeRateBp, 0),
+    taxRateBp: int(d.taxRateBp, 0),
+    firstPayout: d.firstPayout === true,
+    ...(str(d.approvedBy) !== undefined ? { approvedBy: str(d.approvedBy) as string } : {}),
+    ...(approvedAt !== undefined ? { approvedAt } : {}),
     ...(str(d.reference) !== undefined ? { reference: str(d.reference) as string } : {}),
     ...(str(d.failureReason) !== undefined ? { failureReason: str(d.failureReason) as string } : {}),
     ...(str(d.holdReason) !== undefined ? { holdReason: str(d.holdReason) as string } : {}),
@@ -86,12 +114,18 @@ export function accountToFirestore(a: PayoutAccount): DocumentData {
     active: a.active,
     createdAt: ts(a.createdAt),
     ...(a.deactivatedAt ? { deactivatedAt: ts(a.deactivatedAt) } : {}),
+    nameStatus: a.nameStatus,
+    activeFrom: ts(a.activeFrom),
   };
 }
+
+const nameStatusOf = (v: unknown): NameStatus =>
+  (NAME_STATUSES as readonly unknown[]).includes(v) ? (v as NameStatus) : 'matched';
 
 export function accountFromFirestore(id: string, d: DocumentData | undefined): PayoutAccount | null {
   if (d === undefined || typeof d.userId !== 'string' || typeof d.accountNumberEnc !== 'string') return null;
   const deactivatedAt = iso(d.deactivatedAt);
+  const createdAt = iso(d.createdAt) ?? new Date(0).toISOString();
   return {
     id,
     userId: d.userId,
@@ -100,8 +134,11 @@ export function accountFromFirestore(id: string, d: DocumentData | undefined): P
     accountLast4: String(d.accountLast4 ?? ''),
     holderName: String(d.holderName ?? ''),
     active: d.active === true,
-    createdAt: iso(d.createdAt) ?? new Date(0).toISOString(),
+    createdAt,
     ...(deactivatedAt !== undefined ? { deactivatedAt } : {}),
+    // An account written before the 72-hour rule: matched and active from its creation.
+    nameStatus: nameStatusOf(d.nameStatus),
+    activeFrom: iso(d.activeFrom) ?? createdAt,
   };
 }
 
@@ -112,6 +149,8 @@ export function accountViewToFirestore(v: PayoutAccountView): DocumentData {
     accountLast4: v.accountLast4,
     holderName: v.holderName,
     updatedAt: ts(v.updatedAt),
+    nameStatus: v.nameStatus,
+    activeFrom: ts(v.activeFrom),
   };
 }
 
@@ -145,6 +184,17 @@ export class FirestorePayoutStore implements PayoutStore {
     return out.sort((a, b) => a.payeeId.localeCompare(b.payeeId));
   }
 
+  async listPayoutIdsByStatus(statuses: readonly PayoutStatus[], limit: number): Promise<string[]> {
+    if (statuses.length === 0 || limit <= 0) return [];
+    // Sorted here, not by the query, so no composite index is needed (open payouts are few).
+    const snap = await this.db.collection(PAYOUTS_COLLECTION).where('status', 'in', [...statuses]).get();
+    return snap.docs
+      .map((d) => ({ id: d.id, createdAt: iso(d.data().createdAt) ?? '' }))
+      .sort((a, b) => (a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt)))
+      .slice(0, limit)
+      .map((p) => p.id);
+  }
+
   async runTransaction<T>(fn: (tx: PayoutTx) => Promise<T>): Promise<T> {
     return this.db.runTransaction(async (fTx: Transaction) => {
       const writes: Array<(t: Transaction) => void> = [];
@@ -154,6 +204,8 @@ export class FirestorePayoutStore implements PayoutStore {
           const role: unknown = (await fTx.get(this.db.collection('users').doc(uid))).data()?.role;
           return typeof role === 'string' ? role : null;
         },
+        getPayeeType: async (uid) =>
+          providerTypeOf((await fTx.get(this.db.collection(PHOTOGRAPHERS_COLLECTION).doc(uid))).data()?.providerType),
         getActiveAccount: async (userId) => {
           const snap = await fTx.get(accounts(userId).where('active', '==', true).limit(1));
           const d = snap.docs[0];

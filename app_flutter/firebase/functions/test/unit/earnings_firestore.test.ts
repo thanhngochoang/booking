@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
+  DEFAULT_PAYOUT_POLICY,
   MemoryBookingStore,
   MemoryEarningsStore,
   MemoryPayoutStore,
   type EarningItem,
   type Payment,
   type Payout,
+  type PayoutAccount,
 } from '@photobooking/domain';
 import { paymentFromFirestore, paymentToFirestore } from '../../src/infra/booking_firestore.js';
 import {
@@ -65,6 +67,14 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
       subjectLabel: 'Chân dung 2 giờ',
       day: '2026-10-09',
       amount: 450_000,
+      platformFee: 0,
+      taxWithheld: 31_500,
+      netAmount: 418_500,
+      feeRateBp: 0,
+      taxRateBp: 700,
+      estimated: false,
+      milestonesDone: 1,
+      milestonesTotal: 2,
       state: 'paid_out',
       holdReason: null,
       paidOutAt: T,
@@ -89,11 +99,16 @@ describe('Firestore mapping for payments, payouts and earnings', () => {
   it('payout and account documents round-trip and the account holds only ciphertext', () => {
     const p: Payout = {
       id: 'po1', payeeId: 'p1', accountId: 'a1', amount: 300_000, status: 'paid',
-      items: [{ paymentId: 'pay1', amount: 300_000 }], reference: 'FAKE-po1', createdBy: 'admin1',
+      items: [{ paymentId: 'pay1', amount: 300_000, fee: 0, tax: 21_000, net: 279_000 }], reference: 'FAKE-po1', createdBy: 'admin1',
+      platformFee: 0, taxWithheld: 21_000, amountNet: 279_000, feeRateBp: 0, taxRateBp: 700, firstPayout: true,
+      approvedBy: 's1', approvedAt: T,
       createdAt: T, updatedAt: T, processingAt: T, paidAt: T,
     };
     assert.deepEqual(payoutFromFirestore('po1', payoutToFirestore(p)), p);
-    const a = { id: 'a1', userId: 'p1', bankCode: 'VCB', accountNumberEnc: 'v1:a:b:c', accountLast4: '6789', holderName: 'AN', active: true, createdAt: T };
+    const a: PayoutAccount = {
+      id: 'a1', userId: 'p1', bankCode: 'VCB', accountNumberEnc: 'v1:a:b:c', accountLast4: '6789', holderName: 'AN', active: true, createdAt: T,
+      nameStatus: 'matched', activeFrom: T,
+    };
     assert.deepEqual(accountFromFirestore('a1', accountToFirestore(a)), a);
     assert.deepEqual(Object.keys(accountToFirestore(a)).filter((k) => /number/i.test(k)), ['accountNumberEnc']);
   });
@@ -104,7 +119,7 @@ describe('earnings triggers', () => {
     const booking = new MemoryBookingStore();
     const payouts = new MemoryPayoutStore(booking);
     const earnings = new MemoryEarningsStore(booking, payouts, new Map([['c1', 'Lan']]));
-    const deps = { store: earnings, clock: { now: () => new Date('2026-10-11T00:00:00.000Z') } };
+    const deps = { store: earnings, clock: { now: () => new Date('2026-10-11T00:00:00.000Z') }, policy: DEFAULT_PAYOUT_POLICY };
     return { booking, payouts, earnings, deps };
   }
   const withBooking = (w: ReturnType<typeof world>, p: Payment) => {
@@ -145,7 +160,8 @@ describe('earnings triggers', () => {
     withBooking(w, payment({ escrowStatus: 'paid_out', payoutId: 'po1', updatedAt: '2026-10-10T09:00:00.000Z' }));
     const po: Payout = {
       id: 'po1', payeeId: 'p1', accountId: 'a1', amount: 300_000, status: 'paid',
-      items: [{ paymentId: 'pay1', amount: 300_000 }], createdBy: 'admin1',
+      items: [{ paymentId: 'pay1', amount: 300_000, fee: 0, tax: 21_000, net: 279_000 }], createdBy: 'admin1',
+      platformFee: 0, taxWithheld: 21_000, amountNet: 279_000, feeRateBp: 0, taxRateBp: 700, firstPayout: true,
       createdAt: T, updatedAt: '2026-10-10T10:00:00.000Z', paidAt: '2026-10-10T10:00:00.000Z',
     };
     w.payouts.seedPayout(po);

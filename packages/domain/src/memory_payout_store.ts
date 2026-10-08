@@ -3,6 +3,7 @@ import { isPayoutPayable, type Payout, type PayoutStatus } from './payout.js';
 import { isEscrowRefund, type Payment } from './escrow.js';
 import type { PayoutAccount, PayoutAccountView } from './payout_account.js';
 import type { PayoutStore, PayoutTx } from './payout_ports.js';
+import { providerTypeOf, type ProviderType } from './provider_type.js';
 
 /**
  * In-memory reference store. Transactions run one at a time and apply their writes on success.
@@ -12,6 +13,8 @@ export class MemoryPayoutStore implements PayoutStore {
   constructor(readonly booking: MemoryBookingStore = new MemoryBookingStore()) {}
 
   readonly roles = new Map<string, string>();
+  /** uid → provider type; missing → 'individual'. */
+  readonly payeeTypes = new Map<string, ProviderType>();
   /** key `${userId}/${accountId}` */
   readonly accounts = new Map<string, PayoutAccount>();
   readonly accountViews = new Map<string, PayoutAccountView>();
@@ -22,6 +25,14 @@ export class MemoryPayoutStore implements PayoutStore {
 
   seedRole(uid: string, role: string): void {
     this.roles.set(uid, role);
+  }
+
+  seedPayeeType(uid: string, t: ProviderType): void {
+    this.payeeTypes.set(uid, t);
+  }
+
+  payeeTypeOf(uid: string): ProviderType {
+    return providerTypeOf(this.payeeTypes.get(uid));
   }
 
   seedPayout(p: Payout): void {
@@ -54,6 +65,14 @@ export class MemoryPayoutStore implements PayoutStore {
     }));
   }
 
+  async listPayoutIdsByStatus(statuses: readonly PayoutStatus[], limit: number): Promise<string[]> {
+    return [...this.payouts.values()]
+      .filter((p) => statuses.includes(p.status))
+      .sort((a, b) => (a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt)))
+      .slice(0, Math.max(0, limit))
+      .map((p) => p.id);
+  }
+
   async runTransaction<T>(fn: (tx: PayoutTx) => Promise<T>): Promise<T> {
     const run = async (): Promise<T> => {
       const staged: Array<() => void> = [];
@@ -72,6 +91,10 @@ export class MemoryPayoutStore implements PayoutStore {
         getUserRole: async (uid) => {
           read('getUserRole');
           return this.roles.get(uid) ?? null;
+        },
+        getPayeeType: async (uid) => {
+          read('getPayeeType');
+          return this.payeeTypeOf(uid);
         },
         getActiveAccount: async (userId) => {
           read('getActiveAccount');

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import {
+  DEFAULT_PAYOUT_POLICY,
   FakePayoutGateway,
   MemoryBookingStore,
   MemoryPayoutStore,
+  approvePayout,
   type Payment,
   type PayoutDeps,
 } from '@photobooking/domain';
@@ -31,7 +33,11 @@ describe('payouts staff CLI', () => {
   const deps = (gateway = new FakePayoutGateway()): PayoutDeps => ({
     store, cipher, gateway, clock: { now: () => NOW },
     ids: { newId: () => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n++).padStart(2, '0')}` },
+    policy: DEFAULT_PAYOUT_POLICY,
+    notices: { accountNeeded: async () => undefined, accountChanged: async () => undefined },
   });
+  /** The first payout to an account waits for staff (the CLI's `approve` comes with the daily run). */
+  const approve = (id: string) => approvePayout(deps(), { uid: 's1', isAdmin: true }, id);
   const io: CliIo = {
     print: (s) => void out.push(s),
     isAdmin: async () => admin,
@@ -50,6 +56,7 @@ describe('payouts staff CLI', () => {
     store.accounts.set('p1/a1', {
       id: 'a1', userId: 'p1', bankCode: 'VCB', accountNumberEnc: await cipher.encrypt('0123456789'),
       accountLast4: '6789', holderName: 'NGUYEN VAN AN', active: true, createdAt: T,
+      nameStatus: 'matched', activeFrom: T,
     });
   });
 
@@ -75,9 +82,14 @@ describe('payouts staff CLI', () => {
   it('create, hold, resume and execute walk a payout through', async () => {
     await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
     const id = [...store.payouts.keys()][0] as string;
+    assert.equal(store.payouts.get(id)?.status, 'needs_approval');
+    await approve(id);
     await runCli(['hold', id, 'Kiểm tra tài khoản', '--actor', 's1'], deps(), io, 'fake');
     assert.equal(store.payouts.get(id)?.status, 'on_hold');
     await runCli(['resume', id, '--actor', 's1'], deps(), io, 'fake');
+    // Nothing paid to the account yet: resuming sends it back to staff approval.
+    assert.equal(store.payouts.get(id)?.status, 'needs_approval');
+    await approve(id);
     await runCli(['execute', id, '--actor', 's1'], deps(), io, 'fake');
     assert.equal(store.payouts.get(id)?.status, 'paid');
     assert.equal(booking.payments.get('pay1')?.escrowStatus, 'paid_out');
@@ -87,6 +99,7 @@ describe('payouts staff CLI', () => {
   it('execute refuses outside fake mode and changes nothing', async () => {
     await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
     const id = [...store.payouts.keys()][0] as string;
+    await approve(id);
     await assert.rejects(runCli(['execute', id, '--actor', 's1'], deps(), io, 'off'), /no real bank adapter/);
     assert.equal(store.payouts.get(id)?.status, 'pending');
   });

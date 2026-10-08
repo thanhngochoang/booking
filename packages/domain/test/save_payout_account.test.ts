@@ -35,7 +35,13 @@ describe('savePayoutAccount', () => {
     accountId: 'old',
     amount: 100,
     status,
-    items: [{ paymentId: `pay-${id}`, amount: 100 }],
+    items: [{ paymentId: `pay-${id}`, amount: 100, fee: 0, tax: 7, net: 93 }],
+    platformFee: 0,
+    taxWithheld: 7,
+    amountNet: 93,
+    feeRateBp: 0,
+    taxRateBp: 700,
+    firstPayout: true,
     createdBy: 'admin',
     createdAt: NOW.toISOString(),
     updatedAt: NOW.toISOString(),
@@ -62,6 +68,8 @@ describe('savePayoutAccount', () => {
       accountLast4: '6789',
       holderName: 'NGUYEN VAN AN',
       updatedAt: NOW.toISOString(),
+      nameStatus: 'matched',
+      activeFrom: NOW.toISOString(),
     });
   });
 

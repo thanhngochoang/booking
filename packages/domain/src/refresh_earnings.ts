@@ -18,6 +18,7 @@ export async function refreshEarnings(
   return deps.store.runTransaction(async (tx) => {
     const now = deps.clock.now();
     const existing = new Map((await tx.listItems(payeeId)).map((i) => [i.id, i]));
+    const payeeType = await tx.getPayeeType(payeeId);
     const next = new Map(existing);
     for (const id of new Set(paymentIds)) {
       const p = await tx.getPayment(id);
@@ -31,6 +32,8 @@ export async function refreshEarnings(
               refunded: await tx.refundedTotal(id),
               subject,
               payout: p.payoutId ? await tx.getPayout(p.payoutId) : null,
+              payeeType,
+              policy: deps.policy,
               now,
             });
       if (item === null) next.delete(id);

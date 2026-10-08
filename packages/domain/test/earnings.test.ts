@@ -13,12 +13,14 @@ import type { Payout } from '../src/payout.js';
 import { runBookingSweeps } from '../src/booking_sweeps.js';
 import { openDispute } from '../src/open_dispute.js';
 import { transitionBooking } from '../src/transition_booking.js';
-import { createPayout, executePayout } from '../src/payout_use_cases.js';
+import { approvePayout, createPayout, executePayout } from '../src/payout_use_cases.js';
+import { DEFAULT_PAYOUT_POLICY } from '../src/payout_policy.js';
+import type { ProviderType } from '../src/provider_type.js';
 import { refreshEarnings } from '../src/refresh_earnings.js';
 import { ADMIN, addAccount, createPayoutWorld, paidBooking } from './support/payout_world.js';
 
 const NOW = new Date('2026-10-20T10:00:00.000Z');
-const subject = { counterpartName: 'Khách Hàng Một', label: 'Gói Chân dung', day: '2026-10-15' };
+const subject = { counterpartName: 'Khách Hàng Một', label: 'Gói Chân dung', day: '2026-10-15', milestones: null };
 
 const payment = (over: Partial<Payment> = {}): Payment => ({
   id: 'pay1',
@@ -41,14 +43,20 @@ const payout = (over: Partial<Payout> = {}): Payout => ({
   accountId: 'a1',
   amount: 300_000,
   status: 'pending',
-  items: [{ paymentId: 'pay1', amount: 300_000 }],
+  items: [{ paymentId: 'pay1', amount: 300_000, fee: 0, tax: 21_000, net: 279_000 }],
+  platformFee: 0,
+  taxWithheld: 21_000,
+  amountNet: 279_000,
+  feeRateBp: 0,
+  taxRateBp: 700,
+  firstPayout: true,
   createdBy: 'admin1',
   createdAt: NOW.toISOString(),
   updatedAt: NOW.toISOString(),
   ...over,
 });
-const item = (p: Payment, refunded = 0, po: Payout | null = null) =>
-  earningItemOf({ payment: p, refunded, subject, payout: po, now: NOW });
+const item = (p: Payment, refunded = 0, po: Payout | null = null, payeeType: ProviderType = 'individual') =>
+  earningItemOf({ payment: p, refunded, subject, payout: po, payeeType, policy: DEFAULT_PAYOUT_POLICY, now: NOW });
 
 /** The customer pays the whole price up front. */
 const PAID = computeDeposit(1_000_000).deposit;
@@ -94,6 +102,66 @@ describe('earning rows', () => {
     assert.equal(row?.paidOutAt, '2026-10-18T03:00:00.000Z');
     assert.equal(item(payment())?.paidOutAt, null);
   });
+
+  it("a paid-out row carries the payout item's fee, tax and net (estimated false)", () => {
+    // The snapshot wins over today's policy: a studio payee still shows what was withheld then.
+    const po = payout({
+      status: 'paid',
+      paidAt: '2026-10-18T03:00:00.000Z',
+      items: [{ paymentId: 'pay1', amount: 300_000, fee: 3_000, tax: 21_000, net: 276_000 }],
+      feeRateBp: 100,
+    });
+    const row = item(payment({ escrowStatus: 'paid_out', payoutId: 'po1' }), 0, po, 'studio');
+    assert.equal(row?.amount, 300_000);
+    assert.equal(row?.platformFee, 3_000);
+    assert.equal(row?.taxWithheld, 21_000);
+    assert.equal(row?.netAmount, 276_000);
+    assert.equal(row?.feeRateBp, 100);
+    assert.equal(row?.taxRateBp, 700);
+    assert.equal(row?.estimated, false);
+  });
+
+  it('a held row carries the policy estimate (estimated true); a studio row has tax 0', () => {
+    const held = item(payment({ amount: 1_500_000 }));
+    assert.equal(held?.amount, 1_500_000);
+    assert.equal(held?.platformFee, 0);
+    assert.equal(held?.taxWithheld, 105_000);
+    assert.equal(held?.netAmount, 1_395_000);
+    assert.equal(held?.taxRateBp, 700);
+    assert.equal(held?.feeRateBp, 0);
+    assert.equal(held?.estimated, true);
+    // A released row in a payout that is not paid yet is still an estimate.
+    assert.equal(item(payment({ escrowStatus: 'released', payoutId: 'po1' }), 0, payout())?.estimated, true);
+    const studio = item(payment({ amount: 1_500_000 }), 0, null, 'studio');
+    assert.equal(studio?.taxWithheld, 0);
+    assert.equal(studio?.taxRateBp, 0);
+    assert.equal(studio?.netAmount, 1_500_000);
+    assert.equal(studio?.estimated, true);
+  });
+
+  it('the estimate is on the amount kept after refunds', () => {
+    const row = item(payment({ escrowStatus: 'partially_refunded', amount: 1_000_000 }), 500_000);
+    assert.equal(row?.amount, 500_000);
+    assert.equal(row?.taxWithheld, 35_000);
+    assert.equal(row?.netAmount, 465_000);
+  });
+
+  it('milestones from the subject reach the row; null when absent', () => {
+    const withMilestones = earningItemOf({
+      payment: payment(),
+      refunded: 0,
+      subject: { ...subject, milestones: { done: 1, total: 2 } },
+      payout: null,
+      payeeType: 'individual',
+      policy: DEFAULT_PAYOUT_POLICY,
+      now: NOW,
+    });
+    assert.equal(withMilestones?.milestonesDone, 1);
+    assert.equal(withMilestones?.milestonesTotal, 2);
+    const none = item(payment());
+    assert.equal(none?.milestonesDone, null);
+    assert.equal(none?.milestonesTotal, null);
+  });
 });
 
 describe('earnings summary', () => {
@@ -137,6 +205,7 @@ describe('earnings summary', () => {
     assert.equal((await runBookingSweeps(w.deps)).releasedEscrows, 1);
     const batch = await createPayout(w.payoutDeps, ADMIN, 'p1');
     assert.equal(batch.amount, PAID - computeRefund(PAID, 50));
+    await approvePayout(w.payoutDeps, ADMIN, batch.id);
     await executePayout(w.payoutDeps, ADMIN, batch.id);
 
     // B and C complete; C is disputed; B is released after the window.
@@ -160,10 +229,12 @@ describe('earnings summary', () => {
       sum((e) => heldIds.includes(e.paymentId ?? '') && (e.type === 'payment_received' || (e.type as string) === 'deposit_received')) +
       sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'refund_issued') -
       sum((e) => heldIds.includes(e.paymentId ?? '') && e.type === 'escrow_released');
+    // A paid payment leaves escrow as the transfer (net) plus what was withheld (tax, fee).
+    const outgoing = ['payout_paid', 'tax_withheld', 'platform_fee'];
     const soon =
       sum((e) => releasedIds.includes(e.paymentId ?? '') && e.type === 'escrow_released') +
-      sum((e) => releasedIds.includes(e.paymentId ?? '') && e.type === 'payout_paid');
-    const received = -sum((e) => e.type === 'payout_paid');
+      sum((e) => releasedIds.includes(e.paymentId ?? '') && outgoing.includes(e.type));
+    const received = -sum((e) => outgoing.includes(e.type));
 
     assert.deepEqual(
       [summary.heldAmount, summary.soonAmount, summary.receivedAmount],

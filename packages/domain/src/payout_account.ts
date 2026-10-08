@@ -34,6 +34,23 @@ export function accountLast4(n: string): string {
   return n.slice(-4);
 }
 
+/**
+ * `matched`: the bank's holder name equals the verified name; `pending_review`: staff compare it
+ * before the first payout; `staff_confirmed`: staff did.
+ */
+export const NAME_STATUSES = ['matched', 'pending_review', 'staff_confirmed'] as const;
+export type NameStatus = (typeof NAME_STATUSES)[number];
+
+/** Money may move to the account: it is the active one and its activeFrom has come. */
+export function isAccountActiveAt(a: Pick<PayoutAccount, 'active' | 'activeFrom'>, now: Date): boolean {
+  return a.active && !isAccountWaitingAt(a, now);
+}
+
+/** The account's activeFrom is still ahead (the wait after a change); an unreadable one waits too. */
+export function isAccountWaitingAt(a: Pick<PayoutAccount, 'activeFrom'>, now: Date): boolean {
+  return !(Date.parse(a.activeFrom) <= now.getTime());
+}
+
 /** Server-only history document: the number is ciphertext, never plain. */
 export interface PayoutAccount {
   readonly id: string;
@@ -45,6 +62,9 @@ export interface PayoutAccount {
   readonly active: boolean;
   readonly createdAt: string;
   readonly deactivatedAt?: string;
+  readonly nameStatus: NameStatus;
+  /** No payout is created or sent before this instant. */
+  readonly activeFrom: string;
 }
 
 /** Owner-readable masked view of the active account. */
@@ -54,4 +74,6 @@ export interface PayoutAccountView {
   readonly accountLast4: string;
   readonly holderName: string;
   readonly updatedAt: string;
+  readonly nameStatus: NameStatus;
+  readonly activeFrom: string;
 }

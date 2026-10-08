@@ -9,6 +9,8 @@ export class MemoryEarningsStore implements EarningsStore {
   /** key `${payeeId}/${paymentId}` */
   readonly items = new Map<string, EarningItem>();
   readonly summaries = new Map<string, EarningsSummary>();
+  /** bookingId → released / all milestones (written by the delivery flow); missing → null. */
+  readonly milestones = new Map<string, { done: number; total: number }>();
   /** Counts of committed writes, by kind. */
   itemWrites = 0;
   itemDeletes = 0;
@@ -39,6 +41,10 @@ export class MemoryEarningsStore implements EarningsStore {
           const p = this.booking.payments.get(id);
           return p ? { ...p } : null;
         },
+        getPayeeType: async (uid) => {
+          read('getPayeeType');
+          return this.payouts.payeeTypeOf(uid);
+        },
         refundedTotal: async (paymentId) => {
           read('refundedTotal');
           let sum = 0;
@@ -55,6 +61,7 @@ export class MemoryEarningsStore implements EarningsStore {
             counterpartName: this.names.get(b.customerId) ?? '',
             label: b.serviceSnapshot.name,
             day: b.day,
+            milestones: this.milestones.get(b.id) ?? null,
           };
         },
         getPayout: async (id) => {

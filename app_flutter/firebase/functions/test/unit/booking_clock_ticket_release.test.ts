@@ -10,6 +10,7 @@ import {
   listDuePayees,
   savePayoutAccount,
   type PayoutDeps,
+  DEFAULT_PAYOUT_POLICY,
   confirmFakeTicketPayment,
   publishEvent,
   registerEvent,
@@ -91,6 +92,8 @@ function payoutDeps(store: MemoryBookingStore, now: Date): PayoutDeps {
     clock: { now: () => now },
     ids: { newId: () => `po_${next++}` },
     gateway: new FakePayoutGateway(),
+    policy: DEFAULT_PAYOUT_POLICY,
+    notices: { accountNeeded: async () => undefined, accountChanged: async () => undefined },
   };
 }
 
@@ -138,7 +141,8 @@ describe('bookingClock and ticket money', () => {
     await savePayoutAccount(deps, { uid: 'ph1', authTime: at }, { bankCode: 'VCB', accountNumber: '0123456789', holderName: 'Lan' });
     assert.deepEqual(await listDuePayees(deps, ADMIN), [{ payeeId: 'ph1', amount: 200_000, hasAccount: true }]);
     const po = await createPayout(deps, ADMIN, 'ph1');
-    assert.deepEqual(po.items, [{ paymentId: ticket.id, amount: 200_000 }]);
+    // ph1 is an individual: 7 % withheld from the 200,000.
+    assert.deepEqual(po.items, [{ paymentId: ticket.id, amount: 200_000, fee: 0, tax: 14_000, net: 186_000 }]);
     assert.equal(store.payments.get(ticket.id)?.payoutId, po.id);
     assert.deepEqual(await listDuePayees(deps, ADMIN), []);
     await assert.rejects(createPayout(deps, ADMIN, 'ph1'), /not_eligible/);
