@@ -85,6 +85,7 @@ p{max-width:64ch;color:var(--ink-2);margin:10px 0}
 .sb{height:24px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;flex:none}
 .sb.inv{color:#fff;position:absolute;left:0;right:0;top:0;z-index:2}
 .body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:4px 14px 0}
+.body.sc{overflow-y:auto;scrollbar-width:none}.body.sc>*{flex:none}
 .body.flush{padding:0}
 .tabs{flex:none;display:grid;grid-template-columns:repeat(5,1fr);align-items:end;padding:4px 6px 5px;border-top:1px solid var(--line);background:var(--surface)}
 .tab{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:9.5px;color:var(--ink-3);position:relative;font-weight:500}
@@ -1659,11 +1660,11 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
       </div>
       <div class="tabs"><div class="tab"><span class="ms">home</span>Trang chủ</div><div class="tab"><span class="ms">explore</span>Khám phá<span class="dot">3</span></div><div class="tab mid"><div class="disc"><span class="ms">search</span></div>Tìm thợ ảnh</div><div class="tab"><span class="ms">calendar_today</span>Đặt lịch</div><div class="tab on"><span class="ms">person</span>Hồ sơ<span class="dot" aria-label="3 thông báo chưa đọc">3</span></div></div>
     </div></div>
-    <div class="cap"><span class="n">S09.01 · Hồ sơ · có sẵn, làm lại</span><b>Hồ sơ là bài đăng của bạn, cho cả thợ lẫn người thuê</b><span>Dòng <b>Thông báo</b> ngay dưới tên (số chưa đọc, thông báo mới nhất) mở S17.01; số chưa đọc cũng hiện trên tab Hồ sơ (thay chuông ở đầu trang, 2026-10-05). <code>ProfileTab</code>: avatar, tên, vai trò; hàng số (bài đăng, đang theo dõi, đã lưu); huy hiệu (→ S03.02); rồi lưới 3 cột các bài do chính bạn đăng (<code>authorId</code> = bạn), mới nhất trước, chạm → S02.02. Chip lọc theo loại chỉ hiện loại bạn có: <b>Tác phẩm</b> (<code>work</code>, nhiếp ảnh gia), <b>Buổi chụp</b> (<code>real_shoot</code>, khách chia sẻ sau buổi chụp), <b>Sự kiện</b> (<code>event_share</code>). Lưới giống nhau ở cả hai chế độ. Trống: nhiếp ảnh gia thấy "Đăng bài đầu tiên" (→ S10.01), khách thấy "Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây". Đổi chế độ và đăng xuất đã chuyển sang Cài đặt (S09.02, bánh răng).</span></div></div>
+    <div class="cap"><span class="n">S09.01 · Hồ sơ · có sẵn, làm lại</span><b>Hồ sơ là bài đăng của bạn, cho cả thợ lẫn người thuê</b><span>Dòng <b>Thông báo</b> ngay dưới tên (số chưa đọc, thông báo mới nhất) mở S17.01; số chưa đọc cũng hiện trên tab Hồ sơ (thay chuông ở đầu trang, 2026-10-05). <code>ProfileTab</code>: avatar, tên, vai trò; hàng số (bài đăng, đang theo dõi, đã lưu); huy hiệu (→ S03.02); rồi lưới 3 cột các bài do chính bạn đăng (<code>authorId</code> = bạn), mới nhất trước, chạm → S02.02. Chip lọc theo loại chỉ hiện loại bạn có: <b>Tác phẩm</b> (<code>work</code>, nhiếp ảnh gia), <b>Buổi chụp</b> (<code>real_shoot</code>, khách chia sẻ sau buổi chụp), <b>Sự kiện</b> (<code>event_share</code>). Lưới giống nhau ở cả hai chế độ. Bản nhiếp ảnh gia: S09.01-photographer. Trống: nhiếp ảnh gia thấy "Đăng bài đầu tiên" (→ S10.01), khách thấy "Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây". Đổi chế độ và đăng xuất đã chuyển sang Cài đặt (S09.02, bánh răng).</span></div></div>
 
     <div class="step" id="S09.02"><div class="phone" data-code="S09.02"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
-      <div class="body" style="gap:9px">
+      <div class="body sc" style="gap:9px">
         <div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="t" style="font-size:17px">Cài đặt</div><div class="ic" style="opacity:0"></div></div>
         <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Tài khoản</div>
         <div class="card" style="flex-direction:column;align-items:stretch;padding:2px 10px;gap:0">
@@ -1681,12 +1682,68 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-
         <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Kiểu nút chính</div>
         <div class="seg"><span class="on">Gradient</span><span>Ảnh đại diện làm mờ</span></div>
         <div class="btn pri sm">Xem trước nút</div>
+        <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Thông báo</div>
+        <div class="card" style="flex-direction:column;align-items:stretch;padding:2px 10px;gap:0"><div class="row" style="padding:8px 0"><div class="ic"><span class="ms">notifications</span></div><div class="grow"><b style="font-size:13px">Thông báo</b><div class="meta x">Push, giờ yên lặng, nhắc buổi chụp</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div></div>
         <div style="flex:1"></div>
         <div class="btn txt" style="height:36px">Đăng xuất</div>
         <div style="height:6px"></div>
       </div>
     </div></div>
-    <div class="cap"><span class="n">S09.02 · Cài đặt · có sẵn, thêm mục</span><b>Mọi thứ về tài khoản nằm một chỗ, kể cả đổi chế độ và đăng xuất</b><span><code>SettingsScreen</code>. Tài khoản: Chỉnh sửa hồ sơ (S09.03), Số điện thoại (S04.05); nhiếp ảnh gia thêm "Kỹ năng" (S08.02) và "Xem hồ sơ công khai" (S03.01). <b>Chế độ</b>: thẻ đổi vai trò chuyển từ S09.01 sang, giữ chữ cũ ("Tôi là nhiếp ảnh gia" / "Tôi cần đặt lịch"); nút viền (<code>AppButton.outline</code>) vì nút chính của màn là "Xem trước nút"; hồ sơ nhiếp ảnh gia chưa xong thì mở S08.01. Giao diện và kiểu nút thành <code>SegmentedTabs</code> để vừa một màn; kiểu avatar khoá kèm lời nhắc khi chưa có ảnh. <b>Đăng xuất</b> ở đáy, chữ đỏ, mở sheet xác nhận có nút đỏ "Đăng xuất".</span></div></div>
+    <div class="cap"><span class="n">S09.02 · Cài đặt · có sẵn, thêm mục</span><b>Mọi thứ về tài khoản nằm một chỗ, kể cả đổi chế độ và đăng xuất</b><span><code>SettingsScreen</code>. Tài khoản: Chỉnh sửa hồ sơ (S09.03), Số điện thoại (S04.05); nhiếp ảnh gia thêm "Kỹ năng" (S08.02) và "Xem hồ sơ công khai" (S03.01). <b>Chế độ</b>: thẻ đổi vai trò chuyển từ S09.01 sang, giữ chữ cũ ("Tôi là nhiếp ảnh gia" / "Tôi cần đặt lịch"); nút viền (<code>AppButton.outline</code>) vì nút chính của màn là "Xem trước nút"; hồ sơ nhiếp ảnh gia chưa xong thì mở S08.01. Giao diện và kiểu nút thành <code>SegmentedTabs</code> để vừa một màn; kiểu avatar khoá kèm lời nhắc khi chưa có ảnh. <b>Thông báo</b>: một dòng mở S17.02. Bản nhiếp ảnh gia: S09.02-photographer. <b>Đăng xuất</b> ở đáy, chữ đỏ, mở sheet xác nhận có nút đỏ "Đăng xuất".</span></div></div>
+
+    <div class="step" id="S09.01-photographer"><div class="phone" data-code="S09.01"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body sc" style="gap:10px">
+        <div class="bar"><div class="t">Hồ sơ</div><div class="ic"><span class="ms">settings</span></div></div>
+        <div class="row" style="gap:12px"><span class="av l"></span><div class="grow"><div style="font-family:var(--display);font-weight:600;font-size:20px">Minh Trí</div><div class="meta">Nhiếp ảnh gia · TP.HCM</div></div></div>
+        <div class="card" style="padding:8px 10px" role="button" aria-label="Thông báo, 2 chưa đọc"><div class="ic" style="background:var(--field);color:var(--ink-2)"><span class="ms">notifications</span></div><div class="t"><b>Thông báo</b><span class="meta">Lan Anh gửi yêu cầu đặt lịch</span></div><span class="nbadge">2</span><span class="ms chev">chevron_right</span></div>
+        <div class="row" style="gap:18px"><div><b class="tn" style="font-size:14px">24</b><div class="meta x">bài đăng</div></div></div>
+        <div class="row" style="gap:6px;overflow:hidden"><span class="bdg"><i><span class="ms">photo_camera</span></i>100+ buổi chụp</span><span class="bdg"><i><span class="ms">chat_bubble</span></i>Phản hồi nhanh</span><span class="sec" style="display:block"><span>Tất cả</span></span></div>
+        <div class="card" style="padding:8px 10px"><div class="ic" style="background:var(--field);color:var(--ink-2)"><span class="ms">album</span></div><div class="t"><b>Album của tôi</b><span class="meta">Gom bài thành album, sắp xếp thứ tự trên hồ sơ</span></div><span class="ms chev">chevron_right</span></div>
+        <div class="card" style="padding:8px 10px"><div class="ic" style="background:var(--field);color:var(--ink-2)"><span class="ms">account_balance_wallet</span></div><div class="t"><b>Thu nhập</b><span class="meta">Tiền đang giữ, sắp nhận và đã nhận</span></div><span class="ms chev">chevron_right</span></div>
+        <div class="card" style="padding:8px 10px"><div class="ic" style="background:var(--field);color:var(--ink-2)"><span class="ms">workspace_premium</span></div><div class="t"><b>Có giải thưởng? Lên hạng Nhiếp ảnh gia</b></div><div class="btn txt xs">Để sau</div></div>
+        <div class="chips"><span class="chip on">Tất cả · 24</span><span class="chip">Tác phẩm · 22</span><span class="chip">Sự kiện · 2</span></div>
+        <div class="grid3"><div class="ph p3"></div><div class="ph p1"></div><div class="ph p6"><span class="tag" style="position:absolute;left:5px;bottom:5px;font-size:9px;padding:2px 6px">Sự kiện</span></div><div class="ph p2"></div><div class="ph p4"></div><div class="ph p5"></div></div>
+      </div>
+      <div class="tabs"><div class="tab"><span class="ms">home</span>Trang chủ</div><div class="tab"><span class="ms">explore</span>Khám phá<span class="dot">3</span></div><div class="tab mid"><div class="disc"><span class="ms">add</span></div>Đăng bài</div><div class="tab"><span class="ms">calendar_today</span>Công việc<span class="dot">2</span></div><div class="tab on"><span class="ms">person</span>Hồ sơ<span class="dot" aria-label="2 thông báo chưa đọc">2</span></div></div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S09.01 · Hồ sơ (nhiếp ảnh gia)</span><b>Cùng lưới bài đăng, thêm lối vào việc của thợ</b><span>Dưới huy hiệu: thẻ "Hoàn thiện hồ sơ nhiếp ảnh gia" khi thiết lập chưa xong (→ S08.01), "Album của tôi" (→ S24.02), "Thu nhập" (→ S06.05), dòng nhắc giải thưởng khi hồ sơ là Cá nhân (→ S25.01, ẩn sau "Để sau"). "đang theo dõi · đã lưu" chỉ hiện khi S19 xong. Chip chỉ hiện loại có bài; chỉ một loại thì ẩn hàng chip. Trống: "Chưa có bài đăng" + nút "Đăng bài đầu tiên" (→ S10.01).</span></div></div>
+
+    <div class="step" id="S09.02-photographer"><div class="phone" data-code="S09.02"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="body sc" style="gap:9px">
+        <div class="bar"><div class="ic"><span class="ms">arrow_back</span></div><div class="t" style="font-size:17px">Cài đặt</div><div class="ic" style="opacity:0"></div></div>
+        <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Tài khoản</div>
+        <div class="card" style="flex-direction:column;align-items:stretch;padding:2px 10px;gap:0">
+          <div class="row" style="padding:8px 0"><div class="ic"><span class="ms">person</span></div><div class="grow"><b style="font-size:13px">Chỉnh sửa hồ sơ</b><div class="meta x">Minh Trí</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">call</span></div><div class="grow"><b style="font-size:13px">Số điện thoại</b><div class="meta x">•••• 0001</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">auto_awesome</span></div><div class="grow"><b style="font-size:13px">Kỹ năng</b><div class="meta x"><div class="cbar" style="width:80px;margin-top:4px"><i style="width:72%"></i></div></div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">work</span></div><div class="grow"><b style="font-size:13px">Hình thức nhận việc</b><div class="meta x">Studio</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">place</span></div><div class="grow"><b style="font-size:13px">Địa chỉ studio</b><div class="meta x">Quận 1</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">workspace_premium</span></div><div class="grow"><b style="font-size:13px">Giải thưởng</b><div class="meta x">Khai giải để lên hạng Nhiếp ảnh gia</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">verified</span></div><div class="grow"><b style="font-size:13px">Xác minh &amp; nhận đơn</b><div class="meta x">Xác minh danh tính để bắt đầu nhận đơn</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">groups</span></div><div class="grow"><b style="font-size:13px">Thành viên studio</b><div class="meta x">Mời thợ, giao việc cho thành viên</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+          <div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div class="ic"><span class="ms">storefront</span></div><div class="grow"><b style="font-size:13px">Xem hồ sơ công khai</b><div class="meta x">Hồ sơ như khách nhìn thấy</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div>
+        </div>
+        <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Chế độ</div>
+        <div class="card" style="flex-direction:column;align-items:stretch;padding:12px;gap:6px">
+          <b style="font-size:13.5px">Tôi cần đặt lịch</b>
+          <div class="meta x">Tìm nhiếp ảnh gia, đặt lịch và nhắn tin. Bạn vẫn đổi lại được bất cứ lúc nào.</div>
+          <div class="btn out sm"><span class="ms" style="font-size:16px">swap_horiz</span>Chuyển qua chế độ đặt lịch</div>
+        </div>
+        <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Giao diện</div>
+        <div class="seg"><span class="on">Tối</span><span>Sáng</span><span>Theo hệ thống</span></div>
+        <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Kiểu nút chính</div>
+        <div class="seg"><span class="on">Gradient</span><span>Ảnh đại diện làm mờ</span></div>
+        <div class="btn pri sm">Xem trước nút</div>
+        <div class="meta x" style="text-transform:uppercase;letter-spacing:.08em;font-size:10.5px">Thông báo</div>
+        <div class="card" style="flex-direction:column;align-items:stretch;padding:2px 10px;gap:0"><div class="row" style="padding:8px 0"><div class="ic"><span class="ms">notifications</span></div><div class="grow"><b style="font-size:13px">Thông báo</b><div class="meta x">Push, giờ yên lặng, nhắc buổi chụp</div></div><div class="ic"><span class="ms" style="transform:scaleX(-1)">arrow_back</span></div></div></div>
+        <div style="flex:1"></div>
+        <div class="btn txt" style="height:36px">Đăng xuất</div>
+        <div style="height:6px"></div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n new">Mới</span><span class="n">S09.02 · Cài đặt (nhiếp ảnh gia, studio)</span><b>Mọi lối vào việc của thợ ở một nhóm</b><span>Thứ tự trong Tài khoản: Chỉnh sửa hồ sơ, Số điện thoại, Kỹ năng, Hình thức nhận việc, Địa chỉ studio (chỉ Studio, mở S08.05), Giải thưởng (S25.01), Xác minh &amp; nhận đơn (S21.02), Xác minh doanh nghiệp (Studio, S21.04), Studio của tôi (Cá nhân, S26.03) hoặc Thành viên studio (Studio, S26.01), Cộng tác và Tin tuyển (S27), Xem hồ sơ công khai (S03.01), Người đã chặn (S20); staff thêm Quản lý sự kiện (S12.03). Sau Thông báo: nhóm Thanh toán và dữ liệu (S22), nhóm Hỗ trợ (S18), rồi Đăng xuất. Dòng nào có màn chưa làm thì ẩn, không để link chết.</span></div></div>
 
     <div class="step" id="S09.03"><div class="phone" data-code="S09.03"><div class="scr">
       <div class="sb"><span>9:41</span><span>●●● ▮</span></div>

@@ -31,6 +31,7 @@ Màn của phần A–C trong [`../2026-10-05-provider-types-portfolio-jobs-desi
 ### S09.01 · Hồ sơ cá nhân: dòng Thông báo
 - Dòng "Thông báo" ngay dưới tên: biểu tượng chuông trong vòng tròn tô nhạt, tiêu đề, tóm tắt thông báo mới nhất, chấm số chưa đọc, mũi tên → S17.01. Số chưa đọc cũng hiện trên tab Hồ sơ (`TabBadge`). Không còn chuông ở đầu trang các màn khác (spec 10-05 mục 8).
 - Thợ ảnh hồ sơ Cá nhân chưa là NAG có thêm dòng nhắc "Có giải thưởng? Lên hạng Nhiếp ảnh gia" → S25.01 (ẩn khi đã bấm "Để sau").
+- Vị trí: các lối vào việc của thợ (thẻ hoàn thiện hồ sơ, "Album của tôi", "Thu nhập", dòng nhắc giải thưởng này) nằm giữa hàng huy hiệu và hàng chip lọc, xem khung `#S09.01-photographer` trong mock; lưới bài đăng bên dưới giống hệt chế độ khách.
 
 ---
 
