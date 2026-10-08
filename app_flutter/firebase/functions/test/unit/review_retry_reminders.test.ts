@@ -20,8 +20,10 @@ describe('review notice retries', () => {
       runTransaction: async <T,>(fn: (tx: StatsTx) => Promise<T>) =>
         fn({
           getReview: async (id) => ({
-            bookingId: id, customerId: 'c1', photographerId: 'p1', serviceId: 's', rating: 5, text: 'Tốt',
-            photoPostId: null, createdAt: new Date(), countedAt: counted ? new Date() : null,
+            id, bookingId: id, subjectType: 'photographer', subjectId: 'p1', photographerId: 'p1', customerId: 'c1',
+            serviceId: 's', serviceName: 'Chân dung', bookingDay: '2026-10-08', verdict: 'tomato', hits: 5,
+            intensity: 0.82, reasons: [], text: 'Tốt lắm, đúng giờ', photoPostId: null, createdAt: new Date(),
+            countedAt: counted ? new Date() : null,
           }),
           getPhotographerStats: async () => null,
           setPhotographerStats: () => {},
@@ -62,7 +64,15 @@ describe('review notice retries', () => {
       },
       clock,
     };
-    const input = { bookingId: 'b1', before: undefined, after: { photographerId: 'p1', customerId: 'c1', rating: 5, text: 'Tốt' } };
+    const input = {
+      reviewId: 'b1',
+      before: undefined,
+      after: {
+        bookingId: 'b1', subjectType: 'photographer', subjectId: 'p1', photographerId: 'p1', customerId: 'c1',
+        serviceId: 's', serviceName: 'Chân dung', bookingDay: '2026-10-08', verdict: 'tomato', hits: 5, intensity: 0.82,
+        reasons: [], text: 'Tốt lắm, đúng giờ', photoPostId: null, createdAt: new Date(), countedAt: null,
+      },
+    };
 
     await assert.rejects(handleReviewWrite(input, store, new Date(), badges));
     assert.equal(notifyStore.rowsOf('p1').length, 0);

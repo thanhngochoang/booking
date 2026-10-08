@@ -117,20 +117,38 @@ describe('notifications on the emulators', () => {
   });
 
   test('a counted review notifies the photographer and awards top_rated at 20 reviews', async () => {
-    await db.doc(`photographers/${BINH}`).set({ stats: { ratingSum: 95, reviewCount: 19, rating: 5 } }, { merge: true });
+    // 19 tomatoes so far (legacy star fields still present: the first verdict write deletes them).
+    await db.doc(`photographers/${BINH}`).set(
+      { stats: { reviewCount: 19, tomatoCount: 19, brickCount: 0, signedSum: 19, tomatoPct: 100, score: 1, rating: 5, ratingSum: 95 } },
+      { merge: true },
+    );
     await db.doc('reviews/seed-booking-completed-recent').set({
+      bookingId: 'seed-booking-completed-recent',
+      subjectType: 'photographer',
+      subjectId: BINH,
       customerId: LAN,
       photographerId: BINH,
       serviceId: 'seed-service-family',
-      rating: 5,
+      serviceName: 'Gia đình 90 phút',
+      bookingDay: '2026-09-27',
+      verdict: 'tomato',
+      hits: 10,
+      intensity: 1,
+      reasons: [],
       text: 'Rất tận tâm',
       photoPostId: null,
       createdAt: Timestamp.now(),
       countedAt: null,
     });
-    await waitFor(async () => (await db.doc(`users/${BINH}/notifications/n_review_new_seed-booking-completed-recent`).get()).exists, 'the review row');
+    const id = `n_review_tomato_seed-booking-completed-recent_${BINH}`;
+    await waitFor(async () => (await db.doc(`users/${BINH}/notifications/${id}`).get()).exists, 'the review row');
+    assert.equal((await data(`users/${BINH}/notifications/${id}`)).title, 'Bạn nhận 🍅 ×10 từ buổi chụp CN 27/9');
     await waitFor(async () => (await db.doc(`users/${BINH}/badges/top_rated`).get()).exists, 'the top_rated badge');
     assert.equal((await data(`users/${BINH}/badges/top_rated`)).uid, BINH);
+    const stats = (await data(`photographers/${BINH}`)).stats as Record<string, unknown>;
+    assert.equal(stats.reviewCount, 20);
+    assert.equal('rating' in stats, false);
+    assert.equal('ratingSum' in stats, false);
   });
 
   test('a new user gets new_member', async () => {

@@ -629,10 +629,11 @@ service cloud.firestore {
       allow delete: if isOwner(uid) && resource.data.state == 'off';
     }
 
-    // reviews/{bookingId}: customer review of completed shoot.
+    // reviews/{reviewId}: tomato/brick review of a completed shoot; reviewId = bookingId for the
+    // photographer, {bookingId}_studio for the studio.
     // Read: any signed-in user (public on profile).
     // Client write: false (all reviews are submitted via submitReview Function).
-    match /reviews/{bookingId} {
+    match /reviews/{reviewId} {
       allow read: if signedIn();
       allow write: if false;
     }

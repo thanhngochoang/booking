@@ -92,8 +92,6 @@ export interface PhotographersTable {
   verified_at: Opt<Date>;
   onboarding_complete: Def<boolean>;
   accepts_inquiries: Def<boolean>;
-  /** numeric(3,2): pg returns a string, kept as is (derived, read-only here). */
-  rating_avg: Def<string>;
   review_count: Def<number>;
   completed_count: Def<number>;
   response_minutes_median: Opt<number>;
@@ -105,6 +103,15 @@ export interface PhotographersTable {
   studio_district: Opt<string>;
   studio_city: Opt<string>;
   approved_award_count: Def<number>;
+  /** Server-computed review stats (migration 1791676800001; derived, read-only here). */
+  tomato_count: Def<number>;
+  brick_count: Def<number>;
+  /** numeric(8,2): pg returns a string, kept as is. */
+  signed_sum: Def<string>;
+  /** 0..100, 0 without reviews; shown only from 5 reviews. */
+  tomato_pct: Def<number>;
+  /** numeric(4,3), -1..1: pg returns a string, kept as is. */
+  score: Def<string>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

@@ -72,10 +72,10 @@ test('users docs never hold an email address (readable by every signed-in user)'
 test('server-computed reputation fields are never client-writable', async () => {
   await asPhotographer('s1');
   const db = env.authenticatedContext('s1').firestore();
-  await assertFails(setDoc(doc(db, 'photographers/s1'), { onboardingComplete: false, stats: { rating: 5, reviewCount: 9999 } }));
+  await assertFails(setDoc(doc(db, 'photographers/s1'), { onboardingComplete: false, stats: { tomatoPct: 100, reviewCount: 9999 } }));
   await assertFails(setDoc(doc(db, 'photographers/s1'), { onboardingComplete: false, startingPrice: 1 }));
   await assertSucceeds(setDoc(doc(db, 'photographers/s1'), { onboardingComplete: false, verified: false, bio: 'Chân dung' }));
-  await assertFails(updateDoc(doc(db, 'photographers/s1'), { 'stats.rating': 5 }));
+  await assertFails(updateDoc(doc(db, 'photographers/s1'), { 'stats.score': 1 }));
   await assertFails(updateDoc(doc(db, 'photographers/s1'), { startingPrice: 1 }));
   await assertFails(updateDoc(doc(db, 'photographers/s1'), { anythingElse: true }));
   await assertSucceeds(updateDoc(doc(db, 'photographers/s1'), { bio: 'Cưới', specialties: ['wedding'], onboardingComplete: true }));
@@ -344,7 +344,7 @@ test('a client cannot touch counters on posts or users through likes', async () 
   await env.withSecurityRulesDisabled(async (c) => {
     await setDoc(doc(c.firestore(), 'users/v1'), { displayName: 'V', role: 'photographer', followerCount: 3, savedCount: 1 });
     await setDoc(doc(c.firestore(), 'photographers/v1'), {
-      onboardingComplete: true, verified: false, bio: 'x', followerCount: 3, stats: { rating: 4 },
+      onboardingComplete: true, verified: false, bio: 'x', followerCount: 3, stats: { tomatoPct: 90 },
     });
   });
   const db = env.authenticatedContext('v1').firestore();
@@ -354,7 +354,7 @@ test('a client cannot touch counters on posts or users through likes', async () 
   await assertFails(updateDoc(doc(db, 'users/v1'), { savedCount: 10 }));
   await assertFails(updateDoc(doc(db, 'users/v1'), { followerCount: 10 }));
   await assertFails(updateDoc(doc(db, 'photographers/v1'), { followerCount: 10 }));
-  await assertFails(updateDoc(doc(db, 'photographers/v1'), { 'stats.rating': 5 }));
+  await assertFails(updateDoc(doc(db, 'photographers/v1'), { 'stats.tomatoPct': 100 }));
   await assertFails(updateDoc(doc(db, 'photographers/v1'), { verified: true }));
 });
 
@@ -1234,9 +1234,14 @@ test('reviews are readable by any signed-in user and writable by no client', asy
   await env.withSecurityRulesDisabled(async (c) => {
     await setDoc(doc(c.firestore(), 'reviews/rev_b1'), {
       bookingId: 'rev_b1',
+      subjectType: 'photographer',
+      subjectId: 'p1',
       customerId: 'cust1',
       photographerId: 'p1',
-      rating: 5,
+      verdict: 'tomato',
+      hits: 5,
+      intensity: 0.82,
+      reasons: [],
       text: 'Chụp rất đẹp',
     });
   });
@@ -1251,16 +1256,48 @@ test('reviews are readable by any signed-in user and writable by no client', asy
   await assertFails(getDoc(doc(unauthDb, 'reviews/rev_b1')));
 
   // No client can create, update, or delete reviews
-  await assertFails(setDoc(doc(authDb, 'reviews/rev_b2'), {
-    bookingId: 'rev_b2',
-    customerId: 'u_any',
-    photographerId: 'p1',
-    rating: 5,
-    text: 'Client write attempt',
-  }));
   await assertFails(updateDoc(doc(authDb, 'reviews/rev_b1'), { text: 'Modified review' }));
+  await assertFails(updateDoc(doc(authDb, 'reviews/rev_b1'), { hits: 10, intensity: 1 }));
   await assertFails(deleteDoc(doc(authDb, 'reviews/rev_b1')));
-  await assertFails(setDoc(doc(unauthDb, 'reviews/rev_b3'), { rating: 5 }));
+  await assertFails(setDoc(doc(unauthDb, 'reviews/rev_b3'), { verdict: 'tomato', hits: 1 }));
+});
+
+test('a customer cannot create reviews/{bookingId} with a verdict', async () => {
+  await asCustomer('cust_rv');
+  const db = env.authenticatedContext('cust_rv').firestore();
+  const review = {
+    bookingId: 'rev_c1',
+    subjectType: 'photographer',
+    subjectId: 'p1',
+    customerId: 'cust_rv',
+    photographerId: 'p1',
+    verdict: 'brick',
+    hits: 3,
+    intensity: 0.69,
+    reasons: ['late'],
+    text: 'Đến trễ 30 phút, ảnh giao chậm.',
+    photoPostId: null,
+    countedAt: null,
+  };
+  await assertFails(setDoc(doc(db, 'reviews/rev_c1'), review));
+  await assertFails(setDoc(doc(db, 'reviews/rev_c1_studio'), { ...review, subjectType: 'studio' }));
+});
+
+test('a customer cannot write photographers/{uid}.stats.tomatoPct', async () => {
+  await asPhotographer('p_tp');
+  await asCustomer('cust_tp');
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/p_tp'), {
+      onboardingComplete: true, verified: true, bio: 'x', stats: { reviewCount: 3, tomatoCount: 3, tomatoPct: 100, score: 0.8 },
+    }));
+  const customer = env.authenticatedContext('cust_tp').firestore();
+  await assertFails(updateDoc(doc(customer, 'photographers/p_tp'), { 'stats.tomatoPct': 100 }));
+  await assertFails(setDoc(doc(customer, 'photographers/p_tp'), { stats: { tomatoPct: 100 } }, { merge: true }));
+  // Not the owner either: stats are server-computed.
+  const owner = env.authenticatedContext('p_tp').firestore();
+  await assertFails(updateDoc(doc(owner, 'photographers/p_tp'), { 'stats.tomatoPct': 100 }));
+  await assertFails(updateDoc(doc(owner, 'photographers/p_tp'), { 'stats.score': 1, 'stats.brickCount': 0 }));
+  await assertSucceeds(updateDoc(doc(owner, 'photographers/p_tp'), { bio: 'y' }));
 });
 
 test('clients still cannot create real_shoot posts', async () => {

@@ -26,10 +26,10 @@ const EXPECTED: Record<string, string[]> = {
   photographer_contact_numbers: ['photographer_id', 'phone_e164', 'zalo_phone_e164', 'whatsapp_phone_e164'],
   photographers: [
     'user_id', 'bio', 'years_experience', 'service_city', 'service_lat', 'service_lng', 'service_radius_km',
-    'cover_file_id', 'verified', 'verified_at', 'onboarding_complete', 'accepts_inquiries', 'rating_avg',
+    'cover_file_id', 'verified', 'verified_at', 'onboarding_complete', 'accepts_inquiries',
     'review_count', 'completed_count', 'response_minutes_median', 'starting_price', 'next_free_date',
     'skills_completeness', 'created_at', 'updated_at', 'provider_type', 'artist_since', 'studio_district',
-    'studio_city', 'approved_award_count',
+    'studio_city', 'approved_award_count', 'tomato_count', 'brick_count', 'signed_sum', 'tomato_pct', 'score',
   ],
   services: [
     'id', 'photographer_id', 'name', 'specialty_id', 'duration_minutes', 'price', 'currency', 'photo_count',
@@ -175,6 +175,20 @@ describe('constraints from relational-schema.md', () => {
     await db.updateTable('studio_addresses').set({ district: 'Quận 3' }).where('photographer_id', '=', 'p1').execute();
     const after = await db.selectFrom('studio_addresses').select('updated_at').where('photographer_id', '=', 'p1').executeTakeFirstOrThrow();
     expect(after.updated_at.getTime()).toBeGreaterThan(before.updated_at.getTime());
+  });
+
+  it('photographers: tomato_pct check refuses 101', async () => {
+    await graph();
+    await expect(db.updateTable('photographers').set({ tomato_pct: 101 }).where('user_id', '=', 'p1').execute()).rejects.toThrow(/check constraint/);
+    await db.updateTable('photographers').set({ tomato_pct: 100 }).where('user_id', '=', 'p1').execute();
+  });
+
+  it('photographers: score check refuses 1.5', async () => {
+    await graph();
+    await expect(db.updateTable('photographers').set({ score: '1.5' }).where('user_id', '=', 'p1').execute()).rejects.toThrow(/check constraint/);
+    await db.updateTable('photographers').set({ score: '-1', signed_sum: '-54.62', brick_count: 58 }).where('user_id', '=', 'p1').execute();
+    const row = await db.selectFrom('photographers').select(['score', 'signed_sum', 'tomato_count']).where('user_id', '=', 'p1').executeTakeFirstOrThrow();
+    expect(row).toEqual({ score: '-1.000', signed_sum: '-54.62', tomato_count: 0 });
   });
 
   it('money comes back as a JS integer and a day as yyyy-MM-dd', async () => {

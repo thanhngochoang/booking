@@ -40,10 +40,26 @@ const NOW = new Date('2026-10-10T00:00:00.000Z');
 
 describe('FirestoreBadgeMetricsReader', () => {
   it('asks only the requested metrics', async () => {
-    const { db, log } = fakeDb({ 'photographers/u1': { stats: { rating: 4.85, reviewCount: 30 } } }, {});
-    const m = await new FirestoreBadgeMetricsReader(db, () => NOW).read('u1', new Set(['rating', 'reviewCount'] as const));
+    const { db, log } = fakeDb({ 'photographers/u1': { stats: { tomatoPct: 97, reviewCount: 58, score: 0.942 } } }, {});
+    const m = await new FirestoreBadgeMetricsReader(db, () => NOW).read('u1', new Set(['reviewCount'] as const));
     assert.deepEqual(log, ['get photographers/u1']);
-    assert.deepEqual(m, { rating: 4.9, reviewCount: 30 });
+    assert.deepEqual(m, { reviewCount: 58 });
+  });
+
+  it('tomatoPct and reviewCount come from stats', async () => {
+    const { db } = fakeDb({ 'photographers/u1': { stats: { tomatoPct: 97, reviewCount: 58, rating: 4.9 } } }, {});
+    const m = await new FirestoreBadgeMetricsReader(db, () => NOW).read('u1', new Set(['tomatoPct', 'reviewCount'] as const));
+    assert.deepEqual(m, { tomatoPct: 97, reviewCount: 58 });
+  });
+
+  it('a photographer without stats has tomatoPct null', async () => {
+    const { db } = fakeDb({ 'photographers/u1': {} }, {});
+    const m = await new FirestoreBadgeMetricsReader(db, () => NOW).read('u1', new Set(['tomatoPct'] as const));
+    assert.deepEqual(m, { tomatoPct: null });
+    // Legacy star stats (rating only) give no percentage either.
+    const legacy = fakeDb({ 'photographers/u2': { stats: { rating: 4.9, ratingSum: 284, reviewCount: 58 } } }, {});
+    const m2 = await new FirestoreBadgeMetricsReader(legacy.db, () => NOW).read('u2', new Set(['tomatoPct'] as const));
+    assert.deepEqual(m2, { tomatoPct: null });
   });
 
   it('counts through aggregation queries, one per metric', async () => {
@@ -76,12 +92,12 @@ describe('FirestoreBadgeMetricsReader', () => {
     assert.equal(m.detailedReviews, 2);
   });
 
-  it('absent stats give null for rating and 0 for counts', async () => {
+  it('absent stats give null for tomatoPct and 0 for counts', async () => {
     const { db } = fakeDb({ 'photographers/u1': {} }, {});
     const m = await new FirestoreBadgeMetricsReader(db, () => NOW).read(
       'u1',
-      new Set(['rating', 'reviewCount', 'responseMinutes', 'punctualMentions'] as const),
+      new Set(['tomatoPct', 'reviewCount', 'responseMinutes', 'punctualMentions'] as const),
     );
-    assert.deepEqual(m, { rating: null, reviewCount: 0, responseMinutes: null, punctualMentions: 0 });
+    assert.deepEqual(m, { tomatoPct: null, reviewCount: 0, responseMinutes: null, punctualMentions: 0 });
   });
 });

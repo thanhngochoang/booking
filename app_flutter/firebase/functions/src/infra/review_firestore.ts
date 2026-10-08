@@ -1,16 +1,24 @@
 import {
   type DocumentData,
+  FieldValue,
   type Firestore,
   Timestamp,
   type Transaction,
 } from 'firebase-admin/firestore';
-import type {
-  RealShootPost,
-  Review,
-  ReviewStore,
-  ReviewTx,
-  StatsStore,
-  StatsTx,
+import {
+  intensityOf,
+  REVIEW_HITS_MAX,
+  REVIEW_REASONS,
+  REVIEW_SUBJECT_TYPES,
+  VERDICTS,
+  type RealShootPost,
+  type Review,
+  type ReviewReason,
+  type ReviewStore,
+  type ReviewTx,
+  type StatsStore,
+  type StatsTx,
+  type Verdict,
 } from '@photobooking/domain';
 import {
   BOOKINGS_COLLECTION,
@@ -32,13 +40,21 @@ function toDate(v: unknown): Date | null {
   return null;
 }
 
+/** `reviews/{reviewId}` fields (the id is the document id). No `rating` is written. */
 export function reviewToFirestore(r: Review): DocumentData {
   return {
     bookingId: r.bookingId,
-    customerId: r.customerId,
+    subjectType: r.subjectType,
+    subjectId: r.subjectId,
     photographerId: r.photographerId,
+    customerId: r.customerId,
     serviceId: r.serviceId,
-    rating: r.rating,
+    serviceName: r.serviceName,
+    bookingDay: r.bookingDay,
+    verdict: r.verdict,
+    hits: r.hits,
+    intensity: r.intensity,
+    reasons: [...r.reasons],
     text: r.text,
     photoPostId: r.photoPostId ?? null,
     createdAt: Timestamp.fromDate(r.createdAt),
@@ -46,6 +62,16 @@ export function reviewToFirestore(r: Review): DocumentData {
   };
 }
 
+const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+
+function isHits(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= REVIEW_HITS_MAX;
+}
+
+/**
+ * Tolerant reader. A legacy star doc (no `verdict`, from a saved emulator export) reads as
+ * `tomato` when `rating >= 4`, else `brick`, with one hit and no reasons (display only).
+ */
 export function reviewFromFirestore(
   id: string,
   d: DocumentData | undefined
@@ -54,13 +80,40 @@ export function reviewFromFirestore(
   const createdAt = toDate(d.createdAt);
   if (!createdAt) return null;
 
+  const known = VERDICTS.find((v) => v === d.verdict);
+  const verdict: Verdict =
+    known ?? (typeof d.rating === 'number' && d.rating >= 4 ? 'tomato' : 'brick');
+  const hits = known !== undefined && isHits(d.hits) ? d.hits : 1;
+  const intensity =
+    known !== undefined && typeof d.intensity === 'number' && Number.isFinite(d.intensity)
+      ? d.intensity
+      : intensityOf(hits);
+  const reasons: ReviewReason[] = [];
+  if (known === 'brick' && Array.isArray(d.reasons)) {
+    for (const x of d.reasons as unknown[]) {
+      const reason = REVIEW_REASONS.find((r) => r === x);
+      if (reason !== undefined && !reasons.includes(reason)) reasons.push(reason);
+    }
+  }
+  const photographerId = str(d.photographerId);
+  const subjectType = REVIEW_SUBJECT_TYPES.find((t) => t === d.subjectType) ?? 'photographer';
+  const subjectId = str(d.subjectId) || photographerId;
+
   return {
-    bookingId: id,
-    customerId: typeof d.customerId === 'string' ? d.customerId : '',
-    photographerId: typeof d.photographerId === 'string' ? d.photographerId : '',
-    serviceId: typeof d.serviceId === 'string' ? d.serviceId : '',
-    rating: typeof d.rating === 'number' ? d.rating : 5,
-    text: typeof d.text === 'string' ? d.text : '',
+    id,
+    bookingId: str(d.bookingId) || id,
+    subjectType,
+    subjectId,
+    photographerId: photographerId || subjectId,
+    customerId: str(d.customerId),
+    serviceId: str(d.serviceId),
+    serviceName: str(d.serviceName),
+    bookingDay: str(d.bookingDay),
+    verdict,
+    hits,
+    intensity,
+    reasons,
+    text: str(d.text),
     photoPostId: typeof d.photoPostId === 'string' ? d.photoPostId : null,
     createdAt,
     countedAt: toDate(d.countedAt),
@@ -101,9 +154,9 @@ export class FirestoreReviewStore implements ReviewStore {
           );
           return bookingFromFirestore(snap.id, snap.data());
         },
-        getReview: async (bookingId) => {
+        getReview: async (reviewId) => {
           const snap = await fTx.get(
-            this.firestore.collection(REVIEWS_COLLECTION).doc(bookingId)
+            this.firestore.collection(REVIEWS_COLLECTION).doc(reviewId)
           );
           return reviewFromFirestore(snap.id, snap.data());
         },
@@ -127,7 +180,7 @@ export class FirestoreReviewStore implements ReviewStore {
         },
         setReview: (r) => {
           fTx.set(
-            this.firestore.collection(REVIEWS_COLLECTION).doc(r.bookingId),
+            this.firestore.collection(REVIEWS_COLLECTION).doc(r.id),
             reviewToFirestore(r)
           );
         },
@@ -164,18 +217,26 @@ export class FirestoreStatsStore implements StatsStore {
           if (!data || typeof data.stats !== 'object' || data.stats === null) {
             return null;
           }
-          return data.stats as { ratingSum?: unknown; reviewCount?: unknown; punctualMentions?: unknown };
+          return data.stats as Record<string, unknown>;
         },
+        // merge: true keeps the other stats fields (completedCount, responseMinutes, nextFreeDate, …);
+        // the legacy star fields go on the first verdict write.
         setPhotographerStats: (uid, patch) => {
           fTx.set(
             this.firestore.collection(PHOTOGRAPHERS_COLLECTION).doc(uid),
-            { stats: patch },
+            {
+              stats: {
+                ...patch,
+                rating: FieldValue.delete(),
+                ratingSum: FieldValue.delete(),
+              },
+            },
             { merge: true }
           );
         },
-        markCounted: (bookingId, at) => {
+        markCounted: (reviewId, at) => {
           fTx.update(
-            this.firestore.collection(REVIEWS_COLLECTION).doc(bookingId),
+            this.firestore.collection(REVIEWS_COLLECTION).doc(reviewId),
             {
               countedAt: Timestamp.fromDate(at),
             }
