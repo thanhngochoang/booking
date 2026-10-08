@@ -81,6 +81,7 @@ class _PayoutAccountScreenState extends ConsumerState<PayoutAccountScreen> {
       PayoutSaveOutcome.mismatch => l.payoutLookupMismatchBody,
       PayoutSaveOutcome.lookupLimit => l.payoutLookupLimit,
       PayoutSaveOutcome.notFound => l.payoutLookupNotFound,
+      PayoutSaveOutcome.notEligible => l.payoutLookupUnverifiable,
       PayoutSaveOutcome.otpWait => l.payoutOtpResendIn(
         controller.otpWaitSeconds,
       ),

@@ -413,7 +413,7 @@ create table otp_challenges (                      -- 🔒 chỉ máy chủ; mã
   purpose      text not null check (purpose in ('payout_account')),
   code_hash    text not null,                      -- băm có muối; không lưu mã, không lưu số tài khoản
   salt         text not null,
-  target_hash  text not null,                      -- băm 'bankCode:số' của tài khoản đang lưu; mã chỉ dùng cho tài khoản đó
+  target_hash  text not null,                      -- băm có muối của 'salt:bankCode:số' của tài khoản mới sắp lưu; mã chỉ dùng cho tài khoản đó
   expires_at   timestamptz not null,               -- gửi + 5 phút
   attempts     int not null default 0,             -- sai 5 lần thì phải gửi lại
   sent_at      timestamptz not null,               -- gửi lại sau 60 giây

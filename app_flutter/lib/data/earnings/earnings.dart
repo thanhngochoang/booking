@@ -84,7 +84,7 @@ class EarningItem {
   final int? milestonesTotal;
 }
 
-/// The three totals of S06.05: Đang giữ, Sắp nhận, Đã nhận.
+/// The three totals of S06.05: Đang giữ, Chờ chi trả, Đã nhận.
 @immutable
 class EarningsSummary {
   const EarningsSummary({

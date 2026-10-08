@@ -32,6 +32,8 @@ let db: Firestore;
 const ACCOUNT = 'int-account-binh-1';
 /** Test value; the fake gateway pays any number not ending in 0000. */
 const NUMBER = '0987654321';
+/** The emulator on a `demo-*` project: where fake payouts may run (Ruling 11). */
+const FAKE_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-photobooking' };
 
 before(async () => {
   await resetEmulators();
@@ -92,7 +94,7 @@ describe('createPayouts on the emulators', () => {
     const receivedBefore = ((await data(`earnings/${BINH}`)).receivedAmount as number | undefined) ?? 0;
 
     // Run 1: Bình's payout is created and waits for staff (the seed's An is paid on the way).
-    const first = await handleCreatePayouts(deps(store), 'fake');
+    const first = await handleCreatePayouts(deps(store), FAKE_ENV);
     assert.ok(first !== null);
     assert.equal(first.errors, 0, JSON.stringify(first));
     const waiting = await db.collection('payouts').where('payeeId', '==', BINH).get();
@@ -113,7 +115,7 @@ describe('createPayouts on the emulators', () => {
     await releasedPayment('int-po-pay-2', 500_000);
 
     // Run 2: the second payout is created `pending`, and both are sent.
-    const second = await handleCreatePayouts(deps(store), 'fake');
+    const second = await handleCreatePayouts(deps(store), FAKE_ENV);
     assert.ok(second !== null);
     assert.equal(second.errors, 0, JSON.stringify(second));
     assert.equal(second.needsApproval, 0, JSON.stringify(second));
@@ -151,14 +153,14 @@ describe('createPayouts on the emulators', () => {
     assert.equal(row.estimated, false);
 
     // A third run the same day creates nothing new.
-    const third = await handleCreatePayouts(deps(store), 'fake');
+    const third = await handleCreatePayouts(deps(store), FAKE_ENV);
     assert.equal((await db.collection('payouts').where('payeeId', '==', BINH).get()).size, 2);
     assert.equal(third?.executed, 0);
   });
 
   test('off mode creates nothing', async () => {
     await releasedPayment('int-po-pay-off', 200_000);
-    assert.equal(await handleCreatePayouts(deps(new FirestorePayoutStore(db)), 'off'), null);
+    assert.equal(await handleCreatePayouts(deps(new FirestorePayoutStore(db)), {}), null);
     assert.equal((await data('payments/int-po-pay-off')).payoutId ?? null, null);
   });
 });

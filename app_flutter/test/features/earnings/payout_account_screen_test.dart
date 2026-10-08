@@ -310,21 +310,42 @@ void main() {
       expect(_saveEnabled(tester), isFalse);
     });
 
-    testWidgets('conflict shows the busy SnackBar and keeps the input', (
+    testWidgets('conflict on a first save says try again and keeps the input', (
       tester,
     ) async {
       final w = await _open(tester);
       await _pickBank(tester, 'VCB');
       await _type(tester, '01234567890');
+      // Two first saves racing; there is no payout in flight to be busy with.
       w.repo.failNextSave('conflict');
       await tester.tap(_key('payout-save'));
       await _settle(tester);
+      expect(find.text('Không lưu được. Thử lại'), findsOneWidget);
       expect(
         find.text('Đang chuyển một lô tiền, thử lại sau ít phút'),
-        findsOneWidget,
+        findsNothing,
       );
       expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
       expect(_saveEnabled(tester), isTrue);
+      expect(w.repo.saves, isEmpty);
+    });
+
+    testWidgets('not_eligible on a first save shows the unverifiable copy', (
+      tester,
+    ) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      w.repo.failNextSave('not_eligible');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(
+        find.text(
+          'Cần xác minh danh tính trước khi thêm tài khoản ở ngân hàng này',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('Không lưu được. Thử lại'), findsNothing);
       expect(w.repo.saves, isEmpty);
     });
 

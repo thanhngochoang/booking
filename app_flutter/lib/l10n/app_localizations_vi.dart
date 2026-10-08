@@ -3990,9 +3990,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get earningsStateReleased => 'Chờ chi trả';
 
   @override
-  String earningsStatePaid(String date) {
-    return 'Đã chuyển $date';
-  }
+  String get earningsStatePaid => 'Đã chuyển';
 
   @override
   String get earningsStateDispute => 'Đang khiếu nại';
@@ -4048,6 +4046,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get earningsBreakdownReleased => 'Đã chuyển theo mốc';
+
+  @override
+  String get earningsBreakdownPaidOn => 'Ngày chuyển';
 
   @override
   String get earningsBreakdownAmount => 'Số tiền';

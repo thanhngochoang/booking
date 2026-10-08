@@ -103,7 +103,8 @@ class PayoutAccountForm {
 /// the save used the last lookup of the day; [notFound] the bank has no such
 /// account; [otpWait] a code was sent less than 60 s ago (for any account:
 /// the server's resend wait is per user), see
-/// [PayoutAccountController.otpWaitSeconds].
+/// [PayoutAccountController.otpWaitSeconds]; [conflict] only on a change (a
+/// payout is being sent); a first save's conflict is [failed] (try again).
 enum PayoutSaveOutcome {
   saved,
   changed,
@@ -119,6 +120,9 @@ enum PayoutSaveOutcome {
   lookupLimit,
   notFound,
   otpWait,
+
+  /// A first save refused as `not_eligible` (no verified name to compare).
+  notEligible,
 }
 
 /// A code was sent less than the resend wait ago; nothing was requested.
@@ -278,7 +282,11 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
           'name_mismatch' => PayoutSaveOutcome.mismatch,
           'not_found' => PayoutSaveOutcome.notFound,
           'limit_exceeded' => PayoutSaveOutcome.lookupLimit,
-          'conflict' => PayoutSaveOutcome.conflict,
+          // No verified name and the bank cannot tell the holder (or not a
+          // photographer): the same copy as the unverifiable lookup card.
+          'not_eligible' => PayoutSaveOutcome.notEligible,
+          // A first save has no payout in flight: a conflict is two first
+          // saves racing, so "try again", not the busy copy.
           _ => PayoutSaveOutcome.failed,
         });
       } catch (_) {

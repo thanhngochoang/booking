@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, type DocumentData, type Firestore } from 'firebase-admin/firestore';
 import {
   DEFAULT_PAYOUT_POLICY,
   MemoryBookingStore,
   MemoryEarningsStore,
   MemoryPayoutStore,
+  refreshEarnings,
   type EarningItem,
   type Payment,
   type Payout,
@@ -17,6 +18,7 @@ import {
   earningItemFromFirestore,
   earningItemToFirestore,
   earningsSummaryToFirestore,
+  FirestoreEarningsStore,
   milestonesOfDocs,
 } from '../../src/infra/earnings_firestore.js';
 import {
@@ -295,5 +297,67 @@ describe('earnings triggers', () => {
     assert.equal(w.earnings.summaries.get('p1')?.soonAmount, 300_000);
     assert.equal(w.earnings.summaries.get('p1')?.receivedAmount, 0);
     assert.equal(await handlePayoutWrite('po1', undefined, {}, w.deps), null);
+  });
+});
+
+/**
+ * Transaction-only Firestore stand-in: documents by path; a collection or query `get` returns the
+ * direct children of its path (filters ignored); every read path and every `set` are recorded.
+ */
+function pathDb(docs: Record<string, DocumentData>) {
+  const reads: string[] = [];
+  const sets = new Map<string, DocumentData>();
+  const doc = (path: string): unknown => ({
+    kind: 'doc',
+    path,
+    id: path.split('/').at(-1) ?? '',
+    collection: (c: string) => coll(`${path}/${c}`),
+  });
+  const coll = (path: string): unknown => {
+    const q = { kind: 'query', path, doc: (id: string) => doc(`${path}/${id}`), where: () => q, orderBy: () => q, limit: () => q };
+    return q;
+  };
+  const db = {
+    collection: (c: string) => coll(c),
+    runTransaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> =>
+      fn({
+        get: async (r: { kind: string; path: string; id: string }) => {
+          reads.push(r.path);
+          if (r.kind === 'query') {
+            const depth = r.path.split('/').length + 1;
+            const children = Object.keys(docs).filter((k) => k.startsWith(`${r.path}/`) && k.split('/').length === depth);
+            return { docs: children.map((k) => ({ id: k.split('/').at(-1), data: () => docs[k] })) };
+          }
+          return { id: r.id, exists: docs[r.path] !== undefined, data: () => docs[r.path], ref: r };
+        },
+        set: (r: { path: string }, data: DocumentData) => void sets.set(r.path, data),
+        delete: () => undefined,
+      }),
+  } as unknown as Firestore;
+  return { db, reads, sets };
+}
+
+describe('FirestoreEarningsStore.getSubject', () => {
+  it('reads bookings/{id}/milestones: shoot released, delivery held → mốc 1/2 on the row', async () => {
+    const { db, reads, sets } = pathDb({
+      'payments/pay1': paymentToFirestore(payment()),
+      'photographers/p1': { providerType: 'individual' },
+      'bookings/b1': { customerId: 'c1', serviceSnapshot: { name: 'Chân dung' }, day: '2026-10-09' },
+      'users/c1': { displayName: 'Lan' },
+      'bookings/b1/milestones/shoot': { status: 'released' },
+      'bookings/b1/milestones/delivery': { status: 'held' },
+    });
+    const deps = {
+      store: new FirestoreEarningsStore(db),
+      clock: { now: () => new Date('2026-10-11T00:00:00.000Z') },
+      policy: DEFAULT_PAYOUT_POLICY,
+    };
+    await refreshEarnings(deps, { payeeId: 'p1', paymentIds: ['pay1'] });
+    assert.ok(reads.includes('bookings/b1/milestones'), reads.join(' | '));
+    const row = sets.get('earnings/p1/items/pay1');
+    assert.ok(row !== undefined, [...sets.keys()].join(' | '));
+    assert.equal(row.milestonesDone, 1);
+    assert.equal(row.milestonesTotal, 2);
+    assert.equal(row.counterpartName, 'Lan');
   });
 });

@@ -6991,8 +6991,8 @@ abstract class AppLocalizations {
   /// No description provided for @earningsStatePaid.
   ///
   /// In vi, this message translates to:
-  /// **'Đã chuyển {date}'**
-  String earningsStatePaid(String date);
+  /// **'Đã chuyển'**
+  String get earningsStatePaid;
 
   /// No description provided for @earningsStateDispute.
   ///
@@ -7089,6 +7089,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã chuyển theo mốc'**
   String get earningsBreakdownReleased;
+
+  /// No description provided for @earningsBreakdownPaidOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày chuyển'**
+  String get earningsBreakdownPaidOn;
 
   /// No description provided for @earningsBreakdownAmount.
   ///

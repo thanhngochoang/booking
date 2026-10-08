@@ -1,7 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { FakeAccountNameLookup, type AccountNameLookup, type VerifiedNameReader } from '@photobooking/domain';
-import { payoutsMode } from '../config.js';
-import { fakePaymentsAllowed } from './fake_payments.js';
+import { fakePayoutsMode } from './fake_payments.js';
 
 /**
  * The verified legal name: `users/{uid}/private/identity.legalName` (identity spec §3, written by
@@ -31,8 +30,9 @@ export function accountNameLookup(mode: 'fake' | 'off', echoName: string | null)
 /**
  * `fake` only where fake payouts run (`payoutsMode()`) AND fake payments are allowed (the dev
  * project or the emulator on `demo-*`): the echo would match any number to the caller's own name,
- * so a stray `PAYOUTS_MODE=fake` on another project still gets `off` (staff review).
+ * so a stray `PAYOUTS_MODE=fake` on another project still gets `off` (staff review). Same gate as
+ * `createPayouts` (`fakePayoutsMode`).
  */
 export function lookupMode(env: Readonly<Record<string, string | undefined>> = process.env): 'fake' | 'off' {
-  return payoutsMode(env) === 'fake' && fakePaymentsAllowed(env) ? 'fake' : 'off';
+  return fakePayoutsMode(env);
 }

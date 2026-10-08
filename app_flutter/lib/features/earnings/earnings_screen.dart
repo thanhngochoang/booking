@@ -9,13 +9,15 @@ import 'package:photobooking/data/earnings/earnings.dart';
 import 'package:photobooking/data/earnings/earnings_providers.dart';
 import 'package:photobooking/features/earnings/earnings_analytics.dart';
 import 'package:photobooking/features/earnings/earnings_controller.dart';
+import 'package:photobooking/features/earnings/widgets/account_inputs.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 const _accountRoute = '/work/earnings/account';
 
 /// S06.05 "Thu nhập" at `/work/earnings`: where the photographer's money is
-/// (Đang giữ, Sắp nhận, Đã nhận) and one row per payment with its state. There
-/// is no primary button: the screen only reads.
+/// (Đang giữ, Chờ chi trả, Đã nhận), the payout account card (or the
+/// add-account card) and one row per payment with its state. There is no
+/// primary button: the screen only reads.
 class EarningsScreen extends ConsumerStatefulWidget {
   const EarningsScreen({super.key});
 
@@ -90,18 +92,6 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                     onPressed: () => context.go('/bookings'),
                   ),
             title: Text(l.earningsTitle),
-            actions: [
-              IconButton(
-                key: const Key('earnings-account'),
-                tooltip: l.payoutAccountTitle,
-                constraints: const BoxConstraints.tightFor(
-                  width: AppSpace.s12,
-                  height: AppSpace.s12,
-                ),
-                icon: const AppIcon(AppIcons.settings),
-                onPressed: _openAccount,
-              ),
-            ],
           ),
           body: ListView(
             padding: const EdgeInsets.only(bottom: AppSpace.s6),
@@ -142,12 +132,14 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                 value: ref.watch(payoutAccountProvider),
                 skeleton: (_) => const SizedBox.shrink(),
                 error: (_, _, _) => const SizedBox.shrink(),
-                data: (_, account) => account != null
-                    ? const SizedBox.shrink()
-                    : Padding(
-                        padding: gutter.copyWith(top: AppSpace.s3),
-                        child: _AddAccountCard(onTap: _openAccount),
-                      ),
+                // The mock's account row: the active account, or the
+                // reminder to add one. Both open S06.06.
+                data: (_, account) => Padding(
+                  padding: gutter.copyWith(top: AppSpace.s3),
+                  child: account == null
+                      ? _AddAccountCard(onTap: _openAccount)
+                      : _AccountCard(account: account, onTap: _openAccount),
+                ),
               ),
               const SizedBox(height: AppSpace.s2),
               AsyncView<List<EarningItem>>(
@@ -231,12 +223,34 @@ class _Totals extends StatelessWidget {
           const SizedBox(height: AppSpace.s3),
           _LinkCard(
             key: const Key('earnings-payout-failed'),
-            icon: AppIcons.warning,
+            leading: const AppIcon(AppIcons.warning),
             title: l.earningsPayoutFailed,
             onTap: onOpenAccount,
           ),
         ],
       ],
+    );
+  }
+}
+
+/// The mock's `.card` row: bank badge, "Tài khoản nhận tiền" and
+/// "{bankCode} •••• {last4}", chevron to S06.06.
+class _AccountCard extends StatelessWidget {
+  const _AccountCard({required this.account, required this.onTap});
+
+  final PayoutAccountView account;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return _LinkCard(
+      key: const Key('earnings-account'),
+      leading: BankBadge(code: account.bankCode),
+      title: l.payoutAccountTitle,
+      sub: '${account.bankCode} ${l.payoutAccountMasked(account.accountLast4)}',
+      tabularSub: true,
+      onTap: onTap,
     );
   }
 }
@@ -251,7 +265,7 @@ class _AddAccountCard extends StatelessWidget {
     final l = context.l10n;
     return _LinkCard(
       key: const Key('earnings-add-account'),
-      icon: AppIcons.payment,
+      leading: const AppIcon(AppIcons.payment),
       title: l.earningsAddAccount,
       sub: l.earningsAddAccountSub,
       onTap: onTap,
@@ -259,19 +273,23 @@ class _AddAccountCard extends StatelessWidget {
   }
 }
 
-/// A glass card with an icon, text and a chevron that opens S06.06.
+/// A glass card with an icon or badge, text and a chevron that opens S06.06.
 class _LinkCard extends StatelessWidget {
   const _LinkCard({
     super.key,
-    required this.icon,
+    required this.leading,
     required this.title,
     this.sub,
+    this.tabularSub = false,
     required this.onTap,
   });
 
-  final IconData icon;
+  final Widget leading;
   final String title;
   final String? sub;
+
+  /// Digits of [sub] in tabular figures (the masked account number).
+  final bool tabularSub;
   final VoidCallback onTap;
 
   @override
@@ -293,7 +311,7 @@ class _LinkCard extends StatelessWidget {
               padding: const EdgeInsets.all(AppSpace.s3),
               child: Row(
                 children: [
-                  AppIcon(icon),
+                  leading,
                   const SizedBox(width: AppSpace.s3),
                   Expanded(
                     child: Column(
@@ -301,7 +319,16 @@ class _LinkCard extends StatelessWidget {
                       children: [
                         Text(title, style: theme.textTheme.titleMedium),
                         if (sub != null)
-                          Text(sub!, style: theme.textTheme.bodySmall),
+                          Text(
+                            sub!,
+                            style: tabularSub
+                                ? theme.textTheme.bodySmall?.copyWith(
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  )
+                                : theme.textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ),
@@ -420,11 +447,18 @@ String _percent(int bp) => bp % 100 == 0
     : '${(bp / 100).toStringAsFixed(1).replaceAll('.', ',')}%';
 
 /// The lines under an open row, in the mock's order. A paid row shows the
-/// payout item's own numbers; every other row shows the estimate. The tax line
-/// is absent for a studio (rate 0), the commission line while it is 0.
+/// payout item's own numbers, after the transfer day (the pill only says "Đã
+/// chuyển"); every other row shows the estimate. The tax line is absent for a
+/// studio (rate 0), the commission line while it is 0.
 List<EarningBreakdownLine> _breakdown(AppLocalizations l, EarningItem item) {
   final paid = item.state == EarningState.paidOut;
+  final paidOutAt = item.paidOutAt;
   return [
+    if (paid && paidOutAt != null)
+      EarningBreakdownLine(
+        label: l.earningsBreakdownPaidOn,
+        value: formatDayMonth(toVn(paidOutAt)),
+      ),
     EarningBreakdownLine(
       label: paid ? l.earningsBreakdownReleased : l.earningsBreakdownAmount,
       value: formatMoney(item.amountVnd),
@@ -514,9 +548,7 @@ Widget _badge(AppLocalizations l, EarningItem item) {
       AppColors.foreground,
     ),
     EarningState.paidOut => (
-      item.paidOutAt == null
-          ? l.earningsReceived
-          : l.earningsStatePaid(formatDayMonth(toVn(item.paidOutAt!))),
+      l.earningsStatePaid,
       AppColors.success,
       AppColors.foregroundInverse,
     ),

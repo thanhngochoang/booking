@@ -380,7 +380,9 @@ void main() {
       ('name_mismatch', PayoutSaveOutcome.mismatch),
       ('not_found', PayoutSaveOutcome.notFound),
       ('limit_exceeded', PayoutSaveOutcome.lookupLimit),
-      ('conflict', PayoutSaveOutcome.conflict),
+      ('not_eligible', PayoutSaveOutcome.notEligible),
+      // Two first saves racing: generic "try again", not the busy copy.
+      ('conflict', PayoutSaveOutcome.failed),
       ('network', PayoutSaveOutcome.failed),
     ]) {
       test('$code from a first save → ${outcome.name}, input kept', () async {

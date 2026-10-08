@@ -16,10 +16,11 @@ import {
   type PayoutNotices,
   type VerifiedNameReader,
 } from '@photobooking/domain';
-import { PAYOUT_ACCOUNT_KEY, payoutsMode } from '../config.js';
+import { PAYOUT_ACCOUNT_KEY } from '../config.js';
 import { aesGcmCipher } from './account_cipher.js';
 import { db } from './admin.js';
 import { FirestoreEarningsStore } from './earnings_firestore.js';
+import { fakePayoutsMode } from './fake_payments.js';
 import { liveNotifyDeps } from './live_notification.js';
 import { FirestorePhotographerPhoneReader, nodeOtpCrypto, otpSender } from './otp.js';
 import { FirestoreVerifiedNameReader, accountNameLookup, lookupMode } from './payout_lookup.js';
@@ -68,7 +69,7 @@ export function livePayoutNotices(
 }
 
 /** The payout gateway: the reference adapter in fake mode; otherwise one that refuses (no real bank adapter exists). */
-export function payoutGateway(mode: 'fake' | 'off' = payoutsMode()): PayoutGateway {
+export function payoutGateway(mode: 'fake' | 'off' = fakePayoutsMode()): PayoutGateway {
   if (mode === 'fake') return sharedFake();
   return {
     transfer: async () => {

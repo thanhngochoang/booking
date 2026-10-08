@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/earnings/earnings.dart';
 import 'package:photobooking/features/earnings/earnings_controller.dart';
+import 'package:photobooking/features/earnings/widgets/account_inputs.dart';
 
 import '../../support/earnings_world.dart';
 
@@ -116,19 +117,41 @@ void main() {
     expect(find.text('CHỜ CHI TRẢ'), findsOneWidget);
   });
 
-  testWidgets('a paid row shows Đã chuyển with its date', (tester) async {
+  testWidgets('a paid row pill reads Đã chuyển; the day is in the breakdown', (
+    tester,
+  ) async {
     await _open(
       tester,
       seed: (w) => w.repo.emitItems([
         w.item(
           'a',
+          day: '2026-10-09',
           state: EarningState.paidOut,
           // 12/10 in Vietnam.
           paidOutAt: DateTime.utc(2026, 10, 12, 3),
         ),
       ]),
     );
-    expect(find.text('ĐÃ CHUYỂN 12/10'), findsOneWidget);
+    // The mock's pill has no date (Ruling 10).
+    expect(find.text('ĐÃ CHUYỂN'), findsOneWidget);
+    expect(find.textContaining('ĐÃ CHUYỂN 12/10'), findsNothing);
+    expect(find.text('Ngày chuyển'), findsNothing);
+    await _expand(tester, 'Lan Anh · Chân dung 2h');
+    expect(find.text('Ngày chuyển'), findsOneWidget);
+    expect(find.text('12/10'), findsOneWidget);
+  });
+
+  testWidgets('a paid row without a transfer time has no day line', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      seed: (w) => w.repo.emitItems([w.item('a', state: EarningState.paidOut)]),
+    );
+    expect(find.text('ĐÃ CHUYỂN'), findsOneWidget);
+    await _expand(tester, 'Lan Anh · Chân dung 2h');
+    expect(find.text('Ngày chuyển'), findsNothing);
+    expect(find.text('Đã chuyển theo mốc'), findsOneWidget);
   });
 
   testWidgets('a disputed row shows Đang khiếu nại and the reason', (
@@ -179,9 +202,73 @@ void main() {
     expect(w.router.state.uri.path, '/work/earnings/account');
   });
 
-  testWidgets('with an account the card is hidden', (tester) async {
-    await _open(tester);
+  testWidgets('with an account the account card shows the bank and the last '
+      '4 digits and opens S06.06', (tester) async {
+    final w = await _open(
+      tester,
+      seed: (w) => w.repo.setAccount(w.account(bank: 'MB', last4: '3456')),
+    );
     expect(find.text('Thêm tài khoản để nhận tiền'), findsNothing);
+    final card = _key('earnings-account');
+    expect(card, findsOneWidget);
+    expect(
+      find.descendant(of: card, matching: find.byType(BankBadge)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('Tài khoản nhận tiền')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('MB •••• 3456')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.byIcon(AppIcons.chevron)),
+      findsOneWidget,
+    );
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+    expect(find.text('stub /work/earnings/account'), findsOneWidget);
+    expect(w.router.state.uri.path, '/work/earnings/account');
+  });
+
+  testWidgets('the account card reads as one button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _open(tester);
+    expect(
+      find.bySemanticsLabel('Tài khoản nhận tiền. VCB •••• 3456'),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('the account card fits at 320 dp and text scale 1.3', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      width: 320,
+      textScale: 1.3,
+      seed: (w) => w.repo.setAccount(w.account(bank: 'SHINHAN', last4: '9876')),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('SHINHAN •••• 9876'), findsOneWidget);
+    expect(find.text('Tài khoản nhận tiền'), findsOneWidget);
+  });
+
+  testWidgets('the add-account card fits at 320 dp and text scale 1.3', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      width: 320,
+      textScale: 1.3,
+      seed: (w) => w.repo.setAccount(null),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('Thêm tài khoản để nhận tiền'), findsOneWidget);
+    expect(_key('earnings-account'), findsNothing);
   });
 
   testWidgets('a failed last payout shows the banner', (tester) async {
@@ -244,12 +331,10 @@ void main() {
     expect(find.text('Chuyển khoản lỗi, kiểm tra tài khoản'), findsNothing);
   });
 
-  testWidgets('the settings icon opens S06.06', (tester) async {
+  testWidgets('the app bar has no gear (the mock has none)', (tester) async {
     await _open(tester);
-    expect(find.byTooltip('Tài khoản nhận tiền'), findsOneWidget);
-    await tester.tap(find.byTooltip('Tài khoản nhận tiền'));
-    await tester.pumpAndSettle();
-    expect(find.text('stub /work/earnings/account'), findsOneWidget);
+    expect(find.byTooltip('Tài khoản nhận tiền'), findsNothing);
+    expect(find.byIcon(AppIcons.settings), findsNothing);
   });
 
   testWidgets('tapping a booking row no longer opens the booking', (
@@ -396,6 +481,8 @@ void main() {
     ) async {
       await _open(tester, seed: (w) => w.repo.emitItems([paid(w)]));
       await _expand(tester, khoa);
+      expect(find.text('Ngày chuyển'), findsOneWidget);
+      expect(find.text('03/10'), findsOneWidget);
       expect(find.text('Đã chuyển theo mốc'), findsOneWidget);
       expect(find.text('1.500.000₫'), findsOneWidget);
       expect(find.text('Thuế khấu trừ (7%)'), findsOneWidget);

@@ -102,16 +102,18 @@ export interface CliIo {
 }
 
 /**
- * `fake` only when the fake gateway may run: against the emulators, or when `PAYOUTS_MODE=fake`
- * AND the project id (GCLOUD_PROJECT) equals the dev project from `.firebaserc` (alias `dev`,
- * passed in as `devProjectId`). Never against any other project, whatever the variable says.
+ * `fake` only when the fake gateway may run (Ruling 11, the CLI's form of `fakePayoutsMode`):
+ * against the Firestore emulator (`FIRESTORE_EMULATOR_HOST` set, so the Admin SDK writes there and
+ * nothing real is marked paid out), or when `PAYOUTS_MODE=fake` AND the project id
+ * (GCLOUD_PROJECT) equals the dev project from `.firebaserc` (alias `dev`, passed in as
+ * `devProjectId`). `FUNCTIONS_EMULATOR` alone does not count: the CLI would still write to the
+ * project its credentials point at. Never against any other project, whatever the variables say.
  */
 export function cliPayoutsMode(
   env: Readonly<Record<string, string | undefined>>,
   devProjectId: string | null = null,
 ): 'fake' | 'off' {
-  const emulator = (env.FIRESTORE_EMULATOR_HOST ?? '') !== '' || env.FUNCTIONS_EMULATOR === 'true';
-  if (emulator) return 'fake';
+  if ((env.FIRESTORE_EMULATOR_HOST ?? '') !== '') return 'fake';
   const project = env.GCLOUD_PROJECT ?? '';
   return env.PAYOUTS_MODE === 'fake' && devProjectId !== null && devProjectId !== '' && project === devProjectId
     ? 'fake'

@@ -903,7 +903,7 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
   const amount = paid.data.amount as number;
   const paidAt = new Date(now.getTime() - 35 * DAY_MS);
   const createdAt = new Date(paidAt.getTime() - HOUR_MS);
-  // An is an individual: 7% withheld (DEFAULT_PAYOUT_POLICY), so 450,000 → tax 31,500, net 418,500.
+  // An is an individual: 7% withheld (DEFAULT_PAYOUT_POLICY), so 1,500,000 → tax 105,000, net 1,395,000 (Ruling 8).
   const line = payoutLineOf(amount, providerTypeOf(SEED_PHOTOGRAPHERS.find((sp) => sp.uid === AN)?.providerType), DEFAULT_PAYOUT_POLICY);
   // The first payout to the account, approved by staff before it was sent.
   const payout: Payout = {

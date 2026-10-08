@@ -13,7 +13,7 @@ import {
   type PayoutItem,
   type PayoutStatus,
 } from './payout.js';
-import { isAccountActiveAt, isAccountWaitingAt, type PayoutAccount } from './payout_account.js';
+import { isAccountActiveAt, type PayoutAccount } from './payout_account.js';
 import { payoutLineOf, taxRateBpOf } from './payout_policy.js';
 import type { PayoutDeps, PayoutTx } from './payout_ports.js';
 
@@ -149,8 +149,9 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
     if (p.status !== 'pending' && p.status !== 'processing') throw new DomainError('conflict');
     const account = await tx.getAccount(p.payeeId, p.accountId);
     if (account === null) throw new DomainError('not_eligible');
-    // No money moves before the account's activeFrom (the 72 hours after a change).
-    if (isAccountWaitingAt(account, deps.clock.now())) throw new DomainError('not_eligible');
+    // No money moves to a deactivated account (defence in depth: a change re-points open payouts)
+    // nor before the account's activeFrom (the 72 hours after a change).
+    if (!isAccountActiveAt(account, deps.clock.now())) throw new DomainError('not_eligible');
     return account;
   });
   const accountNumber = await deps.cipher.decrypt(preview.accountNumberEnc);
@@ -161,7 +162,7 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
     if (p.status !== 'pending' && p.status !== 'processing') throw new DomainError('conflict');
     const account = await tx.getAccount(p.payeeId, p.accountId);
     if (account === null || account.accountNumberEnc !== preview.accountNumberEnc) throw new DomainError('conflict');
-    if (isAccountWaitingAt(account, deps.clock.now())) throw new DomainError('not_eligible');
+    if (!isAccountActiveAt(account, deps.clock.now())) throw new DomainError('not_eligible');
     const at = deps.clock.now().toISOString();
     const processing: Payout =
       p.status === 'processing' ? p : { ...p, status: 'processing', processingAt: at, updatedAt: at };

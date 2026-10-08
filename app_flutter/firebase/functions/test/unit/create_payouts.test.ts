@@ -20,6 +20,9 @@ const T = NOW.toISOString();
 const EARLIER = '2026-10-01T03:00:00.000Z';
 const KEY = Buffer.alloc(32, 7).toString('base64');
 const NUMBER = '0123456789';
+/** The emulator on a `demo-*` project: fake payouts allowed. */
+const FAKE_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-photobooking' };
+const OFF_ENV = {};
 
 const payment = (id: string, payeeId: string, amount: number): Payment => ({
   id, subjectType: 'booking', subjectId: `b-${id}`, payerId: 'c1', payeeId, provider: 'fake',
@@ -72,7 +75,7 @@ describe('createPayouts job', () => {
   it('off mode creates nothing and returns null', async (t) => {
     let result: unknown = 'unset';
     const lines = await captureLogs(t, async () => {
-      result = await handleCreatePayouts(deps(), 'off');
+      result = await handleCreatePayouts(deps(), OFF_ENV);
     });
     assert.equal(result, null);
     assert.deepEqual([...store.payouts.keys()], ['po0']);
@@ -81,10 +84,30 @@ describe('createPayouts job', () => {
     assert.equal(lines.filter((l) => l.includes('createPayouts skipped')).length, 1, lines.join(''));
   });
 
+  for (const [name, env] of [
+    ['PAYOUTS_MODE=fake on another project', { PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'booking-prod-1' }],
+    ['FUNCTIONS_EMULATOR on another project', { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'booking-prod-1' }],
+    ['PAYOUTS_MODE=fake with no project id', { PAYOUTS_MODE: 'fake' }],
+  ] as const) {
+    it(`${name} is off: returns null and touches nothing (Ruling 11)`, async (t) => {
+      let result: unknown = 'unset';
+      const lines = await captureLogs(t, async () => {
+        result = await handleCreatePayouts(deps(), env);
+      });
+      assert.equal(result, null);
+      assert.deepEqual([...store.payouts.keys()], ['po0']);
+      assert.equal(store.payouts.get('po0')?.status, 'paid');
+      assert.equal(booking.payments.get('pay1')?.payoutId ?? null, null);
+      assert.equal(booking.payments.get('pay1')?.escrowStatus, 'released');
+      assert.deepEqual(needed, []);
+      assert.equal(lines.filter((l) => l.includes('createPayouts skipped')).length, 1, lines.join(''));
+    });
+  }
+
   it('fake mode runs the daily payouts and logs the report', async (t) => {
     let report = null as Awaited<ReturnType<typeof handleCreatePayouts>>;
     const lines = await captureLogs(t, async () => {
-      report = await handleCreatePayouts(deps(), 'fake');
+      report = await handleCreatePayouts(deps(), FAKE_ENV);
     });
     const expected = { created: 1, needsApproval: 0, onHold: 0, executed: 1, paid: 1, failed: 0, noAccount: 1, notActive: 0, errors: 0 };
     assert.deepEqual(report, expected);
@@ -123,7 +146,7 @@ describe('createPayouts job', () => {
     };
     let report = null as Awaited<ReturnType<typeof handleCreatePayouts>>;
     const lines = await captureLogs(t, async () => {
-      report = await handleCreatePayouts(deps(failing), 'fake');
+      report = await handleCreatePayouts(deps(failing), FAKE_ENV);
     });
     // p1 is still created and paid; p3's failure is counted.
     assert.equal(report?.errors, 1);
@@ -147,7 +170,7 @@ describe('createPayouts job', () => {
         throw new Error(`index missing for ${NUMBER}`);
       },
     };
-    const lines = await captureLogs(t, () => assert.rejects(handleCreatePayouts(deps(broken), 'fake')));
+    const lines = await captureLogs(t, () => assert.rejects(handleCreatePayouts(deps(broken), FAKE_ENV)));
     const logged = lines.filter((l) => l.includes('createPayouts failed'));
     assert.equal(logged.length, 1, lines.join(''));
     assert.match(logged[0] ?? '', /"code":"Error"/);

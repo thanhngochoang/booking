@@ -493,6 +493,22 @@ describe('payout use cases', () => {
     assert.equal((await executePayout(w.payoutDeps, ADMIN, po.id)).status, 'paid');
   });
 
+  it('executePayout refuses a deactivated account (not_eligible) and writes nothing', async () => {
+    const w = createPayoutWorld();
+    const a = await paidBeforeAccount(w);
+    await releasedPayment(w, '2026-10-15');
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    // Defence in depth: the payout still points at an account that is no longer active.
+    w.payoutStore.accounts.set(`p1/${a.id}`, { ...a, active: false, deactivatedAt: w.clock.now().toISOString() });
+    const writes = w.payoutStore.writes;
+    const ledger = w.store.ledgerEntries.size;
+    await refused(executePayout(w.payoutDeps, ADMIN, po.id), 'not_eligible');
+    assert.equal(w.payoutStore.writes, writes);
+    assert.equal(w.store.ledgerEntries.size, ledger);
+    assert.equal(w.payoutStore.payouts.get(po.id)?.status, 'pending');
+    assert.deepEqual(w.payGateway.calls, []);
+  });
+
   it('transfer receives amountNet', async () => {
     const w = createPayoutWorld();
     await paidBeforeAccount(w);

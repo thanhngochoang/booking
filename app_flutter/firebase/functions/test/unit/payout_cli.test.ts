@@ -131,6 +131,9 @@ describe('payouts staff CLI', () => {
     assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake' }, dev), 'off');
     assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-dev' }, null), 'off');
     assert.equal(cliPayoutsMode({ GCLOUD_PROJECT: 'proj-dev' }, dev), 'off');
+    // Ruling 11: FUNCTIONS_EMULATOR alone does not point the CLI's writes at an emulator.
+    assert.equal(cliPayoutsMode({ FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'proj-prod' }, dev), 'off');
+    assert.equal(cliPayoutsMode({ FUNCTIONS_EMULATOR: 'true', PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-prod' }, dev), 'off');
     assert.equal(devProjectFromFirebaserc('not json'), null);
     assert.equal(devProjectFromFirebaserc('{"projects":{}}'), null);
   });
