@@ -47,8 +47,8 @@ const int kReviewHitsMax = kVerdictHitsMax;
 double intensityOf(int hits) => verdictIntensity(hits);
 
 /// The legacy star rating a doc without `verdict` had maps to a verdict
-/// (display only): 4 and 5 stars read as one tomato, anything lower as one
-/// brick.
+/// (display only): 4 and 5 stars read as one tomato, anything lower (or no
+/// rating) as one brick.
 const int _legacyTomatoMinStars = 4;
 
 @immutable
@@ -105,20 +105,37 @@ class Review {
       return DateTime.now();
     }
 
-    var verdict = Verdict.fromCode(data['verdict']);
-    var hits = (data['hits'] as num?)?.toInt();
-    var legacy = false;
-    if (verdict == null) {
-      // A star doc left in an emulator export: read it, never count it.
-      final stars = (data['rating'] as num?)?.toInt() ?? 5;
-      verdict = stars >= _legacyTomatoMinStars ? Verdict.tomato : Verdict.brick;
-      legacy = true;
+    // Same rules as the server reader (functions `reviewFromFirestore`).
+    final known = Verdict.fromCode(data['verdict']);
+    // A star doc left in an emulator export: read it, never count it. No
+    // rating (or a non-number) reads as a brick, like the server.
+    final rating = data['rating'];
+    final verdict = known ??
+        (rating is num && rating >= _legacyTomatoMinStars
+            ? Verdict.tomato
+            : Verdict.brick);
+    final rawHits = data['hits'];
+    // Out of range, fractional or not a number: one hit (no clamping).
+    final hits = known != null &&
+            rawHits is num &&
+            rawHits == rawHits.truncateToDouble() &&
+            rawHits >= 1 &&
+            rawHits <= kReviewHitsMax
+        ? rawHits.toInt()
+        : 1;
+    final rawIntensity = data['intensity'];
+    final intensity = known != null && rawIntensity is num &&
+            rawIntensity.isFinite
+        ? rawIntensity.toDouble()
+        : intensityOf(hits);
+    // Reasons only on a brick, known codes once each.
+    final reasons = <ReviewReason>[];
+    if (known == Verdict.brick && data['reasons'] is List) {
+      for (final c in data['reasons'] as List) {
+        final reason = ReviewReason.fromCode(c);
+        if (reason != null && !reasons.contains(reason)) reasons.add(reason);
+      }
     }
-    hits = (legacy ? 1 : hits ?? 1).clamp(1, kReviewHitsMax);
-    final reasons = <ReviewReason>[
-      if (data['reasons'] is List)
-        for (final c in data['reasons'] as List) ?ReviewReason.fromCode(c),
-    ];
     final photographerId = data['photographerId'] as String? ?? '';
     final rawBookingId = data['bookingId'];
     return Review(
@@ -134,9 +151,7 @@ class Review {
       bookingDay: data['bookingDay'] as String?,
       verdict: verdict,
       hits: hits,
-      intensity: legacy
-          ? intensityOf(1)
-          : (data['intensity'] as num?)?.toDouble() ?? intensityOf(hits),
+      intensity: intensity,
       reasons: reasons,
       text: data['text'] as String? ?? '',
       photoPostId: data['photoPostId'] as String?,

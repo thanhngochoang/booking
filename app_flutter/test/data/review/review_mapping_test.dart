@@ -131,18 +131,83 @@ void main() {
       expect(review.customerId, '');
       expect(review.photographerId, '');
       expect(review.serviceId, '');
-      expect(review.verdict, Verdict.tomato, reason: 'legacy default: 5 stars');
+      expect(
+        review.verdict,
+        Verdict.brick,
+        reason: 'no rating reads as a brick, like the server reader',
+      );
+      expect(review.hits, 1);
       expect(review.text, '');
       expect(review.photoPostId, isNull);
       expect(review.createdAt, isA<DateTime>());
     });
 
-    test('hits outside 1..10 are clamped', () async {
-      final doc = await makeDoc('reviews/clamp', {
-        'verdict': 'tomato',
-        'hits': 99,
+    test('hits outside 1..10 or fractional read as one hit (server rule)',
+        () async {
+      for (final raw in <Object>[99, 0, -3, 2.5]) {
+        final doc = await makeDoc('reviews/out_$raw', {
+          'verdict': 'tomato',
+          'hits': raw,
+        });
+        final review = Review.fromFirestore(doc);
+        expect(review.hits, 1, reason: 'hits $raw');
+        expect(review.intensity, 0.4, reason: 'hits $raw');
+      }
+    });
+
+    test('a non-numeric hits, rating or intensity does not throw', () async {
+      final doc = await makeDoc('reviews/strings', {
+        'verdict': 'brick',
+        'hits': 'many',
+        'intensity': 'big',
+        'reasons': ['late'],
       });
-      expect(Review.fromFirestore(doc).hits, 10);
+      final review = Review.fromFirestore(doc);
+      expect(review.hits, 1);
+      expect(review.intensity, 0.4);
+      expect(review.reasons, [ReviewReason.late]);
+
+      final legacy = Review.fromFirestore(
+        await makeDoc('reviews/legacy_str', {'rating': 'five'}),
+      );
+      expect(legacy.verdict, Verdict.brick);
+    });
+
+    test('a legacy star doc without rating reads as one brick', () async {
+      final review = Review.fromFirestore(
+        await makeDoc('reviews/old_none', {'text': 'Cũ', 'hits': 5}),
+      );
+      expect(review.verdict, Verdict.brick);
+      expect(review.hits, 1);
+      expect(review.reasons, isEmpty);
+    });
+
+    test('reasons are kept only on a brick and de-duplicated', () async {
+      final brick = Review.fromFirestore(
+        await makeDoc('reviews/dup', {
+          'verdict': 'brick',
+          'hits': 2,
+          'reasons': ['late', 'attitude', 'late'],
+        }),
+      );
+      expect(brick.reasons, [ReviewReason.late, ReviewReason.attitude]);
+
+      final tomato = Review.fromFirestore(
+        await makeDoc('reviews/tomato_reasons', {
+          'verdict': 'tomato',
+          'hits': 2,
+          'reasons': ['late'],
+        }),
+      );
+      expect(tomato.reasons, isEmpty);
+
+      final legacyBrick = Review.fromFirestore(
+        await makeDoc('reviews/legacy_reasons', {
+          'rating': 1,
+          'reasons': ['late'],
+        }),
+      );
+      expect(legacyBrick.reasons, isEmpty);
     });
 
     test('equality and hashCode match for identical instances', () {
