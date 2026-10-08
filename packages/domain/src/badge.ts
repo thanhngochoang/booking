@@ -4,7 +4,7 @@
  */
 
 export const BADGE_METRICS = [
-  'rating',
+  'tomatoPct',
   'reviewCount',
   'punctualMentions',
   'detailedReviews',
@@ -66,11 +66,11 @@ const shoots = (n: number, order: number, shortName: string): BadgeDefinition =>
 export const BADGE_CATALOG: readonly BadgeDefinition[] = [
   def('top_rated', 10, {
     name: 'Được đánh giá cao',
-    description: 'Từ 4,8 sao với ít nhất 20 đánh giá',
+    description: 'Từ 95% cà chua với ít nhất 20 đánh giá',
     icon: 'favorite',
     source: 'review',
     audience: 'photographer',
-    rule: { metric: 'rating', op: '>=', threshold: 4.8, minSample: { metric: 'reviewCount', threshold: 20 } },
+    rule: { metric: 'tomatoPct', op: '>=', threshold: 95, minSample: { metric: 'reviewCount', threshold: 20 } },
     progress: 'minSample',
     revocable: true,
   }),
@@ -190,12 +190,12 @@ export function progressOf(b: BadgeDefinition, m: Metrics): { current: number; t
   return { current: Math.max(0, Math.min(raw, target)), target };
 }
 
-/** Text frozen on the earned badge at award time ("4,9 sao từ 58 đánh giá", "Hoàn thành 112 buổi"). */
+/** Text frozen on the earned badge at award time ("97% cà chua từ 58 đánh giá", "Hoàn thành 112 buổi"). */
 export function snapshotText(b: BadgeDefinition, m: Metrics): string {
   if (b.id === 'top_rated') {
-    const rating = value(m, 'rating');
+    const pct = value(m, 'tomatoPct');
     const count = value(m, 'reviewCount');
-    if (rating !== null && count !== null) return `${rating.toFixed(1).replace('.', ',')} sao từ ${count} đánh giá`;
+    if (pct !== null && count !== null) return `${Math.round(pct)}% cà chua từ ${count} đánh giá`;
   }
   if (b.id.startsWith('shoots_')) {
     const n = value(m, 'completedShoots');

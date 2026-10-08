@@ -53,7 +53,7 @@ describe('submitReview callable unit tests', () => {
         handleSubmitReview(
           {
             auth: undefined,
-            data: { bookingId: 'b1', rating: 5, text: 'Rất tuyệt vời nha!' },
+            data: { bookingId: 'b1', verdict: 'tomato', hits: 3, text: 'Rất tuyệt vời nha!' },
           },
           makeDeps()
         ),
@@ -75,7 +75,8 @@ describe('submitReview callable unit tests', () => {
         auth: { uid: 'cust1' },
         data: {
           bookingId: 'book1',
-          rating: 5,
+          verdict: 'tomato',
+          hits: 3,
           text: 'Buổi chụp tuyệt vời!',
         },
       },
@@ -91,7 +92,8 @@ describe('submitReview callable unit tests', () => {
             auth: { uid: 'cust1' },
             data: {
               bookingId: 'book1',
-              rating: 5,
+              verdict: 'tomato',
+              hits: 3,
               text: 'Bí mật riêng tư không được log',
             },
           },

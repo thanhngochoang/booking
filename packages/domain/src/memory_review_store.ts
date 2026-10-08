@@ -13,7 +13,7 @@ export class MemoryReviewStore implements ReviewStore {
   }
 
   seedReview(review: Review): void {
-    this.reviews.set(review.bookingId, review);
+    this.reviews.set(review.id, review);
   }
 
   async runTransaction<T>(fn: (tx: ReviewTx) => Promise<T>): Promise<T> {
@@ -34,13 +34,13 @@ export class MemoryReviewStore implements ReviewStore {
         return this.bookings.get(id) ?? null;
       },
 
-      getReview: async (bookingId: string): Promise<Review | null> => {
+      getReview: async (reviewId: string): Promise<Review | null> => {
         if (hasWritten) {
           throw new Error(
             'Transaction read after write: getReview called after a write operation'
           );
         }
-        return this.reviews.get(bookingId) ?? null;
+        return this.reviews.get(reviewId) ?? null;
       },
 
       setBooking: (b: Booking): void => {
@@ -55,7 +55,7 @@ export class MemoryReviewStore implements ReviewStore {
 
       setReview: (r: Review): void => {
         hasWritten = true;
-        stagedReviews.set(r.bookingId, r);
+        stagedReviews.set(r.id, r);
       },
 
       createPost: (p: RealShootPost): void => {

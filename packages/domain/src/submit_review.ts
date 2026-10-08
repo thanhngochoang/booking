@@ -1,6 +1,13 @@
 import type { Booking, BookingEventRecord } from './booking.js';
 import { DomainError } from './errors.js';
-import { type RealShootPost, type Review, validateReviewInput } from './review.js';
+import {
+  intensityOf,
+  isReviewable,
+  type RealShootPost,
+  type Review,
+  reviewDocId,
+  validateReviewInput,
+} from './review.js';
 import type { ReviewDeps } from './review_ports.js';
 
 export async function submitReview(
@@ -12,7 +19,8 @@ export async function submitReview(
 
   return deps.reviews.runTransaction(async (tx) => {
     const booking = await tx.getBooking(input.bookingId);
-    const existing = await tx.getReview(input.bookingId);
+    const reviewId = reviewDocId(input.bookingId, 'photographer');
+    const existing = await tx.getReview(reviewId);
 
     if (booking === null) {
       throw new DomainError('not_found');
@@ -22,11 +30,15 @@ export async function submitReview(
       throw new DomainError('permission_denied');
     }
 
-    if (existing !== null || booking.status === 'reviewed') {
+    if (
+      existing !== null ||
+      booking.reviewedAt !== undefined ||
+      booking.status === 'reviewed'
+    ) {
       throw new DomainError('conflict');
     }
 
-    if (booking.status !== 'completed') {
+    if (!isReviewable(booking.status)) {
       throw new DomainError('not_eligible');
     }
 
@@ -35,11 +47,19 @@ export async function submitReview(
     const postId = input.photos.length > 0 ? input.postId : null;
 
     const review: Review = {
+      id: reviewId,
       bookingId: input.bookingId,
-      customerId: callerId,
+      subjectType: 'photographer',
+      subjectId: booking.photographerId,
       photographerId: booking.photographerId,
+      customerId: callerId,
       serviceId: booking.serviceId,
-      rating: input.rating,
+      serviceName: booking.serviceSnapshot.name,
+      bookingDay: booking.day,
+      verdict: input.verdict,
+      hits: input.hits,
+      intensity: intensityOf(input.hits),
+      reasons: input.reasons,
       text: input.text,
       photoPostId: postId,
       createdAt: now,
@@ -69,7 +89,6 @@ export async function submitReview(
 
     const updatedBooking: Booking = {
       ...booking,
-      status: 'reviewed',
       reviewedAt: nowIso,
       version: booking.version + 1,
       updatedAt: nowIso,

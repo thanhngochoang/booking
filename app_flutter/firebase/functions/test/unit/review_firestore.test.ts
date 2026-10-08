@@ -10,18 +10,26 @@ import {
 import { handleReviewWrite } from '../../src/triggers/review_write.js';
 
 class MockStatsStore implements StatsStore {
-  readonly stats = new Map<string, { ratingSum: number; reviewCount: number; rating: number }>();
+  readonly stats = new Map<string, Record<string, unknown>>();
   readonly counted = new Set<string>();
 
   async runTransaction<T>(fn: (tx: StatsTx) => Promise<T>): Promise<T> {
     const tx: StatsTx = {
       getReview: async (id: string) => {
         return {
+          id,
           bookingId: id,
+          subjectType: 'photographer' as const,
+          subjectId: 'photo1',
           customerId: 'cust1',
           photographerId: 'photo1',
           serviceId: 'pkg1',
-          rating: 5,
+          serviceName: 'Chụp chân dung',
+          bookingDay: '2026-10-10',
+          verdict: 'tomato' as const,
+          hits: 7,
+          intensity: 0.91,
+          reasons: [],
           text: 'Great shoot',
           photoPostId: null,
           createdAt: new Date(),
@@ -115,7 +123,7 @@ describe('review_firestore mapping and trigger unit tests', () => {
       store
     );
     assert.equal(counted, 'counted');
-    assert.equal(store.stats.get('photo1')?.rating, 5);
+    assert.equal(store.stats.get('photo1')?.reviewCount, 1);
 
     // Second write for same booking is already counted
     const already = await handleReviewWrite(

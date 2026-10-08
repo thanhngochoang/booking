@@ -57,25 +57,25 @@ describe('badge use cases', () => {
   });
 
   it('keeps the snapshot written at award time', async () => {
-    metrics.values.set('p1', { rating: 4.9, reviewCount: 58 });
+    metrics.values.set('p1', { tomatoPct: 97, reviewCount: 58 });
     metrics.photographers.add('p1');
     await evaluateUserBadges(deps, 'p1');
     const first = [...(store.earned.get('p1')?.values() ?? [])].find((e) => e.badgeId === 'top_rated');
-    assert.equal(first?.snapshotText, '4,9 sao từ 58 đánh giá');
-    metrics.values.set('p1', { rating: 4.8, reviewCount: 70 });
+    assert.equal(first?.snapshotText, '97% cà chua từ 58 đánh giá');
+    metrics.values.set('p1', { tomatoPct: 95, reviewCount: 70 });
     w.clock.advanceHours(1);
     await evaluateUserBadges(deps, 'p1');
     const again = store.earned.get('p1')?.get('top_rated');
-    assert.equal(again?.snapshotText, '4,9 sao từ 58 đánh giá');
+    assert.equal(again?.snapshotText, '97% cà chua từ 58 đánh giá');
     assert.equal(again?.awardedAt.getTime(), first?.awardedAt.getTime());
   });
 
-  it('a dropped rating removes top_rated', async () => {
+  it('a dropped tomato percentage removes top_rated', async () => {
     metrics.photographers.add('p1');
-    metrics.values.set('p1', { rating: 4.9, reviewCount: 30 });
+    metrics.values.set('p1', { tomatoPct: 97, reviewCount: 30 });
     await evaluateUserBadges(deps, 'p1');
     assert.ok(store.earnedIds('p1').includes('top_rated'));
-    metrics.values.set('p1', { rating: 4.5, reviewCount: 31 });
+    metrics.values.set('p1', { tomatoPct: 90, reviewCount: 31 });
     const r = await evaluateUserBadges(deps, 'p1');
     assert.deepEqual(r.revoked, ['top_rated']);
     assert.equal(store.earnedIds('p1').includes('top_rated'), false);
@@ -83,7 +83,7 @@ describe('badge use cases', () => {
 
   it('progress is written for locked badges only', async () => {
     metrics.photographers.add('p1');
-    metrics.values.set('p1', { completedShoots: 12, workPosts: 2, rating: 5, reviewCount: 3 });
+    metrics.values.set('p1', { completedShoots: 12, workPosts: 2, tomatoPct: 100, reviewCount: 3 });
     await evaluateUserBadges(deps, 'p1');
     const p = store.progress.get('p1');
     assert.ok(p);
