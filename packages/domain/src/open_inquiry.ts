@@ -19,6 +19,26 @@ export async function openInquiry(
   return deps.chats.runTransaction(async (tx) => {
     const existing = await tx.getChat(chatId);
     if (existing) {
+      const now = deps.clock.now();
+      // A past customer's booking chat, read-only since readOnlyAt, becomes an inquiry again
+      // (same thread, history kept, photographerRepliedAt kept so no 3-message cap).
+      if (
+        existing.kind === 'booking' &&
+        existing.readOnlyAt !== null &&
+        now.getTime() >= existing.readOnlyAt.getTime()
+      ) {
+        if (!(await deps.photographers.acceptsInquiries(input.photographerId))) {
+          throw new DomainError('not_eligible');
+        }
+        tx.setChat({
+          ...existing,
+          kind: 'inquiry',
+          bookingId: null,
+          bookingStatus: null,
+          readOnlyAt: null,
+          updatedAt: now,
+        });
+      }
       return { chatId, created: false };
     }
 
@@ -34,6 +54,7 @@ export async function openInquiry(
       customerId: input.customerId,
       photographerId: input.photographerId,
       bookingId: null,
+      bookingStatus: null,
       photographerRepliedAt: null,
       customerMessagesBeforeReply: 0,
       lastMessageAt: null,

@@ -49,6 +49,7 @@ describe('reschedule proposal and answer (Task 3)', () => {
       customerId: booking.customerId,
       photographerId: booking.photographerId,
       bookingId: booking.id,
+      bookingStatus: booking.status,
       photographerRepliedAt: new Date('2026-10-01T12:00:00.000Z'),
       customerMessagesBeforeReply: 1,
       lastMessageAt: new Date('2026-10-01T12:00:00.000Z'),

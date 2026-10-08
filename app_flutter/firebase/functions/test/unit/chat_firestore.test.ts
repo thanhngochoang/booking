@@ -19,6 +19,7 @@ describe('chat_firestore mapping and trigger unit tests', () => {
       customerId: 'cust1',
       photographerId: 'phot1',
       bookingId: 'book_123',
+      bookingStatus: 'upcoming',
       photographerRepliedAt: new Date('2026-10-01T12:00:00.000Z'),
       customerMessagesBeforeReply: 2,
       lastMessageAt: new Date('2026-10-01T12:05:00.000Z'),

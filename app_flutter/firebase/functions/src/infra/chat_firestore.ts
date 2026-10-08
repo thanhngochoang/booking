@@ -17,6 +17,7 @@ export function toFirestoreChat(chat: Chat): Record<string, unknown> {
     photographerId: chat.photographerId,
     members: [chat.customerId, chat.photographerId],
     bookingId: chat.bookingId ?? null,
+    bookingStatus: chat.bookingStatus ?? null,
     photographerRepliedAt: chat.photographerRepliedAt
       ? Timestamp.fromDate(chat.photographerRepliedAt)
       : null,
@@ -44,6 +45,7 @@ export function fromFirestoreChat(id: string, data: Record<string, unknown>): Ch
     customerId: String(data.customerId ?? ''),
     photographerId: String(data.photographerId ?? ''),
     bookingId: data.bookingId ? String(data.bookingId) : null,
+    bookingStatus: typeof data.bookingStatus === 'string' ? data.bookingStatus : null,
     photographerRepliedAt: toDate(data.photographerRepliedAt),
     customerMessagesBeforeReply: Number(data.customerMessagesBeforeReply ?? 0),
     lastMessageAt: toDate(data.lastMessageAt),

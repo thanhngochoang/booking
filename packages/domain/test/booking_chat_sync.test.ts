@@ -256,4 +256,72 @@ describe('syncBookingChat (Task 4)', () => {
     const msgsAfter = (chats.messages.get(chatId) ?? []).length;
     assert.equal(msgsAfter, msgsBefore);
   });
+
+  it('the requested attach sets bookingStatus requested', async () => {
+    const { deps, chats } = createChatWorld();
+    await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    await syncBookingChat(deps, { before: null, after: baseBooking });
+    assert.equal(chats.chats.get('cust1_phot1')?.bookingStatus, 'requested');
+
+    const { deps: deps2, chats: chats2 } = createChatWorld();
+    await syncBookingChat(deps2, { before: null, after: baseBooking });
+    assert.equal(chats2.chats.get('cust1_phot1')?.bookingStatus, 'requested');
+  });
+
+  it('accepted, cancelled and completed set bookingStatus with their system message', async () => {
+    for (const status of ['accepted', 'cancelled', 'completed'] as const) {
+      const { deps, chats } = createChatWorld();
+      await syncBookingChat(deps, { before: null, after: baseBooking });
+      await syncBookingChat(deps, { before: baseBooking, after: { ...baseBooking, status } });
+      const chat = chats.chats.get('cust1_phot1');
+      assert.equal(chat?.bookingStatus, status);
+      assert.ok(chats.messages.get('cust1_phot1')?.some((m) => m.id === `sys-book_1-${status}`));
+    }
+  });
+
+  it('upcoming and reviewed are mirrored without a system message', async () => {
+    const { deps, chats } = createChatWorld();
+    const chatId = chatIdFor('cust1', 'phot1');
+    const accepted: Booking = { ...baseBooking, status: 'accepted' };
+    await syncBookingChat(deps, { before: null, after: baseBooking });
+    await syncBookingChat(deps, { before: baseBooking, after: accepted });
+    const count = chats.messages.get(chatId)?.length;
+
+    const upcoming: Booking = { ...accepted, status: 'upcoming' };
+    await syncBookingChat(deps, { before: accepted, after: upcoming });
+    assert.equal(chats.chats.get(chatId)?.bookingStatus, 'upcoming');
+    assert.equal(chats.messages.get(chatId)?.length, count);
+
+    const reviewed: Booking = { ...upcoming, status: 'reviewed' };
+    await syncBookingChat(deps, { before: upcoming, after: reviewed });
+    assert.equal(chats.chats.get(chatId)?.bookingStatus, 'reviewed');
+    assert.equal(chats.messages.get(chatId)?.length, count);
+  });
+
+  it('a status change of another booking of the same pair does not touch bookingStatus', async () => {
+    const { deps, chats } = createChatWorld();
+    const chatId = chatIdFor('cust1', 'phot1');
+    await syncBookingChat(deps, { before: null, after: baseBooking });
+    const booking2: Booking = { ...baseBooking, id: 'book_2' };
+    await syncBookingChat(deps, { before: null, after: booking2 });
+    await syncBookingChat(deps, {
+      before: baseBooking,
+      after: { ...baseBooking, status: 'cancelled' },
+    });
+    const chat = chats.chats.get(chatId);
+    assert.equal(chat?.bookingId, 'book_2');
+    assert.equal(chat?.bookingStatus, 'requested');
+  });
+
+  it('an unchanged status writes nothing', async () => {
+    const { deps, chats, clock } = createChatWorld();
+    const chatId = chatIdFor('cust1', 'phot1');
+    const accepted: Booking = { ...baseBooking, status: 'accepted' };
+    await syncBookingChat(deps, { before: null, after: baseBooking });
+    await syncBookingChat(deps, { before: baseBooking, after: accepted });
+    const before = chats.chats.get(chatId);
+    clock.advance(60_000);
+    await syncBookingChat(deps, { before: accepted, after: { ...accepted, version: 2 } });
+    assert.deepEqual(chats.chats.get(chatId), before);
+  });
 });
