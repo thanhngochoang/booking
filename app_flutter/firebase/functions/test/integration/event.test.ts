@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { Timestamp, getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { newUlid } from '@photobooking/domain';
+import { MemoryPushSender, newUlid } from '@photobooking/domain';
 import { applySeed } from '../../seed/apply.js';
 import { callCallable, emulatorProject, resetEmulators, signIn } from '../../seed/emulator_client.js';
 import { AN, LAN, SEED_PASSWORD, SEED_USERS } from '../../seed/fixtures.js';
@@ -12,6 +12,8 @@ import { handleEventClock } from '../../src/scheduled/event_clock.js';
 import { firestoreEventPeople, ownCoverUpload } from '../../src/infra/event_firestore.js';
 import { firestoreUserContactReader } from '../../src/infra/firestore.js';
 import { storageUrlPrefixes } from '../../src/config.js';
+import { FirestoreNotificationStore } from '../../src/infra/notification_firestore.js';
+import { FirestoreUserDirectory } from '../../src/infra/user_directory.js';
 import { eventStartInDays } from './event_social_support.js';
 
 // The real event callables on the Functions emulator through FirestoreEventStore. Needs the
@@ -94,8 +96,9 @@ describe('events on the emulators', () => {
   });
 
   test('check-in twice is conflict', async () => {
-    // The event starts in 1 day, so check-in opens at 00:00 of its day only; move the day to today.
-    const eventId = await publish(AN, {}, 1);
+    // Check-in opens at 00:00 of the event day only; move the day to today. (Not on day 1: the seed's
+    // S17 event 36 h ahead may hold An's availability tomorrow.)
+    const eventId = await publish(AN);
     const res = await call('registerEvent', LAN, { eventId, quantity: 1, name: 'Lan' });
     const regId = (res.result as { registrationId: string }).registrationId;
     const code = (await data(`events/${eventId}/registrations/${regId}`)).ticketCode as string;
@@ -132,6 +135,9 @@ describe('events on the emulators', () => {
       clock: { now: () => new Date() },
       ids: { newId: () => newUlid(Date.now()) },
       random: (n) => globalThis.crypto.getRandomValues(new Uint8Array(n)),
+    }, {
+      // The S17 reminder step runs too (the seed has an event 36 h ahead): this app's Firestore, no FCM.
+      notify: { store: new FirestoreNotificationStore(db), push: new MemoryPushSender(), users: new FirestoreUserDirectory(db), clock: { now: () => new Date() } },
     });
     assert.ok(results.closed >= 1 && results.completed >= 1);
     assert.equal(eventFromFirestore(closing, await data(`events/${closing}`)).status, 'closed');

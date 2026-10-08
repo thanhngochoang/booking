@@ -103,6 +103,8 @@ export function eventToFirestore(e: EventRecord): DocumentData {
     publishedAt: ts(e.publishedAt),
     completedAt: ts(e.completedAt),
     cancelledAt: ts(e.cancelledAt),
+    // Always written (null when unset) so the reminder query `soonNoticeAt == null` matches it.
+    soonNoticeAt: ts(e.soonNoticeAt ?? null),
     createdAt: Timestamp.fromDate(e.createdAt),
     updatedAt: Timestamp.fromDate(e.updatedAt),
   };
@@ -161,6 +163,7 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
     publishedAt: toDate(d.publishedAt),
     completedAt: toDate(d.completedAt),
     cancelledAt: toDate(d.cancelledAt),
+    soonNoticeAt: toDate(d.soonNoticeAt),
     createdAt: toDate(d.createdAt) ?? new Date(0),
     updatedAt: toDate(d.updatedAt) ?? new Date(0),
   };
@@ -490,6 +493,18 @@ export class FirestoreEventStore implements EventStore {
       .limit(limit)
       .get();
     return snap.docs.flatMap((d) => refundFromFirestore(d.id, d.data()) ?? []);
+  }
+
+  /** S17 reminder: composite index events (status, soonNoticeAt, startAt) in firestore.indexes.json. */
+  dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]> {
+    return this.due(
+      this.firestore.collection(EVENTS_COLLECTION)
+        .where('status', 'in', ['open', 'full', 'closed'])
+        .where('soonNoticeAt', '==', null)
+        .where('startAt', '>', Timestamp.fromDate(now))
+        .where('startAt', '<=', Timestamp.fromDate(horizon)),
+      limit,
+    );
   }
 
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {

@@ -85,6 +85,8 @@ export interface EventStore {
   dueForCompletion(now: Date, limit: number): Promise<EventRecord[]>;
   /** O1: drafts with `hostConsent = pending` and `hostConsentExpiresAt <= now`. */
   dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]>;
+  /** S17: open | full | closed, `soonNoticeAt == null`, `now < startAt <= horizon` (the 48-hour reminder). */
+  dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]>;
   /** `held` registrations of any event with `holdExpiresAt <= now` (the 1-minute hold sweep). */
   expiredHoldsAll(now: Date, limit: number): Promise<RegistrationDoc[]>;
   /** Registrations with `refundDue == true`: tickets of a cancelled event still to refund. */

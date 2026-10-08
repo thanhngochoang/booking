@@ -430,12 +430,17 @@ export const onPaymentWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document
   );
 });
 
-/** A payout write refreshes the rows of every payment in the batch and the last-payout card. */
+/**
+ * A payout write refreshes the rows of every payment in the batch and the last-payout card; when
+ * the payout becomes `paid` the payee gets `payout_released` (S17).
+ */
 export const onPayoutWritten = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'payouts/{payoutId}' }, async (event) => {
   await handlePayoutWrite(
+    event.params.payoutId,
     event.data?.before.exists ? event.data.before.data() : undefined,
     event.data?.after.exists ? event.data.after.data() : undefined,
     liveEarningsDeps(),
+    liveNotifyDeps(),
   );
 });
 
@@ -492,7 +497,8 @@ export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
 
 /**
  * Every 5 minutes: closes registration, completes events (ticket money then waits 24 h for the
- * bookingClock release), expires unanswered host invitations, retries refunds of cancelled events.
+ * bookingClock release), expires unanswered host invitations, retries refunds of cancelled events,
+ * then reminds paid ticket holders 48 h before the start (S17 `event_soon`).
  */
 export const eventClock = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 5 minutes', timeoutSeconds: 120 }, async () => {
   await handleEventClock();

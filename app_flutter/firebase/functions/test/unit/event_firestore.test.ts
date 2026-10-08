@@ -46,6 +46,7 @@ const event = (over: Partial<EventRecord> = {}): EventRecord => ({
   publishedAt: null,
   completedAt: null,
   cancelledAt: null,
+  soonNoticeAt: null,
   createdAt: D('2026-10-06T03:00:00.000Z'),
   updatedAt: D('2026-10-06T03:00:00.000Z'),
   ...over,
@@ -100,6 +101,42 @@ describe('Firestore mapping for events', () => {
     const e = event({ startAt: null, endAt: null, dayKey: null, location: null, capacity: null, price: null,
       registrationDeadline: null, coverUrl: null, coverPath: null });
     assert.deepEqual(eventFromFirestore('ev1', eventToFirestore(e)), e);
+  });
+
+  it('soonNoticeAt round-trips; absent reads null', () => {
+    const e = event({ status: 'open', soonNoticeAt: D('2026-10-10T13:00:00.000Z') });
+    const doc = eventToFirestore(e);
+    assert.ok(doc.soonNoticeAt instanceof Timestamp);
+    assert.deepEqual(eventFromFirestore('ev1', doc), e);
+    // Written as null when the record has none, so the reminder query (== null) matches it.
+    assert.equal(eventToFirestore({ ...event(), soonNoticeAt: undefined }).soonNoticeAt, null);
+    // An older document without the field reads null.
+    const old = { ...eventToFirestore(event()) };
+    delete old.soonNoticeAt;
+    assert.equal(eventFromFirestore('ev1', old).soonNoticeAt, null);
+  });
+
+  it('dueForSoonNotice builds the status/soonNoticeAt/startAt query with the limit', async () => {
+    const asked: unknown[] = [];
+    const evDoc = eventToFirestore(event({ status: 'open' }));
+    const q = {
+      where: (...args: unknown[]) => { asked.push(['where', ...args]); return q; },
+      limit: (n: number) => { asked.push(['limit', n]); return q; },
+      get: async () => ({ docs: [{ id: 'ev1', data: () => evDoc }] }),
+    };
+    const firestore = { collection: (name: string) => { asked.push(['collection', name]); return q; } };
+    const now = D('2026-10-10T13:00:00.000Z');
+    const horizon = D('2026-10-12T13:00:00.000Z');
+    const got = await new FirestoreEventStore(firestore as never).dueForSoonNotice(now, horizon, 200);
+    assert.deepEqual(got.map((e) => e.id), ['ev1']);
+    assert.deepEqual(asked, [
+      ['collection', 'events'],
+      ['where', 'status', 'in', ['open', 'full', 'closed']],
+      ['where', 'soonNoticeAt', '==', null],
+      ['where', 'startAt', '>', Timestamp.fromDate(now)],
+      ['where', 'startAt', '<=', Timestamp.fromDate(horizon)],
+      ['limit', 200],
+    ]);
   });
 
   it('a registration snapshot round-trips and carries no phone', () => {

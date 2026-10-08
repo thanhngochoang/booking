@@ -1,7 +1,16 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { acceptsOrders, bookingContactUnlocked, computeDeposit, isId, isInternationalE164, isVnE164, transferCodeFor } from '@photobooking/domain';
-import { SEED_PASSWORD, SEED_PHOTOGRAPHERS, SEED_USERS, seedDocuments } from '../../seed/fixtures.js';
+import type { Timestamp } from 'firebase-admin/firestore';
+import { acceptsOrders, bookingContactUnlocked, computeDeposit, isId, isInternationalE164, isTicketCode, isVnE164, transferCodeFor } from '@photobooking/domain';
+import {
+  LAN,
+  SEED_EVENT_SOON,
+  SEED_PASSWORD,
+  SEED_PHOTOGRAPHERS,
+  SEED_REGISTRATION_LAN_SOON,
+  SEED_USERS,
+  seedDocuments,
+} from '../../seed/fixtures.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 
@@ -185,5 +194,40 @@ describe('seed payouts and earnings', () => {
     assert.equal((e?.lastPayout as { status: string }).status, 'paid');
     assert.equal(get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old')?.state, 'paid_out');
     assert.equal(get('earnings/seed-photographer-binh')?.heldAmount, dep(1_200_000));
+  });
+});
+
+describe('seed event reminder (S17)', () => {
+  test("SEED_EVENT_SOON starts 36 h after seeding, is open, has soonNoticeAt null and Lan's paid ticket", () => {
+    const docs = seedDocuments(NOW);
+    const get = (path: string) => docs.find((d) => d.path === path)?.data;
+    const ev = get(`events/${SEED_EVENT_SOON}`);
+    assert.ok(ev);
+    assert.equal((ev.startAt as Timestamp).toMillis(), NOW.getTime() + 36 * 3_600_000);
+    assert.equal(ev.status, 'open');
+    assert.equal(ev.title, 'Chụp phố đêm');
+    assert.equal(ev.type, 'photo_walk');
+    assert.equal(ev.price, 0);
+    assert.equal('soonNoticeAt' in ev, true);
+    assert.equal(ev.soonNoticeAt, null);
+    assert.equal(ev.registeredCount, 1);
+    const reg = get(`events/${SEED_EVENT_SOON}/registrations/${SEED_REGISTRATION_LAN_SOON}`);
+    assert.equal(reg?.userId, LAN);
+    assert.equal(reg?.status, 'paid');
+    assert.ok(isTicketCode(String(reg?.ticketCode)));
+    assert.deepEqual(get(`ticket_codes/${String(reg?.ticketCode)}`), { eventId: SEED_EVENT_SOON, registrationId: SEED_REGISTRATION_LAN_SOON });
+    // Every other seed event is still more than 48 hours away (only this one is reminded).
+    for (const d of docs.filter((x) => /^events\/[^/]+$/.test(x.path) && x.path !== `events/${SEED_EVENT_SOON}`)) {
+      assert.ok((d.data.startAt as Timestamp).toMillis() > NOW.getTime() + 48 * 3_600_000, d.path);
+    }
+  });
+
+  test('every path is written once, even when an event day falls on a seed booking day', () => {
+    // 36 h after this clock is 10 Oct in Vietnam, the day of seed-booking-upcoming.
+    const docs = seedDocuments(new Date('2026-10-08T12:00:00Z'));
+    const paths = docs.map((d) => d.path);
+    assert.equal(new Set(paths).size, paths.length);
+    const day = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-10')?.data;
+    assert.equal(day?.bookingId, 'seed-booking-upcoming');
   });
 });

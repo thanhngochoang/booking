@@ -110,5 +110,23 @@ npm run payouts -- create seed-photographer-an --actor seed-staff-admin   # batc
 | `seed-registration-lan-free-walk` | Lan | free registration to the walk: `paid`, `contactEligible: false`, ticket `VE-LANA-0000`, no `private/contact` snapshot (the host never gets Lan's phone) |
 | Timeline of the walk | Lan, Minh | `seed-post-lan-share` (`event_share`, visible) and `seed-post-minh-share` (pending: Minh holds no ticket, so it shows only in the managers' "Chờ duyệt" tab); `postCount` 1 |
 | Group chat of the walk | An, Lan | member docs (names only), a join line for Lan, An's announcement `seed-msg-announcement` pinned |
+| `seed-event-an-night-walk` | An | "Chụp phố đêm", open, free, starts **36 hours after seeding** (meeting point Nhà hát Thành phố), `soonNoticeAt` null: the next event clock run sends the S17 `event_soon` reminder; group chat with An and Lan |
+| `seed-registration-lan-night-walk` | Lan | free registration to the night walk: `paid`, ticket `VE-LANB-0000` |
 
-Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability, and the registration its `ticket_codes/*` entry.
+Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability
+(unless a seed booking already holds that day), and each registration its `ticket_codes/*` entry.
+
+## Running a clock on the emulators
+
+The emulators never fire scheduled functions. `npm run clock -- events` runs the event clock once
+(close, complete, refunds, then the 48-hour `event_soon` reminders) and prints the counts;
+`npm run clock -- bookings` runs the booking clock once (sweeps and shoot reminders). The tool
+refuses unless `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` point at a local host;
+push is only logged.
+
+```bash
+export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>
+npm run clock -- events
+# eventClock: closed=0 completed=0 consentExpired=0 refunded=0 refundsResent=0 soonEvents=1 soonSent=1
+# Lan's inbox now has "Chụp phố đêm bắt đầu ngày mai" (or "sau 2 ngày"); a second run sends nothing.
+```

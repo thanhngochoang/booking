@@ -15,6 +15,7 @@
     "seed": "node --import tsx seed/seed.ts",
     "awards": "tsx tools/awards.ts",
     "payouts": "tsx tools/payouts.ts",
+    "clock": "tsx tools/clock.ts",
     "try:contact": "node --import tsx seed/try_contact_link.ts"
   },
   "dependencies": {

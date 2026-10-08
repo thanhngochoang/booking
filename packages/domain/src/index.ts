@@ -85,6 +85,7 @@ export * from './memory_event_store.js';
 export * from './event_use_cases.js';
 export * from './event_registration.js';
 export * from './event_sweeps.js';
+export * from './event_notices.js';
 export * from './event_payments.js';
 export * from './event_timeline_ports.js';
 export * from './event_timeline.js';
