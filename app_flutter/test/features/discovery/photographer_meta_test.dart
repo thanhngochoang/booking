@@ -9,10 +9,17 @@ import '../../support/content_fixtures.dart';
 void main() {
   final l = AppLocalizationsVi();
 
-  test('area, rating with count and sessions, joined by dots', () {
+  test('area, % cà chua with count and sessions, joined by dots', () {
     expect(
-      areaRatingMeta(fixturePhotographer('p1', areaLabel: 'Quận 3'), l),
-      'Quận 3 · ★ 4,9 (58) · 112 buổi',
+      areaRatingMeta(fixturePhotographer(
+          'p1',
+          areaLabel: 'Quận 3',
+          tomatoCount: 56,
+          brickCount: 2,
+        ),
+        l,
+      ),
+      'Quận 3 · 97% (58) · 112 buổi',
     );
   });
 
@@ -21,14 +28,14 @@ void main() {
     expect(areaRatingMeta(bare, l), '');
     expect(
       areaRatingMeta(
-        fixturePhotographer('p', areaLabel: null, reviews: 0, completed: 0),
+        fixturePhotographer('p', areaLabel: null, completed: 0),
         l,
       ),
       '',
     );
     expect(
       areaRatingMeta(
-        fixturePhotographer('p', areaLabel: 'Quận 1', reviews: 0, completed: 5),
+        fixturePhotographer('p', areaLabel: 'Quận 1', completed: 5),
         l,
       ),
       'Quận 1 · 5 buổi',

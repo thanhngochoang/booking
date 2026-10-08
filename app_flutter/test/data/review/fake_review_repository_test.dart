@@ -19,7 +19,9 @@ void main() {
         customerId: 'cust_abc',
         photographerId: 'photog_1',
         serviceId: 'srv_1',
-        rating: 5,
+        verdict: Verdict.tomato,
+        hits: 1,
+        reasons: const [],
         text: 'Rất tuyệt vời!',
         createdAt: now,
       );
@@ -32,7 +34,7 @@ void main() {
 
       expect(emissions.first, isNull);
       expect(emissions.last?.bookingId, 'book_1');
-      expect(emissions.last?.rating, 5);
+      expect(emissions.last?.verdict, Verdict.tomato);
 
       await sub.cancel();
     });
@@ -46,7 +48,7 @@ void main() {
             customerId: 'cust_$i',
             photographerId: 'photog_target',
             serviceId: 'srv_1',
-            rating: i + 1,
+            verdict: i >= 3 ? Verdict.tomato : Verdict.brick,
             text: 'Review $i',
             createdAt: now.add(Duration(minutes: i)),
           ),
@@ -81,7 +83,9 @@ void main() {
 
       final postId = await repo.submit(
         bookingId: 'book_new',
-        rating: 5,
+        verdict: Verdict.tomato,
+        hits: 1,
+        reasons: const [],
         text: 'Nhiếp ảnh gia rất có tâm',
         postId: 'post_new',
         photos: photos,
@@ -90,7 +94,7 @@ void main() {
       expect(postId, 'post_new');
       expect(repo.submitCalls.length, 1);
       expect(repo.submitCalls.first['bookingId'], 'book_new');
-      expect(repo.submitCalls.first['rating'], 5);
+      expect(repo.submitCalls.first['verdict'], Verdict.tomato);
       expect(repo.submitCalls.first['text'], 'Nhiếp ảnh gia rất có tâm');
       expect(repo.submitCalls.first['postId'], 'post_new');
       expect(repo.submitCalls.first['photos'], photos);
@@ -98,21 +102,25 @@ void main() {
       final saved = repo.reviews['book_new'];
       expect(saved, isNotNull);
       expect(saved?.customerId, 'cust_abc');
-      expect(saved?.rating, 5);
+      expect(saved?.verdict, Verdict.tomato);
       expect(saved?.photoPostId, 'post_new');
     });
 
     test('submit throws conflict if booking was already reviewed', () async {
       await repo.submit(
         bookingId: 'book_once',
-        rating: 5,
+        verdict: Verdict.tomato,
+        hits: 1,
+        reasons: const [],
         text: 'First time',
       );
 
       expect(
         () => repo.submit(
           bookingId: 'book_once',
-          rating: 4,
+          verdict: Verdict.tomato,
+          hits: 1,
+          reasons: const [],
           text: 'Second time',
         ),
         throwsA(
@@ -131,7 +139,9 @@ void main() {
       expect(
         () => repo.submit(
           bookingId: 'book_fail',
-          rating: 5,
+          verdict: Verdict.tomato,
+          hits: 1,
+          reasons: const [],
           text: 'Test fail',
         ),
         throwsA(
@@ -146,7 +156,9 @@ void main() {
       // Subsequent call should succeed since nextError was consumed
       final postId = await repo.submit(
         bookingId: 'book_fail',
-        rating: 5,
+        verdict: Verdict.tomato,
+        hits: 1,
+        reasons: const [],
         text: 'Test succeed now',
       );
       expect(postId, isNull);

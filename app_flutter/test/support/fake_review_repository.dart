@@ -92,7 +92,9 @@ class FakeReviewRepository implements ReviewRepository {
   @override
   Future<String?> submit({
     required String bookingId,
-    required int rating,
+    required Verdict verdict,
+    required int hits,
+    required List<ReviewReason> reasons,
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
@@ -117,7 +119,9 @@ class FakeReviewRepository implements ReviewRepository {
 
     submitCalls.add({
       'bookingId': bookingId,
-      'rating': rating,
+      'verdict': verdict,
+      'hits': hits,
+      'reasons': reasons,
       'text': text,
       'postId': postId,
       'photos': photos,
@@ -130,7 +134,9 @@ class FakeReviewRepository implements ReviewRepository {
       customerId: currentUserId,
       photographerId: photogId,
       serviceId: 'srv1',
-      rating: rating,
+      verdict: verdict,
+      hits: hits,
+      reasons: reasons,
       text: text,
       photoPostId: postId,
       createdAt: DateTime.now(),
@@ -141,10 +147,8 @@ class FakeReviewRepository implements ReviewRepository {
     if (bookingRepository != null &&
         bookingRepository!.bookings.containsKey(bookingId)) {
       final old = bookingRepository!.bookings[bookingId]!;
-      final updated = old.copyWith(
-        status: BookingStatus.reviewed,
-        reviewedAt: DateTime.now(),
-      );
+      // Like the server: the booking keeps its status, `reviewedAt` is set.
+      final updated = old.copyWith(reviewedAt: DateTime.now());
       bookingRepository!.seedBooking(updated);
       bookingRepository!.addEvent(
         BookingEventRecord(

@@ -62,8 +62,9 @@ PhotographerSummary fixturePhotographer(
   bool verified = false,
   List<String> specialties = const ['portrait'],
   List<String> styles = const [],
-  double rating = 4.9,
-  int reviews = 58,
+  int tomatoCount = 0,
+  int brickCount = 0,
+  double? score,
   int completed = 112,
   int? startingPrice = 1500000,
   String? nextFreeDate,
@@ -90,8 +91,21 @@ PhotographerSummary fixturePhotographer(
   areaLabel: areaLabel,
   lat: lat,
   lng: lng,
-  ratingAvg: rating,
-  reviewCount: reviews,
+  reviewCount: tomatoCount + brickCount,
+  tomatoCount: tomatoCount,
+  brickCount: brickCount,
+  tomatoPct: tomatoCount + brickCount == 0
+      ? 0
+      : (100 * tomatoCount / (tomatoCount + brickCount)).round(),
+  // Like the server with every verdict at full intensity, unless a test
+  // pins the score.
+  score:
+      score ??
+      (tomatoCount + brickCount == 0
+          ? 0
+          : ((tomatoCount - brickCount) / (tomatoCount + brickCount) * 1000)
+                    .round() /
+                1000),
   completedCount: completed,
   responseMinutes: responseMinutes,
   startingPriceVnd: startingPrice,

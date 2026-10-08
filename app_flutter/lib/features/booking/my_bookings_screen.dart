@@ -7,7 +7,6 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
-import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
@@ -248,7 +247,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
       }
     }
     if (_tab == BookingTab.history &&
-        b.status == BookingStatus.completed &&
+        BookingRules.canReview(b) &&
         features.review) {
       buttons.add(
         AppButton.outline(

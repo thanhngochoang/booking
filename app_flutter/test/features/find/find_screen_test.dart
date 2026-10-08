@@ -166,11 +166,11 @@ void main() {
     expect(find.byKey(const Key('find-card-p3')), findsNothing);
   });
 
-  testWidgets('budget and rating sheets', (tester) async {
+  testWidgets('budget and tomato sheets', (tester) async {
     await _open(tester, DiscoveryWorld());
     await _choose(tester, 'find-price', 'Dưới 2M');
     expect(find.text('2 nhiếp ảnh gia'), findsOneWidget);
-    await _choose(tester, 'find-rating', '★ 4,8+');
+    await _choose(tester, 'find-rating', '95%+');
     expect(find.text('1 nhiếp ảnh gia'), findsOneWidget);
     expect(find.byKey(const Key('find-card-p1')), findsOneWidget);
   });
@@ -407,7 +407,7 @@ void main() {
           fixturePhotographer(
             'p${i.toString().padLeft(2, '0')}',
             name: 'Thợ $i',
-            reviews: 10 + i,
+            tomatoCount: 10 + i,
           ),
       ],
     );
@@ -437,36 +437,35 @@ void main() {
   });
 
   testWidgets(
-    'a rating-filtered first page that does not fill the screen loads the next',
+    'a tomato-filtered first page that does not fill the screen loads the next',
     (tester) async {
-      // Page one keeps a single photographer after the rating filter, so
+      // Page one keeps a single photographer after the tomato filter, so
       // nothing scrolls; the next page must still be requested.
       final w = DiscoveryWorld(
         photographers: [
           for (var i = 0; i < 19; i++)
             fixturePhotographer(
               'a${i.toString().padLeft(2, '0')}',
-              rating: 4.7,
-              reviews: 1000,
+              tomatoCount: 925,
+              brickCount: 75,
               completed: 500,
             ),
           fixturePhotographer(
             'b00',
-            rating: 4.85,
-            reviews: 500,
+            tomatoCount: 481,
+            brickCount: 19,
             completed: 250,
           ),
           for (var i = 0; i < 20; i++)
             fixturePhotographer(
               'c${i.toString().padLeft(2, '0')}',
-              rating: 4.85,
-              reviews: 10,
+              tomatoCount: 10,
               completed: 5,
             ),
         ],
       );
       await _open(tester, w);
-      await _choose(tester, 'find-rating', '★ 4,8+');
+      await _choose(tester, 'find-rating', '95%+');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('find-card-b00')), findsOneWidget);
       expect(find.byKey(const Key('find-card-c00')), findsOneWidget);
@@ -484,22 +483,23 @@ void main() {
         for (var i = 0; i < 15; i++)
           fixturePhotographer(
             'h${i.toString().padLeft(2, '0')}',
-            rating: 4.9,
-            reviews: 1000 - i,
+            tomatoCount: 1000 - i,
+            score: 0.95,
             completed: 500,
           ),
         for (var i = 0; i < 15; i++)
           fixturePhotographer(
             'l${i.toString().padLeft(2, '0')}',
-            rating: 4.5,
-            reviews: 500 - i,
+            tomatoCount: 400 - i,
+            brickCount: 100,
+            score: 0.75,
             completed: 250,
           ),
       ],
       recommenderFactory: (x) => _Slow(x.localRecommender()),
     );
     await _open(tester, w);
-    await _choose(tester, 'find-rating', '★ 4,8+');
+    await _choose(tester, 'find-rating', '95%+');
     // Timers do not schedule frames: pump through the 200 ms pages by hand.
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));

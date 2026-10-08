@@ -1338,8 +1338,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String reasonTopRated(String rating, int count) {
-    return '★ $rating · $count đánh giá';
+  String reasonTopRated(int pct, int count) {
+    return '$pct% cà chua từ $count đánh giá';
   }
 
   @override
@@ -1577,14 +1577,14 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get findRatingTitle => 'Đánh giá tối thiểu';
+  String get findTomatoTitle => 'Tỷ lệ hài lòng';
 
   @override
   String get findRatingAny => 'Mọi đánh giá';
 
   @override
-  String findRatingMin(String rating) {
-    return '★ $rating+';
+  String findTomatoMin(int pct) {
+    return '$pct%+';
   }
 
   @override
@@ -2747,6 +2747,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewText => 'Nhận xét';
+
+  @override
+  String get reviewTomato => 'Hài lòng';
+
+  @override
+  String get reviewBrick => 'Chưa hài lòng';
 
   @override
   String get reviewTextHint => 'Chia sẻ cảm nhận của bạn về buổi chụp...';
@@ -3956,11 +3962,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get eventHostRole => 'Chủ sự kiện';
-
-  @override
-  String eventHostRoleRating(String rating) {
-    return 'Chủ sự kiện · ★ $rating';
-  }
 
   @override
   String get eventProfile => 'Hồ sơ';

@@ -130,7 +130,7 @@ void main() {
       expect(find.byType(VerifiedMark), findsOneWidget);
       expect(find.textContaining('Minh Trí'), findsWidgets);
       expect(find.text('Chân dung · Cưới · Quận 3'), findsOneWidget);
-      for (final t in ['4,9', '58 đánh giá', '112', '~1 giờ', '6 năm']) {
+      for (final t in ['97%', '58 đánh giá', '112', '~1 giờ', '6 năm']) {
         expect(find.text(t), findsOneWidget, reason: t);
       }
       expect(find.text(profileBio), findsOneWidget);

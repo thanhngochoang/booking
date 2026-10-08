@@ -217,17 +217,17 @@ class _FindPhotographerScreenState
           ),
           AppChip(
             key: const Key('find-rating'),
-            label: filters.minRating == null
+            label: filters.minTomatoPct == null
                 ? l.findRating
-                : l.findRatingMin(formatRating(filters.minRating!)),
-            selected: filters.minRating != null,
+                : l.findTomatoMin(filters.minTomatoPct!),
+            selected: filters.minTomatoPct != null,
             onChanged: (_) async {
-              final r = await pickMinRating(
+              final r = await pickMinTomatoPct(
                 context,
-                current: filters.minRating,
+                current: filters.minTomatoPct,
               );
               if (r != null) {
-                filterCtl.setMinRating(r.value);
+                filterCtl.setMinTomatoPct(r.value);
               }
             },
           ),

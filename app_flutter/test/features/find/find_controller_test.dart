@@ -51,13 +51,13 @@ void main() {
   test('filters are reset when another user signs in', () async {
     final (c, w, _) = await _make();
     c.listen(findFiltersProvider, (_, _) {});
-    c.read(findFiltersProvider.notifier).setMinRating(4.5);
+    c.read(findFiltersProvider.notifier).setMinTomatoPct(90);
     await Future<void>.delayed(Duration.zero);
-    expect(c.read(findFiltersProvider).minRating, 4.5, reason: 'same user');
+    expect(c.read(findFiltersProvider).minTomatoPct, 90, reason: 'same user');
     await w.auth.signOut();
     await Future<void>.delayed(Duration.zero);
     await c.pump();
-    expect(c.read(findFiltersProvider).minRating, isNull);
+    expect(c.read(findFiltersProvider).minTomatoPct, isNull);
   });
 
   group('FindFilters', () {
@@ -66,14 +66,14 @@ void main() {
       final n = c.read(findFiltersProvider.notifier);
       n.setSpecialty('wedding');
       n.setBudget(2000000);
-      n.setMinRating(4.5);
+      n.setMinTomatoPct(90);
       n.setStyle('film');
       n.setDate(DateTime(2026, 10, 3));
       n.setSort(RecommendationSort.price);
       final f = c.read(findFiltersProvider);
       expect(
-        (f.specialtyId, f.budgetMax, f.minRating, f.styleId, f.sort),
-        ('wedding', 2000000, 4.5, 'film', RecommendationSort.price),
+        (f.specialtyId, f.budgetMax, f.minTomatoPct, f.styleId, f.sort),
+        ('wedding', 2000000, 90, 'film', RecommendationSort.price),
       );
       expect(f.hasAny, isTrue);
       n.clear();
@@ -142,33 +142,74 @@ void main() {
     });
 
     test(
-      'the rating filter is applied here and skips pages it empties',
+      'the tomato filter is applied here and skips pages it empties',
       () async {
         final world = DiscoveryWorld(
           photographers: [
             for (var i = 0; i < 20; i++)
               fixturePhotographer(
                 'a${i.toString().padLeft(2, '0')}',
-                rating: 4.7,
-                reviews: 1000,
+                tomatoCount: 880,
+                brickCount: 120,
                 completed: 500,
               ),
             for (var i = 0; i < 5; i++)
               fixturePhotographer(
                 'b$i',
-                rating: 4.85,
-                reviews: 10,
+                tomatoCount: 11,
+                brickCount: 1,
                 completed: 5,
               ),
           ],
         );
         final (c, _, _) = await _make(world: world);
-        c.read(findFiltersProvider.notifier).setMinRating(4.8);
+        c.read(findFiltersProvider.notifier).setMinTomatoPct(90);
         final r = await c.read(findResultsProvider.future);
         expect(r.items, hasLength(5));
         expect(_ids(r).every((id) => id.startsWith('b')), isTrue);
       },
     );
+
+    test('minTomatoPct 90 keeps 92% with 12 reviews and drops 88%', () async {
+      final world = DiscoveryWorld(
+        photographers: [
+          fixturePhotographer('keep', tomatoCount: 11, brickCount: 1),
+          fixturePhotographer('drop', tomatoCount: 22, brickCount: 3),
+        ],
+      );
+      final (c, _, _) = await _make(world: world);
+      c.read(findFiltersProvider.notifier).setMinTomatoPct(90);
+      expect(_ids(await c.read(findResultsProvider.future)), ['keep']);
+    });
+
+    test(
+      'minTomatoPct drops a provider with 4 reviews even at 100%',
+      () async {
+        final world = DiscoveryWorld(
+          photographers: [
+            fixturePhotographer('few', tomatoCount: 4),
+            fixturePhotographer('five', tomatoCount: 5),
+          ],
+        );
+        final (c, _, _) = await _make(world: world);
+        c.read(findFiltersProvider.notifier).setMinTomatoPct(80);
+        expect(_ids(await c.read(findResultsProvider.future)), ['five']);
+      },
+    );
+
+    test('no filter keeps providers without reviews', () async {
+      final world = DiscoveryWorld(
+        photographers: [
+          fixturePhotographer('none'),
+          fixturePhotographer('some', tomatoCount: 6),
+        ],
+      );
+      final (c, _, _) = await _make(world: world);
+      expect(_ids(await c.read(findResultsProvider.future)).toSet(), {
+        'none',
+        'some',
+      });
+    });
 
     test('closed providers are left out of the results', () async {
       final world = DiscoveryWorld(
@@ -189,12 +230,12 @@ void main() {
           for (var i = 0; i < 20; i++)
             fixturePhotographer(
               'a${i.toString().padLeft(2, '0')}',
-              reviews: 1000,
+              tomatoCount: 1000,
               completed: 500,
               acceptingOrders: false,
             ),
           for (var i = 0; i < 3; i++)
-            fixturePhotographer('b$i', reviews: 10, completed: 5),
+            fixturePhotographer('b$i', tomatoCount: 10, completed: 5),
         ],
       );
       final (c, _, _) = await _make(world: world);
@@ -203,16 +244,21 @@ void main() {
       expect(_ids(r).every((id) => id.startsWith('b')), isTrue);
     });
 
-    test('the rating filter and the closed filter combine', () async {
+    test('the tomato filter and the closed filter combine', () async {
       final world = DiscoveryWorld(
         photographers: [
-          fixturePhotographer('ok', rating: 4.9),
-          fixturePhotographer('low', rating: 4.0),
-          fixturePhotographer('shut', rating: 4.9, acceptingOrders: false),
+          fixturePhotographer('ok', tomatoCount: 19, brickCount: 1),
+          fixturePhotographer('low', tomatoCount: 8, brickCount: 2),
+          fixturePhotographer(
+            'shut',
+            tomatoCount: 19,
+            brickCount: 1,
+            acceptingOrders: false,
+          ),
         ],
       );
       final (c, _, _) = await _make(world: world);
-      c.read(findFiltersProvider.notifier).setMinRating(4.5);
+      c.read(findFiltersProvider.notifier).setMinTomatoPct(90);
       final r = await c.read(findResultsProvider.future);
       expect(_ids(r), ['ok']);
     });
@@ -223,7 +269,7 @@ void main() {
           for (var i = 0; i < 30; i++)
             fixturePhotographer(
               'p${i.toString().padLeft(2, '0')}',
-              reviews: 10 + i,
+              tomatoCount: 10 + i,
             ),
         ],
       );
@@ -258,7 +304,7 @@ void main() {
           for (var i = 0; i < 30; i++)
             fixturePhotographer(
               'p${i.toString().padLeft(2, '0')}',
-              reviews: 10 + i,
+              tomatoCount: 10 + i,
             ),
         ],
       );
@@ -266,7 +312,7 @@ void main() {
       final n = c.read(findResultsProvider.notifier);
       await c.read(findResultsProvider.future);
       final pending = n.loadMore();
-      c.read(findFiltersProvider.notifier).setMinRating(4.0);
+      c.read(findFiltersProvider.notifier).setMinTomatoPct(80);
       await pending;
       final r = await c.read(findResultsProvider.future);
       expect(r.items.length, lessThanOrEqualTo(20));

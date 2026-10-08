@@ -49,12 +49,19 @@ void main() {
     expect(formatDay(toVn(DateTime.utc(2026, 10, 2, 17, 30))), 'T7 03/10');
   });
 
-  test('formatRating has one decimal and a comma', () {
-    expect(formatRating(4.9), '4,9');
-    expect(formatRating(5), '5,0');
-    expect(formatRating(4.56), '4,6');
-    expect(formatRating(4.54), '4,5');
-    expect(formatRating(0), '0,0');
+  test('formatTomatoPct is the integer and a percent sign', () {
+    expect(formatTomatoPct(97), '97%');
+    expect(formatTomatoPct(100), '100%');
+    expect(formatTomatoPct(0), '0%');
+  });
+
+  test('verdictIntensity table (display mirror of the server rule)', () {
+    expect(verdictIntensity(1), 0.40);
+    expect(verdictIntensity(7), 0.91);
+    expect(verdictIntensity(10), 1.00);
+    expect(verdictIntensity(0), 0.40, reason: 'clamped into 1..10');
+    expect(verdictIntensity(99), 1.00, reason: 'clamped into 1..10');
+    expect(kVerdictHitsMax, 10);
   });
 
   test('priceFromLabel: null for unknown or non-positive prices', () {

@@ -107,6 +107,15 @@ class BookingRules {
     return map;
   }
 
+  /// A finished shoot the customer has not reviewed yet.
+  static bool canReview(Booking booking) =>
+      booking.status == BookingStatus.completed && booking.reviewedAt == null;
+
+  /// Reviewed: `reviewedAt` is set (a booking keeps its status after a
+  /// review), or the legacy status `reviewed`.
+  static bool isReviewed(Booking booking) =>
+      booking.reviewedAt != null || booking.status == BookingStatus.reviewed;
+
   /// Checks if customer can cancel the booking.
   static bool canCustomerCancel(Booking booking) {
     return booking.status == BookingStatus.requested ||

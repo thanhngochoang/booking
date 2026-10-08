@@ -37,6 +37,8 @@ Widget _card({
         providerType: type,
         approvedAwards: awards,
         studioDistrict: district,
+        tomatoCount: 56,
+        brickCount: 2,
       ),
       reasons: reasons,
       distanceKm: distanceKm,
@@ -55,7 +57,7 @@ void main() {
   testWidgets('shows name, meta line, price and availability', (tester) async {
     await tester.pumpWidget(_card());
     expect(find.textContaining('Minh Trí', findRichText: true), findsOneWidget);
-    expect(find.text('Chân dung · 1,2 km · ★ 4,9 · 112 buổi'), findsOneWidget);
+    expect(find.text('Chân dung · 1,2 km · 97% · 112 buổi'), findsOneWidget);
     expect(find.text('1,5M'), findsOneWidget);
     expect(find.text('từ'), findsOneWidget);
     expect(find.text('Rảnh 12/10'), findsOneWidget);
@@ -76,7 +78,7 @@ void main() {
     await tester.pumpWidget(
       _card(distanceKm: null, price: null, availability: null),
     );
-    expect(find.text('Chân dung · ★ 4,9 · 112 buổi'), findsOneWidget);
+    expect(find.text('Chân dung · 97% · 112 buổi'), findsOneWidget);
     expect(find.text('—'), findsOneWidget, reason: 'unknown price');
     expect(find.text('từ'), findsNothing);
     expect(find.byType(PhotoPill), findsNothing);
@@ -204,7 +206,7 @@ void main() {
     await tester.pumpWidget(_card());
     expect(
       find.bySemanticsLabel(
-        'Minh Trí, Đã xác minh, Chân dung · 1,2 km · ★ 4,9 · 112 buổi, '
+        'Minh Trí, Đã xác minh, Chân dung · 1,2 km · 97% · 112 buổi, '
         'từ 1,5M, Rảnh 12/10',
       ),
       findsOneWidget,
@@ -219,16 +221,16 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('no rating leaves it out of the meta line', (tester) async {
+  testWidgets('no reviews leave the percentage out of the meta line', (tester) async {
     await tester.pumpWidget(
       hostWidget(
         PhotographerCard(
-          data: fixturePhotographer('p1', reviews: 0),
+          data: fixturePhotographer('p1'),
           onProfile: () {},
         ),
       ),
     );
-    expect(find.textContaining('★'), findsNothing);
+    expect(find.textContaining('%'), findsNothing);
   });
 
   testWidgets('Hồ sơ is a small outline, Đặt a small gradient primary, 38dp', (

@@ -56,8 +56,13 @@ PhotographerSummary photographerSummaryFrom({
     areaLabel: _str(area['city']),
     lat: geo is GeoPoint ? geo.latitude : null,
     lng: geo is GeoPoint ? geo.longitude : null,
-    ratingAvg: _double(stats['rating']),
-    reviewCount: _int(stats['reviewCount']),
+    // Legacy star stats carry `rating` and `reviewCount` but no counts:
+    // they read as no reviews (the server ignores them on the next verdict).
+    reviewCount: _int(stats['tomatoCount']) + _int(stats['brickCount']),
+    tomatoCount: _int(stats['tomatoCount']),
+    brickCount: _int(stats['brickCount']),
+    tomatoPct: _int(stats['tomatoPct']).clamp(0, 100),
+    score: _double(stats['score']).clamp(-1.0, 1.0),
     completedCount: _int(stats['completedCount']),
     responseMinutes: _intOrNull(stats['responseMinutes']),
     startingPriceVnd: _intOrNull(photographer['startingPrice']),
@@ -164,9 +169,9 @@ class FirestorePhotographerRepository implements PhotographerRepository {
     };
   }
 
-  /// Invariant (server): `stats.rating` is always written (0 when there are
+  /// Invariant (server): `stats.score` is always written (0 when there are
   /// no reviews) whenever `stats.nextFreeDate` is written; a photographer
-  /// without `stats.rating` is not returned by this query.
+  /// without `stats.score` is not returned by this query.
   @override
   Future<List<PhotographerSummary>> freeThisWeek({
     required DateTime now,
@@ -180,7 +185,7 @@ class FirestorePhotographerRepository implements PhotographerRepository {
         .where('stats.nextFreeDate', isGreaterThanOrEqualTo: from)
         .where('stats.nextFreeDate', isLessThan: to)
         .orderBy('stats.nextFreeDate')
-        .orderBy('stats.rating', descending: true)
+        .orderBy('stats.score', descending: true)
         .orderBy(FieldPath.documentId)
         .limit(clampPageSize(limit))
         .get();
@@ -192,8 +197,8 @@ class FirestorePhotographerRepository implements PhotographerRepository {
       if (byDay != 0) {
         return byDay;
       }
-      final byRating = b.ratingAvg.compareTo(a.ratingAvg);
-      return byRating != 0 ? byRating : a.id.compareTo(b.id);
+      final byScore = b.score.compareTo(a.score);
+      return byScore != 0 ? byScore : a.id.compareTo(b.id);
     });
     return list;
   }

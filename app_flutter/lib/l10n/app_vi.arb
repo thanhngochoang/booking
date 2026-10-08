@@ -543,10 +543,10 @@
       "distance": {"type": "String"}
     }
   },
-  "reasonTopRated": "★ {rating} · {count} đánh giá",
+  "reasonTopRated": "{pct}% cà chua từ {count} đánh giá",
   "@reasonTopRated": {
     "placeholders": {
-      "rating": {"type": "String"},
+      "pct": {"type": "int"},
       "count": {"type": "int"}
     }
   },
@@ -705,12 +705,12 @@
       "price": {"type": "String"}
     }
   },
-  "findRatingTitle": "Đánh giá tối thiểu",
+  "findTomatoTitle": "Tỷ lệ hài lòng",
   "findRatingAny": "Mọi đánh giá",
-  "findRatingMin": "★ {rating}+",
-  "@findRatingMin": {
+  "findTomatoMin": "{pct}%+",
+  "@findTomatoMin": {
     "placeholders": {
-      "rating": {"type": "String"}
+      "pct": {"type": "int"}
     }
   },
   "profileResponseMinutes": "~{minutes} phút",
@@ -1389,6 +1389,8 @@
   },
   "reviewTitle": "Buổi chụp thế nào?",
   "reviewText": "Nhận xét",
+  "reviewTomato": "Hài lòng",
+  "reviewBrick": "Chưa hài lòng",
   "reviewTextHint": "Chia sẻ cảm nhận của bạn về buổi chụp...",
   "reviewTextTooShort": "Viết ít nhất 10 ký tự",
   "reviewShare": "Chia sẻ ảnh bạn thích",
@@ -1877,8 +1879,6 @@
   "eventTabTimeline": "Timeline",
   "eventTabChat": "Nhóm chat",
   "eventHostRole": "Chủ sự kiện",
-  "eventHostRoleRating": "Chủ sự kiện · ★ {rating}",
-  "@eventHostRoleRating": {"placeholders": {"rating": {"type": "String"}}},
   "eventProfile": "Hồ sơ",
   "eventMeetingPoint": "Điểm hẹn: {place}",
   "@eventMeetingPoint": {"placeholders": {"place": {"type": "String"}}},

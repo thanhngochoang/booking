@@ -1,24 +1,98 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:photobooking/core/core.dart';
+
+/// The two sides of a review: tomato = satisfied, brick = not satisfied.
+enum Verdict {
+  tomato,
+  brick;
+
+  String get code => name;
+
+  static Verdict? fromCode(Object? c) {
+    for (final v in values) {
+      if (v.code == c) return v;
+    }
+    return null;
+  }
+}
+
+/// Why a brick was thrown (a tomato carries none).
+enum ReviewReason {
+  late('late'),
+  notAsPortfolio('not_as_portfolio'),
+  slowDelivery('slow_delivery'),
+  attitude('attitude'),
+  priceChanged('price_changed'),
+  other('other');
+
+  const ReviewReason(this.code);
+  final String code;
+
+  static ReviewReason? fromCode(Object? c) {
+    for (final r in values) {
+      if (r.code == c) return r;
+    }
+    return null;
+  }
+}
+
+/// Most taps on one side of the pad.
+const int kReviewHitsMax = kVerdictHitsMax;
+
+/// Providers with fewer reviews show "Mới" instead of a percentage.
+const int kTomatoPctMinReviews = 5;
+
+/// Display mirror of the server rule `round2(0.4 + 0.6 * log10(hits))`; the
+/// server computes the stored value.
+double intensityOf(int hits) => verdictIntensity(hits);
+
+/// The legacy star rating a doc without `verdict` had maps to a verdict
+/// (display only): 4 and 5 stars read as one tomato, anything lower as one
+/// brick.
+const int _legacyTomatoMinStars = 4;
 
 @immutable
 class Review {
-  const Review({
+  Review({
     required this.bookingId,
+    this.subjectType = 'photographer',
+    String? subjectId,
     required this.customerId,
     required this.photographerId,
     required this.serviceId,
-    required this.rating,
+    this.serviceName,
+    this.bookingDay,
+    required this.verdict,
+    this.hits = 1,
+    double? intensity,
+    this.reasons = const [],
     required this.text,
     this.photoPostId,
     required this.createdAt,
-  });
+  })  : subjectId = subjectId ?? photographerId,
+        intensity = intensity ?? intensityOf(hits);
 
+  /// The booking this review is about (not always the document id: a studio
+  /// review lives in `{bookingId}_studio`).
   final String bookingId;
+
+  /// `photographer` or `studio`: whose stats this review counts into.
+  final String subjectType;
+  final String subjectId;
   final String customerId;
   final String photographerId;
   final String serviceId;
-  final int rating;
+
+  /// Snapshots taken from the booking, for the reviews tab.
+  final String? serviceName;
+
+  /// `yyyy-MM-dd`.
+  final String? bookingDay;
+  final Verdict verdict;
+  final int hits;
+  final double intensity;
+  final List<ReviewReason> reasons;
   final String text;
   final String? photoPostId;
   final DateTime createdAt;
@@ -32,12 +106,39 @@ class Review {
       return DateTime.now();
     }
 
+    var verdict = Verdict.fromCode(data['verdict']);
+    var hits = (data['hits'] as num?)?.toInt();
+    var legacy = false;
+    if (verdict == null) {
+      // A star doc left in an emulator export: read it, never count it.
+      final stars = (data['rating'] as num?)?.toInt() ?? 5;
+      verdict = stars >= _legacyTomatoMinStars ? Verdict.tomato : Verdict.brick;
+      legacy = true;
+    }
+    hits = (legacy ? 1 : hits ?? 1).clamp(1, kReviewHitsMax);
+    final reasons = <ReviewReason>[
+      if (data['reasons'] is List)
+        for (final c in data['reasons'] as List) ?ReviewReason.fromCode(c),
+    ];
+    final photographerId = data['photographerId'] as String? ?? '';
+    final rawBookingId = data['bookingId'];
     return Review(
-      bookingId: doc.id,
+      bookingId: rawBookingId is String && rawBookingId.isNotEmpty
+          ? rawBookingId
+          : doc.id,
+      subjectType: data['subjectType'] == 'studio' ? 'studio' : 'photographer',
+      subjectId: data['subjectId'] as String? ?? photographerId,
       customerId: data['customerId'] as String? ?? '',
-      photographerId: data['photographerId'] as String? ?? '',
+      photographerId: photographerId,
       serviceId: data['serviceId'] as String? ?? '',
-      rating: (data['rating'] as num?)?.toInt() ?? 5,
+      serviceName: data['serviceName'] as String?,
+      bookingDay: data['bookingDay'] as String?,
+      verdict: verdict,
+      hits: hits,
+      intensity: legacy
+          ? intensityOf(1)
+          : (data['intensity'] as num?)?.toDouble() ?? intensityOf(hits),
+      reasons: reasons,
       text: data['text'] as String? ?? '',
       photoPostId: data['photoPostId'] as String?,
       createdAt: toDate(data['createdAt']),
@@ -49,10 +150,17 @@ class Review {
       identical(this, other) ||
       other is Review &&
           bookingId == other.bookingId &&
+          subjectType == other.subjectType &&
+          subjectId == other.subjectId &&
           customerId == other.customerId &&
           photographerId == other.photographerId &&
           serviceId == other.serviceId &&
-          rating == other.rating &&
+          serviceName == other.serviceName &&
+          bookingDay == other.bookingDay &&
+          verdict == other.verdict &&
+          hits == other.hits &&
+          intensity == other.intensity &&
+          listEquals(reasons, other.reasons) &&
           text == other.text &&
           photoPostId == other.photoPostId &&
           createdAt == other.createdAt;
@@ -60,10 +168,17 @@ class Review {
   @override
   int get hashCode => Object.hash(
         bookingId,
+        subjectType,
+        subjectId,
         customerId,
         photographerId,
         serviceId,
-        rating,
+        serviceName,
+        bookingDay,
+        verdict,
+        hits,
+        intensity,
+        Object.hashAll(reasons),
         text,
         photoPostId,
         createdAt,

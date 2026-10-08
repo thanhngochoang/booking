@@ -3,10 +3,10 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// "Quận 3 · ★ 4,9 (58) · 112 buổi": only the parts that exist.
+/// "Quận 3 · 97% (58) · 112 buổi": only the parts that exist.
 String areaRatingMeta(PhotographerSummary p, AppLocalizations l) => [
   if (p.areaLabel != null && p.areaLabel!.isNotEmpty) p.areaLabel!,
-  if (p.hasRating) '★ ${formatRating(p.ratingAvg)} (${p.reviewCount})',
+  if (p.hasTomatoPct) '${formatTomatoPct(p.tomatoPct)} (${p.reviewCount})',
   if (p.completedCount > 0) l.photographerSessions(p.completedCount),
 ].join(' · ');
 

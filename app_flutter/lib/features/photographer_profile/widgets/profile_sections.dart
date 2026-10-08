@@ -15,7 +15,6 @@ import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
-import 'package:photobooking/features/review/widgets/star_rating.dart';
 
 class _Quiet extends StatelessWidget {
   const _Quiet(this.text);
@@ -653,12 +652,12 @@ class _ReviewsContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (profile != null && profile.summary.hasRating)
+        if (profile != null && profile.summary.hasTomatoPct)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpace.s3),
             child: Text(
               l.reviewsHeader(
-                formatRating(profile.summary.ratingAvg),
+                formatTomatoPct(profile.summary.tomatoPct),
                 profile.summary.reviewCount,
               ),
               style: theme.textTheme.titleMedium?.copyWith(
@@ -755,6 +754,7 @@ class _ReviewTileState extends State<ReviewTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.s3),
@@ -785,7 +785,12 @@ class _ReviewTileState extends State<ReviewTile> {
                         style: theme.textTheme.titleSmall,
                       ),
                       const SizedBox(height: 2),
-                      StarRating(value: widget.review.rating, size: 14),
+                      Text(
+                        widget.review.verdict == Verdict.tomato
+                            ? l.reviewTomato
+                            : l.reviewBrick,
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ),

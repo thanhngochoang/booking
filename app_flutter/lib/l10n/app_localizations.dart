@@ -2437,8 +2437,8 @@ abstract class AppLocalizations {
   /// No description provided for @reasonTopRated.
   ///
   /// In vi, this message translates to:
-  /// **'★ {rating} · {count} đánh giá'**
-  String reasonTopRated(String rating, int count);
+  /// **'{pct}% cà chua từ {count} đánh giá'**
+  String reasonTopRated(int pct, int count);
 
   /// No description provided for @reasonFastReply.
   ///
@@ -2836,11 +2836,11 @@ abstract class AppLocalizations {
   /// **'Dưới {price}'**
   String findPriceUnder(String price);
 
-  /// No description provided for @findRatingTitle.
+  /// No description provided for @findTomatoTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Đánh giá tối thiểu'**
-  String get findRatingTitle;
+  /// **'Tỷ lệ hài lòng'**
+  String get findTomatoTitle;
 
   /// No description provided for @findRatingAny.
   ///
@@ -2848,11 +2848,11 @@ abstract class AppLocalizations {
   /// **'Mọi đánh giá'**
   String get findRatingAny;
 
-  /// No description provided for @findRatingMin.
+  /// No description provided for @findTomatoMin.
   ///
   /// In vi, this message translates to:
-  /// **'★ {rating}+'**
-  String findRatingMin(String rating);
+  /// **'{pct}%+'**
+  String findTomatoMin(int pct);
 
   /// No description provided for @profileResponseMinutes.
   ///
@@ -4857,6 +4857,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Nhận xét'**
   String get reviewText;
+
+  /// No description provided for @reviewTomato.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hài lòng'**
+  String get reviewTomato;
+
+  /// No description provided for @reviewBrick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa hài lòng'**
+  String get reviewBrick;
 
   /// No description provided for @reviewTextHint.
   ///
@@ -6957,12 +6969,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chủ sự kiện'**
   String get eventHostRole;
-
-  /// No description provided for @eventHostRoleRating.
-  ///
-  /// In vi, this message translates to:
-  /// **'Chủ sự kiện · ★ {rating}'**
-  String eventHostRoleRating(String rating);
 
   /// No description provided for @eventProfile.
   ///

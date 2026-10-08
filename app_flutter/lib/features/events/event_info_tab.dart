@@ -256,8 +256,8 @@ class _HostRow extends ConsumerWidget {
     final summary = hostId == null
         ? null
         : ref.watch(photographerProfileProvider(hostId)).value?.summary;
-    final rating = (summary != null && summary.reviewCount > 0)
-        ? l.eventHostRoleRating(formatRating(summary.ratingAvg))
+    final rating = (summary != null && summary.hasTomatoPct)
+        ? '${l.eventHostRole} · ${formatTomatoPct(summary.tomatoPct)}'
         : l.eventHostRole;
     final unlocked =
         registration != null &&

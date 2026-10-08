@@ -2,9 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/review/review_repository.dart';
 import 'package:photobooking/data/review/firestore_review_repository.dart';
+
+class _MockFunctions extends Mock implements FirebaseFunctions {}
+
+class _MockCallable extends Mock implements HttpsCallable {}
+
+class _MockResult extends Mock
+    implements HttpsCallableResult<Map<String, dynamic>> {}
 
 void main() {
   late FakeFirebaseFirestore firestore;
@@ -25,48 +33,95 @@ void main() {
   }
 
   group('Review.fromFirestore', () {
-    test('parses full review document with Timestamps', () async {
+    test('reads verdict, hits, intensity, reasons and subject', () async {
       final now = DateTime(2026, 10, 3, 12, 0, 0);
       final doc = await makeDoc('reviews/book_1', {
+        'bookingId': 'book_1',
+        'subjectType': 'photographer',
+        'subjectId': 'photog_1',
         'customerId': 'cust_1',
         'photographerId': 'photog_1',
         'serviceId': 'srv_1',
-        'rating': 5,
-        'text': 'Ảnh rất đẹp và chuyên nghiệp!',
+        'serviceName': 'Chân dung 2 giờ',
+        'bookingDay': '2026-10-12',
+        'verdict': 'brick',
+        'hits': 7,
+        'intensity': 0.91,
+        'reasons': ['late', 'attitude'],
+        'text': 'Đến trễ gần một tiếng',
         'photoPostId': 'post_1',
         'createdAt': Timestamp.fromDate(now),
       });
 
       final review = Review.fromFirestore(doc);
       expect(review.bookingId, 'book_1');
+      expect(review.subjectType, 'photographer');
+      expect(review.subjectId, 'photog_1');
       expect(review.customerId, 'cust_1');
       expect(review.photographerId, 'photog_1');
       expect(review.serviceId, 'srv_1');
-      expect(review.rating, 5);
-      expect(review.text, 'Ảnh rất đẹp và chuyên nghiệp!');
+      expect(review.serviceName, 'Chân dung 2 giờ');
+      expect(review.bookingDay, '2026-10-12');
+      expect(review.verdict, Verdict.brick);
+      expect(review.hits, 7);
+      expect(review.intensity, 0.91);
+      expect(review.reasons, [ReviewReason.late, ReviewReason.attitude]);
+      expect(review.text, 'Đến trễ gần một tiếng');
       expect(review.photoPostId, 'post_1');
       expect(review.createdAt, now);
     });
 
-    test('parses review with ISO string date and null photoPostId', () async {
-      final doc = await makeDoc('reviews/book_2', {
-        'customerId': 'cust_2',
-        'photographerId': 'photog_2',
-        'serviceId': 'srv_2',
-        'rating': 4,
-        'text': 'Tốt',
+    test('a studio review keeps the booking id and its own subject', () async {
+      final doc = await makeDoc('reviews/book_9_studio', {
+        'bookingId': 'book_9',
+        'subjectType': 'studio',
+        'subjectId': 'studio_1',
+        'photographerId': 'studio_1',
+        'verdict': 'tomato',
+        'hits': 3,
+        'text': 'Studio gọn gàng',
         'createdAt': '2026-10-02T15:30:00.000Z',
       });
-
       final review = Review.fromFirestore(doc);
-      expect(review.bookingId, 'book_2');
-      expect(review.customerId, 'cust_2');
-      expect(review.photographerId, 'photog_2');
-      expect(review.serviceId, 'srv_2');
-      expect(review.rating, 4);
-      expect(review.text, 'Tốt');
+      expect(review.bookingId, 'book_9');
+      expect(review.subjectType, 'studio');
+      expect(review.subjectId, 'studio_1');
       expect(review.photoPostId, isNull);
       expect(review.createdAt, DateTime.parse('2026-10-02T15:30:00.000Z'));
+    });
+
+    test('unknown reason codes are dropped', () async {
+      final doc = await makeDoc('reviews/book_3', {
+        'verdict': 'brick',
+        'hits': 2,
+        'reasons': ['late', 'smelly', 42, 'other'],
+        'text': 'x',
+      });
+      expect(Review.fromFirestore(doc).reasons, [
+        ReviewReason.late,
+        ReviewReason.other,
+      ]);
+    });
+
+    test('a legacy star doc reads as a verdict', () async {
+      final five = Review.fromFirestore(
+        await makeDoc('reviews/old_5', {
+          'photographerId': 'p1',
+          'rating': 5,
+          'text': 'Tuyệt',
+        }),
+      );
+      expect(five.verdict, Verdict.tomato);
+      expect(five.hits, 1);
+      expect(five.intensity, 0.4);
+      expect(five.reasons, isEmpty);
+      expect(five.subjectId, 'p1');
+
+      final two = Review.fromFirestore(
+        await makeDoc('reviews/old_2', {'rating': 2, 'text': 'Tệ'}),
+      );
+      expect(two.verdict, Verdict.brick);
+      expect(two.hits, 1);
     });
 
     test('handles empty or missing data with default values', () async {
@@ -76,10 +131,18 @@ void main() {
       expect(review.customerId, '');
       expect(review.photographerId, '');
       expect(review.serviceId, '');
-      expect(review.rating, 5);
+      expect(review.verdict, Verdict.tomato, reason: 'legacy default: 5 stars');
       expect(review.text, '');
       expect(review.photoPostId, isNull);
       expect(review.createdAt, isA<DateTime>());
+    });
+
+    test('hits outside 1..10 are clamped', () async {
+      final doc = await makeDoc('reviews/clamp', {
+        'verdict': 'tomato',
+        'hits': 99,
+      });
+      expect(Review.fromFirestore(doc).hits, 10);
     });
 
     test('equality and hashCode match for identical instances', () {
@@ -89,7 +152,8 @@ void main() {
         customerId: 'c1',
         photographerId: 'p1',
         serviceId: 's1',
-        rating: 5,
+        verdict: Verdict.tomato,
+        hits: 3,
         text: 'Tuyệt',
         photoPostId: 'post1',
         createdAt: now,
@@ -99,7 +163,8 @@ void main() {
         customerId: 'c1',
         photographerId: 'p1',
         serviceId: 's1',
-        rating: 5,
+        verdict: Verdict.tomato,
+        hits: 3,
         text: 'Tuyệt',
         photoPostId: 'post1',
         createdAt: now,
@@ -109,7 +174,8 @@ void main() {
         customerId: 'c1',
         photographerId: 'p1',
         serviceId: 's1',
-        rating: 4,
+        verdict: Verdict.tomato,
+        hits: 4,
         text: 'Tuyệt',
         photoPostId: null,
         createdAt: now,
@@ -172,7 +238,7 @@ void main() {
         customerId: 'c1',
         photographerId: 'p1',
         serviceId: 's1',
-        rating: 5,
+        verdict: Verdict.tomato,
         text: 'Tuyệt',
         createdAt: now,
       );
@@ -289,14 +355,15 @@ void main() {
         'customerId': 'c1',
         'photographerId': 'p1',
         'serviceId': 's1',
-        'rating': 5,
+        'verdict': 'tomato',
+        'hits': 2,
         'text': 'Good',
         'createdAt': Timestamp.fromDate(now),
       });
       await pumpEventQueue();
 
       expect(emissions.last?.bookingId, 'b100');
-      expect(emissions.last?.rating, 5);
+      expect(emissions.last?.verdict, Verdict.tomato);
 
       await sub.cancel();
     });
@@ -308,7 +375,8 @@ void main() {
           'customerId': 'cust_$i',
           'photographerId': 'target_p',
           'serviceId': 's1',
-          'rating': 5,
+          'verdict': 'tomato',
+          'hits': 1,
           'text': 'Review $i',
           'createdAt': Timestamp.fromDate(now.add(Duration(minutes: i))),
         });
@@ -328,6 +396,72 @@ void main() {
       expect(page2.items.length, 2);
       expect(page2.hasMore, isFalse);
       expect(page2.items.first.bookingId, 'b_1');
+    });
+  });
+
+  group('intensityOf (app mirror)', () {
+    test('matches the server table', () {
+      // packages/domain intensityOf: round2(0.4 + 0.6 * log10(hits)).
+      const server = {
+        1: 0.4,
+        2: 0.58,
+        3: 0.69,
+        4: 0.76,
+        5: 0.82,
+        6: 0.87,
+        7: 0.91,
+        8: 0.94,
+        9: 0.97,
+        10: 1.0,
+      };
+      for (final e in server.entries) {
+        expect(intensityOf(e.key), e.value, reason: 'hits ${e.key}');
+      }
+      expect(kReviewHitsMax, 10);
+      expect(kTomatoPctMinReviews, 5);
+    });
+  });
+
+  group('FirestoreReviewRepository.submit', () {
+    test('sends verdict code, hits, reason codes and no rating', () async {
+      final functions = _MockFunctions();
+      final callable = _MockCallable();
+      final result = _MockResult();
+      when(() => functions.httpsCallable(any())).thenReturn(callable);
+      when(() => result.data).thenReturn({'postId': 'post_9'});
+      Map<String, dynamic>? sent;
+      when(() => callable.call<Map<String, dynamic>>(any())).thenAnswer((
+        inv,
+      ) async {
+        sent = Map<String, dynamic>.from(inv.positionalArguments.first as Map);
+        return result;
+      });
+      final repo = FirestoreReviewRepository(
+        firestore: firestore,
+        functions: functions,
+      );
+
+      final postId = await repo.submit(
+        bookingId: 'b1',
+        verdict: Verdict.brick,
+        hits: 4,
+        reasons: const [ReviewReason.late, ReviewReason.notAsPortfolio],
+        text: 'Đến trễ và ảnh khác mẫu',
+        postId: 'post_9',
+      );
+
+      verify(() => functions.httpsCallable('submitReview')).called(1);
+      expect(postId, 'post_9');
+      expect(sent, {
+        'bookingId': 'b1',
+        'verdict': 'brick',
+        'hits': 4,
+        'reasons': ['late', 'not_as_portfolio'],
+        'text': 'Đến trễ và ảnh khác mẫu',
+        'postId': 'post_9',
+        'photos': <Object?>[],
+      });
+      expect(sent!.containsKey('rating'), isFalse);
     });
   });
 }

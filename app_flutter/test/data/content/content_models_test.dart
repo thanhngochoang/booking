@@ -30,17 +30,24 @@ void main() {
   });
 
   group('PhotographerSummary', () {
-    test('rating, geo, hero and next free day', () {
-      final p = fixturePhotographer('p1', nextFreeDate: '2026-10-03');
-      expect(p.hasRating, isTrue);
+    test('reviews, geo, hero and next free day', () {
+      final p = fixturePhotographer(
+        'p1',
+        nextFreeDate: '2026-10-03',
+        tomatoCount: 6,
+        brickCount: 1,
+      );
+      expect(p.hasReviews, isTrue);
+      expect(p.hasTomatoPct, isTrue);
       expect(p.hasGeo, isTrue);
       expect(p.heroUrl, p.avatarUrl, reason: 'no cover: the avatar stands in');
       expect(p.nextFreeDay, DateTime.utc(2026, 10, 3));
     });
 
-    test('a new photographer has no rating, no geo and no free day', () {
+    test('a new photographer has no reviews, no geo and no free day', () {
       const p = PhotographerSummary(id: 'p9', displayName: 'Mới');
-      expect(p.hasRating, isFalse);
+      expect(p.hasReviews, isFalse);
+      expect(p.hasTomatoPct, isFalse);
       expect(p.hasGeo, isFalse);
       expect(p.heroUrl, isNull);
       expect(p.nextFreeDay, isNull);

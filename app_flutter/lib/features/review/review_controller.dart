@@ -290,6 +290,12 @@ class ReviewController extends Notifier<ReviewState> {
     }
   }
 
+  // Transitional until the tomato/brick pad replaces the stars: 4 and 5
+  // stars send one tomato, fewer send one brick with the reason "other".
+  Verdict get _verdict => state.rating >= 4 ? Verdict.tomato : Verdict.brick;
+  List<ReviewReason> get _reasons =>
+      _verdict == Verdict.brick ? const [ReviewReason.other] : const [];
+
   Future<bool> submit({required bool share}) async {
     if (state.phase == ReviewPhase.submitting) return false;
     state = state.copyWith(
@@ -303,7 +309,9 @@ class ReviewController extends Notifier<ReviewState> {
             .read(reviewRepositoryProvider)
             .submit(
               bookingId: bookingId,
-              rating: state.rating,
+              verdict: _verdict,
+              hits: 1,
+              reasons: _reasons,
               text: state.text.trim(),
               postId: null,
               photos: const [],
@@ -318,7 +326,9 @@ class ReviewController extends Notifier<ReviewState> {
             .read(reviewRepositoryProvider)
             .submit(
               bookingId: bookingId,
-              rating: state.rating,
+              verdict: _verdict,
+              hits: 1,
+              reasons: _reasons,
               text: state.text.trim(),
               postId: state.postId,
               photos: photos,

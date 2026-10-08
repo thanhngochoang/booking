@@ -11,7 +11,7 @@ class Picked<T> {
 }
 
 const _budgets = [1000000, 2000000, 5000000, 10000000];
-const _ratings = [4.0, 4.5, 4.8];
+const _tomatoPcts = [80, 90, 95];
 
 /// How far ahead a day can be picked.
 const _dateHorizon = Duration(days: 365);
@@ -88,21 +88,21 @@ Future<Picked<int>?> pickBudget(BuildContext context, {int? current}) {
   );
 }
 
-Future<Picked<double>?> pickMinRating(BuildContext context, {double? current}) {
+Future<Picked<int>?> pickMinTomatoPct(BuildContext context, {int? current}) {
   final l = context.l10n;
-  return showAppSheet<Picked<double>>(
+  return showAppSheet<Picked<int>>(
     context,
-    builder: (sheet) => _sheet(sheet, l.findRatingTitle, [
+    builder: (sheet) => _sheet(sheet, l.findTomatoTitle, [
       AppOptionTile(
         label: l.findRatingAny,
         selected: current == null,
-        onTap: () => Navigator.of(sheet).pop(const Picked<double>(null)),
+        onTap: () => Navigator.of(sheet).pop(const Picked<int>(null)),
       ),
-      for (final r in _ratings)
+      for (final r in _tomatoPcts)
         AppOptionTile(
-          label: l.findRatingMin(formatRating(r)),
+          label: l.findTomatoMin(r),
           selected: current == r,
-          onTap: () => Navigator.of(sheet).pop(Picked<double>(r)),
+          onTap: () => Navigator.of(sheet).pop(Picked<int>(r)),
         ),
     ]),
   );

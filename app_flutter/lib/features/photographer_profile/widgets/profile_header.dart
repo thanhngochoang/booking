@@ -152,7 +152,7 @@ class ProfileHeader extends ConsumerWidget {
               StatTileRow(
                 tiles: [
                   StatTile(
-                    value: s.hasRating ? formatRating(s.ratingAvg) : '—',
+                    value: s.hasTomatoPct ? formatTomatoPct(s.tomatoPct) : '—',
                     label: s.reviewCount > 0
                         ? l.profileStatReviews(s.reviewCount)
                         : l.profileStatNoReviews,

@@ -29,11 +29,11 @@ const int _moreSlots = 3;
 const double _stackBodyPx = 16;
 const double _stackAbovePx = 18.4;
 
-/// "Chân dung · Quận 3 · ★ 4,9 (58)": only the parts that exist (mock S02.02).
+/// "Chân dung · Quận 3 · 97% (58)": only the parts that exist (mock S02.02).
 String _authorMeta(PhotographerSummary p) => [
   if (p.specialtyIds.isNotEmpty) specialtyLabel(p.specialtyIds.first),
   if (p.areaLabel != null && p.areaLabel!.isNotEmpty) p.areaLabel!,
-  if (p.hasRating) '★ ${formatRating(p.ratingAvg)} (${p.reviewCount})',
+  if (p.hasTomatoPct) '${formatTomatoPct(p.tomatoPct)} (${p.reviewCount})',
 ].join(' · ');
 
 /// S02.02: from one photo to the package it was shot with, and to booking it.

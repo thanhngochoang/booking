@@ -320,7 +320,8 @@ List<PhotographerSummary> contractPhotographers() => [
     name: 'Minh Trí',
     verified: true,
     nextFreeDate: '2026-10-03',
-    rating: 4.9,
+    tomatoCount: 56,
+    brickCount: 2,
     startingPrice: 1500000,
     styles: const ['natural_light', 'film'],
   ),
@@ -328,13 +329,14 @@ List<PhotographerSummary> contractPhotographers() => [
     'p2',
     name: 'Hồng Nhung',
     nextFreeDate: '2026-10-01',
-    rating: 4.5,
+    tomatoCount: 10,
+    brickCount: 2,
   ),
   fixturePhotographer(
     'p3',
     name: 'Quốc Bảo',
     nextFreeDate: '2026-10-03',
-    rating: 4.95,
+    tomatoCount: 58,
   ),
   fixturePhotographer('p4', name: 'Thu Hà', nextFreeDate: '2026-10-08'),
   fixturePhotographer('p5', name: 'Gia Bảo', nextFreeDate: '2026-09-30'),
@@ -361,7 +363,8 @@ void photographerRepositoryContract(
         expect(p1.verified, isTrue);
         expect(p1.specialtyIds, ['portrait']);
         expect(p1.styleIds, ['natural_light', 'film']);
-        expect(p1.ratingAvg, 4.9);
+        expect(p1.tomatoPct, 97);
+        expect(p1.score, closeTo(0.931, 1e-3));
         expect(p1.reviewCount, 58);
         expect(p1.completedCount, 112);
         expect(p1.startingPriceVnd, 1500000);
@@ -408,9 +411,9 @@ void photographerRepositoryContract(
 
     test('freeThisWeek ties on day and rating go to the smaller id', () async {
       final repo = await create([
-        fixturePhotographer('z', nextFreeDate: '2026-10-02', rating: 4.0),
-        fixturePhotographer('a', nextFreeDate: '2026-10-02', rating: 4.0),
-        fixturePhotographer('b', nextFreeDate: '2026-10-02', rating: 4.0),
+        fixturePhotographer('z', nextFreeDate: '2026-10-02', tomatoCount: 3),
+        fixturePhotographer('a', nextFreeDate: '2026-10-02', tomatoCount: 3),
+        fixturePhotographer('b', nextFreeDate: '2026-10-02', tomatoCount: 3),
       ]);
       final free = await repo.freeThisWeek(now: fixtureNow);
       expect(free.map((p) => p.id), ['a', 'b', 'z']);

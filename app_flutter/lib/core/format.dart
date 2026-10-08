@@ -77,11 +77,18 @@ String formatDayMonth(DateTime day) => '${_two(day.day)}/${_two(day.month)}';
 String formatDay(DateTime day) =>
     '${weekdayLabel(day.weekday)} ${formatDayMonth(day)}';
 
-/// `4,9`. Callers handle a missing rating (null or no reviews) themselves;
-/// [rating] must be finite.
-String formatRating(double rating) {
-  assert(rating.isFinite);
-  return ((rating * 10).round() / 10).toStringAsFixed(1).replaceAll('.', ',');
+/// `97%`. Callers show it only when the provider has enough reviews
+/// (`PhotographerSummary.hasTomatoPct`); [pct] is the stored integer 0..100.
+String formatTomatoPct(int pct) => '${pct.clamp(0, 100)}%';
+
+/// Most hits on one side of the review pad.
+const int kVerdictHitsMax = 10;
+
+/// Display mirror of the server rule `round2(0.4 + 0.6 * log10(hits))`, hits
+/// 1..10 (the track width of the pad). The server computes the stored value.
+double verdictIntensity(int hits) {
+  final h = hits.clamp(1, kVerdictHitsMax);
+  return (((0.4 + 0.6 * (math.log(h) / math.ln10)) * 100).round()) / 100;
 }
 
 /// `từ 1,5M`, or null when the price is unknown or not positive (callers then

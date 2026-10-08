@@ -75,10 +75,10 @@ List<DetailAction> detailActions(
       out.add(DetailAction.cancel);
     }
     if (_isStopped(s)) out.add(DetailAction.bookAgain);
-    if (s == BookingStatus.completed && features.review) {
+    if (BookingRules.canReview(b) && features.review) {
       out.add(DetailAction.review);
     }
-    if (s == BookingStatus.reviewed && features.review) {
+    if (BookingRules.isReviewed(b) && features.review) {
       out.add(DetailAction.viewReview);
     }
     return out;
@@ -239,7 +239,7 @@ List<TimelineStep> timelineSteps(
       ];
     case BookingStatus.completed:
     case BookingStatus.reviewed:
-      final reviewed = s == BookingStatus.reviewed;
+      final reviewed = BookingRules.isReviewed(b);
       return [
         step1,
         step2(done),

@@ -288,7 +288,7 @@ void main() {
       final w = EventsWorld(events: [_free('ev1')]);
       await w.pump(tester, path: '/e/ev1', size: _sw);
       expect(find.text('Quốc Bảo'), findsOneWidget);
-      expect(find.text('Chủ sự kiện · ★ 4,8'), findsOneWidget);
+      expect(find.text('Chủ sự kiện · 92%'), findsOneWidget);
       expect(find.byType(VerifiedMark), findsOneWidget);
       await tester.tap(_byKey('event-inquiry'));
       await settle(tester);

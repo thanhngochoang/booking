@@ -5,6 +5,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
+import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/booking/booking_summary.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
@@ -163,7 +164,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   ref.invalidate(bookingReviewProvider(widget.bookingId)),
               data: (context, existingReview) {
                 if (existingReview != null ||
-                    booking.status == BookingStatus.reviewed ||
+                    BookingRules.isReviewed(booking) ||
                     controllerState.isConflict) {
                   return _buildReadOnlyView(
                     context: context,
@@ -216,7 +217,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 style: theme.textTheme.bodyLarge,
               )
             else ...[
-              Center(child: StarRating(value: review.rating, size: 40)),
+              Center(
+                child: Text(
+                  review.verdict == Verdict.tomato
+                      ? l10n.reviewTomato
+                      : l10n.reviewBrick,
+                  style: theme.textTheme.titleLarge,
+                ),
+              ),
               const SizedBox(height: AppSpace.s4),
               Text(review.text, style: theme.textTheme.bodyLarge),
             ],

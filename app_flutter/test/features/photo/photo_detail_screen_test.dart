@@ -73,7 +73,7 @@ void main() {
     expect(find.text('Chiều muộn ở bến Bạch Đằng #chandung'), findsOneWidget);
     expect(find.textContaining('Minh Trí', findRichText: true), findsWidgets);
     expect(find.byType(VerifiedMark), findsOneWidget);
-    expect(find.text('Chân dung · Quận 3 · ★ 4,9 (58)'), findsOneWidget);
+    expect(find.text('Chân dung · Quận 3 · 97% (58)'), findsOneWidget);
     expect(_in('like', find.text('214')), findsOneWidget);
     expect(_in('save', find.text('37')), findsOneWidget);
     expect(find.text('Bến Bạch Đằng'), findsOneWidget);

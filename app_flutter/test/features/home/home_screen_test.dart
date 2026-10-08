@@ -107,7 +107,7 @@ void main() {
       expect(
         find.descendant(
           of: author,
-          matching: find.text('Quận 3 · ★ 4,9 (58) · 112 buổi'),
+          matching: find.text('Quận 3 · 97% (58) · 112 buổi'),
         ),
         findsOneWidget,
       );

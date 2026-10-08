@@ -41,7 +41,9 @@ class _DelayReviewRepository implements ReviewRepository {
   @override
   Future<String?> submit({
     required String bookingId,
-    required int rating,
+    required Verdict verdict,
+    required int hits,
+    required List<ReviewReason> reasons,
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
@@ -91,7 +93,9 @@ class _PagingReviewRepository implements ReviewRepository {
   @override
   Future<String?> submit({
     required String bookingId,
-    required int rating,
+    required Verdict verdict,
+    required int hits,
+    required List<ReviewReason> reasons,
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
@@ -134,8 +138,10 @@ void main() {
           summary: PhotographerSummary(
             id: 'p1',
             displayName: 'Minh Trí',
-            ratingAvg: 4.8,
-            reviewCount: 2,
+            reviewCount: 6,
+            tomatoCount: 5,
+            brickCount: 1,
+            tomatoPct: 83,
           ),
         ),
       ]);
@@ -222,7 +228,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Line 1\nLine 2\nLine 3\nLine 4',
           createdAt: DateTime(2026, 10, 2),
         );
@@ -285,7 +291,7 @@ void main() {
           customerId: 'c$i',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Đánh giá số $i rất tuyệt vời!',
           createdAt: DateTime(2026, 10, 1, 10, i),
         ),
@@ -300,7 +306,7 @@ void main() {
             customerId: 'c10',
             photographerId: 'p1',
             serviceId: 's1',
-            rating: 4,
+            verdict: Verdict.tomato,
             text: 'Đánh giá trang 2',
             createdAt: DateTime(2026, 10, 1, 9),
           ),
@@ -339,7 +345,7 @@ void main() {
       expect(find.byType(SignatureLoader), findsNothing);
     });
 
-    testWidgets('shows the newest reviews with name, stars, date and text', (
+    testWidgets('shows the newest reviews with name, verdict, date and text', (
       tester,
     ) async {
       await fakeUsers.ensureProfile(
@@ -355,7 +361,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Buổi chụp diễn ra hoàn hảo!',
           createdAt: DateTime(2026, 10, 2),
         ),
@@ -366,8 +372,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('4,8 · 2 đánh giá'), findsOneWidget);
+      expect(find.text('83% · 6 đánh giá'), findsOneWidget);
       expect(find.text('Thanh Ngô'), findsOneWidget);
+      expect(find.text('Hài lòng'), findsOneWidget);
       expect(find.text('02/10/2026'), findsOneWidget);
       expect(find.text('Buổi chụp diễn ra hoàn hảo!'), findsOneWidget);
     });
@@ -378,7 +385,7 @@ void main() {
         customerId: 'c1',
         photographerId: 'p1',
         serviceId: 's1',
-        rating: 5,
+        verdict: Verdict.tomato,
         text: 'Dòng 1: Quá tuyệt vời\n'
             'Dòng 2: Rất hài lòng\n'
             'Dòng 3: Thợ chụp có tâm\n'
@@ -414,7 +421,7 @@ void main() {
               customerId: 'c$i',
               photographerId: 'p1',
               serviceId: 's1',
-              rating: 5,
+              verdict: Verdict.tomato,
               text: 'Đánh giá $i',
               createdAt: DateTime(2026, 10, 1, 10, i),
             ),
@@ -425,7 +432,7 @@ void main() {
             customerId: 'c10',
             photographerId: 'p1',
             serviceId: 's1',
-            rating: 5,
+            verdict: Verdict.tomato,
             text: 'Trang hai',
             createdAt: DateTime(2026, 10, 1, 9),
           ),
@@ -465,7 +472,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: List.filled(40, 'chụp').join(' '),
           createdAt: DateTime(2026, 10, 2),
         ),
@@ -495,7 +502,7 @@ void main() {
           customerId: 'ghost',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Tốt',
           createdAt: DateTime(2026, 10, 2),
         ),
@@ -529,7 +536,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Ảnh chia sẻ thật tuyệt vời',
           photoPostId: 'post_123',
           createdAt: DateTime(2026, 10, 2),
@@ -586,7 +593,7 @@ void main() {
           customerId: 'c$i',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Đánh giá $i',
           createdAt: DateTime(2026, 10, 1, 10, i),
         ),
@@ -597,7 +604,7 @@ void main() {
           customerId: 'c10',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Đánh giá trang tiếp theo 10',
           createdAt: DateTime(2026, 10, 1, 9),
         ),
@@ -650,7 +657,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Đánh giá rất tốt trên màn hình nhỏ và cỡ chữ to',
           createdAt: DateTime(2026, 10, 2),
         ),

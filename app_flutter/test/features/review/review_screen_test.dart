@@ -186,7 +186,7 @@ void main() {
     });
 
     testWidgets(
-      'submitting sends rating, trimmed text, postId and the uploaded photos, then opens S05.02 with the thanks message',
+      'submitting sends verdict, trimmed text, postId and the uploaded photos, then opens S05.02 with the thanks message',
       (tester) async {
         fakePicker = FakeImagePicker([
           const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
@@ -221,7 +221,9 @@ void main() {
 
         expect(fakeReviews.submitCalls, hasLength(1));
         final call = fakeReviews.submitCalls.first;
-        expect(call['rating'], 5);
+        expect(call['verdict'], Verdict.tomato);
+        expect(call['hits'], 1);
+        expect(call['reasons'], isEmpty);
         expect(call['text'], 'Buổi chụp rất đẹp và chuyên nghiệp');
         expect(call['postId'], isNotNull);
         expect(call['photos'], hasLength(1));
@@ -265,7 +267,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Đã gửi đánh giá từ trước',
           createdAt: DateTime.now(),
         ),
@@ -427,7 +429,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 4,
+          verdict: Verdict.tomato,
           text: 'Rất ưng ý với chất lượng ảnh',
           photoPostId: 'p_123',
           createdAt: DateTime.now(),
@@ -451,7 +453,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Rất ưng ý với chất lượng ảnh'), findsOneWidget);
-      expect(find.byType(StarRating), findsOneWidget);
+      expect(find.text('Hài lòng'), findsOneWidget);
       expect(find.text('Xem ảnh đã chia sẻ'), findsOneWidget);
       expect(find.byKey(const Key('review_text_field')), findsNothing);
       expect(find.byKey(const Key('submit_review_button')), findsNothing);
@@ -756,7 +758,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 4,
+          verdict: Verdict.tomato,
           text: 'Rất ưng ý với chất lượng ảnh',
           createdAt: DateTime.now(),
         ),

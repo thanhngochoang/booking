@@ -49,7 +49,7 @@ class PhotographerCard extends StatelessWidget {
     return [
       if (data.specialtyIds.isNotEmpty) specialtyLabel(data.specialtyIds.first),
       if (distanceKm != null) formatDistance(distanceKm!),
-      if (data.hasRating) '★ ${formatRating(data.ratingAvg)}',
+      if (data.hasTomatoPct) formatTomatoPct(data.tomatoPct),
       if (data.completedCount > 0) l.photographerSessions(data.completedCount),
     ].join(' · ');
   }

@@ -94,7 +94,9 @@ class FirestoreReviewRepository implements ReviewRepository {
   @override
   Future<String?> submit({
     required String bookingId,
-    required int rating,
+    required Verdict verdict,
+    required int hits,
+    required List<ReviewReason> reasons,
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
@@ -104,7 +106,9 @@ class FirestoreReviewRepository implements ReviewRepository {
           .httpsCallable('submitReview')
           .call<Map<String, dynamic>>({
         'bookingId': bookingId,
-        'rating': rating,
+        'verdict': verdict.code,
+        'hits': hits,
+        'reasons': reasons.map((r) => r.code).toList(),
         'text': text,
         'postId': postId,
         'photos': photos.map((p) => p.toMap()).toList(),
