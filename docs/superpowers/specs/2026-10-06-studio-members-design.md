@@ -151,6 +151,8 @@ Gọi/Zalo/WhatsApp của studio mở sau khi thanh toán (luật hiện có). C
 
 `studio_invite`, `studio_join_request`, `studio_invite_accepted`, `studio_join_approved`, `studio_removed`, `studio_invite_expiring` (1 ngày trước hạn), `booking_assigned` (khách, thợ), `booking_reassigned` (khách, thợ cũ, thợ mới), `assign_reminder` (studio, 48 giờ / 26 giờ), `assign_overdue` (khách, studio), `change_requested` (studio), `change_answered` (khách), `assignment_returned` (studio, khi thợ "Trả việc").
 
+Hook: `notifyStudioInvite`, `notifyStudioJoinRequest`, `notifyStudioInviteAccepted`, `notifyStudioJoinApproved`, `notifyStudioRemoved`, `notifyStudioInviteExpiring`, `notifyBookingAssigned`, `notifyBookingReassigned` (truyền `reassignedAt`), `notifyAssignReminder`, `notifyAssignOverdue`, `notifyChangeRequested`, `notifyChangeAnswered`, `notifyAssignmentReturned` trong `packages/domain/src/notification_hooks.ts` (#138); #136 là chỗ gọi duy nhất.
+
 ## 8. Rules và dữ liệu khác
 
 - `studio_members`: chỉ server ghi; đọc khi `request.auth.uid` là `studioId` hoặc `memberId`.

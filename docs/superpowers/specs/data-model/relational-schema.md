@@ -506,6 +506,7 @@ create table events (
   created_by_role text not null check (created_by_role in ('photographer','admin','sales')),
   host_consent  text not null default 'not_required' check (host_consent in ('not_required','pending','accepted','declined','expired')),
   host_consent_expires_at timestamptz,            -- O1: lúc mời + 24 giờ
+  soon_notice_at timestamptz null,                -- S17 event_soon: đặt khi đã nhắc mọi vé paid (48 giờ trước starts_at); null = chưa nhắc
   title         text not null, description text not null default '',
   cover_file_id text references files(id),
   type          text not null check (type in ('photo_walk','mini_session','workshop','cosplay','other')),
@@ -526,6 +527,7 @@ create table events (
   check (registered_count + held_count <= capacity)
 );
 create index ix_events_listing on events (status, starts_at);
+create index ix_events_soon on events (starts_at) where soon_notice_at is null and status in ('open','full','closed');   -- job nhắc event_soon (Firestore: status, soonNoticeAt, startAt)
 create index ix_events_geohash on events (geohash, starts_at);
 alter table availability_days add constraint fk_avail_event foreign key (event_id) references events(id);
 alter table chats add constraint fk_chats_event foreign key (event_id) references events(id);

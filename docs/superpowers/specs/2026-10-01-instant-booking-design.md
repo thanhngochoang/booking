@@ -101,6 +101,8 @@ choosing ──invite (lượt đầu)──▶ pending_payment ──paid──
 | Thời gian tìm một đợt | 10 phút kể từ lúc trả tiền hoặc lượt chọn gần nhất (tính lại khi nhiếp ảnh gia huỷ sau khi nhận); quá thì `no_match`, tiền vẫn treo cho tới khi khách chọn lại hoặc huỷ |
 | Người thắng | Giao dịch "Nhận" đầu tiên thành công (khoá dòng yêu cầu `SELECT … FOR UPDATE`); mọi lời mời khác của yêu cầu và mọi lời mời khác của người thắng chuyển `withdrawn` |
 
+Thông báo trong hộp thư (S17): `notifyInstantAssigned`, `notifyInstantMissed`, `notifyInstantRoundEnded`, `notifyInstantNoMatch`, `notifyInstantArrived`, `notifyInstantFinished`, `notifyInstantCancelled` trong `packages/domain/src/notification_hooks.ts` (#138), #140 là chỗ gọi duy nhất; lời mời chính là push ưu tiên cao mở S14.02 chứ không phải một dòng trong hộp thư. Lời xin quyền thông báo gọi ở S13.03 (`CustomerInstantPrimer`) và khi bật Live Shutter (`PhotographerPrimer`).
+
 ## 4. Giá, thanh toán, huỷ
 
 - **Gói** (`instant_packages`): mã, thời lượng phút, số ảnh chỉnh sửa giao, giá VND (số nguyên), phiên bản bảng giá. Giá cuối = giá gói × hệ số cao điểm của thành phố tại thời điểm gửi, làm tròn tới 1.000 ₫, **khoá lại trong yêu cầu** (không đổi khi đang tìm).

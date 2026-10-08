@@ -158,9 +158,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S16.02 | Việc đang tuyển (tab trong Công việc) | `/work?tab=jobs` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S61 |
 | S16.03 | Gửi báo giá (sheet) | `/jobs/:id/quote` | thợ ảnh | D (spec 10-05) | ⬜ chưa có plan · có mock (2026-10-05) | S62 |
 | **S17** | **Thông báo** | | | | | |
-| S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ✅ đã làm (10a) | S63 |
+| S17.01 | Thông báo (hộp thư trong app) | `/notifications` | cả hai | N | ✅ đã làm (10a) · đủ loại + hook (#138) | S63 |
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
-| S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ đã làm (10a) | S65 |
+| S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ (10a) · thêm sau khi mua vé (#138) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
 | S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ đang thiết kế · chưa có mock | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ đang thiết kế · chưa có mock | — |
@@ -710,42 +710,113 @@ Hộp thư thông báo trong app (S17.01), cài đặt thông báo (S17.02) và 
 - **Điểm vào** (đổi 2026-10-05): **không có chuông ở đầu trang**. Số chưa đọc hiện bằng `TabBadge` trên tab **Hồ sơ** (mục 3d.3), giống chấm số của tab Khám phá; S09.01 có dòng "Thông báo" ngay dưới tên (số chưa đọc + thông báo mới nhất) mở S17.01; push mở thẳng màn đích. Cài đặt (S09.02) → "Thông báo" → S17.02; biểu tượng bánh răng ở S17.01 → S17.02. `NotificationBell` gỡ khỏi S02.01, S02.03, S02.04, S06.01.
 - **Chấm số**: đọc từ `users/{uid}/private/inbox.unreadCount` (tài liệu riêng của chủ, không nằm trên `users/{uid}` công khai, 2026-10-06), "9+" từ mười trở lên, ẩn khi 0. Trình đọc màn hình đọc "3 thông báo chưa đọc", không đọc số trần.
 - **Danh sách (S17.01)**: chia mục Hôm nay / 7 ngày qua / Trước đó; lọc bằng `SegmentedTabs` (khách: Tất cả · Đặt lịch · Sự kiện · Hệ thống; NAG: Tất cả · Công việc · Sự kiện · Hệ thống). Mỗi dòng lưu trường `tab` (`activity` · `events` · `system`) do server gán theo `type`, và bộ lọc truy vấn theo `tab`, **không** theo `type`: một `shoot_reminder` là "Đặt lịch" với khách nhưng "Công việc" với NAG, nên `activity` là một mục với nhãn đổi theo vai trò (2026-10-06). Mỗi dòng: biểu tượng loại trong vòng tròn tô nhạt, tiêu đề đậm, nội dung tối đa 2 dòng, thời gian tương đối ("5 phút"), chưa đọc = chấm tím bên trái **và** nhãn ngữ nghĩa "Chưa đọc" (không chỉ dựa vào màu), thumbnail 40dp tuỳ chọn (booking, sự kiện).
-- **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới.
+- **Gom nhóm**: các thông báo cùng `groupKey` gộp thành một dòng, ví dụ "3 nhiếp ảnh gia đã báo giá cho việc 'Chụp kỷ yếu'" → mở S15.03. Phía server cập nhật dòng gộp (tăng `actorIds`, đẩy `createdAt`, xoá `readAt`) thay vì tạo dòng mới. Dòng gộp nêu tối đa 3 tên người gửi mới nhất (ví dụ "Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá."); một dòng đã đọc thì dòng kế tiếp bắt đầu lại từ 1 người.
 - **Chạm** = đánh dấu đã đọc + đi tới `target` (deep link). **Nhấn giữ** mở menu "Đánh dấu đã đọc / Tắt loại thông báo này" (không có thao tác chỉ vuốt). Hành động đầu trang: "Đánh dấu tất cả đã đọc".
 - **Phân trang**: 30 mục mỗi trang, skeleton khi tải. Empty state có một hành động ("Khám phá nhiếp ảnh gia" cho khách, "Mở Công việc" cho NAG).
 - **Lời mời Chụp ngay không là thông báo trong hộp thư**: chúng mở thẳng màn toàn hình S14.02 (giữ nguyên spec Chụp ngay). Hộp thư chỉ ghi một dòng "Bạn đã bỏ lỡ một lời mời" sau khi hết hạn.
 
 ### 3h.2 Các loại thông báo
 
-| `type` | Vai trò | Biểu tượng (sprite mock) | Mục lọc | `target` | Ghi chú |
-|--------|---------|--------------------------|---------|----------|---------|
-| `booking_accepted` | khách | `i-cal`, tông xanh | Đặt lịch | `/bookings/:id` (S05.02) | |
-| `booking_declined` | khách | `i-cal`, tông đỏ | Đặt lịch | `/bookings/:id` | Nêu hoàn cọc |
-| `booking_cancelled` | khách và NAG (bên còn lại; cả hai khi hệ thống huỷ) | `i-cal`, tông đỏ | Đặt lịch / Công việc | `/bookings/:id` | Quan trọng: luôn có dòng trong hộp thư, im giờ yên lặng không áp dụng; khách nhận kèm "Hoàn {percent}% số đã trả" |
-| `shoot_reminder` | khách (và NAG) | `i-cam` | Đặt lịch / Công việc | `/bookings/:id` | Trước 24 giờ và/hoặc 2 giờ theo S17.02 |
-| `quote_new` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S15.03) | Gom theo `groupKey = job:<id>:quotes` |
-| `instant_assigned` | khách | `i-bolt` | Đặt lịch | `/instant/:id` (S13.05) | |
-| `refund_done` | khách | `i-card` | Đặt lịch | `/bookings/:id` | |
-| `event_soon` | khách | `i-ticket` | Sự kiện | `/events/:id` (S11.02) hoặc vé S11.04 | |
-| `booking_request` | NAG | `i-cal`, tông vàng | Công việc | `/work` (S06.01) | Còn 24 giờ để nhận |
-| `job_match` | NAG | `i-brief` | Công việc | `/jobs/:id` (S16.01) | |
-| `job_invited` | NAG | `i-brief` | Công việc | `/jobs/:id` (S16.01) | |
-| `quote_accepted` | thợ ảnh | `i-brief` | Công việc | `/b/:id` (S05.02) | Khách đã chọn và trả tiền (spec 10-05) |
-| `quote_not_selected` | thợ ảnh | `i-brief` | Công việc | `/jobs/:id` (S16.01) | Việc awarded / expired / closed, hoặc khách từ chối |
-| `quote_withdrawn` | khách | `i-brief` | Đặt lịch | `/jobs/:id/applications` (S15.03) | Gồm rút tự động khi thợ kín lịch |
-| `job_expiring` | khách | `i-cal` | Đặt lịch | `/jobs/:id/applications` (S15.03) | 24 giờ trước hạn, khi có ≥ 1 báo giá |
-| `job_expired` | khách | `i-cal` | Đặt lịch | `/jobs/:id` (S15.02) | |
-| `award_reviewed` | thợ ảnh | `i-award` | Hệ thống | `/me/awards` (S25.01) | Duyệt / cần bổ sung / từ chối / thu hồi |
-| `artist_granted`, `artist_revoked` | thợ ảnh | `i-award` | Hệ thống | `/me/awards` (S25.01) | Lên / mất hạng Nhiếp ảnh gia |
-| `job_selected` | NAG | `i-check` | Công việc | `/work` | Bạn được chọn |
-| `payout_released` | NAG | `i-card` | Hệ thống | `/earnings` (S06.05) | |
-| `badge_new` | cả hai | `i-award` | Hệ thống | `/u/:uid/badges` (S03.02) | |
-| `review_new` | cả hai | `i-star` | Hệ thống | hồ sơ của mình (S09.01) | |
-| `chat_message` | cả hai | `i-chat` | Hệ thống | `/chat/:roomId` (S07.01) | Chỉ khi app ở nền; gom theo phòng |
-| `instant_missed` | NAG | `i-bolt`, tông xám | Công việc | `/work/instant` (S14.01) | Bản ghi "bỏ lỡ lời mời" |
-| `promo` | cả hai | `i-info` | Hệ thống | theo `target` | Tắt mặc định (S17.02) |
+Danh mục đầy đủ của `NOTIFICATION_TYPES` (`packages/domain/src/notification.ts`; nguồn duy nhất cho nhóm S17.02, mục lọc và "quan trọng"); nội dung (tiêu đề và nội dung, tiếng Việt) chỉ nằm ở một bảng trong `notification_render.ts`, app không tự dựng chữ. Biểu tượng và tông nằm ở `notification_visuals.dart` (`AppIcons`); `target` chỉ được mở nếu khớp danh sách cho phép trong `notification_targets.dart`. "Quan trọng" = luôn có dòng trong hộp thư và push phát âm cả trong giờ yên lặng (mục 3h.5).
 
-Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = thành công, vàng = cần hành động, đỏ = bị từ chối, tím = mặc định).
+| `type` | Vai trò | Biểu tượng · tông | Mục lọc | `target` | Nhóm S17.02 | Ghi chú |
+|--------|---------|-------------------|---------|----------|-------------|---------|
+| `booking_request` | thợ ảnh | `calendar` · vàng | Công việc | `/bookings` (S06.01) | Đặt lịch và thanh toán | Còn 24 giờ để nhận |
+| `booking_accepted` | khách | `calendar` · xanh | Đặt lịch | `/b/:id` (S05.02) | Đặt lịch và thanh toán | |
+| `booking_declined` | khách | `calendar` · đỏ | Đặt lịch | `/b/:id` | Đặt lịch và thanh toán | Nêu hoàn tiền: "Đã hoàn {percent}% số bạn đã trả. Xem các nhiếp ảnh gia còn rảnh."; hết hạn: "Yêu cầu đã hết hạn. Đã hoàn {percent}% số bạn đã trả." |
+| `booking_cancelled` | khách và thợ ảnh (bên còn lại; cả hai khi hệ thống huỷ) | `calendar` · đỏ | Đặt lịch / Công việc | `/b/:id` | Đặt lịch và thanh toán | Quan trọng; khách nhận kèm "Hoàn {percent}% số bạn đã trả" |
+| `refund_done` | khách | `payment` · xanh | Đặt lịch | `/b/:id` | Đặt lịch và thanh toán | Quan trọng; "Tiền buổi chụp #… đã về tài khoản của bạn." |
+| `shoot_reminder` | khách và thợ ảnh | `camera` · tím | Đặt lịch / Công việc | `/b/:id` | Đặt lịch và thanh toán | Trước 24 giờ và/hoặc 2 giờ theo S17.02 |
+| `payout_released` | thợ ảnh, studio | `payment` · xanh | Hệ thống | `/work/earnings` (S06.05) | Đặt lịch và thanh toán | Quan trọng; gửi khi khoản chi chuyển sang `paid` (#138) |
+| `payout_account_needed` | thợ ảnh, studio | `payment` · vàng | Hệ thống | `/work/earnings/account` (S06.06) | Đặt lịch và thanh toán | Có tiền sẵn sàng chi nhưng chưa có tài khoản nhận (#134) |
+| `payout_account_changed` | thợ ảnh, studio | `lock` · vàng | Hệ thống | `/work/earnings/account` | Đặt lịch và thanh toán | Quan trọng; "Không phải bạn đổi? Liên hệ hỗ trợ ngay." (#134) |
+| `delivery_submitted` | khách | `image` · vàng | Đặt lịch | `/b/:id/delivery` | Đặt lịch và thanh toán | Ảnh mẫu đã gửi, xem và đồng ý để nhận ảnh gốc (#152) |
+| `delivery_revision_requested` | người bàn giao | `image` · vàng | Công việc | `/b/:id` | Đặt lịch và thanh toán | Khách xin chỉnh sửa vòng {n} |
+| `delivery_approved` | người bàn giao | `image` · xanh | Công việc | `/b/:id` | Đặt lịch và thanh toán | Tiền chuyển sau 48 giờ kiểm tra |
+| `delivery_auto_approve_soon` | khách | `schedule` · vàng | Đặt lịch | `/b/:id/delivery` | Đặt lịch và thanh toán | Còn 24 giờ trước khi ảnh mẫu tự được đồng ý; một lần mỗi vòng |
+| `delivery_extra_round` | khách | `image` · tím | Đặt lịch | `/b/:id/delivery` | Đặt lịch và thanh toán | Người bàn giao cho thêm hoặc không cho thêm một vòng sửa |
+| `studio_invite` | thợ ảnh | `store` · vàng | Hệ thống | `/me/studio` | Đặt lịch và thanh toán | Hết hạn sau 7 ngày (#136) |
+| `studio_join_request` | studio | `store` · vàng | Hệ thống | `/studio/members` | Đặt lịch và thanh toán | |
+| `studio_invite_accepted` | studio | `store` · xanh | Hệ thống | `/studio/members` | Đặt lịch và thanh toán | |
+| `studio_join_approved` | thợ ảnh | `store` · xanh | Hệ thống | `/me/studio` | Đặt lịch và thanh toán | |
+| `studio_removed` | thợ ảnh | `store` · xám | Hệ thống | `/me/studio` | Đặt lịch và thanh toán | |
+| `studio_invite_expiring` | thợ ảnh | `store` · vàng | Hệ thống | `/me/studio` | Đặt lịch và thanh toán | 1 ngày trước hạn |
+| `booking_assigned` | khách, thợ được giao | `calendar` · xanh | Đặt lịch / Công việc | `/b/:id` | Đặt lịch và thanh toán | Mỗi bên một nội dung; studio là người gửi |
+| `booking_reassigned` | khách, thợ cũ, thợ mới | `calendar` · tím | Đặt lịch / Công việc | `/b/:id` | Đặt lịch và thanh toán | Cùng một cặp thợ cũ → mới (kèm `reassignedAt`) chỉ báo một lần |
+| `assign_reminder` | studio | `calendar` · vàng | Công việc | `/b/:id` | Đặt lịch và thanh toán | Còn 48 giờ / 26 giờ để giao thợ |
+| `assign_overdue` | khách, studio | `calendar` · đỏ | Đặt lịch / Công việc | `/b/:id` | Đặt lịch và thanh toán | Quan trọng; khách có thể chờ hoặc huỷ và được hoàn 100% |
+| `change_requested` | studio | `swap` · vàng | Công việc | `/b/:id` | Đặt lịch và thanh toán | Khách xin đổi thợ, hạn trả lời `respondBy` |
+| `change_answered` | khách | `swap` · tím | Đặt lịch | `/b/:id` | Đặt lịch và thanh toán | Đã đổi / không đổi / hết hạn |
+| `assignment_returned` | studio | `calendar` · vàng | Công việc | `/b/:id` | Đặt lịch và thanh toán | Thợ "Trả việc" |
+| `verification_approved` | thợ ảnh, studio | `verified` · xanh | Hệ thống | `/verify/start` (S21.02) | Đặt lịch và thanh toán | Quan trọng: quyết định về quyền nhận đơn (#135) |
+| `verification_rejected` | thợ ảnh, studio | `verified` · đỏ | Hệ thống | `/verify/start` | Đặt lịch và thanh toán | Quan trọng |
+| `verification_revoked` | thợ ảnh, studio | `verified` · đỏ | Hệ thống | `/verify/start` | Đặt lịch và thanh toán | Quan trọng |
+| `verification_reminder` | thợ ảnh, studio | `schedule` · vàng | Hệ thống | `/verify/start` | Đặt lịch và thanh toán | Một lần, sau 24 giờ bỏ dở |
+| `business_verified` | studio | `store` · xanh | Hệ thống | `/verify/business` (S21.04) | Đặt lịch và thanh toán | Quan trọng |
+| `business_rejected` | studio | `store` · đỏ | Hệ thống | `/verify/business` | Đặt lịch và thanh toán | Quan trọng |
+| `dispute_opened` | bên cung cấp (thợ ảnh, studio, chủ sự kiện) | `flag` · vàng | Công việc | `/disputes/:id` (S18.02) | Đặt lịch và thanh toán | Quan trọng; không gửi cho sự kiện nền tảng (#142) |
+| `dispute_resolved` | các bên của khiếu nại | `payment` · xanh | Đặt lịch / Công việc | `/disputes/:id` | Đặt lịch và thanh toán | Quan trọng; thả / hoàn / chia, nêu số tiền |
+| `dispute_message` | bên kia của khiếu nại | `chat` · tím | Đặt lịch / Công việc | `/disputes/:id` | Đặt lịch và thanh toán | Gom theo khiếu nại (`dispute:<id>`), "{n} tin nhắn mới" |
+| `support_reply` | người hỏi | `supportAgent` · tím | Đặt lịch / Công việc | `/disputes/:id` hoặc `/help/chat` | Đặt lịch và thanh toán | Quan trọng |
+| `refund_account_needed` | khách | `payment` · vàng | Đặt lịch | `/me/payments` | Đặt lịch và thanh toán | Quan trọng; sau 24 giờ tiền tự về tài khoản đã chuyển nếu có (#141) |
+| `quote_new` | khách | `work` · tím | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | Gom theo `groupKey = job:<id>:quotes`, nêu tối đa 3 tên; mỗi thợ chỉ tính một lần cho một việc |
+| `quote_withdrawn` | khách | `work` · tím | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | Gồm rút tự động khi thợ kín lịch |
+| `job_expiring` | khách | `calendar` · vàng | Đặt lịch | `/jobs/:id/applications` (S15.03) | Việc đăng tuyển | 24 giờ trước hạn, khi có ≥ 1 báo giá |
+| `job_expired` | khách | `calendar` · xám | Đặt lịch | `/jobs/:id` (S15.02) | Việc đăng tuyển | |
+| `job_match` | thợ ảnh | `work` · tím | Công việc | `/jobs/:id` (S16.01) | Việc đăng tuyển | |
+| `job_invited` | thợ ảnh | `work` · tím | Công việc | `/jobs/:id` (S16.01) | Việc đăng tuyển | |
+| `quote_accepted` | thợ ảnh | `work` · xanh | Công việc | `/b/:id` (S05.02) | Việc đăng tuyển | Khách đã chọn và trả tiền; **thay `job_selected`** |
+| `quote_not_selected` | thợ ảnh | `work` · xám | Công việc | `/jobs/:id` (S16.01) | Việc đăng tuyển | Việc awarded / expired / closed, hoặc khách từ chối |
+| `job_selected` | thợ ảnh | `work` · xanh | Công việc | — | Việc đăng tuyển | Bỏ: **thay bằng `quote_accepted`**; còn trong danh mục để dòng cũ vẫn có biểu tượng, không còn hook |
+| `recruit_post_new` | thợ ảnh khớp tin | `work` · tím | Công việc | `/recruit/:id` (S27) | Việc đăng tuyển | Tối đa 3 mỗi thợ mỗi ngày (#151) |
+| `recruit_application_new` | studio | `work` · vàng | Công việc | `/studio/recruit?post=<id>` | Việc đăng tuyển | Gom theo tin (`recruit:<postId>:apps`) |
+| `recruit_application_result` | thợ ảnh | `work` · tím | Công việc | `/recruit/:id` | Việc đăng tuyển | Nhận làm cộng tác viên / thành viên, từ chối, hết hạn |
+| `collab_invite` | cộng tác viên | `store` · vàng | Công việc | `/collab` | Việc đăng tuyển | Hết hạn sau 7 ngày |
+| `collab_invite_result` | studio | `store` · tím | Công việc | `/collab` | Việc đăng tuyển | |
+| `collab_assignment_offer` | cộng tác viên | `work` · vàng | Công việc | `/collab?offer=<bookingId>` | Việc đăng tuyển | Quan trọng: lời đề nghị có hạn trả lời |
+| `collab_assignment_result` | studio | `calendar` · tím | Công việc | `/b/:id` | Việc đăng tuyển | |
+| `collab_pay_due` | studio | `payment` · vàng | Công việc | `/collab` | Việc đăng tuyển | Thù lao trả ngoài app, đến hạn |
+| `collab_pay_reported` | cộng tác viên | `payment` · tím | Công việc | `/collab` | Việc đăng tuyển | Bấm "Đã nhận" hoặc "Chưa nhận" |
+| `collab_pay_disputed` | studio | `payment` · đỏ | Công việc | `/collab` | Việc đăng tuyển | |
+| `instant_assigned` | khách | `instant` · xanh | Đặt lịch | `/instant/:id` (S13.05) | Chụp ngay | |
+| `instant_missed` | thợ ảnh | `instant` · xám | Công việc | `/work/instant` (S14.01) | Chụp ngay | Bản ghi "bỏ lỡ lời mời" |
+| `instant_round_ended` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | "Chưa ai nhận. Chọn thêm người nhé." (#140) |
+| `instant_no_match` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | Tiền vẫn được giữ, huỷ thì hoàn đủ |
+| `instant_arrived` | khách | `instant` · xanh | Đặt lịch | `/instant/:id` | Chụp ngay | |
+| `instant_finished` | khách | `instant` · vàng | Đặt lịch | `/instant/:id` | Chụp ngay | Xác nhận trong 2 giờ, nếu không tự hoàn thành |
+| `instant_cancelled` | bên còn lại (thợ hoặc khách) | `instant` · đỏ | Đặt lịch / Công việc | thợ: `/work/instant/:id`; khách: `/instant/:id` | Chụp ngay | Quan trọng; thợ nhận kèm phí đi lại nếu có |
+| `event_soon` | khách (và thợ ảnh) có vé đã thanh toán | `ticket` · tím | Sự kiện | `/e/:id` (S11.02) | Sự kiện | Một lần mỗi vé khi sự kiện bắt đầu trong vòng 48 giờ (xem dưới); thumbnail là ảnh bìa |
+| `event_host_invited` | thợ ảnh | `ticket` · vàng | Sự kiện | `/events/:id/manage` (S12.03) | Sự kiện | Quan trọng; nhân viên tạo sự kiện cho thợ, trả lời trong 24 giờ (O1) |
+| `review_tomato` | thợ ảnh, studio | `favorite` · xanh | Hệ thống | `/u/:uid?tab=reviews` | Huy hiệu và đánh giá | "Bạn nhận 🍅 ×{n} từ buổi chụp {ngày}" (#130) |
+| `review_brick` | thợ ảnh, studio | `chat` · vàng | Hệ thống | `/u/:uid?tab=reviews` | Huy hiệu và đánh giá | "Có góp ý mới về buổi chụp {ngày}" |
+| `review_new` | thợ ảnh | `star` · tím | Hệ thống | `/u/:uid?tab=reviews` | Huy hiệu và đánh giá | Review kiểu sao cũ: không còn phát khi #130 gọi `notifyReviewVerdict`; dòng cũ vẫn hiện |
+| `badge_new` | cả hai | `award` · tím | Hệ thống | `/u/:uid/badges` (S03.02) | Huy hiệu và đánh giá | |
+| `award_reviewed` | thợ ảnh | `award` · theo kết quả | Hệ thống | `/me/awards` (S25.01) | Huy hiệu và đánh giá | Duyệt (xanh) / cần bổ sung (vàng) / từ chối, thu hồi (đỏ) |
+| `artist_granted`, `artist_revoked` | thợ ảnh | `award` · xanh / tím | Hệ thống | `/me/awards` (S25.01) | Huy hiệu và đánh giá | Lên / mất hạng Nhiếp ảnh gia |
+| `chat_message` | cả hai | `chat` · tím | Hệ thống | `/chat/:roomId` (S07.01) | Tin nhắn | Chỉ khi app ở nền; gom theo phòng |
+| `promo` | cả hai | `info` · tím | Hệ thống | theo `target` | Khuyến mãi | Tắt mặc định (S17.02); chưa có nơi phát (cần công cụ staff) |
+
+Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = thành công, vàng = cần hành động, đỏ = bị từ chối hoặc huỷ, xám = đã qua, tím = mặc định). Loại lạ hiện biểu tượng `info` tông tím. Hàng "Đặt lịch và thanh toán" của S17.02 không tắt được kênh Trong app; dòng quan trọng luôn vào hộp thư dù kênh tắt.
+
+**Nhắc sự kiện (`event_soon`)**: `eventClock` (5 phút một lần, không thêm job) tìm sự kiện `open`, `full` hoặc `closed` chưa có `soonNoticeAt`, bắt đầu trong 48 giờ tới; gửi một thông báo cho mỗi vé `paid` (khoá chống trùng `event_soon_{eventId}_{regId}`), rồi đặt `Event.soonNoticeAt` **chỉ khi mọi lần gửi đều xong** (lỗi thì tick sau gửi lại, khoá chống trùng không cho gửi đôi). Tiêu đề theo ngày lịch Việt Nam: từ 2 ngày "… bắt đầu sau {n} ngày", "… bắt đầu ngày mai", "… bắt đầu hôm nay"; nội dung "Tập trung {HH:mm} tại {điểm hẹn hoặc tên địa điểm}. Mang vé trong mục Vé." Vé mua sau lượt này không nhận nhắc; sự kiện tạo trước thay đổi này (không có trường) không được nhắc; dời giờ bắt đầu không đặt lại `soonNoticeAt`. Câu hỏi mở với chủ dự án: người giữ vé có nhận thông báo khi sự kiện bị huỷ (hoàn tiền) hoặc đổi giờ không; hiện **không có** loại `event_cancelled` / `event_changed`.
+
+**Hook theo use case**: mỗi loại chưa có chỗ phát có đúng một hook trong `packages/domain/src/notification_hooks.ts` (chữ ký `(deps: NotifyDeps, e) => Promise<NotifyResult | NotifyResult[]>`), và đúng một chủ phát, chỉ gọi sau khi giao dịch ghi xong (từ trigger hoặc callable, với `liveNotifyDeps()`), không bao giờ trong transaction; hook lỗi thì trigger thử lại, không huỷ việc đã ghi. Hook tự chọn người nhận, nội dung, `target`, khoá chống trùng hoặc `groupKey`, người gửi (tên lấy từ `deps.users`). Bảng theo chủ phát (issue):
+
+| Chủ phát | Hook |
+|----------|------|
+| #139 (đăng việc, báo giá) | `notifyQuoteNew` (chỉ gọi cho báo giá **đầu tiên** của một thợ trên một việc), `notifyQuoteWithdrawn`, `notifyJobExpiring`, `notifyJobExpired`, `notifyJobMatch`, `notifyJobInvited`, `notifyQuoteAccepted`, `notifyQuoteNotSelected` |
+| #140 (Chụp ngay) | `notifyInstantAssigned`, `notifyInstantMissed`, `notifyInstantRoundEnded`, `notifyInstantNoMatch`, `notifyInstantArrived`, `notifyInstantFinished`, `notifyInstantCancelled`; cùng chỗ gọi primer `CustomerInstantPrimer` (S13.03) và `PhotographerPrimer` (S14.01) |
+| #130 (đánh giá cà chua/gạch) | `notifyReviewVerdict` (gọi từ `onReviewWrite` thay cho `review_new`; booking studio gọi hai lần, một cho thợ và một cho studio) |
+| #152 (bàn giao, tách từ #130) | `notifyDeliverySubmitted`, `notifyDeliveryRevisionRequested`, `notifyDeliveryApproved`, `notifyDeliveryAutoApproveSoon`, `notifyDeliveryExtraRound` |
+| #136 (studio, giao thợ) | `notifyStudioInvite`, `notifyStudioJoinRequest`, `notifyStudioInviteAccepted`, `notifyStudioJoinApproved`, `notifyStudioRemoved`, `notifyStudioInviteExpiring`, `notifyBookingAssigned`, `notifyBookingReassigned` (truyền `reassignedAt`), `notifyAssignReminder`, `notifyAssignOverdue`, `notifyChangeRequested`, `notifyChangeAnswered`, `notifyAssignmentReturned` |
+| #134 (chi trả) | `notifyPayoutAccountNeeded`, `notifyPayoutAccountChanged` |
+| #135 (xác minh) | `notifyVerificationDecision`, `notifyBusinessDecision`, `notifyVerificationReminder` |
+| #142 (khiếu nại, hỗ trợ) | `notifyDisputeOpened`, `notifyDisputeResolved`, `notifyDisputeMessage` (truyền `messageId`), `notifySupportReply` |
+| #141 (tài khoản nhận hoàn) | `notifyRefundAccountNeeded` |
+| #151 (tuyển thợ, cộng tác viên) | `notifyRecruitPostNew`, `notifyRecruitApplicationNew`, `notifyRecruitApplicationResult`, `notifyCollabInvite`, `notifyCollabInviteResult`, `notifyCollabAssignmentOffer`, `notifyCollabAssignmentResult`, `notifyCollabPayDue`, `notifyCollabPayReported`, `notifyCollabPayDisputed` |
+| #138 (use case này) | `notifyPayoutReleased` (từ `onPayoutWritten` khi khoản chi chuyển sang `paid`), `sendEventSoonNotices` (từ `eventClock`); các loại booking, nhắc lịch, huy hiệu, giải thưởng, chat, mời làm chủ sự kiện đã có chỗ phát từ trước |
+
+Mỗi hook được liệt kê trong sổ bàn giao `docs/superpowers/handover/ledger-s17-notifications.md` cùng chữ ký đầy đủ, `target` và khoá chống trùng. Danh sách `target` cho phép (app) là `/e/:id`, `/events/:id/manage`, `/work/earnings`, `/work/earnings/account`, `/jobs/:id`, `/jobs/:id/applications`, `/instant/:id`, `/work/instant`, `/work/instant/:id`, `/work/instant/offer/:id`, `/b/:id/delivery`, `/studio/members`, `/me/studio`, `/verify/start`, `/verify/business`, `/disputes/:id`, `/help/chat`, `/me/payments`, `/recruit/:id`, `/collab` cùng các đường đã có từ trước; chỉ `/studio/recruit?post=<id>` và `/collab?offer=<id>` được mang query (đúng một khóa, giá trị là id). Kế hoạch của chủ phát không sửa `safeTarget`; một dòng chỉ xuất hiện khi chủ phát gọi hook, trong cùng kế hoạch đăng ký route.
 
 ### 3h.3 Dữ liệu
 
@@ -779,17 +850,17 @@ devices/{uid}_{installId}                    # token FCM (kế hoạch I4)
 
 ### 3h.5 Giờ yên lặng
 
-Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng (không âm, không rung), vẫn vào hộp thư. Ngoại lệ, vẫn phát âm: **giao dịch quan trọng** là lời mời Chụp ngay khi NAG đang bật "Live Shutter", thanh toán, và huỷ lịch. Nhắc buổi chụp trước 24 giờ và 2 giờ bật/tắt riêng.
+Mặc định 22:00–07:00 (múi giờ Asia/Ho_Chi_Minh): push đến im lặng (không âm, không rung), vẫn vào hộp thư. Ngoại lệ, vẫn phát âm: **giao dịch quan trọng** là lời mời Chụp ngay khi NAG đang bật "Live Shutter", thanh toán và hoàn tiền, huỷ lịch (kể cả huỷ Chụp ngay), quyết định xác minh, khiếu nại và phản hồi của hỗ trợ, đổi tài khoản nhận tiền, giao thợ quá hạn và lời đề nghị cộng tác có hạn trả lời (các dòng "Quan trọng" ở mục 3h.2). Nhắc buổi chụp trước 24 giờ và 2 giờ bật/tắt riêng.
 
 ### 3h.6 Thời điểm xin quyền (S17.03)
 
-- Chỉ hỏi **sau một hành động có ý nghĩa**, không bao giờ khi mở app lần đầu. Khách: sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"). NAG: khi bật "Live Shutter" hoặc khi nhận booking đầu tiên.
+- Chỉ hỏi **sau một hành động có ý nghĩa**, không bao giờ khi mở app lần đầu. Khách: sau khi đặt lịch, mua vé hoặc gửi yêu cầu Chụp ngay ("Bật thông báo để biết khi Minh Trí nhận lịch"). Sau khi mua vé (miễn phí hoặc đã thanh toán) app về tab Vé sự kiện với vé vừa mua và hỏi **một lần**: "Bật thông báo để được nhắc trước khi {sự kiện} bắt đầu" kèm lợi ích "Nhắc trước khi sự kiện bắt đầu, kèm giờ và điểm tập trung"; mở tab Vé bình thường không hỏi. Thợ ảnh mua vé về tab công việc và không bị hỏi. NAG: khi bật "Live Shutter" hoặc khi nhận booking đầu tiên.
 - Sheet nêu lợi ích, nút chính "Bật thông báo" (gọi hộp thoại quyền của hệ điều hành), nút phụ "Để sau". "Để sau" lưu thời điểm và hỏi lại sau **7 ngày**, tại một hành động có ý nghĩa kế tiếp. Nếu OS đã từ chối vĩnh viễn thì không hỏi lại mà dùng banner của S17.02 ("Mở Cài đặt").
 - Android 13+ cần `POST_NOTIFICATIONS`; iOS xin `UNAuthorizationOptions`.
 
 ### 3h.7 Cloud Functions
 
-`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, cập nhật `unreadCount` và `unreadCountAt` (trong `users/{uid}/private/inbox`), gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch. `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
+`notify(uid, type, payload)` dùng chung: kiểm tra `prefs`, ghi `notifications/{id}`, cập nhật `unreadCount` và `unreadCountAt` (trong `users/{uid}/private/inbox`), gửi FCM tới mọi `devices/{uid}_*`. Được gọi từ các trigger booking, báo giá, sự kiện, huy hiệu, chi trả, và cron nhắc lịch; mỗi loại mới có một hook trong `notification_hooks.ts` do một use case khác gọi (mục 3h.2, "Hook theo use case"). `markAllNotificationsRead` (callable) đặt `readAt` hàng loạt và đưa `unreadCount` về 0.
 
 ## 3i. Use case bổ sung (2026-10-02)
 

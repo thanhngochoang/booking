@@ -169,6 +169,8 @@ Thay đổi ở màn cũ:
 | `collab_pay_reported` | CTV | |
 | `collab_pay_disputed` | Studio, staff | |
 
+Hook: `notifyRecruitPostNew`, `notifyRecruitApplicationNew`, `notifyRecruitApplicationResult`, `notifyCollabInvite`, `notifyCollabInviteResult`, `notifyCollabAssignmentOffer`, `notifyCollabAssignmentResult`, `notifyCollabPayDue`, `notifyCollabPayReported`, `notifyCollabPayDisputed` trong `packages/domain/src/notification_hooks.ts` (#138), mười loại trên; #151 gọi, giới hạn 3 thông báo mỗi thợ mỗi ngày và 200 người nhận nằm ở `notifyRecruitMatches` của #151. Hook của `collab_pay_disputed` chỉ gửi cho Studio; thông báo cho staff không thuộc danh mục S17.
+
 ## 9. Rules, job, chi phí
 
 - **Rules:**

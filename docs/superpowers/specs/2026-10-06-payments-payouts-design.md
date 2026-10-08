@@ -75,6 +75,8 @@ Khiếu nại → mốc liên quan `disputed`, chi trả `on_hold` (§3g.2 giữ
 
 `Refund` thêm `method` (`gateway` \| `bank_transfer`), `destinationAccount?` (che, mã hoá), `providerRef`, `failureReason?`. Hoàn sau khi đã chi cho thợ: bút toán `adjustment` trừ vào lần chi sau (§3g.3 giữ nguyên). Chính sách hoàn giữ nguyên, tính trên toàn bộ số đã trả; lỗi của thợ/studio hoàn 100%.
 
+Hook: `notifyRefundAccountNeeded` trong `packages/domain/src/notification_hooks.ts` (#138) ("Chọn tài khoản nhận hoàn"), mục tiêu `/me/payments`; #141 là chỗ gọi duy nhất.
+
 ## 6. Chi trả
 
 ### 6.1 Lịch và số tiền
@@ -83,6 +85,7 @@ Khiếu nại → mốc liên quan `disputed`, chi trả `on_hold` (§3g.2 giữ
 - Số tiền chi = Σ `escrow_released` − `platform_fee` (hoa hồng, mặc định 0%) − `tax_withheld` (thợ cá nhân) ± `adjustment`. Phí cổng và phí chi do nền tảng chịu: bút toán `gateway_fee`, `payout_fee` ghi vào doanh thu âm của nền tảng, không trừ vào thợ.
 - **Lần chi đầu của mỗi tài khoản nhận tiền** vào hàng chờ staff (S23.02); staff duyệt rồi mới gửi. Từ lần sau tự động.
 - Chưa có tài khoản nhận tiền: khoản giữ ở `released`, thông báo "Thêm tài khoản để nhận {số tiền}" (một lần, kèm banner ở S06.05).
+- Hook: `notifyPayoutAccountNeeded` trong `packages/domain/src/notification_hooks.ts` (#138); `payout_released` ("Đã chuyển {số tiền} cho bạn") do `onPayoutWritten` gửi khi `Payout` chuyển sang `paid`, mục tiêu `/work/earnings`.
 
 `Payout` thêm `provider`, `providerPayoutId`, `idempotencyKey`, `amountGross`, `platformFee`, `taxWithheld`, `amountNet`, `attempts`, `firstPayout: bool`, `approvedBy?`.
 
@@ -93,6 +96,7 @@ Khiếu nại → mốc liên quan `disputed`, chi trả `on_hold` (§3g.2 giữ
 - Tên tra được phải **khớp họ tên đã xác minh** (bỏ dấu, không phân biệt hoa thường, chuẩn hoá khoảng trắng). Studio đã xác minh doanh nghiệp: khớp tên doanh nghiệp hoặc tên chủ. Không khớp → không lưu, báo "Tên chủ tài khoản không khớp tên đã xác minh"; ngân hàng không hỗ trợ tra tên → lưu ở `pending_review`, staff đối chiếu.
 - Lưu: `bankBin`, `bankName`, `accountNumberEnc` (mã hoá), `accountLast4`, `holderName`, `nameMatched`, `verifiedAt`, `activeFrom`.
 - **Đổi tài khoản**: OTP qua số điện thoại đã xác minh; tài khoản mới `activeFrom` = +72 giờ; trong 72 giờ đó tạm dừng chi; gửi thông báo và email (nếu có) về việc đổi; tài khoản mới chi lần đầu cũng qua staff duyệt.
+- Hook: `notifyPayoutAccountChanged` trong `packages/domain/src/notification_hooks.ts` (#138) (thông báo quan trọng, không tắt được).
 
 ### 6.3 Thu nhập (S06.05)
 

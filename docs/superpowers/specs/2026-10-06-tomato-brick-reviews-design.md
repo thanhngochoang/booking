@@ -202,6 +202,8 @@ Hai loại mới trong danh mục thông báo, gửi khi `onReviewWrite` đếm 
 
 Nếu kênh gửi thông báo phía server chưa có khi làm plan này, chỉ thêm hai loại vào danh mục và để lại hook, giống cách `awardBadgesAfterReview` đang làm.
 
+Hook: `notifyReviewVerdict` trong `packages/domain/src/notification_hooks.ts` (#138); #130 gọi từ `onReviewWrite` sau khi đếm xong (booking studio gọi hai lần, một cho thợ, một cho studio) và thôi phát `review_new`.
+
 ## 8. Backend tự host và hợp đồng API
 
 - `services/api`: **migration mới** (không sửa migration cũ): bảng `photographers` bỏ `rating_avg`, thêm `tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`; bảng `reviews` bỏ `rating`, thêm `verdict` (check `in ('tomato','brick')`), `hits` (check 1–10), `intensity`, `reasons text[]` (check: `brick` có ≥ 1, `tomato` rỗng). Cập nhật `migrations.test.ts`.

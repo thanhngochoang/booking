@@ -86,6 +86,8 @@ Mã đã giữ chỗ trong spec 2026-10-05, nay vào bảng mã vì đã có moc
 | `delivery_auto_approve_soon` | khách | 24 giờ trước khi tự đồng ý |
 | `delivery_extra_round` | khách | người bàn giao cho thêm hoặc không cho thêm vòng |
 
+Hook: `notifyDeliverySubmitted`, `notifyDeliveryRevisionRequested`, `notifyDeliveryApproved`, `notifyDeliveryAutoApproveSoon`, `notifyDeliveryExtraRound` trong `packages/domain/src/notification_hooks.ts` (#138); chỉ plan bàn giao (#152) gọi, từ trigger `onBookingWrite` và bước `remindAutoApprovals` của `bookingClock` (một lần mỗi vòng).
+
 ## 7. Giới hạn
 
 - App chỉ che link **trong app**. Người bàn giao tự gửi link qua chat hay kênh khác trước khi khách đồng ý là lựa chọn của họ; điều khoản ghi rõ điều này.
