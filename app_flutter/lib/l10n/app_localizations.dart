@@ -6925,7 +6925,7 @@ abstract class AppLocalizations {
   /// No description provided for @earningsNotice.
   ///
   /// In vi, this message translates to:
-  /// **'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.'**
+  /// **'Chi tự động mỗi ngày · lần chi đầu do staff duyệt · phí chuyển do nền tảng trả'**
   String get earningsNotice;
 
   /// No description provided for @earningsHeld.
@@ -6937,7 +6937,7 @@ abstract class AppLocalizations {
   /// No description provided for @earningsSoon.
   ///
   /// In vi, this message translates to:
-  /// **'Sắp nhận'**
+  /// **'Chờ chi trả'**
   String get earningsSoon;
 
   /// No description provided for @earningsReceived.
@@ -7053,6 +7053,54 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không tải được thu nhập'**
   String get earningsLoadError;
+
+  /// No description provided for @earningsBreakdownReleased.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển theo mốc'**
+  String get earningsBreakdownReleased;
+
+  /// No description provided for @earningsBreakdownAmount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền'**
+  String get earningsBreakdownAmount;
+
+  /// No description provided for @earningsBreakdownFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoa hồng ({percent})'**
+  String earningsBreakdownFee(String percent);
+
+  /// No description provided for @earningsBreakdownTax.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thuế khấu trừ ({percent})'**
+  String earningsBreakdownTax(String percent);
+
+  /// No description provided for @earningsBreakdownNet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thực nhận'**
+  String get earningsBreakdownNet;
+
+  /// No description provided for @earningsBreakdownNetEstimated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thực nhận dự kiến'**
+  String get earningsBreakdownNetEstimated;
+
+  /// No description provided for @earningsMilestones.
+  ///
+  /// In vi, this message translates to:
+  /// **'mốc {done}/{total}'**
+  String earningsMilestones(int done, int total);
+
+  /// No description provided for @earningsMilestonesAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'đủ {total} mốc'**
+  String earningsMilestonesAll(int total);
 
   /// No description provided for @payoutAccountTitle.
   ///

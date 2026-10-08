@@ -3954,13 +3954,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get earningsNotice =>
-      'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.';
+      'Chi tự động mỗi ngày · lần chi đầu do staff duyệt · phí chuyển do nền tảng trả';
 
   @override
   String get earningsHeld => 'Đang giữ';
 
   @override
-  String get earningsSoon => 'Sắp nhận';
+  String get earningsSoon => 'Chờ chi trả';
 
   @override
   String get earningsReceived => 'Đã nhận';
@@ -4027,6 +4027,38 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get earningsLoadError => 'Không tải được thu nhập';
+
+  @override
+  String get earningsBreakdownReleased => 'Đã chuyển theo mốc';
+
+  @override
+  String get earningsBreakdownAmount => 'Số tiền';
+
+  @override
+  String earningsBreakdownFee(String percent) {
+    return 'Hoa hồng ($percent)';
+  }
+
+  @override
+  String earningsBreakdownTax(String percent) {
+    return 'Thuế khấu trừ ($percent)';
+  }
+
+  @override
+  String get earningsBreakdownNet => 'Thực nhận';
+
+  @override
+  String get earningsBreakdownNetEstimated => 'Thực nhận dự kiến';
+
+  @override
+  String earningsMilestones(int done, int total) {
+    return 'mốc $done/$total';
+  }
+
+  @override
+  String earningsMilestonesAll(int total) {
+    return 'đủ $total mốc';
+  }
 
   @override
   String get payoutAccountTitle => 'Tài khoản nhận tiền';

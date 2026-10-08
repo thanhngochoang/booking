@@ -27,6 +27,9 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
   /// Last rows shown, kept while a bigger page loads so the list never blinks.
   List<EarningItem>? _shown;
 
+  /// Ids of the rows that are open; each row toggles on its own.
+  final Set<String> _expanded = {};
+
   @override
   void initState() {
     super.initState();
@@ -35,11 +38,22 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
 
   void _openAccount() => context.push(_accountRoute);
 
-  void _openItem(EarningItem item) {
-    ref.read(earningsAnalyticsProvider)('earnings_item_open', {
-      'state': item.state.code,
+  /// A tap opens or closes the breakdown of that row (the row no longer links
+  /// to the booking: the mock has no link).
+  void _toggle(EarningItem item) {
+    final opening = !_expanded.contains(item.id);
+    setState(() {
+      if (opening) {
+        _expanded.add(item.id);
+      } else {
+        _expanded.remove(item.id);
+      }
     });
-    context.push('/b/${item.subjectId}');
+    if (opening) {
+      ref.read(earningsAnalyticsProvider)('earnings_item_open', {
+        'state': item.state.code,
+      });
+    }
   }
 
   @override
@@ -158,7 +172,8 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                 data: (_, list) => _Rows(
                   items: list,
                   limit: limit,
-                  onOpen: _openItem,
+                  expanded: _expanded,
+                  onToggle: _toggle,
                   onMore: () => ref.read(earningsLimitProvider.notifier).more(),
                 ),
               ),
@@ -305,13 +320,15 @@ class _Rows extends ConsumerWidget {
   const _Rows({
     required this.items,
     required this.limit,
-    required this.onOpen,
+    required this.expanded,
+    required this.onToggle,
     required this.onMore,
   });
 
   final List<EarningItem> items;
   final int limit;
-  final void Function(EarningItem) onOpen;
+  final Set<String> expanded;
+  final void Function(EarningItem) onToggle;
   final VoidCallback onMore;
 
   @override
@@ -365,7 +382,7 @@ class _Rows extends ConsumerWidget {
     return EarningRow(
       key: ValueKey(item.id),
       title: title,
-      meta: day == null ? item.day : formatDay(day),
+      meta: _meta(l, item, day),
       // Millions truncate to two decimals (never rounded up); below 1M the
       // plain K form (`450K`) is exact for whole-thousand amounts.
       amount: formatMoney(
@@ -377,9 +394,57 @@ class _Rows extends ConsumerWidget {
       badge: _badge(l, item),
       note: reason == null ? null : l.earningsHoldReason(reason),
       noteIcon: reason == null ? null : AppIcons.warning,
-      onTap: item.subjectType == 'booking' ? () => onOpen(item) : null,
+      breakdown: _breakdown(l, item),
+      expanded: expanded.contains(item.id),
+      onTap: () => onToggle(item),
     );
   }
+}
+
+/// "T3 01/10 · đủ 2 mốc": the day, then the milestones when the booking has
+/// them.
+String _meta(AppLocalizations l, EarningItem item, DateTime? day) {
+  final date = day == null ? item.day : formatDay(day);
+  final total = item.milestonesTotal;
+  if (total == null || total <= 0) return date;
+  final done = item.milestonesDone ?? 0;
+  final milestones = done >= total
+      ? l.earningsMilestonesAll(total)
+      : l.earningsMilestones(done, total);
+  return '$date · $milestones';
+}
+
+/// `700` is "7%", `750` is "7,5%".
+String _percent(int bp) => bp % 100 == 0
+    ? '${bp ~/ 100}%'
+    : '${(bp / 100).toStringAsFixed(1).replaceAll('.', ',')}%';
+
+/// The lines under an open row, in the mock's order. A paid row shows the
+/// payout item's own numbers; every other row shows the estimate. The tax line
+/// is absent for a studio (rate 0), the commission line while it is 0.
+List<EarningBreakdownLine> _breakdown(AppLocalizations l, EarningItem item) {
+  final paid = item.state == EarningState.paidOut;
+  return [
+    EarningBreakdownLine(
+      label: paid ? l.earningsBreakdownReleased : l.earningsBreakdownAmount,
+      value: formatMoney(item.amountVnd),
+    ),
+    if (item.feeVnd > 0)
+      EarningBreakdownLine(
+        label: l.earningsBreakdownFee(_percent(item.feeRateBp)),
+        value: formatMoney(item.feeVnd),
+      ),
+    if (item.taxVnd > 0 || item.taxRateBp > 0)
+      EarningBreakdownLine(
+        label: l.earningsBreakdownTax(_percent(item.taxRateBp)),
+        value: formatMoney(item.taxVnd),
+      ),
+    EarningBreakdownLine(
+      label: paid ? l.earningsBreakdownNet : l.earningsBreakdownNetEstimated,
+      value: formatMoney(item.netVnd),
+      strong: true,
+    ),
+  ];
 }
 
 class _MonthHeader extends StatelessWidget {
