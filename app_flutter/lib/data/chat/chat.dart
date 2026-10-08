@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 
 enum ChatKind { inquiry, booking }
 
@@ -151,6 +152,7 @@ class ChatThread {
     this.rescheduleUsed = false,
     this.createdAt,
     this.updatedAt,
+    this.bookingStatus,
   });
 
   final String id;
@@ -167,6 +169,10 @@ class ChatThread {
   final bool rescheduleUsed;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// `BookingStatus` code of [bookingId], mirrored by the server on every
+  /// status change; null for inquiries and chats written before it existed.
+  final String? bookingStatus;
 
   factory ChatThread.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
@@ -194,6 +200,9 @@ class ChatThread {
       rescheduleUsed: data['rescheduleUsed'] as bool? ?? false,
       createdAt: toDate(data['createdAt']),
       updatedAt: toDate(data['updatedAt']),
+      bookingStatus: data['bookingStatus'] is String
+          ? data['bookingStatus'] as String
+          : null,
     );
   }
 
@@ -212,6 +221,7 @@ class ChatThread {
     bool? rescheduleUsed,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? bookingStatus,
   }) {
     return ChatThread(
       id: id ?? this.id,
@@ -230,6 +240,7 @@ class ChatThread {
       rescheduleUsed: rescheduleUsed ?? this.rescheduleUsed,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      bookingStatus: bookingStatus ?? this.bookingStatus,
     );
   }
 
@@ -248,7 +259,8 @@ class ChatThread {
           lastMessagePreview == other.lastMessagePreview &&
           lastSenderId == other.lastSenderId &&
           readOnlyAt == other.readOnlyAt &&
-          rescheduleUsed == other.rescheduleUsed;
+          rescheduleUsed == other.rescheduleUsed &&
+          bookingStatus == other.bookingStatus;
 
   @override
   int get hashCode => Object.hash(
@@ -264,7 +276,27 @@ class ChatThread {
     lastSenderId,
     readOnlyAt,
     rescheduleUsed,
+    bookingStatus,
   );
+}
+
+/// Days of silence after which an inquiry is closed (domain
+/// `INQUIRY_CLOSE_DAYS`). Closed is derived, never stored: any message reopens it.
+const inquiryCloseDays = 14;
+
+extension ChatThreadRules on ChatThread {
+  /// Same rule as the domain's `isInquiryClosed`: an inquiry is closed when
+  /// [now] is at or past `(lastMessageAt ?? createdAt) + inquiryCloseDays`;
+  /// a booking chat never is.
+  bool isClosedInquiryAt(DateTime now) {
+    if (kind != ChatKind.inquiry) return false;
+    final since = lastMessageAt ?? createdAt;
+    if (since == null) return false;
+    return !now.isBefore(since.add(const Duration(days: inquiryCloseDays)));
+  }
+
+  /// [bookingStatus] parsed; null when absent or unknown.
+  BookingStatus? get bookingStatusValue => bookingStatusFromCode(bookingStatus);
 }
 
 @immutable
@@ -324,7 +356,8 @@ class ChatMessage {
       point = (lat: rawPoint.latitude, lng: rawPoint.longitude);
     } else if (rawPoint is Map<String, dynamic>) {
       final lat = (rawPoint['lat'] ?? rawPoint['latitude'] as num?)?.toDouble();
-      final lng = (rawPoint['lng'] ?? rawPoint['longitude'] as num?)?.toDouble();
+      final lng = (rawPoint['lng'] ?? rawPoint['longitude'] as num?)
+          ?.toDouble();
       if (lat != null && lng != null) {
         point = (lat: lat, lng: lng);
       }
@@ -384,10 +417,7 @@ class ChatMessage {
 
 @immutable
 class ChatListItem {
-  const ChatListItem({
-    required this.thread,
-    required this.unreadCount,
-  });
+  const ChatListItem({required this.thread, required this.unreadCount});
 
   final ChatThread thread;
   final int unreadCount;

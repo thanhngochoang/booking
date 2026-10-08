@@ -108,7 +108,12 @@ class ChatController extends Notifier<ChatState> {
     );
 
     try {
-      await _repo.sendImage(chatId, picked, clientId: clientId);
+      final path = await _repo.uploadChatImage(
+        chatId,
+        picked,
+        clientId: clientId,
+      );
+      await _repo.sendImagePath(chatId, path, clientId: clientId);
     } catch (e) {
       _markFailed(clientId);
     } finally {
@@ -207,7 +212,10 @@ class ChatController extends Notifier<ChatState> {
     );
   }
 
-  Future<void> answerReschedule(String messageId, {required bool accept}) async {
+  Future<void> answerReschedule(
+    String messageId, {
+    required bool accept,
+  }) async {
     await _repo.answerReschedule(chatId, messageId, accept: accept);
   }
 
@@ -234,6 +242,4 @@ class ChatController extends Notifier<ChatState> {
 }
 
 final chatControllerProvider = NotifierProvider.autoDispose
-    .family<ChatController, ChatState, String>(
-  ChatController.new,
-);
+    .family<ChatController, ChatState, String>(ChatController.new);

@@ -6,32 +6,34 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
-import 'package:photobooking/data/media/firebase_media_uploader.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
-import 'package:photobooking/data/media/native_image_compressor.dart';
 
 /// The 1-1 chat kinds S07.02 lists (`chats.kind`); event groups (`event_group`) are excluded.
 const oneToOneChatKinds = ['inquiry', 'booking'];
 
 class FirestoreChatRepository implements ChatRepository {
+  /// [currentUid] defaults to the signed-in Firebase user ([auth] or
+  /// `FirebaseAuth.instance`, read lazily), so tests need no FirebaseAuth.
   FirestoreChatRepository({
     FirebaseFirestore? firestore,
     FirebaseFunctions? functions,
     FirebaseAuth? auth,
-    MediaUploader? mediaUploader,
+    String? Function()? currentUid,
+    required this.mediaUploader,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _customFunctions = functions,
-       _auth = auth ?? FirebaseAuth.instance,
-       _mediaUploader =
-           mediaUploader ??
-           FirebaseMediaUploader(compressor: NativeImageCompressor());
+       _currentUid =
+           currentUid ??
+           (() => (auth ?? FirebaseAuth.instance).currentUser?.uid);
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions? _customFunctions;
-  final FirebaseAuth _auth;
-  final MediaUploader _mediaUploader;
+  final String? Function() _currentUid;
+
+  /// Compresses and stores chat photos (`mediaUploaderProvider` in the app).
+  final MediaUploader mediaUploader;
 
   FirebaseFunctions get _functions =>
       _customFunctions ??
@@ -113,52 +115,100 @@ class FirestoreChatRepository implements ChatRepository {
 
   @override
   Stream<List<ChatListItem>> watchMyChats({int limit = 50}) {
-    final uid = _auth.currentUser?.uid;
+    final uid = _currentUid();
     if (uid == null) {
       return Stream.value(const []);
     }
 
-    // Filtered on the server (review I2): a group message must not re-fire every member's inbox
-    // listener, and groups must not take rows of the 50-row page. Index:
-    // chats (members CONTAINS, kind ASC, lastMessageAt DESC).
-    return _firestore
-        .collection('chats')
-        .where('members', arrayContains: uid)
-        .where('kind', whereIn: oneToOneChatKinds)
-        .orderBy('lastMessageAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .asyncMap((snap) async {
-          final items = <ChatListItem>[];
-          for (final doc in snap.docs) {
-            // Event group chats have their own screen (S11.06), never a row here
-            // (kept as a guard behind the server filter).
-            if (doc.data()['kind'] == 'event_group') continue;
-            final thread = ChatThread.fromFirestore(doc);
-            int unread = 0;
-            try {
-              final memberDoc = await _firestore
-                  .collection('chats')
-                  .doc(doc.id)
-                  .collection('members')
-                  .doc(uid)
-                  .get();
-              if (memberDoc.exists) {
-                unread =
-                    (memberDoc.data()?['unreadCount'] as num?)?.toInt() ?? 0;
-              }
-            } catch (_) {}
-            items.add(ChatListItem(thread: thread, unreadCount: unread));
-          }
-          return items;
-        });
-  }
+    // One listener on the chats query plus one per listed chat on
+    // chats/{id}/members/{uid} (the unread count): a new message costs the two
+    // changed documents, and markRead (which only touches the member doc)
+    // still reaches the list. No member doc is ever re-read with a `get`.
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? chatsSub;
+    final memberSubs =
+        <String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>{};
+    final unread = <String, int>{};
+    List<ChatThread>? threads; // null until the first chats snapshot
+    late final StreamController<List<ChatListItem>> out;
 
-  @override
-  Stream<int> watchTotalUnread() {
-    return watchMyChats().map((items) {
-      return items.fold<int>(0, (acc, item) => acc + item.unreadCount);
-    });
+    void emit() {
+      final current = threads;
+      // Wait until every listed chat has its member doc, so a badge never
+      // shows 0 for a moment before its real number.
+      if (current == null ||
+          out.isClosed ||
+          current.any((t) => !unread.containsKey(t.id))) {
+        return;
+      }
+      out.add([
+        for (final t in current)
+          ChatListItem(thread: t, unreadCount: unread[t.id]!),
+      ]);
+    }
+
+    void onChats(QuerySnapshot<Map<String, dynamic>> snap) {
+      final next = <ChatThread>[
+        for (final d in snap.docs)
+          // Event group chats have their own screen (S11.06), never a row here
+          // (kept as a guard behind the server filter).
+          if (d.data()['kind'] != 'event_group') ChatThread.fromFirestore(d),
+      ];
+      // A chat nobody has written in yet (an inquiry opened and left) is not
+      // listed: it would be a blank row for the photographer.
+      next.removeWhere((t) => t.lastMessageAt == null);
+      threads = next;
+      final ids = {for (final t in next) t.id};
+      for (final gone
+          in memberSubs.keys.where((k) => !ids.contains(k)).toList()) {
+        unawaited(memberSubs.remove(gone)!.cancel());
+        unread.remove(gone);
+      }
+      for (final id in ids.where((k) => !memberSubs.containsKey(k))) {
+        memberSubs[id] = _firestore
+            .collection('chats')
+            .doc(id)
+            .collection('members')
+            .doc(uid)
+            .snapshots()
+            .listen(
+              (m) {
+                unread[id] = (m.data()?['unreadCount'] as num?)?.toInt() ?? 0;
+                emit();
+              },
+              // A member doc that cannot be read counts as nothing unread.
+              onError: (Object _) {
+                unread[id] ??= 0;
+                emit();
+              },
+            );
+      }
+      emit();
+    }
+
+    out = StreamController<List<ChatListItem>>(
+      onListen: () {
+        // Filtered on the server (review I2): a group message must not re-fire
+        // every member's inbox listener, and groups must not take rows of the
+        // page. Index: chats (members CONTAINS, kind ASC, lastMessageAt DESC).
+        chatsSub = _firestore
+            .collection('chats')
+            .where('members', arrayContains: uid)
+            .where('kind', whereIn: oneToOneChatKinds)
+            .orderBy('lastMessageAt', descending: true)
+            .limit(limit)
+            .snapshots()
+            .listen(onChats, onError: out.addError);
+      },
+      onCancel: () async {
+        await chatsSub?.cancel();
+        final subs = memberSubs.values.toList();
+        memberSubs.clear();
+        for (final sub in subs) {
+          await sub.cancel();
+        }
+      },
+    );
+    return out.stream;
   }
 
   @override
@@ -199,12 +249,12 @@ class FirestoreChatRepository implements ChatRepository {
   }
 
   @override
-  Future<void> sendImage(
+  Future<String> uploadChatImage(
     String chatId,
     PickedImage image, {
     required String clientId,
   }) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = _currentUid();
     if (uid == null) {
       throw const ChatException(
         ChatErrorCode.permissionDenied,
@@ -213,9 +263,29 @@ class FirestoreChatRepository implements ChatRepository {
     }
     final storagePath = 'chats/$chatId/$uid/$clientId.jpg';
     try {
-      await _mediaUploader
+      await mediaUploader
           .upload(image, storagePath: storagePath, purpose: ImagePurpose.chat)
           .lastWhere((event) => event.isDone);
+    } on FirebaseException catch (e) {
+      throw ChatException(
+        e.code == 'unauthorized'
+            ? ChatErrorCode.permissionDenied
+            : ChatErrorCode.network,
+        e.code,
+      );
+    } catch (e) {
+      throw ChatException(ChatErrorCode.unknown, e.toString());
+    }
+    return storagePath;
+  }
+
+  @override
+  Future<void> sendImagePath(
+    String chatId,
+    String storagePath, {
+    required String clientId,
+  }) async {
+    try {
       await _functions.httpsCallable('sendMessage').call<dynamic>({
         'chatId': chatId,
         'message': {
@@ -251,7 +321,7 @@ class FirestoreChatRepository implements ChatRepository {
 
   @override
   Future<void> markRead(String chatId) async {
-    final uid = _auth.currentUser?.uid;
+    final uid = _currentUid();
     if (uid == null) return;
     try {
       await _firestore

@@ -42,46 +42,49 @@ void main() {
       expect(repo.threads.length, 1);
     });
 
-    test('watchMessages and olderMessages return correct ordering and paging', () async {
-      const chatId = 'chat_pages';
-      final now = DateTime(2026, 10, 3, 10, 0, 0);
-      final msgs = List.generate(
-        10,
-        (i) => ChatMessage(
-          id: 'm_$i',
-          senderId: 'cust1',
-          type: MessageType.text,
-          body: 'Message $i',
-          createdAt: now.add(Duration(minutes: i)),
-        ),
-      );
+    test(
+      'watchMessages and olderMessages return correct ordering and paging',
+      () async {
+        const chatId = 'chat_pages';
+        final now = DateTime(2026, 10, 3, 10, 0, 0);
+        final msgs = List.generate(
+          10,
+          (i) => ChatMessage(
+            id: 'm_$i',
+            senderId: 'cust1',
+            type: MessageType.text,
+            body: 'Message $i',
+            createdAt: now.add(Duration(minutes: i)),
+          ),
+        );
 
-      repo.seedThread(
-        const ChatThread(
-          id: chatId,
-          kind: ChatKind.inquiry,
-          customerId: 'cust1',
-          photographerId: 'photo1',
-        ),
-      );
-      repo.seedMessages(chatId, msgs);
+        repo.seedThread(
+          const ChatThread(
+            id: chatId,
+            kind: ChatKind.inquiry,
+            customerId: 'cust1',
+            photographerId: 'photo1',
+          ),
+        );
+        repo.seedMessages(chatId, msgs);
 
-      final streamList = await repo.watchMessages(chatId, limit: 5).first;
-      expect(streamList.length, 5);
-      expect(streamList.first.id, 'm_5');
-      expect(streamList.last.id, 'm_9');
+        final streamList = await repo.watchMessages(chatId, limit: 5).first;
+        expect(streamList.length, 5);
+        expect(streamList.first.id, 'm_5');
+        expect(streamList.last.id, 'm_9');
 
-      final older = await repo.olderMessages(
-        chatId,
-        before: now.add(const Duration(minutes: 5)),
-        limit: 3,
-      );
-      expect(older.length, 3);
-      expect(older.first.id, 'm_2');
-      expect(older.last.id, 'm_4');
-    });
+        final older = await repo.olderMessages(
+          chatId,
+          before: now.add(const Duration(minutes: 5)),
+          limit: 3,
+        );
+        expect(older.length, 3);
+        expect(older.first.id, 'm_2');
+        expect(older.last.id, 'm_4');
+      },
+    );
 
-    test('sendText, sendImage, sendLocation update messages and thread preview', () async {
+    test('sendText, sendImagePath, sendLocation update messages and thread preview', () async {
       final chatId = await repo.openInquiry('photo1');
 
       await repo.sendText(chatId, 'Hello photographer', clientId: 'txt_1');
@@ -89,15 +92,23 @@ void main() {
       expect(repo.threads[chatId]?.lastMessagePreview, 'Hello photographer');
       expect(repo.threads[chatId]?.lastSenderId, 'cust1');
 
-      const fakeImage = PickedImage(
-        path: '/tmp/test.jpg',
-        name: 'test.jpg',
+      const fakeImage = PickedImage(path: '/tmp/test.jpg', name: 'test.jpg');
+      final path = await repo.uploadChatImage(
+        chatId,
+        fakeImage,
+        clientId: 'img_1',
       );
-      await repo.sendImage(chatId, fakeImage, clientId: 'img_1');
+      expect(path, 'chats/$chatId/cust1/img_1.jpg');
+      expect(repo.messages[chatId]?.length, 1);
+      await repo.sendImagePath(chatId, path, clientId: 'img_1');
       expect(repo.messages[chatId]?.length, 2);
+      expect(repo.messages[chatId]?.last.imagePath, path);
       expect(repo.threads[chatId]?.lastMessagePreview, 'Ảnh');
 
-      await repo.sendLocation(chatId, (lat: 10.7, lng: 106.6), clientId: 'loc_1');
+      await repo.sendLocation(chatId, (
+        lat: 10.7,
+        lng: 106.6,
+      ), clientId: 'loc_1');
       expect(repo.messages[chatId]?.length, 3);
       expect(repo.threads[chatId]?.lastMessagePreview, 'Vị trí');
     });
@@ -108,7 +119,11 @@ void main() {
       expect(repo.messages[chatId]?.length, 1);
 
       // Same clientId resent
-      await repo.sendText(chatId, 'First try again', clientId: 'client_unique_1');
+      await repo.sendText(
+        chatId,
+        'First try again',
+        clientId: 'client_unique_1',
+      );
       expect(repo.messages[chatId]?.length, 1);
       expect(repo.messages[chatId]?.first.body, 'First try');
     });
@@ -197,37 +212,95 @@ void main() {
       );
     });
 
-    test('unread counts and markRead update streams', () async {
-      const thread1 = ChatThread(
+    test('unread counts and markRead update the chat list', () async {
+      final at = DateTime.utc(2026, 10, 5);
+      final thread1 = ChatThread(
         id: 'c1',
         kind: ChatKind.inquiry,
         customerId: 'cust1',
         photographerId: 'p1',
+        lastMessageAt: at,
       );
-      const thread2 = ChatThread(
+      final thread2 = ChatThread(
         id: 'c2',
         kind: ChatKind.inquiry,
         customerId: 'cust1',
         photographerId: 'p2',
+        lastMessageAt: at,
       );
       repo.seedThread(thread1);
       repo.seedThread(thread2);
 
-      final unreadEmissions = <int>[];
-      final unreadSub = repo.watchTotalUnread().listen(unreadEmissions.add);
+      final emissions = <List<ChatListItem>>[];
+      final sub = repo.watchMyChats().listen(emissions.add);
 
       repo.seedUnread('c1', 2);
       repo.seedUnread('c2', 3);
       await pumpEventQueue();
 
-      expect(unreadEmissions.last, 5);
+      int total() => emissions.last.fold(0, (n, i) => n + i.unreadCount);
+      expect(total(), 5);
 
       await repo.markRead('c1');
       await pumpEventQueue();
 
-      expect(unreadEmissions.last, 3);
-      await unreadSub.cancel();
+      expect(total(), 3);
+      await sub.cancel();
     });
+
+    test('chats without lastMessageAt are not listed', () async {
+      await repo.openInquiry('photo1');
+      expect(await repo.watchMyChats().first, isEmpty);
+
+      await repo.sendText('cust1_photo1', 'Chào', clientId: 'm1');
+      expect((await repo.watchMyChats().first).map((i) => i.thread.id), [
+        'cust1_photo1',
+      ]);
+    });
+
+    test(
+      'uploads and image sends are recorded; failNext applies to each',
+      () async {
+        final chatId = await repo.openInquiry('photo1');
+        const image = PickedImage(path: '/tmp/a.jpg', name: 'a.jpg');
+
+        repo.failNext = ChatErrorCode.network;
+        await expectLater(
+          repo.uploadChatImage(chatId, image, clientId: 'i1'),
+          throwsA(isA<ChatException>()),
+        );
+        expect(repo.uploads, isEmpty);
+
+        final path = await repo.uploadChatImage(chatId, image, clientId: 'i1');
+        expect(repo.uploads.single, (
+          chatId: chatId,
+          clientId: 'i1',
+          image: image,
+          path: path,
+        ));
+
+        repo.failNext = ChatErrorCode.notEligible;
+        await expectLater(
+          repo.sendImagePath(chatId, path, clientId: 'i1'),
+          throwsA(
+            isA<ChatException>().having(
+              (e) => e.code,
+              'code',
+              ChatErrorCode.notEligible,
+            ),
+          ),
+        );
+        expect(repo.imageSends, isEmpty);
+
+        await repo.sendImagePath(chatId, path, clientId: 'i1');
+        expect(repo.imageSends.single, (
+          chatId: chatId,
+          path: path,
+          clientId: 'i1',
+        ));
+        expect(repo.uploads, hasLength(1));
+      },
+    );
 
     test('respects online flag and failNext simulation', () async {
       repo.online = false;

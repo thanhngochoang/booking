@@ -15,6 +15,15 @@ enum BookingStatus {
   reviewed,
 }
 
+/// The status for a stored code (`BookingStatus.name`); null when [code] is
+/// missing or unknown.
+BookingStatus? bookingStatusFromCode(String? code) {
+  for (final s in BookingStatus.values) {
+    if (s.name == code) return s;
+  }
+  return null;
+}
+
 extension BookingStatusX on BookingStatus {
   Color get color => switch (this) {
     BookingStatus.draft || BookingStatus.requested => AppColors.bookingWaiting,
