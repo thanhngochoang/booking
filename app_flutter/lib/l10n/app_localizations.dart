@@ -4984,11 +4984,77 @@ abstract class AppLocalizations {
   /// **'Gạch, {n} trên 10'**
   String verdictBadgeBrick(int n);
 
-  /// No description provided for @reviewTextHint.
+  /// No description provided for @reviewTextHintTomato.
   ///
   /// In vi, this message translates to:
-  /// **'Chia sẻ cảm nhận của bạn về buổi chụp...'**
-  String get reviewTextHint;
+  /// **'Điều bạn thích nhất ở buổi chụp'**
+  String get reviewTextHintTomato;
+
+  /// No description provided for @reviewTextHintBrick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kể rõ điều chưa ổn để thợ cải thiện'**
+  String get reviewTextHintBrick;
+
+  /// No description provided for @reviewReasonsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều gì chưa ổn?'**
+  String get reviewReasonsTitle;
+
+  /// No description provided for @reviewReasonsMin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất 1'**
+  String get reviewReasonsMin;
+
+  /// No description provided for @reviewReasonLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến trễ'**
+  String get reviewReasonLate;
+
+  /// No description provided for @reviewReasonNotAsPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh không như mẫu'**
+  String get reviewReasonNotAsPortfolio;
+
+  /// No description provided for @reviewReasonSlowDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao ảnh chậm'**
+  String get reviewReasonSlowDelivery;
+
+  /// No description provided for @reviewReasonAttitude.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thái độ'**
+  String get reviewReasonAttitude;
+
+  /// No description provided for @reviewReasonPriceChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi giá'**
+  String get reviewReasonPriceChanged;
+
+  /// No description provided for @reviewReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get reviewReasonOther;
+
+  /// No description provided for @reviewNeedVerdict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn cà chua hoặc gạch'**
+  String get reviewNeedVerdict;
+
+  /// No description provided for @reviewNeedReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất một lý do'**
+  String get reviewNeedReason;
 
   /// No description provided for @reviewTextTooShort.
   ///
@@ -5043,12 +5109,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Cảm ơn bạn đã đánh giá!'**
   String get reviewThanks;
-
-  /// No description provided for @reviewStarsSemantics.
-  ///
-  /// In vi, this message translates to:
-  /// **'{rating} trên 5 sao'**
-  String reviewStarsSemantics(int rating);
 
   /// No description provided for @reviewUploadFailed.
   ///

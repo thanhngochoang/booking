@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/review/review_repository.dart';
 import 'package:photobooking/features/review/review_controller.dart';
@@ -45,42 +46,150 @@ void main() {
       fakeAuth = FakeAuthRepository(initialUser: const AuthUser(uid: 'c1'));
     });
 
-    test('submit is disabled without stars or with a short text', () async {
+    test('setVerdict(tomato, 3) stores side and hits', () async {
       final container = createContainer();
       await pumpEventQueue();
       final controller = container.read(
         reviewControllerProvider('b1').notifier,
       );
 
-      expect(
-        container.read(reviewControllerProvider('b1')).canSubmitReviewOnly,
-        isFalse,
+      controller.setVerdict(Verdict.tomato, 3);
+      final state = container.read(reviewControllerProvider('b1'));
+      expect(state.verdict, Verdict.tomato);
+      expect(state.hits, 3);
+
+      controller.setVerdict(null, 0);
+      final cleared = container.read(reviewControllerProvider('b1'));
+      expect(cleared.verdict, isNull);
+      expect(cleared.hits, 0);
+    });
+
+    test('reset clears side and hits and keeps text', () async {
+      final container = createContainer();
+      await pumpEventQueue();
+      final controller = container.read(
+        reviewControllerProvider('b1').notifier,
+      );
+      controller.setVerdict(Verdict.tomato, 4);
+      controller.setText('Một nhận xét dài hơn mười ký tự');
+
+      controller.reset();
+
+      final state = container.read(reviewControllerProvider('b1'));
+      expect(state.verdict, isNull);
+      expect(state.hits, 0);
+      expect(state.text, 'Một nhận xét dài hơn mười ký tự');
+    });
+
+    test('toggleReason adds and removes', () async {
+      final container = createContainer();
+      await pumpEventQueue();
+      final controller = container.read(
+        reviewControllerProvider('b1').notifier,
       );
 
-      controller.setRating(5);
-      expect(
-        container.read(reviewControllerProvider('b1')).canSubmitReviewOnly,
-        isFalse,
-      );
+      controller.toggleReason(ReviewReason.late);
+      controller.toggleReason(ReviewReason.attitude);
+      expect(container.read(reviewControllerProvider('b1')).reasons, {
+        ReviewReason.late,
+        ReviewReason.attitude,
+      });
 
+      controller.toggleReason(ReviewReason.late);
+      expect(container.read(reviewControllerProvider('b1')).reasons, {
+        ReviewReason.attitude,
+      });
+    });
+
+    test('missing is verdict, then reason (brick without reasons), then '
+        'text (< 10)', () async {
+      final container = createContainer();
+      await pumpEventQueue();
+      final controller = container.read(
+        reviewControllerProvider('b1').notifier,
+      );
+      ReviewState read() => container.read(reviewControllerProvider('b1'));
+
+      expect(read().missing, ReviewBlock.verdict);
+      expect(read().canSubmitReviewOnly, isFalse);
+
+      controller.setVerdict(Verdict.brick, 2);
+      expect(read().missing, ReviewBlock.reason);
+
+      controller.toggleReason(ReviewReason.late);
+      expect(read().missing, ReviewBlock.text);
       controller.setText('Ngắn'); // 4 chars < 10
-      expect(
-        container.read(reviewControllerProvider('b1')).canSubmitReviewOnly,
-        isFalse,
-      );
+      expect(read().missing, ReviewBlock.text);
+      expect(read().canSubmitReviewOnly, isFalse);
 
       controller.setText('Một nhận xét dài hơn mười ký tự');
-      expect(
-        container.read(reviewControllerProvider('b1')).canSubmitReviewOnly,
-        isTrue,
-      );
+      expect(read().missing, isNull);
+      expect(read().canSubmitReviewOnly, isTrue);
 
-      controller.setRating(0);
-      expect(
-        container.read(reviewControllerProvider('b1')).canSubmitReviewOnly,
-        isFalse,
-      );
+      controller.setVerdict(Verdict.tomato, 1); // reasons not needed
+      controller.toggleReason(ReviewReason.late);
+      expect(read().missing, isNull);
+
+      controller.reset();
+      expect(read().missing, ReviewBlock.verdict);
+      expect(read().canSubmitReviewOnly, isFalse);
     });
+
+    test('brick reasons survive a switch to tomato and back', () async {
+      final container = createContainer();
+      await pumpEventQueue();
+      final controller = container.read(
+        reviewControllerProvider('b1').notifier,
+      );
+      controller.setVerdict(Verdict.brick, 3);
+      controller.toggleReason(ReviewReason.late);
+      controller.toggleReason(ReviewReason.slowDelivery);
+
+      controller.setVerdict(Verdict.tomato, 1);
+      controller.setVerdict(Verdict.brick, 1);
+
+      expect(container.read(reviewControllerProvider('b1')).reasons, {
+        ReviewReason.late,
+        ReviewReason.slowDelivery,
+      });
+    });
+
+    test(
+      'submit sends verdict, hits and reasons; tomato sends no reasons',
+      () async {
+        final container = createContainer();
+        await pumpEventQueue();
+        final controller = container.read(
+          reviewControllerProvider('b1').notifier,
+        );
+        controller.setText('Một nhận xét dài hơn mười ký tự');
+
+        controller.setVerdict(Verdict.brick, 4);
+        controller.toggleReason(ReviewReason.slowDelivery);
+        controller.toggleReason(ReviewReason.late);
+        expect(await controller.submit(share: false), isTrue);
+        var call = fakeReviews.submitCalls.single;
+        expect(call['verdict'], Verdict.brick);
+        expect(call['hits'], 4);
+        expect(call['reasons'], [ReviewReason.late, ReviewReason.slowDelivery]);
+
+        // A second booking-less submit: fresh container, tomato after brick.
+        fakeReviews.reviews.clear();
+        fakeReviews.submitCalls.clear();
+        final other = createContainer();
+        await pumpEventQueue();
+        final c2 = other.read(reviewControllerProvider('b1').notifier);
+        c2.setText('Một nhận xét dài hơn mười ký tự');
+        c2.setVerdict(Verdict.brick, 2);
+        c2.toggleReason(ReviewReason.late);
+        c2.setVerdict(Verdict.tomato, 7);
+        expect(await c2.submit(share: false), isTrue);
+        call = fakeReviews.submitCalls.single;
+        expect(call['verdict'], Verdict.tomato);
+        expect(call['hits'], 7);
+        expect(call['reasons'], isEmpty);
+      },
+    );
 
     test(
       'picking photos uploads each with progress under posts/{uid}/{postId}/',
@@ -125,7 +234,7 @@ void main() {
       final controller = container.read(
         reviewControllerProvider('b1').notifier,
       );
-      controller.setRating(5);
+      controller.setVerdict(Verdict.tomato, 1);
       controller.setText('Dịch vụ rất tốt và chuyên nghiệp');
 
       await controller.pickPhotos();
@@ -146,7 +255,7 @@ void main() {
       final controller = container.read(
         reviewControllerProvider('b1').notifier,
       );
-      controller.setRating(5);
+      controller.setVerdict(Verdict.tomato, 1);
       controller.setText('Nhận xét không gửi kèm ảnh');
 
       await controller.pickPhotos();
@@ -173,7 +282,7 @@ void main() {
       final controller = container.read(
         reviewControllerProvider('b1').notifier,
       );
-      controller.setRating(5);
+      controller.setVerdict(Verdict.tomato, 1);
       controller.setText('Nhận xét không gửi kèm ảnh');
       await controller.pickPhotos();
 
@@ -198,7 +307,7 @@ void main() {
         final controller = container.read(
           reviewControllerProvider('b1').notifier,
         );
-        controller.setRating(5);
+        controller.setVerdict(Verdict.tomato, 1);
         controller.setText('Nhận xét không gửi kèm ảnh');
         await controller.pickPhotos();
 
@@ -236,7 +345,7 @@ void main() {
         final controller = container.read(
           reviewControllerProvider('b1').notifier,
         );
-        controller.setRating(5);
+        controller.setVerdict(Verdict.tomato, 1);
         controller.setText('Nhận xét không gửi kèm ảnh');
         unawaited(controller.pickPhotos());
         while (manual.pending.isEmpty) {
@@ -346,7 +455,7 @@ void main() {
       final controller = container.read(
         reviewControllerProvider('b1').notifier,
       );
-      controller.setRating(5);
+      controller.setVerdict(Verdict.tomato, 1);
       controller.setText('Nhận xét kèm ảnh chia sẻ');
       await controller.pickPhotos();
       expect(await controller.submit(share: true), isTrue);
@@ -367,7 +476,7 @@ void main() {
         final controller = container.read(
           reviewControllerProvider('b1').notifier,
         );
-        controller.setRating(5);
+        controller.setVerdict(Verdict.tomato, 1);
         controller.setText('Nhận xét kèm ảnh chia sẻ');
         await controller.pickPhotos();
 
@@ -387,7 +496,7 @@ void main() {
       final controller = container.read(
         reviewControllerProvider('b1').notifier,
       );
-      controller.setRating(5);
+      controller.setVerdict(Verdict.tomato, 1);
 
       // 5 emoji = 10 UTF-16 units but only 5 characters: too short.
       controller.setText('😀😀😀😀😀');

@@ -229,6 +229,20 @@ void main() {
       );
     });
 
+    test('customer gets review on completed without reviewedAt, viewReview '
+        'once reviewedAt is set', () {
+      final after = endsAt.add(const Duration(days: 2));
+      const on = BookingFeatures(chat: false, reschedule: false, review: true);
+      final open = _b(BookingStatus.completed);
+      expect(detailActions(open, BookingRole.customer, after, on), [
+        DetailAction.review,
+      ]);
+      final done = open.copyWith(reviewedAt: after);
+      expect(detailActions(done, BookingRole.customer, after, on), [
+        DetailAction.viewReview,
+      ]);
+    });
+
     test('message only when chat is on and the booking has a chat', () {
       final withChat = _b(BookingStatus.accepted, chatId: 'chat1');
       final noChat = _b(BookingStatus.accepted);
@@ -382,6 +396,18 @@ void main() {
       );
       expect(steps, hasLength(7));
       expect(states(steps), everyElement(TimelineStepState.done));
+    });
+
+    test('completed with reviewedAt set: step 7 done; without: upcoming', () {
+      final now = DateTime.utc(2026, 10, 14, 3, 0);
+      final open = _b(BookingStatus.completed, completedAt: endsAt);
+      List<TimelineStep> steps(Booking b) =>
+          timelineSteps(b, const [], now, l, photographerName: 'Minh Trí');
+      expect(steps(open).last.state, TimelineStepState.upcoming);
+      expect(
+        steps(open.copyWith(reviewedAt: now)).last.state,
+        TimelineStepState.done,
+      );
     });
 
     test("cancelled after acceptance: steps 1–3 done then a stopped "

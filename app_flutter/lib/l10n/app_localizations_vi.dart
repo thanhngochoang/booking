@@ -2826,7 +2826,40 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get reviewTextHint => 'Chia sẻ cảm nhận của bạn về buổi chụp...';
+  String get reviewTextHintTomato => 'Điều bạn thích nhất ở buổi chụp';
+
+  @override
+  String get reviewTextHintBrick => 'Kể rõ điều chưa ổn để thợ cải thiện';
+
+  @override
+  String get reviewReasonsTitle => 'Điều gì chưa ổn?';
+
+  @override
+  String get reviewReasonsMin => 'Chọn ít nhất 1';
+
+  @override
+  String get reviewReasonLate => 'Đến trễ';
+
+  @override
+  String get reviewReasonNotAsPortfolio => 'Ảnh không như mẫu';
+
+  @override
+  String get reviewReasonSlowDelivery => 'Giao ảnh chậm';
+
+  @override
+  String get reviewReasonAttitude => 'Thái độ';
+
+  @override
+  String get reviewReasonPriceChanged => 'Đổi giá';
+
+  @override
+  String get reviewReasonOther => 'Khác';
+
+  @override
+  String get reviewNeedVerdict => 'Chọn cà chua hoặc gạch';
+
+  @override
+  String get reviewNeedReason => 'Chọn ít nhất một lý do';
 
   @override
   String get reviewTextTooShort => 'Viết ít nhất 10 ký tự';
@@ -2859,11 +2892,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewThanks => 'Cảm ơn bạn đã đánh giá!';
-
-  @override
-  String reviewStarsSemantics(int rating) {
-    return '$rating trên 5 sao';
-  }
 
   @override
   String get reviewUploadFailed => 'Tải ảnh lỗi. Thử lại';

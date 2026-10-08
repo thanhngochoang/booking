@@ -260,6 +260,43 @@ void main() {
     expect(handles.location, '/b/c/review');
   });
 
+  testWidgets('S05.01 Đã xong shows Đánh giá only for a booking that can be '
+      'reviewed', (tester) async {
+    await pumpBookingsTab(
+      tester,
+      now: _now,
+      bookings: _repo([
+        ..._mixed(),
+        _b(
+          'rd',
+          BookingStatus.completed,
+        ).copyWith(reviewedAt: DateTime.utc(2026, 10, 9)),
+      ]),
+      features: const BookingFeatures(
+        chat: false,
+        reschedule: false,
+        review: true,
+      ),
+    );
+    await _settle(tester);
+    await _openTab(tester, 'Đã xong');
+    expect(
+      find.descendant(
+        of: _card('c'),
+        matching: find.widgetWithText(AppButton, 'Đánh giá'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _card('rd'),
+        matching: find.widgetWithText(AppButton, 'Đánh giá'),
+      ),
+      findsNothing,
+    );
+    expect(find.widgetWithText(AppButton, 'Đánh giá'), findsOneWidget);
+  });
+
   testWidgets('tapping a card opens /b/:id', (tester) async {
     final handles = await pumpBookingsTab(
       tester,

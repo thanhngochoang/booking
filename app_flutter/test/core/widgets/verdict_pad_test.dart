@@ -406,6 +406,28 @@ void main() {
       ),
     );
 
+    testWidgets('showHint false drops the tap hint and keeps the rest', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        hostWidget(
+          Builder(
+            builder: (context) => VerdictLevel(
+              kind: VerdictKind.brick,
+              hits: 3,
+              label: 'Chưa ưng',
+              onReset: () {},
+              showHint: false,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Chạm tiếp để tăng mức độ, tối đa 10'), findsNothing);
+      expect(find.text('Chưa ưng'), findsOneWidget);
+      expect(find.text('Làm lại'), findsOneWidget);
+      expect(find.byKey(const Key('verdict-track')), findsOneWidget);
+    });
+
     testWidgets('labels by hits', (tester) async {
       late BuildContext ctx;
       await tester.pumpWidget(

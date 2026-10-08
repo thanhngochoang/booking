@@ -1417,7 +1417,18 @@
   "@verdictBadgeTomato": {"placeholders": {"n": {"type": "int"}}},
   "verdictBadgeBrick": "Gạch, {n} trên 10",
   "@verdictBadgeBrick": {"placeholders": {"n": {"type": "int"}}},
-  "reviewTextHint": "Chia sẻ cảm nhận của bạn về buổi chụp...",
+  "reviewTextHintTomato": "Điều bạn thích nhất ở buổi chụp",
+  "reviewTextHintBrick": "Kể rõ điều chưa ổn để thợ cải thiện",
+  "reviewReasonsTitle": "Điều gì chưa ổn?",
+  "reviewReasonsMin": "Chọn ít nhất 1",
+  "reviewReasonLate": "Đến trễ",
+  "reviewReasonNotAsPortfolio": "Ảnh không như mẫu",
+  "reviewReasonSlowDelivery": "Giao ảnh chậm",
+  "reviewReasonAttitude": "Thái độ",
+  "reviewReasonPriceChanged": "Đổi giá",
+  "reviewReasonOther": "Khác",
+  "reviewNeedVerdict": "Chọn cà chua hoặc gạch",
+  "reviewNeedReason": "Chọn ít nhất một lý do",
   "reviewTextTooShort": "Viết ít nhất 10 ký tự",
   "reviewShare": "Chia sẻ ảnh bạn thích",
   "reviewOptional": "Tuỳ chọn",
@@ -1437,12 +1448,6 @@
   "reviewSubmit": "Gửi đánh giá",
   "reviewNotYet": "Buổi chụp chưa hoàn thành nên chưa đánh giá được.",
   "reviewThanks": "Cảm ơn bạn đã đánh giá!",
-  "reviewStarsSemantics": "{rating} trên 5 sao",
-  "@reviewStarsSemantics": {
-    "placeholders": {
-      "rating": {"type": "int"}
-    }
-  },
   "reviewUploadFailed": "Tải ảnh lỗi. Thử lại",
   "reviewsHeader": "{rating} · {count} đánh giá",
   "@reviewsHeader": {

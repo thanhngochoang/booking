@@ -289,12 +289,16 @@ class VerdictLevel extends StatelessWidget {
     required this.hits,
     required this.label,
     required this.onReset,
+    this.showHint = true,
   });
 
   final VerdictKind kind;
   final int hits;
   final String label;
   final VoidCallback onReset;
+
+  /// The tap hint under the track; the brick frame of S05.05 leaves it out.
+  final bool showHint;
 
   @override
   Widget build(BuildContext context) {
@@ -351,8 +355,10 @@ class VerdictLevel extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 5),
-        Text(l.reviewTapMore, style: TextStyle(fontSize: 10.5, color: muted)),
+        if (showHint) ...[
+          const SizedBox(height: 5),
+          Text(l.reviewTapMore, style: TextStyle(fontSize: 10.5, color: muted)),
+        ],
       ],
     );
   }
