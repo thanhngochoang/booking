@@ -14,10 +14,10 @@ import 'package:photobooking/features/photographer_setup/setup_draft_store.dart'
 import 'package:photobooking/features/photographer_setup/setup_intro_controller.dart';
 import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 
-/// S08.01, setup step 1/4: name, short bio, equipment (years and genres are
-/// step 3, S08.02). Everything typed is kept as a device draft until
+/// S08.01, setup step 1/4: type (Cá nhân / Studio), avatar, name, bio,
+/// equipment (years and genres are step 3, S08.02). Everything typed is kept as a device draft until
 /// "Tiếp tục" saves it. Layout follows the other step screens (S08.05, S08.02) and
-/// mock S08.01 step 2: AppBar "n / 4", progress, h3 + hint, fields, sticky footer.
+/// mock `#S08.01-type`: AppBar "n / 4", progress, type section, fields, sticky footer.
 class SetupIntroScreen extends ConsumerStatefulWidget {
   const SetupIntroScreen({super.key});
 
@@ -273,23 +273,6 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Semantics(
-                          header: true,
-                          child: Text(
-                            l.setupIntroHeading,
-                            style: theme.textTheme.titleLarge,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpace.s2),
-                        Text(
-                          l.setupIntroHint,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: muted,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpace.s4),
-                        const AvatarEditor(),
-                        const SizedBox(height: AppSpace.s4),
                         // Mock `#S08.01-type`: who takes the jobs.
                         Semantics(
                           header: true,
@@ -318,7 +301,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                                 key: const Key('type-individual'),
                                 label: l.setupTypeIndividual,
                                 description: l.setupTypeIndividualBody,
-                                leading: const AppIcon(AppIcons.profile),
+                                icon: AppIcons.profile,
                                 selected: choice == ProviderChoice.individual,
                                 onTap: () {
                                   if (!saving) {
@@ -331,7 +314,7 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                                 key: const Key('type-studio'),
                                 label: l.setupTypeStudio,
                                 description: l.setupTypeStudioBody,
-                                leading: const AppIcon(AppIcons.work),
+                                icon: AppIcons.work,
                                 selected: choice == ProviderChoice.studio,
                                 onTap: () {
                                   if (!saving) {
@@ -356,6 +339,8 @@ class _SetupIntroScreenState extends ConsumerState<SetupIntroScreen> {
                               ),
                             ),
                           ),
+                        const SizedBox(height: AppSpace.s4),
+                        const AvatarEditor(),
                         const SizedBox(height: AppSpace.s4),
                         TextField(
                           key: const Key('setup-name'),

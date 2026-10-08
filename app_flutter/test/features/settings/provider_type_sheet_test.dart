@@ -78,6 +78,12 @@ void main() {
     expect(find.text('Cá nhân · Nhiếp ảnh gia'), findsOneWidget);
   });
 
+  testWidgets("the sheet's tiles use the icon variant", (tester) async {
+    await _open(tester);
+    await _openSheet(tester);
+    expect(find.byKey(const ValueKey('option-icon-tile')), findsNWidgets(2));
+  });
+
   testWidgets('switching opens the address form, flagged as from Settings', (
     tester,
   ) async {
