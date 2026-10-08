@@ -4071,7 +4071,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payoutAccountIntro =>
-      'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.';
+      'Nhập tài khoản đứng tên bạn, tiền sẽ chi tự động vào đây.';
 
   @override
   String get payoutAccountBank => 'Ngân hàng';
@@ -4089,14 +4089,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get payoutAccountNumber => 'Số tài khoản';
 
   @override
-  String get payoutAccountHolder => 'Tên chủ tài khoản';
-
-  @override
   String get payoutAccountSave => 'Lưu tài khoản';
 
   @override
   String get payoutAccountHint =>
-      'Tên chủ tài khoản phải trùng tên bạn đã xác minh. Số tài khoản được mã hoá và chỉ hiện 4 số cuối.';
+      'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ. Số tài khoản được mã hoá, chỉ hiện 4 số cuối.';
 
   @override
   String payoutAccountMasked(String last4) {
@@ -4110,36 +4107,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get payoutAccountNumberError => 'Số tài khoản gồm 6–20 chữ số';
 
   @override
-  String get payoutAccountHolderError =>
-      'Nhập họ tên viết hoa không dấu, 2–50 chữ cái';
-
-  @override
-  String get payoutAccountChangeTitle => 'Đổi tài khoản nhận tiền?';
-
-  @override
-  String get payoutAccountChangeBody =>
-      'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.';
-
-  @override
-  String get payoutAccountChangeConfirm => 'Đổi tài khoản';
-
-  @override
-  String get payoutAccountReauthTitle => 'Xác nhận lại để đổi tài khoản';
-
-  @override
-  String get payoutAccountReauthBody =>
-      'Vì an toàn, hãy đăng nhập lại trước khi đổi tài khoản nhận tiền.';
-
-  @override
-  String get payoutAccountReauthPassword => 'Mật khẩu';
-
-  @override
-  String get payoutAccountReauthGo => 'Xác nhận';
-
-  @override
-  String get payoutAccountReauthWrong => 'Mật khẩu chưa đúng';
-
-  @override
   String get payoutAccountSaved => 'Đã lưu tài khoản nhận tiền';
 
   @override
@@ -4148,6 +4115,139 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get payoutAccountBusy =>
       'Đang chuyển một lô tiền, thử lại sau ít phút';
+
+  @override
+  String payoutAccountIntroChange(String bank, String last4) {
+    return 'Đang dùng $bank •••• $last4. Nhập tài khoản mới đứng tên bạn, tiền sẽ chi tự động vào đây.';
+  }
+
+  @override
+  String get payoutAccountChangeNote =>
+      'Đổi tài khoản cần OTP và có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi. Tài khoản cũ sẽ nhận thông báo.';
+
+  @override
+  String get payoutAccountSameAccount => 'Đây đã là tài khoản đang dùng';
+
+  @override
+  String get payoutLookupLoading => 'Đang tra tên chủ tài khoản…';
+
+  @override
+  String get payoutLookupMatched => 'Khớp tên đã xác minh';
+
+  @override
+  String get payoutLookupMismatch => 'Không khớp';
+
+  @override
+  String payoutLookupMismatchTitle(String name) {
+    return 'Tên chủ tài khoản không khớp tên đã xác minh ($name)';
+  }
+
+  @override
+  String get payoutLookupMismatchBody =>
+      'Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và số tài khoản.';
+
+  @override
+  String get payoutLookupReview => 'Ngân hàng chưa hỗ trợ tra tên';
+
+  @override
+  String get payoutLookupReviewSub => 'Staff đối chiếu tên trước lần chi đầu';
+
+  @override
+  String get payoutLookupNotFound =>
+      'Không tìm thấy tài khoản. Kiểm tra lại số tài khoản.';
+
+  @override
+  String get payoutLookupUnverifiable =>
+      'Cần xác minh danh tính trước khi thêm tài khoản ở ngân hàng này';
+
+  @override
+  String get payoutLookupLimit =>
+      'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get payoutLookupError => 'Không tra được tên. Thử lại';
+
+  @override
+  String get payoutOtpTitle => 'Nhập mã xác nhận';
+
+  @override
+  String payoutOtpBody(String last4) {
+    return 'Mã 6 số đã gửi tới số điện thoại •••• $last4. Mã có hiệu lực 5 phút.';
+  }
+
+  @override
+  String get payoutOtpField => 'Mã OTP';
+
+  @override
+  String get payoutOtpConfirm => 'Xác nhận đổi tài khoản';
+
+  @override
+  String get payoutOtpResend => 'Gửi lại mã';
+
+  @override
+  String payoutOtpResendIn(int seconds) {
+    return 'Gửi lại sau $seconds giây';
+  }
+
+  @override
+  String get payoutOtpNote =>
+      'Tài khoản mới có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi.';
+
+  @override
+  String get payoutOtpWrong => 'Mã chưa đúng. Kiểm tra lại tin nhắn';
+
+  @override
+  String get payoutOtpExpired => 'Mã đã hết hạn. Gửi lại mã mới';
+
+  @override
+  String get payoutOtpTooMany =>
+      'Bạn đã nhập sai quá nhiều lần. Gửi lại mã mới';
+
+  @override
+  String get payoutOtpLimit =>
+      'Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get payoutPhoneRequired => 'Cần số điện thoại trong hồ sơ để nhận mã';
+
+  @override
+  String get payoutOtpUnavailable =>
+      'Chưa đổi được tài khoản lúc này. Liên hệ hỗ trợ';
+
+  @override
+  String payoutAccountPendingTitle(String time) {
+    return 'Tài khoản mới có hiệu lực lúc $time';
+  }
+
+  @override
+  String get payoutAccountPendingBody =>
+      'Trong lúc chờ, tạm dừng chi. Lần chi đầu vào tài khoản mới do staff duyệt.';
+
+  @override
+  String get payoutAccountPendingBadge => 'Chờ hiệu lực';
+
+  @override
+  String get payoutAccountReviewNote =>
+      'Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu.';
+
+  @override
+  String get payoutAccountChangeSaved =>
+      'Đã đổi tài khoản. Có hiệu lực sau 72 giờ';
+
+  @override
+  String get reauthTitle => 'Xác nhận lại để tiếp tục';
+
+  @override
+  String get reauthBody => 'Vì an toàn, hãy đăng nhập lại trước khi tiếp tục.';
+
+  @override
+  String get reauthPassword => 'Mật khẩu';
+
+  @override
+  String get reauthGo => 'Xác nhận';
+
+  @override
+  String get reauthWrong => 'Mật khẩu chưa đúng';
 
   @override
   String get eventHostPlatform => 'Do ứng dụng tổ chức';

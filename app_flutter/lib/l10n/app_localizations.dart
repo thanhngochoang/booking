@@ -7123,7 +7123,7 @@ abstract class AppLocalizations {
   /// No description provided for @payoutAccountIntro.
   ///
   /// In vi, this message translates to:
-  /// **'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.'**
+  /// **'Nhập tài khoản đứng tên bạn, tiền sẽ chi tự động vào đây.'**
   String get payoutAccountIntro;
 
   /// No description provided for @payoutAccountBank.
@@ -7156,12 +7156,6 @@ abstract class AppLocalizations {
   /// **'Số tài khoản'**
   String get payoutAccountNumber;
 
-  /// No description provided for @payoutAccountHolder.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tên chủ tài khoản'**
-  String get payoutAccountHolder;
-
   /// No description provided for @payoutAccountSave.
   ///
   /// In vi, this message translates to:
@@ -7171,7 +7165,7 @@ abstract class AppLocalizations {
   /// No description provided for @payoutAccountHint.
   ///
   /// In vi, this message translates to:
-  /// **'Tên chủ tài khoản phải trùng tên bạn đã xác minh. Số tài khoản được mã hoá và chỉ hiện 4 số cuối.'**
+  /// **'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ. Số tài khoản được mã hoá, chỉ hiện 4 số cuối.'**
   String get payoutAccountHint;
 
   /// No description provided for @payoutAccountMasked.
@@ -7192,60 +7186,6 @@ abstract class AppLocalizations {
   /// **'Số tài khoản gồm 6–20 chữ số'**
   String get payoutAccountNumberError;
 
-  /// No description provided for @payoutAccountHolderError.
-  ///
-  /// In vi, this message translates to:
-  /// **'Nhập họ tên viết hoa không dấu, 2–50 chữ cái'**
-  String get payoutAccountHolderError;
-
-  /// No description provided for @payoutAccountChangeTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đổi tài khoản nhận tiền?'**
-  String get payoutAccountChangeTitle;
-
-  /// No description provided for @payoutAccountChangeBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.'**
-  String get payoutAccountChangeBody;
-
-  /// No description provided for @payoutAccountChangeConfirm.
-  ///
-  /// In vi, this message translates to:
-  /// **'Đổi tài khoản'**
-  String get payoutAccountChangeConfirm;
-
-  /// No description provided for @payoutAccountReauthTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Xác nhận lại để đổi tài khoản'**
-  String get payoutAccountReauthTitle;
-
-  /// No description provided for @payoutAccountReauthBody.
-  ///
-  /// In vi, this message translates to:
-  /// **'Vì an toàn, hãy đăng nhập lại trước khi đổi tài khoản nhận tiền.'**
-  String get payoutAccountReauthBody;
-
-  /// No description provided for @payoutAccountReauthPassword.
-  ///
-  /// In vi, this message translates to:
-  /// **'Mật khẩu'**
-  String get payoutAccountReauthPassword;
-
-  /// No description provided for @payoutAccountReauthGo.
-  ///
-  /// In vi, this message translates to:
-  /// **'Xác nhận'**
-  String get payoutAccountReauthGo;
-
-  /// No description provided for @payoutAccountReauthWrong.
-  ///
-  /// In vi, this message translates to:
-  /// **'Mật khẩu chưa đúng'**
-  String get payoutAccountReauthWrong;
-
   /// No description provided for @payoutAccountSaved.
   ///
   /// In vi, this message translates to:
@@ -7263,6 +7203,228 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đang chuyển một lô tiền, thử lại sau ít phút'**
   String get payoutAccountBusy;
+
+  /// No description provided for @payoutAccountIntroChange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang dùng {bank} •••• {last4}. Nhập tài khoản mới đứng tên bạn, tiền sẽ chi tự động vào đây.'**
+  String payoutAccountIntroChange(String bank, String last4);
+
+  /// No description provided for @payoutAccountChangeNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi tài khoản cần OTP và có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi. Tài khoản cũ sẽ nhận thông báo.'**
+  String get payoutAccountChangeNote;
+
+  /// No description provided for @payoutAccountSameAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đây đã là tài khoản đang dùng'**
+  String get payoutAccountSameAccount;
+
+  /// No description provided for @payoutLookupLoading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tra tên chủ tài khoản…'**
+  String get payoutLookupLoading;
+
+  /// No description provided for @payoutLookupMatched.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khớp tên đã xác minh'**
+  String get payoutLookupMatched;
+
+  /// No description provided for @payoutLookupMismatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không khớp'**
+  String get payoutLookupMismatch;
+
+  /// No description provided for @payoutLookupMismatchTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên chủ tài khoản không khớp tên đã xác minh ({name})'**
+  String payoutLookupMismatchTitle(String name);
+
+  /// No description provided for @payoutLookupMismatchBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và số tài khoản.'**
+  String get payoutLookupMismatchBody;
+
+  /// No description provided for @payoutLookupReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng chưa hỗ trợ tra tên'**
+  String get payoutLookupReview;
+
+  /// No description provided for @payoutLookupReviewSub.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff đối chiếu tên trước lần chi đầu'**
+  String get payoutLookupReviewSub;
+
+  /// No description provided for @payoutLookupNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy tài khoản. Kiểm tra lại số tài khoản.'**
+  String get payoutLookupNotFound;
+
+  /// No description provided for @payoutLookupUnverifiable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần xác minh danh tính trước khi thêm tài khoản ở ngân hàng này'**
+  String get payoutLookupUnverifiable;
+
+  /// No description provided for @payoutLookupLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.'**
+  String get payoutLookupLimit;
+
+  /// No description provided for @payoutLookupError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tra được tên. Thử lại'**
+  String get payoutLookupError;
+
+  /// No description provided for @payoutOtpTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã xác nhận'**
+  String get payoutOtpTitle;
+
+  /// No description provided for @payoutOtpBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã 6 số đã gửi tới số điện thoại •••• {last4}. Mã có hiệu lực 5 phút.'**
+  String payoutOtpBody(String last4);
+
+  /// No description provided for @payoutOtpField.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã OTP'**
+  String get payoutOtpField;
+
+  /// No description provided for @payoutOtpConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đổi tài khoản'**
+  String get payoutOtpConfirm;
+
+  /// No description provided for @payoutOtpResend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã'**
+  String get payoutOtpResend;
+
+  /// No description provided for @payoutOtpResendIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại sau {seconds} giây'**
+  String payoutOtpResendIn(int seconds);
+
+  /// No description provided for @payoutOtpNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản mới có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi.'**
+  String get payoutOtpNote;
+
+  /// No description provided for @payoutOtpWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã chưa đúng. Kiểm tra lại tin nhắn'**
+  String get payoutOtpWrong;
+
+  /// No description provided for @payoutOtpExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã đã hết hạn. Gửi lại mã mới'**
+  String get payoutOtpExpired;
+
+  /// No description provided for @payoutOtpTooMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã nhập sai quá nhiều lần. Gửi lại mã mới'**
+  String get payoutOtpTooMany;
+
+  /// No description provided for @payoutOtpLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.'**
+  String get payoutOtpLimit;
+
+  /// No description provided for @payoutPhoneRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần số điện thoại trong hồ sơ để nhận mã'**
+  String get payoutPhoneRequired;
+
+  /// No description provided for @payoutOtpUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đổi được tài khoản lúc này. Liên hệ hỗ trợ'**
+  String get payoutOtpUnavailable;
+
+  /// No description provided for @payoutAccountPendingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản mới có hiệu lực lúc {time}'**
+  String payoutAccountPendingTitle(String time);
+
+  /// No description provided for @payoutAccountPendingBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong lúc chờ, tạm dừng chi. Lần chi đầu vào tài khoản mới do staff duyệt.'**
+  String get payoutAccountPendingBody;
+
+  /// No description provided for @payoutAccountPendingBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ hiệu lực'**
+  String get payoutAccountPendingBadge;
+
+  /// No description provided for @payoutAccountReviewNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu.'**
+  String get payoutAccountReviewNote;
+
+  /// No description provided for @payoutAccountChangeSaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đổi tài khoản. Có hiệu lực sau 72 giờ'**
+  String get payoutAccountChangeSaved;
+
+  /// No description provided for @reauthTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận lại để tiếp tục'**
+  String get reauthTitle;
+
+  /// No description provided for @reauthBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vì an toàn, hãy đăng nhập lại trước khi tiếp tục.'**
+  String get reauthBody;
+
+  /// No description provided for @reauthPassword.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mật khẩu'**
+  String get reauthPassword;
+
+  /// No description provided for @reauthGo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get reauthGo;
+
+  /// No description provided for @reauthWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mật khẩu chưa đúng'**
+  String get reauthWrong;
 
   /// No description provided for @eventHostPlatform.
   ///

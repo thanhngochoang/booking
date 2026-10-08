@@ -33,18 +33,25 @@ class GatedAuthRepository extends FakeAuthRepository {
 /// A signed-in photographer with in-memory earnings, a recording analytics
 /// hook and S06.05 mounted at `/work/earnings`; other routes are stubs.
 class EarningsWorld {
-  EarningsWorld({ReauthMethod? reauthMethod, bool cancelSocial = false})
-    : auth = GatedAuthRepository(
-        initialReauthMethod: reauthMethod,
-        cancelSocial: cancelSocial,
-      );
+  EarningsWorld({
+    ReauthMethod? reauthMethod,
+    bool cancelSocial = false,
+    DateTime? now,
+  }) : now = now ?? earningsNow,
+       auth = GatedAuthRepository(
+         initialReauthMethod: reauthMethod,
+         cancelSocial: cancelSocial,
+       );
+
+  /// The clock of the repository and of `clockProvider`; tests may move it.
+  DateTime now;
 
   /// The signed-in user's password (email accounts).
   static const password = 'password1';
 
   late String uid;
   final GatedAuthRepository auth;
-  final repo = FakeEarningsRepository(clock: () => earningsNow);
+  late final repo = FakeEarningsRepository(clock: () => now);
 
   /// Registers the signed-in photographer; call before [app].
   Future<void> init() async {
@@ -107,8 +114,8 @@ class EarningsWorld {
     bankCode: bank,
     accountLast4: last4,
     holderName: holder,
-    updatedAt: updatedAt ?? earningsNow,
-    activeFrom: activeFrom ?? updatedAt ?? earningsNow,
+    updatedAt: updatedAt ?? now,
+    activeFrom: activeFrom ?? updatedAt ?? now,
     nameStatus: nameStatus,
   );
 
@@ -116,7 +123,7 @@ class EarningsWorld {
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     authRepositoryProvider.overrideWithValue(auth),
     earningsRepositoryProvider.overrideWithValue(repo),
-    clockProvider.overrideWithValue(() => earningsNow),
+    clockProvider.overrideWithValue(() => now),
     earningsAnalyticsProvider.overrideWithValue(
       (name, params) => events.add((name, params)),
     ),

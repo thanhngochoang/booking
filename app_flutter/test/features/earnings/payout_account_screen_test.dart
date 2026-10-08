@@ -1,20 +1,19 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/app/router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
-import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/earnings/earnings.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/earnings/payout_account_screen.dart';
 
 import '../../support/earnings_world.dart';
 import '../../support/photographer_world.dart' show PhotographerWorld;
 
-/// The Lưu button's ring spins while a save waits (re-authentication), so
-/// pumpAndSettle would never return: pump a bounded second instead.
+/// The Lưu button's ring spins while a save waits, and the lookup waits
+/// 800 ms after typing, so pumpAndSettle would never return: pump a bounded
+/// 1.2 seconds instead.
 Future<void> _settle(WidgetTester tester) async {
   for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 100));
@@ -23,17 +22,20 @@ Future<void> _settle(WidgetTester tester) async {
 
 Finder _key(String k) => find.byKey(Key(k));
 
+/// 10/10/2026 10:15 in Vietnam: a change made now is active 13/10 10:15.
+final _changeNow = DateTime.utc(2026, 10, 10, 3, 15);
+
 Future<EarningsWorld> _open(
   WidgetTester tester, {
   EarningsWorld? world,
-  bool account = false,
+  PayoutAccountView? Function(EarningsWorld w)? account,
   double width = 390,
   double textScale = 1.0,
 }) async {
   usePhone(tester, width: width, height: 900);
   final w = world ?? EarningsWorld();
   await w.init();
-  w.repo.setAccount(account ? w.account() : null);
+  w.repo.setAccount(account?.call(w));
   await tester.pumpWidget(
     w.app(
       location: '/work/earnings/account',
@@ -55,360 +57,531 @@ Future<void> _pickBank(WidgetTester tester, String code) async {
   await _settle(tester);
 }
 
-Future<void> _fill(
-  WidgetTester tester, {
-  String number = '01234567890',
-  String holder = 'nguyễn minh trí',
-}) async {
+/// Types the number and waits past the 800 ms lookup delay.
+Future<void> _type(WidgetTester tester, String number) async {
   await tester.enterText(_key('payout-number'), number);
-  await tester.enterText(_key('payout-holder'), holder);
-  await _settle(tester);
-}
-
-Future<void> _confirmChange(WidgetTester tester) async {
-  expect(find.text('Đổi tài khoản nhận tiền?'), findsOneWidget);
-  await tester.tap(
-    find.descendant(
-      of: _key('app-sheet'),
-      matching: find.widgetWithText(AppButton, 'Đổi tài khoản'),
-    ),
-  );
   await _settle(tester);
 }
 
 String _fieldText(WidgetTester tester, String key) =>
     tester.widget<TextField>(_key(key)).controller!.text;
 
+Future<void> _startChange(WidgetTester tester) async {
+  await tester.tap(_key('payout-change'));
+  await _settle(tester);
+}
+
+/// No full account number on screen (only masked text is asserted).
+void _expectNoFullNumber(List<String> numbers) {
+  for (final n in numbers) {
+    final shown = find.byWidgetPredicate(
+      (w) =>
+          w is Text &&
+          (w.data ?? w.textSpan?.toPlainText() ?? '')
+              .replaceAll(' ', '')
+              .contains(n),
+    );
+    expect(
+      shown.evaluate().isEmpty,
+      isTrue,
+      reason: 'a full account number is visible (masked)',
+    );
+  }
+}
+
 void main() {
-  testWidgets('save stays disabled until bank, number and holder are valid', (
-    tester,
-  ) async {
-    await _open(tester);
-    expect(
-      find.text(
-        'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.',
-      ),
-      findsOneWidget,
-    );
-    expect(_saveEnabled(tester), isFalse);
-    await _pickBank(tester, 'VCB');
-    expect(find.text('Vietcombank'), findsOneWidget);
-    expect(_saveEnabled(tester), isFalse);
-    await tester.enterText(_key('payout-number'), '12345');
-    await tester.enterText(_key('payout-holder'), 'tri');
-    await _settle(tester);
-    expect(_saveEnabled(tester), isFalse, reason: 'number too short');
-    await tester.enterText(_key('payout-number'), '123456');
-    await _settle(tester);
-    expect(_saveEnabled(tester), isTrue);
-  });
-
-  testWidgets('the number groups by four and the holder is upper-case', (
-    tester,
-  ) async {
-    await _open(tester);
-    await _fill(tester);
-    expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
-    expect(_fieldText(tester, 'payout-holder'), 'NGUYEN MINH TRI');
-    final style = tester.widget<TextField>(_key('payout-number')).style!;
-    expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
-  });
-
-  testWidgets('a short number shows the error under its field', (tester) async {
-    await _open(tester);
-    await tester.enterText(_key('payout-number'), '123');
-    await _settle(tester);
-    expect(find.text('Số tài khoản gồm 6–20 chữ số'), findsNothing);
-    // Leaving the field.
-    await tester.tap(_key('payout-holder'));
-    await _settle(tester);
-    expect(find.text('Số tài khoản gồm 6–20 chữ số'), findsOneWidget);
-    await tester.enterText(_key('payout-holder'), 'a');
-    await tester.tap(_key('payout-number'));
-    await _settle(tester);
-    expect(
-      find.text('Nhập họ tên viết hoa không dấu, 2–50 chữ cái'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('first save sends normalised values and shows the masked view', (
-    tester,
-  ) async {
-    final w = await _open(tester);
-    await _pickBank(tester, 'VCB');
-    await _fill(tester);
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    expect(w.repo.saves, ['VCB:7890']);
-    expect(find.text('Đã lưu tài khoản nhận tiền'), findsOneWidget);
-    expect(_key('payout-masked'), findsOneWidget);
-    expect(find.text('•••• 7890'), findsOneWidget);
-    expect(find.text('Đổi tài khoản'), findsOneWidget);
-    expect(find.textContaining('0123'), findsNothing);
-    expect(find.textContaining('1234567'), findsNothing);
-    expect(_key('payout-save'), findsNothing);
-  });
-
-  testWidgets('an existing account shows •••• and Đổi tài khoản, never the '
-      'full number', (tester) async {
-    await _open(tester, account: true);
-    expect(find.text('Vietcombank'), findsOneWidget);
-    expect(find.text('•••• 3456'), findsOneWidget);
-    expect(find.text('NGUYEN MINH TRI'), findsOneWidget);
-    expect(find.text('Đổi tài khoản'), findsOneWidget);
-    expect(_key('payout-save'), findsNothing);
-    expect(find.byType(TextField), findsNothing);
-    expect(find.byType(AppButton), findsOneWidget, reason: 'one button only');
-  });
-
-  testWidgets('Đổi tài khoản opens the empty form with the bank kept', (
-    tester,
-  ) async {
-    await _open(tester, account: true);
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    expect(_fieldText(tester, 'payout-bank'), 'Vietcombank');
-    expect(_fieldText(tester, 'payout-number'), isEmpty);
-    expect(_fieldText(tester, 'payout-holder'), isEmpty);
-    expect(_saveEnabled(tester), isFalse);
-    await tester.tap(_key('payout-cancel-change'));
-    await _settle(tester);
-    expect(find.text('•••• 3456'), findsOneWidget);
-  });
-
-  testWidgets('a change asks to confirm first', (tester) async {
-    final w = await _open(tester, account: true);
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    expect(find.text('Đổi tài khoản nhận tiền?'), findsOneWidget);
-    expect(
-      find.text(
-        'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.',
-      ),
-      findsOneWidget,
-    );
-    expect(w.repo.saves, isEmpty, reason: 'nothing sent before confirming');
-    await _confirmChange(tester);
-    expect(w.repo.saves, ['VCB:3210']);
-    expect(find.text('•••• 3210'), findsOneWidget);
-  });
-
-  testWidgets('keeping the old account sends nothing', (tester) async {
-    final w = await _open(tester, account: true);
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    await tester.tap(find.widgetWithText(AppButton, 'Huỷ').last);
-    await _settle(tester);
-    expect(w.repo.saves, isEmpty);
-    expect(_fieldText(tester, 'payout-number'), '9876 5432 10');
-  });
-
-  testWidgets('reauth_required re-authenticates and retries once', (
-    tester,
-  ) async {
-    final w = await _open(tester, account: true);
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    w.repo.failNextSave('reauth_required');
-    await _confirmChange(tester);
-    expect(find.text('Xác nhận lại để đổi tài khoản'), findsOneWidget);
-    expect(w.repo.saves, isEmpty);
-    await tester.enterText(_key('reauth-password'), EarningsWorld.password);
-    await tester.tap(_key('reauth-go'));
-    await _settle(tester);
-    expect(w.auth.reauthentications, 1);
-    expect(w.repo.saves, ['VCB:3210']);
-    expect(find.text('Đã lưu tài khoản nhận tiền'), findsOneWidget);
-  });
-
-  testWidgets('a Google user re-authenticates with the button only', (
-    tester,
-  ) async {
-    final w = await _open(
+  group('first account', () {
+    testWidgets('matched lookup shows the name and "Khớp tên đã xác minh"', (
       tester,
-      world: EarningsWorld(reauthMethod: ReauthMethod.google),
-      account: true,
-    );
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    w.repo.failNextSave('reauth_required');
-    await _confirmChange(tester);
-    expect(_key('reauth-password'), findsNothing);
-    await tester.tap(_key('reauth-go'));
-    await _settle(tester);
-    expect(w.auth.reauthentications, 1);
-    expect(w.repo.saves, ['VCB:3210']);
-  });
+    ) async {
+      final w = await _open(tester);
+      expect(
+        find.text('Nhập tài khoản đứng tên bạn, tiền sẽ chi tự động vào đây.'),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isFalse);
+      await _pickBank(tester, 'VCB');
+      expect(find.text('Vietcombank'), findsOneWidget);
+      expect(find.text('Ngân hàng TMCP Ngoại thương Việt Nam'), findsOneWidget);
+      await _type(tester, '01234567890');
+      expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
+      expect(w.repo.lookupCalls, ['VCB:7890']);
+      expect(find.text('NGUYEN MINH TRI'), findsOneWidget);
+      expect(find.text('Khớp tên đã xác minh'), findsOneWidget);
+      expect(
+        find.text(
+          'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ. Số tài '
+          'khoản được mã hoá, chỉ hiện 4 số cuối.',
+        ),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isTrue);
+      final style = tester.widget<TextField>(_key('payout-number')).style!;
+      expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
+    });
 
-  testWidgets('a cancelled re-authentication keeps the input', (tester) async {
-    final w = await _open(tester, account: true);
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    w.repo.failNextSave('reauth_required');
-    await _confirmChange(tester);
-    // Close the re-authentication sheet by tapping the barrier.
-    await tester.tapAt(const Offset(195, 20));
-    await _settle(tester);
-    expect(find.text('Xác nhận lại để đổi tài khoản'), findsNothing);
-    expect(w.repo.saves, isEmpty);
-    expect(_fieldText(tester, 'payout-number'), '9876 5432 10');
-    expect(_fieldText(tester, 'payout-holder'), 'LE VAN A');
-    expect(find.text('Đã lưu tài khoản nhận tiền'), findsNothing);
-    expect(_saveEnabled(tester), isTrue);
-  });
+    testWidgets('no holder name field exists', (tester) async {
+      await _open(tester);
+      expect(_key('payout-holder'), findsNothing);
+      expect(find.byType(TextField), findsOneWidget, reason: 'number only');
+      expect(find.text('Tên chủ tài khoản'), findsNothing);
+    });
 
-  testWidgets('the re-authentication sheet stays while it is signing in', (
-    tester,
-  ) async {
-    final w = await _open(
+    testWidgets('mismatch shows the two names, the warning text and a '
+        'disabled "Lưu tài khoản"', (tester) async {
+      final w = EarningsWorld();
+      w.repo.nextLookup['VCB:0987654321'] = const PayoutNameLookup(
+        decision: PayoutNameDecision.mismatch,
+        holderName: 'TRAN VAN B',
+        verifiedName: 'NGUYEN MINH TRI',
+      );
+      await _open(tester, world: w);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '0987654321');
+      expect(find.text('TRAN VAN B'), findsOneWidget);
+      expect(find.text('Không khớp'), findsOneWidget);
+      expect(
+        find.text(
+          'Tên chủ tài khoản không khớp tên đã xác minh (NGUYEN MINH TRI)',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và '
+          'số tài khoản.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Lưu tài khoản'), findsOneWidget);
+      expect(_saveEnabled(tester), isFalse);
+      final field = tester.widget<TextField>(_key('payout-number'));
+      expect(field.decoration?.error, isNotNull, reason: 'red border');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(w.repo.saves, isEmpty);
+    });
+
+    testWidgets('review shows "Ngân hàng chưa hỗ trợ tra tên" and enables '
+        'save', (tester) async {
+      final w = EarningsWorld();
+      w.repo.nextLookup['TCB:190355669999'] = const PayoutNameLookup(
+        decision: PayoutNameDecision.review,
+        verifiedName: 'NGUYEN MINH TRI',
+      );
+      await _open(tester, world: w);
+      await _pickBank(tester, 'TCB');
+      await _type(tester, '190355669999');
+      expect(find.text('Ngân hàng chưa hỗ trợ tra tên'), findsOneWidget);
+      expect(
+        find.text('Staff đối chiếu tên trước lần chi đầu'),
+        findsOneWidget,
+      );
+      expect(_saveEnabled(tester), isTrue);
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(w.repo.saves, ['TCB:9999']);
+      expect(
+        find.text('Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu.'),
+        findsOneWidget,
+      );
+    });
+
+    for (final (name, setUp, text)
+        in <(String, void Function(EarningsWorld), String)>[
+          (
+            'not_found',
+            (w) => w.repo.defaultLookup = const PayoutNameLookup(
+              decision: PayoutNameDecision.notFound,
+            ),
+            'Không tìm thấy tài khoản. Kiểm tra lại số tài khoản.',
+          ),
+          (
+            'unverifiable',
+            (w) => w.repo.defaultLookup = const PayoutNameLookup(
+              decision: PayoutNameDecision.unverifiable,
+            ),
+            'Cần xác minh danh tính trước khi thêm tài khoản ở ngân hàng này',
+          ),
+          (
+            'limit',
+            (w) => w.repo.failNextLookup('limit_exceeded'),
+            'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.',
+          ),
+          (
+            'network',
+            (w) => w.repo.failNextLookup('network'),
+            'Không tra được tên. Thử lại',
+          ),
+        ]) {
+      testWidgets('$name shows its text and disables save', (tester) async {
+        final w = EarningsWorld();
+        setUp(w);
+        await _open(tester, world: w);
+        await _pickBank(tester, 'VCB');
+        await _type(tester, '01234567890');
+        expect(find.text(text), findsOneWidget);
+        expect(_saveEnabled(tester), isFalse);
+      });
+    }
+
+    testWidgets('a failed lookup retries on tap', (tester) async {
+      final w = EarningsWorld();
+      w.repo.failNextLookup('network');
+      await _open(tester, world: w);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      await tester.tap(find.text('Không tra được tên. Thử lại'));
+      await _settle(tester);
+      expect(find.text('Khớp tên đã xác minh'), findsOneWidget);
+      expect(w.repo.lookupCalls, hasLength(2));
+    });
+
+    testWidgets('a short number shows the error after leaving the field', (
       tester,
-      world: EarningsWorld(reauthMethod: ReauthMethod.google),
-      account: true,
-    );
-    final gate = Completer<void>();
-    w.auth.reauthGate = gate.future;
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    w.repo.failNextSave('reauth_required');
-    await _confirmChange(tester);
-    await tester.tap(_key('reauth-go'));
-    await _settle(tester);
-    // Barrier tap and Back do nothing while busy.
-    await tester.tapAt(const Offset(195, 20));
-    await _settle(tester);
-    await tester.binding.handlePopRoute();
-    await _settle(tester);
-    expect(find.text('Xác nhận lại để đổi tài khoản'), findsOneWidget);
-    gate.complete();
-    await _settle(tester);
-    expect(find.text('Xác nhận lại để đổi tài khoản'), findsNothing);
-    expect(w.repo.saves, ['VCB:3210']);
-  });
+    ) async {
+      await _open(tester);
+      await _type(tester, '123');
+      expect(find.text('Số tài khoản gồm 6–20 chữ số'), findsNothing);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await _settle(tester);
+      expect(find.text('Số tài khoản gồm 6–20 chữ số'), findsOneWidget);
+    });
 
-  testWidgets('a cancelled provider sign-in keeps the sheet open', (
-    tester,
-  ) async {
-    final w = await _open(
+    testWidgets('first save asks no OTP and shows the masked view', (
       tester,
-      world: EarningsWorld(
-        reauthMethod: ReauthMethod.facebook,
-        cancelSocial: true,
-      ),
-      account: true,
-    );
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    w.repo.failNextSave('reauth_required');
-    await _confirmChange(tester);
-    await tester.tap(_key('reauth-go'));
-    await _settle(tester);
-    expect(find.text('Xác nhận lại để đổi tài khoản'), findsOneWidget);
-    expect(w.auth.reauthentications, 0);
-    expect(w.repo.saves, isEmpty);
+    ) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(w.repo.otpCalls, isEmpty);
+      expect(find.text('Nhập mã xác nhận'), findsNothing);
+      expect(w.repo.saves, ['VCB:7890']);
+      expect(find.text('Đã lưu tài khoản nhận tiền'), findsOneWidget);
+      expect(find.text('Vietcombank •••• 7890'), findsOneWidget);
+      expect(find.text('CHỜ HIỆU LỰC'), findsNothing);
+      expect(_key('payout-save'), findsNothing);
+      _expectNoFullNumber(['01234567890']);
+    });
+
+    testWidgets('name_mismatch on save shows the warning and keeps the input', (
+      tester,
+    ) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      w.repo.failNextSave('name_mismatch');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(
+        find.text(
+          'Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và '
+          'số tài khoản.',
+        ),
+        findsOneWidget,
+      );
+      expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
+    });
+
+    testWidgets('conflict shows the busy SnackBar and keeps the input', (
+      tester,
+    ) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      w.repo.failNextSave('conflict');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(
+        find.text('Đang chuyển một lô tiền, thử lại sau ít phút'),
+        findsOneWidget,
+      );
+      expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
+      expect(_saveEnabled(tester), isTrue);
+      expect(w.repo.saves, isEmpty);
+    });
+
+    testWidgets('limit_exceeded on save shows the lookup limit', (
+      tester,
+    ) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      w.repo.failNextSave('limit_exceeded');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(
+        find.text('Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('another error shows the generic SnackBar', (tester) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      w.repo.failNextSave('network');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(find.text('Không lưu được. Thử lại'), findsOneWidget);
+    });
+
+    testWidgets('analytics gets no account data', (tester) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      final saves = w.events
+          .where((e) => e.$1 == 'payout_account_save')
+          .toList();
+      expect(saves, hasLength(1));
+      expect(saves.single.$2, {'change': false});
+      for (final e in w.events) {
+        expect('${e.$2}'.contains('7890'), isFalse);
+        expect('${e.$2}'.contains('NGUYEN'), isFalse);
+      }
+    });
   });
 
-  testWidgets('a wrong password shows the error in the sheet', (tester) async {
-    final w = await _open(tester, account: true);
-    await tester.tap(_key('payout-change'));
-    await _settle(tester);
-    await _fill(tester, number: '9876543210', holder: 'le van a');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    w.repo.failNextSave('reauth_required');
-    await _confirmChange(tester);
-    await tester.enterText(_key('reauth-password'), 'wrong');
-    await tester.tap(_key('reauth-go'));
-    await _settle(tester);
-    expect(find.text('Mật khẩu chưa đúng'), findsOneWidget);
-    expect(find.text('Xác nhận lại để đổi tài khoản'), findsOneWidget);
-    expect(w.repo.saves, isEmpty);
-    // Retrying with the right one works.
-    await tester.enterText(_key('reauth-password'), EarningsWorld.password);
-    await tester.tap(_key('reauth-go'));
-    await _settle(tester);
-    expect(w.repo.saves, ['VCB:3210']);
-  });
+  group('existing account', () {
+    testWidgets('shows the masked account and Đổi tài khoản, never the full '
+        'number', (tester) async {
+      await _open(tester, account: (w) => w.account());
+      expect(find.text('Vietcombank •••• 3456'), findsOneWidget);
+      expect(find.text('NGUYEN MINH TRI'), findsOneWidget);
+      expect(find.text('Đổi tài khoản'), findsOneWidget);
+      expect(find.text('CHỜ HIỆU LỰC'), findsNothing);
+      expect(_key('payout-save'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.byType(AppButton), findsOneWidget, reason: 'one button only');
+    });
 
-  testWidgets('conflict shows the busy SnackBar and keeps the input', (
-    tester,
-  ) async {
-    final w = await _open(tester);
-    await _pickBank(tester, 'VCB');
-    await _fill(tester);
-    w.repo.failNextSave('conflict');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    expect(
-      find.text('Đang chuyển một lô tiền, thử lại sau ít phút'),
-      findsOneWidget,
-    );
-    expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
-    expect(_saveEnabled(tester), isTrue);
-    expect(w.repo.saves, isEmpty);
-  });
+    testWidgets('a pending_review account shows the staff note', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        account: (w) => w.account(nameStatus: PayoutNameStatus.pendingReview),
+      );
+      expect(
+        find.text('Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu.'),
+        findsOneWidget,
+      );
+    });
 
-  testWidgets('another error shows the generic SnackBar and keeps the input', (
-    tester,
-  ) async {
-    final w = await _open(tester);
-    await _pickBank(tester, 'VCB');
-    await _fill(tester);
-    w.repo.failNextSave('network');
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    expect(find.text('Không lưu được. Thử lại'), findsOneWidget);
-    expect(_fieldText(tester, 'payout-holder'), 'NGUYEN MINH TRI');
-  });
+    testWidgets('change form shows the intro with the current bank and last 4 '
+        'and the lock note', (tester) async {
+      await _open(tester, account: (w) => w.account(bank: 'MB'));
+      await _startChange(tester);
+      expect(
+        find.text(
+          'Đang dùng MBBank •••• 3456. Nhập tài khoản mới đứng tên bạn, tiền '
+          'sẽ chi tự động vào đây.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Đổi tài khoản cần OTP và có hiệu lực sau 72 giờ; trong lúc đó tạm '
+          'dừng chi. Tài khoản cũ sẽ nhận thông báo.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('MBBank'), findsOneWidget, reason: 'bank kept');
+      expect(_fieldText(tester, 'payout-number'), isEmpty);
+      expect(_saveEnabled(tester), isFalse);
+      await tester.tap(_key('payout-cancel-change'));
+      await _settle(tester);
+      expect(find.text('MBBank •••• 3456'), findsOneWidget);
+    });
 
-  testWidgets('analytics gets no account data', (tester) async {
-    final w = await _open(tester);
-    await _pickBank(tester, 'VCB');
-    await _fill(tester);
-    await tester.tap(_key('payout-save'));
-    await _settle(tester);
-    final saves = w.events.where((e) => e.$1 == 'payout_account_save').toList();
-    expect(saves, hasLength(1));
-    expect(saves.single.$2.keys.toSet().difference({'change'}), isEmpty);
-    expect(saves.single.$2['change'], false);
-    for (final e in w.events) {
-      expect('${e.$2}', isNot(contains('7890')));
-      expect('${e.$2}', isNot(contains('NGUYEN')));
+    testWidgets('after a change the read view shows "Chờ hiệu lực" and '
+        '"Tài khoản mới có hiệu lực lúc 10:15, 13/10"', (tester) async {
+      final w = await _open(
+        tester,
+        world: EarningsWorld(now: _changeNow),
+        account: (w) => w.account(bank: 'MB'),
+      );
+      await _startChange(tester);
+      await _pickBank(tester, 'TCB');
+      await _type(tester, '190355667788');
+      expect(w.repo.saves, isEmpty);
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(w.repo.otpCalls, ['TCB:7788']);
+      expect(find.text('Nhập mã xác nhận'), findsOneWidget);
+      expect(
+        find.text(
+          'Mã 6 số đã gửi tới số điện thoại •••• 0001. Mã có hiệu lực 5 phút.',
+        ),
+        findsOneWidget,
+      );
+      expect(w.repo.saves, isEmpty, reason: 'nothing saved before the code');
+      await tester.enterText(
+        find.descendant(
+          of: _key('app-sheet'),
+          matching: find.byType(TextField),
+        ),
+        '482913',
+      );
+      await _settle(tester);
+      expect(w.repo.saves, ['TCB:7788:482913']);
+      expect(find.text('Nhập mã xác nhận'), findsNothing);
+      expect(
+        find.text('Đã đổi tài khoản. Có hiệu lực sau 72 giờ'),
+        findsOneWidget,
+      );
+      expect(find.text('Techcombank •••• 7788'), findsOneWidget);
+      expect(find.text('CHỜ HIỆU LỰC'), findsOneWidget);
+      expect(
+        find.text('Tài khoản mới có hiệu lực lúc 10:15, 13/10'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Trong lúc chờ, tạm dừng chi. Lần chi đầu vào tài khoản mới do '
+          'staff duyệt.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Đổi tài khoản'), findsOneWidget);
+      _expectNoFullNumber(['190355667788']);
+    });
+
+    testWidgets('a wrong code keeps the OTP sheet open', (tester) async {
+      final w = await _open(tester, account: (w) => w.account());
+      await _startChange(tester);
+      await _type(tester, '190355667788');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      w.repo.failNextSave('otp_invalid');
+      final otp = find.descendant(
+        of: _key('app-sheet'),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(otp, '111111');
+      await _settle(tester);
+      expect(find.text('Mã chưa đúng. Kiểm tra lại tin nhắn'), findsOneWidget);
+      expect(find.text('Nhập mã xác nhận'), findsOneWidget);
+      expect(w.repo.saves, isEmpty);
+      // Closing the sheet keeps the input and sends nothing more.
+      await tester.tapAt(const Offset(195, 20));
+      await _settle(tester);
+      expect(find.text('Nhập mã xác nhận'), findsNothing);
+      expect(_fieldText(tester, 'payout-number'), '1903 5566 7788');
+      expect(_saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('OTP sheet: resend is disabled for 60 s then enabled', (
+      tester,
+    ) async {
+      final w = await _open(tester, account: (w) => w.account());
+      await _startChange(tester);
+      await _type(tester, '190355667788');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(find.text('Gửi lại sau 60 giây'), findsOneWidget);
+      expect(find.text('Gửi lại mã'), findsNothing);
+      w.now = w.now.add(const Duration(seconds: 59));
+      await tester.pump(const Duration(seconds: 59));
+      expect(find.text('Gửi lại sau 1 giây'), findsOneWidget);
+      w.now = w.now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Gửi lại mã'), findsOneWidget);
+      await tester.tap(find.text('Gửi lại mã'));
+      await _settle(tester);
+      expect(w.repo.otpCalls, ['VCB:7788', 'VCB:7788']);
+      // Let the new countdown end so no timer is left running.
+      w.now = w.now.add(const Duration(seconds: 60));
+      await tester.pump(const Duration(seconds: 60));
+    });
+
+    for (final (code, text) in [
+      ('phone_required', 'Cần số điện thoại trong hồ sơ để nhận mã'),
+      ('not_eligible', 'Chưa đổi được tài khoản lúc này. Liên hệ hỗ trợ'),
+      ('limit_exceeded', 'Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.'),
+      ('conflict', 'Đây đã là tài khoản đang dùng'),
+    ]) {
+      testWidgets('$code when asking for the code shows "$text"', (
+        tester,
+      ) async {
+        final w = await _open(tester, account: (w) => w.account());
+        await _startChange(tester);
+        await _type(tester, '190355667788');
+        w.repo.failNextOtp(code);
+        await tester.tap(_key('payout-save'));
+        await _settle(tester);
+        expect(find.text(text), findsOneWidget);
+        expect(find.text('Nhập mã xác nhận'), findsNothing);
+        expect(_fieldText(tester, 'payout-number'), '1903 5566 7788');
+      });
     }
   });
 
-  testWidgets('fits 320 dp at text scale 1.3 with the keyboard up', (
-    tester,
-  ) async {
-    await _open(tester, width: 320, textScale: 1.3);
-    await _pickBank(tester, 'VCB');
-    await _fill(tester, holder: 'nguyễn thị minh khoa');
-    expect(tester.takeException(), isNull);
-    expect(
-      tester.getSize(_key('payout-save')).height,
-      greaterThanOrEqualTo(48),
-    );
+  group('fits 320 dp at 1.3× text', () {
+    testWidgets('form', (tester) async {
+      await _open(
+        tester,
+        width: 320,
+        textScale: 1.3,
+        account: (w) => w.account(),
+      );
+      await _startChange(tester);
+      await _type(tester, '01234567890');
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(_key('payout-save')).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
+
+    testWidgets('mismatch', (tester) async {
+      final w = EarningsWorld();
+      w.repo.defaultLookup = const PayoutNameLookup(
+        decision: PayoutNameDecision.mismatch,
+        holderName: 'TRAN VAN BINH MINH KHOA',
+        verifiedName: 'NGUYEN THI MINH KHOA',
+      );
+      await _open(tester, world: w, width: 320, textScale: 1.3);
+      await _pickBank(tester, 'BIDV');
+      await _type(tester, '01234567890');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('OTP sheet', (tester) async {
+      final w = await _open(
+        tester,
+        width: 320,
+        textScale: 1.3,
+        account: (w) => w.account(),
+      );
+      await _startChange(tester);
+      await _type(tester, '190355667788');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(find.text('Nhập mã xác nhận'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      w.now = w.now.add(const Duration(seconds: 60));
+      await tester.pump(const Duration(seconds: 60));
+    });
+
+    testWidgets('pending view', (tester) async {
+      await _open(
+        tester,
+        width: 320,
+        textScale: 1.3,
+        account: (w) => w.account(
+          bank: 'BIDV',
+          activeFrom: w.now.add(const Duration(hours: 72)),
+        ),
+      );
+      expect(find.text('CHỜ HIỆU LỰC'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('photographers only', () {

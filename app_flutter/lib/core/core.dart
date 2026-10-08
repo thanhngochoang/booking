@@ -49,6 +49,7 @@ export 'package:photobooking/core/widgets/level_selector.dart';
 export 'package:photobooking/core/widgets/location_prompt_card.dart';
 export 'package:photobooking/core/widgets/network_photo.dart';
 export 'package:photobooking/core/widgets/offline_banner.dart';
+export 'package:photobooking/core/widgets/otp_code_field.dart';
 export 'package:photobooking/core/widgets/phone_field.dart';
 export 'package:photobooking/core/widgets/photographer_card.dart';
 export 'package:photobooking/core/widgets/photo_card.dart';

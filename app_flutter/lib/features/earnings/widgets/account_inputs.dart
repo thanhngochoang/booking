@@ -1,9 +1,12 @@
 // lib/features/earnings/widgets/account_inputs.dart
 import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/earnings/payout_account_rules.dart';
+import 'package:photobooking/data/earnings/vn_banks.dart';
 
 /// Digits only, in groups of four ("0123 4567 890"), at most
 /// [accountNumberMax] digits; the caret stays after the digit it was after.
@@ -41,49 +44,98 @@ class AccountNumberFormatter extends TextInputFormatter {
   static String _digits(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
 }
 
-/// Turns the holder name into upper-case ASCII while typing: no diacritics
-/// (`Đ` becomes `D`), only letters and single spaces, at most
-/// [holderNameMax] characters.
-class HolderNameFormatter extends TextInputFormatter {
-  const HolderNameFormatter();
+/// The mock's bank field: a code badge, the short and full name, and a
+/// search mark that opens the bank list ([onTap]). Without a bank it reads
+/// "Chọn ngân hàng".
+class BankField extends StatelessWidget {
+  const BankField({super.key, required this.bank, required this.onTap});
+
+  final VnBank? bank;
+  final VoidCallback? onTap;
 
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text;
-    final caret = newValue.selection.isValid
-        ? newValue.selection.extentOffset.clamp(0, text.length)
-        : text.length;
-    final cleaned = _clean(text);
-    final before = _clean(text.substring(0, caret)).length;
-    return TextEditingValue(
-      text: cleaned,
-      selection: TextSelection.collapsed(
-        offset: math.min(before, cleaned.length),
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final b = bank;
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      excludeSemantics: true,
+      label:
+          '${l.payoutAccountBank}, ${b == null ? l.payoutAccountBankPick : '${b.shortName}, ${b.name}'}',
+      onTap: onTap,
+      child: InkWell(
+        key: const Key('payout-bank'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        child: InputDecorator(
+          isEmpty: false,
+          decoration: InputDecoration(
+            labelText: l.payoutAccountBank,
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            enabled: onTap != null,
+            suffixIcon: const AppIcon(AppIcons.search),
+          ),
+          child: b == null
+              ? Text(
+                  l.payoutAccountBankPick,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                )
+              : Row(
+                  children: [
+                    BankBadge(code: b.code),
+                    const SizedBox(width: AppSpace.s3),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(b.shortName, style: theme.textTheme.titleSmall),
+                          Text(b.name, style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
+}
 
-  static String _clean(String raw) {
-    final out = StringBuffer();
-    var lastSpace = true; // drops leading spaces
-    for (final rune in raw.runes) {
-      final ch = String.fromCharCode(rune);
-      if (ch.trim().isEmpty) {
-        if (!lastSpace) out.write(' ');
-        lastSpace = true;
-        continue;
-      }
-      // Run the shared rule on a doubled letter (it needs 2+ letters): digits,
-      // punctuation and lone combining marks come back null and are dropped.
-      final letter = normalizeHolderName('$ch$ch');
-      if (letter == null || letter.length != 2) continue;
-      out.write(letter[0]);
-      lastSpace = false;
-    }
-    final s = out.toString();
-    return s.length > holderNameMax ? s.substring(0, holderNameMax) : s;
+/// The mock's `.bnk`: the bank code in a small rounded tile (the logo slot).
+class BankBadge extends StatelessWidget {
+  const BankBadge({super.key, required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return ExcludeSemantics(
+      child: Container(
+        constraints: const BoxConstraints(
+          minWidth: AppSpace.s10,
+          minHeight: AppSpace.s8,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.s1),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Text(
+          code,
+          maxLines: 1,
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 }
