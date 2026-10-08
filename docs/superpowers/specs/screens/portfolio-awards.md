@@ -19,7 +19,7 @@ Màn của phần A–C trong [`../2026-10-05-provider-types-portfolio-jobs-desi
 - **Chấp nhận**: hồ sơ không có album không trống thì không có nút gạt; đổi nút gạt giữ vị trí cuộn của từng chế độ.
 
 ### S08.01 · Thiết lập hồ sơ bước 1: "Hình thức"
-- Thêm câu hỏi "Bạn nhận việc với tư cách" với hai `AppOptionTile`: **Cá nhân** ("Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).") và **Studio** ("Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có."). Mặc định Cá nhân.
+- Thêm câu hỏi "Bạn nhận việc với tư cách" với hai `AppOptionTile` (ô biểu tượng bo tròn bên trái, nút radio bên phải): **Cá nhân** ("Bạn tự chụp và nhận booking. Có giải thưởng? Thêm sau để lên hạng Nhiếp ảnh gia (NAG).") và **Studio** ("Cơ sở kinh doanh chụp ảnh, có địa chỉ. Thêm thành viên: sắp có."). Mặc định Cá nhân.
 - Studio: nhãn ô tên thành "Tên studio"; S08.05 thêm ô "Địa chỉ cơ sở" (bắt buộc).
 - Dòng ghi chú: "Đổi Cá nhân ↔ Studio được trong Cài đặt khi không còn booking đang chạy."
 - **Chuỗi**: `s0801_typeTitle` "Bạn nhận việc với tư cách", `s0801_typeIndividual` "Cá nhân", `s0801_typeStudio` "Studio", `s0801_studioName` "Tên studio".
