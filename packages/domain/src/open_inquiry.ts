@@ -17,11 +17,13 @@ export async function openInquiry(
   const chatId = chatIdFor(input.customerId, input.photographerId);
 
   return deps.chats.runTransaction(async (tx) => {
+    const now = deps.clock.now();
     const existing = await tx.getChat(chatId);
     if (existing) {
-      const now = deps.clock.now();
       // A past customer's booking chat, read-only since readOnlyAt, becomes an inquiry again
-      // (same thread, history kept, photographerRepliedAt kept so no 3-message cap).
+      // (same thread, history kept). They already talked during the booking, so the
+      // 3-message cap does not apply: photographerRepliedAt is kept, or set to now when the
+      // booking chat never recorded one (afterMessage only tracks it for inquiries).
       if (
         existing.kind === 'booking' &&
         existing.readOnlyAt !== null &&
@@ -36,6 +38,7 @@ export async function openInquiry(
           bookingId: null,
           bookingStatus: null,
           readOnlyAt: null,
+          photographerRepliedAt: existing.photographerRepliedAt ?? now,
           updatedAt: now,
         });
       }
@@ -47,7 +50,6 @@ export async function openInquiry(
       throw new DomainError('not_eligible');
     }
 
-    const now = deps.clock.now();
     const newChat: Chat = {
       id: chatId,
       kind: 'inquiry',

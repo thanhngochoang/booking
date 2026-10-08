@@ -79,7 +79,6 @@ describe('chat model and rules (Task 1)', () => {
     const tLate = new Date('2026-10-16T10:00:00Z');
     assert.equal(isInquiryClosed(chatWithMsg, tLate), true);
 
-
     // Reopened with a new message at tLate
     const reopened: Chat = {
       ...chatWithMsg,

@@ -189,7 +189,7 @@ export function validateMessageInput(
       throw new DomainError('invalid_argument');
     }
     const parts = imagePath.split('/');
-    if (parts.length < 4) {
+    if (parts.length !== 4) {
       throw new DomainError('invalid_argument');
     }
     if (senderId !== undefined && parts[2] !== senderId) {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { DomainError } from '../src/errors.js';
 import type { Chat, Message } from '../src/chat.js';
 import { openInquiry } from '../src/open_inquiry.js';
+import { sendMessage } from '../src/send_message.js';
 import { createChatWorld } from './support/chat_world.js';
 
 describe('openInquiry (Task 2)', () => {
@@ -60,7 +61,7 @@ describe('openInquiry (Task 2)', () => {
     );
   });
 
-  async function readOnlyBookingChat() {
+  async function readOnlyBookingChat(repliedAt: 'set' | 'null' = 'set', unanswered = 2) {
     const world = createChatWorld();
     const { deps, clock } = world;
     const chatId = 'cust1_phot1';
@@ -83,8 +84,8 @@ describe('openInquiry (Task 2)', () => {
       photographerId: 'phot1',
       bookingId: 'book_1',
       bookingStatus: 'completed',
-      photographerRepliedAt: clock.now(),
-      customerMessagesBeforeReply: 2,
+      photographerRepliedAt: repliedAt === 'set' ? clock.now() : null,
+      customerMessagesBeforeReply: unanswered,
       lastMessageAt: clock.now(),
       lastMessagePreview: 'Cảm ơn bạn',
       lastSenderId: 'phot1',
@@ -143,5 +144,33 @@ describe('openInquiry (Task 2)', () => {
     const res = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
     assert.deepEqual(res, { chatId: 'cust1_phot1', created: false });
     assert.deepEqual(chats.chats.get('cust1_phot1'), before);
+  });
+
+  it('a revived booking chat without photographerRepliedAt is not capped like a new inquiry', async () => {
+    const { deps, chats, clock, chatId, readOnlyAt } = await readOnlyBookingChat('null', 5);
+    clock.set(readOnlyAt);
+    await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    const stored = chats.chats.get(chatId);
+    assert.deepEqual(stored?.photographerRepliedAt, readOnlyAt);
+    assert.equal(stored?.customerMessagesBeforeReply, 5);
+    for (let i = 0; i < 5; i++) {
+      await sendMessage(deps, {
+        senderId: 'cust1',
+        chatId,
+        message: { type: 'text', body: `m${i}`, clientId: `rv_${i}` },
+      });
+    }
+    assert.equal(chats.messages.get(chatId)?.length, 6);
+  });
+
+  it('reviving twice returns the chat unchanged the second time', async () => {
+    const { deps, chats, clock, chatId, readOnlyAt } = await readOnlyBookingChat('null');
+    clock.set(readOnlyAt);
+    await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    const first = chats.chats.get(chatId);
+    clock.advance(60_000);
+    const res = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    assert.deepEqual(res, { chatId, created: false });
+    assert.deepEqual(chats.chats.get(chatId), first);
   });
 });
