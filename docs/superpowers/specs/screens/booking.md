@@ -1,18 +1,18 @@
 # Đặt lịch, thanh toán, hội thoại, liên hệ
 
-Màn: S04.01, S04.02, S04.03, S04.04, S05.02, S05.03, S07.01, S05.01, S05.04, S04.05. Quy ước chung ở [README.md](README.md). Máy trạng thái booking ở spec gốc mục 6–8; thanh toán 100% và chuyển sai ở [spec thanh toán](../2026-10-06-payments-payouts-design.md) mục 3.
+Màn: S04.01, S04.02, S04.06, S04.03, S04.04, S05.02, S05.03, S07.01, S05.01, S05.04, S04.05. Quy ước chung ở [README.md](README.md). Máy trạng thái booking ở spec gốc mục 6–8; thanh toán 100% và chuyển sai ở [spec thanh toán](../2026-10-06-payments-payouts-design.md) mục 3.
 
 ---
 
 ## S04.01–S04.03 · Đặt lịch (sheet 4 bước)
 
-Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bước `service` → `datetime` → `place` → `review`. Dùng chung `AppBottomSheet` và `StepProgress` "n / 4".
+Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bước `service` (S04.01) → `datetime` (S04.02) → `place` (S04.06) → `review` (S04.03). Dịch vụ đi kèm (khối "Thêm dịch vụ" ở S04.01, ô "Điểm đón" ở S04.06, từng dòng dịch vụ ở S04.03): [spec dịch vụ đi kèm](../2026-10-08-booking-addons-design.md) mục 5, mock `#S04.01-addons`, `#S04.06`, `#S04.03-addons`. Dùng chung `AppBottomSheet` và `StepProgress` "n / 4".
 
 ### Quy tắc chung của luồng
 
 - **Thông tin**: khách · sub‑project 4 · Đã làm (S04.03: thanh toán 100%, #129).
 - **Điều kiện vào**: khách đăng nhập và **có số điện thoại hợp lệ**. Thiếu thì mở S04.05 trước, lưu xong quay lại đúng bước (`returnTo`). Vào từ S02.02 ("Đặt gói này") thì bỏ bước 1; vào từ S02.06 ("Đặt T7") thì có sẵn ngày và dịch vụ.
-- **Trạng thái luồng** giữ trong controller: `serviceId`, `date`, `start`, `end`, `place`, `note`, `phone`, `method` (mặc định `bank_qr`). Quay lại không mất lựa chọn. Đóng sheet khi đã chọn gì đó hỏi xác nhận "Bỏ yêu cầu đặt lịch?". Không lưu nháp lên server cho tới khi tạo `draft` ở bước 4.
+- **Trạng thái luồng** giữ trong controller: `serviceId`, `date`, `start`, `end`, `place`, `addons` (`addonId` + `qty`), `pickup`, `note`, `phone`, `method` (mặc định `bank_qr`). Quay lại không mất lựa chọn. Đóng sheet khi đã chọn gì đó hỏi xác nhận "Bỏ yêu cầu đặt lịch?". Không lưu nháp lên server cho tới khi tạo `draft` ở bước 4.
 - **Tiền**: tổng giá gói luôn nằm trên nút chính; khách trả 100% khi đặt, tiền được giữ và chuyển cho thợ theo 2 mốc.
 
 ### S04.01 · Bước 1 · Chọn gói
@@ -32,9 +32,12 @@ Ba màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), bư�
 - **Chuỗi**: `s06_legendFree` "Rảnh", `s06_legendBooked` "Đã đặt", `s06_legendPending` "Chờ", `s06_waiting` "{n} người đang chờ", `s06_endsAt` "{start}–{end}".
 - **Chấp nhận**: ngày và giờ chọn không đổi khi quay lại; ngày chọn từ S02.06 được chọn sẵn.
 
-### Bước 3 · Địa điểm (cùng layout S04.01)
+### S04.06 · Bước 3 · Địa điểm (cùng layout S04.01)
 
-- Bản đồ nhỏ + ô địa chỉ + chip gợi ý của nhiếp ảnh gia và địa điểm trong bộ lọc; mặc định theo bộ lọc hoặc gợi ý. Địa điểm tuỳ chọn tự do cần tên (≥ 3 ký tự). Nút "Tiếp tục".
+> **Mã mới 2026-10-08**: bước này trước đây chưa có mã; nay là S04.06 vì có thêm ô "Điểm đón" ([spec dịch vụ đi kèm](../2026-10-08-booking-addons-design.md) mục 5.2, mock `#S04.06`).
+
+- Bản đồ nhỏ + ô địa chỉ + chip gợi ý của nhiếp ảnh gia và địa điểm trong bộ lọc; mặc định theo bộ lọc hoặc gợi ý. Địa điểm tuỳ chọn tự do cần tên (≥ 3 ký tự). Nút "Tiếp tục · {tổng}".
+- **Điểm đón** (chỉ khi khách đã chọn ở S04.01 một dịch vụ `kind = transport`): tiêu đề "Điểm đón", ô cùng kiểu ô địa điểm chụp (bản đồ nhỏ + tên, tên ≥ 3 ký tự, bắt buộc) và dòng phụ "Chỉ thợ chụp cho bạn thấy điểm đón."; chưa có điểm đón thì "Tiếp tục" tắt. Lưu ở `bookings/{id}.pickup` (`{name, point?}`), chỉ hai bên của booking đọc, không chép sang tài liệu công khai; server trả `pickup_required` nếu thiếu. Không có xe: bước giữ nguyên, không có ô này.
 
 ### S04.03 · Bước 4 · Xem lại và thanh toán
 
