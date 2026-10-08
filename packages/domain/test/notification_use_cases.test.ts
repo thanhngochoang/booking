@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import type { NotifyRequest } from '../src/notification_ports.js';
 import {
+  GROUP_RECENT_EVENT_IDS,
   markAllRead,
   notify,
   pruneReadNotifications,
@@ -118,6 +119,45 @@ describe('notify', () => {
     assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
     assert.equal(w.store.rowsOf('u1')[0]?.count, 1);
     assert.equal(w.push.sent.length, 1);
+  });
+
+  it('a grouped row keeps the last 20 event ids, newest first; an older one counts again', async () => {
+    assert.equal(GROUP_RECENT_EVENT_IDS, 20);
+    for (let i = 0; i < 22; i++) await notify(w.deps, chat(i, 'a', `m${i}`));
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.count, 22);
+    assert.equal(row?.recentEventIds.length, 20);
+    assert.equal(row?.recentEventIds[0], 'm21');
+    assert.equal(row?.recentEventIds[19], 'm2');
+    assert.equal(await notify(w.deps, chat(5, 'a', 'm5')), 'duplicate');
+    // m0 fell out of the window: it counts again.
+    assert.equal(await notify(w.deps, chat(0, 'a', 'm0')), 'grouped');
+    assert.equal(w.store.rowsOf('u1')[0]?.count, 23);
+  });
+
+  it('a row written before recentEventIds still dedupes on lastEventId', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    const prev = w.store.rowsOf('u1')[0];
+    assert.ok(prev);
+    // Simulates an older Firestore doc: the adapter reads a missing list as [].
+    w.store.rows.set(`u1/${prev.id}`, { ...prev, recentEventIds: [] });
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+  });
+
+  it('a read row still treats its last event as a duplicate (retried trigger)', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    await w.store.markRead('u1', ['g_chat_c1'], w.clock.now());
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+  });
+
+  it('dedupe and group keys turn ":" and "/" into "_" for the row id', async () => {
+    await notify(w.deps, review({ dedupeKey: 'support_reply:t1/m1' }));
+    await notify(w.deps, { ...chat(1, 'a', 'm1'), groupKey: 'dispute:d/1' });
+    const ids = w.store.rowsOf('u1').map((r) => r.id).sort();
+    assert.deepEqual(ids, ['g_dispute_d_1', 'n_support_reply_t1_m1']);
+    // Keys without "/" keep the id they had.
+    await notify(w.deps, review({ dedupeKey: 'review_new:b2' }));
+    assert.ok(w.store.rowsOf('u1').some((r) => r.id === 'n_review_new_b2'));
   });
 
   it('group keeps at most 3 unique actors, newest first', async () => {

@@ -23,6 +23,11 @@ export interface NotificationRow {
   readonly count: number;
   readonly thumbUrl: string | null;
   readonly lastEventId: string | null;
+  /**
+   * Grouped rows: the last `GROUP_RECENT_EVENT_IDS` (20) event ids, newest first; an incoming event id
+   * already in the list is a duplicate. Reset when a read row restarts; `[]` on single rows.
+   */
+  readonly recentEventIds: readonly string[];
   readonly createdAt: Date;
   readonly readAt: Date | null;
 }

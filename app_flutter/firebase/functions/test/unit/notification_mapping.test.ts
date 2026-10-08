@@ -18,6 +18,7 @@ const row: NotificationRow = {
   count: 2,
   thumbUrl: null,
   lastEventId: 'm2',
+  recentEventIds: ['m2', 'm1'],
   createdAt: new Date('2026-10-10T10:00:00.000Z'),
   readAt: null,
 };
@@ -32,6 +33,15 @@ describe('notification row mapping', () => {
 
     const read = { ...row, readAt: new Date('2026-10-11T01:00:00.000Z') };
     assert.deepEqual(notificationRowFromFirestore('u1', row.id, notificationRowToFirestore(read)), read);
+  });
+
+  it('recentEventIds is written as a list; absent or malformed reads []', () => {
+    assert.deepEqual(notificationRowToFirestore(row).recentEventIds, ['m2', 'm1']);
+    const old = { ...notificationRowToFirestore(row) };
+    delete old.recentEventIds;
+    assert.deepEqual(notificationRowFromFirestore('u1', row.id, old)?.recentEventIds, []);
+    assert.deepEqual(notificationRowFromFirestore('u1', row.id, { ...old, recentEventIds: 'm2' })?.recentEventIds, []);
+    assert.deepEqual(notificationRowFromFirestore('u1', row.id, { ...old, recentEventIds: ['m2', 3] })?.recentEventIds, ['m2']);
   });
 
   it('a doc without createdAt is not a row', () => {

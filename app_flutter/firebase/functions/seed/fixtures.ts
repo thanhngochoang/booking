@@ -566,6 +566,7 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
         count: r.group?.count ?? 1,
         thumbUrl: null,
         lastEventId: r.group?.lastEventId ?? null,
+        recentEventIds: r.group ? [r.group.lastEventId] : [],
         createdAt: at,
         readAt: r.read ? new Date(at.getTime() + HOUR_MS / 2) : null,
       },

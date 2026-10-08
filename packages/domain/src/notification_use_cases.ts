@@ -10,6 +10,11 @@ const MAX_PAGES = 100;
 const PRUNE_PAGE = 400;
 const PRUNE_MAX_PAGES = 100;
 export const NOTIFICATION_RETENTION_DAYS = 90;
+/** How many recent event ids a grouped row remembers; a repeat inside the window is a duplicate (Ruling 8). */
+export const GROUP_RECENT_EVENT_IDS = 20;
+
+/** Dedupe/group key → Firestore-safe id part: `:` and `/` become `_` (keys without them keep their id). */
+const idPart = (key: string): string => key.replace(/[:/]/g, '_');
 
 /** Decides delivery from prefs, writes the inbox row (dedupe or group) and sends push after commit. */
 export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<NotifyResult> {
@@ -38,11 +43,18 @@ export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<Noti
     };
     const outcome = await deps.store.runTransaction(async (tx) => {
       if (req.groupKey !== undefined && req.actor !== undefined) {
-        const id = `g_${req.groupKey.replace(/:/g, '_')}`;
+        const id = `g_${idPart(req.groupKey)}`;
         const prev = await tx.getRow(req.userId, id);
-        if (prev && req.eventId && prev.lastEventId === req.eventId) return { result: 'duplicate' as const, row: null };
-        // A row the user already read restarts: count 1 and a single actor.
+        // A row the user already read restarts: count 1, a single actor and a fresh event-id list.
         const carried = prev && prev.readAt === null ? prev : null;
+        // Duplicate: the row's last event (read or not, so a retried trigger never re-pushes), or any
+        // event still remembered by the unread row (p1, p2, p1 counts two quotes, not three).
+        if (
+          prev && req.eventId
+          && (prev.lastEventId === req.eventId || (carried?.recentEventIds ?? []).includes(req.eventId))
+        ) {
+          return { result: 'duplicate' as const, row: null };
+        }
         const count = (carried?.count ?? 0) + 1;
         const actors = [req.actor, ...(carried?.actors ?? []).filter((a) => a.id !== req.actor?.id)].slice(0, 3);
         // Grouped copy may name the row's actors, newest first (S17 Decision 3); chat ignores `names`.
@@ -56,11 +68,14 @@ export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<Noti
           createdAt: now,
           readAt: null,
           lastEventId: req.eventId ?? null,
+          recentEventIds: req.eventId
+            ? [req.eventId, ...(carried?.recentEventIds ?? [])].slice(0, GROUP_RECENT_EVENT_IDS)
+            : [...(carried?.recentEventIds ?? [])],
         };
         tx.putRow(next);
         return { result: carried ? ('grouped' as const) : ('created' as const), row: next };
       }
-      const id = `n_${req.dedupeKey.replace(/:/g, '_')}`;
+      const id = `n_${idPart(req.dedupeKey)}`;
       if (await tx.getRow(req.userId, id)) return { result: 'duplicate' as const, row: null };
       const next: NotificationRow = {
         ...base,
@@ -71,6 +86,7 @@ export async function notify(deps: NotifyDeps, req: NotifyRequest): Promise<Noti
         createdAt: now,
         readAt: null,
         lastEventId: null,
+        recentEventIds: [],
       };
       tx.putRow(next);
       return { result: 'created' as const, row: next };

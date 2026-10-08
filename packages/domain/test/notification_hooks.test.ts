@@ -496,6 +496,40 @@ describe('notifyQuoteNew (grouped)', () => {
     assert.equal(w.push.sent.length, 1);
   });
 
+  it('p1, p2, p1 counts two quotes with two actors (a repeat within the recent ids is a duplicate)', async () => {
+    assert.equal(await quote(w.deps, 'p1'), 'created');
+    assert.equal(await quote(w.deps, 'p2'), 'grouped');
+    assert.equal(await quote(w.deps, 'p1'), 'duplicate');
+    const r = w.store.rowsOf('c1')[0];
+    assert.equal(r?.count, 2);
+    assert.deepEqual(r?.actors.map((a) => a.id), ['p2', 'p1']);
+    assert.deepEqual(r?.recentEventIds, ['p2', 'p1']);
+    assert.equal(r?.lastEventId, 'p2');
+    assert.equal(r?.title, '2 nhiếp ảnh gia đã báo giá cho việc “Chụp kỷ yếu”');
+    assert.equal(r?.body, 'Lan Chi và Minh Trí. Xem và so sánh báo giá.');
+    assert.equal(w.push.sent.length, 2);
+  });
+
+  it('p2, p1, p2 reads "Minh Trí và Lan Chi" (newest first) with count 2', async () => {
+    await quote(w.deps, 'p2');
+    await quote(w.deps, 'p1');
+    assert.equal(await quote(w.deps, 'p2'), 'duplicate');
+    const r = w.store.rowsOf('c1')[0];
+    assert.equal(r?.count, 2);
+    assert.equal(r?.body, 'Minh Trí và Lan Chi. Xem và so sánh báo giá.');
+  });
+
+  it('after reading, a photographer from the old list counts again (the list restarts)', async () => {
+    await quote(w.deps, 'p1');
+    await quote(w.deps, 'p2');
+    await w.store.markRead('c1', ['g_job_j1_quotes'], w.clock.now());
+    assert.equal(await quote(w.deps, 'p1'), 'created');
+    const r = w.store.rowsOf('c1')[0];
+    assert.equal(r?.count, 1);
+    assert.deepEqual(r?.recentEventIds, ['p1']);
+    assert.equal(r?.title, 'Minh Trí đã báo giá cho việc “Chụp kỷ yếu”');
+  });
+
   it('after reading, the next quote restarts at 1 with one actor', async () => {
     await quote(w.deps, 'p3');
     await quote(w.deps, 'p2');
