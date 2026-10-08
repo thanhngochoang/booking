@@ -4,8 +4,10 @@
 //   npm run awards -- approve <awardId> --actor <uid>
 //   npm run awards -- needs-info|reject|revoke <awardId> "<note>" --actor <uid>
 // Uses the Admin SDK. Environment (see HELP below): GOOGLE_APPLICATION_CREDENTIALS (a service
-// account key; `show` needs it to sign URLs), STORAGE_BUCKET for `show`, or the emulators through
-// FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST.
+// account key; `show` needs it to sign URLs) with STORAGE_BUCKET, or the three emulator hosts
+// (FIRESTORE_/FIREBASE_AUTH_/FIREBASE_STORAGE_EMULATOR_HOST, all local; `scripts/awards-local.sh`
+// sets them), where `show` downloads the proof files instead of signing. A half-set emulator
+// environment is refused.
 // Decisions go through the same reviewAward use case as the callable; `--actor` must be a user
 // with the admin claim.
 
@@ -36,8 +38,11 @@ export function guardEnv(env: Readonly<Record<string, string | undefined>>): voi
   if (!EMULATOR_HOST_VARS.some((k) => env[k] !== undefined && env[k] !== '')) return;
   assertLocalEmulators({ allowAnyProject: true }, env as NodeJS.ProcessEnv);
   const storage = env.FIREBASE_STORAGE_EMULATOR_HOST;
-  if (storage !== undefined && storage !== '' && !LOCAL_HOST.test(storage)) {
-    throw new Error(`Refusing to run: FIREBASE_STORAGE_EMULATOR_HOST must point at a local emulator (got ${storage}).`);
+  // Mixed mode would sign URLs against the real bucket while reading emulator data.
+  if (storage === undefined || storage === '' || !LOCAL_HOST.test(storage)) {
+    throw new Error(
+      `Refusing to run: FIREBASE_STORAGE_EMULATOR_HOST must point at a local emulator (got ${storage ?? 'nothing'}).`,
+    );
   }
 }
 
@@ -59,17 +64,50 @@ export function formatWaiting(createdAt: Date, now: Date): string {
   return `waiting ${minutes}m`;
 }
 
-/** The `file` lines of `show`: signed URLs against a project, local downloads on the emulators. */
-export async function proofFileLines(
-  mode: ProofMode,
-  files: readonly string[],
-  deps: { sign(path: string): Promise<string>; download(path: string): Promise<string> },
-): Promise<string[]> {
-  const lines: string[] = [];
-  for (const f of files) {
-    lines.push(mode === 'emulator' ? `file: ${await deps.download(f)}` : `file (15 min): ${await deps.sign(f)}`);
+/** The part of a Storage bucket the CLI uses (structural, so tests need no firebase-admin). */
+export interface BucketLike {
+  file(name: string): {
+    getSignedUrl(options: { action: 'read'; expires: number }): Promise<[string]>;
+    download(options: { destination: string }): Promise<unknown>;
+  };
+}
+
+export interface ProofFileDeps {
+  /** Resolved lazily: only called when there is at least one file. */
+  getBucket(): BucketLike;
+  /** Emulator mode: directory the files are downloaded to (created on demand). */
+  downloadDir: string;
+  now(): number;
+}
+
+/** Signed URLs (project) or local paths of downloaded copies (emulator), one per proof file. */
+export async function fetchProofFiles(mode: ProofMode, files: readonly string[], deps: ProofFileDeps): Promise<string[]> {
+  if (files.length === 0) return [];
+  const bucket = deps.getBucket();
+  const out: string[] = [];
+  if (mode === 'emulator') await mkdir(deps.downloadDir, { recursive: true });
+  for (const [i, f] of files.entries()) {
+    if (mode === 'emulator') {
+      // The index prefix keeps two files with the same basename apart.
+      const destination = path.join(deps.downloadDir, `${i}-${path.basename(f)}`);
+      await bucket.file(f).download({ destination });
+      out.push(destination);
+    } else {
+      const [url] = await bucket.file(f).getSignedUrl({ action: 'read', expires: deps.now() + 15 * 60 * 1000 });
+      out.push(url);
+    }
   }
-  return lines;
+  return out;
+}
+
+/** One printed `file` line: a signed URL (project) or a local path (emulator). */
+export function formatProofFile(mode: ProofMode, value: string): string {
+  return mode === 'emulator' ? `file: ${value}` : `file (15 min): ${value}`;
+}
+
+/** The `file` lines of `show`. */
+export async function proofFileLines(mode: ProofMode, files: readonly string[], deps: ProofFileDeps): Promise<string[]> {
+  return (await fetchProofFiles(mode, files, deps)).map((v) => formatProofFile(mode, v));
 }
 
 /** Bucket that holds the proof files; `show` cannot guess it outside Cloud Functions. */
@@ -156,8 +194,8 @@ export async function runCli(argv: readonly string[], deps: AwardDeps, io: CliIo
     if (found === null) throw new Error(`award ${awardId} not found`);
     io.print(JSON.stringify(found.award, null, 2));
     for (const l of found.proof?.links ?? []) io.print(`link: ${l}`);
-    for (const u of found.urls) io.print(`file (15 min): ${u}`);
-    for (const f of found.files) io.print(`file: ${f}`);
+    for (const u of found.urls) io.print(formatProofFile('project', u));
+    for (const f of found.files) io.print(formatProofFile('emulator', f));
     return;
   }
   if (args.actor === null) throw new Error(`${args.command} needs --actor <uid> of an admin. ${USAGE}`);
@@ -203,28 +241,15 @@ async function main(): Promise<void> {
       const ad = a?.data();
       if (ad === undefined) return null;
       const proof = p?.data() === undefined ? null : proofFromDoc(id, p.data() ?? {});
-      const proofFiles = proof?.files ?? [];
-      // Only resolve the bucket when there is something to fetch (the seed's proof has links only).
-      const bucket = proofFiles.length > 0 ? getStorage().bucket(bucketNameFromEnv(process.env)) : null;
-      const urls: string[] = [];
-      const files: string[] = [];
-      await proofFileLines(mode, proofFiles, {
-        sign: async (f) => {
-          const [url] = await (bucket as NonNullable<typeof bucket>)
-            .file(f)
-            .getSignedUrl({ action: 'read', expires: Date.now() + 15 * 60 * 1000 });
-          urls.push(url);
-          return url;
-        },
-        download: async (f) => {
-          const dir = path.join(os.tmpdir(), 'awards', id);
-          await mkdir(dir, { recursive: true });
-          const destination = path.join(dir, path.basename(f));
-          await (bucket as NonNullable<typeof bucket>).file(f).download({ destination });
-          files.push(destination);
-          return destination;
-        },
+      let bucket: BucketLike | undefined;
+      const values = await fetchProofFiles(mode, proof?.files ?? [], {
+        // The bucket name is only needed (and required) when the proof has files; the seed's has links only.
+        getBucket: () => (bucket ??= getStorage().bucket(bucketNameFromEnv(process.env)) as unknown as BucketLike),
+        downloadDir: path.join(os.tmpdir(), 'awards', path.basename(id)),
+        now: () => Date.now(),
       });
+      const urls = mode === 'project' ? values : [];
+      const files = mode === 'emulator' ? values : [];
       return { award: awardFromDoc(id, ad), proof, urls, files };
     },
     now: () => new Date(),

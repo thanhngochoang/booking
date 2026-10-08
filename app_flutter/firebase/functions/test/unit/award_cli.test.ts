@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { beforeEach, describe, it } from 'node:test';
 import { MemoryAwardStore, type Award, type AwardDeps } from '@photobooking/domain';
 import {
@@ -159,21 +162,30 @@ describe('awards staff CLI', () => {
     assert.ok(!out.some((l) => l.includes('(15 min)')));
   });
 
-  it('proofFileLines signs in project mode and downloads in emulator mode', async () => {
+  const fakeBucket = (calls: string[]) => ({
+    file: (name: string) => ({
+      getSignedUrl: async () => (calls.push(`sign ${name}`), [`https://signed/${name}`] as [string]),
+      download: async ({ destination }: { destination: string }) => void calls.push(`download ${name} -> ${destination}`),
+    }),
+  });
+
+  it('proofFileLines signs in project mode and downloads (index-prefixed) in emulator mode', async () => {
     const calls: string[] = [];
-    const d = {
-      sign: async (p: string) => (calls.push(`sign ${p}`), `https://signed/${p}`),
-      download: async (p: string) => (calls.push(`download ${p}`), `/tmp/awards/${p}`),
-    };
-    assert.deepEqual(await proofFileLines('project', ['a.jpg'], d), ['file (15 min): https://signed/a.jpg']);
-    assert.deepEqual(await proofFileLines('emulator', ['a.jpg'], d), ['file: /tmp/awards/a.jpg']);
-    assert.deepEqual(calls, ['sign a.jpg', 'download a.jpg']);
+    const dir = mkdtempSync(join(tmpdir(), 'awards-test-'));
+    const d = { getBucket: () => fakeBucket(calls), downloadDir: join(dir, 'x'), now: () => 0 };
+    assert.deepEqual(await proofFileLines('project', ['a/one.jpg'], d), ['file (15 min): https://signed/a/one.jpg']);
+    assert.deepEqual(await proofFileLines('emulator', ['a/one.jpg', 'b/one.jpg'], d), [
+      `file: ${join(dir, 'x', '0-one.jpg')}`,
+      `file: ${join(dir, 'x', '1-one.jpg')}`,
+    ]);
+    assert.equal(calls.length, 3);
   });
 
   it('show without files needs no bucket', async () => {
     const d = {
-      sign: async () => assert.fail('must not sign'),
-      download: async () => assert.fail('must not download'),
+      getBucket: (): never => assert.fail('the bucket must not be resolved without files'),
+      downloadDir: join(tmpdir(), 'awards-never'),
+      now: () => 0,
     };
     assert.deepEqual(await proofFileLines('emulator', [], d), []);
     assert.deepEqual(await proofFileLines('project', [], d), []);
@@ -198,6 +210,11 @@ describe('awards staff CLI', () => {
           GCLOUD_PROJECT: 'p',
         }),
       /must point at a local emulator/,
+    );
+    // Firestore and Auth local but no Storage emulator: mixed mode, refused.
+    assert.throws(
+      () => guardEnv({ FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080', FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099', GCLOUD_PROJECT: 'p' }),
+      /FIREBASE_STORAGE_EMULATOR_HOST must point at a local emulator/,
     );
     // A storage host alone also triggers the guard (Firestore and Auth then missing).
     assert.throws(() => guardEnv({ FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199', GCLOUD_PROJECT: 'p' }), /must point/);
