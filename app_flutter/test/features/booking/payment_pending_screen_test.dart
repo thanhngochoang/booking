@@ -394,6 +394,25 @@ void main() {
       },
     );
 
+    testWidgets(
+      '"Tạo QR mới" refused with blocked shows "Không đặt lịch được với người này."',
+      (tester) async {
+        final s = await _pump(
+          tester,
+          checkout: (now) =>
+              _qr(expiresAt: now.add(const Duration(minutes: 15)), attempt: 3),
+        );
+        s.repo.nextPaymentError = BookingErrorCode.blocked;
+
+        await tester.tap(find.widgetWithText(AppButton, 'Tạo QR mới'));
+        await _settle(tester);
+
+        expect(find.text('Không đặt lịch được với người này.'), findsOneWidget);
+        expect(find.text('Yêu cầu đã hết hạn, thử lại nhé.'), findsNothing);
+        expect(find.text('PB 7F3K2Q'), findsOneWidget);
+      },
+    );
+
     testWidgets('"Tạo QR mới" failing otherwise shows bookTryAgain', (
       tester,
     ) async {

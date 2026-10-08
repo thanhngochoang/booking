@@ -125,6 +125,10 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookNotAcceptingOrders)),
         );
+      case BookingErrorCode.blocked:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookingErrBlocked)),
+        );
       case BookingErrorCode.paymentAttemptsExceeded:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.payAttemptsExceeded)),

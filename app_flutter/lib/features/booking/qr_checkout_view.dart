@@ -93,9 +93,11 @@ class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
       _doneCreating();
       showPaymentSnack(
         messenger,
-        bookingErrorOf(e) == BookingErrorCode.paymentAttemptsExceeded
-            ? l10n.payAttemptsExceeded
-            : l10n.bookTryAgain,
+        switch (bookingErrorOf(e)) {
+          BookingErrorCode.paymentAttemptsExceeded => l10n.payAttemptsExceeded,
+          BookingErrorCode.blocked => l10n.bookingErrBlocked,
+          _ => l10n.bookTryAgain,
+        },
       );
     }
   }

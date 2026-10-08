@@ -5220,4 +5220,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get bookNotAcceptingOrders => 'Nhiếp ảnh gia này chưa nhận đặt lịch.';
+
+  @override
+  String get bookingErrBlocked => 'Không đặt lịch được với người này.';
 }

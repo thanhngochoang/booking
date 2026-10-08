@@ -9189,6 +9189,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Nhiếp ảnh gia này chưa nhận đặt lịch.'**
   String get bookNotAcceptingOrders;
+
+  /// S04: createBooking/createPayment refused because the customer and the photographer blocked each other (blocked).
+  ///
+  /// In vi, this message translates to:
+  /// **'Không đặt lịch được với người này.'**
+  String get bookingErrBlocked;
 }
 
 class _AppLocalizationsDelegate

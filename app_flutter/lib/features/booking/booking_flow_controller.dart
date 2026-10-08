@@ -327,6 +327,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.deadlinePassed:
       case BookingErrorCode.notFound:
       case BookingErrorCode.notAcceptingOrders:
+      case BookingErrorCode.blocked:
         state = state.copyWith(
           clearBookingId: true,
           phase: SubmitPhase.idle,

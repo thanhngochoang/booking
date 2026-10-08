@@ -420,6 +420,40 @@ void main() {
   );
 
   testWidgets(
+    'a blocked pair refused by the server shows "Không đặt lịch được với người này."',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository();
+      fakeRepo.nextError = BookingErrorCode.blocked;
+
+      await navigateToReviewStep(tester, bookings: fakeRepo);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Không đặt lịch được với người này.'), findsOneWidget);
+      expect(find.text('Thử lại'), findsNothing);
+      expect(fakeRepo.paymentCalls, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'blocked from createPayment shows the same text and does not open /pay',
+    (tester) async {
+      final fakeRepo = FakeBookingRepository()
+        ..nextPaymentError = BookingErrorCode.blocked;
+      final handles = await navigateToReviewStep(tester, bookings: fakeRepo);
+
+      await tester.tap(find.widgetWithText(AppButton, 'Thanh toán 1.500.000₫'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Không đặt lịch được với người này.'), findsOneWidget);
+      expect(find.text('Thử lại'), findsNothing);
+      expect(handles.router.state.uri.toString(), isNot(contains('/pay')));
+      expect(find.byType(ReviewStep), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'after a not_accepting_orders refusal the photographer profile is re-read',
     (tester) async {
       final fakeRepo = FakeBookingRepository();
