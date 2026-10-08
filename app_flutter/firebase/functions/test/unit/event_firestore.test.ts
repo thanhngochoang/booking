@@ -47,6 +47,7 @@ const event = (over: Partial<EventRecord> = {}): EventRecord => ({
   completedAt: null,
   cancelledAt: null,
   soonNoticeAt: null,
+  soonNotifiedRegIds: [],
   createdAt: D('2026-10-06T03:00:00.000Z'),
   updatedAt: D('2026-10-06T03:00:00.000Z'),
   ...over,
@@ -114,6 +115,19 @@ describe('Firestore mapping for events', () => {
     const old = { ...eventToFirestore(event()) };
     delete old.soonNoticeAt;
     assert.equal(eventFromFirestore('ev1', old).soonNoticeAt, null);
+  });
+
+  it('soonNotifiedRegIds round-trips; absent or malformed reads []', () => {
+    const e = event({ status: 'open', soonNotifiedRegIds: ['rg1', 'rg2'] });
+    const doc = eventToFirestore(e);
+    assert.deepEqual(doc.soonNotifiedRegIds, ['rg1', 'rg2']);
+    assert.deepEqual(eventFromFirestore('ev1', doc), e);
+    // Written as [] when the record has none.
+    assert.deepEqual(eventToFirestore({ ...event(), soonNotifiedRegIds: undefined }).soonNotifiedRegIds, []);
+    const old = { ...eventToFirestore(event()) };
+    delete old.soonNotifiedRegIds;
+    assert.deepEqual(eventFromFirestore('ev1', old).soonNotifiedRegIds, []);
+    assert.deepEqual(eventFromFirestore('ev1', { ...old, soonNotifiedRegIds: ['rg1', 7, null] }).soonNotifiedRegIds, ['rg1']);
   });
 
   it('dueForSoonNotice builds the status/soonNoticeAt/startAt query with the limit', async () => {

@@ -155,6 +155,77 @@ describe('sendEventSoonNotices', () => {
     assert.deepEqual(w.errors, ['evS']);
   });
 
+  test('a push-only recipient gets exactly one push across retries while a failing one is retried', async () => {
+    const w = world();
+    seedEvent(w);
+    seedReg(w, 'rga', 'cu1', 'paid');
+    seedReg(w, 'rgb', 'cu2', 'paid');
+    // cu1: "Sự kiện" inbox off, push on → no dedupe row, so only the event's list stops a re-push.
+    w.nw.store.prefs.set('cu1', { channels: { events: { push: true, inApp: false } } });
+    const real = w.nw.store.getPrefs.bind(w.nw.store);
+    let failures = 2;
+    w.nw.store.getPrefs = async (uid: string) => {
+      if (uid === 'cu2' && failures > 0) {
+        failures -= 1;
+        throw new Error('firestore unavailable');
+      }
+      return real(uid);
+    };
+    const pushesTo = (uid: string) => w.nw.push.sent.filter((p) => p.uid === uid).length;
+
+    // notify reports a push-only send as 'created'.
+    assert.deepEqual(await run(w), { events: 0, sent: 1 });
+    assert.equal(pushesTo('cu1'), 1);
+    assert.equal(rowsOf(w, 'cu1').length, 0);
+    assert.deepEqual(w.ev.store.events.get('evS')?.soonNotifiedRegIds, ['rga']);
+    assert.equal(w.ev.store.events.get('evS')?.soonNoticeAt ?? null, null);
+
+    w.ev.clock.advance(5 * 60_000);
+    assert.deepEqual(await run(w), { events: 0, sent: 0 });
+    assert.equal(pushesTo('cu1'), 1);
+    assert.equal(rowsOf(w, 'cu2').length, 0);
+    assert.equal(w.ev.store.events.get('evS')?.soonNoticeAt ?? null, null);
+
+    w.ev.clock.advance(5 * 60_000);
+    assert.deepEqual(await run(w), { events: 1, sent: 1 });
+    assert.equal(pushesTo('cu1'), 1);
+    assert.equal(pushesTo('cu2'), 1);
+    assert.equal(rowsOf(w, 'cu2').length, 1);
+    const ev = w.ev.store.events.get('evS');
+    assert.notEqual(ev?.soonNoticeAt ?? null, null);
+    // The list is only needed until the marker is set.
+    assert.deepEqual(ev?.soonNotifiedRegIds, []);
+    assert.equal(ev?.version, 1);
+    assert.deepEqual(w.errors, ['evS', 'evS']);
+
+    // Marker set: a later run sends nothing to anyone.
+    w.ev.clock.advance(5 * 60_000);
+    assert.deepEqual(await run(w), { events: 0, sent: 0 });
+    assert.equal(w.nw.push.sent.length, 2);
+  });
+
+  test('a ticket paid between the send and the marker is reminded on the next run', async () => {
+    const w = world();
+    seedEvent(w);
+    seedReg(w, 'rga', 'cu1', 'paid');
+    const realPrefs = w.nw.store.getPrefs.bind(w.nw.store);
+    let added = false;
+    w.nw.store.getPrefs = async (uid: string) => {
+      if (!added) {
+        added = true;
+        seedReg(w, 'rgb', 'cu2', 'paid');
+      }
+      return realPrefs(uid);
+    };
+    assert.deepEqual(await run(w), { events: 0, sent: 1 });
+    assert.deepEqual(w.ev.store.events.get('evS')?.soonNotifiedRegIds, ['rga']);
+    w.ev.clock.advance(5 * 60_000);
+    assert.deepEqual(await run(w), { events: 1, sent: 1 });
+    assert.equal(rowsOf(w, 'cu1').length, 1);
+    assert.equal(rowsOf(w, 'cu2').length, 1);
+    assert.deepEqual(w.errors, []);
+  });
+
   test('one failing event does not block the others', async () => {
     const w = world();
     seedEvent(w, { id: 'evA', hashtagKey: 'eva' });

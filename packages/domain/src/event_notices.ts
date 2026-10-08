@@ -1,9 +1,11 @@
 /**
  * S17 `event_soon`: one reminder per paid ticket when its event starts within 48 hours (plan
- * 2026-10-07 Decision 4). Run by the event clock every 5 minutes; the event-level marker
- * `soonNoticeAt` is set only after every send succeeded, so a failure retries on the next tick and
- * the per-ticket dedupe key (`event_soon_{eventId}_{regId}`) keeps the retry from sending twice.
- * Tickets bought after the marker is set get no reminder (they just bought it).
+ * 2026-10-07 Decision 4). Run by the event clock every 5 minutes. After each run the event records the
+ * registrations whose send settled (`soonNotifiedRegIds`, Ruling 7), so a retry after a partial
+ * failure sends only to the others: a user with the inbox off but push on has no dedupe row and would
+ * otherwise get a push on every tick. The event-level marker `soonNoticeAt` is set (and the list
+ * cleared) once every paid registration is in the list. Tickets bought after the marker is set get no
+ * reminder (they just bought it).
  */
 
 import { formatVnDate, formatVnTime } from './booking_policy.js';
@@ -63,8 +65,10 @@ export async function sendEventSoonNotices(
       });
       if (found === null) continue;
       const { ev, regs } = found;
+      const already = new Set(ev.soonNotifiedRegIds ?? []);
+      const pending = regs.filter((r) => !already.has(r.id));
       const content = eventSoonContent(ev, deps.clock.now());
-      const results = await Promise.allSettled(regs.map((r) => notify(notifyDeps, {
+      const results = await Promise.allSettled(pending.map((r) => notify(notifyDeps, {
         userId: r.userId,
         content,
         target: `/e/${ev.id}`,
@@ -72,13 +76,22 @@ export async function sendEventSoonNotices(
         thumbUrl: ev.coverUrl,
       })));
       sent += results.filter((x) => x.status === 'fulfilled' && x.value === 'created').length;
-      if (results.some((x) => x.status === 'rejected')) throw new Error('event_soon send failed');
-      await deps.events.runTransaction(async (tx) => {
+      const settled = pending.filter((_, i) => results[i]?.status === 'fulfilled').map((r) => r.id);
+      const marked = await deps.events.runTransaction(async (tx) => {
         const fresh = await tx.getEvent(ev.id);
-        if (fresh === null || (fresh.soonNoticeAt ?? null) !== null) return;
+        if (fresh === null || (fresh.soonNoticeAt ?? null) !== null) return false;
+        const notified = new Set([...(fresh.soonNotifiedRegIds ?? []), ...settled]);
+        const paid = (await tx.activeRegistrations(ev.id)).filter((r) => r.status === 'paid');
+        const done = paid.every((r) => notified.has(r.id));
+        if (!done && settled.length === 0) return false;
         // Version unchanged: a server marker, not an edit of the event.
-        tx.putEvent({ ...fresh, soonNoticeAt: deps.clock.now() });
+        tx.putEvent(done
+          ? { ...fresh, soonNoticeAt: deps.clock.now(), soonNotifiedRegIds: [] }
+          : { ...fresh, soonNotifiedRegIds: [...notified] });
+        return done;
       });
+      if (results.some((x) => x.status === 'rejected')) throw new Error('event_soon send failed');
+      if (!marked) continue;
       events += 1;
     } catch (e) {
       onError(due.id, e);

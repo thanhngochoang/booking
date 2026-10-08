@@ -109,6 +109,12 @@ export interface EventRecord {
    * Firestore adapter writes null when absent.
    */
   readonly soonNoticeAt?: Date | null;
+  /**
+   * S17 (Ruling 7): registration ids already sent their `event_soon` reminder while `soonNoticeAt` is
+   * still null, so a retry after a partial failure skips them (no repeated pushes for push-only users).
+   * Server-only; cleared when the marker is set. Optional (absent = `[]`).
+   */
+  readonly soonNotifiedRegIds?: readonly string[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

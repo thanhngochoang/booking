@@ -105,6 +105,8 @@ export function eventToFirestore(e: EventRecord): DocumentData {
     cancelledAt: ts(e.cancelledAt),
     // Always written (null when unset) so the reminder query `soonNoticeAt == null` matches it.
     soonNoticeAt: ts(e.soonNoticeAt ?? null),
+    // S17 Ruling 7: server-only list of registrations already reminded while the marker is unset.
+    soonNotifiedRegIds: [...(e.soonNotifiedRegIds ?? [])],
     createdAt: Timestamp.fromDate(e.createdAt),
     updatedAt: Timestamp.fromDate(e.updatedAt),
   };
@@ -164,6 +166,9 @@ export function eventFromFirestore(id: string, d: DocumentData): EventRecord {
     completedAt: toDate(d.completedAt),
     cancelledAt: toDate(d.cancelledAt),
     soonNoticeAt: toDate(d.soonNoticeAt),
+    soonNotifiedRegIds: Array.isArray(d.soonNotifiedRegIds)
+      ? d.soonNotifiedRegIds.filter((x: unknown): x is string => typeof x === 'string')
+      : [],
     createdAt: toDate(d.createdAt) ?? new Date(0),
     updatedAt: toDate(d.updatedAt) ?? new Date(0),
   };
