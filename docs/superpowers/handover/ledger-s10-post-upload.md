@@ -32,7 +32,7 @@ Plan: `docs/superpowers/plans/2026-10-07-s10-post-upload.md`, Tasks 1–6. Branc
 8. Upload path vs rules audit (2026-10-07): avatar `avatars/{uid}/{ulid}.jpg` → `avatar`; S10.01 `posts/{uid}/{draftId}/{key}.jpg` → `portfolio`; S05.05 `real_shoot` and S11.05 `event_share` under `posts/…` → `share`; S12.01 cover `eventCovers/{uid}/{eventId}/{ulid}.jpg` → `share`; awards `awardProofs/{uid}/{awardId}/{ulid}.jpg` → `document`; S07.01 chat `chats/{chatId}/{uid}/{clientId}` → `chat` (the extension lied: `.webp` with JPEG bytes, now `.jpg`); S11.06 `chats/event_{eventId}/{uid}/{clientId}.jpg` → `chat`; `users/{uid}/**` had no writer and is closed. `posts/` holds both portfolio and share, so its limit is the larger (3 MiB).
 9. Image size travels with the upload (`UploadedMedia.width/height/sizeBytes`).
 10. S10.01 mock parity: mock fixed (tab-root bar without back arrow, "n / 10 ảnh" line); app uses the tab-root title style; square tiles accepted by `portfolio-awards.md`; the remaining fields already matched.
-11. Delivery samples (#130) are compressed on the phone too (`deliverySample`), then watermarked by the Function at the same 1600 px; identity documents (#135) use `document`.
+11. Delivery samples (#152) are compressed on the phone too (`deliverySample`), then watermarked by the Function at the same 1600 px; identity documents (#135) use `document`.
 
 ## Owner answers
 1. JPEG everywhere (no WebP for public images for now; reconsider with upload-time thumbnails).
@@ -55,12 +55,12 @@ Plan: `docs/superpowers/plans/2026-10-07-s10-post-upload.md`, Tasks 1–6. Branc
 
 ## Hand-off for other units
 - **#131 (chat):** `MediaUploader.upload(image, storagePath: 'chats/$chatId/$uid/$clientId.jpg', purpose: ImagePurpose.chat)`; the `.webp` → `.jpg` rename is already done here (its plan's Decision 7 finds it done and skips that edit). Chat image display from download URLs and retry (`chat_screen.dart`, `chat_controller.dart`) remain #131's.
-- **#130 (delivery samples):** `ImagePurpose.deliverySample`; the path and its rule line are #130's and must use `jpegUpTo(2 * 1024 * 1024)`; add the path to the sync test's table. The watermark Function does not need to resize (1600 px already).
+- **#152 (delivery samples):** `ImagePurpose.deliverySample`; the path and its rule line are #152's and must use `jpegUpTo(2 * 1024 * 1024)`; add the path to the sync test's table. The watermark Function does not need to resize (1600 px already).
 - **#135 (identity documents):** `ImagePurpose.document`, rule `jpegUpTo(3 * 1024 * 1024)`, path owned by #135 (private); add it to the sync test's table.
 - **S15/S16 job references:** `jobRefs/{uid}/{draftId}/{ulid}.jpg`, `ImagePurpose.share`, `jpegUpTo(2 * 1024 * 1024)`. **S18 dispute evidence:** `ImagePurpose.document`, `jpegUpTo(3 * 1024 * 1024)` instead of its planned `image/(jpeg|png|webp|heic|heif)`. Whichever unit lands later rebases onto `jpegUpTo` in `storage.rules` (see the comment above the function) and ledgers the merge.
 
 ## Cost (Google)
-Before: 2048 px q85 ≈ 650 KB for every purpose (estimate, confirm on a device). After: avatar 60 KB, chat 150 KB, share/cover 300 KB, portfolio 500 KB, document 600 KB. Assumed view mix of 600 views/MAU/month: 390 MB → 172 MB per MAU, i.e. **−$26/month at (b) 1,000 MAU, −$262/month at (c) 10,000 MAU** (egress $0.12/GB is an unconfirmed assumption; if the Firebase 100 GB/month free download applies, (b) shrinks to about −$14). Storage at rest −$0.04/month at (b). No Firestore read/write and no Functions work added. Thumbnails would add another −$12 (b) / −$116 (c) per month (Deferred).
+Before: 2048 px q85 ≈ 650 KB for every purpose (estimate, confirm on a device). After: avatar 60 KB, chat 150 KB, share/cover 300 KB, portfolio 500 KB, document 600 KB. Assumed view mix of 600 views/MAU/month: 390 MB → 172 MB per MAU, i.e. **−$26/month at (b) 1,000 MAU, −$262/month at (c) 10,000 MAU** (egress $0.12/GB is an unconfirmed assumption; the cost spec assumes the Singapore bucket gets no free download tier, and even if a 100 GB/month free tier applied, both before (390 GB) and after (172 GB) at (b) are above it, so the saving would stay ≈ −$26). Worst-case egress at (b) is now $20.6/month (172 GB) and at (c) $206/month (1,720 GB) until thumbnails ship; the cost spec's worst-case totals were updated to ≈ $54 (b) and ≈ $638 (c). Storage at rest −$0.04/month at (b). No Firestore read/write and no Functions work added. Thumbnails would add another −$12 (b) / −$116 (c) per month (Deferred).
 
 ## Needs the owner
 None open (both questions answered above).
@@ -76,7 +76,7 @@ From the SDD progress ledger (`.superpowers/sdd/2026-10-07-s10-post-upload/progr
 - Task 3: complete (7c1bcc8..a06c965, review approved).
 - Task 3: minor (deferred): imageMeta w/h at the Firestore publisher level not pinned by this task's tests
 - Task 4: complete (a06c965..2cfda91, review approved; Important was documentation only).
-- Task 4: minor (deferred, FINAL TRIAGE): sync test should assert every create block uses jpegUpTo; chats create lacks resource == null
+- Task 4: minor (done in the final fix wave): sync test should assert every create block uses jpegUpTo; chats create lacks resource == null
 - Task 4: minor (deferred): awardProofs read/delete inline auth vs isOwner; client-declared contentType; no per-owner file-count cap (pre-existing)
 - Task 5: review 1 (98db0a6): Important — photographer.md S10.01 still listed the old portfolio toggle; fix round 1 (98db0a6..a469fa2); complete (2cfda91..a469fa2, review clean).
 
@@ -88,6 +88,8 @@ From the SDD progress ledger (`.superpowers/sdd/2026-10-07-s10-post-upload/progr
 - WebP output (owner question 1; answered JPEG for now).
 - Server-side verification of pixel dimensions or a Storage trigger that re-encodes uploads: needs Blaze and Functions on Storage events; rules size and type limits are the server guard for now.
 - Chat image display from download URLs and image retry (`chat_screen.dart`, `chat_controller.dart`): #131.
-- Delivery samples path, rule and watermark Function: #130. Identity document upload and its private path: #135.
+- Delivery samples path, rule and watermark Function: #152. Identity document upload and its private path: #135.
 - Video in posts (`PostMedia`): out of scope.
+- Final review minors (deferred): compression failures show generic errors (no `unreadable` copy); a cancel racing a finished upload leaves an orphan object (#131/#152); the chat repo builds its own `NativeImageCompressor` (#131). Known limitation, documented in `data-model/README.md` "Ảnh tải lên": PNG sources with transparency become black in the Android JPEG output; flattening onto white before encoding is a later improvement.
 - Minors, verbatim from the review notes above: Task 1 (denylist vs allowlist of segments; standalone markers before SOS; tooLarge code after overshoot retries; DHT-before-SOF fixture; duplicated marker walk; isIcc may misclassify an APP2 shorter than 14 bytes); Task 2 (temp-file write error untyped; put uses purpose.cacheControl not meta.cacheControl; task.cancel() future discarded; no test for cancel during compression; chat repo builds its own NativeImageCompressor; stale fake comments); Task 3 (imageMeta w/h at the Firestore publisher level not pinned by this task's tests); Task 4 FINAL TRIAGE (sync test should assert every create block uses jpegUpTo; chats create lacks resource == null; awardProofs read/delete inline auth vs isOwner; client-declared contentType; no per-owner file-count cap, pre-existing).
+- Final review (3ad3787): With fixes — I1 cost docs, M2 chats `resource == null`, M3 sync test, M6 #130 → #152, M7 `.jpg` wording, M8 PNG transparency doc note; all addressed in the final fix wave (the Task 4 FINAL TRIAGE minors above are done: the sync test now requires `jpegUpTo(` on every writable rule and the chats create has `resource == null`, with an overwrite assertion in `rules.test.mjs`; rules tests 172/172).
