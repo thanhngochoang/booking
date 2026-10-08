@@ -279,8 +279,16 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
             ),
     );
 
-    InputDecoration numberField(String label, PackageField f) =>
-        InputDecoration(labelText: label, errorText: err(f), errorMaxLines: 2);
+    InputDecoration numberField(
+      String label,
+      PackageField f, {
+      String? suffix,
+    }) => InputDecoration(
+      labelText: label,
+      suffixText: suffix,
+      errorText: err(f),
+      errorMaxLines: 2,
+    );
 
     return ScreenCode(
       ScreenCodes.setupProfile,
@@ -433,6 +441,7 @@ class _SetupPackagesScreenState extends ConsumerState<SetupPackagesScreen> {
                                 decoration: numberField(
                                   l.packageDeliveryLabel,
                                   PackageField.delivery,
+                                  suffix: l.packageDeliverySuffix,
                                 ),
                                 onChanged: (_) => _changed(),
                               ),

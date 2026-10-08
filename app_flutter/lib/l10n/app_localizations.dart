@@ -1126,22 +1126,10 @@ abstract class AppLocalizations {
   /// **'Không lưu được thiết lập. Kiểm tra mạng rồi thử lại.'**
   String get setupSaveError;
 
-  /// No description provided for @setupIntroHeading.
-  ///
-  /// In vi, this message translates to:
-  /// **'Giới thiệu bản thân'**
-  String get setupIntroHeading;
-
-  /// No description provided for @setupIntroHint.
-  ///
-  /// In vi, this message translates to:
-  /// **'Khách đọc phần này trước khi đặt lịch. Viết ngắn, nói rõ bạn chụp kiểu gì.'**
-  String get setupIntroHint;
-
   /// No description provided for @setupBioLabel.
   ///
   /// In vi, this message translates to:
-  /// **'Giới thiệu ngắn'**
+  /// **'Giới thiệu'**
   String get setupBioLabel;
 
   /// No description provided for @setupBioHint.
@@ -1279,8 +1267,14 @@ abstract class AppLocalizations {
   /// No description provided for @packageDeliveryLabel.
   ///
   /// In vi, this message translates to:
-  /// **'Giao sau (ngày)'**
+  /// **'Giao sau'**
   String get packageDeliveryLabel;
+
+  /// No description provided for @packageDeliverySuffix.
+  ///
+  /// In vi, this message translates to:
+  /// **'ngày'**
+  String get packageDeliverySuffix;
 
   /// No description provided for @packagePhotos.
   ///

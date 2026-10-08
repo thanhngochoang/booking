@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 
 /// One choice of a single-choice list (mock `.opt`, S02.05; later S04.02, S13.01):
 /// a bordered glass card with a radio. Selected = accent border, accent-soft
-/// fill and a filled radio. No blur, so it is safe in long lists.
+/// fill and a filled radio. No blur, so it is safe in long lists. The [icon]
+/// variant (S08.01, Settings provider-type sheet) puts a 40dp icon tile on
+/// the left and the radio on the right.
 class AppOptionTile extends StatelessWidget {
   static Widget skeleton({Key? key, bool withThumb = false}) =>
       _AppOptionTileSkeleton(key: key, withThumb: withThumb);
@@ -16,8 +19,12 @@ class AppOptionTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.leading,
+    this.icon,
     this.description,
-  });
+  }) : assert(
+         icon == null || leading == null,
+         'icon and leading are mutually exclusive',
+       );
 
   final String label;
 
@@ -26,8 +33,15 @@ class AppOptionTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// Optional icon between the radio and the label.
+  /// Optional icon between the radio and the label (radio-left layout only;
+  /// see [icon]).
   final Widget? leading;
+
+  /// Mock `.opt .oi` (S08.01-type): a 40dp rounded tile on the left holding
+  /// this icon — field colour, or primary with an onPrimary icon when
+  /// selected — and the radio moves to the right end. Mutually exclusive
+  /// with [leading].
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -66,8 +80,30 @@ class AppOptionTile extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    _Radio(selected: selected, edge: edge),
-                    const SizedBox(width: AppSpace.s2h),
+                    if (icon != null) ...[
+                      Container(
+                        key: const ValueKey('option-icon-tile'),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: selected ? scheme.primary : scheme.secondary,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                        child: Center(
+                          child: AppIcon(
+                            icon!,
+                            size: 20,
+                            color: selected
+                                ? scheme.onPrimary
+                                : scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.s2h),
+                    ] else ...[
+                      _Radio(selected: selected, edge: edge),
+                      const SizedBox(width: AppSpace.s2h),
+                    ],
                     if (leading != null) ...[
                       IconTheme.merge(
                         data: const IconThemeData(size: 18),
@@ -98,6 +134,10 @@ class AppOptionTile extends StatelessWidget {
                               ],
                             ),
                     ),
+                    if (icon != null) ...[
+                      const SizedBox(width: AppSpace.s2),
+                      _Radio(selected: selected, edge: edge),
+                    ],
                   ],
                 ),
               ),

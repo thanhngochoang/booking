@@ -218,6 +218,51 @@ void main() {
     );
   });
 
+  testWidgets('the type choice comes first, before the avatar and the name', (
+    tester,
+  ) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    final ys = [
+      'type-individual',
+      'change-avatar',
+      'setup-name',
+      'setup-bio',
+      'setup-equipment-field',
+    ].map((k) => tester.getTopLeft(_key(k)).dy).toList();
+    expect(ys, [...ys]..sort());
+    expect(ys.toSet().length, ys.length);
+  });
+
+  testWidgets('no "Giới thiệu bản thân" heading', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.text('Giới thiệu bản thân'), findsNothing);
+  });
+
+  testWidgets('the bio field is labelled "Giới thiệu"', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: _key('setup-bio'), matching: find.text('Giới thiệu')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('type tiles use the icon variant', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/setup/1', routes: _routes));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('option-icon-tile')), findsNWidgets(2));
+  });
+
   testWidgets('a stored studio profile preselects Studio', (tester) async {
     usePhone(tester, height: 1400);
     final w = await _world();

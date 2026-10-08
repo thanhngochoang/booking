@@ -91,4 +91,104 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  Finder radioRing() => find.byWidgetPredicate(
+    (w) =>
+        w is Container &&
+        w.decoration is BoxDecoration &&
+        (w.decoration! as BoxDecoration).shape == BoxShape.circle &&
+        w.constraints?.maxWidth == 18,
+  );
+
+  testWidgets('with icon: a 40dp tile on the left and the radio on the right', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        AppOptionTile(
+          label: 'Cá nhân',
+          description: 'Nhận việc một mình',
+          icon: AppIcons.profile,
+          selected: false,
+          onTap: () {},
+        ),
+      ),
+    );
+    final iconTile = find.byKey(const ValueKey('option-icon-tile'));
+    expect(iconTile, findsOneWidget);
+    expect(tester.getSize(iconTile), const Size(40, 40));
+    final label = tester.getTopLeft(find.text('Cá nhân')).dx;
+    expect(tester.getTopLeft(iconTile).dx, lessThan(label));
+    expect(label, lessThan(tester.getTopLeft(radioRing()).dx));
+  });
+
+  for (final b in Brightness.values) {
+    testWidgets(
+      'selected icon tile is primary with an onPrimary icon, unselected is '
+      'secondary (${b.name})',
+      (tester) async {
+        var selected = false;
+        await tester.pumpWidget(
+          hostWidget(
+            StatefulBuilder(
+              builder: (context, set) => AppOptionTile(
+                label: 'Studio',
+                icon: AppIcons.work,
+                selected: selected,
+                onTap: () => set(() => selected = true),
+              ),
+            ),
+            brightness: b,
+          ),
+        );
+        final scheme = Theme.of(tester.element(find.byType(AppOptionTile)))
+            .colorScheme;
+        final iconTile = find.byKey(const ValueKey('option-icon-tile'));
+        BoxDecoration deco() =>
+            tester.widget<Container>(iconTile).decoration! as BoxDecoration;
+        AppIcon icon() => tester.widget<AppIcon>(
+          find.descendant(of: iconTile, matching: find.byType(AppIcon)),
+        );
+        expect(deco().color, scheme.secondary);
+        expect(icon().color, scheme.onSurface);
+        expect(deco().borderRadius, BorderRadius.circular(AppRadius.lg));
+
+        await tester.tap(find.byType(AppOptionTile));
+        await tester.pump();
+        expect(deco().color, scheme.primary);
+        expect(icon().color, scheme.onPrimary);
+      },
+    );
+  }
+
+  testWidgets('without icon the radio stays on the left', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        AppOptionTile(
+          label: 'Quận 3',
+          leading: const AppIcon(AppIcons.myLocation),
+          selected: false,
+          onTap: () {},
+        ),
+      ),
+    );
+    expect(find.byKey(const ValueKey('option-icon-tile')), findsNothing);
+    expect(
+      tester.getTopLeft(radioRing()).dx,
+      lessThan(tester.getTopLeft(find.text('Quận 3')).dx),
+    );
+  });
+
+  test('icon and leading together assert', () {
+    expect(
+      () => AppOptionTile(
+        label: 'x',
+        selected: false,
+        onTap: () {},
+        icon: AppIcons.work,
+        leading: const SizedBox(),
+      ),
+      throwsAssertionError,
+    );
+  });
 }

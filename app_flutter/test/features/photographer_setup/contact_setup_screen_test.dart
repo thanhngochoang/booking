@@ -502,11 +502,47 @@ void main() {
       expect(find.text('work'), findsNothing);
     });
 
+    testWidgets('the address block comes before the service area', (
+      tester,
+    ) async {
+      await _open(tester, type: ProviderType.studio);
+      final address = tester.getTopLeft(find.text('Địa chỉ cơ sở')).dy;
+      final area = tester.getTopLeft(find.text('Khu vực phục vụ')).dy;
+      expect(address, lessThan(area));
+    });
+
+    testWidgets('the studio form fits 320dp at 1.3x with every channel open', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await _harness(type: ProviderType.studio);
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 640),
+            textScaler: TextScaler.linear(1.3),
+          ),
+          child: h.widget,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Địa chỉ cơ sở'), findsOneWidget);
+      for (final k in ['channel-call', 'channel-zalo', 'channel-whatsapp']) {
+        await tester.ensureVisible(find.byKey(Key(k)));
+        await tester.tap(find.byKey(Key(k)));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('an individual finishes without the address block', (
       tester,
     ) async {
       final h = await _open(tester);
       expect(find.byKey(const Key('studio-line')), findsNothing);
+      expect(find.text('Địa chỉ cơ sở'), findsNothing);
       await _type(tester, 'setup-city', 'Hà Nội');
       await fillContact(tester);
       await _tap(tester, 'setup-finish');
