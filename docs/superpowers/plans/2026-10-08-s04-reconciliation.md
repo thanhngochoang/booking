@@ -132,7 +132,7 @@ Mỗi chỗ thêm có ghi chú "trước đây do S04 làm; #129 không làm (xe
 
 ## Việc mới cần plan
 
-Ba việc dưới đây lớn hơn một task nhỏ, nên chưa gán vào plan nào. Plan dùng chúng có ghi chú "Blocked by" trỏ về đây. Cần chủ dự án (hoặc một lượt viết plan) tạo issue và plan cho từng việc.
+Ba việc dưới đây lớn hơn một task nhỏ. Cập nhật 2026-10-08: V1 và V2 đã có issue và plan (xem dòng "Issue và plan" ở mỗi mục); plan dùng chúng ghi "Blocked by" trỏ tới issue đó. V3 vẫn chưa có issue và plan.
 
 ### V1. Thanh toán dùng chung cho mọi chủ thể (vé, Chụp ngay, phí xác minh) và S04.04 dùng chung
 
@@ -143,7 +143,9 @@ Hôm nay chỉ booking có `createPayment`, VietQR, webhook và đối soát; `h
 - App: `features/payment/` (`PaySubject`, `PaymentScreen`, `PaymentController`, `openPayment`, `FakeWalletSheet`), `PaymentsRepository.confirmFake`, `PaymentInstructions` (Dart).
 - Vé S11.03 chuyển sang mô hình này (`TicketPay`, route `/e/:eventId/pay/:regId`, `registerEvent` nhận `method`); bỏ `PaymentProviderCode`, `createDepositIntent`, `checkPaymentStatus`, `confirmFakeTicketPayment`.
 
-Plan bị chặn: #135 S21 (phí xác minh, chủ thể `verification_fee`), #140 S13–S14 (chủ thể `instant_request`) và #140 S13 khách (trả tiền ở S04.04). #138 S17 chỉ bị ảnh hưởng nhẹ (vé trả tiền vẫn về `/bookings?tab=events&highlight=…`).
+**Issue và plan:** #200, `docs/superpowers/plans/2026-10-08-v1-subject-payments.md` (Blocked by: nothing; tên thật và bảng Deviations trong plan đó thắng tên ở mục này, ví dụ không có `FakeWalletSheet`).
+
+Plan bị chặn: #203 S21 phí xác minh (tách khỏi #135 ngày 2026-10-08; chủ thể `verification_fee`), #140 S13–S14 (chủ thể `instant_request`) và #140 S13 khách (trả tiền ở S04.04). #138 S17 chỉ bị ảnh hưởng nhẹ (vé trả tiền vẫn về `/bookings?tab=events&highlight=…`).
 
 ### V2. Hoàn tiền về tài khoản người chuyển, gửi lại hoàn tiền và webhook hoàn tiền
 
@@ -154,11 +156,13 @@ Hôm nay: không lưu tài khoản người chuyển (chỉ nằm trong `raw` c�
 - Gửi lại refund `pending` dưới cùng id (`sendRefundOnce`, `mergeRefundOutcome`, `REFUND_RESEND_AFTER_MINUTES`) trong `paymentClock`, cho cả booking và vé (thay bước `refund_resend` của `runEventSweeps`).
 - Webhook hoàn tiền (`RefundEvent`, `applyRefundEvent`).
 
-Plan bị chặn: #141 S22 (cứng: S22.04 và cửa sổ 24 giờ dựng trên nó). Dùng được khi có: #142 S18 (bỏ qua refund `awaiting_account`), #140 S13–S14.
+**Issue và plan:** #201, `docs/superpowers/plans/2026-10-08-v2-refund-destination.md` (Blocked by: nothing).
+
+Plan bị chặn: #141 S22 (cứng: S22.04 và cửa sổ 24 giờ dựng trên nó; phần xoá tài khoản tách sang #205, không bị chặn). Dùng được khi có: #142 S18 (bỏ qua refund `awaiting_account`), #140 S13–S14.
 
 ### V3. Bút toán doanh thu nền tảng (`gateway_fee`, `payout_fee`, `revenue_received`)
 
-Plan S06 (#134) chuyển các loại bút toán này cho #129; plan cũ của #129 lại chuyển cho #134. Không ai làm. Cần phí thật của tổ chức trung gian nên có thể để sau, nhưng cần một chủ.
+Plan S06 (#134) chuyển các loại bút toán này cho #129; plan cũ của #129 lại chuyển cho #134. Không ai làm. **Chưa có issue và plan** (2026-10-08). Cần phí thật của tổ chức trung gian nên có thể để sau, nhưng cần một chủ.
 
 ### Việc nhỏ chưa có chủ (không chặn plan nào)
 
