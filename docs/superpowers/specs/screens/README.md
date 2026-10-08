@@ -1,6 +1,6 @@
 # Đặc tả từng màn hình
 
-Chi tiết cho mọi màn `S01–S17`, `S24`, `S25` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
+Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S29` của spec `../2026-10-01-remaining-screens.md` (gọi là "spec chính"). Mock hi‑fi: https://claude.ai/artifact/LptNpoqnt5KjQ5tUaPjYDM (bật "Debug" để thấy mã; thêm `#S05.05` vào link để nhảy tới màn). Widget dùng chung có tài liệu riêng ở `../components/shared-components.md`.
 
 ## Mục lục
 
@@ -12,6 +12,7 @@ Chi tiết cho mọi màn `S01–S17`, `S24`, `S25` của spec `../2026-10-01-re
 | [photographer.md](photographer.md) | S06.01 Công việc · S06.04 Lịch · S10.01 Đăng bài · S06.02 Empty Công việc · S06.03 Từ chối · S08.01 Thiết lập hồ sơ · S08.05 Khu vực & liên hệ · S08.02–S08.04 Kỹ năng · S08.06, S08.07 Dịch vụ đi kèm |
 | [portfolio-awards.md](portfolio-awards.md) | Thay đổi ở S02.06, S03.01, S08.01, S09.01, S10.01 · S24.01–S24.05 Portfolio album · S25.01–S25.02 Giải thưởng & hạng NAG (spec 10-05) |
 | [jobs.md](jobs.md) | S15.01–S15.04 Đăng việc · S16.01–S16.03 Nhận việc đăng (spec 10-05) |
+| [spots.md](spots.md) | S29.01–S29.06 Điểm chụp đang hot · thay đổi ở S02.01, S02.03, S04 (đặt từ điểm), S06.01, S10.01, S12.01 (spec 10-08) |
 | [account.md](account.md) | S05.05 Đánh giá & chia sẻ · S01.03 Đăng nhập · S01.05 Chọn vai trò · S09.01 Hồ sơ cá nhân · S09.02 Cài đặt · S03.02 Huy hiệu · S01.04 Đăng ký · S09.03 Sửa hồ sơ · S17.01 Thông báo · S17.02 Cài đặt thông báo · S17.03 Xin quyền thông báo |
 
 ## Mẫu cho mỗi màn

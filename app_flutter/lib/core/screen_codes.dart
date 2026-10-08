@@ -5,8 +5,9 @@
 /// mock `docs/design/ui-mock.html` use the same codes (a test compares them).
 ///
 /// A new screen takes the next `.yy` in its use case, a new use case the next
-/// `Sxx`; never renumber inside a use case. Old flat codes (S01–S67, before
-/// 2026-10-02) are in the spec table's "Mã cũ" column.
+/// `Sxx`; never renumber inside a use case. A use case number may be reserved
+/// for screens outside the app (S28: studio web dashboard, #161). Old flat
+/// codes (S01–S67, before 2026-10-02) are in the spec table's "Mã cũ" column.
 abstract final class ScreenCodes {
   // S01 Vào app & tài khoản.
   static const splash = 'S01.01';
@@ -155,6 +156,14 @@ abstract final class ScreenCodes {
   static const studioRecruit = 'S27.05';
   static const collaboration = 'S27.06';
   static const collabOffer = 'S27.07';
+  // S28 is reserved for the studio web dashboard (#161); no app screen.
+  // S29 Điểm chụp đang hot.
+  static const spots = 'S29.01';
+  static const spotDetail = 'S29.02';
+  static const mySpotSchedules = 'S29.03';
+  static const spotScheduleEdit = 'S29.04';
+  static const spotSlotOffer = 'S29.05';
+  static const spotSlotPick = 'S29.06';
 
   static const all = <String>[
     splash,
@@ -277,5 +286,11 @@ abstract final class ScreenCodes {
     studioRecruit,
     collaboration,
     collabOffer,
+    spots,
+    spotDetail,
+    mySpotSchedules,
+    spotScheduleEdit,
+    spotSlotOffer,
+    spotSlotPick,
   ];
 }
