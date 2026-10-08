@@ -612,6 +612,130 @@ tr.sel td{background:var(--accent-soft)}
     <div class="cap"><span class="n">S23.06 · Hộp thư hỗ trợ</span><b>Chờ trả lời lên trước, nhận xử lý để không trả lời trùng</b><span>Hội thoại đang mở làm mới mỗi 10 giây (chỉ lấy tin mới). Ghi chú nội bộ người dùng không thấy. Quá hạn sau 12 giờ chờ.</span></div>
   </div>
 
+  <h2 id="kiemduyet" style="font-size:22px;margin-top:40px">Kiểm duyệt (#166) · admin, support</h2>
+  <p>Spec: <code>screens/staff-moderation.md</code>. Báo cáo gộp theo nội dung, không tự ẩn; từ 3 người báo cáo hoặc có "lừa đảo" thì lên đầu. Khoá tạm 7/30 ngày; khoá hẳn chỉ admin.</p>
+
+  <div class="shot" id="S23.05">
+    <div class="frame"><div class="desk" data-code="S23.05">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav on"><span class="ms">flag</span>Báo cáo<span class="cnt late">7</span></div>
+        <div class="nav"><span class="ms">groups</span>Cờ tuyển thợ<span class="cnt">2</span></div>
+        <div class="grp">Hệ thống</div>
+        <div class="nav"><span class="ms">block</span>Tài khoản bị khoá</div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã…</div><span class="role">support</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Báo cáo</h3><div class="sub">Gộp theo nội dung · không tự ẩn</div></div></div>
+          <div class="tabs" role="tablist"><span class="on">Đang mở <b>7</b></span><span>Đã xử lý</span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Nội dung</th><th>Người báo</th><th>Lý do</th><th>Từ lúc</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td><div class="who"><span class="ms">chat_bubble</span><div>"Chuyển khoản trước 50% qua…"<small>tin nhắn · Quang Studio</small></div></div></td><td class="num">3</td><td><span class="chip c-bad">Lừa đảo</span></td><td class="num">07/10 18:20<br><span class="chip c-bad">26 giờ</span></td></tr>
+                <tr><td><div class="who"><span class="ms">image</span><div>Bộ ảnh cưới Đà Lạt<small>bài · Minh Khôi</small></div></div></td><td class="num">1</td><td><span class="chip c-mut">Ảnh lấy cắp</span></td><td class="num">08/10 08:02</td></tr>
+                <tr><td><div class="who"><span class="ms">work</span><div>Cần thợ chụp kỷ yếu 40 người<small>việc đăng · Phạm Quân</small></div></div></td><td class="num">1</td><td><span class="chip c-mut">Spam</span></td><td class="num">08/10 10:41</td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Tin nhắn của Quang Studio</h4><div class="hint">Trong chat hỏi trước với Nguyễn Thanh Hà · 07/10 18:11</div></div>
+              <div class="pb">
+                <p class="quote">"Bạn chuyển khoản trước 50% qua số 0123… để mình giữ lịch, đặt trong app phí cao lắm."</p>
+                <span class="btn sec" style="height:32px;align-self:flex-start"><span class="ms">forum</span>Xem ngữ cảnh (5 tin trước, 5 tin sau)</span>
+                <dl class="kv sm"><dt>Chủ nội dung</dt><dd>Quang Studio · thợ · tạo 3 ngày trước · chưa xác minh</dd><dt>Đã bị xử lý</dt><dd>0 lần</dd></dl>
+                <div class="tbl"><table><tbody>
+                  <tr><td>Nguyễn Thanh Hà</td><td><span class="chip c-bad">Lừa đảo</span></td><td class="num">18:20</td></tr>
+                  <tr><td>Lê Minh <span class="chip c-mut">Tài khoản mới</span></td><td><span class="chip c-bad">Lừa đảo</span></td><td class="num">19:02</td></tr>
+                  <tr><td>Trần Lan</td><td><span class="chip c-mut">Quấy rối</span></td><td class="num">21:40</td></tr>
+                </tbody></table></div>
+              </div>
+              <div class="pf"><span class="btn sec">Bỏ qua…</span><span class="btn pri">Gỡ nội dung…</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.05 · Báo cáo</span><b>Một dòng cho mỗi nội dung, kèm danh sách người báo cáo</b><span>"Gỡ nội dung…" có ô "Khoá luôn chủ nội dung" (7 ngày / 30 ngày / khoá hẳn). Xem ngữ cảnh tin nhắn được ghi nhật ký. Sự kiện không gỡ ở đây.</span></div>
+  </div>
+
+  <div class="shot" id="S23.16">
+    <div class="frame"><div class="desk" data-code="S23.16">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">flag</span>Báo cáo<span class="cnt late">7</span></div>
+        <div class="grp">Hệ thống</div>
+        <div class="nav on"><span class="ms">block</span>Tài khoản bị khoá</div>
+        <div class="nav"><span class="ms">how_to_reg</span>Duyệt lần hai<span class="cnt">1</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã…</div><span class="role">admin</span><span class="av"></span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Tài khoản bị khoá</h3><div class="sub">Khoá tạm tự mở khi hết hạn · booking đang chạy không tự huỷ</div></div><span class="btn pri"><span class="ms">block</span>Khoá tài khoản…</span></div>
+          <div class="tabs" role="tablist"><span class="on">Đang khoá <b>3</b></span><span>Lịch sử</span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Người dùng</th><th>Mức</th><th>Tới</th><th>Lý do</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td><div class="who"><span class="av" style="background:linear-gradient(150deg,#8FB6C9,#1E3A4A)"></span><div>Quang Studio<small>thợ · 2 booking chưa xong</small></div></div></td><td><span class="chip c-mut">Tạm 30 ngày</span><br><span class="chip c-bad">Chờ khoá hẳn</span></td><td class="num">07/11</td><td>Lừa đảo</td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div>Đức Anh<small>khách</small></div></div></td><td><span class="chip c-mut">Tạm 7 ngày</span></td><td class="num">15/10</td><td>Quấy rối</td></tr>
+                <tr><td><div class="who"><span class="av"></span><div>Phong Lê<small>thợ</small></div></div></td><td><span class="chip c-mut">Tạm 30 ngày</span></td><td class="num">02/11</td><td>Ảnh lấy cắp</td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Quang Studio</h4><div class="hint">Khoá tạm 30 ngày từ 08/10 bởi Lê Hoài An · đề xuất khoá hẳn bởi Nguyễn Thu Thảo</div></div>
+              <div class="pb">
+                <dl class="kv sm"><dt>Booking chưa xong</dt><dd>2 · T7 11/10, CN 19/10</dd><dt>Tiền đang giữ</dt><dd class="num">3.200.000₫</dd><dt>Chi trả đang mở</dt><dd>Không có</dd><dt>Báo cáo</dt><dd>3 người · lừa đảo</dd></dl>
+                <div class="banner warn"><span class="ms">how_to_reg</span><div><b>Chờ duyệt lần hai</b><div class="hint">Khoá hẳn thợ còn booking và tiền đang giữ cần một admin hoặc support khác duyệt ở S23.15.</div></div></div>
+              </div>
+              <div class="pf"><span class="btn sec">Mở khoá…</span><span class="btn sec">Gia hạn…</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.16 · Tài khoản bị khoá</span><b>Thấy ngay booking chưa xong và tiền đang giữ trước khi khoá</b><span>Thợ bị khoá biến khỏi Tìm thợ và không nhận đơn mới. Khoá hẳn tạm giữ chi trả đang mở; khoá tạm thì không.</span></div>
+  </div>
+
+  <div class="shot" id="S23.17">
+    <div class="frame"><div class="desk" data-code="S23.17">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">flag</span>Báo cáo<span class="cnt late">7</span></div>
+        <div class="nav on"><span class="ms">groups</span>Cờ tuyển thợ<span class="cnt">2</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã…</div><span class="role">support</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Cờ tuyển thợ</h3><div class="sub">3 cờ chưa trả công trong 90 ngày → khoá đăng tin 30 ngày</div></div></div>
+          <div class="tabs" role="tablist"><span class="on">Chưa trả công <b>1</b></span><span>Lôi kéo thợ <b>1</b></span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Studio</th><th>Cờ (90 ngày)</th><th>Khoá đăng tin</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td><div class="who"><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><div>Studio Ánh Dương<small>Hà Nội</small></div></div></td><td class="num">3</td><td class="num">tới 06/11</td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Studio Ánh Dương · 3 cờ</h4><div class="hint">Khoá đăng tin, mời và giao cộng tác viên tới 06/11</div></div>
+              <div class="pb">
+                <div class="tbl"><table><thead><tr><th>Job</th><th>Thù lao</th><th>Cờ</th></tr></thead><tbody>
+                  <tr><td>Cưới 14/09 · Hà Vy</td><td class="num">1.800.000₫</td><td><span class="chip c-bad">Quá hạn 7 ngày</span></td></tr>
+                  <tr><td>Kỷ yếu 21/09 · Tuấn</td><td class="num">900.000₫</td><td><span class="chip c-bad">Chưa nhận</span></td></tr>
+                  <tr><td>Sự kiện 28/09 · Hà Vy</td><td class="num">1.200.000₫</td><td><span class="chip c-bad">Quá hạn 7 ngày</span></td></tr>
+                </tbody></table></div>
+              </div>
+              <div class="pf"><span class="btn sec">Xoá cờ…</span><span class="btn pri">Gỡ khoá đăng tin…</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.17 · Cờ tuyển thợ · tab Chưa trả công</span><b>Gỡ khoá sớm hoặc xoá cờ sai, luôn kèm ghi chú</b><span>Tab Lôi kéo thợ chỉ để xem (job cộng tác và booking riêng sau đó), "Đánh dấu đã xem…"; muốn xử lý thì khoá ở S23.16.</span></div>
+  </div>
+
   <h2 id="khung" style="font-size:22px;margin-top:40px">Khung (#161/#162)</h2>
   <div class="shot" id="S23.08">
     <div class="frame"><div class="desk" data-code="S23.08">
@@ -880,6 +1004,7 @@ tr.sel td{background:var(--accent-soft)}
         <tr><td>S23.02</td><td>Chi trả</td><td><code>/staff/payouts</code></td><td>admin · finance</td></tr>
         <tr><td>S23.03</td><td>Hoàn tiền</td><td><code>/staff/refunds</code></td><td>admin · finance</td></tr>
         <tr><td>S23.04</td><td>Duyệt xác minh</td><td><code>/staff/verifications</code></td><td>admin · support</td></tr>
+        <tr><td>S23.05</td><td>Kiểm duyệt báo cáo</td><td><code>/staff/reports</code></td><td>admin · support</td></tr>
         <tr><td>S23.06</td><td>Hộp thư hỗ trợ</td><td><code>/staff/inbox</code></td><td>admin · support · sales</td></tr>
         <tr><td>S23.07</td><td>Duyệt giải thưởng</td><td><code>/staff/awards</code></td><td>admin · support</td></tr>
         <tr><td>S23.08</td><td>Đăng nhập dashboard &amp; xác thực hai lớp</td><td><code>/login</code></td><td>staff · chủ studio</td></tr>
@@ -889,6 +1014,8 @@ tr.sel td{background:var(--accent-soft)}
         <tr><td>S23.12</td><td>Chuyển khoản chưa khớp</td><td><code>/staff/transfers</code></td><td>admin · finance</td></tr>
         <tr><td>S23.13</td><td>Báo cáo thuế</td><td><code>/staff/tax</code></td><td>admin · finance</td></tr>
         <tr><td>S23.15</td><td>Chờ duyệt lần hai</td><td><code>/staff/approvals</code></td><td>ai có quyền duyệt</td></tr>
+        <tr><td>S23.16</td><td>Tài khoản bị khoá</td><td><code>/staff/suspensions</code></td><td>admin · support</td></tr>
+        <tr><td>S23.17</td><td>Cờ tuyển thợ</td><td><code>/staff/recruit-flags</code></td><td>admin · support</td></tr>
         <tr><td>S28</td><td>Studio trên web (khung)</td><td><code>/studio</code></td><td>chủ studio</td></tr>
       </tbody>
     </table></div>
