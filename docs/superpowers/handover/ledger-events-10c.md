@@ -103,7 +103,7 @@ Other notes:
 ## Owner questions ("Needs the owner" in the Task 9+10 brief)
 
 1. Staff hosting for a photographer (question 17): answered by O1 (draft until the photographer accepts within 24 h). Backend and photographer side done; staff picker deferred (above).
-2. Support inbox for platform events (question 16): answered by O2 (FAQ + fixed support email until S23.06). FAQ editor built (S12.02, staff). **Open: give the support address** — the line stays hidden until `eventSupportEmail` is set (the earlier `hotro@photobooking.vn` was invented).
+2. Support inbox for platform events (question 16): answered by O2 (FAQ + fixed support email until S23.06). FAQ editor built (S12.02, staff). Owner 2026-10-07: the address is build config, set later — `--dart-define=SUPPORT_EMAIL=<address>` fills `eventSupportEmail`; unset keeps the line hidden (the earlier `hotro@photobooking.vn` was invented).
 3. Free tickets unlock contact: answered by O3 (they do not; only paid tickets after payment).
 4. Late cancellation of a paid ticket (< 48 h): answered by O4 (allowed, no refund, seat freed, money released to the host after the event). Implemented in Task 9; a host cancel afterwards refunds that money too.
 5. New (Task 10): confirm the S11.03 mapping of "Chuyển khoản QR" and "ZaloPay" onto the VNPay gateway code until #129 brings the real methods.
