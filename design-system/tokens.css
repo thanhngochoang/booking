@@ -116,6 +116,8 @@
   --color-accent-foreground: #FFFFFF;
   --color-accent-soft: #F4EEFF;
   --color-verified: #3D63FF;
+  --color-tomato: #D93A2B;
+  --color-brick: #A65A35;
   --color-secondary: #EFEFEF;
   --color-secondary-pressed: #E9E9E9;
   --color-secondary-foreground: #313131;
@@ -267,6 +269,8 @@
   --color-accent-foreground: #0B0B10;
   --color-accent-soft: #2C0F5C;
   --color-verified: #3D63FF;
+  --color-tomato: #FF5A47;
+  --color-brick: #D2875E;
   --color-secondary: #14FFFFFF;
   --color-secondary-pressed: #24FFFFFF;
   --color-secondary-foreground: #F7F7F7;

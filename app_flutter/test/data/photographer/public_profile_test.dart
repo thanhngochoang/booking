@@ -17,7 +17,10 @@ void main() {
         'onboardingComplete': true,
         'serviceArea': {'city': 'Quận 3', 'radiusKm': 15},
         'stats': {
-          'rating': 4.9,
+          'tomatoCount': 56,
+          'brickCount': 2,
+          'tomatoPct': 97,
+          'score': 0.93,
           'reviewCount': 58,
           'completedCount': 112,
           'responseMinutes': 60,

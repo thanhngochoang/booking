@@ -320,7 +320,7 @@ class EventsWorld {
     this.role = UserRole.customer,
     this.staff,
     this.contact = const UserContact(phone: '+84903123456'),
-    this.hostRating = 4.8,
+    this.hostTomatoCount = 11,
     this.hostChannels = const ContactChannels(call: true),
     this.onboardingComplete = false,
     this.now,
@@ -350,7 +350,7 @@ class EventsWorld {
   final UserRole role;
   final StaffRole? staff;
   final UserContact? contact;
-  final double hostRating;
+  final int hostTomatoCount;
   final ContactChannels hostChannels;
   final bool onboardingComplete;
   final DateTime? now;
@@ -416,8 +416,10 @@ class EventsWorld {
           summary: PhotographerSummary(
             id: 'p1',
             displayName: 'Quốc Bảo',
-            ratingAvg: hostRating,
-            reviewCount: 12,
+            reviewCount: hostTomatoCount + 1,
+            tomatoCount: hostTomatoCount,
+            brickCount: 1,
+            tomatoPct: (100 * hostTomatoCount / (hostTomatoCount + 1)).round(),
             verified: true,
             acceptingOrders: true,
           ),

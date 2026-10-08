@@ -43,6 +43,21 @@ derived from the payment id). The fake payment webhook (`paymentWebhook?provider
 `FAKE_PAYMENT_WEBHOOK_SECRET` from `.env.local` (emulator) and `.env.booking-c1922` (dev project):
 a self-made test value; the real secret comes with the payment intermediary unit.
 
+## Reviews (tomato/brick)
+
+| Photographer | Card / profile | `stats` | Seeded `reviews/*` |
+|---|---|---|---|
+| An | 97% from 58 reviews (keeps `top_rated`: "97% cà chua từ 58 đánh giá") | 56 tomato, 2 brick, `signedSum` 54.62, `score` 0.942, `punctualMentions` 3 | `seed-review-an-1` tomato ×10, `-2` brick ×3 (Đến trễ, Giao ảnh chậm), `-3` tomato ×6 (the newest three of the 58; texts of the mock) |
+| Cúc | "Mới · 3 đánh giá" (under 5, no %) | 3 tomato, folded with `addVerdict` | `seed-review-cuc-1..3`, all tomato |
+| Dũng | 50%, with bricks | 3 tomato, 3 brick, folded with `addVerdict` | `seed-review-dung-1..6`; every brick has its reasons |
+| Bình | nothing shown (0 reviews) | none | none |
+
+Reviews sit on synthetic booking ids (no booking docs), customers Lan and Minh, and are seeded already
+counted (`countedAt` set), so `onReviewWrite` neither recounts them nor sends a notice.
+`seed-booking-completed-recent` stays unreviewed: sign in as Lan to try S05.05.
+
+Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data are not converted.
+
 ## Earnings and payouts (plan 10b)
 
 | Data | Owner | Notes |
@@ -58,10 +73,10 @@ a self-made test value; the real secret comes with the payment intermediary unit
 | Data | Owner | Notes |
 |---|---|---|
 | Inbox rows (`users/{uid}/notifications/*`) | Lan | 5 rows: booking accepted (unread), 24 h reminder (read), refund (read), declined (read, 12 days old), grouped chat with 2 messages (unread) |
-| Inbox rows | An | booking request (unread), new review (read) |
+| Inbox rows | An | booking request (unread), a sample `review_tomato` notice "Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9" (read) |
 | `users/{uid}/private/inbox` | Lan, An | `unreadCount` 2 and 1, matching the unread rows |
 | Earned badges | An | `top_rated`, `shoots_10`, `complete_profile`; progress `punctual` 3/5, `shoots_50` 12/50 |
-| Earned badges | Lan | `loyal_customer`; progress `sharer` 2/5, `detailed_reviewer` 3/5 |
+| Earned badges | Lan | `loyal_customer`; progress `sharer` 0/5, `detailed_reviewer` 3/5 |
 | `badges/{id}` | all | the 12-badge catalogue |
 | `users/{uid}/private/notification_prefs` | none | no doc, so the defaults apply |
 

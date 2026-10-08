@@ -212,6 +212,38 @@ describe('Booking callables', () => {
     assert.equal(accepted.status, 'accepted');
   });
 
+  test('transitionBooking refuses the retired review action with invalid_argument and leaves the booking', async () => {
+    const { deps, store } = createTestDeps();
+    const booking: Booking = {
+      id: 'b_review',
+      customerId: 'c1',
+      photographerId: 'p1',
+      serviceId: 'svc1',
+      serviceSnapshot: { name: 'Chân dung', price: 1_000_000, durationMinutes: 120 },
+      day: '2026-10-15',
+      start: '09:00',
+      end: '11:00',
+      place: { name: 'Thảo Cầm Viên' },
+      status: 'completed',
+      deposit: 1_000_000,
+      remaining: 0,
+      escrowStatus: 'held',
+      completedAt: '2026-10-01T09:00:00.000Z',
+      version: 1,
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T09:00:00.000Z',
+    };
+    store.bookings.set(booking.id, booking);
+
+    await assert.rejects(
+      handleTransitionBooking({ auth: { uid: 'c1' }, data: { bookingId: 'b_review', action: 'review' } }, deps),
+      httpsError('invalid-argument', 'invalid_argument'),
+    );
+    const after = store.bookings.get('b_review');
+    assert.equal(after?.status, 'completed');
+    assert.equal(after?.reviewedAt, undefined);
+  });
+
   test('handleOpenDispute allows customer to dispute a completed booking', async () => {
     const { deps, store } = createTestDeps();
     const booking: Booking = {

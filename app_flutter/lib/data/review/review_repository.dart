@@ -30,7 +30,9 @@ abstract class ReviewRepository {
 
   Future<String?> submit({
     required String bookingId,
-    required int rating,
+    required Verdict verdict,
+    required int hits,
+    required List<ReviewReason> reasons,
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],

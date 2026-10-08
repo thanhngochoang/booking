@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/l10n/app_localizations.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
@@ -13,7 +12,6 @@ import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/review/review.dart';
 import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/review/review_repository.dart';
-import 'package:photobooking/features/review/widgets/star_rating.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/booking_world.dart';
@@ -76,7 +74,7 @@ void main() {
     });
 
     testWidgets(
-      'shows the compact card, stars, the comment field with a counter, and the share section',
+      'shows the compact card, the pad, the comment field with a counter, and the share section',
       (tester) async {
         final repo = RecordingBookingRepository()..seedBooking(_booking());
 
@@ -94,7 +92,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(BookingCard), findsOneWidget);
-        expect(find.byType(StarRating), findsOneWidget);
+        expect(find.byType(VerdictPad), findsOneWidget);
         expect(find.byKey(const Key('review_text_field')), findsOneWidget);
         expect(find.text('Chia sẻ ảnh bạn thích'), findsOneWidget);
       },
@@ -126,8 +124,8 @@ void main() {
       );
       expect(btn.onPressed, isNull);
 
-      // Tap 5th star
-      await tester.tap(find.byKey(const Key('star_5')));
+      // Pick tomato
+      await tester.tap(find.byKey(const Key('verdict-tomato')));
       await tester.pump();
 
       // Enter text
@@ -169,7 +167,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('star_5')));
+      await tester.tap(find.byKey(const Key('verdict-tomato')));
       await tester.enterText(
         find.byKey(const Key('review_text_field')),
         'Buổi chụp tuyệt vời và chuyên nghiệp',
@@ -186,7 +184,7 @@ void main() {
     });
 
     testWidgets(
-      'submitting sends rating, trimmed text, postId and the uploaded photos, then opens S05.02 with the thanks message',
+      'submitting sends verdict, trimmed text, postId and the uploaded photos, then opens S05.02 with the thanks message',
       (tester) async {
         fakePicker = FakeImagePicker([
           const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
@@ -207,7 +205,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(const Key('star_5')));
+        await tester.tap(find.byKey(const Key('verdict-tomato')));
         await tester.enterText(
           find.byKey(const Key('review_text_field')),
           '  Buổi chụp rất đẹp và chuyên nghiệp  ',
@@ -221,7 +219,9 @@ void main() {
 
         expect(fakeReviews.submitCalls, hasLength(1));
         final call = fakeReviews.submitCalls.first;
-        expect(call['rating'], 5);
+        expect(call['verdict'], Verdict.tomato);
+        expect(call['hits'], 1);
+        expect(call['reasons'], isEmpty);
         expect(call['text'], 'Buổi chụp rất đẹp và chuyên nghiệp');
         expect(call['postId'], isNotNull);
         expect(call['photos'], hasLength(1));
@@ -250,7 +250,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('star_5')));
+      await tester.tap(find.byKey(const Key('verdict-tomato')));
       await tester.enterText(
         find.byKey(const Key('review_text_field')),
         'Đã gửi đánh giá từ trước',
@@ -265,7 +265,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 5,
+          verdict: Verdict.tomato,
           text: 'Đã gửi đánh giá từ trước',
           createdAt: DateTime.now(),
         ),
@@ -379,7 +379,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(const Key('star_5')));
+        await tester.tap(find.byKey(const Key('verdict-tomato')));
         await tester.enterText(
           find.byKey(const Key('review_text_field')),
           'Buổi chụp rất đẹp và chuyên nghiệp',
@@ -420,6 +420,288 @@ void main() {
       expect(find.byKey(const Key('review_text_field')), findsNothing);
     });
 
+    Future<void> pumpForm(WidgetTester tester, {Booking? booking}) async {
+      final repo = RecordingBookingRepository()
+        ..seedBooking(booking ?? _booking());
+      await pumpBookingRoute(
+        tester,
+        path: '/b/b1/review',
+        bookings: repo,
+        signedInUid: 'c1',
+        extraOverrides: [
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(fakePicker),
+        ],
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows the pad, level and hint after the first tap', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+      expect(find.byType(VerdictPad), findsOneWidget);
+      expect(find.text('Hài lòng'), findsOneWidget);
+      expect(find.byType(VerdictLevel), findsNothing);
+
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(find.byKey(const Key('verdict-tomato')));
+        await tester.pump();
+      }
+      expect(find.text('Rất hài lòng'), findsOneWidget);
+      expect(find.text('Làm lại'), findsOneWidget);
+      expect(find.text('Chạm tiếp để tăng mức độ, tối đa 10'), findsOneWidget);
+      expect(find.text('Điều gì chưa ổn?'), findsNothing);
+
+      await tester.tap(find.text('Làm lại'));
+      await tester.pump();
+      expect(find.byType(VerdictLevel), findsNothing);
+    });
+
+    testWidgets('brick shows the reasons title and six chips', (tester) async {
+      await pumpForm(tester);
+      await tester.tap(find.byKey(const Key('verdict-brick')));
+      await tester.pump();
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.byKey(const Key('verdict-brick')));
+        await tester.pump();
+      }
+
+      expect(find.text('Chưa ưng'), findsOneWidget); // level 3
+      expect(find.text('Điều gì chưa ổn?'), findsOneWidget);
+      expect(find.text('Chọn ít nhất 1'), findsOneWidget);
+      final chips = find.descendant(
+        of: find.byKey(const Key('review_reasons')),
+        matching: find.byType(AppChip),
+      );
+      expect(chips, findsNWidgets(6));
+      final labels = tester
+          .widgetList<AppChip>(chips)
+          .map((c) => c.label)
+          .toList();
+      expect(labels, [
+        'Đến trễ',
+        'Ảnh không như mẫu',
+        'Giao ảnh chậm',
+        'Thái độ',
+        'Đổi giá',
+        'Khác',
+      ]);
+      // The brick frame of the mock has no tap hint.
+      expect(find.text('Chạm tiếp để tăng mức độ, tối đa 10'), findsNothing);
+    });
+
+    testWidgets('submit is disabled with "Chọn cà chua hoặc gạch" under it '
+        'before a side is picked', (tester) async {
+      await pumpForm(tester);
+      expect(find.text('Chọn cà chua hoặc gạch'), findsOneWidget);
+      final btn = tester.widget<AppButton>(
+        find.byKey(const Key('submit_review_button')),
+      );
+      expect(btn.onPressed, isNull);
+    });
+
+    testWidgets('brick without a reason shows "Chọn ít nhất một lý do"', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+      await tester.tap(find.byKey(const Key('verdict-brick')));
+      await tester.enterText(
+        find.byKey(const Key('review_text_field')),
+        'Đến trễ và giao ảnh quá chậm',
+      );
+      await tester.pump();
+      expect(find.text('Chọn ít nhất một lý do'), findsOneWidget);
+      expect(
+        tester
+            .widget<AppButton>(find.byKey(const Key('submit_review_button')))
+            .onPressed,
+        isNull,
+      );
+
+      await tester.tap(find.text('Đến trễ'));
+      await tester.pump();
+      expect(find.text('Chọn ít nhất một lý do'), findsNothing);
+      expect(
+        tester
+            .widget<AppButton>(find.byKey(const Key('submit_review_button')))
+            .onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('short text shows "Viết ít nhất 10 ký tự"', (tester) async {
+      await pumpForm(tester);
+      await tester.tap(find.byKey(const Key('verdict-tomato')));
+      await tester.enterText(find.byKey(const Key('review_text_field')), 'Đẹp');
+      await tester.pump();
+      expect(find.text('Viết ít nhất 10 ký tự'), findsOneWidget);
+      expect(
+        tester
+            .widget<AppButton>(find.byKey(const Key('submit_review_button')))
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('the text hint follows the side', (tester) async {
+      await pumpForm(tester);
+      expect(find.text('Điều bạn thích nhất ở buổi chụp'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('verdict-brick')));
+      await tester.pump();
+      expect(find.text('Kể rõ điều chưa ổn để thợ cải thiện'), findsOneWidget);
+    });
+
+    testWidgets('a brick review sends hits and the ticked reasons', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byKey(const Key('verdict-brick')));
+        await tester.pump();
+      }
+      await tester.tap(find.text('Giao ảnh chậm'));
+      await tester.tap(find.text('Đến trễ'));
+      await tester.enterText(
+        find.byKey(const Key('review_text_field')),
+        'Đến trễ 30 phút, ảnh giao chậm',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('submit_review_button')));
+      await tester.pumpAndSettle();
+
+      final call = fakeReviews.submitCalls.single;
+      expect(call['verdict'], Verdict.brick);
+      expect(call['hits'], 3);
+      expect(call['reasons'], [ReviewReason.late, ReviewReason.slowDelivery]);
+    });
+
+    testWidgets('a send error keeps side, hits, reasons and text and shows '
+        'the network message', (tester) async {
+      await pumpForm(tester);
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.byKey(const Key('verdict-brick')));
+        await tester.pump();
+      }
+      await tester.tap(find.text('Thái độ'));
+      await tester.enterText(
+        find.byKey(const Key('review_text_field')),
+        'Thái độ chưa tốt với khách',
+      );
+      await tester.pump();
+
+      fakeReviews.nextError = ReviewErrorCode.network;
+      await tester.tap(find.byKey(const Key('submit_review_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Không gửi được. Thử lại nhé.'), findsOneWidget);
+      expect(find.text('Rất hài lòng'), findsNothing);
+      expect(find.text('Chưa ưng'), findsOneWidget); // still 4 hits
+      expect(find.text('×4'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<AppChip>(
+              find.descendant(
+                of: find.byKey(const Key('review_reasons')),
+                matching: find.byType(AppChip),
+              ),
+            )
+            .where((c) => c.selected)
+            .map((c) => c.label),
+        ['Thái độ'],
+      );
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('review_text_field')))
+            .controller!
+            .text,
+        'Thái độ chưa tốt với khách',
+      );
+    });
+
+    testWidgets('read-only view shows VerdictBadge ×n, reason chips and the '
+        'text', (tester) async {
+      fakeReviews.seedReview(
+        Review(
+          bookingId: 'b1',
+          customerId: 'c1',
+          photographerId: 'p1',
+          serviceId: 's1',
+          verdict: Verdict.brick,
+          hits: 3,
+          reasons: const [ReviewReason.late, ReviewReason.slowDelivery],
+          text: 'Đến trễ 30 phút, ảnh giao chậm',
+          createdAt: DateTime.now(),
+        ),
+      );
+      await pumpForm(tester, booking: _booking(status: BookingStatus.reviewed));
+
+      final badge = tester.widget<VerdictBadge>(find.byType(VerdictBadge));
+      expect(badge.kind, VerdictKind.brick);
+      expect(badge.hits, 3);
+      expect(find.text('×3'), findsOneWidget);
+      expect(find.text('Chưa hài lòng'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('review_reasons_readonly')),
+          matching: find.byType(AppChip),
+        ),
+        findsNWidgets(2),
+      );
+      expect(find.text('Đến trễ'), findsOneWidget);
+      expect(find.text('Giao ảnh chậm'), findsOneWidget);
+      expect(find.text('Đến trễ 30 phút, ảnh giao chậm'), findsOneWidget);
+      expect(find.byType(VerdictPad), findsNothing);
+    });
+
+    testWidgets('a completed booking with reviewedAt opens the read-only '
+        'view', (tester) async {
+      await pumpForm(
+        tester,
+        booking: _booking().copyWith(reviewedAt: DateTime.utc(2026, 10, 13)),
+      );
+      expect(find.byKey(const Key('review_already_done')), findsOneWidget);
+      expect(find.byType(VerdictPad), findsNothing);
+    });
+
+    testWidgets('the screen carries ScreenCode S05.05', (tester) async {
+      await pumpForm(tester);
+      final code = tester.widget<ScreenCode>(find.byType(ScreenCode).first);
+      expect(code.code, 'S05.05');
+      expect(ScreenCodes.reviewAndShare, 'S05.05');
+    });
+
+    testWidgets('brick form with reasons and photos fits 320 dp at 1.3× text', (
+      tester,
+    ) async {
+      final repo = RecordingBookingRepository()..seedBooking(_booking());
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      await pumpBookingRoute(
+        tester,
+        path: '/b/b1/review',
+        bookings: repo,
+        signedInUid: 'c1',
+        viewSize: const Size(320, 600),
+        textScale: 1.3,
+        extraOverrides: [
+          reviewRepositoryProvider.overrideWithValue(fakeReviews),
+          mediaUploaderProvider.overrideWithValue(fakeUploader),
+          imagePickerProvider.overrideWithValue(picker),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('verdict-brick')));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('add_photo_tile')));
+      await tester.tap(find.byKey(const Key('add_photo_tile')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('submit_share_button')), findsOneWidget);
+    });
+
     testWidgets('an existing review shows the read-only view', (tester) async {
       fakeReviews.seedReview(
         Review(
@@ -427,7 +709,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 4,
+          verdict: Verdict.tomato,
           text: 'Rất ưng ý với chất lượng ảnh',
           photoPostId: 'p_123',
           createdAt: DateTime.now(),
@@ -451,7 +733,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Rất ưng ý với chất lượng ảnh'), findsOneWidget);
-      expect(find.byType(StarRating), findsOneWidget);
+      expect(find.text('Hài lòng'), findsOneWidget);
       expect(find.text('Xem ảnh đã chia sẻ'), findsOneWidget);
       expect(find.byKey(const Key('review_text_field')), findsNothing);
       expect(find.byKey(const Key('submit_review_button')), findsNothing);
@@ -640,23 +922,6 @@ void main() {
       expect(find.bySemanticsLabel('Ảnh 1 đang tải lên, 30%'), findsOneWidget);
     });
 
-    testWidgets('a read-only star rating is a plain label, not a slider', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(
-        const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: StarRating(value: 4)),
-        ),
-      );
-      final node = tester.getSemantics(find.byType(StarRating));
-      expect(node.label, '4 trên 5 sao');
-      expect(node.flagsCollection.isSlider, isFalse);
-      handle.dispose();
-    });
-
     testWidgets('submit failures: not eligible, forbidden and network '
         'each get their own message', (tester) async {
       final repo = RecordingBookingRepository()..seedBooking(_booking());
@@ -673,7 +938,7 @@ void main() {
         ],
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('star_5')));
+      await tester.tap(find.byKey(const Key('verdict-tomato')));
       await tester.enterText(
         find.byKey(const Key('review_text_field')),
         'Buổi chụp rất đẹp và chuyên nghiệp',
@@ -756,7 +1021,7 @@ void main() {
           customerId: 'c1',
           photographerId: 'p1',
           serviceId: 's1',
-          rating: 4,
+          verdict: Verdict.tomato,
           text: 'Rất ưng ý với chất lượng ảnh',
           createdAt: DateTime.now(),
         ),

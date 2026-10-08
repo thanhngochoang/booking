@@ -103,12 +103,12 @@ create table photographers (
   onboarding_complete  boolean not null default false,
   accepts_inquiries    boolean not null default true,
   -- dẫn xuất (use case ghi)
-  -- 2026-10-06: rating_avg thay bằng các cột cà chua/gạch
+  -- 2026-10-06: rating_avg thay bằng các cột cà chua/gạch (migration 1791676800001_tomato_brick.sql, #130)
   tomato_count         int not null default 0,
   brick_count          int not null default 0,
   signed_sum           numeric(8,2) not null default 0,
-  tomato_pct           smallint not null default 0,
-  score                numeric(4,3) not null default 0,
+  tomato_pct           smallint not null default 0 check (tomato_pct between 0 and 100),
+  score                numeric(4,3) not null default 0 check (score between -1 and 1),
   review_count         int not null default 0,
   completed_count      int not null default 0,
   response_minutes_median int,
@@ -254,6 +254,7 @@ create table bookings (
   cancelled_by     text check (cancelled_by in ('customer','photographer','system')),
   cancel_reason    text, cancelled_at timestamptz, cancel_refund_percent smallint,
   chat_id          text,                          -- fk chats (thêm sau)
+  reviewed_at      timestamptz,                   -- submit_review ghi; status không đổi ('reviewed' chỉ còn là trạng thái cũ đọc được)
   version          int not null default 1,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
@@ -393,9 +394,14 @@ create index ix_ledger_payment on ledger_entries (payment_id, at);
 create index ix_ledger_owner on ledger_entries (account_owner_id, at);
 
 create table reviews (
-  booking_id      text primary key references bookings(id),
+  booking_id      text not null references bookings(id),
+  subject_type    text not null default 'photographer' check (subject_type in ('photographer','studio')),
+  subject_id      text not null references users(id),
   customer_id     text not null references users(id),
-  photographer_id text not null references photographers(user_id),
+  photographer_id text not null references photographers(user_id), -- = subject_id; khoá truy vấn tab Đánh giá
+  service_id      text references services(id),
+  service_name    text not null,          -- ảnh chụp của gói
+  booking_day     date not null,          -- ảnh chụp của booking
   verdict         text not null check (verdict in ('tomato','brick')),
   hits            smallint not null check (hits between 1 and 10),
   intensity       numeric(3,2) not null,
@@ -404,8 +410,12 @@ create table reviews (
   text            text not null,
   photo_post_id   text references posts(id),
   created_at      timestamptz not null default now(),
-  deleted_at      timestamptz
+  counted_at      timestamptz,
+  deleted_at      timestamptz,
+  primary key (booking_id, subject_type)
 );
+-- Bảng này chưa có trong services/api: migration 1791676800001_tomato_brick.sql chỉ đổi cột của photographers.
+-- Bảng reviews do lát cắt thêm posts tạo (Phase 2, #90); khoá (booking_id, subject_type) khớp reviewDocId.
 create index ix_reviews_photographer on reviews (photographer_id, created_at desc) where deleted_at is null;
 ```
 
@@ -905,7 +915,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
 | `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received` |
 | `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
-| `reviews/{bookingId}` | `reviews` | |
+| `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột |
 | `users/{uid}/notifications/{id}` | `notifications` | `actors[]`→`actors jsonb`; `users/{uid}/private/inbox.unreadCount` không có cột (đếm `read_at is null`) |
 | `users/{uid}/private/notification_prefs` | `notification_prefs` | `quietHours.*`→`quiet_*`, `reminders.*`→`reminder_*` |

@@ -207,7 +207,7 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-/// Host line: a photographer (avatar, name, rating, "Hồ sơ", ask first or the
+/// Host line: a photographer (avatar, name, % cà chua, "Hồ sơ", ask first or the
 /// unlocked contact) or the app itself, with no buttons (O2).
 class _HostRow extends ConsumerWidget {
   const _HostRow({
@@ -256,9 +256,12 @@ class _HostRow extends ConsumerWidget {
     final summary = hostId == null
         ? null
         : ref.watch(photographerProfileProvider(hostId)).value?.summary;
-    final rating = (summary != null && summary.reviewCount > 0)
-        ? l.eventHostRoleRating(formatRating(summary.ratingAvg))
-        : l.eventHostRole;
+    // "Chủ sự kiện · 🍅 97%" (mock S11.02); under five reviews just the role.
+    final hostMeta = [
+      MetaPart.text(l.eventHostRole),
+      if (summary != null && summary.hasTomatoPct)
+        MetaPart.tomato(summary.tomatoPct),
+    ];
     final unlocked =
         registration != null &&
         registration!.status == RegistrationStatus.paid &&
@@ -311,7 +314,7 @@ class _HostRow extends ConsumerWidget {
                       if (s.hostVerified) const VerifiedMark(),
                     ],
                   ),
-                  Text(rating, style: theme.textTheme.bodySmall),
+                  MetaLine(hostMeta, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),

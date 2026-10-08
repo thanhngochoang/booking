@@ -16,7 +16,7 @@ class FindFilters {
     this.styleId,
     this.date,
     this.budgetMax,
-    this.minRating,
+    this.minTomatoPct,
     this.sort = RecommendationSort.best,
   });
 
@@ -27,7 +27,9 @@ class FindFilters {
   /// matter.
   final DateTime? date;
   final int? budgetMax;
-  final double? minRating;
+  /// Least share of tomatoes (80, 90, 95); a provider with fewer than
+  /// [kTomatoPctMinReviews] reviews never passes it.
+  final int? minTomatoPct;
   final RecommendationSort sort;
 
   bool get hasAny =>
@@ -35,7 +37,7 @@ class FindFilters {
       styleId != null ||
       date != null ||
       budgetMax != null ||
-      minRating != null;
+      minTomatoPct != null;
 
   @override
   bool operator ==(Object other) =>
@@ -44,12 +46,12 @@ class FindFilters {
       other.styleId == styleId &&
       other.date == date &&
       other.budgetMax == budgetMax &&
-      other.minRating == minRating &&
+      other.minTomatoPct == minTomatoPct &&
       other.sort == sort;
 
   @override
   int get hashCode =>
-      Object.hash(specialtyId, styleId, date, budgetMax, minRating, sort);
+      Object.hash(specialtyId, styleId, date, budgetMax, minTomatoPct, sort);
 }
 
 class FindFiltersController extends Notifier<FindFilters> {
@@ -66,7 +68,7 @@ class FindFiltersController extends Notifier<FindFilters> {
     Object? styleId = _keep,
     Object? date = _keep,
     Object? budgetMax = _keep,
-    Object? minRating = _keep,
+    Object? minTomatoPct = _keep,
     RecommendationSort? sort,
   }) => FindFilters(
     specialtyId: identical(specialtyId, _keep)
@@ -77,9 +79,9 @@ class FindFiltersController extends Notifier<FindFilters> {
     budgetMax: identical(budgetMax, _keep)
         ? state.budgetMax
         : budgetMax as int?,
-    minRating: identical(minRating, _keep)
-        ? state.minRating
-        : minRating as double?,
+    minTomatoPct: identical(minTomatoPct, _keep)
+        ? state.minTomatoPct
+        : minTomatoPct as int?,
     sort: sort ?? state.sort,
   );
 
@@ -91,7 +93,7 @@ class FindFiltersController extends Notifier<FindFilters> {
   void setDate(DateTime? v) =>
       state = _with(date: v == null ? null : DateTime(v.year, v.month, v.day));
   void setBudget(int? v) => state = _with(budgetMax: v);
-  void setMinRating(double? v) => state = _with(minRating: v);
+  void setMinTomatoPct(int? v) => state = _with(minTomatoPct: v);
   void setSort(RecommendationSort v) => state = _with(sort: v);
 
   /// Removes every filter and keeps the chosen sort.
@@ -203,7 +205,7 @@ class FindResultsController extends AsyncNotifier<FindResults> {
         cursor: cursor,
       );
 
-  /// Drops providers who cannot be booked yet, then applies the rating floor.
+  /// Drops providers who cannot be booked yet, then applies the tomato floor.
   List<RecommendedPhotographer> _visible(
     List<RecommendedPhotographer> items,
     FindFilters f,
@@ -211,7 +213,9 @@ class FindResultsController extends AsyncNotifier<FindResults> {
       .where(
         (i) =>
             i.photographer.acceptingOrders &&
-            (f.minRating == null || i.photographer.ratingAvg >= f.minRating!),
+            (f.minTomatoPct == null ||
+                (i.photographer.hasTomatoPct &&
+                    i.photographer.tomatoPct >= f.minTomatoPct!)),
       )
       .toList();
 

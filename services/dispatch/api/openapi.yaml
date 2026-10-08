@@ -460,13 +460,14 @@ components:
              no_match, cancelled_by_customer, no_show_customer, disputed]
     PhotographerCard:
       type: object
-      required: [uid, displayName, verified, rating, completedShoots]
+      required: [uid, displayName, verified, tomatoPct, reviewCount, completedShoots]
       properties:
         uid: { type: string }
         displayName: { type: string }
         avatarUrl: { type: string, nullable: true }
         verified: { type: boolean }
-        rating: { type: number, nullable: true }
+        tomatoPct: { type: integer, nullable: true, description: "null under 5 reviews" }
+        reviewCount: { type: integer }
         completedShoots: { type: integer }
     InstantRequestMirror:
       type: object

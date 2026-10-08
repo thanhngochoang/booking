@@ -18,7 +18,7 @@ const _loadMoreExtent = 600.0;
 
 const _noteIconSize = 14.0;
 
-/// S02.06: compare photographers by area, day, service, price and rating.
+/// S02.06: compare photographers by area, day, service, price and % cà chua.
 class FindPhotographerScreen extends ConsumerStatefulWidget {
   const FindPhotographerScreen({
     super.key,
@@ -102,7 +102,7 @@ class _FindPhotographerScreenState
     });
   }
 
-  /// A page the rating filter shrank can leave the list shorter than the
+  /// A page the % cà chua filter shrank can leave the list shorter than the
   /// viewport: nothing scrolls, so ask for the next page once per cursor
   /// until the list fills or the pages run out.
   void _fillViewport() {
@@ -217,17 +217,30 @@ class _FindPhotographerScreenState
           ),
           AppChip(
             key: const Key('find-rating'),
-            label: filters.minRating == null
+            label: filters.minTomatoPct == null
                 ? l.findRating
-                : l.findRatingMin(formatRating(filters.minRating!)),
-            selected: filters.minRating != null,
+                : l.findTomatoMin(filters.minTomatoPct!),
+            semanticsLabel: filters.minTomatoPct == null
+                ? null
+                : l.findTomatoChipA11y(filters.minTomatoPct!),
+            selected: filters.minTomatoPct != null,
+            // Mock S02.06: "🍅 90%+", the icon in the chip's own text colour.
+            leading: filters.minTomatoPct == null
+                ? null
+                : Builder(
+                    builder: (context) => VerdictIcon(
+                      VerdictKind.tomato,
+                      size: 16,
+                      color: IconTheme.of(context).color,
+                    ),
+                  ),
             onChanged: (_) async {
-              final r = await pickMinRating(
+              final r = await pickMinTomatoPct(
                 context,
-                current: filters.minRating,
+                current: filters.minTomatoPct,
               );
               if (r != null) {
-                filterCtl.setMinRating(r.value);
+                filterCtl.setMinTomatoPct(r.value);
               }
             },
           ),

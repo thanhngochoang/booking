@@ -207,22 +207,21 @@ export const submitReview = onCall(CALLABLE_OPTIONS, (request) =>
   handleSubmitReview(request, liveReviewDeps()),
 );
 
-/** Fold review rating into photographer stats */
+/** Count a tomato/brick review into its subject's stats, then the verdict notice and badges */
 export const onReviewWrite = onDocumentWritten(
-  { ...TRIGGER_OPTIONS, document: 'reviews/{bookingId}' },
+  { ...TRIGGER_OPTIONS, document: 'reviews/{reviewId}' },
   async (event) => {
-    const bookingId = event.params.bookingId;
+    const reviewId = event.params.reviewId;
     const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
     const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
     await handleReviewWrite(
-      { bookingId, before, after },
+      { reviewId, before, after },
       liveStatsStore(),
       new Date(),
       liveBadgeDeps(),
     );
   },
 );
-
 
 /** Provider picks individual or studio (`{type}` → `{providerType}`); refused with open work or held money. */
 export const setProviderType = onCall(CALLABLE_OPTIONS, (request) =>

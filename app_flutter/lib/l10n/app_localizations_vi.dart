@@ -1338,8 +1338,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String reasonTopRated(String rating, int count) {
-    return '★ $rating · $count đánh giá';
+  String reasonTopRated(int pct, int count) {
+    return '$pct% cà chua từ $count đánh giá';
   }
 
   @override
@@ -1539,7 +1539,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get findClear => 'Xoá bộ lọc';
 
   @override
-  String get findFallbackNote => 'Đang xếp theo sao và khoảng cách';
+  String get findFallbackNote => 'Đang xếp theo điểm cà chua và khoảng cách';
 
   @override
   String get findLoadError =>
@@ -1577,14 +1577,19 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get findRatingTitle => 'Đánh giá tối thiểu';
+  String get findTomatoTitle => 'Tỷ lệ hài lòng';
 
   @override
   String get findRatingAny => 'Mọi đánh giá';
 
   @override
-  String findRatingMin(String rating) {
-    return '★ $rating+';
+  String findTomatoMin(int pct) {
+    return '$pct%+';
+  }
+
+  @override
+  String findTomatoChipA11y(int pct) {
+    return 'Từ $pct% cà chua';
   }
 
   @override
@@ -1643,7 +1648,12 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get profileStatNoReviews => 'đánh giá';
+  String get profileStatNew => 'Mới';
+
+  @override
+  String photographerReviewsNew(int count) {
+    return 'Mới · $count đánh giá';
+  }
 
   @override
   String get profileStatShoots => 'buổi chụp';
@@ -2749,7 +2759,127 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewText => 'Nhận xét';
 
   @override
-  String get reviewTextHint => 'Chia sẻ cảm nhận của bạn về buổi chụp...';
+  String get reviewTomato => 'Hài lòng';
+
+  @override
+  String get reviewBrick => 'Chưa hài lòng';
+
+  @override
+  String get reviewBrickShort => 'Chưa ưng';
+
+  @override
+  String reviewHits(int n) {
+    return '×$n';
+  }
+
+  @override
+  String get reviewTomatoLevel1 => 'Ổn';
+
+  @override
+  String get reviewTomatoLevel2 => 'Hài lòng';
+
+  @override
+  String get reviewTomatoLevel3 => 'Rất hài lòng';
+
+  @override
+  String get reviewTomatoLevel4 => 'Tuyệt vời!';
+
+  @override
+  String get reviewBrickLevel1 => 'Hơi tiếc';
+
+  @override
+  String get reviewBrickLevel2 => 'Chưa ưng';
+
+  @override
+  String get reviewBrickLevel3 => 'Thất vọng';
+
+  @override
+  String get reviewBrickLevel4 => 'Rất thất vọng';
+
+  @override
+  String get reviewReset => 'Làm lại';
+
+  @override
+  String get reviewTapMore => 'Chạm tiếp để tăng mức độ, tối đa 10';
+
+  @override
+  String get reviewPadLabel => 'Đánh giá buổi chụp';
+
+  @override
+  String reviewA11yTomato(int n) {
+    return 'Ném cà chua, $n trên 10';
+  }
+
+  @override
+  String reviewA11yBrick(int n) {
+    return 'Ném gạch, $n trên 10';
+  }
+
+  @override
+  String reviewsRatioCounts(int tomato, int brick, int count) {
+    return '$tomato cà chua · $brick gạch · $count đánh giá';
+  }
+
+  @override
+  String reviewsRatioSemantics(int tomato, int brick) {
+    return '$tomato cà chua, $brick gạch';
+  }
+
+  @override
+  String tomatoPctA11y(int pct) {
+    return '$pct% cà chua';
+  }
+
+  @override
+  String tomatoPctCountA11y(int pct, int count) {
+    return '$pct% cà chua, $count đánh giá';
+  }
+
+  @override
+  String verdictBadgeTomato(int n) {
+    return 'Cà chua, $n trên 10';
+  }
+
+  @override
+  String verdictBadgeBrick(int n) {
+    return 'Gạch, $n trên 10';
+  }
+
+  @override
+  String get reviewTextHintTomato => 'Điều bạn thích nhất ở buổi chụp';
+
+  @override
+  String get reviewTextHintBrick => 'Kể rõ điều chưa ổn để thợ cải thiện';
+
+  @override
+  String get reviewReasonsTitle => 'Điều gì chưa ổn?';
+
+  @override
+  String get reviewReasonsMin => 'Chọn ít nhất 1';
+
+  @override
+  String get reviewReasonLate => 'Đến trễ';
+
+  @override
+  String get reviewReasonNotAsPortfolio => 'Ảnh không như mẫu';
+
+  @override
+  String get reviewReasonSlowDelivery => 'Giao ảnh chậm';
+
+  @override
+  String get reviewReasonAttitude => 'Thái độ';
+
+  @override
+  String get reviewReasonPriceChanged => 'Đổi giá';
+
+  @override
+  String get reviewReasonOther => 'Khác';
+
+  @override
+  String get reviewNeedVerdict => 'Chọn cà chua hoặc gạch';
+
+  @override
+  String get reviewNeedReason => 'Chọn ít nhất một lý do';
 
   @override
   String get reviewTextTooShort => 'Viết ít nhất 10 ký tự';
@@ -2784,17 +2914,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewThanks => 'Cảm ơn bạn đã đánh giá!';
 
   @override
-  String reviewStarsSemantics(int rating) {
-    return '$rating trên 5 sao';
-  }
-
-  @override
   String get reviewUploadFailed => 'Tải ảnh lỗi. Thử lại';
-
-  @override
-  String reviewsHeader(String rating, int count) {
-    return '$rating · $count đánh giá';
-  }
 
   @override
   String get reviewsMore => 'Xem thêm';
@@ -3956,11 +4076,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get eventHostRole => 'Chủ sự kiện';
-
-  @override
-  String eventHostRoleRating(String rating) {
-    return 'Chủ sự kiện · ★ $rating';
-  }
 
   @override
   String get eventProfile => 'Hồ sơ';

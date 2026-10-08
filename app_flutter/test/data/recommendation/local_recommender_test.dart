@@ -62,11 +62,11 @@ void main() {
       () async {
         final r = make(
           photographers: [
-            fixturePhotographer('few', rating: 5, reviews: 1, completed: 1),
+            fixturePhotographer('few', tomatoCount: 1, completed: 1),
             fixturePhotographer(
               'many',
-              rating: 4.9,
-              reviews: 58,
+              tomatoCount: 57,
+              brickCount: 1,
               completed: 112,
             ),
           ],
@@ -127,24 +127,24 @@ void main() {
             lat: 21.0285,
             lng: 105.8542,
             startingPrice: 900000,
-            rating: 4.0,
-            reviews: 30,
+            tomatoCount: 22,
+            brickCount: 8,
           ),
           fixturePhotographer(
             'b',
             lat: 10.7869,
             lng: 106.7009,
             startingPrice: 3000000,
-            rating: 4.9,
-            reviews: 60,
+            tomatoCount: 59,
+            brickCount: 1,
           ),
           fixturePhotographer(
             'c',
             lat: 10.9,
             lng: 106.7,
             startingPrice: null,
-            rating: 4.5,
-            reviews: 40,
+            tomatoCount: 35,
+            brickCount: 5,
           ),
         ],
       );
@@ -261,8 +261,8 @@ void main() {
           for (var i = 0; i < 100; i++)
             fixturePhotographer(
               'c${i.toString().padLeft(3, '0')}',
-              reviews: 10 + i,
-              rating: 4.9,
+              tomatoCount: 10 + i,
+              score: 0.95,
             ),
         ];
         final r = make(photographers: many, availability: availability);
@@ -290,15 +290,15 @@ void main() {
                 'far${i.toString().padLeft(2, '0')}',
                 lat: 21.0285,
                 lng: 105.8542,
-                rating: 4.9,
-                reviews: 100,
+                tomatoCount: 98,
+                brickCount: 2,
               ),
             fixturePhotographer(
               'near',
               lat: 10.7869,
               lng: 106.7009,
-              rating: 4.0,
-              reviews: 5,
+              tomatoCount: 4,
+              brickCount: 1,
             ),
           ],
           availability: availability,
@@ -330,14 +330,14 @@ void main() {
             for (var i = 0; i < 70; i++)
               fixturePhotographer(
                 'dear${i.toString().padLeft(2, '0')}',
-                rating: 4.9,
-                reviews: 100,
+                tomatoCount: 98,
+                brickCount: 2,
                 startingPrice: 9000000,
               ),
             fixturePhotographer(
               'cheap',
-              rating: 4.0,
-              reviews: 5,
+              tomatoCount: 4,
+              brickCount: 1,
               startingPrice: 500000,
             ),
           ],
@@ -446,8 +446,8 @@ void main() {
       final p = fixturePhotographer(
         'p1',
         nextFreeDate: '2026-10-03',
-        rating: 4.9,
-        reviews: 58,
+        tomatoCount: 56,
+        brickCount: 2,
         responseMinutes: 45,
       );
       final reasons = await reasonsFor(p, const RecommendationQuery());
@@ -456,7 +456,7 @@ void main() {
         ReasonCode.topRated,
         ReasonCode.fastReply,
       ]);
-      expect(reasons[1].text, '★ 4,9 · 58 đánh giá');
+      expect(reasons[1].text, '97% cà chua từ 58 đánh giá');
       expect(reasons[2].text, 'Phản hồi nhanh');
     });
 
@@ -466,8 +466,6 @@ void main() {
         final fresh = await reasonsFor(
           fixturePhotographer(
             'n',
-            reviews: 0,
-            rating: 0,
             createdAgo: const Duration(days: 10),
             responseMinutes: 600,
           ),
@@ -476,19 +474,29 @@ void main() {
         expect(fresh.map((r) => r.code), [ReasonCode.newTalent]);
         expect(fresh.single.text, 'Mới tham gia');
         final old = await reasonsFor(
-          fixturePhotographer('o', reviews: 0, rating: 0, responseMinutes: 600),
+          fixturePhotographer('o', responseMinutes: 600),
           const RecommendationQuery(),
         );
         expect(old, isEmpty);
       },
     );
 
-    test('top rated needs a real sample', () async {
-      final r = await reasonsFor(
-        fixturePhotographer('t', rating: 5, reviews: 3, responseMinutes: 600),
-        const RecommendationQuery(),
-      );
-      expect(r.map((e) => e.code), isNot(contains(ReasonCode.topRated)));
+    test('top rated needs reviewCount >= 10 and tomatoPct >= 95', () async {
+      Future<Iterable<ReasonCode>> codes(int tomato, int brick) async =>
+          (await reasonsFor(
+            fixturePhotographer(
+              't',
+              tomatoCount: tomato,
+              brickCount: brick,
+              responseMinutes: 600,
+            ),
+            const RecommendationQuery(),
+          )).map((e) => e.code);
+      expect(await codes(3, 0), isNot(contains(ReasonCode.topRated)));
+      expect(await codes(9, 0), isNot(contains(ReasonCode.topRated)));
+      expect(await codes(18, 2), isNot(contains(ReasonCode.topRated)),
+          reason: '90%');
+      expect(await codes(19, 1), contains(ReasonCode.topRated));
     });
   });
 
@@ -497,7 +505,7 @@ void main() {
       final r = make(
         photographers: [
           for (var i = 0; i < 5; i++)
-            fixturePhotographer('p$i', reviews: 10 + i),
+            fixturePhotographer('p$i', tomatoCount: 10 + i),
         ],
       );
       final p1 = await r.recommendPhotographers(
@@ -693,5 +701,49 @@ void main() {
         at: fixtureNow,
       ),
     ]);
+  });
+
+  group('smoothedScore', () {
+    test('pulls a 3-review provider toward 0.6', () {
+      final p = fixturePhotographer('p', tomatoCount: 3);
+      expect(p.score, 1.0);
+      expect(smoothedScore(p), closeTo(9 / 13, 1e-9)); // 0.692
+    });
+
+    test('a provider without reviews sits at 0.6', () {
+      expect(smoothedScore(fixturePhotographer('p')), closeTo(0.6, 1e-9));
+    });
+
+    test('80 reviews at 0.9 beat 3 reviews at 1.0 in rating sort', () async {
+      final r = make(
+        photographers: [
+          fixturePhotographer('few', tomatoCount: 3),
+          fixturePhotographer(
+            'many',
+            tomatoCount: 76,
+            brickCount: 4,
+            score: 0.9,
+          ),
+        ],
+      );
+      final page = await r.recommendPhotographers(
+        const RecommendationQuery(sort: RecommendationSort.rating),
+      );
+      expect(ids(page), ['many', 'few']);
+    });
+
+    test('quality stays within 0..1 with a negative score', () async {
+      final r = make(
+        photographers: [
+          fixturePhotographer('bad', tomatoCount: 0, brickCount: 20),
+          fixturePhotographer('good', tomatoCount: 20, completed: 100000),
+        ],
+      );
+      final page = await r.recommendPhotographers(const RecommendationQuery());
+      for (final e in page.items) {
+        expect(e.score, inInclusiveRange(0.0, 1.0));
+      }
+      expect(ids(page).first, 'good');
+    });
   });
 }

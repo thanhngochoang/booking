@@ -83,10 +83,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S02.03 | Khám phá (chưa hỏi vị trí) | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S13 |
 | S02.04 | Khám phá, đã bật vị trí | `/explore` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S35 |
 | S02.05 | Chọn khu vực thủ công (sheet) | `/explore/area` | cả hai | 3 | ✅ đã làm · khớp mock (mock-parity-1) | S36 |
-| S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback | S04 |
+| S02.06 | Tìm thợ ảnh | `/action` (khách) | khách | 3 | ✅ đã làm (3b4) · mock thiếu hàng sắp xếp và ghi chú fallback · chip 🍅 90%+ (#130) | S04 |
 | **S03** | **Xem hồ sơ nhiếp ảnh gia** | | | | | |
-| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2; tab Đánh giá 4e) · lệch mock: không nút chia sẻ, lưới vuông thay masonry · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) | S03 |
-| S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ✅ đã làm (10a) | S37 |
+| S03.01 | Hồ sơ nhiếp ảnh gia | `/u/:uid` | cả hai | 2 | ✅ đã làm (2d2; tab Đánh giá 4e) · lệch mock: không nút chia sẻ, lưới vuông thay masonry · loại nhà cung cấp: đã làm (a1) · biến thể NAG và hàng giải thưởng: ✅ đã làm (b1) · bản chưa nhận đơn: ✅ (#133) · % cà chua và tab Đánh giá: ✅ (#130) | S03 |
+| S03.02 | Huy hiệu | `/u/:uid/badges` | cả hai | 6 | ✅ đã làm (10a) · "Được đánh giá cao" theo % cà chua (#130) | S37 |
 | **S04** | **Đặt lịch** | | | | | |
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
@@ -98,7 +98,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.02 | Chi tiết booking | `/b/:id` | cả hai | 4 | ✅ đã làm (4c) · Nhắn tin/Đổi lịch/Đánh giá chờ 4d–4e | S09 |
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
-| S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · huy hiệu chờ plan huy hiệu | S12 |
+| S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) | S12 |
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
@@ -482,7 +482,7 @@ Huy hiệu ghi nhận người dùng (cả khách và nhiếp ảnh gia) và đ�
 
 | Nguồn | Ý nghĩa | Ví dụ (danh mục khởi đầu) |
 |-------|---------|---------------------------|
-| `review` | Suy ra từ đánh giá | "Được đánh giá cao" (NAG: ≥ 95% cà chua và ≥ 20 đánh giá; đổi 2026-10-06), "Khen nhiều về đúng giờ" (≥ 5 đánh giá nhắc từ khoá "đúng giờ"), "Nhận xét chi tiết" (khách: ≥ 5 nhận xét ≥ 50 ký tự) |
+| `review` | Suy ra từ đánh giá | "Được đánh giá cao" (thợ ảnh: `tomatoPct ≥ 95` và `reviewCount ≥ 20`, lúc đạt ghi "{pct}% cà chua từ {n} đánh giá"; đổi 2026-10-06, làm trong #130: chỉ số `rating` của `BADGE_METRICS` thành `tomatoPct`), "Khen nhiều về đúng giờ" (≥ 5 đánh giá nhắc từ khoá "đúng giờ"), "Nhận xét chi tiết" (khách: ≥ 5 nhận xét ≥ 50 ký tự) |
 | `system` | Hệ thống trao theo hoạt động | "Thành viên mới" (30 ngày đầu), "Hồ sơ đầy đủ" (≥ 6 ảnh và ≥ 1 gói), "Phản hồi nhanh" (trung vị ≤ 60 phút trong 10 yêu cầu gần nhất), "10 / 50 / 100 buổi chụp", "Chủ sự kiện" (≥ 1 sự kiện hoàn thành), "Khách thân thiết" (≥ 3 buổi hoàn thành), "Người chia sẻ" (≥ 5 bài "Buổi chụp thật") |
 
 Dữ liệu:
@@ -587,7 +587,7 @@ taxonomy/skills/items/{id}
 - **Bộ xếp hạng cắm được**: mỗi thuật toán là một `Scorer` đăng ký tên (`rules-v1`, sau này `ltr-v2`…). Tham số `algorithm` chọn bản; không truyền thì dùng bản mặc định trong cấu hình. Trọng số và ngưỡng nằm trong cấu hình (Remote Config / tài liệu `config/recommender`), đổi không cần phát hành.
 - **Thử nghiệm A/B**: `experiment` + hash `userId` chọn bản; mỗi phản hồi trả `algorithm`, `algorithmVersion`, `requestId` để gắn vào nhật ký.
 - **Hiệu năng**: mục tiêu p95 < 400 ms; ứng dụng đặt thời hạn 800 ms. Có bộ nhớ đệm theo (bộ lọc, ô geohash, ngày) 60 giây.
-- **Dự phòng ở ứng dụng**: `RecommendationRepository` có hai cài đặt, `RemoteRecommendationRepository` (gọi `recommend`) và `LocalRecommender` (xếp theo sao đã làm mượt và khoảng cách, dùng khi lỗi, quá hạn, offline và trong test). Giao diện không đổi khi nâng cấp.
+- **Dự phòng ở ứng dụng**: `RecommendationRepository` có hai cài đặt, `RemoteRecommendationRepository` (gọi `recommend`) và `LocalRecommender` (xếp theo điểm cà chua/gạch đã làm mượt và khoảng cách, dùng khi lỗi, quá hạn, offline và trong test). Giao diện không đổi khi nâng cấp.
 - **Chỉ mục**: v1 đọc thẳng Firestore có đệm; khi số nhiếp ảnh gia lớn thì dựng chỉ mục riêng (bảng đặc trưng) mà không đổi API.
 
 ### 3e.5 API tóm tắt
@@ -611,7 +611,7 @@ Phản hồi: `requestId`, `algorithm`, `algorithmVersion`, `items[{photographer
 | `style` | Jaccard giữa phong cách của khách (từ tín hiệu, mục 3e.7) và `styles`; không có tín hiệu → 0,5 trung tính. |
 | `geo` | `exp(−d / 8 km)`; trong `serviceArea` thì ≥ 0,7. Khoảng cách tính từ tâm ô geohash. |
 | `availability` | Rảnh đúng ngày = 1; chờ = 0,5; kín/nghỉ = 0 (loại khỏi kết quả nếu khách đã chọn ngày). Không chọn ngày: theo `nextFreeDate` trong 7 ngày. |
-| `quality` | Điểm trung bình làm mượt kiểu Bayes `(v·R + m·C)/(v+m)` với `m = 10`, `C = 4,3`, rồi `(x − 3)/2`; cộng nhẹ theo `log(số buổi hoàn thành)`. |
+| `quality` | `smoothedScore = (v·score + m·C)/(v + m)` với `v = reviewCount`, `m = 10`, `C = 0,6` (điểm cà chua/gạch −1…+1, spec 2026-10-06); cộng nhẹ theo `log(số buổi hoàn thành)`, kẹp 0…1. |
 | `price` | 1 nếu `startingPrice ≤ budgetMax`, giảm tuyến tính tới 0 ở 1,5 × ngân sách; thiếu dữ liệu → 0,5. |
 | `response` | 1 nếu thời gian phản hồi trung vị ≤ 60 phút, giảm dần tới 0 ở 24 giờ. |
 | `fresh` | Tăng tối đa 0,05 trong 30 ngày đầu của hồ sơ đủ thông tin (cho nhiếp ảnh gia mới có cơ hội, tránh vòng lặp "người nổi tiếng thắng"). |
@@ -960,7 +960,7 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S05.02 | Toast "Đã thanh toán {số tiền}, tiền được giữ an toàn.", `BookingCard`, `StatusTimeline`, hàng hai nút "Nhắn tin" + `ContactDial` "Liên hệ", nút chữ Huỷ; "Đổi lịch" nằm trong menu `…` ở thanh trên | Một màn cho mọi trạng thái; hành động hiện theo trạng thái. Hôm diễn ra: nút "Chỉ đường". | "Liên hệ" bung S05.04; huỷ mở S05.03 kèm số tiền hoàn. |
 | S05.03 | Bảng hoàn tiền (tính trên số đã trả), dòng áp dụng nổi bật, số tiền nhận lại, lý do, Giữ lịch / Huỷ | Lý do mặc định "Đổi kế hoạch". Nút đỏ chỉ trong sheet này. | Sau huỷ: `cancelled`, toast, availability được nhả. |
 | S07.01 | Thanh ngữ cảnh booking, hành động nhanh, bong bóng, ô nhập + gửi + ảnh | Realtime qua snapshot; gửi lỗi → thử lại tại chỗ. Tin `system` cho đổi lịch. | Gửi ảnh nén ≤ 2048px. |
-| S05.05 | Sao, nhận xét (bắt buộc), lưới chọn ảnh chia sẻ (≤ 10) | "Chỉ đánh giá" hoặc "Gửi & chia sẻ n ảnh". Chỉ mở khi booking `completed`. | Tạo `reviews/{bookingId}` + post `real_shoot`; có thể kích hoạt huy hiệu (toast "Bạn nhận huy hiệu …"). |
+| S05.05 | `VerdictPad` cà chua/gạch (1–10 hit; gạch kèm lý do), nhận xét (bắt buộc), lưới chọn ảnh chia sẻ (≤ 10) | Chưa chọn ảnh: một nút "Gửi đánh giá"; có ảnh: "Chỉ đánh giá" + "Gửi & chia sẻ n ảnh". Chỉ mở khi `isReviewable` (hiện `completed`), đã đánh giá thì xem lại (`reviewedAt`). | Tạo `reviews/{bookingId}` (doc id theo `reviewDocId`) + post `real_shoot`; booking không đổi `status`; có thể kích hoạt huy hiệu. |
 | S02.03 | Ô tìm kiếm; nhóm Dịch vụ/Địa điểm/Phong cách/Thợ ảnh; **thẻ "Sự kiện gần bạn"** xin vị trí; section Sự kiện chụp ảnh | Trạng thái vị trí: chưa hỏi (thẻ), cho phép → S02.04, từ chối/để sau → chip "Chọn khu vực" → S02.05. Section sự kiện ẩn nếu không có sự kiện sắp tới. | Chỉ bấm "Cho phép" mới hiện hộp thoại quyền; "Xem tất cả" → S11.01. |
 | S05.01 | `SegmentedTabs` Sắp tới / Đang chờ / Đã xong; `BookingCard` có hành động | Empty mỗi nhóm có hành động riêng. Đã xong chưa review: nút "Đánh giá". | Chạm card → S05.02. |
 | S02.04 | Dòng "Quanh Quận 1 · vị trí gần đúng" + Đổi, chip bán kính/thời gian, thẻ sự kiện nổi bật, danh sách sắp theo khoảng cách | Không có sự kiện trong bán kính → gợi ý tăng bán kính hoặc tạo sự kiện (NAG). Khoảng cách làm tròn 0,1 km. | Đổi khu vực → S02.05; chạm thẻ → S11.02. |

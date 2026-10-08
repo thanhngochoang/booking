@@ -36,6 +36,14 @@ function makeCompletedBooking(overrides: Partial<Booking> = {}): Booking {
   };
 }
 
+const tomatoInput = (over: Record<string, unknown> = {}) => ({
+  bookingId: 'book1',
+  verdict: 'tomato',
+  hits: 7,
+  text: 'Trải nghiệm chụp ảnh tuyệt vời!',
+  ...over,
+});
+
 describe('submitReview', () => {
   let store: MemoryReviewStore;
   let idCounter: number;
@@ -54,43 +62,106 @@ describe('submitReview', () => {
     };
   });
 
-  it('writes the review, moves the booking to reviewed with an event', async () => {
-    const booking = makeCompletedBooking();
-    store.seedBooking(booking);
+  it('stores verdict, hits, server intensity, reasons, subject, serviceName and bookingDay', async () => {
+    store.seedBooking(makeCompletedBooking());
 
     const res = await submitReview(deps, 'cust1', {
       bookingId: 'book1',
-      rating: 5,
-      text: 'Trải nghiệm chụp ảnh tuyệt vời!',
+      verdict: 'brick',
+      hits: 3,
+      reasons: ['late', 'slow_delivery'],
+      intensity: 1,
+      text: 'Đến trễ và giao ảnh chậm quá',
     });
 
     assert.equal(res.postId, null);
-    assert.equal(res.review.bookingId, 'book1');
-    assert.equal(res.review.customerId, 'cust1');
-    assert.equal(res.review.photographerId, 'photo1');
-    assert.equal(res.review.serviceId, 'pkg1');
-    assert.equal(res.review.rating, 5);
-    assert.equal(res.review.text, 'Trải nghiệm chụp ảnh tuyệt vời!');
-    assert.equal(res.review.photoPostId, null);
-    assert.equal(res.review.countedAt, null);
+    const stored = store.reviews.get('book1');
+    assert.ok(stored);
+    assert.deepEqual(res.review, stored);
+    assert.equal(stored.id, 'book1');
+    assert.equal(stored.bookingId, 'book1');
+    assert.equal(stored.customerId, 'cust1');
+    assert.equal(stored.subjectType, 'photographer');
+    assert.equal(stored.subjectId, 'photo1');
+    assert.equal(stored.photographerId, 'photo1');
+    assert.equal(stored.serviceId, 'pkg1');
+    assert.equal(stored.serviceName, 'Chụp chân dung');
+    assert.equal(stored.bookingDay, '2026-10-10');
+    assert.equal(stored.verdict, 'brick');
+    assert.equal(stored.hits, 3);
+    assert.equal(stored.intensity, 0.69);
+    assert.deepEqual(stored.reasons, ['late', 'slow_delivery']);
+    assert.equal(stored.text, 'Đến trễ và giao ảnh chậm quá');
+    assert.equal(stored.photoPostId, null);
+    assert.equal(stored.countedAt, null);
+    assert.equal(stored.createdAt.toISOString(), now.toISOString());
+    assert.equal('rating' in stored, false);
+  });
 
-    // Stored review
-    const storedReview = store.reviews.get('book1');
-    assert.ok(storedReview);
-    assert.equal(storedReview.rating, 5);
+  it('sets booking.reviewedAt and keeps booking.status completed', async () => {
+    store.seedBooking(makeCompletedBooking());
+    await submitReview(deps, 'cust1', tomatoInput());
 
-    // Stored booking
     const storedBooking = store.bookings.get('book1');
     assert.ok(storedBooking);
-    assert.equal(storedBooking.status, 'reviewed');
+    assert.equal(storedBooking.status, 'completed');
     assert.equal(storedBooking.reviewedAt, now.toISOString());
     assert.equal(storedBooking.version, 2);
+    assert.equal(storedBooking.updatedAt, now.toISOString());
+  });
 
-    // Stored event
+  it('adds a booking event with status reviewed', async () => {
+    store.seedBooking(makeCompletedBooking());
+    await submitReview(deps, 'cust1', tomatoInput());
+
     assert.equal(store.events.length, 1);
     assert.equal(store.events[0]?.bookingId, 'book1');
     assert.equal(store.events[0]?.status, 'reviewed');
     assert.equal(store.events[0]?.actorId, 'cust1');
+  });
+
+  it('refuses with conflict when a review doc already exists', async () => {
+    store.seedBooking(makeCompletedBooking());
+    store.seedReview({
+      id: 'book1',
+      bookingId: 'book1',
+      subjectType: 'photographer',
+      subjectId: 'photo1',
+      photographerId: 'photo1',
+      customerId: 'cust1',
+      serviceId: 'pkg1',
+      serviceName: 'Chụp chân dung',
+      bookingDay: '2026-10-10',
+      verdict: 'tomato',
+      hits: 1,
+      intensity: 0.4,
+      reasons: [],
+      text: 'Đã có đánh giá từ trước',
+      photoPostId: null,
+      createdAt: now,
+      countedAt: null,
+    });
+    await assert.rejects(
+      () => submitReview(deps, 'cust1', tomatoInput()),
+      (err: unknown) => err instanceof DomainError && err.code === 'conflict'
+    );
+  });
+
+  it('refuses when reviewedAt is set with conflict', async () => {
+    store.seedBooking(makeCompletedBooking({ reviewedAt: '2026-10-10T11:30:00.000Z' }));
+    await assert.rejects(
+      () => submitReview(deps, 'cust1', tomatoInput()),
+      (err: unknown) => err instanceof DomainError && err.code === 'conflict'
+    );
+    assert.equal(store.reviews.size, 0);
+  });
+
+  it('refuses a legacy reviewed booking with conflict', async () => {
+    store.seedBooking(makeCompletedBooking({ status: 'reviewed' }));
+    await assert.rejects(
+      () => submitReview(deps, 'cust1', tomatoInput()),
+      (err: unknown) => err instanceof DomainError && err.code === 'conflict'
+    );
   });
 
   it("with photos also creates the real-shoot post with the booking's service, place and the text as caption", async () => {
@@ -103,7 +174,8 @@ describe('submitReview', () => {
 
     const res = await submitReview(deps, 'cust1', {
       bookingId: 'book1',
-      rating: 4,
+      verdict: 'tomato',
+      hits: 3,
       text: 'Ảnh chụp siêu nét, cảm ơn bạn!',
       postId,
       photos: [
@@ -145,7 +217,8 @@ describe('submitReview', () => {
 
     const res = await submitReview(deps, 'cust1', {
       bookingId: 'book1',
-      rating: 5,
+      verdict: 'tomato',
+      hits: 3,
       text: 'Dù gói chụp đã ẩn nhưng buổi chụp rất vui.',
       postId,
       photos: [{ url: photoUrl, storagePath }],
@@ -157,13 +230,14 @@ describe('submitReview', () => {
     assert.equal(post.serviceId, 'hiddenPkg');
   });
 
-  it('a second submit is a conflict and writes nothing', async () => {
+  it('refuses a second review with conflict', async () => {
     const booking = makeCompletedBooking();
     store.seedBooking(booking);
 
     await submitReview(deps, 'cust1', {
       bookingId: 'book1',
-      rating: 5,
+      verdict: 'tomato',
+      hits: 3,
       text: 'Lần đầu tiên đánh giá thành công',
     });
 
@@ -171,7 +245,8 @@ describe('submitReview', () => {
       () =>
         submitReview(deps, 'cust1', {
           bookingId: 'book1',
-          rating: 4,
+          verdict: 'tomato',
+      hits: 3,
           text: 'Lần thứ hai cố đánh giá lại',
         }),
       (err: unknown) =>
@@ -187,7 +262,8 @@ describe('submitReview', () => {
       () =>
         submitReview(deps, 'otherUser', {
           bookingId: 'book1',
-          rating: 5,
+          verdict: 'tomato',
+      hits: 3,
           text: 'Đánh giá giùm bạn nè',
         }),
       (err: unknown) =>
@@ -203,7 +279,8 @@ describe('submitReview', () => {
       () =>
         submitReview(deps, 'cust1', {
           bookingId: 'book1',
-          rating: 5,
+          verdict: 'tomato',
+      hits: 3,
           text: 'Chưa chụp đã đánh giá',
         }),
       (err: unknown) =>
@@ -216,7 +293,8 @@ describe('submitReview', () => {
       () =>
         submitReview(deps, 'cust1', {
           bookingId: 'unknownBooking',
-          rating: 5,
+          verdict: 'tomato',
+      hits: 3,
           text: 'Booking không tồn tại',
         }),
       (err: unknown) =>

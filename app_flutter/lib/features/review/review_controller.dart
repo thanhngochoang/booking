@@ -46,10 +46,15 @@ class SharedPhotoTile {
 
 enum ReviewPhase { idle, submitting, done, error }
 
+/// What still blocks the submit button, in the order the screen names it.
+enum ReviewBlock { verdict, reason, text }
+
 @immutable
 class ReviewState {
   const ReviewState({
-    this.rating = 0,
+    this.verdict,
+    this.hits = 0,
+    this.reasons = const {},
     this.text = '',
     this.photos = const [],
     this.postId,
@@ -59,7 +64,13 @@ class ReviewState {
     this.submittedShare,
   });
 
-  final int rating;
+  /// The side picked on the pad; null exactly when [hits] is 0.
+  final Verdict? verdict;
+  final int hits;
+
+  /// Reasons ticked on the brick side. Kept when the customer switches to
+  /// tomato and back, but only sent with a brick.
+  final Set<ReviewReason> reasons;
   final String text;
   final List<SharedPhotoTile> photos;
   final String? postId;
@@ -73,11 +84,19 @@ class ReviewState {
   /// "chỉ đánh giá"; null before the first submit.
   final bool? submittedShare;
 
+  /// The first thing still missing, or null when the review can be sent.
+  ReviewBlock? get missing {
+    if (verdict == null) return ReviewBlock.verdict;
+    if (verdict == Verdict.brick && reasons.isEmpty) return ReviewBlock.reason;
+    if (text.trim().characters.length < ReviewController.minTextLength ||
+        text.characters.length > ReviewController.maxTextLength) {
+      return ReviewBlock.text;
+    }
+    return null;
+  }
+
   bool get canSubmitReviewOnly =>
-      rating > 0 &&
-      text.trim().characters.length >= ReviewController.minTextLength &&
-      text.characters.length <= ReviewController.maxTextLength &&
-      phase != ReviewPhase.submitting;
+      missing == null && phase != ReviewPhase.submitting;
 
   bool get canSubmitWithShare =>
       canSubmitReviewOnly &&
@@ -91,7 +110,10 @@ class ReviewState {
   int get photoCount => photos.length;
 
   ReviewState copyWith({
-    int? rating,
+    Verdict? verdict,
+    bool clearVerdict = false,
+    int? hits,
+    Set<ReviewReason>? reasons,
     String? text,
     List<SharedPhotoTile>? photos,
     String? postId,
@@ -101,7 +123,9 @@ class ReviewState {
     bool? submittedShare,
   }) {
     return ReviewState(
-      rating: rating ?? this.rating,
+      verdict: clearVerdict ? null : verdict ?? this.verdict,
+      hits: hits ?? this.hits,
+      reasons: reasons ?? this.reasons,
       text: text ?? this.text,
       photos: photos ?? this.photos,
       postId: postId ?? this.postId,
@@ -150,9 +174,25 @@ class ReviewController extends Notifier<ReviewState> {
     return const ReviewState();
   }
 
-  void setRating(int val) {
+  /// The pad's change: a side and its hits (1..10), or null and 0 to clear.
+  void setVerdict(Verdict? verdict, int hits) {
     if (state.phase == ReviewPhase.submitting) return;
-    state = state.copyWith(rating: val.clamp(0, 5));
+    final cleared = verdict == null || hits <= 0;
+    state = state.copyWith(
+      verdict: cleared ? null : verdict,
+      clearVerdict: cleared,
+      hits: cleared ? 0 : hits.clamp(1, kReviewHitsMax),
+    );
+  }
+
+  /// "Làm lại": drops the side and hits, keeps text and ticked reasons.
+  void reset() => setVerdict(null, 0);
+
+  void toggleReason(ReviewReason reason) {
+    if (state.phase == ReviewPhase.submitting) return;
+    final next = {...state.reasons};
+    if (!next.remove(reason)) next.add(reason);
+    state = state.copyWith(reasons: next);
   }
 
   void setText(String val) {
@@ -290,8 +330,19 @@ class ReviewController extends Notifier<ReviewState> {
     }
   }
 
+  /// Brick reasons in the catalogue order; a tomato carries none.
+  List<ReviewReason> get _reasons => state.verdict == Verdict.brick
+      ? [
+          for (final r in ReviewReason.values)
+            if (state.reasons.contains(r)) r,
+        ]
+      : const [];
+
   Future<bool> submit({required bool share}) async {
-    if (state.phase == ReviewPhase.submitting) return false;
+    final verdict = state.verdict;
+    if (state.phase == ReviewPhase.submitting || verdict == null) return false;
+    final hits = state.hits;
+    final reasons = _reasons;
     state = state.copyWith(
       phase: ReviewPhase.submitting,
       submittedShare: share,
@@ -303,7 +354,9 @@ class ReviewController extends Notifier<ReviewState> {
             .read(reviewRepositoryProvider)
             .submit(
               bookingId: bookingId,
-              rating: state.rating,
+              verdict: verdict,
+              hits: hits,
+              reasons: reasons,
               text: state.text.trim(),
               postId: null,
               photos: const [],
@@ -318,7 +371,9 @@ class ReviewController extends Notifier<ReviewState> {
             .read(reviewRepositoryProvider)
             .submit(
               bookingId: bookingId,
-              rating: state.rating,
+              verdict: verdict,
+              hits: hits,
+              reasons: reasons,
               text: state.text.trim(),
               postId: state.postId,
               photos: photos,

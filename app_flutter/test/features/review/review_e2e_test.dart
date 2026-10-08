@@ -71,8 +71,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(handles.location, '/b/b1/review');
 
-      // S05.05: 5 stars, text, 2 photos, share.
-      await tester.tap(find.byKey(const Key('star_5')));
+      // S05.05: tomato, text, 2 photos, share.
+      await tester.tap(find.byKey(const Key('verdict-tomato')));
       await tester.enterText(
         find.byKey(const Key('review_text_field')),
         'Buổi chụp rất đẹp và chuyên nghiệp',

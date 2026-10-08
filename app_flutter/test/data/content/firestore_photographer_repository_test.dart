@@ -31,8 +31,11 @@ Future<void> seedPhotographer(
       'radiusKm': 20,
     },
     'stats': {
-      'rating': p.ratingAvg,
       'reviewCount': p.reviewCount,
+      'tomatoCount': p.tomatoCount,
+      'brickCount': p.brickCount,
+      'tomatoPct': p.tomatoPct,
+      'score': p.score,
       'completedCount': p.completedCount,
       if (p.responseMinutes != null) 'responseMinutes': p.responseMinutes,
       if (p.nextFreeDate != null) 'nextFreeDate': p.nextFreeDate,
@@ -173,8 +176,11 @@ void main() {
             'center': const GeoPoint(10.78, 106.68),
           },
           'stats': {
-            'rating': 4,
             'reviewCount': 12.0,
+            'tomatoCount': 11.0,
+            'brickCount': 1,
+            'tomatoPct': 92,
+            'score': 0.84,
             'completedCount': 30,
             'responseMinutes': 45,
             'nextFreeDate': '2026-10-05',
@@ -193,8 +199,12 @@ void main() {
       expect(p.styleIds, ['film']);
       expect(p.areaLabel, 'Quận 3');
       expect((p.lat, p.lng), (10.78, 106.68));
-      expect(p.ratingAvg, 4.0);
       expect(p.reviewCount, 12);
+      expect(p.tomatoCount, 11);
+      expect(p.brickCount, 1);
+      expect(p.tomatoPct, 92);
+      expect(p.score, 0.84);
+      expect(p.hasTomatoPct, isTrue);
       expect(p.startingPriceVnd, 2000000);
       expect(p.createdAt, DateTime.utc(2026, 1, 2));
     });
@@ -212,6 +222,36 @@ void main() {
       },
     );
 
+    test('hasTomatoPct needs 5 reviews', () {
+      PhotographerSummary of(int tomato, int brick) => photographerSummaryFrom(
+        id: 'p',
+        photographer: {
+          'stats': {
+            'tomatoCount': tomato,
+            'brickCount': brick,
+            'tomatoPct': 100,
+            'score': 1,
+          },
+        },
+      );
+      expect(of(4, 0).hasReviews, isTrue);
+      expect(of(4, 0).hasTomatoPct, isFalse);
+      expect(of(4, 1).hasTomatoPct, isTrue);
+    });
+
+    test('legacy stats with rating and no counts read as no reviews', () {
+      final p = photographerSummaryFrom(
+        id: 'p',
+        photographer: {
+          'stats': {'rating': 4.9, 'ratingSum': 284, 'reviewCount': 58},
+        },
+      );
+      expect(p.reviewCount, 0);
+      expect(p.hasReviews, isFalse);
+      expect(p.tomatoPct, 0);
+      expect(p.score, 0);
+    });
+
     test('falls back to the flat specialties and survives a bare document', () {
       final p = photographerSummaryFrom(
         id: 'p2',
@@ -225,7 +265,7 @@ void main() {
       expect(p.displayName, '');
       expect(p.specialtyIds, ['family', 'couple']);
       expect(p.hasGeo, isFalse);
-      expect(p.hasRating, isFalse);
+      expect(p.hasReviews, isFalse);
       expect(p.verified, isFalse);
       expect(p.nextFreeDate, isNull);
     });

@@ -543,10 +543,10 @@
       "distance": {"type": "String"}
     }
   },
-  "reasonTopRated": "★ {rating} · {count} đánh giá",
+  "reasonTopRated": "{pct}% cà chua từ {count} đánh giá",
   "@reasonTopRated": {
     "placeholders": {
-      "rating": {"type": "String"},
+      "pct": {"type": "int"},
       "count": {"type": "int"}
     }
   },
@@ -684,7 +684,7 @@
   "findNoResult": "Chưa có ai khớp bộ lọc",
   "findNoResultBody": "Thử bỏ bớt bộ lọc hoặc chọn ngày khác.",
   "findClear": "Xoá bộ lọc",
-  "findFallbackNote": "Đang xếp theo sao và khoảng cách",
+  "findFallbackNote": "Đang xếp theo điểm cà chua và khoảng cách",
   "findLoadError": "Không tải được danh sách. Kiểm tra mạng rồi thử lại.",
   "findBookDay": "Đặt {day}",
   "@findBookDay": {
@@ -705,12 +705,18 @@
       "price": {"type": "String"}
     }
   },
-  "findRatingTitle": "Đánh giá tối thiểu",
+  "findTomatoTitle": "Tỷ lệ hài lòng",
   "findRatingAny": "Mọi đánh giá",
-  "findRatingMin": "★ {rating}+",
-  "@findRatingMin": {
+  "findTomatoMin": "{pct}%+",
+  "@findTomatoMin": {
     "placeholders": {
-      "rating": {"type": "String"}
+      "pct": {"type": "int"}
+    }
+  },
+  "findTomatoChipA11y": "Từ {pct}% cà chua",
+  "@findTomatoChipA11y": {
+    "placeholders": {
+      "pct": {"type": "int"}
     }
   },
   "profileResponseMinutes": "~{minutes} phút",
@@ -733,7 +739,9 @@
   "profileFollowing": "Đang theo dõi",
   "profileStatReviews": "{count} đánh giá",
   "@profileStatReviews": {"placeholders": {"count": {"type": "int"}}},
-  "profileStatNoReviews": "đánh giá",
+  "profileStatNew": "Mới",
+  "photographerReviewsNew": "Mới · {count} đánh giá",
+  "@photographerReviewsNew": {"placeholders": {"count": {"type": "int"}}},
   "profileStatShoots": "buổi chụp",
   "profileStatResponse": "phản hồi",
   "profileStatYears": "kinh nghiệm",
@@ -1389,7 +1397,50 @@
   },
   "reviewTitle": "Buổi chụp thế nào?",
   "reviewText": "Nhận xét",
-  "reviewTextHint": "Chia sẻ cảm nhận của bạn về buổi chụp...",
+  "reviewTomato": "Hài lòng",
+  "reviewBrick": "Chưa hài lòng",
+  "reviewBrickShort": "Chưa ưng",
+  "reviewHits": "×{n}",
+  "@reviewHits": {"placeholders": {"n": {"type": "int"}}},
+  "reviewTomatoLevel1": "Ổn",
+  "reviewTomatoLevel2": "Hài lòng",
+  "reviewTomatoLevel3": "Rất hài lòng",
+  "reviewTomatoLevel4": "Tuyệt vời!",
+  "reviewBrickLevel1": "Hơi tiếc",
+  "reviewBrickLevel2": "Chưa ưng",
+  "reviewBrickLevel3": "Thất vọng",
+  "reviewBrickLevel4": "Rất thất vọng",
+  "reviewReset": "Làm lại",
+  "reviewTapMore": "Chạm tiếp để tăng mức độ, tối đa 10",
+  "reviewPadLabel": "Đánh giá buổi chụp",
+  "reviewA11yTomato": "Ném cà chua, {n} trên 10",
+  "@reviewA11yTomato": {"placeholders": {"n": {"type": "int"}}},
+  "reviewA11yBrick": "Ném gạch, {n} trên 10",
+  "@reviewA11yBrick": {"placeholders": {"n": {"type": "int"}}},
+  "reviewsRatioCounts": "{tomato} cà chua · {brick} gạch · {count} đánh giá",
+  "@reviewsRatioCounts": {"placeholders": {"tomato": {"type": "int"}, "brick": {"type": "int"}, "count": {"type": "int"}}},
+  "reviewsRatioSemantics": "{tomato} cà chua, {brick} gạch",
+  "@reviewsRatioSemantics": {"placeholders": {"tomato": {"type": "int"}, "brick": {"type": "int"}}},
+  "tomatoPctA11y": "{pct}% cà chua",
+  "@tomatoPctA11y": {"placeholders": {"pct": {"type": "int"}}},
+  "tomatoPctCountA11y": "{pct}% cà chua, {count} đánh giá",
+  "@tomatoPctCountA11y": {"placeholders": {"pct": {"type": "int"}, "count": {"type": "int"}}},
+  "verdictBadgeTomato": "Cà chua, {n} trên 10",
+  "@verdictBadgeTomato": {"placeholders": {"n": {"type": "int"}}},
+  "verdictBadgeBrick": "Gạch, {n} trên 10",
+  "@verdictBadgeBrick": {"placeholders": {"n": {"type": "int"}}},
+  "reviewTextHintTomato": "Điều bạn thích nhất ở buổi chụp",
+  "reviewTextHintBrick": "Kể rõ điều chưa ổn để thợ cải thiện",
+  "reviewReasonsTitle": "Điều gì chưa ổn?",
+  "reviewReasonsMin": "Chọn ít nhất 1",
+  "reviewReasonLate": "Đến trễ",
+  "reviewReasonNotAsPortfolio": "Ảnh không như mẫu",
+  "reviewReasonSlowDelivery": "Giao ảnh chậm",
+  "reviewReasonAttitude": "Thái độ",
+  "reviewReasonPriceChanged": "Đổi giá",
+  "reviewReasonOther": "Khác",
+  "reviewNeedVerdict": "Chọn cà chua hoặc gạch",
+  "reviewNeedReason": "Chọn ít nhất một lý do",
   "reviewTextTooShort": "Viết ít nhất 10 ký tự",
   "reviewShare": "Chia sẻ ảnh bạn thích",
   "reviewOptional": "Tuỳ chọn",
@@ -1409,20 +1460,7 @@
   "reviewSubmit": "Gửi đánh giá",
   "reviewNotYet": "Buổi chụp chưa hoàn thành nên chưa đánh giá được.",
   "reviewThanks": "Cảm ơn bạn đã đánh giá!",
-  "reviewStarsSemantics": "{rating} trên 5 sao",
-  "@reviewStarsSemantics": {
-    "placeholders": {
-      "rating": {"type": "int"}
-    }
-  },
   "reviewUploadFailed": "Tải ảnh lỗi. Thử lại",
-  "reviewsHeader": "{rating} · {count} đánh giá",
-  "@reviewsHeader": {
-    "placeholders": {
-      "rating": {"type": "String"},
-      "count": {"type": "int"}
-    }
-  },
   "reviewsMore": "Xem thêm",
   "reviewSharedLink": "Xem ảnh đã chia sẻ",
   "reviewAlreadyDone": "Bạn đã đánh giá buổi chụp này.",
@@ -1877,8 +1915,6 @@
   "eventTabTimeline": "Timeline",
   "eventTabChat": "Nhóm chat",
   "eventHostRole": "Chủ sự kiện",
-  "eventHostRoleRating": "Chủ sự kiện · ★ {rating}",
-  "@eventHostRoleRating": {"placeholders": {"rating": {"type": "String"}}},
   "eventProfile": "Hồ sơ",
   "eventMeetingPoint": "Điểm hẹn: {place}",
   "@eventMeetingPoint": {"placeholders": {"place": {"type": "String"}}},

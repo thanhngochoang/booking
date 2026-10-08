@@ -36,7 +36,7 @@ void main() {
   test('a badge doc parses; missing shortName is null', () async {
     await db.collection('badges').doc('top_rated').set({
       'name': 'Được đánh giá cao',
-      'description': 'Từ 4,8 sao với ít nhất 20 đánh giá',
+      'description': 'Từ 95% cà chua với ít nhất 20 đánh giá',
       'icon': 'favorite',
       'source': 'review',
       'audience': 'photographer',
@@ -78,7 +78,7 @@ void main() {
       'badgeId': 'top_rated',
       'uid': 'u1',
       'awardedAt': Timestamp.fromDate(at),
-      'snapshot': {'text': '4,9 sao từ 58 đánh giá'},
+      'snapshot': {'text': '97% cà chua từ 58 đánh giá'},
     });
     await col.doc('punctual').set({
       'badgeId': 'punctual',
@@ -87,7 +87,7 @@ void main() {
     });
     final earned = await repo.watchEarned('u1').first;
     final byId = {for (final e in earned) e.badgeId: e};
-    expect(byId['top_rated']!.snapshotText, '4,9 sao từ 58 đánh giá');
+    expect(byId['top_rated']!.snapshotText, '97% cà chua từ 58 đánh giá');
     expect(byId['top_rated']!.awardedAt, at);
     expect(byId['punctual']!.snapshotText, isNull);
   });

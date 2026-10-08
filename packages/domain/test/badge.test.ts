@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BADGE_CATALOG,
+  BADGE_METRICS,
   eligibleBadges,
   meets,
   planBadges,
@@ -27,17 +28,26 @@ describe('badge catalogue', () => {
     assert.deepEqual(orders, [...orders].sort((a, b) => a - b));
   });
 
-  it('top_rated needs 20 reviews even at 5 stars', () => {
+  it('top_rated needs tomatoPct >= 95 and reviewCount >= 20', () => {
     const rule = badge('top_rated').rule;
-    assert.equal(meets(rule, { rating: 5, reviewCount: 19 }), false);
-    assert.equal(meets(rule, { rating: 5, reviewCount: 20 }), true);
-    assert.equal(meets(rule, { rating: 4.7, reviewCount: 50 }), false);
-    assert.equal(meets(rule, { rating: 4.8, reviewCount: 20 }), true);
+    assert.equal(meets(rule, { tomatoPct: 94, reviewCount: 30 }), false);
+    assert.equal(meets(rule, { tomatoPct: 95, reviewCount: 19 }), false);
+    assert.equal(meets(rule, { tomatoPct: 95, reviewCount: 20 }), true);
+    assert.equal(meets(rule, { tomatoPct: 100, reviewCount: 50 }), true);
   });
 
   it('top_rated progress counts reviews toward 20', () => {
-    assert.deepEqual(progressOf(badge('top_rated'), { rating: 5, reviewCount: 12 }), { current: 12, target: 20 });
+    assert.deepEqual(progressOf(badge('top_rated'), { tomatoPct: 100, reviewCount: 12 }), { current: 12, target: 20 });
     assert.deepEqual(progressOf(badge('top_rated'), {}), { current: 0, target: 20 });
+  });
+
+  it('top_rated describes the 95% condition', () => {
+    assert.equal(badge('top_rated').description, 'Từ 95% cà chua với ít nhất 20 đánh giá');
+  });
+
+  it('BADGE_METRICS has no rating', () => {
+    assert.equal((BADGE_METRICS as readonly string[]).includes('rating'), false);
+    assert.equal(BADGE_METRICS.includes('tomatoPct'), true);
   });
 
   it('unknown responseMinutes never meets fast_reply', () => {
@@ -82,7 +92,7 @@ describe('planBadges', () => {
   });
 
   it('planBadges revokes only revocable badges', () => {
-    const plan = planBadges(photographer, { rating: 4.0, reviewCount: 30 }, new Set(['top_rated']));
+    const plan = planBadges(photographer, { tomatoPct: 80, reviewCount: 30 }, new Set(['top_rated']));
     assert.deepEqual(plan.revoke, ['top_rated']);
     assert.deepEqual(plan.award, []);
   });
@@ -100,7 +110,7 @@ describe('planBadges', () => {
   it("progress is omitted for earned and for progress 'none'", () => {
     const plan = planBadges(
       photographer,
-      { completedShoots: 12, workPosts: 2, reviewCount: 5, rating: 5, accountAgeDays: 90 },
+      { completedShoots: 12, workPosts: 2, reviewCount: 5, tomatoPct: 100, accountAgeDays: 90 },
       new Set(['shoots_10']),
     );
     assert.equal('shoots_10' in plan.progress, false);
@@ -119,7 +129,7 @@ describe('planBadges', () => {
 
 describe('snapshotText', () => {
   it("snapshot for top_rated reads '4,9 sao từ 58 đánh giá'", () => {
-    assert.equal(snapshotText(badge('top_rated'), { rating: 4.9, reviewCount: 58 }), '4,9 sao từ 58 đánh giá');
+    assert.equal(snapshotText(badge('top_rated'), { tomatoPct: 97, reviewCount: 58 }), '97% cà chua từ 58 đánh giá');
   });
 
   it('shoots read the real count and others the description', () => {

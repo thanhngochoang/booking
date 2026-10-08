@@ -1,6 +1,6 @@
 # Đánh giá bằng cà chua và gạch
 
-Ngày: 2026-10-06 · Trạng thái: chờ duyệt · Thay cho: đánh giá 1–5 sao (spec gốc `2026-09-30-photography-marketplace-design.md` §review, spec chính `2026-10-01-remaining-screens.md`, màn S05.05 trong `screens/account.md`).
+Ngày: 2026-10-06 · Trạng thái: đã làm (#130; mở đánh giá ở `approved` thuộc plan bàn giao hai lớp, cùng issue) · Thay cho: đánh giá 1–5 sao (spec gốc `2026-09-30-photography-marketplace-design.md` §review, spec chính `2026-10-01-remaining-screens.md`, màn S05.05 trong `screens/account.md`).
 
 ## 1. Vì sao đổi
 
@@ -28,18 +28,25 @@ Thay bằng hai phe, mượn tiếng lóng mạng: **🍅 cà chua = hài lòng*
 
 ### 3.1 Một lượt đánh giá
 
-`reviews/{bookingId}` (Firestore) / bảng `reviews` (SQL). Một đánh giá cho **mỗi đối tượng** trong một booking (booking studio có hai: thợ và studio, xem `2026-10-06-studio-members-design.md` §6), chỉ ghi qua callable `submitReview`; rules không đổi (client không được ghi).
+`reviews/{reviewId}` (Firestore) / bảng `reviews` (SQL), với `reviewId = reviewDocId(bookingId, subjectType)`: là `bookingId` với `photographer`, là `{bookingId}_studio` với `studio`. Một đánh giá cho **mỗi đối tượng** trong một booking (booking studio có hai: thợ và studio, xem `2026-10-06-studio-members-design.md` §6), chỉ ghi qua callable `submitReview`; rules không đổi (client không được ghi). #130 chỉ ghi bản `photographer`; khối studio, mã lý do riêng của studio và bản `{bookingId}_studio` do #136 thêm vào cùng transaction của `submitReview`.
 
 | Trường | Kiểu | Quy tắc |
 |---|---|---|
+| `subjectType` | `'photographer'` \| `'studio'` | đối tượng được đánh giá; #130 chỉ ghi `photographer` |
+| `subjectId` | chuỗi | tài khoản mà đánh giá này cộng vào `stats` |
+| `photographerId` | chuỗi | luôn bằng `subjectId`, để truy vấn tab Đánh giá (`photographerId`, `createdAt` giảm dần) dùng chung cho hồ sơ studio |
+| `serviceName` | chuỗi | ảnh chụp của `booking.serviceSnapshot.name`, để dòng review hiện "12/10 · Chân dung 2 giờ" và thông báo nói "buổi chụp {ngày}" mà không đọc thêm |
+| `bookingDay` | chuỗi `yyyy-MM-dd` | ảnh chụp của `booking.day` |
 | `verdict` | `'tomato'` \| `'brick'` | thay cho `rating` |
 | `hits` | số nguyên | 1–10 |
 | `intensity` | số thực | server tính từ `hits` (§4.1), app không gửi |
 | `reasons` | danh sách mã lý do | `brick`: ≥ 1 mã, không trùng; `tomato`: rỗng |
 | `text` | chuỗi | giữ quy tắc cũ: 10–1000 ký tự (đếm grapheme) |
-| `photos`, `photoPostId`, `customerId`, `photographerId`, `serviceId`, `createdAt`, `countedAt` | | giữ nguyên |
+| `photos`, `photoPostId`, `customerId`, `serviceId`, `createdAt`, `countedAt` | | giữ nguyên |
 
-Bỏ trường `rating`.
+Bỏ trường `rating`. Doc cũ kiểu sao (chỉ có thể còn trong bản export emulator của lập trình viên, chưa có review thật nào ở dev hay production) vẫn đọc được: không có `verdict` thì coi là `tomato` khi `rating ≥ 4`, ngược lại `brick`, một hit, không lý do (chỉ để hiển thị). Thống kê không trộn: `addVerdict` tính `reviewCount = tomatoCount + brickCount` nên `reviewCount`, `rating`, `ratingSum` cũ bị bỏ qua và adapter xoá `stats.rating`, `stats.ratingSum` ở lần ghi đầu.
+
+Booking: `submitReview` ghi `bookings/{id}.reviewedAt` và một sự kiện booking `reviewed`, **không đổi `status`**, vì plan bàn giao mở đánh giá từ `approved` và trạng thái đó còn phải chạy mốc kiểm tra 48 giờ; booking studio cũng cần đủ hai đánh giá mới tính là đã đánh giá. `reviewed` chỉ còn là trạng thái cũ đọc được.
 
 Mã lý do gạch (chuỗi cố định, nhãn trong `app_vi.arb`):
 
@@ -66,7 +73,7 @@ Chọn `other` thì nội dung phải nói rõ lý do; không có trường riê
 | `tomatoPct` | `round(100 · tomatoCount / reviewCount)`, số nguyên 0–100; 0 khi chưa có đánh giá |
 | `score` | `signedSum / reviewCount`, làm tròn 3 chữ số, khoảng −1…+1; 0 khi chưa có đánh giá |
 
-Bỏ `ratingSum`, `rating` (Firestore) và `rating_avg` (SQL).
+Bỏ `ratingSum`, `rating` (Firestore) và `rating_avg` (SQL). `stats.score` đồng thời là trường sắp xếp của `freeThisWeek` (index `photographers (onboardingComplete, stats.nextFreeDate, stats.score giảm dần)`): bất biến là `stats.score` được ghi (0 khi chưa có đánh giá) mỗi khi `stats.nextFreeDate` được ghi.
 
 ## 4. Luật nghiệp vụ (`packages/domain`)
 
@@ -117,7 +124,7 @@ Mã màn, route `/b/:id/review`, điểm vào và ra giữ nguyên. Đánh giá 
 4. Khi phe là 🧱: **nhóm chip lý do** (chọn nhiều, ít nhất 1), theo bảng §3.1.
 5. Ô nhận xét (bắt buộc, 10–1000 ký tự). Gợi ý theo phe: 🍅 "Điều bạn thích nhất ở buổi chụp"; 🧱 "Kể rõ điều chưa ổn để thợ cải thiện".
 6. Section "Chia sẻ ảnh bạn thích" giữ nguyên.
-7. Thanh dưới giữ nguyên: "Chỉ đánh giá" và nút chính "Gửi & chia sẻ {n} ảnh".
+7. Thanh dưới: chưa chọn ảnh thì **một** nút chính "Gửi đánh giá" (hai nút cùng làm một việc là thừa); có ảnh thì nút viền "Chỉ đánh giá" + nút chính "Gửi & chia sẻ {n} ảnh". Khung `#S05.05-brick` của mock đã khớp cách này (nhãn ô nhận xét "Nhận xét", gợi ý theo phe làm placeholder, phần chia sẻ ảnh ở cả hai phe). Dòng gợi ý "Chạm tiếp để tăng mức độ, tối đa 10" chỉ hiện ở phe cà chua.
 
 ### 5.2 Tương tác
 
@@ -134,17 +141,19 @@ Mỗi nút là một điều khiển chỉnh được: nhãn đọc "Ném cà ch
 ### 5.4 Trạng thái
 
 - Nút gửi vô hiệu khi: chưa chọn phe; nhận xét chưa đủ 10 ký tự; phe gạch mà chưa có lý do. Một dòng nhỏ dưới nút nói thiếu gì.
-- Booking chưa `completed` → chặn như cũ.
-- Đã đánh giá → chế độ xem lại: phe, "×n", lý do, nội dung, ảnh; không sửa.
+- Booking chưa đủ điều kiện → chặn. Điều kiện là `isReviewable(status)`: hiện là `completed`; plan bàn giao hai lớp mở rộng thêm `approved` (phải sửa `isReviewable` ở đó).
+- Đã đánh giá = `Booking.reviewedAt` có giá trị (hoặc đã có review, hoặc trạng thái cũ `reviewed`; server trả `conflict`) → chế độ xem lại: phe, "×n", lý do, nội dung, ảnh; không sửa. App dùng `BookingRules.canReview` (đủ điều kiện và `reviewedAt == null`) và `BookingRules.isReviewed`.
 - Gửi lỗi → giữ nguyên lựa chọn và nội dung, hiện lỗi qua SnackBar như các form khác.
 
 ### 5.5 Chuỗi mới (`app_vi.arb`)
 
-`reviewTomato` "Hài lòng", `reviewBrick` "Chưa hài lòng", `reviewHits` "×{n}", `reviewTomatoLevel1..4`, `reviewBrickLevel1..4` (theo bảng §5.1), `reviewReset` "Làm lại", `reviewReasonsTitle` "Điều gì chưa ổn?", `reviewReason_late`, `reviewReason_not_as_portfolio`, `reviewReason_slow_delivery`, `reviewReason_attitude`, `reviewReason_price_changed`, `reviewReason_other`, `reviewTextHintTomato`, `reviewTextHintBrick`, `reviewNeedVerdict` "Chọn cà chua hoặc gạch", `reviewNeedReason` "Chọn ít nhất một lý do", `reviewA11yTomato` "Ném cà chua, {n} trên 10", `reviewA11yBrick` "Ném gạch, {n} trên 10". Giữ các khoá `s12_*` hiện có.
+Khoá viết camelCase theo thói quen của file (`reviewReasonLate`, không phải `reviewReason_late`); file không có khoá `s12_*` nào.
+
+`reviewTomato` "Hài lòng", `reviewBrick` "Chưa hài lòng", `reviewBrickShort` "Chưa ưng" (nhãn bản gọn `compact` của S05.05-studio), `reviewHits` "×{n}", `reviewTomatoLevel1..4` và `reviewBrickLevel1..4` (theo bảng §5.1), `reviewReset` "Làm lại", `reviewTapMore` "Chạm tiếp để tăng mức độ, tối đa 10", `reviewPadLabel` "Đánh giá buổi chụp", `reviewReasonsTitle` "Điều gì chưa ổn?", `reviewReasonsMin` "Chọn ít nhất 1", `reviewReasonLate`, `reviewReasonNotAsPortfolio`, `reviewReasonSlowDelivery`, `reviewReasonAttitude`, `reviewReasonPriceChanged`, `reviewReasonOther` (nhãn theo bảng §3.1), `reviewTextHintTomato`, `reviewTextHintBrick`, `reviewNeedVerdict` "Chọn cà chua hoặc gạch", `reviewNeedReason` "Chọn ít nhất một lý do", `reviewTextTooShort` "Viết ít nhất 10 ký tự", `reviewA11yTomato` "Ném cà chua, {n} trên 10", `reviewA11yBrick` "Ném gạch, {n} trên 10". Các khoá cũ `reviewText` "Nhận xét", `reviewShare`, `reviewOptional`, `reviewOnly`, `reviewSubmitShare`, `reviewSubmit` giữ nguyên.
 
 ### 5.6 Phân tích
 
-`review_submit{verdict, hits, reasons, shared}` thay `review_submit{rating, shared}`.
+`review_submit{verdict, hits, reasons, shared}` thay `review_submit{rating, shared}`. Chưa phát: app chưa có cổng phân tích (analytics port), sự kiện này làm cùng lúc với cổng đó.
 
 ## 6. Hiển thị
 
@@ -152,8 +161,8 @@ Mỗi nút là một điều khiển chỉnh được: nhãn đọc "Ném cà ch
 
 | Số đánh giá | Hiển thị |
 |---|---|
-| 0 | ẩn (như hiện nay) |
-| 1–4 | "Mới · {n} đánh giá" |
+| 0 | ẩn trên thẻ và dòng meta (như hiện nay); ô thống kê hồ sơ vẫn có, hiện "Mới" và "0 đánh giá" (mock `#S03.01-new`) |
+| 1–4 | "Mới · {n} đánh giá"; ô thống kê hồ sơ: "Mới" và "{n} đánh giá" |
 | ≥ 5 | "🍅 {tomatoPct}% · …" |
 
 Ngưỡng 5 là hằng số `TOMATO_PCT_MIN_REVIEWS` trong `packages/domain` và một hằng tương ứng trong app.
@@ -161,7 +170,8 @@ Ngưỡng 5 là hằng số `TOMATO_PCT_MIN_REVIEWS` trong `packages/domain` và
 Áp dụng ở:
 
 - `PhotographerCard` và các dòng meta ở Trang chủ, Tìm, chi tiết ảnh: "★ 4.9 · 112 buổi" → "🍅 94% · 112 buổi".
-- Header hồ sơ thợ: ô "4.9 ★★★★★ / 58 đánh giá" → "94% 🍅 / 58 đánh giá".
+- Header hồ sơ thợ: ô "4.9 ★★★★★ / 58 đánh giá" → "94% 🍅 / 58 đánh giá". Ô luôn có mặt (mock thắng quy tắc "0 → ẩn"): từ 5 đánh giá hiện "97%" kèm biểu tượng và "58 đánh giá", dưới 5 hiện "Mới" và "{n} đánh giá".
+- Biểu tượng cà chua: ở app là SVG `assets/icons/tomato.svg` vẽ cạnh số qua `VerdictIcon`/`MetaLine`, chuỗi `app_vi.arb` không chứa emoji. Ngoại lệ là chữ do server dựng cho thông báo (tiêu đề `review_tomato` giữ 🍅) và chip lý do `reasonTopRated` (chỉ chữ).
 - `formatRating` → `formatTomatoPct`; `PhotographerSummary.ratingAvg`/`hasRating` → `tomatoPct`, `score`, `tomatoCount`, `brickCount`, `hasTomatoPct` (≥ 5 đánh giá).
 
 ### 6.2 Danh sách review trên hồ sơ
@@ -181,15 +191,15 @@ smoothedScore(p) = (v · score + m · C) / (v + m),  v = reviewCount, m = 10, C 
 - `C = 0.6` tương đương mức tiên nghiệm cũ 4,3★ trên thang mới.
 - `smoothedRating` → `smoothedScore`; `_quality` dùng `smoothedScore` trực tiếp (bỏ phép quy đổi `(r − 3)/2`), vẫn cộng phần thưởng theo số buổi và kẹp về 0…1.
 - Sắp xếp "Đánh giá" (Tìm, báo giá S16) dùng `smoothedScore`.
-- Lý do gợi ý "đánh giá cao": `reviewCount ≥ 10` và `tomatoPct ≥ 95`, chuỗi `reasonTopRated` → "🍅 {pct}% từ {n} đánh giá".
+- Lý do gợi ý "đánh giá cao": `reviewCount ≥ 10` và `tomatoPct ≥ 95`, chuỗi `reasonTopRated` → "{pct}% cà chua từ {count} đánh giá" (chip chỉ chữ nên không có biểu tượng, cùng lời với huy hiệu S03.02). Ghi chú dự phòng của Tìm `findFallbackNote`: "Đang xếp theo điểm cà chua và khoảng cách".
 
 ### 7.2 Bộ lọc màn Tìm
 
-Chip "★ 4.5+" → "🍅 90%+", lựa chọn 80% / 90% / 95%. `FindFilters.minRating` → `minTomatoPct` (int). Thợ dưới 5 đánh giá không qua bộ lọc này.
+Chip "★ 4.5+" → "🍅 90%+" (biểu tượng + `findTomatoMin` "{pct}%+"), sheet tiêu đề `findTomatoTitle` "Tỷ lệ hài lòng", lựa chọn 80% / 90% / 95%. `FindFilters.minRating` → `minTomatoPct` (int). Thợ dưới 5 đánh giá không qua bộ lọc này.
 
 ### 7.3 Huy hiệu
 
-Spec chính §huy hiệu, nguồn `review`: "Được đánh giá cao" đổi từ "≥ 4,8 sao và ≥ 20 đánh giá" thành **"≥ 95% cà chua và ≥ 20 đánh giá"**. Các huy hiệu khác không đổi. Huy hiệu chưa được cài (hook `awardBadgesAfterReview` đang rỗng), nên chỉ sửa spec.
+Spec chính §huy hiệu, nguồn `review`: "Được đánh giá cao" đổi từ "≥ 4,8 sao và ≥ 20 đánh giá" thành **"≥ 95% cà chua và ≥ 20 đánh giá"**. Các huy hiệu khác không đổi. Lúc viết spec này tưởng chưa có hook, nhưng khi làm #130 hook đã chạy (`handleReviewWrite` gọi `evaluateUserBadges`), nên là thay đổi mã chứ không chỉ sửa spec: `BADGE_METRICS` đổi `rating` thành `tomatoPct`; `top_rated` là `tomatoPct >= 95` với `minSample` `reviewCount >= 20`, mô tả "Từ 95% cà chua với ít nhất 20 đánh giá", ảnh chụp lúc đạt "{pct}% cà chua từ {n} đánh giá" (mock S03.02: "97% cà chua từ 58 đánh giá").
 
 ### 7.4 Thông báo cho thợ (S17)
 
@@ -200,14 +210,12 @@ Hai loại mới trong danh mục thông báo, gửi khi `onReviewWrite` đếm 
 | `review_tomato` | "Bạn nhận 🍅 ×{n} từ buổi chụp {ngày}" | review đó trên hồ sơ |
 | `review_brick` | "Có góp ý mới về buổi chụp {ngày}" | review đó trên hồ sơ |
 
-Nếu kênh gửi thông báo phía server chưa có khi làm plan này, chỉ thêm hai loại vào danh mục và để lại hook, giống cách `awardBadgesAfterReview` đang làm.
-
-Hook: `notifyReviewVerdict` trong `packages/domain/src/notification_hooks.ts` (#138); #130 gọi từ `onReviewWrite` sau khi đếm xong (booking studio gọi hai lần, một cho thợ, một cho studio) và thôi phát `review_new`.
+Thông báo do #138 làm (S17): hai loại `review_tomato`/`review_brick` (danh mục `badges`, tab `system`) và hook `notifyReviewVerdict` trong `packages/domain/src/notification_hooks.ts`. #130 chỉ gọi hook từ `onReviewWrite` sau khi `countReview` xong (booking studio sẽ gọi hai lần, một cho thợ, một cho studio, khi #136 thêm bản `{bookingId}_studio`), rồi chấm huy hiệu cho đối tượng và khách; từ nay không còn phát `review_new` (loại này vẫn nằm trong danh mục với chữ sao cũ để dòng hộp thư cũ còn hiển thị). Review sinh ra đã có `countedAt` (seed hoặc nhập từ nơi khác) không gửi thông báo và không chấm huy hiệu; nơi nhập dữ liệu (#136 với bản studio phải để `countedAt` rỗng; di trú Phase 2) tự chạy chấm huy hiệu.
 
 ## 8. Backend tự host và hợp đồng API
 
-- `services/api`: **migration mới** (không sửa migration cũ): bảng `photographers` bỏ `rating_avg`, thêm `tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`; bảng `reviews` bỏ `rating`, thêm `verdict` (check `in ('tomato','brick')`), `hits` (check 1–10), `intensity`, `reasons text[]` (check: `brick` có ≥ 1, `tomato` rỗng). Cập nhật `migrations.test.ts`.
-- `services/dispatch/api/openapi.yaml`: `PhotographerCard.rating` → `tomatoPct` (integer, nullable) và `reviewCount`.
+- `services/api`: **migration mới** `1791676800001_tomato_brick.sql` (không sửa migration cũ), và nó **chỉ đổi bảng `photographers`**: bỏ `rating_avg`, thêm `tomato_count`, `brick_count`, `signed_sum`, `tomato_pct` (check 0–100), `score` (check −1…+1); Down khôi phục `rating_avg`. `services/api` chưa có bảng `reviews` hay `posts`, nên bảng `reviews` **chưa tạo ở đây**: DDL đích (bỏ `rating`, thêm `verdict` với check `in ('tomato','brick')`, `hits` 1–10, `intensity`, `reasons text[]` có check, và khoá `(booking_id, subject_type)` cùng `subject_type`, `subject_id`, `service_name`, `booking_day`) nằm trong `relational-schema.md` và do lát cắt thêm `posts` tạo (Phase 2, #90). `migrations.test.ts` và `src/db/database.ts` đã cập nhật.
+- `services/dispatch/api/openapi.yaml`: `PhotographerCard.rating` → `tomatoPct` (integer, null khi dưới 5 đánh giá) và `reviewCount`.
 - `docs/superpowers/specs/data-model/`: `domain-model.md` (`Review`, `PhotographerStats`, kiểu `Verdict`, `ReviewReason`) và `relational-schema.md` (hai bảng trên, bảng nguồn của cột tính).
 
 ## 9. Mock, gallery và spec liên quan
@@ -217,7 +225,7 @@ Hook: `notifyReviewVerdict` trong `packages/domain/src/notification_hooks.ts` (#
 - `docs/design/ui-mock.html`: token `--tomato`/`--brick` (tối và sáng), biểu tượng `i-tomato`/`i-brick`; S05.05 dùng `VerdictPad` (cà chua ×7); thêm `S05.05-brick` (gạch ×3 kèm chip lý do) và `S03.01-reviews` (tab Đánh giá: % cà chua, thanh tỷ lệ, `VerdictBadge`); mọi chỗ "★ 4.x" ở thẻ, hồ sơ, Tìm, chip lọc, sự kiện, đặt nhanh và báo giá đổi sang "🍅 n%" (Thu Hà ở S02.06 minh hoạ "Mới · 3 đánh giá"); huy hiệu "Được đánh giá cao" ở S03.02 đổi theo §7.3.
 - Spec cũ sửa theo spec này: `screens/account.md` (S05.05), `screens/discovery.md` (S02.02, S03.01, S02.06), `screens/jobs.md` (S16), `components/shared-components.md` (`PhotographerCard`), spec chính 2026-10-01 (huy hiệu, dự phòng xếp hạng, S02.06), spec gốc 2026-09-30 (`stats`, `Review`), spec đặt nhanh 2026-10-01 (thành phần `rating` của điểm điều phối = `(score + 1)/2`), `data-model/domain-model.md`, `data-model/relational-schema.md`.
 
-**Còn lại cho plan** (đơn vị 4): thêm `VerdictPad` và `VerdictBadge` vào `components/shared-components.md` và gallery `docs/design/ui-components.html` (sinh bằng `scripts/tools/build_ui_components.py`). Widget `StarRating` trong code (`features/review/widgets/star_rating.dart`) bị xoá ở đơn vị 3.
+**Đã làm trong #130**: `VerdictPad`, `VerdictLevel`, `VerdictBadge`, `TomatoRatioBar`, `MetaLine`, `VerdictIcon` có trong `components/shared-components.md` và gallery `docs/design/ui-components.html` (sinh bằng `scripts/tools/build_ui_components.py`); widget `StarRating` đã xoá. Khung `#S05.05-brick` của mock sửa cho khớp bản dựng (xem §5.1.7).
 
 **Plan chưa chạy còn nhắc sao**: instant I2–I5 (`RUN-ORDER.md` dòng 10–13, vốn phải viết lại theo spec đặt nhanh mới) và plan 16 (pin/hiệu năng). Khi viết lại hoặc chạy các plan này, dùng `tomatoPct`/`score` thay `rating`. Plan và ledger đã chạy là lịch sử, không sửa.
 

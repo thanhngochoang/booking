@@ -153,8 +153,10 @@ void main() {
         summary: PhotographerSummary(
           id: 'p1',
           displayName: 'Minh Trí',
-          ratingAvg: 4.9,
           reviewCount: 25,
+          tomatoCount: 24,
+          brickCount: 1,
+          tomatoPct: 96,
           areaLabel: 'Quận 3',
           startingPriceVnd: 1500000,
           acceptingOrders: false,

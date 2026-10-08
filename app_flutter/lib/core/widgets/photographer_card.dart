@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/l10n_ext.dart';
+import 'package:photobooking/core/review_meta.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_avatar.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
+import 'package:photobooking/core/widgets/meta_line.dart';
 import 'package:photobooking/core/widgets/network_photo.dart';
 import 'package:photobooking/core/widgets/photo_card.dart';
 import 'package:photobooking/core/widgets/provider_mark.dart';
@@ -44,14 +46,19 @@ class PhotographerCard extends StatelessWidget {
   /// Label of the second button; defaults to "Đặt lịch".
   final String? bookLabel;
 
-  String _meta(BuildContext context) {
+  /// "Chân dung · 1,2 km · 🍅 97% · 112 buổi" (mock S02.06); "Mới · 3 đánh giá"
+  /// under five reviews and no review part without any.
+  List<MetaPart> _meta(BuildContext context) {
     final l = context.l10n;
+    final review = reviewMetaPart(data, l);
     return [
-      if (data.specialtyIds.isNotEmpty) specialtyLabel(data.specialtyIds.first),
-      if (distanceKm != null) formatDistance(distanceKm!),
-      if (data.hasRating) '★ ${formatRating(data.ratingAvg)}',
-      if (data.completedCount > 0) l.photographerSessions(data.completedCount),
-    ].join(' · ');
+      if (data.specialtyIds.isNotEmpty)
+        MetaPart.text(specialtyLabel(data.specialtyIds.first)),
+      if (distanceKm != null) MetaPart.text(formatDistance(distanceKm!)),
+      ?review,
+      if (data.completedCount > 0)
+        MetaPart.text(l.photographerSessions(data.completedCount)),
+    ];
   }
 
   @override
@@ -66,6 +73,7 @@ class PhotographerCard extends StatelessWidget {
     final stack = MediaQuery.textScalerOf(context).scale(16) > 18.4;
     final hero = data.heroUrl;
     final meta = _meta(context);
+    final metaText = metaPartsSemantics(meta, l);
     final priceLabel = priceFromLabel(data.startingPriceVnd, l);
     final price = priceLabel == null
         ? '—'
@@ -96,7 +104,7 @@ class PhotographerCard extends StatelessWidget {
         district.isEmpty
             ? l.providerStudio
             : l.providerStudioDistrict(district),
-      meta,
+      metaText,
       priceLabel,
       availabilityLabel,
     ].whereType<String>().where((e) => e.isNotEmpty).join(', ');
@@ -201,7 +209,10 @@ class PhotographerCard extends StatelessWidget {
                                     ),
                                   ),
                                 if (meta.isNotEmpty)
-                                  Text(meta, style: theme.textTheme.bodySmall),
+                                  MetaLine(
+                                    meta,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
                               ],
                             ),
                           ),

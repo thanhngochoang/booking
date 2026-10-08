@@ -4,6 +4,10 @@
 import {
   BADGE_CATALOG,
   acceptsOrders,
+  addVerdict,
+  intensityOf,
+  mentionsPunctual,
+  reviewDocId,
   NOTIFICATION_TYPES,
   accountLast4,
   computeDeposit,
@@ -24,6 +28,9 @@ import {
   type NotificationType,
   type Payment,
   type Payout,
+  type PhotographerStatsPatch,
+  type ReviewReason,
+  type Verdict,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
@@ -212,6 +219,90 @@ export const SEED_AWARDS: readonly SeedAward[] = [
   { id: 'seed-award-binh-1', photographerId: BINH, competition: 'Vietnam Photo Contest', year: 2025, result: 'finalist', status: 'pending' },
 ];
 
+export interface SeedReview {
+  /** Synthetic booking id (no booking doc): the review doc id is `reviewDocId(bookingId, 'photographer')`. */
+  readonly bookingId: string;
+  readonly subjectId: string;
+  readonly customerId: string;
+  readonly serviceId: string;
+  readonly serviceName: string;
+  readonly bookingDay: string;
+  readonly verdict: Verdict;
+  readonly hits: number;
+  readonly reasons: readonly ReviewReason[];
+  readonly text: string;
+  /** Days between the review and seeding. */
+  readonly daysAgo: number;
+}
+
+/**
+ * Tomato/brick reviews (S05). An's three are the newest of his 58 (texts of mock S03.01-reviews);
+ * Cúc's and Dũng's are all they have. Every review is born counted, so the trigger neither recounts
+ * nor notifies. `seed-booking-completed-recent` stays unreviewed: Lan can review it.
+ */
+export const SEED_REVIEWS: readonly SeedReview[] = [
+  { bookingId: 'seed-review-an-1', subjectId: AN, customerId: LAN, serviceId: 'seed-service-portrait', serviceName: 'Chân dung 2 giờ', bookingDay: '2026-09-24', verdict: 'tomato', hits: 10, reasons: [], text: 'Đúng giờ, kiên nhẫn với bé, ảnh giao sau 3 ngày. Rất ưng.', daysAgo: 4 },
+  { bookingId: 'seed-review-an-2', subjectId: AN, customerId: MINH, serviceId: 'seed-service-portrait', serviceName: 'Chân dung 2 giờ', bookingDay: '2026-09-14', verdict: 'brick', hits: 3, reasons: ['late', 'slow_delivery'], text: 'Đến trễ 30 phút, ảnh giao sau 10 ngày. Ảnh thì đẹp.', daysAgo: 6 },
+  { bookingId: 'seed-review-an-3', subjectId: AN, customerId: LAN, serviceId: 'seed-service-portrait', serviceName: 'Chân dung 2 giờ', bookingDay: '2026-09-07', verdict: 'tomato', hits: 6, reasons: [], text: 'Cả lớp ai cũng có ảnh đẹp, anh hướng dẫn tạo dáng rất vui.', daysAgo: 12 },
+  { bookingId: 'seed-review-cuc-1', subjectId: CUC, customerId: LAN, serviceId: 'seed-service-cuc-wedding', serviceName: 'Ảnh cưới trong studio', bookingDay: '2026-09-20', verdict: 'tomato', hits: 8, reasons: [], text: 'Phòng chụp đẹp, ekip chu đáo, ảnh cưới rất ưng ý.', daysAgo: 5 },
+  { bookingId: 'seed-review-cuc-2', subjectId: CUC, customerId: MINH, serviceId: 'seed-service-cuc-wedding', serviceName: 'Ảnh cưới trong studio', bookingDay: '2026-09-13', verdict: 'tomato', hits: 4, reasons: [], text: 'Trang điểm khéo, chụp nhanh gọn, giá hợp lý.', daysAgo: 9 },
+  { bookingId: 'seed-review-cuc-3', subjectId: CUC, customerId: LAN, serviceId: 'seed-service-cuc-family', serviceName: 'Gia đình 90 phút', bookingDay: '2026-09-06', verdict: 'tomato', hits: 2, reasons: [], text: 'Ổn, bé nhà mình hợp tác tốt nhờ anh chị kiên nhẫn.', daysAgo: 15 },
+  { bookingId: 'seed-review-dung-1', subjectId: DUNG, customerId: LAN, serviceId: 'seed-service-dung-art', serviceName: 'Chân dung nghệ thuật', bookingDay: '2026-09-25', verdict: 'tomato', hits: 9, reasons: [], text: 'Ảnh như tranh, anh chỉnh ánh sáng rất có gu.', daysAgo: 3 },
+  { bookingId: 'seed-review-dung-2', subjectId: DUNG, customerId: MINH, serviceId: 'seed-service-dung-art', serviceName: 'Chân dung nghệ thuật', bookingDay: '2026-09-22', verdict: 'brick', hits: 2, reasons: ['late'], text: 'Đến trễ gần một tiếng, phải dời cả buổi.', daysAgo: 4 },
+  { bookingId: 'seed-review-dung-3', subjectId: DUNG, customerId: LAN, serviceId: 'seed-service-dung-art', serviceName: 'Chân dung nghệ thuật', bookingDay: '2026-09-18', verdict: 'tomato', hits: 5, reasons: [], text: 'Concept lạ, ảnh có hồn, đáng tiền.', daysAgo: 8 },
+  { bookingId: 'seed-review-dung-4', subjectId: DUNG, customerId: MINH, serviceId: 'seed-service-dung-art', serviceName: 'Chân dung nghệ thuật', bookingDay: '2026-09-15', verdict: 'brick', hits: 5, reasons: ['not_as_portfolio', 'price_changed'], text: 'Ảnh không giống portfolio, lại đòi thêm tiền hậu kỳ.', daysAgo: 10 },
+  { bookingId: 'seed-review-dung-5', subjectId: DUNG, customerId: LAN, serviceId: 'seed-service-dung-art', serviceName: 'Chân dung nghệ thuật', bookingDay: '2026-09-10', verdict: 'tomato', hits: 3, reasons: [], text: 'Ảnh đẹp, nhưng chờ hơi lâu mới bắt đầu chụp.', daysAgo: 14 },
+  { bookingId: 'seed-review-dung-6', subjectId: DUNG, customerId: MINH, serviceId: 'seed-service-dung-art', serviceName: 'Chân dung nghệ thuật', bookingDay: '2026-09-04', verdict: 'brick', hits: 1, reasons: ['attitude'], text: 'Hơi khó tính khi mình góp ý về dáng chụp.', daysAgo: 20 },
+];
+
+/** An's stats stand for all 58 of his reviews (only three are seeded); they keep `top_rated` (≥ 95% from ≥ 20). */
+const AN_STATS: PhotographerStatsPatch = {
+  reviewCount: 58,
+  tomatoCount: 56,
+  brickCount: 2,
+  signedSum: 54.62,
+  tomatoPct: 97,
+  score: 0.942,
+  punctualMentions: 3,
+};
+
+/** `photographers/{uid}.stats`: An's fixed numbers; anyone else's folded from their seeded reviews. */
+function seedStatsOf(uid: string): PhotographerStatsPatch | null {
+  if (uid === AN) return AN_STATS;
+  let stats: PhotographerStatsPatch | null = null;
+  for (const r of SEED_REVIEWS.filter((x) => x.subjectId === uid)) {
+    stats = addVerdict(stats === null ? {} : { ...stats }, r.verdict, intensityOf(r.hits), mentionsPunctual(r.text));
+  }
+  return stats;
+}
+
+function reviewDocuments(now: Date): SeedDocument[] {
+  return SEED_REVIEWS.map((r) => {
+    const at = new Date(now.getTime() - r.daysAgo * DAY_MS);
+    return {
+      path: `reviews/${reviewDocId(r.bookingId, 'photographer')}`,
+      data: {
+        bookingId: r.bookingId,
+        subjectType: 'photographer',
+        subjectId: r.subjectId,
+        photographerId: r.subjectId,
+        customerId: r.customerId,
+        serviceId: r.serviceId,
+        serviceName: r.serviceName,
+        bookingDay: r.bookingDay,
+        verdict: r.verdict,
+        hits: r.hits,
+        intensity: intensityOf(r.hits),
+        reasons: [...r.reasons],
+        text: r.text,
+        photoPostId: null,
+        createdAt: at,
+        countedAt: at,
+      },
+    };
+  });
+}
+
 export interface SeedDocument {
   readonly path: string;
   readonly data: Record<string, unknown>;
@@ -286,6 +377,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   }
   for (const p of SEED_PHOTOGRAPHERS) {
     const onboardingComplete = true;
+    const stats = seedStatsOf(p.uid);
     docs.push({
       path: `photographers/${p.uid}`,
       data: {
@@ -301,7 +393,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),
         // An's stats keep the revocable `top_rated` badge: the evaluator runs on every seed write.
-        ...(p.uid === AN ? { stats: { rating: 4.9, reviewCount: 58, ratingSum: 284, punctualMentions: 3 } } : {}),
+        ...(stats !== null ? { stats: { ...stats } } : {}),
         approvedAwardCount: SEED_AWARDS.filter((a) => a.photographerId === p.uid && a.status === 'approved').length,
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
@@ -507,6 +599,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
       });
     }
   }
+  docs.push(...reviewDocuments(now));
   docs.push(...notificationAndBadgeDocuments(now));
   docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
@@ -541,8 +634,10 @@ const SEED_ROWS: readonly SeedRow[] = [
     group: { key: `chat:${SEED_CHAT}`, count: 2, lastEventId: 'seed-message-2' } },
   { uid: AN, id: 'n_booking_request_seed-booking-requested-an', ageHours: 3, read: false, target: '/bookings',
     content: { type: 'booking_request', customer: 'Lan (seed)', service: 'Chân dung 2 giờ', day: 'T7 25/10', start: '16:00' } },
-  { uid: AN, id: 'n_review_new_seed-booking-completed-recent', ageHours: 48, read: true, target: `/u/${AN}?tab=reviews`,
-    content: { type: 'review_new', customer: 'Lan (seed)', rating: 5, text: 'Rất hài lòng, đúng giờ.' } },
+  // A sample verdict notice (S17 `review_tomato`); its id is no real dedupe key, so Lan's review of
+  // seed-booking-completed-recent still notifies An.
+  { uid: AN, id: 'n_review_tomato_seed-sample', ageHours: 48, read: true, target: `/u/${AN}?tab=reviews`,
+    content: { type: 'review_tomato', hits: 7, day: '2026-09-27', text: 'Rất hài lòng, đúng giờ.' } },
 ];
 
 /** Inbox rows, unread counts and badges (plan 10a). Defaults apply to everyone: no prefs doc. */
@@ -597,7 +692,7 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
       path: `users/${uid}/badges/${badgeId}`,
       data: { badgeId, uid, awardedAt: new Date(now.getTime() - daysAgo * DAY_MS), snapshot: { text } },
     });
-  earned(AN, 'top_rated', '4,9 sao từ 58 đánh giá', 20);
+  earned(AN, 'top_rated', '97% cà chua từ 58 đánh giá', 20);
   earned(AN, 'shoots_10', 'Hoàn thành 12 buổi', 10);
   earned(AN, 'complete_profile', 'Đủ ảnh và gói', 25);
   earned(LAN, 'loyal_customer', 'Hoàn thành 3 buổi chụp', 5);
@@ -606,7 +701,8 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
   // Equal to what the evaluator computes from the seeded data, so a trigger run changes nothing.
   const anShoots = SEED_BOOKINGS.filter((b) => b.photographerId === AN && b.status === 'completed').length;
   progress(AN, { punctual: { current: 3, target: 5 }, shoots_50: { current: Math.min(anShoots, 50), target: 50 } });
-  progress(LAN, { sharer: { current: 0, target: 5 }, detailed_reviewer: { current: 0, target: 5 } });
+  // Lan has no real-shoot post; 3 of her seeded reviews have ≥ 50 graphemes (detailedReviews).
+  progress(LAN, { sharer: { current: 0, target: 5 }, detailed_reviewer: { current: 3, target: 5 } });
   return docs;
 }
 

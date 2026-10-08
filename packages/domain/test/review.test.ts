@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { BOOKING_STATUSES } from '../src/booking.js';
 import { DomainError } from '../src/errors.js';
-import { validateReviewInput } from '../src/review.js';
+import {
+  intensityOf,
+  isReviewable,
+  REVIEW_HITS_MAX,
+  reviewDocId,
+  validateReviewInput,
+} from '../src/review.js';
 
 const prefixes = [
   'https://firebasestorage.googleapis.com/v0/b/demo-bucket/o/',
@@ -14,45 +21,138 @@ const validStoragePath = (callerId: string, postId: string, name = '0.jpg') =>
 const validUrl = (callerId: string, postId: string, name = '0.jpg') =>
   `${prefixes[0]}${encodeURIComponent(validStoragePath(callerId, postId, name))}?alt=media`;
 
-describe('validateReviewInput', () => {
-  it('rating must be an integer from 1 to 5', () => {
-    for (const rating of [1, 2, 3, 4, 5]) {
-      const res = validateReviewInput(
-        {
-          bookingId: 'book1',
-          rating,
-          text: 'Buổi chụp rất tuyệt vời!',
-        },
-        'cust1',
-        prefixes
-      );
-      assert.equal(res.rating, rating);
+describe('intensityOf', () => {
+  it('matches the spec table', () => {
+    assert.equal(REVIEW_HITS_MAX, 10);
+    const table: Array<[number, number]> = [
+      [1, 0.4],
+      [2, 0.58],
+      [3, 0.69],
+      [5, 0.82],
+      [7, 0.91],
+      [10, 1.0],
+    ];
+    for (const [hits, expected] of table) {
+      assert.equal(intensityOf(hits), expected, `hits ${hits}`);
     }
+  });
 
-    for (const bad of [0, 6, -1, 3.5, '5', null, undefined, NaN]) {
+  it('refuses 0, 11, 2.5 and NaN with invalid_argument', () => {
+    for (const bad of [0, 11, 2.5, NaN, -3]) {
       assert.throws(
-        () =>
-          validateReviewInput(
-            {
-              bookingId: 'book1',
-              rating: bad,
-              text: 'Buổi chụp rất tuyệt vời!',
-            },
-            'cust1',
-            prefixes
-          ),
-        (err: unknown) =>
-          err instanceof DomainError && err.code === 'invalid_argument',
-        `expected rating ${String(bad)} to fail`
+        () => intensityOf(bad),
+        (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
+        String(bad)
       );
     }
+  });
+});
+
+describe('reviewDocId and isReviewable', () => {
+  it('photographer uses the booking id, studio appends _studio', () => {
+    assert.equal(reviewDocId('b1', 'photographer'), 'b1');
+    assert.equal(reviewDocId('b1', 'studio'), 'b1_studio');
+  });
+
+  it('isReviewable is true only for completed', () => {
+    for (const status of BOOKING_STATUSES) {
+      assert.equal(isReviewable(status), status === 'completed', status);
+    }
+  });
+});
+
+describe('validateReviewInput', () => {
+  it('accepts tomato x7 without reasons', () => {
+    const res = validateReviewInput(
+      { bookingId: 'book1', verdict: 'tomato', hits: 7, text: 'Buổi chụp rất tuyệt vời!' },
+      'cust1',
+      prefixes
+    );
+    assert.equal(res.verdict, 'tomato');
+    assert.equal(res.hits, 7);
+    assert.deepEqual(res.reasons, []);
+  });
+
+  it('accepts brick x3 with [late, slow_delivery]', () => {
+    const res = validateReviewInput(
+      {
+        bookingId: 'book1',
+        verdict: 'brick',
+        hits: 3,
+        reasons: ['late', 'slow_delivery'],
+        text: 'Đến trễ và giao ảnh chậm',
+      },
+      'cust1',
+      prefixes
+    );
+    assert.equal(res.verdict, 'brick');
+    assert.deepEqual(res.reasons, ['late', 'slow_delivery']);
+  });
+
+  const invalid = (raw: Record<string, unknown>, label: string) =>
+    assert.throws(
+      () =>
+        validateReviewInput(
+          { bookingId: 'book1', text: 'Buổi chụp rất tuyệt vời!', ...raw },
+          'cust1',
+          prefixes
+        ),
+      (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
+      label
+    );
+
+  it('refuses an unknown verdict', () => {
+    for (const bad of ['banana', 'TOMATO', null, undefined, 5]) {
+      invalid({ verdict: bad, hits: 1 }, `verdict ${String(bad)}`);
+    }
+  });
+
+  it('refuses hits 0, 11, 3.5 and "3"', () => {
+    for (const bad of [0, 11, -1, 3.5, '3', null, undefined, NaN]) {
+      invalid({ verdict: 'tomato', hits: bad }, `hits ${String(bad)}`);
+    }
+  });
+
+  it('refuses brick without reasons', () => {
+    invalid({ verdict: 'brick', hits: 2 }, 'missing');
+    invalid({ verdict: 'brick', hits: 2, reasons: [] }, 'empty');
+  });
+
+  it('refuses brick with an unknown reason', () => {
+    invalid({ verdict: 'brick', hits: 2, reasons: ['late', 'rude'] }, 'unknown');
+    invalid({ verdict: 'brick', hits: 2, reasons: 'late' }, 'not an array');
+  });
+
+  it('refuses brick with a duplicate reason', () => {
+    invalid({ verdict: 'brick', hits: 2, reasons: ['late', 'late'] }, 'duplicate');
+  });
+
+  it('refuses tomato with reasons', () => {
+    invalid({ verdict: 'tomato', hits: 2, reasons: ['late'] }, 'tomato with reasons');
+  });
+
+  it('ignores a client intensity and a client rating', () => {
+    const res = validateReviewInput(
+      {
+        bookingId: 'book1',
+        verdict: 'tomato',
+        hits: 2,
+        intensity: 1,
+        rating: 5,
+        text: 'Buổi chụp rất tuyệt vời!',
+      },
+      'cust1',
+      prefixes
+    );
+    assert.equal('intensity' in res, false);
+    assert.equal('rating' in res, false);
   });
 
   it('text needs 10 to 1000 graphemes after trimming (emoji count as one)', () => {
     // Exactly 10 chars
     const minText = '1234567890';
     const res1 = validateReviewInput(
-      { bookingId: 'book1', rating: 5, text: minText },
+      { bookingId: 'book1', verdict: 'tomato', hits: 3, text: minText },
       'cust1',
       prefixes
     );
@@ -61,7 +161,7 @@ describe('validateReviewInput', () => {
     // 10 emoji graphemes
     const emojiText = '📸✨🌟🎉🇻🇳👍❤️📷🌸🎯';
     const res2 = validateReviewInput(
-      { bookingId: 'book1', rating: 5, text: emojiText },
+      { bookingId: 'book1', verdict: 'tomato', hits: 3, text: emojiText },
       'cust1',
       prefixes
     );
@@ -70,7 +170,7 @@ describe('validateReviewInput', () => {
     // Padding spaces trimmed before check
     const padded = '   1234567890   ';
     const res3 = validateReviewInput(
-      { bookingId: 'book1', rating: 5, text: padded },
+      { bookingId: 'book1', verdict: 'tomato', hits: 3, text: padded },
       'cust1',
       prefixes
     );
@@ -80,7 +180,7 @@ describe('validateReviewInput', () => {
     assert.throws(
       () =>
         validateReviewInput(
-          { bookingId: 'book1', rating: 5, text: '123456789' },
+          { bookingId: 'book1', verdict: 'tomato', hits: 3, text: '123456789' },
           'cust1',
           prefixes
         ),
@@ -93,7 +193,7 @@ describe('validateReviewInput', () => {
     assert.throws(
       () =>
         validateReviewInput(
-          { bookingId: 'book1', rating: 5, text: longText },
+          { bookingId: 'book1', verdict: 'tomato', hits: 3, text: longText },
           'cust1',
           prefixes
         ),
@@ -112,7 +212,7 @@ describe('validateReviewInput', () => {
         validateReviewInput(
           {
             bookingId: 'book1',
-            rating: 5,
+            verdict: 'tomato', hits: 3,
             text: 'Chụp hình đẹp lắm nha',
             postId,
             photos: [
@@ -135,7 +235,7 @@ describe('validateReviewInput', () => {
         validateReviewInput(
           {
             bookingId: 'book1',
-            rating: 5,
+            verdict: 'tomato', hits: 3,
             text: 'Chụp hình đẹp lắm nha',
             postId,
             photos: [
@@ -164,7 +264,7 @@ describe('validateReviewInput', () => {
         validateReviewInput(
           {
             bookingId: 'book1',
-            rating: 5,
+            verdict: 'tomato', hits: 3,
             text: 'Chụp hình đẹp lắm nha',
             postId,
             photos: [
@@ -187,7 +287,7 @@ describe('validateReviewInput', () => {
         validateReviewInput(
           {
             bookingId: 'book1',
-            rating: 5,
+            verdict: 'tomato', hits: 3,
             text: 'Chụp hình đẹp lắm nha',
             postId,
             photos: [
@@ -218,7 +318,7 @@ describe('validateReviewInput', () => {
         validateReviewInput(
           {
             bookingId: 'book1',
-            rating: 5,
+            verdict: 'tomato', hits: 3,
             text: 'Chụp hình đẹp lắm nha',
             postId,
             photos,
@@ -235,7 +335,7 @@ describe('validateReviewInput', () => {
     const res = validateReviewInput(
       {
         bookingId: 'book1',
-        rating: 5,
+        verdict: 'tomato', hits: 3,
         text: 'Chụp hình đẹp lắm nha',
         postId: 'ignoredPostId',
         photos: [],

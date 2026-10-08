@@ -111,7 +111,7 @@ export class FirestoreBadgeStore implements BadgeStore {
   }
 }
 
-const GROUP_STATS: readonly BadgeMetric[] = ['rating', 'reviewCount', 'responseMinutes', 'punctualMentions'];
+const GROUP_STATS: readonly BadgeMetric[] = ['tomatoPct', 'reviewCount', 'responseMinutes', 'punctualMentions'];
 const DETAILED_MIN_GRAPHEMES = 50;
 const countGraphemes = (s: string): number =>
   Array.from(new Intl.Segmenter('vi', { granularity: 'grapheme' }).segment(s.trim())).length;
@@ -142,8 +142,8 @@ export class FirestoreBadgeMetricsReader implements BadgeMetricsReader {
           const raw: unknown = snap.data()?.stats;
           const s = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
           const num = (k: string): number | null => (typeof s[k] === 'number' && Number.isFinite(s[k]) ? (s[k] as number) : null);
-          const rating = num('rating');
-          if (metrics.has('rating')) m.rating = rating === null ? null : Math.round(rating * 10) / 10;
+          // A legacy star `rating` is ignored: no tomatoPct until the first verdict is counted.
+          if (metrics.has('tomatoPct')) m.tomatoPct = num('tomatoPct');
           if (metrics.has('reviewCount')) m.reviewCount = num('reviewCount') ?? 0;
           if (metrics.has('responseMinutes')) m.responseMinutes = num('responseMinutes');
           if (metrics.has('punctualMentions')) m.punctualMentions = num('punctualMentions') ?? 0;

@@ -4,7 +4,7 @@ import type { RealShootPost, Review } from './review.js';
 
 export interface ReviewTx {
   getBooking(id: string): Promise<Booking | null>;
-  getReview(bookingId: string): Promise<Review | null>;
+  getReview(reviewId: string): Promise<Review | null>;
   setBooking(b: Booking): void;
   addBookingEvent(e: BookingEventRecord): void;
   setReview(r: Review): void;

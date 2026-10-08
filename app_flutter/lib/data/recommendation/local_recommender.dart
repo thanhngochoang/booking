@@ -14,20 +14,19 @@ import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 double _unit(double x) => math.min(1.0, math.max(0.0, x));
 
-/// Smoothed rating `(v*R + m*C) / (v + m)`: a handful of five-star reviews do
-/// not beat a long record.
-double smoothedRating(PhotographerSummary p) {
+/// Smoothed score `(v*score + m*C) / (v + m)` with `m = 10`, `C = 0.6`: a
+/// handful of glowing reviews do not beat a long record. A provider without
+/// reviews sits at `C`.
+double smoothedScore(PhotographerSummary p) {
   const m = 10.0;
-  const c = 4.3;
+  const c = 0.6;
   final v = p.reviewCount.toDouble();
-  final r = p.hasRating ? p.ratingAvg : c;
-  return (v * r + m * c) / (v + m);
+  return (v * p.score + m * c) / (v + m);
 }
 
 double _quality(PhotographerSummary p) {
-  final base = (smoothedRating(p) - 3) / 2;
   final boost = 0.05 * (math.log(1 + p.completedCount) / math.ln10);
-  return _unit(base + boost);
+  return _unit(smoothedScore(p) + boost);
 }
 
 class _Scored {
@@ -67,12 +66,12 @@ int Function(_Scored, _Scored) _bySort(
     return c != 0 ? c : tie(a, b);
   },
   RecommendationSort.rating => (a, b) {
-    final c = smoothedRating(b.p).compareTo(smoothedRating(a.p));
+    final c = smoothedScore(b.p).compareTo(smoothedScore(a.p));
     return c != 0 ? c : tie(a, b);
   },
 };
 
-/// Ranks on the device with stars (smoothed), distance and availability. It is
+/// Ranks on the device with the review score (smoothed), distance and availability. It is
 /// the safety net when the remote recommender is down, slow or offline, and it
 /// is what the app uses until the recommender service exists.
 class LocalRecommender implements RecommendationRepository {
@@ -183,11 +182,11 @@ class LocalRecommender implements RecommendationRepository {
         ),
       );
     }
-    if (p.reviewCount >= 10 && smoothedRating(p) >= 4.7) {
+    if (p.reviewCount >= 10 && p.tomatoPct >= 95) {
       out.add(
         Reason(
           code: ReasonCode.topRated,
-          text: _l.reasonTopRated(formatRating(p.ratingAvg), p.reviewCount),
+          text: _l.reasonTopRated(p.tomatoPct, p.reviewCount),
         ),
       );
     }
@@ -236,9 +235,9 @@ class LocalRecommender implements RecommendationRepository {
         if (s != 0) {
           return s;
         }
-        final byRating = smoothedRating(b.p).compareTo(smoothedRating(a.p));
-        if (byRating != 0) {
-          return byRating;
+        final byScore = smoothedScore(b.p).compareTo(smoothedScore(a.p));
+        if (byScore != 0) {
+          return byScore;
         }
         final byReviews = b.p.reviewCount.compareTo(a.p.reviewCount);
         return byReviews != 0 ? byReviews : a.p.id.compareTo(b.p.id);

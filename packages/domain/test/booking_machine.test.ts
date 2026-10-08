@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { roleOf, decideTransition } from '../src/booking_machine.js';
+import { roleOf, decideTransition, type TransitionAction } from '../src/booking_machine.js';
 import type { Booking } from '../src/booking.js';
 import { DomainError } from '../src/errors.js';
 
@@ -189,11 +189,19 @@ describe('Task 2: Booking state machine & transitions', () => {
       assert.equal(res.nextStatus, 'completed');
     });
 
-    it('customer can review a completed booking', () => {
+    it('the retired review action is refused (reviews go through submitReview)', () => {
       const now = new Date('2026-10-16T10:00:00.000Z');
       const booking = { ...baseBooking, status: 'completed' as const };
-      const res = decideTransition(booking, 'review', { id: 'cust_01', role: 'customer' }, now);
-      assert.equal(res.nextStatus, 'reviewed');
+      assert.throws(
+        () =>
+          decideTransition(
+            booking,
+            'review' as unknown as TransitionAction,
+            { id: 'cust_01', role: 'customer' },
+            now,
+          ),
+        (err: unknown) => err instanceof DomainError && err.code === 'invalid_argument',
+      );
     });
   });
 });

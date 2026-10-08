@@ -373,10 +373,9 @@ class _PostBlock extends ConsumerWidget {
                           ),
                           style: nameStyle,
                         ),
-                        Text(
+                        MetaLine(
                           areaRatingMeta(p, l),
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.foregroundInverse,
                           ),

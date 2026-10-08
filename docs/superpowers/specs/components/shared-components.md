@@ -326,6 +326,28 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 
 ---
 
+### Component của spec 10-06 (đánh giá cà chua / gạch) · Mới
+
+Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lòng), tối đa 10 lần chạm. Hình ở mock (`#S05.05`, `#S05.05-brick`, `#S05.05-studio`, `#S03.01-reviews`). Hai màu token mới `tomato`, `brick` (sáng `D93A2B` / `A65A35`, tối `FF5A47` / `D2875E`) chỉ dùng cho hai biểu tượng, thanh mức, `VerdictBadge` và thanh tỷ lệ; phần còn lại giữ 60-30-10. Lõi (`core/`) không import `lib/data`, nên dùng enum `VerdictKind { tomato, brick }`; tính năng ánh xạ `Verdict` sang nó.
+
+#### VerdictIcon · Mới
+`VerdictIcon(VerdictKind kind, {double size = 16, Color? color})`. Hai biểu tượng nét (`assets/icons/tomato.svg`, `brick.svg`, `viewBox 24`, nét `currentColor` dày 1,8) vẽ bằng `SvgPicture.asset` với `ColorFilter.mode(color, srcIn)`; màu mặc định là token của phe theo giao diện (`verdictColor(context, kind)`). Chỉ trang trí (`ExcludeSemantics`): chữ đọc nằm ở widget bao quanh. Mock `.tm svg`.
+
+#### VerdictPad · Mới
+`VerdictPad({required VerdictKind? kind, required int hits, required void Function(VerdictKind?, int) onChanged, bool compact = false, bool enabled = true})`; `kind == null` khi `hits == 0`. Hai nút cạnh nhau (mock `.vpad`, `.vbtn`): biểu tượng 40 trên nhãn ("Hài lòng" / "Chưa hài lòng"), nút đang chọn có viền và nền 14–16% màu phe, "×n" góc trên phải cùng màu; nút còn lại nền `glass`. Chạm: phe chưa chọn thì chọn với ×1 (kể cả đổi phe, không hỏi lại); chạm tiếp trên phe đang chọn thì +1; chạm lần thứ 11 không làm gì. Rung nhẹ mỗi lần (`HapticFeedback.lightImpact`), rung mạnh khi chạm 10 (`heavyImpact`). Hiệu ứng chỉ là một cú nảy của biểu tượng mỗi lần đổi (220 ms, không `repeat()`, tắt khi hệ thống giảm chuyển động). `Semantics`: mỗi phe là thanh trượt, nhãn "Ném cà chua, {n} trên 10" / "Ném gạch, {n} trên 10", có hành động tăng, giảm, chạm; giảm ở 1 thì bỏ chọn; vùng chạm ≥ 48dp. `compact` (mock `.vpad.cp`, khối "Đánh giá thợ / studio" của S05.05-studio): biểu tượng 22, nhãn và "×n" trên một hàng. Vô hiệu thì không nhận chạm và không có hành động.
+
+#### VerdictLevel · Mới
+`VerdictLevel({required VerdictKind kind, required int hits, required String label, required VoidCallback onReset, bool showHint = true})`. Dưới pad khi đã chọn phe (mock `.vlvl`): nhãn mức đậm (`verdictLevelLabel(l10n, kind, hits)`: cà chua 1–2 "Ổn", 3–5 "Hài lòng", 6–9 "Rất hài lòng", 10 "Tuyệt vời!"; gạch 1–2 "Hơi tiếc", 3–5 "Chưa ưng", 6–9 "Thất vọng", 10 "Rất thất vọng"), nút chữ "Làm lại" (gọi `onReset`), thanh 6dp có phần tô rộng bằng `verdictIntensity(hits)` (bản hiển thị của công thức máy chủ `0,4 + 0,6·log10(hits)`; 7 lần chạm = 91%) màu của phe, dòng gợi ý "Chạm tiếp để tăng mức độ, tối đa 10" (`showHint`; S05.05 tắt ở phe gạch vì khung `#S05.05-brick` không vẽ dòng này).
+
+#### VerdictBadge · Mới
+`VerdictBadge({required VerdictKind kind, required int hits})`. Viên thuốc ở dòng đánh giá (mock `.vbdg`): biểu tượng 14 và "×n" 11,5 đậm màu phe, nền 14% (cà chua) / 16% (gạch) màu đó. `Semantics.label`: "Cà chua, {n} trên 10" / "Gạch, {n} trên 10". Dùng ở S03.01 tab Đánh giá.
+
+#### TomatoRatioBar · Mới
+`TomatoRatioBar({required int tomatoCount, required int brickCount})`. Thanh 8dp bo tròn (mock `.vratio`), đoạn cà chua trước, cách 2dp, rộng tỷ lệ với số lượng (56 : 2 thì đoạn gạch rất hẹp); một phe bằng 0 thì phe kia chiếm cả thanh; không có đánh giá thì vẽ nền trống. `Semantics.label`: "{t} cà chua, {b} gạch". Dùng ở đầu tab Đánh giá của S03.01, kèm "% cà chua" lớn và dòng "56 cà chua · 2 gạch · 58 đánh giá".
+
+#### MetaLine · Mới
+`MetaLine(List<MetaPart> parts, {TextStyle? style, int maxLines = 1})`; `MetaPart.text(String)` và `MetaPart.tomato(int pct, {int? count})` (có `count` thì "97% (58)", dùng ở thẻ ảnh S02.01). Nối các phần bằng " · " thành một `Text.rich`, phần cà chua là `VerdictIcon(12)` + "97%" (`formatTomatoPct`) nằm giữa dòng chữ; cắt bằng dấu "…" khi quá `maxLines`. Mặc định cỡ 12 màu `foregroundSecondary`. Thay các chuỗi ghép sẵn có số sao (thẻ thợ, hàng kết quả tìm, dòng chủ sự kiện, dòng tin cậy của báo giá). Ẩn phần cà chua khi chưa đủ 5 đánh giá (`hasTomatoPct`); `MetaPart` của phần đánh giá do helper dùng chung của lõi `reviewMetaPart(summary, l10n, {withCount})` (`lib/core/review_meta.dart`) dựng, các phần chữ khác do tính năng tạo: từ 5 đánh giá là phần cà chua, 1–4 là chữ "Mới · {count} đánh giá" (`photographerReviewsNew`), 0 thì không có gì. Đọc cho trình đọc màn hình chỉ là "97%" (biểu tượng không có nhãn).
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
@@ -375,6 +397,9 @@ Giao diện gợi ý (spec chính 3e): `recommendPhotographers(RecommendationQue
 | `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp) |
 | `JobCard` | S15.02, S16.02 |
 | `QuoteCard`, `DeliverableChips`, `FitPill`, `MilestoneTable` | S15.02, S15.03, S15.04, S16.01, S16.03 |
+| `VerdictIcon`, `MetaLine` | S02.01, S02.02, S02.06, S03.01, S12.02, S15.03, S26 |
+| `VerdictPad`, `VerdictLevel` | S05.05 (khối thợ và khối studio dùng `compact`) |
+| `VerdictBadge`, `TomatoRatioBar` | S03.01 (tab Đánh giá) |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)

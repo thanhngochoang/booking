@@ -50,7 +50,7 @@ List<BadgeDefinition> badgeCatalogue() => [
   _def(
     'top_rated',
     'Được đánh giá cao',
-    'Từ 4,8 sao với ít nhất 20 đánh giá',
+    'Từ 95% cà chua với ít nhất 20 đánh giá',
     'favorite',
     BadgeSource.review,
     'photographer',
@@ -212,13 +212,15 @@ class BadgesWorld {
           catalog: badgeCatalogue(),
           earned: {
             uid: [
-              earnedOn('top_rated', old, '4,9 sao từ 58 đánh giá'),
+              earnedOn('top_rated', old, '97% cà chua từ 58 đánh giá'),
               earnedOn('punctual', old),
               earnedOn('new_member', old),
               earnedOn('fast_reply', old),
               earnedOn('shoots_100', old, 'Hoàn thành 112 buổi'),
             ],
-            otherUid: [earnedOn('top_rated', old, '4,8 sao từ 30 đánh giá')],
+            otherUid: [
+              earnedOn('top_rated', old, '96% cà chua từ 30 đánh giá'),
+            ],
           },
           progress: {
             uid: const {

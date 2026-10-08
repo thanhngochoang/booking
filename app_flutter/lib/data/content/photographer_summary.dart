@@ -16,8 +16,11 @@ class PhotographerSummary {
     this.areaLabel,
     this.lat,
     this.lng,
-    this.ratingAvg = 0,
     this.reviewCount = 0,
+    this.tomatoCount = 0,
+    this.brickCount = 0,
+    this.tomatoPct = 0,
+    this.score = 0,
     this.completedCount = 0,
     this.responseMinutes,
     this.startingPriceVnd,
@@ -50,8 +53,18 @@ class PhotographerSummary {
   /// Centre of the service area; null when the photographer has not set one.
   final double? lat;
   final double? lng;
-  final double ratingAvg;
+
+  /// Tomato and brick reviews; [reviewCount] is their sum.
   final int reviewCount;
+  final int tomatoCount;
+  final int brickCount;
+
+  /// Share of tomatoes, integer 0..100 (0 without reviews). Show it only when
+  /// [hasTomatoPct].
+  final int tomatoPct;
+
+  /// Mean signed intensity, -1..1 (0 without reviews); what rankings use.
+  final double score;
   final int completedCount;
 
   /// Median reply time in minutes, when known.
@@ -72,7 +85,8 @@ class PhotographerSummary {
   /// Public district of a studio; the full address stays private.
   final String? studioDistrict;
 
-  bool get hasRating => reviewCount > 0;
+  bool get hasReviews => reviewCount > 0;
+  bool get hasTomatoPct => reviewCount >= kTomatoPctMinReviews;
   bool get hasGeo => lat != null && lng != null;
   String? get heroUrl => coverUrl ?? avatarUrl;
   DateTime? get nextFreeDay =>

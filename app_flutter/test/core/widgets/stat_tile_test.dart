@@ -12,6 +12,25 @@ const _tiles = [
 ];
 
 void main() {
+  testWidgets('a value leading is drawn before the value on the same line', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const StatTile(
+          value: '97%',
+          label: '58 đánh giá',
+          valueLeading: VerdictIcon(VerdictKind.tomato, size: 18),
+        ),
+      ),
+    );
+    final icon = tester.getRect(find.byType(VerdictIcon));
+    final value = tester.getRect(find.text('97%'));
+    expect(icon.right, lessThanOrEqualTo(value.left));
+    expect(icon.center.dy, closeTo(value.center.dy, 4));
+    expect(find.bySemanticsLabel('97%, 58 đánh giá'), findsOneWidget);
+  });
+
   testWidgets('three tiles share one row and one height at 320dp, 1.3x', (
     tester,
   ) async {

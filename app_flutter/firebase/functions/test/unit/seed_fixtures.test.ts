@@ -1,13 +1,31 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Timestamp } from 'firebase-admin/firestore';
-import { acceptsOrders, bookingContactUnlocked, computeDeposit, isId, isInternationalE164, isTicketCode, isVnE164, transferCodeFor } from '@photobooking/domain';
 import {
+  acceptsOrders,
+  addVerdict,
+  bookingContactUnlocked,
+  computeDeposit,
+  intensityOf,
+  isId,
+  isInternationalE164,
+  isTicketCode,
+  isVnE164,
+  mentionsPunctual,
+  reviewDocId,
+  TOMATO_PCT_MIN_REVIEWS,
+  transferCodeFor,
+} from '@photobooking/domain';
+import {
+  AN,
+  CUC,
+  DUNG,
   LAN,
   SEED_EVENT_SOON,
   SEED_PASSWORD,
   SEED_PHOTOGRAPHERS,
   SEED_REGISTRATION_LAN_SOON,
+  SEED_REVIEWS,
   SEED_USERS,
   seedDocuments,
 } from '../../seed/fixtures.js';
@@ -145,6 +163,20 @@ describe('seed notifications and badges', () => {
     );
     assert.equal(docs.some((d) => d.path.endsWith('/private/notification_prefs')), false);
   });
+
+  test("Lan's badge progress equals what the evaluator computes from the seeded reviews and posts", () => {
+    const lan = LAN;
+    const graphemes = (t: string) =>
+      Array.from(new Intl.Segmenter('vi', { granularity: 'grapheme' }).segment(t.trim())).length;
+    const detailed = SEED_REVIEWS.filter((r) => r.customerId === lan && graphemes(r.text) >= 50).length;
+    const shared = docs.filter(
+      (d) => d.path.startsWith('posts/') && d.data.authorId === lan && d.data.kind === 'real_shoot',
+    ).length;
+    const entries = docs.find((d) => d.path === `users/${lan}/private/badgeProgress`)?.data.entries as Record<string, unknown>;
+    assert.equal(detailed, 3);
+    assert.deepEqual(entries.detailed_reviewer, { current: detailed, target: 5 });
+    assert.deepEqual(entries.sharer, { current: shared, target: 5 });
+  });
 });
 
 describe('seed payouts and earnings', () => {
@@ -229,5 +261,103 @@ describe('seed event reminder (S17)', () => {
     assert.equal(new Set(paths).size, paths.length);
     const day = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-10')?.data;
     assert.equal(day?.bookingId, 'seed-booking-upcoming');
+  });
+});
+
+describe('seed reviews (tomato/brick)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+  const reviewsOf = (uid: string): (Record<string, unknown> & { id: string })[] =>
+    docs
+      .filter((d) => /^reviews\/[^/]+$/.test(d.path) && d.data.subjectId === uid)
+      .map((d) => ({ ...d.data, id: d.path.slice('reviews/'.length) }));
+  const statsOf = (uid: string) => get(`photographers/${uid}`)?.stats as Record<string, unknown> | undefined;
+  const fold = (uid: string) =>
+    reviewsOf(uid).reduce<Record<string, unknown>>(
+      (acc, r) => ({ ...addVerdict(acc, r.verdict as 'tomato' | 'brick', r.intensity as number, mentionsPunctual(String(r.text))) }),
+      {},
+    );
+
+  test("An's stats are 56 tomato and 2 brick (97%) and his seeded reviews are verdict docs", () => {
+    assert.deepEqual(statsOf(AN), {
+      reviewCount: 58,
+      tomatoCount: 56,
+      brickCount: 2,
+      signedSum: 54.62,
+      tomatoPct: 97,
+      score: 0.942,
+      punctualMentions: 3,
+    });
+    const an = reviewsOf(AN);
+    assert.deepEqual(an.map((r) => r.id).sort(), ['seed-review-an-1', 'seed-review-an-2', 'seed-review-an-3']);
+    assert.deepEqual(an.map((r) => `${String(r.verdict)}×${String(r.hits)}`).sort(), ['brick×3', 'tomato×10', 'tomato×6']);
+    const brick = an.find((r) => r.verdict === 'brick');
+    assert.deepEqual(brick?.reasons, ['late', 'slow_delivery']);
+    const topRated = get(`users/${AN}/badges/top_rated`)?.snapshot as { text: string } | undefined;
+    assert.equal(topRated?.text, '97% cà chua từ 58 đánh giá');
+  });
+
+  test('every seeded review is a counted verdict doc keyed by reviewDocId', () => {
+    const all = docs.filter((d) => /^reviews\/[^/]+$/.test(d.path));
+    assert.equal(all.length, 12);
+    for (const d of all) {
+      const r = d.data;
+      assert.equal(d.path, `reviews/${reviewDocId(String(r.bookingId), 'photographer')}`);
+      assert.equal(r.subjectType, 'photographer');
+      assert.equal(r.photographerId, r.subjectId, d.path);
+      assert.equal(r.intensity, intensityOf(r.hits as number), d.path);
+      assert.ok(r.countedAt instanceof Date, `${d.path} is born counted: the trigger neither recounts nor notifies`);
+      assert.match(String(r.bookingDay), /^\d{4}-\d{2}-\d{2}$/);
+      assert.ok(String(r.serviceName).length > 0);
+      assert.ok([LAN, 'seed-customer-minh'].includes(String(r.customerId)), d.path);
+      if (r.verdict === 'tomato') assert.deepEqual(r.reasons, [], d.path);
+    }
+    // Lan can still review the recent shoot.
+    assert.equal(get('reviews/seed-booking-completed-recent'), undefined);
+  });
+
+  test('Cúc has 3 reviews and no tomatoPct shown (under 5)', () => {
+    const cuc = reviewsOf(CUC);
+    assert.equal(cuc.length, 3);
+    assert.ok(cuc.every((r) => r.verdict === 'tomato'));
+    assert.deepEqual(statsOf(CUC), fold(CUC));
+    assert.equal(statsOf(CUC)?.reviewCount, 3);
+    assert.ok((statsOf(CUC)?.reviewCount as number) < TOMATO_PCT_MIN_REVIEWS);
+  });
+
+  test('Dũng has 6 reviews with 3 bricks, each brick with a reason', () => {
+    const dung = reviewsOf(DUNG);
+    assert.equal(dung.length, 6);
+    const bricks = dung.filter((r) => r.verdict === 'brick');
+    assert.equal(bricks.length, 3);
+    for (const b of bricks) assert.ok(Array.isArray(b.reasons) && b.reasons.length > 0, b.id);
+    assert.deepEqual(statsOf(DUNG), fold(DUNG));
+    assert.equal(statsOf(DUNG)?.tomatoPct, 50);
+  });
+
+  test('no seed doc carries rating', () => {
+    const keys = (v: unknown): string[] =>
+      v !== null && typeof v === 'object' && !(v instanceof Date)
+        ? Object.entries(v as Record<string, unknown>).flatMap(([k, x]) => [k, ...keys(x)])
+        : [];
+    for (const d of docs) {
+      const k = keys(d.data);
+      assert.equal(k.includes('rating'), false, d.path);
+      assert.equal(k.includes('ratingSum'), false, d.path);
+    }
+  });
+
+  test('the seed inbox review row uses the verdict payload', () => {
+    const rows = docs.filter((d) => d.path.startsWith(`users/${AN}/notifications/`));
+    assert.equal(rows.some((d) => d.data.type === 'review_new'), false);
+    const row = rows.find((d) => d.data.type === 'review_tomato');
+    assert.ok(row);
+    assert.equal(row.data.title, 'Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9');
+    assert.equal(row.data.body, '“Rất hài lòng, đúng giờ.”');
+    assert.equal(row.data.target, `/u/${AN}?tab=reviews`);
+    assert.equal(row.data.category, 'badges');
+    assert.equal(row.data.tab, 'system');
+    // Not the dedupe id of a real notice for the unreviewed recent shoot (Lan can still review it).
+    assert.notEqual(row.path, `users/${AN}/notifications/n_review_tomato_seed-booking-completed-recent_${AN}`);
   });
 });

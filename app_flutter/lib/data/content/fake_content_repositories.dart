@@ -241,8 +241,8 @@ class FakePhotographerRepository implements PhotographerRepository {
           if (byDay != 0) {
             return byDay;
           }
-          final byRating = b.ratingAvg.compareTo(a.ratingAvg);
-          return byRating != 0 ? byRating : a.id.compareTo(b.id);
+          final byScore = b.score.compareTo(a.score);
+          return byScore != 0 ? byScore : a.id.compareTo(b.id);
         });
     return list.take(clampPageSize(limit)).toList();
   }

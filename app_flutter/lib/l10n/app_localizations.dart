@@ -2437,8 +2437,8 @@ abstract class AppLocalizations {
   /// No description provided for @reasonTopRated.
   ///
   /// In vi, this message translates to:
-  /// **'★ {rating} · {count} đánh giá'**
-  String reasonTopRated(String rating, int count);
+  /// **'{pct}% cà chua từ {count} đánh giá'**
+  String reasonTopRated(int pct, int count);
 
   /// No description provided for @reasonFastReply.
   ///
@@ -2773,7 +2773,7 @@ abstract class AppLocalizations {
   /// No description provided for @findFallbackNote.
   ///
   /// In vi, this message translates to:
-  /// **'Đang xếp theo sao và khoảng cách'**
+  /// **'Đang xếp theo điểm cà chua và khoảng cách'**
   String get findFallbackNote;
 
   /// No description provided for @findLoadError.
@@ -2836,11 +2836,11 @@ abstract class AppLocalizations {
   /// **'Dưới {price}'**
   String findPriceUnder(String price);
 
-  /// No description provided for @findRatingTitle.
+  /// No description provided for @findTomatoTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Đánh giá tối thiểu'**
-  String get findRatingTitle;
+  /// **'Tỷ lệ hài lòng'**
+  String get findTomatoTitle;
 
   /// No description provided for @findRatingAny.
   ///
@@ -2848,11 +2848,17 @@ abstract class AppLocalizations {
   /// **'Mọi đánh giá'**
   String get findRatingAny;
 
-  /// No description provided for @findRatingMin.
+  /// No description provided for @findTomatoMin.
   ///
   /// In vi, this message translates to:
-  /// **'★ {rating}+'**
-  String findRatingMin(String rating);
+  /// **'{pct}%+'**
+  String findTomatoMin(int pct);
+
+  /// No description provided for @findTomatoChipA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ {pct}% cà chua'**
+  String findTomatoChipA11y(int pct);
 
   /// No description provided for @profileResponseMinutes.
   ///
@@ -2944,11 +2950,17 @@ abstract class AppLocalizations {
   /// **'{count} đánh giá'**
   String profileStatReviews(int count);
 
-  /// No description provided for @profileStatNoReviews.
+  /// No description provided for @profileStatNew.
   ///
   /// In vi, this message translates to:
-  /// **'đánh giá'**
-  String get profileStatNoReviews;
+  /// **'Mới'**
+  String get profileStatNew;
+
+  /// No description provided for @photographerReviewsNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới · {count} đánh giá'**
+  String photographerReviewsNew(int count);
 
   /// No description provided for @profileStatShoots.
   ///
@@ -4858,11 +4870,215 @@ abstract class AppLocalizations {
   /// **'Nhận xét'**
   String get reviewText;
 
-  /// No description provided for @reviewTextHint.
+  /// No description provided for @reviewTomato.
   ///
   /// In vi, this message translates to:
-  /// **'Chia sẻ cảm nhận của bạn về buổi chụp...'**
-  String get reviewTextHint;
+  /// **'Hài lòng'**
+  String get reviewTomato;
+
+  /// No description provided for @reviewBrick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa hài lòng'**
+  String get reviewBrick;
+
+  /// No description provided for @reviewBrickShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ưng'**
+  String get reviewBrickShort;
+
+  /// No description provided for @reviewHits.
+  ///
+  /// In vi, this message translates to:
+  /// **'×{n}'**
+  String reviewHits(int n);
+
+  /// No description provided for @reviewTomatoLevel1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ổn'**
+  String get reviewTomatoLevel1;
+
+  /// No description provided for @reviewTomatoLevel2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hài lòng'**
+  String get reviewTomatoLevel2;
+
+  /// No description provided for @reviewTomatoLevel3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rất hài lòng'**
+  String get reviewTomatoLevel3;
+
+  /// No description provided for @reviewTomatoLevel4.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuyệt vời!'**
+  String get reviewTomatoLevel4;
+
+  /// No description provided for @reviewBrickLevel1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hơi tiếc'**
+  String get reviewBrickLevel1;
+
+  /// No description provided for @reviewBrickLevel2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ưng'**
+  String get reviewBrickLevel2;
+
+  /// No description provided for @reviewBrickLevel3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thất vọng'**
+  String get reviewBrickLevel3;
+
+  /// No description provided for @reviewBrickLevel4.
+  ///
+  /// In vi, this message translates to:
+  /// **'Rất thất vọng'**
+  String get reviewBrickLevel4;
+
+  /// No description provided for @reviewReset.
+  ///
+  /// In vi, this message translates to:
+  /// **'Làm lại'**
+  String get reviewReset;
+
+  /// No description provided for @reviewTapMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chạm tiếp để tăng mức độ, tối đa 10'**
+  String get reviewTapMore;
+
+  /// No description provided for @reviewPadLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá buổi chụp'**
+  String get reviewPadLabel;
+
+  /// No description provided for @reviewA11yTomato.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ném cà chua, {n} trên 10'**
+  String reviewA11yTomato(int n);
+
+  /// No description provided for @reviewA11yBrick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ném gạch, {n} trên 10'**
+  String reviewA11yBrick(int n);
+
+  /// No description provided for @reviewsRatioCounts.
+  ///
+  /// In vi, this message translates to:
+  /// **'{tomato} cà chua · {brick} gạch · {count} đánh giá'**
+  String reviewsRatioCounts(int tomato, int brick, int count);
+
+  /// No description provided for @reviewsRatioSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'{tomato} cà chua, {brick} gạch'**
+  String reviewsRatioSemantics(int tomato, int brick);
+
+  /// No description provided for @tomatoPctA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'{pct}% cà chua'**
+  String tomatoPctA11y(int pct);
+
+  /// No description provided for @tomatoPctCountA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'{pct}% cà chua, {count} đánh giá'**
+  String tomatoPctCountA11y(int pct, int count);
+
+  /// No description provided for @verdictBadgeTomato.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cà chua, {n} trên 10'**
+  String verdictBadgeTomato(int n);
+
+  /// No description provided for @verdictBadgeBrick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gạch, {n} trên 10'**
+  String verdictBadgeBrick(int n);
+
+  /// No description provided for @reviewTextHintTomato.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều bạn thích nhất ở buổi chụp'**
+  String get reviewTextHintTomato;
+
+  /// No description provided for @reviewTextHintBrick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kể rõ điều chưa ổn để thợ cải thiện'**
+  String get reviewTextHintBrick;
+
+  /// No description provided for @reviewReasonsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều gì chưa ổn?'**
+  String get reviewReasonsTitle;
+
+  /// No description provided for @reviewReasonsMin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất 1'**
+  String get reviewReasonsMin;
+
+  /// No description provided for @reviewReasonLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến trễ'**
+  String get reviewReasonLate;
+
+  /// No description provided for @reviewReasonNotAsPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh không như mẫu'**
+  String get reviewReasonNotAsPortfolio;
+
+  /// No description provided for @reviewReasonSlowDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giao ảnh chậm'**
+  String get reviewReasonSlowDelivery;
+
+  /// No description provided for @reviewReasonAttitude.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thái độ'**
+  String get reviewReasonAttitude;
+
+  /// No description provided for @reviewReasonPriceChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi giá'**
+  String get reviewReasonPriceChanged;
+
+  /// No description provided for @reviewReasonOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get reviewReasonOther;
+
+  /// No description provided for @reviewNeedVerdict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn cà chua hoặc gạch'**
+  String get reviewNeedVerdict;
+
+  /// No description provided for @reviewNeedReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ít nhất một lý do'**
+  String get reviewNeedReason;
 
   /// No description provided for @reviewTextTooShort.
   ///
@@ -4918,23 +5134,11 @@ abstract class AppLocalizations {
   /// **'Cảm ơn bạn đã đánh giá!'**
   String get reviewThanks;
 
-  /// No description provided for @reviewStarsSemantics.
-  ///
-  /// In vi, this message translates to:
-  /// **'{rating} trên 5 sao'**
-  String reviewStarsSemantics(int rating);
-
   /// No description provided for @reviewUploadFailed.
   ///
   /// In vi, this message translates to:
   /// **'Tải ảnh lỗi. Thử lại'**
   String get reviewUploadFailed;
-
-  /// No description provided for @reviewsHeader.
-  ///
-  /// In vi, this message translates to:
-  /// **'{rating} · {count} đánh giá'**
-  String reviewsHeader(String rating, int count);
 
   /// No description provided for @reviewsMore.
   ///
@@ -6957,12 +7161,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chủ sự kiện'**
   String get eventHostRole;
-
-  /// No description provided for @eventHostRoleRating.
-  ///
-  /// In vi, this message translates to:
-  /// **'Chủ sự kiện · ★ {rating}'**
-  String eventHostRoleRating(String rating);
 
   /// No description provided for @eventProfile.
   ///

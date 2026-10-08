@@ -60,7 +60,7 @@ class EarnedBadge {
   final String badgeId;
   final DateTime awardedAt;
 
-  /// Text frozen at award time ("4,9 sao từ 58 đánh giá").
+  /// Text frozen at award time ("97% cà chua từ 58 đánh giá").
   final String? snapshotText;
 }
 

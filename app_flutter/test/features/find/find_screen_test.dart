@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/recommendation/availability_lookup.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/resilient_recommendation_repository.dart';
@@ -166,13 +167,80 @@ void main() {
     expect(find.byKey(const Key('find-card-p3')), findsNothing);
   });
 
-  testWidgets('budget and rating sheets', (tester) async {
+  testWidgets('budget and tomato sheets', (tester) async {
     await _open(tester, DiscoveryWorld());
     await _choose(tester, 'find-price', 'Dưới 2M');
     expect(find.text('2 nhiếp ảnh gia'), findsOneWidget);
-    await _choose(tester, 'find-rating', '★ 4,8+');
+    await _choose(tester, 'find-rating', '95%+');
     expect(find.text('1 nhiếp ảnh gia'), findsOneWidget);
     expect(find.byKey(const Key('find-card-p1')), findsOneWidget);
+  });
+
+  Finder tomatoIconInChip() => find.descendant(
+    of: find.byKey(const Key('find-rating')),
+    matching: find.byType(VerdictIcon),
+  );
+
+  testWidgets('the chip reads 90%+ with the tomato icon after picking 90', (
+    tester,
+  ) async {
+    await _open(tester, DiscoveryWorld());
+    final chip = find.byKey(const Key('find-rating'));
+    expect(
+      find.descendant(of: chip, matching: find.text('Đánh giá')),
+      findsOneWidget,
+    );
+    expect(tomatoIconInChip(), findsNothing);
+
+    await _choose(tester, 'find-rating', '90%+');
+    expect(
+      find.descendant(of: chip, matching: find.text('90%+')),
+      findsOneWidget,
+    );
+    expect(tomatoIconInChip(), findsOneWidget);
+    expect(
+      tester.widget<VerdictIcon>(tomatoIconInChip()).kind,
+      VerdictKind.tomato,
+    );
+  });
+
+  testWidgets('the set chip reads "Từ 90% cà chua" to a screen reader', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _open(tester, DiscoveryWorld());
+    await _choose(tester, 'find-rating', '90%+');
+    expect(find.bySemanticsLabel('Từ 90% cà chua'), findsOneWidget);
+    expect(find.bySemanticsLabel('90%+'), findsNothing);
+    handle.dispose();
+  });
+
+  testWidgets(
+    'the sheet is titled "Tỷ lệ hài lòng" and offers 80%+, 90%+, 95%+',
+    (tester) async {
+      await _open(tester, DiscoveryWorld());
+      await _tapChip(tester, 'find-rating');
+      expect(find.text('Tỷ lệ hài lòng'), findsOneWidget);
+      for (final t in ['80%+', '90%+', '95%+']) {
+        expect(find.text(t), findsOneWidget, reason: t);
+      }
+      expect(find.text('Mọi đánh giá'), findsOneWidget);
+    },
+  );
+
+  testWidgets('clearing the chip resets minTomatoPct', (tester) async {
+    await _open(tester, DiscoveryWorld());
+    await _choose(tester, 'find-rating', '95%+');
+    expect(find.text('1 nhiếp ảnh gia'), findsOneWidget);
+
+    await _choose(tester, 'find-rating', 'Mọi đánh giá');
+    final chip = find.byKey(const Key('find-rating'));
+    expect(
+      find.descendant(of: chip, matching: find.text('Đánh giá')),
+      findsOneWidget,
+    );
+    expect(tomatoIconInChip(), findsNothing);
+    expect(find.text('4 nhiếp ảnh gia'), findsOneWidget);
   });
 
   testWidgets('sort by price puts the cheapest first', (tester) async {
@@ -282,13 +350,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Đang xếp theo sao và khoảng cách'), findsOneWidget);
+    expect(find.text('Đang xếp theo điểm cà chua và khoảng cách'), findsOneWidget);
     expect(find.byKey(const Key('find-card-p1')), findsOneWidget);
   });
 
   testWidgets('the local ranking alone shows no note', (tester) async {
     await _open(tester, DiscoveryWorld());
-    expect(find.text('Đang xếp theo sao và khoảng cách'), findsNothing);
+    expect(find.text('Đang xếp theo điểm cà chua và khoảng cách'), findsNothing);
   });
 
   testWidgets(
@@ -407,7 +475,7 @@ void main() {
           fixturePhotographer(
             'p${i.toString().padLeft(2, '0')}',
             name: 'Thợ $i',
-            reviews: 10 + i,
+            tomatoCount: 10 + i,
           ),
       ],
     );
@@ -437,36 +505,35 @@ void main() {
   });
 
   testWidgets(
-    'a rating-filtered first page that does not fill the screen loads the next',
+    'a tomato-filtered first page that does not fill the screen loads the next',
     (tester) async {
-      // Page one keeps a single photographer after the rating filter, so
+      // Page one keeps a single photographer after the tomato filter, so
       // nothing scrolls; the next page must still be requested.
       final w = DiscoveryWorld(
         photographers: [
           for (var i = 0; i < 19; i++)
             fixturePhotographer(
               'a${i.toString().padLeft(2, '0')}',
-              rating: 4.7,
-              reviews: 1000,
+              tomatoCount: 925,
+              brickCount: 75,
               completed: 500,
             ),
           fixturePhotographer(
             'b00',
-            rating: 4.85,
-            reviews: 500,
+            tomatoCount: 481,
+            brickCount: 19,
             completed: 250,
           ),
           for (var i = 0; i < 20; i++)
             fixturePhotographer(
               'c${i.toString().padLeft(2, '0')}',
-              rating: 4.85,
-              reviews: 10,
+              tomatoCount: 10,
               completed: 5,
             ),
         ],
       );
       await _open(tester, w);
-      await _choose(tester, 'find-rating', '★ 4,8+');
+      await _choose(tester, 'find-rating', '95%+');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('find-card-b00')), findsOneWidget);
       expect(find.byKey(const Key('find-card-c00')), findsOneWidget);
@@ -484,22 +551,23 @@ void main() {
         for (var i = 0; i < 15; i++)
           fixturePhotographer(
             'h${i.toString().padLeft(2, '0')}',
-            rating: 4.9,
-            reviews: 1000 - i,
+            tomatoCount: 1000 - i,
+            score: 0.95,
             completed: 500,
           ),
         for (var i = 0; i < 15; i++)
           fixturePhotographer(
             'l${i.toString().padLeft(2, '0')}',
-            rating: 4.5,
-            reviews: 500 - i,
+            tomatoCount: 400 - i,
+            brickCount: 100,
+            score: 0.75,
             completed: 250,
           ),
       ],
       recommenderFactory: (x) => _Slow(x.localRecommender()),
     );
     await _open(tester, w);
-    await _choose(tester, 'find-rating', '★ 4,8+');
+    await _choose(tester, 'find-rating', '95%+');
     // Timers do not schedule frames: pump through the 200 ms pages by hand.
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));

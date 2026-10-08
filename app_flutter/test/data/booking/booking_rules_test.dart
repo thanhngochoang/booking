@@ -91,6 +91,55 @@ void main() {
       });
     });
 
+    group('review eligibility', () {
+      Booking booking(BookingStatus status, {DateTime? reviewedAt}) => Booking(
+        id: 'b1',
+        customerId: 'c1',
+        photographerId: 'p1',
+        serviceId: 's1',
+        serviceSnapshot: const BookingServiceSnapshot(
+          name: 'Gói',
+          price: 1000000,
+          durationMinutes: 60,
+        ),
+        day: '2026-10-12',
+        start: '09:00',
+        end: '10:00',
+        place: const BookingPlace(name: 'Hà Nội'),
+        status: status,
+        deposit: 1000000,
+        remaining: 0,
+        reviewedAt: reviewedAt,
+        createdAt: DateTime.utc(2026, 10, 1),
+        updatedAt: DateTime.utc(2026, 10, 1),
+      );
+
+      test('canReview is true for completed without reviewedAt', () {
+        final b = booking(BookingStatus.completed);
+        expect(BookingRules.canReview(b), isTrue);
+        expect(BookingRules.isReviewed(b), isFalse);
+      });
+
+      test('canReview is false after reviewedAt', () {
+        final b = booking(
+          BookingStatus.completed,
+          reviewedAt: DateTime.utc(2026, 10, 13),
+        );
+        expect(BookingRules.canReview(b), isFalse);
+        expect(BookingRules.isReviewed(b), isTrue);
+      });
+
+      test('isReviewed is true for legacy status reviewed', () {
+        final b = booking(BookingStatus.reviewed);
+        expect(BookingRules.isReviewed(b), isTrue);
+        expect(BookingRules.canReview(b), isFalse);
+      });
+
+      test('canReview is false before the shoot is completed', () {
+        expect(BookingRules.canReview(booking(BookingStatus.upcoming)), isFalse);
+      });
+    });
+
     group('S05.01 Tab grouping', () {
       Booking makeBooking({
         required String id,
