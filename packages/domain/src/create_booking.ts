@@ -8,6 +8,7 @@ import { DRAFT_EXPIRY_MINUTES, addMinutesToTime, computeDeposit } from './bookin
 import type { BookingDeps } from './booking_ports.js';
 import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
+import { assertOrderAllowed } from './order_gate.js';
 import { requireCustomerPhone } from './require_phone.js';
 
 export async function createBookingDraft(
@@ -23,10 +24,8 @@ export async function createBookingDraft(
     throw new DomainError('not_found');
   }
 
-  // Providers who cannot take orders yet are not bookable (identity-verification-design.md §3)
-  if (!(await deps.providers.acceptsOrders(input.photographerId))) {
-    throw new DomainError('not_accepting_orders');
-  }
+  // Providers who cannot take orders yet, and blocked pairs, are not bookable
+  await assertOrderAllowed(deps, { customerId: input.customerId, providerId: input.photographerId });
 
   if (input.expectedPrice !== undefined && input.expectedPrice !== service.price) {
     throw new DomainError('price_changed');

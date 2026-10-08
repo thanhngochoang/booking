@@ -213,6 +213,17 @@ describe('Task 4: createBookingDraft', () => {
       assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
     });
 
+    it('refuses a blocked pair with blocked and holds nothing', async () => {
+      const world = createBookingWorld();
+      world.blocks.block('p1', 'c1');
+      await assert.rejects(
+        createBookingDraft(world.deps, input),
+        (err: unknown) => err instanceof DomainError && err.code === 'blocked',
+      );
+      assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
+      assert.equal(await world.store.getCustomerDraftForDay('c1', 'p1', '2026-10-15'), null);
+    });
+
     it('checks the service before the provider', async () => {
       const world = createBookingWorld();
       world.providers.set('p1', {});

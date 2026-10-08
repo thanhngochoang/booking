@@ -14,6 +14,8 @@ export const ERROR_CODES = [
   'not_eligible',
   'reauth_required',
   'not_accepting_orders',
+  /** The customer and the provider blocked each other in either direction; no new order between them. */
+  'blocked',
   /** A booking already had MAX_PAYMENT_ATTEMPTS payments ("Tạo QR mới" cannot hold the day forever). */
   'payment_attempts_exceeded',
   /** The bank's holder name is not the verified name (S06.06); only accounts in your own name. */

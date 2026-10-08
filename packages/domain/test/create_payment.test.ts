@@ -305,4 +305,40 @@ describe('createPayment', () => {
     );
     assert.equal(world.gateway.issuedRefunds.size, 0);
   });
+
+  describe('order gate', () => {
+    it('refuses a provider who stopped accepting orders with not_accepting_orders', async () => {
+      const world = createBookingWorld();
+      const draft = await newDraft(world);
+      world.providers.set('p1', { verified: false, onboardingComplete: true });
+      await assert.rejects(
+        createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' }),
+        refusedWith('not_accepting_orders'),
+      );
+      assert.equal((await world.store.getPaymentsForBooking(draft.id)).length, 0);
+      assert.equal(world.gateway.createPaymentCalls.length, 0);
+    });
+
+    it('refuses a blocked pair with blocked', async () => {
+      const world = createBookingWorld();
+      const draft = await newDraft(world);
+      world.blocks.block('c1', 'p1');
+      await assert.rejects(
+        createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' }),
+        refusedWith('blocked'),
+      );
+      assert.equal((await world.store.getPaymentsForBooking(draft.id)).length, 0);
+      assert.equal(world.gateway.createPaymentCalls.length, 0);
+    });
+
+    it('createPayment by another customer answers permission_denied even for a blocked pair', async () => {
+      const world = createBookingWorld();
+      const draft = await newDraft(world);
+      world.blocks.block('p1', 'c1');
+      await assert.rejects(
+        createPayment(world.deps, { bookingId: draft.id, customerId: 'c2', method: 'bank_qr' }),
+        refusedWith('permission_denied'),
+      );
+    });
+  });
 });
