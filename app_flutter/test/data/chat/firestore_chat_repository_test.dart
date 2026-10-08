@@ -29,6 +29,12 @@ class _CountingFirestore implements FirebaseFirestore {
   int memberListens = 0;
   final Map<String, int> openMemberListeners = {};
 
+  /// Open listeners on chats queries (where/orderBy/limit → snapshots).
+  int openQueryListeners = 0;
+
+  /// Chat ids whose member doc stream fails instead of emitting.
+  final Set<String> failingMembers = {};
+
   int get openListeners => openMemberListeners.values.fold(0, (a, b) => a + b);
 
   @override
@@ -51,18 +57,63 @@ class _Col implements CollectionReference<Map<String, dynamic>> {
       _Doc(inner.doc(path), counter);
 
   @override
-  dynamic noSuchMethod(Invocation i) => Function.apply(
-    switch (i.memberName) {
-      #where => inner.where,
-      #orderBy => inner.orderBy,
-      #limit => inner.limit,
-      #snapshots => inner.snapshots,
-      #get => inner.get,
-      _ => throw UnimplementedError('${i.memberName}'),
+  dynamic noSuchMethod(Invocation i) => _Query(inner, counter).noSuchMethod(i);
+}
+
+/// Wraps `snapshots()` so a test can tell whether a listener is still open.
+Stream<T> _tracked<T>(
+  Stream<T> upstream, {
+  required void Function() onListen,
+  required void Function() onCancel,
+}) {
+  StreamSubscription<T>? sub;
+  late final StreamController<T> c;
+  c = StreamController<T>(
+    onListen: () {
+      onListen();
+      sub = upstream.listen(c.add, onError: c.addError, onDone: c.close);
     },
-    i.positionalArguments,
-    i.namedArguments,
+    onCancel: () {
+      onCancel();
+      return sub?.cancel();
+    },
   );
+  return c.stream;
+}
+
+// ignore: subtype_of_sealed_class
+class _Query implements Query<Map<String, dynamic>> {
+  _Query(this.inner, this.counter);
+
+  final Query<Map<String, dynamic>> inner;
+  final _CountingFirestore counter;
+
+  @override
+  dynamic noSuchMethod(Invocation i) {
+    Object? call(Function f) =>
+        Function.apply(f, i.positionalArguments, i.namedArguments);
+    return switch (i.memberName) {
+      #where => _Query(
+        call(inner.where)! as Query<Map<String, dynamic>>,
+        counter,
+      ),
+      #orderBy => _Query(
+        call(inner.orderBy)! as Query<Map<String, dynamic>>,
+        counter,
+      ),
+      #limit => _Query(
+        call(inner.limit)! as Query<Map<String, dynamic>>,
+        counter,
+      ),
+      #snapshots => _tracked(
+        call(inner.snapshots)! as Stream<QuerySnapshot<Map<String, dynamic>>>,
+        onListen: () => counter.openQueryListeners++,
+        onCancel: () => counter.openQueryListeners--,
+      ),
+      #get => call(inner.get),
+      _ => throw UnimplementedError('${i.memberName}'),
+    };
+  }
 }
 
 // ignore: subtype_of_sealed_class
@@ -95,14 +146,17 @@ class _Doc implements DocumentReference<Map<String, dynamic>> {
     bool includeMetadataChanges = false,
     ListenSource source = ListenSource.defaultSource,
   }) {
-    final upstream = inner.snapshots(
-      includeMetadataChanges: includeMetadataChanges,
-    );
-    if (!_isMember) return upstream;
+    if (!_isMember) {
+      return inner.snapshots(includeMetadataChanges: includeMetadataChanges);
+    }
     final chatId = inner.parent.parent!.id;
-    StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? sub;
-    late final StreamController<DocumentSnapshot<Map<String, dynamic>>> c;
-    c = StreamController(
+    final upstream = counter.failingMembers.contains(chatId)
+        ? Stream<DocumentSnapshot<Map<String, dynamic>>>.error(
+            FirebaseException(plugin: 'cloud_firestore', code: 'unavailable'),
+          )
+        : inner.snapshots(includeMetadataChanges: includeMetadataChanges);
+    return _tracked(
+      upstream,
       onListen: () {
         counter.memberListens++;
         counter.openMemberListeners.update(
@@ -110,14 +164,9 @@ class _Doc implements DocumentReference<Map<String, dynamic>> {
           (n) => n + 1,
           ifAbsent: () => 1,
         );
-        sub = upstream.listen(c.add, onError: c.addError, onDone: c.close);
       },
-      onCancel: () {
-        counter.openMemberListeners.update(chatId, (n) => n - 1);
-        return sub?.cancel();
-      },
+      onCancel: () => counter.openMemberListeners.update(chatId, (n) => n - 1),
     );
-    return c.stream;
   }
 
   @override
@@ -331,11 +380,31 @@ void main() {
       final sub = repo().watchMyChats().listen((_) {});
       await pumpEventQueue();
       expect(counting.openListeners, 2);
+      expect(counting.openQueryListeners, 1);
 
       await sub.cancel();
 
       expect(counting.openListeners, 0);
+      expect(counting.openQueryListeners, 0);
     });
+
+    test(
+      'a member doc that fails still lets the list emit with unread 0',
+      () async {
+        await seedChat('a', lastMessageAt: t0, unread: 3);
+        await seedChat(
+          'b',
+          lastMessageAt: t0.add(const Duration(minutes: 1)),
+          unread: 2,
+        );
+        counting.failingMembers.add('a');
+
+        final items = await repo().watchMyChats().first;
+
+        expect(items.map((i) => i.thread.id), ['b', 'a']);
+        expect(unreadOf(items), {'b': 2, 'a': 0});
+      },
+    );
 
     test('no signed-in user lists nothing', () async {
       await seedChat('a', lastMessageAt: t0, unread: 1);

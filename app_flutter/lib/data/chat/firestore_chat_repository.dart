@@ -5,9 +5,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:photobooking/data/chat/chat.dart';
+import 'package:photobooking/data/chat/chat_photo_upload.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
-import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 /// The 1-1 chat kinds S07.02 lists (`chats.kind`); event groups (`event_group`) are excluded.
@@ -134,7 +134,9 @@ class FirestoreChatRepository implements ChatRepository {
     void emit() {
       final current = threads;
       // Wait until every listed chat has its member doc, so a badge never
-      // shows 0 for a moment before its real number.
+      // shows 0 for a moment before its real number. This holds for every
+      // emission, not only the first: a chats snapshot that adds a chat is
+      // emitted once that chat's member doc has arrived.
       if (current == null ||
           out.isClosed ||
           current.any((t) => !unread.containsKey(t.id))) {
@@ -176,6 +178,9 @@ class FirestoreChatRepository implements ChatRepository {
                 emit();
               },
               // A member doc that cannot be read counts as nothing unread.
+              // The failed listener is not re-attached: it stays in memberSubs
+              // until the chat leaves the page or the stream is listened to
+              // again (provider rebuild).
               onError: (Object _) {
                 unread[id] ??= 0;
                 emit();
@@ -262,20 +267,7 @@ class FirestoreChatRepository implements ChatRepository {
       );
     }
     final storagePath = 'chats/$chatId/$uid/$clientId.jpg';
-    try {
-      await mediaUploader
-          .upload(image, storagePath: storagePath, purpose: ImagePurpose.chat)
-          .lastWhere((event) => event.isDone);
-    } on FirebaseException catch (e) {
-      throw ChatException(
-        e.code == 'unauthorized'
-            ? ChatErrorCode.permissionDenied
-            : ChatErrorCode.network,
-        e.code,
-      );
-    } catch (e) {
-      throw ChatException(ChatErrorCode.unknown, e.toString());
-    }
+    await uploadChatPhoto(mediaUploader, image, storagePath);
     return storagePath;
   }
 

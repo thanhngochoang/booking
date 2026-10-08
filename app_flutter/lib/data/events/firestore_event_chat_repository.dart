@@ -6,13 +6,13 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import 'package:photobooking/data/backend/backend_config.dart';
 import 'package:photobooking/data/chat/chat.dart';
+import 'package:photobooking/data/chat/chat_photo_upload.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/events/event_callable.dart';
 import 'package:photobooking/data/events/event_chat.dart';
 import 'package:photobooking/data/events/event_chat_repository.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
-import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 DateTime? _date(Object? v) => v is Timestamp ? v.toDate().toUtc() : null;
@@ -344,20 +344,7 @@ class FirestoreEventChatRepository implements EventChatRepository {
       );
     }
     final path = 'chats/${chatIdOfEvent(eventId)}/$me/$clientId.jpg';
-    try {
-      await uploader
-          .upload(image, storagePath: path, purpose: ImagePurpose.chat)
-          .lastWhere((e) => e.isDone);
-    } on FirebaseException catch (e) {
-      throw ChatException(
-        e.code == 'unauthorized'
-            ? ChatErrorCode.permissionDenied
-            : ChatErrorCode.network,
-        e.code,
-      );
-    } catch (e) {
-      throw ChatException(ChatErrorCode.unknown, e.toString());
-    }
+    await uploadChatPhoto(uploader, image, path);
     await _send(eventId, {
       'type': 'image',
       'imagePath': path,
