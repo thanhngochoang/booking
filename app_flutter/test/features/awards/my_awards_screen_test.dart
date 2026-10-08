@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 
@@ -39,9 +40,50 @@ void main() {
       find.text('Còn 1 giải đã duyệt nữa để nhận tích vàng'),
       findsOneWidget,
     );
-    expect(find.text('Đã khai · 3 giải'), findsOneWidget);
+    expect(find.text('Đã khai'), findsOneWidget);
+    expect(find.text('3 giải'), findsOneWidget);
+    expect(find.text('Đã khai · 3 giải'), findsNothing);
     expect(find.text('ĐÃ DUYỆT'), findsNWidgets(2));
     expect(find.text('CHỜ DUYỆT'), findsOneWidget);
+  });
+
+  void seedFour(AwardsWorld w) {
+    for (final id in ['a1', 'a2', 'a3', 'a4']) {
+      w.awardRepo.add(w.award(id));
+    }
+  }
+
+  testWidgets('the count sits on the right in tertiary ink', (tester) async {
+    await _open(tester, seed: seedFour);
+    final title = _key('awards-listed-title');
+    final count = _key('awards-listed-count');
+    expect(tester.widget<Text>(title).data, 'Đã khai');
+    expect(tester.widget<Text>(count).data, '4 giải');
+    expect(
+      tester.getTopLeft(count).dx,
+      greaterThan(tester.getTopLeft(title).dx),
+    );
+    expect(tester.getBottomRight(count).dx, greaterThan(300));
+    // Same row: the two texts overlap vertically.
+    expect(tester.getRect(count).top, lessThan(tester.getRect(title).bottom));
+    expect(tester.getRect(title).top, lessThan(tester.getRect(count).bottom));
+    expect(
+      tester.widget<Text>(count).style?.color,
+      AppColorsDark.foregroundMuted,
+    );
+  });
+
+  testWidgets('the header reads "Đã khai, 4 giải" to screen readers', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _open(tester, seed: seedFour);
+    expect(find.bySemanticsLabel('Đã khai, 4 giải'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Đã khai, 4 giải')),
+      matchesSemantics(label: 'Đã khai, 4 giải', isHeader: true),
+    );
+    handle.dispose();
   });
 
   testWidgets('an artist sees Bạn là Nhiếp ảnh gia', (tester) async {
@@ -77,7 +119,8 @@ void main() {
     );
     expect(_key('awards-tier-card'), findsNothing);
     expect(find.text('Hạng Nhiếp ảnh gia (NAG)'), findsNothing);
-    expect(find.text('Đã khai · 1 giải'), findsOneWidget);
+    expect(find.text('Đã khai'), findsOneWidget);
+    expect(find.text('1 giải'), findsOneWidget);
   });
 
   testWidgets('a needs_info award shows the staff note', (tester) async {
@@ -92,6 +135,7 @@ void main() {
         ),
       ),
     );
+    expect(find.text('1 giải'), findsOneWidget);
     expect(find.text('BỔ SUNG'), findsOneWidget);
     expect(find.text('Thiếu ảnh giấy chứng nhận'), findsOneWidget);
     expect(find.text('Phong cảnh'), findsNothing);
@@ -219,6 +263,8 @@ void main() {
         },
       );
       expect(tester.takeException(), isNull);
+      expect(find.text('Đã khai'), findsOneWidget);
+      expect(find.text('2 giải'), findsOneWidget);
     });
   }
 }
