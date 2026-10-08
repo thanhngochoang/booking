@@ -94,12 +94,14 @@ void main() {
     expect(find.textContaining('Mới', findRichText: true), findsNothing);
   });
 
-  testWidgets('the card label carries the meta line with the percent', (
+  testWidgets('the card label reads the percent as "97% cà chua"', (
     tester,
   ) async {
     await tester.pumpWidget(_card());
     expect(
-      find.bySemanticsLabel(RegExp(r'Chân dung · 1,2 km · 97% · 112 buổi')),
+      find.bySemanticsLabel(
+        RegExp(r'Chân dung · 1,2 km · 97% cà chua · 112 buổi'),
+      ),
       findsOneWidget,
     );
   });
@@ -247,7 +249,7 @@ void main() {
     await tester.pumpWidget(_card());
     expect(
       find.bySemanticsLabel(
-        'Minh Trí, Đã xác minh, Chân dung · 1,2 km · 97% · 112 buổi, '
+        'Minh Trí, Đã xác minh, Chân dung · 1,2 km · 97% cà chua · 112 buổi, '
         'từ 1,5M, Rảnh 12/10',
       ),
       findsOneWidget,

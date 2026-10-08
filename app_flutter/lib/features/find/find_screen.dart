@@ -220,6 +220,9 @@ class _FindPhotographerScreenState
             label: filters.minTomatoPct == null
                 ? l.findRating
                 : l.findTomatoMin(filters.minTomatoPct!),
+            semanticsLabel: filters.minTomatoPct == null
+                ? null
+                : l.findTomatoChipA11y(filters.minTomatoPct!),
             selected: filters.minTomatoPct != null,
             // Mock S02.06: "🍅 90%+", the icon in the chip's own text colour.
             leading: filters.minTomatoPct == null

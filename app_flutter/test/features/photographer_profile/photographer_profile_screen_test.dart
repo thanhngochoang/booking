@@ -144,6 +144,16 @@ void main() {
     expect(icon.color, isNull, reason: 'tomato colour on the icon only');
   });
 
+  testWidgets('the tile reads "97% cà chua, 58 đánh giá"', (tester) async {
+    final handle = tester.ensureSemantics();
+    final w = await _world(tester);
+    await tester.pumpWidget(w.app('/u/p1'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('97% cà chua, 58 đánh giá'), findsOneWidget);
+    expect(find.bySemanticsLabel('97%, 58 đánh giá'), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets('under 5 reviews the tile shows "Mới" and "3 đánh giá"', (
     tester,
   ) async {

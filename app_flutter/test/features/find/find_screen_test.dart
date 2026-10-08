@@ -204,6 +204,17 @@ void main() {
     );
   });
 
+  testWidgets('the set chip reads "Từ 90% cà chua" to a screen reader', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _open(tester, DiscoveryWorld());
+    await _choose(tester, 'find-rating', '90%+');
+    expect(find.bySemanticsLabel('Từ 90% cà chua'), findsOneWidget);
+    expect(find.bySemanticsLabel('90%+'), findsNothing);
+    handle.dispose();
+  });
+
   testWidgets(
     'the sheet is titled "Tỷ lệ hài lòng" and offers 80%+, 90%+, 95%+',
     (tester) async {

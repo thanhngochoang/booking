@@ -73,7 +73,7 @@ class PhotographerCard extends StatelessWidget {
     final stack = MediaQuery.textScalerOf(context).scale(16) > 18.4;
     final hero = data.heroUrl;
     final meta = _meta(context);
-    final metaText = metaPartsText(meta);
+    final metaText = metaPartsSemantics(meta, l);
     final priceLabel = priceFromLabel(data.startingPriceVnd, l);
     final price = priceLabel == null
         ? '—'

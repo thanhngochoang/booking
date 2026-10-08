@@ -161,6 +161,9 @@ class ProfileHeader extends ConsumerWidget {
                     valueLeading: s.hasTomatoPct
                         ? const VerdictIcon(VerdictKind.tomato, size: 18)
                         : null,
+                    semanticsValue: s.hasTomatoPct
+                        ? l.tomatoPctA11y(s.tomatoPct)
+                        : null,
                     label: l.profileStatReviews(s.reviewCount),
                   ),
                   if (artist)

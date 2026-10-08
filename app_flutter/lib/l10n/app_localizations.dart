@@ -2854,6 +2854,12 @@ abstract class AppLocalizations {
   /// **'{pct}%+'**
   String findTomatoMin(int pct);
 
+  /// No description provided for @findTomatoChipA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ {pct}% cà chua'**
+  String findTomatoChipA11y(int pct);
+
   /// No description provided for @profileResponseMinutes.
   ///
   /// In vi, this message translates to:
@@ -4977,6 +4983,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'{tomato} cà chua, {brick} gạch'**
   String reviewsRatioSemantics(int tomato, int brick);
+
+  /// No description provided for @tomatoPctA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'{pct}% cà chua'**
+  String tomatoPctA11y(int pct);
+
+  /// No description provided for @tomatoPctCountA11y.
+  ///
+  /// In vi, this message translates to:
+  /// **'{pct}% cà chua, {count} đánh giá'**
+  String tomatoPctCountA11y(int pct, int count);
 
   /// No description provided for @verdictBadgeTomato.
   ///

@@ -418,6 +418,16 @@ void main() {
       },
     );
 
+    testWidgets('the header percent reads "97% cà chua"', (tester) async {
+      final handle = tester.ensureSemantics();
+      useSummary(tomato: 56, brick: 2);
+      fakeReviews.seedReview(review(id: 'b1'));
+      await openTab(tester);
+      expect(find.bySemanticsLabel('97% cà chua'), findsOneWidget);
+      expect(find.bySemanticsLabel('97%'), findsNothing);
+      handle.dispose();
+    });
+
     testWidgets('under 5 the header shows "Mới" instead of the percent', (
       tester,
     ) async {

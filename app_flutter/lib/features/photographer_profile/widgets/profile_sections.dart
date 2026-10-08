@@ -705,6 +705,10 @@ class _ReviewsHeader extends StatelessWidget {
           summary.hasTomatoPct
               ? formatTomatoPct(summary.tomatoPct)
               : l.profileStatNew,
+          // The icon is decorative: say what the percent is.
+          semanticsLabel: summary.hasTomatoPct
+              ? l.tomatoPctA11y(summary.tomatoPct)
+              : null,
           style: const TextStyle(
             fontFamily: AppFonts.display,
             fontSize: 26,

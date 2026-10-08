@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/widgets/verdict_icon.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 /// One part of a [MetaLine]: plain text, or the tomato icon with a percent.
 sealed class MetaPart {
@@ -18,13 +20,31 @@ sealed class MetaPart {
 String _tomatoText(int pct, int? count) =>
     count == null ? formatTomatoPct(pct) : '${formatTomatoPct(pct)} ($count)';
 
-/// The text of [parts] as [MetaLine] reads it (` · ` between parts, the
-/// tomato icon left out): for semantics labels and tests.
+/// What a screen reader hears for the tomato part: "97% cà chua", or
+/// "97% cà chua, 58 đánh giá" with a count (the icon itself is decorative).
+String _tomatoSpoken(AppLocalizations l, int pct, int? count) => count == null
+    ? l.tomatoPctA11y(pct)
+    : l.tomatoPctCountA11y(pct, count);
+
+/// The text of [parts] as [MetaLine] shows it (` · ` between parts, the
+/// tomato icon left out), e.g. `Quận 3 · 97% · 112 buổi`.
 String metaPartsText(List<MetaPart> parts) => parts
     .map(
       (part) => switch (part) {
         _TextPart(:final text) => text,
         _TomatoPart(:final pct, :final count) => _tomatoText(pct, count),
+      },
+    )
+    .join(' · ');
+
+/// The spoken form of [parts] for a parent's semantics label: like
+/// [metaPartsText], but the tomato part says what the percent is
+/// (`Quận 3 · 97% cà chua · 112 buổi`).
+String metaPartsSemantics(List<MetaPart> parts, AppLocalizations l) => parts
+    .map(
+      (part) => switch (part) {
+        _TextPart(:final text) => text,
+        _TomatoPart(:final pct, :final count) => _tomatoSpoken(l, pct, count),
       },
     )
     .join(' · ');
@@ -79,11 +99,17 @@ class MetaLine extends StatelessWidget {
           spans.add(TextSpan(text: _tomatoText(pct, count)));
       }
     }
-    return Text.rich(
-      TextSpan(children: spans),
-      style: base,
-      maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
+    // One label for the whole line, with the tomato part spoken as
+    // "97% cà chua" (the icon is decorative and the span would split it).
+    return Semantics(
+      label: metaPartsSemantics(parts, context.l10n),
+      excludeSemantics: true,
+      child: Text.rich(
+        TextSpan(children: spans),
+        style: base,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }

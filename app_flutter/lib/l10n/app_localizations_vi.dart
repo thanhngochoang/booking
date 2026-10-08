@@ -1588,6 +1588,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String findTomatoChipA11y(int pct) {
+    return 'Từ $pct% cà chua';
+  }
+
+  @override
   String profileResponseMinutes(int minutes) {
     return '~$minutes phút';
   }
@@ -2818,6 +2823,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String reviewsRatioSemantics(int tomato, int brick) {
     return '$tomato cà chua, $brick gạch';
+  }
+
+  @override
+  String tomatoPctA11y(int pct) {
+    return '$pct% cà chua';
+  }
+
+  @override
+  String tomatoPctCountA11y(int pct, int count) {
+    return '$pct% cà chua, $count đánh giá';
   }
 
   @override

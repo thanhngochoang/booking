@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 import 'widget_host.dart';
 
@@ -60,6 +61,49 @@ void main() {
     expect(
       metaPartsText(const [MetaPart.tomato(97, count: 58), MetaPart.text('x')]),
       '97% (58) · x',
+    );
+  });
+
+  testWidgets('a screen reader hears "97% cà chua", not a bare percent', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(
+        const MetaLine([
+          MetaPart.text('Quận 3'),
+          MetaPart.tomato(97),
+          MetaPart.text('112 buổi'),
+        ]),
+      ),
+    );
+    expect(
+      find.bySemanticsLabel('Quận 3 · 97% cà chua · 112 buổi'),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('a counted tomato part reads "97% cà chua, 58 đánh giá"', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      hostWidget(const MetaLine([MetaPart.tomato(97, count: 58)])),
+    );
+    expect(find.bySemanticsLabel('97% cà chua, 58 đánh giá'), findsOneWidget);
+    handle.dispose();
+  });
+
+  test('metaPartsSemantics names the tomato percent', () async {
+    final l = await AppLocalizations.delegate.load(const Locale('vi'));
+    expect(
+      metaPartsSemantics(const [
+        MetaPart.text('Quận 3'),
+        MetaPart.tomato(97),
+        MetaPart.tomato(90, count: 12),
+      ], l),
+      'Quận 3 · 97% cà chua · 90% cà chua, 12 đánh giá',
     );
   });
 

@@ -713,6 +713,12 @@
       "pct": {"type": "int"}
     }
   },
+  "findTomatoChipA11y": "Từ {pct}% cà chua",
+  "@findTomatoChipA11y": {
+    "placeholders": {
+      "pct": {"type": "int"}
+    }
+  },
   "profileResponseMinutes": "~{minutes} phút",
   "@profileResponseMinutes": {"placeholders": {"minutes": {"type": "int"}}},
   "profileResponseHours": "~{hours} giờ",
@@ -1415,6 +1421,10 @@
   "@reviewsRatioCounts": {"placeholders": {"tomato": {"type": "int"}, "brick": {"type": "int"}, "count": {"type": "int"}}},
   "reviewsRatioSemantics": "{tomato} cà chua, {brick} gạch",
   "@reviewsRatioSemantics": {"placeholders": {"tomato": {"type": "int"}, "brick": {"type": "int"}}},
+  "tomatoPctA11y": "{pct}% cà chua",
+  "@tomatoPctA11y": {"placeholders": {"pct": {"type": "int"}}},
+  "tomatoPctCountA11y": "{pct}% cà chua, {count} đánh giá",
+  "@tomatoPctCountA11y": {"placeholders": {"pct": {"type": "int"}, "count": {"type": "int"}}},
   "verdictBadgeTomato": "Cà chua, {n} trên 10",
   "@verdictBadgeTomato": {"placeholders": {"n": {"type": "int"}}},
   "verdictBadgeBrick": "Gạch, {n} trên 10",

@@ -21,9 +21,14 @@ class AppChip extends StatelessWidget {
     required this.onChanged,
     this.kind = AppChipKind.filter,
     this.leading,
+    this.semanticsLabel,
   });
 
   final String label;
+
+  /// Read instead of [label] when the visible text needs its [leading] icon
+  /// to make sense (the Find chip "🍅 90%+" reads "Từ 90% cà chua").
+  final String? semanticsLabel;
   final bool selected;
 
   /// Called with the value the chip would take, i.e. `!selected`.
@@ -49,7 +54,7 @@ class AppChip extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: label,
+      label: semanticsLabel ?? label,
       excludeSemantics: true,
       onTap: () => onChanged(!selected),
       child: GestureDetector(
