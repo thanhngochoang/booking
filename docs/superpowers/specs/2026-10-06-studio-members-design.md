@@ -146,6 +146,7 @@ Gọi/Zalo/WhatsApp của studio mở sau khi thanh toán (luật hiện có). C
 - Hiển thị: tab Đánh giá của studio chỉ hiện đánh giá studio, mỗi lượt có tag "Chụp bởi {thợ}"; đánh giá thợ từ booking studio có tag "Qua {Studio}".
 - Thông báo: thợ nhận về đánh giá của mình, studio nhận về đánh giá studio (mẫu như spec cà chua/gạch §7.4).
 - Đánh giá mở khi booking `approved` (spec bàn giao).
+- Mô hình đã sẵn (#130, `2026-10-06-tomato-brick-reviews-design.md` §3.1): review có `subjectType`/`subjectId`, doc id `reviewDocId(bookingId, 'studio')` = `{bookingId}_studio`, `countReview` đếm vào `review.subjectId`, `onReviewWrite` gọi `notifyReviewVerdict` cho từng bản. #130 chỉ ghi bản `photographer`; #136 thêm khối studio, các mã lý do riêng của studio (`slow_response`, `price_changed`, `late_assignment`, `poor_assignment`, `other`) vào `REVIEW_REASONS` hoặc bảng mã theo `subjectType`, và bản `{bookingId}_studio` trong cùng transaction của `submitReview`. Bản studio tạo với `countedAt` rỗng (để trigger đếm, thông báo và chấm huy hiệu).
 
 ## 7. Thông báo (S17)
 
