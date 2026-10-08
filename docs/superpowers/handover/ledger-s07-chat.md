@@ -1,6 +1,6 @@
 # Handover ledger — plan S07 chat (issue #131)
 
-Plan: `docs/superpowers/plans/2026-10-07-s07-chat.md`, Tasks 1–7. Branch `plan/131-s07-hoi-thoai`. Merge base 6e95637 (#147 already merged: chat uploads were already `.jpg` with `ImagePurpose.chat`). Commits: de9e006 and 3904dae (domain), dff9e6d (functions + seed), 4ce4451 and 775253e (app data), 5a53e41 (S07.01), 4aeccf7 and 013a793 (S07.02), then the docs commit of Task 7. Execution notes of each task: `.superpowers/sdd/2026-10-07-s07-chat/`.
+Plan: `docs/superpowers/plans/2026-10-07-s07-chat.md`, Tasks 1–7. Branch `plan/131-s07-hoi-thoai`. Merge base 6e95637 (#147 already merged: chat uploads were already `.jpg` with `ImagePurpose.chat`). Commits: de9e006 and 3904dae (domain), dff9e6d (functions + seed), 4ce4451 and 775253e (app data), 5a53e41 (S07.01), 4aeccf7 and 013a793 (S07.02), then the docs commit of Task 7. Execution notes of each task: `.superpowers/sdd/2026-10-07-s07-chat/` (a local, untracked folder: the rulings are copied into this ledger). The SHAs above are commits of the branch and may change if it is squashed or rebased.
 
 ## Built
 
@@ -73,6 +73,10 @@ From the plan:
 - Persisting failed messages across restarts (in memory only, as before).
 - `stats.responseMinutes` (reply time) computed from chats for the "Trả lời nhanh" reason and badge (S02 / badges follow-up).
 - Keyword filter in inquiries (phone numbers, "chuyển khoản"): open question in the main spec.
+
+Follow-ups from the final review:
+- Event group chat S11.06: retry re-uploads to the same `.jpg` path (Storage refuses overwrite, so the photo stays failed) and leaves a bubble in "sending" when the picked file is unknown. Fix by reusing `uploadChatPhoto` and the `_uploaded` map pattern from `ChatController` (`app_flutter/lib/features/event_chat/event_chat_controller.dart` ~164-183).
+- `chat_screen.dart` calls `syncWithStream` and `markRead` on every build; each extra `markRead` now costs a member-doc listener read.
 
 Minors found in review and parked:
 - Task 1: a revived chat can be born already "đã đóng" (old `lastMessageAt`); out-of-order booking trigger events can regress `bookingStatus` until the next event.

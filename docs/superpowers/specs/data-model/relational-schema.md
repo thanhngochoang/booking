@@ -434,7 +434,6 @@ create table chats (
   moderators_only      boolean not null default false,
   last_message_at      timestamptz,
   last_message_preview text,
-  closed_at            timestamptz,
   created_at           timestamptz not null default now(),
   check (kind <> 'event_group' or event_id is not null)
 );

@@ -130,7 +130,13 @@ class _ChatRow extends ConsumerWidget {
         BookingStatus.reviewed => BookingStatus.completed,
         _ => status,
       };
-      preview = posted == null ? '' : bookingStatusSentence(posted, l10n) ?? '';
+      // A revived inquiry has no status: name the kind of chat instead of a
+      // blank line.
+      preview = posted != null
+          ? bookingStatusSentence(posted, l10n) ?? ''
+          : thread.kind == ChatKind.inquiry
+          ? l10n.contactInquiry
+          : '';
     } else if (currentUserId != null && thread.lastSenderId == currentUserId) {
       preview = l10n.chatsYouPrefix(lastText);
     } else {

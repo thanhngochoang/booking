@@ -459,6 +459,25 @@ void main() {
       );
     });
 
+    testWidgets(
+      'a revived inquiry with a status message as last message has a preview',
+      (tester) async {
+        fakeChat.seedThread(
+          thread(
+            preview: '',
+            lastMessageAt: _testNow.subtract(const Duration(days: 2)),
+          ),
+        );
+        await pumpChatList(tester);
+        await settle(tester);
+        expect(find.text('Nhắn tin hỏi trước'), findsOneWidget);
+        expect(
+          find.text('Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('my last message is prefixed "Bạn: "', (tester) async {
       fakeChat.seedThread(
         thread(id: 'mine', preview: 'Em gửi ảnh mẫu', lastSenderId: 'c1'),
