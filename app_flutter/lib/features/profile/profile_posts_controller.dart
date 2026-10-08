@@ -7,8 +7,8 @@ import 'package:photobooking/data/content/post_summary.dart';
 
 /// The S09.01 grid of one filter: the posts read so far, newest first.
 @immutable
-class OwnPostsState {
-  const OwnPostsState({
+class ProfilePostsState {
+  const ProfilePostsState({
     this.posts = const [],
     this.nextCursor,
     this.loadingMore = false,
@@ -20,7 +20,7 @@ class OwnPostsState {
   /// Pass to the repository for the next page; null after the last page.
   final String? nextCursor;
 
-  /// A next page is in flight; further [OwnPostsController.loadMore] calls
+  /// A next page is in flight; further [ProfilePostsController.loadMore] calls
   /// wait for nothing and do nothing.
   final bool loadingMore;
 
@@ -32,8 +32,8 @@ class OwnPostsState {
 /// The signed-in user's own posts (`authorId` = uid) for S09.01, one list
 /// per filter (null = all kinds), read with one-shot pages of [pageSize]
 /// (no listener on `posts`). autoDispose: re-read on each visit.
-class OwnPostsController extends AsyncNotifier<OwnPostsState> {
-  OwnPostsController(this.kind);
+class ProfilePostsController extends AsyncNotifier<ProfilePostsState> {
+  ProfilePostsController(this.kind);
 
   /// The kind chip; null for "Tất cả".
   final PostKind? kind;
@@ -47,26 +47,26 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
   int _generation = 0;
 
   @override
-  Future<OwnPostsState> build() async {
+  Future<ProfilePostsState> build() async {
     _generation++;
     _uid = (await ref.watch(authStateProvider.future))?.uid;
     return _firstPage();
   }
 
-  Future<OwnPostsState> _firstPage() async {
+  Future<ProfilePostsState> _firstPage() async {
     final uid = _uid;
     if (uid == null) {
-      return const OwnPostsState();
+      return const ProfilePostsState();
     }
     final page = await ref
         .read(postRepositoryProvider)
         .byAuthor(uid, kind: kind, limit: pageSize);
-    return OwnPostsState(posts: page.posts, nextCursor: page.nextCursor);
+    return ProfilePostsState(posts: page.posts, nextCursor: page.nextCursor);
   }
 
   /// The next page, once per page: does nothing while one is in flight or
   /// after the last page. A failure keeps the posts and sets
-  /// [OwnPostsState.moreError]; calling again asks for the same page.
+  /// [ProfilePostsState.moreError]; calling again asks for the same page.
   Future<void> loadMore() async {
     final current = state.value;
     final uid = _uid;
@@ -79,7 +79,7 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
     }
     final mine = _generation;
     state = AsyncData(
-      OwnPostsState(
+      ProfilePostsState(
         posts: current.posts,
         nextCursor: cursor,
         loadingMore: true,
@@ -93,7 +93,7 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
         return;
       }
       state = AsyncData(
-        OwnPostsState(
+        ProfilePostsState(
           posts: [...current.posts, ...page.posts],
           nextCursor: page.nextCursor,
         ),
@@ -103,7 +103,7 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
         return;
       }
       state = AsyncData(
-        OwnPostsState(
+        ProfilePostsState(
           posts: current.posts,
           nextCursor: cursor,
           moreError: true,
@@ -113,26 +113,32 @@ class OwnPostsController extends AsyncNotifier<OwnPostsState> {
   }
 
   /// Pull to refresh and the first-load retry: reads the first page again.
-  /// A failed reload shows the error state.
-  Future<void> refresh() async {
+  /// Returns false when the read failed. Posts already shown stay as they
+  /// were (the caller tells the user); with nothing shown yet the state
+  /// becomes the error, so the first-load error state stays.
+  Future<bool> refresh() async {
     final mine = ++_generation;
     final next = await AsyncValue.guard(_firstPage);
-    if (ref.mounted && mine == _generation) {
+    if (!ref.mounted || mine != _generation) {
+      return next.hasValue;
+    }
+    if (next.hasValue || !state.hasValue) {
       state = next;
     }
+    return next.hasValue;
   }
 }
 
-final ownPostsProvider = AsyncNotifierProvider.autoDispose
-    .family<OwnPostsController, OwnPostsState, PostKind?>(
-      OwnPostsController.new,
+final profilePostsProvider = AsyncNotifierProvider.autoDispose
+    .family<ProfilePostsController, ProfilePostsState, PostKind?>(
+      ProfilePostsController.new,
     );
 
 /// How many posts the user has in all and per kind (S09.01 counts row and
 /// chips), counted by the server.
 @immutable
-class OwnPostCounts {
-  const OwnPostCounts({required this.total, required this.byKind});
+class ProfilePostCounts {
+  const ProfilePostCounts({required this.total, required this.byKind});
 
   final int total;
   final Map<PostKind, int> byKind;
@@ -148,23 +154,23 @@ class OwnPostCounts {
 
 /// Four `count()` aggregations in parallel: all posts and one per kind
 /// (about one read each, never the documents themselves).
-final ownPostCountsProvider = FutureProvider.autoDispose<OwnPostCounts>((
-  ref,
-) async {
-  final uid = (await ref.watch(authStateProvider.future))?.uid;
-  if (uid == null) {
-    return const OwnPostCounts(total: 0, byKind: {});
-  }
-  final repo = ref.watch(postRepositoryProvider);
-  final counts = await Future.wait([
-    repo.countByAuthor(uid),
-    for (final k in PostKind.values) repo.countByAuthor(uid, kind: k),
-  ]);
-  return OwnPostCounts(
-    total: counts.first,
-    byKind: {
-      for (var i = 0; i < PostKind.values.length; i++)
-        PostKind.values[i]: counts[i + 1],
-    },
-  );
-});
+final profilePostCountsProvider = FutureProvider.autoDispose<ProfilePostCounts>(
+  (ref) async {
+    final uid = (await ref.watch(authStateProvider.future))?.uid;
+    if (uid == null) {
+      return const ProfilePostCounts(total: 0, byKind: {});
+    }
+    final repo = ref.watch(postRepositoryProvider);
+    final counts = await Future.wait([
+      repo.countByAuthor(uid),
+      for (final k in PostKind.values) repo.countByAuthor(uid, kind: k),
+    ]);
+    return ProfilePostCounts(
+      total: counts.first,
+      byKind: {
+        for (var i = 0; i < PostKind.values.length; i++)
+          PostKind.values[i]: counts[i + 1],
+      },
+    );
+  },
+);

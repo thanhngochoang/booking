@@ -38,7 +38,8 @@ class _World {
     this.role = UserRole.customer,
     this.name = 'Lan Anh',
     this.setupComplete = true,
-  });
+    FakePostRepository? posts,
+  }) : posts = posts ?? FakePostRepository();
 
   final UserRole role;
   final String name;
@@ -46,7 +47,7 @@ class _World {
   final auth = FakeAuthRepository();
   final users = FakeUserRepository();
   final intro = FakePhotographerIntroRepository();
-  final posts = FakePostRepository();
+  final FakePostRepository posts;
   final notifications = FakeNotificationRepository();
   final badges = FakeBadgeRepository(catalog: badgeCatalogue());
   late SharedPreferences prefs;
@@ -172,6 +173,25 @@ Future<_World> _open(
   await tester.pumpAndSettle();
   return w;
 }
+
+/// Every page read takes 200 ms, like a real network.
+class _SlowPosts extends FakePostRepository {
+  @override
+  Future<PostPage> byAuthor(
+    String uid, {
+    PostKind? kind,
+    String? cursor,
+    int limit = 20,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return super.byAuthor(uid, kind: kind, cursor: cursor, limit: limit);
+  }
+}
+
+/// The tab's own vertical scroll (the chip row scrolls sideways).
+final _vertical = find.byWidgetPredicate(
+  (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+);
 
 Finder _tile(String id) => find.byKey(Key('profile-post-$id'));
 
@@ -445,11 +465,49 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('scrolling to the end loads the next page once', (tester) async {
-    _usePhone(tester, height: 3000);
-    final w = await _open(tester, seed: (w) => w.seedPosts(25));
-    expect(_tile('w24'), findsOneWidget);
-    expect(w.posts.byAuthorCursors.where((c) => c != null), ['w19']);
+  testWidgets('pages load on scroll only, once per page', (tester) async {
+    _usePhone(tester, height: 800);
+    final w = _World(posts: _SlowPosts());
+    await w.init();
+    w.seedPosts(85);
+    await tester.pumpWidget(w.app());
+    await tester.pumpAndSettle();
+    expect(_tile('w0'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(w.posts.byAuthorCursors, [
+      null,
+    ], reason: 'opening the tab reads the first page only');
+
+    await tester.scrollUntilVisible(_tile('w19'), 300, scrollable: _vertical);
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(w.posts.byAuthorCursors, [null, 'w19']);
+    expect(
+      tester.state<ScrollableState>(_vertical).position.extentAfter,
+      greaterThan(0),
+      reason: 'the second page is below, not read further',
+    );
+  });
+
+  testWidgets('a failed pull to refresh keeps the posts and says so', (
+    tester,
+  ) async {
+    _usePhone(tester);
+    final w = await _open(tester, seed: (w) => w.seedPosts(3));
+    w.posts.failWith = Exception('offline');
+    await tester.fling(_vertical, const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.text('Không tải được bài đăng.'),
+      ),
+      findsOneWidget,
+    );
+    expect(_tile('w0'), findsOneWidget);
+    expect(find.byType(ErrorState), findsNothing);
   });
 
   testWidgets('a failed next page keeps the grid and offers retry', (
@@ -729,13 +787,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Nguyễn Thị Phương Thảo'), findsOneWidget);
       // The whole tab scrolls; the grid is reachable below the extras.
-      await tester.scrollUntilVisible(
-        _tile('w2'),
-        200,
-        scrollable: find.byWidgetPredicate(
-          (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
-        ),
-      );
+      await tester.scrollUntilVisible(_tile('w2'), 200, scrollable: _vertical);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });

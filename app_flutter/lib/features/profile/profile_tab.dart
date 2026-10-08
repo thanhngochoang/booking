@@ -10,7 +10,7 @@ import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/awards/award_nudge.dart';
-import 'package:photobooking/features/profile/own_posts_controller.dart';
+import 'package:photobooking/features/profile/profile_posts_controller.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
 
 /// S09.01 Hồ sơ: the user's own posts (all kinds, newest first) under a
@@ -28,6 +28,25 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   /// The kind chip; null for "Tất cả".
   PostKind? _filter;
 
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// After a page lands (or the filter changes) the content may not reach
+  /// past the screen, so no scroll will come: check the position once laid
+  /// out.
+  void _checkEndAfterLayout() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scroll.hasClients) {
+        _onScrollMetrics(_scroll.position, 0);
+      }
+    });
+  }
+
   void _choose(PostKind? kind) {
     if (kind != _filter) {
       setState(() => _filter = kind);
@@ -35,22 +54,74 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   }
 
   /// Pull to refresh (and the first-load retry): the grid of the current
-  /// filter from its first page, and the counts.
+  /// filter from its first page, and the counts. When the grid was showing
+  /// posts and the reload failed, they stay and a SnackBar says so.
   Future<void> _refresh() async {
-    ref.invalidate(ownPostCountsProvider);
-    await Future.wait<void>([
-      ref.read(ownPostsProvider(_filter).notifier).refresh(),
+    final filter = _filter;
+    final hadPosts = ref.read(profilePostsProvider(filter)).hasValue;
+    ref.invalidate(profilePostCountsProvider);
+    final (ok, _) = await (
+      ref.read(profilePostsProvider(filter).notifier).refresh(),
       ref
-          .read(ownPostCountsProvider.future)
+          .read(profilePostCountsProvider.future)
           .then<void>((_) {}, onError: (_) {}),
-    ]);
+    ).wait;
+    if (!ok && hadPosts && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.profilePostsError)));
+    }
+  }
+
+  /// How close to the end of the tab (px still below the viewport) the next
+  /// page is asked for: about one row of tiles.
+  static const _loadMoreWithin = 200.0;
+
+  /// The tab's own vertical scroll moved or its content changed: near the
+  /// end, ask for the next page. Driven by the scroll position, not by a
+  /// built widget: slivers build ahead within the cache extent, so a footer
+  /// or the last tile is built on open and would read pages unasked.
+  bool _onScrollMetrics(ScrollMetrics metrics, int depth) {
+    if (depth == 0 &&
+        metrics.axis == Axis.vertical &&
+        metrics.extentAfter < _loadMoreWithin) {
+      _loadMoreSoon(_filter);
+    }
+    return false;
+  }
+
+  /// After the frame, and only if the state still wants the same page it
+  /// wanted when the scroll got near the end (a page that landed in between
+  /// moved the end away); the controller also ignores calls while a page is
+  /// in flight.
+  void _loadMoreSoon(PostKind? filter) {
+    bool wants(ProfilePostsState? s) =>
+        s != null && s.nextCursor != null && !s.loadingMore && !s.moreError;
+    final now = ref.read(profilePostsProvider(filter)).value;
+    if (!wants(now)) {
+      return;
+    }
+    final cursor = now!.nextCursor;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || filter != _filter) {
+        return;
+      }
+      final s = ref.read(profilePostsProvider(filter)).value;
+      if (!wants(s) || s!.nextCursor != cursor) {
+        return;
+      }
+      ref.read(profilePostsProvider(filter).notifier).loadMore();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     // A chosen kind that no longer has posts (or the only kind left, whose
     // chip row hides) falls back to "Tất cả".
-    ref.listen<AsyncValue<OwnPostCounts>>(ownPostCountsProvider, (_, next) {
+    ref.listen<AsyncValue<ProfilePostCounts>>(profilePostCountsProvider, (
+      _,
+      next,
+    ) {
       final counts = next.value;
       final kind = _filter;
       if (counts != null &&
@@ -65,7 +136,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     final setupOpen =
         isPhotographer &&
         !(ref.watch(myIntroProvider).value?.onboardingComplete ?? true);
-    final counts = ref.watch(ownPostCountsProvider);
+    final counts = ref.watch(profilePostCountsProvider);
     final present = counts.value?.present ?? const <PostKind>[];
     const gap = SizedBox(height: AppSpace.s3);
     return ScreenCode(
@@ -88,48 +159,55 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: _refresh,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpace.s4,
-                    AppSpace.s1,
-                    AppSpace.s4,
-                    AppSpace.s3,
-                  ),
-                  sliver: SliverList.list(
-                    children: [
-                      _Header(profile: profile),
-                      gap,
-                      const _NotificationsRow(),
-                      gap,
-                      _CountsRow(counts: counts),
-                      if (profile != null) ...[
-                        gap,
-                        _BadgesRow(uid: profile.uid),
-                      ],
-                      if (setupOpen) ...[gap, const _SetupCard()],
-                      if (isPhotographer) ...[
-                        gap,
-                        const _MyAlbumsRow(),
-                        const SizedBox(height: AppSpace.s2),
-                        const _EarningsRow(),
-                        AwardNudgeRow(uid: profile!.uid),
-                      ],
-                      if (present.length >= 2) ...[
-                        gap,
-                        _KindChips(
-                          counts: counts.requireValue,
-                          selected: _filter,
-                          onChanged: _choose,
-                        ),
-                      ],
-                    ],
-                  ),
+            child: NotificationListener<ScrollMetricsNotification>(
+              onNotification: (n) => _onScrollMetrics(n.metrics, n.depth),
+              child: NotificationListener<ScrollUpdateNotification>(
+                onNotification: (n) => _onScrollMetrics(n.metrics, n.depth),
+                child: CustomScrollView(
+                  controller: _scroll,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpace.s4,
+                        AppSpace.s1,
+                        AppSpace.s4,
+                        AppSpace.s3,
+                      ),
+                      sliver: SliverList.list(
+                        children: [
+                          _Header(profile: profile),
+                          gap,
+                          const _NotificationsRow(),
+                          gap,
+                          _CountsRow(counts: counts),
+                          if (profile != null) ...[
+                            gap,
+                            _BadgesRow(uid: profile.uid),
+                          ],
+                          if (setupOpen) ...[gap, const _SetupCard()],
+                          if (isPhotographer) ...[
+                            gap,
+                            const _MyAlbumsRow(),
+                            const SizedBox(height: AppSpace.s2),
+                            const _EarningsRow(),
+                            AwardNudgeRow(uid: profile!.uid),
+                          ],
+                          if (present.length >= 2) ...[
+                            gap,
+                            _KindChips(
+                              counts: counts.requireValue,
+                              selected: _filter,
+                              onChanged: _choose,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    ..._grid(context, isPhotographer: isPhotographer),
+                  ],
                 ),
-                ..._grid(context, isPhotographer: isPhotographer),
-              ],
+              ),
             ),
           ),
         ),
@@ -140,7 +218,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   List<Widget> _grid(BuildContext context, {required bool isPhotographer}) {
     final l = context.l10n;
     final filter = _filter;
-    final async = ref.watch(ownPostsProvider(filter));
+    final async = ref.watch(profilePostsProvider(filter));
     const pad = EdgeInsets.symmetric(horizontal: AppSpace.s4);
     const delegate = SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: 3,
@@ -187,7 +265,10 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         ),
       ];
     }
-    final notifier = ref.read(ownPostsProvider(filter).notifier);
+    final notifier = ref.read(profilePostsProvider(filter).notifier);
+    if (state.nextCursor != null && !state.loadingMore && !state.moreError) {
+      _checkEndAfterLayout();
+    }
     return [
       SliverPadding(
         padding: pad,
@@ -261,7 +342,7 @@ class _Header extends StatelessWidget {
 class _CountsRow extends ConsumerWidget {
   const _CountsRow({required this.counts});
 
-  final AsyncValue<OwnPostCounts> counts;
+  final AsyncValue<ProfilePostCounts> counts;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -343,7 +424,7 @@ class _KindChips extends StatelessWidget {
     required this.onChanged,
   });
 
-  final OwnPostCounts counts;
+  final ProfilePostCounts counts;
   final PostKind? selected;
   final ValueChanged<PostKind?> onChanged;
 
@@ -482,13 +563,13 @@ class _TileSkeleton extends StatelessWidget {
   );
 }
 
-/// Under the grid: asks for the next page when it is first built (the last
-/// row is on screen), a loader while it comes, or a retry row after a
-/// failure.
+/// Under the grid: a loader while the next page comes, or a retry row after
+/// a failure. The page itself is asked for by the scroll position (see
+/// `_onScrollMetrics`), never by this eagerly built footer.
 class _GridFooter extends StatelessWidget {
   const _GridFooter({required this.state, required this.onLoadMore});
 
-  final OwnPostsState state;
+  final ProfilePostsState state;
   final Future<void> Function() onLoadMore;
 
   @override
@@ -522,37 +603,8 @@ class _GridFooter extends StatelessWidget {
         child: Center(child: DotRingLoader(size: LoaderSize.inline)),
       );
     }
-    if (state.nextCursor != null) {
-      return _LoadMoreTrigger(onVisible: onLoadMore);
-    }
     return const SizedBox(height: AppSpace.s6);
   }
-}
-
-class _LoadMoreTrigger extends StatefulWidget {
-  const _LoadMoreTrigger({required this.onVisible});
-
-  final Future<void> Function() onVisible;
-
-  @override
-  State<_LoadMoreTrigger> createState() => _LoadMoreTriggerState();
-}
-
-class _LoadMoreTriggerState extends State<_LoadMoreTrigger> {
-  @override
-  void initState() {
-    super.initState();
-    // Once per build of the footer; the controller ignores calls while a
-    // page is in flight.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        widget.onVisible();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) => const SizedBox(height: AppSpace.s12);
 }
 
 /// The unfinished-setup card (S08.01), photographers only.
