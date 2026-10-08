@@ -1,4 +1,11 @@
-import { afterMessage, assertCanSend, validateMessageInput, type Message } from './chat.js';
+import {
+  afterMessage,
+  assertCanSend,
+  isInquiryClosed,
+  roleInChat,
+  validateMessageInput,
+  type Message,
+} from './chat.js';
 import type { ChatDeps } from './chat_ports.js';
 import { DomainError } from './errors.js';
 
@@ -10,7 +17,7 @@ export async function sendMessage(
     message: unknown;
   },
 ): Promise<Message> {
-  const validated = validateMessageInput(input.message, input.senderId);
+  const validated = validateMessageInput(input.message, input.senderId, input.chatId);
 
   return deps.chats.runTransaction(async (tx) => {
     const chat = await tx.getChat(input.chatId);
@@ -24,6 +31,17 @@ export async function sendMessage(
     }
 
     const now = deps.clock.now();
+    // Reopening a quiet inquiry is a new inquiry: refused when the photographer turned them off.
+    // The flag is read only on this rare path; an open inquiry continues regardless.
+    const role = roleInChat(chat, input.senderId);
+    if (
+      chat.kind === 'inquiry' &&
+      role === 'customer' &&
+      isInquiryClosed(chat, now) &&
+      !(await deps.photographers.acceptsInquiries(chat.photographerId))
+    ) {
+      throw new DomainError('not_eligible');
+    }
     assertCanSend(chat, input.senderId, now);
 
     const message: Message = {

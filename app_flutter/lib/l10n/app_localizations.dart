@@ -4468,6 +4468,30 @@ abstract class AppLocalizations {
   /// **'Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'**
   String get chatClosed;
 
+  /// No description provided for @chatNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy cuộc trò chuyện'**
+  String get chatNotFound;
+
+  /// No description provided for @chatMe.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi'**
+  String get chatMe;
+
+  /// No description provided for @chatViewProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ'**
+  String get chatViewProfile;
+
+  /// No description provided for @chatInquiriesOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia đang tạm tắt nhận tin hỏi trước.'**
+  String get chatInquiriesOff;
+
   /// No description provided for @chatOffline.
   ///
   /// In vi, this message translates to:
@@ -4605,6 +4629,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tìm nhiếp ảnh gia'**
   String get chatsEmptyAction;
+
+  /// No description provided for @chatsYouPrefix.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn: {text}'**
+  String chatsYouPrefix(String text);
 
   /// No description provided for @inquiryNotEligible.
   ///

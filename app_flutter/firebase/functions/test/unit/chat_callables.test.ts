@@ -96,4 +96,53 @@ describe('chat callables unit tests', () => {
       httpsError('resource-exhausted', 'limit_exceeded'),
     );
   });
+
+  it('sendMessage into a closed inquiry with inquiries off is failed-precondition with details.code not_eligible', async () => {
+    const { memoryChats, fakeDeps } = createTestDeps();
+    const { chatId } = await openInquiry(fakeDeps, { customerId: 'cust1', photographerId: 'phot1' });
+    await handleSendMessage(
+      {
+        auth: { uid: 'cust1' },
+        data: { chatId, message: { type: 'text', body: 'Hello', clientId: 'client_1' } },
+      },
+      fakeDeps,
+    );
+
+    // 15 days later (past INQUIRY_CLOSE_DAYS) and the photographer no longer takes inquiries.
+    const later: ChatDeps & { bookings: BookingStore } = {
+      ...fakeDeps,
+      chats: memoryChats,
+      photographers: { acceptsInquiries: async () => false },
+      clock: { now: () => new Date('2026-10-16T12:00:00.000Z') },
+    };
+    await assert.rejects(
+      handleSendMessage(
+        {
+          auth: { uid: 'cust1' },
+          data: { chatId, message: { type: 'text', body: 'Still there?', clientId: 'client_2' } },
+        },
+        later,
+      ),
+      httpsError('failed-precondition', 'not_eligible'),
+    );
+  });
+
+  it('openInquiry on a read-only booking chat returns the same chatId', async () => {
+    const { memoryChats, fakeDeps } = createTestDeps();
+    const { chatId } = await openInquiry(fakeDeps, { customerId: 'cust1', photographerId: 'phot1' });
+    const chat = await memoryChats.runTransaction((tx) => tx.getChat(chatId));
+    assert.ok(chat);
+    await memoryChats.runTransaction(async (tx) => {
+      tx.setChat({
+        ...chat,
+        kind: 'booking',
+        bookingId: 'book_1',
+        bookingStatus: 'completed',
+        readOnlyAt: new Date('2026-10-01T00:00:00.000Z'),
+      });
+    });
+
+    const res = await handleOpenInquiry({ auth: { uid: 'cust1' }, data: { photographerId: 'phot1' } }, fakeDeps);
+    assert.equal(res.chatId, chatId);
+  });
 });

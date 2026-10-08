@@ -9,6 +9,7 @@ import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
+import 'package:photobooking/features/chat/chat_bubble_mapping.dart';
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -109,11 +110,38 @@ class _ChatRow extends ConsumerWidget {
       return ConversationRow.skeleton();
     }
 
+    final l10n = context.l10n;
     final profile = profileAsync.value;
     final counterpartName = profile?.displayName ??
-        (currentUserId == thread.customerId ? 'Nhiếp ảnh gia' : 'Khách hàng');
+        (currentUserId == thread.customerId
+            ? l10n.profileRolePhotographer
+            : l10n.profileRoleCustomer);
     final avatarUrl = profile?.avatarUrl;
-    final preview = thread.lastMessagePreview ?? '';
+    final status = thread.bookingStatusValue;
+    final lastText = thread.lastMessagePreview ?? '';
+    final String preview;
+    if (thread.isClosedInquiryAt(now)) {
+      preview = l10n.chatClosed;
+    } else if (lastText.isEmpty) {
+      // A status message has no preview text: show its sentence. upcoming and
+      // reviewed post no message of their own, so the last posted one stays.
+      final posted = switch (status) {
+        BookingStatus.upcoming => BookingStatus.accepted,
+        BookingStatus.reviewed => BookingStatus.completed,
+        _ => status,
+      };
+      // A revived inquiry has no status: name the kind of chat instead of a
+      // blank line.
+      preview = posted != null
+          ? bookingStatusSentence(posted, l10n) ?? ''
+          : thread.kind == ChatKind.inquiry
+          ? l10n.contactInquiry
+          : '';
+    } else if (currentUserId != null && thread.lastSenderId == currentUserId) {
+      preview = l10n.chatsYouPrefix(lastText);
+    } else {
+      preview = lastText;
+    }
     final timeLabel = formatChatTime(thread.lastMessageAt, now);
 
     return ConversationRow(
@@ -122,9 +150,7 @@ class _ChatRow extends ConsumerWidget {
       preview: preview,
       timeLabel: timeLabel,
       unread: item.unreadCount,
-      badge: thread.kind == ChatKind.booking
-          ? const StatusBadge(BookingStatus.accepted, label: 'Đã đặt')
-          : null,
+      badge: status == null ? null : StatusBadge(status),
       onTap: () => context.push('/chat/${thread.id}'),
     );
   }

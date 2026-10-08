@@ -5,31 +5,43 @@ import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 
 class FakeChatRepository implements ChatRepository {
-  FakeChatRepository({
-    this.currentUserId = 'cust1',
-  });
+  FakeChatRepository({this.currentUserId = 'cust1'});
 
   String currentUserId;
   bool online = true;
   ChatErrorCode? failNext;
 
+  /// Fails only the next [sendImagePath] (the upload before it succeeds), the
+  /// "network dropped on the callable" case.
+  ChatErrorCode? failNextSendImage;
+
+  /// When set, [uploadChatImage] waits for it before it uploads.
+  Future<void>? uploadGate;
+
   final Map<String, ChatThread> threads = {};
   final Map<String, List<ChatMessage>> messages = {};
   final Map<String, int> unreadCounts = {}; // chatId -> count for currentUserId
 
+  /// Every successful [uploadChatImage], in order.
+  final List<({String chatId, String clientId, PickedImage image, String path})>
+  uploads = [];
+
+  /// Every successful [sendImagePath], in order.
+  final List<({String chatId, String path, String clientId})> imageSends = [];
+
+  /// Every [sendImagePath] call, failed ones included.
+  final List<({String chatId, String path, String clientId})>
+  imageSendAttempts = [];
+
   final Map<String, StreamController<ChatThread?>> _threadControllers = {};
-  final Map<String, StreamController<List<ChatMessage>>> _messageControllers = {};
+  final Map<String, StreamController<List<ChatMessage>>> _messageControllers =
+      {};
   final StreamController<List<ChatListItem>> _myChatsController =
       StreamController<List<ChatListItem>>.broadcast();
-  final StreamController<int> _totalUnreadController =
-      StreamController<int>.broadcast();
 
   void _checkPreconditions() {
     if (!online) {
-      throw const ChatException(
-        ChatErrorCode.network,
-        'No network connection',
-      );
+      throw const ChatException(ChatErrorCode.network, 'No network connection');
     }
     if (failNext != null) {
       final code = failNext!;
@@ -53,7 +65,6 @@ class FakeChatRepository implements ChatRepository {
   void seedUnread(String chatId, int count) {
     unreadCounts[chatId] = count;
     _notifyChats();
-    _notifyTotalUnread();
   }
 
   void _notifyThread(String chatId) {
@@ -64,18 +75,23 @@ class FakeChatRepository implements ChatRepository {
 
   void _notifyMessages(String chatId) {
     if (_messageControllers.containsKey(chatId)) {
-      _messageControllers[chatId]!.add(List.unmodifiable(messages[chatId] ?? []));
+      _messageControllers[chatId]!.add(
+        List.unmodifiable(messages[chatId] ?? []),
+      );
     }
   }
 
+  /// Like the adapter: chats without any message are not listed.
   List<ChatListItem> _buildChatList() {
-    final items = threads.values.map((t) {
+    final items = threads.values.where((t) => t.lastMessageAt != null).map((t) {
       final unread = unreadCounts[t.id] ?? 0;
       return ChatListItem(thread: t, unreadCount: unread);
     }).toList();
     items.sort((a, b) {
-      final aTime = a.thread.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime = b.thread.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aTime =
+          a.thread.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime =
+          b.thread.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
     return items;
@@ -83,11 +99,6 @@ class FakeChatRepository implements ChatRepository {
 
   void _notifyChats() {
     _myChatsController.add(_buildChatList());
-  }
-
-  void _notifyTotalUnread() {
-    final total = unreadCounts.values.fold<int>(0, (sum, count) => sum + count);
-    _totalUnreadController.add(total);
   }
 
   @override
@@ -110,7 +121,9 @@ class FakeChatRepository implements ChatRepository {
       () => StreamController<List<ChatMessage>>.broadcast(
         onListen: () {
           final list = messages[chatId] ?? [];
-          final slice = list.length > limit ? list.sublist(list.length - limit) : list;
+          final slice = list.length > limit
+              ? list.sublist(list.length - limit)
+              : list;
           _messageControllers[chatId]?.add(List.unmodifiable(slice));
         },
       ),
@@ -134,15 +147,19 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Stream<List<ChatListItem>> watchMyChats({int limit = 50}) async* {
-    yield _buildChatList();
-    yield* _myChatsController.stream;
-  }
-
-  @override
-  Stream<int> watchTotalUnread() async* {
-    yield unreadCounts.values.fold<int>(0, (sum, count) => sum + count);
-    yield* _totalUnreadController.stream;
+  Stream<List<ChatListItem>> watchMyChats({int limit = 50}) {
+    // Subscribes to updates as soon as it is listened to, so a change made
+    // right after the first list (e.g. markRead) is never lost.
+    StreamSubscription<List<ChatListItem>>? sub;
+    late final StreamController<List<ChatListItem>> out;
+    out = StreamController<List<ChatListItem>>(
+      onListen: () {
+        out.add(_buildChatList());
+        sub = _myChatsController.stream.listen(out.add);
+      },
+      onCancel: () => sub?.cancel(),
+    );
+    return out.stream;
   }
 
   @override
@@ -172,7 +189,8 @@ class FakeChatRepository implements ChatRepository {
     }
 
     // Check read-only
-    if (thread.readOnlyAt != null && DateTime.now().isAfter(thread.readOnlyAt!)) {
+    if (thread.readOnlyAt != null &&
+        DateTime.now().isAfter(thread.readOnlyAt!)) {
       throw const ChatException(ChatErrorCode.notEligible, 'Chat is read-only');
     }
 
@@ -201,9 +219,11 @@ class FakeChatRepository implements ChatRepository {
     DateTime? photographerRepliedAt = thread.photographerRepliedAt;
 
     if (thread.kind == ChatKind.inquiry) {
-      if (currentUserId == thread.photographerId && photographerRepliedAt == null) {
+      if (currentUserId == thread.photographerId &&
+          photographerRepliedAt == null) {
         photographerRepliedAt = message.createdAt;
-      } else if (currentUserId == thread.customerId && photographerRepliedAt == null) {
+      } else if (currentUserId == thread.customerId &&
+          photographerRepliedAt == null) {
         customerMessagesBeforeReply++;
       }
     }
@@ -263,13 +283,35 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Future<void> sendImage(
+  Future<String> uploadChatImage(
     String chatId,
     PickedImage image, {
     required String clientId,
   }) async {
     _checkPreconditions();
-    final storagePath = 'chats/$chatId/$currentUserId/$clientId.webp';
+    await uploadGate;
+    final path = 'chats/$chatId/$currentUserId/$clientId.jpg';
+    uploads.add((chatId: chatId, clientId: clientId, image: image, path: path));
+    return path;
+  }
+
+  @override
+  Future<void> sendImagePath(
+    String chatId,
+    String storagePath, {
+    required String clientId,
+  }) async {
+    imageSendAttempts.add((
+      chatId: chatId,
+      path: storagePath,
+      clientId: clientId,
+    ));
+    _checkPreconditions();
+    if (failNextSendImage != null) {
+      final code = failNextSendImage!;
+      failNextSendImage = null;
+      throw ChatException(code, 'Simulated send failure: $code');
+    }
     final msg = ChatMessage(
       id: clientId,
       senderId: currentUserId,
@@ -278,6 +320,7 @@ class FakeChatRepository implements ChatRepository {
       createdAt: DateTime.now(),
     );
     await _addMessage(chatId, msg);
+    imageSends.add((chatId: chatId, path: storagePath, clientId: clientId));
   }
 
   @override
@@ -301,7 +344,6 @@ class FakeChatRepository implements ChatRepository {
   Future<void> markRead(String chatId) async {
     unreadCounts[chatId] = 0;
     _notifyChats();
-    _notifyTotalUnread();
   }
 
   @override
@@ -337,7 +379,9 @@ class FakeChatRepository implements ChatRepository {
           day: day,
           start: start,
           end: '11:00',
-          byRole: currentUserId == thread.customerId ? 'customer' : 'photographer',
+          byRole: currentUserId == thread.customerId
+              ? 'customer'
+              : 'photographer',
         ),
       ),
       createdAt: DateTime.now(),
@@ -355,12 +399,18 @@ class FakeChatRepository implements ChatRepository {
     final msgs = messages[chatId] ?? [];
     final idx = msgs.indexWhere((m) => m.id == messageId);
     if (idx == -1) {
-      throw const ChatException(ChatErrorCode.notFound, 'Proposal message not found');
+      throw const ChatException(
+        ChatErrorCode.notFound,
+        'Proposal message not found',
+      );
     }
     final existing = msgs[idx];
     final sys = existing.system;
     if (sys == null || sys.kind != 'reschedule_proposal') {
-      throw const ChatException(ChatErrorCode.invalidArgument, 'Not a proposal message');
+      throw const ChatException(
+        ChatErrorCode.invalidArgument,
+        'Not a proposal message',
+      );
     }
 
     final answer = accept ? 'accepted' : 'declined';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photobooking/core/widgets/chat_bubble.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -9,16 +10,33 @@ BubbleSendState sendStateOf(MessageSendState s) => switch (s) {
       MessageSendState.sent => BubbleSendState.sent,
     };
 
+/// The system sentence for a booking [status] (also the S07.02 row preview
+/// when the last message is a status message); null for the states that post
+/// no message (draft, upcoming, reviewed).
+String? bookingStatusSentence(BookingStatus status, AppLocalizations l) =>
+    switch (status) {
+      BookingStatus.requested => l.chatSysRequested,
+      BookingStatus.accepted => l.chatSysAccepted,
+      BookingStatus.declined => l.chatSysDeclined,
+      BookingStatus.expired => l.chatSysExpired,
+      BookingStatus.cancelled => l.chatSysCancelled,
+      BookingStatus.completed => l.chatSysCompleted,
+      BookingStatus.draft ||
+      BookingStatus.upcoming ||
+      BookingStatus.reviewed => null,
+    };
+
 ChatBubbleContent bubbleContentOf(
   ChatMessage m, {
   String? imageUrl,
+  String? localPath,
   required AppLocalizations l,
   required String senderName,
   List<Widget> systemActions = const [],
 }) {
   return switch (m.type) {
     MessageType.text => TextContent(m.body ?? ''),
-    MessageType.image => ImageContent(imageUrl ?? m.imagePath ?? ''),
+    MessageType.image => ImageContent(imageUrl ?? '', localPath: localPath),
     MessageType.location => LocationContent(
         label: l.chatLocationOf(senderName),
         mapUrl: m.point != null
@@ -60,15 +78,11 @@ SystemContent _systemContentOf(
 
   final status = sys.status;
   if (status != null) {
-    final text = switch (status) {
-      'requested' => l.chatSysRequested,
-      'accepted' => l.chatSysAccepted,
-      'declined' => l.chatSysDeclined,
-      'expired' => l.chatSysExpired,
-      'cancelled' => l.chatSysCancelled,
-      'completed' => l.chatSysCompleted,
-      _ => m.body ?? status,
-    };
+    final known = bookingStatusFromCode(status);
+    final text =
+        (known == null ? null : bookingStatusSentence(known, l)) ??
+        m.body ??
+        status;
     return SystemContent(text, actions: systemActions);
   }
 

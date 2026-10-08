@@ -34,17 +34,29 @@ abstract class ChatRepository {
     int limit = 50,
   });
 
+  /// The signed-in user's 1-1 chats (inquiry and booking) that have at least
+  /// one message, newest first, each with that user's unread count; live on
+  /// both the chat and the user's member document.
   Stream<List<ChatListItem>> watchMyChats({int limit = 50});
-
-  Stream<int> watchTotalUnread();
 
   Future<String> openInquiry(String photographerId);
 
   Future<void> sendText(String chatId, String text, {required String clientId});
 
-  Future<void> sendImage(
+  /// Uploads [image] to `chats/{chatId}/{uid}/{clientId}.jpg` and returns that
+  /// path. Storage never overwrites it, so a retry after a failed send reuses
+  /// the path with [sendImagePath] instead of uploading again.
+  Future<String> uploadChatImage(
     String chatId,
     PickedImage image, {
+    required String clientId,
+  });
+
+  /// Posts an image message for an already uploaded [storagePath]
+  /// (idempotent by [clientId] on the server).
+  Future<void> sendImagePath(
+    String chatId,
+    String storagePath, {
     required String clientId,
   });
 

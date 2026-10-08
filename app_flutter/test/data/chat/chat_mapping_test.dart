@@ -4,6 +4,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/chat/firestore_chat_repository.dart';
@@ -110,6 +111,105 @@ void main() {
       );
       expect(t1, equals(t2));
       expect(t1.hashCode, equals(t2.hashCode));
+    });
+  });
+
+  group('booking status and closed inquiries', () {
+    test('ChatThread reads bookingStatus', () async {
+      final doc = await makeDoc('chats/b1', {
+        'kind': 'booking',
+        'customerId': 'c1',
+        'photographerId': 'p1',
+        'bookingId': 'bk1',
+        'bookingStatus': 'upcoming',
+      });
+      final thread = ChatThread.fromFirestore(doc);
+      expect(thread.bookingStatus, 'upcoming');
+      expect(thread.copyWith(lastSenderId: 'x').bookingStatus, 'upcoming');
+      expect(thread, isNot(thread.copyWith(bookingStatus: 'completed')));
+
+      final none = ChatThread.fromFirestore(
+        await makeDoc('chats/b2', {'kind': 'booking', 'bookingStatus': 3}),
+      );
+      expect(none.bookingStatus, isNull);
+    });
+
+    test('bookingStatusValue parses known codes and is null otherwise', () {
+      ChatThread t(String? s) => ChatThread(
+        id: 'c',
+        kind: ChatKind.booking,
+        customerId: 'c1',
+        photographerId: 'p1',
+        bookingStatus: s,
+      );
+      expect(t('accepted').bookingStatusValue, BookingStatus.accepted);
+      expect(t('reviewed').bookingStatusValue, BookingStatus.reviewed);
+      expect(t('someday').bookingStatusValue, isNull);
+      expect(t(null).bookingStatusValue, isNull);
+    });
+
+    test('isClosedInquiryAt matches the domain rule', () {
+      final now = DateTime.utc(2026, 10, 20, 12);
+      ChatThread chat(
+        ChatKind kind, {
+        DateTime? lastMessageAt,
+        DateTime? createdAt,
+      }) => ChatThread(
+        id: 'c',
+        kind: kind,
+        customerId: 'c1',
+        photographerId: 'p1',
+        lastMessageAt: lastMessageAt,
+        createdAt: createdAt,
+      );
+      final cases = [
+        (
+          'inquiry 13 d 23 h → open',
+          chat(
+            ChatKind.inquiry,
+            lastMessageAt: now.subtract(const Duration(days: 13, hours: 23)),
+          ),
+          false,
+        ),
+        (
+          'inquiry 14 d → closed',
+          chat(
+            ChatKind.inquiry,
+            lastMessageAt: now.subtract(const Duration(days: 14)),
+          ),
+          true,
+        ),
+        (
+          'inquiry one ms before 14 d → open',
+          chat(
+            ChatKind.inquiry,
+            lastMessageAt: now.subtract(
+              const Duration(days: 14) - const Duration(milliseconds: 1),
+            ),
+          ),
+          false,
+        ),
+        (
+          'no message + createdAt 15 d → closed',
+          chat(
+            ChatKind.inquiry,
+            createdAt: now.subtract(const Duration(days: 15)),
+          ),
+          true,
+        ),
+        (
+          'booking chat → never',
+          chat(
+            ChatKind.booking,
+            lastMessageAt: now.subtract(const Duration(days: 60)),
+          ),
+          false,
+        ),
+      ];
+      for (final (name, thread, closed) in cases) {
+        expect(thread.isClosedInquiryAt(now), closed, reason: name);
+      }
+      expect(inquiryCloseDays, 14);
     });
   });
 

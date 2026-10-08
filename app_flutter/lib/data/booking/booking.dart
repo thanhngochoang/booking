@@ -169,11 +169,8 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       }
     }
 
-    final statusStr = data['status'] as String? ?? '';
-    final status = BookingStatus.values.firstWhere(
-      (s) => s.name == statusStr,
-      orElse: () => BookingStatus.draft,
-    );
+    final status =
+        bookingStatusFromCode(data['status'] as String?) ?? BookingStatus.draft;
 
     EscrowStatus? escrowStatus;
     final escrowStr = data['escrowStatus'] as String?;
@@ -278,11 +275,8 @@ BookingEventRecord? bookingEventRecordFromFirestore(
   final at = toDateTime(data['at']);
   if (at == null) return null;
 
-  final statusStr = data['status'] as String? ?? '';
-  final status = BookingStatus.values.firstWhere(
-    (s) => s.name == statusStr,
-    orElse: () => BookingStatus.draft,
-  );
+  final status =
+      bookingStatusFromCode(data['status'] as String?) ?? BookingStatus.draft;
 
   return BookingEventRecord(
     id: id,
@@ -292,4 +286,3 @@ BookingEventRecord? bookingEventRecordFromFirestore(
     actorId: data['actorId'] as String?,
   );
 }
-

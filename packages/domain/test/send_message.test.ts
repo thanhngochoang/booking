@@ -279,4 +279,120 @@ describe('sendMessage (Task 2)', () => {
     assert.ok(chat);
     assert.equal(isInquiryClosed(chat, clock.now()), false);
   });
+
+  const DAY = 24 * 60 * 60 * 1000;
+
+  async function closedInquiry() {
+    const world = createChatWorld();
+    const { deps, clock } = world;
+    const { chatId } = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    await sendMessage(deps, {
+      senderId: 'cust1',
+      chatId,
+      message: { type: 'text', body: 'Hello', clientId: 'c_1' },
+    });
+    clock.advance(15 * DAY);
+    return { ...world, chatId };
+  }
+
+  it('a customer reopens a closed inquiry with a message', async () => {
+    const { deps, clock, chatId } = await closedInquiry();
+    const msg = await sendMessage(deps, {
+      senderId: 'cust1',
+      chatId,
+      message: { type: 'text', body: 'Còn lịch không?', clientId: 'c_2' },
+    });
+    assert.equal(msg.body, 'Còn lịch không?');
+    const chat = await deps.chats.runTransaction(async (tx) => tx.getChat(chatId));
+    assert.ok(chat);
+    assert.deepEqual(chat.lastMessageAt, clock.now());
+    assert.equal(isInquiryClosed(chat, clock.now()), false);
+  });
+
+  it('a customer cannot reopen a closed inquiry when inquiries are off', async () => {
+    const { deps, chats, photographers, chatId } = await closedInquiry();
+    photographers.disableInquiries('phot1');
+    const messagesBefore = chats.messages.get(chatId)?.length;
+    await assert.rejects(
+      () =>
+        sendMessage(deps, {
+          senderId: 'cust1',
+          chatId,
+          message: { type: 'text', body: 'Còn lịch không?', clientId: 'c_2' },
+        }),
+      (err: unknown) => err instanceof DomainError && err.code === 'not_eligible',
+    );
+    assert.equal(chats.messages.get(chatId)?.length, messagesBefore);
+    assert.equal(chats.unread.get(chatId)?.get('phot1'), 1);
+  });
+
+  it('an open inquiry continues after inquiries are turned off', async () => {
+    const { deps, photographers } = createChatWorld();
+    const { chatId } = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    await sendMessage(deps, {
+      senderId: 'cust1',
+      chatId,
+      message: { type: 'text', body: 'Hello', clientId: 'c_1' },
+    });
+    photographers.disableInquiries('phot1');
+    const msg = await sendMessage(deps, {
+      senderId: 'cust1',
+      chatId,
+      message: { type: 'text', body: 'Still there?', clientId: 'c_2' },
+    });
+    assert.equal(msg.id, 'c_2');
+  });
+
+  it('the photographer reopens a closed inquiry even with inquiries off', async () => {
+    const { deps, photographers, clock, chatId } = await closedInquiry();
+    photographers.disableInquiries('phot1');
+    await sendMessage(deps, {
+      senderId: 'phot1',
+      chatId,
+      message: { type: 'text', body: 'Xin lỗi, giờ mới thấy', clientId: 'p_1' },
+    });
+    const chat = await deps.chats.runTransaction(async (tx) => tx.getChat(chatId));
+    assert.ok(chat);
+    assert.equal(isInquiryClosed(chat, clock.now()), false);
+  });
+
+  it('closing does not reset the 3-message cap', async () => {
+    const { deps, clock } = createChatWorld();
+    const { chatId } = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    for (let i = 0; i < 3; i++) {
+      await sendMessage(deps, {
+        senderId: 'cust1',
+        chatId,
+        message: { type: 'text', body: `m${i}`, clientId: `c_${i}` },
+      });
+    }
+    clock.advance(15 * DAY);
+    await assert.rejects(
+      () =>
+        sendMessage(deps, {
+          senderId: 'cust1',
+          chatId,
+          message: { type: 'text', body: 'm4', clientId: 'c_4' },
+        }),
+      (err: unknown) => err instanceof DomainError && err.code === 'limit_exceeded',
+    );
+  });
+
+  it('a retried message in a closed inquiry is returned even with inquiries off', async () => {
+    const { deps, photographers, clock } = createChatWorld();
+    const { chatId } = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    const first = await sendMessage(deps, {
+      senderId: 'cust1',
+      chatId,
+      message: { type: 'text', body: 'Hello', clientId: 'c_1' },
+    });
+    clock.advance(15 * DAY);
+    photographers.disableInquiries('phot1');
+    const again = await sendMessage(deps, {
+      senderId: 'cust1',
+      chatId,
+      message: { type: 'text', body: 'Hello', clientId: 'c_1' },
+    });
+    assert.equal(again.id, first.id);
+  });
 });

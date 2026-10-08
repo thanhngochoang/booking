@@ -59,6 +59,7 @@ export async function syncBookingChat(
         customerId: after.customerId,
         photographerId: after.photographerId,
         bookingId: after.id,
+        bookingStatus: after.status,
         photographerRepliedAt: null,
         customerMessagesBeforeReply: 0,
         lastMessageAt: null,
@@ -83,6 +84,7 @@ export async function syncBookingChat(
         ...currentChat,
         kind: 'booking',
         bookingId: after.id,
+        bookingStatus: after.status,
         readOnlyAt: null,
         updatedAt: now,
       };
@@ -116,13 +118,22 @@ export async function syncBookingChat(
       return { chatId, setBookingChatId: false };
     }
 
+    // Mirror the status on the chat (read model for the list); only when it differs.
+    const statusChanged = currentChat.bookingStatus !== after.status;
+    const mirrored: Chat = statusChanged
+      ? { ...currentChat, bookingStatus: after.status, updatedAt: now }
+      : currentChat;
+
     if (before && before.status === after.status) {
+      if (statusChanged) tx.setChat(mirrored);
       return { chatId, setBookingChatId: false };
     }
 
     if (after.status === 'upcoming' || after.status === 'reviewed') {
+      if (statusChanged) tx.setChat(mirrored);
       return { chatId, setBookingChatId: false };
     }
+    currentChat = mirrored;
 
     let nextReadOnlyAt = currentChat.readOnlyAt;
     if ((validClosingStatuses as readonly string[]).includes(after.status)) {

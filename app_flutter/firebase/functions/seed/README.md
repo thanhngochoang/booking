@@ -68,13 +68,28 @@ Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data
 | `earnings/{uid}` + `items/*` | An, Bình | the projection, computed with the same pure functions as the triggers (An: held 3 × 450 000, soon 450 000, received 450 000) |
 | Payout account | Bình | none (the S06.05 add-account card) |
 
+## Chats (S07)
+
+Three 1-1 conversations, built by `directChatDocuments` in `fixtures.ts` (chat fields folded from the messages with the domain's `afterMessage`; `bookingStatus` is read from the seeded booking, not typed in):
+
+| Chat (`chats/{customer}_{photographer}`) | Kind | Messages | What it shows on S07.02 |
+|---|---|---|---|
+| `seed-customer-lan_seed-photographer-an` | `booking` (`seed-booking-upcoming`, `bookingStatus` = its status) | 3 text, the last from An | "Sắp tới" badge; Lan has 2 unread (matches her grouped inbox row) |
+| `seed-customer-lan_seed-photographer-cuc` | `inquiry`, `lastMessageAt` = seed time − 20 days | 2 text (Lan, Cúc) | preview "đã đóng"; Lan's next message reopens it unless Cúc turns inquiries off |
+| `seed-customer-minh_seed-photographer-dung` | `inquiry`, open | 1 text from Minh | Dũng has 1 unread (as Dũng: unread 1) |
+
+Each chat has `members/{uid}` docs with `unreadCount` for both sides (0 where nothing is unread).
+
+Each member who received a message also has the grouped inbox row `g_chat_{chatId}` that `onChatMessageCreated` would have left (same last and recent message ids; unread with the member's unread count, read otherwise). The seed writes the messages with the Admin SDK, so that trigger still runs for each one after seeding; with the rows in place every run is a duplicate and writes nothing.
+
 ## Notifications and badges
 
 | Data | Owner | Notes |
 |---|---|---|
-| Inbox rows (`users/{uid}/notifications/*`) | Lan | 5 rows: booking accepted (unread), 24 h reminder (read), refund (read), declined (read, 12 days old), grouped chat with 2 messages (unread) |
-| Inbox rows | An | booking request (unread), a sample `review_tomato` notice "Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9" (read) |
-| `users/{uid}/private/inbox` | Lan, An | `unreadCount` 2 and 1, matching the unread rows |
+| Inbox rows (`users/{uid}/notifications/*`) | Lan | 6 rows: booking accepted (unread), 24 h reminder (read), refund (read), declined (read, 12 days old), grouped chat with An, 2 messages (unread), chat with Cúc (read, 20 days old) |
+| Inbox rows | An | booking request (unread), a sample `review_tomato` notice "Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9" (read), chat with Lan (read) |
+| Inbox rows | Cúc, Dũng | chat with Lan (read); chat with Minh (unread) |
+| `users/{uid}/private/inbox` | Lan, An, Cúc, Dũng | `unreadCount` 2, 1, 0 and 1, matching the unread rows |
 | Earned badges | An | `top_rated`, `shoots_10`, `complete_profile`; progress `punctual` 3/5, `shoots_50` 12/50 |
 | Earned badges | Lan | `loyal_customer`; progress `sharer` 0/5, `detailed_reviewer` 3/5 |
 | `badges/{id}` | all | the 12-badge catalogue |

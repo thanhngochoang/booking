@@ -2529,6 +2529,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get chatClosed => 'Cuộc trò chuyện đã đóng. Gửi tin để mở lại.';
 
   @override
+  String get chatNotFound => 'Không tìm thấy cuộc trò chuyện';
+
+  @override
+  String get chatMe => 'Tôi';
+
+  @override
+  String get chatViewProfile => 'Xem hồ sơ';
+
+  @override
+  String get chatInquiriesOff =>
+      'Nhiếp ảnh gia đang tạm tắt nhận tin hỏi trước.';
+
+  @override
   String get chatOffline => 'Không có kết nối. Bạn vẫn xem được tin cũ.';
 
   @override
@@ -2602,6 +2615,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get chatsEmptyAction => 'Tìm nhiếp ảnh gia';
+
+  @override
+  String chatsYouPrefix(String text) {
+    return 'Bạn: $text';
+  }
 
   @override
   String inquiryNotEligible(String name) {
