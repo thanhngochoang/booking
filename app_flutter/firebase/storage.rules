@@ -6,71 +6,62 @@ service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
-    function validImage() {
-      return request.resource.size < 15 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+    // Every upload is a JPEG made by the app's compressor (lib/data/media/image_purpose.dart);
+    // the limit of each path is the maxBytes of its purpose
+    // (test/data/media/storage_rules_limits_sync_test.dart). New paths use this, never a wildcard
+    // image type: #152 delivery samples jpegUpTo(2 * 1024 * 1024) (deliverySample),
+    // #135 identity documents jpegUpTo(3 * 1024 * 1024) (document).
+    function jpegUpTo(maxBytes) {
+      return request.resource.contentType == 'image/jpeg' && request.resource.size <= maxBytes;
     }
 
-    // users/{uid}/... : portfolio/album photos, chat images (avatars live
-    // under avatars/, below).
-    match /users/{uid}/{allPaths=**} {
-      allow read: if signedIn();
-      allow create, update: if isOwner(uid) && validImage();
-      allow delete: if isOwner(uid);
-    }
-
-    // posts/{uid}/{postId}/{file} : post photos. Anyone signed in may look at
-    // them; only the owner may add, replace or delete, images up to 8 MB.
+    // posts/{uid}/{postId}/{file} : post photos (purpose portfolio, 2048 px) and shared shoot
+    // photos (purpose share, 1600 px), so the limit is the larger, 3 MiB. Anyone signed in may
+    // look at them; only the owner may add, replace or delete.
     match /posts/{uid}/{postId}/{file} {
       allow read: if signedIn();
-      allow create, update: if isOwner(uid)
-        && request.resource.size < 8 * 1024 * 1024 + 1
-        && request.resource.contentType.matches('image/.*');
+      allow create, update: if isOwner(uid) && jpegUpTo(3 * 1024 * 1024);
       allow delete: if isOwner(uid);
     }
 
-    // Avatars: avatars/{uid}/{ulid}.jpg. Signed-in users may look at them;
-    // only the owner adds, replaces or deletes, images up to 5 MB.
+    // Avatars (purpose avatar, 512 px): avatars/{uid}/{ulid}.jpg. Signed-in users may look at
+    // them; only the owner adds, replaces or deletes, 512 KiB.
     match /avatars/{uid}/{file} {
       allow read: if signedIn();
-      allow create, update: if isOwner(uid)
-        && request.resource.size < 5 * 1024 * 1024 + 1
-        && request.resource.contentType.matches('image/.*');
+      allow create, update: if isOwner(uid) && jpegUpTo(512 * 1024);
       allow delete: if isOwner(uid);
     }
 
-    // Award proofs: awardProofs/{uid}/{awardId}/{file}. Owner only (staff read through the
-    // Admin SDK), raster images up to 10 MB (no SVG: staff open signed URLs). Create only, no
-    // update: a reviewed proof cannot be overwritten (the app names each file with a fresh ULID).
-    // `resource == null` also refuses an overwrite where the Storage emulator reports it as a create.
+    // Award proofs (purpose document, 2048 px): awardProofs/{uid}/{awardId}/{file}. Owner only
+    // (staff read through the Admin SDK), JPEG up to 3 MiB (no SVG: staff open signed URLs).
+    // Create only, no update: a reviewed proof cannot be overwritten (the app names each file
+    // with a fresh ULID). `resource == null` also refuses an overwrite where the Storage
+    // emulator reports it as a create.
     match /awardProofs/{uid}/{awardId}/{file} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null && request.auth.uid == uid
+      allow create: if isOwner(uid)
         && resource == null
-        && request.resource.contentType.matches('image/(jpeg|png|webp|heic|heif)')
-        && request.resource.size <= 10 * 1024 * 1024;
+        && jpegUpTo(3 * 1024 * 1024);
     }
 
-    // Chat images: chats/{chatId}/{uid}/{file}. Only chat members may read.
-    // The sender uploads under their own uid (<= 8 MB), update/delete disallowed.
+    // Chat images (purpose chat, 1280 px): chats/{chatId}/{uid}/{file}. Only chat members may
+    // read. The sender uploads under their own uid (1.5 MiB), update/delete disallowed.
     match /chats/{chatId}/{uid}/{file} {
       allow read: if signedIn()
         && request.auth.uid in firestore.get(/databases/(default)/documents/chats/$(chatId)).data.members;
       allow create: if isOwner(uid)
-        && validImage()
-        && request.resource.size < 8 * 1024 * 1024
+        && jpegUpTo(1536 * 1024)
         && request.auth.uid in firestore.get(/databases/(default)/documents/chats/$(chatId)).data.members;
       allow update, delete: if false;
     }
 
-    // Event covers: eventCovers/{uid}/{eventId}/{file}. Signed-in users look at them; the owner
-    // uploads before the draft exists, under their own uid: the creator, or the host photographer
-    // of a staff-created draft (the server checks the path against both at save), images < 8 MB.
+    // Event covers (purpose share, 1600 px): eventCovers/{uid}/{eventId}/{file}. Signed-in users
+    // look at them; the owner uploads before the draft exists, under their own uid: the creator,
+    // or the host photographer of a staff-created draft (the server checks the path against both
+    // at save), JPEG up to 2 MiB.
     match /eventCovers/{uid}/{eventId}/{file} {
       allow read: if signedIn();
-      allow create, update: if isOwner(uid)
-        && request.resource.size < 8 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+      allow create, update: if isOwner(uid) && jpegUpTo(2 * 1024 * 1024);
       allow delete: if isOwner(uid);
     }
 

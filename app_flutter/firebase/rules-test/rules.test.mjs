@@ -781,19 +781,27 @@ test('nobody uploads into or deletes from someone else\'s post path', async () =
   await assertFails(uploadBytes(ref(env.unauthenticatedContext().storage(), 'posts/ph1/post1/d.jpg'), photo(), jpeg));
 });
 
-test('only images up to 8 MB are accepted', async () => {
+test('posts: only JPEG up to 3 MiB is accepted (portfolio 2048 px, share 1600 px)', async () => {
   const st = env.authenticatedContext('ph1').storage();
   await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/e.pdf'), photo(), { contentType: 'application/pdf' }));
-  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/f.jpg'), photo(8 * 1024 * 1024 + 1), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, 'posts/ph1/post1/ok.jpg'), photo(3 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/f.jpg'), photo(3 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/f8.jpg'), photo(8 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/h.webp'), photo(), { contentType: 'image/webp' }));
+  await assertFails(uploadBytes(ref(st, 'posts/ph1/post1/h.png'), photo(), { contentType: 'image/png' }));
   await assertSucceeds(uploadBytes(ref(st, 'posts/ph1/post1/g.jpg'), photo(1024 * 1024), jpeg));
 });
 
-test('every other Storage path is closed, and the users/{uid} rule still works', async () => {
+test('every other Storage path is closed, users/{uid}/** included', async () => {
   const st = env.authenticatedContext('ph1').storage();
   await assertFails(uploadBytes(ref(st, 'misc/ph1/a.jpg'), photo(), jpeg));
   await assertFails(uploadBytes(ref(st, 'posts/ph1/a.jpg'), photo(), jpeg)); // missing the post folder
   await assertFails(getBytes(ref(st, 'misc/x.jpg')));
-  await assertSucceeds(uploadBytes(ref(st, 'users/ph1/avatar.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(st, 'users/ph1/x.jpg'), photo(), jpeg)); // path closed (no writer)
+  await env.withSecurityRulesDisabled(async (c) =>
+    uploadBytes(ref(c.storage(), 'users/ph1/old.jpg'), photo(), jpeg));
+  await assertFails(getBytes(ref(st, 'users/ph1/old.jpg')));
+  await assertFails(deleteObject(ref(st, 'users/ph1/old.jpg')));
 });
 
 // ---- creating posts ----
@@ -977,7 +985,7 @@ test('users keep the storage key of their own avatar only', async () => {
   await assertFails(updateDoc(doc(db, 'users/av1'), { avatarPath: 42 }));
 });
 
-test('a user uploads, replaces and deletes only their own avatar, images up to 5 MB', async () => {
+test('a user uploads, replaces and deletes only their own avatar, JPEG up to 512 KiB', async () => {
   const st = env.authenticatedContext('av1').storage();
   const own = ref(st, `avatars/av1/${ulidJpg}`);
   await assertSucceeds(uploadBytes(own, photo(), jpeg));
@@ -987,7 +995,9 @@ test('a user uploads, replaces and deletes only their own avatar, images up to 5
   await assertFails(uploadBytes(ref(env.authenticatedContext('av2').storage(), 'avatars/av1/b.jpg'), photo(), jpeg));
   await assertFails(deleteObject(ref(env.authenticatedContext('av2').storage(), `avatars/av1/${ulidJpg}`)));
   await assertFails(uploadBytes(ref(st, 'avatars/av1/c.pdf'), photo(), { contentType: 'application/pdf' }));
-  await assertFails(uploadBytes(ref(st, 'avatars/av1/d.jpg'), photo(5 * 1024 * 1024 + 1), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, 'avatars/av1/e.jpg'), photo(512 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'avatars/av1/d.jpg'), photo(512 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'avatars/av1/f.png'), photo(), { contentType: 'image/png' }));
   await assertSucceeds(deleteObject(own));
 });
 
@@ -1472,13 +1482,15 @@ test('an existing proof file cannot be overwritten', async () => {
   await assertFails(uploadBytes(own, photo(), jpeg));
 });
 
-test('a proof image over 10 MB, an SVG or a non-image is refused', async () => {
+test('a proof over 3 MiB, a PNG, an SVG or a non-image is refused', async () => {
   const st = env.authenticatedContext('awo1').storage();
-  await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/ok.jpg'), photo(10 * 1024 * 1024), jpeg));
-  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/big.jpg'), photo(10 * 1024 * 1024 + 1), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/ok.jpg'), photo(3 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/big.jpg'), photo(3 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/big10.jpg'), photo(10 * 1024 * 1024), jpeg));
   await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.pdf'), photo(), { contentType: 'application/pdf' }));
   await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/a.svg'), photo(), { contentType: 'image/svg+xml' }));
-  await assertSucceeds(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.png'), photo(), { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.png'), photo(), { contentType: 'image/png' })); // was allowed before JPEG-only
+  await assertFails(uploadBytes(ref(st, 'awardProofs/awo1/aw1/b.heic'), photo(), { contentType: 'image/heic' }));
 });
 
 // ---- notifications, prefs, badges, devices (plan 10a) ----
@@ -1786,7 +1798,10 @@ test('events storage: an owner uploads a cover, others cannot', async () => {
   await assertFails(uploadBytes(ref(other, 'eventCovers/eh1/e1/x.jpg'), photo(), jpeg));
   await assertFails(deleteObject(ref(other, 'eventCovers/eh1/e1/cover.jpg')));
   await assertSucceeds(getBytes(ref(other, 'eventCovers/eh1/e1/cover.jpg')));
-  await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/big.jpg'), photo(9 * 1024 * 1024), jpeg));
+  const eh1 = env.authenticatedContext('eh1').storage();
+  await assertSucceeds(uploadBytes(ref(eh1, 'eventCovers/eh1/e1/ok2.jpg'), photo(2 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(eh1, 'eventCovers/eh1/e1/big.jpg'), photo(2 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(eh1, 'eventCovers/eh1/e1/c.png'), photo(), { contentType: 'image/png' }));
   await assertFails(uploadBytes(ref(env.authenticatedContext('eh1').storage(), 'eventCovers/eh1/e1/a.txt'), photo(), { contentType: 'text/plain' }));
   await assertSucceeds(deleteObject(mine));
 });
@@ -1899,5 +1914,18 @@ test('chat storage: a removed member cannot read chat images', async () => {
   await evSeed('chats/event_e4', grpChat(['eh1']));
   await assertFails(getBytes(ref(evStorage('att1'), path)));
   await assertFails(uploadBytes(ref(evStorage('att1'), 'chats/event_e4/att1/again.jpg'), photo(), jpeg));
+});
+test('chat storage: a member uploads up to 1.5 MiB of JPEG, nothing else', async () => {
+  await evSeed('chats/event_e5', grpChat(['eh1', 'att1']));
+  const st = evStorage('att1');
+  await assertSucceeds(uploadBytes(ref(st, 'chats/event_e5/att1/ok.jpg'), photo(1536 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'chats/event_e5/att1/big.jpg'), photo(1536 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'chats/event_e5/att1/c.png'), photo(), { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(st, 'chats/event_e5/att1/c.webp'), photo(), { contentType: 'image/webp' }));
+  // not a member, or someone else's folder
+  await assertFails(uploadBytes(ref(evStorage('v1'), 'chats/event_e5/v1/a.jpg'), photo(), jpeg));
+  await assertFails(uploadBytes(ref(evStorage('eh1'), 'chats/event_e5/att1/a.jpg'), photo(), jpeg));
+  // no delete (an overwrite is reported as a create by the Storage emulator, so it is not asserted)
+  await assertFails(deleteObject(ref(st, 'chats/event_e5/att1/ok.jpg')));
 });
 function evStorage(uid) { return env.authenticatedContext(uid).storage(); }
