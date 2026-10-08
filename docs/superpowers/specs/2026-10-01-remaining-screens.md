@@ -218,10 +218,19 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S27.05 | Tin của studio và ứng viên | `/studio/recruit` | studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.06 | Cộng tác (studio và thợ) | `/collab` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.07 | Nhận việc cộng tác (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
+| **S29** | **Điểm chụp đang hot** | | | | | |
+| S29.01 | Điểm chụp: danh sách, lọc khu vực / "Đang vào mùa" / "Cuối tuần này có thợ" (+ khu ở S02.01, lưới tab Địa điểm ở S02.03) | `/spots` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| S29.02 | Trang điểm chụp: mô tả, mẹo, bản đồ; thợ nhận chụp theo ngày; gói chia suất; sự kiện; ảnh (trống ngày, ngoài mùa) | `/spots/:spotId` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| S29.03 | Lịch tại điểm của tôi | `/me/spot-schedules` | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| S29.04 | Thêm / sửa lịch tại điểm | `/me/spot-schedules/new`, `/me/spot-schedules/:id/edit` | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| S29.05 | Gói chia suất (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| S29.06 | Chọn suất (sheet, phía khách) | — (sheet) | khách | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
 
 Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 Use case S26 (**Studio và thành viên**) đặc tả ở [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md); S05.06, S05.07, S06.07 (bàn giao hai lớp) ở [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đánh giá cà chua/gạch (S05.05) ở [`2026-10-06-tomato-brick-reviews-design.md`](2026-10-06-tomato-brick-reviews-design.md).
+
+Use case S29 (**Điểm chụp đang hot**) đặc tả ở [`2026-10-08-trending-spots-design.md`](2026-10-08-trending-spots-design.md); biến thể ở màn đã có: S02.01, S02.03, S04.02, S10.01, S12.01 (mock `-spots` / `-spot`). Mã S28 để dành cho studio trên web (#161), chưa có màn trong app.
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 
