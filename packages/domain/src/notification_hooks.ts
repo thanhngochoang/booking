@@ -48,9 +48,10 @@ function vnTimeDay(iso: string): string {
 // ── #139 job posts and quotes ────────────────────────────────────────────────────────────────
 
 /**
- * Grouped per job: the customer's row counts quotes and names the latest three photographers. The event
- * id is the photographer (not the quote version), so a re-quote right after their own quote is a
- * duplicate: the customer sees the updated quote in S15.03 without a second count.
+ * Grouped per job: the customer's row counts quotes and names the latest three photographers. Called for
+ * every quote. The event id is the photographer (not the quote version), and any repeat inside the unread
+ * row's 20-id window (`recentEventIds`, Ruling 8) is a duplicate, so a re-quote never counts again: the
+ * customer sees the updated quote in S15.03. Once the row is read, the next quote restarts the count.
  */
 export async function notifyQuoteNew(
   deps: NotifyDeps,

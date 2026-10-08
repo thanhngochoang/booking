@@ -804,7 +804,7 @@ Mỗi loại đúng một biểu tượng; tông màu theo ngữ nghĩa (xanh = 
 
 | Chủ phát | Hook |
 |----------|------|
-| #139 (đăng việc, báo giá) | `notifyQuoteNew` (chỉ gọi cho báo giá **đầu tiên** của một thợ trên một việc), `notifyQuoteWithdrawn`, `notifyJobExpiring`, `notifyJobExpired`, `notifyJobMatch`, `notifyJobInvited`, `notifyQuoteAccepted`, `notifyQuoteNotSelected` |
+| #139 (đăng việc, báo giá) | `notifyQuoteNew` (gọi cho mỗi báo giá; báo giá lặp lại của cùng thợ trong dòng chưa đọc không tăng số đếm), `notifyQuoteWithdrawn`, `notifyJobExpiring`, `notifyJobExpired`, `notifyJobMatch`, `notifyJobInvited`, `notifyQuoteAccepted`, `notifyQuoteNotSelected` |
 | #140 (Chụp ngay) | `notifyInstantAssigned`, `notifyInstantMissed`, `notifyInstantRoundEnded`, `notifyInstantNoMatch`, `notifyInstantArrived`, `notifyInstantFinished`, `notifyInstantCancelled`; cùng chỗ gọi primer `CustomerInstantPrimer` (S13.03) và `PhotographerPrimer` (S14.01) |
 | #130 (đánh giá cà chua/gạch) | `notifyReviewVerdict` (gọi từ `onReviewWrite` thay cho `review_new`; booking studio gọi hai lần, một cho thợ và một cho studio) |
 | #152 (bàn giao, tách từ #130) | `notifyDeliverySubmitted`, `notifyDeliveryRevisionRequested`, `notifyDeliveryApproved`, `notifyDeliveryAutoApproveSoon`, `notifyDeliveryExtraRound` |
