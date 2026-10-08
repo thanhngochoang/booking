@@ -108,6 +108,11 @@ void main() {
       expect(tester.getSize(tileOf('role-customer')), const Size(36, 36));
       expect(tileColor(tester, 'role-customer'), subtle);
       expect(iconColor(tester, 'role-customer'), scheme.primary);
+      final card = tester.widget<Container>(find.descendant(
+        of: find.byKey(const Key('role-customer')),
+        matching: find.byType(Container),
+      ).first);
+      expect((card.decoration! as BoxDecoration).color, subtle);
     });
 
     testWidgets('the other role uses the field colour (${b.name})',
