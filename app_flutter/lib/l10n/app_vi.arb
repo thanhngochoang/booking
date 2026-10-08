@@ -684,7 +684,7 @@
   "findNoResult": "Chưa có ai khớp bộ lọc",
   "findNoResultBody": "Thử bỏ bớt bộ lọc hoặc chọn ngày khác.",
   "findClear": "Xoá bộ lọc",
-  "findFallbackNote": "Đang xếp theo tỷ lệ cà chua và khoảng cách",
+  "findFallbackNote": "Đang xếp theo điểm cà chua và khoảng cách",
   "findLoadError": "Không tải được danh sách. Kiểm tra mạng rồi thử lại.",
   "findBookDay": "Đặt {day}",
   "@findBookDay": {

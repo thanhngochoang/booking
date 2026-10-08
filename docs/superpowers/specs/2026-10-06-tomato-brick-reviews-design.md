@@ -191,7 +191,7 @@ smoothedScore(p) = (v · score + m · C) / (v + m),  v = reviewCount, m = 10, C 
 - `C = 0.6` tương đương mức tiên nghiệm cũ 4,3★ trên thang mới.
 - `smoothedRating` → `smoothedScore`; `_quality` dùng `smoothedScore` trực tiếp (bỏ phép quy đổi `(r − 3)/2`), vẫn cộng phần thưởng theo số buổi và kẹp về 0…1.
 - Sắp xếp "Đánh giá" (Tìm, báo giá S16) dùng `smoothedScore`.
-- Lý do gợi ý "đánh giá cao": `reviewCount ≥ 10` và `tomatoPct ≥ 95`, chuỗi `reasonTopRated` → "{pct}% cà chua từ {count} đánh giá" (chip chỉ chữ nên không có biểu tượng, cùng lời với huy hiệu S03.02). Ghi chú dự phòng của Tìm `findFallbackNote`: "Đang xếp theo tỷ lệ cà chua và khoảng cách".
+- Lý do gợi ý "đánh giá cao": `reviewCount ≥ 10` và `tomatoPct ≥ 95`, chuỗi `reasonTopRated` → "{pct}% cà chua từ {count} đánh giá" (chip chỉ chữ nên không có biểu tượng, cùng lời với huy hiệu S03.02). Ghi chú dự phòng của Tìm `findFallbackNote`: "Đang xếp theo điểm cà chua và khoảng cách".
 
 ### 7.2 Bộ lọc màn Tìm
 
