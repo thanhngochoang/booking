@@ -38,17 +38,18 @@ class CompletenessMeter extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          // Title left, value right; in a narrow row (S09.02's Kỹ năng at
+          // 320dp and large text) the value moves under the title.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: AppSpace.s2,
             children: [
-              Expanded(
-                child: Text(
-                  l.completenessTitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              Text(
+                l.completenessTitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: AppSpace.s2),
               Text(
                 value,
                 style: theme.textTheme.bodyMedium?.copyWith(

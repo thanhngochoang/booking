@@ -1,7 +1,9 @@
 // test/features/events/event_share_composer_test.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 
@@ -79,6 +81,10 @@ void main() {
       expect(share.caption, '#PhotoWalkPhoCo1020 Sáng nay đẹp quá');
       expect(find.text('Đã đăng lên timeline'), findsOneWidget);
       expect(w.location, '/e/ev1/timeline');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(Navigator).first),
+      );
+      expect(container.read(ownPostsChangedProvider), 1, reason: 'S09.01');
     });
 
     testWidgets('a refused share stays, says why and cleans up', (

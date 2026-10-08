@@ -455,10 +455,14 @@ service cloud.firestore {
             && request.time <= b.completedAt + duration.value(30, 'd'));
     }
 
+    // bookings: the customer, the photographer (or studio) and, for a studio booking, the member it
+    // is assigned to (`assigneeId`, studio spec §8; S06.01 queries `assigneeId == uid`). The
+    // private/contact and events sub-rules are #136's and stay customer/photographer only.
     match /bookings/{bookingId} {
       allow read: if signedIn()
         && (resource.data.customerId == request.auth.uid
-            || resource.data.photographerId == request.auth.uid);
+            || resource.data.photographerId == request.auth.uid
+            || resource.data.get('assigneeId', null) == request.auth.uid);
       allow write: if false; // only Cloud Functions (sub-project 4)
 
       match /private/{docId} {
@@ -515,6 +519,12 @@ service cloud.firestore {
         allow read, write: if false;
       }
     }
+
+    // otp_challenges/{uid}_payout_account: salted hashes of the OTP for a payout account change
+    // (attempts, sends per day). payout_lookups/{uid}: `{day, count}` of bank name lookups.
+    // Server-only: a client that could read or reset them could brute-force the code or the cap.
+    match /otp_challenges/{id} { allow read, write: if false; }
+    match /payout_lookups/{uid} { allow read, write: if false; }
 
     // payouts/{payoutId}: batches paid to a photographer. Server-only: rows hold staff free text
     // (holdReason, failureReason, reference, createdBy); the app reads the summary instead.

@@ -3,6 +3,7 @@ import {
   EARNING_STATES,
   formatVnDate,
   isSettledPayment,
+  providerTypeOf,
   type EarningItem,
   type EarningState,
   type EarningSubject,
@@ -20,6 +21,7 @@ import {
   paymentFromFirestore,
 } from './booking_firestore.js';
 import { PAYOUTS_COLLECTION, payoutFromFirestore } from './payout_firestore.js';
+import { PHOTOGRAPHERS_COLLECTION } from './review_firestore.js';
 
 export const EARNINGS_COLLECTION = 'earnings';
 
@@ -35,6 +37,14 @@ export function earningItemToFirestore(i: EarningItem): DocumentData {
     subjectLabel: i.subjectLabel,
     day: i.day,
     amount: i.amount,
+    platformFee: i.platformFee,
+    taxWithheld: i.taxWithheld,
+    netAmount: i.netAmount,
+    feeRateBp: i.feeRateBp,
+    taxRateBp: i.taxRateBp,
+    estimated: i.estimated,
+    milestonesDone: i.milestonesDone,
+    milestonesTotal: i.milestonesTotal,
     state: i.state,
     holdReason: i.holdReason,
     paidOutAt: i.paidOutAt === null ? null : ts(i.paidOutAt),
@@ -42,7 +52,12 @@ export function earningItemToFirestore(i: EarningItem): DocumentData {
   };
 }
 
+const num = (v: unknown, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/** A row written before the breakdown existed reads fee 0, tax 0, net = amount, estimated. */
 export function earningItemFromFirestore(id: string, d: DocumentData): EarningItem {
+  const amount = typeof d.amount === 'number' ? d.amount : 0;
   return {
     id,
     payeeId: String(d.payeeId ?? ''),
@@ -51,7 +66,15 @@ export function earningItemFromFirestore(id: string, d: DocumentData): EarningIt
     counterpartName: String(d.counterpartName ?? ''),
     subjectLabel: String(d.subjectLabel ?? ''),
     day: String(d.day ?? ''),
-    amount: typeof d.amount === 'number' ? d.amount : 0,
+    amount,
+    platformFee: num(d.platformFee, 0),
+    taxWithheld: num(d.taxWithheld, 0),
+    netAmount: num(d.netAmount, amount),
+    feeRateBp: num(d.feeRateBp, 0),
+    taxRateBp: num(d.taxRateBp, 0),
+    estimated: d.estimated !== false,
+    milestonesDone: numOrNull(d.milestonesDone),
+    milestonesTotal: numOrNull(d.milestonesTotal),
     state: ((EARNING_STATES as readonly unknown[]).includes(d.state) ? d.state : 'held') as EarningState,
     holdReason: typeof d.holdReason === 'string' ? d.holdReason : null,
     paidOutAt: iso(d.paidOutAt),
@@ -69,6 +92,12 @@ export function earningsSummaryToFirestore(s: EarningsSummary): DocumentData {
   };
 }
 
+/** Released / all docs of `bookings/{id}/milestones` (written by the delivery flow, #152); none → null. */
+export function milestonesOfDocs(docs: readonly DocumentData[]): { done: number; total: number } | null {
+  if (docs.length === 0) return null;
+  return { done: docs.filter((d) => d.status === 'released').length, total: docs.length };
+}
+
 /** Earnings projection in Firestore; writes are buffered until all reads are done. */
 export class FirestoreEarningsStore implements EarningsStore {
   constructor(private readonly db: Firestore) {}
@@ -78,6 +107,8 @@ export class FirestoreEarningsStore implements EarningsStore {
       const writes: Array<() => void> = [];
       const items = (uid: string) => this.db.collection(EARNINGS_COLLECTION).doc(uid).collection('items');
       const tx: EarningsTx = {
+        getPayeeType: async (uid) =>
+          providerTypeOf((await fTx.get(this.db.collection(PHOTOGRAPHERS_COLLECTION).doc(uid))).data()?.providerType),
         getPayment: async (id) => {
           const snap = await fTx.get(this.db.collection(PAYMENTS_COLLECTION).doc(id));
           return snap.exists ? paymentFromFirestore(snap.id, snap.data()) : null;
@@ -101,6 +132,7 @@ export class FirestoreEarningsStore implements EarningsStore {
               counterpartName: typeof r.userName === 'string' ? r.userName : '',
               label: typeof ev.title === 'string' ? ev.title : '',
               day: start === null ? '' : formatVnDate(start),
+              milestones: null,
             };
           }
           if (p.subjectType !== 'booking') return null;
@@ -117,7 +149,13 @@ export class FirestoreEarningsStore implements EarningsStore {
             if (typeof name === 'string') counterpartName = name;
           }
           const label: unknown = d.serviceSnapshot?.name;
-          return { counterpartName, label: typeof label === 'string' ? label : '', day: String(d.day ?? '') };
+          const milestones = await fTx.get(b.ref.collection('milestones'));
+          return {
+            counterpartName,
+            label: typeof label === 'string' ? label : '',
+            day: String(d.day ?? ''),
+            milestones: milestonesOfDocs(milestones.docs.map((m) => m.data())),
+          };
         },
         getPayout: async (id): Promise<Payout | null> => {
           const snap = await fTx.get(this.db.collection(PAYOUTS_COLLECTION).doc(id));

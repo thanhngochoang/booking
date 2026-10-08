@@ -83,6 +83,7 @@ Callable: `inviteMember`, `cancelInvite`, `requestToJoin`, `cancelJoinRequest`, 
   - S03.01 (hồ sơ studio): ô thống kê % cà chua của studio · buổi chụp · **thành viên** · kinh nghiệm; hàng "Thành viên" (avatar, tên, % cá nhân); thợ cá nhân xem hồ sơ studio thấy nút viền "Xin gia nhập".
   - S03.01 (hồ sơ thợ thành viên): nhãn "Thành viên của {Studio}" dưới tên.
   - S09.02 Cài đặt: dòng "Thành viên studio" (studio) / "Studio của tôi" (thợ).
+    Hai dòng đã có sẵn trong `SettingsScreen` (#148, `settings-studio-members` và `settings-my-studio`), chỉ hiện khi `studioRoutesReadyProvider` (`lib/features/settings/settings_links.dart`) là true; bật khi có `/studio/members` (S26.01) và `/me/studio` (S26.03).
   - S06.01 Công việc: booking studio được giao có nhãn "Giao bởi {Studio}".
 
 ## 5. Booking với studio

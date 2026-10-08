@@ -183,6 +183,36 @@ class FirestorePostRepository implements PostRepository {
   );
 
   @override
+  Future<PostPage> byAuthor(
+    String uid, {
+    PostKind? kind,
+    String? cursor,
+    int limit = 20,
+  }) {
+    if (!_validId(uid)) {
+      return Future.value(const PostPage());
+    }
+    Query<Map<String, dynamic>> q = _posts.where('authorId', isEqualTo: uid);
+    if (kind != null) {
+      q = q.where('kind', isEqualTo: kind.code);
+    }
+    return _page(q, cursor, limit);
+  }
+
+  @override
+  Future<int> countByAuthor(String uid, {PostKind? kind}) async {
+    if (!_validId(uid)) {
+      return 0;
+    }
+    Query<Map<String, dynamic>> q = _posts.where('authorId', isEqualTo: uid);
+    if (kind != null) {
+      q = q.where('kind', isEqualTo: kind.code);
+    }
+    final snap = await q.count().get();
+    return snap.count ?? 0;
+  }
+
+  @override
   Future<PostPage> byAlbum(
     String albumId, {
     String? cursor,

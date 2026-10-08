@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/badges/badge.dart';
-import 'package:photobooking/features/shell/placeholder_tabs.dart';
+import 'package:photobooking/features/profile/profile_tab.dart';
 
 import '../../support/notifications_world.dart';
 import '../../support/screen_host.dart';

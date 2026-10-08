@@ -2,25 +2,33 @@
 //   npm run payouts -- due
 //   npm run payouts -- show <payoutId>
 //   npm run payouts -- create <payeeId> --actor <uid>
+//   npm run payouts -- approve <payoutId> --actor <uid>
 //   npm run payouts -- execute <payoutId> --actor <uid>
 //   npm run payouts -- hold <payoutId> "<reason>" --actor <uid>
 //   npm run payouts -- resume <payoutId> --actor <uid>
-// Uses the Admin SDK and the same domain use cases as any future staff screen. There is no real
-// bank adapter: `execute` works only against the fake gateway (emulators, or PAYOUTS_MODE=fake in the dev project of .firebaserc only).
+//   npm run payouts -- run-daily --actor <uid>
+// Uses the Admin SDK and the same domain use cases as any future staff screen and the daily
+// `createPayouts` job. There is no real bank adapter: `execute` and `run-daily` work only against
+// the fake gateway (emulators, or PAYOUTS_MODE=fake in the dev project of .firebaserc only).
 
 import { fileURLToPath } from 'node:url';
 import {
+  approvePayout,
   createPayout,
   executePayout,
   holdPayout,
+  isDomainError,
   resumePayout,
+  runDailyPayouts,
+  type DailyPayoutReport,
   type Payout,
   type PayoutDeps,
+  type PayoutStatus,
   type StaffActor,
 } from '@photobooking/domain';
 
 const USAGE =
-  'usage: payouts due | show <payoutId> | create <payeeId> --actor <uid> | execute <payoutId> --actor <uid> | hold <payoutId> "<reason>" --actor <uid> | resume <payoutId> --actor <uid>';
+  'usage: payouts due | show <payoutId> | create <payeeId> --actor <uid> | approve <payoutId> --actor <uid> | execute <payoutId> --actor <uid> | hold <payoutId> "<reason>" --actor <uid> | resume <payoutId> --actor <uid> | run-daily --actor <uid>';
 
 export const HELP = `${USAGE}
 
@@ -29,13 +37,19 @@ Environment:
   GCLOUD_PROJECT                  project id
   PAYOUT_ACCOUNT_KEY              base64 key of the account cipher (32 bytes); with FIRESTORE_EMULATOR_HOST
                                   the emulator key from .secret.local is used when it is unset
-  PAYOUTS_MODE=fake               allow \`execute\` against the fake gateway, only when GCLOUD_PROJECT is the dev
+  PAYOUTS_MODE=fake               allow \`execute\` and \`run-daily\` against the fake gateway, only when GCLOUD_PROJECT is the dev
                                   project of .firebaserc (emulators allow it by default; any other project: refused)
   FIRESTORE_EMULATOR_HOST, FIREBASE_AUTH_EMULATOR_HOST
                                   use these instead of credentials to work against the emulators
---actor must be a user with the custom claim staffRole = admin. \`show\` prints the account masked (•••• 6789).`;
+--actor must be a user with the custom claim staffRole = admin. \`show\` prints the account masked (•••• 6789).
+\`approve\` sends a payout waiting for staff (needs_approval: the first to an account, or a holder name
+to compare) to pending. \`run-daily\` does what the daily createPayouts job does (create a payout per
+due payee, send every pending one) and prints its report; a failed item is printed by id and code.`;
 
-export type Command = 'due' | 'show' | 'create' | 'execute' | 'hold' | 'resume';
+export type Command = 'due' | 'show' | 'create' | 'approve' | 'execute' | 'hold' | 'resume' | 'run-daily';
+
+/** Payouts `due` lists as `open:` (waiting for staff or the bank), oldest first. */
+export const OPEN_PAYOUT_STATUSES = ['needs_approval', 'pending', 'on_hold', 'processing'] as const satisfies readonly PayoutStatus[];
 
 export interface ParsedArgs {
   readonly command: Command;
@@ -58,8 +72,15 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
     }
   }
   const command = rest[0];
-  if (command === 'due') return { command, target: null, reason: null, actor };
-  if (command === 'show' || command === 'create' || command === 'execute' || command === 'hold' || command === 'resume') {
+  if (command === 'due' || command === 'run-daily') return { command, target: null, reason: null, actor };
+  if (
+    command === 'show' ||
+    command === 'create' ||
+    command === 'approve' ||
+    command === 'execute' ||
+    command === 'hold' ||
+    command === 'resume'
+  ) {
     const target = rest[1];
     if (target === undefined) throw new Error(`missing ${command === 'create' ? 'payee' : 'payout'} id. ${USAGE}`);
     let reason: string | null = null;
@@ -76,21 +97,23 @@ export interface CliIo {
   print(line: string): void;
   /** The actor of a change must pass it (the real CLI checks the admin claim). */
   isAdmin(uid: string): Promise<boolean>;
-  /** Payouts that wait for staff (`pending`, `on_hold`, `processing`), oldest first. */
-  listOpenPayouts(): Promise<Payout[]>;
+  /** Payouts in these statuses (`OPEN_PAYOUT_STATUSES`), oldest first. */
+  listOpenPayouts(statuses: readonly PayoutStatus[]): Promise<Payout[]>;
 }
 
 /**
- * `fake` only when the fake gateway may run: against the emulators, or when `PAYOUTS_MODE=fake`
- * AND the project id (GCLOUD_PROJECT) equals the dev project from `.firebaserc` (alias `dev`,
- * passed in as `devProjectId`). Never against any other project, whatever the variable says.
+ * `fake` only when the fake gateway may run (Ruling 11, the CLI's form of `fakePayoutsMode`):
+ * against the Firestore emulator (`FIRESTORE_EMULATOR_HOST` set, so the Admin SDK writes there and
+ * nothing real is marked paid out), or when `PAYOUTS_MODE=fake` AND the project id
+ * (GCLOUD_PROJECT) equals the dev project from `.firebaserc` (alias `dev`, passed in as
+ * `devProjectId`). `FUNCTIONS_EMULATOR` alone does not count: the CLI would still write to the
+ * project its credentials point at. Never against any other project, whatever the variables say.
  */
 export function cliPayoutsMode(
   env: Readonly<Record<string, string | undefined>>,
   devProjectId: string | null = null,
 ): 'fake' | 'off' {
-  const emulator = (env.FIRESTORE_EMULATOR_HOST ?? '') !== '' || env.FUNCTIONS_EMULATOR === 'true';
-  if (emulator) return 'fake';
+  if ((env.FIRESTORE_EMULATOR_HOST ?? '') !== '') return 'fake';
   const project = env.GCLOUD_PROJECT ?? '';
   return env.PAYOUTS_MODE === 'fake' && devProjectId !== null && devProjectId !== '' && project === devProjectId
     ? 'fake'
@@ -113,6 +136,12 @@ function line(p: Payout): string {
   return `${p.id}  ${p.status}  ${p.createdAt}  ${p.payeeId}  ${money(p.amount)}  ${p.items.length} payment(s)`;
 }
 
+const reportLine = (r: DailyPayoutReport): string =>
+  (Object.keys(r) as (keyof DailyPayoutReport)[]).map((k) => `${k}=${r[k]}`).join(' ');
+
+/** The domain code or the error's class name: never its message (it could carry account data). */
+const codeOf = (e: unknown): string => (isDomainError(e) ? e.code : e instanceof Error ? e.name : 'unknown');
+
 export async function runCli(
   argv: readonly string[],
   deps: PayoutDeps,
@@ -127,7 +156,7 @@ export async function runCli(
     for (const d of due) {
       io.print(`${d.payeeId}  ${money(d.amount)}  ${d.hasAccount ? 'account' : 'NO ACCOUNT (cannot create a payout)'}`);
     }
-    for (const p of await io.listOpenPayouts()) io.print(`open: ${line(p)}`);
+    for (const p of await io.listOpenPayouts(OPEN_PAYOUT_STATUSES)) io.print(`open: ${line(p)}`);
     return;
   }
 
@@ -154,6 +183,19 @@ export async function runCli(
   const actor: StaffActor = { uid: args.actor, isAdmin: true };
 
   switch (args.command) {
+    case 'run-daily': {
+      if (mode !== 'fake') {
+        throw new Error('run-daily is refused: no real bank adapter exists. Use the emulators, or PAYOUTS_MODE=fake with GCLOUD_PROJECT set to the dev project.');
+      }
+      const report = await runDailyPayouts(deps, (id, step, e) => io.print(`error: ${id} ${step} ${codeOf(e)}`));
+      io.print(reportLine(report));
+      return;
+    }
+    case 'approve': {
+      const p = await approvePayout(deps, actor, target);
+      io.print(`${p.id} -> ${p.status} (approved by ${actor.uid})`);
+      return;
+    }
     case 'create': {
       const p = await createPayout(deps, actor, target);
       io.print(`${p.id} created: ${money(p.amount)} for ${p.payeeId}, ${p.items.length} payment(s)`);
@@ -209,10 +251,10 @@ async function main(): Promise<void> {
   const io: CliIo = {
     print: (l) => console.log(l),
     isAdmin: async (uid) => (await getAuth().getUser(uid)).customClaims?.staffRole === 'admin',
-    listOpenPayouts: async () => {
+    listOpenPayouts: async (statuses) => {
       const snap = await firestore
         .collection(PAYOUTS_COLLECTION)
-        .where('status', 'in', ['pending', 'on_hold', 'processing'])
+        .where('status', 'in', [...statuses])
         .orderBy('createdAt')
         .get();
       return snap.docs.flatMap((d) => payoutFromFirestore(d.id, d.data()) ?? []);

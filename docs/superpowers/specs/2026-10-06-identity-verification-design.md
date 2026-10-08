@@ -108,6 +108,8 @@ Cổng chung là port `ProviderOrderGate` (`packages/domain`, đọc `verified` 
 
 Thay đổi màn cũ: S06.02 (nút chính "Bắt đầu nhận đơn"), S03.01 (nhãn "Chưa nhận đơn" khi khách xem; chủ hồ sơ thấy thẻ "Còn {n} bước để nhận đơn"), S09.02 (dòng "Xác minh & nhận đơn"), S26.01 (giới hạn 3 thợ dẫn tới S21.04).
 
+S09.02: dòng "Xác minh & nhận đơn" (`settings-verify`) có sẵn trong `SettingsScreen` (#148), chỉ hiện khi `verifyStartReadyProvider` (`lib/features/settings/settings_links.dart`) là true; bật khi có `/verify/start` (S21.02), và lúc đó thay phụ đề bằng "Còn {n} bước".
+
 ## 9. Dữ liệu cá nhân
 
 - Luật Bảo vệ dữ liệu cá nhân 91/2025 và Nghị định 356/2025 (thay Nghị định 13/2023 từ 01/01/2026): ảnh khuôn mặt là dữ liệu nhạy cảm; app không tự lưu nhưng vẫn xử lý qua nhà cung cấp, nên **phải lập hồ sơ đánh giá tác động**. Lưu trên Firebase ở Singapore là chuyển dữ liệu ra nước ngoài: cần hồ sơ riêng hoặc chuyển dữ liệu danh tính về máy chủ trong nước (câu hỏi mở).

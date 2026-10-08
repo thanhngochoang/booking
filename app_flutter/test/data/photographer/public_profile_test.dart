@@ -39,6 +39,7 @@ void main() {
         bio: 'Ánh sáng tự nhiên.',
         equipment: ['Sony A7 IV'],
         onboardingComplete: true,
+        acceptingOrders: true,
       ),
     );
     expect(p.published, isTrue);

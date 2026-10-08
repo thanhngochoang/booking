@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
@@ -11,7 +13,7 @@ import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
 import 'package:photobooking/features/onboarding/role_screen.dart';
 import 'package:photobooking/features/onboarding/session_error_screen.dart';
-import 'package:photobooking/features/shell/placeholder_tabs.dart';
+import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 const _sizes = [Size(320, 568), Size(320, 640), Size(430, 932), Size(640, 360)];
@@ -51,6 +53,7 @@ void main() {
                 photographerIntroRepositoryProvider.overrideWithValue(
                   FakePhotographerIntroRepository(),
                 ),
+                postRepositoryProvider.overrideWithValue(FakePostRepository()),
               ],
               child: MaterialApp(
                 locale: const Locale('vi'),

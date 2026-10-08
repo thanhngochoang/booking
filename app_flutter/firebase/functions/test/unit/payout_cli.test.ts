@@ -1,13 +1,22 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import {
+  DEFAULT_PAYOUT_POLICY,
   FakePayoutGateway,
   MemoryBookingStore,
   MemoryPayoutStore,
+  approvePayout,
   type Payment,
   type PayoutDeps,
 } from '@photobooking/domain';
-import { cliPayoutsMode, devProjectFromFirebaserc, parseArgs, runCli, type CliIo } from '../../tools/payouts.js';
+import {
+  OPEN_PAYOUT_STATUSES,
+  cliPayoutsMode,
+  devProjectFromFirebaserc,
+  parseArgs,
+  runCli,
+  type CliIo,
+} from '../../tools/payouts.js';
 import { aesGcmCipher } from '../../src/infra/account_cipher.js';
 import { payoutGateway } from '../../src/infra/live_payout.js';
 import { payoutsMode } from '../../src/config.js';
@@ -31,11 +40,16 @@ describe('payouts staff CLI', () => {
   const deps = (gateway = new FakePayoutGateway()): PayoutDeps => ({
     store, cipher, gateway, clock: { now: () => NOW },
     ids: { newId: () => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n++).padStart(2, '0')}` },
+    policy: DEFAULT_PAYOUT_POLICY,
+    notices: { accountNeeded: async () => undefined, accountChanged: async () => undefined },
   });
+  /** The first payout to an account waits for staff (domain use case; the CLI command is tested below). */
+  const approve = (id: string) => approvePayout(deps(), { uid: 's1', isAdmin: true }, id);
   const io: CliIo = {
     print: (s) => void out.push(s),
     isAdmin: async () => admin,
-    listOpenPayouts: async () => [...store.payouts.values()].filter((p) => p.status !== 'paid' && p.status !== 'failed'),
+    listOpenPayouts: async (statuses) =>
+      [...store.payouts.values()].filter((p) => statuses.includes(p.status)).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   };
 
   beforeEach(async () => {
@@ -50,6 +64,7 @@ describe('payouts staff CLI', () => {
     store.accounts.set('p1/a1', {
       id: 'a1', userId: 'p1', bankCode: 'VCB', accountNumberEnc: await cipher.encrypt('0123456789'),
       accountLast4: '6789', holderName: 'NGUYEN VAN AN', active: true, createdAt: T,
+      nameStatus: 'matched', activeFrom: T,
     });
   });
 
@@ -75,9 +90,13 @@ describe('payouts staff CLI', () => {
   it('create, hold, resume and execute walk a payout through', async () => {
     await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
     const id = [...store.payouts.keys()][0] as string;
+    assert.equal(store.payouts.get(id)?.status, 'needs_approval');
+    await approve(id);
     await runCli(['hold', id, 'Kiểm tra tài khoản', '--actor', 's1'], deps(), io, 'fake');
     assert.equal(store.payouts.get(id)?.status, 'on_hold');
     await runCli(['resume', id, '--actor', 's1'], deps(), io, 'fake');
+    // The approval given before the hold is kept.
+    assert.equal(store.payouts.get(id)?.status, 'pending');
     await runCli(['execute', id, '--actor', 's1'], deps(), io, 'fake');
     assert.equal(store.payouts.get(id)?.status, 'paid');
     assert.equal(booking.payments.get('pay1')?.escrowStatus, 'paid_out');
@@ -87,6 +106,7 @@ describe('payouts staff CLI', () => {
   it('execute refuses outside fake mode and changes nothing', async () => {
     await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
     const id = [...store.payouts.keys()][0] as string;
+    await approve(id);
     await assert.rejects(runCli(['execute', id, '--actor', 's1'], deps(), io, 'off'), /no real bank adapter/);
     assert.equal(store.payouts.get(id)?.status, 'pending');
   });
@@ -111,8 +131,81 @@ describe('payouts staff CLI', () => {
     assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake' }, dev), 'off');
     assert.equal(cliPayoutsMode({ PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-dev' }, null), 'off');
     assert.equal(cliPayoutsMode({ GCLOUD_PROJECT: 'proj-dev' }, dev), 'off');
+    // Ruling 11: FUNCTIONS_EMULATOR alone does not point the CLI's writes at an emulator.
+    assert.equal(cliPayoutsMode({ FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'proj-prod' }, dev), 'off');
+    assert.equal(cliPayoutsMode({ FUNCTIONS_EMULATOR: 'true', PAYOUTS_MODE: 'fake', GCLOUD_PROJECT: 'proj-prod' }, dev), 'off');
     assert.equal(devProjectFromFirebaserc('not json'), null);
     assert.equal(devProjectFromFirebaserc('{"projects":{}}'), null);
+  });
+
+  it('approve needs --actor and an admin', async () => {
+    await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
+    const id = [...store.payouts.keys()][0] as string;
+    await assert.rejects(runCli(['approve', id], deps(), io, 'fake'), /--actor/);
+    admin = false;
+    await assert.rejects(runCli(['approve', id, '--actor', 's1'], deps(), io, 'fake'), /admin claim/);
+    assert.equal(store.payouts.get(id)?.status, 'needs_approval');
+    assert.throws(() => parseArgs(['approve']), /missing payout id/);
+  });
+
+  it('approve moves needs_approval to pending', async () => {
+    await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
+    const id = [...store.payouts.keys()][0] as string;
+    out = [];
+    // Approving moves no money, so it works in any mode.
+    await runCli(['approve', id, '--actor', 's1'], deps(), io, 'off');
+    const p = store.payouts.get(id);
+    assert.equal(p?.status, 'pending');
+    assert.equal(p?.approvedBy, 's1');
+    assert.deepEqual(out, [`${id} -> pending (approved by s1)`]);
+    await assert.rejects(runCli(['approve', id, '--actor', 's1'], deps(), io, 'fake'), /conflict/);
+  });
+
+  it('run-daily is refused in off mode', async () => {
+    await assert.rejects(runCli(['run-daily'], deps(), io, 'fake'), /--actor/);
+    await assert.rejects(runCli(['run-daily', '--actor', 's1'], deps(), io, 'off'), /run-daily is refused/);
+    admin = false;
+    await assert.rejects(runCli(['run-daily', '--actor', 's1'], deps(), io, 'fake'), /admin claim/);
+    assert.equal(store.payouts.size, 0);
+    assert.equal(booking.payments.get('pay1')?.payoutId ?? null, null);
+  });
+
+  it('run-daily prints the report', async () => {
+    assert.deepEqual(parseArgs(['run-daily', '--actor', 's1']), { command: 'run-daily', target: null, reason: null, actor: 's1' });
+    await runCli(['run-daily', '--actor', 's1'], deps(), io, 'fake');
+    // A first payout to the account: created and waiting for staff, nothing sent yet.
+    assert.deepEqual(out, ['created=1 needsApproval=1 onHold=0 executed=0 paid=0 failed=0 noAccount=0 notActive=0 errors=0']);
+    const id = [...store.payouts.keys()][0] as string;
+    await runCli(['approve', id, '--actor', 's1'], deps(), io, 'fake');
+    out = [];
+    await runCli(['run-daily', '--actor', 's1'], deps(), io, 'fake');
+    assert.deepEqual(out, ['created=0 needsApproval=0 onHold=0 executed=1 paid=1 failed=0 noAccount=0 notActive=0 errors=0']);
+    assert.equal(store.payouts.get(id)?.status, 'paid');
+  });
+
+  it('run-daily prints a failing item by its code only', async () => {
+    const failing: PayoutDeps['store'] = {
+      listDuePayees: () => store.listDuePayees(),
+      listPayoutIdsByStatus: (s, l) => store.listPayoutIdsByStatus(s, l),
+      runTransaction: (fn) =>
+        store.runTransaction((tx) => fn({ ...tx, getActiveAccount: async () => { throw new Error('bank 0123456789 down'); } })),
+    };
+    await runCli(['run-daily', '--actor', 's1'], { ...deps(), store: failing }, io, 'fake');
+    assert.deepEqual(out, [
+      'error: p1 create Error',
+      'created=0 needsApproval=0 onHold=0 executed=0 paid=0 failed=0 noAccount=0 notActive=0 errors=1',
+    ]);
+  });
+
+  it('due shows needs_approval payouts as open', async () => {
+    await runCli(['create', 'p1', '--actor', 's1'], deps(), io, 'fake');
+    const id = [...store.payouts.keys()][0] as string;
+    out = [];
+    await runCli(['due'], deps(), io, 'fake');
+    assert.equal(out.length, 2, out.join('\n'));
+    assert.equal(out[0], 'no payee has released money without a payout');
+    assert.match(out[1] ?? '', new RegExp(`^open: ${id}  needs_approval  `));
+    assert.deepEqual([...OPEN_PAYOUT_STATUSES], ['needs_approval', 'pending', 'on_hold', 'processing']);
   });
 
   it('show masks the account number', async () => {

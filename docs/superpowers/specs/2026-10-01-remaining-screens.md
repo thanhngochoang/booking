@@ -103,12 +103,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
-| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · ẩn Sự kiện của tôi | S19 |
-| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ đã làm (4c) | S22 |
+| S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi | S19 |
+| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134), nút mở khi có S21.02 (#135) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
-| S06.05 | Thu nhập (đang giữ, sắp nhận, đã nhận) | `/work/earnings` | NAG | 5 | ✅ đã làm (10b) · chỉnh theo spec thanh toán 10-06 ở #56–#58 | S43 |
-| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ đã làm (10b) · chỉnh theo spec thanh toán 10-06 ở #56–#58 | S44 |
+| S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày | S43 |
+| S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ (10b, #134) · tra tên, OTP, 72 giờ (cổng giả) | S44 |
 | S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) · ảnh, gửi lại ảnh (#131) | S11 |
@@ -120,8 +120,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.04 | Minh chứng kỹ năng (sheet) | `/profile/skills/evidence?skill=…` | NAG | 2 | ✅ đã làm (2c) · khớp mock (#146) | S40 |
 | S08.05 | Thiết lập hồ sơ, bước 4/4 (khu vực, liên hệ) | `/setup/4` | NAG | 2 | ✅ đã làm · khớp mock, có bản studio (#146) | S34 |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
-| S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | 🟡 code cũ (thẻ hồ sơ + đổi vai trò) · **lệch mock**: mock mới là lưới bài đăng, đổi vai trò và đăng xuất đã sang S09.02 | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | 🟡 **lệch mock**: thiếu nhóm Chế độ, Số điện thoại, Đăng xuất; giao diện và kiểu nút đổi sang `SegmentedTabs` | S31 |
+| S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng xác minh/studio ẩn tới #135/#136 | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |
@@ -694,18 +694,18 @@ Khách khiếu nại trong cửa sổ khiếu nại → khoản thành `disputed
 ### 3g.4 Chi trả cho nhiếp ảnh gia
 
 - Nhiếp ảnh gia khai **tài khoản nhận tiền** (ngân hàng) ở S06.06 trước khi nhận được tiền; thiếu thì khoản vẫn tích luỹ ở `released` và ứng dụng nhắc thêm tài khoản.
-- Giai đoạn đầu `admin` duyệt từng lô và chuyển khoản thủ công (xuất tệp đối soát); sau đó tự động qua API chi hộ của ngân hàng/cổng. Mỗi lô `Payout` gồm nhiều khoản `released`, trạng thái `pending → processing → paid` (hoặc `failed`, `on_hold`).
+- ~~Giai đoạn đầu `admin` duyệt từng lô và chuyển khoản thủ công (xuất tệp đối soát).~~ Đã thay (#134): chi tự động mỗi ngày (gạch dưới), staff chỉ duyệt lần chi đầu vào mỗi tài khoản nhận tiền; chuyển khoản thật qua API chi hộ của trung gian thanh toán khi có nhà cung cấp. Mỗi lô `Payout` gồm nhiều khoản `released`, trạng thái `needs_approval`/`pending → processing → paid` (hoặc `failed`, `on_hold`).
 - v1 không thu hoa hồng, nhưng sổ cái có sẵn bút toán `fee` để bật sau.
-- Chi trả chạy qua CLI của nhân viên (`npm run payouts`) với cổng giả cho tới khi có nhà cung cấp ngân hàng và S23; ứng dụng chỉ đọc kết quả ở S06.05.
+- Chi trả chạy mỗi ngày bằng job `createPayouts` (10:00 giờ Việt Nam) với cổng giả cho tới khi có nhà cung cấp ngân hàng; nhân viên duyệt lần chi đầu bằng CLI `npm run payouts -- approve` cho tới khi có S23; ứng dụng chỉ đọc kết quả ở S06.05. Thuế khấu trừ và hoa hồng tính theo từng khoản (spec thanh toán §6 và §7).
 
 ### 3g.5 Sổ cái (ledger)
 
-Mọi biến động tiền là một **bút toán bất biến** (append‑only) trong `ledger_entries`: `deposit_received`, `ticket_received`, `refund_issued`, `escrow_released`, `payout_paid`, `fee_charged`, `adjustment`. Số dư treo của một khoản = tổng bút toán; không sửa/xoá bút toán, chỉ thêm bút toán đảo. Đối soát hằng ngày: tổng `*_received` − `refund_issued` phải khớp báo cáo của cổng. Dữ liệu và bảng ở [data-model](data-model/).
+Mọi biến động tiền là một **bút toán bất biến** (append‑only) trong `ledger_entries`: `deposit_received`, `ticket_received`, `refund_issued`, `escrow_released`, `payout_paid`, `tax_withheld`, `platform_fee`, `fee_charged`, `adjustment`. Số dư treo của một khoản = tổng bút toán; không sửa/xoá bút toán, chỉ thêm bút toán đảo. Đối soát hằng ngày: tổng `*_received` − `refund_issued` phải khớp báo cáo của cổng. Dữ liệu và bảng ở [data-model](data-model/).
 
 ### 3g.6 Hiển thị trong ứng dụng
 
 - Khách: S04.03 có một dòng chữ phụ "Tiền được giữ tới khi bạn nhận ảnh, chuyển cho thợ theo 2 mốc. Huỷ trước 48 giờ hoàn 100% số đã trả."; `EscrowNotice` "Đã thanh toán {số tiền}, tiền được giữ an toàn" ở S05.02 (vé: "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.") ở S11.03, S11.04.
-- Nhiếp ảnh gia: S05.02 ghi rõ "Cọc {số tiền} đang được giữ, chuyển cho bạn sau khi hoàn thành"; S06.01 ô số liệu "Đang giữ"; **S06.05 Thu nhập** (đang giữ, sắp nhận, đã nhận, lịch sử, từng khoản) và **S06.06 Tài khoản nhận tiền**.
+- Nhiếp ảnh gia: S05.02 ghi rõ "Cọc {số tiền} đang được giữ, chuyển cho bạn sau khi hoàn thành"; S06.01 ô số liệu "Đang giữ"; **S06.05 Thu nhập** (đang giữ, chờ chi trả, đã nhận, lịch sử, từng khoản) và **S06.06 Tài khoản nhận tiền**.
 - Staff `admin`: màn duyệt lô chi trả và khiếu nại nằm ở bảng điều khiển quản trị (ngoài phạm vi ứng dụng khách; câu hỏi mở 18).
 
 ### 3g.7 Pháp lý
@@ -885,6 +885,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 
 ### 3i.2 S19 · Lưu & theo dõi
 - **Vì sao cần**: S09.01 có hàng số "đang theo dõi · đã lưu" đang ẩn vì chưa có danh sách; nút lưu ở S02.02 và tín hiệu "đã lưu" của gợi ý (mục 3e.7) cần nơi xem lại.
+- **Ô số ở S09.01 (từ #148)**: hai ô "đang theo dõi" và "đã lưu" đã có sẵn trong `ProfileTab`, ẩn sau `savedListsReadyProvider` (`lib/features/settings/settings_links.dart`, mặc định false). Khi `/me/following` và `/me/saved` có, plan S19 bật cờ, nối số thật (hai ô đang hiện "—" vì chưa có nguồn số) và cho ô mở danh sách tương ứng.
 - **Quy tắc**: lưu bài và lưu nhiếp ảnh gia là hai danh sách riêng; theo dõi chỉ áp dụng cho nhiếp ảnh gia; bài mới của người mình theo dõi ưu tiên trong feed "Dành cho bạn"; danh sách người theo dõi chỉ chủ hồ sơ xem; số đếm công khai.
 
 ### 3i.3 S20 · Báo cáo & chặn
@@ -1007,7 +1008,7 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S12.02 | Ngày, giờ bắt đầu/kết thúc, sức chứa, địa điểm, giá, hạn đăng ký, thẻ **xem trước** (`EventCard`), Lưu nháp / Đăng sự kiện | Kiểm tra: `endAt > startAt`, `startAt` ở tương lai, `capacity ≥ 1`, `price ≥ 0` (0 = không thu phí), hạn đăng ký ≤ `startAt`, ngày chưa bị `booked`. Lỗi dưới từng trường, có tóm tắt lỗi khi submit thất bại. | Đăng xong: toast, mở S12.03. Sự kiện hiện ở S11.01/S02.03 ngay. |
 | S12.03 | `EventCard`, KPI (đăng ký/sức chứa, doanh thu, ngày còn lại), danh sách người tham gia kèm trạng thái và `ContactDial` từng người, "Nhắn nhóm", "Quét mã check‑in", "Huỷ sự kiện" | Quét QR (`mobile_scanner`) gọi `checkInRegistration`; đã check‑in → báo rõ. Huỷ mở sheet xác nhận nêu số vé và tổng tiền sẽ hoàn. | Check‑in cập nhật dòng tương ứng trong < 2 giây. |
 
-| S06.05 | Ba ô `StatTile` (Đang giữ · Sắp nhận · Đã nhận), danh sách khoản thu theo booking/sự kiện kèm trạng thái tiền (Đang giữ, Chờ chi trả, Đã chuyển, Đang khiếu nại), nút "Tài khoản nhận tiền" | Thiếu tài khoản nhận tiền → dải nhắc "Thêm tài khoản để nhận tiền" (→ S06.06). Chỉ khoản của chính mình. | Số khớp sổ cái (mục 3g.5); khoản đang khiếu nại hiện lý do tạm giữ. |
+| S06.05 | Ba ô `StatTile` (Đang giữ · Chờ chi trả · Đã nhận), danh sách khoản thu theo booking/sự kiện kèm trạng thái tiền (Đang giữ, Chờ chi trả, Đã chuyển, Đang khiếu nại), thẻ "Tài khoản nhận tiền" (ngân hàng •••• 4 số) | Thiếu tài khoản nhận tiền → dải nhắc "Thêm tài khoản để nhận tiền" (→ S06.06). Chỉ khoản của chính mình. | Số khớp sổ cái (mục 3g.5); khoản đang khiếu nại hiện lý do tạm giữ. |
 | S06.06 | Chọn ngân hàng, số tài khoản, tên chủ tài khoản (tự điền theo tra cứu nếu có), xác nhận | Số tài khoản chỉ lưu mã hoá và hiện che ("•••• 3456"); đổi tài khoản cần xác nhận lại mật khẩu/OTP khi có. | Tài khoản hợp lệ mới bật nút; chi trả dùng tài khoản đang bật. |
 
 | S11.05 | Tên sự kiện + `SegmentedTabs` Thông tin / **Timeline** / Nhóm chat; chip hashtag `#PhotoWalkPhoCo1020` + số bài; lưới masonry 2 cột bài viết (tác giả phủ chữ); thanh dưới "Đăng ảnh với #hashtag" | Mọi người xem; nút đăng chỉ cho người tham gia/chủ/staff; bài `pending` chỉ chủ/staff thấy ở tab "Chờ duyệt"; empty "Chưa có ảnh, hãy là người đầu tiên"; tải theo trang 20. | Bài có hashtag trong chú thích tự xuất hiện trong vài giây; chủ sự kiện ẩn được bài; chạm bài → S02.02 kèm chip sự kiện. |

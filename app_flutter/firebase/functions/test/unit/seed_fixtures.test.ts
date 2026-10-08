@@ -30,6 +30,8 @@ import {
   DUNG,
   LAN,
   MINH,
+  ADMIN,
+  SEED_CREATED_AT,
   SEED_EVENT_SOON,
   SEED_PASSWORD,
   SEED_PHOTOGRAPHERS,
@@ -40,6 +42,8 @@ import {
 } from '../../seed/fixtures.js';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
+/** A seeded time: a Date, or a Timestamp when the doc comes from a src/infra mapper. */
+const millis = (v: unknown): number => (v instanceof Date ? v.getTime() : (v as Timestamp).toMillis());
 
 function bookingDoc(id: string): { status: string; timeline: { status: string; at: Date }[] } {
   const doc = seedDocuments(NOW).find((d) => d.path === `bookings/${id}`);
@@ -212,7 +216,59 @@ describe('seed payouts and earnings', () => {
     assert.equal(po?.amount, pay?.amount);
     const entry = get('ledger_entries/seed-ledger-seed-payout-an-1-pay');
     assert.equal(entry?.type, 'payout_paid');
-    assert.equal(entry?.amount, -(pay?.amount as number));
+    assert.equal(entry?.amount, -(po?.amountNet as number));
+  });
+
+  // The brief's 450,000 → 31,500 / 418,500 predates #129 (customers now pay 100% up front): the
+  // seeded payment is the full 1,500,000 price, so 7% is 105,000 and the net 1,395,000.
+  test("An's seeded payout has tax 105,000 and net 1,395,000 with a tax_withheld ledger entry", () => {
+    const po = get('payouts/seed-payout-an-1');
+    // An is an individual: 7% of the 1,500,000 payment is withheld; the gross amount stays.
+    assert.equal(po?.amount, 1_500_000);
+    assert.equal(po?.taxWithheld, 105_000);
+    assert.equal(po?.platformFee, 0);
+    assert.equal(po?.amountNet, 1_395_000);
+    assert.equal(po?.taxRateBp, 700);
+    assert.equal(po?.feeRateBp, 0);
+    assert.equal(po?.firstPayout, true);
+    assert.equal(po?.approvedBy, ADMIN);
+    assert.equal(po?.idempotencyKey, 'seed-payout-an-1');
+    assert.equal(po?.provider, 'fake');
+    assert.deepEqual(po?.items, [
+      { paymentId: 'seed-payment-seed-booking-completed-old', amount: 1_500_000, fee: 0, tax: 105_000, net: 1_395_000 },
+    ]);
+    const pay = get('ledger_entries/seed-ledger-seed-payout-an-1-pay');
+    const tax = get('ledger_entries/seed-ledger-seed-payout-an-1-tax');
+    assert.equal(pay?.amount, -1_395_000);
+    assert.equal(tax?.type, 'tax_withheld');
+    assert.equal(tax?.amount, -105_000);
+    assert.equal(tax?.payoutId, 'seed-payout-an-1');
+    assert.equal(tax?.paymentId, 'seed-payment-seed-booking-completed-old');
+    // Per payment the payout entries net to -amount.
+    assert.equal((pay?.amount as number) + (tax?.amount as number), -1_500_000);
+    assert.equal(get('ledger_entries/seed-ledger-seed-payout-an-1-fee'), undefined);
+    const row = get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old');
+    assert.equal(row?.amount, 1_500_000);
+    assert.equal(row?.taxWithheld, 105_000);
+    assert.equal(row?.netAmount, 1_395_000);
+    assert.equal(row?.estimated, false);
+  });
+
+  test("An's account is matched and active from SEED_CREATED_AT", () => {
+    const stored = get('payoutAccounts/seed-photographer-an/accounts/seed-account-an-1');
+    const view = get('payoutAccounts/seed-photographer-an');
+    assert.equal(stored?.nameStatus, 'matched');
+    assert.equal(view?.nameStatus, 'matched');
+    assert.equal(millis(stored?.activeFrom), SEED_CREATED_AT.getTime());
+    assert.equal(millis(view?.activeFrom), SEED_CREATED_AT.getTime());
+  });
+
+  test('An has an identity legalName', () => {
+    const identity = get('users/seed-photographer-an/private/identity');
+    assert.equal(identity?.legalName, 'Nguyễn Văn An');
+    assert.equal(identity?.method, 'fake');
+    assert.equal(identity?.provider, 'fake');
+    assert.equal(millis(identity?.verifiedAt), SEED_CREATED_AT.getTime());
   });
 
   test('the disputed booking holds its payment with the reason', () => {

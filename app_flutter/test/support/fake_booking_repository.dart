@@ -149,6 +149,32 @@ class FakeBookingRepository implements BookingRepository {
     return _bookingChanges.stream.map((_) => list()).startWith(list());
   }
 
+  List<Booking> _assigned = const [];
+  Object? _assignedError;
+  final _assignedChanges = StreamController<List<Booking>>.broadcast();
+
+  /// Sets the bookings a studio assigned to the watcher and notifies it.
+  void emitAssigned(List<Booking> list) {
+    _assigned = List.unmodifiable(list);
+    _assignedError = null;
+    _assignedChanges.add(_assigned);
+  }
+
+  /// Makes the assigned stream fail (e.g. the rule denies the query); a later
+  /// watcher fails at once.
+  void failAssigned(Object error) {
+    _assignedError = error;
+    _assignedChanges.addError(error);
+  }
+
+  @override
+  Stream<List<Booking>> watchAssignedBookings(String uid) async* {
+    final error = _assignedError;
+    if (error != null) throw error;
+    yield _assigned;
+    yield* _assignedChanges.stream;
+  }
+
   @override
   Stream<BookingContactSnapshot?> watchBookingContact(String bookingId) {
     return _contactChanges.stream

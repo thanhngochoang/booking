@@ -7,6 +7,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
 
 /// The one action S06.02 offers, in the spec's order of precedence.
 enum WorkEmptyStep { addPhotos, addPackage, skills, share }
@@ -79,14 +80,48 @@ class WorkEmptyState extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(authStateProvider).value?.uid;
     if (uid == null) return const SizedBox.shrink();
+    // Decision 17: not accepting orders yet → the closed variant. While the
+    // own doc loads (or fails) keep today's behaviour, no flash of it.
+    final closed = ref.watch(myIntroProvider).value?.acceptingOrders == false;
     return ScreenCode(
       ScreenCodes.workEmpty,
       // No known shape: core's screen loader (ripple) while it loads.
-      child: AsyncView<WorkEmptyInputs>(
-        value: ref.watch(workEmptyInputsProvider(uid)),
-        onRetry: () => ref.invalidate(workEmptyInputsProvider(uid)),
-        data: (context, inputs) => _body(context, uid, inputs),
+      child: closed
+          ? _closed(context, ref)
+          : AsyncView<WorkEmptyInputs>(
+              value: ref.watch(workEmptyInputsProvider(uid)),
+              onRetry: () => ref.invalidate(workEmptyInputsProvider(uid)),
+              data: (context, inputs) => _body(context, uid, inputs),
+            ),
+    );
+  }
+
+  /// S06.02 closed variant: the verification starts from the button, never at
+  /// sign-up. The button waits for #135's route (`verifyStartReadyProvider`);
+  /// until then only the text shows.
+  Widget _closed(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final ready = ref.watch(verifyStartReadyProvider);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return EmptyState(
+      illustration: Container(
+        width: 96,
+        height: 96,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondary,
+          shape: BoxShape.circle,
+        ),
+        child: AppIcon(
+          AppIcons.verifiedUser,
+          size: 40,
+          color: dark ? AppColorsDark.primary : AppColors.primary,
+        ),
       ),
+      title: l10n.workClosedTitle,
+      body: l10n.workClosedBody,
+      note: l10n.workClosedNote,
+      actionLabel: ready ? l10n.workClosedStart : null,
+      onAction: ready ? () => context.push('/verify/start') : null,
     );
   }
 

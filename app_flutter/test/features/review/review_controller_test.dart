@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
@@ -282,6 +283,7 @@ void main() {
       final call = fakeReviews.submitCalls.first;
       expect(call['photos'], isEmpty);
       expect(call['postId'], isNull);
+      expect(container.read(ownPostsChangedProvider), 0, reason: 'no post');
 
       // Verify file deleted
       expect(fakeUploader.deleted, hasLength(1));
@@ -473,6 +475,8 @@ void main() {
       controller.setText('Nhận xét kèm ảnh chia sẻ');
       await controller.pickPhotos();
       expect(await controller.submit(share: true), isTrue);
+      // The server created the real-shoot post: S09.01 reloads.
+      expect(container.read(ownPostsChangedProvider), 1);
 
       container.dispose();
       await pumpEventQueue();

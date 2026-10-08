@@ -5,10 +5,31 @@ import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_skeleton.dart';
 
+/// One line of an expanded [EarningRow]: a label on the left and a full
+/// amount on the right (mock `.brk`). [strong] marks the bottom line.
+@immutable
+class EarningBreakdownLine {
+  const EarningBreakdownLine({
+    required this.label,
+    required this.value,
+    this.strong = false,
+  });
+
+  final String label;
+
+  /// Already formatted, full (`1.395.000₫`).
+  final String value;
+  final bool strong;
+}
+
 /// One money row of S06.05 (mock `.card`): title and date on the left, the
 /// short amount (tabular figures) and a state badge on the right, and an
 /// optional note line (the hold reason) under both. The amount is plain
 /// foreground colour: accent is for actions, never money.
+///
+/// With a [breakdown] the row can expand (the caller owns [expanded] and flips
+/// it from [onTap]) to show one line per figure; screen readers hear the
+/// expanded state and, once open, the lines.
 class EarningRow extends StatelessWidget {
   const EarningRow({
     super.key,
@@ -20,6 +41,8 @@ class EarningRow extends StatelessWidget {
     this.note,
     this.noteIcon,
     this.onTap,
+    this.breakdown,
+    this.expanded = false,
   });
 
   static Widget skeleton({Key? key}) => _EarningRowSkeleton(key: key);
@@ -37,6 +60,10 @@ class EarningRow extends StatelessWidget {
   final IconData? noteIcon;
   final VoidCallback? onTap;
 
+  /// The lines shown when [expanded]; null makes the row a plain row.
+  final List<EarningBreakdownLine>? breakdown;
+  final bool expanded;
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -46,11 +73,21 @@ class EarningRow extends StatelessWidget {
         : AppColors.foregroundSecondary;
     final radius = BorderRadius.circular(AppRadius.md);
     final n = note;
+    final lines = breakdown;
+    final open = lines != null && expanded;
     return Semantics(
       container: true,
       button: onTap != null,
+      expanded: lines == null ? null : expanded,
       onTap: onTap,
-      label: [title, meta, amountLabel, ?n].join(', '),
+      label: [
+        title,
+        meta,
+        amountLabel,
+        ?n,
+        if (open)
+          for (final l in lines) '${l.label}, ${l.value}',
+      ].join(', '),
       child: ExcludeSemantics(
         child: Material(
           color: dark ? AppColorsDark.glass : AppColors.glass,
@@ -144,12 +181,83 @@ class EarningRow extends StatelessWidget {
                         ],
                       ),
                     ],
+                    if (lines != null)
+                      AnimatedSize(
+                        duration: MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : const Duration(milliseconds: 180),
+                        alignment: Alignment.topCenter,
+                        child: open
+                            ? _Breakdown(lines: lines, fg: fg, fgSec: fgSec)
+                            : const SizedBox(width: double.infinity),
+                      ),
                   ],
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Breakdown extends StatelessWidget {
+  const _Breakdown({
+    required this.lines,
+    required this.fg,
+    required this.fgSec,
+  });
+
+  final List<EarningBreakdownLine> lines;
+  final Color fg;
+  final Color fgSec;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: AppSpace.s2),
+      padding: const EdgeInsets.only(top: AppSpace.s2),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+      child: Column(
+        children: [
+          for (final l in lines)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.s1),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.label,
+                      style: TextStyle(
+                        fontSize: AppText.xs2,
+                        fontWeight: l.strong
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                        color: l.strong ? fg : fgSec,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s3),
+                  Text(
+                    l.value,
+                    style: TextStyle(
+                      fontSize: AppText.xs2,
+                      fontWeight: l.strong ? FontWeight.w700 : FontWeight.w500,
+                      color: fg,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
