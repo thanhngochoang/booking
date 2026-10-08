@@ -1,0 +1,486 @@
+<!doctype html>
+<!-- Mock dashboard web Phase 1.5 (staff + chủ studio), cùng theme dark aurora với docs/design/ui-mock.html.
+     Spec: docs/superpowers/specs/2026-10-08-dashboard-web-design.md (khung, quyền, thành phần) và
+     docs/superpowers/specs/screens/staff-*.md, studio-web-*.md (màn của từng ticket #163–#169).
+     Bật "Debug" để thấy mã màn, hoặc thêm #S23.09 vào URL. Dữ liệu trong mock là ví dụ.
+     Mỗi ticket thêm màn của mình thành một <section class="uc"> mới; giữ thứ tự mã. -->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dashboard Nhiếp Ảnh Gia</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<style>
+/* Layout: trang tài liệu chứa các khung desktop 1200×740 (cuộn ngang trong khung khi màn hẹp).
+   Token copy từ ui-mock.html (dark aurora mặc định, sáng theo hệ thống hoặc nút). */
+:root{
+  --bg:#0B0B10; --surface:#17151F; --glass:rgba(255,255,255,.08); --field:rgba(255,255,255,.08); --glass-hi:rgba(255,255,255,.14);
+  --ink:#F7F7F7; --ink-2:#D6D6D6; --ink-3:#AEAEAE; --line:rgba(255,255,255,.12); --line-2:rgba(255,255,255,.2);
+  --accent:#B08AFF; --accent-ink:#0B0B10; --accent-soft:#2C0F5C; --focus:#14E0F5;
+  --ok:#1A9F02; --ok-ink:#7BE070; --warn:#E6C617; --bad:#E91E11; --bad-d:#B21D14; --bad-ink:#FF8A80; --pending:#8338F5; --closed:#898888;
+  --btn:linear-gradient(90deg,#8A3FFC,#6E2FD6); --btn-ink:#fff; --btn-shadow:0 8px 18px rgba(138,63,252,.35);
+  --app:#0E0D14; --side:#121019; --scrim:rgba(0,0,0,.5); --shadow:rgba(0,0,0,.5);
+  --aurora:radial-gradient(60% 50% at 15% 10%,rgba(138,63,252,.28),transparent 70%),radial-gradient(50% 40% at 90% 90%,rgba(20,224,245,.12),transparent 70%);
+  --display:"Fraunces",Georgia,serif; --body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+  --r1:8px; --r2:16px; --r3:20px;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#F4F1EC; --surface:#FFFFFF; --glass:rgba(255,255,255,.72); --field:#EDE9E3; --glass-hi:#FFFFFF;
+  --ink:#313131; --ink-2:#67625B; --ink-3:#898888; --line:#E3DFD8; --line-2:#CFCAC1;
+  --accent:#8338F5; --accent-ink:#FFFFFF; --accent-soft:#F4EEFF; --focus:#8338F5; --ok-ink:#127001; --bad-ink:#B21D14;
+  --btn:linear-gradient(135deg,#8338F5,#702BDB); --btn-shadow:0 4px 12px rgba(131,56,245,.25);
+  --app:#FAF8F5; --side:#F1EDE7; --scrim:rgba(0,0,0,.25); --shadow:rgba(0,0,0,.18);
+  --aurora:radial-gradient(60% 50% at 15% 10%,rgba(131,56,245,.10),transparent 70%);
+  color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#F4F1EC; --surface:#FFFFFF; --glass:rgba(255,255,255,.72); --field:#EDE9E3; --glass-hi:#FFFFFF;
+  --ink:#313131; --ink-2:#67625B; --ink-3:#898888; --line:#E3DFD8; --line-2:#CFCAC1;
+  --accent:#8338F5; --accent-ink:#FFFFFF; --accent-soft:#F4EEFF; --focus:#8338F5; --ok-ink:#127001; --bad-ink:#B21D14;
+  --btn:linear-gradient(135deg,#8338F5,#702BDB); --btn-shadow:0 4px 12px rgba(131,56,245,.25);
+  --app:#FAF8F5; --side:#F1EDE7; --scrim:rgba(0,0,0,.25); --shadow:rgba(0,0,0,.18);
+  --aurora:radial-gradient(60% 50% at 15% 10%,rgba(131,56,245,.10),transparent 70%);
+  color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding-inline:16px}
+.wrap{max-width:1240px;margin:0 auto;padding-block:32px 72px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,5vw,48px);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:clamp(22px,3vw,30px);margin:56px 0 4px;text-wrap:balance}
+p{max-width:68ch;color:var(--ink-2);margin:8px 0}
+code{font-family:var(--mono);font-size:.9em}
+.eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tog{display:flex;background:var(--field);border-radius:999px;padding:3px;gap:2px}
+.tog button{font:600 12px var(--body);border:0;background:transparent;color:var(--ink-2);padding:7px 14px;border-radius:999px;cursor:pointer}
+.tog button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ms{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;font-size:20px;line-height:1;display:inline-block;flex:none;user-select:none;font-feature-settings:'liga';font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;-webkit-font-smoothing:antialiased}
+.ms.on{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+
+/* khung desktop */
+.shot{margin-top:18px}
+.frame{overflow-x:auto;border-radius:var(--r3);box-shadow:0 18px 40px var(--shadow)}
+.desk{width:1200px;height:740px;position:relative;background:var(--app);background-image:var(--aurora);border:1px solid var(--line);border-radius:var(--r3);overflow:hidden;font-size:14px;display:flex}
+.cap{margin-top:10px;display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r2);background:var(--surface);max-width:1200px}
+.cap b{font-size:14px}.cap span{font-size:13px;color:var(--ink-2)}
+.cap .n{align-self:flex-start;font-size:11px;font-weight:600;color:var(--ink-2);background:var(--field);border-radius:999px;padding:2px 8px;margin-bottom:4px}
+.dbg .desk::after{content:attr(data-code);position:absolute;top:10px;left:10px;z-index:30;font:700 11px/1 var(--mono);background:#FF2D95;color:#fff;padding:4px 7px;border-radius:6px;pointer-events:none}
+
+/* shell */
+.side{width:232px;flex:none;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 10px;gap:2px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;font-family:var(--display);font-weight:600;font-size:17px}
+.logo{width:28px;height:28px;border-radius:9px;background:var(--btn);display:grid;place-items:center;color:#fff}
+.logo .ms{font-size:18px}
+.grp{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:12px 10px 4px}
+.nav{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;color:var(--ink-2);font-size:13.5px}
+.nav .ms{font-size:19px;color:var(--ink-3)}
+.nav.on{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.nav.on .ms{color:var(--accent);font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+.cnt{margin-left:auto;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ink-3)}
+.cnt.late{color:#fff;background:var(--bad-d);border-radius:999px;padding:1px 7px;font-weight:600}
+.side .me{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid var(--line);font-size:12.5px}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(140deg,#E2C9B0,#7A5238);flex:none}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.bar{height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid var(--line)}
+.search{flex:0 1 380px;display:flex;align-items:center;gap:8px;height:36px;border-radius:10px;background:var(--field);padding:0 12px;color:var(--ink-3);font-size:13px}
+.search .ms{font-size:18px}
+.kbd{margin-left:auto;font:600 11px var(--mono);border:1px solid var(--line-2);border-radius:5px;padding:1px 5px}
+.role{margin-left:auto;font-size:12px;font-weight:600;border:1px solid var(--line-2);border-radius:999px;padding:4px 10px;color:var(--ink-2)}
+.content{flex:1;min-height:0;padding:22px 26px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.ttl{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.ttl h3{font-family:var(--display);font-weight:600;font-size:26px;margin:0;line-height:1.1}
+.ttl .sub{font-size:13px;color:var(--ink-3)}
+
+/* nút, chip */
+.btn{height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 16px;font:600 13.5px var(--body);border:0;white-space:nowrap}
+.btn .ms{font-size:18px}
+.btn.pri{background:var(--btn);color:var(--btn-ink);box-shadow:var(--btn-shadow)}
+.btn.sec{background:var(--field);color:var(--ink)}
+.btn.bad{background:var(--bad-d);color:#fff}
+.btn.gh{background:transparent;color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.c-ok{background:rgba(26,159,2,.18);color:var(--ok-ink)}
+.c-bad{background:rgba(233,30,17,.16);color:var(--bad-ink)}
+.c-pen{background:var(--accent-soft);color:var(--accent)}
+.c-mut{background:var(--field);color:var(--ink-2)}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.fl{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line-2);font-size:12.5px;color:var(--ink-2)}
+.fl .ms{font-size:17px}
+
+/* thẻ tổng quan */
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.q{background:var(--glass);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.q .h{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);font-weight:600}
+.q .h .ms{font-size:18px;color:var(--ink-3)}
+.q .big{font-family:var(--display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.q .meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);min-height:22px}
+.q.late{border-color:rgba(233,30,17,.45)}
+
+/* bảng */
+.tbl{background:var(--glass);border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line)}
+td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr.sel td{background:var(--accent-soft)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.who{display:flex;align-items:center;gap:8px}.who .av{width:24px;height:24px}
+.who small{display:block;color:var(--ink-3);font-size:11.5px}
+.more{color:var(--ink-3)}
+
+/* hàng đợi + chi tiết */
+.queue{flex:1;min-height:0;display:grid;grid-template-columns:1fr 400px;gap:14px}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);display:flex;flex-direction:column;min-height:0}
+.pane .ph{padding:16px 18px;border-bottom:1px solid var(--line)}
+.pane .ph h4{margin:0;font-size:16px}
+.pane .pb{padding:14px 18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden;font-size:13px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 10px}
+.kv dt{color:var(--ink-3)}.kv dd{margin:0}
+.thumbs{display:flex;gap:8px}
+.thumb{width:84px;height:62px;border-radius:10px;background:linear-gradient(150deg,#8FB6C9,#1E3A4A);position:relative;overflow:hidden;display:grid;place-items:center;color:#fff}
+.thumb .ms{font-size:20px;opacity:.85}
+.pf{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+
+/* hộp quyết định */
+.scrim{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(3px);display:grid;place-items:center;z-index:10}
+.dlg{width:460px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r3);box-shadow:0 20px 50px var(--shadow);padding:20px;display:flex;flex-direction:column;gap:14px}
+.dlg h4{margin:0;font-family:var(--display);font-weight:600;font-size:21px}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-2)}
+.inp{min-height:40px;border-radius:10px;background:var(--field);border:1px solid var(--line);padding:9px 12px;color:var(--ink);font-size:13.5px}
+.inp.area{min-height:72px}
+.inp.found{display:flex;align-items:center;gap:10px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg span{border:1px solid var(--line-2);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--ink-2)}
+.seg span.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:600}
+.hint{font-size:11.5px;color:var(--ink-3)}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
+
+/* đăng nhập */
+.login{flex:1;display:grid;place-items:center}
+.card{width:400px;background:var(--surface);border:1px solid var(--line-2);border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px var(--shadow)}
+.card h4{margin:0;font-family:var(--display);font-weight:600;font-size:26px;line-height:1.15}
+.card p{margin:0;font-size:13.5px}
+.card .btn{width:100%;height:46px}
+.oauth{background:var(--field);color:var(--ink)}
+.or{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-3)}.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.otp{display:flex;gap:8px;justify-content:center}
+.otp span{width:46px;height:54px;border-radius:12px;background:var(--field);border:1px solid var(--line-2);display:grid;place-items:center;font:600 22px var(--mono)}
+.otp span.cur{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.steps{display:flex;flex-direction:column;gap:12px;font-size:13px}
+.st{display:flex;gap:12px}
+.st i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--field);display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:none}
+.qr{width:132px;height:132px;border-radius:12px;background:#fff;padding:10px;flex:none}
+.qr div{width:100%;height:100%;background:repeating-conic-gradient(#111 0 25%,#fff 0 50%) 0 0/14px 14px}
+.secret{font:600 12.5px var(--mono);letter-spacing:.08em;background:var(--field);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:8px}
+.link{color:var(--accent);font-weight:600;font-size:13px}
+
+/* studio placeholder */
+.ph-empty{flex:1;border:1.5px dashed var(--line-2);border-radius:var(--r2);display:grid;place-items:center;text-align:center;color:var(--ink-3);font-size:13.5px;padding:24px}
+.foot{margin-top:56px;font-size:13px;color:var(--ink-3)}
+.foot table{font-size:13px;margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="eyebrow">Dashboard web · Phase 1.5 · staff &amp; chủ studio · theme dark aurora</div>
+    <div class="top" style="gap:8px">
+      <div class="tog" role="group" aria-label="Chế độ gỡ lỗi"><button id="t-dbg" type="button" aria-pressed="false">Debug: mã màn hình</button></div>
+      <div class="tog" role="group" aria-label="Chế độ giao diện"><button id="t-dark" type="button" aria-pressed="true">Tối</button><button id="t-light" type="button" aria-pressed="false">Sáng</button></div>
+    </div>
+  </div>
+  <h1>Dashboard vận hành</h1>
+  <p>Khung chung của dashboard web: đăng nhập có xác thực hai lớp cho staff, tổng quan hàng đợi, quản lý staff, nhật ký kiểm toán, mẫu hàng đợi và khung trang studio. Màn của từng nghiệp vụ (tiền, xác minh, khiếu nại, kiểm duyệt, studio) được thêm vào trang này theo spec của từng ticket. Dữ liệu trên các khung là ví dụ.</p>
+
+  <!-- ============ S23 ============ -->
+  <h2 id="S23">S23 · Vận hành nội bộ (staff)</h2>
+  <p>Spec: <code>2026-10-08-dashboard-web-design.md</code> §7. Thanh bên chỉ hiện mục vai trò được xem (§4.2); số đỏ là việc quá hạn.</p>
+
+  <div class="shot" id="S23.08">
+    <div class="frame"><div class="desk" data-code="S23.08">
+      <div class="login"><div class="card">
+        <div class="brand" style="padding:0"><span class="logo"><span class="ms">photo_camera</span></span>Nhiếp Ảnh Gia</div>
+        <h4>Đăng nhập dashboard</h4>
+        <p>Dùng tài khoản bạn đang đăng nhập trong app.</p>
+        <span class="btn oauth"><span class="ms">account_circle</span>Tiếp tục với Google</span>
+        <span class="btn oauth"><span class="ms">public</span>Tiếp tục với Facebook</span>
+        <div class="or">hoặc</div>
+        <div class="fld"><label for="lg-email">Email</label><div class="inp" id="lg-email">thao.nguyen@nhiepanhgia.vn</div></div>
+        <div class="fld"><label for="lg-pass">Mật khẩu</label><div class="inp" id="lg-pass">••••••••••</div></div>
+        <span class="btn pri">Đăng nhập</span>
+      </div></div>
+    </div></div>
+    <div class="cap"><span class="n">S23.08 · Đăng nhập · bước 1</span><b>Cùng tài khoản với app</b><span>Google, Facebook, email + mật khẩu như S01.03. Không tạo tài khoản trên dashboard. Tài khoản không phải staff hay chủ studio thấy "Tài khoản này không dùng được dashboard" và nút Đăng xuất.</span></div>
+  </div>
+
+  <div class="shot">
+    <div class="frame"><div class="desk" data-code="S23.08 · thiết lập">
+      <div class="login"><div class="card" style="width:460px">
+        <h4>Bật xác thực hai lớp</h4>
+        <p>Tài khoản staff cần mã từ ứng dụng xác thực mỗi lần đăng nhập.</p>
+        <div class="steps">
+          <div class="st"><i>1</i><div>Cài một ứng dụng xác thực: Google Authenticator, Microsoft Authenticator hoặc 1Password.</div></div>
+          <div class="st"><i>2</i><div style="display:flex;gap:14px;align-items:flex-start"><div class="qr" role="img" aria-label="Mã QR (ví dụ)"><div></div></div><div style="display:flex;flex-direction:column;gap:8px">Quét mã QR, hoặc nhập mã này:<span class="secret">JBSW Y3DP EHPK 3PXP<span class="ms" style="font-size:16px">content_copy</span></span></div></div></div>
+          <div class="st"><i>3</i><div>Nhập mã 6 số ứng dụng hiện ra.</div></div>
+        </div>
+        <div class="otp" aria-label="Mã 6 số"><span>4</span><span>8</span><span>1</span><span class="cur"></span><span></span><span></span></div>
+        <span class="btn pri">Bật xác thực hai lớp</span>
+      </div></div>
+    </div></div>
+    <div class="cap"><span class="n">S23.08 · thiết lập TOTP (lần đầu của staff)</span><b>Chưa bật xong thì không vào được màn staff nào</b><span>Mã đủ 6 số thì tự gửi. Chủ studio không gặp bước này (bật tuỳ chọn trong menu tài khoản).</span></div>
+  </div>
+
+  <div class="shot">
+    <div class="frame"><div class="desk" data-code="S23.08 · mã">
+      <div class="login"><div class="card">
+        <h4>Nhập mã xác thực</h4>
+        <p>Mở ứng dụng xác thực và nhập mã 6 số của <b>Nhiếp Ảnh Gia · thao.nguyen@nhiepanhgia.vn</b>.</p>
+        <div class="otp" aria-label="Mã 6 số"><span>2</span><span>0</span><span>7</span><span>3</span><span>1</span><span class="cur">9</span></div>
+        <p class="c-bad" style="background:none;font-size:13px;font-weight:600">Mã không đúng hoặc đã hết hạn. Đợi mã mới rồi nhập lại.</p>
+        <span class="btn pri">Xác nhận</span>
+        <p class="hint">Mất điện thoại? Nhờ một admin đặt lại xác thực hai lớp ở mục Staff.</p>
+      </div></div>
+    </div></div>
+    <div class="cap"><span class="n">S23.08 · nhập mã (các lần sau)</span><b>Bước hai bắt buộc với staff</b><span>BFF và callable cùng kiểm token có bước TOTP. Thử sai nhiều lần: thông điệp chờ của Firebase.</span></div>
+  </div>
+
+  <div class="shot" id="S23.09">
+    <div class="frame"><div class="desk" data-code="S23.09">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav on"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">gavel</span>Khiếu nại<span class="cnt">4</span></div>
+        <div class="nav"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav"><span class="ms">emoji_events</span>Giải thưởng<span class="cnt">3</span></div>
+        <div class="nav"><span class="ms">flag</span>Báo cáo<span class="cnt">7</span></div>
+        <div class="nav"><span class="ms">support_agent</span>Hộp thư<span class="cnt">5</span></div>
+        <div class="grp">Tiền</div>
+        <div class="nav"><span class="ms">payments</span>Chi trả<span class="cnt">12</span></div>
+        <div class="nav"><span class="ms">account_balance</span>Đối soát<span class="cnt late">1</span></div>
+        <div class="nav"><span class="ms">currency_exchange</span>Hoàn tiền<span class="cnt">2</span></div>
+        <div class="nav"><span class="ms">receipt_long</span>Thuế</div>
+        <div class="grp">Nội dung</div>
+        <div class="nav"><span class="ms">event</span>Sự kiện</div>
+        <div class="nav"><span class="ms">campaign</span>Promo</div>
+        <div class="nav"><span class="ms">tune</span>Cấu hình</div>
+        <div class="grp">Hệ thống</div>
+        <div class="nav"><span class="ms">group</span>Staff</div>
+        <div class="nav"><span class="ms">history</span>Nhật ký</div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã booking, người dùng, thanh toán…<span class="kbd">/</span></div><span class="role">admin</span><span class="av" aria-label="Thảo Nguyễn"></span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Tổng quan</h3><div class="sub">Thứ Năm, 08/10/2026 · làm mới mỗi 60 giây</div></div></div>
+          <div class="qgrid">
+            <div class="q late"><div class="h"><span class="ms">verified_user</span>Xác minh</div><div class="big">6</div><div class="meta"><span class="chip c-bad">2 quá hạn</span>Cũ nhất 31 giờ</div></div>
+            <div class="q"><div class="h"><span class="ms">gavel</span>Khiếu nại</div><div class="big">4</div><div class="meta">Cũ nhất 9 giờ</div></div>
+            <div class="q"><div class="h"><span class="ms">emoji_events</span>Giải thưởng</div><div class="big">3</div><div class="meta">Cũ nhất 2 ngày làm việc</div></div>
+            <div class="q"><div class="h"><span class="ms">flag</span>Báo cáo</div><div class="big">7</div><div class="meta">Cũ nhất 5 giờ</div></div>
+            <div class="q"><div class="h"><span class="ms">support_agent</span>Hộp thư</div><div class="big">5</div><div class="meta">3 đang chờ staff trả lời</div></div>
+            <div class="q"><div class="h"><span class="ms">payments</span>Chi trả chờ duyệt</div><div class="big">12</div><div class="meta">8 lần chi đầu · 4 đổi tài khoản</div></div>
+            <div class="q late"><div class="h"><span class="ms">account_balance</span>Chuyển khoản chưa khớp</div><div class="big">1</div><div class="meta"><span class="chip c-bad">1 quá hạn</span>2.350.000₫</div></div>
+            <div class="q"><div class="h"><span class="ms">currency_exchange</span>Hoàn tiền thất bại</div><div class="big">2</div><div class="meta">Cũ nhất 14 giờ</div></div>
+          </div>
+          <div class="tbl">
+            <table><thead><tr><th>Thao tác gần đây của bạn</th><th>Đối tượng</th><th>Lý do</th><th style="text-align:right">Lúc</th></tr></thead>
+            <tbody>
+              <tr><td>Duyệt xác minh danh tính</td><td class="mono">user 01JA7…QX4</td><td>Ảnh chân dung khớp, giấy tờ hợp lệ</td><td class="num" style="text-align:right">14:52</td></tr>
+              <tr><td>Duyệt lần chi đầu</td><td class="mono">payout 01JA6…M2T</td><td>Tên tài khoản khớp hồ sơ</td><td class="num" style="text-align:right">14:31</td></tr>
+              <tr><td>Bỏ qua báo cáo</td><td class="mono">report u_01J…_post_8F</td><td>Ảnh không vi phạm quy định</td><td class="num" style="text-align:right">11:08</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.09 · Tổng quan staff</span><b>Mỗi hàng đợi một thẻ, việc quá hạn viền đỏ</b><span>Thẻ chỉ hiện với vai trò được xem và khi ticket của hàng đợi đó đã xong. Số đếm dùng count(); hạn quá hạn do spec từng ticket chốt.</span></div>
+  </div>
+
+  <div class="shot" id="S23.10">
+    <div class="frame"><div class="desk" data-code="S23.10">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">gavel</span>Khiếu nại<span class="cnt">4</span></div>
+        <div class="nav"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav"><span class="ms">support_agent</span>Hộp thư<span class="cnt">5</span></div>
+        <div class="grp">Tiền</div>
+        <div class="nav"><span class="ms">payments</span>Chi trả<span class="cnt">12</span></div>
+        <div class="grp">Hệ thống</div>
+        <div class="nav on"><span class="ms">group</span>Staff</div>
+        <div class="nav"><span class="ms">history</span>Nhật ký</div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã booking, người dùng, thanh toán…<span class="kbd">/</span></div><span class="role">admin</span><span class="av"></span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Staff</h3><div class="sub">5 người · ít nhất một admin luôn được giữ</div></div><span class="btn pri"><span class="ms">person_add</span>Thêm staff</span></div>
+          <div class="tbl"><table>
+            <thead><tr><th>Người</th><th>Vai trò</th><th>Xác thực hai lớp</th><th>Cấp bởi</th><th>Ngày cấp</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div class="who"><span class="av"></span><div>Nguyễn Thu Thảo<small>thao.nguyen@nhiepanhgia.vn</small></div></div></td><td><span class="chip c-pen">admin</span></td><td><span class="chip c-ok"><span class="ms" style="font-size:14px">check</span>Đã bật</span></td><td>—</td><td class="num">01/10/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+              <tr><td><div class="who"><span class="av" style="background:linear-gradient(150deg,#8FB6C9,#1E3A4A)"></span><div>Trần Minh Khoa<small>khoa.tran@nhiepanhgia.vn</small></div></div></td><td><span class="chip c-mut">finance</span></td><td><span class="chip c-ok"><span class="ms" style="font-size:14px">check</span>Đã bật</span></td><td>Nguyễn Thu Thảo</td><td class="num">03/10/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+              <tr><td><div class="who"><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><div>Lê Hoài An<small>an.le@nhiepanhgia.vn</small></div></div></td><td><span class="chip c-mut">support</span></td><td><span class="chip c-ok"><span class="ms" style="font-size:14px">check</span>Đã bật</span></td><td>Nguyễn Thu Thảo</td><td class="num">03/10/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+              <tr><td><div class="who"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div>Phạm Gia Huy<small>huy.pham@nhiepanhgia.vn</small></div></div></td><td><span class="chip c-mut">support</span></td><td><span class="chip c-bad">Chưa bật</span></td><td>Nguyễn Thu Thảo</td><td class="num">07/10/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+              <tr><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span><div>Đỗ Mai Linh<small>linh.do@nhiepanhgia.vn</small></div></div></td><td><span class="chip c-mut">sales</span></td><td><span class="chip c-ok"><span class="ms" style="font-size:14px">check</span>Đã bật</span></td><td>Nguyễn Thu Thảo</td><td class="num">05/10/2026</td><td class="more"><span class="ms">more_horiz</span></td></tr>
+            </tbody></table></div>
+        </div>
+      </div>
+      <div class="scrim"><div class="dlg" role="dialog" aria-label="Thêm staff">
+        <h4>Thêm staff</h4>
+        <div class="fld"><label for="ad-email">Email tài khoản app</label><div class="inp found" id="ad-email"><span class="av" style="width:26px;height:26px;background:linear-gradient(150deg,#B9A08C,#4A3527)"></span><div>Vũ Ngọc Hân<div class="hint">han.vu@gmail.com · khách</div></div></div></div>
+        <div class="fld"><span>Vai trò</span><div class="seg"><span>admin</span><span>finance</span><span class="on">support</span><span>sales</span></div><div class="hint">support: khiếu nại, hộp thư, kiểm duyệt, duyệt xác minh và giải thưởng. Không thấy màn tiền.</div></div>
+        <div class="fld"><label for="ad-reason">Lý do (ghi vào nhật ký)</label><div class="inp area" id="ad-reason">Nhân viên hỗ trợ ca chiều, bắt đầu 09/10</div></div>
+        <div class="acts"><span class="btn gh">Huỷ</span><span class="btn pri">Cấp quyền</span></div>
+      </div></div>
+    </div></div>
+    <div class="cap"><span class="n">S23.10 · Staff (hộp "Thêm staff" đang mở)</span><b>Cấp quyền theo email, bắt buộc lý do</b><span>Menu "…": Đổi vai trò, Đặt lại xác thực hai lớp, Bỏ quyền staff (hai mục sau là nút đỏ trong hộp xác nhận). Mỗi thao tác một dòng audit_log; người bị bỏ quyền mất quyền ở request kế tiếp.</span></div>
+  </div>
+
+  <div class="shot" id="S23.11">
+    <div class="frame"><div class="desk" data-code="S23.11">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hệ thống</div>
+        <div class="nav"><span class="ms">group</span>Staff</div>
+        <div class="nav on"><span class="ms">history</span>Nhật ký</div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã booking, người dùng, thanh toán…<span class="kbd">/</span></div><span class="role">admin</span><span class="av"></span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Nhật ký kiểm toán</h3><div class="sub">Không bao giờ xoá · 50 dòng mỗi trang</div></div></div>
+          <div class="filters"><span class="fl"><span class="ms">person</span>Mọi người</span><span class="fl"><span class="ms">category</span>payout · 01JA6…M2T<span class="ms">close</span></span><span class="fl"><span class="ms">bolt</span>Mọi thao tác</span><span class="fl"><span class="ms">calendar_month</span>30 ngày qua</span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Lúc</th><th>Người</th><th>Thao tác</th><th>Lý do</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td class="num">08/10 14:31</td><td>Trần Minh Khoa <span class="chip c-mut">finance</span></td><td>Duyệt lần chi đầu</td><td>Tên tài khoản khớp hồ sơ</td></tr>
+                <tr><td class="num">08/10 10:00</td><td>Hệ thống</td><td>Tạo khoản chi hằng ngày</td><td>—</td></tr>
+                <tr><td class="num">07/10 16:12</td><td>Lê Hoài An <span class="chip c-mut">support</span></td><td>Xem giấy đăng ký kinh doanh</td><td>—</td></tr>
+                <tr><td class="num">06/10 09:40</td><td>Trần Minh Khoa <span class="chip c-mut">finance</span></td><td>Tạm giữ khoản chi</td><td>Chờ khách xác nhận khiếu nại</td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Duyệt lần chi đầu</h4><div class="hint">action <code>payout.approve</code> · 08/10/2026 14:31:07</div></div>
+              <div class="pb">
+                <dl class="kv"><dt>Người</dt><dd>Trần Minh Khoa (finance)</dd><dt>Đối tượng</dt><dd><span class="link">payout 01JA6…M2T</span></dd><dt>Lý do</dt><dd>Tên tài khoản khớp hồ sơ</dd></dl>
+                <div class="tbl"><table><thead><tr><th>Trường</th><th>Trước</th><th>Sau</th></tr></thead><tbody>
+                  <tr><td class="mono">status</td><td>needs_approval</td><td>pending</td></tr>
+                  <tr><td class="mono">nameStatus</td><td>pending_review</td><td>staff_confirmed</td></tr>
+                </tbody></table></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.11 · Nhật ký kiểm toán</span><b>Lịch sử của một đối tượng, mới nhất trước</b><span>Lọc theo người, đối tượng (loại + id) hoặc thao tác, cộng khoảng ngày. diff không chứa số tài khoản hay số giấy tờ.</span></div>
+  </div>
+
+  <div class="shot" id="mau-hang-doi">
+    <div class="frame"><div class="desk" data-code="Mẫu · QueueLayout + DecisionDialog">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav on"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav"><span class="ms">support_agent</span>Hộp thư<span class="cnt">5</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã booking, người dùng, thanh toán…<span class="kbd">/</span></div><span class="role">support</span><span class="av"></span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Hàng đợi (mẫu)</h3><div class="sub">Quá hạn rồi cũ nhất lên đầu · j / k chuyển dòng</div></div></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Người gửi</th><th>Loại</th><th>Gửi lúc</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td><div class="who"><span class="av"></span><div>Hoàng Vũ<small>cá nhân · Đà Nẵng</small></div></div></td><td>Danh tính</td><td class="num">07/10 07:20</td><td><span class="chip c-bad">Quá 31 giờ</span></td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><div>Studio Mây<small>studio · Hà Nội</small></div></div></td><td>Doanh nghiệp</td><td class="num">07/10 12:05</td><td><span class="chip c-bad">Quá 26 giờ</span></td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span><div>Minh Trí<small>cá nhân · TP.HCM</small></div></div></td><td>Danh tính</td><td class="num">08/10 09:48</td><td><span class="chip c-pen">Chờ duyệt</span></td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Hoàng Vũ</h4><div class="hint">Gửi 07/10/2026 07:20 · lần gửi thứ 1</div></div>
+              <div class="pb">
+                <dl class="kv"><dt>Họ tên trên giấy tờ</dt><dd>Hoàng Văn Vũ</dd><dt>Ngày sinh</dt><dd class="num">14/02/1996</dd><dt>Số giấy tờ</dt><dd class="num">•••• 4821</dd><dt>Trùng tài khoản</dt><dd><span class="chip c-ok">Không có</span></dd></dl>
+                <div class="thumbs"><span class="thumb"><span class="ms">lock</span></span><span class="thumb" style="background:linear-gradient(140deg,#E2C9B0,#7A5238)"><span class="ms">lock</span></span></div>
+                <div class="hint">Mở ảnh sẽ ghi vào nhật ký. Ảnh có chữ chìm "Nội bộ · an.le@nhiepanhgia.vn".</div>
+              </div>
+              <div class="pf"><span class="btn sec">Từ chối…</span><span class="btn pri">Duyệt</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scrim"><div class="dlg" role="dialog" aria-label="Từ chối xác minh">
+        <h4>Từ chối xác minh?</h4>
+        <p style="margin:0;font-size:13.5px">Hoàng Vũ sẽ nhận thông báo kèm lý do và còn 1 lần gửi lại miễn phí.</p>
+        <div class="fld"><span>Lý do</span><div class="seg"><span>Ảnh đại diện giả</span><span class="on">Không khớp danh tính</span><span>Trùng tài khoản</span><span>Khác</span></div></div>
+        <div class="fld"><label for="dq-note">Ghi chú (5–500 ký tự, ghi vào nhật ký)</label><div class="inp area" id="dq-note">Ảnh chân dung không khớp ảnh trên căn cước</div></div>
+        <div class="acts"><span class="btn gh">Quay lại</span><span class="btn bad">Từ chối</span></div>
+      </div></div>
+    </div></div>
+    <div class="cap"><span class="n">Mẫu · QueueLayout + DecisionDialog (không phải màn riêng)</span><b>Bảng bên trái, chi tiết bên phải, một nút chính</b><span>Từ chối là nút đỏ trong hộp xác nhận, có lý do bắt buộc. Nội dung thật của hàng đợi xác minh nằm ở spec #164; mẫu này chỉ cho bố cục.</span></div>
+  </div>
+
+  <!-- ============ S28 ============ -->
+  <h2 id="S28">S28 · Studio trên web</h2>
+  <p>Chỉ chủ studio (tài khoản có <code>providerType = studio</code>). Dùng tốt từ 768 px. Màn cụ thể do spec #167 (vận hành) và #169 (kinh doanh) thêm vào đây.</p>
+
+  <div class="shot">
+    <div class="frame"><div class="desk" data-code="S28 · khung">
+      <nav class="side" aria-label="Điều hướng studio">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Studio Mây</div>
+        <div class="nav on"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Vận hành</div>
+        <div class="nav"><span class="ms">calendar_month</span>Lịch</div>
+        <div class="nav"><span class="ms">event_available</span>Booking<span class="cnt late">1</span></div>
+        <div class="nav"><span class="ms">cloud_upload</span>Bàn giao<span class="cnt">2</span></div>
+        <div class="nav"><span class="ms">groups</span>Thành viên</div>
+        <div class="grp">Kinh doanh</div>
+        <div class="nav"><span class="ms">sell</span>Gói dịch vụ</div>
+        <div class="nav"><span class="ms">request_quote</span>Báo giá</div>
+        <div class="nav"><span class="ms">account_balance_wallet</span>Thu nhập</div>
+        <div class="nav"><span class="ms">reviews</span>Đánh giá</div>
+        <div class="nav"><span class="ms">chat</span>Tin nhắn<span class="cnt">3</span></div>
+        <div class="me"><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><div>Studio Mây<div class="hint">chủ studio</div></div></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm booking theo mã hoặc tên khách…</div><span class="role">chủ studio</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Tổng quan</h3><div class="sub">Khung StudioShell</div></div></div>
+          <div class="ph-empty">Nội dung các mục studio thuộc spec #167 và #169.<br>Số đỏ là việc quá hạn (ví dụ booking chưa giao thợ quá hạn giao).</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S28 · khung StudioShell</span><b>Cùng cấu trúc với trang staff</b><span>Không bắt buộc xác thực hai lớp. Thành viên studio không vào được dashboard (dùng app).</span></div>
+  </div>
+
+  <div class="foot">
+    <b>Bảng mã màn trên trang này</b>
+    <div class="frame" style="box-shadow:none"><table>
+      <thead><tr><th>Mã</th><th>Màn</th><th>Route</th><th>Vai trò</th></tr></thead>
+      <tbody>
+        <tr><td>S23.08</td><td>Đăng nhập dashboard &amp; xác thực hai lớp</td><td><code>/login</code></td><td>staff · chủ studio</td></tr>
+        <tr><td>S23.09</td><td>Tổng quan staff</td><td><code>/staff</code></td><td>mọi staff</td></tr>
+        <tr><td>S23.10</td><td>Staff</td><td><code>/staff/team</code></td><td>admin</td></tr>
+        <tr><td>S23.11</td><td>Nhật ký kiểm toán</td><td><code>/staff/audit</code></td><td>admin</td></tr>
+        <tr><td>S28</td><td>Studio trên web (khung)</td><td><code>/studio</code></td><td>chủ studio</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+<script>
+(function(){
+  var root=document.documentElement,d=document.getElementById('t-dark'),l=document.getElementById('t-light'),g=document.getElementById('t-dbg');
+  function set(m){root.setAttribute('data-theme',m);d.setAttribute('aria-pressed',m==='dark');l.setAttribute('aria-pressed',m==='light')}
+  function dbg(on){root.classList.toggle('dbg',on);g.setAttribute('aria-pressed',on)}
+  g.addEventListener('click',function(){dbg(!root.classList.contains('dbg'))});
+  d.addEventListener('click',function(){set('dark')});l.addEventListener('click',function(){set('light')});
+  if(/^#S\d+(\.\d+)?$/.test(location.hash))dbg(true);
+  if(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches&&!root.getAttribute('data-theme')){d.setAttribute('aria-pressed','false');l.setAttribute('aria-pressed','true')}
+})();
+</script>
+</body>
+</html>
