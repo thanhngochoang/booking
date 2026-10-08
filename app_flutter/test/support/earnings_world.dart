@@ -44,7 +44,7 @@ class EarningsWorld {
 
   late String uid;
   final GatedAuthRepository auth;
-  final repo = FakeEarningsRepository();
+  final repo = FakeEarningsRepository(clock: () => earningsNow);
 
   /// Registers the signed-in photographer; call before [app].
   Future<void> init() async {
@@ -66,6 +66,14 @@ class EarningsWorld {
     String? holdReason,
     DateTime? paidOutAt,
     String subjectType = 'booking',
+    int fee = 0,
+    int tax = 0,
+    int? net,
+    int feeRateBp = 0,
+    int taxRateBp = 0,
+    bool estimated = true,
+    int? milestonesDone,
+    int? milestonesTotal,
   }) => EarningItem(
     id: id,
     subjectType: subjectType,
@@ -77,6 +85,14 @@ class EarningsWorld {
     state: state,
     holdReason: holdReason,
     paidOutAt: paidOutAt,
+    feeVnd: fee,
+    taxVnd: tax,
+    netVnd: net,
+    feeRateBp: feeRateBp,
+    taxRateBp: taxRateBp,
+    estimated: estimated,
+    milestonesDone: milestonesDone,
+    milestonesTotal: milestonesTotal,
   );
 
   PayoutAccountView account({
@@ -84,12 +100,16 @@ class EarningsWorld {
     String last4 = '3456',
     String holder = 'NGUYEN MINH TRI',
     DateTime? updatedAt,
+    DateTime? activeFrom,
+    PayoutNameStatus nameStatus = PayoutNameStatus.matched,
   }) => PayoutAccountView(
     accountId: 'acc-0',
     bankCode: bank,
     accountLast4: last4,
     holderName: holder,
     updatedAt: updatedAt ?? earningsNow,
+    activeFrom: activeFrom ?? updatedAt ?? earningsNow,
+    nameStatus: nameStatus,
   );
 
   List<Override> get overrides => [

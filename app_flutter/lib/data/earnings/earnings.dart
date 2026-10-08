@@ -38,7 +38,15 @@ class EarningItem {
     required this.state,
     this.holdReason,
     this.paidOutAt,
-  });
+    this.feeVnd = 0,
+    this.taxVnd = 0,
+    int? netVnd,
+    this.feeRateBp = 0,
+    this.taxRateBp = 0,
+    this.estimated = true,
+    this.milestonesDone,
+    this.milestonesTotal,
+  }) : netVnd = netVnd ?? amountVnd;
 
   final String id;
   final String subjectType;
@@ -52,6 +60,28 @@ class EarningItem {
   final EarningState state;
   final String? holdReason;
   final DateTime? paidOutAt;
+
+  /// Platform commission withheld from [amountVnd] (0 today for every type).
+  final int feeVnd;
+
+  /// Tax withheld from [amountVnd] (individuals and artists; 0 for studios).
+  final int taxVnd;
+
+  /// What the photographer receives: [amountVnd] − [feeVnd] − [taxVnd].
+  final int netVnd;
+
+  /// Rates in basis points (700 = 7%).
+  final int feeRateBp;
+  final int taxRateBp;
+
+  /// True while the breakdown comes from the policy (not paid out yet); false
+  /// once it is the payout item's own numbers.
+  final bool estimated;
+
+  /// Released milestones of the booking and their count; null when the booking
+  /// has no milestone documents.
+  final int? milestonesDone;
+  final int? milestonesTotal;
 }
 
 /// The three totals of S06.05: Đang giữ, Sắp nhận, Đã nhận.
@@ -78,6 +108,78 @@ class EarningsSummary {
   final bool fromCache;
 }
 
+/// How the holder name of a payout account was checked. Codes are the server's.
+enum PayoutNameStatus {
+  matched('matched'),
+  pendingReview('pending_review'),
+  staffConfirmed('staff_confirmed');
+
+  const PayoutNameStatus(this.code);
+  final String code;
+
+  /// An unknown or missing code reads [matched] (accounts saved before the
+  /// name check).
+  static PayoutNameStatus fromCode(Object? code) {
+    for (final s in values) {
+      if (s.code == code) return s;
+    }
+    return matched;
+  }
+}
+
+/// The server's verdict on a looked-up holder name against the verified name.
+enum PayoutNameDecision {
+  matched('matched'),
+  mismatch('mismatch'),
+  review('review'),
+  notFound('not_found'),
+  unverifiable('unverifiable');
+
+  const PayoutNameDecision(this.code);
+  final String code;
+
+  /// An unknown code reads [review] (staff compares).
+  static PayoutNameDecision fromCode(Object? code) {
+    for (final d in values) {
+      if (d.code == code) return d;
+    }
+    return review;
+  }
+}
+
+/// Answer of the bank name lookup for a bank and account number.
+@immutable
+class PayoutNameLookup {
+  const PayoutNameLookup({
+    required this.decision,
+    this.holderName,
+    this.verifiedName,
+  });
+
+  final PayoutNameDecision decision;
+
+  /// The name the bank returned (upper case, no diacritics); null when the bank
+  /// cannot be asked or the account does not exist.
+  final String? holderName;
+
+  /// The caller's verified legal name as stored; null when not verified yet.
+  final String? verifiedName;
+}
+
+/// An OTP was sent for an account change.
+@immutable
+class PayoutOtpTicket {
+  const PayoutOtpTicket({
+    required this.phoneLast4,
+    required this.expiresInSeconds,
+    required this.resendInSeconds,
+  });
+
+  final String phoneLast4;
+  final int expiresInSeconds;
+  final int resendInSeconds;
+}
+
 /// Masked view of the active payout account. The full number is never readable
 /// by the app.
 @immutable
@@ -88,6 +190,8 @@ class PayoutAccountView {
     required this.accountLast4,
     required this.holderName,
     required this.updatedAt,
+    required this.activeFrom,
+    this.nameStatus = PayoutNameStatus.matched,
   });
 
   final String accountId;
@@ -95,10 +199,19 @@ class PayoutAccountView {
   final String accountLast4;
   final String holderName;
   final DateTime updatedAt;
+
+  /// Payouts go to this account from this instant (72 h after a change).
+  final DateTime activeFrom;
+  final PayoutNameStatus nameStatus;
+
+  /// True while a changed account is not yet in effect at [now].
+  bool pendingAt(DateTime now) => activeFrom.isAfter(now);
 }
 
-/// Failure of saving a payout account. [code] is one of `reauth_required`,
-/// `conflict`, `invalid_argument`, `permission_denied`, `network`, `unknown`.
+/// Failure of a payout account call. [code] is one of `name_mismatch`,
+/// `not_found`, `not_eligible`, `otp_required`, `otp_invalid`, `otp_expired`,
+/// `limit_exceeded`, `phone_required`, `reauth_required`, `conflict`,
+/// `invalid_argument`, `permission_denied`, `network`, `unknown`.
 class PayoutAccountError implements Exception {
   const PayoutAccountError(this.code);
   final String code;

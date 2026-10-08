@@ -100,11 +100,8 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
     final before = ref.read(payoutAccountProvider).value;
     state = state.copyWith(saving: true);
     Future<void> attempt() async {
-      await repo.saveAccount(
-        bankCode: v.bankCode,
-        accountNumber: v.number,
-        holderName: v.holder,
-      );
+      // The server takes the holder name from the bank lookup.
+      await repo.saveAccount(bankCode: v.bankCode, accountNumber: v.number);
     }
 
     try {
