@@ -1391,6 +1391,7 @@
   "reviewText": "Nhận xét",
   "reviewTomato": "Hài lòng",
   "reviewBrick": "Chưa hài lòng",
+  "reviewBrickShort": "Chưa ưng",
   "reviewHits": "×{n}",
   "@reviewHits": {"placeholders": {"n": {"type": "int"}}},
   "reviewTomatoLevel1": "Ổn",

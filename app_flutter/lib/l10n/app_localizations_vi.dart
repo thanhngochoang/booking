@@ -2755,6 +2755,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewBrick => 'Chưa hài lòng';
 
   @override
+  String get reviewBrickShort => 'Chưa ưng';
+
+  @override
   String reviewHits(int n) {
     return '×$n';
   }

@@ -317,6 +317,41 @@ void main() {
       expect(label.dx, lessThan(hits.dx));
     });
 
+    testWidgets('the regular pad draws the hit label inside its button', (
+      tester,
+    ) async {
+      for (final (kind, key) in [
+        (VerdictKind.tomato, _tomatoKey),
+        (VerdictKind.brick, _brickKey),
+      ]) {
+        await tester.pumpWidget(const SizedBox()); // drop the harness state
+        await _pump(tester, [], kind: kind, hits: 10);
+        final button = tester.getRect(find.byKey(key));
+        final hit = tester.getRect(find.text('×10'));
+        expect(button.contains(hit.topLeft), isTrue, reason: '$kind topLeft');
+        expect(
+          button.contains(hit.bottomRight),
+          isTrue,
+          reason: '$kind bottomRight',
+        );
+        // Mock .vbtn .hit: top 8, right 11 from the border box.
+        expect(hit.top - button.top, inInclusiveRange(4, 10));
+        expect(button.right - hit.right, inInclusiveRange(9, 13));
+      }
+    });
+
+    testWidgets(
+      'the compact brick label is "Chưa ưng", the regular one is not',
+      (tester) async {
+        await _pump(tester, [], compact: true);
+        expect(find.text('Chưa ưng'), findsOneWidget);
+        expect(find.text('Chưa hài lòng'), findsNothing);
+        await _pump(tester, []);
+        expect(find.text('Chưa hài lòng'), findsOneWidget);
+        expect(find.text('Chưa ưng'), findsNothing);
+      },
+    );
+
     testWidgets('the regular pad stacks the label under the icon', (
       tester,
     ) async {

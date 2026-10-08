@@ -4870,6 +4870,12 @@ abstract class AppLocalizations {
   /// **'Chưa hài lòng'**
   String get reviewBrick;
 
+  /// No description provided for @reviewBrickShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa ưng'**
+  String get reviewBrickShort;
+
   /// No description provided for @reviewHits.
   ///
   /// In vi, this message translates to:

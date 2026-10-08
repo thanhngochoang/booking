@@ -167,7 +167,9 @@ class _VerdictButtonState extends State<_VerdictButton>
     final border = selected
         ? sideColor
         : (dark ? AppColorsDark.borderStrong : AppColors.borderStrong);
-    final labelText = tomato ? l.reviewTomato : l.reviewBrick;
+    final labelText = tomato
+        ? l.reviewTomato
+        : (compact ? l.reviewBrickShort : l.reviewBrick);
     final label = Text(
       labelText,
       maxLines: 1,
@@ -207,6 +209,7 @@ class _VerdictButtonState extends State<_VerdictButton>
             ],
           )
         : Stack(
+            clipBehavior: Clip.none,
             children: [
               SizedBox(
                 width: double.infinity,
@@ -216,7 +219,7 @@ class _VerdictButtonState extends State<_VerdictButton>
                 ),
               ),
               if (hit != null)
-                PositionedDirectional(top: -6, end: -3, child: hit),
+                PositionedDirectional(top: -7, end: 2, child: hit),
             ],
           );
     final enabled = widget.enabled;
