@@ -15,7 +15,7 @@ import 'package:photobooking/features/create_post/post_composer.dart';
 
 /// S10.01: publish once for the feed and the portfolio, always tied to a package.
 ///
-/// Mock S10.01: "Đăng bài" bar · two-column photo grid with a "+" tile · caption
+/// Mock S10.01: "Đăng bài" tab-root bar (middle tab, no back button) · two-column photo grid with a "+" tile · caption
 /// · the package field (accent border, required) · place and style side by
 /// side · "Album · tuỳ chọn" field (S24.05) · sticky footer with "Đăng". The
 /// "Bài đăng / Sự kiện" tabs sit under the bar; "Sự kiện" leads to S12.01.
@@ -254,7 +254,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       ScreenCodes.createPost,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l.tabCreate)),
+        appBar: AppBar(
+          centerTitle: false,
+          titleTextStyle: tabRootTitleStyle(context),
+          title: Text(l.tabCreate),
+        ),
         // Every field is built (not lazily) so the form keeps its state.
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

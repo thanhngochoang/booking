@@ -8,6 +8,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/events/firestore_event_timeline_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 class _MockFunctions extends Mock implements FirebaseFunctions {}
@@ -180,9 +181,9 @@ void main() {
       final images = sent['images'] as List;
       expect(images, hasLength(2));
       expect((images.first as Map)['path'], uploader.uploaded.first);
-      // M11: the tile gets the real aspect.
-      expect((images.first as Map)['w'], 800);
-      expect((images.first as Map)['h'], 1200);
+      // M11: the tile gets the real aspect, taken from the upload result.
+      expect((images.first as Map)['w'], 1000);
+      expect((images.first as Map)['h'], 750);
       expect(
         (images.first as Map)['url'],
         'https://storage.test/${uploader.uploaded.first}',
@@ -196,9 +197,45 @@ void main() {
     });
 
     test(
+      'event share photos use the share purpose and the uploaded size',
+      () async {
+        answer({'postId': 'whatever'});
+        uploader
+          ..doneWidth = 1600
+          ..doneHeight = 1067;
+        await repo.share('ev1', images: [photo], caption: '');
+        expect(uploader.purposes.values.single, ImagePurpose.share);
+        final sent =
+            verify(() => callable.call<Object?>(captureAny())).captured.single
+                as Map<String, Object?>;
+        final image = (sent['images'] as List).single as Map;
+        expect((image['w'], image['h']), (1600, 1067));
+      },
+    );
+
+    test(
+      'a media without a size falls back to measuring the picked file',
+      () async {
+        answer({'postId': 'whatever'});
+        uploader
+          ..doneWidth = null
+          ..doneHeight = null;
+        await repo.share('ev1', images: [photo], caption: '');
+        final sent =
+            verify(() => callable.call<Object?>(captureAny())).captured.single
+                as Map<String, Object?>;
+        final image = (sent['images'] as List).single as Map;
+        expect((image['w'], image['h']), (800, 1200));
+      },
+    );
+
+    test(
       'an image whose size cannot be read is sent without w and h',
       () async {
         answer({'postId': 'whatever'});
+        uploader
+          ..doneWidth = null
+          ..doneHeight = null;
         final blind = FirestoreEventTimelineRepository(
           uid: 'u1',
           uploader: uploader,

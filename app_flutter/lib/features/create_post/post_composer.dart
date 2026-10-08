@@ -14,6 +14,7 @@ import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/features/create_post/create_post_providers.dart';
@@ -424,7 +425,11 @@ class PostComposerController extends Notifier<ComposerState> {
       await for (final e
           in ref
               .read(mediaUploaderProvider)
-              .upload(img.picked, storagePath: path)) {
+              .upload(
+                img.picked,
+                storagePath: path,
+                purpose: ImagePurpose.portfolio,
+              )) {
         final media = e.media;
         if (media != null) {
           if (gen != _gen || !ref.mounted || _image(key) == null) {
@@ -505,7 +510,14 @@ class PostComposerController extends Notifier<ComposerState> {
           photographerId: uid,
           serviceId: s.serviceId!,
           specialtyId: s.specialtyId,
-          images: [for (final i in s.images) PostImage(url: i.media!.url)],
+          images: [
+            for (final i in s.images)
+              PostImage(
+                url: i.media!.url,
+                width: i.media!.width,
+                height: i.media!.height,
+              ),
+          ],
           caption: s.caption.trim(),
           locationName: s.locationName,
           styleId: s.styleId,

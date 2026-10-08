@@ -13,6 +13,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/events/event_timeline_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 /// Reads the pixel size of a picked image file; null when it cannot be read.
@@ -172,11 +173,17 @@ class FirestoreEventTimelineRepository implements EventTimelineRepository {
       for (final image in images) {
         final path = 'posts/$me/$postId/${newUlid()}.jpg';
         final media = await uploader
-            .upload(image, storagePath: path)
+            .upload(image, storagePath: path, purpose: ImagePurpose.share)
             .lastWhere((e) => e.isDone)
             .then((e) => e.media!);
         uploaded.add(media);
-        sizes.add(await _measureSafely(image));
+        final w = media.width;
+        final h = media.height;
+        // The size of the compressed file comes with the upload; measuring
+        // the picked file is the fallback for an uploader that did not say.
+        sizes.add(
+          w != null && h != null ? (w: w, h: h) : await _measureSafely(image),
+        );
       }
       await callEventFunction(_functions, 'shareEventPost', {
         'eventId': eventId,

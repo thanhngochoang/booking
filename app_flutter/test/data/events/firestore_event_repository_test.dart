@@ -12,6 +12,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/firestore_event_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 import '../../support/event_world.dart';
@@ -862,6 +863,16 @@ void main() {
         ).called(1);
       },
     );
+
+    test('event cover uses the share purpose', () async {
+      await repo.uploadCover(
+        'e' * 24,
+        const PickedImage(path: '/tmp/a.jpg', name: 'a.jpg'),
+      );
+      expect(uploader.purposes, {
+        uploader.uploaded.single: ImagePurpose.share,
+      });
+    });
 
     test('a failed upload is an error and signed out cannot upload', () async {
       uploader.failNames.add('bad.jpg');

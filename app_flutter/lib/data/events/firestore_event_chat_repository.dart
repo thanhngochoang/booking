@@ -12,6 +12,7 @@ import 'package:photobooking/data/events/event_chat.dart';
 import 'package:photobooking/data/events/event_chat_repository.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 DateTime? _date(Object? v) => v is Timestamp ? v.toDate().toUtc() : null;
@@ -345,7 +346,7 @@ class FirestoreEventChatRepository implements EventChatRepository {
     final path = 'chats/${chatIdOfEvent(eventId)}/$me/$clientId.jpg';
     try {
       await uploader
-          .upload(image, storagePath: path)
+          .upload(image, storagePath: path, purpose: ImagePurpose.chat)
           .lastWhere((e) => e.isDone);
     } on FirebaseException catch (e) {
       throw ChatException(

@@ -8,8 +8,10 @@ class PluginImagePicker implements ImagePickerPort {
   PluginImagePicker({ImagePicker? picker}) : _picker = picker ?? ImagePicker();
   final ImagePicker _picker;
 
+  // A pre-pass that bounds decode memory; the uploader's compressor makes the
+  // final per-purpose JPEG, so this one stays near lossless.
   static const _longSide = 2048.0;
-  static const _quality = 85;
+  static const _quality = 95;
 
   @override
   Future<List<PickedImage>> pickImages({required int max}) async {

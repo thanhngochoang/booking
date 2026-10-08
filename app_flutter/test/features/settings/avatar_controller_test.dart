@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/user/user_repository.dart';
@@ -59,9 +60,10 @@ class _GatedUploader extends FakeMediaUploader {
   Stream<UploadEvent> upload(
     PickedImage image, {
     required String storagePath,
+    required ImagePurpose purpose,
   }) async* {
     await gate.future;
-    yield* super.upload(image, storagePath: storagePath);
+    yield* super.upload(image, storagePath: storagePath, purpose: purpose);
   }
 }
 
@@ -89,6 +91,14 @@ void main() {
     await c.read(avatarControllerProvider.notifier).change();
     expect(uploader.deleted, [first]);
     expect(uploader.uploaded.single, isNot(first));
+  });
+
+  test('avatar upload uses the avatar purpose', () async {
+    final (c, _, uploader) = await _setup([
+      [_a],
+    ]);
+    await c.read(avatarControllerProvider.notifier).change();
+    expect(uploader.purposes, {uploader.uploaded.single: ImagePurpose.avatar});
   });
 
   test('a cancelled pick changes nothing', () async {

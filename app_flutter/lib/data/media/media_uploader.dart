@@ -1,16 +1,29 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 
 @immutable
 class UploadedMedia {
-  const UploadedMedia({required this.url, required this.storagePath});
+  const UploadedMedia({
+    required this.url,
+    required this.storagePath,
+    this.width,
+    this.height,
+    this.sizeBytes,
+  });
 
   /// Download URL, stored on the post as `imageUrls[i]`.
   final String url;
 
   /// Where the object lives; kept so it can be deleted again.
   final String storagePath;
+
+  /// Pixel size and byte size of the uploaded (compressed) file; null when the
+  /// uploader did not measure it.
+  final int? width;
+  final int? height;
+  final int? sizeBytes;
 }
 
 @immutable
@@ -24,9 +37,15 @@ class UploadEvent {
 }
 
 abstract class MediaUploader {
-  /// Uploads [image] to [storagePath]. Emits progress events and then one done
+  /// Uploads [image] to [storagePath]. The photo is resized and re-encoded as a
+  /// JPEG for [purpose] and stripped of its metadata (EXIF, GPS) first, so a
+  /// caller never compresses itself. Emits progress events and then one done
   /// event; a failure is a stream error.
-  Stream<UploadEvent> upload(PickedImage image, {required String storagePath});
+  Stream<UploadEvent> upload(
+    PickedImage image, {
+    required String storagePath,
+    required ImagePurpose purpose,
+  });
 
   /// Removes an uploaded object. A missing object is not an error.
   Future<void> delete(String storagePath);
@@ -51,17 +70,27 @@ class FakeMediaUploader implements MediaUploader {
   /// Storage paths that currently hold an object.
   final List<String> uploaded = [];
   final List<String> deleted = [];
+
+  /// Storage path -> the purpose it was uploaded with.
+  final Map<String, ImagePurpose> purposes = {};
   int uploadCalls = 0;
 
   /// The most uploads that were open at the same time.
   int maxConcurrent = 0;
   Object? deleteFailure;
+
+  /// Size reported by every done event, like the compressor's output.
+  /// A test sets these to null to model an uploader that did not measure.
+  int? doneWidth = 1000;
+  int? doneHeight = 750;
+  int? doneSizeBytes = 100000;
   int _open = 0;
 
   @override
   Stream<UploadEvent> upload(
     PickedImage image, {
     required String storagePath,
+    required ImagePurpose purpose,
   }) async* {
     uploadCalls++;
     _open++;
@@ -77,10 +106,14 @@ class FakeMediaUploader implements MediaUploader {
       yield const UploadEvent.progress(0.6);
       await Future<void>.delayed(Duration.zero);
       uploaded.add(storagePath);
+      purposes[storagePath] = purpose;
       yield UploadEvent.done(
         UploadedMedia(
           url: 'https://storage.test/$storagePath',
           storagePath: storagePath,
+          width: doneWidth,
+          height: doneHeight,
+          sizeBytes: doneSizeBytes,
         ),
       );
     } finally {

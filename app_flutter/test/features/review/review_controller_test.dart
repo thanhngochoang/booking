@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/review/review.dart';
@@ -222,6 +223,19 @@ void main() {
         expect(fakeUploader.uploadCalls, 2);
       },
     );
+
+    test('review share photos use the share purpose', () async {
+      final picker = FakeImagePicker([
+        const [PickedImage(path: '/tmp/1.jpg', name: '1.jpg')],
+      ]);
+      final container = createContainer(picker: picker);
+      await pumpEventQueue();
+      await container
+          .read(reviewControllerProvider('b1').notifier)
+          .pickPhotos();
+      expect(fakeUploader.purposes, hasLength(1));
+      expect(fakeUploader.purposes.values.single, ImagePurpose.share);
+    });
 
     test('a failed tile blocks sharing but not review-only', () async {
       fakeUploader.failNames.add('fail.jpg');
@@ -601,7 +615,10 @@ class _ManualUploader implements MediaUploader {
   final List<String> deleted = [];
 
   @override
-  Stream<UploadEvent> upload(PickedImage image, {required String storagePath}) {
+  Stream<UploadEvent> upload(PickedImage image, {
+    required String storagePath,
+    required ImagePurpose purpose,
+  }) {
     final controller = StreamController<UploadEvent>();
     pending[storagePath] = controller;
     return controller.stream;

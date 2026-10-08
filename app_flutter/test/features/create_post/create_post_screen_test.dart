@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
@@ -35,6 +37,7 @@ class _Create {
     MediaUploader? uploader,
     Map<String, Object> prefsValues = const {},
     this.initialCaption,
+    this.withEvents = false,
   }) : world = CreatePostWorld(prefsValues: prefsValues),
        picker = FakeImagePicker(
          picks ??
@@ -49,6 +52,7 @@ class _Create {
   final MediaUploader uploader;
   final bool withService;
   final String? initialCaption;
+  final bool withEvents;
   late final FakePostPublisher publisher;
   late List<Override> overrides;
   final published = <String>[];
@@ -70,6 +74,7 @@ class _Create {
 
   Widget screen() => CreatePostScreen(
     initialCaption: initialCaption,
+    onOpenEvents: withEvents ? () {} : null,
     onAddService: () => addServiceTaps++,
     onPublished: published.add,
   );
@@ -662,6 +667,62 @@ void main() {
     });
   });
 
+  group('S10.01 mock parity', () {
+    testWidgets('S10.01 uses the tab-root title and has no back button', (
+      tester,
+    ) async {
+      await _open(tester);
+      final bar = tester.widget<AppBar>(find.byType(AppBar));
+      expect(bar.centerTitle, isFalse);
+      expect(
+        bar.titleTextStyle,
+        tabRootTitleStyle(tester.element(find.byType(AppBar))),
+      );
+      expect(bar.leading, isNull);
+      expect(find.byType(BackButton), findsNothing);
+      expect(find.byTooltip('Back'), findsNothing);
+    });
+
+    testWidgets('the order of fields matches the mock', (tester) async {
+      await _open(tester, create: _Create(withEvents: true));
+      await _addPhotos(tester);
+      double top(String k) => tester.getTopLeft(find.byKey(Key(k))).dy;
+      final order = [
+        top('create-post-tabs'),
+        top('create-add'),
+        top('create-caption'),
+        top('create-service'),
+        top('create-location'),
+        top('create-album'),
+      ];
+      for (var i = 1; i < order.length; i++) {
+        expect(order[i], greaterThan(order[i - 1]), reason: 'field $i');
+      }
+      expect(top('create-style'), top('create-location'));
+      expect(
+        tester.getTopLeft(find.byKey(const Key('create-style'))).dx,
+        greaterThan(
+          tester.getTopLeft(find.byKey(const Key('create-location'))).dx,
+        ),
+      );
+    });
+
+    testWidgets('the photo count reads "1 / 10 ảnh" after one photo', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        create: _Create(
+          picks: [
+            [img(0)],
+          ],
+        ),
+      );
+      await _addPhotos(tester);
+      expect(find.text('1 / 10 ảnh'), findsOneWidget);
+    });
+  });
+
   group('S10.01 Bài đăng / Sự kiện', () {
     testWidgets('S10.01 Sự kiện tab opens /events/new', (tester) async {
       final w = CreatePostWorld();
@@ -715,6 +776,7 @@ class _SlowUploader implements MediaUploader {
   Stream<UploadEvent> upload(
     PickedImage image, {
     required String storagePath,
+    required ImagePurpose purpose,
   }) async* {
     yield const UploadEvent.progress(0.4);
     await _gate.future;

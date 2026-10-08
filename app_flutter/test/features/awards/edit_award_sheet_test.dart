@@ -6,6 +6,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 import '../../support/awards_world.dart';
@@ -58,7 +59,10 @@ class _ManualUploader implements MediaUploader {
   final List<String> deleted = [];
 
   @override
-  Stream<UploadEvent> upload(PickedImage image, {required String storagePath}) {
+  Stream<UploadEvent> upload(PickedImage image, {
+    required String storagePath,
+    required ImagePurpose purpose,
+  }) {
     final c = StreamController<UploadEvent>();
     pending[storagePath] = c;
     return c.stream;
@@ -151,6 +155,18 @@ void main() {
     await tester.tap(_key('award-proof-done'));
     await tester.pumpAndSettle();
     expect(_enabled(tester), isTrue);
+  });
+
+  testWidgets('award proofs use the document purpose', (tester) async {
+    final w = await _open(tester);
+    w.picker.answers.add([_pic]);
+    await _fill(tester);
+    await _openProof(tester);
+    await tester.tap(_key('award-add-image'));
+    await tester.pumpAndSettle();
+    expect(w.uploader.purposes, {
+      w.uploader.uploaded.single: ImagePurpose.document,
+    });
   });
 
   testWidgets('closing without saving deletes uploaded files', (tester) async {

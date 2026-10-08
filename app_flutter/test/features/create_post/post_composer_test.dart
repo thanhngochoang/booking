@@ -11,6 +11,7 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
@@ -33,6 +34,7 @@ class _GatedUploader extends FakeMediaUploader {
   Stream<UploadEvent> upload(
     PickedImage image, {
     required String storagePath,
+    required ImagePurpose purpose,
   }) async* {
     uploadCalls++;
     yield const UploadEvent.progress(0.3);
@@ -248,6 +250,27 @@ void main() {
           for (final p in e.uploader.uploaded) 'https://storage.test/$p',
         ]);
         expect((await e.posts.byId(draftId))!.hashtags, ['chandung']);
+      },
+    );
+
+    test(
+      'post photos use the portfolio purpose and imageMeta carries the uploaded size',
+      () async {
+        final e = await _ready(photos: 2);
+        e.uploader
+          ..doneWidth = 2048
+          ..doneHeight = 1365;
+        await e.ctl.publish();
+        expect(e.uploader.purposes.keys, hasLength(2));
+        expect(
+          e.uploader.purposes.values,
+          everyElement(ImagePurpose.portfolio),
+        );
+        final d = e.publisher.published.single;
+        expect(d.images.map((i) => (i.width, i.height)), [
+          (2048, 1365),
+          (2048, 1365),
+        ]);
       },
     );
 

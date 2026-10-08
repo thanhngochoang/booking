@@ -105,6 +105,28 @@ Mỗi cổng là một interface ở lớp miền/ứng dụng; hiện thực Fi
 | `Scheduler` | Việc định kỳ (hết hạn, nhắc lịch, huy hiệu) | Cloud Scheduler + Functions | Cron/queue (BullMQ, Cloud Tasks, Temporal) |
 | `Clock`, `IdGenerator` | Thời gian, id | Hệ thống | Hệ thống |
 
+### Ảnh tải lên (`FileStorage`, #147)
+
+Mọi ảnh người dùng tải lên đi qua `MediaUploader.upload(image, storagePath:, purpose:)`; chỗ gọi chọn một `ImagePurpose` (bắt buộc, không có giá trị mặc định). Nén, xoá EXIF và đặt kiểu nội dung JPEG xảy ra bên trong uploader, nên nơi gọi không tự nén. Bảng dưới là hợp đồng mà **mọi hiện thực `FileStorage`** phải giữ (cả Firebase Storage lẫn S3/GCS/MinIO sau này):
+
+| Mục đích (`ImagePurpose`) | `customMetadata.purpose` | Cạnh dài | JPEG q | Dự kiến | Giới hạn (`maxBytes`) | `Cache-Control` | Đường dẫn hiện có |
+|---|---|---|---|---|---|---|---|
+| `avatar` | `avatar` | 512 px | 80 | ~60 KB | 512 KiB | `public, max-age=31536000` | `avatars/{uid}/{ulid}.jpg` |
+| `chat` | `chat` | 1280 px | 75 | ~150 KB | 1,5 MiB | `private, max-age=31536000` | `chats/{chatId}/{uid}/{clientId}.jpg` |
+| `share` | `share` | 1600 px | 80 | ~300 KB | 2 MiB | `public, max-age=31536000` | `posts/…` (ảnh thực tế, ảnh sự kiện), `eventCovers/{uid}/{eventId}/{ulid}.jpg` |
+| `deliverySample` | `delivery_sample` | 1600 px | 75 | ~250 KB | 2 MiB | `private, max-age=31536000` | do #152 đặt |
+| `portfolio` | `portfolio` | 2048 px | 82 | ~500 KB | 3 MiB | `public, max-age=31536000` | `posts/{uid}/{postId}/{key}.jpg` |
+| `document` | `document` | 2048 px | 85 | ~600 KB | 3 MiB | `private, max-age=31536000` | `awardProofs/{uid}/{awardId}/{ulid}.jpg`; giấy tờ định danh do #135 đặt |
+
+Quy tắc:
+
+- **Chỉ JPEG.** Một kiểu nội dung duy nhất (`image/jpeg`) cho mọi mục đích: giải mã được ở Android, iOS, web và `sharp` của Function đóng dấu mờ; rules chỉ cần một điều kiện. Tệp tải lên mới luôn kết thúc `.jpg` và đổi tên mỗi lần tải (nên cache một năm an toàn); các tệp ảnh chat cũ đuôi `.webp` (nội dung vẫn là JPEG) vẫn đọc được. WebP chưa dùng (câu hỏi chủ sở hữu 1, mặc định JPEG). **Giới hạn đã biết:** nguồn PNG có kênh trong suốt sẽ thành nền đen khi mã hoá JPEG trên Android; trải lên nền trắng trước khi mã hoá là cải tiến sau.
+- **Không còn dữ liệu cá nhân trong tệp.** Ứng dụng gọi bộ mã hoá với `keepExif: false` và `autoCorrectionAngle: true` (hướng ảnh được ghi vào điểm ảnh), rồi `stripJpegMetadata` trong Dart bỏ APP1 (EXIF, XMP, gồm GPS), APP3–APP15, COM và APP2 không phải ICC, ở mọi lần quét và mọi dữ liệu sau EOI. Giữ APP0 (JFIF) và **hồ sơ màu ICC** (ảnh Display P3 vẫn đúng màu; không phải dữ liệu cá nhân). Hệ thống riêng không được nhận ảnh có EXIF từ máy khách mà không xoá lại.
+- **Siêu dữ liệu đối tượng.** `contentType: image/jpeg`, `cacheControl` theo bảng, `customMetadata: {purpose: <mã>}`. `purpose` chỉ để vận hành và kiểm toán; giới hạn thực thi dựa trên đường dẫn, không dựa trên giá trị do máy khách khai.
+- **Giới hạn phía máy chủ theo đường dẫn.** Mỗi đường dẫn nhận một giới hạn bằng `maxBytes` của mục đích của nó (`jpegUpTo(n)` trong `app_flutter/firebase/storage.rules`: `request.resource.contentType == 'image/jpeg' && request.resource.size <= n`). `posts/` chứa cả portfolio (2048) lẫn ảnh chia sẻ (1600) nên lấy giới hạn lớn hơn (3 MiB). Một `FileStorage` tự vận hành (presigned URL của S3/GCS/MinIO) phải ép đúng bảng này: kiểu nội dung `image/jpeg` và kích thước tối đa theo tiền tố khoá (điều kiện `content-length-range` và `Content-Type` trong chính sách POST đã ký, hoặc kiểm tra ở cổng tải lên). Đường dẫn mới dùng `jpegUpTo(<maxBytes của mục đích>)`, không bao giờ `image/.*`. Không có đường dẫn ghi nào dưới `users/{uid}/**` (đã đóng).
+- **Kích thước đi cùng lần tải.** `UploadedMedia` mang `width`, `height`, `sizeBytes` do bộ nén đo; S10.01 ghi `imageMeta.w/h`, dòng thời gian sự kiện dùng lại thay vì đo lại.
+- **Đồng bộ.** `test/data/media/storage_rules_limits_sync_test.dart` so từng khối `match` của `storage.rules` với `ImagePurpose.maxBytes`; sửa bảng thì sửa cả hai. Cùng test đòi mọi dòng `allow create|update|write` không phải `if false` đều dùng `jpegUpTo(`, để đường dẫn Storage mới không bỏ qua giới hạn kiểu và kích thước; ảnh chat và minh chứng thêm `resource == null` (không ghi đè).
+
 **Luật phụ thuộc** (kiểm bằng test, mục 7): `lib/domain/**` và `lib/features/**` không được `import` `cloud_firestore`, `firebase_*`; chỉ `lib/data/firebase/**`, `lib/firebase_options.dart` và `lib/main.dart` được phép.
 
 ## 4. Ma trận phân quyền (chính sách, không phụ thuộc cách thực thi)

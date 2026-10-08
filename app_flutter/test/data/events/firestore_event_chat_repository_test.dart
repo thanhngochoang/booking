@@ -8,6 +8,7 @@ import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/events/event_chat.dart';
 import 'package:photobooking/data/events/firestore_event_chat_repository.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 class _MockFunctions extends Mock implements FirebaseFunctions {}
@@ -238,6 +239,18 @@ void main() {
         });
       },
     );
+
+    test('event chat images use the chat purpose', () async {
+      answer({'id': 'c2'});
+      await repo.sendImage(
+        'ev1',
+        const PickedImage(path: '/tmp/a.jpg', name: 'a.jpg'),
+        clientId: 'c2',
+      );
+      expect(uploader.purposes, {
+        'chats/event_ev1/u1/c2.jpg': ImagePurpose.chat,
+      });
+    });
 
     test('sendLocation sends the point', () async {
       answer({'id': 'c3'});

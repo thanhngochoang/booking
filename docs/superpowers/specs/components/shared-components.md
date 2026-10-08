@@ -310,6 +310,9 @@ Biến thể `customer` (S15.02: tag thể loại, `StatusBadge`, tiêu đề, n
 #### MilestoneTable · Mới
 Bảng mốc tiền: mỗi dòng đĩa số thứ tự, tên mốc + dòng phụ, số tiền tabular; dùng ở S15.04, S16.03 (dạng một dòng chữ) và S04.03 / S05.02 khi hợp đồng 100% được chốt. Mốc cuối nhận phần dư làm tròn.
 
+### `ImagePurpose` / `MediaUploader.upload(purpose:)` · Đã có (#147)
+Mọi màn tải ảnh lên (S10.01, S05.05, S11.05, S12.01, S25 minh chứng, S07.01, S11.06, ảnh đại diện S09.03) gọi `MediaUploader.upload(image, storagePath:, purpose: ImagePurpose.<x>)`; `purpose` bắt buộc. Nén trên máy, xoá EXIF và JPEG nằm trong uploader (bảng mục đích, giới hạn và quy tắc: `data-model/README.md` mục "Ảnh tải lên"). Màn không tự gọi bộ nén và không import `firebase_storage` hay `flutter_image_compress`; tiến độ và kết quả (`UploadedMedia` có `width`, `height`, `sizeBytes`) đọc qua `UploadEvent`. Bản giả trong test: `FakeMediaUploader.purposes` (đường dẫn → mục đích) và `FakeImageCompressor`.
+
 ## 5. Công cụ không phải widget
 
 ### Định dạng · Mới
@@ -393,6 +396,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `MapPreview` | S13.01, S13.05, S13.08, S14.03 |
 | `ProviderMark`, `ProviderTag` | S02.02, S02.06, S03.01, S15.02, S15.03, S15.04, S24.01 |
 | `AwardChip`, `AwardRow` | S03.01, S25.01 |
+| `ImagePurpose`, `MediaUploader.upload(purpose:)` | mọi màn tải ảnh: S10.01, S05.05, S11.05, S12.01, S25 (minh chứng), S07.01, S11.06, S09.03 |
 | `PortfolioViewToggle`, `AlbumTile` | S03.01, S24.02 |
 | `ReorderableRow`, `PostPickerGrid` | S24.02, S24.04, S24.01 (chế độ sắp xếp) |
 | `JobCard` | S15.02, S16.02 |
