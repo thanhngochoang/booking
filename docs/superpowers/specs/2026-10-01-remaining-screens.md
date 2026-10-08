@@ -123,7 +123,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | 🟡 **lệch mock**: thiếu nhóm Chế độ, Số điện thoại, Đăng xuất; giao diện và kiểu nút đổi sang `SegmentedTabs` | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
-| S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) | S21 |
+| S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |
 | **S11** | **Tham gia sự kiện** | | | | | |
 | S11.01 | Danh sách sự kiện | `/events` | cả hai | 3b | ✅ đã làm (10c) | S15 |
 | S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ✅ đã làm (10c) | S16 |

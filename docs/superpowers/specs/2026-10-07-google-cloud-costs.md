@@ -92,6 +92,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
 | Ghi khác | 20 lượt/MAU/tháng |
 | Mỗi lần gọi Function | 0.4 giây, 0.5 vCPU, 256 MiB → 0.2 vCPU-giây, 0.1 GiB-giây |
 | Ảnh (sau nén) | avatar 512 q80 ≈ 60 KB; chat 1280 q75 ≈ 150 KB; portfolio 2048 q82 ≈ 500 KB; mẫu 1600 q75 ≈ 250 KB (watermark) |
+| Ảnh trước #147 | Ảnh hiện tại trước #147: 2048 px q85 ≈ 650 KB cho mọi mục đích (avatar, chat, ảnh chia sẻ, minh chứng đều như nhau); sau #147 theo bảng mục đích ở dòng "Ảnh (sau nén)" (trung bình theo tỉ lệ xem giả định ≈ 172 MB/MAU/tháng thay vì 390 MB); thumbnail chưa có (xem lưới/feed vẫn tải ảnh 2048 px; thumbnail ~400 px ~35 KB lúc tải lên là đòn bẩy egress lớn nhất còn lại, đơn vị riêng) |
 | Kho ảnh | 60 ảnh portfolio/thợ; 10 mẫu/booking; 5 ảnh chat/booking |
 | Xem ảnh | 600 ảnh/MAU/tháng; không tối ưu = 150 KB/ảnh trung bình (90 MB/MAU/tháng) |
 | SMS | người dùng mới/tháng = 50% MAU ra mắt, 30% MAU tăng trưởng; 40-50% cần xác minh SĐT |
