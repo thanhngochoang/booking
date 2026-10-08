@@ -41,8 +41,8 @@ Màn: S06.01, S06.04, S10.01, S06.02, S06.03, S08.01, S08.05, S08.02, S08.03, S0
 
 - **Thông tin**: `/action` (NAG) · sub‑project 3 · Chưa có (hiện empty trong `ActionTab`).
 - **Mục đích**: đăng một lần cho cả portfolio và feed, luôn gắn gói.
-- **Bố cục**: Back + "Đăng bài"; `SegmentedTabs` **Bài đăng / Sự kiện** (Sự kiện → S12.01); lưới ảnh 2 cột (≤ 10, ô cuối là dấu +); ô mô tả; ô **Gói dịch vụ (bắt buộc)** viền nhấn; hàng Địa điểm + Phong cách; công tắc "Thêm vào portfolio"; nút "Đăng".
-- **Dữ liệu**: tải ảnh (nén ≤ 2048px WebP) lên Storage; tạo `posts` (`kind=work`, `serviceId`, `location`, `style`).
+- **Bố cục**: thanh tab‑gốc "Đăng bài" (tab giữa, không có nút quay lại); `SegmentedTabs` **Bài đăng / Sự kiện** (Sự kiện → S12.01); lưới ảnh 2 cột (≤ 10, ô cuối là dấu +; app dùng ô vuông) và dòng đếm "{n} / 10 ảnh"; ô mô tả; ô **Gói dịch vụ (bắt buộc)** viền nhấn; hàng Địa điểm + Phong cách; công tắc "Thêm vào portfolio"; nút "Đăng".
+- **Dữ liệu**: tải ảnh lên Storage (nén trên máy theo mục đích portfolio: cạnh dài 2048 px, JPEG q82, xoá EXIF; `posts/{uid}/{postId}/{file}`, ≤ 3 MiB); tạo `posts` (`kind=work`, `serviceId`, `location`, `style`).
 - **Trạng thái**: thiếu gói/ảnh → nút vô hiệu và lỗi dưới ô; chưa có gói nào → nút "Thêm gói" (→ S08.01 bước gói); tải lên có thanh tiến độ từng ảnh, lỗi một ảnh → thử lại riêng; nháp tự lưu cục bộ.
 - **Tương tác**: kéo đổi thứ tự ảnh (có nút lên/xuống thay thế); gỡ ảnh; đăng xong về S02.01 với bài mới ở đầu.
 - **Chuỗi**: `s21_title` "Đăng bài", `s21_tabPost` "Bài đăng", `s21_tabEvent` "Sự kiện", `s21_service` "Gói dịch vụ · bắt buộc", `s21_portfolio` "Thêm vào portfolio", `s21_publish` "Đăng".
