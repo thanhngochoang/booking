@@ -5902,11 +5902,17 @@ abstract class AppLocalizations {
   /// **'{a} / {n} giải đã duyệt'**
   String s2501Progress(int a, int n);
 
-  /// No description provided for @s2501Listed.
+  /// No description provided for @s2501ListedTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Đã khai · {n} giải'**
-  String s2501Listed(int n);
+  /// **'Đã khai'**
+  String get s2501ListedTitle;
+
+  /// No description provided for @s2501ListedCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} giải'**
+  String s2501ListedCount(int n);
 
   /// No description provided for @s2501Add.
   ///

@@ -93,11 +93,12 @@ Màn của phần A–C trong [`../2026-10-05-provider-types-portfolio-jobs-desi
 - **Thông tin**: `/me/awards` · thợ ảnh · B1 · Chưa có.
 - **Mục đích**: khai giải, theo dõi duyệt và biết còn bao nhiêu nữa thì lên NAG.
 - **Điểm vào → ra**: S09.02 "Giải thưởng", dòng nhắc ở S09.01, lối lên NAG ở S16.02 → S25.02.
-- **Bố cục**: thanh trên Back · "Giải thưởng" · nút (i) (giải thích hạng NAG, sheet chỉ đọc); thẻ `GlassCard` viền nổi bật (trung tính): biểu tượng giải vàng, "Hạng Nhiếp ảnh gia (NAG)", "Còn {n} giải đã duyệt nữa để nhận tích vàng", số "{a} / 3", `CapacityBar`; `SectionHeader` "Đã khai · {n} giải"; danh sách `AwardRow` (biểu tượng, "{kết quả} · {cuộc thi} {năm}", `StatusBadge` + hạng mục hoặc lý do); nút chính "Thêm giải thưởng".
+- **Bố cục**: thanh trên Back · "Giải thưởng" · nút (i) (giải thích hạng NAG, sheet chỉ đọc); thẻ `GlassCard` viền nổi bật (trung tính): biểu tượng giải vàng, "Hạng Nhiếp ảnh gia (NAG)", "Còn {n} giải đã duyệt nữa để nhận tích vàng", số "{a} / 3", `CapacityBar`; `SectionHeader` "Đã khai" bên trái và "{n} giải" bên phải (chữ phụ, không phải liên kết; theo mock); danh sách `AwardRow` (biểu tượng, "{kết quả} · {cuộc thi} {năm}", `StatusBadge` + hạng mục hoặc lý do); nút chính "Thêm giải thưởng".
 - **Trạng thái**: chưa có giải → `EmptyState` "Giải thưởng giúp khách tin tác phẩm của bạn" + nút chính; đã là NAG → thẻ thành "Bạn là Nhiếp ảnh gia · từ {ngày}"; hồ sơ Studio → không có thẻ hạng, chỉ danh sách.
 - **Tương tác**: chạm giải `needs_info` / `rejected` / `pending` / `approved` mở S25.02 để sửa (sửa giải đã duyệt hỏi xác nhận "Giải sẽ được duyệt lại"); nhấn giữ → Xoá (`ConfirmSheet`).
-- **Chuỗi**: `s2501_title` "Giải thưởng", `s2501_tier` "Hạng Nhiếp ảnh gia (NAG)", `s2501_remaining` "Còn {n} giải đã duyệt nữa để nhận tích vàng", `s2501_isArtist` "Bạn là Nhiếp ảnh gia · từ {date}", `s2501_listed` "Đã khai", `s2501_add` "Thêm giải thưởng", trạng thái `awardPending` "Chờ duyệt", `awardApproved` "Đã duyệt", `awardNeedsInfo` "Bổ sung", `awardRejected` "Từ chối", `awardRevoked` "Đã thu hồi".
+- **Chuỗi**: `s2501_title` "Giải thưởng", `s2501_tier` "Hạng Nhiếp ảnh gia (NAG)", `s2501_remaining` "Còn {n} giải đã duyệt nữa để nhận tích vàng", `s2501_isArtist` "Bạn là Nhiếp ảnh gia · từ {date}", `s2501ListedTitle` "Đã khai", `s2501ListedCount` "{n} giải", `s2501_add` "Thêm giải thưởng", trạng thái `awardPending` "Chờ duyệt", `awardApproved` "Đã duyệt", `awardNeedsInfo` "Bổ sung", `awardRejected` "Từ chối", `awardRevoked` "Đã thu hồi".
 - **Phân tích**: `award_view_list{approved, pending}`.
+- **Duyệt**: CLI `scripts/awards-local.sh` tới khi có S23.07 (#83).
 - **Chấp nhận**: trạng thái luôn có chữ; lý do của staff hiện nguyên văn; khi giải thứ 3 được duyệt, thẻ đổi sang "Bạn là Nhiếp ảnh gia" không cần tải lại (nghe `photographers/{uid}`).
 
 ## S25.02 · Thêm / sửa giải thưởng (sheet)

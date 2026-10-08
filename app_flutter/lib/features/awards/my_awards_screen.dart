@@ -205,6 +205,9 @@ class _Body extends ConsumerWidget {
     final theme = Theme.of(context);
     final approved = awards.where((a) => a.status == AwardStatus.approved);
     final tier = ref.watch(myTierProvider);
+    final tertiary = theme.brightness == Brightness.dark
+        ? AppColorsDark.foregroundMuted
+        : AppColors.foregroundMuted;
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.s4,
@@ -222,13 +225,33 @@ class _Body extends ConsumerWidget {
               _TierCard(tier: t ?? AwardTier(approvedCount: approved.length)),
         ),
         const SizedBox(height: AppSpace.s2),
+        // Mock `.sec`: title left, count right in tertiary ink (`--ink-3`);
+        // one label for screen readers, the count is not a link.
         Semantics(
           header: true,
+          label: '${l.s2501ListedTitle}, ${l.s2501ListedCount(awards.length)}',
+          excludeSemantics: true,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
-            child: Text(
-              l.s2501Listed(awards.length),
-              style: theme.textTheme.titleMedium,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
+                  child: Text(
+                    l.s2501ListedTitle,
+                    key: const Key('awards-listed-title'),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  l.s2501ListedCount(awards.length),
+                  key: const Key('awards-listed-count'),
+                  style: theme.textTheme.bodySmall?.copyWith(color: tertiary),
+                ),
+              ],
             ),
           ),
         ),

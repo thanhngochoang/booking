@@ -3348,8 +3348,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String s2501Listed(int n) {
-    return 'Đã khai · $n giải';
+  String get s2501ListedTitle => 'Đã khai';
+
+  @override
+  String s2501ListedCount(int n) {
+    return '$n giải';
   }
 
   @override

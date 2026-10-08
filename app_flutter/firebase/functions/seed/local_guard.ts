@@ -1,7 +1,7 @@
 // Refuses to touch anything but local emulators. Shared by the seed, the integration tests
 // and the emulator client, so no code path can reach a real Firebase project by accident.
 
-const LOCAL = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\]):\d+$/;
+export const LOCAL_HOST = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\]):\d+$/;
 
 export interface LocalGuardOptions {
   /** Also require FUNCTIONS_EMULATOR_HOST (when the caller invokes functions). */
@@ -16,7 +16,7 @@ export function assertLocalEmulators(options: LocalGuardOptions = {}, env: NodeJ
   if (options.functions === true) keys.push('FUNCTIONS_EMULATOR_HOST');
   for (const key of keys) {
     const value = env[key];
-    if (value === undefined || !LOCAL.test(value)) {
+    if (value === undefined || !LOCAL_HOST.test(value)) {
       throw new Error(`Refusing to run: ${key} must point at a local emulator (got ${value ?? 'nothing'}).`);
     }
   }
