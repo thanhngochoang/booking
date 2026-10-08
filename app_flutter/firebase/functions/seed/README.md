@@ -76,7 +76,7 @@ Run `scripts/backend-local.sh --fresh` once: star reviews in saved emulator data
 | Inbox rows | An | booking request (unread), a sample `review_tomato` notice "Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9" (read) |
 | `users/{uid}/private/inbox` | Lan, An | `unreadCount` 2 and 1, matching the unread rows |
 | Earned badges | An | `top_rated`, `shoots_10`, `complete_profile`; progress `punctual` 3/5, `shoots_50` 12/50 |
-| Earned badges | Lan | `loyal_customer`; progress `sharer` 2/5, `detailed_reviewer` 3/5 |
+| Earned badges | Lan | `loyal_customer`; progress `sharer` 0/5, `detailed_reviewer` 3/5 |
 | `badges/{id}` | all | the 12-badge catalogue |
 | `users/{uid}/private/notification_prefs` | none | no doc, so the defaults apply |
 

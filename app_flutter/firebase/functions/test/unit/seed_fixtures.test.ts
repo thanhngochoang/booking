@@ -25,6 +25,7 @@ import {
   SEED_PASSWORD,
   SEED_PHOTOGRAPHERS,
   SEED_REGISTRATION_LAN_SOON,
+  SEED_REVIEWS,
   SEED_USERS,
   seedDocuments,
 } from '../../seed/fixtures.js';
@@ -161,6 +162,20 @@ describe('seed notifications and badges', () => {
       { current: 3, target: 5 },
     );
     assert.equal(docs.some((d) => d.path.endsWith('/private/notification_prefs')), false);
+  });
+
+  test("Lan's badge progress equals what the evaluator computes from the seeded reviews and posts", () => {
+    const lan = LAN;
+    const graphemes = (t: string) =>
+      Array.from(new Intl.Segmenter('vi', { granularity: 'grapheme' }).segment(t.trim())).length;
+    const detailed = SEED_REVIEWS.filter((r) => r.customerId === lan && graphemes(r.text) >= 50).length;
+    const shared = docs.filter(
+      (d) => d.path.startsWith('posts/') && d.data.authorId === lan && d.data.kind === 'real_shoot',
+    ).length;
+    const entries = docs.find((d) => d.path === `users/${lan}/private/badgeProgress`)?.data.entries as Record<string, unknown>;
+    assert.equal(detailed, 3);
+    assert.deepEqual(entries.detailed_reviewer, { current: detailed, target: 5 });
+    assert.deepEqual(entries.sharer, { current: shared, target: 5 });
   });
 });
 

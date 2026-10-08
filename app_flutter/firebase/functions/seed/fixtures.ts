@@ -701,7 +701,8 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
   // Equal to what the evaluator computes from the seeded data, so a trigger run changes nothing.
   const anShoots = SEED_BOOKINGS.filter((b) => b.photographerId === AN && b.status === 'completed').length;
   progress(AN, { punctual: { current: 3, target: 5 }, shoots_50: { current: Math.min(anShoots, 50), target: 50 } });
-  progress(LAN, { sharer: { current: 0, target: 5 }, detailed_reviewer: { current: 0, target: 5 } });
+  // Lan has no real-shoot post; 3 of her seeded reviews have ≥ 50 graphemes (detailedReviews).
+  progress(LAN, { sharer: { current: 0, target: 5 }, detailed_reviewer: { current: 3, target: 5 } });
   return docs;
 }
 
