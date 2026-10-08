@@ -106,6 +106,7 @@ abstract final class AppIcons {
   static const IconData delete = Symbols.delete_rounded;
   static const IconData personRemove = Symbols.person_remove_rounded;
   static const IconData flag = Symbols.flag_rounded;
+  static const IconData supportAgent = Symbols.support_agent_rounded;
 }
 
 /// Icon sizes (logical pixels).

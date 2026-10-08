@@ -330,6 +330,93 @@ void main() {
     );
   });
 
+  testWidgets('a grouped quote_new row shows the three avatars and opens '
+      '/jobs/j1/applications', (tester) async {
+    final w = NotificationsWorld();
+    await _open(
+      tester,
+      rows: [
+        w.note(
+          'q',
+          type: 'quote_new',
+          category: NotificationCategory.jobs,
+          title: '3 nhiếp ảnh gia đã báo giá cho việc “Chụp kỷ yếu”',
+          body: 'Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá.',
+          target: '/jobs/j1/applications',
+          count: 3,
+          actors: const [
+            NotificationActor(id: 'p1', name: 'Minh Trí'),
+            NotificationActor(id: 'p2', name: 'Lan Chi'),
+            NotificationActor(id: 'p3', name: 'Hải'),
+          ],
+        ),
+      ],
+    );
+    for (final i in [0, 1, 2]) {
+      expect(
+        find.byKey(ValueKey('notification_group_avatar_$i')),
+        findsOneWidget,
+      );
+    }
+    expect(find.byIcon(AppIcons.work), findsOneWidget);
+    await tester.tap(find.textContaining('3 nhiếp ảnh gia'));
+    await tester.pumpAndSettle();
+    expect(find.text('stub /jobs/j1/applications'), findsOneWidget);
+  });
+
+  testWidgets('an event_host_invited row opens /events/e1/manage', (
+    tester,
+  ) async {
+    final w = NotificationsWorld();
+    await _open(
+      tester,
+      role: UserRole.photographer,
+      rows: [
+        w.note(
+          'h',
+          type: 'event_host_invited',
+          tab: NotificationTab.events,
+          category: NotificationCategory.events,
+          target: '/events/e1/manage',
+        ),
+      ],
+    );
+    await tester.tap(find.text('Tiêu đề h'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nội dung này không còn'), findsNothing);
+    expect(find.text('stub /events/e1/manage'), findsOneWidget);
+  });
+
+  testWidgets('an event_soon row shows the cover thumbnail', (tester) async {
+    final w = NotificationsWorld();
+    const cover = 'https://example.test/cover.jpg';
+    await _open(
+      tester,
+      rows: [
+        w.note(
+          'e',
+          type: 'event_soon',
+          tab: NotificationTab.events,
+          category: NotificationCategory.events,
+          target: '/e/e1',
+          thumbUrl: cover,
+        ),
+      ],
+    );
+    await tester.tap(find.text('Sự kiện'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(AppIcons.ticket), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Image &&
+            w.image is NetworkImage &&
+            (w.image as NetworkImage).url == cover,
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('loading shows row skeletons', (tester) async {
     await _open(tester, repository: HangingNotificationRepository());
     await tester.pump(const Duration(milliseconds: 200));
