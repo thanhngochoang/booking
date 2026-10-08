@@ -551,13 +551,88 @@ describe('payout use cases', () => {
 
   it('resumePayout goes to needs_approval when the account has no paid payout', async () => {
     const w = createPayoutWorld();
+    const a = await addAccount(w);
+    for (let i = 0; i < 3; i += 1) payoutHistory(w, a, 'failed');
+    await releasedPayment(w, '2026-10-15');
+    const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    assert.equal(po.status, 'on_hold');
+    assert.equal(po.approvedBy, undefined);
+    const resumed = await resumePayout(w.payoutDeps, ADMIN, po.id);
+    assert.equal(resumed.status, 'needs_approval');
+    assert.equal(resumed.holdReason, undefined);
+  });
+
+  it('resume keeps an earlier approval', async () => {
+    const w = createPayoutWorld();
     await addAccount(w);
     await releasedPayment(w, '2026-10-15');
     const po = await createPayout(w.payoutDeps, ADMIN, 'p1');
     await approvePayout(w.payoutDeps, ADMIN, po.id);
     await holdPayout(w.payoutDeps, ADMIN, po.id, 'Kiểm tra tài khoản');
     const resumed = await resumePayout(w.payoutDeps, ADMIN, po.id);
-    assert.equal(resumed.status, 'needs_approval');
-    assert.equal(resumed.holdReason, undefined);
+    assert.equal(resumed.status, 'pending');
+    assert.equal(resumed.approvedBy, ADMIN.uid);
+    assert.equal((await executePayout(w.payoutDeps, ADMIN, po.id)).status, 'paid');
+  });
+
+  it('an approved payout not yet sent satisfies the first-payout gate for the next one', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    await releasedPayment(w, '2026-10-15');
+    const first = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    // Created but not approved: the next one still waits.
+    await releasedPayment(w, '2026-10-16');
+    const waiting = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    assert.equal(waiting.status, 'needs_approval');
+    await approvePayout(w.payoutDeps, ADMIN, first.id);
+    await releasedPayment(w, '2026-10-17');
+    const next = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    assert.equal(next.status, 'pending');
+    assert.equal(next.firstPayout, false);
+  });
+
+  it('a processing approved payout satisfies the gate too', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    await releasedPayment(w, '2026-10-15');
+    const first = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    const approved = await approvePayout(w.payoutDeps, ADMIN, first.id);
+    w.payoutStore.seedPayout({ ...approved, status: 'processing' });
+    await releasedPayment(w, '2026-10-16');
+    assert.equal((await createPayout(w.payoutDeps, ADMIN, 'p1')).status, 'pending');
+  });
+
+  it('the hold rule looks only at the last three finished payouts to the account', async () => {
+    const w = createPayoutWorld();
+    const a = await addAccount(w);
+    for (let i = 0; i < 5; i += 1) payoutHistory(w, a, 'paid');
+    for (let i = 0; i < 3; i += 1) payoutHistory(w, a, 'failed');
+    await releasedPayment(w, '2026-10-15');
+    const held = await createPayout(w.payoutDeps, ADMIN, 'p1');
+    assert.equal(held.status, 'on_hold');
+    assert.equal(held.holdReason, HOLD_REASON_REPEATED_FAILURE);
+    assert.equal(held.firstPayout, false);
+  });
+
+  it('failures to another account do not count for the hold rule', async () => {
+    const w = createPayoutWorld();
+    const old = await addAccount(w, '0123450000');
+    for (let i = 0; i < 3; i += 1) payoutHistory(w, old, 'failed');
+    const fresh = await addAccount(w, '9988776655');
+    payoutHistory(w, fresh, 'paid');
+    await releasedPayment(w, '2026-10-15');
+    assert.equal((await createPayout(w.payoutDeps, ADMIN, 'p1')).status, 'pending');
+  });
+
+  it('no payout_paid entry when everything is withheld', async () => {
+    const w = createPayoutWorld();
+    const deps = { ...w.payoutDeps, policy: { ...w.payoutDeps.policy, feeBp: { individual: 10_000, artist: 0, studio: 0 } } };
+    await paidBeforeAccount(w);
+    const pay = await releasedFor(w, '2026-10-15', 'p1', 450_000);
+    const po = await createPayout(deps, ADMIN, 'p1');
+    await executePayout(deps, ADMIN, po.id);
+    assert.equal(ledgerOf(w, 'payout_paid').length, 0);
+    assert.deepEqual(ledgerOf(w, 'platform_fee').map((e) => [e.paymentId, e.amount]), [[pay, -450_000]]);
+    assert.ok([...w.store.ledgerEntries.values()].every((e) => !Object.is(e.amount, -0)));
   });
 });

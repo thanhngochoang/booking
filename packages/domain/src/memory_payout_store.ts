@@ -110,6 +110,21 @@ export class MemoryPayoutStore implements PayoutStore {
             (p) => p.payeeId === payeeId && statuses.includes(p.status),
           );
         },
+        hasApprovedOrPaidPayout: async (accountId) => {
+          read('hasApprovedOrPaidPayout');
+          return [...this.payouts.values()].some(
+            (p) =>
+              p.accountId === accountId &&
+              (p.status === 'paid' || ((p.status === 'pending' || p.status === 'processing') && !!p.approvedBy)),
+          );
+        },
+        lastFinishedPayouts: async (accountId, limit) => {
+          read('lastFinishedPayouts');
+          return [...this.payouts.values()]
+            .filter((p) => p.accountId === accountId && (p.status === 'paid' || p.status === 'failed'))
+            .sort((a, b) => (a.createdAt === b.createdAt ? b.id.localeCompare(a.id) : b.createdAt.localeCompare(a.createdAt)))
+            .slice(0, Math.max(0, limit));
+        },
         putAccount: (a) => stage(() => void this.accounts.set(`${a.userId}/${a.id}`, a)),
         putAccountView: (userId, v) => stage(() => void this.accountViews.set(userId, v)),
         putPayout: (p) => stage(() => void this.payouts.set(p.id, p)),

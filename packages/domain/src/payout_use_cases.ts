@@ -14,7 +14,7 @@ import {
   type PayoutStatus,
 } from './payout.js';
 import { isAccountActiveAt, isAccountWaitingAt, type PayoutAccount } from './payout_account.js';
-import { payoutLineOf } from './payout_policy.js';
+import { payoutLineOf, taxRateBpOf } from './payout_policy.js';
 import type { PayoutDeps, PayoutTx } from './payout_ports.js';
 
 export interface StaffActor {
@@ -32,27 +32,17 @@ function requireAdmin(actor: StaffActor): void {
   if (!actor.isAdmin) throw new DomainError('permission_denied');
 }
 
-/** Paid and failed payouts to one account, oldest first. */
-async function accountHistory(tx: PayoutTx, payeeId: string, accountId: string): Promise<Payout[]> {
-  const done = await tx.listPayouts(payeeId, ['paid', 'failed']);
-  return done
-    .filter((p) => p.accountId === accountId)
-    .sort((a, b) => (a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt)));
+/**
+ * Staff approve the first payout to each account (M5): until some payout to it is paid or
+ * approved, and for every payout while staff must still compare the holder name.
+ */
+function needsApproval(account: PayoutAccount, cleared: boolean): boolean {
+  return !cleared || account.nameStatus === 'pending_review';
 }
 
-/** Nothing has been paid to the account yet: its next payout is its first. */
-function isFirstPayout(history: readonly Payout[]): boolean {
-  return !history.some((p) => p.status === 'paid');
-}
-
-/** Staff approve the first payout to each account and every payout to an account whose name they must still compare (M5). */
-function needsApproval(account: PayoutAccount, history: readonly Payout[]): boolean {
-  return isFirstPayout(history) || account.nameStatus === 'pending_review';
-}
-
-/** The last MAX_CONSECUTIVE_FAILURES payouts to the account all failed. */
-function failedTooOften(history: readonly Payout[]): boolean {
-  const last = history.slice(-MAX_CONSECUTIVE_FAILURES);
+/** The last MAX_CONSECUTIVE_FAILURES finished payouts to the account all failed. */
+async function failedTooOften(tx: PayoutTx, accountId: string): Promise<boolean> {
+  const last = await tx.lastFinishedPayouts(accountId, MAX_CONSECUTIVE_FAILURES);
   return last.length === MAX_CONSECUTIVE_FAILURES && last.every((p) => p.status === 'failed');
 }
 
@@ -80,7 +70,8 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
       const gross = p.amount - (await tx.refundedTotal(p.id));
       if (gross > 0) payable.push({ payment: p, gross });
     }
-    const history = await accountHistory(tx, payeeId, account.id);
+    const cleared = await tx.hasApprovedOrPaidPayout(account.id);
+    const held = await failedTooOften(tx, account.id);
     if (payable.length === 0) throw new DomainError('not_eligible');
 
     const items: PayoutItem[] = payable.map(({ payment, gross }) => {
@@ -88,10 +79,7 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
       return { paymentId: payment.id, amount: line.gross, fee: line.fee, tax: line.tax, net: line.net };
     });
     const sum = (f: (i: PayoutItem) => number): number => items.reduce((s, i) => s + f(i), 0);
-    const rates = payoutLineOf(0, payeeType, deps.policy);
-    const firstPayout = isFirstPayout(history);
-    const held = failedTooOften(history);
-    const status: PayoutStatus = held ? 'on_hold' : needsApproval(account, history) ? 'needs_approval' : 'pending';
+    const status: PayoutStatus = held ? 'on_hold' : needsApproval(account, cleared) ? 'needs_approval' : 'pending';
     const payout: Payout = {
       id: deps.ids.newId(),
       payeeId,
@@ -102,9 +90,9 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
       platformFee: sum((i) => i.fee),
       taxWithheld: sum((i) => i.tax),
       amountNet: sum((i) => i.net),
-      feeRateBp: rates.feeRateBp,
-      taxRateBp: rates.taxRateBp,
-      firstPayout,
+      feeRateBp: deps.policy.feeBp[payeeType],
+      taxRateBp: taxRateBpOf(payeeType, deps.policy),
+      firstPayout: !cleared,
       ...(held ? { holdReason: HOLD_REASON_REPEATED_FAILURE } : {}),
       createdBy: actor.uid,
       createdAt: now,
@@ -209,6 +197,7 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
         if (pay === null || pay === undefined) return;
         tx.setPayment({ ...pay, escrowStatus: 'paid_out', updatedAt: at });
         // Per payment: transfer + tax + fee = −amount, so the ledger nets to zero (no zero entries).
+        // A zero line (nothing to transfer, no tax, no fee) is skipped: never a −0 entry.
         const split = itemSplit(item);
         const lines: [LedgerEntryType, number][] = [
           ['payout_paid', split.net],
@@ -216,7 +205,7 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
           ['platform_fee', split.fee],
         ];
         for (const [type, amount] of lines) {
-          if (type !== 'payout_paid' && amount <= 0) continue;
+          if (amount <= 0) continue;
           const entry: LedgerEntry = {
             id: deps.ids.newId(),
             type,
@@ -271,7 +260,10 @@ export async function holdPayout(
   });
 }
 
-/** Back to `pending`, or to `needs_approval` when staff must still approve a payout to this account. */
+/**
+ * Back to `pending` when staff approved it before the hold or the account is cleared; otherwise to
+ * `needs_approval`.
+ */
 export async function resumePayout(deps: PayoutDeps, actor: StaffActor, payoutId: string): Promise<Payout> {
   requireAdmin(actor);
   return deps.store.runTransaction(async (tx) => {
@@ -279,8 +271,9 @@ export async function resumePayout(deps: PayoutDeps, actor: StaffActor, payoutId
     if (p === null) throw new DomainError('not_found');
     if (p.status !== 'on_hold') throw new DomainError('conflict');
     const account = await tx.getAccount(p.payeeId, p.accountId);
-    const history = await accountHistory(tx, p.payeeId, p.accountId);
-    const status: PayoutStatus = account === null || needsApproval(account, history) ? 'needs_approval' : 'pending';
+    const cleared = await tx.hasApprovedOrPaidPayout(p.accountId);
+    const status: PayoutStatus =
+      p.approvedBy !== undefined ? 'pending' : account === null || needsApproval(account, cleared) ? 'needs_approval' : 'pending';
     const { holdReason, ...rest } = p;
     void holdReason;
     const resumed: Payout = { ...rest, status, updatedAt: deps.clock.now().toISOString() };

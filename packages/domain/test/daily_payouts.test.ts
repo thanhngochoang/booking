@@ -155,4 +155,25 @@ describe('runDailyPayouts', () => {
     assert.deepEqual(await runDailyPayouts(w.payoutDeps), { ...ZERO, created: 1, executed: 1, failed: 1 });
     assert.equal(w.payGateway.calls.length, 2);
   });
+
+  it('an approved first payout lets the next day\'s payout go without a second approval', async () => {
+    const w = createPayoutWorld();
+    await addAccount(w);
+    await releasedFor(w, '2026-10-15');
+    // Day 1: A is created and waits for staff.
+    assert.deepEqual(await runDailyPayouts(w.payoutDeps), { ...ZERO, created: 1, needsApproval: 1 });
+    const [a] = [...w.payoutStore.payouts.values()];
+    assert.ok(a);
+    await approvePayout(w.payoutDeps, ADMIN, a.id);
+    // Day 2: new money arrives before A is sent; B is created pending, then both are sent.
+    w.clock.advanceHours(24);
+    const later = await releasedFor(w, '2026-10-16');
+    const report = await runDailyPayouts(w.payoutDeps);
+    assert.deepEqual(report, { ...ZERO, created: 1, executed: 2, paid: 2 });
+    const b = [...w.payoutStore.payouts.values()].find((p) => p.items.some((i) => i.paymentId === later));
+    assert.ok(b);
+    assert.equal(b.firstPayout, false);
+    assert.equal(b.approvedBy, undefined);
+    assert.equal(b.status, 'paid');
+  });
 });

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { DomainError } from '../src/errors.js';
 import { DEFAULT_PAYOUT_POLICY, payoutLineOf, type PayoutPolicy } from '../src/payout_policy.js';
 
 describe('payout policy', () => {
@@ -42,6 +43,16 @@ describe('payout policy', () => {
       }
     }
     assert.equal(payoutLineOf(1, 'individual', DEFAULT_PAYOUT_POLICY).net, 1);
+  });
+
+  it('a negative or non-integer gross is invalid_argument', () => {
+    for (const gross of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      assert.throws(
+        () => payoutLineOf(gross, 'individual', DEFAULT_PAYOUT_POLICY),
+        (e: unknown) => e instanceof DomainError && e.code === 'invalid_argument',
+        String(gross),
+      );
+    }
   });
 
   it('the default policy is 0 fee and 5% + 2% individual tax', () => {

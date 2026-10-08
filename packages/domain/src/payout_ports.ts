@@ -18,6 +18,13 @@ export interface PayoutTx {
   getActiveAccount(userId: string): Promise<PayoutAccount | null>;
   getAccount(userId: string, accountId: string): Promise<PayoutAccount | null>;
   listPayouts(payeeId: string, statuses: readonly PayoutStatus[]): Promise<Payout[]>;
+  /**
+   * Whether staff have cleared this account: some payout to it is `paid`, or is `pending`/
+   * `processing` with `approvedBy` set (`failed` never counts). Bounded read (limit 1 per query).
+   */
+  hasApprovedOrPaidPayout(accountId: string): Promise<boolean>;
+  /** The last `limit` finished (`paid`/`failed`) payouts to this account, newest `createdAt` first. */
+  lastFinishedPayouts(accountId: string, limit: number): Promise<Payout[]>;
   putAccount(a: PayoutAccount): void;
   putAccountView(userId: string, v: PayoutAccountView): void;
   putPayout(p: Payout): void;

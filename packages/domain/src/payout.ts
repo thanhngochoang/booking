@@ -49,7 +49,7 @@ export interface Payout {
   /** The policy rates used, snapshotted so history never changes. */
   readonly feeRateBp: number;
   readonly taxRateBp: number;
-  /** No payout to this account had been paid when this one was created. */
+  /** No payout to this account had been paid or approved when this one was created. */
   readonly firstPayout: boolean;
   readonly approvedBy?: string;
   readonly approvedAt?: string;

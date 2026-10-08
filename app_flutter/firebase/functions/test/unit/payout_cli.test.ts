@@ -87,9 +87,8 @@ describe('payouts staff CLI', () => {
     await runCli(['hold', id, 'Kiểm tra tài khoản', '--actor', 's1'], deps(), io, 'fake');
     assert.equal(store.payouts.get(id)?.status, 'on_hold');
     await runCli(['resume', id, '--actor', 's1'], deps(), io, 'fake');
-    // Nothing paid to the account yet: resuming sends it back to staff approval.
-    assert.equal(store.payouts.get(id)?.status, 'needs_approval');
-    await approve(id);
+    // The approval given before the hold is kept.
+    assert.equal(store.payouts.get(id)?.status, 'pending');
     await runCli(['execute', id, '--actor', 's1'], deps(), io, 'fake');
     assert.equal(store.payouts.get(id)?.status, 'paid');
     assert.equal(booking.payments.get('pay1')?.escrowStatus, 'paid_out');

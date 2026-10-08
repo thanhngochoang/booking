@@ -222,6 +222,27 @@ export class FirestorePayoutStore implements PayoutStore {
           );
           return snap.docs.flatMap((d) => payoutFromFirestore(d.id, d.data()) ?? []);
         },
+        hasApprovedOrPaidPayout: async (accountId) => {
+          const byAccount = this.db.collection(PAYOUTS_COLLECTION).where('accountId', '==', accountId);
+          const paid = await fTx.get(byAccount.where('status', '==', 'paid').limit(1));
+          if (!paid.empty) return true;
+          const approved = await fTx.get(
+            byAccount.where('status', 'in', ['pending', 'processing']).where('approvedBy', '!=', null).limit(1),
+          );
+          return !approved.empty;
+        },
+        lastFinishedPayouts: async (accountId, limit) => {
+          if (limit <= 0) return [];
+          const snap = await fTx.get(
+            this.db
+              .collection(PAYOUTS_COLLECTION)
+              .where('accountId', '==', accountId)
+              .where('status', 'in', ['paid', 'failed'])
+              .orderBy('createdAt', 'desc')
+              .limit(limit),
+          );
+          return snap.docs.flatMap((d) => payoutFromFirestore(d.id, d.data()) ?? []);
+        },
         putAccount: (a) => writes.push((t) => t.set(accounts(a.userId).doc(a.id), accountToFirestore(a))),
         putAccountView: (userId, v) =>
           writes.push((t) => t.set(this.db.collection(PAYOUT_ACCOUNTS_COLLECTION).doc(userId), accountViewToFirestore(v))),

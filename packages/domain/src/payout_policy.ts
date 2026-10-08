@@ -6,6 +6,7 @@
  * The platform bears gateway and payout fees; they are never part of this policy.
  */
 
+import { DomainError } from './errors.js';
 import type { ProviderType } from './provider_type.js';
 
 export interface PayoutPolicy {
@@ -39,10 +40,12 @@ export function taxRateBpOf(payee: ProviderType, policy: PayoutPolicy): number {
 
 /**
  * Integer VND; tax only for 'individual' and 'artist'; Math.round per line. Both fee and tax are
- * taken on the gross amount and net = gross − fee − tax, never below 0.
+ * taken on the gross amount and net = gross − fee − tax, never below 0. A negative or non-integer
+ * gross is `invalid_argument`.
  */
 export function payoutLineOf(gross: number, payee: ProviderType, policy: PayoutPolicy): PayoutLine {
-  const amount = Number.isSafeInteger(gross) && gross > 0 ? gross : 0;
+  if (!Number.isSafeInteger(gross) || gross < 0) throw new DomainError('invalid_argument');
+  const amount = gross;
   const feeRateBp = policy.feeBp[payee];
   const taxRateBp = taxRateBpOf(payee, policy);
   const fee = Math.min(amount, Math.round((amount * feeRateBp) / BP));
