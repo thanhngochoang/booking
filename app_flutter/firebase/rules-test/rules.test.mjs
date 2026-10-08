@@ -1288,14 +1288,17 @@ test('a customer cannot write photographers/{uid}.stats.tomatoPct', async () => 
   await asCustomer('cust_tp');
   await env.withSecurityRulesDisabled(async (c) =>
     setDoc(doc(c.firestore(), 'photographers/p_tp'), {
-      onboardingComplete: true, verified: true, bio: 'x', stats: { reviewCount: 3, tomatoCount: 3, tomatoPct: 100, score: 0.8 },
+      onboardingComplete: true, verified: true, bio: 'x', stats: { reviewCount: 4, tomatoCount: 3, tomatoPct: 75, score: 0.8 },
     }));
+  // The stored tomatoPct (75) differs from the attempted one (100): writing the stored value
+  // back changes nothing, so the rules rightly allow it and the assertion would test nothing.
   const customer = env.authenticatedContext('cust_tp').firestore();
   await assertFails(updateDoc(doc(customer, 'photographers/p_tp'), { 'stats.tomatoPct': 100 }));
   await assertFails(setDoc(doc(customer, 'photographers/p_tp'), { stats: { tomatoPct: 100 } }, { merge: true }));
   // Not the owner either: stats are server-computed.
   const owner = env.authenticatedContext('p_tp').firestore();
   await assertFails(updateDoc(doc(owner, 'photographers/p_tp'), { 'stats.tomatoPct': 100 }));
+  await assertFails(setDoc(doc(owner, 'photographers/p_tp'), { stats: { tomatoPct: 100 } }, { merge: true }));
   await assertFails(updateDoc(doc(owner, 'photographers/p_tp'), { 'stats.score': 1, 'stats.brickCount': 0 }));
   await assertSucceeds(updateDoc(doc(owner, 'photographers/p_tp'), { bio: 'y' }));
 });
