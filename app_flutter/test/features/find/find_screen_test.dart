@@ -339,13 +339,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Đang xếp theo sao và khoảng cách'), findsOneWidget);
+    expect(find.text('Đang xếp theo tỷ lệ cà chua và khoảng cách'), findsOneWidget);
     expect(find.byKey(const Key('find-card-p1')), findsOneWidget);
   });
 
   testWidgets('the local ranking alone shows no note', (tester) async {
     await _open(tester, DiscoveryWorld());
-    expect(find.text('Đang xếp theo sao và khoảng cách'), findsNothing);
+    expect(find.text('Đang xếp theo tỷ lệ cà chua và khoảng cách'), findsNothing);
   });
 
   testWidgets(

@@ -1539,7 +1539,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get findClear => 'Xoá bộ lọc';
 
   @override
-  String get findFallbackNote => 'Đang xếp theo sao và khoảng cách';
+  String get findFallbackNote => 'Đang xếp theo tỷ lệ cà chua và khoảng cách';
 
   @override
   String get findLoadError =>

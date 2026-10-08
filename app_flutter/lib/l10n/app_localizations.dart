@@ -2773,7 +2773,7 @@ abstract class AppLocalizations {
   /// No description provided for @findFallbackNote.
   ///
   /// In vi, this message translates to:
-  /// **'Đang xếp theo sao và khoảng cách'**
+  /// **'Đang xếp theo tỷ lệ cà chua và khoảng cách'**
   String get findFallbackNote;
 
   /// No description provided for @findLoadError.
