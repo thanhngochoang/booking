@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
@@ -715,6 +716,7 @@ class _SlowUploader implements MediaUploader {
   Stream<UploadEvent> upload(
     PickedImage image, {
     required String storagePath,
+    required ImagePurpose purpose,
   }) async* {
     yield const UploadEvent.progress(0.4);
     await _gate.future;

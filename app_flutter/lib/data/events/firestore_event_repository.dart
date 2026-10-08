@@ -15,6 +15,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/firestore_event_mapping.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 /// Reads `events` (and `registrations`) directly; every write is a callable.
@@ -459,7 +460,11 @@ class FirestoreEventRepository implements EventRepository {
     }
     final path = 'eventCovers/$me/$eventId/${newUlid()}.jpg';
     UploadedMedia? done;
-    await for (final e in uploader.upload(image, storagePath: path)) {
+    await for (final e in uploader.upload(
+      image,
+      storagePath: path,
+      purpose: ImagePurpose.share,
+    )) {
       if (e.isDone) {
         done = e.media;
       }

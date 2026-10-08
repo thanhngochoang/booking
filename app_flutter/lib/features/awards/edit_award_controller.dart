@@ -10,6 +10,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/award/award.dart';
 import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
@@ -391,7 +392,11 @@ class EditAwardController extends Notifier<EditAwardState> {
         .read(awardRepositoryProvider)
         .proofPath(uid, args.awardId, newUlid());
     try {
-      await for (final event in _uploader.upload(local, storagePath: path)) {
+      await for (final event in _uploader.upload(
+        local,
+        storagePath: path,
+        purpose: ImagePurpose.document,
+      )) {
         final media = event.media;
         final dropped =
             !ref.mounted ||

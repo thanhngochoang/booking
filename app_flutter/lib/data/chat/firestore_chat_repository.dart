@@ -8,7 +8,9 @@ import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_repository.dart';
 import 'package:photobooking/data/media/firebase_media_uploader.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/media/native_image_compressor.dart';
 
 /// The 1-1 chat kinds S07.02 lists (`chats.kind`); event groups (`event_group`) are excluded.
 const oneToOneChatKinds = ['inquiry', 'booking'];
@@ -22,7 +24,9 @@ class FirestoreChatRepository implements ChatRepository {
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _customFunctions = functions,
        _auth = auth ?? FirebaseAuth.instance,
-       _mediaUploader = mediaUploader ?? FirebaseMediaUploader();
+       _mediaUploader =
+           mediaUploader ??
+           FirebaseMediaUploader(compressor: NativeImageCompressor());
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions? _customFunctions;
@@ -210,7 +214,7 @@ class FirestoreChatRepository implements ChatRepository {
     final storagePath = 'chats/$chatId/$uid/$clientId.webp';
     try {
       await _mediaUploader
-          .upload(image, storagePath: storagePath)
+          .upload(image, storagePath: storagePath, purpose: ImagePurpose.chat)
           .lastWhere((event) => event.isDone);
       await _functions.httpsCallable('sendMessage').call<dynamic>({
         'chatId': chatId,

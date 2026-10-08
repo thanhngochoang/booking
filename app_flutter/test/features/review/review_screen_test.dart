@@ -7,6 +7,7 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/review/review.dart';
@@ -1061,7 +1062,10 @@ class _HangingUploader implements MediaUploader {
   final _controllers = <StreamController<UploadEvent>>[];
 
   @override
-  Stream<UploadEvent> upload(PickedImage image, {required String storagePath}) {
+  Stream<UploadEvent> upload(PickedImage image, {
+    required String storagePath,
+    required ImagePurpose purpose,
+  }) {
     final c = StreamController<UploadEvent>()
       ..add(const UploadEvent.progress(0.3));
     _controllers.add(c);

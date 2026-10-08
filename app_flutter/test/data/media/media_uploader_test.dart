@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
 const _img = PickedImage(path: '/tmp/a.jpg', name: 'a.jpg');
@@ -12,7 +13,11 @@ void main() {
     () async {
       final up = FakeMediaUploader();
       final events = await up
-          .upload(_img, storagePath: 'posts/u1/p1/a.jpg')
+          .upload(
+            _img,
+            storagePath: 'posts/u1/p1/a.jpg',
+            purpose: ImagePurpose.portfolio,
+          )
           .toList();
       expect(
         events
@@ -33,10 +38,17 @@ void main() {
     final up = FakeMediaUploader()..failNames.add('a.jpg');
     final seen = <UploadEvent>[];
     await expectLater(
-      up.upload(_img, storagePath: 'posts/u1/p1/a.jpg').map((e) {
-        seen.add(e);
-        return e;
-      }).drain<void>(),
+      up
+          .upload(
+            _img,
+            storagePath: 'posts/u1/p1/a.jpg',
+            purpose: ImagePurpose.portfolio,
+          )
+          .map((e) {
+            seen.add(e);
+            return e;
+          })
+          .drain<void>(),
       throwsStateError,
     );
     expect(seen, isNotEmpty);
@@ -44,9 +56,37 @@ void main() {
     expect(up.uploaded, isEmpty);
   });
 
+  test('the fake records each path\'s purpose', () async {
+    final up = FakeMediaUploader();
+    await up
+        .upload(
+          _img,
+          storagePath: 'avatars/u1/a.jpg',
+          purpose: ImagePurpose.avatar,
+        )
+        .drain<void>();
+    await up
+        .upload(
+          _img,
+          storagePath: 'chats/c1/u1/b.jpg',
+          purpose: ImagePurpose.chat,
+        )
+        .drain<void>();
+    expect(up.purposes, {
+      'avatars/u1/a.jpg': ImagePurpose.avatar,
+      'chats/c1/u1/b.jpg': ImagePurpose.chat,
+    });
+  });
+
   test('delete removes the object, is idempotent, and is recorded', () async {
     final up = FakeMediaUploader();
-    await up.upload(_img, storagePath: 'posts/u1/p1/a.jpg').drain<void>();
+    await up
+        .upload(
+          _img,
+          storagePath: 'posts/u1/p1/a.jpg',
+          purpose: ImagePurpose.portfolio,
+        )
+        .drain<void>();
     await up.delete('posts/u1/p1/a.jpg');
     await up.delete('posts/u1/p1/a.jpg');
     expect(up.uploaded, isEmpty);
@@ -55,12 +95,20 @@ void main() {
 
   test('the fake records the most uploads open at once', () async {
     final up = FakeMediaUploader();
-    await up.upload(_img, storagePath: 'a').drain<void>();
-    await up.upload(_img, storagePath: 'b').drain<void>();
+    await up
+        .upload(_img, storagePath: 'a', purpose: ImagePurpose.portfolio)
+        .drain<void>();
+    await up
+        .upload(_img, storagePath: 'b', purpose: ImagePurpose.portfolio)
+        .drain<void>();
     expect(up.maxConcurrent, 1);
     await Future.wait([
-      up.upload(_img, storagePath: 'c').drain<void>(),
-      up.upload(_img, storagePath: 'd').drain<void>(),
+      up
+          .upload(_img, storagePath: 'c', purpose: ImagePurpose.portfolio)
+          .drain<void>(),
+      up
+          .upload(_img, storagePath: 'd', purpose: ImagePurpose.portfolio)
+          .drain<void>(),
     ]);
     expect(up.maxConcurrent, 2);
   });
@@ -77,6 +125,8 @@ void main() {
       reason: 'progress in steps of at least 5 percent',
     );
     expect(src, contains("contentType: 'image/jpeg'"));
+    expect(src, contains('cacheControl: purpose.cacheControl'));
+    expect(src, contains('customMetadata'));
     expect(src, contains('object-not-found'));
     for (final banned in ['Timer', 'Stream.periodic']) {
       expect(src, isNot(contains(banned)));
@@ -104,4 +154,18 @@ void main() {
       );
     },
   );
+
+  test('flutter_image_compress is imported only by the native compressor', () {
+    final offenders = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .where(
+          (f) =>
+              f.readAsStringSync().contains('package:flutter_image_compress/'),
+        )
+        .map((f) => f.path)
+        .toList();
+    expect(offenders, ['lib/data/media/native_image_compressor.dart']);
+  });
 }

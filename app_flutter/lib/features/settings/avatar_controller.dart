@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 
@@ -65,7 +66,11 @@ class AvatarController extends AsyncNotifier<bool> {
       await for (final e
           in ref
               .read(mediaUploaderProvider)
-              .upload(picked.first, storagePath: path)) {
+              .upload(
+                picked.first,
+                storagePath: path,
+                purpose: ImagePurpose.avatar,
+              )) {
         if (e.isDone) {
           media = e.media;
         }

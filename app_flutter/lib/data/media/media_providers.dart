@@ -1,18 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/data/media/firebase_media_uploader.dart';
+import 'package:photobooking/data/media/image_compressor.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/media/native_image_compressor.dart';
 import 'package:photobooking/data/media/plugin_image_picker.dart';
 
 final imagePickerProvider = Provider<ImagePickerPort>(
   (ref) => PluginImagePicker(),
 );
 
+final imageCompressorProvider = Provider<ImageCompressor>(
+  (ref) => NativeImageCompressor(),
+);
+
 final mediaUploaderProvider = Provider<MediaUploader>(
-  (ref) => FirebaseMediaUploader(),
+  (ref) =>
+      FirebaseMediaUploader(compressor: ref.watch(imageCompressorProvider)),
 );
 
 final mediaUrlResolverProvider = Provider<MediaUrlResolver>(
-  (ref) => FirebaseMediaUploader(),
+  (ref) => FirebaseMediaUrlResolver(),
 );

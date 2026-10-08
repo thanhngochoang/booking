@@ -12,7 +12,8 @@ class PickedImage {
 abstract class ImagePickerPort {
   /// Opens the system gallery picker for up to [max] photos. They are already
   /// scaled to at most 2048 px on the long side and re-encoded as JPEG at
-  /// quality 85. Empty when the user cancels.
+  /// quality 95 (a pre-pass; `MediaUploader` compresses for the final purpose).
+  /// Empty when the user cancels.
   Future<List<PickedImage>> pickImages({required int max});
 }
 

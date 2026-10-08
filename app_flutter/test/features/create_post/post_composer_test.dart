@@ -11,6 +11,7 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/post_publisher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/media/media_providers.dart';
@@ -33,6 +34,7 @@ class _GatedUploader extends FakeMediaUploader {
   Stream<UploadEvent> upload(
     PickedImage image, {
     required String storagePath,
+    required ImagePurpose purpose,
   }) async* {
     uploadCalls++;
     yield const UploadEvent.progress(0.3);

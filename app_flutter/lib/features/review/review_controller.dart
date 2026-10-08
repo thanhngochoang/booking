@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/ulid.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/review/review.dart';
@@ -274,6 +275,7 @@ class ReviewController extends Notifier<ReviewState> {
       await for (final event in _uploader.upload(
         tile.local,
         storagePath: storagePath,
+        purpose: ImagePurpose.share,
       )) {
         final media = event.media;
         final dropped =
