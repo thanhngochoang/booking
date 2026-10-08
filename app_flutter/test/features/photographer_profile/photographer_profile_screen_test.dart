@@ -121,6 +121,68 @@ void main() {
     expect(find.byType(VerifiedMark), findsNothing);
   });
 
+  Finder tile() => _key('profile-stat-reviews');
+
+  testWidgets('the tile shows 97% with the tomato icon and "58 đánh giá"', (
+    tester,
+  ) async {
+    final w = await _world(tester);
+    await tester.pumpWidget(w.app('/u/p1'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: tile(), matching: find.text('97%')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tile(), matching: find.text('58 đánh giá')),
+      findsOneWidget,
+    );
+    final icon = tester.widget<VerdictIcon>(
+      find.descendant(of: tile(), matching: find.byType(VerdictIcon)),
+    );
+    expect(icon.kind, VerdictKind.tomato);
+    expect(icon.color, isNull, reason: 'tomato colour on the icon only');
+  });
+
+  testWidgets('under 5 reviews the tile shows "Mới" and "3 đánh giá"', (
+    tester,
+  ) async {
+    final w = await _world(
+      tester,
+      photographers: [fixturePhotographer('p1', tomatoCount: 3)],
+    );
+    await tester.pumpWidget(w.app('/u/p1'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: tile(), matching: find.text('Mới')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tile(), matching: find.text('3 đánh giá')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tile(), matching: find.byType(VerdictIcon)),
+      findsNothing,
+    );
+    expect(find.textContaining('%'), findsNothing);
+  });
+
+  testWidgets('no reviews shows "Mới" and "0 đánh giá"', (tester) async {
+    final w = await _world(tester, photographers: [fixturePhotographer('p1')]);
+    await tester.pumpWidget(w.app('/u/p1'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: tile(), matching: find.text('Mới')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tile(), matching: find.text('0 đánh giá')),
+      findsOneWidget,
+    );
+    expect(find.text('—'), findsNothing);
+  });
+
   testWidgets(
     'a visitor sees who, how good and from how much; no phone anywhere',
     (tester) async {

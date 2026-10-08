@@ -12,6 +12,7 @@ export 'package:photobooking/core/hashtags.dart';
 export 'package:photobooking/core/l10n_ext.dart';
 export 'package:photobooking/core/package_meta.dart';
 export 'package:photobooking/core/phone.dart';
+export 'package:photobooking/core/review_meta.dart';
 export 'package:photobooking/core/screen_codes.dart';
 export 'package:photobooking/core/text_fold.dart';
 export 'package:photobooking/core/ulid.dart';

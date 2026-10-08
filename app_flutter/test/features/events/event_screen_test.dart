@@ -11,6 +11,7 @@ import 'package:photobooking/features/events/event_join_bar.dart';
 import 'package:photobooking/l10n/app_localizations_vi.dart';
 
 import '../../support/event_world.dart';
+import '../../support/meta_finders.dart';
 
 const _sw = Size(390, 1200);
 
@@ -288,7 +289,9 @@ void main() {
       final w = EventsWorld(events: [_free('ev1')]);
       await w.pump(tester, path: '/e/ev1', size: _sw);
       expect(find.text('Quốc Bảo'), findsOneWidget);
-      expect(find.text('Chủ sự kiện · 92%'), findsOneWidget);
+      final host = findMeta('Chủ sự kiện · 92%');
+      expect(host, findsOneWidget);
+      expect(tomatoIconIn(host), findsOneWidget);
       expect(find.byType(VerifiedMark), findsOneWidget);
       await tester.tap(_byKey('event-inquiry'));
       await settle(tester);

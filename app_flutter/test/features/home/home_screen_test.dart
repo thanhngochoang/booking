@@ -10,6 +10,7 @@ import 'package:photobooking/features/home/home_screen.dart';
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
 import '../../support/icon_finders.dart';
+import '../../support/meta_finders.dart';
 import '../../support/screen_host.dart';
 
 GoRouter _router() => GoRouter(
@@ -107,7 +108,7 @@ void main() {
       expect(
         find.descendant(
           of: author,
-          matching: find.text('Quận 3 · 97% (58) · 112 buổi'),
+          matching: findMeta('Quận 3 · 97% (58) · 112 buổi'),
         ),
         findsOneWidget,
       );

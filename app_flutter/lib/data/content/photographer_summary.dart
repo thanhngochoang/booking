@@ -1,6 +1,5 @@
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/provider_type.dart';
-import 'package:photobooking/data/review/review.dart';
 
 /// What a card or a ranking needs to know about a photographer. Built from the
 /// public `users/{uid}` and `photographers/{uid}` documents.

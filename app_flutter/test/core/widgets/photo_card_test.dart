@@ -11,7 +11,7 @@ import 'widget_host.dart';
 Widget _card({
   double aspect = 4 / 5,
   String? title = 'Minh Trí',
-  String? subtitle = 'Quận 3 · ★ 4,9 (58) · 112 buổi',
+  String? subtitle = 'Quận 3 · 97% (58) · 112 buổi',
   Widget? leading,
   Widget? trailing,
   Widget? action,
@@ -58,7 +58,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Minh Trí'), findsOneWidget);
-    expect(find.text('Quận 3 · ★ 4,9 (58) · 112 buổi'), findsOneWidget);
+    expect(find.text('Quận 3 · 97% (58) · 112 buổi'), findsOneWidget);
     expect(find.text('Rảnh T7 này'), findsOneWidget);
     expect(find.text('Chân dung · từ 1,5M'), findsOneWidget);
     expect(find.byKey(const Key('save')), findsOneWidget);
@@ -253,7 +253,7 @@ void main() {
         width: 320,
         textScale: 1.3,
         title: 'Nguyễn Thị Phương Anh Thư Hoàng Gia',
-        subtitle: 'Quận 3 · ★ 4,9 (58) · 112 buổi chụp chân dung gia đình',
+        subtitle: 'Quận 3 · 97% (58) · 112 buổi chụp chân dung gia đình',
         action: const AppIcon(AppIcons.save),
       ),
     );

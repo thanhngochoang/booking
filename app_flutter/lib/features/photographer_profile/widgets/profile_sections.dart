@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/album/album.dart';
 import 'package:photobooking/data/album/album_providers.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
@@ -15,6 +16,7 @@ import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
+import 'package:photobooking/features/review/review_labels.dart';
 
 class _Quiet extends StatelessWidget {
   const _Quiet(this.text);
@@ -640,7 +642,6 @@ class _ReviewsContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final theme = Theme.of(context);
     final profile = ref
         .watch(photographerProfileProvider(photographerId))
         .value;
@@ -652,18 +653,10 @@ class _ReviewsContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (profile != null && profile.summary.hasTomatoPct)
+        if (profile != null && profile.summary.hasReviews)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpace.s3),
-            child: Text(
-              l.reviewsHeader(
-                formatTomatoPct(profile.summary.tomatoPct),
-                profile.summary.reviewCount,
-              ),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: _ReviewsHeader(summary: profile.summary),
           ),
         for (var i = 0; i < reviews.length; i++) ...[
           _ReviewRow(review: reviews[i]),
@@ -684,6 +677,62 @@ class _ReviewsContent extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: AppSpace.s4),
             child: Center(child: SignatureLoader(size: LoaderSize.inline)),
           ),
+      ],
+    );
+  }
+}
+
+/// Top of the Đánh giá tab (mock `#S03.01-reviews`): the big % cà chua with
+/// the tomato icon (just "Mới" under five reviews), the tomato : brick bar and
+/// "56 cà chua · 2 gạch · 58 đánh giá".
+class _ReviewsHeader extends StatelessWidget {
+  const _ReviewsHeader({required this.summary});
+
+  final PhotographerSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return Row(
+      key: const Key('reviews-header'),
+      children: [
+        if (summary.hasTomatoPct) ...[
+          const VerdictIcon(VerdictKind.tomato, size: 24),
+          const SizedBox(width: AppSpace.s1),
+        ],
+        Text(
+          summary.hasTomatoPct
+              ? formatTomatoPct(summary.tomatoPct)
+              : l.profileStatNew,
+          style: const TextStyle(
+            fontFamily: AppFonts.display,
+            fontSize: 26,
+            fontWeight: FontWeight.w600,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+        const SizedBox(width: AppSpace.s3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TomatoRatioBar(
+                tomatoCount: summary.tomatoCount,
+                brickCount: summary.brickCount,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                l.reviewsRatioCounts(
+                  summary.tomatoCount,
+                  summary.brickCount,
+                  summary.reviewCount,
+                ),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -720,8 +769,8 @@ class _ReviewRow extends ConsumerWidget {
   }
 }
 
-/// A single review tile showing customer info, stars, date, review text,
-/// and up to 3 thumbnails of shared photos.
+/// A single review tile: customer, day and package, the verdict badge, brick
+/// reason chips, the text and up to 3 thumbnails of shared photos.
 class ReviewTile extends StatefulWidget {
   const ReviewTile({
     super.key,
@@ -745,11 +794,15 @@ class ReviewTile extends StatefulWidget {
 class _ReviewTileState extends State<ReviewTile> {
   bool _expanded = false;
 
-  String _formatDate(DateTime dt) {
-    final day = dt.day.toString().padLeft(2, '0');
-    final month = dt.month.toString().padLeft(2, '0');
-    final year = dt.year.toString();
-    return '$day/$month/$year';
+  /// "12/10 · Chân dung 2 giờ": the review day in Vietnam time and, when the
+  /// review carries one, the package name (a legacy row has only the day).
+  String _meta() {
+    final r = widget.review;
+    final name = r.serviceName;
+    return [
+      formatDayMonth(toVn(r.createdAt)),
+      if (name != null && name.isNotEmpty) name,
+    ].join(' · ');
   }
 
   @override
@@ -786,22 +839,34 @@ class _ReviewTileState extends State<ReviewTile> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        widget.review.verdict == Verdict.tomato
-                            ? l.reviewTomato
-                            : l.reviewBrick,
+                        _meta(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: AppSpace.s2),
-                Text(
-                  _formatDate(widget.review.createdAt),
-                  style: theme.textTheme.bodySmall,
+                VerdictBadge(
+                  kind: widget.review.verdict.kind,
+                  hits: widget.review.hits,
                 ),
               ],
             ),
           ),
+          if (widget.review.reasons.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.s2),
+            Wrap(
+              key: const Key('review-reasons'),
+              spacing: AppSpace.s1,
+              runSpacing: AppSpace.s1,
+              children: [
+                for (final reason in widget.review.reasons)
+                  _ReasonChip(reviewReasonLabel(l, reason)),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpace.s2),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -898,6 +963,35 @@ class _ReviewTileState extends State<ReviewTile> {
   }
 }
 
+/// A brick reason on a review row (mock `.chip`): quiet pill, no tap.
+class _ReasonChip extends StatelessWidget {
+  const _ReasonChip(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.secondary,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s2,
+          vertical: AppSpace.s1,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(fontSize: 11.5, color: scheme.onSurface),
+        ),
+      ),
+    );
+  }
+}
+
 class _ReviewTileSkeleton extends StatelessWidget {
   const _ReviewTileSkeleton();
 
@@ -928,7 +1022,7 @@ class _ReviewTileSkeleton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpace.s2),
-                AppSkeleton.line(width: 60, height: 10),
+                AppSkeleton.box(width: 44, height: 22, radius: AppRadius.full),
               ],
             ),
           ),

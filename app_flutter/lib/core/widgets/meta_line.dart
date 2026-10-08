@@ -9,10 +9,25 @@ import 'package:photobooking/core/widgets/verdict_icon.dart';
 sealed class MetaPart {
   const factory MetaPart.text(String text) = _TextPart;
 
-  /// Shown as the tomato icon and `97%`. Callers add it only when the
-  /// provider has enough reviews (`hasTomatoPct`).
-  const factory MetaPart.tomato(int pct) = _TomatoPart;
+  /// Shown as the tomato icon and `97%`, or `97% (58)` with a [count] (the
+  /// S02.01 photo cards). Callers add it only when the provider has enough
+  /// reviews (`hasTomatoPct`).
+  const factory MetaPart.tomato(int pct, {int? count}) = _TomatoPart;
 }
+
+String _tomatoText(int pct, int? count) =>
+    count == null ? formatTomatoPct(pct) : '${formatTomatoPct(pct)} ($count)';
+
+/// The text of [parts] as [MetaLine] reads it (` · ` between parts, the
+/// tomato icon left out): for semantics labels and tests.
+String metaPartsText(List<MetaPart> parts) => parts
+    .map(
+      (part) => switch (part) {
+        _TextPart(:final text) => text,
+        _TomatoPart(:final pct, :final count) => _tomatoText(pct, count),
+      },
+    )
+    .join(' · ');
 
 class _TextPart implements MetaPart {
   const _TextPart(this.text);
@@ -20,8 +35,9 @@ class _TextPart implements MetaPart {
 }
 
 class _TomatoPart implements MetaPart {
-  const _TomatoPart(this.pct);
+  const _TomatoPart(this.pct, {this.count});
   final int pct;
+  final int? count;
 }
 
 /// A one-line meta row of parts joined with ` · ` (mock `.meta`, `.tm`), e.g.
@@ -50,7 +66,7 @@ class MetaLine extends StatelessWidget {
       switch (part) {
         case _TextPart(:final text):
           spans.add(TextSpan(text: text));
-        case _TomatoPart(:final pct):
+        case _TomatoPart(:final pct, :final count):
           spans.add(
             const WidgetSpan(
               alignment: PlaceholderAlignment.middle,
@@ -60,7 +76,7 @@ class MetaLine extends StatelessWidget {
               ),
             ),
           );
-          spans.add(TextSpan(text: formatTomatoPct(pct)));
+          spans.add(TextSpan(text: _tomatoText(pct, count)));
       }
     }
     return Text.rich(

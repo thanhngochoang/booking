@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:photobooking/core/core.dart';
 
+export 'package:photobooking/core/format.dart' show kTomatoPctMinReviews;
+
 /// The two sides of a review: tomato = satisfied, brick = not satisfied.
 enum Verdict {
   tomato,
@@ -39,9 +41,6 @@ enum ReviewReason {
 
 /// Most taps on one side of the pad.
 const int kReviewHitsMax = kVerdictHitsMax;
-
-/// Providers with fewer reviews show "Mới" instead of a percentage.
-const int kTomatoPctMinReviews = 5;
 
 /// Display mirror of the server rule `round2(0.4 + 0.6 * log10(hits))`; the
 /// server computes the stored value.

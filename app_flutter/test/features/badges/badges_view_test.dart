@@ -130,15 +130,15 @@ void main() {
   test('earned tile shows the snapshot text, locked the description', () {
     final v = buildBadgesView(
       catalog: badgeCatalogue(),
-      earned: [earnedOn('top_rated', _day, '4,9 sao từ 58 đánh giá')],
+      earned: [earnedOn('top_rated', _day, '97% cà chua từ 58 đánh giá')],
       progress: const {},
       own: true,
       photographer: true,
     );
-    expect(v.fromReviews.first.badge.condition, '4,9 sao từ 58 đánh giá');
+    expect(v.fromReviews.first.badge.condition, '97% cà chua từ 58 đánh giá');
     expect(
       v.fromReviews.first.description,
-      'Từ 4,8 sao với ít nhất 20 đánh giá',
+      'Từ 95% cà chua với ít nhất 20 đánh giá',
     );
     expect(v.fromReviews.last.badge.condition, 'Viết 5 nhận xét dài');
   });

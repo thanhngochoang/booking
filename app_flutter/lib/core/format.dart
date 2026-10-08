@@ -84,6 +84,9 @@ String formatTomatoPct(int pct) => '${pct.clamp(0, 100)}%';
 /// Most hits on one side of the review pad.
 const int kVerdictHitsMax = 10;
 
+/// Providers with fewer reviews show "Mới" instead of a percentage.
+const int kTomatoPctMinReviews = 5;
+
 /// Display mirror of the server rule `round2(0.4 + 0.6 * log10(hits))`, hits
 /// 1..10 (the track width of the pad). The server computes the stored value.
 double verdictIntensity(int hits) {

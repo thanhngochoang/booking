@@ -47,6 +47,22 @@ void main() {
     expect(icon.size, 12);
   });
 
+  testWidgets('a tomato part with a count reads "97% (58)"', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(
+        const MetaLine([
+          MetaPart.text('Quận 3'),
+          MetaPart.tomato(97, count: 58),
+        ]),
+      ),
+    );
+    expect(_plain(tester), 'Quận 3 · 97% (58)');
+    expect(
+      metaPartsText(const [MetaPart.tomato(97, count: 58), MetaPart.text('x')]),
+      '97% (58) · x',
+    );
+  });
+
   testWidgets('ellipsises at maxLines', (tester) async {
     await tester.pumpWidget(
       hostWidget(

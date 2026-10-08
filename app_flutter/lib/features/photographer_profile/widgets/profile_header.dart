@@ -151,11 +151,17 @@ class ProfileHeader extends ConsumerWidget {
               const SizedBox(height: AppSpace.s4),
               StatTileRow(
                 tiles: [
+                  // Mock S03.01: "97%" with the tomato icon; under five reviews
+                  // "Mới" (S03.01-new), always with the review count.
                   StatTile(
-                    value: s.hasTomatoPct ? formatTomatoPct(s.tomatoPct) : '—',
-                    label: s.reviewCount > 0
-                        ? l.profileStatReviews(s.reviewCount)
-                        : l.profileStatNoReviews,
+                    key: const Key('profile-stat-reviews'),
+                    value: s.hasTomatoPct
+                        ? formatTomatoPct(s.tomatoPct)
+                        : l.profileStatNew,
+                    valueLeading: s.hasTomatoPct
+                        ? const VerdictIcon(VerdictKind.tomato, size: 18)
+                        : null,
+                    label: l.profileStatReviews(s.reviewCount),
                   ),
                   if (artist)
                     StatTile(

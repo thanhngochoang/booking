@@ -3,12 +3,18 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-/// "Quận 3 · 97% (58) · 112 buổi": only the parts that exist.
-String areaRatingMeta(PhotographerSummary p, AppLocalizations l) => [
-  if (p.areaLabel != null && p.areaLabel!.isNotEmpty) p.areaLabel!,
-  if (p.hasTomatoPct) '${formatTomatoPct(p.tomatoPct)} (${p.reviewCount})',
-  if (p.completedCount > 0) l.photographerSessions(p.completedCount),
-].join(' · ');
+/// "Quận 3 · 🍅 97% (58) · 112 buổi" (S02.01 photo cards): only the parts that
+/// exist. Under five reviews the review part reads "Mới · 3 đánh giá".
+List<MetaPart> areaRatingMeta(PhotographerSummary p, AppLocalizations l) {
+  final review = reviewMetaPart(p, l, withCount: true);
+  return [
+    if (p.areaLabel != null && p.areaLabel!.isNotEmpty)
+      MetaPart.text(p.areaLabel!),
+    ?review,
+    if (p.completedCount > 0)
+      MetaPart.text(l.photographerSessions(p.completedCount)),
+  ];
+}
 
 /// "Rảnh T7 này" when the next free day is within the next 7 Vietnamese days.
 String? freeThisWeekLabel(

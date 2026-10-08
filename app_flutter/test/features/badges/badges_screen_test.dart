@@ -47,7 +47,7 @@ void main() {
     expect(find.text('Từ hệ thống'), findsOneWidget);
     expect(find.text('2 / 3'), findsOneWidget);
     expect(find.text('3 / 9'), findsOneWidget);
-    expect(find.text('4,9 sao từ 58 đánh giá'), findsOneWidget);
+    expect(find.text('97% cà chua từ 58 đánh giá'), findsOneWidget);
     expect(find.text('Hoàn thành 112 buổi'), findsOneWidget);
     expect(find.byType(ScreenCode), findsWidgets);
   });
@@ -87,7 +87,7 @@ void main() {
   ) async {
     await _open(tester, location: '/u/${BadgesWorld.otherUid}/badges');
     expect(find.text('Được đánh giá cao'), findsOneWidget);
-    expect(find.text('4,8 sao từ 30 đánh giá'), findsOneWidget);
+    expect(find.text('96% cà chua từ 30 đánh giá'), findsOneWidget);
     expect(find.text('Nhận xét chi tiết'), findsNothing);
     expect(find.text('Chưa đạt'), findsNothing);
     expect(find.byKey(const Key('badges-meta')), findsNothing);
@@ -124,7 +124,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('badge-sheet')), findsOneWidget);
     expect(find.text('Đạt ngày 1/9/2026'), findsOneWidget);
-    expect(find.text('Từ 4,8 sao với ít nhất 20 đánh giá'), findsOneWidget);
+    expect(find.text('Từ 95% cà chua với ít nhất 20 đánh giá'), findsOneWidget);
   });
 
   testWidgets('tile tap on a locked badge shows the progress line', (

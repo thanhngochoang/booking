@@ -1643,7 +1643,12 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get profileStatNoReviews => 'đánh giá';
+  String get profileStatNew => 'Mới';
+
+  @override
+  String photographerReviewsNew(int count) {
+    return 'Mới · $count đánh giá';
+  }
 
   @override
   String get profileStatShoots => 'buổi chụp';
@@ -2895,11 +2900,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewUploadFailed => 'Tải ảnh lỗi. Thử lại';
-
-  @override
-  String reviewsHeader(String rating, int count) {
-    return '$rating · $count đánh giá';
-  }
 
   @override
   String get reviewsMore => 'Xem thêm';

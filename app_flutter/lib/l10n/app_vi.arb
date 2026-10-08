@@ -733,7 +733,9 @@
   "profileFollowing": "Đang theo dõi",
   "profileStatReviews": "{count} đánh giá",
   "@profileStatReviews": {"placeholders": {"count": {"type": "int"}}},
-  "profileStatNoReviews": "đánh giá",
+  "profileStatNew": "Mới",
+  "photographerReviewsNew": "Mới · {count} đánh giá",
+  "@photographerReviewsNew": {"placeholders": {"count": {"type": "int"}}},
   "profileStatShoots": "buổi chụp",
   "profileStatResponse": "phản hồi",
   "profileStatYears": "kinh nghiệm",
@@ -1449,13 +1451,6 @@
   "reviewNotYet": "Buổi chụp chưa hoàn thành nên chưa đánh giá được.",
   "reviewThanks": "Cảm ơn bạn đã đánh giá!",
   "reviewUploadFailed": "Tải ảnh lỗi. Thử lại",
-  "reviewsHeader": "{rating} · {count} đánh giá",
-  "@reviewsHeader": {
-    "placeholders": {
-      "rating": {"type": "String"},
-      "count": {"type": "int"}
-    }
-  },
   "reviewsMore": "Xem thêm",
   "reviewSharedLink": "Xem ảnh đã chia sẻ",
   "reviewAlreadyDone": "Bạn đã đánh giá buổi chụp này.",

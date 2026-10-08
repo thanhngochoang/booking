@@ -32,8 +32,7 @@ class _DelayReviewRepository implements ReviewRepository {
     String photographerId, {
     Object? after,
     int limit = 10,
-  }) =>
-      completer.future;
+  }) => completer.future;
 
   @override
   Stream<Review?> watchReview(String bookingId) => const Stream.empty();
@@ -47,8 +46,7 @@ class _DelayReviewRepository implements ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
-  }) async =>
-      null;
+  }) async => null;
 }
 
 class _PagingReviewRepository implements ReviewRepository {
@@ -70,21 +68,13 @@ class _PagingReviewRepository implements ReviewRepository {
     int limit = 10,
   }) async {
     if (after == null) {
-      return ReviewPage(
-        items: firstPage,
-        cursor: 'cursor-1',
-        hasMore: true,
-      );
+      return ReviewPage(items: firstPage, cursor: 'cursor-1', hasMore: true);
     }
     secondPageRequested = true;
     if (secondPageCompleter != null) {
       await secondPageCompleter!.future;
     }
-    return ReviewPage(
-      items: secondPage,
-      cursor: null,
-      hasMore: false,
-    );
+    return ReviewPage(items: secondPage, cursor: null, hasMore: false);
   }
 
   @override
@@ -99,8 +89,7 @@ class _PagingReviewRepository implements ReviewRepository {
     required String text,
     String? postId,
     List<ReviewPhoto> photos = const [],
-  }) async =>
-      null;
+  }) async => null;
 }
 
 class _FlakyPagingRepository extends _PagingReviewRepository {
@@ -168,16 +157,13 @@ void main() {
             : MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: CustomScrollView(
-                    slivers: [sliver],
-                  ),
-                ),
+                home: Scaffold(body: CustomScrollView(slivers: [sliver])),
               ),
       );
 
-      final overrideOrigins =
-          overrides.map((o) => (o as dynamic).origin).toSet();
+      final overrideOrigins = overrides
+          .map((o) => (o as dynamic).origin)
+          .toSet();
 
       return ProviderScope(
         overrides: [
@@ -204,9 +190,7 @@ void main() {
       await tester.pumpWidget(
         buildApp(
           sliver: const ReviewsSliver(photographerId: 'p1'),
-          overrides: [
-            reviewRepositoryProvider.overrideWithValue(delayRepo),
-          ],
+          overrides: [reviewRepositoryProvider.overrideWithValue(delayRepo)],
         ),
       );
 
@@ -262,9 +246,7 @@ void main() {
               home: Scaffold(
                 body: SizedBox(
                   width: width,
-                  child: AppSkeletonScope(
-                    child: ReviewTile.skeleton(),
-                  ),
+                  child: AppSkeletonScope(child: ReviewTile.skeleton()),
                 ),
               ),
             ),
@@ -317,9 +299,7 @@ void main() {
       await tester.pumpWidget(
         buildApp(
           sliver: const ReviewsSliver(photographerId: 'p1'),
-          overrides: [
-            reviewRepositoryProvider.overrideWithValue(pagingRepo),
-          ],
+          overrides: [reviewRepositoryProvider.overrideWithValue(pagingRepo)],
         ),
       );
       await tester.pumpAndSettle();
@@ -345,38 +325,224 @@ void main() {
       expect(find.byType(SignatureLoader), findsNothing);
     });
 
-    testWidgets('shows the newest reviews with name, verdict, date and text', (
-      tester,
-    ) async {
-      await fakeUsers.ensureProfile(
-        const AuthUser(
-          uid: 'c1',
-          displayName: 'Thanh Ngô',
-        ),
-      );
+    Review review({
+      required String id,
+      Verdict verdict = Verdict.tomato,
+      int hits = 1,
+      List<ReviewReason> reasons = const [],
+      String? serviceName,
+      String text = 'Buổi chụp diễn ra hoàn hảo!',
+      String customerId = 'c1',
+      DateTime? createdAt,
+    }) => Review(
+      bookingId: id,
+      customerId: customerId,
+      photographerId: 'p1',
+      serviceId: 's1',
+      serviceName: serviceName,
+      verdict: verdict,
+      hits: hits,
+      reasons: reasons,
+      text: text,
+      createdAt: createdAt ?? DateTime.utc(2026, 10, 12, 3),
+    );
 
-      fakeReviews.seedReview(
-        Review(
-          bookingId: 'b1',
-          customerId: 'c1',
-          photographerId: 'p1',
-          serviceId: 's1',
-          verdict: Verdict.tomato,
-          text: 'Buổi chụp diễn ra hoàn hảo!',
-          createdAt: DateTime(2026, 10, 2),
+    void useSummary({required int tomato, required int brick, int? pct}) {
+      final total = tomato + brick;
+      fakeProfiles = FakePublicProfileRepository([
+        PhotographerProfile(
+          summary: PhotographerSummary(
+            id: 'p1',
+            displayName: 'Minh Trí',
+            reviewCount: total,
+            tomatoCount: tomato,
+            brickCount: brick,
+            tomatoPct: pct ?? (100 * tomato / total).round(),
+          ),
         ),
-      );
+      ]);
+    }
 
+    Future<void> openTab(WidgetTester tester) async {
       await tester.pumpWidget(
         buildApp(sliver: const ReviewsSliver(photographerId: 'p1')),
       );
       await tester.pumpAndSettle();
+    }
 
-      expect(find.text('83% · 6 đánh giá'), findsOneWidget);
+    testWidgets('shows name, verdict badge, day and text of a review', (
+      tester,
+    ) async {
+      await fakeUsers.ensureProfile(
+        const AuthUser(uid: 'c1', displayName: 'Thanh Ngô'),
+      );
+      fakeReviews.seedReview(review(id: 'b1', hits: 10));
+      await openTab(tester);
+
       expect(find.text('Thanh Ngô'), findsOneWidget);
-      expect(find.text('Hài lòng'), findsOneWidget);
-      expect(find.text('02/10/2026'), findsOneWidget);
+      expect(find.text('12/10'), findsOneWidget);
       expect(find.text('Buổi chụp diễn ra hoàn hảo!'), findsOneWidget);
+      final badge = tester.widget<VerdictBadge>(find.byType(VerdictBadge));
+      expect(badge.kind, VerdictKind.tomato);
+      expect(badge.hits, 10);
+      expect(find.text('Hài lòng'), findsNothing, reason: 'no star-era label');
+    });
+
+    testWidgets(
+      'header shows 97%, the ratio bar and "56 cà chua · 2 gạch · 58 đánh giá"',
+      (tester) async {
+        useSummary(tomato: 56, brick: 2);
+        fakeReviews.seedReview(review(id: 'b1'));
+        await openTab(tester);
+
+        final header = find.byKey(const Key('reviews-header'));
+        expect(
+          find.descendant(of: header, matching: find.text('97%')),
+          findsOneWidget,
+        );
+        final bar = tester.widget<TomatoRatioBar>(
+          find.descendant(of: header, matching: find.byType(TomatoRatioBar)),
+        );
+        expect((bar.tomatoCount, bar.brickCount), (56, 2));
+        expect(
+          find.descendant(
+            of: header,
+            matching: find.text('56 cà chua · 2 gạch · 58 đánh giá'),
+          ),
+          findsOneWidget,
+        );
+        final icon = tester.widget<VerdictIcon>(
+          find.descendant(of: header, matching: find.byType(VerdictIcon)),
+        );
+        expect((icon.kind, icon.size), (VerdictKind.tomato, 24));
+      },
+    );
+
+    testWidgets('under 5 the header shows "Mới" instead of the percent', (
+      tester,
+    ) async {
+      useSummary(tomato: 3, brick: 0);
+      fakeReviews.seedReview(review(id: 'b1'));
+      await openTab(tester);
+
+      final header = find.byKey(const Key('reviews-header'));
+      expect(
+        find.descendant(of: header, matching: find.text('Mới')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: header, matching: find.text('100%')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: header, matching: find.byType(VerdictIcon)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: header,
+          matching: find.text('3 cà chua · 0 gạch · 3 đánh giá'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a brick row shows VerdictBadge ×3 and the chips "Đến trễ", "Giao ảnh chậm"',
+      (tester) async {
+        fakeReviews.seedReview(
+          review(
+            id: 'b1',
+            verdict: Verdict.brick,
+            hits: 3,
+            reasons: const [ReviewReason.late, ReviewReason.slowDelivery],
+            text: 'Đến trễ 30 phút, ảnh giao sau 10 ngày.',
+          ),
+        );
+        await openTab(tester);
+
+        final badge = tester.widget<VerdictBadge>(find.byType(VerdictBadge));
+        expect((badge.kind, badge.hits), (VerdictKind.brick, 3));
+        expect(find.text('×3'), findsOneWidget);
+        final chips = find.byKey(const Key('review-reasons'));
+        expect(
+          find.descendant(of: chips, matching: find.text('Đến trễ')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: chips, matching: find.text('Giao ảnh chậm')),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Đến trễ 30 phút, ảnh giao sau 10 ngày.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a tomato row has no reason chips', (tester) async {
+      fakeReviews.seedReview(review(id: 'b1'));
+      await openTab(tester);
+      expect(find.byKey(const Key('review-reasons')), findsNothing);
+    });
+
+    testWidgets('rows keep createdAt order, bricks included', (tester) async {
+      fakeReviews.seedReview(
+        review(
+          id: 'a',
+          customerId: 'c1',
+          text: 'Mới nhất',
+          createdAt: DateTime.utc(2026, 10, 12),
+        ),
+      );
+      fakeReviews.seedReview(
+        review(
+          id: 'b',
+          customerId: 'c2',
+          verdict: Verdict.brick,
+          hits: 2,
+          reasons: const [ReviewReason.late],
+          text: 'Gạch ở giữa',
+          createdAt: DateTime.utc(2026, 9, 28),
+        ),
+      );
+      fakeReviews.seedReview(
+        review(
+          id: 'c',
+          customerId: 'c3',
+          text: 'Cũ nhất',
+          createdAt: DateTime.utc(2026, 9, 21),
+        ),
+      );
+      await openTab(tester);
+
+      double top(String t) => tester.getTopLeft(find.text(t)).dy;
+      expect(top('Mới nhất'), lessThan(top('Gạch ở giữa')));
+      expect(top('Gạch ở giữa'), lessThan(top('Cũ nhất')));
+    });
+
+    testWidgets('row meta reads "12/10 · Chân dung 2 giờ"', (tester) async {
+      fakeReviews.seedReview(review(id: 'b1', serviceName: 'Chân dung 2 giờ'));
+      await openTab(tester);
+      expect(find.text('12/10 · Chân dung 2 giờ'), findsOneWidget);
+    });
+
+    testWidgets('the day is the Vietnam day of createdAt', (tester) async {
+      // 20:00 UTC on the 11th is 03:00 on the 12th in Vietnam.
+      fakeReviews.seedReview(
+        review(id: 'b1', createdAt: DateTime.utc(2026, 10, 11, 20)),
+      );
+      await openTab(tester);
+      expect(find.text('12/10'), findsOneWidget);
+    });
+
+    testWidgets('a legacy row without serviceName shows only the date', (
+      tester,
+    ) async {
+      fakeReviews.seedReview(review(id: 'b1'));
+      await openTab(tester);
+      expect(find.text('12/10'), findsOneWidget);
+      expect(find.textContaining(' · 12'), findsNothing);
     });
 
     testWidgets('Xem thêm expands a long review', (tester) async {
@@ -386,7 +552,8 @@ void main() {
         photographerId: 'p1',
         serviceId: 's1',
         verdict: Verdict.tomato,
-        text: 'Dòng 1: Quá tuyệt vời\n'
+        text:
+            'Dòng 1: Quá tuyệt vời\n'
             'Dòng 2: Rất hài lòng\n'
             'Dòng 3: Thợ chụp có tâm\n'
             'Dòng 4: Giá cả hợp lý\n'
@@ -551,9 +718,7 @@ void main() {
             path: '/u/:uid',
             builder: (_, _) => const Scaffold(
               body: CustomScrollView(
-                slivers: [
-                  ReviewsSliver(photographerId: 'p1'),
-                ],
+                slivers: [ReviewsSliver(photographerId: 'p1')],
               ),
             ),
           ),
@@ -575,7 +740,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final thumb = find.byKey(const Key('review-thumb-https://example.com/p1.jpg'));
+      final thumb = find.byKey(
+        const Key('review-thumb-https://example.com/p1.jpg'),
+      );
       expect(thumb, findsOneWidget);
 
       await tester.tap(thumb);
@@ -618,9 +785,7 @@ void main() {
       await tester.pumpWidget(
         buildApp(
           sliver: const ReviewsSliver(photographerId: 'p1'),
-          overrides: [
-            reviewRepositoryProvider.overrideWithValue(pagingRepo),
-          ],
+          overrides: [reviewRepositoryProvider.overrideWithValue(pagingRepo)],
         ),
       );
       await tester.pumpAndSettle();
@@ -673,6 +838,31 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('320 dp, 1.3×: a brick row with chips and the header fit', (
+      tester,
+    ) async {
+      useSummary(tomato: 56, brick: 2);
+      fakeReviews.seedReview(
+        review(
+          id: 'b1',
+          verdict: Verdict.brick,
+          hits: 10,
+          serviceName: 'Chân dung gia đình ngoài trời 3 giờ',
+          reasons: ReviewReason.values,
+        ),
+      );
+      await tester.pumpWidget(
+        buildApp(
+          sliver: const ReviewsSliver(photographerId: 'p1'),
+          size: const Size(320, 600),
+          textScale: 1.3,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(VerdictBadge), findsOneWidget);
     });
   });
 }

@@ -18,7 +18,7 @@ const _loadMoreExtent = 600.0;
 
 const _noteIconSize = 14.0;
 
-/// S02.06: compare photographers by area, day, service, price and rating.
+/// S02.06: compare photographers by area, day, service, price and % cà chua.
 class FindPhotographerScreen extends ConsumerStatefulWidget {
   const FindPhotographerScreen({
     super.key,
@@ -102,7 +102,7 @@ class _FindPhotographerScreenState
     });
   }
 
-  /// A page the rating filter shrank can leave the list shorter than the
+  /// A page the % cà chua filter shrank can leave the list shorter than the
   /// viewport: nothing scrolls, so ask for the next page once per cursor
   /// until the list fills or the pages run out.
   void _fillViewport() {
@@ -221,6 +221,16 @@ class _FindPhotographerScreenState
                 ? l.findRating
                 : l.findTomatoMin(filters.minTomatoPct!),
             selected: filters.minTomatoPct != null,
+            // Mock S02.06: "🍅 90%+", the icon in the chip's own text colour.
+            leading: filters.minTomatoPct == null
+                ? null
+                : Builder(
+                    builder: (context) => VerdictIcon(
+                      VerdictKind.tomato,
+                      size: 16,
+                      color: IconTheme.of(context).color,
+                    ),
+                  ),
             onChanged: (_) async {
               final r = await pickMinTomatoPct(
                 context,

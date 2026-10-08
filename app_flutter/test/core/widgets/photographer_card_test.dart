@@ -5,6 +5,7 @@ import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/reason.dart';
 
 import '../../support/content_fixtures.dart';
+import '../../support/meta_finders.dart';
 import '../../support/photo_scope.dart';
 import 'widget_host.dart';
 
@@ -25,6 +26,8 @@ Widget _card({
   ProviderType type = ProviderType.individual,
   int awards = 0,
   String? district,
+  int tomato = 56,
+  int brick = 2,
 }) => hostWidget(
   testPhotoScope(
     log: log,
@@ -37,8 +40,8 @@ Widget _card({
         providerType: type,
         approvedAwards: awards,
         studioDistrict: district,
-        tomatoCount: 56,
-        brickCount: 2,
+        tomatoCount: tomato,
+        brickCount: brick,
       ),
       reasons: reasons,
       distanceKm: distanceKm,
@@ -57,10 +60,48 @@ void main() {
   testWidgets('shows name, meta line, price and availability', (tester) async {
     await tester.pumpWidget(_card());
     expect(find.textContaining('Minh Trí', findRichText: true), findsOneWidget);
-    expect(find.text('Chân dung · 1,2 km · 97% · 112 buổi'), findsOneWidget);
+    expect(findMeta('Chân dung · 1,2 km · 97% · 112 buổi'), findsOneWidget);
     expect(find.text('1,5M'), findsOneWidget);
     expect(find.text('từ'), findsOneWidget);
     expect(find.text('Rảnh 12/10'), findsOneWidget);
+  });
+
+  testWidgets('5 reviews or more shows the tomato part "97%" with the icon', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card());
+    final meta = findMeta('Chân dung · 1,2 km · 97% · 112 buổi');
+    expect(tomatoIconIn(meta), findsOneWidget);
+    await tester.pumpWidget(_card(tomato: 5, brick: 0));
+    expect(findMeta('Chân dung · 1,2 km · 100% · 112 buổi'), findsOneWidget);
+  });
+
+  testWidgets('3 reviews shows "Mới · 3 đánh giá" and no tomato icon', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card(tomato: 2, brick: 1));
+    final meta = findMeta('Chân dung · 1,2 km · Mới · 3 đánh giá · 112 buổi');
+    expect(meta, findsOneWidget);
+    expect(tomatoIconIn(meta), findsNothing);
+    expect(find.text('97%', findRichText: true), findsNothing);
+  });
+
+  testWidgets('0 reviews shows no review part', (tester) async {
+    await tester.pumpWidget(_card(tomato: 0, brick: 0));
+    final meta = findMeta('Chân dung · 1,2 km · 112 buổi');
+    expect(meta, findsOneWidget);
+    expect(tomatoIconIn(meta), findsNothing);
+    expect(find.textContaining('Mới', findRichText: true), findsNothing);
+  });
+
+  testWidgets('the card label carries the meta line with the percent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_card());
+    expect(
+      find.bySemanticsLabel(RegExp(r'Chân dung · 1,2 km · 97% · 112 buổi')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the verified tick only appears for verified photographers', (
@@ -78,7 +119,7 @@ void main() {
     await tester.pumpWidget(
       _card(distanceKm: null, price: null, availability: null),
     );
-    expect(find.text('Chân dung · 97% · 112 buổi'), findsOneWidget);
+    expect(findMeta('Chân dung · 97% · 112 buổi'), findsOneWidget);
     expect(find.text('—'), findsOneWidget, reason: 'unknown price');
     expect(find.text('từ'), findsNothing);
     expect(find.byType(PhotoPill), findsNothing);

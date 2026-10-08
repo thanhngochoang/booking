@@ -14,9 +14,14 @@ class StatTile extends StatelessWidget {
     required this.label,
     this.onTap,
     this.semanticsValue,
+    this.valueLeading,
   });
 
   final String value;
+
+  /// Drawn before [value] in the same line (the tomato icon of S03.01's
+  /// "97%"); decorative, so it adds nothing to the spoken label.
+  final Widget? valueLeading;
   final String label;
 
   /// Read instead of [value] by screen readers (the full amount for a short
@@ -33,6 +38,16 @@ class StatTile extends StatelessWidget {
         ? AppColorsDark.foregroundSecondary
         : AppColors.foregroundSecondary;
     final radius = BorderRadius.circular(AppRadius.xl);
+    final valueText = Text(
+      value,
+      maxLines: 1,
+      style: const TextStyle(
+        fontFamily: AppFonts.display,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        fontFeatures: [FontFeature.tabularFigures()],
+      ),
+    );
     final content = Padding(
       // Mock .kpi: padding 10 8 10 12, content pinned to the bottom.
       padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
@@ -44,16 +59,16 @@ class StatTile extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              value,
-              maxLines: 1,
-              style: const TextStyle(
-                fontFamily: AppFonts.display,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
+            child: valueLeading == null
+                ? valueText
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      valueLeading!,
+                      const SizedBox(width: 4),
+                      valueText,
+                    ],
+                  ),
           ),
           const SizedBox(height: 2),
           FittedBox(

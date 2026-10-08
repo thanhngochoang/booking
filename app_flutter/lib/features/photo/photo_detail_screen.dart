@@ -14,6 +14,7 @@ import 'package:photobooking/features/booking/booking_parties.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photo/photo_detail_controller.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Mock: the gallery is 3:4.
 const double _galleryAspect = 3 / 4;
@@ -29,12 +30,17 @@ const int _moreSlots = 3;
 const double _stackBodyPx = 16;
 const double _stackAbovePx = 18.4;
 
-/// "Chân dung · Quận 3 · 97% (58)": only the parts that exist (mock S02.02).
-String _authorMeta(PhotographerSummary p) => [
-  if (p.specialtyIds.isNotEmpty) specialtyLabel(p.specialtyIds.first),
-  if (p.areaLabel != null && p.areaLabel!.isNotEmpty) p.areaLabel!,
-  if (p.hasTomatoPct) '${formatTomatoPct(p.tomatoPct)} (${p.reviewCount})',
-].join(' · ');
+/// "Chân dung · Quận 3 · 🍅 97% (58)": only the parts that exist (mock S02.02).
+List<MetaPart> _authorMeta(PhotographerSummary p, AppLocalizations l) {
+  final review = reviewMetaPart(p, l, withCount: true);
+  return [
+    if (p.specialtyIds.isNotEmpty)
+      MetaPart.text(specialtyLabel(p.specialtyIds.first)),
+    if (p.areaLabel != null && p.areaLabel!.isNotEmpty)
+      MetaPart.text(p.areaLabel!),
+    ?review,
+  ];
+}
 
 /// S02.02: from one photo to the package it was shot with, and to booking it.
 class PhotoDetailScreen extends ConsumerStatefulWidget {
@@ -283,8 +289,9 @@ class _Content extends ConsumerWidget {
                                   ),
                                   style: theme.textTheme.titleMedium,
                                 ),
-                                Text(
-                                  _authorMeta(author),
+                                MetaLine(
+                                  _authorMeta(author, l),
+                                  maxLines: 2,
                                   style: theme.textTheme.bodySmall,
                                 ),
                               ],

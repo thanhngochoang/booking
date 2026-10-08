@@ -2944,11 +2944,17 @@ abstract class AppLocalizations {
   /// **'{count} đánh giá'**
   String profileStatReviews(int count);
 
-  /// No description provided for @profileStatNoReviews.
+  /// No description provided for @profileStatNew.
   ///
   /// In vi, this message translates to:
-  /// **'đánh giá'**
-  String get profileStatNoReviews;
+  /// **'Mới'**
+  String get profileStatNew;
+
+  /// No description provided for @photographerReviewsNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới · {count} đánh giá'**
+  String photographerReviewsNew(int count);
 
   /// No description provided for @profileStatShoots.
   ///
@@ -5115,12 +5121,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tải ảnh lỗi. Thử lại'**
   String get reviewUploadFailed;
-
-  /// No description provided for @reviewsHeader.
-  ///
-  /// In vi, this message translates to:
-  /// **'{rating} · {count} đánh giá'**
-  String reviewsHeader(String rating, int count);
 
   /// No description provided for @reviewsMore.
   ///
