@@ -331,6 +331,7 @@ void main() {
       int hits = 1,
       List<ReviewReason> reasons = const [],
       String? serviceName,
+      String? bookingDay,
       String text = 'Buổi chụp diễn ra hoàn hảo!',
       String customerId = 'c1',
       DateTime? createdAt,
@@ -340,6 +341,7 @@ void main() {
       photographerId: 'p1',
       serviceId: 's1',
       serviceName: serviceName,
+      bookingDay: bookingDay,
       verdict: verdict,
       hits: hits,
       reasons: reasons,
@@ -537,7 +539,35 @@ void main() {
       expect(find.text('12/10 · Chân dung 2 giờ'), findsOneWidget);
     });
 
-    testWidgets('the day is the Vietnam day of createdAt', (tester) async {
+    testWidgets('the day is the shoot day (bookingDay), not createdAt', (
+      tester,
+    ) async {
+      fakeReviews.seedReview(
+        review(
+          id: 'b1',
+          bookingDay: '2026-10-05',
+          serviceName: 'Chân dung 2 giờ',
+          createdAt: DateTime.utc(2026, 10, 12, 3),
+        ),
+      );
+      await openTab(tester);
+      expect(find.text('05/10 · Chân dung 2 giờ'), findsOneWidget);
+      expect(find.textContaining('12/10'), findsNothing);
+    });
+
+    testWidgets('an invalid bookingDay falls back to createdAt', (
+      tester,
+    ) async {
+      fakeReviews.seedReview(
+        review(id: 'b1', bookingDay: 'not-a-day'),
+      );
+      await openTab(tester);
+      expect(find.text('12/10'), findsOneWidget);
+    });
+
+    testWidgets('without bookingDay the day is the Vietnam day of createdAt', (
+      tester,
+    ) async {
       // 20:00 UTC on the 11th is 03:00 on the 12th in Vietnam.
       fakeReviews.seedReview(
         review(id: 'b1', createdAt: DateTime.utc(2026, 10, 11, 20)),

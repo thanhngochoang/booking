@@ -798,13 +798,15 @@ class ReviewTile extends StatefulWidget {
 class _ReviewTileState extends State<ReviewTile> {
   bool _expanded = false;
 
-  /// "12/10 · Chân dung 2 giờ": the review day in Vietnam time and, when the
-  /// review carries one, the package name (a legacy row has only the day).
+  /// "12/10 · Chân dung 2 giờ": the shoot day (`bookingDay` snapshot) and,
+  /// when the review carries one, the package name. A legacy row without a
+  /// valid `bookingDay` shows the Vietnam day of `createdAt` instead.
   String _meta() {
     final r = widget.review;
     final name = r.serviceName;
+    final shootDay = r.bookingDay == null ? null : parseDayKey(r.bookingDay!);
     return [
-      formatDayMonth(toVn(r.createdAt)),
+      formatDayMonth(shootDay ?? toVn(r.createdAt)),
       if (name != null && name.isNotEmpty) name,
     ].join(' · ');
   }
