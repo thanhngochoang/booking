@@ -261,6 +261,7 @@ void main() {
       await _fill(c, bank: _mb, number: '1903 5566 7788');
       PayoutOtpTicket? again;
       PayoutOtpTicket? refused;
+      final reasons = <PayoutOtpResendRefusal?>[];
       await _ctl(c).save(
         askOtp: (_) async {
           w.repo.otpTicket = const PayoutOtpTicket(
@@ -269,14 +270,54 @@ void main() {
             resendInSeconds: 60,
           );
           again = await _ctl(c).resendOtp();
+          expect(_ctl(c).lastResendError, isNull);
           w.repo.failNextOtp('limit_exceeded');
           refused = await _ctl(c).resendOtp();
+          reasons.add(_ctl(c).lastResendError);
+          w.repo.failNextOtp('network');
+          expect(await _ctl(c).resendOtp(), isNull);
+          reasons.add(_ctl(c).lastResendError);
           return false;
         },
       );
       expect(again?.phoneLast4, '4567');
       expect(refused, isNull);
-      expect(w.repo.otpCalls, ['MB:7788', 'MB:7788', 'MB:7788']);
+      expect(reasons, [
+        PayoutOtpResendRefusal.limit,
+        PayoutOtpResendRefusal.failed,
+      ]);
+      expect(w.repo.otpCalls, ['MB:7788', 'MB:7788', 'MB:7788', 'MB:7788']);
+    });
+
+    test('a code for another account inside the 60 s wait sends nothing '
+        '(the wait is per user)', () async {
+      final (w, c) = await _setup(account: true);
+      _ctl(c).startChange('VCB');
+      await _fill(c, bank: _mb, number: '1903 5566 7788');
+      expect(
+        await _ctl(c).save(askOtp: (_) async => false),
+        PayoutSaveOutcome.cancelled,
+      );
+      // Fixes a typo and saves again 20 s later.
+      _ctl(c).setNumber('1903 5566 7789');
+      await _ctl(c).lookupNow();
+      w.now = w.now.add(const Duration(seconds: 20));
+      expect(await _ctl(c).save(askOtp: _noOtp), PayoutSaveOutcome.otpWait);
+      expect(_ctl(c).otpWaitSeconds, 40);
+      expect(w.repo.otpCalls, ['MB:7788'], reason: 'no request for B');
+      expect(_form(c).saving, isFalse);
+      expect(_form(c).number, '1903 5566 7789');
+      // After the wait the new account gets its own code.
+      w.now = w.now.add(const Duration(seconds: 40));
+      PayoutOtpTicket? ticket;
+      await _ctl(c).save(
+        askOtp: (t) async {
+          ticket = t;
+          return false;
+        },
+      );
+      expect(ticket, isNotNull);
+      expect(w.repo.otpCalls, ['MB:7788', 'MB:7789']);
     });
 
     test('closing the sheet and saving again reuses the code', () async {
@@ -337,6 +378,7 @@ void main() {
 
     for (final (code, outcome) in [
       ('name_mismatch', PayoutSaveOutcome.mismatch),
+      ('not_found', PayoutSaveOutcome.notFound),
       ('limit_exceeded', PayoutSaveOutcome.lookupLimit),
       ('conflict', PayoutSaveOutcome.conflict),
       ('network', PayoutSaveOutcome.failed),
@@ -350,6 +392,45 @@ void main() {
         expect(_form(c).saving, isFalse);
       });
     }
+
+    for (final (code, decision) in [
+      ('name_mismatch', PayoutNameDecision.mismatch),
+      ('not_found', PayoutNameDecision.notFound),
+    ]) {
+      test('$code from the server replaces the cached match with '
+          '${decision.name} and disables save', () async {
+        final (w, c) = await _setup();
+        await _fill(c);
+        expect(_form(c).valid, isNotNull);
+        w.repo.failNextSave(code);
+        await _ctl(c).save(askOtp: _noOtp);
+        final view = _form(c).lookup;
+        expect((view as LookupDone).result.decision, decision);
+        expect(view.result.verifiedName, 'Nguyễn Minh Trí');
+        expect(_form(c).valid, isNull);
+        // The cached match is gone: a new lookup asks the bank again.
+        _ctl(c).setNumber('0123 4567 89');
+        _ctl(c).setNumber('0123 4567 890');
+        expect(_form(c).lookup, isA<LookupIdle>());
+        await _ctl(c).lookupNow();
+        expect(w.repo.lookupCalls, ['VCB:7890', 'VCB:7890']);
+      });
+    }
+
+    test('name_mismatch in the OTP sheet shows the mismatch state', () async {
+      final (w, c) = await _setup(account: true);
+      _ctl(c).startChange('VCB');
+      await _fill(c, bank: _mb, number: '1903 5566 7788');
+      w.repo.failNextSave('name_mismatch');
+      final outcome = await _ctl(c).save(
+        askOtp: (_) async =>
+            await _ctl(c).submitOtp('482913') == PayoutOtpSubmit.saved,
+      );
+      expect(outcome, PayoutSaveOutcome.mismatch);
+      final view = _form(c).lookup as LookupDone;
+      expect(view.result.decision, PayoutNameDecision.mismatch);
+      expect(_form(c).valid, isNull);
+    });
 
     test('startChange preselects the bank and opens the empty form', () async {
       final (_, c) = await _setup(account: true);

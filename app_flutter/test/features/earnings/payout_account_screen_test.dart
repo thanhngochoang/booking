@@ -267,23 +267,47 @@ void main() {
       _expectNoFullNumber(['01234567890']);
     });
 
-    testWidgets('name_mismatch on save shows the warning and keeps the input', (
-      tester,
-    ) async {
+    testWidgets('name_mismatch on save replaces the match with the mismatch '
+        'state and keeps the input', (tester) async {
       final w = await _open(tester);
       await _pickBank(tester, 'VCB');
       await _type(tester, '01234567890');
+      expect(find.text('Khớp tên đã xác minh'), findsOneWidget);
       w.repo.failNextSave('name_mismatch');
       await tester.tap(_key('payout-save'));
       await _settle(tester);
+      expect(find.text('Khớp tên đã xác minh'), findsNothing);
+      expect(find.text('Không khớp'), findsOneWidget);
+      expect(
+        find.text(
+          'Tên chủ tài khoản không khớp tên đã xác minh (Nguyễn Minh Trí)',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.text(
           'Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và '
           'số tài khoản.',
         ),
-        findsOneWidget,
+        findsWidgets,
       );
+      expect(_saveEnabled(tester), isFalse);
       expect(_fieldText(tester, 'payout-number'), '0123 4567 890');
+    });
+
+    testWidgets('not_found on save shows the not-found state', (tester) async {
+      final w = await _open(tester);
+      await _pickBank(tester, 'VCB');
+      await _type(tester, '01234567890');
+      w.repo.failNextSave('not_found');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(find.text('Khớp tên đã xác minh'), findsNothing);
+      expect(
+        find.text('Không tìm thấy tài khoản. Kiểm tra lại số tài khoản.'),
+        findsWidgets,
+      );
+      expect(_saveEnabled(tester), isFalse);
     });
 
     testWidgets('conflict shows the busy SnackBar and keeps the input', (
@@ -379,7 +403,7 @@ void main() {
       await _startChange(tester);
       expect(
         find.text(
-          'Đang dùng MBBank •••• 3456. Nhập tài khoản mới đứng tên bạn, tiền '
+          'Đang dùng MB •••• 3456. Nhập tài khoản mới đứng tên bạn, tiền '
           'sẽ chi tự động vào đây.',
         ),
         findsOneWidget,
@@ -498,6 +522,58 @@ void main() {
       // Let the new countdown end so no timer is left running.
       w.now = w.now.add(const Duration(seconds: 60));
       await tester.pump(const Duration(seconds: 60));
+    });
+
+    testWidgets('a typo fixed within 60 s waits instead of showing the daily '
+        'limit', (tester) async {
+      final w = await _open(tester, account: (w) => w.account());
+      await _startChange(tester);
+      await _type(tester, '190355667788');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(find.text('Nhập mã xác nhận'), findsOneWidget);
+      // Closes the sheet, fixes the number and saves again 20 s later.
+      await tester.tapAt(const Offset(195, 20));
+      await _settle(tester);
+      await _type(tester, '190355667789');
+      w.now = w.now.add(const Duration(seconds: 20));
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      expect(w.repo.otpCalls, ['VCB:7788'], reason: 'nothing sent for B');
+      expect(find.text('Nhập mã xác nhận'), findsNothing);
+      expect(
+        find.text('Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.'),
+        findsNothing,
+      );
+      expect(find.text('Gửi lại sau 40 giây'), findsOneWidget);
+      expect(_saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('a resend that fails on the network shows the generic error', (
+      tester,
+    ) async {
+      final w = await _open(tester, account: (w) => w.account());
+      await _startChange(tester);
+      await _type(tester, '190355667788');
+      await tester.tap(_key('payout-save'));
+      await _settle(tester);
+      w.now = w.now.add(const Duration(seconds: 60));
+      await tester.pump(const Duration(seconds: 60));
+      w.repo.failNextOtp('network');
+      await tester.tap(find.text('Gửi lại mã'));
+      await _settle(tester);
+      expect(find.text('Không lưu được. Thử lại'), findsOneWidget);
+      expect(
+        find.text('Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.'),
+        findsNothing,
+      );
+      w.repo.failNextOtp('limit_exceeded');
+      await tester.tap(find.text('Gửi lại mã'));
+      await _settle(tester);
+      expect(
+        find.text('Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.'),
+        findsOneWidget,
+      );
     });
 
     for (final (code, text) in [

@@ -100,7 +100,10 @@ class PayoutAccountForm {
 
 /// [saved] a first account, [changed] a change (active 72 h later);
 /// [sameAccount] the change is to the account already in use; [lookupLimit]
-/// the save used the last lookup of the day.
+/// the save used the last lookup of the day; [notFound] the bank has no such
+/// account; [otpWait] a code was sent less than 60 s ago (for any account:
+/// the server's resend wait is per user), see
+/// [PayoutAccountController.otpWaitSeconds].
 enum PayoutSaveOutcome {
   saved,
   changed,
@@ -114,6 +117,14 @@ enum PayoutSaveOutcome {
   mismatch,
   sameAccount,
   lookupLimit,
+  notFound,
+  otpWait,
+}
+
+/// A code was sent less than the resend wait ago; nothing was requested.
+class _OtpWait implements Exception {
+  const _OtpWait(this.seconds);
+  final int seconds;
 }
 
 /// How long typing must pause before the bank is asked for the holder name.
@@ -134,6 +145,13 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
   /// The last code sent, so closing the sheet and saving again within its
   /// validity does not ask for another (the server refuses a resend < 60 s).
   ({String key, PayoutOtpTicket ticket, DateTime at})? _lastOtp;
+
+  /// Seconds left before another code can be sent, after
+  /// [PayoutSaveOutcome.otpWait].
+  int otpWaitSeconds = 0;
+
+  /// Why the last [resendOtp] returned null.
+  PayoutOtpResendRefusal? lastResendError;
 
   @override
   PayoutAccountForm build() {
@@ -255,8 +273,10 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
       try {
         await repo.saveAccount(bankCode: v.bankCode, accountNumber: v.number);
       } on PayoutAccountError catch (e) {
+        _serverRefusedName(v, e.code);
         return stop(switch (e.code) {
           'name_mismatch' => PayoutSaveOutcome.mismatch,
+          'not_found' => PayoutSaveOutcome.notFound,
           'limit_exceeded' => PayoutSaveOutcome.lookupLimit,
           'conflict' => PayoutSaveOutcome.conflict,
           _ => PayoutSaveOutcome.failed,
@@ -270,6 +290,9 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
     final PayoutOtpTicket ticket;
     try {
       ticket = await _ticketFor(v);
+    } on _OtpWait catch (w) {
+      otpWaitSeconds = w.seconds;
+      return stop(PayoutSaveOutcome.otpWait);
     } on PayoutAccountError catch (e) {
       return stop(switch (e.code) {
         'phone_required' => PayoutSaveOutcome.phoneRequired,
@@ -302,21 +325,26 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
   }
 
   /// The ticket of a code still valid for this account, or a new code.
+  /// Throws [_OtpWait] while a code for another account is inside its resend
+  /// wait: the server counts that wait per user and would refuse the send
+  /// as `limit_exceeded` (read as the daily limit).
   Future<PayoutOtpTicket> _ticketFor(
     ({String bankCode, String number}) v,
   ) async {
     final key = _key(v.bankCode, v.number);
     final last = _lastOtp;
-    if (last != null && last.key == key) {
+    if (last != null) {
       final elapsed = _now().difference(last.at).inSeconds;
       final left = last.ticket.expiresInSeconds - elapsed;
-      if (elapsed >= 0 && left > 0) {
+      final wait = last.ticket.resendInSeconds - elapsed;
+      if (last.key == key && elapsed >= 0 && left > 0) {
         return PayoutOtpTicket(
           phoneLast4: last.ticket.phoneLast4,
           expiresInSeconds: left,
-          resendInSeconds: math.max(0, last.ticket.resendInSeconds - elapsed),
+          resendInSeconds: math.max(0, wait),
         );
       }
+      if (last.key != key && elapsed >= 0 && wait > 0) throw _OtpWait(wait);
     }
     final ticket = await ref
         .read(earningsRepositoryProvider)
@@ -353,7 +381,11 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
         case 'limit_exceeded':
           return PayoutOtpSubmit.tooMany;
         case 'name_mismatch':
+          _serverRefusedName(v, e.code);
           _fatal = PayoutSaveOutcome.mismatch;
+        case 'not_found':
+          _serverRefusedName(v, e.code);
+          _fatal = PayoutSaveOutcome.notFound;
         case 'conflict':
           _fatal = PayoutSaveOutcome.conflict;
         default:
@@ -366,19 +398,52 @@ class PayoutAccountController extends Notifier<PayoutAccountForm> {
     }
   }
 
-  /// Sends a new code for the pending change; null when refused.
+  /// Sends a new code for the pending change; null when refused, with the
+  /// reason in [lastResendError].
   Future<PayoutOtpTicket?> resendOtp() async {
     final v = _otpTarget;
-    if (v == null) return null;
+    lastResendError = null;
+    if (v == null) {
+      lastResendError = PayoutOtpResendRefusal.failed;
+      return null;
+    }
     try {
       final ticket = await ref
           .read(earningsRepositoryProvider)
           .requestAccountOtp(bankCode: v.bankCode, accountNumber: v.number);
       _lastOtp = (key: _key(v.bankCode, v.number), ticket: ticket, at: _now());
       return ticket;
+    } on PayoutAccountError catch (e) {
+      lastResendError = e.code == 'limit_exceeded'
+          ? PayoutOtpResendRefusal.limit
+          : PayoutOtpResendRefusal.failed;
+      return null;
     } catch (_) {
+      lastResendError = PayoutOtpResendRefusal.failed;
       return null;
     }
+  }
+
+  /// The server's own lookup at save time disagreed with the cached one:
+  /// forget it and show the server's verdict (save is then disabled).
+  void _serverRefusedName(({String bankCode, String number}) v, String code) {
+    final decision = switch (code) {
+      'name_mismatch' => PayoutNameDecision.mismatch,
+      'not_found' => PayoutNameDecision.notFound,
+      _ => null,
+    };
+    if (decision == null) return;
+    final key = _key(v.bankCode, v.number);
+    final before = _cache.remove(key);
+    if (!ref.mounted || _formKey(state) != key) return;
+    state = state.copyWith(
+      lookup: LookupDone(
+        PayoutNameLookup(
+          decision: decision,
+          verifiedName: before?.verifiedName,
+        ),
+      ),
+    );
   }
 
   PayoutSaveOutcome _finish(

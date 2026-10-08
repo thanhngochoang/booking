@@ -66,10 +66,11 @@ class NameLookupCard extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // The server's own check may refuse without a name.
             _Line(
               mark: const _Mark(_Tone.bad, AppIcons.close),
-              title: r.holderName ?? '',
-              sub: l.payoutLookupMismatch,
+              title: r.holderName ?? l.payoutLookupMismatch,
+              sub: r.holderName == null ? null : l.payoutLookupMismatch,
             ),
             const SizedBox(height: AppSpace.s3),
             _MismatchAlert(verifiedName: r.verifiedName ?? ''),
@@ -231,11 +232,13 @@ class _MismatchAlert extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      l.payoutLookupMismatchTitle(verifiedName),
-                      style: theme.textTheme.titleSmall?.copyWith(color: fg),
-                    ),
-                    const SizedBox(height: AppSpace.s1),
+                    if (verifiedName.isNotEmpty) ...[
+                      Text(
+                        l.payoutLookupMismatchTitle(verifiedName),
+                        style: theme.textTheme.titleSmall?.copyWith(color: fg),
+                      ),
+                      const SizedBox(height: AppSpace.s1),
+                    ],
                     Text(
                       l.payoutLookupMismatchBody,
                       style: theme.textTheme.bodySmall?.copyWith(color: fg),

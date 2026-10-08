@@ -11,11 +11,15 @@ import 'package:photobooking/data/earnings/earnings.dart';
 /// it with false (the caller says why).
 enum PayoutOtpSubmit { saved, wrong, expired, tooMany, failed }
 
+/// Why a resend gave no ticket: the daily send limit, or anything else.
+enum PayoutOtpResendRefusal { limit, failed }
+
 /// S06.06-otp: the code sent to the phone in the profile, to confirm a change
 /// of payout account. True once [onSubmit] answered
 /// [PayoutOtpSubmit.saved]; false when closed or failed. Resend is offered
 /// after [PayoutOtpTicket.resendInSeconds]; [onResend] answers the new
-/// ticket, or null when refused (the daily limit).
+/// ticket, or null when refused, and [resendRefusal] then says why (the
+/// daily limit when not given).
 ///
 /// Dragging down is off because the sheet holds a text field; the barrier
 /// tap and Back close it, except while a code is being checked.
@@ -24,6 +28,7 @@ Future<bool> showPayoutOtpSheet(
   required PayoutOtpTicket ticket,
   required Future<PayoutOtpSubmit> Function(String code) onSubmit,
   required Future<PayoutOtpTicket?> Function() onResend,
+  PayoutOtpResendRefusal Function()? resendRefusal,
 }) async {
   final done = await showAppSheet<bool>(
     context,
@@ -31,7 +36,12 @@ Future<bool> showPayoutOtpSheet(
     builder: (_) => ScreenCode(
       ScreenCodes.payoutAccount,
       label: 'otp',
-      child: _OtpBody(ticket: ticket, onSubmit: onSubmit, onResend: onResend),
+      child: _OtpBody(
+        ticket: ticket,
+        onSubmit: onSubmit,
+        onResend: onResend,
+        resendRefusal: resendRefusal,
+      ),
     ),
   );
   return done ?? false;
@@ -42,11 +52,13 @@ class _OtpBody extends ConsumerStatefulWidget {
     required this.ticket,
     required this.onSubmit,
     required this.onResend,
+    this.resendRefusal,
   });
 
   final PayoutOtpTicket ticket;
   final Future<PayoutOtpSubmit> Function(String code) onSubmit;
   final Future<PayoutOtpTicket?> Function() onResend;
+  final PayoutOtpResendRefusal Function()? resendRefusal;
 
   @override
   ConsumerState<_OtpBody> createState() => _OtpBodyState();
@@ -122,7 +134,11 @@ class _OtpBodyState extends ConsumerState<_OtpBody> {
     setState(() {
       _resending = false;
       if (t == null) {
-        _error = l.payoutOtpLimit;
+        _error = switch (widget.resendRefusal?.call() ??
+            PayoutOtpResendRefusal.limit) {
+          PayoutOtpResendRefusal.limit => l.payoutOtpLimit,
+          PayoutOtpResendRefusal.failed => l.payoutAccountSaveError,
+        };
         return;
       }
       _ticket = t;
@@ -162,16 +178,13 @@ class _OtpBodyState extends ConsumerState<_OtpBody> {
               style: theme.textTheme.bodyMedium?.copyWith(color: secondary),
             ),
             const SizedBox(height: AppSpace.s4),
-            ListenableBuilder(
-              listenable: _code,
-              builder: (context, _) => OtpCodeField(
-                key: const Key('payout-otp'),
-                controller: _code,
-                labelText: l.payoutOtpField,
-                errorText: _error,
-                enabled: !_busy,
-                onCompleted: (_) => _submit(),
-              ),
+            OtpCodeField(
+              key: const Key('payout-otp'),
+              controller: _code,
+              labelText: l.payoutOtpField,
+              errorText: _error,
+              enabled: !_busy,
+              onCompleted: (_) => _submit(),
             ),
             const SizedBox(height: AppSpace.s2),
             Center(

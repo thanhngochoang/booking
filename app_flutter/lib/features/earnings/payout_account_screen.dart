@@ -64,6 +64,8 @@ class _PayoutAccountScreenState extends ConsumerState<PayoutAccountScreen> {
             ticket: ticket,
             onSubmit: controller.submitOtp,
             onResend: controller.resendOtp,
+            resendRefusal: () =>
+                controller.lastResendError ?? PayoutOtpResendRefusal.failed,
           ),
     );
     if (!mounted) return;
@@ -78,6 +80,10 @@ class _PayoutAccountScreenState extends ConsumerState<PayoutAccountScreen> {
       PayoutSaveOutcome.otpUnavailable => l.payoutOtpUnavailable,
       PayoutSaveOutcome.mismatch => l.payoutLookupMismatchBody,
       PayoutSaveOutcome.lookupLimit => l.payoutLookupLimit,
+      PayoutSaveOutcome.notFound => l.payoutLookupNotFound,
+      PayoutSaveOutcome.otpWait => l.payoutOtpResendIn(
+        controller.otpWaitSeconds,
+      ),
       PayoutSaveOutcome.cancelled || PayoutSaveOutcome.invalid => null,
     };
     if (message != null) _say(message);
@@ -231,7 +237,7 @@ class _AccountFormState extends ConsumerState<_AccountForm> {
         Text(
           changing
               ? l.payoutAccountIntroChange(
-                  _bankOf(current.bankCode)?.shortName ?? current.bankCode,
+                  current.bankCode,
                   current.accountLast4,
                 )
               : l.payoutAccountIntro,
