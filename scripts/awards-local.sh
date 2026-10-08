@@ -53,6 +53,8 @@ export HOME="$ROOT/.home"
 mkdir -p "$HOME"
 # Local runs use no credentials; a key in the environment must never reach the Admin SDK.
 unset GOOGLE_APPLICATION_CREDENTIALS
+# firebase-admin and the Storage client prefer these over GCLOUD_PROJECT / FIREBASE_STORAGE_EMULATOR_HOST.
+unset GOOGLE_CLOUD_PROJECT STORAGE_EMULATOR_HOST
 
 gs_value() { # gs_value <project_info key>
   [ -f "$GS" ] && node -p 'require(process.argv[1]).project_info[process.argv[2]] || ""' "$GS" "$1" 2>/dev/null || true
@@ -72,6 +74,13 @@ if [ -z "${STORAGE_BUCKET:-}" ]; then
 fi
 
 [ -d "$FN/node_modules" ] || npm --prefix "$FN" ci
+
+for port in 8080 9099; do
+  if ! curl -fsS "http://127.0.0.1:$port/" >/dev/null 2>&1; then
+    echo "Emulator on 127.0.0.1:$port does not answer: start scripts/backend-local.sh first." >&2
+    exit 1
+  fi
+done
 
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080
 export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099

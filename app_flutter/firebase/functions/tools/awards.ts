@@ -35,8 +35,19 @@ const EMULATOR_HOST_VARS = ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_H
 
 /** Refuses a mixed environment: once any emulator host is set, all of them must be local. */
 export function guardEnv(env: Readonly<Record<string, string | undefined>>): void {
+  // The Storage client prefers STORAGE_EMULATOR_HOST (usually with a scheme) over our own variable.
+  const clientStorage = env.STORAGE_EMULATOR_HOST;
+  if (clientStorage !== undefined && clientStorage !== '' && !LOCAL_HOST.test(clientStorage.replace(/^https?:\/\//, ''))) {
+    throw new Error(`Refusing to run: STORAGE_EMULATOR_HOST must point at a local emulator (got ${clientStorage}).`);
+  }
   if (!EMULATOR_HOST_VARS.some((k) => env[k] !== undefined && env[k] !== '')) return;
   assertLocalEmulators({ allowAnyProject: true }, env as NodeJS.ProcessEnv);
+  // Decisions notify through the live deps; with a key in the environment they could push to real devices.
+  if (env.GOOGLE_APPLICATION_CREDENTIALS !== undefined && env.GOOGLE_APPLICATION_CREDENTIALS !== '') {
+    throw new Error(
+      'Refusing to run: GOOGLE_APPLICATION_CREDENTIALS is set while the emulator hosts are; unset it (scripts/awards-local.sh does).',
+    );
+  }
   const storage = env.FIREBASE_STORAGE_EMULATOR_HOST;
   // Mixed mode would sign URLs against the real bucket while reading emulator data.
   if (storage === undefined || storage === '' || !LOCAL_HOST.test(storage)) {
@@ -218,6 +229,8 @@ async function main(): Promise<void> {
   }
   guardEnv(process.env);
   const mode = proofModeFromEnv(process.env);
+  // Emulator mode: livePushSender() then logs instead of sending FCM pushes (set before the live deps load).
+  if (mode === 'emulator') process.env.FUNCTIONS_EMULATOR = 'true';
   const { getAuth } = await import('firebase-admin/auth');
   const { getStorage } = await import('firebase-admin/storage');
   const { db } = await import('../src/infra/admin.js');

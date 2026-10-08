@@ -13,7 +13,7 @@ Plan: `docs/superpowers/plans/2026-10-07-s25-awards.md`, Tasks 1–3. Branch `pl
 1. Keep the CLI for phase 1; no staff callable change and no in-app staff screen. `reviewAward` is already a callable (claim `staffRole == 'admin'`) and the CLI drives the same use case. An in-app screen would add a staff-only surface to the consumer app, needs signed proof URLs and an audit view, and would be thrown away when S23.07 lands in the web dashboard (phase 1.5, #83). What blocked review was that `show` could not run on the emulators and nobody documented a one-command local run.
 2. Emulator `show` downloads the proof files to `$TMPDIR/awards/<awardId>/` with the Admin SDK (bypasses Storage rules) and prints local paths; against a real project it keeps 15-minute signed URLs. Mode = emulator when `FIREBASE_STORAGE_EMULATOR_HOST` is set.
 3. Bucket on the emulator: `STORAGE_BUCKET`, else `FIREBASE_STORAGE_BUCKET`, else (wrapper only) `project_info.storage_bucket` of `app_flutter/android/app/google-services.json`, else `<project>.appspot.com` (the app's default bucket comes from the same file).
-4. The wrapper refuses real credentials: it unsets `GOOGLE_APPLICATION_CREDENTIALS`, and the CLI calls `assertLocalEmulators({ allowAnyProject: true })` whenever any of the three emulator hosts is set, so a half-set environment cannot touch a real project.
+4. The wrapper and the CLI keep emulator runs off real projects. The wrapper unsets `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT` and `STORAGE_EMULATOR_HOST` and checks Firestore and Auth answer. The CLI's `guardEnv` calls `assertLocalEmulators({ allowAnyProject: true })` whenever any of the three emulator hosts is set, requires all three to be local, refuses `GOOGLE_APPLICATION_CREDENTIALS` in that case and a non-local `STORAGE_EMULATOR_HOST`; in emulator mode `main()` sets `FUNCTIONS_EMULATOR=true` so notifications use `LoggingPushSender`, never FCM. Not guaranteed: gcloud application-default login in the developer's home (no env var) is not detected, but with the emulator hosts set Admin SDK calls go to the emulators and pushes are only logged.
 5. `list` shows how long each award has waited (`waiting 3d 4h`), oldest first, so the 3-business-day promise of S25.02 ("Duyệt trong 3 ngày làm việc") can be checked by eye. Pure formatter, unit-tested.
 6. S25.01 header copy: the mock wins ("Đã khai" left, "{n} giải" right in tertiary ink, count not a link).
 
@@ -25,12 +25,14 @@ From the SDD progress ledger (`.superpowers/sdd/2026-10-07-s25-awards/progress-p
 - Pre-flight scan: no cross-task findings (T1 usage → T3 README, T2 status → T3 rows).
 - Task 1 review 1 (b38e781): one Important finding, the "bucket needed" logic lived in `main()` and was untested; fix round 1 (b38e781..f097bf1) resolves the bucket only for files and pins it in tests, and folded in the minors: awardId basename, index-prefixed file names, mixed-mode refusal (`guardEnv`), header comment. Review clean afterwards.
 - Task 2 (f097bf1..63f9be3): review approved.
+- Final whole-branch review: CLI emulator mode could send real FCM pushes with a key in the environment; fixed (guard + `FUNCTIONS_EMULATOR`), plus `STORAGE_EMULATOR_HOST`/`GOOGLE_CLOUD_PROJECT` handling and a reachability check in the wrapper.
 - Final check: no rules, index or function changed; no emulator suite skipped.
 
 ## Not run
 - Manual emulator walkthrough (Review Focus 4: `approve seed-award-binh-1`, then Bình's S25.01 flips the row to "Đã duyệt", `award_reviewed` arrives, `onAwardWrite` recomputes the tier, the tier card says "Còn 2 giải đã duyệt nữa để nhận tích vàng") was **not run in the sandbox** (it needs the running emulators). Run it when merging, with the steps of `app_flutter/firebase/functions/seed/README.md` "Staff CLI for awards". Also try `show` on an award created in the app with proof photos (files land in `$TMPDIR/awards/<id>/`).
 
 ## Deferred
+- Minors from the final review: `main()`'s `show` wiring (bucket resolution, download to the tmp dir) is not unit-tested, only `fetchProofFiles` is; the S25.01 header is hand-built in `my_awards_screen.dart` and its typography differs from the mock `.sec` (follow-up: `SectionHeader` with a `trailing` slot); the spec's string key naming for the header (`s2501ListedTitle`/`s2501ListedCount`) differs from the style of neighbouring keys.
 - S23.07 staff award review screen with proof viewer and identity check on tier grant: web dashboard, phase 1.5 (#83).
 - Reminders or escalation when an award waits longer than 3 business days: needs the staff operations queue (S23, #83).
 - Real-project review runs (service-account key, prod bucket): operational, outside the sandbox; documented in the README.

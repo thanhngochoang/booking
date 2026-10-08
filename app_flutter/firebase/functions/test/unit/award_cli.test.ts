@@ -220,6 +220,32 @@ describe('awards staff CLI', () => {
     assert.throws(() => guardEnv({ FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199', GCLOUD_PROJECT: 'p' }), /must point/);
   });
 
+  it('emulator hosts with GOOGLE_APPLICATION_CREDENTIALS are refused', () => {
+    assert.throws(
+      () =>
+        guardEnv({
+          FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+          FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+          FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199',
+          GOOGLE_APPLICATION_CREDENTIALS: '/key.json',
+          GCLOUD_PROJECT: 'p',
+        }),
+      /GOOGLE_APPLICATION_CREDENTIALS/,
+    );
+  });
+
+  it('a remote STORAGE_EMULATOR_HOST is refused, a local one (with scheme) is fine', () => {
+    assert.throws(() => guardEnv({ STORAGE_EMULATOR_HOST: 'http://storage.example.com:9199' }), /STORAGE_EMULATOR_HOST must point/);
+    const local = {
+      FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+      FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+      FIREBASE_STORAGE_EMULATOR_HOST: '127.0.0.1:9199',
+      GCLOUD_PROJECT: 'p',
+    };
+    assert.doesNotThrow(() => guardEnv({ ...local, STORAGE_EMULATOR_HOST: 'http://127.0.0.1:9199' }));
+    assert.throws(() => guardEnv({ ...local, STORAGE_EMULATOR_HOST: 'http://10.0.0.5:9199' }), /STORAGE_EMULATOR_HOST/);
+  });
+
   it('guardEnv accepts local emulators and plain project env', () => {
     assert.doesNotThrow(() => guardEnv({}));
     assert.doesNotThrow(() => guardEnv({ GOOGLE_APPLICATION_CREDENTIALS: '/k.json', GCLOUD_PROJECT: 'real' }));

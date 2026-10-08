@@ -100,7 +100,8 @@ npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
 its proof links and files) and the decisions `approve`, `needs-info`, `reject`, `revoke`. A decision
 calls the same `reviewAward` use case as the callable, so the same rules, notification and tier
 recompute (`onAwardWrite`) apply; `--actor` must be a user with the admin claim.
-`npm run awards -- --help` lists the commands.
+`npm run awards -- --help` lists the commands. `list` shows calendar time waiting, while S25.02
+promises a review in 3 business days: count weekends and holidays by eye.
 
 ### Local (emulators running via `scripts/backend-local.sh`)
 
