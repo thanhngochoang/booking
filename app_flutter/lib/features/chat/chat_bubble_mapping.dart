@@ -5,10 +5,10 @@ import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 BubbleSendState sendStateOf(MessageSendState s) => switch (s) {
-  MessageSendState.sending => BubbleSendState.sending,
-  MessageSendState.failed => BubbleSendState.failed,
-  MessageSendState.sent => BubbleSendState.sent,
-};
+      MessageSendState.sending => BubbleSendState.sending,
+      MessageSendState.failed => BubbleSendState.failed,
+      MessageSendState.sent => BubbleSendState.sent,
+    };
 
 /// The system sentence for a booking [status] (also the S07.02 row preview
 /// when the last message is a status message); null for the states that post
@@ -38,16 +38,16 @@ ChatBubbleContent bubbleContentOf(
     MessageType.text => TextContent(m.body ?? ''),
     MessageType.image => ImageContent(imageUrl ?? '', localPath: localPath),
     MessageType.location => LocationContent(
-      label: l.chatLocationOf(senderName),
-      mapUrl: m.point != null
-          ? 'https://www.google.com/maps?q=${m.point!.lat},${m.point!.lng}'
-          : '',
-    ),
+        label: l.chatLocationOf(senderName),
+        mapUrl: m.point != null
+            ? 'https://www.google.com/maps?q=${m.point!.lat},${m.point!.lng}'
+            : '',
+      ),
     MessageType.system => _systemContentOf(
-      m,
-      l: l,
-      systemActions: systemActions,
-    ),
+        m,
+        l: l,
+        systemActions: systemActions,
+      ),
   };
 }
 

@@ -58,15 +58,21 @@ void main() {
     router = GoRouter(
       initialLocation: '/chats',
       routes: [
-        GoRoute(path: '/chats', builder: (_, _) => const ChatListScreen()),
+        GoRoute(
+          path: '/chats',
+          builder: (_, _) => const ChatListScreen(),
+        ),
         GoRoute(
           path: '/chat/:id',
-          builder: (_, s) =>
-              Scaffold(body: Text('chat ${s.pathParameters['id']}')),
+          builder: (_, s) => Scaffold(
+            body: Text('chat ${s.pathParameters['id']}'),
+          ),
         ),
         GoRoute(
           path: '/action',
-          builder: (_, _) => const Scaffold(body: Text('action screen')),
+          builder: (_, _) => const Scaffold(
+            body: Text('action screen'),
+          ),
         ),
       ],
     );
@@ -76,7 +82,9 @@ void main() {
       authStateProvider.overrideWith(
         (ref) => Stream.value(AuthUser(uid: currentUid)),
       ),
-      currentProfileProvider.overrideWith((ref) => fakeUsers.watch(currentUid)),
+      currentProfileProvider.overrideWith(
+        (ref) => fakeUsers.watch(currentUid),
+      ),
       userRepositoryProvider.overrideWithValue(fakeUsers),
       clockProvider.overrideWithValue(() => _testNow),
       chatRepositoryProvider.overrideWithValue(fakeChat),
@@ -116,7 +124,9 @@ void main() {
 
     await pumpChatList(
       tester,
-      extraOverrides: [myChatsProvider.overrideWith((ref) => never.stream)],
+      extraOverrides: [
+        myChatsProvider.overrideWith((ref) => never.stream),
+      ],
     );
 
     await tester.pump(const Duration(milliseconds: 200));
@@ -275,7 +285,8 @@ void main() {
       photographerId: 'p1',
       bookingStatus: 'upcoming',
       lastMessageAt: DateTime.utc(2026, 10, 5, 9, 41),
-      lastMessagePreview: 'Một tin nhắn xem trước cực kỳ dài để kiểm tra độ co giãn trên màn nhỏ và chữ lớn',
+      lastMessagePreview:
+          'Một tin nhắn xem trước cực kỳ dài để kiểm tra độ co giãn trên màn nhỏ và chữ lớn',
     );
     fakeChat.seedThread(t1);
     fakeChat.seedUnread(t1.id, 99);
@@ -506,6 +517,74 @@ void main() {
         expect(find.text('Khách hàng'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'upcoming and reviewed with an empty preview keep the last posted sentence',
+      (tester) async {
+        fakeChat.seedThread(
+          thread(
+            id: 'up',
+            kind: ChatKind.booking,
+            bookingStatus: 'upcoming',
+            preview: '',
+          ),
+        );
+        fakeChat.seedThread(
+          thread(
+            id: 'rev',
+            kind: ChatKind.booking,
+            photographerId: 'p2',
+            bookingStatus: 'reviewed',
+            preview: '',
+            lastMessageAt: DateTime.utc(2026, 10, 5, 8, 0),
+          ),
+        );
+        await pumpChatList(tester);
+        await settle(tester);
+        expect(find.text('Nhiếp ảnh gia đã nhận buổi chụp.'), findsOneWidget);
+        expect(find.text('Buổi chụp đã hoàn thành.'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a closed inquiry whose last sender is me shows chatClosed', (
+      tester,
+    ) async {
+      fakeChat.seedThread(
+        thread(
+          preview: 'Em hỏi giá',
+          lastSenderId: 'c1',
+          lastMessageAt: _testNow.subtract(const Duration(days: 20)),
+        ),
+      );
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(
+        find.text('Cuộc trò chuyện đã đóng. Gửi tin để mở lại.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Bạn:'), findsNothing);
+    });
+
+    testWidgets('an own message with an empty preview gets no "Bạn:" prefix', (
+      tester,
+    ) async {
+      fakeChat.seedThread(thread(preview: '', lastSenderId: 'c1'));
+      fakeChat.seedThread(
+        thread(
+          id: 'booked',
+          kind: ChatKind.booking,
+          photographerId: 'p2',
+          bookingStatus: 'accepted',
+          preview: '',
+          lastSenderId: 'c1',
+          lastMessageAt: DateTime.utc(2026, 10, 5, 8, 0),
+        ),
+      );
+      await pumpChatList(tester);
+      await settle(tester);
+      expect(find.textContaining('Bạn:'), findsNothing);
+      expect(find.text('Nhiếp ảnh gia đã nhận buổi chụp.'), findsOneWidget);
+    });
 
     testWidgets('reading a chat clears its unread number', (tester) async {
       fakeChat.seedThread(thread(preview: 'Tin mới'));

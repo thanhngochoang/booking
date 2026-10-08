@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
@@ -16,8 +17,7 @@ String formatChatTime(DateTime? time, DateTime now) {
   if (time == null) return '';
   final local = time.toLocal();
   final localNow = now.toLocal();
-  final sameDay =
-      local.year == localNow.year &&
+  final sameDay = local.year == localNow.year &&
       local.month == localNow.month &&
       local.day == localNow.day;
   if (sameDay) {
@@ -50,11 +50,15 @@ class ChatListScreen extends ConsumerWidget {
       ScreenCodes.chats,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: Text(l10n.chatsTitle)),
+        appBar: AppBar(
+          title: Text(l10n.chatsTitle),
+        ),
         body: AsyncView<List<ChatListItem>>(
           value: chatsAsync,
           skeleton: (_) => Column(
-            children: [for (var i = 0; i < 6; i++) ConversationRow.skeleton()],
+            children: [
+              for (var i = 0; i < 6; i++) ConversationRow.skeleton(),
+            ],
           ),
           onRetry: () => ref.refresh(myChatsProvider),
           isEmpty: (items) => items.isEmpty,
@@ -108,8 +112,7 @@ class _ChatRow extends ConsumerWidget {
 
     final l10n = context.l10n;
     final profile = profileAsync.value;
-    final counterpartName =
-        profile?.displayName ??
+    final counterpartName = profile?.displayName ??
         (currentUserId == thread.customerId
             ? l10n.profileRolePhotographer
             : l10n.profileRoleCustomer);
@@ -120,8 +123,14 @@ class _ChatRow extends ConsumerWidget {
     if (thread.isClosedInquiryAt(now)) {
       preview = l10n.chatClosed;
     } else if (lastText.isEmpty) {
-      // A status message has no preview text: show its sentence.
-      preview = status == null ? '' : bookingStatusSentence(status, l10n) ?? '';
+      // A status message has no preview text: show its sentence. upcoming and
+      // reviewed post no message of their own, so the last posted one stays.
+      final posted = switch (status) {
+        BookingStatus.upcoming => BookingStatus.accepted,
+        BookingStatus.reviewed => BookingStatus.completed,
+        _ => status,
+      };
+      preview = posted == null ? '' : bookingStatusSentence(posted, l10n) ?? '';
     } else if (currentUserId != null && thread.lastSenderId == currentUserId) {
       preview = l10n.chatsYouPrefix(lastText);
     } else {
