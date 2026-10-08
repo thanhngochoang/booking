@@ -186,6 +186,9 @@ tr.sel td{background:var(--accent-soft)}
 .sugg.on{border-color:var(--accent);background:var(--accent-soft)}
 .sugg.on .ms{color:var(--accent)}
 .pane .tbl th,.pane .tbl td{padding:8px 9px;font-size:12.5px}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px}
+.banner.warn{background:rgba(230,198,23,.14);border:1px solid rgba(230,198,23,.4)}
+.banner.warn>.ms{color:var(--warn)}
 /* studio placeholder */
 .ph-empty{flex:1;border:1.5px dashed var(--line-2);border-radius:var(--r2);display:grid;place-items:center;text-align:center;color:var(--ink-3);font-size:13.5px;padding:24px}
 .foot{margin-top:56px;font-size:13px;color:var(--ink-3)}
@@ -235,20 +238,19 @@ tr.sel td{background:var(--accent-soft)}
             <div class="tbl"><table>
               <thead><tr><th>Người nhận</th><th>Thực nhận</th><th>Lý do</th><th>Tạo lúc</th></tr></thead>
               <tbody>
-                <tr class="sel"><td><div class="who"><span class="av"></span><div>Hoàng Vũ<small>cá nhân · 3 khoản</small></div></div></td><td class="num">4.185.000₫</td><td><span class="chip c-pen">Lần chi đầu</span></td><td class="num">07/10 10:00<br><span class="chip c-bad">27 giờ</span></td></tr>
+                <tr class="sel"><td><div class="who"><span class="av"></span><div>Hoàng Vũ<small>cá nhân · 2 khoản</small></div></div></td><td class="num">3.441.000₫</td><td><span class="chip c-pen">Lần chi đầu</span></td><td class="num">07/10 10:00<br><span class="chip c-bad">27 giờ</span></td></tr>
                 <tr><td><div class="who"><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><div>Studio Mây<small>studio · 6 khoản</small></div></div></td><td class="num">18.400.000₫</td><td><span class="chip c-pen">Lần chi đầu</span></td><td class="num">08/10 10:00</td></tr>
                 <tr><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span><div>Minh Trí<small>NAG · 2 khoản</small></div></div></td><td class="num">2.790.000₫</td><td><span class="chip c-mut">Tên chờ đối chiếu</span></td><td class="num">08/10 10:00</td></tr>
                 <tr><td><div class="who"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div>Thu Hà<small>cá nhân · 1 khoản</small></div></div></td><td class="num">1.395.000₫</td><td><span class="chip c-mut">Đổi tài khoản</span></td><td class="num">08/10 10:00</td></tr>
               </tbody></table></div>
             <div class="pane">
-              <div class="ph"><h4>Hoàng Vũ · 4.185.000₫</h4><div class="hint">payout 01JA6…M2T · tạo 07/10/2026 10:00</div></div>
+              <div class="ph"><h4>Hoàng Vũ · 3.441.000₫</h4><div class="hint">payout 01JA6…M2T · tạo 07/10/2026 10:00</div></div>
               <div class="pb">
-                <dl class="kv"><dt>Tài khoản</dt><dd>Vietcombank •••• 6789</dd><dt>Tên chủ tài khoản</dt><dd>HOANG VAN VU <span class="chip c-ok">Khớp</span></dd><dt>Họ tên đã xác minh</dt><dd>Hoàng Văn Vũ</dd><dt>Lần chi trước</dt><dd>Chưa có</dd></dl>
+                <dl class="kv"><dt>Tài khoản</dt><dd>Vietcombank •••• 6789</dd><dt>Tên chủ tài khoản</dt><dd>HOANG VAN VU <span class="chip c-ok">Khớp</span></dd><dt>Họ tên đã xác minh</dt><dd>Hoàng Văn Vũ</dd></dl>
                 <div class="tbl"><table><thead><tr><th>Khoản</th><th>Gộp</th><th>Thuế 7%</th><th>Thực nhận</th></tr></thead><tbody>
                   <tr><td>Chụp cưới · 12/09</td><td class="num">2.500.000₫</td><td class="num">175.000₫</td><td class="num">2.325.000₫</td></tr>
                   <tr><td>Kỷ yếu · 20/09</td><td class="num">1.200.000₫</td><td class="num">84.000₫</td><td class="num">1.116.000₫</td></tr>
-                  <tr><td>Vé Workshop · 28/09</td><td class="num">800.000₫</td><td class="num">56.000₫</td><td class="num">744.000₫</td></tr>
-                  <tr><td><b>Tổng</b></td><td class="num"><b>4.500.000₫</b></td><td class="num"><b>315.000₫</b></td><td class="num"><b>4.185.000₫</b></td></tr>
+                  <tr><td><b>Tổng</b></td><td class="num"><b>3.700.000₫</b></td><td class="num"><b>259.000₫</b></td><td class="num"><b>3.441.000₫</b></td></tr>
                 </tbody></table></div>
               </div>
               <div class="pf"><span class="btn sec">Tạm giữ…</span><span class="btn pri">Duyệt chi</span></div>
@@ -416,6 +418,91 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div></div>
     <div class="cap"><span class="n">S23.15 · Chờ duyệt lần hai</span><b>Người thứ hai xác nhận, thao tác chạy ngay</b><span>Đối tượng đổi trạng thái trước khi duyệt thì yêu cầu tự đóng. Hết hạn sau 24 giờ. Người đề xuất chỉ thấy "Huỷ yêu cầu".</span></div>
+  </div>
+
+  <h2 id="xacminh" style="font-size:22px;margin-top:40px">Xác minh &amp; giải thưởng (#164) · admin, support</h2>
+  <p>Spec: <code>screens/staff-verification-awards.md</code>. Hạng NAG chỉ cấp khi đủ 3 giải và đã xác minh danh tính; khôi phục xác minh cần người thứ hai.</p>
+
+  <div class="shot" id="S23.04">
+    <div class="frame"><div class="desk" data-code="S23.04">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">gavel</span>Khiếu nại<span class="cnt">4</span></div>
+        <div class="nav on"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav"><span class="ms">emoji_events</span>Giải thưởng<span class="cnt">3</span></div>
+        <div class="nav"><span class="ms">flag</span>Báo cáo<span class="cnt">7</span></div>
+        <div class="nav"><span class="ms">support_agent</span>Hộp thư<span class="cnt">5</span></div>
+        <div class="grp">Hệ thống</div>
+        <div class="nav"><span class="ms">how_to_reg</span>Duyệt lần hai<span class="cnt">1</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã booking, người dùng, thanh toán…<span class="kbd">/</span></div><span class="role">support</span><span class="av" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Xác minh</h3><div class="sub">Duyệt trong 24 giờ · không bao giờ tự duyệt</div></div></div>
+          <div class="tabs" role="tablist"><span class="on">Danh tính <b>4</b></span><span>Doanh nghiệp <b>2</b></span><span>Đã duyệt</span><span>Đã thu hồi <b>1</b></span><span>Lịch sử</span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Thợ</th><th>Gửi lúc</th><th>Lần</th><th>Cờ</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td><div class="who"><span class="av"></span><div>Hoàng Vũ<small>cá nhân · Đà Nẵng</small></div></div></td><td class="num">07/10 07:20</td><td class="num">1</td><td><span class="chip c-bad">Quá 31 giờ</span></td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div>Lê Quỳnh<small>cá nhân · TP.HCM</small></div></div></td><td class="num">08/10 06:12</td><td class="num">2</td><td><span class="chip c-bad">Trùng tài khoản</span></td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span><div>Minh Trí<small>cá nhân · TP.HCM</small></div></div></td><td class="num">08/10 09:48</td><td class="num">1</td><td></td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Hoàng Vũ</h4><div class="hint">Gửi 07/10/2026 07:20 · lần 1 · mở chi tiết được ghi vào nhật ký</div></div>
+              <div class="pb">
+                <dl class="kv"><dt>Họ tên trên giấy tờ</dt><dd>HOÀNG VĂN VŨ</dd><dt>Ngày sinh</dt><dd class="num">14/02/1996 · 30 tuổi</dd><dt>Số định danh</dt><dd class="num">•••• 4821</dd><dt>Cách xác minh</dt><dd>VNeID · <span class="chip c-ok">Đạt</span></dd><dt>Trùng tài khoản</dt><dd><span class="chip c-ok">Không có</span></dd><dt>Các bước</dt><dd>Điện thoại ✓ · Phí 99.000₫ ✓ · Quy định 2026-10-06 ✓</dd></dl>
+                <div class="thumbs"><span class="thumb" style="background:linear-gradient(140deg,#E2C9B0,#7A5238)"></span><span class="thumb"></span><span class="thumb" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"></span><span class="thumb" style="background:linear-gradient(160deg,#B9A08C,#4A3527)"></span></div>
+                <div class="hint">Ảnh đại diện và portfolio công khai · tài khoản tạo 22/09/2026 · 2 giải đã duyệt</div>
+              </div>
+              <div class="pf"><span class="btn sec">Từ chối…</span><span class="btn pri">Duyệt</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.04 · Xác minh · tab Danh tính</span><b>Họ tên, ngày sinh, 4 số cuối, kết quả kiểm tra, cảnh báo trùng</b><span>Chi tiết đi qua callable để ghi nhật ký mỗi lần xem. Tab Doanh nghiệp có ảnh giấy đăng ký (URL ký 5 phút) cạnh họ tên chủ studio. Tab Đã duyệt có "Thu hồi xác minh…", tab Đã thu hồi có "Khôi phục…" (chỉ admin đề xuất, người thứ hai duyệt).</span></div>
+  </div>
+
+  <div class="shot" id="S23.07">
+    <div class="frame"><div class="desk" data-code="S23.07">
+      <nav class="side" aria-label="Điều hướng staff">
+        <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
+        <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
+        <div class="grp">Hàng đợi</div>
+        <div class="nav"><span class="ms">verified_user</span>Xác minh<span class="cnt late">2</span></div>
+        <div class="nav on"><span class="ms">emoji_events</span>Giải thưởng<span class="cnt">3</span></div>
+        <div class="nav"><span class="ms">flag</span>Báo cáo<span class="cnt">7</span></div>
+      </nav>
+      <div class="main">
+        <div class="bar"><div class="search"><span class="ms">search</span>Tìm theo mã…</div><span class="role">support</span></div>
+        <div class="content">
+          <div class="ttl"><div><h3>Giải thưởng</h3><div class="sub">Mục tiêu duyệt trong 3 ngày làm việc</div></div></div>
+          <div class="tabs" role="tablist"><span class="on">Chờ duyệt <b>3</b></span><span>Cần bổ sung <b>1</b></span><span>Đã duyệt</span><span>Đã từ chối</span></div>
+          <div class="queue">
+            <div class="tbl"><table>
+              <thead><tr><th>Thợ</th><th>Cuộc thi</th><th>Kết quả</th><th>Chờ</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td><div class="who"><span class="av"></span><div>Hoàng Vũ<small>2 giải đã duyệt</small></div></div></td><td>Sony World Photography Awards 2025</td><td>Chung khảo</td><td class="num">2 ngày</td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(160deg,#D9D3CA,#6B665E)"></span><div>Minh Trí<small>NAG · 5 giải</small></div></div></td><td>Ảnh đẹp Việt Nam 2024</td><td>Bạc</td><td class="num">1 ngày</td></tr>
+                <tr><td><div class="who"><span class="av" style="background:linear-gradient(145deg,#C98F7A,#4B2E2A)"></span><div>Thu Hà<small>0 giải</small></div></div></td><td>Di sản Việt Nam 2025</td><td>Khuyến khích</td><td class="num">4 giờ</td></tr>
+              </tbody></table></div>
+            <div class="pane">
+              <div class="ph"><h4>Sony World Photography Awards 2025</h4><div class="hint">Hạng mục Kiến trúc · Chung khảo · gửi 06/10</div></div>
+              <div class="pb">
+                <div class="thumbs"><span class="thumb"><span class="ms">lock</span></span><span class="thumb" style="background:linear-gradient(135deg,#6E8C7A,#22352B)"><span class="ms">lock</span></span></div>
+                <dl class="kv"><dt>Link</dt><dd><span class="link">worldphoto.org</span> · mở tab mới</dd><dt>Bài dự thi</dt><dd>"Mái ngói Hội An" · ảnh công khai</dd></dl>
+                <div class="banner warn"><span class="ms">workspace_premium</span><div><b>Đủ điều kiện NAG, chờ xác minh danh tính</b><div class="hint">Duyệt giải này là giải thứ 3. Hoàng Vũ chưa được duyệt xác minh (S21), hạng NAG sẽ tự cấp khi xác minh xong.</div></div></div>
+              </div>
+              <div class="pf"><span class="btn sec">Từ chối…</span><span class="btn sec">Cần bổ sung…</span><span class="btn pri">Duyệt</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><span class="n">S23.07 · Giải thưởng · tab Chờ duyệt</span><b>Minh chứng riêng tư mở qua URL ký; tiến độ NAG ngay trong chi tiết</b><span>Đã xác minh thì banner đổi thành "Duyệt giải này sẽ cấp hạng NAG". Ghi chú bắt buộc khi Cần bổ sung, Từ chối, Thu hồi.</span></div>
   </div>
 
   <h2 id="khung" style="font-size:22px;margin-top:40px">Khung (#161/#162)</h2>
@@ -601,7 +688,7 @@ tr.sel td{background:var(--accent-soft)}
   </div>
 
   <div class="shot" id="mau-hang-doi">
-    <div class="frame"><div class="desk" data-code="Mẫu · QueueLayout + DecisionDialog">
+    <div class="frame"><div class="desk" data-code="S23.04 · từ chối (mẫu QueueLayout + DecisionDialog)">
       <nav class="side" aria-label="Điều hướng staff">
         <div class="brand"><span class="logo"><span class="ms">photo_camera</span></span>Vận hành</div>
         <div class="nav"><span class="ms">space_dashboard</span>Tổng quan</div>
@@ -636,7 +723,7 @@ tr.sel td{background:var(--accent-soft)}
       <div class="scrim"><div class="dlg" role="dialog" aria-label="Từ chối xác minh">
         <h4>Từ chối xác minh?</h4>
         <p style="margin:0;font-size:13.5px">Hoàng Vũ sẽ nhận thông báo kèm lý do và còn 1 lần gửi lại miễn phí.</p>
-        <div class="fld"><span>Lý do</span><div class="seg"><span>Ảnh đại diện giả</span><span class="on">Không khớp danh tính</span><span>Trùng tài khoản</span><span>Khác</span></div></div>
+        <div class="fld"><span>Lý do</span><div class="seg"><span>Ảnh đại diện giả</span><span>Portfolio của người khác</span><span class="on">Không khớp danh tính</span><span>Trùng tài khoản</span><span>Chưa đủ 18 tuổi</span><span>Khác</span></div><div class="hint">Trùng tài khoản và Chưa đủ 18 tuổi là từ chối hẳn, không gửi lại được.</div></div>
         <div class="fld"><label for="dq-note">Ghi chú (5–500 ký tự, ghi vào nhật ký)</label><div class="inp area" id="dq-note">Ảnh chân dung không khớp ảnh trên căn cước</div></div>
         <div class="acts"><span class="btn gh">Quay lại</span><span class="btn bad">Từ chối</span></div>
       </div></div>
@@ -684,13 +771,15 @@ tr.sel td{background:var(--accent-soft)}
       <tbody>
         <tr><td>S23.02</td><td>Chi trả</td><td><code>/staff/payouts</code></td><td>admin · finance</td></tr>
         <tr><td>S23.03</td><td>Hoàn tiền</td><td><code>/staff/refunds</code></td><td>admin · finance</td></tr>
+        <tr><td>S23.04</td><td>Duyệt xác minh</td><td><code>/staff/verifications</code></td><td>admin · support</td></tr>
+        <tr><td>S23.07</td><td>Duyệt giải thưởng</td><td><code>/staff/awards</code></td><td>admin · support</td></tr>
         <tr><td>S23.08</td><td>Đăng nhập dashboard &amp; xác thực hai lớp</td><td><code>/login</code></td><td>staff · chủ studio</td></tr>
         <tr><td>S23.09</td><td>Tổng quan staff</td><td><code>/staff</code></td><td>mọi staff</td></tr>
         <tr><td>S23.10</td><td>Staff</td><td><code>/staff/team</code></td><td>admin</td></tr>
         <tr><td>S23.11</td><td>Nhật ký kiểm toán</td><td><code>/staff/audit</code></td><td>admin</td></tr>
         <tr><td>S23.12</td><td>Chuyển khoản chưa khớp</td><td><code>/staff/transfers</code></td><td>admin · finance</td></tr>
         <tr><td>S23.13</td><td>Báo cáo thuế</td><td><code>/staff/tax</code></td><td>admin · finance</td></tr>
-        <tr><td>S23.15</td><td>Chờ duyệt lần hai</td><td><code>/staff/approvals</code></td><td>admin · finance</td></tr>
+        <tr><td>S23.15</td><td>Chờ duyệt lần hai</td><td><code>/staff/approvals</code></td><td>ai có quyền duyệt</td></tr>
         <tr><td>S28</td><td>Studio trên web (khung)</td><td><code>/studio</code></td><td>chủ studio</td></tr>
       </tbody>
     </table></div>

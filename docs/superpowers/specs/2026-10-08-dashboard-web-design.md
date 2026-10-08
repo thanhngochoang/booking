@@ -237,6 +237,8 @@ audit_log/{ulid}
 | `setStaffRole` | `staff.set_role`: admin | `{uid, role: StaffRole \| null, reason}` | Ghi `staff_members/{uid}` (xoá khi `null`), đặt claim, `revokeRefreshTokens`, audit. Từ chối hạ admin cuối cùng. |
 | `resetStaffMfa` | `staff.reset_mfa`: admin | `{uid, reason}` | Xoá mọi second factor của `uid` (Admin SDK `updateUser`), `revokeRefreshTokens`, audit. |
 | `findUserForStaff` | `staff.set_role`: admin | `{email}` | Trả `{uid, displayName, email, staffRole}` của đúng một tài khoản, hoặc `not_found`. Không có tìm kiếm mờ. |
+| `decideStaffApproval` | theo `kind` (§5.4) | `{approvalId, decision, note}` | Duyệt hoặc từ chối một yêu cầu hai người; duyệt thì chạy thao tác gốc. |
+| `cancelStaffApproval` | người đề xuất | `{approvalId}` | Huỷ yêu cầu còn `pending`. |
 | `getSensitiveFileUrl` | theo `kind` | `{kind, entityId, file}` | Kiểm quyền theo bảng `kind` dưới, đổi `kind` + `entityId` + `file` sang đường dẫn Storage (không nhận đường dẫn tự do), ký URL đọc sống 5 phút, audit `file.view`. |
 
 `kind` của `getSensitiveFileUrl` (ticket sau thêm vào bảng khi cần):
@@ -253,6 +255,30 @@ Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | r
 
 `SecureFileViewer` (§8) gọi server action → `getSensitiveFileUrl` mỗi lần mở file; URL không lưu lại, không đặt vào link chia sẻ. Ảnh hiện trong khung xem có watermark chữ "Nội bộ · <email staff> · <thời điểm>" bằng CSS (lớp phủ, không sửa file) để ảnh chụp màn hình truy được nguồn.
 
+### 5.4 Duyệt hai người (`staff_approvals`)
+
+Một số thao tác cần người thứ hai xác nhận: thao tác tiền từ 10.000.000₫ (`screens/staff-money.md` §2) và khôi phục xác minh đã thu hồi (`screens/staff-verification-awards.md`). Cơ chế dùng chung:
+
+```
+staff_approvals/{ulid}
+  kind          mã thao tác, ví dụ payout_approve, refund_manual, verification_reinstate
+  entityType, entityId
+  amount?       số đồng, khi là thao tác tiền
+  params        đầu vào của thao tác (đã kiểm), không chứa số tài khoản hay số giấy tờ
+  reason        lý do của người đề xuất
+  status        pending | approved | rejected | cancelled | expired
+  requestedBy, requestedRole, requestedAt, expiresAt (= requestedAt + 24 giờ)
+  decidedBy?, decidedAt?, decisionNote?
+```
+
+- Bảng `APPROVAL_KINDS` trong `packages/domain/src/staff_approvals.ts`: với mỗi `kind`, `StaffAction` để đề xuất, `StaffAction` để duyệt, và hàm chạy thao tác gốc. Ticket nào thêm thao tác cần hai người thì thêm một dòng vào bảng này.
+- Callable của thao tác gốc tạo yêu cầu `pending` khi luật của thao tác đòi hai người, trả `{status: 'awaiting_second_approval', approvalId}`. Mỗi đối tượng có tối đa một yêu cầu `pending` (`approval_pending`).
+- `decideStaffApproval({approvalId, decision: 'approve' | 'reject', note})`: người duyệt có quyền duyệt của `kind` và khác người đề xuất (`same_person`). `approve` chạy thao tác gốc với `params` đã lưu trong cùng transaction, kiểm lại trạng thái đối tượng; đối tượng đã đổi thì yêu cầu thành `rejected` với ghi chú hệ thống (`stale`). Quá `expiresAt` thì `expired`.
+- `cancelStaffApproval({approvalId})`: chỉ người đề xuất, khi còn `pending`.
+- `audit_log`: một dòng cho đề xuất (`approval.request`), một cho quyết định (`approval.decide`), một cho thao tác gốc (actor là người duyệt, `diff` ghi cả hai uid).
+- Rules: client không đọc, không ghi. Index `(status, requestedAt)`, `(entityType, entityId, status)`.
+- CLI không có người thứ hai: thao tác cần hai người chạy bằng CLI cũng chỉ tạo yêu cầu.
+
 ## 6. Mã màn
 
 - Staff: thêm vào S23 (bảng mã §2 của spec chính, cột Route ghi route web):
@@ -263,6 +289,7 @@ Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | r
   | S23.09 | Tổng quan staff: các hàng đợi, số việc, việc quá hạn | `/staff` | mọi staff |
   | S23.10 | Staff: cấp, đổi, bỏ vai trò; đặt lại xác thực hai lớp | `/staff/team` | admin |
   | S23.11 | Nhật ký kiểm toán | `/staff/audit` | admin |
+  | S23.15 | Chờ duyệt lần hai (§5.4; mã cấp ở spec #163) | `/staff/approvals` | ai có quyền duyệt ít nhất một `kind` |
 
   S23.01–S23.07 có route web khi spec ticket của chúng chốt (ví dụ `/staff/payouts`). Mã mới cho màn staff còn lại lấy tiếp từ S23.12 theo thứ tự viết spec ticket.
 - Studio: use case mới **S28 · Studio trên web**; mã S28.yy do spec #167 và #169 cấp.
@@ -306,6 +333,14 @@ Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | r
 - **Dữ liệu:** truy vấn theo một trong ba index ở §5.1; mỗi trang 50 dòng; không có tìm kiếm toàn văn.
 - **Chấp nhận:** lọc theo `entityType + entityId` cho ra toàn bộ lịch sử của đối tượng đó theo thời gian giảm dần.
 
+### S23.15 · Chờ duyệt lần hai
+
+- **Thông tin:** `/staff/approvals` · staff có quyền duyệt ít nhất một `kind` (§5.4) · chưa có.
+- **Mục đích:** người thứ hai xem và xác nhận một thao tác cần hai người.
+- **Bố cục:** `QueueLayout`, chỉ liệt kê `kind` người xem được duyệt, cộng các yêu cầu của chính mình. Bảng: thao tác (nhãn), đối tượng, số tiền (khi có), người đề xuất + vai trò, còn hạn ("còn 18 giờ"). `DetailPane`: lý do của người đề xuất, tóm tắt thao tác (như hộp xác nhận gốc), link sang đối tượng. Chân: chính "Duyệt", phụ "Từ chối…" (đỏ trong hộp, bắt ghi chú). Yêu cầu của chính mình: chỉ "Huỷ yêu cầu".
+- **Trạng thái:** trống "Không có thao tác nào chờ duyệt"; `same_person`; `stale` ("Đối tượng đã thay đổi, yêu cầu đã đóng"); `expired`.
+- **Chấp nhận:** người đề xuất không duyệt được yêu cầu của mình kể cả gọi thẳng callable; thao tác gốc chạy đúng một lần.
+
 ### Khung studio
 
 `StudioShell` có cùng cấu trúc với `StaffShell`; mục menu: Tổng quan, Lịch, Booking, Bàn giao, Thành viên, Gói dịch vụ, Báo giá, Thu nhập, Đánh giá, Tin nhắn. Nội dung từng mục thuộc spec #167 và #169.
@@ -339,7 +374,7 @@ Thêm CLI `npm run staff -- list | set-role <uid> <role|none> --reason "…" | r
 
 - **Domain (`packages/domain`):** `staffMay` dạng bảng (mỗi vai trò × mỗi `StaffAction`); `AuditWriter` được gọi đúng một lần cho mỗi quyết định; `StaffActor` mới cho use case chi trả.
 - **Functions:** unit + integration cho `setStaffRole` (cấp, đổi, bỏ, `last_admin`, revoke), `resetStaffMfa`, `findUserForStaff`, `getSensitiveFileUrl` (từng `kind` × vai trò, `kind` lạ, đường dẫn không đúng chủ), `assertStaff` (thiếu TOTP → `mfa_required`; `MFA_DEV_BYPASS` không có tác dụng ngoài emulator).
-- **Rules (`rules-test`, CI chạy):** client không đọc/ghi `audit_log`, `staff_members`.
+- **Rules (`rules-test`, CI chạy):** client không đọc/ghi `audit_log`, `staff_members`, `staff_approvals`.
 - **Dashboard (Vitest):** `getSession` (token hết hạn, bị thu hồi, thiếu bước hai, `auth_time` > 12 giờ); guard theo bảng quyền; `callCallable` (đổi `details.code` sang chữ, lỗi mạng); mapper DTO (không lọt `Timestamp`); test purity import.
 - **React Testing Library:** `QueueLayout`, `DecisionDialog` (lý do < 5 ký tự thì không gửi, nút đỏ cho từ chối), S23.10 luồng thêm staff.
 - **Playwright trên emulator (CI):** đăng nhập từng tài khoản seed → thấy đúng menu; gõ URL ngoài quyền → 403; admin cấp vai trò `support` cho một tài khoản → tài khoản đó vào được hàng đợi xác minh, không vào được tiền; S23.11 hiện dòng vừa ghi.
@@ -365,10 +400,10 @@ Phần đổi `data-model` (§5.1), `shared-components.md` (§8) và `design-sys
 ## 13. Thứ tự gợi ý cho plan #162
 
 1. Domain: `staff_permissions.ts` (`STAFF_ROLES`, `StaffAction`, `staffMay`), `audit.ts` (`AuditWriter`), `StaffActor {uid, role}` cho use case chi trả.
-2. Functions: `assertStaff`, adapter `audit_log`, `setStaffRole`, `resetStaffMfa`, `findUserForStaff`, `getSensitiveFileUrl`, CLI `staff`, rules + index, seed bốn tài khoản.
+2. Functions: `assertStaff`, adapter `audit_log`, `staff_approvals` (§5.4) với `decideStaffApproval`/`cancelStaffApproval`, `setStaffRole`, `resetStaffMfa`, `findUserForStaff`, `getSensitiveFileUrl`, CLI `staff`, rules + index, seed bốn tài khoản.
 3. Kiểm hai câu hỏi Q3, Q4 trên emulator.
 4. `apps/dashboard`: dựng dự án, lint import, `tool/gen_tokens_css.mjs`, thành phần dùng chung, `StaffShell`/`StudioShell`.
 5. Phiên: `/api/session`, `getSession`, guard, S23.08 (đăng nhập, thiết lập và nhập TOTP).
-6. Lớp đọc + `callCallable`; S23.09, S23.10, S23.11.
+6. Lớp đọc + `callCallable`; S23.09, S23.10, S23.11, S23.15.
 7. CI `dashboard.yml`, `apphosting.yaml`, job `deploy-dashboard`.
 8. Playwright trên emulator.

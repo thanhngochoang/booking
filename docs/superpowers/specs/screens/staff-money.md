@@ -24,36 +24,17 @@
 | S23.12 | Chuyển khoản chưa khớp (`needs_review`) | `/staff/transfers` | mới |
 | S23.13 | Báo cáo thuế theo tháng | `/staff/tax` | mới |
 | S23.14 | Đối soát sao kê ngày | `/staff/reconciliation` | mới, chỉ thiết kế (§6) |
-| S23.15 | Chờ duyệt lần hai | `/staff/approvals` | mới |
+| S23.15 | Chờ duyệt lần hai | `/staff/approvals` | mới; màn và cơ chế ở spec dashboard §5.4 |
 
 Thanh bên nhóm "Tiền": Chi trả · Chưa khớp · Hoàn tiền · Duyệt lần hai · Thuế (· Đối soát khi làm §6). Thẻ trên S23.09: chi trả chờ duyệt, chuyển khoản chưa khớp, hoàn tiền thất bại, chờ duyệt lần hai.
 
-## 2. Duyệt hai người (`money_approvals`)
+## 2. Duyệt hai người
 
-```
-money_approvals/{ulid}
-  kind          payout_approve | transfer_assign | transfer_refund | transfer_dismiss | refund_manual
-  entityType, entityId       payout / payment_notification / refund
-  amount        số đồng; quyết định có cần hai người hay không dựa vào số này
-  params        đầu vào của thao tác (đã kiểm), không có số tài khoản
-  reason        lý do của người đề xuất
-  status        pending | approved | rejected | cancelled | expired
-  requestedBy, requestedAt, expiresAt (= requestedAt + 24 giờ)
-  decidedBy?, decidedAt?, decisionNote?
-```
+Cơ chế chung `staff_approvals` và màn S23.15 nằm ở spec dashboard §5.4 (nền tảng #162, dùng chung với #164). Phần của tiền:
 
-- Mỗi callable thao tác tiền (§3–§5) tự quyết: `amount < twoPersonThreshold` thì làm ngay; ngược lại tạo `money_approvals` `pending` và trả `{status: 'awaiting_second_approval', approvalId}`. Mỗi đối tượng có tối đa một yêu cầu `pending` (thử tạo lần hai → `approval_pending`).
-- `decideMoneyApproval({approvalId, decision: 'approve' | 'reject', note})`: `staffMay(role, 'money_approval.decide')` (admin, finance) và `decidedBy ≠ requestedBy` (`same_person`). `approve` chạy đúng thao tác gốc với `params` đã lưu trong cùng transaction (kiểm lại trạng thái đối tượng; đã đổi thì `stale`, yêu cầu thành `rejected` với ghi chú hệ thống). Quá `expiresAt` thì `expired`, không duyệt được.
-- Người đề xuất huỷ được yêu cầu của mình (`cancelMoneyApproval`).
-- `audit_log`: một dòng cho đề xuất (`money_approval.request`), một dòng cho quyết định, một dòng cho thao tác gốc (actor là người duyệt, `diff` ghi cả hai uid).
-- Rules: client không đọc, không ghi. Index `(status, requestedAt)`, `(entityType, entityId, status)`.
-
-### S23.15 · Chờ duyệt lần hai
-
-- **Mục đích:** người thứ hai xem và xác nhận một thao tác tiền lớn.
-- **Bố cục:** `QueueLayout`. Bảng: loại (nhãn), đối tượng, số tiền (`MoneyText`), người đề xuất, lúc, còn hạn ("còn 18 giờ"). `DetailPane`: lý do của người đề xuất, tóm tắt thao tác (giống hộp xác nhận gốc), link sang đối tượng. Chân: nút chính "Duyệt", nút phụ "Từ chối…" (đỏ trong hộp, bắt ghi chú). Yêu cầu của chính mình: chỉ có "Huỷ yêu cầu".
-- **Trạng thái:** trống "Không có thao tác nào chờ duyệt"; `same_person`; `stale` ("Đối tượng đã thay đổi, yêu cầu đã đóng"); `expired`.
-- **Chấp nhận:** người đề xuất không duyệt được yêu cầu của mình kể cả gọi thẳng callable; thao tác gốc chạy đúng một lần (bấm hai lần không chạy hai lần).
+- `kind`: `payout_approve`, `transfer_assign`, `transfer_refund`, `transfer_dismiss`, `refund_manual`, `instant_staff_cancel`; người duyệt cần `money_approval.decide` (admin, finance).
+- Callable thao tác tiền (§3–§5, §5.1) tự quyết: `amount < DEFAULT_MONEY_CONTROLS.twoPersonThreshold` thì làm ngay; ngược lại tạo yêu cầu `pending` và trả `{status: 'awaiting_second_approval', approvalId}`.
+- `amount` của yêu cầu là số tiền thao tác đưa đi (thực nhận của khoản chi, số tiền hoàn, số tiền chuyển khoản).
 
 ## 3. S23.02 · Chi trả
 
@@ -151,8 +132,6 @@ Làm khi đã chọn tổ chức trung gian (spec thanh toán §10), vì định
 | `markRefundManual` | `{refundId, bankRef, paidAt, reason}` | từ 10 triệu | mới |
 | `staffCancelInstantRequest` | `{requestId, reason}` | từ 10 triệu | luật huỷ của #140 |
 | `exportTaxReport` | `{period, reason}` | — | mới (`buildTaxReport` thuần) |
-| `decideMoneyApproval` | `{approvalId, decision, note}` | — | mới |
-| `cancelMoneyApproval` | `{approvalId}` | — | mới |
 
 - Mọi callable: `assertStaff(request, action)` (spec dashboard §4.3), `idempotencyKey` (ULID tạo khi mở hộp), trả `{status: 'done'}` hoặc `{status: 'awaiting_second_approval', approvalId}`.
 - CLI `npm run payouts` giữ nguyên, đi qua cùng use case, nên cũng chịu M2 (CLI không có người thứ hai: thao tác từ 10 triệu bằng CLI tạo yêu cầu S23.15).
@@ -164,9 +143,9 @@ Hàng đợi tiền nhỏ (vài chục dòng mở); mỗi lần làm mới là 1
 
 ## 10. Kiểm thử
 
-- **Domain:** `requiresTwoPeople(amount)` ở biên 9.999.999 / 10.000.000; `decideMoneyApproval` (`same_person`, `expired`, `stale`, chạy đúng một lần); `assignUnmatchedTransfer` cho từng hàng của bảng §3.3 spec thanh toán; `refundUnmatchedTransfer` (không có payment, `fromEscrow: false`); `markRefundManual` trên `failed` / `done`; `suggestPaymentsForTransfer` (cùng số tiền, khoảng 48 giờ, mã sai một ký tự đứng đầu); `buildTaxReport` (gom theo người, tháng theo giờ Việt Nam, studio 0%).
+- **Domain:** `requiresTwoPeople(amount)` ở biên 9.999.999 / 10.000.000; `decideStaffApproval` (`same_person`, `expired`, `stale`, chạy đúng một lần); `assignUnmatchedTransfer` cho từng hàng của bảng §3.3 spec thanh toán; `refundUnmatchedTransfer` (không có payment, `fromEscrow: false`); `markRefundManual` trên `failed` / `done`; `suggestPaymentsForTransfer` (cùng số tiền, khoảng 48 giờ, mã sai một ký tự đứng đầu); `buildTaxReport` (gom theo người, tháng theo giờ Việt Nam, studio 0%).
 - **Functions:** mỗi callable × vai trò (support, sales bị từ chối); `exportTaxReport` ghi tệp và audit; CLI payouts từ 10 triệu tạo yêu cầu thay vì chạy.
-- **Rules:** client không đọc `money_approvals`, `exports/**`.
+- **Rules:** client không đọc `staff_approvals`, `exports/**`.
 - **Dashboard:** DTO chi trả không có trường số tài khoản đầy đủ; hộp "Duyệt chi" đổi thành "Gửi duyệt lần hai" từ 10 triệu; người đề xuất thấy "Huỷ yêu cầu", không thấy "Duyệt".
 - **Playwright:** finance A đề xuất hoàn thủ công 12.000.000₫ → finance B duyệt ở S23.15 → khoản hoàn `done`, ba dòng audit.
 
