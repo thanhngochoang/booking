@@ -509,7 +509,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   }
   docs.push(...notificationAndBadgeDocuments(now));
   docs.push(...payoutAndEarningsDocuments(now, docs));
-  docs.push(...eventDocuments(now));
+  docs.push(...eventDocuments(now, docs));
   return docs;
 }
 
@@ -566,6 +566,7 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
         count: r.group?.count ?? 1,
         thumbUrl: null,
         lastEventId: r.group?.lastEventId ?? null,
+        recentEventIds: r.group ? [r.group.lastEventId] : [],
         createdAt: at,
         readAt: r.read ? new Date(at.getTime() + HOUR_MS / 2) : null,
       },
@@ -761,15 +762,21 @@ export const SEED_EVENT_FREE = 'seed-event-an-free-photowalk';
 export const SEED_EVENT_PAID = 'seed-event-an-paid-workshop';
 export const SEED_REGISTRATION_LAN = 'seed-registration-lan-free-walk';
 export const SEED_TICKET_CODE_LAN = 'VE-LANA-0000';
+/** S17: starts 36 hours after seeding, so `npm run clock -- events` sends Lan's `event_soon` reminder. */
+export const SEED_EVENT_SOON = 'seed-event-an-night-walk';
+export const SEED_REGISTRATION_LAN_SOON = 'seed-registration-lan-night-walk';
+export const SEED_TICKET_CODE_LAN_SOON = 'VE-LANB-0000';
 
 /**
- * Two open events of An (a free photo walk and a paid workshop) and Lan's free registration to the
- * walk. Written through the same mapping the Functions use (plan 10c). The free ticket is `paid`
- * with `contactEligible: false` and has no `private/contact` snapshot (O3).
+ * Three open events of An (a free photo walk, a paid workshop and, for the S17 reminder, a free
+ * night walk 36 hours after seeding) and Lan's free registrations to both walks. Written through the
+ * same mapping the Functions use (plan 10c). Free tickets are `paid` with `contactEligible: false`
+ * and have no `private/contact` snapshot (O3). An availability day a seed booking already holds is
+ * left to the booking (`existing`: the documents written before).
  */
-function eventDocuments(now: Date): SeedDocument[] {
-  const make = (id: string, title: string, type: EventRecord['type'], daysAhead: number, price: number, capacity: number): EventRecord => {
-    const startAt = new Date(now.getTime() + daysAhead * DAY_MS + 2 * HOUR_MS);
+function eventDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
+  const make = (id: string, title: string, type: EventRecord['type'], hoursAhead: number, price: number, capacity: number): EventRecord => {
+    const startAt = new Date(now.getTime() + hoursAhead * HOUR_MS);
     const endAt = new Date(startAt.getTime() + 2 * HOUR_MS);
     const hashtag = hashtagBase(title, startAt);
     return {
@@ -807,15 +814,24 @@ function eventDocuments(now: Date): SeedDocument[] {
       publishedAt: now,
       completedAt: null,
       cancelledAt: null,
+      soonNoticeAt: null,
       createdAt: now,
       updatedAt: now,
     };
   };
-  const free = make(SEED_EVENT_FREE, 'Photo walk phố cổ', 'photo_walk', 8, 0, 20);
-  const paid = make(SEED_EVENT_PAID, 'Workshop ánh sáng tự nhiên', 'workshop', 15, 250_000, 12);
-  const registration: RegistrationDoc = {
-    id: SEED_REGISTRATION_LAN,
-    eventId: free.id,
+  const free = make(SEED_EVENT_FREE, 'Photo walk phố cổ', 'photo_walk', 8 * 24 + 2, 0, 20);
+  const paid = make(SEED_EVENT_PAID, 'Workshop ánh sáng tự nhiên', 'workshop', 15 * 24 + 2, 250_000, 12);
+  const soonBase = make(SEED_EVENT_SOON, 'Chụp phố đêm', 'photo_walk', 36, 0, 15);
+  const soon: EventRecord = {
+    ...soonBase,
+    location: {
+      name: 'Phố đi bộ Nguyễn Huệ', meetingPoint: 'Nhà hát Thành phố', lat: 10.7769, lng: 106.7032,
+      geohash: encodeGeohash(10.7769, 106.7032), areaId: null,
+    },
+  };
+  const ticketOf = (id: string, ev: EventRecord, code: string): RegistrationDoc => ({
+    id,
+    eventId: ev.id,
     userId: LAN,
     userName: 'Lan (seed)',
     userAvatarUrl: null,
@@ -823,32 +839,40 @@ function eventDocuments(now: Date): SeedDocument[] {
     amount: 0,
     status: 'paid',
     holdExpiresAt: null,
-    ticketCode: SEED_TICKET_CODE_LAN,
+    ticketCode: code,
     paymentId: null,
     contactEligible: false,
     checkedInAt: null,
     cancelledAt: null,
     refundPercent: null,
     event: {
-      title: free.title, type: free.type, startAt: free.startAt as Date, endAt: free.endAt as Date,
-      locationName: 'Hồ Gươm', lat: 21.0285, lng: 105.8542, coverUrl: null,
+      title: ev.title, type: ev.type, startAt: ev.startAt as Date, endAt: ev.endAt as Date,
+      locationName: ev.location?.name ?? '', lat: ev.location?.lat ?? 0, lng: ev.location?.lng ?? 0, coverUrl: null,
     },
     version: 1,
     createdAt: now,
     updatedAt: now,
-  };
+  });
+  const registration = ticketOf(SEED_REGISTRATION_LAN, free, SEED_TICKET_CODE_LAN);
+  const soonTicket = ticketOf(SEED_REGISTRATION_LAN_SOON, soon, SEED_TICKET_CODE_LAN_SOON);
+  const withLan = new Set([free.id, soon.id]);
+  const taken = new Set(existing.map((d) => d.path));
   const docs: SeedDocument[] = [];
-  for (const e of [{ ...free, registeredCount: 1, postCount: 1 }, paid]) {
+  for (const e of [{ ...free, registeredCount: 1, postCount: 1 }, paid, { ...soon, registeredCount: 1 }]) {
     docs.push({ path: `events/${e.id}`, data: eventToFirestore(e) as Record<string, unknown> });
     docs.push({ path: `event_hashtags/${e.hashtagKey}`, data: { eventId: e.id } });
-    docs.push({ path: `availability/${AN}/days/${e.dayKey}`, data: { state: 'booked', eventId: e.id, updatedAt: now } });
+    const dayPath = `availability/${AN}/days/${e.dayKey}`;
+    if (!taken.has(dayPath)) {
+      taken.add(dayPath);
+      docs.push({ path: dayPath, data: { state: 'booked', eventId: e.id, updatedAt: now } });
+    }
     docs.push({
       path: `chats/${e.chatId}`,
       data: groupChatToFirestore({
         id: e.chatId as string, kind: 'event_group', eventId: e.id, title: e.title,
-        members: e.id === free.id ? [AN, LAN] : [AN], moderators: [AN],
+        members: withLan.has(e.id) ? [AN, LAN] : [AN], moderators: [AN],
         memberProfiles: [{ uid: AN, name: 'An Studio (seed)', avatarUrl: null }],
-        memberCount: e.id === free.id ? 2 : 1, moderatorsOnly: false,
+        memberCount: withLan.has(e.id) ? 2 : 1, moderatorsOnly: false,
         lastMessageAt: null, lastMessagePreview: null, lastSenderId: null, readOnlyAt: null,
         createdAt: now, updatedAt: now,
       }) as Record<string, unknown>,
@@ -863,6 +887,8 @@ function eventDocuments(now: Date): SeedDocument[] {
   docs.push({ path: `${chatPath}/members/${AN}`, data: memberDoc('moderator', 'An Studio (seed)') });
   docs.push({ path: `chats/${paid.chatId as string}/members/${AN}`, data: memberDoc('moderator', 'An Studio (seed)') });
   docs.push({ path: `${chatPath}/members/${LAN}`, data: memberDoc('member', 'Lan (seed)') });
+  docs.push({ path: `chats/${soon.chatId as string}/members/${AN}`, data: memberDoc('moderator', 'An Studio (seed)') });
+  docs.push({ path: `chats/${soon.chatId as string}/members/${LAN}`, data: memberDoc('member', 'Lan (seed)') });
   docs.push({
     path: `${chatPath}/messages/seed-msg-join-lan`,
     data: {
@@ -904,5 +930,7 @@ function eventDocuments(now: Date): SeedDocument[] {
   docs.push(share('seed-post-minh-share', MINH, 'Minh'), row('seed-post-minh-share', MINH, 'Minh', 'pending'));
   docs.push({ path: `events/${free.id}/registrations/${registration.id}`, data: registrationToFirestore(registration) as Record<string, unknown> });
   docs.push({ path: `ticket_codes/${registration.ticketCode}`, data: { eventId: free.id, registrationId: registration.id } });
+  docs.push({ path: `events/${soon.id}/registrations/${soonTicket.id}`, data: registrationToFirestore(soonTicket) as Record<string, unknown> });
+  docs.push({ path: `ticket_codes/${soonTicket.ticketCode}`, data: { eventId: soon.id, registrationId: soonTicket.id } });
   return docs;
 }

@@ -23,6 +23,7 @@ export function notificationRowToFirestore(r: NotificationRow): DocumentData {
     count: r.count,
     thumbUrl: r.thumbUrl,
     lastEventId: r.lastEventId,
+    recentEventIds: [...r.recentEventIds],
     createdAt: Timestamp.fromDate(r.createdAt),
     readAt: r.readAt === null ? null : Timestamp.fromDate(r.readAt),
   };
@@ -54,6 +55,9 @@ export function notificationRowFromFirestore(uid: string, id: string, d: Documen
     count: typeof d.count === 'number' ? d.count : 1,
     thumbUrl: typeof d.thumbUrl === 'string' ? d.thumbUrl : null,
     lastEventId: typeof d.lastEventId === 'string' ? d.lastEventId : null,
+    recentEventIds: Array.isArray(d.recentEventIds)
+      ? d.recentEventIds.filter((x: unknown): x is string => typeof x === 'string')
+      : [],
     createdAt,
     readAt: asDate(d.readAt),
   };

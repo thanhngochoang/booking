@@ -149,16 +149,16 @@ describe('earnings triggers', () => {
       createdAt: T, updatedAt: '2026-10-10T10:00:00.000Z', paidAt: '2026-10-10T10:00:00.000Z',
     };
     w.payouts.seedPayout(po);
-    assert.equal(await handlePayoutWrite(undefined, { payeeId: 'p1', items: po.items }, w.deps), 'p1');
+    assert.equal(await handlePayoutWrite('po1', undefined, { payeeId: 'p1', items: po.items }, w.deps), 'p1');
     assert.equal(w.earnings.items.get('p1/pay1')?.paidOutAt, '2026-10-10T10:00:00.000Z');
     assert.equal(w.earnings.summaries.get('p1')?.receivedAmount, 300_000);
     assert.equal(w.earnings.summaries.get('p1')?.lastPayout?.status, 'paid');
     // A failed payout: the payment left the batch (in `before` only) and is released again.
     w.booking.payments.set('pay1', payment({ payoutId: null }));
     w.payouts.seedPayout({ ...po, status: 'failed', updatedAt: '2026-10-10T11:00:00.000Z' });
-    await handlePayoutWrite({ payeeId: 'p1', items: po.items }, { payeeId: 'p1', items: [] }, w.deps);
+    await handlePayoutWrite('po1', { payeeId: 'p1', items: po.items }, { payeeId: 'p1', items: [] }, w.deps);
     assert.equal(w.earnings.summaries.get('p1')?.soonAmount, 300_000);
     assert.equal(w.earnings.summaries.get('p1')?.receivedAmount, 0);
-    assert.equal(await handlePayoutWrite(undefined, {}, w.deps), null);
+    assert.equal(await handlePayoutWrite('po1', undefined, {}, w.deps), null);
   });
 });

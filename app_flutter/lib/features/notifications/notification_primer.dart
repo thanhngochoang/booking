@@ -20,6 +20,14 @@ class CustomerBookingPrimer extends PrimerContext {
   final String photographerName;
 }
 
+/// A customer just bought or registered a ticket: "Bật thông báo để được nhắc
+/// trước khi {event} bắt đầu".
+class CustomerTicketPrimer extends PrimerContext {
+  const CustomerTicketPrimer(this.eventTitle);
+
+  final String eventTitle;
+}
+
 /// A customer sent an instant request (used by the instant plans).
 class CustomerInstantPrimer extends PrimerContext {
   const CustomerInstantPrimer();
@@ -32,6 +40,7 @@ class PhotographerPrimer extends PrimerContext {
 
 String _contextName(PrimerContext c) => switch (c) {
   CustomerBookingPrimer() => 'customer_booking',
+  CustomerTicketPrimer() => 'customer_ticket',
   CustomerInstantPrimer() => 'customer_instant',
   PhotographerPrimer() => 'photographer',
 };
@@ -176,8 +185,22 @@ class _PrimerSheet extends StatelessWidget {
     final title = switch (context) {
       CustomerBookingPrimer(:final photographerName) =>
         l.primerTitleCustomerBooking(photographerName),
+      CustomerTicketPrimer(:final eventTitle) => l.primerTitleCustomerTicket(
+        eventTitle,
+      ),
       CustomerInstantPrimer() => l.primerTitleCustomerInstant,
       PhotographerPrimer() => l.primerTitlePhotographer,
+    };
+    final benefits = switch (context) {
+      CustomerTicketPrimer() => [
+        PrimerBenefit(AppIcons.calendar, l.primerTicketBenefit1),
+        PrimerBenefit(AppIcons.chat, l.primerBenefit3),
+      ],
+      _ => [
+        PrimerBenefit(AppIcons.check, l.primerBenefit1),
+        PrimerBenefit(AppIcons.calendar, l.primerBenefit2),
+        PrimerBenefit(AppIcons.chat, l.primerBenefit3),
+      ],
     };
     return ScreenCode(
       ScreenCodes.notificationPermission,
@@ -191,11 +214,7 @@ class _PrimerSheet extends StatelessWidget {
           child: SingleChildScrollView(
             child: PermissionPrimer(
               title: title,
-              benefits: [
-                PrimerBenefit(AppIcons.check, l.primerBenefit1),
-                PrimerBenefit(AppIcons.calendar, l.primerBenefit2),
-                PrimerBenefit(AppIcons.chat, l.primerBenefit3),
-              ],
+              benefits: benefits,
               note: l.primerNote,
               enabling: busy,
               onEnable: onEnable,

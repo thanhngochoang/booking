@@ -103,6 +103,18 @@ export interface EventRecord {
   readonly publishedAt: Date | null;
   readonly completedAt: Date | null;
   readonly cancelledAt: Date | null;
+  /**
+   * S17: when the 48-hour `event_soon` reminders went out (server marker, set by the event clock
+   * only after every paid ticket was notified). Optional so records built before it compile; the
+   * Firestore adapter writes null when absent.
+   */
+  readonly soonNoticeAt?: Date | null;
+  /**
+   * S17 (Ruling 7): registration ids already sent their `event_soon` reminder while `soonNoticeAt` is
+   * still null, so a retry after a partial failure skips them (no repeated pushes for push-only users).
+   * Server-only; cleared when the marker is set. Optional (absent = `[]`).
+   */
+  readonly soonNotifiedRegIds?: readonly string[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

@@ -3,8 +3,8 @@
  */
 
 import type { BookingDeps } from './booking_ports.js';
-import type { PaymentProvider } from './booking.js';
-import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { Booking, PaymentProvider } from './booking.js';
+import { isEscrowRefund, type LedgerEntry, type Payment, type Refund } from './escrow.js';
 
 /**
  * Why a booking payment's money went back without a cancellation (#129 Decisions 6–8):
@@ -72,19 +72,34 @@ export function transferRefund(params: {
 
 type GatewayRefundResult = Awaited<ReturnType<BookingDeps['gateway']['issueRefund']>>;
 
-/** Records the gateway's answer on the refund: `done`, or `failed` + `manual` for staff. */
+/**
+ * Records the gateway's answer on the refund: `done`, or `failed` + `manual` for staff.
+ * When an escrow refund of a booking payment is `done`, the booking gets `depositRefundedAt` once (in
+ * the same transaction), which makes the booking trigger send `refund_done`. A booking that is gone (a
+ * late payment whose draft expired) gets nothing: there is no booking to tell the customer about.
+ */
 async function recordDispatch(deps: BookingDeps, refund: Refund, gatewayResult: GatewayRefundResult): Promise<Refund> {
   const now = deps.clock.now();
+  const at = now.toISOString();
   const updatedRefund: Refund = {
     ...refund,
     status: gatewayResult.success ? 'done' : 'failed',
     manual: !gatewayResult.success,
     providerRef: gatewayResult.providerRef ?? refund.providerRef,
-    updatedAt: now.toISOString(),
+    updatedAt: at,
   };
 
   await deps.store.runTransaction(async (tx) => {
+    let booking: Booking | null = null;
+    if (updatedRefund.status === 'done' && isEscrowRefund(updatedRefund)) {
+      const payment = await tx.getPayment(updatedRefund.paymentId);
+      if (payment?.subjectType === 'booking') booking = await tx.getBooking(payment.subjectId);
+    }
     await tx.addRefund(updatedRefund);
+    if (booking && !booking.depositRefundedAt) {
+      // A server marker, not an edit: the version stays so a client's pending change is not refused.
+      await tx.setBooking({ ...booking, depositRefundedAt: at, updatedAt: at });
+    }
   });
 
   return updatedRefund;

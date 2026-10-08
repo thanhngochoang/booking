@@ -5,6 +5,9 @@ import {
   FakePaymentGateway,
   MemoryBookingStore,
   MemoryEventStore,
+  MemoryNotificationStore,
+  MemoryPushSender,
+  MemoryUserDirectory,
   type BookingDeps,
   type EventPaymentDeps,
 } from '@photobooking/domain';
@@ -210,7 +213,9 @@ describe('ticket payment callables', () => {
     const out = await handleCancelEvent({ auth: { uid: 'ph1' }, data: { eventId: EVENT_ID } }, deps());
     assert.deepEqual(out, { paidRegistrationIds: [r.registrationId], refunded: 1, failed: 0 });
     assert.equal(store.registrations.get(`${EVENT_ID}/${r.registrationId}`)?.status, 'refunded');
-    assert.equal((await handleEventClock(deps())).refunded, 0);
+    // Explicit memory notify deps: the default would be liveNotifyDeps() (Firestore).
+    const notify = { store: new MemoryNotificationStore(), push: new MemoryPushSender(), users: new MemoryUserDirectory(), clock: { now: () => now } };
+    assert.equal((await handleEventClock(deps(), { notify })).refunded, 0);
   });
 
   it('releaseEventHolds frees an expired hold', async () => {

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
+import 'package:photobooking/data/push/notification_permission.dart';
+import 'package:photobooking/data/push/push_providers.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/features/events/tickets_tab.dart';
 import 'package:photobooking/l10n/app_localizations_vi.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../support/event_world.dart';
+import '../../support/fake_push.dart';
 
 EventRegistration _reg(
   String id, {
@@ -64,6 +70,7 @@ Future<EventsWorld> _open(
   int priceVnd = 0,
   List<Override> extra = const [],
   DateTime Function()? clock,
+  String? path,
 }) async {
   final w = EventsWorld(
     events: [detailOf('ev1', priceVnd: priceVnd)],
@@ -73,11 +80,15 @@ Future<EventsWorld> _open(
   );
   await w.pump(
     tester,
-    path: '/bookings',
+    path: path ?? '/bookings',
     size: size,
     textScale: textScale,
     extra: extra,
-    bookings: (_) => Scaffold(body: EventTicketsTab(highlightId: highlight)),
+    bookings: (s) => Scaffold(
+      body: EventTicketsTab(
+        highlightId: highlight ?? s.uri.queryParameters['highlight'],
+      ),
+    ),
   );
   return w;
 }
@@ -109,6 +120,25 @@ EventRegistration _as(
 
 List<TicketCard> _cards(WidgetTester t) =>
     t.widgetList<TicketCard>(find.byType(TicketCard)).toList();
+
+/// Counts how many times the primer looked at the OS permission.
+class _CountingPermission extends FakeNotificationPermission {
+  _CountingPermission([super.current]);
+
+  int statusCalls = 0;
+
+  @override
+  Future<NotificationPermissionStatus> status() {
+    statusCalls++;
+    return super.status();
+  }
+}
+
+List<Override> _permission(FakeNotificationPermission p) => [
+  notificationPermissionProvider.overrideWithValue(p),
+];
+
+Finder get _primer => find.byType(PermissionPrimer);
 
 void main() {
   final l = AppLocalizationsVi();
@@ -228,6 +258,166 @@ void main() {
         label(cancelled, TicketRefundStatus.done),
         'Đã huỷ · đã hoàn tiền',
       );
+    });
+  });
+
+  group('S17.03 notification primer', () {
+    setUp(resetNotificationPrimerState);
+    tearDown(resetNotificationPrimerState);
+
+    testWidgets(
+      'asks once per highlight when the highlighted ticket is shown',
+      (tester) async {
+        final perm = _CountingPermission();
+        final w = await _open(
+          tester,
+          [_reg('a'), _reg('b', startsIn: const Duration(days: 9))],
+          highlight: 'b',
+          extra: _permission(perm),
+        );
+        expect(_primer, findsOneWidget);
+        expect(
+          find.text(
+            'Bật thông báo để được nhắc trước khi Photo walk b bắt đầu',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Nhắc trước khi sự kiện bắt đầu, kèm giờ và điểm tập trung',
+          ),
+          findsOneWidget,
+        );
+        expect(perm.statusCalls, 1);
+
+        // Close it, forget the 7-day wait, rebuild the list: not asked again.
+        await tester.tap(find.text('Để sau'));
+        await settle(tester);
+        await w.prefs!.remove('notifPrimerLaterAt');
+        ProviderScope.containerOf(tester.element(find.byType(EventTicketsTab)))
+            .invalidate(myTicketsProvider);
+        await settle(tester);
+        expect(_primer, findsNothing);
+        expect(perm.statusCalls, 1);
+      },
+    );
+
+    testWidgets('opening the tickets tab without highlight asks nothing', (
+      tester,
+    ) async {
+      final perm = _CountingPermission();
+      await _open(tester, [_reg('a')], extra: _permission(perm));
+      expect(_primer, findsNothing);
+      expect(perm.statusCalls, 0);
+      expect(perm.requests, 0);
+    });
+
+    testWidgets('a highlight that is not an upcoming ticket asks nothing', (
+      tester,
+    ) async {
+      final perm = _CountingPermission();
+      await _open(
+        tester,
+        [
+          _reg('a'),
+          _reg('past', startsIn: const Duration(days: -2)),
+          _reg('gone', status: RegistrationStatus.cancelled),
+        ],
+        highlight: 'past',
+        extra: _permission(perm),
+      );
+      expect(_primer, findsNothing);
+      expect(perm.statusCalls, 0);
+    });
+
+    testWidgets('a highlight that matches no ticket asks nothing', (
+      tester,
+    ) async {
+      final perm = _CountingPermission();
+      await _open(
+        tester,
+        [_reg('a')],
+        highlight: 'ghost',
+        extra: _permission(perm),
+      );
+      expect(_primer, findsNothing);
+      expect(perm.statusCalls, 0);
+    });
+
+    testWidgets('granted permission asks nothing', (tester) async {
+      final perm = _CountingPermission(NotificationPermissionStatus.granted);
+      await _open(
+        tester,
+        [_reg('a')],
+        highlight: 'a',
+        extra: _permission(perm),
+      );
+      expect(_primer, findsNothing);
+      expect(perm.requests, 0);
+    });
+
+    testWidgets('"Để sau" closes it and the 7-day policy is recorded', (
+      tester,
+    ) async {
+      final perm = _CountingPermission();
+      final w = await _open(
+        tester,
+        [_reg('a')],
+        highlight: 'a',
+        extra: _permission(perm),
+      );
+      expect(_primer, findsOneWidget);
+      await tester.tap(find.text('Để sau'));
+      await settle(tester);
+      expect(_primer, findsNothing);
+      expect(perm.requests, 0);
+      expect(
+        w.prefs!.getInt('notifPrimerLaterAt'),
+        eventNow.millisecondsSinceEpoch,
+      );
+    });
+
+    testWidgets('a paid ticket landing on the highlight asks once', (
+      tester,
+    ) async {
+      final perm = _CountingPermission();
+      await _open(
+        tester,
+        [_reg('pay1', amount: 250000)],
+        priceVnd: 250000,
+        path: '/bookings?tab=events&highlight=pay1',
+        extra: _permission(perm),
+      );
+      expect(_primer, findsOneWidget);
+      expect(
+        find.text(
+          'Bật thông báo để được nhắc trước khi Photo walk pay1 bắt đầu',
+        ),
+        findsOneWidget,
+      );
+      expect(perm.statusCalls, 1);
+    });
+
+    testWidgets('a held ticket highlighted asks nothing until it is paid', (
+      tester,
+    ) async {
+      final perm = _CountingPermission();
+      await _open(
+        tester,
+        [
+          _reg(
+            'h',
+            status: RegistrationStatus.held,
+            amount: 250000,
+            holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
+          ),
+        ],
+        priceVnd: 250000,
+        highlight: 'h',
+        extra: _permission(perm),
+      );
+      expect(_primer, findsNothing);
+      expect(perm.statusCalls, 0);
     });
   });
 

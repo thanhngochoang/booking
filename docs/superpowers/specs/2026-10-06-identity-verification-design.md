@@ -65,6 +65,8 @@ Xác minh doanh nghiệp: `photographers/{uid}.businessVerified: bool` (công kh
 
 **Nhắc**: bỏ dở thì gửi **một** thông báo sau 24 giờ và một banner có thể tắt ở S06.01. Không nhắc thêm, không email.
 
+Hook: `notifyVerificationDecision` (duyệt, từ chối, thu hồi), `notifyBusinessDecision` (doanh nghiệp), `notifyVerificationReminder` trong `packages/domain/src/notification_hooks.ts` (#138); #135 gọi sau khi quyết định được ghi. Cả ba đều mở S21.02 hoặc S21.04, quyết định là thông báo quan trọng.
+
 ## 5. Xác minh doanh nghiệp cho studio (S21.04)
 
 - Mở khi studio cần: chạm giới hạn 3 thợ ở S26.01, xin con dấu Studio, hoặc thêm tài khoản nhận tiền đứng tên doanh nghiệp. Không có trong S21.02.

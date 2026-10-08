@@ -122,3 +122,102 @@ describe('decideDelivery', () => {
     assert.deepEqual(decideDelivery('promo', p, NOON), { inbox: false, push: 'none' });
   });
 });
+
+/** The plan's catalogue (Contract table): type → [category, tab, critical]. */
+const PLAN_META: Record<string, readonly [string, string, boolean]> = {
+  payout_released: ['booking', 'system', true],
+  quote_new: ['jobs', 'activity', false],
+  quote_withdrawn: ['jobs', 'activity', false],
+  job_expiring: ['jobs', 'activity', false],
+  job_expired: ['jobs', 'activity', false],
+  job_match: ['jobs', 'activity', false],
+  job_invited: ['jobs', 'activity', false],
+  quote_accepted: ['jobs', 'activity', false],
+  quote_not_selected: ['jobs', 'activity', false],
+  job_selected: ['jobs', 'activity', false],
+  instant_assigned: ['instant', 'activity', false],
+  instant_missed: ['instant', 'activity', false],
+  instant_round_ended: ['instant', 'activity', false],
+  instant_no_match: ['instant', 'activity', false],
+  instant_arrived: ['instant', 'activity', false],
+  instant_finished: ['instant', 'activity', false],
+  instant_cancelled: ['instant', 'activity', true],
+  event_soon: ['events', 'events', false],
+  review_tomato: ['badges', 'system', false],
+  review_brick: ['badges', 'system', false],
+  delivery_submitted: ['booking', 'activity', false],
+  delivery_revision_requested: ['booking', 'activity', false],
+  delivery_approved: ['booking', 'activity', false],
+  delivery_auto_approve_soon: ['booking', 'activity', false],
+  delivery_extra_round: ['booking', 'activity', false],
+  studio_invite: ['booking', 'system', false],
+  studio_join_request: ['booking', 'system', false],
+  studio_invite_accepted: ['booking', 'system', false],
+  studio_join_approved: ['booking', 'system', false],
+  studio_removed: ['booking', 'system', false],
+  studio_invite_expiring: ['booking', 'system', false],
+  booking_assigned: ['booking', 'activity', false],
+  booking_reassigned: ['booking', 'activity', false],
+  assign_reminder: ['booking', 'activity', false],
+  assign_overdue: ['booking', 'activity', true],
+  change_requested: ['booking', 'activity', false],
+  change_answered: ['booking', 'activity', false],
+  assignment_returned: ['booking', 'activity', false],
+  payout_account_needed: ['booking', 'system', false],
+  payout_account_changed: ['booking', 'system', true],
+  verification_approved: ['booking', 'system', true],
+  verification_rejected: ['booking', 'system', true],
+  verification_revoked: ['booking', 'system', true],
+  verification_reminder: ['booking', 'system', false],
+  business_verified: ['booking', 'system', true],
+  business_rejected: ['booking', 'system', true],
+  dispute_opened: ['booking', 'activity', true],
+  dispute_resolved: ['booking', 'activity', true],
+  dispute_message: ['booking', 'activity', false],
+  support_reply: ['booking', 'activity', true],
+  refund_account_needed: ['booking', 'activity', true],
+  recruit_post_new: ['jobs', 'activity', false],
+  recruit_application_new: ['jobs', 'activity', false],
+  recruit_application_result: ['jobs', 'activity', false],
+  collab_invite: ['jobs', 'activity', false],
+  collab_invite_result: ['jobs', 'activity', false],
+  collab_assignment_offer: ['jobs', 'activity', true],
+  collab_assignment_result: ['jobs', 'activity', false],
+  collab_pay_due: ['jobs', 'activity', false],
+  collab_pay_reported: ['jobs', 'activity', false],
+  collab_pay_disputed: ['jobs', 'activity', false],
+};
+
+/** Critical rows that existed before S17 and keep their meta. */
+const EARLIER_CRITICAL = ['booking_cancelled', 'refund_done', 'event_host_invited'];
+
+describe('S17 catalogue', () => {
+  it('every new type has meta (category, tab, critical) as in the plan table', () => {
+    const types = NOTIFICATION_TYPES as Record<string, { category: string; tab: string; critical: boolean }>;
+    for (const [type, [category, tab, critical]] of Object.entries(PLAN_META)) {
+      assert.deepEqual(types[type], { category, tab, critical }, type);
+    }
+  });
+
+  it('the critical set is exactly the ✓ rows of the table', () => {
+    const critical = Object.entries(NOTIFICATION_TYPES)
+      .filter(([, m]) => m.critical)
+      .map(([t]) => t)
+      .sort();
+    const expected = [
+      ...EARLIER_CRITICAL,
+      ...Object.entries(PLAN_META)
+        .filter(([, m]) => m[2])
+        .map(([t]) => t),
+    ].sort();
+    assert.deepEqual(critical, expected);
+  });
+
+  it('review_tomato and review_brick are badges/system', () => {
+    for (const t of ['review_tomato', 'review_brick'] as const) {
+      assert.equal(NOTIFICATION_TYPES[t].category, 'badges');
+      assert.equal(NOTIFICATION_TYPES[t].tab, 'system');
+      assert.equal(NOTIFICATION_TYPES[t].critical, false);
+    }
+  });
+});

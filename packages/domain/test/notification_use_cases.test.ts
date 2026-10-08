@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import type { NotifyRequest } from '../src/notification_ports.js';
 import {
+  GROUP_RECENT_EVENT_IDS,
   markAllRead,
   notify,
   pruneReadNotifications,
@@ -120,6 +121,45 @@ describe('notify', () => {
     assert.equal(w.push.sent.length, 1);
   });
 
+  it('a grouped row keeps the last 20 event ids, newest first; an older one counts again', async () => {
+    assert.equal(GROUP_RECENT_EVENT_IDS, 20);
+    for (let i = 0; i < 22; i++) await notify(w.deps, chat(i, 'a', `m${i}`));
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.count, 22);
+    assert.equal(row?.recentEventIds.length, 20);
+    assert.equal(row?.recentEventIds[0], 'm21');
+    assert.equal(row?.recentEventIds[19], 'm2');
+    assert.equal(await notify(w.deps, chat(5, 'a', 'm5')), 'duplicate');
+    // m0 fell out of the window: it counts again.
+    assert.equal(await notify(w.deps, chat(0, 'a', 'm0')), 'grouped');
+    assert.equal(w.store.rowsOf('u1')[0]?.count, 23);
+  });
+
+  it('a row written before recentEventIds still dedupes on lastEventId', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    const prev = w.store.rowsOf('u1')[0];
+    assert.ok(prev);
+    // Simulates an older Firestore doc: the adapter reads a missing list as [].
+    w.store.rows.set(`u1/${prev.id}`, { ...prev, recentEventIds: [] });
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+  });
+
+  it('a read row still treats its last event as a duplicate (retried trigger)', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    await w.store.markRead('u1', ['g_chat_c1'], w.clock.now());
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+  });
+
+  it('dedupe and group keys turn ":" and "/" into "_" for the row id', async () => {
+    await notify(w.deps, review({ dedupeKey: 'support_reply:t1/m1' }));
+    await notify(w.deps, { ...chat(1, 'a', 'm1'), groupKey: 'dispute:d/1' });
+    const ids = w.store.rowsOf('u1').map((r) => r.id).sort();
+    assert.deepEqual(ids, ['g_dispute_d_1', 'n_support_reply_t1_m1']);
+    // Keys without "/" keep the id they had.
+    await notify(w.deps, review({ dedupeKey: 'review_new:b2' }));
+    assert.ok(w.store.rowsOf('u1').some((r) => r.id === 'n_review_new_b2'));
+  });
+
   it('group keeps at most 3 unique actors, newest first', async () => {
     for (const [i, a] of ['a', 'b', 'c', 'd', 'b'].entries()) await notify(w.deps, chat(i, a, `m${i}`));
     const row = w.store.rowsOf('u1')[0];
@@ -191,5 +231,42 @@ describe('pruneReadNotifications', () => {
     assert.equal(await pruneReadNotifications(w.deps), 1);
     assert.deepEqual(w.store.rowsOf('u1').map((r) => r.id).sort(), ['n_new_read', 'n_old_unread']);
     assert.equal(await pruneReadNotifications(w.deps), 0);
+  });
+});
+
+describe('grouped names', () => {
+  const quote = (actorId: string, name: string, eventId: string): NotifyRequest => ({
+    userId: 'u1',
+    content: { type: 'quote_new', jobTitle: 'Chụp kỷ yếu', count: 1, names: [name] },
+    target: '/jobs/j1/applications',
+    dedupeKey: 'ignored',
+    groupKey: 'job:j1:quotes',
+    eventId,
+    actor: { id: actorId, name, avatarUrl: null },
+  });
+
+  it("grouped render receives the actors' names newest first", async () => {
+    const w = createNotifyWorld();
+    await notify(w.deps, quote('p3', 'Hà', 'p3_1'));
+    await notify(w.deps, quote('p2', 'Lan Chi', 'p2_1'));
+    assert.equal(w.store.rowsOf('u1')[0]?.body, 'Lan Chi và Hà. Xem và so sánh báo giá.');
+    await notify(w.deps, quote('p1', 'Minh Trí', 'p1_1'));
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.title, '3 nhiếp ảnh gia đã báo giá cho việc “Chụp kỷ yếu”');
+    assert.equal(row?.body, 'Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá.');
+    assert.equal(w.push.sent[2]?.msg.body, row?.body);
+  });
+
+  it('chat_message grouped copy unchanged', async () => {
+    const w = createNotifyWorld();
+    await notify(w.deps, chat(1, 'Lan', 'm1'));
+    assert.deepEqual(
+      { title: w.store.rowsOf('u1')[0]?.title, body: w.store.rowsOf('u1')[0]?.body },
+      { title: 'Lan', body: 'tin 1' },
+    );
+    await notify(w.deps, chat(2, 'Lan', 'm2'));
+    const row = w.store.rowsOf('u1')[0];
+    assert.deepEqual({ title: row?.title, body: row?.body }, { title: 'Lan', body: '2 tin nhắn mới' });
+    assert.equal('names' in (row ?? {}), false);
   });
 });

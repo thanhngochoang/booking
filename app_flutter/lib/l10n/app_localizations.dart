@@ -6406,6 +6406,18 @@ abstract class AppLocalizations {
   /// **'Bật thông báo để biết khi {name} nhận lịch'**
   String primerTitleCustomerBooking(String name);
 
+  /// No description provided for @primerTitleCustomerTicket.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật thông báo để được nhắc trước khi {event} bắt đầu'**
+  String primerTitleCustomerTicket(String event);
+
+  /// No description provided for @primerTicketBenefit1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắc trước khi sự kiện bắt đầu, kèm giờ và điểm tập trung'**
+  String get primerTicketBenefit1;
+
   /// No description provided for @primerTitleCustomerInstant.
   ///
   /// In vi, this message translates to:

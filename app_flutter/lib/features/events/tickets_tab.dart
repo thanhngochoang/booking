@@ -1,4 +1,6 @@
 // lib/features/events/tickets_tab.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +16,7 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/features/events/event_links.dart';
 import 'package:photobooking/features/events/ticket_payment_sheet.dart';
+import 'package:photobooking/features/notifications/notification_primer.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Hours before the start up to which cancelling a paid ticket refunds all of
@@ -101,14 +104,26 @@ TicketView ticketViewOf(
 }
 
 /// S11.04: the customer's event tickets, inside S05.01 "Vé sự kiện".
-class EventTicketsTab extends ConsumerWidget {
+class EventTicketsTab extends ConsumerStatefulWidget {
   const EventTicketsTab({super.key, this.highlightId});
 
   /// A ticket to emphasise (the one just bought), else the soonest upcoming.
+  /// Showing it as an upcoming ticket is also the moment S17.03 is offered.
   final String? highlightId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EventTicketsTab> createState() => _EventTicketsTabState();
+}
+
+class _EventTicketsTabState extends ConsumerState<EventTicketsTab> {
+  /// The highlight the primer was already requested for (once per highlight,
+  /// not once per rebuild).
+  String? _primerAskedFor;
+
+  String? get highlightId => widget.highlightId;
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final tickets = ref.watch(myTicketsProvider);
     final now = ref.watch(clockProvider)();
@@ -128,14 +143,13 @@ class EventTicketsTab extends ConsumerWidget {
           actionLabel: l.ticketsBrowse,
           onAction: () => context.push('/events'),
         ),
-        data: (_, all) => _list(context, ref, all, now),
+        data: (_, all) => _list(context, all, now),
       ),
     );
   }
 
   Widget _list(
     BuildContext context,
-    WidgetRef ref,
     List<EventRegistration> all,
     DateTime now,
   ) {
@@ -158,6 +172,26 @@ class EventTicketsTab extends ConsumerWidget {
     final emphasised = upcoming.any((r) => r.id == highlightId)
         ? highlightId
         : upcoming.firstOrNull?.id;
+
+    // The ticket just bought is on screen: the meaningful action (spec
+    // S17.03). Opening the tab without `highlight` asks nothing.
+    final bought = highlightId == null
+        ? null
+        : upcoming.where((r) => r.id == highlightId).firstOrNull;
+    if (bought != null && _primerAskedFor != highlightId) {
+      _primerAskedFor = highlightId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(
+            maybeAskForNotifications(
+              context,
+              ref,
+              CustomerTicketPrimer(bought.event.title),
+            ),
+          );
+        }
+      });
+    }
 
     return ListView.separated(
       key: const PageStorageKey('event-tickets'),

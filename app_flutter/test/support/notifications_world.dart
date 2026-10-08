@@ -116,6 +116,9 @@ class NotificationsWorld {
         for (final p in [
           '/home',
           '/b/:id',
+          '/e/:id',
+          '/events/:id/manage',
+          '/jobs/:id/applications',
           '/chat/:id',
           '/me/awards',
           '/u/:uid',
@@ -149,6 +152,7 @@ class NotificationsWorld {
     String? target,
     List<NotificationActor> actors = const [],
     int count = 1,
+    String? thumbUrl,
   }) {
     final at =
         createdAt ?? notificationsNow.subtract(Duration(minutes: minutesAgo));
@@ -164,6 +168,7 @@ class NotificationsWorld {
       readAt: read ? at : null,
       actors: actors,
       count: count,
+      thumbUrl: thumbUrl,
     );
   }
 }

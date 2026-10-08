@@ -16,35 +16,65 @@ import 'package:photobooking/l10n/app_localizations.dart';
 }) {
   switch (type) {
     case 'booking_accepted':
+    case 'booking_assigned':
       return (icon: AppIcons.calendar, tone: NotificationTone.success);
     case 'booking_declined':
     case 'booking_cancelled':
+    case 'assign_overdue':
       return (icon: AppIcons.calendar, tone: NotificationTone.danger);
     case 'booking_request':
+    case 'assign_reminder':
+    case 'assignment_returned':
       return (icon: AppIcons.calendar, tone: NotificationTone.action);
+    case 'booking_reassigned':
+    case 'collab_assignment_result':
+      return (icon: AppIcons.calendar, tone: NotificationTone.neutral);
     case 'shoot_reminder':
       return (icon: AppIcons.camera, tone: NotificationTone.neutral);
     case 'refund_done':
     case 'payout_released':
+    case 'dispute_resolved':
       return (icon: AppIcons.payment, tone: NotificationTone.success);
+    case 'payout_account_needed':
+    case 'refund_account_needed':
+    case 'collab_pay_due':
+      return (icon: AppIcons.payment, tone: NotificationTone.action);
+    case 'collab_pay_reported':
+      return (icon: AppIcons.payment, tone: NotificationTone.neutral);
+    case 'collab_pay_disputed':
+      return (icon: AppIcons.payment, tone: NotificationTone.danger);
+    case 'payout_account_changed':
+      return (icon: AppIcons.lock, tone: NotificationTone.action);
     case 'quote_new':
     case 'quote_withdrawn':
     case 'job_match':
     case 'job_invited':
+    case 'recruit_post_new':
+    case 'recruit_application_result':
       return (icon: AppIcons.work, tone: NotificationTone.neutral);
     case 'quote_accepted':
     case 'job_selected':
       return (icon: AppIcons.work, tone: NotificationTone.success);
     case 'quote_not_selected':
       return (icon: AppIcons.work, tone: NotificationTone.muted);
+    case 'recruit_application_new':
+    case 'collab_assignment_offer':
+      return (icon: AppIcons.work, tone: NotificationTone.action);
     case 'job_expiring':
       return (icon: AppIcons.calendar, tone: NotificationTone.action);
     case 'job_expired':
       return (icon: AppIcons.calendar, tone: NotificationTone.muted);
     case 'instant_assigned':
+    case 'instant_arrived':
       return (icon: AppIcons.instant, tone: NotificationTone.success);
     case 'instant_missed':
       return (icon: AppIcons.instant, tone: NotificationTone.muted);
+    case 'instant_round_ended':
+    case 'instant_no_match':
+    case 'instant_finished':
+      return (icon: AppIcons.instant, tone: NotificationTone.action);
+    case 'instant_cancelled':
+      return (icon: AppIcons.instant, tone: NotificationTone.danger);
     case 'event_soon':
       return (icon: AppIcons.ticket, tone: NotificationTone.neutral);
     case 'event_host_invited':
@@ -68,7 +98,50 @@ import 'package:photobooking/l10n/app_localizations.dart';
       return (icon: AppIcons.award, tone: NotificationTone.neutral);
     case 'review_new':
       return (icon: AppIcons.star, tone: NotificationTone.neutral);
+    case 'review_tomato':
+      return (icon: AppIcons.favorite, tone: NotificationTone.success);
+    case 'review_brick':
+      return (icon: AppIcons.chat, tone: NotificationTone.action);
+    case 'delivery_submitted':
+    case 'delivery_revision_requested':
+      return (icon: AppIcons.image, tone: NotificationTone.action);
+    case 'delivery_approved':
+      return (icon: AppIcons.image, tone: NotificationTone.success);
+    case 'delivery_extra_round':
+      return (icon: AppIcons.image, tone: NotificationTone.neutral);
+    case 'delivery_auto_approve_soon':
+    case 'verification_reminder':
+      return (icon: AppIcons.schedule, tone: NotificationTone.action);
+    case 'studio_invite':
+    case 'studio_join_request':
+    case 'studio_invite_expiring':
+    case 'collab_invite':
+      return (icon: AppIcons.store, tone: NotificationTone.action);
+    case 'studio_invite_accepted':
+    case 'studio_join_approved':
+    case 'business_verified':
+      return (icon: AppIcons.store, tone: NotificationTone.success);
+    case 'studio_removed':
+      return (icon: AppIcons.store, tone: NotificationTone.muted);
+    case 'business_rejected':
+      return (icon: AppIcons.store, tone: NotificationTone.danger);
+    case 'collab_invite_result':
+      return (icon: AppIcons.store, tone: NotificationTone.neutral);
+    case 'change_requested':
+      return (icon: AppIcons.swap, tone: NotificationTone.action);
+    case 'change_answered':
+      return (icon: AppIcons.swap, tone: NotificationTone.neutral);
+    case 'verification_approved':
+      return (icon: AppIcons.verified, tone: NotificationTone.success);
+    case 'verification_rejected':
+    case 'verification_revoked':
+      return (icon: AppIcons.verified, tone: NotificationTone.danger);
+    case 'dispute_opened':
+      return (icon: AppIcons.flag, tone: NotificationTone.action);
+    case 'support_reply':
+      return (icon: AppIcons.supportAgent, tone: NotificationTone.neutral);
     case 'chat_message':
+    case 'dispute_message':
       return (icon: AppIcons.chat, tone: NotificationTone.neutral);
     default:
       return (icon: AppIcons.info, tone: NotificationTone.neutral);

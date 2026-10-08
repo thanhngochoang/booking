@@ -228,6 +228,14 @@ export class MemoryEventStore implements EventStore {
       .slice(0, limit);
   }
 
+  async dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]> {
+    return [...this.events.values()]
+      .filter((e) => (e.status === 'open' || e.status === 'full' || e.status === 'closed')
+        && (e.soonNoticeAt ?? null) === null && e.startAt !== null
+        && e.startAt.getTime() > now.getTime() && e.startAt.getTime() <= horizon.getTime())
+      .slice(0, limit);
+  }
+
   async dueForConsentExpiry(now: Date, limit: number): Promise<EventRecord[]> {
     return [...this.events.values()]
       .filter((e) => e.status === 'draft' && e.hostConsent === 'pending'
