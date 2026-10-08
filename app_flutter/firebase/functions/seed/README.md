@@ -95,11 +95,39 @@ npm run try:contact -- lan.customer@seed.test seed-booking-accepted zalo
 
 ## Staff CLI for awards
 
-`npm run awards -- --help` lists the commands. Against the emulators set
-`FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST`; against a real project set
-`GOOGLE_APPLICATION_CREDENTIALS` (a service account key). `show` also needs `STORAGE_BUCKET`
-(or `FIREBASE_STORAGE_BUCKET`) and credentials that can sign URLs. `--actor` is a user with the
-admin claim, e.g. `seed-staff-admin` locally.
+`tools/awards.ts` is the staff review of award proofs until the web dashboard (S23.07, #83) exists:
+`list` (pending awards, oldest first, with how long each has waited), `show <awardId>` (the award,
+its proof links and files) and the decisions `approve`, `needs-info`, `reject`, `revoke`. A decision
+calls the same `reviewAward` use case as the callable, so the same rules, notification and tier
+recompute (`onAwardWrite`) apply; `--actor` must be a user with the admin claim.
+`npm run awards -- --help` lists the commands.
+
+### Local (emulators running via `scripts/backend-local.sh`)
+
+`scripts/awards-local.sh` points the CLI at the local emulators (Firestore, Auth and Storage on
+127.0.0.1), unsets `GOOGLE_APPLICATION_CREDENTIALS` and refuses a half-set or non-local emulator
+environment. `show` downloads the proof files to `$TMPDIR/awards/<awardId>/` (named
+`<index>-<file name>`) and prints the paths; links are printed as they are.
+
+```bash
+scripts/awards-local.sh list
+scripts/awards-local.sh show seed-award-binh-1
+scripts/awards-local.sh approve seed-award-binh-1 --actor seed-staff-admin
+scripts/awards-local.sh needs-info <awardId> "Thiếu ảnh giấy chứng nhận" --actor seed-staff-admin
+```
+
+Check: sign in as `binh.unverified@seed.test`, open Cài đặt → Giải thưởng: the award reads
+"Đã duyệt"; a notification `award_reviewed` is in Bình's inbox; the tier card says "Còn 2 giải đã
+duyệt nữa để nhận tích vàng". An award created in the app (with proof photos) shows its files with
+`show`; the seeded one has a link only.
+
+### Real project
+
+Run the CLI directly, with `GOOGLE_APPLICATION_CREDENTIALS` (a service account key) and
+`STORAGE_BUCKET` (or `FIREBASE_STORAGE_BUCKET`), and no emulator host set:
+`npm run awards -- list`. `show` prints signed URLs that expire in 15 minutes, so the credentials
+must be able to sign. `--actor` is the uid of a user with the admin claim. The dev project
+`booking-c1922` is on Spark, so reviews there are not run; this is for the production project.
 
 ## Staff CLI for payouts
 
