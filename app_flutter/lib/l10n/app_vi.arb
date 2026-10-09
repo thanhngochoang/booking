@@ -2359,5 +2359,7 @@
   "createEventFaqRemove": "Xoá câu hỏi {n}",
   "@createEventFaqRemove": {"placeholders": {"n": {"type": "int"}}},
   "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời.",
-  "bookNotAcceptingOrders": "Nhiếp ảnh gia này chưa nhận đặt lịch."
+  "bookNotAcceptingOrders": "Nhiếp ảnh gia này chưa nhận đặt lịch.",
+  "bookingErrBlocked": "Không đặt lịch được với người này.",
+  "@bookingErrBlocked": {"description": "S04: createBooking/createPayment refused because the customer and the photographer blocked each other (blocked)."}
 }

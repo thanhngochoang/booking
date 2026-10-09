@@ -28,6 +28,7 @@ describe('toHttpsError', () => {
       not_eligible: 'failed-precondition',
       reauth_required: 'failed-precondition',
       not_accepting_orders: 'failed-precondition',
+      blocked: 'failed-precondition',
       payment_attempts_exceeded: 'failed-precondition',
       name_mismatch: 'failed-precondition',
       otp_required: 'failed-precondition',
@@ -47,6 +48,13 @@ describe('toHttpsError', () => {
     const e = toHttpsError(new DomainError('not_accepting_orders'));
     assert.equal(e.code, 'failed-precondition');
     assert.deepEqual(e.details, { code: 'not_accepting_orders' });
+  });
+
+  test('blocked maps to failed-precondition with details.code blocked', () => {
+    const e = toHttpsError(new DomainError('blocked'));
+    assert.equal(e.code, 'failed-precondition');
+    assert.equal(e.message, 'blocked');
+    assert.deepEqual(e.details, { code: 'blocked' });
   });
 
   test('the four new codes map to failed-precondition', () => {

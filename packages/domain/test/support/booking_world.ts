@@ -1,5 +1,6 @@
 import { MemoryBookingStore } from '../../src/memory_booking_store.js';
 import { FakePaymentGateway } from '../../src/fake_payment_gateway.js';
+import { FakeBlockGate } from '../../src/fake_block_gate.js';
 import type { BookingDeps, CustomerContactReader, ServiceCatalog, ServiceRecord } from '../../src/booking_ports.js';
 import { acceptsOrders, type OrderEligibilityFields } from '../../src/provider_orders.js';
 import type { Clock, IdGenerator } from '../../src/ports.js';
@@ -44,6 +45,7 @@ export interface BookingWorld {
   readonly deps: BookingDeps;
   readonly store: MemoryBookingStore;
   readonly gateway: FakePaymentGateway;
+  readonly blocks: FakeBlockGate;
   readonly clock: ControllableClock;
   readonly ids: SequentialIdGen;
   readonly services: Map<string, ServiceRecord>;
@@ -54,6 +56,7 @@ export interface BookingWorld {
 export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.000Z')): BookingWorld {
   const store = new MemoryBookingStore();
   const gateway = new FakePaymentGateway();
+  const blocks = new FakeBlockGate();
   const clock = new ControllableClock(initialDate);
   const ids = new SequentialIdGen();
 
@@ -101,13 +104,14 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     store,
     services: serviceCatalog,
     providers: { acceptsOrders: async (id) => acceptsOrders(providers.get(id)) },
+    blocks,
     contacts: contactReader,
     gateway,
     clock,
     ids,
   };
 
-  return { deps, store, gateway, clock, ids, services, providers, contacts };
+  return { deps, store, gateway, blocks, clock, ids, services, providers, contacts };
 }
 
 /** The default draft request: c1 books p1's `srv_01` (1 000 000 VND) on 2026-10-15 at 14:00. */

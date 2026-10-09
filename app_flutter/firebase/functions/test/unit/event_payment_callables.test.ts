@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { HttpsError } from 'firebase-functions/v2/https';
 import {
+  FakeBlockGate,
   FakePaymentGateway,
   MemoryBookingStore,
   MemoryEventStore,
@@ -81,6 +82,7 @@ describe('fake payment gate', () => {
       services: { getService: async () => null },
       contacts: { get: async () => null },
       providers: { acceptsOrders: async () => true },
+      blocks: new FakeBlockGate(),
       gateway: new FakePaymentGateway(),
       clock: { now: () => new Date('2026-10-01T10:00:00.000Z') },
       ids: { newId: () => 'id_1' },

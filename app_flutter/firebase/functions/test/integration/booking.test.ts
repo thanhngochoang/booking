@@ -50,6 +50,21 @@ describe('booking callables on the emulators', () => {
     assert.equal(res.status, 404, res.text);
   });
 
+  test('a block document either way makes createBooking answer failed-precondition blocked', async () => {
+    const ref = db.doc(`blocks/${AN}_${LAN}`);
+    await ref.set({ blockerId: AN, blockedId: LAN, createdAt: new Date() });
+    try {
+      const refused = await call('createBooking', LAN, draft);
+      assert.equal(refused.status, 400, refused.text);
+      assert.equal((refused.error?.details as { code?: string })?.code, 'blocked');
+    } finally {
+      await ref.delete();
+    }
+    // Another day, so this draft does not hold the day the next test books.
+    const allowed = await call('createBooking', LAN, { ...draft, day: '2026-11-21' });
+    assert.equal(allowed.status, 200, allowed.text);
+  });
+
   test('create, pay the full price by bank QR with a fake exact transfer, check, and the photographer accepts', async () => {
     const created = await call('createBooking', LAN, draft);
     assert.equal(created.status, 200, created.text);

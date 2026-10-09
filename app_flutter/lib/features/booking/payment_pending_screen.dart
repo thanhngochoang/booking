@@ -64,6 +64,7 @@ class _PaymentPendingScreenState extends ConsumerState<PaymentPendingScreen> {
             () => _createFailure = switch (bookingErrorOf(e)) {
               BookingErrorCode.paymentAttemptsExceeded =>
                 l10n.payAttemptsExceeded,
+              BookingErrorCode.blocked => l10n.bookingErrBlocked,
               BookingErrorCode.network => l10n.bookNetworkError,
               _ => l10n.bookTryAgain,
             },

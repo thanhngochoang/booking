@@ -6,6 +6,7 @@ import {
   type BookingDeps,
   MemoryBookingStore,
   FakePaymentGateway,
+  FakeBlockGate,
   type ServiceRecord,
   type CustomerContactRecord,
   computeDeposit,
@@ -18,9 +19,10 @@ import {
 import { handleConfirmFakePayment, handleCreatePayment } from '../../src/callables/payment.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
 
-function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gateway: FakePaymentGateway } {
+function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gateway: FakePaymentGateway; blocks: FakeBlockGate } {
   const store = new MemoryBookingStore();
   const gateway = new FakePaymentGateway();
+  const blocks = new FakeBlockGate();
   let idCounter = 1;
 
   const servicesMap = new Map<string, ServiceRecord>([
@@ -43,12 +45,13 @@ function createTestDeps(): { deps: BookingDeps; store: MemoryBookingStore; gatew
       get: async (uid) => contactsMap.get(uid) ?? null,
     },
     providers: { acceptsOrders: async (id) => id !== 'closed1' },
+    blocks,
     gateway,
     clock: { now: () => new Date('2026-10-01T10:00:00.000Z') },
     ids: { newId: () => `id_${idCounter++}` },
   };
 
-  return { deps, store, gateway };
+  return { deps, store, gateway, blocks };
 }
 
 /** Fake payments run on the emulator (or the dev project) only; the fake webhook needs its (test) secret. */
@@ -110,6 +113,49 @@ describe('Booking callables', () => {
         deps,
       ),
       httpsError('failed-precondition', 'not_accepting_orders'),
+    );
+  });
+
+  test('createBooking refuses a blocked pair with failed-precondition and details.code blocked', async () => {
+    const { deps, blocks } = createTestDeps();
+    blocks.block('p1', 'c1');
+    await assert.rejects(
+      handleCreateBooking(
+        {
+          auth: { uid: 'c1' },
+          data: {
+            photographerId: 'p1',
+            serviceId: 'svc1',
+            day: '2026-10-15',
+            start: '09:00',
+            place: { name: 'Thảo Cầm Viên, Quận 1' },
+          },
+        },
+        deps,
+      ),
+      httpsError('failed-precondition', 'blocked'),
+    );
+  });
+
+  test('createPayment refuses a blocked pair with failed-precondition and details.code blocked', async () => {
+    const { deps, blocks } = createTestDeps();
+    const draft = await handleCreateBooking(
+      {
+        auth: { uid: 'c1' },
+        data: {
+          photographerId: 'p1',
+          serviceId: 'svc1',
+          day: '2026-10-15',
+          start: '09:00',
+          place: { name: 'Thảo Cầm Viên' },
+        },
+      },
+      deps,
+    );
+    blocks.block('c1', 'p1');
+    await assert.rejects(
+      handleCreatePayment({ auth: { uid: 'c1' }, data: { bookingId: draft.id, method: 'bank_qr' } }, deps, EMULATOR_ENV),
+      httpsError('failed-precondition', 'blocked'),
     );
   });
 

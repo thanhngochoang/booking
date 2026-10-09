@@ -2,6 +2,7 @@ import type { TestContext } from 'node:test';
 import {
   createBookingDraft,
   createPayment,
+  FakeBlockGate,
   FakePaymentGateway,
   MemoryBookingStore,
   type BookingDeps,
@@ -22,6 +23,7 @@ export interface PaymentWorld {
   readonly deps: BookingDeps;
   readonly store: MemoryBookingStore;
   readonly gateway: FakePaymentGateway;
+  readonly blocks: FakeBlockGate;
   /** Moves the clock forward. */
   advanceMinutes(minutes: number): void;
 }
@@ -30,6 +32,7 @@ export interface PaymentWorld {
 export function paymentWorld(start = new Date('2026-10-01T10:00:00.000Z')): PaymentWorld {
   const store = new MemoryBookingStore();
   const gateway = new FakePaymentGateway();
+  const blocks = new FakeBlockGate();
   let now = start.getTime();
   let n = 0;
   const services = new Map<string, ServiceRecord>([
@@ -47,11 +50,12 @@ export function paymentWorld(start = new Date('2026-10-01T10:00:00.000Z')): Paym
     } },
     contacts: { get: async (uid) => contacts.get(uid) ?? null },
     providers: { acceptsOrders: async () => true },
+    blocks,
     gateway,
     clock: { now: () => new Date(now) },
     ids: { newId: () => `id_${String(++n).padStart(4, '0')}` },
   };
-  return { deps, store, gateway, advanceMinutes: (m) => { now += m * 60_000; } };
+  return { deps, store, gateway, blocks, advanceMinutes: (m) => { now += m * 60_000; } };
 }
 
 /** A draft of c1 (or `customerId`) on `day` and its first bank-QR payment. */

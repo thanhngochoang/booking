@@ -2,6 +2,7 @@
  * Ports and dependencies for Booking domain use cases.
  */
 
+import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
 import type { Payment, PaymentMethod, Refund, LedgerEntry } from './escrow.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
@@ -203,6 +204,8 @@ export interface BookingDeps {
   readonly store: BookingStore;
   readonly services: ServiceCatalog;
   readonly providers: ProviderOrderGate;
+  /** Checked with `providers` before a new order (see order_gate.ts). */
+  readonly blocks: BlockGate;
   readonly contacts: CustomerContactReader;
   readonly gateway: PaymentGateway;
   readonly clock: Clock;

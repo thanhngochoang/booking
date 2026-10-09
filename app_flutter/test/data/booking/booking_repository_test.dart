@@ -18,6 +18,13 @@ void main() {
     );
   });
 
+  test('bookingErrorOf maps blocked to blocked', () {
+    expect(
+      bookingErrorOf(const BookingException('blocked')),
+      BookingErrorCode.blocked,
+    );
+  });
+
   group('FakeBookingRepository', () {
     late FakeBookingRepository repo;
 

@@ -80,6 +80,7 @@ class FakeBookingRepository implements BookingRepository {
       BookingErrorCode.priceChanged => 'price_changed',
       BookingErrorCode.notEligible => 'not_eligible',
       BookingErrorCode.notAcceptingOrders => 'not_accepting_orders',
+      BookingErrorCode.blocked => 'blocked',
       BookingErrorCode.deadlinePassed => 'deadline_passed',
       BookingErrorCode.conflict => 'conflict',
       BookingErrorCode.permissionDenied => 'permission_denied',

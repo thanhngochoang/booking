@@ -18,6 +18,7 @@ enum BookingErrorCode {
   priceChanged,
   notEligible,
   notAcceptingOrders,
+  blocked,
   deadlinePassed,
   conflict,
   permissionDenied,
@@ -67,6 +68,8 @@ BookingErrorCode _codeToBookingError(String code) {
       return BookingErrorCode.notEligible;
     case 'not_accepting_orders':
       return BookingErrorCode.notAcceptingOrders;
+    case 'blocked':
+      return BookingErrorCode.blocked;
     case 'deadline_passed':
       return BookingErrorCode.deadlinePassed;
     case 'conflict':

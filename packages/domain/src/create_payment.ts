@@ -15,6 +15,7 @@ import { expireOpenPayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
 import { isPaymentMethod, type Payment, type Refund } from './escrow.js';
 import { isId } from './ids.js';
+import { assertOrderAllowed } from './order_gate.js';
 import { transferCodeFor } from './payment_code.js';
 import { dispatchRefunds } from './refunds.js';
 import { requireCustomerPhone } from './require_phone.js';
@@ -61,6 +62,13 @@ export async function createPayment(
   if (!isId(input.bookingId) || !isId(input.customerId)) throw new DomainError('invalid_argument');
 
   await requireCustomerPhone(deps.contacts, input.customerId);
+
+  // The provider may have stopped accepting orders, or a block may have started, since the draft.
+  // Only the owner of a draft learns about it; anyone else gets the transaction's own answer.
+  const pre = await deps.store.getBooking(input.bookingId);
+  if (pre && pre.customerId === input.customerId && pre.status === 'draft') {
+    await assertOrderAllowed(deps, { customerId: pre.customerId, providerId: pre.photographerId });
+  }
 
   const prior = await deps.store.getPaymentsForBooking(input.bookingId);
   const { id: paymentId, code: transferCode } = await freshPaymentId(deps);

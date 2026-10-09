@@ -8,6 +8,7 @@ import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
@@ -443,6 +444,50 @@ void main() {
       expect(state.phase, SubmitPhase.idle);
       expect(state.bookingId, isNull);
       expect(outcomes, isEmpty);
+    });
+
+    test('blocked clears the draft id and goes idle with error blocked; the profile is not re-read', () async {
+      final repo = FakeBookingRepository()
+        ..nextPaymentError = BookingErrorCode.blocked;
+      var profileReads = 0;
+      final container = ProviderContainer(
+        overrides: [
+          clockProvider.overrideWithValue(() => today),
+          calendarTodayProvider.overrideWithValue(today),
+          profilePackagesProvider(photographerId).overrideWithValue(
+            const AsyncData([package1, package2]),
+          ),
+          currentContactProvider.overrideWithValue(
+            const AsyncData(UserContact(phone: '+84912345678')),
+          ),
+          bookingRepositoryProvider.overrideWithValue(repo),
+          photographerProfileProvider(photographerId).overrideWith((ref) async {
+            profileReads++;
+            throw StateError('not needed');
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      final profileSub = container.listen(
+        photographerProfileProvider(photographerId),
+        (_, _) {},
+      );
+      addTearDown(profileSub.close);
+      await Future<void>.delayed(Duration.zero);
+      final readsBefore = profileReads;
+      final outcomes = <SubmitOutcome>[];
+      final ctrl = readyToPay(container, outcomes);
+
+      await ctrl.submit();
+      await Future<void>.delayed(Duration.zero);
+
+      final state = container.read(bookingFlowControllerProvider(args));
+      expect(state.error, BookingErrorCode.blocked);
+      expect(state.step, BookingStep.review);
+      expect(state.phase, SubmitPhase.idle);
+      expect(state.bookingId, isNull);
+      expect(outcomes, isEmpty);
+      expect(profileReads, readsBefore);
     });
   });
 }
