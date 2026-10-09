@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
@@ -318,11 +319,19 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
   Widget _todayCard(BuildContext context, Booking b, BookingFeatures features) {
     final l10n = context.l10n;
     final message = features.chat && b.chatId != null;
+    final uid = ref.watch(authStateProvider).value?.uid;
+    // A studio's booking assigned to me (Decision 18): name the studio.
+    final studio = uid == null || b.photographerId == uid
+        ? null
+        : ref.watch(partyProfileProvider(b.photographerId)).value?.displayName;
     return BookingCard(
       data: bookingSummaryFor(
         b,
         name: _customerName(b),
         thumbUrl: _customerAvatar(b),
+        tag: studio == null || studio.isEmpty
+            ? null
+            : l10n.workAssignedBy(studio),
       ),
       highlight: true,
       onTap: () => context.push('/b/${b.id}'),

@@ -1,4 +1,4 @@
-// lib/features/earnings/widgets/reauth_sheet.dart
+// lib/features/account/widgets/reauth_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,8 +7,9 @@ import 'package:photobooking/data/auth/auth_error.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 
-/// Asks the user to sign in again before the payout account changes: the
-/// password for email accounts, the provider flow for Google and Facebook.
+/// Asks the user to sign in again before a sensitive account action (S22.02
+/// account deletion on `reauth_required`): the password for email accounts,
+/// the provider flow for Google and Facebook.
 /// True after a successful re-authentication; false when the sheet is closed
 /// without one (the caller keeps what the user typed).
 ///
@@ -61,7 +62,7 @@ class _ReauthBodyState extends ConsumerState<_ReauthBody> {
         // Backing out of the provider's own screen is not an error.
         _error = switch (error) {
           AuthError.cancelled => null,
-          AuthError.wrongPassword => l.payoutAccountReauthWrong,
+          AuthError.wrongPassword => l.reauthWrong,
           _ => errorMessage(e, l),
         };
       });
@@ -90,13 +91,10 @@ class _ReauthBodyState extends ConsumerState<_ReauthBody> {
           children: [
             Semantics(
               header: true,
-              child: Text(
-                l.payoutAccountReauthTitle,
-                style: theme.textTheme.titleLarge,
-              ),
+              child: Text(l.reauthTitle, style: theme.textTheme.titleLarge),
             ),
             const SizedBox(height: AppSpace.s2),
-            Text(l.payoutAccountReauthBody, style: theme.textTheme.bodyMedium),
+            Text(l.reauthBody, style: theme.textTheme.bodyMedium),
             if (usesPassword) ...[
               const SizedBox(height: AppSpace.s3),
               TextField(
@@ -112,7 +110,7 @@ class _ReauthBodyState extends ConsumerState<_ReauthBody> {
                 },
                 onSubmitted: (_) => _go(true),
                 decoration: InputDecoration(
-                  labelText: l.payoutAccountReauthPassword,
+                  labelText: l.reauthPassword,
                   errorText: _error,
                 ),
               ),
@@ -128,7 +126,7 @@ class _ReauthBodyState extends ConsumerState<_ReauthBody> {
             ],
             const SizedBox(height: AppSpace.s4),
             AppButton.primary(
-              l.payoutAccountReauthGo,
+              l.reauthGo,
               key: const Key('reauth-go'),
               loading: _busy,
               onPressed: () => _go(usesPassword),

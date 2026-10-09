@@ -89,6 +89,8 @@ Hook: `notifyRefundAccountNeeded` trong `packages/domain/src/notification_hooks.
 
 `Payout` thêm `provider`, `providerPayoutId`, `idempotencyKey`, `amountGross`, `platformFee`, `taxWithheld`, `amountNet`, `attempts`, `firstPayout: bool`, `approvedBy?`.
 
+**Đã làm (#134, cổng giả)**: job `createPayouts` chạy 10:00 mỗi ngày giờ Việt Nam (`maxInstances` 1, không thử lại; ở chế độ `off` chỉ ghi log), tạo lô cho mọi người nhận có tài khoản đang hiệu lực rồi chuyển mọi lô `pending`, một lỗi không chặn các lô khác. Staff dùng CLI `npm run payouts -- approve <payoutId> --actor <uid>` để duyệt lô `needs_approval`, và `npm run payouts -- run-daily --actor <uid>` chạy một vòng ngay (chỉ chế độ giả; in `DailyPayoutReport`). Mỗi lô ghi `feeRateBp`/`taxRateBp` đã dùng; thuế 7% cho cá nhân và nghệ sĩ, 0% cho studio (kế toán xác nhận).
+
 ### 6.2 Tài khoản nhận tiền (S06.06)
 
 - Hỏi khi có khoản `released` đầu tiên (không hỏi trong S21.02).
@@ -97,6 +99,8 @@ Hook: `notifyRefundAccountNeeded` trong `packages/domain/src/notification_hooks.
 - Lưu: `bankBin`, `bankName`, `accountNumberEnc` (mã hoá), `accountLast4`, `holderName`, `nameMatched`, `verifiedAt`, `activeFrom`.
 - **Đổi tài khoản**: OTP qua số điện thoại đã xác minh; tài khoản mới `activeFrom` = +72 giờ; trong 72 giờ đó tạm dừng chi; gửi thông báo và email (nếu có) về việc đổi; tài khoản mới chi lần đầu cũng qua staff duyệt.
 - Hook: `notifyPayoutAccountChanged` trong `packages/domain/src/notification_hooks.ts` (#138) (thông báo quan trọng, không tắt được).
+
+**Đã làm (#134, cổng giả)**: cổng tra tên `AccountNameLookup` và `FakeAccountNameLookup` nằm ở `packages/domain/src/account_lookup.ts` (S22.04 dùng lại, không thêm bản giả thứ hai): lặp lại tên đã xác minh của người gọi, riêng số kết thúc `4321` ra `TRAN VAN B`, `9999` ra chưa hỗ trợ, `0404` ra không tìm thấy; tối đa 20 lần tra mỗi người mỗi ngày giờ Việt Nam. OTP (`FakeOtpSender`) chỉ chạy trên emulator và project dev (`fakePaymentsAllowed`), mã nằm trong log (`fake otp`); nơi khác `requestPayoutOtp` trả `not_eligible` cho tới khi chọn nhà cung cấp SMS. Tài khoản đổi có `activeFrom` = +72 giờ, chưa có lô nào được tạo hay chuyển trước đó.
 
 ### 6.3 Thu nhập (S06.05)
 

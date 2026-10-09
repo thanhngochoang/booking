@@ -16,6 +16,9 @@ import {
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  providerTypeOf,
+  payoutLineOf,
+  DEFAULT_PAYOUT_POLICY,
   renderNotification,
   summarizeEarnings,
   titleKeyOf,
@@ -33,6 +36,7 @@ import {
   type NotificationType,
   type Payment,
   type Payout,
+  type PayoutAccount,
   type PhotographerStatsPatch,
   type ReviewReason,
   type Verdict,
@@ -40,6 +44,8 @@ import {
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
+import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
+import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -184,6 +190,8 @@ export const SEED_BOOKINGS: readonly SeedBooking[] = [
 /** An's payout account (VCB). Test value; the number is stored encrypted with the emulator key. */
 export const SEED_AN_ACCOUNT = { id: 'seed-account-an-1', bankCode: 'VCB', number: '0123456789', holderName: 'NGUYEN VAN AN' } as const;
 export const SEED_PAYOUT_AN = 'seed-payout-an-1';
+/** An's verified legal name (`users/{uid}/private/identity.legalName`; test value). */
+export const SEED_AN_LEGAL_NAME = 'Nguyễn Văn An';
 /** The booking whose payment the seeded payout paid out. */
 export const SEED_PAID_OUT_BOOKING = 'seed-booking-completed-old';
 
@@ -847,7 +855,8 @@ function notificationAndBadgeDocuments(now: Date): SeedDocument[] {
 
 
 /**
- * An's payout account and one paid payout (plan 10b), and the `earnings` projection of every
+ * An's payout account (matched, with her verified name), one paid payout with its tax line (#134),
+ * and the `earnings` projection of every
  * photographer with payments, computed by the same pure functions the triggers use so the seed
  * does not depend on trigger timing. Bình has no account.
  */
@@ -855,21 +864,36 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
   const docs: SeedDocument[] = [];
   const at = SEED_CREATED_AT;
   const a = SEED_AN_ACCOUNT;
+  // An's account: matched against the verified name below, active since the seed start.
+  const account: PayoutAccount = {
+    id: a.id,
+    userId: AN,
+    bankCode: a.bankCode,
+    accountNumberEnc: encryptSyncForSeed(emulatorPayoutKey(), a.number),
+    accountLast4: accountLast4(a.number),
+    holderName: a.holderName,
+    active: true,
+    createdAt: at.toISOString(),
+    nameStatus: 'matched',
+    activeFrom: at.toISOString(),
+  };
   docs.push({
     path: `payoutAccounts/${AN}`,
-    data: { accountId: a.id, bankCode: a.bankCode, accountLast4: accountLast4(a.number), holderName: a.holderName, updatedAt: at },
+    data: accountViewToFirestore({
+      accountId: account.id,
+      bankCode: account.bankCode,
+      accountLast4: account.accountLast4,
+      holderName: account.holderName,
+      updatedAt: account.createdAt,
+      nameStatus: account.nameStatus,
+      activeFrom: account.activeFrom,
+    }),
   });
+  docs.push({ path: `payoutAccounts/${AN}/accounts/${a.id}`, data: accountToFirestore(account) });
+  // The verified name the account was matched against (test value; #135 owns this doc's full shape).
   docs.push({
-    path: `payoutAccounts/${AN}/accounts/${a.id}`,
-    data: {
-      userId: AN,
-      bankCode: a.bankCode,
-      accountNumberEnc: encryptSyncForSeed(emulatorPayoutKey(), a.number),
-      accountLast4: accountLast4(a.number),
-      holderName: a.holderName,
-      active: true,
-      createdAt: at,
-    },
+    path: `users/${AN}/private/identity`,
+    data: { legalName: SEED_AN_LEGAL_NAME, method: 'fake', provider: 'fake', verifiedAt: at },
   });
 
   const paymentDoc = (id: string) => existing.find((d) => d.path === `payments/${id}`);
@@ -878,52 +902,58 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
   if (paid === undefined) throw new Error('seed: the paid-out payment is missing');
   const amount = paid.data.amount as number;
   const paidAt = new Date(now.getTime() - 35 * DAY_MS);
-  docs.push({
-    path: `payouts/${SEED_PAYOUT_AN}`,
-    data: {
-      payeeId: AN,
-      accountId: a.id,
-      amount,
-      status: 'paid',
-      items: [{ paymentId: paidId, amount }],
-      reference: `FAKE-${SEED_PAYOUT_AN}`,
-      failureReason: null,
-      holdReason: null,
-      createdBy: ADMIN,
-      createdAt: new Date(paidAt.getTime() - HOUR_MS),
-      updatedAt: paidAt,
-      processingAt: new Date(paidAt.getTime() - HOUR_MS / 2),
-      paidAt,
-    },
-  });
-  docs.push({
-    path: `ledger_entries/seed-ledger-${SEED_PAYOUT_AN}-pay`,
-    data: {
-      type: 'payout_paid',
-      paymentId: paidId,
-      payoutId: SEED_PAYOUT_AN,
-      subjectType: 'booking',
-      subjectId: SEED_PAID_OUT_BOOKING,
-      accountOwnerId: AN,
-      amount: -amount,
-      note: `Payout ${SEED_PAYOUT_AN}`,
-      at: paidAt,
-    },
-  });
-
-  // The projection: rows and totals per payee, from the seeded payments.
+  const createdAt = new Date(paidAt.getTime() - HOUR_MS);
+  // An is an individual: 7% withheld (DEFAULT_PAYOUT_POLICY), so 1,500,000 → tax 105,000, net 1,395,000 (Ruling 8).
+  const line = payoutLineOf(amount, providerTypeOf(SEED_PHOTOGRAPHERS.find((sp) => sp.uid === AN)?.providerType), DEFAULT_PAYOUT_POLICY);
+  // The first payout to the account, approved by staff before it was sent.
   const payout: Payout = {
     id: SEED_PAYOUT_AN,
     payeeId: AN,
     accountId: a.id,
     amount,
     status: 'paid',
-    items: [{ paymentId: paidId, amount }],
+    items: [{ paymentId: paidId, amount, fee: line.fee, tax: line.tax, net: line.net }],
+    platformFee: line.fee,
+    taxWithheld: line.tax,
+    amountNet: line.net,
+    feeRateBp: line.feeRateBp,
+    taxRateBp: line.taxRateBp,
+    firstPayout: true,
+    approvedBy: ADMIN,
+    approvedAt: new Date(createdAt.getTime() + HOUR_MS / 4).toISOString(),
+    reference: `FAKE-${SEED_PAYOUT_AN}`,
     createdBy: ADMIN,
-    createdAt: new Date(paidAt.getTime() - HOUR_MS).toISOString(),
+    createdAt: createdAt.toISOString(),
     updatedAt: paidAt.toISOString(),
+    processingAt: new Date(paidAt.getTime() - HOUR_MS / 2).toISOString(),
     paidAt: paidAt.toISOString(),
   };
+  docs.push({ path: `payouts/${SEED_PAYOUT_AN}`, data: payoutToFirestore(payout) });
+  // Per payment the payout entries net to −amount: payout_paid −net, tax_withheld −tax.
+  const ledgerLines: [string, string, number][] = [
+    ['pay', 'payout_paid', line.net],
+    ['tax', 'tax_withheld', line.tax],
+    ['fee', 'platform_fee', line.fee],
+  ];
+  for (const [suffix, type, value] of ledgerLines) {
+    if (value <= 0) continue;
+    docs.push({
+      path: `ledger_entries/seed-ledger-${SEED_PAYOUT_AN}-${suffix}`,
+      data: {
+        type,
+        paymentId: paidId,
+        payoutId: SEED_PAYOUT_AN,
+        subjectType: 'booking',
+        subjectId: SEED_PAID_OUT_BOOKING,
+        accountOwnerId: AN,
+        amount: -value,
+        note: `Payout ${SEED_PAYOUT_AN}`,
+        at: paidAt,
+      },
+    });
+  }
+
+  // The projection: rows and totals per payee, from the seeded payments.
   const iso = (v: unknown): string | undefined => (v instanceof Date ? v.toISOString() : undefined);
   const byPayee = new Map<string, EarningItem[]>();
   for (const d of existing) {
@@ -952,8 +982,10 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
     const item = earningItemOf({
       payment,
       refunded,
-      subject: { counterpartName: 'Lan (seed)', label: service.name, day: booking.date },
+      subject: { counterpartName: 'Lan (seed)', label: service.name, day: booking.date, milestones: null },
       payout: payment.payoutId === SEED_PAYOUT_AN ? payout : null,
+      payeeType: providerTypeOf(SEED_PHOTOGRAPHERS.find((sp) => sp.uid === payment.payeeId)?.providerType),
+      policy: DEFAULT_PAYOUT_POLICY,
       now,
     });
     if (item === null) continue;
@@ -972,22 +1004,7 @@ function payoutAndEarningsDocuments(now: Date, existing: readonly SeedDocument[]
       },
     });
     for (const i of items) {
-      docs.push({
-        path: `earnings/${payeeId}/items/${i.id}`,
-        data: {
-          payeeId: i.payeeId,
-          subjectType: i.subjectType,
-          subjectId: i.subjectId,
-          counterpartName: i.counterpartName,
-          subjectLabel: i.subjectLabel,
-          day: i.day,
-          amount: i.amount,
-          state: i.state,
-          holdReason: i.holdReason,
-          paidOutAt: i.paidOutAt === null ? null : new Date(i.paidOutAt),
-          updatedAt: now,
-        },
-      });
+      docs.push({ path: `earnings/${payeeId}/items/${i.id}`, data: earningItemToFirestore({ ...i, updatedAt: now.toISOString() }) });
     }
   }
   return docs;

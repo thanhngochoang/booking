@@ -32,4 +32,35 @@ void main() {
     );
     expect(find.byType(FilledButton), findsNothing);
   });
+  testWidgets('without a body only the title line is drawn', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: EmptyState(title: 'a')),
+      ),
+    );
+    expect(find.byType(Text), findsOneWidget);
+  });
+  testWidgets('shows note under the body when given', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: EmptyState(title: 'a', body: 'Nội dung', note: 'Ghi chú nhỏ'),
+        ),
+      ),
+    );
+    expect(find.text('Ghi chú nhỏ'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Ghi chú nhỏ')).dy,
+      greaterThan(tester.getBottomLeft(find.text('Nội dung')).dy),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: EmptyState(title: 'a', body: 'Nội dung'),
+        ),
+      ),
+    );
+    expect(find.text('Ghi chú nhỏ'), findsNothing);
+  });
 }

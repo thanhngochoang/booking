@@ -9,7 +9,11 @@ import {
   createPayout,
   listDuePayees,
   savePayoutAccount,
+  FakeAccountNameLookup,
+  FakeOtpSender,
+  type PayoutAccountDeps,
   type PayoutDeps,
+  DEFAULT_PAYOUT_POLICY,
   confirmFakeTicketPayment,
   publishEvent,
   registerEvent,
@@ -81,7 +85,7 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
 
 const ADMIN = { uid: 'admin1', isAdmin: true } as const;
 
-function payoutDeps(store: MemoryBookingStore, now: Date): PayoutDeps {
+function payoutDeps(store: MemoryBookingStore, now: Date): PayoutDeps & PayoutAccountDeps {
   const payoutStore = new MemoryPayoutStore(store);
   payoutStore.seedRole('ph1', 'photographer');
   let next = 1;
@@ -91,6 +95,15 @@ function payoutDeps(store: MemoryBookingStore, now: Date): PayoutDeps {
     clock: { now: () => now },
     ids: { newId: () => `po_${next++}` },
     gateway: new FakePayoutGateway(),
+    policy: DEFAULT_PAYOUT_POLICY,
+    notices: { accountNeeded: async () => undefined, accountChanged: async () => undefined },
+    lookup: new FakeAccountNameLookup('Lan'),
+    names: { legalName: async () => 'Lan' },
+    otp: {
+      sender: new FakeOtpSender(),
+      phones: { phoneOf: async () => null },
+      crypto: { sha256Hex: async (s) => s, random: (n) => new Uint8Array(n) },
+    },
   };
 }
 
@@ -135,10 +148,11 @@ describe('bookingClock and ticket money', () => {
     const at = new Date(END.getTime() + 25 * HOUR);
     await handleBookingClock(bookingDeps(store, at));
     const deps = payoutDeps(store, at);
-    await savePayoutAccount(deps, { uid: 'ph1', authTime: at }, { bankCode: 'VCB', accountNumber: '0123456789', holderName: 'Lan' });
+    await savePayoutAccount(deps, { uid: 'ph1' }, { bankCode: 'VCB', accountNumber: '0123456789' });
     assert.deepEqual(await listDuePayees(deps, ADMIN), [{ payeeId: 'ph1', amount: 200_000, hasAccount: true }]);
     const po = await createPayout(deps, ADMIN, 'ph1');
-    assert.deepEqual(po.items, [{ paymentId: ticket.id, amount: 200_000 }]);
+    // ph1 is an individual: 7 % withheld from the 200,000.
+    assert.deepEqual(po.items, [{ paymentId: ticket.id, amount: 200_000, fee: 0, tax: 14_000, net: 186_000 }]);
     assert.equal(store.payments.get(ticket.id)?.payoutId, po.id);
     assert.deepEqual(await listDuePayees(deps, ADMIN), []);
     await assert.rejects(createPayout(deps, ADMIN, 'ph1'), /not_eligible/);

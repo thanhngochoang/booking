@@ -66,6 +66,9 @@ Lưới 3 cột chọn tối đa 3 ảnh. `EvidencePicker({required List<PostThu
 ### PhoneField · Mới
 Ô số điện thoại Việt Nam. `PhoneField({required TextEditingController controller, String? errorText, bool enabled = true, ValueChanged<String>? onChanged, FormFieldValidator<String>? validator, bool autofocus = false})`. Hai ô như mock: ô "Mã" cố định `+84` (72dp, chỉ đọc) và ô "Số điện thoại", `TextInputType.phone`, bộ lọc chữ số và định dạng `903 123 456`, chấp nhận dán `0903…` hoặc `+84…`. Hàm thuần `normalizePhone(String) → String?` (E.164 `+84…`), `validatePhone(String, AppLocalizations) → String?` (quy tắc `^(?:\+84|0)(3|5|7|8|9)\d{8}$`); tuỳ chọn quốc tế nằm ở `normalizePhone(…, international: true)` (nhận `^\+\d{8,15}$` cho số WhatsApp) và ô có `PhoneField(international: true, label: …)`: nhận `^\+\d{8,15}$` cho WhatsApp, số Việt Nam ở chế độ này vẫn được chuẩn hoá về `+84…`. Lỗi cụ thể dưới ô. Văn bản trong ô luôn ở dạng quốc nội `903 123 456`; dán `0903…` hoặc `+84…` được chuẩn hoá; gõ từng ký tự `+` không được coi là mã nước. Dán đúng 11 chữ số bắt đầu bằng `84` (không có `+`, dạng liên kết wa.me hoặc file xuất) thì bỏ `84` đầu: `84903123456` → `903 123 456`; chuỗi `84…` 9 chữ số giữ nguyên (số quốc nội 084). Đọc số bằng `phoneFromField`. Test bảng hợp lệ/không hợp lệ.
 
+### OtpCodeField · Đã có (#134)
+Ô nhập mã xác nhận 6 số (`lib/core/widgets/otp_code_field.dart`). `OtpCodeField({required TextEditingController controller, String? errorText, ValueChanged<String>? onCompleted, String? labelText, bool enabled = true, bool autofocus = true})`; hằng `otpCodeLength = 6`. Một ô (không phải sáu ô riêng): chỉ nhận chữ số, tối đa 6, bàn phím số, `AutofillHints.oneTimeCode` (tự điền mã từ SMS), tắt gợi ý và tự sửa, chữ căn giữa cỡ `titleLarge` giãn cách `AppSpace.s2` với chữ số đều (`tabularFigures`); nhãn luôn nổi (`labelText`, ví dụ `payoutOtpField` "Mã OTP"). `onCompleted` gọi khi chữ số thứ 6 được gõ hoặc dán; `errorText` hiện dưới ô (tối đa 3 dòng, ví dụ `payoutOtpWrong` "Mã chưa đúng. Kiểm tra lại tin nhắn"). Dùng ở sheet OTP của S06.06 (`showPayoutOtpSheet`); S21.01 (xác minh số điện thoại) dùng lại. Test: chỉ nhận chữ số và cắt ở 6, `onCompleted` ở chữ số thứ 6, lỗi hiện dưới ô, có gợi ý tự điền và bàn phím số, vừa khung 320dp với chữ 1,3×.
+
 ### ContactDial · Mới
 Nút liên hệ gọn, bung kênh khi bấm. `ContactDial({required ContactAccess access, required List<ContactChannel> channels, required ValueChanged<ContactChannel> onSelected, ContactDialStyle style = icon, bool busy = false})`. `ContactAccess.locked` (chưa đặt): vẽ nút chat "Nhắn tin hỏi trước" và gọi `onSelected(ContactChannel.inApp)`, không bung. `ContactAccess.unlocked` (đã đặt/có vé): hành vi bung bên dưới. `ContactChannel` gồm `inApp` (chỉ dùng ở chế độ `locked`), `call`, `zalo`, `whatsapp` kèm `label`, `icon` (`IconData` hoặc `SvgPicture` từ `assets/social/zalo.svg`, `whatsapp.svg`), `enabled`. `style: icon` = nút vuông 48dp có biểu tượng điện thoại; `style: labeled` = nút thấp 38dp "Liên hệ" trong hàng nút.
 - Bung: **một khay** nền `surface`, radius 28, bóng `elevation` của sheet, căn phải theo nút, phía trên nút (đổi xuống dưới nếu thiếu chỗ), `OverlayPortal` + `CompositedTransformFollower`. Khay chứa tối đa **ba** mục xếp ngang (`ContactChannel.call/zalo/whatsapp`): vòng tròn 44dp nền `surfaceMuted` viền mảnh, glyph 22dp đơn sắc `onSurface`, nhãn 10,5 bên dưới, rộng 62dp mỗi mục. Mở 240ms (khay dịch 10dp + phóng 0,92→1, mờ→rõ, đường cong ra nảy nhẹ), mục vào so le 40ms từ phải sang; đóng 140ms không so le; ngắt được. `inApp` không nằm trong khay (màn có nút "Nhắn tin" riêng).
@@ -111,7 +114,7 @@ Thẻ so sánh. `PhotographerCard({required PhotographerSummary data, List<Reaso
 Lý do gợi ý. `ReasonChips({required List<Reason> reasons, int max = 2})`. Chip nhỏ nền kính, chữ 10,5, một dòng; dư thì bỏ bớt, không cuộn. `Semantics` đọc "Gợi ý vì: …". Mã lý do `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent`.
 
 ### BookingCard · Đã có
-`BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
+`BookingCard({required BookingSummary data, BookingCardSize size = normal, Widget? actions, bool highlight = false, VoidCallback? onTap})`. Thumb 56–64 (radius 12), tên + gói, ngày giờ (`tabularFigures`), địa điểm, `StatusBadge` bên phải. `size: compact` cho thanh ngữ cảnh chat và S04.04; `highlight` dùng `GlassCard(highlight: true)` cho buổi hôm nay. `BookingSummary.tag` (String?, mặc định null) vẽ một viên thuốc viền nhỏ với `AppIcons.store` dưới dòng tên, ví dụ "Giao bởi Studio Ánh Dương" ở S06.01 (buổi studio giao); không có thì không vẽ gì. Khe `actions` đặt hàng nút dưới thẻ (Chỉ đường, Nhắn tin, Nhận…). Dùng ở S04.03, S05.02, S07.01, S05.01, S06.01, S04.04.
 
 ### EventCard và DateBlock · Đã có
 `EventCard({required EventCardData data, EventCardSize size = row, String? distanceLabel, VoidCallback? onTap})`. `size: row`: `DateBlock` bên trái, tên, "chủ · địa điểm", tag loại dạng chữ `#workshop` (màu primary, cỡ nhỏ, không nền/viền; cùng nhãn với hàng lọc S11.01), cột phải giá (hoặc `FreeTag` khi giá 0) + số chỗ ("Còn 3 chỗ" / "Hết chỗ" bằng chữ). `size: featured` (mock S11.01, 2026-10-07): ảnh bìa 16:10; `PhotoPill` sáng góc trên trái với chấm trạng thái (xanh còn nhiều chỗ, vàng từ một nửa, đỏ "Hết chỗ"); lớp phủ đáy ba dòng: "thứ dd/MM · HH:mm · địa điểm[ · khoảng cách]", tên đậm, "chủ · n/sức chứa đã đăng ký"; không có giá (giá nằm ở thẻ hàng). `EventTypeTag(label)`: tag loại dạng pill kính có viền (mock `.tag`), dùng ở S11.02 và `TicketCard`. `size: compact` (hàng ngang S02.03) rộng 176dp. Có biến thể `EventCard.skeleton({EventCardSize size = row})`.  
@@ -200,7 +203,7 @@ Khung bắt buộc để màn hiển thị một `AsyncValue` (mọi fetch). `As
 `SectionHeader({required String title, String? actionLabel, VoidCallback? onAction, String? trailing})`. Tiêu đề Fraunces 17 + hành động chữ primary 12 bên phải (≥ 48dp vùng chạm). `Semantics(header)`. Dùng khắp nơi cho "Xem tất cả", "Tất cả".
 
 ### EmptyState · Đã có
-Minh hoạ tròn, tiêu đề, mô tả, một nút `AppButton.primary` (tuỳ chọn). Mọi trạng thái trống có đúng một hành động nuôi vòng lặp (xem S06.02, S02.03…).
+Minh hoạ tròn, tiêu đề, mô tả (`body`, tuỳ chọn), dòng ghi chú nhỏ dưới mô tả (`note`, tuỳ chọn, ví dụ "Staff duyệt trong 24 giờ sau khi bạn gửi" ở S06.02), một nút `AppButton.primary` (tuỳ chọn). Mọi trạng thái trống có đúng một hành động nuôi vòng lặp (xem S06.02, S02.03…).
 
 ### ErrorState và OfflineBanner · Đã có
 `ErrorState({required String message, VoidCallback? onRetry})` tiêu đề ngắn + "Thử lại". `OfflineBanner()` dải mảnh "Đang xem dữ liệu đã lưu" trên đầu danh sách khi offline. Thông điệp lấy từ ánh xạ mã lỗi → tiếng Việt (`errorMessage(Object, AppLocalizations)`). Dùng ở mọi màn có dữ liệu mạng.
@@ -372,6 +375,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `EarningRow` | S06.05 |
 | `ContactDial`, `ContactLauncher` | S03.01, S05.02, S11.02, S06.01, S12.03 (S05.04) |
 | `PhoneField` | S04.03, S11.03, S04.05, S08.05, S09.03 |
+| `OtpCodeField` | S06.06 (sheet OTP), S21.01 |
 | `LocationPromptCard`, `LocationRepository` | S02.03, S02.04, S02.05 |
 | `VerifiedMark`, `BadgeChip`, `BadgeRow`, `BadgeTile` | S02.02, S03.01, S02.06, S11.02, S12.03, S09.01, S03.02 |
 | `SkillChip`, `LevelSelector`, `EvidencePicker`, `CompletenessMeter` | S06.02, S09.02, S08.02, S08.03, S08.04 |
@@ -495,6 +499,7 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.verified` | `verified` | (mới, chưa có trong mock) | `Icons.verified` |
 | `AppIcons.work` | `work` | `i-brief` | `Icons.work_outline` |
 | `AppIcons.store` | `storefront` | (mới, chưa có trong mock) | `Icons.storefront_outlined` |
+| `AppIcons.verifiedUser` | `verified_user` | (mới, chưa có trong mock) | `Icons.verified_user` |
 | `AppIcons.people` | `group` | (mới, chưa có trong mock) | `Icons.people` |
 | `AppIcons.celebration` | `celebration` | (mới, chưa có trong mock) | `Icons.celebration` |
 | `AppIcons.trendingUp` | `trending_up` | (mới, chưa có trong mock) | `Icons.trending_up` |

@@ -17,34 +17,20 @@ import 'screen_host.dart';
 /// 08/10/2026 09:00 in Vietnam.
 final earningsNow = DateTime.utc(2026, 10, 8, 2);
 
-/// A fake whose re-authentication waits for [reauthGate] (a busy sheet).
-class GatedAuthRepository extends FakeAuthRepository {
-  GatedAuthRepository({super.initialReauthMethod, super.cancelSocial});
-
-  Future<void>? reauthGate;
-
-  @override
-  Future<void> reauthenticate({String? password}) async {
-    await reauthGate;
-    return super.reauthenticate(password: password);
-  }
-}
-
 /// A signed-in photographer with in-memory earnings, a recording analytics
 /// hook and S06.05 mounted at `/work/earnings`; other routes are stubs.
 class EarningsWorld {
-  EarningsWorld({ReauthMethod? reauthMethod, bool cancelSocial = false})
-    : auth = GatedAuthRepository(
-        initialReauthMethod: reauthMethod,
-        cancelSocial: cancelSocial,
-      );
+  EarningsWorld({DateTime? now}) : now = now ?? earningsNow;
+
+  /// The clock of the repository and of `clockProvider`; tests may move it.
+  DateTime now;
 
   /// The signed-in user's password (email accounts).
   static const password = 'password1';
 
   late String uid;
-  final GatedAuthRepository auth;
-  final repo = FakeEarningsRepository();
+  final auth = FakeAuthRepository();
+  late final repo = FakeEarningsRepository(clock: () => now);
 
   /// Registers the signed-in photographer; call before [app].
   Future<void> init() async {
@@ -66,6 +52,14 @@ class EarningsWorld {
     String? holdReason,
     DateTime? paidOutAt,
     String subjectType = 'booking',
+    int fee = 0,
+    int tax = 0,
+    int? net,
+    int feeRateBp = 0,
+    int taxRateBp = 0,
+    bool estimated = true,
+    int? milestonesDone,
+    int? milestonesTotal,
   }) => EarningItem(
     id: id,
     subjectType: subjectType,
@@ -77,6 +71,14 @@ class EarningsWorld {
     state: state,
     holdReason: holdReason,
     paidOutAt: paidOutAt,
+    feeVnd: fee,
+    taxVnd: tax,
+    netVnd: net,
+    feeRateBp: feeRateBp,
+    taxRateBp: taxRateBp,
+    estimated: estimated,
+    milestonesDone: milestonesDone,
+    milestonesTotal: milestonesTotal,
   );
 
   PayoutAccountView account({
@@ -84,19 +86,23 @@ class EarningsWorld {
     String last4 = '3456',
     String holder = 'NGUYEN MINH TRI',
     DateTime? updatedAt,
+    DateTime? activeFrom,
+    PayoutNameStatus nameStatus = PayoutNameStatus.matched,
   }) => PayoutAccountView(
     accountId: 'acc-0',
     bankCode: bank,
     accountLast4: last4,
     holderName: holder,
-    updatedAt: updatedAt ?? earningsNow,
+    updatedAt: updatedAt ?? now,
+    activeFrom: activeFrom ?? updatedAt ?? now,
+    nameStatus: nameStatus,
   );
 
   List<Override> get overrides => [
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     authRepositoryProvider.overrideWithValue(auth),
     earningsRepositoryProvider.overrideWithValue(repo),
-    clockProvider.overrideWithValue(() => earningsNow),
+    clockProvider.overrideWithValue(() => now),
     earningsAnalyticsProvider.overrideWithValue(
       (name, params) => events.add((name, params)),
     ),

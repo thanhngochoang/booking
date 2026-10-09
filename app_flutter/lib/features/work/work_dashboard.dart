@@ -3,7 +3,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
-import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
@@ -18,10 +17,11 @@ const workTick = Duration(minutes: 1);
 final workDashboardProvider = Provider.autoDispose<AsyncValue<WorkDashboard>>((
   ref,
 ) {
-  final mine = ref.watch(myBookingsProvider(BookingRole.photographer));
+  final uid = ref.watch(authStateProvider.select((a) => a.value?.uid)) ?? '';
+  final mine = ref.watch(myWorkBookingsProvider);
   final now =
       ref.watch(nowTickerProvider(workTick)).value ?? ref.read(clockProvider)();
-  return mine.whenData((list) => workDashboard(list, now));
+  return mine.whenData((list) => workDashboard(list, now, uid: uid));
 });
 
 /// Requests waiting for the signed-in photographer's answer: the work tab's

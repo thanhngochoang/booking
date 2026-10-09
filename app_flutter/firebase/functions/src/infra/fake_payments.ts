@@ -1,5 +1,5 @@
 import { HttpsError } from 'firebase-functions/v2/https';
-import { DEV_PROJECT_ID, currentProjectId } from '../config.js';
+import { DEV_PROJECT_ID, currentProjectId, payoutsMode } from '../config.js';
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -26,6 +26,16 @@ export function fakePaymentsAllowed(env: Env = process.env): boolean {
  */
 export function checkoutGatewayAvailable(env: Env = process.env): boolean {
   return fakePaymentsAllowed(env);
+}
+
+/**
+ * The payout mode a server path may act on (Ruling 11): `fake` only when `payoutsMode()` says
+ * `fake` AND fake payments are allowed (the dev project, or the emulator on `demo-*`). A stray
+ * `PAYOUTS_MODE=fake` or `FUNCTIONS_EMULATOR` on any other project gives `off`, so the fake
+ * gateway never marks real payments paid out and the fake lookup never echoes a name there.
+ */
+export function fakePayoutsMode(env: Env = process.env): 'fake' | 'off' {
+  return payoutsMode(env) === 'fake' && fakePaymentsAllowed(env) ? 'fake' : 'off';
 }
 
 /** Call before any read or write of a fake-payment callable. */

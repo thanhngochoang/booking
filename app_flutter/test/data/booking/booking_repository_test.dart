@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
+import 'package:photobooking/data/booking/firestore_booking_repository.dart';
 
 import '../../support/booking_fixtures.dart';
 import '../../support/fake_booking_repository.dart';
@@ -108,6 +110,60 @@ void main() {
       final list = await repo.watchCustomerBookings('c1').first;
       expect(list.length, 1);
       expect(list.first.id, 'b1');
+    });
+  });
+
+  group('watchAssignedBookings', () {
+    Map<String, dynamic> doc(String status, {String? assigneeId}) => {
+      'customerId': 'c1',
+      'photographerId': 'studio1',
+      'serviceId': 's1',
+      'serviceSnapshot': {'name': 'G', 'price': 1000000, 'durationMinutes': 60},
+      'day': '2026-10-20',
+      'start': '09:00',
+      'end': '10:00',
+      'place': {'name': 'Hà Nội'},
+      'status': status,
+      'deposit': 1000000,
+      'remaining': 0,
+      'assigneeId': ?assigneeId,
+    };
+
+    test(
+      'reads bookings where assigneeId is the uid, drafts dropped',
+      () async {
+        final db = FakeFirebaseFirestore();
+        final repo = FirestoreBookingRepository(firestore: db);
+        final col = db.collection('bookings');
+        await col.doc('a1').set(doc('accepted', assigneeId: 'p1'));
+        await col.doc('a2').set(doc('draft', assigneeId: 'p1'));
+        await col.doc('a3').set(doc('accepted', assigneeId: 'p2'));
+        await col.doc('a4').set(doc('accepted'));
+        final list = await repo.watchAssignedBookings('p1').first;
+        expect([for (final b in list) b.id], ['a1']);
+      },
+    );
+
+    test('the fake emits assigned lists and errors', () async {
+      final repo = FakeBookingRepository();
+      final seen = <Object>[];
+      final sub = repo
+          .watchAssignedBookings('p1')
+          .listen(
+            (l) => seen.add([for (final b in l) b.id]),
+            onError: (Object e) => seen.add('error'),
+          );
+      await Future<void>.delayed(Duration.zero);
+      repo.emitAssigned([makeTestBooking(id: 'x1', photographerId: 'studio1')]);
+      await Future<void>.delayed(Duration.zero);
+      repo.failAssigned(StateError('permission-denied'));
+      await Future<void>.delayed(Duration.zero);
+      expect(seen, [
+        <String>[],
+        ['x1'],
+        'error',
+      ]);
+      await sub.cancel();
     });
   });
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
@@ -65,6 +68,50 @@ final myBookingsProvider =
           ? repo.watchCustomerBookings(uid)
           : repo.watchPhotographerBookings(uid);
     });
+
+/// Bookings a studio assigned to the signed-in photographer (S06.01). A
+/// failing stream (rule not deployed, stale client) reads as an empty list and
+/// is logged once, so the work tab never breaks for everyone.
+final assignedBookingsProvider = StreamProvider.autoDispose<List<Booking>>((
+  ref,
+) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return const Stream.empty();
+  var logged = false;
+  return ref
+      .watch(bookingRepositoryProvider)
+      .watchAssignedBookings(uid)
+      .transform(
+        StreamTransformer<List<Booking>, List<Booking>>.fromHandlers(
+          handleError: (error, _, sink) {
+            if (!logged) {
+              logged = true;
+              debugPrint('assignedBookings failed: ${error.runtimeType}');
+            }
+            sink.add(const <Booking>[]);
+          },
+        ),
+      );
+});
+
+/// S06.01's bookings: the photographer's own merged with the assigned ones;
+/// the own document wins on the same id. Loading and errors are the own
+/// stream's.
+final myWorkBookingsProvider = Provider.autoDispose<AsyncValue<List<Booking>>>((
+  ref,
+) {
+  final own = ref.watch(myBookingsProvider(BookingRole.photographer));
+  final assigned =
+      ref.watch(assignedBookingsProvider).value ?? const <Booking>[];
+  return own.whenData((list) {
+    final ids = {for (final b in list) b.id};
+    return [
+      ...list,
+      for (final b in assigned)
+        if (!ids.contains(b.id)) b,
+    ];
+  });
+});
 
 /// Auto-disposed events stream provider for S05.02.
 final bookingEventsProvider =

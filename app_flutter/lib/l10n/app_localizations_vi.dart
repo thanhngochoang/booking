@@ -267,6 +267,36 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsButtonPreview => 'Xem trước nút';
 
   @override
+  String get settingsMode => 'Chế độ';
+
+  @override
+  String get settingsButtonGradientShort => 'Gradient';
+
+  @override
+  String get settingsStudioAddress => 'Địa chỉ studio';
+
+  @override
+  String get settingsStudioAddressEmpty => 'Chưa có địa chỉ';
+
+  @override
+  String get settingsVerify => 'Xác minh & nhận đơn';
+
+  @override
+  String get settingsVerifyBody => 'Xác minh danh tính để bắt đầu nhận đơn';
+
+  @override
+  String get settingsMyStudio => 'Studio của tôi';
+
+  @override
+  String get settingsMyStudioBody => 'Studio đang ở, việc được giao, lời mời';
+
+  @override
+  String get settingsStudioMembers => 'Thành viên studio';
+
+  @override
+  String get settingsStudioMembersBody => 'Mời thợ, giao việc cho thành viên';
+
+  @override
   String get settingsDeveloper => 'Dành cho nhà phát triển';
 
   @override
@@ -337,6 +367,65 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get profileSwitchError =>
       'Không đổi được chế độ. Kiểm tra mạng rồi thử lại.';
+
+  @override
+  String get profilePostsCount => 'bài đăng';
+
+  @override
+  String get profileFollowingCount => 'đang theo dõi';
+
+  @override
+  String get profileSavedCount => 'đã lưu';
+
+  @override
+  String profileFilterAll(int n) {
+    return 'Tất cả · $n';
+  }
+
+  @override
+  String profileFilterWork(int n) {
+    return 'Tác phẩm · $n';
+  }
+
+  @override
+  String profileFilterRealShoot(int n) {
+    return 'Buổi chụp · $n';
+  }
+
+  @override
+  String profileFilterEventShare(int n) {
+    return 'Sự kiện · $n';
+  }
+
+  @override
+  String get profileTagRealShoot => 'Buổi chụp';
+
+  @override
+  String get profileTagEventShare => 'Sự kiện';
+
+  @override
+  String get profileEmptyPhotographerTitle => 'Chưa có bài đăng';
+
+  @override
+  String get profileEmptyPhotographerAction => 'Đăng bài đầu tiên';
+
+  @override
+  String get profileEmptyCustomerTitle => 'Chưa có ảnh nào';
+
+  @override
+  String get profileEmptyCustomerBody =>
+      'Ảnh bạn chia sẻ sau buổi chụp sẽ hiện ở đây';
+
+  @override
+  String get profilePostsError => 'Không tải được bài đăng.';
+
+  @override
+  String get profilePostsMoreError => 'Không tải thêm được. Thử lại';
+
+  @override
+  String profilePostTile(int n) {
+    return 'Bài đăng $n';
+  }
 
   @override
   String get statusRequested => 'Đã gửi';
@@ -2473,6 +2562,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String get workEmptyShare => 'Chia sẻ hồ sơ';
 
   @override
+  String workAssignedBy(String studio) {
+    return 'Giao bởi $studio';
+  }
+
+  @override
+  String get workClosedTitle => 'Mở nhận đơn để khách đặt được bạn';
+
+  @override
+  String get workClosedBody =>
+      'Bạn vẫn đăng portfolio, tạo gói và trò chuyện. Khách chỉ đặt lịch và xin báo giá sau khi bạn xác minh: số điện thoại, phí xác minh, danh tính và quy định nhận việc.';
+
+  @override
+  String get workClosedNote => 'Staff duyệt trong 24 giờ sau khi bạn gửi';
+
+  @override
+  String get workClosedStart => 'Bắt đầu nhận đơn';
+
+  @override
   String get declineReasonBusy => 'Kín lịch hôm đó';
 
   @override
@@ -3865,13 +3972,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get earningsNotice =>
-      'Tiền khách trả được giữ an toàn trên ứng dụng và chuyển cho bạn sau khi buổi chụp hoàn thành.';
+      'Chi tự động mỗi ngày · lần chi đầu do staff duyệt · phí chuyển do nền tảng trả';
 
   @override
   String get earningsHeld => 'Đang giữ';
 
   @override
-  String get earningsSoon => 'Sắp nhận';
+  String get earningsSoon => 'Chờ chi trả';
 
   @override
   String get earningsReceived => 'Đã nhận';
@@ -3883,9 +3990,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get earningsStateReleased => 'Chờ chi trả';
 
   @override
-  String earningsStatePaid(String date) {
-    return 'Đã chuyển $date';
-  }
+  String get earningsStatePaid => 'Đã chuyển';
 
   @override
   String get earningsStateDispute => 'Đang khiếu nại';
@@ -3940,6 +4045,41 @@ class AppLocalizationsVi extends AppLocalizations {
   String get earningsLoadError => 'Không tải được thu nhập';
 
   @override
+  String get earningsBreakdownReleased => 'Đã chuyển theo mốc';
+
+  @override
+  String get earningsBreakdownPaidOn => 'Ngày chuyển';
+
+  @override
+  String get earningsBreakdownAmount => 'Số tiền';
+
+  @override
+  String earningsBreakdownFee(String percent) {
+    return 'Hoa hồng ($percent)';
+  }
+
+  @override
+  String earningsBreakdownTax(String percent) {
+    return 'Thuế khấu trừ ($percent)';
+  }
+
+  @override
+  String get earningsBreakdownNet => 'Thực nhận';
+
+  @override
+  String get earningsBreakdownNetEstimated => 'Thực nhận dự kiến';
+
+  @override
+  String earningsMilestones(int done, int total) {
+    return 'mốc $done/$total';
+  }
+
+  @override
+  String earningsMilestonesAll(int total) {
+    return 'đủ $total mốc';
+  }
+
+  @override
   String get payoutAccountTitle => 'Tài khoản nhận tiền';
 
   @override
@@ -3950,7 +4090,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get payoutAccountIntro =>
-      'Chúng tôi chuyển tiền sau mỗi buổi chụp hoàn thành vào tài khoản này.';
+      'Nhập tài khoản đứng tên bạn, tiền sẽ chi tự động vào đây.';
 
   @override
   String get payoutAccountBank => 'Ngân hàng';
@@ -3968,14 +4108,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get payoutAccountNumber => 'Số tài khoản';
 
   @override
-  String get payoutAccountHolder => 'Tên chủ tài khoản';
-
-  @override
   String get payoutAccountSave => 'Lưu tài khoản';
 
   @override
   String get payoutAccountHint =>
-      'Tên chủ tài khoản phải trùng tên bạn đã xác minh. Số tài khoản được mã hoá và chỉ hiện 4 số cuối.';
+      'Tên chủ tài khoản do ngân hàng trả về, bạn không cần gõ. Số tài khoản được mã hoá, chỉ hiện 4 số cuối.';
 
   @override
   String payoutAccountMasked(String last4) {
@@ -3989,36 +4126,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get payoutAccountNumberError => 'Số tài khoản gồm 6–20 chữ số';
 
   @override
-  String get payoutAccountHolderError =>
-      'Nhập họ tên viết hoa không dấu, 2–50 chữ cái';
-
-  @override
-  String get payoutAccountChangeTitle => 'Đổi tài khoản nhận tiền?';
-
-  @override
-  String get payoutAccountChangeBody =>
-      'Các khoản chưa chuyển sẽ chuyển vào tài khoản mới. Khoản đã chuyển không thay đổi.';
-
-  @override
-  String get payoutAccountChangeConfirm => 'Đổi tài khoản';
-
-  @override
-  String get payoutAccountReauthTitle => 'Xác nhận lại để đổi tài khoản';
-
-  @override
-  String get payoutAccountReauthBody =>
-      'Vì an toàn, hãy đăng nhập lại trước khi đổi tài khoản nhận tiền.';
-
-  @override
-  String get payoutAccountReauthPassword => 'Mật khẩu';
-
-  @override
-  String get payoutAccountReauthGo => 'Xác nhận';
-
-  @override
-  String get payoutAccountReauthWrong => 'Mật khẩu chưa đúng';
-
-  @override
   String get payoutAccountSaved => 'Đã lưu tài khoản nhận tiền';
 
   @override
@@ -4027,6 +4134,139 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get payoutAccountBusy =>
       'Đang chuyển một lô tiền, thử lại sau ít phút';
+
+  @override
+  String payoutAccountIntroChange(String bank, String last4) {
+    return 'Đang dùng $bank •••• $last4. Nhập tài khoản mới đứng tên bạn, tiền sẽ chi tự động vào đây.';
+  }
+
+  @override
+  String get payoutAccountChangeNote =>
+      'Đổi tài khoản cần OTP và có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi. Tài khoản cũ sẽ nhận thông báo.';
+
+  @override
+  String get payoutAccountSameAccount => 'Đây đã là tài khoản đang dùng';
+
+  @override
+  String get payoutLookupLoading => 'Đang tra tên chủ tài khoản…';
+
+  @override
+  String get payoutLookupMatched => 'Khớp tên đã xác minh';
+
+  @override
+  String get payoutLookupMismatch => 'Không khớp';
+
+  @override
+  String payoutLookupMismatchTitle(String name) {
+    return 'Tên chủ tài khoản không khớp tên đã xác minh ($name)';
+  }
+
+  @override
+  String get payoutLookupMismatchBody =>
+      'Chỉ chi tiền vào tài khoản đứng tên bạn. Kiểm tra lại ngân hàng và số tài khoản.';
+
+  @override
+  String get payoutLookupReview => 'Ngân hàng chưa hỗ trợ tra tên';
+
+  @override
+  String get payoutLookupReviewSub => 'Staff đối chiếu tên trước lần chi đầu';
+
+  @override
+  String get payoutLookupNotFound =>
+      'Không tìm thấy tài khoản. Kiểm tra lại số tài khoản.';
+
+  @override
+  String get payoutLookupUnverifiable =>
+      'Cần xác minh danh tính trước khi thêm tài khoản ở ngân hàng này';
+
+  @override
+  String get payoutLookupLimit =>
+      'Bạn đã tra quá nhiều lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get payoutLookupError => 'Không tra được tên. Thử lại';
+
+  @override
+  String get payoutOtpTitle => 'Nhập mã xác nhận';
+
+  @override
+  String payoutOtpBody(String last4) {
+    return 'Mã 6 số đã gửi tới số điện thoại •••• $last4. Mã có hiệu lực 5 phút.';
+  }
+
+  @override
+  String get payoutOtpField => 'Mã OTP';
+
+  @override
+  String get payoutOtpConfirm => 'Xác nhận đổi tài khoản';
+
+  @override
+  String get payoutOtpResend => 'Gửi lại mã';
+
+  @override
+  String payoutOtpResendIn(int seconds) {
+    return 'Gửi lại sau $seconds giây';
+  }
+
+  @override
+  String get payoutOtpNote =>
+      'Tài khoản mới có hiệu lực sau 72 giờ; trong lúc đó tạm dừng chi.';
+
+  @override
+  String get payoutOtpWrong => 'Mã chưa đúng. Kiểm tra lại tin nhắn';
+
+  @override
+  String get payoutOtpExpired => 'Mã đã hết hạn. Gửi lại mã mới';
+
+  @override
+  String get payoutOtpTooMany =>
+      'Bạn đã nhập sai quá nhiều lần. Gửi lại mã mới';
+
+  @override
+  String get payoutOtpLimit =>
+      'Đã gửi quá nhiều mã hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get payoutPhoneRequired => 'Cần số điện thoại trong hồ sơ để nhận mã';
+
+  @override
+  String get payoutOtpUnavailable =>
+      'Chưa đổi được tài khoản lúc này. Liên hệ hỗ trợ';
+
+  @override
+  String payoutAccountPendingTitle(String time) {
+    return 'Tài khoản mới có hiệu lực lúc $time';
+  }
+
+  @override
+  String get payoutAccountPendingBody =>
+      'Trong lúc chờ, tạm dừng chi. Lần chi đầu vào tài khoản mới do staff duyệt.';
+
+  @override
+  String get payoutAccountPendingBadge => 'Chờ hiệu lực';
+
+  @override
+  String get payoutAccountReviewNote =>
+      'Staff sẽ đối chiếu tên chủ tài khoản trước lần chi đầu.';
+
+  @override
+  String get payoutAccountChangeSaved =>
+      'Đã đổi tài khoản. Có hiệu lực sau 72 giờ';
+
+  @override
+  String get reauthTitle => 'Xác nhận lại để tiếp tục';
+
+  @override
+  String get reauthBody => 'Vì an toàn, hãy đăng nhập lại trước khi tiếp tục.';
+
+  @override
+  String get reauthPassword => 'Mật khẩu';
+
+  @override
+  String get reauthGo => 'Xác nhận';
+
+  @override
+  String get reauthWrong => 'Mật khẩu chưa đúng';
 
   @override
   String get eventHostPlatform => 'Do ứng dụng tổ chức';

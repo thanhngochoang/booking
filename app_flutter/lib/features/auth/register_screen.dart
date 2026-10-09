@@ -138,7 +138,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 AppButton.primary(
                   l.registerButton,
                   key: const Key('register'),
-                  icon: const AppIcon(AppIcons.forward, size: 20),
                   loading: loading,
                   onPressed: submit,
                 ),
@@ -156,13 +155,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         child: AuroraBackground(
           child: Scaffold(
             backgroundColor: Colors.transparent,
-            appBar: AppBar(),
             body: SafeArea(
-              top: false,
+              top: true,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpace.s5,
-                  0,
+                  AppSpace.s3,
                   AppSpace.s5,
                   AppSpace.s2,
                 ),
@@ -191,10 +189,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                             ),
                             TextButton(
+                              key: const Key('register-login-link'),
                               style: TextButton.styleFrom(
                                 foregroundColor: theme.colorScheme.primary,
                               ),
-                              onPressed: loading ? null : () => context.pop(),
+                              onPressed: loading
+                                  ? null
+                                  : () => context.canPop()
+                                        ? context.pop()
+                                        : context.go('/login'),
                               child: Text(l.loginButton),
                             ),
                           ],

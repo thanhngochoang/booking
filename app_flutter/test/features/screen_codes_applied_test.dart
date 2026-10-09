@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
@@ -23,10 +25,10 @@ import 'package:photobooking/features/onboarding/session_error_screen.dart';
 import 'package:photobooking/features/onboarding/splash_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
+import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
-import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 Future<void> _show(WidgetTester tester, Widget screen) async {
@@ -55,6 +57,7 @@ Future<void> _show(WidgetTester tester, Widget screen) async {
           FakeUserContactRepository(),
         ),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        postRepositoryProvider.overrideWithValue(FakePostRepository()),
       ],
       child: ScreenCodeScope(
         visible: true,

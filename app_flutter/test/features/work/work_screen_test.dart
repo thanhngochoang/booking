@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
@@ -113,6 +114,7 @@ Future<BookingsTabHandles> _pump(
   double textScale = 1.0,
   Size viewSize = const Size(390, 844),
   List<EventDetail> events = const [],
+  List<AuthUser> otherUsers = const [],
 }) => pumpBookingsTab(
   tester,
   uid: detailPhotographerUid,
@@ -125,6 +127,7 @@ Future<BookingsTabHandles> _pump(
   packages: const [workPackage],
   completeness: 90,
   events: events,
+  otherUsers: otherUsers,
 );
 
 typedef FakeRepo = RecordingBookingRepository;
@@ -393,6 +396,55 @@ void main() {
           .where((c) => c.highlight),
       isEmpty,
     );
+  });
+
+  group('S06.01 assigned by a studio (Decision 18)', () {
+    const studio = AuthUser(uid: 'studio1', displayName: 'Studio Ánh Dương');
+
+    Booking assigned() => makeTestBooking(
+      id: 'as1',
+      customerId: detailCustomerUid,
+      photographerId: 'studio1',
+      status: BookingStatus.accepted,
+      day: '2026-10-08',
+      start: '09:00',
+      end: '11:00',
+      deposit: 2100000,
+      serviceSnapshot: const BookingServiceSnapshot(
+        name: 'Cưới hỏi nửa ngày',
+        price: 7000000,
+        durationMinutes: 240,
+      ),
+    );
+
+    testWidgets('today\'s assigned booking shows "Giao bởi Studio Ánh Dương"', (
+      tester,
+    ) async {
+      final repo = _repo([])..emitAssigned([assigned()]);
+      await _pump(tester, repo, otherUsers: const [studio]);
+      await _settle(tester);
+
+      expect(find.text('Hôm nay'), findsOneWidget);
+      expect(find.byKey(const Key('booking-card-tag')), findsOneWidget);
+      expect(find.text('Giao bởi Studio Ánh Dương'), findsOneWidget);
+      // The studio gets the money: nothing in Đang giữ, one in Buổi sắp tới.
+      expect(find.text('Yêu cầu mới'), findsOneWidget);
+      expect(find.text('Không có yêu cầu mới'), findsOneWidget);
+      expect(_codeFinder(ScreenCodes.workEmpty), findsNothing);
+    });
+
+    testWidgets('a failing assigned stream still shows the dashboard', (
+      tester,
+    ) async {
+      final repo = _repo(_busy())..failAssigned(StateError('denied'));
+      await _pump(tester, repo);
+      await _settle(tester);
+
+      expect(find.text('Lan Anh · Kỷ yếu nửa ngày'), findsOneWidget);
+      expect(find.text('Yêu cầu mới'), findsOneWidget);
+      expect(find.byKey(const Key('booking-card-tag')), findsNothing);
+      expect(find.byType(ErrorState), findsNothing);
+    });
   });
 
   testWidgets('everything empty shows S06.02', (tester) async {

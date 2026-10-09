@@ -121,6 +121,10 @@ export const LEDGER_ENTRY_TYPES = [
   'payout_paid',
   'fee_charged',
   'adjustment',
+  /** Tax withheld from a paid-out payment (negative, like `payout_paid`). */
+  'tax_withheld',
+  /** Platform commission kept from a paid-out payment (negative; only when > 0). */
+  'platform_fee',
 ] as const;
 export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number];
 

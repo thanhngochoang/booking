@@ -350,6 +350,8 @@ create table payout_accounts (                    -- 🔒
   account_number_enc bytea not null,              -- mã hoá ở tầng ứng dụng/KMS
   account_last4      char(4) not null,
   holder_name        text not null,
+  name_status        text not null default 'matched' check (name_status in ('matched','pending_review','staff_confirmed')),
+  active_from        timestamptz not null default now(),   -- đổi tài khoản: now() + 72 giờ; không chi trước thời điểm này
   active             boolean not null default true,
   created_at         timestamptz not null default now(),
   deactivated_at     timestamptz
@@ -360,27 +362,40 @@ create table payouts (
   id             text primary key,
   payee_id       text not null references users(id),
   account_id     text not null references payout_accounts(id),
-  amount         bigint not null check (amount > 0),
+  amount         bigint not null check (amount > 0),     -- tổng gộp của các khoản
+  platform_fee   bigint not null default 0 check (platform_fee >= 0),   -- hoa hồng (mặc định 0)
+  tax_withheld   bigint not null default 0 check (tax_withheld >= 0),   -- thuế khấu trừ (thợ cá nhân)
+  amount_net     bigint not null check (amount_net >= 0 and amount_net = amount - platform_fee - tax_withheld),   -- số chuyển thật
+  fee_rate_bp    int not null default 0,           -- tỉ lệ đã dùng (basis point), ghi lại để lịch sử không đổi
+  tax_rate_bp    int not null default 0,
+  first_payout   boolean not null default false,   -- chưa có lô nào của tài khoản đã chi hoặc đã duyệt
   currency       char(3) not null default 'VND',
-  status         text not null check (status in ('pending','on_hold','processing','paid','failed')),
+  status         text not null check (status in ('pending','needs_approval','on_hold','processing','paid','failed')),
   reference      text,                             -- mã giao dịch ngân hàng
+  idempotency_key text,                            -- = id lô
+  provider       text,                             -- 'fake' tới khi có tổ chức trung gian
   approved_by    text references users(id),
+  approved_at    timestamptz,
   failure_reason text,
   hold_reason    text,
-  created_by     text references users(id),        -- nhân viên tạo lô
+  created_by     text references users(id),        -- nhân viên tạo lô; job tự động ghi null (Firestore: 'system:createPayouts')
   created_at     timestamptz not null default now(),
   scheduled_at   timestamptz, paid_at timestamptz
 );
+create index ix_payouts_account_history on payouts (account_id, status, created_at desc);   -- 'đã có lô đã chi/đã duyệt tới tài khoản này' và '3 lô xong gần nhất' (limit 1 và 3); Firestore: hai chỉ mục ghép của `payouts`
 create table payout_items (
   payout_id  text not null references payouts(id) on delete cascade,
   payment_id text not null references payments(id),
   amount     bigint not null check (amount > 0),
+  fee        bigint not null default 0,            -- phí và thuế tính trên từng khoản: round(amount × bp / 10000)
+  tax        bigint not null default 0,
+  net        bigint not null,                      -- amount − fee − tax
   primary key (payout_id, payment_id)
 );
 
 create table ledger_entries (                     -- bất biến, chỉ thêm
   id              text primary key,
-  type            text not null check (type in ('payment_received','deposit_received','ticket_received','refund_issued','escrow_released','payout_paid','fee_charged','adjustment')),
+  type            text not null check (type in ('payment_received','deposit_received','ticket_received','refund_issued','escrow_released','payout_paid','tax_withheld','platform_fee','fee_charged','adjustment')),
   payment_id      text references payments(id),
   refund_id       text references refunds(id),
   payout_id       text references payouts(id),
@@ -392,6 +407,26 @@ create table ledger_entries (                     -- bất biến, chỉ thêm
 );
 create index ix_ledger_payment on ledger_entries (payment_id, at);
 create index ix_ledger_owner on ledger_entries (account_owner_id, at);
+
+create table otp_challenges (                      -- 🔒 chỉ máy chủ; mã xác nhận khi đổi tài khoản nhận tiền
+  user_id      text not null references users(id) on delete cascade,
+  purpose      text not null check (purpose in ('payout_account')),
+  code_hash    text not null,                      -- băm có muối; không lưu mã, không lưu số tài khoản
+  salt         text not null,
+  target_hash  text not null,                      -- băm có muối của 'salt:bankCode:số' của tài khoản mới sắp lưu; mã chỉ dùng cho tài khoản đó
+  expires_at   timestamptz not null,               -- gửi + 5 phút
+  attempts     int not null default 0,             -- sai 5 lần thì phải gửi lại
+  sent_at      timestamptz not null,               -- gửi lại sau 60 giây
+  send_day     date not null,                      -- ngày giờ Việt Nam
+  sends_today  int not null default 0,             -- tối đa 5 mỗi ngày
+  consumed_at  timestamptz,                        -- dùng một lần
+  primary key (user_id, purpose)
+);
+create table payout_lookups (                      -- 🔒 hạn mức tra tên chủ tài khoản: 20 lần mỗi ngày giờ Việt Nam
+  user_id text primary key references users(id) on delete cascade,
+  day     date not null,
+  count   int not null default 0
+);
 
 create table reviews (
   booking_id      text not null references bookings(id),
@@ -923,7 +958,8 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `events/{id}/timeline/{postId}` | `event_posts` | Liên kết timeline; tên `timeline`, không phải `posts`, để không trùng id bộ sưu tập `posts` (và index của nó); `status` visible/pending/hidden, `source` hashtag/explicit; `events.postCount` chỉ đếm hàng `visible`. Nhóm chat sự kiện `chats/event_{id}` (+ `members`, `messages`, `pins/{messageId}`) → `chats` kind `event_group`, `chat_members`, `messages`, `chat_pins` |
 | `badges/{id}`, `users/{uid}/badges/{id}`, `users/{uid}/private/badgeProgress` | `badge_definitions`, `user_badges`, `badge_progress` | |
 | `taxonomy/skills/items/{id}`, `taxonomy/areas/…` | `taxonomy_items` | |
-| `payoutAccounts/{uid}` + `accounts/{id}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá; `payoutAccounts/{uid}` là bản che (`account_last4`), không có bảng riêng |
+| `payoutAccounts/{uid}` + `accounts/{id}`, `payouts/{id}` | `payout_accounts`, `payouts`, `payout_items` | Số tài khoản mã hoá; `payoutAccounts/{uid}` là bản che (`account_last4`, `name_status`, `active_from`), không có bảng riêng. `payouts` cũ đọc phí 0, thuế 0, `amount_net = amount`; `payout_accounts` cũ đọc `name_status = 'matched'`, `active_from = created_at` |
+| `otp_challenges/{uid}_payout_account`, `payout_lookups/{uid}` | `otp_challenges`, `payout_lookups` | Chỉ máy chủ; id Firestore ghép `uid` và `purpose` thành khoá `(user_id, purpose)` |
 | `earnings/{uid}` + `items` | (không có bảng) | Hình chiếu tính bởi `earningsOf` (SQL tổng và join `payments`/`refunds`/`payouts`) |
 | `recommendation_logs/{id}` | `recommendation_logs` | |
 | `contact_access_log/{id}` | `contact_access_log` | Ghi bởi `getContactLink` (Admin SDK), id ULID; client không đọc/ghi; không chứa số điện thoại |

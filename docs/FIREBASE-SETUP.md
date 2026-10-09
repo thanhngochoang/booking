@@ -214,9 +214,11 @@ Workflow `.github/workflows/firebase-deploy.yml` có 4 job: `test` chạy test r
 | Push vào `flutter-rewrite` hoặc `develop` có thay đổi trong `app_flutter/firebase/**` | `dev` | Firestore rules và indexes |
 | Push vào `main` có thay đổi tương tự | `production` | Firestore rules và indexes |
 | Chạy tay (**Actions → firebase-deploy → Run workflow**) | chọn `dev` hoặc `production` | Như trên. Tích **Also deploy Storage rules** để deploy thêm Storage. |
-| Push hoặc chạy tay như trên, khi có thay đổi trong `app_flutter/firebase/**` hoặc `packages/**` | như trên | Cloud Functions (`getContactLink`, `onPhotographerWrite`), job `deploy-functions` |
+| Push hoặc chạy tay như trên, khi có thay đổi trong `app_flutter/firebase/**` hoặc `packages/**` | như trên | Cloud Functions, job `deploy-functions`; **chỉ khi `BLAZE_ENABLED` = `true`** |
 
 Project id không ghi trong workflow. Mỗi GitHub environment có biến `FIREBASE_PROJECT_ID` và secret `FIREBASE_SERVICE_ACCOUNT` riêng. Environment chưa có `FIREBASE_PROJECT_ID` thì job `deploy` chỉ in cảnh báo và không deploy gì. Nhờ vậy `production` an toàn khi chưa có project.
+
+**Công tắc Blaze (`BLAZE_ENABLED`).** Mọi thứ cần gói Blaze (trả theo dùng) chỉ deploy khi environment có biến `BLAZE_ENABLED` bằng đúng `true`: Cloud Functions (kèm job lập lịch và secret) và Storage rules. Không đặt biến, hoặc giá trị khác, là **tắt**: chỉ Firestore rules và indexes được deploy (chạy trên gói Spark miễn phí), các bước cần Blaze in cảnh báo và bỏ qua. Script chạy tay `npm run deploy:storage:dev|prod` (trong `rules-test/`) cũng từ chối khi chưa có `BLAZE_ENABLED=true`. Chủ dự án để công tắc **tắt** cho tới khi cần Blaze (2026-10-09); app và dashboard chạy trên emulator (`scripts/backend-local.sh`).
 
 IAM, service account và key đều miễn phí. GitHub Actions miễn phí cho repo public, repo private có quota phút miễn phí mỗi tháng.
 
@@ -249,6 +251,7 @@ Mở https://github.com/thanhngochoang/booking/settings/environments → **New e
 |--|-------|--------------|
 | Tên environment | `dev` | `production` |
 | **Environment variables** → `FIREBASE_PROJECT_ID` | `booking-c1922` | id project production (để trống tới khi có) |
+| **Environment variables** → `BLAZE_ENABLED` | không đặt (đang ở Spark) | `true` khi project đã lên Blaze |
 | **Environment secrets** → `FIREBASE_SERVICE_ACCOUNT` | toàn bộ nội dung file JSON của dev | toàn bộ nội dung file JSON của production |
 | **Required reviewers** | không cần | bật, thêm chính bạn |
 | **Deployment branches and tags** | `flutter-rewrite`, `develop` | chỉ `main` |
@@ -268,6 +271,7 @@ Lưu ý:
 | Lỗi trong log | Cách sửa |
 |---------------|----------|
 | Cảnh báo `FIREBASE_PROJECT_ID is not set for this environment` | Chưa thêm biến cho environment đó (10.2). |
+| Cảnh báo `BLAZE_ENABLED is not true for this environment` | Đúng ý khi project còn ở Spark. Muốn deploy Functions hoặc Storage: lên Blaze (mục 11 bước 1) rồi đặt `BLAZE_ENABLED` = `true` (10.2). |
 | `the GitHub Action workflow must specify exactly one of "workload_identity_provider" or "credentials_json"` | Secret `FIREBASE_SERVICE_ACCOUNT` chưa có trong environment, hoặc sai tên (10.2). |
 | `Permission ... denied` hoặc `does not have permission` | Thiếu role (10.1), hoặc key thuộc project khác với `FIREBASE_PROJECT_ID`. |
 | `Failed to get Firebase project ...` | Project id sai, hoặc service account chưa được gán role nào trong project đó. |
@@ -277,7 +281,7 @@ Lưu ý:
 
 Job `deploy-functions` deploy codebase `app_flutter/firebase/functions` (region `asia-southeast1`: `getContactLink`, `onPhotographerWrite`) bằng `firebase deploy --only functions`. Không deploy từ máy. Làm các bước dưới đây một lần cho mỗi project: **dev** ngay, **production** khi đã có project.
 
-1. **Gói Blaze.** Firebase Console → ⚙ → **Usage and billing** → **Details & settings** → **Modify plan** → **Blaze**. Cloud Functions không chạy trên gói Spark. Nên đặt budget alert (ví dụ 5 USD) trong Google Cloud Billing.
+1. **Gói Blaze.** Firebase Console → ⚙ → **Usage and billing** → **Details & settings** → **Modify plan** → **Blaze**. Cloud Functions không chạy trên gói Spark. Nên đặt budget alert (ví dụ 5 USD) trong Google Cloud Billing. Sau đó đặt biến `BLAZE_ENABLED` = `true` cho environment (10.2); chưa đặt thì job `deploy-functions` chỉ in cảnh báo.
 2. **Bật API** tại `https://console.cloud.google.com/apis/library?project=<project-id>`: Cloud Functions API, Cloud Build API, Artifact Registry API, Eventarc API, Cloud Run Admin API. Service account của CI không có quyền bật API, nên bật trước bằng tay.
 3. **Thêm role cho service account CI** (`github-firebase-deploy`, mục 10.1) ở trang IAM `https://console.cloud.google.com/iam-admin/iam?project=<project-id>`:
 

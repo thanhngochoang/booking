@@ -588,6 +588,13 @@ Future<BookingsTabHandles> pumpBookingsTab(
 
   /// Events the signed-in user created (S06.01 "Sự kiện của tôi").
   List<EventDetail> events = const [],
+
+  /// The signed-in photographer's own `photographers/{uid}` intro (S06.02
+  /// reads `acceptingOrders`). Defaults to accepting, the old empty state.
+  PhotographerIntro intro = const PhotographerIntro(acceptingOrders: true),
+
+  /// Other users' public profiles (e.g. the studio that assigned a booking).
+  List<AuthUser> otherUsers = const [],
 }) async {
   final effectiveClock = clock ?? TestClock(now ?? worldBookingToday);
   tester.view.physicalSize = viewSize;
@@ -601,6 +608,9 @@ Future<BookingsTabHandles> pumpBookingsTab(
     await userRepo.ensureProfile(
       const AuthUser(uid: detailCustomerUid, displayName: 'Lan Anh'),
     );
+  }
+  for (final other in otherUsers) {
+    await userRepo.ensureProfile(other);
   }
   final launcher = FakeExternalLauncher();
   final skills = FakeSkillsRepository()
@@ -625,6 +635,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
         '/b/:id/review',
         '/work/calendar',
         '/work/earnings',
+        '/verify/start',
         '/setup/2',
         '/profile/skills',
         '/u/:uid',
@@ -652,6 +663,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
     postRepositoryProvider.overrideWithValue(posts),
     myPackagesProvider.overrideWith((ref) => Stream.value(packages)),
     skillsRepositoryProvider.overrideWithValue(skills),
+    myIntroProvider.overrideWith((ref) => Stream.value(intro)),
     eventRepositoryProvider.overrideWithValue(
       FakeEventRepository(
         uid: uid,

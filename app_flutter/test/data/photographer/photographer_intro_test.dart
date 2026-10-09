@@ -15,11 +15,43 @@ void main() {
         bio: 'Ánh sáng tự nhiên.',
         equipment: ['Sony A7 IV', 'Godox V1'],
         onboardingComplete: true,
+        acceptingOrders: true,
       ),
     );
     expect(
       introFromFirestore({'bio': 12, 'equipment': 'Sony'}),
       const PhotographerIntro(),
+    );
+  });
+
+  test('PhotographerIntro.acceptingOrders: stored flag wins; '
+      'missing flag falls back to verified && onboardingComplete', () {
+    bool accepting(Map<String, dynamic> d) =>
+        introFromFirestore(d).acceptingOrders;
+    expect(
+      accepting({
+        'acceptingOrders': false,
+        'verified': true,
+        'onboardingComplete': true,
+      }),
+      isFalse,
+    );
+    expect(
+      accepting({
+        'acceptingOrders': true,
+        'verified': false,
+        'onboardingComplete': false,
+      }),
+      isTrue,
+    );
+    expect(accepting({'verified': true, 'onboardingComplete': true}), isTrue);
+    expect(accepting({'verified': true, 'onboardingComplete': false}), isFalse);
+    expect(accepting({'verified': false, 'onboardingComplete': true}), isFalse);
+    expect(accepting({'acceptingOrders': 'yes', 'verified': true}), isFalse);
+    expect(accepting({}), isFalse);
+    expect(
+      const PhotographerIntro(acceptingOrders: true),
+      isNot(const PhotographerIntro()),
     );
   });
 
@@ -36,7 +68,11 @@ void main() {
       final repo = FakePhotographerIntroRepository()
         ..seed(
           'p1',
-          const PhotographerIntro(onboardingComplete: true, bio: 'Cũ'),
+          const PhotographerIntro(
+            onboardingComplete: true,
+            acceptingOrders: true,
+            bio: 'Cũ',
+          ),
         );
       final seen = <PhotographerIntro?>[];
       final sub = repo.watch('p1').listen(seen.add);
@@ -50,6 +86,7 @@ void main() {
           bio: 'Mới',
           equipment: ['Sony'],
           onboardingComplete: true,
+          acceptingOrders: true,
         ),
       );
       expect(await repo.get('p2'), isNull);

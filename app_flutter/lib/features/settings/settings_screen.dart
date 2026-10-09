@@ -11,11 +11,29 @@ import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/features/onboarding/role_controller.dart';
 import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/provider_type_sheet.dart';
+import 'package:photobooking/features/settings/role_mode_card.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
+
+/// S09.02's groups, top to bottom. Each group's label carries the key
+/// `settings-group-<name>`; a group whose screens do not exist yet is absent,
+/// and later plans fill their slot without reordering the others.
+const settingsGroupOrder = [
+  'account',
+  'mode',
+  'appearance',
+  'buttonStyle',
+  'notifications',
+  'paymentsData',
+  'support',
+  'debug',
+  'signOut',
+];
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -23,208 +41,276 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final theme = Theme.of(context);
     final mode = ref.watch(themeModeProvider);
     final profile = ref.watch(currentProfileProvider).value;
     final name = profile?.displayName;
     final hasAvatar = profile?.avatarUrl != null;
-    final buttonStyle = ref.watch(buttonStyleProvider);
+    // Without a photo the avatar style paints the gradient, so show that.
+    final buttonStyle = hasAvatar
+        ? ref.watch(buttonStyleProvider)
+        : ButtonStyleMode.gradient;
     final showCodes = ref.watch(showScreenCodesProvider);
-    final themes = [
-      (ThemeMode.dark, l.themeDark, AppIcons.darkMode),
-      (ThemeMode.light, l.themeLight, AppIcons.lightMode),
-      (ThemeMode.system, l.themeSystem, AppIcons.autoMode),
+    final isPhotographer = profile?.role == UserRole.photographer;
+    final type = isPhotographer
+        ? ref.watch(liveProviderTypeProvider).value
+        : null;
+    final verifyReady = ref.watch(verifyStartReadyProvider);
+    final studioReady = ref.watch(studioRoutesReadyProvider);
+    final isStaff = ref.watch(staffRoleProvider).value != null;
+    // While the mode switches, only the mode card reacts.
+    final switching = ref.watch(roleSwitchControllerProvider).isLoading;
+    // Here, not in the card: the card can scroll out and be disposed.
+    listenToRoleSwitch(context, ref);
+    Widget guard(Widget child) =>
+        AbsorbPointer(absorbing: switching, child: child);
+
+    final accountRows = <Widget>[
+      ListTile(
+        key: const Key('settings-edit-profile'),
+        leading: const AppIcon(AppIcons.profile),
+        title: Text(l.settingsEditProfile),
+        subtitle: Text(name ?? l.settingsEditProfileBody),
+        trailing: const AppIcon(AppIcons.chevron),
+        onTap: () => context.push('/settings/profile'),
+      ),
+      const _PhoneTile(),
+      if (isPhotographer) ...[
+        _SkillsTile(uid: profile!.uid),
+        _ProviderTypeTile(uid: profile.uid),
+        if (type == ProviderType.studio) _StudioAddressTile(uid: profile.uid),
+        _LinkTile(
+          key: const Key('profile-awards'),
+          icon: AppIcons.award,
+          title: l.settingsAwards,
+          subtitle: l.settingsAwardsBody,
+          path: '/me/awards',
+        ),
+        if (verifyReady)
+          _LinkTile(
+            key: const Key('settings-verify'),
+            icon: AppIcons.verified,
+            title: l.settingsVerify,
+            subtitle: l.settingsVerifyBody,
+            path: '/verify/start',
+          ),
+        if (studioReady && type == ProviderType.studio)
+          _LinkTile(
+            key: const Key('settings-studio-members'),
+            icon: AppIcons.people,
+            title: l.settingsStudioMembers,
+            subtitle: l.settingsStudioMembersBody,
+            path: '/studio/members',
+          )
+        else if (studioReady && type != null)
+          _LinkTile(
+            key: const Key('settings-my-studio'),
+            icon: AppIcons.people,
+            title: l.settingsMyStudio,
+            subtitle: l.settingsMyStudioBody,
+            path: '/me/studio',
+          ),
+        _LinkTile(
+          key: const Key('profile-public'),
+          icon: AppIcons.store,
+          title: l.settingsPublicProfile,
+          subtitle: l.settingsPublicProfileBody,
+          path: '/u/${profile.uid}',
+        ),
+      ],
+      if (isStaff)
+        _LinkTile(
+          key: const Key('settings-manage-events'),
+          icon: AppIcons.celebration,
+          title: l.settingsManageEvents,
+          path: '/events/mine',
+        ),
     ];
+
+    // Mid-switch, Cài đặt cannot be left (system back or the AppBar arrow),
+    // so the mode switch's SnackBar, error and redirect are never lost.
+    final canGoBack = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
     return ScreenCode(
       ScreenCodes.settings,
       child: AuroraBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(title: Text(l.settingsTitle)),
-          body: SafeArea(
-            top: false,
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpace.s5),
-              children: [
-                _SectionLabel(l.settingsAccount),
-                GlassCard(
-                  highlight: false,
-                  child: Column(
-                    children: [
-                      ListTile(
-                        key: const Key('settings-edit-profile'),
-                        leading: const AppIcon(AppIcons.profile),
-                        title: Text(l.settingsEditProfile),
-                        subtitle: Text(name ?? l.settingsEditProfileBody),
-                        trailing: const AppIcon(AppIcons.chevron),
-                        onTap: () => context.push('/settings/profile'),
-                      ),
-                      const _RowDivider(),
-                      const _PhoneTile(),
-                      if (profile?.role == UserRole.photographer) ...[
-                        const _RowDivider(),
-                        _SkillsTile(uid: profile!.uid),
-                        const _RowDivider(),
-                        _ProviderTypeTile(uid: profile.uid),
-                        const _RowDivider(),
-                        ListTile(
-                          key: const Key('profile-awards'),
-                          leading: const AppIcon(AppIcons.award),
-                          title: Text(l.settingsAwards),
-                          subtitle: Text(l.settingsAwardsBody),
-                          trailing: const AppIcon(AppIcons.chevron),
-                          onTap: () => context.push('/me/awards'),
-                        ),
-                        const _RowDivider(),
-                        ListTile(
-                          key: const Key('profile-public'),
-                          leading: const AppIcon(AppIcons.store),
-                          title: Text(l.settingsPublicProfile),
-                          subtitle: Text(l.settingsPublicProfileBody),
-                          trailing: const AppIcon(AppIcons.chevron),
-                          onTap: () => context.push('/u/${profile.uid}'),
-                        ),
-                      ],
-                      if (ref.watch(staffRoleProvider).value != null) ...[
-                        const _RowDivider(),
-                        ListTile(
-                          key: const Key('settings-manage-events'),
-                          leading: const AppIcon(AppIcons.celebration),
-                          title: Text(l.settingsManageEvents),
-                          trailing: const AppIcon(AppIcons.chevron),
-                          onTap: () => context.push('/events/mine'),
-                        ),
-                      ],
-                    ],
+        child: PopScope(
+          canPop: !switching,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              leading: switching && canGoBack
+                  ? IconButton(
+                      key: const Key('settings-back-disabled'),
+                      onPressed: null,
+                      icon: const BackButtonIcon(),
+                      tooltip: MaterialLocalizations.of(context)
+                          .backButtonTooltip,
+                    )
+                  : null,
+              title: Text(l.settingsTitle),
+            ),
+            body: SafeArea(
+              top: false,
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpace.s5),
+                children: [
+                  _SectionLabel(
+                    l.settingsAccount,
+                    key: const Key('settings-group-account'),
                   ),
-                ),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(l.settingsAppearance),
-                GlassCard(
-                  highlight: false,
-                  child: Column(
-                    children: [
-                      for (final (i, (value, label, icon))
-                          in themes.indexed) ...[
-                        if (i > 0) const _RowDivider(),
-                        ListTile(
-                          key: Key('theme-${value.name}'),
-                          leading: AppIcon(icon, selected: value == mode),
-                          title: Text(label),
-                          selected: value == mode,
-                          trailing: value == mode
-                              ? const AppIcon(AppIcons.check)
-                              : null,
-                          onTap: () =>
-                              ref.read(themeModeProvider.notifier).set(value),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(l.settingsButtonStyle),
-                GlassCard(
-                  highlight: false,
-                  child: Column(
-                    children: [
-                      ListTile(
-                        key: const Key('button-gradient'),
-                        leading: AppIcon(
-                          AppIcons.gradient,
-                          selected: buttonStyle == ButtonStyleMode.gradient,
-                        ),
-                        title: Text(l.buttonStyleGradient),
-                        selected: buttonStyle == ButtonStyleMode.gradient,
-                        trailing: buttonStyle == ButtonStyleMode.gradient
-                            ? const AppIcon(AppIcons.check)
-                            : null,
-                        onTap: () => ref
-                            .read(buttonStyleProvider.notifier)
-                            .set(ButtonStyleMode.gradient),
+                  guard(
+                    GlassCard(
+                      highlight: false,
+                      child: Column(
+                        children: [
+                          for (final (i, row) in accountRows.indexed) ...[
+                            if (i > 0) const _RowDivider(),
+                            row,
+                          ],
+                        ],
                       ),
-                      const _RowDivider(),
-                      ListTile(
-                        key: const Key('button-avatar'),
-                        enabled: hasAvatar,
-                        leading: AppIcon(
-                          AppIcons.face,
-                          selected:
-                              hasAvatar &&
-                              buttonStyle == ButtonStyleMode.avatar,
-                        ),
-                        title: Text(l.buttonStyleAvatar),
-                        subtitle: hasAvatar
-                            ? null
-                            : Text(l.buttonStyleAvatarNeedsPhoto),
-                        selected:
-                            hasAvatar && buttonStyle == ButtonStyleMode.avatar,
-                        trailing:
-                            hasAvatar && buttonStyle == ButtonStyleMode.avatar
-                            ? const AppIcon(AppIcons.check)
-                            : null,
-                        onTap: () => ref
-                            .read(buttonStyleProvider.notifier)
-                            .set(ButtonStyleMode.avatar),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpace.s4),
-                Semantics(
-                  label: l.settingsButtonPreview,
-                  child: ExcludeSemantics(
-                    child: AppButton.primary(
-                      l.settingsButtonPreview,
-                      size: AppButtonSize.small,
-                      onPressed: () {},
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpace.s6),
-                _SectionLabel(l.notificationTitle),
-                GlassCard(
-                  highlight: false,
-                  child: ListTile(
-                    key: const Key('settings-notifications'),
-                    leading: const AppIcon(AppIcons.notifications),
-                    title: Text(l.notificationTitle),
-                    subtitle: Text(l.settingsNotificationsBody),
-                    trailing: const AppIcon(AppIcons.chevron),
-                    onTap: () => context.push('/settings/notifications'),
-                  ),
-                ),
-                if (kDebugMode) ...[
                   const SizedBox(height: AppSpace.s6),
-                  _SectionLabel(l.settingsDeveloper),
-                  GlassCard(
-                    highlight: false,
-                    child: SwitchListTile(
-                      key: const Key('show-screen-codes'),
-                      secondary: const AppIcon(AppIcons.pin),
-                      title: Text(l.settingsShowScreenCodes),
-                      subtitle: Text(l.settingsShowScreenCodesBody),
-                      value: showCodes,
+                  _SectionLabel(
+                    l.settingsMode,
+                    key: const Key('settings-group-mode'),
+                  ),
+                  const RoleModeCard(),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.settingsAppearance,
+                    key: const Key('settings-group-appearance'),
+                  ),
+                  guard(
+                    SegmentedTabs<ThemeMode>(
+                      key: const Key('settings-theme'),
+                      options: [
+                        SegmentOption(
+                          value: ThemeMode.dark,
+                          label: l.themeDark,
+                        ),
+                        SegmentOption(
+                          value: ThemeMode.light,
+                          label: l.themeLight,
+                        ),
+                        SegmentOption(
+                          value: ThemeMode.system,
+                          label: l.themeSystem,
+                        ),
+                      ],
+                      value: mode,
                       onChanged: (v) =>
-                          ref.read(showScreenCodesProvider.notifier).set(v),
+                          ref.read(themeModeProvider.notifier).set(v),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.settingsButtonStyle,
+                    key: const Key('settings-group-buttonStyle'),
+                  ),
+                  guard(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SegmentedTabs<ButtonStyleMode>(
+                          key: const Key('settings-button-style'),
+                          options: [
+                            SegmentOption(
+                              value: ButtonStyleMode.gradient,
+                              label: l.settingsButtonGradientShort,
+                            ),
+                            SegmentOption(
+                              value: ButtonStyleMode.avatar,
+                              label: l.buttonStyleAvatar,
+                              enabled: hasAvatar,
+                            ),
+                          ],
+                          value: buttonStyle,
+                          onChanged: (v) =>
+                              ref.read(buttonStyleProvider.notifier).set(v),
+                        ),
+                        if (!hasAvatar) ...[
+                          const SizedBox(height: AppSpace.s2),
+                          Text(
+                            l.buttonStyleAvatarNeedsPhoto,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                        const SizedBox(height: AppSpace.s4),
+                        Semantics(
+                          label: l.settingsButtonPreview,
+                          child: ExcludeSemantics(
+                            child: AppButton.primary(
+                              l.settingsButtonPreview,
+                              size: AppButtonSize.small,
+                              onPressed: () {},
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.notificationTitle,
+                    key: const Key('settings-group-notifications'),
+                  ),
+                  guard(
+                    GlassCard(
+                      highlight: false,
+                      child: _LinkTile(
+                        key: const Key('settings-notifications'),
+                        icon: AppIcons.notifications,
+                        title: l.notificationTitle,
+                        subtitle: l.settingsNotificationsBody,
+                        path: '/settings/notifications',
+                      ),
+                    ),
+                  ),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: AppSpace.s6),
+                    _SectionLabel(
+                      l.settingsDeveloper,
+                      key: const Key('settings-group-debug'),
+                    ),
+                    guard(
+                      GlassCard(
+                        highlight: false,
+                        child: SwitchListTile(
+                          key: const Key('show-screen-codes'),
+                          secondary: const AppIcon(AppIcons.pin),
+                          title: Text(l.settingsShowScreenCodes),
+                          subtitle: Text(l.settingsShowScreenCodesBody),
+                          value: showCodes,
+                          onChanged: (v) =>
+                              ref.read(showScreenCodesProvider.notifier).set(v),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpace.s6),
+                  KeyedSubtree(
+                    key: const Key('settings-group-signOut'),
+                    child: guard(
+                      Center(
+                        child: TextButton(
+                          key: const Key('settings-sign-out'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.error,
+                            minimumSize: const Size.fromHeight(36),
+                          ),
+                          onPressed: () => _confirmSignOut(context, ref),
+                          child: Text(
+                            l.signOut,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
-                const SizedBox(height: AppSpace.s6),
-                Center(
-                  child: TextButton(
-                    key: const Key('settings-sign-out'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
-                      minimumSize: const Size.fromHeight(36),
-                    ),
-                    onPressed: () => _confirmSignOut(context, ref),
-                    child: Text(
-                      l.signOut,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -250,7 +336,7 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
+  const _SectionLabel(this.text, {super.key});
   final String text;
 
   @override
@@ -377,6 +463,64 @@ class _SkillsTile extends ConsumerWidget {
         await context.push('/profile/skills');
         if (context.mounted) {
           ref.invalidate(photographerSkillsSnapshotProvider(uid));
+        }
+      },
+    );
+  }
+}
+
+/// A row that opens [path].
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({
+    required super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.path,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final String path;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: AppIcon(icon),
+    title: Text(title),
+    subtitle: subtitle == null ? null : Text(subtitle!),
+    trailing: const AppIcon(AppIcons.chevron),
+    onTap: () => context.push(path),
+  );
+}
+
+/// "Địa chỉ studio" (studios only): the public district, else "Chưa có địa
+/// chỉ". Opens the S08.05 address form, which pops back here when done; the
+/// profile is read again on return.
+class _StudioAddressTile extends ConsumerWidget {
+  const _StudioAddressTile({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final async = ref.watch(photographerProfileProvider(uid));
+    final district = async.value?.summary.studioDistrict?.trim() ?? '';
+    return ListTile(
+      key: const Key('settings-studio-address'),
+      leading: const AppIcon(AppIcons.place),
+      title: Text(l.settingsStudioAddress),
+      subtitle: district.isNotEmpty
+          ? Text(district)
+          : async.hasValue
+          ? Text(l.settingsStudioAddressEmpty)
+          : null,
+      trailing: const AppIcon(AppIcons.chevron),
+      onTap: () async {
+        await context.push('/setup/4?from=settings');
+        if (context.mounted) {
+          ref.invalidate(photographerProfileProvider(uid));
         }
       },
     );

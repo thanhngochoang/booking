@@ -10,9 +10,6 @@ TextEditingValue _v(String text, [int? caret]) => TextEditingValue(
 TextEditingValue _number(String old, TextEditingValue next) =>
     const AccountNumberFormatter().formatEditUpdate(_v(old), next);
 
-TextEditingValue _holder(TextEditingValue next) =>
-    const HolderNameFormatter().formatEditUpdate(_v(''), next);
-
 void main() {
   group('AccountNumberFormatter', () {
     test('number groups by four and keeps the caret', () {
@@ -57,40 +54,6 @@ void main() {
       final r = _number('1', _v(''));
       expect(r.text, '');
       expect(r.selection.baseOffset, 0);
-    });
-  });
-
-  group('HolderNameFormatter', () {
-    test('holder name turns upper-case without diacritics while typing', () {
-      expect(_holder(_v('nguyễn minh trí')).text, 'NGUYEN MINH TRI');
-      expect(_holder(_v('Đặng Văn Ơn')).text, 'DANG VAN ON');
-    });
-
-    test('digits and punctuation are dropped, spaces collapse', () {
-      expect(_holder(_v('  an  b-2c ')).text, 'AN BC ');
-      expect(_holder(_v('   ')).text, '');
-    });
-
-    test('decomposed accents are folded too', () {
-      // "ế" as e + circumflex + acute.
-      expect(_holder(_v('trế')).text, 'TRE');
-    });
-
-    test('the caret stays after the same letter', () {
-      final r = _holder(
-        _v(
-          'tri'
-          'ễ'
-          'n',
-          4,
-        ),
-      );
-      expect(r.text, 'TRIEN');
-      expect(r.selection.baseOffset, 4);
-    });
-
-    test('at most 50 characters', () {
-      expect(_holder(_v('A' * 80)).text.length, 50);
     });
   });
 }

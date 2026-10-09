@@ -16,10 +16,14 @@ void main() {
           .putIfAbsent(c.substring(0, 3), () => [])
           .add(int.parse(c.substring(4)));
     }
+    // Use case numbers reserved for screens outside the app (S28: studio web
+    // dashboard, #161) are skipped; every other number is used, in order.
+    const reserved = {'S28'};
     final useCases = byUseCase.keys.toList();
     expect(useCases, [
-      for (var i = 1; i <= useCases.length; i++)
-        'S${i.toString().padLeft(2, '0')}',
+      for (var i = 1; i <= useCases.length + reserved.length; i++)
+        if (!reserved.contains('S${i.toString().padLeft(2, '0')}'))
+          'S${i.toString().padLeft(2, '0')}',
     ]);
     for (final e in byUseCase.entries) {
       expect(e.value, [

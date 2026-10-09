@@ -2,6 +2,8 @@
 
 import { isSettledPayment, type Payment, type PaymentSubject } from './escrow.js';
 import type { Payout, PayoutStatus } from './payout.js';
+import { payoutLineOf, type PayoutPolicy } from './payout_policy.js';
+import type { ProviderType } from './provider_type.js';
 
 export const EARNING_STATES = ['held', 'disputed', 'released', 'paid_out'] as const;
 export type EarningState = (typeof EARNING_STATES)[number];
@@ -17,6 +19,8 @@ export interface EarningSubject {
   readonly counterpartName: string;
   readonly label: string;
   readonly day: string;
+  /** Released / all milestones of the booking; null when it has none (yet). */
+  readonly milestones: { readonly done: number; readonly total: number } | null;
 }
 
 export interface EarningItem {
@@ -27,7 +31,17 @@ export interface EarningItem {
   readonly counterpartName: string;
   readonly subjectLabel: string;
   readonly day: string;
+  /** Gross (the booking money kept after refunds); KPIs add this. */
   readonly amount: number;
+  /** Breakdown: from the payout item once paid out (`estimated` false), else today's policy. */
+  readonly platformFee: number;
+  readonly taxWithheld: number;
+  readonly netAmount: number;
+  readonly feeRateBp: number;
+  readonly taxRateBp: number;
+  readonly estimated: boolean;
+  readonly milestonesDone: number | null;
+  readonly milestonesTotal: number | null;
   readonly state: EarningState;
   readonly holdReason: string | null;
   readonly paidOutAt: string | null;
@@ -69,9 +83,11 @@ export function earningItemOf(i: {
   refunded: number;
   subject: EarningSubject;
   payout: Payout | null;
+  payeeType: ProviderType;
+  policy: PayoutPolicy;
   now: Date;
 }): EarningItem | null {
-  const { payment, refunded, subject, payout, now } = i;
+  const { payment, refunded, subject, payout, payeeType, policy, now } = i;
   const state = earningStateOf(payment);
   const net = payment.amount - refunded;
   const paid = isSettledPayment(payment) || payment.status === 'refunded';
@@ -81,6 +97,7 @@ export function earningItemOf(i: {
   if (state === 'disputed') holdReason = HOLD_REASON_DISPUTE;
   else if (state === 'released' && payout?.status === 'on_hold') holdReason = HOLD_REASON_PAYOUT_ON_HOLD;
 
+  const breakdown = breakdownOf(state, payment.id, net, payout, payeeType, policy);
   return {
     id: payment.id,
     payeeId: payment.payeeId,
@@ -90,10 +107,44 @@ export function earningItemOf(i: {
     subjectLabel: subject.label,
     day: subject.day,
     amount: net,
+    ...breakdown,
+    milestonesDone: subject.milestones?.done ?? null,
+    milestonesTotal: subject.milestones?.total ?? null,
     state,
     holdReason,
     paidOutAt: state === 'paid_out' ? (payout?.paidAt ?? payment.updatedAt) : null,
     updatedAt: now.toISOString(),
+  };
+}
+
+/** What a paid-out row's payout item withheld, or the policy's estimate for any other row. */
+function breakdownOf(
+  state: EarningState,
+  paymentId: string,
+  gross: number,
+  payout: Payout | null,
+  payeeType: ProviderType,
+  policy: PayoutPolicy,
+): Pick<EarningItem, 'platformFee' | 'taxWithheld' | 'netAmount' | 'feeRateBp' | 'taxRateBp' | 'estimated'> {
+  const item = state === 'paid_out' ? payout?.items.find((it) => it.paymentId === paymentId) : undefined;
+  if (payout && item) {
+    return {
+      platformFee: item.fee,
+      taxWithheld: item.tax,
+      netAmount: item.net,
+      feeRateBp: payout.feeRateBp,
+      taxRateBp: payout.taxRateBp,
+      estimated: false,
+    };
+  }
+  const line = payoutLineOf(gross, payeeType, policy);
+  return {
+    platformFee: line.fee,
+    taxWithheld: line.tax,
+    netAmount: line.net,
+    feeRateBp: line.feeRateBp,
+    taxRateBp: line.taxRateBp,
+    estimated: true,
   };
 }
 

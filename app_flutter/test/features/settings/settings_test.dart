@@ -8,9 +8,14 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/award/award_providers.dart';
+import 'package:photobooking/data/award/award_repository.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
@@ -23,11 +28,13 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
+import '../../support/content_fixtures.dart';
 import '../../support/fake_push.dart';
 import '../../support/idle.dart';
 import '../../support/photo_scope.dart';
@@ -41,7 +48,11 @@ Future<Widget> _app({
   FakeMediaUploader? uploader,
   FakeSkillsRepository? skills,
   FakeDeviceRegistry? devices,
+  FakePublicProfileRepository? profiles,
+  bool flags = false,
 }) async {
+  Widget stub(BuildContext _, GoRouterState s) =>
+      Scaffold(body: Text('stub ${s.uri}'));
   final router = GoRouter(
     initialLocation: '/settings',
     routes: [
@@ -69,6 +80,11 @@ Future<Widget> _app({
         path: '/u/:uid',
         builder: (_, s) => Text('public ${s.pathParameters['uid']}'),
       ),
+      GoRoute(path: '/setup/4', builder: stub),
+      GoRoute(path: '/me/awards', builder: stub),
+      GoRoute(path: '/verify/start', builder: stub),
+      GoRoute(path: '/me/studio', builder: stub),
+      GoRoute(path: '/studio/members', builder: stub),
     ],
   );
   return ProviderScope(
@@ -91,6 +107,17 @@ Future<Widget> _app({
         FakeNotificationPermission(NotificationPermissionStatus.denied),
       ),
       deviceRegistryProvider.overrideWithValue(devices ?? FakeDeviceRegistry()),
+      if (profiles != null) ...[
+        publicProfileRepositoryProvider.overrideWithValue(profiles),
+        // No live tier: the type comes from the profile above.
+        awardRepositoryProvider.overrideWithValue(
+          FakeAwardRepository(uid: auth.currentUser!.uid)..setTier(null),
+        ),
+      ],
+      if (flags) ...[
+        verifyStartReadyProvider.overrideWithValue(true),
+        studioRoutesReadyProvider.overrideWithValue(true),
+      ],
     ],
     child: MaterialApp.router(
       routerConfig: router,
@@ -152,22 +179,88 @@ void main() {
     expect(again.read(themeModeProvider), ThemeMode.light);
   });
 
-  testWidgets('choosing a theme marks it selected and saves it', (
-    tester,
-  ) async {
+  testWidgets('appearance is a SegmentedTabs Tối / Sáng / Theo hệ thống and '
+      'applies at once', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final (auth, users) = await _signedIn();
     await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
     await tester.pumpAndSettle();
-    ListTile tile(String k) => tester.widget<ListTile>(find.byKey(Key(k)));
-    expect(tile('theme-dark').selected, isTrue);
+    final tabs = find.byKey(const Key('settings-theme'));
+    SegmentedTabs<ThemeMode> theme() =>
+        tester.widget<SegmentedTabs<ThemeMode>>(tabs);
+    expect(theme().value, ThemeMode.dark);
+    expect(theme().options.map((o) => o.label), [
+      'Tối',
+      'Sáng',
+      'Theo hệ thống',
+    ]);
+    expect(find.byKey(const Key('theme-dark')), findsNothing);
 
-    await tester.tap(find.byKey(const Key('theme-system')));
+    await tester.ensureVisible(tabs);
     await tester.pumpAndSettle();
-    expect(tile('theme-system').selected, isTrue);
-    expect(tile('theme-dark').selected, isFalse);
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Theo hệ thống')),
+    );
+    await tester.pumpAndSettle();
+    expect(theme().value, ThemeMode.system);
     expect(prefs.getString('themeMode'), 'system');
+    final container = ProviderScope.containerOf(tester.element(tabs));
+    expect(container.read(themeModeProvider), ThemeMode.system);
+  });
+
+  testWidgets('button style is a SegmentedTabs; avatar is disabled with the '
+      'hint until there is an avatar', (tester) async {
+    // A saved avatar choice without a photo still shows (and paints) gradient.
+    SharedPreferences.setMockInitialValues({'buttonStyle': 'avatar'});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    final tabs = find.byKey(const Key('settings-button-style'));
+    SegmentedTabs<ButtonStyleMode> style() =>
+        tester.widget<SegmentedTabs<ButtonStyleMode>>(tabs);
+    expect(style().options.map((o) => o.label), [
+      'Gradient',
+      'Ảnh đại diện làm mờ',
+    ]);
+    expect(style().value, ButtonStyleMode.gradient);
+    expect(style().options.last.enabled, isFalse);
+    expect(
+      find.text('Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.'),
+      findsOneWidget,
+    );
+
+    await tester.ensureVisible(tabs);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Gradient')),
+    );
+    await tester.pumpAndSettle();
+    expect(prefs.getString('buttonStyle'), 'gradient');
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Ảnh đại diện làm mờ')),
+    );
+    await tester.pumpAndSettle();
+    expect(prefs.getString('buttonStyle'), 'gradient', reason: 'locked');
+
+    await users.setAvatar(
+      auth.currentUser!.uid,
+      url: 'https://img.test/a.jpg',
+      storagePath: 'avatars/a.jpg',
+    );
+    await tester.pumpAndSettle();
+    expect(style().options.last.enabled, isTrue);
+    expect(
+      find.text('Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.'),
+      findsNothing,
+    );
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Ảnh đại diện làm mờ')),
+    );
+    await tester.pumpAndSettle();
+    expect(style().value, ButtonStyleMode.avatar);
+    expect(prefs.getString('buttonStyle'), 'avatar');
   });
 
   testWidgets('editing the display name saves it and returns to settings', (
@@ -494,9 +587,9 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await openSettings(tester);
-      // Account: 2 rows (edit profile, phone) + 1; three theme rows and two
-      // button-style rows: 2 + 1.
-      expect(find.byType(Divider), findsNWidgets(4));
+      // Account: 2 rows (edit profile, phone). Theme and button style are
+      // segmented tabs, Thông báo a single row.
+      expect(find.byType(Divider), findsNWidgets(1));
       final preview = tester.widget<AppButton>(
         find.widgetWithText(AppButton, 'Xem trước nút'),
       );
@@ -806,6 +899,268 @@ void main() {
       hold.complete();
       await tester.pumpAndSettle();
       expect(auth.currentUser, isNull);
+    });
+  });
+
+  group('S09.02 order and flagged rows', () {
+    /// Opens S09.02 for a photographer of [type] (null: customer) on a tall
+    /// view, so every row is built.
+    Future<(FakeAuthRepository, FakeUserRepository)> open(
+      WidgetTester tester, {
+      ProviderType? type,
+      String? district,
+      bool flags = false,
+      Size size = const Size(390, 3000),
+      double textScale = 1.0,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      if (textScale != 1.0) {
+        tester.platformDispatcher.textScaleFactorTestValue = textScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      }
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final (auth, users) = await _signedIn(
+        type == null ? UserRole.customer : UserRole.photographer,
+      );
+      final uid = auth.currentUser!.uid;
+      await tester.pumpWidget(
+        await _app(
+          auth: auth,
+          users: users,
+          prefs: prefs,
+          flags: flags,
+          profiles: FakePublicProfileRepository([
+            if (type != null)
+              PhotographerProfile(
+                summary: fixturePhotographer(
+                  uid,
+                  providerType: type,
+                  studioDistrict: district,
+                ),
+              ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (auth, users);
+    }
+
+    double y(WidgetTester tester, String key) =>
+        tester.getTopLeft(find.byKey(Key(key))).dy;
+
+    Future<void> tapRow(WidgetTester tester, String key) async {
+      await tester.ensureVisible(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('groups appear in settingsGroupOrder and Đăng xuất is last', (
+      tester,
+    ) async {
+      await open(tester, type: ProviderType.studio, district: 'Quận 1');
+      final present = [
+        for (final name in settingsGroupOrder)
+          if (find.byKey(Key('settings-group-$name')).evaluate().isNotEmpty)
+            name,
+      ];
+      expect(
+        present,
+        containsAllInOrder(<String>[
+          'account',
+          'mode',
+          'appearance',
+          'buttonStyle',
+          'notifications',
+          'signOut',
+        ]),
+      );
+      final ys = [
+        for (final name in present) y(tester, 'settings-group-$name'),
+      ];
+      for (var i = 1; i < ys.length; i++) {
+        expect(
+          ys[i],
+          greaterThan(ys[i - 1]),
+          reason: '${present[i]} after ${present[i - 1]}',
+        );
+      }
+      expect(present.last, 'signOut');
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('settings-group-signOut')),
+          matching: find.byKey(const Key('settings-sign-out')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('photographer rows in order: Kỹ năng, Hình thức nhận việc, '
+        'Giải thưởng, Xem hồ sơ công khai', (tester) async {
+      await open(tester, type: ProviderType.individual);
+      final keys = [
+        'settings-edit-profile',
+        'profile-phone',
+        'profile-skills',
+        'profile-provider-type',
+        'profile-awards',
+        'profile-public',
+      ];
+      for (var i = 1; i < keys.length; i++) {
+        expect(
+          y(tester, keys[i]),
+          greaterThan(y(tester, keys[i - 1])),
+          reason: '${keys[i]} after ${keys[i - 1]}',
+        );
+      }
+    });
+
+    testWidgets('a studio has "Địa chỉ studio" showing its district; it opens '
+        '/setup/4?from=settings', (tester) async {
+      await open(tester, type: ProviderType.studio, district: 'Quận 1');
+      const key = 'settings-studio-address';
+      expect(y(tester, key), greaterThan(y(tester, 'profile-provider-type')));
+      expect(y(tester, key), lessThan(y(tester, 'profile-awards')));
+      final row = find.byKey(const Key(key));
+      expect(
+        find.descendant(of: row, matching: find.text('Địa chỉ studio')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('Quận 1')),
+        findsOneWidget,
+      );
+      await tapRow(tester, key);
+      expect(find.text('stub /setup/4?from=settings'), findsOneWidget);
+    });
+
+    testWidgets('an individual has no address row', (tester) async {
+      await open(tester, type: ProviderType.individual);
+      expect(find.byKey(const Key('profile-provider-type')), findsOneWidget);
+      expect(find.byKey(const Key('settings-studio-address')), findsNothing);
+    });
+
+    testWidgets('a studio without district reads "Chưa có địa chỉ"', (
+      tester,
+    ) async {
+      await open(tester, type: ProviderType.studio);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('settings-studio-address')),
+          matching: find.text('Chưa có địa chỉ'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('flagged rows are hidden while their routes do not exist', (
+      tester,
+    ) async {
+      for (final type in [ProviderType.individual, ProviderType.studio]) {
+        await open(tester, type: type);
+        for (final key in [
+          'settings-verify',
+          'settings-my-studio',
+          'settings-studio-members',
+        ]) {
+          expect(find.byKey(Key(key)), findsNothing, reason: '$type $key');
+        }
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('with the flags on they open their routes', (tester) async {
+      await open(tester, type: ProviderType.individual, flags: true);
+      expect(find.byKey(const Key('settings-studio-members')), findsNothing);
+      expect(
+        y(tester, 'settings-verify'),
+        greaterThan(y(tester, 'profile-awards')),
+      );
+      expect(
+        y(tester, 'settings-my-studio'),
+        greaterThan(y(tester, 'settings-verify')),
+      );
+      expect(
+        y(tester, 'profile-public'),
+        greaterThan(y(tester, 'settings-my-studio')),
+      );
+      expect(
+        find.text('Studio đang ở, việc được giao, lời mời'),
+        findsOneWidget,
+      );
+      await tapRow(tester, 'settings-my-studio');
+      expect(find.text('stub /me/studio'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+
+      await open(tester, type: ProviderType.studio, flags: true);
+      expect(find.byKey(const Key('settings-my-studio')), findsNothing);
+      expect(find.text('Mời thợ, giao việc cho thành viên'), findsOneWidget);
+      await tapRow(tester, 'settings-studio-members');
+      expect(find.text('stub /studio/members'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+
+      await open(tester, type: ProviderType.studio, flags: true);
+      expect(
+        find.text('Xác minh danh tính để bắt đầu nhận đơn'),
+        findsOneWidget,
+      );
+      await tapRow(tester, 'settings-verify');
+      expect(find.text('stub /verify/start'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+
+      // Customers never see them.
+      await open(tester, flags: true);
+      expect(find.byKey(const Key('settings-verify')), findsNothing);
+      expect(find.byKey(const Key('settings-my-studio')), findsNothing);
+    });
+
+    testWidgets('the sign-out confirm button is red', (tester) async {
+      await open(tester);
+      await tapRow(tester, 'settings-sign-out');
+      final confirm = find.descendant(
+        of: find.ancestor(
+          of: find.text('Đăng xuất'),
+          matching: find.byType(AppButton),
+        ),
+        matching: find.byType(FilledButton),
+      );
+      expect(confirm, findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(confirm)
+            .style
+            ?.backgroundColor
+            ?.resolve({}),
+        AppColors.error,
+      );
+      final signOut = tester.widget<TextButton>(
+        find.byKey(const Key('settings-sign-out')),
+      );
+      expect(
+        signOut.style?.foregroundColor?.resolve({}),
+        Theme.of(tester.element(find.byType(SettingsScreen))).colorScheme.error,
+      );
+    });
+
+    testWidgets('fits 320dp at 1.3x text for a studio with all flags on', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await open(
+        tester,
+        type: ProviderType.studio,
+        district: 'Thành phố Thủ Đức',
+        flags: true,
+        size: const Size(320, 4000),
+        textScale: 1.3,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('settings-studio-members')), findsOneWidget);
+      expect(find.byKey(const Key('settings-sign-out')), findsOneWidget);
+      expect(find.text('Ảnh đại diện làm mờ'), findsOneWidget);
     });
   });
 }

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/push/push_providers.dart';
-import 'package:photobooking/features/shell/placeholder_tabs.dart';
+import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 
 import '../../support/notifications_world.dart';
@@ -170,23 +168,5 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('9+'), findsNothing);
     handle.dispose();
-  });
-
-  testWidgets('profile tab sign-out unregisters the device first', (
-    tester,
-  ) async {
-    final world = await _profile(tester, NotificationsWorld());
-    // The app root keeps the registration running from the start.
-    ProviderScope.containerOf(tester.element(find.byType(ProfileTab)))
-        .read(pushRegistrationProvider);
-    await tester.pumpAndSettle();
-    world.devices.log.clear();
-    await tester.ensureVisible(find.byKey(const Key('sign-out')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('sign-out')));
-    await tester.pumpAndSettle();
-    expect(world.devices.log, ['unregister']);
-    expect(world.devices.unregistered, [world.uid]);
-    expect(world.auth.currentUser, isNull);
   });
 }

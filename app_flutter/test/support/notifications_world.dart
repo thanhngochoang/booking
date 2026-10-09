@@ -10,6 +10,8 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/badges/badge_providers.dart';
 import 'package:photobooking/data/badges/badge_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/notifications/app_notification.dart';
 import 'package:photobooking/data/notifications/notification_prefs_repository.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
@@ -66,6 +68,9 @@ class NotificationsWorld {
 
   /// S09.01 also reads the badge chips; nobody holds a badge by default.
   final badges = FakeBadgeRepository(catalog: badgeCatalogue());
+
+  /// S09.01's own-posts grid; empty unless a test adds posts.
+  final posts = FakePostRepository();
   late SharedPreferences sharedPrefs;
   late String uid;
   late GoRouter router;
@@ -92,6 +97,7 @@ class NotificationsWorld {
     notificationPermissionProvider.overrideWithValue(permission),
     deviceRegistryProvider.overrideWithValue(devices),
     badgeRepositoryProvider.overrideWithValue(badges),
+    postRepositoryProvider.overrideWithValue(posts),
   ];
 
   Widget app({
