@@ -202,6 +202,12 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.15 | Chờ duyệt lần hai (thao tác tiền từ 10 triệu, khôi phục xác minh) | `/staff/approvals` (web) | ai có quyền duyệt | Phase 1.5 (`2026-10-08-dashboard-web-design.md` §5.4, #162) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
 | S23.16 | Tài khoản bị khoá: khoá tạm 7/30 ngày, khoá hẳn (hai người khi thợ còn booking hoặc tiền), mở khoá | `/staff/suspensions` (web) | admin · support (khoá tạm) | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
 | S23.17 | Cờ tuyển thợ: chưa trả công (gỡ khoá đăng tin, xoá cờ), lôi kéo thợ | `/staff/recruit-flags` (web) | admin · support | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
+| S23.18 | Sự kiện: danh sách (nền tảng và tạo hộ) | `/staff/events` (web) | admin · sales (của mình) | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.19 | Tạo / sửa sự kiện (như S12.01–S12.02) | `/staff/events/new` (web) | admin · sales | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.20 | Quản lý sự kiện: đăng ký, FAQ, thông báo, kiểm duyệt, huỷ (hai người khi hoàn từ 10 triệu) | `/staff/events/:id` (web) | admin · sales (của mình) | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.21 | Khuyến mãi (promo): soạn, xem trước, gửi thử, gửi (1 promo / người / 7 ngày) | `/staff/promos` (web) | admin · sales | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.22 | Cấu hình: Chụp ngay, kiểm soát tiền, lịch sử phiên bản (trường tiền cần admin thứ hai) | `/staff/config` (web) | admin | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.23 | Chỉ số studio (bộ đếm vi phạm) | `/staff/studios` (web) | admin · support | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
 | **S24** | **Portfolio album** | | | | | |
 | S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ✅ đã làm (c2) · khớp mock | — |
 | S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |

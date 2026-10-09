@@ -10,7 +10,7 @@
 | # | Quyết định | Nguồn |
 |---|---|---|
 | M1 | Làm đủ việc hằng ngày: chi trả chờ duyệt / tạm giữ / thất bại, chuyển khoản chưa khớp, hoàn tiền thất bại và hoàn thủ công, báo cáo thuế theo tháng. **Đối soát sao kê ngày** chỉ thiết kế (màn + port) ở §6, làm khi đã chọn tổ chức trung gian. | chủ dự án 2026-10-08 |
-| M2 | **Duyệt hai người** cho thao tác tiền từ **10.000.000₫** trở lên: một người đề xuất, một người khác (admin hoặc finance) xác nhận. Ngưỡng là hằng số có phiên bản `DEFAULT_MONEY_CONTROLS.twoPersonThreshold` trong domain (như `DEFAULT_PAYOUT_POLICY`), đổi bằng một PR; chuyển thành cấu hình sửa được khi #168 có màn cấu hình. | chủ dự án 2026-10-08 |
+| M2 | **Duyệt hai người** cho thao tác tiền từ **10.000.000₫** trở lên: một người đề xuất, một người khác (admin hoặc finance) xác nhận. Ngưỡng đọc từ `platform_config/money.twoPersonThreshold` (sửa ở S23.22, cần admin thứ hai; `screens/staff-config-content.md` C4); thiếu doc thì dùng hằng số `DEFAULT_MONEY_CONTROLS`. | chủ dự án 2026-10-08 |
 | M3 | Thao tác cần hai người: duyệt lần chi đầu, gán chuyển khoản chưa khớp, hoàn chuyển khoản chưa khớp, đóng chuyển khoản chưa khớp không hoàn, ghi nhận hoàn thủ công. Thao tác **không** đưa tiền mới đi đâu thì một người là đủ: tạm giữ, tiếp tục, chạy lại khoản chi đã duyệt, gửi lại một khoản hoàn đã có. | — |
 | M4 | Tiền chỉ đi qua callable (spec dashboard D2); mỗi quyết định một dòng `audit_log` với lý do 5–500 ký tự. Không có thao tác "sửa số tiền". | spec chính §3i.6 |
 | M5 | Finance thấy họ tên đã xác minh của người nhận (để so tên tài khoản), 4 số cuối tài khoản, 4 số cuối giấy tờ. Số giấy tờ đầy đủ chỉ nằm trong **tệp thuế xuất ra** (bắt buộc cho kê khai), không hiện trên màn. | spec xác minh 10-06, M5 ở đây |
