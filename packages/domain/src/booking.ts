@@ -115,6 +115,8 @@ export interface Booking {
    * `createdAt + DRAFT_EXPIRY_MINUTES`, pushed to `expiresAt + DRAFT_PAYMENT_GRACE_MINUTES` by each new payment.
    */
   readonly payableUntil?: string;
+  /** Number of free revision rounds included in this booking. */
+  readonly revisionsIncluded?: number;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;

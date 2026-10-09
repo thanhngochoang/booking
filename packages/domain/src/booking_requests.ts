@@ -115,7 +115,7 @@ export function validateCreateBookingDraftInput(
     serviceId,
     day,
     start,
-    place: { name: placeTrimmed, point: validatedPoint },
+    place: validatedPoint ? { name: placeTrimmed, point: validatedPoint } : { name: placeTrimmed },
     note: noteTrimmed,
     expectedPrice: validatedExpectedPrice,
   };

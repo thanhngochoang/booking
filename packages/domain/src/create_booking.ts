@@ -1,14 +1,111 @@
 /**
- * Use case: createBookingDraft
+ * Use case: createBookingDraft and buildBookingDraft
  * Customer creates a draft booking, holding the photographer's day as pending.
+ * Every order path builds its booking with `buildBookingDraft`; later units extend it only through the slots.
  */
 
 import type { Booking } from './booking.js';
-import { DRAFT_EXPIRY_MINUTES, addMinutesToTime, computeDeposit } from './booking_policy.js';
-import type { BookingDeps } from './booking_ports.js';
+import {
+  DRAFT_EXPIRY_MINUTES,
+  addMinutesToTime,
+  clampRevisions,
+  computeDeposit,
+} from './booking_policy.js';
+import type { BookingDeps, ServiceRecord } from './booking_ports.js';
 import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
 import { requireCustomerPhone } from './require_phone.js';
+
+// ── Draft slots: imports (one block per unit; edit only your own) ──
+// slot #139 (quotes)
+
+// slot #136 (studio)
+
+// slot #190 (add-ons)
+
+// ── end draft slot imports ──
+
+/** What every order path supplies. */
+export interface BookingDraftCore {
+  readonly id: string;
+  readonly customerId: string;
+  readonly photographerId: string;
+  /** The package; a quote passes a synthetic record (#139). `serviceId` = `service.id`. */
+  readonly service: ServiceRecord;
+  readonly day: string; // yyyy-MM-dd
+  readonly start: string; // HH:mm
+  readonly place: Booking['place'];
+  readonly note?: string;
+  readonly now: Date;
+}
+
+/** Core + the optional fields of later units, one slot each (Decision 2). */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface BookingDraftInput extends BookingDraftCore {
+  // slot #139 (quotes): readonly quote?: { jobId: string; quoteId: string; terms: BookingTerms };
+
+  // slot #136 (studio): readonly providerType?: ProviderType | null;
+
+  // slot #190 (add-ons): readonly addons?: readonly AddonLine[]; readonly pickup?: BookingPickup;
+}
+
+/** The amount the customer pays; #190 replaces the body (Decision 3). */
+export function draftTotal(i: BookingDraftInput): number {
+  return i.service.price; // slot #190 (add-ons): bookingTotal(i.service, i.addons ?? [])
+}
+
+function coreDraft(i: BookingDraftInput): Booking {
+  const { id, customerId, photographerId, service, day, start, place, note, now } = i;
+  const createdAt = now.toISOString();
+  const end = addMinutesToTime(start, service.durationMinutes);
+  const total = draftTotal(i);
+  const { deposit, remaining } = computeDeposit(total);
+  const payableUntil = new Date(now.getTime() + DRAFT_EXPIRY_MINUTES * 60_000).toISOString();
+  const revisionsIncluded = clampRevisions(service.revisions);
+
+  return {
+    id,
+    customerId,
+    photographerId,
+    serviceId: service.id,
+    serviceSnapshot: {
+      name: service.name,
+      price: service.price,
+      durationMinutes: service.durationMinutes,
+    },
+    day,
+    start,
+    end,
+    place,
+    note,
+    status: 'draft',
+    deposit,
+    remaining,
+    payableUntil,
+    revisionsIncluded,
+    version: 1,
+    createdAt,
+    updatedAt: createdAt,
+  };
+}
+
+/**
+ * Pure. status 'draft'; serviceId = service.id; serviceSnapshot {name, price, durationMinutes};
+ * end = addMinutesToTime(start, durationMinutes); {deposit, remaining} = computeDeposit(draftTotal(i));
+ * payableUntil = now + DRAFT_EXPIRY_MINUTES; revisionsIncluded = clampRevisions(service.revisions);
+ * version 1; createdAt = updatedAt = now.toISOString(); then each slot's fields.
+ */
+export function buildBookingDraft(i: BookingDraftInput): Booking {
+  const core = coreDraft(i);
+  return {
+    ...core,
+    // slot #139 (quotes): ...quoteDraftFields(i),
+
+    // slot #136 (studio): ...studioDraftFields(i, core),
+
+    // slot #190 (add-ons): ...addonDraftFields(i),
+  };
+}
 
 export async function createBookingDraft(
   deps: BookingDeps,
@@ -36,11 +133,7 @@ export async function createBookingDraft(
   const phone = await requireCustomerPhone(deps.contacts, input.customerId);
   const contactRecord = await deps.contacts.get(input.customerId);
 
-  // 3. Financial calculations
-  const { deposit, remaining } = computeDeposit(service.price);
-  const end = addMinutesToTime(input.start, service.durationMinutes);
-
-  // 4. Transactional availability hold and booking creation
+  // 3. Transactional availability hold and booking creation
   return deps.store.runTransaction(async (tx) => {
     const existingDay = await tx.getAvailabilityDay(input.photographerId, input.day);
     const existingDraft = await tx.getCustomerDraftForDay(
@@ -69,31 +162,17 @@ export async function createBookingDraft(
     }
 
     const bookingId = deps.ids.newId();
-    const createdAt = now.toISOString();
-
-    const booking: Booking = {
+    const booking = buildBookingDraft({
       id: bookingId,
       customerId: input.customerId,
       photographerId: input.photographerId,
-      serviceId: input.serviceId,
-      serviceSnapshot: {
-        name: service.name,
-        price: service.price,
-        durationMinutes: service.durationMinutes,
-      },
+      service,
       day: input.day,
       start: input.start,
-      end,
       place: input.place,
       note: input.note,
-      status: 'draft',
-      deposit,
-      remaining,
-      payableUntil: new Date(now.getTime() + DRAFT_EXPIRY_MINUTES * 60_000).toISOString(),
-      version: 1,
-      createdAt,
-      updatedAt: createdAt,
-    };
+      now,
+    });
 
     await tx.setBooking(booking);
     await tx.setAvailabilityDay(input.photographerId, input.day, {

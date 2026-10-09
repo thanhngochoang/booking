@@ -20,6 +20,23 @@ export const AUTO_COMPLETE_DELAY_HOURS = 24;
 export const ESCROW_RELEASE_DELAY_HOURS = 24;
 export const BOOKING_CONTACT_RETENTION_DAYS = 30;
 
+export const DEFAULT_REVISIONS = 1;
+export const REVISIONS_MAX = 5;
+
+/**
+ * Free revision rounds of a package or quote:
+ * non-number or NaN → 1; else truncated to an integer and clamped to 0–5.
+ */
+export function clampRevisions(v: unknown): number {
+  if (typeof v !== 'number' || Number.isNaN(v)) {
+    return DEFAULT_REVISIONS;
+  }
+  if (!Number.isFinite(v)) {
+    return v > 0 ? REVISIONS_MAX : 0;
+  }
+  return Math.min(REVISIONS_MAX, Math.max(0, Math.trunc(v)));
+}
+
 export const MAX_NOTE_LENGTH = 300;
 export const MIN_PLACE_LENGTH = 3;
 export const MAX_PLACE_LENGTH = 120;

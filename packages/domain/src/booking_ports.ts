@@ -13,6 +13,8 @@ export interface ServiceRecord {
   readonly price: number;
   readonly durationMinutes: number;
   readonly active: boolean;
+  /** Free revision rounds of a package (from deliverables.revisions; a quote passes terms.revisions). */
+  readonly revisions?: number;
 }
 
 export interface ServiceCatalog {
