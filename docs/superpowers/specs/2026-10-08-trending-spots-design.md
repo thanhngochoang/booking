@@ -154,6 +154,7 @@ S06.01 chỉ thêm một dòng lối vào "Lịch tại điểm" (không cần f
 - Độ hot tự động hoàn toàn: recommender xếp hạng điểm, cá nhân hoá theo người dùng, phát hiện điểm mới từ cụm bài đăng (không cần staff tạo).
 - Lưu/theo dõi điểm chụp (S19) và thông báo "điểm bạn lưu vừa vào mùa / có thợ mới cuối tuần này" (S17).
 - Gói chia suất có dịch vụ đi kèm; bản đồ tương tác trên trang điểm.
+- Bản đồ mật độ check-in (điểm càng nhiều check-in càng đậm) và timeline check-in của mỗi người dùng tại các điểm chụp (#213, chủ dự án 2026-10-09). Check-in = bài hoặc bàn giao đã gắn điểm, không lưu toạ độ thô. Vẽ bằng lớp heatmap có sẵn của `maplibre_gl` (dự phòng `Heatmap` của `google_maps_flutter` ≥ 2.8), server đếm sẵn theo điểm và ô geohash.
 
 ## 12. Câu hỏi còn mở (đã có mặc định)
 
