@@ -1813,6 +1813,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileEditContact => 'Khu vực và liên hệ';
 
   @override
+  String get profileSavePhotographer => 'Lưu nhiếp ảnh gia';
+
+  @override
+  String get profileSharePhotographer => 'Chia sẻ hồ sơ';
+
+  @override
+  String get profileShareCopied => 'Đã sao chép liên kết hồ sơ';
+
+  @override
+  String get profileMoreOptions => 'Thêm tuỳ chọn';
+
+  @override
   String get offlineBanner => 'Đang xem dữ liệu đã lưu';
 
   @override

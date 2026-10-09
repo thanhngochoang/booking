@@ -3244,6 +3244,30 @@ abstract class AppLocalizations {
   /// **'Khu vực và liên hệ'**
   String get profileEditContact;
 
+  /// No description provided for @profileSavePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nhiếp ảnh gia'**
+  String get profileSavePhotographer;
+
+  /// No description provided for @profileSharePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ hồ sơ'**
+  String get profileSharePhotographer;
+
+  /// No description provided for @profileShareCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết hồ sơ'**
+  String get profileShareCopied;
+
+  /// No description provided for @profileMoreOptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm tuỳ chọn'**
+  String get profileMoreOptions;
+
   /// No description provided for @offlineBanner.
   ///
   /// In vi, this message translates to:

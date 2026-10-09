@@ -1,5 +1,6 @@
 // lib/features/photographer_profile/photographer_profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -56,6 +57,18 @@ class _PhotographerProfileScreenState
   void dispose() {
     _section.dispose();
     super.dispose();
+  }
+
+  Future<void> _share() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final text = context.l10n.profileShareCopied;
+    await Clipboard.setData(ClipboardData(text: '/u/${widget.uid}'));
+    if (!mounted) {
+      return;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
   }
 
   Future<void> _edit() async {
@@ -133,6 +146,40 @@ class _PhotographerProfileScreenState
                 ),
               )
             : null,
+        actions: [
+          if (!owner)
+            Padding(
+              padding: const EdgeInsets.all(AppSpace.s1),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: AppColors.overlay,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  key: const Key('profile-save'),
+                  tooltip: l.profileSavePhotographer,
+                  icon: const AppIcon(AppIcons.save, color: Colors.white),
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpace.s1),
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                color: AppColors.overlay,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                key: const Key('profile-more'),
+                tooltip: l.profileMoreOptions,
+                icon: const AppIcon(AppIcons.more, color: Colors.white),
+                onPressed: _share,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpace.s1),
+        ],
       ),
       body: CustomScrollView(
         slivers: [
