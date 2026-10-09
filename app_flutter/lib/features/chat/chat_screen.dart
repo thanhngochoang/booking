@@ -449,6 +449,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       actions: [
         if (hasMenu)
           PopupMenuButton<String>(
+            key: const Key('chat-more'),
+            tooltip: l10n.photoMoreOptions,
             icon: const AppIcon(AppIcons.more),
             onSelected: (val) {
               switch (val) {
