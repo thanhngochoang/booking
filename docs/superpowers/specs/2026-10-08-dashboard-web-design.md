@@ -22,7 +22,7 @@
 |---|---|---|
 | D1 | Dashboard là một ứng dụng Next.js (App Router, TypeScript strict) ở `apps/dashboard/`, dùng cho staff và chủ studio. Trả lời câu hỏi mở 22 của spec chính: web nội bộ riêng, không phải chế độ staff trong app. | #83, chủ dự án 2026-10-08 |
 | D2 | **Trình duyệt không gọi Firestore hay Storage.** Mọi dữ liệu qua lớp server của Next.js (BFF). BFF **đọc** bằng Firebase Admin SDK qua các interface đọc, **ghi** bằng cách gọi callable của Cloud Functions với ID token của chính người dùng. BFF không tự ghi Firestore. | chủ dự án 2026-10-08 (hướng B) |
-| D3 | Deploy lên **Firebase App Hosting**, region `asia-southeast1`, cùng project với Functions (cần gói Blaze). Trước khi nâng gói, dashboard chạy local với emulator. Phase 2 chuyển sang VPS cùng Go (#92, #98). | chủ dự án 2026-10-08 |
+| D3 | **Phase 1.5 chạy local với emulator**, không deploy. Chủ dự án tắt mọi thứ cần gói Blaze (2026-10-09, công tắc `BLAZE_ENABLED` trong `firebase-deploy.yml`, `docs/FIREBASE-SETUP.md` §10). Khi bật Blaze: deploy lên **Firebase App Hosting**, region `asia-southeast1`, cùng project với Functions (§9). Phase 2 chuyển sang VPS cùng Go (#92, #98). | chủ dự án 2026-10-08, 2026-10-09 |
 | D4 | Vai trò staff: `admin`, `finance`, `support`, `sales` (claim `staffRole`, mỗi người một vai trò). Trả lời câu hỏi mở 18. | chủ dự án 2026-10-08 |
 | D5 | Staff bắt buộc xác thực hai lớp bằng **TOTP của Firebase Auth** (Identity Platform). Chủ studio không bắt buộc. | chủ dự án 2026-10-08 |
 | D6 | Phía studio chỉ **chủ studio** dùng web (tài khoản `photographers` có `providerType = studio`). Thành viên dùng app. | spec studio 10-06 (không có vai trò quản lý) |
@@ -137,7 +137,7 @@ Giống app (S01.03): Google, Facebook, email và mật khẩu, bằng `firebase
 
 ### 3.2 TOTP cho staff
 
-- Project nâng Firebase Auth lên **Identity Platform** và bật nhà cung cấp MFA TOTP (miễn phí dưới 50.000 MAU; không tốn SMS).
+- Project nâng Firebase Auth lên **Identity Platform** và bật nhà cung cấp MFA TOTP (miễn phí dưới 50.000 MAU; không tốn SMS). Việc nâng làm cùng lúc với bật Blaze (D3); tới lúc đó chỉ chạy trên emulator với `MFA_DEV_BYPASS` nếu emulator không hỗ trợ TOTP.
 - **Lần đầu** một tài khoản có `staffRole` đăng nhập mà chưa có TOTP: S23.08 bước "Thiết lập ứng dụng xác thực": hiện mã QR và mã bí mật (`TotpMultiFactorGenerator.generateSecret`), người dùng nhập mã 6 số để đăng ký. Chưa đăng ký xong thì không vào được màn staff nào.
 - **Các lần sau:** đăng nhập bước một xong thì Firebase trả lỗi `auth/multi-factor-auth-required`; S23.08 hiện ô nhập mã 6 số.
 - **Kiểm ở server:** token phải có `firebase.sign_in_second_factor === 'totp'`. Kiểm ở **cả** BFF (`requireStaff`) và callable staff (`assertStaff` trong Functions, §4.3).
@@ -359,11 +359,12 @@ staff_approvals/{ulid}
 ## 9. Deploy, môi trường, chi phí
 
 - **Local:** `../scripts/backend-local.sh` (emulator + seed), rồi trong `apps/dashboard`: `npm run dev` với `USE_EMULATORS=1` (Admin SDK đọc `FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST`; callable trỏ functions emulator).
-- **App Hosting:** backend `dashboard`, region `asia-southeast1`, `apphosting.yaml`: `runConfig.minInstances: 0`, `maxInstances: 2`, `concurrency: 80`; biến `CALLABLE_BASE_URL`, `FIREBASE_PROJECT_ID`. Không có secret: Admin SDK dùng service account của backend.
+- **Blaze tắt (hiện tại):** chỉ có cách chạy local ở trên. Mọi thứ cần Blaze mà dashboard dùng (App Hosting, Cloud Functions cho mọi thao tác ghi và URL ký, Storage cho file riêng tư và tệp xuất, Identity Platform) chỉ có trên emulator. Không thêm bước deploy nào ngoài công tắc `BLAZE_ENABLED`.
+- **App Hosting (khi bật Blaze):** backend `dashboard`, region `asia-southeast1`, `apphosting.yaml`: `runConfig.minInstances: 0`, `maxInstances: 2`, `concurrency: 80`; biến `CALLABLE_BASE_URL`, `FIREBASE_PROJECT_ID`. Không có secret: Admin SDK dùng service account của backend.
 - **Service account của backend:** chỉ `roles/datastore.viewer` và `roles/firebaseauth.viewer` (cho `checkRevoked`). Không có quyền Storage: mọi URL ký đi qua callable.
 - **CI:**
   - Workflow mới `.github/workflows/dashboard.yml` (chạy khi đổi `apps/dashboard/**`, `packages/domain/**`, `design-system/**`): `npm ci`, lint, typecheck, Vitest, `next build`, kiểm `tokens.css` không cũ; job Playwright chạy trên emulator như `functions-test`.
-  - `firebase-deploy.yml` thêm job `deploy-dashboard` sau `deploy-functions` (`firebase deploy --only apphosting:dashboard`), cùng môi trường `dev` / `production`; bỏ qua khi `FIREBASE_PROJECT_ID` trống hoặc biến môi trường `DASHBOARD_DEPLOY` khác `true` (đặt `true` sau khi project lên Blaze).
+  - `firebase-deploy.yml` thêm job `deploy-dashboard` sau `deploy-functions` (`firebase deploy --only apphosting:dashboard`), cùng môi trường `dev` / `production`; chạy cùng điều kiện với `deploy-functions`: có `FIREBASE_PROJECT_ID` **và** `BLAZE_ENABLED` = `true`; ngược lại chỉ in cảnh báo.
 - **Chi phí** (đơn giá theo `2026-10-07-google-cloud-costs.md`, Cloud Run Tier 2; ước tính, sai số cao):
   - Dashboard ít người dùng (5 staff, 8 giờ/ngày; vài chục chủ studio), `minInstances: 0`: thời gian chạy nằm trong hạn mức miễn phí của Cloud Run → **~$0/tháng**, cold start vài trăm ms.
   - Đọc Firestore: 5 staff × 8 giờ × 120 lần làm mới/giờ × ~10 truy vấn (`count()` + trang đầu) ≈ 48.000 lượt/ngày, chạm hạn mức miễn phí 50.000/ngày. Vì vậy: chỉ làm mới màn đang mở (không làm mới thẻ tổng quan ở tab ẩn), và S23.09 làm mới mỗi 60 giây thay vì 30. Phần vượt (nếu có) ≈ $0,06/100K đọc → **< $1/tháng** ở cả mức 1.000 và 10.000 người dùng app.
@@ -405,5 +406,5 @@ Phần đổi `data-model` (§5.1), `shared-components.md` (§8) và `design-sys
 4. `apps/dashboard`: dựng dự án, lint import, `tool/gen_tokens_css.mjs`, thành phần dùng chung, `StaffShell`/`StudioShell`.
 5. Phiên: `/api/session`, `getSession`, guard, S23.08 (đăng nhập, thiết lập và nhập TOTP).
 6. Lớp đọc + `callCallable`; S23.09, S23.10, S23.11, S23.15.
-7. CI `dashboard.yml`, `apphosting.yaml`, job `deploy-dashboard`.
+7. CI `dashboard.yml`, `apphosting.yaml`, job `deploy-dashboard` sau công tắc `BLAZE_ENABLED` (không deploy khi công tắc tắt).
 8. Playwright trên emulator.
