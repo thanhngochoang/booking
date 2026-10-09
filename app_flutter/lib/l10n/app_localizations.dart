@@ -2806,6 +2806,24 @@ abstract class AppLocalizations {
   /// **'Không tải được bài đăng. Kiểm tra mạng rồi thử lại.'**
   String get photoLoadError;
 
+  /// No description provided for @photoSharePost.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ bài viết'**
+  String get photoSharePost;
+
+  /// No description provided for @photoShareCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết bài viết'**
+  String get photoShareCopied;
+
+  /// No description provided for @photoMoreOptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm tuỳ chọn'**
+  String get photoMoreOptions;
+
   /// No description provided for @servicePhotos.
   ///
   /// In vi, this message translates to:

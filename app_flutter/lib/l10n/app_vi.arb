@@ -664,6 +664,9 @@
     }
   },
   "photoLoadError": "Không tải được bài đăng. Kiểm tra mạng rồi thử lại.",
+  "photoSharePost": "Chia sẻ bài viết",
+  "photoShareCopied": "Đã sao chép liên kết bài viết",
+  "photoMoreOptions": "Thêm tuỳ chọn",
   "servicePhotos": "{n} ảnh",
   "@servicePhotos": {
     "placeholders": {
