@@ -758,7 +758,9 @@ void main() {
       );
 
       await pumpScreen(tester);
-      await tester.tap(find.byType(PopupMenuButton<String>));
+      final moreFinder = find.byKey(const Key('chat-more'));
+      expect(moreFinder, findsOneWidget);
+      await tester.tap(moreFinder);
       await tester.pumpAndSettle();
 
       expect(find.text('Xem buổi chụp'), findsOneWidget);
