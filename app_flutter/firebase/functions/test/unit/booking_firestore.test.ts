@@ -45,6 +45,7 @@ describe('Firestore <-> Domain booking mappers', () => {
     completedAt: '2026-10-15T09:00:00.000Z',
     reviewedAt: '2026-10-16T10:00:00.000Z',
     chatId: 'chat_01',
+    revisionsIncluded: 2,
     version: 2,
     createdAt: '2026-10-10T09:00:00.000Z',
     updatedAt: '2026-10-10T10:00:00.000Z',
@@ -55,6 +56,7 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.ok(docData.place.point instanceof GeoPoint);
     assert.ok(docData.createdAt instanceof Timestamp);
     assert.ok(docData.acceptDeadline instanceof Timestamp);
+    assert.equal(docData.revisionsIncluded, 2);
 
     const restored = bookingFromFirestore('b_01', docData);
     assert.ok(restored);
@@ -68,7 +70,26 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(restored.depositPaidAt, sampleBooking.depositPaidAt);
     assert.equal(restored.acceptDeadline, sampleBooking.acceptDeadline);
     assert.deepEqual(restored.cancel, sampleBooking.cancel);
+    assert.equal(restored.revisionsIncluded, 2);
     assert.equal(restored.version, sampleBooking.version);
+  });
+
+  it('a booking without revisionsIncluded reads it as undefined', () => {
+    const bookingWithoutRev: Booking = {
+      ...sampleBooking,
+      revisionsIncluded: undefined,
+    };
+    const docData = bookingToFirestore(bookingWithoutRev);
+    assert.equal(docData.revisionsIncluded, null);
+
+    const restoredFromNull = bookingFromFirestore('b_01', docData);
+    assert.ok(restoredFromNull);
+    assert.equal(restoredFromNull.revisionsIncluded, undefined);
+
+    delete docData.revisionsIncluded;
+    const restoredFromMissing = bookingFromFirestore('b_01', docData);
+    assert.ok(restoredFromMissing);
+    assert.equal(restoredFromMissing.revisionsIncluded, undefined);
   });
 
   it('round-trips Payment through Firestore conversion', () => {

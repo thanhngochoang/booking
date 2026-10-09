@@ -2,7 +2,7 @@
  * Firestore implementations of ServiceCatalog and CustomerContactReader.
  */
 
-import type { Firestore } from 'firebase-admin/firestore';
+import type { DocumentData, Firestore } from 'firebase-admin/firestore';
 import { db } from './admin.js';
 import { acceptsOrders } from '@photobooking/domain';
 import type {
@@ -12,6 +12,19 @@ import type {
   ServiceCatalog,
   ServiceRecord,
 } from '@photobooking/domain';
+
+export function serviceRecordOf(id: string, photographerId: string, d: DocumentData): ServiceRecord {
+  const revisions = typeof d.deliverables?.revisions === 'number' ? d.deliverables.revisions : undefined;
+  return {
+    id,
+    photographerId,
+    name: d.name ?? '',
+    price: typeof d.price === 'number' ? d.price : 0,
+    durationMinutes: typeof d.durationMinutes === 'number' ? d.durationMinutes : 60,
+    active: d.active !== false,
+    ...(revisions !== undefined ? { revisions } : {}),
+  };
+}
 
 export class FirestoreServiceCatalog implements ServiceCatalog {
   constructor(private readonly firestore: Firestore) {}
@@ -26,14 +39,7 @@ export class FirestoreServiceCatalog implements ServiceCatalog {
     const d = snap.data();
     if (!d) return null;
 
-    return {
-      id: snap.id,
-      photographerId,
-      name: d.name ?? '',
-      price: typeof d.price === 'number' ? d.price : 0,
-      durationMinutes: typeof d.durationMinutes === 'number' ? d.durationMinutes : 60,
-      active: d.active !== false,
-    };
+    return serviceRecordOf(snap.id, photographerId, d);
   }
 }
 
