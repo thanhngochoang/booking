@@ -6,8 +6,8 @@
     "test": "JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true firebase emulators:exec --config ../firebase.json --only firestore,storage --project demo-nag 'node --test rules.test.mjs'",
     "deploy:rules:dev": "firebase deploy --config ../firebase.json --only firestore:rules,firestore:indexes --project dev",
     "deploy:rules:prod": "firebase deploy --config ../firebase.json --only firestore:rules,firestore:indexes --project prod",
-    "deploy:storage:dev": "firebase deploy --config ../firebase.json --only storage --project dev",
-    "deploy:storage:prod": "firebase deploy --config ../firebase.json --only storage --project prod"
+    "deploy:storage:dev": "node -e \"if (process.env.BLAZE_ENABLED !== 'true') { console.error('Storage needs the Blaze plan. Set BLAZE_ENABLED=true to deploy (docs/FIREBASE-SETUP.md section 10).'); process.exit(1) }\" && firebase deploy --config ../firebase.json --only storage --project dev",
+    "deploy:storage:prod": "node -e \"if (process.env.BLAZE_ENABLED !== 'true') { console.error('Storage needs the Blaze plan. Set BLAZE_ENABLED=true to deploy (docs/FIREBASE-SETUP.md section 10).'); process.exit(1) }\" && firebase deploy --config ../firebase.json --only storage --project prod"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.0",
