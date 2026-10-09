@@ -1553,6 +1553,15 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không tải được bài đăng. Kiểm tra mạng rồi thử lại.';
 
   @override
+  String get photoSharePost => 'Chia sẻ bài viết';
+
+  @override
+  String get photoShareCopied => 'Đã sao chép liên kết bài viết';
+
+  @override
+  String get photoMoreOptions => 'Thêm tuỳ chọn';
+
+  @override
   String servicePhotos(int n) {
     return '$n ảnh';
   }

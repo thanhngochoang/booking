@@ -1,5 +1,6 @@
 // lib/features/photo/photo_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -104,6 +105,18 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
     }
   }
 
+  Future<void> _share(String postId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final text = context.l10n.photoShareCopied;
+    await Clipboard.setData(ClipboardData(text: '/p/$postId'));
+    if (!mounted) {
+      return;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -143,6 +156,7 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
                         onLike: () => _like(d.post.id),
                         onSave: () => _save(d.post.id),
                         onFollow: () => _follow(d.post.photographerId),
+                        onShare: () => _share(d.post.id),
                       ),
               ),
             ),
@@ -167,6 +181,25 @@ class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
                 ),
               ),
             ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpace.s2),
+                  child: IconButton(
+                    key: const Key('photo-more'),
+                    tooltip: l.photoMoreOptions,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.overlay,
+                      foregroundColor: AppColors.foregroundInverse,
+                    ),
+                    icon: const AppIcon(AppIcons.more),
+                    onPressed: () => _share(widget.postId),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -183,6 +216,7 @@ class _Content extends ConsumerWidget {
     required this.onLike,
     required this.onSave,
     required this.onFollow,
+    required this.onShare,
   });
 
   final PostDetail detail;
@@ -192,6 +226,7 @@ class _Content extends ConsumerWidget {
   final VoidCallback onLike;
   final VoidCallback onSave;
   final VoidCallback onFollow;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -346,22 +381,26 @@ class _Content extends ConsumerWidget {
                           label: view.saved ? l.photoUnsave : l.photoSave,
                           onTap: onSave,
                         ),
-                        if (post.locationName != null)
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                const AppIcon(AppIcons.place, size: _iconSize),
-                                const SizedBox(width: AppSpace.s1),
-                                Flexible(
-                                  child: Text(
-                                    post.locationName!,
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
+                        if (post.locationName != null) ...[
+                          const SizedBox(width: AppSpace.s2),
+                          const AppIcon(AppIcons.place, size: _iconSize),
+                          const SizedBox(width: AppSpace.s1),
+                          Flexible(
+                            child: Text(
+                              post.locationName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall,
                             ),
                           ),
+                        ] else
+                          const Spacer(),
+                        IconButton(
+                          key: const Key('photo-share-button'),
+                          tooltip: l.photoSharePost,
+                          icon: const AppIcon(AppIcons.share, size: _iconSize),
+                          onPressed: onShare,
+                        ),
                       ],
                     ),
                     if (service != null) ...[

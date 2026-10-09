@@ -1,5 +1,6 @@
 // test/features/photo/photo_detail_screen_test.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -86,6 +87,8 @@ void main() {
       _in('service-card', find.text('40 ảnh · giao sau 5 ngày · 2 giờ')),
       findsOneWidget,
     );
+    expect(find.byKey(const Key('photo-more')), findsOneWidget);
+    expect(find.byKey(const Key('photo-share-button')), findsOneWidget);
   });
 
   testWidgets(
@@ -212,6 +215,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Đang theo dõi'), findsOneWidget);
     expect(w.engagement.writeCalls, 2);
+  });
+
+  testWidgets('tapping share buttons copies link and notifies', (tester) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final w = DiscoveryWorld();
+    await _open(tester, w);
+    await tester.tap(find.byKey(const Key('photo-more')));
+    await tester.pump();
+    expect(copied, '/p/a');
+    expect(find.text('Đã sao chép liên kết bài viết'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    copied = null;
+    await tester.tap(find.byKey(const Key('photo-share-button')));
+    await tester.pump();
+    expect(copied, '/p/a');
+    expect(find.text('Đã sao chép liên kết bài viết'), findsOneWidget);
   });
 
   testWidgets('a post with several photos pages through them with dots', (
