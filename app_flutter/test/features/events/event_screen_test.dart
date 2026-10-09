@@ -490,6 +490,7 @@ void main() {
       );
       final w = EventsWorld(events: [_free('ev1')]);
       await w.pump(tester, path: '/e/ev1', size: _sw);
+      expect(_byKey('event-more'), findsOneWidget);
       await tester.tap(_byKey('event-share'));
       await settle(tester);
       expect(copied, '/e/ev1');
