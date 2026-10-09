@@ -188,13 +188,29 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S22.04 | Tài khoản nhận hoàn (sheet; hoàn VietQR) | — (sheet) | khách | spec 10-06 thanh toán | ⬜ có mock, chưa có plan | — |
 | S22.05 | Khôi phục tài khoản (trong 30 ngày sau khi xoá) | — (router guard khi tài khoản chờ xoá) | cả hai | mới | ⬜ có mock, có plan (#141) | — |
 | **S23** | **Vận hành nội bộ (staff)** | | | | | |
-| S23.01 | Hàng đợi khiếu nại: xem bằng chứng hai bên, quyết định thả / hoàn / chia | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.02 | Duyệt lô chi trả và đối soát cổng | nội bộ | admin · finance | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.03 | Hoàn tiền thủ công (cổng không hoàn tự động) | nội bộ | admin · finance | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.04 | Duyệt xác minh (danh tính, doanh nghiệp; cấp dấu tích xanh và quyền nhận đơn) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.05 | Kiểm duyệt báo cáo (người dùng, bài, tin nhắn, sự kiện) | nội bộ | admin | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.06 | Hộp thư hỗ trợ: chat hỗ trợ và hỏi trước của sự kiện do nền tảng tổ chức | nội bộ | admin · sales | mới | ⬜ đang thiết kế · chưa có mock | — |
-| S23.07 | Duyệt giải thưởng (hạng NAG): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi, kèm xác minh danh tính khi cấp hạng | nội bộ | admin | B (spec 10-05) | ⬜ chưa có mock · duyệt bằng CLI `scripts/awards-local.sh` (local) / `npm run awards` (prod) tới khi có dashboard (#83) | — |
+| S23.01 | Khiếu nại: hàng đợi và chi tiết (bằng chứng, hai mốc tiền, hội thoại ba bên, thả / hoàn / chia; hoàn từ 10 triệu cần người thứ hai) | `/staff/disputes` (web) | admin · support (quyết định) · finance (xem số tiền) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
+| S23.02 | Chi trả: duyệt lần chi đầu, tạm giữ, thất bại, đang xử lý quá lâu | `/staff/payouts` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.03 | Hoàn tiền: thất bại, chờ quá lâu, ghi nhận hoàn thủ công, tiền giữ lâu | `/staff/refunds` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.04 | Duyệt xác minh: danh tính, doanh nghiệp, thu hồi, khôi phục (hai người) | `/staff/verifications` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) | — |
+| S23.05 | Kiểm duyệt báo cáo, gộp theo nội dung (người dùng, bài, tin nhắn, sự kiện, việc đăng, tin tuyển) | `/staff/reports` (web) | admin · support | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
+| S23.06 | Hộp thư hỗ trợ: hội thoại trợ giúp và hội thoại khiếu nại, nhận xử lý, ghi chú nội bộ | `/staff/inbox` (web) | admin · support · sales (chỉ trợ giúp) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
+| S23.07 | Duyệt giải thưởng (hạng NAG chỉ cấp khi đã xác minh S21): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi | `/staff/awards` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) · tới lúc đó duyệt bằng CLI `scripts/awards-local.sh` / `npm run awards` | — |
+| S23.08 | Đăng nhập dashboard & xác thực hai lớp (TOTP cho staff) | `/login` (web) | staff · chủ studio | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
+| S23.09 | Tổng quan staff: hàng đợi, số việc, việc quá hạn | `/staff` (web) | mọi staff | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
+| S23.10 | Staff: cấp, đổi, bỏ vai trò; đặt lại xác thực hai lớp | `/staff/team` (web) | admin | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
+| S23.11 | Nhật ký kiểm toán | `/staff/audit` (web) | admin | Phase 1.5 (`2026-10-08-dashboard-web-design.md`) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
+| S23.12 | Chuyển khoản chưa khớp (`needs_review`): gán, hoàn cho người chuyển, đóng | `/staff/transfers` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.13 | Báo cáo thuế theo tháng, xuất CSV | `/staff/tax` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
+| S23.14 | Đối soát sao kê ngày (chỉ thiết kế, làm khi chọn tổ chức trung gian) | `/staff/reconciliation` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ chỉ thiết kế, chưa có mock | — |
+| S23.15 | Chờ duyệt lần hai (thao tác tiền từ 10 triệu, khôi phục xác minh) | `/staff/approvals` (web) | ai có quyền duyệt | Phase 1.5 (`2026-10-08-dashboard-web-design.md` §5.4, #162) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#162) | — |
+| S23.16 | Tài khoản bị khoá: khoá tạm 7/30 ngày, khoá hẳn (hai người khi thợ còn booking hoặc tiền), mở khoá | `/staff/suspensions` (web) | admin · support (khoá tạm) | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
+| S23.17 | Cờ tuyển thợ: chưa trả công (gỡ khoá đăng tin, xoá cờ), lôi kéo thợ | `/staff/recruit-flags` (web) | admin · support | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
+| S23.18 | Sự kiện: danh sách (nền tảng và tạo hộ) | `/staff/events` (web) | admin · sales (của mình) | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.19 | Tạo / sửa sự kiện (như S12.01–S12.02) | `/staff/events/new` (web) | admin · sales | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.20 | Quản lý sự kiện: đăng ký, FAQ, thông báo, kiểm duyệt, huỷ (hai người khi hoàn từ 10 triệu) | `/staff/events/:id` (web) | admin · sales (của mình) | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.21 | Khuyến mãi (promo): soạn, xem trước, gửi thử, gửi (1 promo / người / 7 ngày) | `/staff/promos` (web) | admin · sales | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.22 | Cấu hình: Chụp ngay, kiểm soát tiền, lịch sử phiên bản (trường tiền cần admin thứ hai) | `/staff/config` (web) | admin | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
+| S23.23 | Chỉ số studio (bộ đếm vi phạm) | `/staff/studios` (web) | admin · support | Phase 1.5 (`screens/staff-config-content.md`, #168) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#168) | — |
 | **S24** | **Portfolio album** | | | | | |
 | S24.01 | Chi tiết album | `/u/:uid/albums/:albumId` | cả hai | C (spec 10-05) | ✅ đã làm (c2) · khớp mock | — |
 | S24.02 | Album của tôi (sắp xếp, "Chưa xếp album") | `/me/albums` | thợ ảnh | C (spec 10-05) | ✅ đã làm (c3) · khớp mock | — |
@@ -218,6 +234,17 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S27.05 | Tin của studio và ứng viên | `/studio/recruit` | studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.06 | Cộng tác (studio và thợ) | `/collab` | thợ ảnh · studio | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
 | S27.07 | Nhận việc cộng tác (sheet) | — (sheet) | thợ ảnh | spec 10-07 tuyển thợ | ⬜ có mock, có plan (#151) | — |
+| **S28** | **Studio trên web** (dashboard Phase 1.5, chỉ chủ studio) | | | | | |
+| S28.01 | Tổng quan studio: chờ giao thợ, khách xin đổi thợ, cần bàn giao, buổi chụp hôm nay | `/studio` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.02 | Lịch tuần theo thành viên (hàng "Chưa giao thợ", cộng tác viên) | `/studio/calendar` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.03 | Booking: danh sách và chi tiết (giao thợ, đổi thợ, trả lời yêu cầu đổi, đã chụp xong) | `/studio/bookings` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.04 | Nộp bàn giao từ máy tính (kéo thả, nén trong trình duyệt, link ảnh gốc) | `/studio/bookings/:id/delivery` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.05 | Thành viên: thành viên, lời mời, yêu cầu gia nhập, mời thợ, cộng tác viên (chỉ đọc) | `/studio/members` (web) | chủ studio | Phase 1.5 (`screens/studio-web-operations.md`, #167) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#167) | — |
+| S28.06 | Gói dịch vụ: thêm, sửa, ẩn | `/studio/packages` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
+| S28.07 | Báo giá: việc đang tuyển, gửi và rút báo giá | `/studio/quotes` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
+| S28.08 | Thu nhập và chi trả, tải CSV theo tháng | `/studio/earnings` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
+| S28.09 | Đánh giá của studio (chỉ xem) | `/studio/reviews` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
+| S28.10 | Tin nhắn: hỏi trước và hội thoại booking, chữ và ảnh | `/studio/messages` (web) | chủ studio | Phase 1.5 (`screens/studio-web-business.md`, #169) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#169) | — |
 | **S29** | **Điểm chụp đang hot** | | | | | |
 | S29.01 | Điểm chụp: danh sách, lọc khu vực / "Đang vào mùa" / "Cuối tuần này có thợ" (+ khu ở S02.01, lưới tab Địa điểm ở S02.03) | `/spots` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
 | S29.02 | Trang điểm chụp: mô tả, mẹo, bản đồ; thợ nhận chụp theo ngày; gói chia suất; sự kiện; ảnh (trống ngày, ngoài mùa) | `/spots/:spotId` | khách · thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
@@ -917,7 +944,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 
 ### 3i.6 S23 · Vận hành nội bộ (staff)
 - **Vì sao cần**: `resolveDispute`, `executePayout`, hoàn tiền `manual`, duyệt dấu tích xanh, kiểm duyệt báo cáo và hộp thư hỗ trợ đều cần người của nền tảng thao tác (vai trò `admin`, `sales`, có thể `finance`, câu hỏi mở 18).
-- **Nền tảng chưa chốt** (câu hỏi mở 22): web nội bộ riêng hay chế độ staff trong app. Mã S23 vẫn đặt để mọi spec tham chiếu chung; route là "nội bộ" cho tới khi chốt.
+- **Nền tảng (đã chốt 2026-10-08, câu hỏi mở 22):** dashboard web riêng (Next.js + BFF), vai trò `admin`, `finance`, `support`, `sales`, staff bắt buộc TOTP; xem `2026-10-08-dashboard-web-design.md`. Route web của S23.01–S23.07 do spec màn của từng ticket chốt; tới lúc đó cột Route ghi "nội bộ".
 - **Quy tắc**: mọi quyết định của staff ghi nhật ký kiểm toán (ai, lúc nào, lý do); tiền chỉ di chuyển qua callable phía server, không sửa tay dữ liệu.
 
 ## 3j. Loại nhà cung cấp, portfolio album, giải thưởng, hợp đồng và Đăng việc (2026-10-05)
@@ -1073,13 +1100,13 @@ Lý do đặt 3b sau 3: sự kiện dùng lại hồ sơ nhiếp ảnh gia, `Eve
 16. **Hỏi trước sự kiện của nền tảng** (đã chốt O2, 2026-10-06): không có chat hỏi trước; S11.02 hiện FAQ do staff nhập và một email hỗ trợ cố định cho tới khi có S23.06. Còn mở: địa chỉ email hỗ trợ (dòng email ẩn cho tới khi có).
 21. **Kiểm duyệt timeline và nhóm chat**: ai chịu trách nhiệm nội dung (chủ sự kiện, staff), có cần bộ lọc ảnh nhạy cảm tự động và nút báo cáo gửi về đâu? Bài của người ngoài chờ duyệt có làm chủ sự kiện quá tải không (đề xuất: bật tự duyệt theo người theo dõi)?
 17. **Tạo hộ nhiếp ảnh gia** (đã chốt O1, 2026-10-06): bắt buộc nhiếp ảnh gia đồng ý trong 24 giờ (`hostConsent`), xem mục 3.6. Còn làm sau: ô chọn nhiếp ảnh gia cho staff ở S12.01.
-18. **Quản trị chi trả**: bảng điều khiển duyệt lô chi trả, khiếu nại và đối soát cổng nằm ở đâu (web nội bộ riêng, Firebase console + callable tạm thời)? Có cần vai trò `finance` ngoài `admin`/`sales`?
+18. **Đã chốt 2026-10-08** (`2026-10-08-dashboard-web-design.md` §4): có vai trò `finance` (chỉ màn tiền), thêm `support`; màn tiền là S23.02/S23.03 trên dashboard web. Bản cũ: **Quản trị chi trả**: bảng điều khiển duyệt lô chi trả, khiếu nại và đối soát cổng nằm ở đâu (web nội bộ riêng, Firebase console + callable tạm thời)? Có cần vai trò `finance` ngoài `admin`/`sales`?
 19. **Đã chọn hướng 2026-10-06** (spec thanh toán §1, §11): mô hình A1, chờ luật sư xác nhận. Bản cũ: **Pháp lý giữ tiền hộ**: tham vấn xem mô hình treo tiền có cần giấy phép trung gian thanh toán hay đi qua cổng có sản phẩm ký quỹ; quyết định trước khi bật cổng thật.
 20. **Phần không hoàn khi huỷ muộn** (50% hoặc 100% giữ lại): giả định chuyển cho nhiếp ảnh gia như bồi thường; xác nhận hoặc cho nền tảng giữ một phần.
 11. **Kỹ năng và gợi ý**: danh mục khởi đầu (3e.2) có đủ cho thị trường Việt Nam không, ai duy trì `taxonomy`? Có cho nhiếp ảnh gia tự đề xuất kỹ năng mới không (qua duyệt)?
 12. **Sở thích của khách**: có thêm câu hỏi khởi đầu "Bạn cần chụp gì?" (và ngân sách, phong cách) để bớt phụ thuộc tín hiệu ngầm không?
 13. **Hạ tầng gợi ý** (đề xuất, cần xác nhận): làm theo hai giai đoạn ở mục 3e.4, bắt đầu bằng `recommender-core` trong hàm `recommend`, tách Cloud Run khi chạm ngưỡng.
-22. **Công cụ vận hành (S23)**: web nội bộ riêng hay chế độ staff trong app? Ai được thấy giấy tờ xác minh và bằng chứng khiếu nại?
+22. **Đã chốt 2026-10-08** (`2026-10-08-dashboard-web-design.md`): web nội bộ riêng; giấy tờ xác minh và bằng chứng khiếu nại chỉ `admin` và `support` xem, qua URL ký 5 phút có ghi nhật ký. Bản cũ: **Công cụ vận hành (S23)**: web nội bộ riêng hay chế độ staff trong app? Ai được thấy giấy tờ xác minh và bằng chứng khiếu nại?
 23. **Đã chốt 2026-10-06** (spec xác minh): có phí, bỏ ngưỡng thành tích. Bản cũ: **Điều kiện dấu tích xanh (S21.02)**: ngưỡng đề xuất ở mục 3i.4 có hợp lý không? Có thu phí xác minh không?
 24. **Chặn khi đang có booking (S20)**: đề xuất giữ booking và liên hệ qua hỗ trợ; hay cho huỷ không mất cọc?
 25. **Xoá tài khoản (S22.02)**: thời gian lưu sổ cái ẩn danh và bài công khai (gỡ ngay hay sau 30 ngày cho phép khôi phục)?
