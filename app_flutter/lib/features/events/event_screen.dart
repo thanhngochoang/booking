@@ -71,6 +71,10 @@ class _EventScreenState extends ConsumerState<EventScreen> {
       ..showSnackBar(SnackBar(content: Text(text)));
   }
 
+  void _more() {
+    _share();
+  }
+
   /// "Đăng ký tham gia": a customer needs a phone number first (spec 3b.1);
   /// reading the contact fails closed, so a failure also goes to S04.05.
   Future<void> _join(EventDetail event) async {
@@ -287,6 +291,12 @@ class _EventScreenState extends ConsumerState<EventScreen> {
               ),
               actions: [
                 IconButton(
+                  key: const Key('event-more'),
+                  tooltip: l.photoMoreOptions,
+                  icon: const AppIcon(AppIcons.more),
+                  onPressed: _more,
+                ),
+                IconButton(
                   key: const Key('event-share'),
                   tooltip: l.eventShareTooltip,
                   icon: const AppIcon(AppIcons.share),
@@ -307,8 +317,10 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                 url: cover,
                 onBack: _back,
                 onShare: _share,
+                onMore: _more,
                 shareTooltip: l.eventShareTooltip,
                 backTooltip: l.back,
+                moreTooltip: l.photoMoreOptions,
               ),
             if (cancelled) _CancelledStrip(text: l.eventCancelled),
             if (s.isFree && !cancelled && !timeline) const FreeBanner(),
@@ -395,15 +407,19 @@ class _Cover extends StatelessWidget {
     required this.url,
     required this.onBack,
     required this.onShare,
+    required this.onMore,
     required this.backTooltip,
     required this.shareTooltip,
+    required this.moreTooltip,
   });
 
   final String? url;
   final VoidCallback onBack;
   final VoidCallback onShare;
+  final VoidCallback onMore;
   final String backTooltip;
   final String shareTooltip;
+  final String moreTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -436,6 +452,16 @@ class _Cover extends StatelessWidget {
               backTooltip,
               AppIcons.back,
               onBack,
+            ),
+          ),
+          Positioned(
+            top: top,
+            right: AppSpace.s2 + 44,
+            child: round(
+              const Key('event-more'),
+              moreTooltip,
+              AppIcons.more,
+              onMore,
             ),
           ),
           Positioned(
