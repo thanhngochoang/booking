@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/award/award.dart';
@@ -401,12 +402,43 @@ void main() {
       final w = await _world(tester);
       await tester.pumpWidget(w.app('/u/p2'));
       await tester.pumpAndSettle();
-      expect(find.byType(VerifiedMark), findsNothing);
-      await tester.tap(_key('profile-follow'));
+        expect(find.byType(VerifiedMark), findsNothing);
+        await tester.tap(_key('profile-follow'));
+        await tester.pumpAndSettle();
+        expect(find.text('Đang theo dõi'), findsOneWidget);
+      },
+    );
+
+    testWidgets('top bar shows save and more actions for visitors; owner sees more only', (
+      tester,
+    ) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      final w = await _world(tester);
+      await tester.pumpWidget(w.app('/u/p1'));
       await tester.pumpAndSettle();
-      expect(find.text('Đang theo dõi'), findsOneWidget);
-    },
-  );
+      expect(_key('profile-save'), findsOneWidget);
+      expect(_key('profile-more'), findsOneWidget);
+
+      await tester.tap(_key('profile-more'));
+      await tester.pump();
+      expect(copied, '/u/p1');
+      expect(find.text('Đã sao chép liên kết hồ sơ'), findsOneWidget);
+    });
 
   testWidgets('unpublished, unknown and failing profiles each say so', (
     tester,
@@ -452,6 +484,8 @@ void main() {
     expect(find.text('Hồ sơ này chưa sẵn sàng'), findsNothing);
     expect(_key('profile-book'), findsNothing);
     expect(_key('profile-follow'), findsNothing);
+    expect(_key('profile-save'), findsNothing);
+    expect(_key('profile-more'), findsOneWidget);
     expect(find.byType(ContactDial), findsNothing);
     expect(find.byType(CompletenessMeter), findsOneWidget);
     final loadsBefore = w.profiles.loads;
