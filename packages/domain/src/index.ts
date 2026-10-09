@@ -11,6 +11,7 @@ export * from './booking.js';
 export * from './booking_policy.js';
 export * from './booking_machine.js';
 export * from './escrow.js';
+export * from './milestones.js';
 export * from './payment_code.js';
 export * from './vietqr.js';
 export * from './transfer_rules.js';

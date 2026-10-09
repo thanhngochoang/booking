@@ -19,6 +19,7 @@ import {
   BOOKING_CONTACT_RETENTION_DAYS,
   isDateString,
   isTimeString,
+  clampRevisions,
 } from '../src/booking_policy.js';
 import { ERROR_CODES } from '../src/errors.js';
 
@@ -65,6 +66,19 @@ describe('Task 1: Booking policy and math', () => {
   it('computeRefund on the full price', () => {
     const { deposit } = computeDeposit(1_500_000);
     assert.equal(computeRefund(deposit, 50), 750_000);
+  });
+
+  it('clampRevisions: undefined → 1, null → 1, "x" → 1, NaN → 1, 0 → 0, 2 → 2, 2.5 → 2, 7 → 5, -1 → 0, Infinity → 5', () => {
+    assert.equal(clampRevisions(undefined), 1);
+    assert.equal(clampRevisions(null), 1);
+    assert.equal(clampRevisions('x'), 1);
+    assert.equal(clampRevisions(Number.NaN), 1);
+    assert.equal(clampRevisions(0), 0);
+    assert.equal(clampRevisions(2), 2);
+    assert.equal(clampRevisions(2.5), 2);
+    assert.equal(clampRevisions(7), 5);
+    assert.equal(clampRevisions(-1), 0);
+    assert.equal(clampRevisions(Number.POSITIVE_INFINITY), 5);
   });
 
   it('computeAcceptDeadline: min(paidAt + 24h, startsAt)', () => {
