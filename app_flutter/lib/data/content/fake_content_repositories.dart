@@ -389,6 +389,9 @@ class FakeSavedFollowRepository implements SavedFollowRepository {
   final followEntries =
       <({String userId, String photographerId, DateTime createdAt, String docId})>[];
 
+  /// Overrides for social counts per userId
+  final seededCounts = <String, SocialCounts>{};
+
   /// Overrides for follower count per photographerId
   final followerCounts = <String, int>{};
 
@@ -398,6 +401,14 @@ class FakeSavedFollowRepository implements SavedFollowRepository {
 
   void _check() {
     if (failWith != null) throw failWith!;
+  }
+
+  void seedCounts(String uid, SocialCounts counts) {
+    seededCounts[uid] = counts;
+  }
+
+  void seedFollowerCount(String photographerId, int count) {
+    followerCounts[photographerId] = count;
   }
 
   void addSavedPost(String uid, String postId, DateTime createdAt) {
@@ -700,6 +711,9 @@ class FakeSavedFollowRepository implements SavedFollowRepository {
   Future<SocialCounts> counts(String uid) async {
     _check();
     readCalls++;
+    if (seededCounts.containsKey(uid)) {
+      return seededCounts[uid]!;
+    }
     final followingCount = followEntries.where((e) => e.userId == uid).length;
     final savedPostsCount = savedPostEntries.where((e) => e.userId == uid).length;
     final savedPhotographersCount =

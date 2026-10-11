@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
+import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/home/home_controller.dart';
 
@@ -26,7 +27,25 @@ Future<(ProviderContainer, DiscoveryWorld, _Spy)> _make({
       DiscoveryWorld(
         recommenderFactory: (x) => spy = _Spy(x.localRecommender()),
       );
+  if (world != null) {
+    final base = world.recommenderFactory?.call(world) ?? world.localRecommender();
+    final s = _Spy(base);
+    spy = s;
+    world.recommender = s;
+  }
   await use.init();
+  if (world != null) {
+    final s = _Spy(use.recommender);
+    spy = s;
+    // Replace recommendationRepositoryProvider in overrides
+    final idx = use.overrides.indexWhere(
+      (o) => o.toString().contains('recommendationRepositoryProvider'),
+    );
+    if (idx >= 0) {
+      use.overrides[idx] =
+          recommendationRepositoryProvider.overrideWithValue(s);
+    }
+  }
   final c = ProviderContainer(overrides: use.overrides, retry: (_, _) => null);
   addTearDown(c.dispose);
   return (c, use, spy ?? _Spy(use.recommender));
@@ -47,6 +66,13 @@ void main() {
       expect(c.read(engagementProvider)['a']!.likeCount, 214);
     },
   );
+
+  test('home passes the followed ids to recommendPosts', () async {
+    final (c, world, spy) = await _make();
+    world.savedFollow.addFollow(world.uid, 'p3', DateTime.now().toUtc());
+    await c.read(homeFeedProvider.future);
+    expect(spy.queries.single.followedIds, contains('p3'));
+  });
 
   test('selecting a category reloads with that specialty', () async {
     final (c, _, spy) = await _make();

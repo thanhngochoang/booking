@@ -5,7 +5,8 @@ enum ReasonCode {
   freeOnDate('free_on_date'),
   topRated('top_rated'),
   fastReply('fast_reply'),
-  newTalent('new_talent');
+  newTalent('new_talent'),
+  following('following');
 
   const ReasonCode(this.code);
   final String code;

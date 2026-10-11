@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/content/photographer_summary.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/saved_world.dart';

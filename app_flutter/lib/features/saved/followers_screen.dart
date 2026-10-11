@@ -131,7 +131,9 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen> {
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(AppSpace.s4),
-                      child: Center(child: CircularProgressIndicator.adaptive()),
+                      child: Center(
+                        child: DotRingLoader(size: LoaderSize.inline),
+                      ),
                     ),
                   ),
                 if (state.moreFailed)

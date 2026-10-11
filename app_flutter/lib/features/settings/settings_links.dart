@@ -12,4 +12,4 @@ final verifyStartReadyProvider = Provider<bool>((ref) => false);
 final studioRoutesReadyProvider = Provider<bool>((ref) => false);
 
 /// The S19 plan flips this when `/me/following` and `/me/saved` exist.
-final savedListsReadyProvider = Provider<bool>((ref) => false);
+final savedListsReadyProvider = Provider<bool>((ref) => true);

@@ -9,6 +9,7 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/features/awards/award_nudge.dart';
 import 'package:photobooking/features/profile/profile_posts_controller.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
@@ -347,6 +348,12 @@ class _CountsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final total = counts.value?.total;
+    final ready = ref.watch(savedListsReadyProvider);
+    final socialCountsAsync = ready ? ref.watch(socialCountsProvider) : null;
+    final followerCountAsync = ready ? ref.watch(myFollowerCountProvider) : null;
+    final profile = ref.watch(currentProfileProvider).value;
+    final isPhotographer = profile?.role == UserRole.photographer;
+
     return Wrap(
       spacing: AppSpace.s5,
       runSpacing: AppSpace.s2,
@@ -357,17 +364,29 @@ class _CountsRow extends ConsumerWidget {
           loading: total == null && !counts.hasError,
           label: l.profilePostsCount,
         ),
-        if (ref.watch(savedListsReadyProvider)) ...[
+        if (ready) ...[
           _CountTile(
             key: const Key('profile-count-following'),
-            value: null,
+            value: socialCountsAsync?.value?.following.toString(),
+            loading: socialCountsAsync?.isLoading ?? false,
             label: l.profileFollowingCount,
+            onTap: () => context.push('/me/following'),
           ),
           _CountTile(
             key: const Key('profile-count-saved'),
-            value: null,
+            value: socialCountsAsync?.value?.saved.toString(),
+            loading: socialCountsAsync?.isLoading ?? false,
             label: l.profileSavedCount,
+            onTap: () => context.push('/me/saved'),
           ),
+          if (isPhotographer)
+            _CountTile(
+              key: const Key('profile-count-followers'),
+              value: followerCountAsync?.value?.toString(),
+              loading: followerCountAsync?.isLoading ?? false,
+              label: l.profileCountFollowers,
+              onTap: () => context.push('/me/followers'),
+            ),
         ],
       ],
     );
@@ -380,20 +399,26 @@ class _CountTile extends StatelessWidget {
     required this.value,
     required this.label,
     this.loading = false,
+    this.onTap,
   });
 
   /// Null shows "—" (unknown).
   final String? value;
   final String label;
   final bool loading;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return MergeSemantics(
+    final semanticLabel = '$label: ${value ?? '—'}';
+
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (loading)
             Padding(
@@ -410,6 +435,25 @@ class _CountTile extends StatelessWidget {
             ),
           Text(label, style: theme.textTheme.bodySmall),
         ],
+      ),
+    );
+
+    if (onTap != null) {
+      return Semantics(
+        button: true,
+        label: semanticLabel,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: content,
+        ),
+      );
+    }
+
+    return MergeSemantics(
+      child: Semantics(
+        label: semanticLabel,
+        child: content,
       ),
     );
   }
