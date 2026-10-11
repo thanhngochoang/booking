@@ -9237,6 +9237,180 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không đặt lịch được với người này.'**
   String get bookingErrBlocked;
+
+  /// No description provided for @savedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu'**
+  String get savedTitle;
+
+  /// No description provided for @savedTabPosts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài · {count}'**
+  String savedTabPosts(int count);
+
+  /// No description provided for @savedTabPhotographers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia · {count}'**
+  String savedTabPhotographers(int count);
+
+  /// No description provided for @savedPostsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu bài nào'**
+  String get savedPostsEmptyTitle;
+
+  /// No description provided for @savedPostsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bấm biểu tượng lưu trên ảnh để xem lại ở đây.'**
+  String get savedPostsEmptyBody;
+
+  /// No description provided for @savedPhotographersEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu nhiếp ảnh gia nào'**
+  String get savedPhotographersEmptyTitle;
+
+  /// No description provided for @savedPhotographersEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bấm biểu tượng lưu trên hồ sơ nhiếp ảnh gia để so sánh và đặt lịch sau.'**
+  String get savedPhotographersEmptyBody;
+
+  /// No description provided for @savedUnsaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ lưu {name}'**
+  String savedUnsaved(String name);
+
+  /// No description provided for @savedUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get savedUndo;
+
+  /// No description provided for @savedBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get savedBook;
+
+  /// No description provided for @savedToggleOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu {name}'**
+  String savedToggleOn(String name);
+
+  /// No description provided for @savedToggleOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu {name}'**
+  String savedToggleOff(String name);
+
+  /// No description provided for @followingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get followingTitle;
+
+  /// No description provided for @followingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} nhiếp ảnh gia'**
+  String followingCount(int count);
+
+  /// No description provided for @followingButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get followingButton;
+
+  /// No description provided for @followButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi'**
+  String get followButton;
+
+  /// No description provided for @followingUnfollowed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ theo dõi {name}'**
+  String followingUnfollowed(String name);
+
+  /// No description provided for @followingEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa theo dõi ai'**
+  String get followingEmptyTitle;
+
+  /// No description provided for @followingEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi nhiếp ảnh gia để thấy bài mới của họ trước.'**
+  String get followingEmptyBody;
+
+  /// No description provided for @followingEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá'**
+  String get followingEmptyAction;
+
+  /// No description provided for @followersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người theo dõi'**
+  String get followersTitle;
+
+  /// No description provided for @followersCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} người theo dõi · chỉ bạn xem được danh sách này'**
+  String followersCount(int count);
+
+  /// No description provided for @followersSince.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi từ {date}'**
+  String followersSince(String date);
+
+  /// No description provided for @followersEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có người theo dõi'**
+  String get followersEmptyTitle;
+
+  /// No description provided for @followersEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài thường xuyên để có thêm người theo dõi.'**
+  String get followersEmptyBody;
+
+  /// No description provided for @profileCountFollowers.
+  ///
+  /// In vi, this message translates to:
+  /// **'người theo dõi'**
+  String get profileCountFollowers;
+
+  /// No description provided for @profileUnsavePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu nhiếp ảnh gia'**
+  String get profileUnsavePhotographer;
+
+  /// No description provided for @reasonFollowing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang theo dõi'**
+  String get reasonFollowing;
+
+  /// No description provided for @socialToggleFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được. Thử lại.'**
+  String get socialToggleFailed;
 }
 
 class _AppLocalizationsDelegate

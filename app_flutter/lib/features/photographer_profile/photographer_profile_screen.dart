@@ -49,6 +49,7 @@ class _PhotographerProfileScreenState
       final me = ref.read(authRepositoryProvider).currentUser?.uid;
       if (me != null && me != widget.uid) {
         ref.read(followProvider.notifier).load(widget.uid);
+        ref.read(savedPhotographerProvider.notifier).load(widget.uid);
       }
     });
   }
@@ -148,20 +149,36 @@ class _PhotographerProfileScreenState
             : null,
         actions: [
           if (!owner)
-            Padding(
-              padding: const EdgeInsets.all(AppSpace.s1),
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  color: AppColors.overlay,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  key: const Key('profile-save'),
-                  tooltip: l.profileSavePhotographer,
-                  icon: const AppIcon(AppIcons.save, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ),
+            Consumer(
+              builder: (context, ref, _) {
+                final saved = ref
+                        .watch(savedPhotographerProvider)[widget.uid] ??
+                    false;
+                final toggleTip = saved
+                    ? l.profileUnsavePhotographer
+                    : l.profileSavePhotographer;
+                return Padding(
+                  padding: const EdgeInsets.all(AppSpace.s1),
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: AppColors.overlay,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      key: const Key('profile-save'),
+                      tooltip: toggleTip,
+                      icon: AppIcon(
+                        AppIcons.save,
+                        selected: saved,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => ref
+                          .read(savedPhotographerProvider.notifier)
+                          .toggle(widget.uid),
+                    ),
+                  ),
+                );
+              },
             ),
           Padding(
             padding: const EdgeInsets.all(AppSpace.s1),

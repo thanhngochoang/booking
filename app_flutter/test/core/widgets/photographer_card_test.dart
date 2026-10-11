@@ -494,4 +494,28 @@ void main() {
     expect(find.bySemanticsLabel(RegExp(r'Hoàn Kiếm')), findsNothing);
     handle.dispose();
   });
+
+  testWidgets('shows bookmark button overlay when onToggleSave is provided', (
+    tester,
+  ) async {
+    var toggled = false;
+    await tester.pumpWidget(
+      hostWidget(
+        testPhotoScope(
+          child: PhotographerCard(
+            data: fixturePhotographer('p1', name: 'Minh Trí'),
+            onProfile: () {},
+            saved: false,
+            onToggleSave: () => toggled = true,
+          ),
+        ),
+      ),
+    );
+
+    final saveFinder = find.byKey(const Key('card-save-p1'));
+    expect(saveFinder, findsOneWidget);
+    await tester.tap(saveFinder);
+    expect(toggled, isTrue);
+  });
 }
+

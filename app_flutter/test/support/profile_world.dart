@@ -10,6 +10,7 @@ import 'package:photobooking/data/badges/badge_repository.dart';
 import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/album/album_repository.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
@@ -84,6 +85,7 @@ class ProfileWorld {
   late GoRouter router;
 
   String get uid => discovery.uid;
+  FakeSavedFollowRepository get savedFollow => discovery.savedFollow;
 
   Future<void> init() async {
     await discovery.init();

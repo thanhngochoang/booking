@@ -43,6 +43,7 @@ import 'package:photobooking/features/photographer_setup/contact_setup_screen.da
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
+import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
@@ -321,6 +322,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      GoRoute(
+        path: '/me/saved',
+        builder: (_, state) => SavedScreen(
+          initialTab: state.uri.queryParameters['tab'] == 'photographers'
+              ? SavedTab.photographers
+              : SavedTab.posts,
+        ),
+      ),
       GoRoute(
         path: '/u/:uid/albums/:albumId',
         builder: (_, state) => AlbumDetailScreen(
