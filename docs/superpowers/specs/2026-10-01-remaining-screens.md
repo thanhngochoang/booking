@@ -170,9 +170,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ có mock, có plan (#142) | — |
 | S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help` | cả hai | mới | ⬜ có mock, có plan (#142) | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
-| S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ⬜ có mock, có plan (#143) | — |
-| S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ⬜ có mock, có plan (#143) | — |
-| S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ⬜ có mock, có plan (#143) | — |
+| S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ✅ đã làm (#143) | — |
+| S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ✅ đã làm (#143) | — |
+| S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ✅ đã làm (#143) | — |
 | **S20** | **Báo cáo & chặn** | | | | | |
 | S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | `/report` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
 | S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
@@ -674,7 +674,7 @@ Phản hồi: `requestId`, `algorithm`, `algorithmVersion`, `items[{photographer
 
 - Ứng dụng gửi lô tín hiệu qua hàm `recommendFeedback`: `impression` (thẻ hiện ≥ 50% trong ≥ 1 giây), `click` (mở S03.01), `inquiry` (mở S05.04 hoặc gửi tin nhắn), `booking` (cọc thành công). Mỗi tín hiệu mang `requestId`, `photographerId`, `rank`, `algorithmVersion`.
 - Chỉ lưu mã người dùng đã băm, không lưu SĐT, vị trí chính xác hay nội dung tin nhắn. Giữ nhật ký 180 ngày.
-- Sở thích rõ ràng của khách (chọn "Bạn cần chụp gì?") là câu hỏi mở số 12; v1 dùng tín hiệu ngầm (thể loại đã xem, đã lưu, đã tìm).
+- Sở thích rõ ràng của khách (chọn "Bạn cần chụp gì?") là câu hỏi mở số 12; v1 dùng tín hiệu ngầm (thể loại đã xem, đã lưu, đã tìm). "Theo dõi" là tín hiệu đẩy bài mới (trong vòng 7 ngày) của thợ ảnh lên đầu bảng tin trang chủ (S19 #143).
 
 ### 3e.8 Đánh giá và nâng cấp
 
