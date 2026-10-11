@@ -39,10 +39,17 @@ void main() {
     // Only the code table in section 2; later sections have other S-tables.
     final start = spec.indexOf('## 2. Mã màn hình');
     final table = spec.substring(start, spec.indexOf('\n## ', start + 1));
+    // S28 and S23.08–S23.23 belong to the web dashboard (Phase 1.5,
+    // 2026-10-08-dashboard-web-design.md §6), which has its own screen-codes.ts
+    // rather than being compiled into the Flutter app.
     final inSpec = RegExp(
       r'^\| (S\d\d\.\d\d) \|',
       multiLine: true,
-    ).allMatches(table).map((m) => m.group(1)!).toList();
+    ).allMatches(table).map((m) => m.group(1)!).where((c) {
+      if (c.startsWith('S28.')) return false;
+      if (c.startsWith('S23.') && int.parse(c.substring(4)) > 7) return false;
+      return true;
+    }).toList();
     expect(inSpec, ScreenCodes.all);
   });
 
