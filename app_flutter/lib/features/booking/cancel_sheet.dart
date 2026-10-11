@@ -129,10 +129,12 @@ class _CancelContentState extends ConsumerState<_CancelContent> {
     final percent = refundPercentAt(b, now);
     final when = '${formatDayMonth(DateTime.parse(b.day))} ${b.start}';
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return ScreenCode(
+      ScreenCodes.cancelBooking,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         if (customer) ...[
           PolicyTable(
             rows: [
@@ -185,6 +187,7 @@ class _CancelContentState extends ConsumerState<_CancelContent> {
           },
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 }
