@@ -183,6 +183,20 @@ npm run payouts -- approve <payoutId> --actor seed-staff-admin
 Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability
 (unless a seed booking already holds that day), and each registration its `ticket_codes/*` entry.
 
+## Follows and saved items (S19)
+
+| Follow | Follower | Followee | Notes |
+|---|---|---|---|
+| Lan → An | Lan (`seed-customer-lan`) | An (`seed-photographer-an`) | An's `followerCount`: 2 |
+| Minh → An | Minh (`seed-customer-minh`) | An (`seed-photographer-an`) | |
+| Lan → Dũng | Lan (`seed-customer-lan`) | Dũng (`seed-photographer-dung`) | Dũng's `followerCount`: 1 |
+
+| Saved item | User | Target | Notes |
+|---|---|---|---|
+| Saved post | Lan | `seed-post-an-1`, `seed-post-an-2` | in `saves/{userId}_{postId}` |
+| Saved photographer | Lan | Cúc (`seed-photographer-cuc`) | in `savedPhotographers/{userId}_{photographerId}` |
+
+
 ## Running a clock on the emulators
 
 The emulators never fire scheduled functions. `npm run clock -- events` runs the event clock once

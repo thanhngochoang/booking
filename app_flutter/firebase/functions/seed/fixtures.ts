@@ -233,6 +233,36 @@ export const SEED_AWARDS: readonly SeedAward[] = [
   { id: 'seed-award-binh-1', photographerId: BINH, competition: 'Vietnam Photo Contest', year: 2025, result: 'finalist', status: 'pending' },
 ];
 
+export interface SeedFollow {
+  readonly userId: string;
+  readonly photographerId: string;
+}
+
+export const SEED_FOLLOWS: readonly SeedFollow[] = [
+  { userId: LAN, photographerId: AN },
+  { userId: MINH, photographerId: AN },
+  { userId: LAN, photographerId: DUNG },
+];
+
+export interface SeedSave {
+  readonly userId: string;
+  readonly postId: string;
+}
+
+export const SEED_SAVES: readonly SeedSave[] = [
+  { userId: LAN, postId: 'seed-post-an-1' },
+  { userId: LAN, postId: 'seed-post-an-2' },
+];
+
+export interface SeedSavedPhotographer {
+  readonly userId: string;
+  readonly photographerId: string;
+}
+
+export const SEED_SAVED_PHOTOGRAPHERS: readonly SeedSavedPhotographer[] = [
+  { userId: LAN, photographerId: CUC },
+];
+
 export interface SeedReview {
   /** Synthetic booking id (no booking doc): the review doc id is `reviewDocId(bookingId, 'photographer')`. */
   readonly bookingId: string;
@@ -409,6 +439,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
         // An's stats keep the revocable `top_rated` badge: the evaluator runs on every seed write.
         ...(stats !== null ? { stats: { ...stats } } : {}),
         approvedAwardCount: SEED_AWARDS.filter((a) => a.photographerId === p.uid && a.status === 'approved').length,
+        followerCount: SEED_FOLLOWS.filter((f) => f.photographerId === p.uid).length,
+        ...(SEED_FOLLOWS.some((f) => f.photographerId === p.uid) ? { followerCountAt: at } : {}),
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
         updatedAt: at,
@@ -487,6 +519,24 @@ export function seedDocuments(now: Date): SeedDocument[] {
         links: [`https://seed.test/awards/${a.id}`],
         ...(a.status === 'approved' ? { purgeAfter: new Date(at.getTime() + 30 * DAY_MS) } : {}),
       },
+    });
+  }
+  for (const f of SEED_FOLLOWS) {
+    docs.push({
+      path: `follows/${f.userId}_${f.photographerId}`,
+      data: { userId: f.userId, photographerId: f.photographerId, createdAt: at },
+    });
+  }
+  for (const s of SEED_SAVES) {
+    docs.push({
+      path: `saves/${s.userId}_${s.postId}`,
+      data: { userId: s.userId, postId: s.postId, createdAt: at },
+    });
+  }
+  for (const sp of SEED_SAVED_PHOTOGRAPHERS) {
+    docs.push({
+      path: `savedPhotographers/${sp.userId}_${sp.photographerId}`,
+      data: { userId: sp.userId, photographerId: sp.photographerId, createdAt: at },
     });
   }
   for (const b of SEED_BOOKINGS) {

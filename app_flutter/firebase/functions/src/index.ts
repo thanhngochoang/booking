@@ -58,6 +58,8 @@ import {
 } from './callables/album.js';
 import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './triggers/post_created.js';
 import { liveAlbumDeps } from './infra/live_album.js';
+import { FirestoreFollowerCounter } from './infra/follower_counter.js';
+import { handleFollowWrite } from './triggers/engagement_counters.js';
 import {
   handleCreateAward,
   handleDeleteAward,
@@ -577,6 +579,22 @@ export const onRegistrationWrite = onDocumentWritten(
         after: event.data?.after.exists ? event.data.after.data() : undefined,
       },
       liveEventChatDeps(),
+    );
+  },
+);
+
+/** A follow marker created or deleted recounts photographer followers. */
+export const onFollowWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'follows/{docId}' },
+  async (event) => {
+    const counter = new FirestoreFollowerCounter(db());
+    await handleFollowWrite(
+      {
+        time: event.time,
+        before: event.data?.before.exists ? (event.data.before.data() as { userId?: string; photographerId?: string }) : null,
+        after: event.data?.after.exists ? (event.data.after.data() as { userId?: string; photographerId?: string }) : null,
+      },
+      counter,
     );
   },
 );

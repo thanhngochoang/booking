@@ -103,3 +103,4 @@ export * from './memory_event_timeline_store.js';
 export * from './event_chat.js';
 export * from './event_chat_ports.js';
 export * from './memory_event_chat_store.js';
+export * from './counters.js';

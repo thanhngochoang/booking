@@ -532,4 +532,36 @@ describe('seed chats and the inbox', () => {
       }
     }
   });
+
+  test('seed follows give An followerCount 2 and Dũng 1, equal to the follows', () => {
+    const docs = seedDocuments(NOW);
+    const follows = docs.filter((d) => d.path.startsWith('follows/'));
+    const anFollows = follows.filter((d) => (d.data as { photographerId: string }).photographerId === 'seed-photographer-an');
+    const dungFollows = follows.filter((d) => (d.data as { photographerId: string }).photographerId === 'seed-photographer-dung');
+
+    const anDoc = docs.find((d) => d.path === 'photographers/seed-photographer-an')?.data as Record<string, unknown>;
+    const dungDoc = docs.find((d) => d.path === 'photographers/seed-photographer-dung')?.data as Record<string, unknown>;
+
+    assert.equal(anFollows.length, 2);
+    assert.equal(dungFollows.length, 1);
+    assert.equal(anDoc.followerCount, anFollows.length);
+    assert.equal(dungDoc.followerCount, dungFollows.length);
+    assert.ok(anDoc.followerCountAt instanceof Date);
+    assert.ok(dungDoc.followerCountAt instanceof Date);
+  });
+
+  test('Lan has saved posts seed-post-an-1, -2 and saved photographer Cúc', () => {
+    const docs = seedDocuments(NOW);
+    const lanSaves = docs.filter(
+      (d) => d.path.startsWith('saves/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
+    );
+    const lanSavedPosts = lanSaves.map((d) => (d.data as { postId: string }).postId).sort();
+    assert.deepEqual(lanSavedPosts, ['seed-post-an-1', 'seed-post-an-2']);
+
+    const lanSavedPhotographers = docs.filter(
+      (d) => d.path.startsWith('savedPhotographers/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
+    );
+    assert.equal(lanSavedPhotographers.length, 1);
+    assert.equal((lanSavedPhotographers[0]!.data as { photographerId: string }).photographerId, 'seed-photographer-cuc');
+  });
 });
