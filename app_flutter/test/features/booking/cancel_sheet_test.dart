@@ -105,6 +105,7 @@ void main() {
     );
 
     expect(_sheet, findsOneWidget);
+    expect(_inSheet(find.byWidgetPredicate((w) => w is ScreenCode && w.code == ScreenCodes.cancelBooking)), findsOneWidget);
     expect(_inSheet(find.text('Huỷ buổi chụp?')), findsOneWidget);
     expect(_inSheet(find.byType(PolicyTable)), findsOneWidget);
     expect(_inSheet(find.byType(MoneyBreakdown)), findsOneWidget);
