@@ -91,6 +91,10 @@ class _FailingPosts implements PostRepository {
       throw StateError('offline');
 
   @override
+  Future<Map<String, PostSummary>> byIds(Iterable<String> ids) async =>
+      throw StateError('offline');
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 

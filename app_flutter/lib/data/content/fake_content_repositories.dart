@@ -3,6 +3,8 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/saved_follow.dart';
+import 'package:photobooking/data/content/saved_follow_repository.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 
 class FakePostRepository implements PostRepository {
@@ -164,6 +166,24 @@ class FakePostRepository implements PostRepository {
       }
     }
     return null;
+  }
+
+  @override
+  Future<Map<String, PostSummary>> byIds(Iterable<String> ids) async {
+    if (failWith != null) {
+      throw failWith!;
+    }
+    final result = <String, PostSummary>{};
+    for (final id in ids) {
+      if (id.isEmpty || id.contains('/')) continue;
+      for (final p in _posts) {
+        if (p.id == id) {
+          result[id] = p;
+          break;
+        }
+      }
+    }
+    return result;
   }
 }
 
@@ -344,3 +364,359 @@ class FakeServiceRepository implements ServiceRepository {
         .toList();
   }
 }
+
+class FakeSavedFollowRepository implements SavedFollowRepository {
+  FakeSavedFollowRepository({
+    this.postRepo,
+    this.photographerRepo,
+    this.userDirectory = const {},
+  });
+
+  PostRepository? postRepo;
+  PhotographerRepository? photographerRepo;
+  Map<String, ({String displayName, String? avatarUrl})> userDirectory;
+
+  /// (userId, postId, createdAt, docId)
+  final savedPostEntries = <({String userId, String postId, DateTime createdAt, String docId})>[];
+
+  /// (userId, photographerId, createdAt, docId)
+  final savedPhotographerEntries =
+      <({String userId, String photographerId, DateTime createdAt, String docId})>[];
+
+  /// (userId, photographerId, createdAt, docId)
+  final followEntries =
+      <({String userId, String photographerId, DateTime createdAt, String docId})>[];
+
+  /// Overrides for follower count per photographerId
+  final followerCounts = <String, int>{};
+
+  Object? failWith;
+  int writeCalls = 0;
+  int readCalls = 0;
+
+  void _check() {
+    if (failWith != null) throw failWith!;
+  }
+
+  void addSavedPost(String uid, String postId, DateTime createdAt) {
+    savedPostEntries.add((
+      userId: uid,
+      postId: postId,
+      createdAt: createdAt,
+      docId: '${uid}_$postId',
+    ));
+  }
+
+  void addSavedPhotographer(String uid, String photographerId, DateTime createdAt) {
+    savedPhotographerEntries.add((
+      userId: uid,
+      photographerId: photographerId,
+      createdAt: createdAt,
+      docId: '${uid}_$photographerId',
+    ));
+  }
+
+  void addFollow(String uid, String photographerId, DateTime createdAt) {
+    followEntries.add((
+      userId: uid,
+      photographerId: photographerId,
+      createdAt: createdAt,
+      docId: '${uid}_$photographerId',
+    ));
+  }
+
+  @override
+  Future<MarkerPage<PostSummary>> savedPosts(
+    String uid, {
+    String? cursor,
+    int limit = 30,
+  }) async {
+    _check();
+    readCalls++;
+    final n = clampPageSize(limit);
+    final userSaves = savedPostEntries.where((e) => e.userId == uid).toList()
+      ..sort((a, b) {
+        final byTime = b.createdAt.compareTo(a.createdAt);
+        return byTime != 0 ? byTime : b.docId.compareTo(a.docId);
+      });
+
+    final parsedCursor = parseMarkerCursor(cursor);
+    var startIdx = 0;
+    if (parsedCursor != null) {
+      final (cursorTime, cursorDocId) = parsedCursor;
+      final idx = userSaves.indexWhere((e) =>
+          e.createdAt == cursorTime && e.docId == cursorDocId);
+      if (idx >= 0) {
+        startIdx = idx + 1;
+      } else {
+        // Unknown or stale cursor
+        return const MarkerPage(items: []);
+      }
+    }
+
+    final remaining = userSaves.skip(startIdx).toList();
+    final items = <PostSummary>[];
+    String? nextCursor;
+    var examined = 0;
+    const maxExtraRounds = 3;
+    var rounds = 0;
+
+    for (var i = 0; i < remaining.length; i += n) {
+      rounds++;
+      final chunk = remaining.skip(i).take(n).toList();
+      examined += chunk.length;
+      final ids = chunk.map((c) => c.postId).toList();
+      final fetched = postRepo != null ? await postRepo!.byIds(ids) : <String, PostSummary>{};
+      final ordered = keepOrder(ids, fetched);
+      items.addAll(ordered);
+
+      if (items.length >= n || rounds > maxExtraRounds || chunk.length < n) {
+        if (examined < remaining.length) {
+          final lastMarker = chunk.last;
+          nextCursor = markerCursor(lastMarker.createdAt, lastMarker.docId);
+        }
+        break;
+      }
+    }
+
+    final pageItems = items.take(n).toList();
+    return MarkerPage(items: pageItems, cursor: nextCursor);
+  }
+
+  @override
+  Future<MarkerPage<PhotographerSummary>> savedPhotographers(
+    String uid, {
+    String? cursor,
+    int limit = 20,
+  }) async {
+    _check();
+    readCalls++;
+    final n = clampPageSize(limit);
+    final userSaves = savedPhotographerEntries.where((e) => e.userId == uid).toList()
+      ..sort((a, b) {
+        final byTime = b.createdAt.compareTo(a.createdAt);
+        return byTime != 0 ? byTime : b.docId.compareTo(a.docId);
+      });
+
+    final parsedCursor = parseMarkerCursor(cursor);
+    var startIdx = 0;
+    if (parsedCursor != null) {
+      final (cursorTime, cursorDocId) = parsedCursor;
+      final idx = userSaves.indexWhere((e) =>
+          e.createdAt == cursorTime && e.docId == cursorDocId);
+      if (idx >= 0) {
+        startIdx = idx + 1;
+      } else {
+        return const MarkerPage(items: []);
+      }
+    }
+
+    final remaining = userSaves.skip(startIdx).toList();
+    final items = <PhotographerSummary>[];
+    String? nextCursor;
+    var examined = 0;
+    const maxExtraRounds = 3;
+    var rounds = 0;
+
+    for (var i = 0; i < remaining.length; i += n) {
+      rounds++;
+      final chunk = remaining.skip(i).take(n).toList();
+      examined += chunk.length;
+      final ids = chunk.map((c) => c.photographerId).toList();
+      final fetched = photographerRepo != null
+          ? await photographerRepo!.summaries(ids)
+          : <String, PhotographerSummary>{};
+      // Only keep published profiles (where displayName is not empty)
+      final published = <String, PhotographerSummary>{
+        for (final entry in fetched.entries)
+          if (entry.value.displayName.isNotEmpty) entry.key: entry.value,
+      };
+      final ordered = keepOrder(ids, published);
+      items.addAll(ordered);
+
+      if (items.length >= n || rounds > maxExtraRounds || chunk.length < n) {
+        if (examined < remaining.length) {
+          final lastMarker = chunk.last;
+          nextCursor = markerCursor(lastMarker.createdAt, lastMarker.docId);
+        }
+        break;
+      }
+    }
+
+    final pageItems = items.take(n).toList();
+    return MarkerPage(items: pageItems, cursor: nextCursor);
+  }
+
+  @override
+  Future<MarkerPage<PhotographerSummary>> following(
+    String uid, {
+    String? cursor,
+    int limit = 20,
+  }) async {
+    _check();
+    readCalls++;
+    final n = clampPageSize(limit);
+    final userFollows = followEntries.where((e) => e.userId == uid).toList()
+      ..sort((a, b) {
+        final byTime = b.createdAt.compareTo(a.createdAt);
+        return byTime != 0 ? byTime : b.docId.compareTo(a.docId);
+      });
+
+    final parsedCursor = parseMarkerCursor(cursor);
+    var startIdx = 0;
+    if (parsedCursor != null) {
+      final (cursorTime, cursorDocId) = parsedCursor;
+      final idx = userFollows.indexWhere((e) =>
+          e.createdAt == cursorTime && e.docId == cursorDocId);
+      if (idx >= 0) {
+        startIdx = idx + 1;
+      } else {
+        return const MarkerPage(items: []);
+      }
+    }
+
+    final remaining = userFollows.skip(startIdx).toList();
+    final items = <PhotographerSummary>[];
+    String? nextCursor;
+    var examined = 0;
+    const maxExtraRounds = 3;
+    var rounds = 0;
+
+    for (var i = 0; i < remaining.length; i += n) {
+      rounds++;
+      final chunk = remaining.skip(i).take(n).toList();
+      examined += chunk.length;
+      final ids = chunk.map((c) => c.photographerId).toList();
+      final fetched = photographerRepo != null
+          ? await photographerRepo!.summaries(ids)
+          : <String, PhotographerSummary>{};
+      // Only keep published profiles (where displayName is not empty, representing existing valid profiles)
+      final published = <String, PhotographerSummary>{
+        for (final entry in fetched.entries)
+          if (entry.value.displayName.isNotEmpty) entry.key: entry.value,
+      };
+      final ordered = keepOrder(ids, published);
+      items.addAll(ordered);
+
+      if (items.length >= n || rounds > maxExtraRounds || chunk.length < n) {
+        if (examined < remaining.length) {
+          final lastMarker = chunk.last;
+          nextCursor = markerCursor(lastMarker.createdAt, lastMarker.docId);
+        }
+        break;
+      }
+    }
+
+    final pageItems = items.take(n).toList();
+    return MarkerPage(items: pageItems, cursor: nextCursor);
+  }
+
+  @override
+  Future<MarkerPage<Follower>> followers(
+    String photographerId, {
+    String? cursor,
+    int limit = 30,
+  }) async {
+    _check();
+    readCalls++;
+    final n = clampPageSize(limit);
+    final targetFollows = followEntries.where((e) => e.photographerId == photographerId).toList()
+      ..sort((a, b) {
+        final byTime = b.createdAt.compareTo(a.createdAt);
+        return byTime != 0 ? byTime : b.docId.compareTo(a.docId);
+      });
+
+    final parsedCursor = parseMarkerCursor(cursor);
+    var startIdx = 0;
+    if (parsedCursor != null) {
+      final (cursorTime, cursorDocId) = parsedCursor;
+      final idx = targetFollows.indexWhere((e) =>
+          e.createdAt == cursorTime && e.docId == cursorDocId);
+      if (idx >= 0) {
+        startIdx = idx + 1;
+      } else {
+        return const MarkerPage(items: []);
+      }
+    }
+
+    final rest = targetFollows.skip(startIdx).toList();
+    final chunk = rest.take(n).toList();
+    final items = <Follower>[];
+    for (final m in chunk) {
+      final user = userDirectory[m.userId];
+      items.add(Follower(
+        userId: m.userId,
+        displayName: user?.displayName ?? 'Người dùng',
+        avatarUrl: user?.avatarUrl,
+        since: m.createdAt,
+      ));
+    }
+
+    final nextCursor = rest.length > n
+        ? markerCursor(chunk.last.createdAt, chunk.last.docId)
+        : null;
+    return MarkerPage(items: items, cursor: nextCursor);
+  }
+
+  @override
+  Future<bool> isPhotographerSaved(String uid, String photographerId) async {
+    _check();
+    readCalls++;
+    return savedPhotographerEntries
+        .any((e) => e.userId == uid && e.photographerId == photographerId);
+  }
+
+  @override
+  Future<void> setPhotographerSaved(
+    String uid,
+    String photographerId,
+    bool saved,
+  ) async {
+    _check();
+    writeCalls++;
+    if (saved) {
+      if (!savedPhotographerEntries.any((e) => e.userId == uid && e.photographerId == photographerId)) {
+        addSavedPhotographer(uid, photographerId, DateTime.now().toUtc());
+      }
+    } else {
+      savedPhotographerEntries.removeWhere(
+        (e) => e.userId == uid && e.photographerId == photographerId,
+      );
+    }
+  }
+
+  @override
+  Future<Set<String>> followingIds(String uid, {int limit = 100}) async {
+    _check();
+    readCalls++;
+    final userFollows = followEntries.where((e) => e.userId == uid).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return userFollows.take(limit).map((e) => e.photographerId).toSet();
+  }
+
+  @override
+  Future<SocialCounts> counts(String uid) async {
+    _check();
+    readCalls++;
+    final followingCount = followEntries.where((e) => e.userId == uid).length;
+    final savedPostsCount = savedPostEntries.where((e) => e.userId == uid).length;
+    final savedPhotographersCount =
+        savedPhotographerEntries.where((e) => e.userId == uid).length;
+    return SocialCounts(
+      following: followingCount,
+      savedPosts: savedPostsCount,
+      savedPhotographers: savedPhotographersCount,
+    );
+  }
+
+  @override
+  Future<int?> followerCount(String photographerId) async {
+    _check();
+    readCalls++;
+    if (followerCounts.containsKey(photographerId)) {
+      return followerCounts[photographerId];
+    }
+    return followEntries.where((e) => e.photographerId == photographerId).length;
+  }
+}
+

@@ -53,6 +53,10 @@ abstract class PostRepository {
 
   /// Null when the post does not exist or was removed.
   Future<PostSummary?> byId(String postId);
+
+  /// Posts by id; unknown or deleted ids are absent from the map.
+  /// Adapters chunk `whereIn` queries by 30.
+  Future<Map<String, PostSummary>> byIds(Iterable<String> ids);
 }
 
 class PostEngagement {

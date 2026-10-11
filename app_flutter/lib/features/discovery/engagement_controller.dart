@@ -6,6 +6,8 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/saved_follow_providers.dart';
+import 'package:photobooking/data/content/saved_follow_repository.dart';
 import 'package:photobooking/features/discovery/auth_reset.dart';
 
 @immutable
@@ -148,6 +150,7 @@ class EngagementController extends Notifier<Map<String, EngagementView>> {
         await _repo.setLiked(uid, postId, want);
       } else {
         await _repo.setSaved(uid, postId, want);
+        ref.invalidate(socialCountsProvider);
       }
       return true;
     } catch (_) {
@@ -215,6 +218,8 @@ class FollowController extends Notifier<Map<String, bool>> {
       await ref
           .read(postEngagementRepositoryProvider)
           .setFollowing(uid, photographerId, !before);
+      ref.invalidate(socialCountsProvider);
+      ref.invalidate(followingIdsProvider);
       return true;
     } catch (_) {
       if (ref.mounted) {
@@ -230,3 +235,59 @@ class FollowController extends Notifier<Map<String, bool>> {
 final followProvider = NotifierProvider<FollowController, Map<String, bool>>(
   FollowController.new,
 );
+
+/// Whether the viewer saved a photographer, with optimistic toggling.
+class SavedPhotographerController extends Notifier<Map<String, bool>> {
+  final _busy = <String>{};
+
+  @override
+  Map<String, bool> build() {
+    resetOnUserChange(ref, () {
+      _busy.clear();
+      state = const {};
+    });
+    return const {};
+  }
+
+  String? get _uid => ref.read(authRepositoryProvider).currentUser?.uid;
+  SavedFollowRepository get _repo => ref.read(savedFollowRepositoryProvider);
+
+  Future<void> load(String photographerId) async {
+    final uid = _uid;
+    if (uid == null) return;
+    try {
+      final saved = await _repo.isPhotographerSaved(uid, photographerId);
+      if (ref.mounted) {
+        state = {...state, photographerId: saved};
+      }
+    } catch (_) {
+      // Shown as not saved until loaded or tapped
+    }
+  }
+
+  Future<bool> toggle(String photographerId) async {
+    final uid = _uid;
+    if (uid == null || !_busy.add(photographerId)) {
+      return uid != null;
+    }
+    final before = state[photographerId] ?? false;
+    state = {...state, photographerId: !before};
+    try {
+      await _repo.setPhotographerSaved(uid, photographerId, !before);
+      ref.invalidate(socialCountsProvider);
+      return true;
+    } catch (_) {
+      if (ref.mounted) {
+        state = {...state, photographerId: before};
+      }
+      return false;
+    } finally {
+      _busy.remove(photographerId);
+    }
+  }
+}
+
+final savedPhotographerProvider =
+    NotifierProvider<SavedPhotographerController, Map<String, bool>>(
+      SavedPhotographerController.new,
+    );
