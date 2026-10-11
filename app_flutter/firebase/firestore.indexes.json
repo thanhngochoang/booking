@@ -65,7 +65,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "onboardingComplete",
+          "fieldPath": "acceptingOrders",
           "order": "ASCENDING"
         },
         {
@@ -79,6 +79,24 @@
         {
           "fieldPath": "__name__",
           "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "services",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "specialty",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
         }
       ]
     },

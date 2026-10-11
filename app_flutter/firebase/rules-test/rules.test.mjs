@@ -1986,3 +1986,61 @@ test('chat storage: a member uploads up to 1.5 MiB of JPEG, nothing else', async
   await assertFails(uploadBytes(ref(st, 'chats/event_e5/att1/ok.jpg'), photo(), jpeg));
 });
 function evStorage(uid) { return env.authenticatedContext(uid).storage(); }
+
+// S02 Discover security rules tests (written, not run locally in CI session)
+test('signed-in users read catalog/explore', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'catalog/explore'), { specialties: { portrait: { serviceCount: 1 } } }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'catalog/explore')));
+});
+
+test('nobody writes catalog/explore', async () => {
+  await assertFails(setDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore'), { specialties: {} }));
+  await assertFails(updateDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore'), { updatedAt: serverTimestamp() }));
+  await assertFails(deleteDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore')));
+});
+
+test('a client cannot write stats.nextFreeDate or startingPrice (create and update)', async () => {
+  await asPhotographer('p_disc');
+  const db = env.authenticatedContext('p_disc').firestore();
+  // create with stats.nextFreeDate
+  await assertFails(setDoc(doc(db, 'photographers/p_disc'), {
+    onboardingComplete: false,
+    verified: false,
+    specialties: [],
+    stats: { nextFreeDate: '2026-10-10' },
+  }));
+  // create with startingPrice
+  await assertFails(setDoc(doc(db, 'photographers/p_disc'), {
+    onboardingComplete: false,
+    verified: false,
+    specialties: [],
+    startingPrice: 500000,
+  }));
+  // valid create
+  await assertSucceeds(setDoc(doc(db, 'photographers/p_disc'), {
+    onboardingComplete: false,
+    verified: false,
+    specialties: [],
+  }));
+  // update with stats.nextFreeDate
+  await assertFails(updateDoc(doc(db, 'photographers/p_disc'), {
+    'stats.nextFreeDate': '2026-10-10',
+  }));
+  // update with startingPrice
+  await assertFails(updateDoc(doc(db, 'photographers/p_disc'), {
+    startingPrice: 500000,
+  }));
+});
+
+test('a client cannot update likeCount on a post', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'posts/post_disc'), {
+      likeCount: 0,
+      saveCount: 0,
+      authorId: 'u1',
+    }));
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(updateDoc(doc(db, 'posts/post_disc'), { likeCount: 5 }));
+});

@@ -729,9 +729,16 @@ service cloud.firestore {
     match /event_hashtags/{key} { allow read, write: if false; }
     match /ticket_codes/{code} { allow read, write: if false; }
 
+    // Explore catalogue cache: readable by any signed-in user, written by Cloud Functions only.
+    match /catalog/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
 

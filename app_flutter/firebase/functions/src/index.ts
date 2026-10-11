@@ -60,6 +60,11 @@ import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './tr
 import { liveAlbumDeps } from './infra/live_album.js';
 import { FirestoreFollowerCounter } from './infra/follower_counter.js';
 import { handleFollowWrite } from './triggers/engagement_counters.js';
+import { liveDiscoveryDeps } from './infra/live_discovery.js';
+import { handleAvailabilityWrite } from './triggers/availability_write.js';
+import { handleEngagementWrite } from './triggers/engagement_write.js';
+import { handleRollNextFree } from './scheduled/roll_next_free.js';
+import { handleServiceDiscovery } from './triggers/service_write.js';
 import {
   handleCreateAward,
   handleDeleteAward,
@@ -166,9 +171,12 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   const uid = event.params.uid;
   const after = event.data?.after;
   const live = after?.exists === true ? after : undefined;
-  await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
-    liveSkillsDeps(uid, live?.updateTime),
+  await handlePhotographerEvent(
+    { uid, time: event.time, before: event.data?.before.data(), after: live?.data() },
+    () => liveSkillsDeps(uid, live?.updateTime),
     liveAcceptingOrdersWriter(),
+    new Date(),
+    liveDiscoveryDeps(),
   );
   // `fast_reply` follows stats.responseMinutes (written by the server only).
   if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {
@@ -203,10 +211,16 @@ export const onBookingWrite = onDocumentWritten(
     const bookingId = event.params.bookingId;
     const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
     const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
-    await handleBookingWrite({ id: bookingId, before, after }, liveChatDeps(), undefined, {
-      notify: liveNotifyDeps(),
-      badges: liveBadgeDeps(),
-    });
+    await handleBookingWrite(
+      { id: bookingId, before, after },
+      liveChatDeps(),
+      undefined,
+      {
+        notify: liveNotifyDeps(),
+        badges: liveBadgeDeps(),
+      },
+      liveDiscoveryDeps(),
+    );
   },
 );
 
@@ -387,15 +401,23 @@ export const onUserCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: '
   await handleUserCreated(event.params.uid, liveBadgeDeps());
 });
 
-/** Package changes can complete `complete_profile`. */
+/** Package changes can complete `complete_profile` and refresh discovery starting price and catalog. */
 export const onServiceWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'photographers/{uid}/services/{serviceId}' },
   async (event) => {
+    const before = event.data?.before.exists ? event.data.before.data() : undefined;
+    const after = event.data?.after.exists ? event.data.after.data() : undefined;
     await handleServiceWrite(
       event.params.uid,
-      event.data?.before.exists ? event.data.before.data() : undefined,
-      event.data?.after.exists ? event.data.after.data() : undefined,
+      before,
+      after,
       liveBadgeDeps(),
+    );
+    await handleServiceDiscovery(
+      event.params.uid,
+      before,
+      after,
+      liveDiscoveryDeps(),
     );
   },
 );
@@ -596,5 +618,47 @@ export const onFollowWrite = onDocumentWritten(
       },
       counter,
     );
+  },
+);
+
+/** An availability day write updates nextFreeDate when inside the horizon. */
+export const onAvailabilityWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'availability/{uid}/days/{dayKey}' },
+  async (event) => {
+    await handleAvailabilityWrite(event.params.uid, event.params.dayKey, liveDiscoveryDeps());
+  },
+);
+
+/** Like marker created or deleted recounts post likes. */
+export const onLikeWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'likes/{docId}' },
+  async (event) => {
+    await handleEngagementWrite(
+      'like',
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveDiscoveryDeps(),
+    );
+  },
+);
+
+/** Save marker created or deleted recounts post saves. */
+export const onSaveWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'saves/{docId}' },
+  async (event) => {
+    await handleEngagementWrite(
+      'save',
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveDiscoveryDeps(),
+    );
+  },
+);
+
+/** Daily 00:10 Asia/Ho_Chi_Minh: rolls nextFreeDate for photographers whose date has passed. */
+export const rollNextFreeDates = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '10 0 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handleRollNextFree(liveDiscoveryDeps());
   },
 );

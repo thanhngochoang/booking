@@ -1,6 +1,13 @@
 import type { DocumentData } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
-import { acceptingOrdersPatch, scorePhotographerSkills, type ScoreSkillsDeps, type ScoreSkillsOutcome } from '@photobooking/domain';
+import {
+  acceptingOrdersPatch,
+  scorePhotographerSkills,
+  refreshNextFreeDate,
+  type ScoreSkillsDeps,
+  type ScoreSkillsOutcome,
+  type DiscoveryDeps,
+} from '@photobooking/domain';
 
 /** The two snapshots of one `photographers/{uid}` write; `after` undefined when it was deleted. */
 export interface PhotographerWriteInput {
@@ -70,6 +77,7 @@ export async function handlePhotographerEvent(
   deps: () => ScoreSkillsDeps,
   acceptingOrders: AcceptingOrdersWriter,
   now: Date = new Date(),
+  discovery?: DiscoveryDeps,
 ): Promise<ScoreSkillsOutcome | 'expired' | 'failed'> {
   const age = now.getTime() - Date.parse(input.time);
   if (age > MAX_EVENT_AGE_MS) {
@@ -80,6 +88,24 @@ export async function handlePhotographerEvent(
     const outcome = await handlePhotographerWrite(input, deps());
     const sync = await syncAcceptingOrders(input, acceptingOrders);
     if (sync === 'written') logger.info('onPhotographerWrite: acceptingOrders synced', { uid: input.uid });
+
+    // Discovery: onPhotographerWrite gains refreshNextFreeDate(uid) when acceptingOrders or
+    // onboardingComplete turned true, or stats.nextFreeDate is missing on a bookable profile.
+    if (discovery && input.after !== undefined) {
+      const beforeAcc = input.before?.acceptingOrders === true;
+      const afterAcc = input.after.acceptingOrders === true;
+      const beforeOnb = input.before?.onboardingComplete === true;
+      const afterOnb = input.after.onboardingComplete === true;
+      const missingNextFree = input.after.stats?.nextFreeDate == null;
+
+      const becameBookable = (!beforeAcc && afterAcc) || (!beforeOnb && afterOnb);
+      const isBookable = afterAcc || afterOnb;
+
+      if (becameBookable || (isBookable && missingNextFree)) {
+        await refreshNextFreeDate(discovery, input.uid);
+      }
+    }
+
     return outcome;
   } catch (e) {
     if (!isPermanentFirestoreError(e)) throw e;
