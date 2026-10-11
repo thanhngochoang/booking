@@ -65,7 +65,7 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
     final hasError = _edited && state.placeName.trim().length < kPlaceMinLength;
 
     return ScreenCode(
-      ScreenCodes.bookReview, // place step is part of S04 flow
+      ScreenCodes.bookPlace,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
