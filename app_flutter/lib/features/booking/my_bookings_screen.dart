@@ -7,6 +7,7 @@ import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
+import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
@@ -108,6 +109,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
         ref.watch(nowTickerProvider(_tick)).value ?? ref.read(clockProvider)();
     final bookings = ref.watch(myBookingsProvider(BookingRole.customer));
 
+    final totalUnread = ref.watch(totalUnreadProvider).value ?? 0;
+
     return ScreenCode(
       ScreenCodes.bookings,
       child: Scaffold(
@@ -121,7 +124,10 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
               IconButton(
                 key: const Key('bookings-chats'),
                 tooltip: l10n.bookingsChats,
-                icon: const AppIcon(AppIcons.chat),
+                icon: TabBadge(
+                  count: totalUnread,
+                  child: const AppIcon(AppIcons.chat),
+                ),
                 onPressed: () => context.push('/chats'),
               ),
           ],
