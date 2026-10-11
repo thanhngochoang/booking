@@ -43,6 +43,8 @@ import 'package:photobooking/features/photographer_setup/contact_setup_screen.da
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
+import 'package:photobooking/features/saved/followers_screen.dart';
+import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
@@ -329,6 +331,21 @@ final routerProvider = Provider<GoRouter>((ref) {
               ? SavedTab.photographers
               : SavedTab.posts,
         ),
+      ),
+      GoRoute(
+        path: '/me/following',
+        builder: (_, _) => const FollowingScreen(),
+      ),
+      GoRoute(
+        path: '/me/followers',
+        redirect: (_, _) {
+          final role = ref.read(currentProfileProvider).value?.role;
+          if (role != UserRole.photographer) {
+            return '/profile';
+          }
+          return null;
+        },
+        builder: (_, _) => const FollowersScreen(),
       ),
       GoRoute(
         path: '/u/:uid/albums/:albumId',

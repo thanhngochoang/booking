@@ -369,8 +369,10 @@ class FakeSavedFollowRepository implements SavedFollowRepository {
   FakeSavedFollowRepository({
     this.postRepo,
     this.photographerRepo,
-    this.userDirectory = const {},
-  });
+    Map<String, ({String displayName, String? avatarUrl})>? userDirectory,
+  }) : userDirectory = userDirectory != null
+            ? Map.of(userDirectory)
+            : <String, ({String displayName, String? avatarUrl})>{};
 
   PostRepository? postRepo;
   PhotographerRepository? photographerRepo;

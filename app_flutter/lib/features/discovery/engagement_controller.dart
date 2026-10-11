@@ -207,6 +207,10 @@ class FollowController extends Notifier<Map<String, bool>> {
     }
   }
 
+  void set(String photographerId, bool isFollowing) {
+    state = {...state, photographerId: isFollowing};
+  }
+
   Future<bool> toggle(String photographerId) async {
     final uid = _uid;
     if (uid == null || !_busy.add(photographerId)) {
