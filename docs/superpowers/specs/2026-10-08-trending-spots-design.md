@@ -19,6 +19,7 @@ Có những nơi đang "hot" để chụp ảnh (đồi chè mùa sương, phố
 | T7 | Staff quản lý điểm bằng **CLI** ở Phase 1 (`npm run spots`); màn staff trên web để #161/S23. | chủ dự án |
 | T8 | Mã use case **S29** (S28 đang được #161 đề xuất cho studio trên web). | chủ dự án |
 | T9 | Luật tiền, hoàn huỷ, liên hệ sau thanh toán, bàn giao hai lớp, chỉ nhà cung cấp đã duyệt mới nhận đơn: **giữ nguyên**. | CLAUDE.md |
+| T10 | Phí vào cửa, chủ quản lý điểm, thợ tại điểm (miễn vé) và vé vào cửa bán qua app: spec riêng `2026-10-12-spot-organizer-entry-tickets-design.md` (S30, #223). | chủ dự án 2026-10-12 |
 
 ## 3. Điểm chụp và độ hot
 
