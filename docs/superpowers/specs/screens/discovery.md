@@ -113,3 +113,32 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 - **Chuỗi**: `s36_title` "Chọn khu vực của bạn", `s36_body` "Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.", `s36_openSettings` "Mở Cài đặt để bật vị trí", `s36_use` "Dùng khu vực này".
 - **Phân tích**: `area_select{areaId}`, `location_settings_open`.
 - **Chấp nhận**: khu vực nhớ giữa các lần mở app; S02.06 và S11.01 dùng cùng khu vực; không yêu cầu quyền nào.
+
+---
+
+## S02.07 · Tìm kiếm
+
+- **Thông tin**: `/explore/search` · cả hai · sub‑project 3 · Chưa có.
+- **Mục đích**: Một ô tìm duy nhất cho dịch vụ, phong cách, địa điểm và thợ ảnh, mở từ S02.03.
+- **Điểm vào → ra**: S02.03 (chạm ô tìm kiếm). Hàng dịch vụ/phong cách/địa điểm → `/action?specialty|style|area=…` (S02.06 có bộ lọc); hàng thợ ảnh → `/u/:uid` (S03.01); "Xem tất cả thợ ảnh" (ở trạng thái không kết quả) → `/action` (S02.06 không lọc); nút Quay lại (`arrow_back`) → đóng màn hình, trở về S02.03.
+- **Bố cục**: Thanh trên cùng với nút `arrow_back` và ô `TextField` tìm kiếm (có nút `close` để xoá văn bản); nội dung cuộn gồm các nhóm: Dịch vụ (`Crow` với icon máy ảnh, tên, số gói, `chevron_right`), Phong cách, Địa điểm, Thợ ảnh (avatar, tên, dấu xác minh, quận, % cà chua hoặc "Mới"); không có thanh tab dưới (màn hình được push toàn màn hình).
+- **Dữ liệu**: Lấy danh mục từ taxonomy / explore catalog, danh sách khu vực `AreaOption`, và pool bookable photographers từ `CachedPhotographerRepository`. Tìm kiếm cục bộ trong bộ nhớ bằng accent-folding (Decision 10).
+- **Trạng thái**:
+  - Chưa gõ: gợi ý "Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh."
+  - Có kết quả: danh sách phân nhóm (giới hạn 5 dịch vụ, 5 phong cách, 5 địa điểm, 10 thợ ảnh; thợ ảnh chỉ tìm khi truy vấn ≥ 2 ký tự sau khi gấp âm).
+  - Không kết quả: màn hình rỗng ở giữa: tiêu đề "Không tìm thấy “{query}”", phụ đề "Thử từ ngắn hơn, hoặc gõ không dấu.", nút viền "Xem tất cả thợ ảnh".
+  - Đang tải pool: `DotRingLoader` inline.
+- **Chuỗi**:
+  - `exploreSearchHint`: "Tìm dịch vụ, địa điểm, tên thợ ảnh"
+  - `exploreSearchClear`: "Xoá"
+  - `exploreSearchServices`: "Dịch vụ"
+  - `exploreSearchStyles`: "Phong cách"
+  - `exploreSearchPlaces`: "Địa điểm"
+  - `exploreSearchPhotographers`: "Thợ ảnh"
+  - `exploreSearchPackagesCount`: "{count} gói"
+  - `exploreSearchEmptyTitle`: "Không tìm thấy “{query}”"
+  - `exploreSearchEmptyBody`: "Thử từ ngắn hơn, hoặc gõ không dấu."
+  - `exploreSearchAllPhotographers`: "Xem tất cả thợ ảnh"
+  - `exploreSearchPrompt`: "Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh."
+- **Chấp nhận**: Gõ không dấu ra có dấu (ví dụ "chan dung" ra "Chân dung"); không gọi mạng khi pool thợ đã có trong bộ nhớ đệm; "Xem tất cả thợ ảnh" mở S02.06 không lọc.
+
