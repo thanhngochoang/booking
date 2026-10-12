@@ -264,13 +264,20 @@ class FakePostEngagementRepository implements PostEngagementRepository {
   }
 }
 
-class FakePhotographerRepository implements PhotographerRepository {
+class FakePhotographerRepository
+    implements PhotographerRepository, PhotographerPoolCache {
   FakePhotographerRepository([
     List<PhotographerSummary> photographers = const [],
   ]) : _all = List.of(photographers);
 
   final List<PhotographerSummary> _all;
   Object? failWith;
+  int invalidateCalls = 0;
+
+  @override
+  void invalidate() {
+    invalidateCalls++;
+  }
 
   void add(PhotographerSummary p) => _all.add(p);
 
@@ -300,6 +307,7 @@ class FakePhotographerRepository implements PhotographerRepository {
     final to = vnDateKey(now.add(const Duration(days: 7)));
     final list =
         _all.where((p) {
+          if (!p.acceptingOrders) return false;
           final d = p.nextFreeDate;
           return d != null && d.compareTo(from) >= 0 && d.compareTo(to) < 0;
         }).toList()..sort((a, b) {
@@ -318,7 +326,10 @@ class FakePhotographerRepository implements PhotographerRepository {
     if (failWith != null) {
       throw failWith!;
     }
-    return _all.take(clampPageSize(limit, 200)).toList();
+    return _all
+        .where((p) => p.acceptingOrders)
+        .take(clampPageSize(limit, 200))
+        .toList();
   }
 }
 

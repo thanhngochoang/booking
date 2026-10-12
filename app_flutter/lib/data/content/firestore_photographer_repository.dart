@@ -181,7 +181,7 @@ class FirestorePhotographerRepository implements PhotographerRepository {
     final to = vnDateKey(now.add(const Duration(days: 7)));
     final snap = await _db
         .collection('photographers')
-        .where('onboardingComplete', isEqualTo: true)
+        .where('acceptingOrders', isEqualTo: true)
         .where('stats.nextFreeDate', isGreaterThanOrEqualTo: from)
         .where('stats.nextFreeDate', isLessThan: to)
         .orderBy('stats.nextFreeDate')
@@ -209,7 +209,7 @@ class FirestorePhotographerRepository implements PhotographerRepository {
   Future<List<PhotographerSummary>> candidates({int limit = 200}) async {
     final snap = await _db
         .collection('photographers')
-        .where('onboardingComplete', isEqualTo: true)
+        .where('acceptingOrders', isEqualTo: true)
         .limit(clampPageSize(limit, 200))
         .get();
     return _join(snap.docs);

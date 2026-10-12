@@ -78,25 +78,30 @@ abstract class PostEngagementRepository {
   Future<void> setFollowing(String uid, String photographerId, bool following);
 }
 
+abstract class PhotographerPoolCache {
+  void invalidate();
+}
+
 abstract class PhotographerRepository {
   /// Photographers by id; unknown ids are absent from the result. [ids] may
   /// have any length; adapters chunk `whereIn` queries by 30.
   Future<Map<String, PhotographerSummary>> summaries(Iterable<String> ids);
 
   /// Photographers whose next free day lies in `[today, today + 7 days)`
-  /// (Vietnam calendar days), soonest first, then best score, then `id`
-  /// ascending. [limit] is clamped to 1..[kMaxPageSize]. Server invariant:
-  /// `stats.score` is always written (0 when no reviews) whenever
-  /// `stats.nextFreeDate` is written; a photographer without `stats.score`
-  /// is not returned.
+  /// (Vietnam calendar days), `acceptingOrders == true`, soonest first, then
+  /// best score, then `id` ascending. [limit] is clamped to 1..[kMaxPageSize].
+  /// Server invariant: `stats.score` is always written (0 when no reviews)
+  /// whenever `stats.nextFreeDate` is written; a photographer without
+  /// `stats.score` is not returned.
   Future<List<PhotographerSummary>> freeThisWeek({
     required DateTime now,
     int limit = 12,
   });
 
   /// The recommender candidate pool, for ranking on the device when the
-  /// recommender service is not available. The one list whose [limit] is
-  /// clamped to 1..200 instead of 1..[kMaxPageSize].
+  /// recommender service is not available. Returns bookable providers only
+  /// (`acceptingOrders == true`). The one list whose [limit] is clamped to
+  /// 1..200 instead of 1..[kMaxPageSize].
   Future<List<PhotographerSummary>> candidates({int limit = 200});
 }
 
