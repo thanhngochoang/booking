@@ -252,12 +252,22 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S29.04 | Thêm / sửa lịch tại điểm | `/me/spot-schedules/new`, `/me/spot-schedules/:id/edit` | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
 | S29.05 | Gói chia suất (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
 | S29.06 | Chọn suất (sheet, phía khách) | — (sheet) | khách | spec 10-08 điểm chụp | ⬜ có mock, chưa có plan (#194) | — |
+| **S30** | **Chủ sự kiện & vé vào cửa** | | | | | |
+| S30.01 | Trở thành chủ sự kiện | `/organizer/apply` | mọi người dùng | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.02 | Nhận quản lý điểm chụp (minh chứng, staff duyệt) | `/organizer/spots/claim` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.03 | Quản lý điểm: thông tin vào cửa, giờ mở cửa, thợ tại điểm | `/organizer/spots/:spotId` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.04 | Tạo / sửa vé vào cửa: loại vé, khoảng ngày, ngày nghỉ, sức chứa/ngày | `/organizer/entry/new`, `/organizer/entry/:eventId/edit` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.05 | Mua vé vào cửa: ngày và số lượng theo loại | `/spots/:spotId/tickets` | khách | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.06 | Nhân viên soát vé | `/organizer/gate-staff` | chủ sự kiện | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
+| S30.07 | Quét mã: soát vé ở cổng, thợ gặp khách ("Đang chụp") | `/scan` | chủ sự kiện · nhân viên soát vé · thợ ảnh · studio | spec 10-12 chủ sự kiện | ⬜ có mock, chưa có plan (#223) | — |
 
 Use case S15, S16 (**Đăng việc**), S24 (**Portfolio album**) và S25 (**Giải thưởng & hạng NAG**) có mock và đặc tả ở [`2026-10-05-provider-types-portfolio-jobs-design.md`](2026-10-05-provider-types-portfolio-jobs-design.md) (mục 3j); từ ngày đó cột "Vai trò" ghi "thợ ảnh" cho vai `photographer`, còn "NAG" chỉ hạng Nhiếp ảnh gia (các dòng cũ ghi "NAG" hiểu là "thợ ảnh"); S18–S23 bổ sung ngày 2026-10-02 (mục 3i), chưa có mock; S17 thuộc Thông báo (mục 3h). S13 và S14 là Chụp ngay, đặc tả ở [`2026-10-01-instant-booking-design.md`](2026-10-01-instant-booking-design.md) (sub‑project I1–I6).
 
 Use case S26 (**Studio và thành viên**) đặc tả ở [`2026-10-06-studio-members-design.md`](2026-10-06-studio-members-design.md); S05.06, S05.07, S06.07 (bàn giao hai lớp) ở [`2026-10-06-delivery-preview-unlock-design.md`](2026-10-06-delivery-preview-unlock-design.md); đánh giá cà chua/gạch (S05.05) ở [`2026-10-06-tomato-brick-reviews-design.md`](2026-10-06-tomato-brick-reviews-design.md).
 
 Use case S29 (**Điểm chụp đang hot**) đặc tả ở [`2026-10-08-trending-spots-design.md`](2026-10-08-trending-spots-design.md); biến thể ở màn đã có: S02.01, S02.03, S04.02, S10.01, S12.01 (mock `-spots` / `-spot`). Mã S28 để dành cho studio trên web (#161), chưa có màn trong app.
+
+Use case S30 (**Chủ sự kiện & vé vào cửa**) đặc tả ở [`2026-10-12-spot-organizer-entry-tickets-design.md`](2026-10-12-spot-organizer-entry-tickets-design.md); biến thể ở màn đã có (mock đặt trong khu S30): S29.02-entry, S04.03-entry, S05.02-pass, S05.02-askshot, S06.01-scan, S11.02-venue-consent, S11.04-entry, S12.01-venue, S12.03-entry. Spec đó thêm trạng thái booking `shooting` (thợ quét mã của khách) giữa `upcoming` và `shot`.
 
 ### 2.1 Hiển thị mã trong app (chế độ debug)
 

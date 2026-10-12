@@ -164,6 +164,14 @@ abstract final class ScreenCodes {
   static const spotScheduleEdit = 'S29.04';
   static const spotSlotOffer = 'S29.05';
   static const spotSlotPick = 'S29.06';
+  // S30 Chủ sự kiện & vé vào cửa.
+  static const organizerApply = 'S30.01';
+  static const spotClaim = 'S30.02';
+  static const managedSpot = 'S30.03';
+  static const entryTicketsEdit = 'S30.04';
+  static const entryTicketsBuy = 'S30.05';
+  static const gateStaff = 'S30.06';
+  static const scanPass = 'S30.07';
 
   static const all = <String>[
     splash,
@@ -292,5 +300,12 @@ abstract final class ScreenCodes {
     spotScheduleEdit,
     spotSlotOffer,
     spotSlotPick,
+    organizerApply,
+    spotClaim,
+    managedSpot,
+    entryTicketsEdit,
+    entryTicketsBuy,
+    gateStaff,
+    scanPass,
   ];
 }
