@@ -1774,6 +1774,48 @@ abstract class AppLocalizations {
   /// **'Xem tất cả nhiếp ảnh gia'**
   String get explorePhotographersAll;
 
+  /// No description provided for @exploreSearchHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm dịch vụ, địa điểm, tên thợ ảnh'**
+  String get exploreSearchHint;
+
+  /// No description provided for @exploreSearchIdle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.'**
+  String get exploreSearchIdle;
+
+  /// No description provided for @exploreSearchEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy “{query}”'**
+  String exploreSearchEmptyTitle(String query);
+
+  /// No description provided for @exploreSearchEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử từ ngắn hơn, hoặc gõ không dấu.'**
+  String get exploreSearchEmptyBody;
+
+  /// No description provided for @exploreSearchSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả thợ ảnh'**
+  String get exploreSearchSeeAll;
+
+  /// No description provided for @exploreSearchClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get exploreSearchClear;
+
+  /// No description provided for @exploreCategoryPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} gói'**
+  String exploreCategoryPackages(int count);
+
   /// No description provided for @exploreLoadError.
   ///
   /// In vi, this message translates to:

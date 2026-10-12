@@ -30,6 +30,7 @@ import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
+import 'package:photobooking/features/explore/search/explore_search_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
@@ -235,6 +236,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => ContactSetupScreen(
           popOnDone: state.uri.queryParameters['from'] == 'settings',
         ),
+      ),
+      GoRoute(
+        path: '/explore/search',
+        builder: (_, _) => const ExploreSearchScreen(),
       ),
       GoRoute(
         path: '/p/:postId',

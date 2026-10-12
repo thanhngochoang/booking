@@ -928,6 +928,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String get explorePhotographersAll => 'Xem tất cả nhiếp ảnh gia';
 
   @override
+  String get exploreSearchHint => 'Tìm dịch vụ, địa điểm, tên thợ ảnh';
+
+  @override
+  String get exploreSearchIdle => 'Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.';
+
+  @override
+  String exploreSearchEmptyTitle(String query) {
+    return 'Không tìm thấy “$query”';
+  }
+
+  @override
+  String get exploreSearchEmptyBody => 'Thử từ ngắn hơn, hoặc gõ không dấu.';
+
+  @override
+  String get exploreSearchSeeAll => 'Xem tất cả thợ ảnh';
+
+  @override
+  String get exploreSearchClear => 'Xoá';
+
+  @override
+  String exploreCategoryPackages(int count) {
+    return '$count gói';
+  }
+
+  @override
   String get exploreLoadError =>
       'Không tải được sự kiện. Kiểm tra mạng rồi thử lại.';
 

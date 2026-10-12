@@ -353,6 +353,23 @@
   "exploreTabStyles": "Phong cách",
   "exploreTabPhotographers": "Thợ ảnh",
   "explorePhotographersAll": "Xem tất cả nhiếp ảnh gia",
+  "exploreSearchHint": "Tìm dịch vụ, địa điểm, tên thợ ảnh",
+  "exploreSearchIdle": "Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.",
+  "exploreSearchEmptyTitle": "Không tìm thấy “{query}”",
+  "@exploreSearchEmptyTitle": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "exploreSearchEmptyBody": "Thử từ ngắn hơn, hoặc gõ không dấu.",
+  "exploreSearchSeeAll": "Xem tất cả thợ ảnh",
+  "exploreSearchClear": "Xoá",
+  "exploreCategoryPackages": "{count} gói",
+  "@exploreCategoryPackages": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại.",
   "eventDateSpoken": "{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}, ngày {day} tháng {month}",
   "@eventDateSpoken": {
