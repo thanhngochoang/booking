@@ -3826,6 +3826,18 @@ abstract class AppLocalizations {
   /// **'Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
   String get payExpiredBody;
 
+  /// No description provided for @payTicketExpiredBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nhận được thanh toán nên chỗ giữ đã nhả. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.'**
+  String get payTicketExpiredBody;
+
+  /// No description provided for @payBackToEvent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về sự kiện'**
+  String get payBackToEvent;
+
   /// No description provided for @payRetry.
   ///
   /// In vi, this message translates to:

@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
-import 'package:photobooking/data/booking/payments_mode.dart';
-import 'package:photobooking/data/contact/contact_providers.dart';
+
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
@@ -15,6 +14,8 @@ import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
 import 'package:photobooking/features/booking/steps/service_step.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/payment/open_payment.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
 
 class BookingSheetPage extends Page<void> {
   const BookingSheetPage({required this.args, super.key});
@@ -84,13 +85,13 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
     if (!mounted) return;
     switch (outcome) {
       case GoToPayment(:final bookingId, :final checkout):
-        // A wallet's own page opens first; S04.04 stays under it and waits for
-        // the booking to leave draft. A bank QR has no page: S04.04 shows it.
-        final payUrl = checkout.payUrl;
-        if (ref.read(realPaymentsProvider) && payUrl != null) {
-          ref.read(externalLauncherProvider).open(Uri.parse(payUrl));
-        }
-        context.replace('/b/$bookingId/pay');
+        openPayment(
+          context,
+          ref,
+          subject: BookingPay(bookingId),
+          instructions: checkout.toInstructions(),
+          replace: true,
+        );
       case NeedPhone():
         final state = ref.read(bookingFlowControllerProvider(widget.args));
         final date = state.day != null ? parseDayKey(state.day!) : null;

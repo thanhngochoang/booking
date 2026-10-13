@@ -11,8 +11,8 @@ import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
-import 'package:photobooking/features/booking/fake_payment_sheet.dart';
-import 'package:photobooking/features/booking/payment_pending_screen.dart';
+import 'package:photobooking/features/payment/fake_transfer_sheet.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../support/booking_world.dart';
@@ -605,7 +605,7 @@ void main() {
         await _settle(tester);
 
         expect(s.handles.router.state.uri.toString(), '/b/booking_1?paid=1');
-        expect(find.byType(PaymentPendingScreen), findsNothing);
+        expect(find.byType(PaymentScreen), findsNothing);
         expect(find.byType(BookingDetailScreen), findsOneWidget);
       },
     );
@@ -637,7 +637,7 @@ void main() {
       await tester.tap(find.text('Giả lập chuyển khoản'));
       await _settle(tester);
 
-      expect(find.byType(FakePaymentSheet), findsOneWidget);
+      expect(find.byType(FakeTransferSheet), findsOneWidget);
       expect(find.text('Giả lập chuyển khoản (thử nghiệm)'), findsOneWidget);
       for (final label in [
         'Chuyển đúng',
@@ -667,7 +667,7 @@ void main() {
 
         expect(s.repo.fakeConfirms, ['pay_booking_1']);
         expect(s.repo.fakeConfirmKinds, [kind]);
-        expect(find.byType(FakePaymentSheet), findsNothing);
+        expect(find.byType(FakeTransferSheet), findsNothing);
       });
     }
 
@@ -683,7 +683,7 @@ void main() {
       await _pump(tester, checkout: _freshQr, realPayments: true);
 
       expect(find.text('Giả lập chuyển khoản'), findsNothing);
-      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(find.byType(FakeTransferSheet), findsNothing);
     });
 
     testWidgets('a removed draft shows expired with Đặt lại', (tester) async {
@@ -787,5 +787,20 @@ void main() {
         expect(find.byType(BookingDetailScreen), findsOneWidget);
       },
     );
+
+    testWidgets('the route extra renders the QR before the booking stream answers', (
+      tester,
+    ) async {
+      final clock = TestClock(worldBookingToday);
+      final repo = FakeBookingRepository(clock: () => clock.now);
+      await pumpBookingRoute(
+        tester,
+        path: '/b/booking_1/pay',
+        bookings: repo,
+        clock: clock,
+      );
+      await _settle(tester);
+      expect(find.byType(PaymentScreen), findsOneWidget);
+    });
   });
 }

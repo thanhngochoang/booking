@@ -978,6 +978,8 @@
   "payExpired": "Yêu cầu đã hết hạn",
   "payExpiredTitle": "Yêu cầu đã hết hạn",
   "payExpiredBody": "Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.",
+  "payTicketExpiredBody": "Chưa nhận được thanh toán nên chỗ giữ đã nhả. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.",
+  "payBackToEvent": "Về sự kiện",
   "payRetry": "Đặt lại",
   "payBookAgain": "Đặt lại",
   "payGoHome": "Về trang chủ",

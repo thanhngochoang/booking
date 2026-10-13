@@ -1,165 +1,109 @@
-// lib/features/booking/qr_checkout_view.dart
+// lib/features/payment/qr_checkout_view.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/booking/booking.dart';
-import 'package:photobooking/data/booking/booking_checkout.dart';
-import 'package:photobooking/data/booking/booking_providers.dart';
-import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
-import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
-import 'package:photobooking/features/booking/fake_payment_sheet.dart';
-import 'package:photobooking/features/booking/payment_snack.dart';
+import 'package:photobooking/features/payment/fake_transfer_sheet.dart';
+import 'package:photobooking/features/payment/payment_controller.dart';
+import 'package:photobooking/features/payment/payment_snack.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 /// S04.04 for a bank transfer: the VietQR with its amount, a countdown, the
 /// bank rows with "Sao chép" on the transfer content, and the footer. The
 /// countdown follows the injected clock, so it also reaches zero while the
 /// screen is open and before any server sweep has run.
-class QrCheckoutView extends ConsumerStatefulWidget {
+class QrCheckoutView extends ConsumerWidget {
   const QrCheckoutView({
     super.key,
-    required this.booking,
-    required this.checkout,
+    required this.instructions,
+    required this.who,
+    required this.canRenew,
+    required this.renewing,
+    required this.onRenew,
+    required this.onBack,
   });
 
-  final Booking booking;
-  final BookingCheckout checkout;
+  final PaymentInstructions instructions;
+  final PayWho who;
+  final bool canRenew;
+  final bool renewing;
+  final VoidCallback onRenew;
+  final VoidCallback onBack;
 
-  @override
-  ConsumerState<QrCheckoutView> createState() => _QrCheckoutViewState();
-}
-
-class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
-  bool _creating = false;
-
-  /// The checkout "Tạo QR mới" got back, until the booking stream shows it.
-  BookingCheckout? _created;
-
-  /// True once the screen shows [created] (or a later attempt).
-  bool _shows(BookingCheckout created) =>
-      widget.checkout.paymentId == created.paymentId ||
-      widget.checkout.attempt >= created.attempt;
-
-  @override
-  void didUpdateWidget(covariant QrCheckoutView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // The booking stream brought the new checkout: the button is live again.
-    final created = _created;
-    if (created != null && _shows(created)) {
-      _created = null;
-      _creating = false;
-    }
-  }
-
-  void _doneCreating() {
-    if (!mounted) return;
-    setState(() {
-      _creating = false;
-      _created = null;
-    });
-  }
-
-  /// "Tạo QR mới": same method, a fresh payment and a fresh 15 minutes. The
-  /// booking stream brings the new checkout; nothing is navigated here. The
-  /// button stays busy until that checkout is on screen (the callable can
-  /// answer first, and the old, maybe expired QR would offer it again: a
-  /// second tap would spend another of the 3 attempts). An error frees it.
-  Future<void> _newQr() async {
-    if (_creating) return;
-    setState(() => _creating = true);
+  Future<void> _copyCode(BuildContext context) async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
-    try {
-      final created = await ref
-          .read(bookingRepositoryProvider)
-          .createPayment(
-            bookingId: widget.booking.id,
-            method: widget.checkout.method,
-          );
-      if (!mounted) return;
-      // The snapshot may already be on screen; else didUpdateWidget frees it.
-      if (_shows(created)) {
-        _doneCreating();
-      } else {
-        _created = created;
-      }
-    } catch (e) {
-      _doneCreating();
-      showPaymentSnack(messenger, switch (bookingErrorOf(e)) {
-        BookingErrorCode.paymentAttemptsExceeded => l10n.payAttemptsExceeded,
-        BookingErrorCode.blocked => l10n.bookingErrBlocked,
-        _ => l10n.bookTryAgain,
-      });
-    }
-  }
-
-  Future<void> _copyCode() async {
-    final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
-    await Clipboard.setData(ClipboardData(text: widget.checkout.transferCode));
+    await Clipboard.setData(ClipboardData(text: instructions.transferCode));
     showPaymentSnack(messenger, l10n.payQrCopied);
   }
 
-  Future<void> _openBankApps(String url) async {
+  Future<void> _openBankApps(WidgetRef ref, String url) async {
     await ref.read(externalLauncherProvider).open(Uri.parse(url));
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final checkout = widget.checkout;
-    final now =
-        ref.watch(nowTickerProvider(const Duration(seconds: 1))).value ??
+    final now = ref.watch(nowTickerProvider(const Duration(seconds: 1))).value ??
         ref.read(clockProvider)();
-    final expired = checkout.isExpiredAt(now);
-    final amount = formatMoney(checkout.amount);
-    final photographerName =
-        ref
-            .watch(photographerProfileProvider(widget.booking.photographerId))
-            .value
-            ?.summary
-            .displayName ??
-        '';
-    final bankAppsUrl = checkout.bankAppsUrl;
-
-    final newQr = expired
-        ? AppButton.primary(
-            l10n.payQrNew,
-            loading: _creating,
-            onPressed: _creating ? null : _newQr,
-          )
-        : AppButton.outline(
-            l10n.payQrNew,
-            size: AppButtonSize.small,
-            loading: _creating,
-            onPressed: _creating ? null : _newQr,
-          );
+    final expired = instructions.isExpiredAt(now);
+    final amount = formatMoney(instructions.amount);
+    final bankAppsUrl = instructions.bankAppsUrl;
 
     final Widget footer;
-    if (expired || bankAppsUrl == null) {
-      footer = newQr;
+    if (expired && !canRenew) {
+      footer = AppButton.primary(
+        l10n.payBackToEvent,
+        onPressed: onBack,
+      );
+    } else if (expired) {
+      footer = AppButton.primary(
+        l10n.payQrNew,
+        loading: renewing,
+        onPressed: renewing ? null : onRenew,
+      );
+    } else if (bankAppsUrl == null) {
+      footer = AppButton.outline(
+        l10n.payQrNew,
+        size: AppButtonSize.small,
+        loading: renewing,
+        onPressed: renewing ? null : onRenew,
+      );
     } else {
       footer = Row(
         children: [
-          Expanded(flex: 38, child: newQr),
+          Expanded(
+            flex: 38,
+            child: AppButton.outline(
+              l10n.payQrNew,
+              size: AppButtonSize.small,
+              loading: renewing,
+              onPressed: renewing ? null : onRenew,
+            ),
+          ),
           const SizedBox(width: AppSpace.s3),
           Expanded(
             flex: 62,
             child: AppButton.primary(
               l10n.payQrOpenBank,
-              onPressed: () => _openBankApps(bankAppsUrl),
+              onPressed: () => _openBankApps(ref, bankAppsUrl),
             ),
           ),
         ],
       );
     }
+
+    final whoText = who.detail.isNotEmpty
+        ? l10n.payQrWho(who.name, who.detail)
+        : who.name;
 
     return Column(
       children: [
@@ -174,11 +118,11 @@ class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
               children: [
                 Center(
                   child: _QrTile(
-                    payload: checkout.qrPayload ?? '',
+                    payload: instructions.qrPayload ?? '',
                     expired: expired,
                     semanticsLabel: l10n.payQrSemantics(
                       amount,
-                      checkout.transferCode,
+                      instructions.transferCode,
                     ),
                   ),
                 ),
@@ -202,13 +146,11 @@ class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
                   spacing: AppSpace.s2,
                   runSpacing: AppSpace.s1,
                   children: [
-                    Text(
-                      l10n.payQrWho(
-                        photographerName,
-                        widget.booking.serviceSnapshot.name,
+                    if (whoText.isNotEmpty)
+                      Text(
+                        whoText,
+                        style: theme.textTheme.bodySmall,
                       ),
-                      style: theme.textTheme.bodySmall,
-                    ),
                     StatusBadge(
                       BookingStatus.draft,
                       label: l10n.payAwaitingDeposit,
@@ -217,27 +159,29 @@ class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
                 ),
                 const SizedBox(height: AppSpace.s2),
                 Center(
-                  child: CountdownPill(remaining: checkout.remainingAt(now)),
+                  child: CountdownPill(remaining: instructions.remainingAt(now)),
                 ),
                 const SizedBox(height: AppSpace.s4),
                 _KeyValueBox(
                   rows: [
                     _KeyValueRow(
                       label: l10n.payQrBank,
-                      value: checkout.bankName ?? '',
+                      value: instructions.bankName ?? '',
                       note: l10n.payQrBankNote,
                     ),
                     _KeyValueRow(
                       label: l10n.payQrAccount,
-                      value: checkout.accountMasked ?? '',
+                      value: instructions.accountMasked ?? '',
                     ),
                     _KeyValueRow(
                       label: l10n.payQrContent,
-                      value: checkout.transferCode,
-                      // An expired code is no use to copy.
+                      value: instructions.transferCode,
                       trailing: expired
                           ? null
-                          : _CopyChip(label: l10n.payQrCopy, onTap: _copyCode),
+                          : _CopyChip(
+                              label: l10n.payQrCopy,
+                              onTap: () => _copyCode(context),
+                            ),
                     ),
                   ],
                 ),
@@ -245,7 +189,7 @@ class _QrCheckoutViewState extends ConsumerState<QrCheckoutView> {
                 Text(l10n.payQrHint, style: theme.textTheme.bodySmall),
                 const SizedBox(height: AppSpace.s2),
                 Center(
-                  child: FakeTransferButton(paymentId: checkout.paymentId),
+                  child: FakeTransferButton(paymentId: instructions.paymentId),
                 ),
               ],
             ),

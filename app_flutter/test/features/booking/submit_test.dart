@@ -7,7 +7,7 @@ import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
-import 'package:photobooking/features/booking/fake_payment_sheet.dart';
+import 'package:photobooking/features/payment/fake_transfer_sheet.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
@@ -159,7 +159,7 @@ void main() {
       await tester.tap(payBtn);
       await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
-      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(find.byType(FakeTransferSheet), findsNothing);
       expect(fakeRepo.fakeConfirms, isEmpty);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
 
@@ -185,7 +185,7 @@ void main() {
       await tester.tap(payBtn);
       await pumpWhileWaiting(tester); // S04.04's draft loader loops
 
-      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(find.byType(FakeTransferSheet), findsNothing);
       // A bank QR has no payUrl: S04.04 draws the QR itself.
       expect(handles.externalLauncher.opened, isEmpty);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
@@ -234,7 +234,7 @@ void main() {
       await pumpWhileWaiting(tester);
 
       expect(handles.externalLauncher.opened, isEmpty);
-      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(find.byType(FakeTransferSheet), findsNothing);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
     },
   );

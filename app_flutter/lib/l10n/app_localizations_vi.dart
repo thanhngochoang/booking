@@ -2142,6 +2142,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
 
   @override
+  String get payTicketExpiredBody =>
+      'Chưa nhận được thanh toán nên chỗ giữ đã nhả. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
+
+  @override
+  String get payBackToEvent => 'Về sự kiện';
+
+  @override
   String get payRetry => 'Đặt lại';
 
   @override

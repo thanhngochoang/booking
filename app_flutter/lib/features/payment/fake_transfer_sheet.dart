@@ -1,11 +1,11 @@
-// lib/features/booking/fake_payment_sheet.dart
+// lib/features/payment/fake_transfer_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 
-/// S04.04's "Giả lập chuyển khoản" text button: opens [FakePaymentSheet] on
+/// S04.04's "Giả lập chuyển khoản" text button: opens [FakeTransferSheet] on
 /// test builds and draws nothing when real payments are on.
 class FakeTransferButton extends ConsumerWidget {
   const FakeTransferButton({super.key, required this.paymentId});
@@ -20,7 +20,7 @@ class FakeTransferButton extends ConsumerWidget {
       size: AppButtonSize.small,
       onPressed: () => showAppSheet<void>(
         context,
-        builder: (_) => FakePaymentSheet(paymentId: paymentId),
+        builder: (_) => FakeTransferSheet(paymentId: paymentId),
       ),
     );
   }
@@ -28,17 +28,17 @@ class FakeTransferButton extends ConsumerWidget {
 
 /// Test-only sheet that makes the fake bank send one of four transfers to a
 /// payment: exact, short, over, or with content that matches nothing. The
-/// server decides what each one does; this screen only watches the booking.
-class FakePaymentSheet extends ConsumerStatefulWidget {
-  const FakePaymentSheet({super.key, required this.paymentId});
+/// server decides what each one does; this screen only watches the subject.
+class FakeTransferSheet extends ConsumerStatefulWidget {
+  const FakeTransferSheet({super.key, required this.paymentId});
 
   final String paymentId;
 
   @override
-  ConsumerState<FakePaymentSheet> createState() => _FakePaymentSheetState();
+  ConsumerState<FakeTransferSheet> createState() => _FakeTransferSheetState();
 }
 
-class _FakePaymentSheetState extends ConsumerState<FakePaymentSheet> {
+class _FakeTransferSheetState extends ConsumerState<FakeTransferSheet> {
   FakeTransferKind? _sending;
 
   Future<void> _send(FakeTransferKind kind) async {
