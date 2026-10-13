@@ -4,7 +4,7 @@
 
 import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
-import type { Payment, PaymentMethod, Refund, LedgerEntry } from './escrow.js';
+import type { Payment, PaymentMethod, PaymentSubject, Refund, LedgerEntry } from './escrow.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 
 export interface ServiceRecord {
@@ -61,8 +61,8 @@ export interface TransferNotification {
   readonly payer?: { readonly bankCode?: string; readonly accountMasked?: string; readonly name?: string };
 }
 
-/** What the provider gives back for a new payment; the app shows it on S04.04. */
-export interface PaymentInstructions {
+/** The gateway's answer to createPayment. Renamed from #129's `PaymentInstructions` (Decision 4). */
+export interface GatewayInstructions {
   readonly providerRef?: string;
   readonly qrPayload?: string;
   readonly bankName?: string;
@@ -156,13 +156,15 @@ export interface PaymentGateway {
    */
   createPayment(params: {
     readonly paymentId: string;
-    readonly bookingId: string;
+    readonly subjectType?: PaymentSubject;
+    readonly subjectId?: string;
+    readonly bookingId?: string;
     readonly amount: number;
     readonly method: PaymentMethod;
     readonly transferCode: string;
     readonly expiresAt: string;
     readonly idempotencyKey: string;
-  }): Promise<PaymentInstructions>;
+  }): Promise<GatewayInstructions>;
 
   /** Transfers the provider has received for this payment (reconciliation, "Kiểm tra lại"). */
   queryTransfers(params: {

@@ -5,7 +5,6 @@
  */
 
 import type { Booking } from './booking.js';
-import { PAYMENT_EXPIRY_MINUTES } from './booking_policy.js';
 import type {
   BookingDeps,
   BookingTx,
@@ -13,21 +12,19 @@ import type {
   TransferOutcome,
   TransferRecord,
 } from './booking_ports.js';
-import { markPaid, moveDraftToRequested, paymentReceivedEntry, refundLatePayment } from './booking_payment_paths.js';
+import { moveDraftToRequested, refundLatePayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
 import type { Payment, Refund } from './escrow.js';
 import { transferCodesIn } from './payment_code.js';
 import { dispatchRefunds, transferRefund } from './refunds.js';
-import { decideTransfer } from './transfer_rules.js';
 
-export interface TransferResult {
-  readonly outcome: TransferOutcome;
-  readonly paymentId?: string;
-}
+import {
+  applyTransfer as applyTransferPure,
+  type TransferResult,
+  transferRecordId,
+} from './payment_settlement.js';
 
-/** The id of a transfer's record: the provider's transaction id, namespaced by provider. */
-export const transferRecordId = (n: Pick<TransferNotification, 'provider' | 'txnId'>): string =>
-  `${n.provider}_${n.txnId}`;
+export { type TransferResult, transferRecordId };
 
 function validNotification(n: TransferNotification): boolean {
   return (
@@ -74,21 +71,17 @@ async function applyTransfer(
   n: TransferNotification,
   now: Date,
 ): Promise<{ readonly outcome: Exclude<TransferOutcome, 'duplicate' | 'needs_review'>; readonly refunds: Refund[] }> {
-  const expiresAt =
-    payment.expiresAt ?? new Date(Date.parse(payment.createdAt) + PAYMENT_EXPIRY_MINUTES * 60_000).toISOString();
-  const decision = decideTransfer({
-    status: payment.status,
-    amount: payment.amount,
-    receivedBefore: payment.receivedAmount ?? 0,
-    expiresAt,
-    transferAmount: n.amount,
-    receivedAt: n.receivedAt,
+  const { payment: stepPayment, ledgerEntry, decision, excess } = applyTransferPure({
+    payment,
+    transfer: n,
+    ledgerEntryId: deps.ids.newId(),
+    now,
   });
 
-  await tx.addLedgerEntry(paymentReceivedEntry(deps, payment, n.amount, now));
+  await tx.addLedgerEntry(ledgerEntry);
 
   const refundOf = async (amount: number, reason: Parameters<typeof transferRefund>[0]['reason']) => {
-    const { refund, ledgerEntry } = transferRefund({
+    const { refund, ledgerEntry: refundLedger } = transferRefund({
       payment,
       refundId: deps.ids.newId(),
       ledgerEntryId: deps.ids.newId(),
@@ -98,13 +91,13 @@ async function applyTransfer(
       now,
     });
     await tx.addRefund(refund);
-    await tx.addLedgerEntry(ledgerEntry);
+    await tx.addLedgerEntry(refundLedger);
     return refund;
   };
 
   switch (decision.kind) {
     case 'partial':
-      await tx.setPayment({ ...payment, receivedAmount: decision.received, updatedAt: now.toISOString() });
+      await tx.setPayment(stepPayment);
       return { outcome: 'partial', refunds: [] };
 
     case 'refund':
@@ -113,8 +106,8 @@ async function applyTransfer(
 
     case 'paid': {
       const refunds: Refund[] = [];
-      const paid = markPaid({ ...payment, receivedAmount: payment.amount }, now);
-      if (decision.excess > 0) refunds.push(await refundOf(decision.excess, 'overpaid_excess'));
+      const paid = stepPayment;
+      if (excess > 0) refunds.push(await refundOf(excess, 'overpaid_excess'));
       if (!booking || booking.status !== 'draft') {
         const late = await refundLatePayment(tx, deps, paid, now);
         refunds.push(late.refund);
@@ -122,7 +115,7 @@ async function applyTransfer(
       }
       await tx.setPayment(paid);
       await moveDraftToRequested(tx, deps, booking, paid, now);
-      return { outcome: decision.excess > 0 ? 'paid_with_refund' : 'paid', refunds };
+      return { outcome: excess > 0 ? 'paid_with_refund' : 'paid', refunds };
     }
   }
 }

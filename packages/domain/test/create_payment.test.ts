@@ -1,7 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createBookingWorld, newDraft, transferOf, type BookingWorld } from './support/booking_world.js';
-import { createPayment } from '../src/create_payment.js';
+import {
+  createPayment,
+  freshPaymentId,
+  instructionsOf,
+  issuePaymentInstructions,
+  newSubjectPayment,
+} from '../src/create_payment.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { TRANSFER_CODE_ALPHABET, transferCodeFor } from '../src/payment_code.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
@@ -339,6 +345,170 @@ describe('createPayment', () => {
         createPayment(world.deps, { bookingId: draft.id, customerId: 'c2', method: 'bank_qr' }),
         refusedWith('permission_denied'),
       );
+    });
+  });
+
+  describe('Task 1 generic payment helpers', () => {
+    it('newSubjectPayment sets created, held, the PB code of its id, zero received and an ISO expiresAt', () => {
+      const now = new Date('2026-10-10T10:00:00.000Z');
+      const expiresAt = new Date('2026-10-10T10:15:00.000Z');
+      const p = newSubjectPayment({
+        id: 'id_xyz',
+        subjectType: 'booking',
+        subjectId: 'b_123',
+        payerId: 'u_payer',
+        payeeId: 'u_payee',
+        amount: 500_000,
+        method: 'bank_qr',
+        provider: 'fake',
+        idempotencyKey: 'key_123',
+        now,
+        expiresAt,
+      });
+
+      assert.equal(p.id, 'id_xyz');
+      assert.equal(p.status, 'created');
+      assert.equal(p.escrowStatus, 'held');
+      assert.equal(p.transferCode, transferCodeFor('id_xyz'));
+      assert.equal(p.receivedAmount, 0);
+      assert.equal(p.expiresAt, '2026-10-10T10:15:00.000Z');
+      assert.equal(p.createdAt, '2026-10-10T10:00:00.000Z');
+    });
+
+    it('instructionsOf rebuilds the instructions from the stored payment and is null without them', () => {
+      const base: Payment = {
+        id: 'p_1',
+        subjectType: 'booking',
+        subjectId: 'b_1',
+        payerId: 'c1',
+        payeeId: 'p1',
+        provider: 'fake',
+        amount: 200_000,
+        status: 'created',
+        escrowStatus: 'held',
+        idempotencyKey: 'k_1',
+        method: 'bank_qr',
+        transferCode: 'PB 111111',
+        expiresAt: '2026-10-10T10:15:00.000Z',
+        createdAt: '2026-10-10T10:00:00.000Z',
+        updatedAt: '2026-10-10T10:00:00.000Z',
+      };
+
+      assert.equal(instructionsOf(base), null);
+
+      const withInst: Payment = {
+        ...base,
+        instructions: {
+          qrPayload: 'qr_test',
+          bankName: 'BIDV',
+        },
+      };
+
+      const inst = instructionsOf(withInst);
+      assert.ok(inst);
+      assert.equal(inst.paymentId, 'p_1');
+      assert.equal(inst.subjectType, 'booking');
+      assert.equal(inst.subjectId, 'b_1');
+      assert.equal(inst.method, 'bank_qr');
+      assert.equal(inst.amount, 200_000);
+      assert.equal(inst.qrPayload, 'qr_test');
+      assert.equal(inst.bankName, 'BIDV');
+    });
+
+    it('issuePaymentInstructions calls the gateway once with subjectType and subjectId and saves providerRef and instructions', async () => {
+      const world = createBookingWorld();
+      const p: Payment = {
+        id: 'p_issue',
+        subjectType: 'booking',
+        subjectId: 'b_issue',
+        payerId: 'c1',
+        payeeId: 'p1',
+        provider: 'fake',
+        amount: 750_000,
+        status: 'created',
+        escrowStatus: 'held',
+        idempotencyKey: 'k_issue',
+        method: 'bank_qr',
+        transferCode: 'PB 222222',
+        expiresAt: '2026-10-10T10:15:00.000Z',
+        createdAt: '2026-10-10T10:00:00.000Z',
+        updatedAt: '2026-10-10T10:00:00.000Z',
+      };
+
+      let savedRef: string | undefined;
+      let savedInst: unknown;
+      const res = await issuePaymentInstructions(world.gateway, p, async (ref, inst) => {
+        savedRef = ref;
+        savedInst = inst;
+      });
+
+      assert.equal(world.gateway.createPaymentCalls.length, 1);
+      assert.equal(world.gateway.createPaymentCalls[0]?.subjectType, 'booking');
+      assert.equal(world.gateway.createPaymentCalls[0]?.subjectId, 'b_issue');
+      assert.equal(savedRef, 'fake_ref_p_issue');
+      assert.ok(savedInst);
+      assert.equal(res.paymentId, 'p_issue');
+      assert.equal(res.transferCode, 'PB 222222');
+      assert.ok(res.qrPayload);
+    });
+
+    it('issuePaymentInstructions refuses a payment without method, code or expiry (conflict)', async () => {
+      const world = createBookingWorld();
+      const pMissing: Payment = {
+        id: 'p_bad',
+        subjectType: 'booking',
+        subjectId: 'b_bad',
+        payerId: 'c1',
+        payeeId: 'p1',
+        provider: 'fake',
+        amount: 100_000,
+        status: 'created',
+        escrowStatus: 'held',
+        idempotencyKey: 'k_bad',
+        createdAt: '2026-10-10T10:00:00.000Z',
+        updatedAt: '2026-10-10T10:00:00.000Z',
+      };
+
+      await assert.rejects(
+        issuePaymentInstructions(world.gateway, pMissing, async () => {}),
+        refusedWith('conflict'),
+      );
+    });
+
+    it('freshPaymentId skips an id whose code any payment of any subject uses', async () => {
+      const world = createBookingWorld();
+      // Suppose id_001 is drawn first, its code is taken by an event_registration payment
+      const takenCode = transferCodeFor('id_001');
+      world.store.payments.set('p_evt', {
+        id: 'p_evt',
+        subjectType: 'event_registration',
+        subjectId: 'reg_1',
+        payerId: 'c2',
+        payeeId: 'host_1',
+        provider: 'fake',
+        amount: 100_000,
+        status: 'created',
+        escrowStatus: 'held',
+        idempotencyKey: 'k_evt',
+        transferCode: takenCode,
+        createdAt: '2026-10-10T10:00:00.000Z',
+        updatedAt: '2026-10-10T10:00:00.000Z',
+      });
+
+      const nextId = await freshPaymentId(world.store, world.ids);
+      assert.notEqual(nextId, 'id_001');
+      assert.notEqual(transferCodeFor(nextId), takenCode);
+    });
+
+    it('createPayment stores the gateway instructions on the booking payment', async () => {
+      const world = createBookingWorld();
+      const draft = await newDraft(world);
+      const res = await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'bank_qr' });
+
+      const p = await world.store.getPayment(res.paymentId);
+      assert.ok(p?.instructions);
+      assert.equal(p.instructions.bankName, 'BIDV');
+      assert.ok(p.instructions.qrPayload);
     });
   });
 });

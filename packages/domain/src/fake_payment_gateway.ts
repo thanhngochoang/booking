@@ -2,10 +2,40 @@
  * Fake payment gateway reference adapter for testing and dev emulators.
  */
 
-import type { PaymentGateway, PaymentInstructions, TransferNotification } from './booking_ports.js';
+import type { GatewayInstructions, PaymentGateway, TransferNotification } from './booking_ports.js';
 import type { PaymentProvider } from './booking.js';
-import type { PaymentMethod } from './escrow.js';
+import type { Payment, PaymentMethod, PaymentSubject } from './escrow.js';
 import { buildVietQrPayload } from './vietqr.js';
+
+export const FAKE_TRANSFER_KINDS = ['exact', 'under', 'over', 'wrong_content'] as const;
+export type FakeTransferKind = (typeof FAKE_TRANSFER_KINDS)[number];
+export const FAKE_OVERPAY_VND = 50_000;
+export const FAKE_WRONG_CONTENT = 'CHUYEN TIEN';
+
+/**
+ * provider 'fake', txnId `fake_${id}_${kind}_${now ms}`, amount amount | floor(amount/2) | amount + 50 000, content code | 'CHUYEN TIEN'.
+ */
+export function fakeTransferFor(
+  payment: Payment & { readonly transferCode: string },
+  kind: FakeTransferKind,
+  now: Date,
+): TransferNotification {
+  const txnId = `fake_${payment.id}_${kind}_${now.getTime()}`;
+  let amount = payment.amount;
+  if (kind === 'under') {
+    amount = Math.floor(payment.amount / 2);
+  } else if (kind === 'over') {
+    amount = payment.amount + FAKE_OVERPAY_VND;
+  }
+  const content = kind === 'wrong_content' ? FAKE_WRONG_CONTENT : payment.transferCode;
+  return {
+    provider: 'fake',
+    txnId,
+    amount,
+    content,
+    receivedAt: now.toISOString(),
+  };
+}
 
 /** Test values only (#129 Decision 15): a BIDV collection account that receives no real money. */
 export const FAKE_COLLECTION_ACCOUNT = {
@@ -84,13 +114,15 @@ export class FakePaymentGateway implements PaymentGateway {
 
   async createPayment(params: {
     readonly paymentId: string;
-    readonly bookingId: string;
+    readonly subjectType?: PaymentSubject;
+    readonly subjectId?: string;
+    readonly bookingId?: string;
     readonly amount: number;
     readonly method: PaymentMethod;
     readonly transferCode: string;
     readonly expiresAt: string;
     readonly idempotencyKey: string;
-  }): Promise<PaymentInstructions> {
+  }): Promise<GatewayInstructions> {
     this.createPaymentCalls.push({ ...params });
     const providerRef = `fake_ref_${params.paymentId}`;
     if (params.method === 'bank_qr') {
