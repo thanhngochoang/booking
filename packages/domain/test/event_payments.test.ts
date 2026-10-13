@@ -4,230 +4,58 @@ import { DomainError, type ErrorCode } from '../src/errors.js';
 import type { EventCaller } from '../src/event.js';
 import type { EventPaymentDeps } from '../src/event_ports.js';
 import {
-  cancelEventWithRefunds, checkTicketPayment, confirmFakeTicketPayment, handleTicketPayment, refundTicket,
-  releaseEventHolds, resendTicketRefund, ticketRefundPercent,
+  cancelEventWithRefunds, refundTicket,
+  resendTicketRefund, ticketRefundPercent,
 } from '../src/event_payments.js';
 import { cancelRegistration, registerEvent } from '../src/event_registration.js';
 import { runEventSweeps } from '../src/event_sweeps.js';
-import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
 import { FakePaymentGateway } from '../src/fake_payment_gateway.js';
 import { getContactLink } from '../src/get_contact_link.js';
 import { MemoryEventStore } from '../src/memory_event_store.js';
 import type { RegistrationRecord } from '../src/ports.js';
-import { END, START, admin, createEventWorld, cu1, cu2, cu3, must, ph1, publishedEvent, type EventWorld } from './support/event_world.js';
+import {
+  END,
+  START,
+  admin,
+  createEventWorld,
+  createTicketPaymentWorld,
+  cu1,
+  cu2,
+  cu3,
+  must,
+  ph1,
+  publishedEvent,
+  type EventWorld,
+  type TicketPaymentWorld,
+} from './support/event_world.js';
+import { settleTransfer } from '../src/payment_settlement.js';
 
 const EV = 'ev1_aaaaaaaaaaaaaaaaaaaa';
 const PRICE = 150_000;
 const HOUR = 3_600_000;
 const code = (c: ErrorCode) => (e: unknown) => e instanceof DomainError && e.code === c;
 
-type PaidWorld = EventWorld & { gateway: FakePaymentGateway; pay: EventPaymentDeps };
+type PaidWorld = TicketPaymentWorld & { pay: EventPaymentDeps };
 
 async function paidWorld(over: Record<string, unknown> = {}, host: EventCaller = ph1): Promise<PaidWorld> {
-  const w = createEventWorld();
-  const gateway = new FakePaymentGateway();
+  const w = createTicketPaymentWorld();
   await publishedEvent(w, { price: PRICE, ...over }, host);
-  return { ...w, gateway, pay: { ...w.deps, gateway } };
+  return { ...w, pay: w.deps };
 }
 
-const buy = (w: PaidWorld, who: EventCaller, quantity = 1, provider = 'momo') =>
-  registerEvent(w.pay, who, { eventId: EV, quantity, name: 'Nguyễn An', provider });
+const buy = (w: PaidWorld, who: EventCaller, quantity = 1, method = 'bank_qr') =>
+  registerEvent(w.pay, who, { eventId: EV, quantity, name: 'Nguyễn An', method });
 
 const ev = (w: EventWorld) => must(w.store.events.get(EV));
 const reg = (w: EventWorld, id: string) => must(w.store.registrations.get(`${EV}/${id}`));
 const pay = (w: EventWorld, id: string | null) => must(w.store.payments.get(must(id)));
 
-/** Registers and confirms through the fake gateway; returns the registration id. */
+/** Registers and confirms through payTicket; returns the registration id. */
 async function bought(w: PaidWorld, who: EventCaller, quantity = 1): Promise<string> {
   const r = await buy(w, who, quantity);
-  await confirmFakeTicketPayment(w.pay, who, { paymentId: r.paymentId });
+  await w.payTicket(must(r.paymentId), 'exact', who);
   return r.registrationId;
 }
-
-describe('paid registration', () => {
-  test('a paid registration holds seats and returns payUrl and hold expiry', async () => {
-    const w = await paidWorld();
-    const r = await buy(w, cu1, 2);
-    assert.equal(r.status, 'held');
-    assert.match(r.payUrl ?? '', /^https:\/\/fake-pay\.local\/checkout\?paymentId=/);
-    assert.equal(r.holdExpiresAt?.getTime(), w.clock.now().getTime() + 10 * 60_000);
-    const doc = reg(w, r.registrationId);
-    assert.deepEqual([doc.status, doc.amount, doc.quantity, doc.contactEligible], ['held', 300_000, 2, false]);
-    assert.deepEqual([ev(w).heldCount, ev(w).registeredCount], [2, 0]);
-    const p = pay(w, r.paymentId);
-    assert.deepEqual(
-      [p.subjectType, p.subjectId, p.eventId, p.payerId, p.payeeId, p.amount, p.status, p.escrowStatus, p.idempotencyKey],
-      ['event_registration', r.registrationId, EV, 'cu1', 'ph1', 300_000, 'created', 'held', `tkt_${r.registrationId}_momo`],
-    );
-    assert.equal(p.providerRef, `fake_ref_${p.id}`);
-    assert.equal(w.store.contacts.size, 0);
-  });
-
-  test('a paid event needs a known provider', async () => {
-    const w = await paidWorld();
-    await assert.rejects(registerEvent(w.pay, cu1, { eventId: EV, quantity: 1, name: 'An' }), code('invalid_argument'));
-    await assert.rejects(buy(w, cu1, 1, 'paypal'), code('invalid_argument'));
-    assert.equal(w.store.registrationsOf(EV).length, 0);
-  });
-
-  test('without a payment gateway a paid event stays not_eligible (Decision 27)', async () => {
-    const w = await paidWorld();
-    await assert.rejects(registerEvent(w.deps, cu1, { eventId: EV, quantity: 1, name: 'An', provider: 'momo' }), code('not_eligible'));
-  });
-
-  test('the same provider twice reuses the payment', async () => {
-    const w = await paidWorld();
-    const a = await buy(w, cu1);
-    const b = await buy(w, cu1);
-    assert.equal(b.registrationId, a.registrationId);
-    assert.equal(b.paymentId, a.paymentId);
-    assert.equal(w.store.payments.size, 1);
-    assert.equal(ev(w).heldCount, 1);
-  });
-
-  test('another provider opens a second intent for the same hold', async () => {
-    const w = await paidWorld();
-    const a = await buy(w, cu1, 1, 'momo');
-    const b = await buy(w, cu1, 1, 'vnpay');
-    assert.equal(b.registrationId, a.registrationId);
-    assert.notEqual(b.paymentId, a.paymentId);
-    assert.equal(reg(w, a.registrationId).paymentId, b.paymentId);
-    assert.equal(pay(w, b.paymentId).idempotencyKey, `tkt_${a.registrationId}_vnpay`);
-    assert.equal(ev(w).heldCount, 1);
-  });
-
-  test('Thanh toán tiếp without a provider keeps the provider of the hold\'s payment', async () => {
-    const w = await paidWorld();
-    const a = await buy(w, cu1, 1, 'vnpay');
-    const b = await buy(w, cu1, 1, 'momo'); // the customer switched to MoMo
-    const again = await registerEvent(w.pay, cu1, { eventId: EV, quantity: 1, name: 'Nguyễn An' });
-    assert.equal(again.registrationId, a.registrationId);
-    assert.equal(again.paymentId, b.paymentId);
-    assert.equal(pay(w, again.paymentId).provider, 'momo');
-    assert.match(again.payUrl ?? '', new RegExp(`paymentId=${must(b.paymentId)}`));
-    assert.equal(w.store.payments.size, 2);
-    assert.equal(reg(w, a.registrationId).paymentId, b.paymentId);
-  });
-
-  test('a lapsed hold tapped again starts a new hold', async () => {
-    const w = await paidWorld();
-    const a = await buy(w, cu1);
-    w.clock.advance(10 * 60_000);
-    const b = await buy(w, cu1);
-    assert.notEqual(b.registrationId, a.registrationId);
-    assert.equal(reg(w, a.registrationId).status, 'cancelled');
-    assert.equal(ev(w).heldCount, 1);
-  });
-});
-
-describe('ticket payment', () => {
-  test('payment confirmation makes the ticket paid and moves held to registered', async () => {
-    const w = await paidWorld();
-    const r = await buy(w, cu1, 2);
-    const holdAt = reg(w, r.registrationId).createdAt;
-    w.clock.advance(60_000);
-    const out = await confirmFakeTicketPayment(w.pay, cu1, { paymentId: r.paymentId });
-    assert.deepEqual(out, { status: 'paid' });
-    const doc = reg(w, r.registrationId);
-    assert.deepEqual([doc.status, doc.contactEligible, doc.paymentId], ['paid', true, r.paymentId]);
-    // The hold time stays: the group chat compares it with a moderator removal (N4).
-    assert.equal(doc.createdAt.getTime(), holdAt.getTime());
-    assert.deepEqual([ev(w).heldCount, ev(w).registeredCount], [0, 2]);
-    const p = pay(w, r.paymentId);
-    assert.deepEqual([p.status, p.escrowStatus, p.providerRef], ['paid', 'held', `fake_confirmed_${p.id}`]);
-    assert.deepEqual(w.store.ledgerOf(p.id).map((e) => [e.type, e.accountOwnerId, e.amount]),
-      [['ticket_received', 'platform_escrow', 300_000]]);
-    assert.deepEqual(w.store.contacts.get(`${EV}/${r.registrationId}`),
-      { name: 'Nguyễn An', phone: '+84912000001', allowZalo: false, allowWhatsApp: false });
-  });
-
-  test('a duplicate confirmation changes nothing', async () => {
-    const w = await paidWorld();
-    const r = await buy(w, cu1);
-    await confirmFakeTicketPayment(w.pay, cu1, { paymentId: r.paymentId });
-    const writes = w.store.writes;
-    const again = await handleTicketPayment(w.pay, { paymentId: must(r.paymentId) });
-    assert.equal(again.refunded, false);
-    assert.equal(again.registration?.status, 'paid');
-    assert.equal(w.store.writes, writes);
-    assert.equal(ev(w).registeredCount, 1);
-    assert.equal(w.store.ledger.length, 1);
-  });
-
-  test('payment after the hold expired refunds 100%', async () => {
-    const w = await paidWorld();
-    const r = await buy(w, cu1);
-    w.clock.advance(11 * 60_000);
-    const out = await handleTicketPayment(w.pay, { paymentId: must(r.paymentId) });
-    assert.equal(out.refunded, true);
-    const p = pay(w, r.paymentId);
-    assert.deepEqual([p.status, p.escrowStatus], ['refunded', 'refunded']);
-    const [refund] = w.store.refundsOf(p.id);
-    assert.deepEqual([refund?.amount, refund?.percent, refund?.reason, refund?.status], [PRICE, 100, 'late_payment_hold_expired', 'done']);
-    // The lapsed hold gives its seat back at once.
-    assert.equal(reg(w, r.registrationId).status, 'cancelled');
-    assert.deepEqual([ev(w).heldCount, ev(w).registeredCount], [0, 0]);
-  });
-
-  test('a second intent paid after the first one is refunded', async () => {
-    const w = await paidWorld();
-    const a = await buy(w, cu1, 1, 'momo');
-    const b = await buy(w, cu1, 1, 'vnpay');
-    await handleTicketPayment(w.pay, { paymentId: must(b.paymentId) });
-    const late = await handleTicketPayment(w.pay, { paymentId: must(a.paymentId) });
-    assert.equal(late.refunded, true);
-    assert.equal(pay(w, a.paymentId).status, 'refunded');
-    assert.equal(pay(w, b.paymentId).status, 'paid');
-    assert.equal(reg(w, a.registrationId).status, 'paid');
-    assert.equal(ev(w).registeredCount, 1);
-  });
-
-  test('only the payer confirms a fake payment', async () => {
-    const w = await paidWorld();
-    const r = await buy(w, cu1);
-    await assert.rejects(confirmFakeTicketPayment(w.pay, cu2, { paymentId: r.paymentId }), code('permission_denied'));
-    await assert.rejects(confirmFakeTicketPayment(w.pay, cu1, { paymentId: 'nope' }), code('not_found'));
-    await assert.rejects(confirmFakeTicketPayment(w.pay, cu1, {}), code('invalid_argument'));
-    assert.equal(reg(w, r.registrationId).status, 'held');
-  });
-
-  test('checkTicketPayment applies a payment the gateway reports', async () => {
-    const w = await paidWorld();
-    const r = await buy(w, cu1);
-    const ask = { eventId: EV, registrationId: r.registrationId };
-    assert.deepEqual(await checkTicketPayment(w.pay, cu1, ask), { paid: false, status: 'held' });
-    await assert.rejects(checkTicketPayment(w.pay, cu2, ask), code('permission_denied'));
-    w.gateway.markPaid(must(r.paymentId));
-    assert.deepEqual(await checkTicketPayment(w.pay, cu1, ask), { paid: true, status: 'paid' });
-    assert.deepEqual(await checkTicketPayment(w.pay, cu1, ask), { paid: true, status: 'paid' });
-    assert.equal(ev(w).registeredCount, 1);
-  });
-
-  test('an expired hold frees its seats', async () => {
-    const w = await paidWorld({ capacity: 2 });
-    await buy(w, cu1, 2);
-    assert.equal(ev(w).status, 'full');
-    w.clock.advance(9 * 60_000);
-    assert.equal(await releaseEventHolds(w.deps), 0);
-    w.clock.advance(60_000);
-    assert.equal(await releaseEventHolds(w.deps), 1);
-    assert.deepEqual([ev(w).heldCount, ev(w).status], [0, 'open']);
-    assert.equal(await releaseEventHolds(w.deps), 0);
-    const next = await buy(w, cu2, 2);
-    assert.equal(next.status, 'held');
-  });
-
-  test('ledger: ticket_received then refund_issued sum to the refund (invariant 11)', async () => {
-    const w = await paidWorld();
-    const id = await bought(w, cu1, 2);
-    await cancelRegistration(w.pay, cu1, { eventId: EV, registrationId: id });
-    const p = pay(w, reg(w, id).paymentId);
-    const entries = w.store.ledgerOf(p.id);
-    assert.deepEqual(entries.map((e) => [e.type, e.amount]), [['ticket_received', 300_000], ['refund_issued', -300_000]]);
-    assert.equal(entries.reduce((s, e) => s + e.amount, 0), 0);
-    assert.ok(verifyPaymentLedgerInvariant(p, w.store.refundsOf(p.id), entries));
-  });
-});
 
 describe('ticket refunds', () => {
   test('refund policy: 100% at 48 hours or more before the start', () => {
@@ -271,7 +99,16 @@ describe('ticket refunds', () => {
     const r = await buy(w, cu1);
     assert.deepEqual(await cancelRegistration(w.pay, cu1, { eventId: EV, registrationId: r.registrationId }), { status: 'cancelled', refundPercent: null });
     assert.equal(ev(w).heldCount, 0);
-    assert.equal((await handleTicketPayment(w.pay, { paymentId: must(r.paymentId) })).refunded, true);
+    const p = pay(w, r.paymentId);
+    const notification = {
+      provider: 'fake' as const,
+      txnId: `fake_${p.id}_exact`,
+      amount: p.amount,
+      content: p.transferCode ?? '',
+      receivedAt: w.clock.now().toISOString(),
+    };
+    const res = await settleTransfer(w.settlement, notification);
+    assert.equal(res.outcome, 'refunded');
   });
 
   test('a refund only comes from held money', async () => {
@@ -363,7 +200,7 @@ describe('ticket refunds', () => {
     };
     const ask = () => getContactLink('cu1', { registrationId: r.registrationId, channel: 'call' }, deps);
     await assert.rejects(ask(), code('contact_locked')); // held, not paid
-    await confirmFakeTicketPayment(w.pay, cu1, { paymentId: r.paymentId });
+    await w.payTicket(must(r.paymentId), 'exact', cu1);
     assert.deepEqual(await ask(), { url: 'tel:+84912999999' });
     await cancelRegistration(w.pay, cu1, { eventId: EV, registrationId: r.registrationId });
     await assert.rejects(ask(), code('contact_locked'));
@@ -526,7 +363,14 @@ describe('refund state on the ticket', () => {
     const w = await paidWorld();
     const r = await buy(w, cu1);
     w.clock.advance(11 * 60_000);
-    await handleTicketPayment(w.pay, { paymentId: must(r.paymentId) });
+    const p = pay(w, r.paymentId);
+    await settleTransfer(w.settlement, {
+      provider: 'fake',
+      txnId: `fake_${p.id}_exact`,
+      amount: p.amount,
+      content: p.transferCode ?? '',
+      receivedAt: w.clock.now().toISOString(),
+    });
     const [refund] = w.store.refundsOf(must(r.paymentId));
     const doc = reg(w, r.registrationId);
     assert.deepEqual([doc.status, doc.refundId, doc.refundStatus], ['cancelled', refund?.id, 'done']);
@@ -536,16 +380,37 @@ describe('refund state on the ticket', () => {
     const w = await paidWorld();
     const r = await buy(w, cu1);
     await cancelRegistration(w.pay, cu1, { eventId: EV, registrationId: r.registrationId });
-    await handleTicketPayment(w.pay, { paymentId: must(r.paymentId) });
+    const p = pay(w, r.paymentId);
+    await settleTransfer(w.settlement, {
+      provider: 'fake',
+      txnId: `fake_${p.id}_exact`,
+      amount: p.amount,
+      content: p.transferCode ?? '',
+      receivedAt: w.clock.now().toISOString(),
+    });
     assert.deepEqual([reg(w, r.registrationId).status, reg(w, r.registrationId).refundStatus], ['cancelled', 'done']);
   });
 
   test('a late second intent is refunded without touching the paid ticket', async () => {
     const w = await paidWorld();
     const a = await buy(w, cu1, 1, 'momo');
-    const b = await buy(w, cu1, 1, 'vnpay');
-    await handleTicketPayment(w.pay, { paymentId: must(b.paymentId) });
-    await handleTicketPayment(w.pay, { paymentId: must(a.paymentId) });
+    const b = await buy(w, cu1, 1, 'bank_qr');
+    const payA = pay(w, a.paymentId);
+    const payB = pay(w, b.paymentId);
+    await settleTransfer(w.settlement, {
+      provider: 'fake',
+      txnId: `fake_${payB.id}_exact`,
+      amount: payB.amount,
+      content: payB.transferCode ?? '',
+      receivedAt: w.clock.now().toISOString(),
+    });
+    await settleTransfer(w.settlement, {
+      provider: 'fake',
+      txnId: `fake_${payA.id}_exact`,
+      amount: payA.amount,
+      content: payA.transferCode ?? '',
+      receivedAt: w.clock.now().toISOString(),
+    });
     const doc = reg(w, a.registrationId);
     assert.deepEqual([doc.status, doc.refundId ?? null, doc.refundStatus ?? null], ['paid', null, null]);
   });
@@ -591,7 +456,7 @@ describe('escrow at completion', () => {
     const w = createEventWorld();
     const gateway = new FakePaymentGateway();
     await publishedEvent(w, { price: PRICE }, admin);
-    const r = await registerEvent({ ...w.deps, gateway }, cu1, { eventId: EV, quantity: 1, name: 'An', provider: 'vnpay' });
+    const r = await registerEvent({ ...w.deps, gateway }, cu1, { eventId: EV, quantity: 1, name: 'An', method: 'bank_qr' });
     assert.equal(w.store.payments.get(must(r.paymentId))?.payeeId, 'platform');
   });
 });

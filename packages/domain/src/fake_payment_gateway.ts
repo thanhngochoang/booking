@@ -66,19 +66,6 @@ export class FakePaymentGateway implements PaymentGateway {
   /** `queryTransfers` throws for these payment ids. */
   readonly queryThrowIds = new Set<string>();
 
-  async createDepositIntent(params: {
-    readonly paymentId: string;
-    readonly bookingId: string;
-    readonly amount: number;
-    readonly provider: PaymentProvider;
-    readonly returnUrl?: string;
-  }): Promise<{ readonly payUrl: string; readonly providerRef?: string }> {
-    return {
-      payUrl: `https://fake-pay.local/checkout?paymentId=${params.paymentId}&amount=${params.amount}`,
-      providerRef: `fake_ref_${params.paymentId}`,
-    };
-  }
-
   async issueRefund(params: {
     readonly paymentId: string;
     readonly refundId: string;
@@ -98,17 +85,6 @@ export class FakePaymentGateway implements PaymentGateway {
     return {
       success: true,
       providerRef: `fake_refund_${params.refundId}`,
-    };
-  }
-
-  async checkPaymentStatus(params: {
-    readonly paymentId: string;
-    readonly provider: PaymentProvider;
-    readonly providerRef?: string;
-  }): Promise<{ readonly paid: boolean; readonly providerRef?: string }> {
-    return {
-      paid: this.paidPayments.has(params.paymentId),
-      providerRef: `fake_ref_${params.paymentId}`,
     };
   }
 
@@ -156,9 +132,5 @@ export class FakePaymentGateway implements PaymentGateway {
   /** Makes `queryTransfers` report `n` for this payment from now on (a transfer the provider received). */
   pushTransfer(paymentId: string, n: TransferNotification): void {
     this.transfers.set(paymentId, [...(this.transfers.get(paymentId) ?? []), n]);
-  }
-
-  markPaid(paymentId: string): void {
-    this.paidPayments.add(paymentId);
   }
 }

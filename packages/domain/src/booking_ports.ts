@@ -173,15 +173,6 @@ export interface PaymentGateway {
     readonly providerRef?: string;
   }): Promise<readonly TransferNotification[]>;
 
-  /** Ticket payments (until #137); bookings pay through `createPayment`. */
-  createDepositIntent(params: {
-    readonly paymentId: string;
-    readonly bookingId: string;
-    readonly amount: number;
-    readonly provider: PaymentProvider;
-    readonly returnUrl?: string;
-  }): Promise<{ readonly payUrl: string; readonly providerRef?: string }>;
-
   /**
    * `refundId` is an idempotency key: the real adapter MUST send it to the provider so that a
    * repeated call (the event clock re-sends a ticket refund left `pending`) never pays twice.
@@ -193,13 +184,6 @@ export interface PaymentGateway {
     readonly provider: PaymentProvider;
     readonly providerRef?: string;
   }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }>;
-
-  /** Ticket payments (until #137); bookings pay through `createPayment`. */
-  checkPaymentStatus(params: {
-    readonly paymentId: string;
-    readonly provider: PaymentProvider;
-    readonly providerRef?: string;
-  }): Promise<{ readonly paid: boolean; readonly providerRef?: string }>;
 }
 
 export interface BookingDeps {

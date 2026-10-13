@@ -147,3 +147,47 @@ export function registrationDoc(over: Partial<RegistrationDoc> = {}): Registrati
     ...over,
   };
 }
+
+import { FakePaymentGateway } from '../../src/fake_payment_gateway.js';
+import type { EventPaymentDeps } from '../../src/event_ports.js';
+import { MemoryPaymentLookup } from '../../src/memory_payment_lookup.js';
+import { TicketPaymentSettler } from '../../src/event_payments.js';
+import { confirmFakePayment, type SettlementDeps } from '../../src/payment_settlement.js';
+import type { FakeTransferKind } from '../../src/fake_payment_gateway.js';
+
+export interface TicketPaymentWorld extends EventWorld {
+  readonly gateway: FakePaymentGateway;
+  readonly deps: EventPaymentDeps;
+  readonly settlement: SettlementDeps;
+  readonly payTicket: (paymentId: string, kind?: FakeTransferKind, caller?: EventCaller) => Promise<unknown>;
+}
+
+export function createTicketPaymentWorld(seed = 7): TicketPaymentWorld {
+  const w = createEventWorld(seed);
+  const gateway = new FakePaymentGateway();
+  const payments = new MemoryPaymentLookup([w.store]);
+  const deps: EventPaymentDeps = {
+    ...w.deps,
+    gateway,
+    payments,
+  };
+  const settler = new TicketPaymentSettler(deps);
+  const settlement: SettlementDeps = {
+    payments,
+    gateway,
+    clock: w.clock,
+    subjects: {
+      event_registration: settler,
+    },
+  };
+  const payTicket = async (paymentId: string, kind: FakeTransferKind = 'exact', caller: EventCaller = cu1) => {
+    return confirmFakePayment(settlement, caller, { paymentId, kind });
+  };
+  return {
+    ...w,
+    gateway,
+    deps,
+    settlement,
+    payTicket,
+  };
+}

@@ -1,5 +1,6 @@
 import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { TransferRecord } from './booking_ports.js';
 import {
   RetryableConflict,
   type AvailabilityRecord,
@@ -7,11 +8,12 @@ import {
   type EventStore,
   type EventTx,
 } from './event_ports.js';
+import type { PaymentSource } from './memory_payment_lookup.js';
 
 /** Like the Firestore adapter: a transaction that lost a race is run again a few times. */
 export const MAX_TX_ATTEMPTS = 5;
 
-export class MemoryEventStore implements EventStore {
+export class MemoryEventStore implements EventStore, PaymentSource {
   readonly events = new Map<string, EventRecord>();
   readonly registrations = new Map<string, RegistrationDoc>(); // `${eventId}/${regId}`
   readonly contacts = new Map<string, RegistrationContact>(); // `${eventId}/${regId}`
@@ -22,6 +24,7 @@ export class MemoryEventStore implements EventStore {
   readonly chatReadOnlyAt = new Map<string, Date>();
   readonly payments = new Map<string, Payment>();
   readonly refunds = new Map<string, Refund>();
+  readonly transferRecords = new Map<string, TransferRecord>();
   readonly ledger: LedgerEntry[] = [];
   /** Test hook: the next transaction attempts throw this before committing (a crash or outage). */
   failNext: { error: Error; times: number } | null = null;
@@ -170,6 +173,10 @@ export class MemoryEventStore implements EventStore {
         read('getRefund', `refund:${id}`);
         return this.refunds.get(id) ?? null;
       },
+      getTransferRecord: async (id) => {
+        read('getTransferRecord', `transfer:${id}`);
+        return this.transferRecords.get(id) ?? null;
+      },
       putEvent: (e) => write(() => { this.events.set(e.id, e); }, `event:${e.id}`),
       putHashtag: (k, eventId) => write(() => { this.hashtags.set(k, eventId); }, `hashtag:${k}`),
       deleteHashtag: (k) => write(() => { this.hashtags.delete(k); }, `hashtag:${k}`),
@@ -181,6 +188,7 @@ export class MemoryEventStore implements EventStore {
       putPayment: (p) => write(() => { this.payments.set(p.id, p); }, ...payWrite(p)),
       putRefund: (r) => write(() => { this.refunds.set(r.id, r); }, `refund:${r.id}`),
       putLedgerEntry: (e) => write(() => { this.ledger.push(e); }),
+      putTransferRecord: (r) => write(() => { this.transferRecords.set(r.id, r); }, `transfer:${r.id}`),
       setAvailabilityBooked: (uid, dayKey, eventId) =>
         write(() => { this.availabilityDays.set(`${uid}/${dayKey}`, { state: 'booked', eventId }); }, `av:${uid}/${dayKey}`),
       deleteAvailability: (uid, dayKey) =>

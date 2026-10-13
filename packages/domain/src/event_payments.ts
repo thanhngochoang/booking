@@ -1,15 +1,15 @@
 /**
- * Paid event tickets (plan 10c Task 9, Decisions 9, 11, 12, 15, 28): the payment that turns a
- * 10-minute hold into a ticket, refunds (customer cancel ≥ 48 h, host cancel, late payment), the
- * hold sweep, and the escrow stamp at completion. Money uses the booking collections and rules:
- * `payments`, `refunds`, `ledger_entries`, refunds only from held money (invariant 12), and the
- * existing `bookingClock` step 5 releases ticket money once `releaseAfter` has passed.
+ * Paid event tickets: payment settlement via TicketPaymentSettler, refunds (customer cancel >= 48h,
+ * host cancel, late payment), hold sweeps, and escrow release.
  */
 
-import { PAYMENT_PROVIDERS, type PaymentProvider } from './booking.js';
-import { DISPUTE_WINDOW_HOURS } from './booking_policy.js';
 import { DomainError } from './errors.js';
-import { applyRefundToPayment, type LedgerEntry, type Payment, type Refund } from './escrow.js';
+import {
+  applyRefundToPayment,
+  type Payment,
+  type PaymentMethod,
+  type Refund,
+} from './escrow.js';
 import {
   FREE_CANCEL_HOURS,
   registrationContactOf,
@@ -24,6 +24,19 @@ import { cancelEvent } from './event_use_cases.js';
 import { isId } from './ids.js';
 import { PLATFORM_PAYEE } from './payout.js';
 import { isVnE164 } from './phone.js';
+import type { SubjectSettler } from './payment_ports.js';
+import type { SettlementDeps } from './payment_settlement.js';
+import {
+  applyTransfer,
+  expireUnpaid,
+  transferRecordId,
+  transferRecordOf,
+} from './payment_settlement.js';
+import type { TransferNotification, TransferOutcome } from './booking_ports.js';
+import { DISPUTE_WINDOW_HOURS } from './booking_policy.js';
+import { transferRefund } from './refunds.js';
+import { checkSubjectPayments } from './create_payment.js';
+import { transferCodeFor } from './payment_code.js';
 
 const HOUR_MS = 3_600_000;
 const SWEEP_BATCH = 200;
@@ -35,32 +48,25 @@ export function ticketRefundPercent(startAt: Date, now: Date): 100 | 0 {
   return startAt.getTime() - now.getTime() >= FREE_CANCEL_HOURS * HOUR_MS ? 100 : 0;
 }
 
-/** One payment per registration and provider; a second tap with the same provider reuses it. */
-export const ticketIdempotencyKey = (registrationId: string, provider: PaymentProvider): string =>
-  `tkt_${registrationId}_${provider}`;
-
-/** `undefined`/`null` → null; a known code → it; anything else is `invalid_argument`. */
-export function parseTicketProvider(v: unknown): PaymentProvider | null {
-  if (v === undefined || v === null) return null;
-  if (typeof v !== 'string' || !(PAYMENT_PROVIDERS as readonly string[]).includes(v)) {
-    throw new DomainError('invalid_argument');
-  }
-  return v as PaymentProvider;
-}
+/** One payment per registration and method; a second tap with the same method reuses it. */
+export const ticketIdempotencyKey = (registrationId: string, method: PaymentMethod): string =>
+  `tkt_${registrationId}_${method}`;
 
 /** The host photographer is paid; a platform-hosted event's money stays with the platform. */
 export const ticketPayeeOf = (ev: Pick<EventRecord, 'host'>): string =>
   ev.host.type === 'photographer' && ev.host.id !== null ? ev.host.id : PLATFORM_PAYEE;
 
-/** A fresh, unpaid ticket payment (`status created`, escrow `held` like a booking deposit intent). */
+/** A fresh, unpaid ticket payment. */
 export function newTicketPayment(params: {
   readonly id: string;
   readonly event: Pick<EventRecord, 'id' | 'host'>;
   readonly registrationId: string;
   readonly payerId: string;
-  readonly provider: PaymentProvider;
+  readonly method: PaymentMethod;
+  readonly provider: Payment['provider'];
   readonly amount: number;
   readonly now: Date;
+  readonly expiresAt: Date;
 }): Payment {
   const at = params.now.toISOString();
   return {
@@ -70,49 +76,38 @@ export function newTicketPayment(params: {
     eventId: params.event.id,
     payerId: params.payerId,
     payeeId: ticketPayeeOf(params.event),
+    method: params.method,
     provider: params.provider,
     amount: params.amount,
     status: 'created',
     escrowStatus: 'held',
-    idempotencyKey: ticketIdempotencyKey(params.registrationId, params.provider),
+    idempotencyKey: ticketIdempotencyKey(params.registrationId, params.method),
+    transferCode: transferCodeFor(params.id),
+    expiresAt: params.expiresAt.toISOString(),
+    receivedAmount: 0,
     createdAt: at,
     updatedAt: at,
   };
 }
 
-/**
- * Asks the gateway for a pay URL, outside any transaction (a retried transaction must not create
- * two intents). The provider reference is saved while the payment is still unpaid.
- */
-export async function issueTicketIntent(deps: EventPaymentDeps, payment: Payment): Promise<string> {
-  const intent = await deps.gateway.createDepositIntent({
-    paymentId: payment.id,
-    bookingId: payment.subjectId, // the port's subject id (plan I6 renames it)
-    amount: payment.amount,
-    provider: payment.provider,
-  });
-  const ref = intent.providerRef;
-  if (ref !== undefined && ref !== payment.providerRef) {
-    await deps.events.runTransaction(async (tx) => {
-      const cur = await tx.getPayment(payment.id);
-      if (cur === null || cur.status !== 'created' || cur.providerRef === ref) return;
-      tx.putPayment({ ...cur, providerRef: ref, updatedAt: deps.clock.now().toISOString() });
-    });
+/** Seats of a hold go back (writes only). */
+function releaseHoldWrites(tx: EventTx, ev: EventRecord | null, holds: readonly RegistrationDoc[], now: Date): void {
+  let held = ev?.heldCount ?? 0;
+  for (const s of holds) {
+    tx.putRegistration({ ...s, status: 'cancelled', cancelledAt: now, updatedAt: now, version: s.version + 1 });
+    held -= s.quantity;
   }
-  return intent.payUrl;
+  if (ev !== null && holds.length > 0) {
+    const next = { ...ev, heldCount: Math.max(0, held) };
+    tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
+  }
 }
-
-/** The event clock sends a ticket refund again once it has been `pending` this long. */
-export const TICKET_REFUND_RESEND_AFTER_MINUTES = 10;
 
 /**
  * Gateway refund after the money moved in the ledger, keyed by the refund id: the gateway treats a
- * repeated id as the same refund, so sending it again never pays twice. A failure is left to staff
- * (`failed`, `manual`), like bookings. The outcome is written only while the refund is still
- * `pending` (a parallel send that already finished wins) and mirrored on the registration, which
- * says "Đang hoàn" until it is `done`.
+ * repeated id as the same refund, so sending it again never pays twice.
  */
-async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, payment: Payment): Promise<Refund> {
+export async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, payment: Payment): Promise<Refund> {
   let result: { success: boolean; providerRef?: string };
   try {
     result = await deps.gateway.issueRefund({
@@ -145,11 +140,8 @@ async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, paym
   });
 }
 
-/**
- * The event clock: sends a ticket refund left `pending` again (the process stopped between the
- * refund transaction and the gateway call, or before the outcome was saved). Idempotent: only a
- * still-`pending` ticket refund is sent, under its own id; `failed` ones stay with staff.
- */
+export const TICKET_REFUND_RESEND_AFTER_MINUTES = 10;
+
 export async function resendTicketRefund(deps: EventPaymentDeps, refundId: string): Promise<boolean> {
   const found = await deps.events.runTransaction(async (tx) => {
     const r = await tx.getRefund(refundId);
@@ -163,7 +155,212 @@ export async function resendTicketRefund(deps: EventPaymentDeps, refundId: strin
   return true;
 }
 
-type PendingRefund = { refund: Refund; payment: Payment };
+/**
+ * SubjectSettler implementation for event registrations.
+ */
+export class TicketPaymentSettler implements SubjectSettler {
+  constructor(private readonly deps: EventPaymentDeps) {}
+
+  async settle(paymentId: string, transfer: TransferNotification): Promise<Exclude<TransferOutcome, 'needs_review'>> {
+    const recordId = transferRecordId(transfer);
+    const now = this.deps.clock.now();
+    let pendingRefunds: Refund[] = [];
+    let paymentForRefund: Payment | null = null;
+
+    const outcome = await this.deps.events.runTransaction(async (tx): Promise<Exclude<TransferOutcome, 'needs_review'>> => {
+      pendingRefunds = [];
+      const seen = await tx.getTransferRecord(recordId);
+      if (seen !== null) return 'duplicate';
+
+      const p = await tx.getPayment(paymentId);
+      if (p === null || p.subjectType !== 'event_registration' || p.eventId === undefined) {
+        throw new DomainError('not_found');
+      }
+      paymentForRefund = p;
+
+      const reg = await tx.getRegistration(p.eventId, p.subjectId);
+      const ev = await tx.getEvent(p.eventId);
+      const live = reg !== null && ev !== null && reg.status === 'held' && ev.status !== 'cancelled'
+        && reg.holdExpiresAt !== null && reg.holdExpiresAt.getTime() > now.getTime();
+      const contact = live ? await this.deps.contacts.get(p.payerId) : null;
+
+      // Apply transfer using pure helper
+      const applied = applyTransfer({
+        payment: p,
+        transfer,
+        ledgerEntryId: this.deps.ids.newId(),
+        now,
+      });
+
+      tx.putLedgerEntry(applied.ledgerEntry);
+
+      if (applied.decision.kind === 'partial') {
+        tx.putPayment(applied.payment);
+        tx.putTransferRecord(transferRecordOf(transfer, 'partial', p.id));
+        return 'partial';
+      }
+
+      if (applied.decision.kind === 'refund') {
+        const refundResult = transferRefund({
+          payment: p,
+          refundId: this.deps.ids.newId(),
+          amount: transfer.amount,
+          reason: applied.decision.reason,
+          ledgerEntryId: this.deps.ids.newId(),
+          now,
+        });
+        const refund: Refund = { ...refundResult.refund, providerRef: transfer.txnId };
+        tx.putRefund(refund);
+        tx.putLedgerEntry(refundResult.ledgerEntry);
+        pendingRefunds.push(refund);
+
+        // Mark registration refund pending if held or cancelled and this is its payment
+        if (reg !== null && (reg.status === 'held' || (reg.status === 'cancelled' && reg.paymentId === p.id))) {
+          const mark = { refundId: refund.id, refundStatus: 'pending' as const };
+          if (reg.status === 'held' && ev !== null) {
+            releaseHoldWrites(tx, ev, [{ ...reg, ...mark }], now);
+          } else {
+            tx.putRegistration({ ...reg, ...mark, updatedAt: now, version: reg.version + 1 });
+          }
+        }
+
+        tx.putTransferRecord(transferRecordOf(transfer, 'refunded', p.id));
+        return 'refunded';
+      }
+
+      // applied.decision.kind === 'paid'
+      if (!live || reg === null || ev === null) {
+        // Late transfer or expired hold: 100% refund
+        const refundResult = applyRefundToPayment({
+          payment: applied.payment,
+          refundId: this.deps.ids.newId(),
+          percent: 100,
+          reason: 'late_payment_hold_expired',
+          ledgerEntryId: this.deps.ids.newId(),
+          now,
+        });
+        const refund: Refund = { ...refundResult.refund, providerRef: transfer.txnId };
+        tx.putPayment(refundResult.payment);
+        tx.putRefund(refund);
+        tx.putLedgerEntry(refundResult.ledgerEntry);
+        pendingRefunds.push(refund);
+
+        const mark = reg !== null && (reg.status === 'held' || (reg.status === 'cancelled' && reg.paymentId === p.id))
+          ? { refundId: refund.id, refundStatus: 'pending' as const }
+          : null;
+
+        if (reg !== null && reg.status === 'held' && ev !== null) {
+          releaseHoldWrites(tx, ev, [{ ...reg, ...(mark ?? {}) }], now);
+        } else if (reg !== null && mark !== null) {
+          tx.putRegistration({ ...reg, ...mark, updatedAt: now, version: reg.version + 1 });
+        }
+
+        tx.putTransferRecord(transferRecordOf(transfer, 'refunded', p.id));
+        return 'refunded';
+      }
+
+      // Live registration: marks paid, seats move, contact snapshot
+      let excessRefund: Refund | null = null;
+      if (applied.excess > 0) {
+        const excessRes = transferRefund({
+          payment: applied.payment,
+          refundId: this.deps.ids.newId(),
+          amount: applied.excess,
+          reason: 'overpaid_excess',
+          ledgerEntryId: this.deps.ids.newId(),
+          now,
+        });
+        excessRefund = { ...excessRes.refund, providerRef: transfer.txnId };
+        tx.putRefund(excessRefund);
+        tx.putLedgerEntry(excessRes.ledgerEntry);
+        pendingRefunds.push(excessRefund);
+      }
+
+      tx.putPayment(applied.payment);
+      const ticket: RegistrationDoc = {
+        ...reg,
+        status: 'paid',
+        paymentId: p.id,
+        contactEligible: true,
+        updatedAt: now,
+        version: reg.version + 1,
+      };
+      tx.putRegistration(ticket);
+
+      const phone = contact?.phone;
+      if (isVnE164(phone)) {
+        tx.putRegistrationContact(ev.id, reg.id, registrationContactOf(reg.userName, phone, contact));
+      }
+
+      const next = {
+        ...ev,
+        heldCount: Math.max(0, ev.heldCount - reg.quantity),
+        registeredCount: ev.registeredCount + reg.quantity,
+      };
+      tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
+
+      const finalOutcome: Exclude<TransferOutcome, 'needs_review'> = applied.excess > 0 ? 'paid_with_refund' : 'paid';
+      tx.putTransferRecord(transferRecordOf(transfer, finalOutcome, p.id));
+      return finalOutcome;
+    });
+
+    const payObj = paymentForRefund;
+    if (outcome !== 'duplicate' && pendingRefunds.length > 0 && payObj !== null) {
+      await Promise.all(pendingRefunds.map((r) => this.dispatchRefund(r, payObj)));
+    }
+
+    return outcome;
+  }
+
+  async expire(paymentId: string, now: Date): Promise<'expired' | 'unchanged'> {
+    let pendingRefund: Refund | null = null;
+    let paymentObj: Payment | null = null;
+
+    const outcome = await this.deps.events.runTransaction(async (tx): Promise<'expired' | 'unchanged'> => {
+      pendingRefund = null;
+      const p = await tx.getPayment(paymentId);
+      if (p === null || p.subjectType !== 'event_registration' || p.status !== 'created' || !p.expiresAt) {
+        return 'unchanged';
+      }
+      if (Date.parse(p.expiresAt) > now.getTime()) {
+        return 'unchanged';
+      }
+
+      const expired = expireUnpaid({
+        payment: p,
+        refundId: this.deps.ids.newId(),
+        ledgerEntryId: this.deps.ids.newId(),
+        now,
+      });
+      tx.putPayment(expired.payment);
+      paymentObj = expired.payment;
+
+      if (expired.refund && expired.ledgerEntry) {
+        tx.putRefund(expired.refund);
+        tx.putLedgerEntry(expired.ledgerEntry);
+        pendingRefund = expired.refund;
+      }
+      return 'expired';
+    });
+
+    if (outcome === 'expired' && pendingRefund !== null && paymentObj !== null) {
+      await this.dispatchRefund(pendingRefund, paymentObj);
+    }
+
+    return outcome;
+  }
+
+  async dispatchRefund(refund: Refund, payment: Payment): Promise<Refund> {
+    return dispatchTicketRefund(this.deps, refund, payment);
+  }
+
+  async statusOf(payment: Payment): Promise<string> {
+    const eventId = payment.eventId;
+    if (eventId === undefined) return 'gone';
+    const reg = await this.deps.events.runTransaction((tx) => tx.getRegistration(eventId, payment.subjectId));
+    return reg?.status ?? 'gone';
+  }
+}
 
 function obj(raw: unknown): Record<string, unknown> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new DomainError('invalid_argument');
@@ -175,125 +372,9 @@ function idOf(v: unknown): string {
   return v;
 }
 
-/** Seats of a hold go back (writes only). */
-function releaseHoldWrites(tx: EventTx, ev: EventRecord | null, holds: readonly RegistrationDoc[], now: Date): void {
-  let held = ev?.heldCount ?? 0;
-  for (const s of holds) {
-    tx.putRegistration({ ...s, status: 'cancelled', cancelledAt: now, updatedAt: now, version: s.version + 1 });
-    held -= s.quantity;
-  }
-  if (ev !== null && holds.length > 0) {
-    const next = { ...ev, heldCount: Math.max(0, held) };
-    tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
-  }
-}
-
-/**
- * The gateway (or the fake confirmation) says a ticket payment was paid. While its registration is
- * still a live hold, the ticket becomes `paid` (held seats → registered, contact snapshot written,
- * O3); otherwise (hold expired, cancelled, another intent already paid, event cancelled) the money
- * is refunded 100% at once (`late_payment_hold_expired`, as bookings do). Idempotent: a repeated
- * confirmation changes nothing. `createdAt` stays the hold time (the group chat compares it with a
- * moderator removal, so a hold taken before a removal never re-admits the user).
- */
-export async function handleTicketPayment(
-  deps: EventPaymentDeps,
-  params: { paymentId: string; providerRef?: string; paidAt?: Date },
-): Promise<{ registration: RegistrationDoc | null; refunded: boolean }> {
-  const box: { pending: PendingRefund | null } = { pending: null };
-  const out = await deps.events.runTransaction(async (tx) => {
-    box.pending = null;
-    const now = params.paidAt ?? deps.clock.now();
-    const p = await tx.getPayment(params.paymentId);
-    if (p === null || p.subjectType !== 'event_registration' || p.eventId === undefined) {
-      throw new DomainError('not_found');
-    }
-    const reg = await tx.getRegistration(p.eventId, p.subjectId);
-    if (p.status === 'paid') return { registration: reg, refunded: false };
-    if (p.status === 'refunded' || p.status === 'partially_refunded') return { registration: reg, refunded: true };
-    if (p.status !== 'created') throw new DomainError('conflict');
-    const ev = await tx.getEvent(p.eventId);
-    const live = reg !== null && ev !== null && reg.status === 'held' && ev.status !== 'cancelled'
-      && reg.holdExpiresAt !== null && reg.holdExpiresAt.getTime() > now.getTime();
-    const contact = live ? await deps.contacts.get(p.payerId) : null;
-
-    // ---- writes from here ----
-    const at = now.toISOString();
-    const paid: Payment = {
-      ...p, status: 'paid', escrowStatus: 'held', providerRef: params.providerRef ?? p.providerRef,
-      paidAt: at, updatedAt: at,
-    };
-    tx.putPayment(paid);
-    const received: LedgerEntry = {
-      id: deps.ids.newId(), type: 'ticket_received', paymentId: p.id, subjectType: 'event_registration',
-      subjectId: p.subjectId, accountOwnerId: 'platform_escrow', amount: p.amount,
-      note: `Ticket for event ${p.eventId}`, at,
-    };
-    tx.putLedgerEntry(received);
-
-    if (!live || reg === null || ev === null) {
-      const res = applyRefundToPayment({
-        payment: paid, refundId: deps.ids.newId(), percent: 100, ledgerEntryId: deps.ids.newId(),
-        reason: 'late_payment_hold_expired', now,
-      });
-      tx.putPayment(res.payment);
-      tx.putRefund(res.refund);
-      tx.putLedgerEntry(res.ledgerEntry);
-      box.pending = { refund: res.refund, payment: res.payment };
-      // The customer sees this refund on the ticket ("Đã huỷ · đang hoàn tiền") when nothing else
-      // was paid for it: a lapsed hold, or a cancelled registration whose own intent this was.
-      const mark = reg !== null && (reg.status === 'held' || (reg.status === 'cancelled' && reg.paymentId === p.id))
-        ? { refundId: res.refund.id, refundStatus: 'pending' as const }
-        : null;
-      // A lapsed hold the sweep has not reached yet gives its seats back now.
-      if (reg !== null && reg.status === 'held' && ev !== null) {
-        releaseHoldWrites(tx, ev, [{ ...reg, ...mark }], now);
-        return { registration: { ...reg, ...mark, status: 'cancelled' as const, cancelledAt: now }, refunded: true };
-      }
-      if (reg !== null && mark !== null) {
-        const marked = { ...reg, ...mark, updatedAt: now, version: reg.version + 1 };
-        tx.putRegistration(marked);
-        return { registration: marked, refunded: true };
-      }
-      return { registration: reg, refunded: true };
-    }
-
-    const ticket: RegistrationDoc = {
-      ...reg, status: 'paid', paymentId: p.id, contactEligible: true,
-      updatedAt: now, version: reg.version + 1,
-    };
-    tx.putRegistration(ticket);
-    const phone = contact?.phone;
-    if (isVnE164(phone)) tx.putRegistrationContact(ev.id, reg.id, registrationContactOf(reg.userName, phone, contact));
-    const next = { ...ev, heldCount: Math.max(0, ev.heldCount - reg.quantity), registeredCount: ev.registeredCount + reg.quantity };
-    tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
-    return { registration: ticket, refunded: false };
-  });
-  if (box.pending !== null) await dispatchTicketRefund(deps, box.pending.refund, box.pending.payment);
-  return out;
-}
-
-async function readPayment(deps: EventDeps, id: string): Promise<Payment | null> {
-  return deps.events.runTransaction((tx) => tx.getPayment(id));
-}
-
-/** Fake gateway mode (dev and emulator only, gated in the callable): the payer confirms their own payment. */
-export async function confirmFakeTicketPayment(
-  deps: EventPaymentDeps,
-  caller: EventCaller,
-  raw: unknown,
-): Promise<{ status: RegistrationStatus }> {
-  const paymentId = idOf(obj(raw).paymentId);
-  const p = await readPayment(deps, paymentId);
-  if (p === null || p.subjectType !== 'event_registration') throw new DomainError('not_found');
-  if (p.payerId !== caller.uid) throw new DomainError('permission_denied');
-  const res = await handleTicketPayment(deps, { paymentId, providerRef: `fake_confirmed_${paymentId}` });
-  return { status: res.registration?.status ?? 'cancelled' };
-}
-
 /** Back from the gateway (or "Thanh toán tiếp"): asks the gateway and applies a payment it reports. */
 export async function checkTicketPayment(
-  deps: EventPaymentDeps,
+  deps: EventPaymentDeps & { settlement?: SettlementDeps },
   caller: EventCaller,
   raw: unknown,
 ): Promise<{ paid: boolean; status: RegistrationStatus }> {
@@ -303,14 +384,23 @@ export async function checkTicketPayment(
   const reg = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));
   if (reg === null) throw new DomainError('not_found');
   if (reg.userId !== caller.uid) throw new DomainError('permission_denied');
-  if (reg.status !== 'held' || reg.paymentId === null) return { paid: reg.status === 'paid', status: reg.status };
-  const p = await readPayment(deps, reg.paymentId);
+  const paymentId = reg.paymentId;
+  if (reg.status !== 'held' || paymentId === null) return { paid: reg.status === 'paid', status: reg.status };
+  const p = await deps.events.runTransaction((tx) => tx.getPayment(paymentId));
   if (p === null) return { paid: false, status: reg.status };
-  const status = await deps.gateway.checkPaymentStatus({ paymentId: p.id, provider: p.provider, providerRef: p.providerRef });
-  if (!status.paid) return { paid: false, status: reg.status };
-  const res = await handleTicketPayment(deps, { paymentId: p.id, providerRef: status.providerRef });
-  const now = res.registration?.status ?? 'cancelled';
-  return { paid: now === 'paid', status: now };
+
+  const settlement: SettlementDeps = deps.settlement ?? {
+    payments: deps.payments,
+    gateway: deps.gateway,
+    clock: deps.clock,
+    subjects: { event_registration: new TicketPaymentSettler(deps) },
+  };
+
+  await checkSubjectPayments(settlement, [p]);
+
+  const updatedReg = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));
+  const finalStatus = updatedReg?.status ?? 'cancelled';
+  return { paid: finalStatus === 'paid', status: finalStatus };
 }
 
 /**
@@ -325,9 +415,9 @@ export async function refundTicket(
   percent: 100,
   reason: TicketRefundReason,
 ): Promise<'refunded' | 'skipped'> {
-  const box: { pending: PendingRefund | null } = { pending: null };
+  let pendingRefund: { refund: Refund; payment: Payment } | null = null;
   const out = await deps.events.runTransaction(async (tx): Promise<'refunded' | 'skipped'> => {
-    box.pending = null;
+    pendingRefund = null;
     const now = deps.clock.now();
     const reg = await tx.getRegistration(eventId, regId);
     if (reg === null || reg.status === 'refunded' || reg.paymentId === null || reg.amount <= 0) return 'skipped';
@@ -358,10 +448,10 @@ export async function refundTicket(
       const next = { ...ev, registeredCount: Math.max(0, ev.registeredCount - reg.quantity) };
       tx.putEvent({ ...next, status: statusAfterSeats(next, now), version: ev.version + 1, updatedAt: now });
     }
-    box.pending = { refund: res.refund, payment: res.payment };
+    pendingRefund = { refund: res.refund, payment: res.payment };
     return 'refunded';
   });
-  if (box.pending !== null) await dispatchTicketRefund(deps, box.pending.refund, box.pending.payment);
+  if (pendingRefund !== null) await dispatchTicketRefund(deps, (pendingRefund as { refund: Refund; payment: Payment }).refund, (pendingRefund as { refund: Refund; payment: Payment }).payment);
   return out;
 }
 
