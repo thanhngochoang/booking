@@ -13,9 +13,17 @@ import { DomainError } from './errors.js';
 import type {
   LedgerEntry,
   Payment,
+  PaymentStatus,
   PaymentSubject,
   Refund,
 } from './escrow.js';
+import {
+  FAKE_TRANSFER_KINDS,
+  type FakeTransferKind,
+  fakeTransferFor,
+} from './fake_payment_gateway.js';
+import { isId } from './ids.js';
+import { transferCodesIn } from './payment_code.js';
 import type { Clock } from './ports.js';
 import type { SubjectSettler } from './payment_ports.js';
 import { transferRefund } from './refunds.js';
@@ -195,5 +203,117 @@ export function expireUnpaid(p: {
     payment: expiredPayment,
     refund,
     ledgerEntry,
+  };
+}
+
+function validNotification(n: TransferNotification): boolean {
+  return (
+    typeof n.txnId === 'string' &&
+    n.txnId.length > 0 &&
+    Number.isInteger(n.amount) &&
+    n.amount > 0 &&
+    typeof n.content === 'string' &&
+    typeof n.receivedAt === 'string' &&
+    !Number.isNaN(Date.parse(n.receivedAt))
+  );
+}
+
+/**
+ * Matches a transfer's content to a payment across subjects.
+ * For each code in transferCodesIn(content), candidates = findPaymentsByTransferCode(code)
+ * with createdAt <= receivedAt AND a settler for their subject.
+ * Open payment wins, else the newest.
+ */
+async function matchPayment(
+  deps: SettlementDeps,
+  content: string,
+  receivedAt: string,
+): Promise<Payment | null> {
+  const receivedMs = Date.parse(receivedAt);
+  const codes = transferCodesIn(content);
+  for (const code of codes) {
+    const all = await deps.payments.findPaymentsByTransferCode(code);
+    const candidates = all.filter(
+      (p) =>
+        Date.parse(p.createdAt) <= receivedMs &&
+        deps.subjects[p.subjectType] !== undefined,
+    );
+    if (candidates.length === 0) continue;
+    const open = candidates.find((p) => p.status === 'created');
+    if (open) return open;
+    return [...candidates].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0] ?? null;
+  }
+  return null;
+}
+
+/**
+ * Dispatches one transfer notification across any subject settler.
+ */
+export async function settleTransfer(deps: SettlementDeps, n: TransferNotification): Promise<TransferResult> {
+  if (!validNotification(n)) {
+    throw new DomainError('invalid_argument');
+  }
+
+  const recordId = transferRecordId(n);
+  const existingRecord = await deps.payments.getTransferRecord(recordId);
+  if (existingRecord) {
+    return {
+      outcome: 'duplicate',
+      ...(existingRecord.paymentId ? { paymentId: existingRecord.paymentId } : {}),
+    };
+  }
+
+  const payment = await matchPayment(deps, n.content, n.receivedAt);
+  if (!payment) {
+    await deps.payments.saveUnmatchedTransfer(transferRecordOf(n, 'needs_review'));
+    return { outcome: 'needs_review' };
+  }
+
+  const settler = deps.subjects[payment.subjectType];
+  if (!settler) {
+    await deps.payments.saveUnmatchedTransfer(transferRecordOf(n, 'needs_review'));
+    return { outcome: 'needs_review' };
+  }
+
+  const outcome = await settler.settle(payment.id, n);
+  return { outcome, paymentId: payment.id };
+}
+
+/**
+ * Dev/emulator tool and CLIs: simulates a transfer of `kind` to the caller's own payment (Decision 9).
+ */
+export async function confirmFakePayment(
+  deps: SettlementDeps,
+  caller: { readonly uid: string },
+  raw: unknown,
+): Promise<{ outcome: TransferOutcome; subjectType: PaymentSubject; paymentStatus: PaymentStatus; subjectStatus: string }> {
+  if (typeof raw !== 'object' || raw === null) throw new DomainError('invalid_argument');
+  const { paymentId, kind = 'exact' } = raw as { paymentId?: unknown; kind?: unknown };
+  if (typeof paymentId !== 'string' || !isId(paymentId)) throw new DomainError('invalid_argument');
+  if (typeof kind !== 'string' || !(FAKE_TRANSFER_KINDS as readonly string[]).includes(kind)) {
+    throw new DomainError('invalid_argument');
+  }
+
+  const p = await deps.payments.getPayment(paymentId);
+  if (!p) throw new DomainError('not_found');
+  if (p.payerId !== caller.uid) throw new DomainError('permission_denied');
+  if (!p.transferCode) throw new DomainError('conflict');
+
+  const settler = deps.subjects[p.subjectType];
+  if (!settler) throw new DomainError('not_eligible');
+
+  const now = deps.clock.now();
+  const transfer = fakeTransferFor(p as Payment & { readonly transferCode: string }, kind as FakeTransferKind, now);
+  const result = await settleTransfer(deps, transfer);
+
+  const reRead = await deps.payments.getPayment(p.id);
+  const paymentStatus = reRead?.status ?? p.status;
+  const subjectStatus = await settler.statusOf(reRead ?? p);
+
+  return {
+    outcome: result.outcome,
+    subjectType: p.subjectType,
+    paymentStatus,
+    subjectStatus,
   };
 }

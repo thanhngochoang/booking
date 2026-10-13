@@ -10,6 +10,10 @@ import { createBookingDraft } from '../../src/create_booking.js';
 import { createPayment } from '../../src/create_payment.js';
 import { handleTransferNotification } from '../../src/handle_transfer.js';
 
+import type { SettlementDeps } from '../../src/payment_settlement.js';
+import { BookingPaymentSettler } from '../../src/handle_transfer.js';
+import { MemoryPaymentLookup } from '../../src/memory_payment_lookup.js';
+
 export class ControllableClock implements Clock {
   constructor(private currentTime: Date = new Date('2026-10-10T10:00:00.000Z')) {}
 
@@ -43,6 +47,7 @@ export class SequentialIdGen implements IdGenerator {
 
 export interface BookingWorld {
   readonly deps: BookingDeps;
+  readonly settlement: SettlementDeps;
   readonly store: MemoryBookingStore;
   readonly gateway: FakePaymentGateway;
   readonly blocks: FakeBlockGate;
@@ -111,7 +116,16 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     ids,
   };
 
-  return { deps, store, gateway, blocks, clock, ids, services, providers, contacts };
+  const settlement: SettlementDeps = {
+    payments: new MemoryPaymentLookup([store]),
+    gateway,
+    clock,
+    subjects: {
+      booking: new BookingPaymentSettler(deps),
+    },
+  };
+
+  return { deps, settlement, store, gateway, blocks, clock, ids, services, providers, contacts };
 }
 
 /** The default draft request: c1 books p1's `srv_01` (1 000 000 VND) on 2026-10-15 at 14:00. */

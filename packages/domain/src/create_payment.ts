@@ -24,7 +24,7 @@ import { isId } from './ids.js';
 import { assertOrderAllowed } from './order_gate.js';
 import { transferCodeFor } from './payment_code.js';
 import type { PaymentInstructions } from './payment_ports.js';
-import type { PaymentLookup } from './payment_settlement.js';
+import { type PaymentLookup, type SettlementDeps, settleTransfer } from './payment_settlement.js';
 import type { IdGenerator } from './ports.js';
 import { dispatchRefunds } from './refunds.js';
 import { requireCustomerPhone } from './require_phone.js';
@@ -151,6 +151,52 @@ export function instructionsOf(payment: Payment): PaymentInstructions | null {
     ...(inst.payUrl !== undefined ? { payUrl: inst.payUrl } : {}),
     ...(inst.bankAppsUrl !== undefined ? { bankAppsUrl: inst.bankAppsUrl } : {}),
   };
+}
+
+/**
+ * "Kiểm tra lại" for any subject: queryTransfers for each created payment, settleTransfer each; true when one is now paid.
+ */
+export async function checkSubjectPayments(
+  deps: SettlementDeps,
+  payments: readonly Payment[],
+): Promise<boolean> {
+  for (const payment of payments) {
+    if (payment.status !== 'created' || !payment.transferCode) continue;
+    const transfers = await deps.gateway.queryTransfers({
+      paymentId: payment.id,
+      transferCode: payment.transferCode,
+      providerRef: payment.providerRef,
+    });
+    for (const n of transfers) {
+      await settleTransfer(deps, n);
+    }
+  }
+
+  for (const payment of payments) {
+    const reRead = await deps.payments.getPayment(payment.id);
+    if (reRead?.status === 'paid') return true;
+  }
+  return false;
+}
+
+/**
+ * getPaymentInstructions: payer only; instructions of a `created` payment, else null.
+ */
+export async function readPaymentInstructions(
+  deps: Pick<SettlementDeps, 'payments'>,
+  caller: { readonly uid: string },
+  raw: unknown,
+): Promise<PaymentInstructions | null> {
+  if (typeof raw !== 'object' || raw === null) throw new DomainError('invalid_argument');
+  const { paymentId } = raw as { paymentId?: unknown };
+  if (typeof paymentId !== 'string' || !isId(paymentId)) throw new DomainError('invalid_argument');
+
+  const payment = await deps.payments.getPayment(paymentId);
+  if (!payment) throw new DomainError('not_found');
+  if (payment.payerId !== caller.uid) throw new DomainError('permission_denied');
+
+  if (payment.status !== 'created') return null;
+  return instructionsOf(payment);
 }
 
 /**

@@ -10,12 +10,10 @@ import type {
   BookingTx,
   TransferNotification,
   TransferOutcome,
-  TransferRecord,
 } from './booking_ports.js';
 import { moveDraftToRequested, refundLatePayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
 import type { Payment, Refund } from './escrow.js';
-import { transferCodesIn } from './payment_code.js';
 import { dispatchRefunds, transferRefund } from './refunds.js';
 
 import {
@@ -25,38 +23,6 @@ import {
 } from './payment_settlement.js';
 
 export { type TransferResult, transferRecordId };
-
-function validNotification(n: TransferNotification): boolean {
-  return (
-    typeof n.txnId === 'string' &&
-    n.txnId.length > 0 &&
-    Number.isInteger(n.amount) &&
-    n.amount > 0 &&
-    typeof n.content === 'string' &&
-    typeof n.receivedAt === 'string' &&
-    !Number.isNaN(Date.parse(n.receivedAt))
-  );
-}
-
-/**
- * The payment a memo names: the first transfer code in it that belongs to a booking payment
- * created no later than the transfer was received (a transfer never pays a payment that did not
- * exist yet). Codes are unique across payments (createPayment); for older data sharing a code,
- * the open one wins, else the most recently created.
- */
-async function matchPayment(deps: BookingDeps, content: string, receivedAt: string): Promise<Payment | null> {
-  const receivedMs = Date.parse(receivedAt);
-  for (const code of transferCodesIn(content)) {
-    const candidates = (await deps.store.findPaymentsByTransferCode(code)).filter(
-      (p) => p.subjectType === 'booking' && Date.parse(p.createdAt) <= receivedMs,
-    );
-    if (candidates.length === 0) continue;
-    const open = candidates.find((p) => p.status === 'created');
-    if (open) return open;
-    return [...candidates].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0] ?? null;
-  }
-  return null;
-}
 
 /**
  * Applies one matched transfer inside the transaction (all reads already done): records it as
@@ -120,61 +86,118 @@ async function applyTransfer(
   }
 }
 
-/**
- * Handles one transfer the provider reports (already authenticated by the adapter):
- * - seen before (same `${provider}_${txnId}`): `duplicate`, nothing changes;
- * - no transfer code in the memo names a payment: stored as `needs_review`, nothing else changes;
- * - otherwise the mis-transfer table (`decideTransfer`): `paid` / `paid_with_refund` / `partial` /
- *   `refunded`. The transfer record is written in the same transaction as the payment and ledger,
- *   and refunds are sent to the gateway afterwards (`refundId` is the idempotency key).
- */
-export async function handleTransferNotification(deps: BookingDeps, n: TransferNotification): Promise<TransferResult> {
-  if (!validNotification(n)) throw new DomainError('invalid_argument');
-  const recordId = transferRecordId(n);
+import type { BookingStore } from './booking_ports.js';
+import { expireOpenPayment } from './booking_payment_paths.js';
+import type { SubjectSettler } from './payment_ports.js';
+import {
+  type PaymentLookup,
+  type SettlementDeps,
+  settleTransfer,
+  transferRecordOf,
+} from './payment_settlement.js';
 
-  const known = await deps.store.getTransferRecord(recordId);
-  if (known) return { outcome: 'duplicate', ...(known.paymentId ? { paymentId: known.paymentId } : {}) };
+export class BookingPaymentSettler implements SubjectSettler {
+  constructor(private readonly deps: BookingDeps) {}
 
-  const matched = await matchPayment(deps, n.content, n.receivedAt);
-  const now = deps.clock.now();
-  let pending: Refund[] = [];
+  async settle(paymentId: string, transfer: TransferNotification): Promise<Exclude<TransferOutcome, 'needs_review'>> {
+    const recordId = transferRecordId(transfer);
+    const now = this.deps.clock.now();
+    let pending: Refund[] = [];
+    let provider: Payment['provider'] = this.deps.gateway.provider;
 
-  const result = await deps.store.runTransaction(async (tx): Promise<TransferResult & { provider?: Payment['provider'] }> => {
-    pending = [];
-    const seen = await tx.getTransferRecord(recordId);
-    if (seen) return { outcome: 'duplicate', ...(seen.paymentId ? { paymentId: seen.paymentId } : {}) };
+    const outcome = await this.deps.store.runTransaction(async (tx): Promise<Exclude<TransferOutcome, 'needs_review'>> => {
+      pending = [];
+      const seen = await tx.getTransferRecord(recordId);
+      if (seen) return 'duplicate';
 
-    const payment = matched ? await tx.getPayment(matched.id) : null;
-    const booking = payment ? await tx.getBooking(payment.subjectId) : null;
+      const payment = await tx.getPayment(paymentId);
+      if (!payment || payment.subjectType !== 'booking') throw new DomainError('not_found');
+      provider = payment.provider;
+      const booking = await tx.getBooking(payment.subjectId);
 
-    const base: Omit<TransferRecord, 'outcome'> = {
-      id: recordId,
-      provider: n.provider,
-      txnId: n.txnId,
-      receivedAt: n.receivedAt,
-      ...(n.raw !== undefined ? { raw: n.raw } : {}),
-    };
+      const applied = await applyTransfer(tx, this.deps, payment, booking, transfer, now);
+      await tx.saveTransferRecord(transferRecordOf(transfer, applied.outcome, payment.id));
+      pending = applied.refunds;
+      return applied.outcome;
+    });
 
-    if (!payment) {
-      await tx.saveTransferRecord({ ...base, outcome: 'needs_review' });
-      return { outcome: 'needs_review' };
+    if (outcome !== 'duplicate' && pending.length > 0) {
+      await Promise.all(pending.map((r) => this.dispatchRefund(r, { provider } as Payment)));
     }
 
-    const applied = await applyTransfer(tx, deps, payment, booking, n, now);
-    await tx.saveTransferRecord({ ...base, outcome: applied.outcome, paymentId: payment.id });
-    pending = applied.refunds;
-    return { outcome: applied.outcome, paymentId: payment.id, provider: payment.provider };
-  });
+    return outcome;
+  }
 
-  // The transfer is recorded: a refund the gateway refuses or throws on is left `failed` for staff,
-  // since a provider retry of this notification is a duplicate and would never re-send it.
-  const provider = result.provider ?? n.provider;
-  await dispatchRefunds(
-    deps,
-    pending.map((refund) => ({ refund, provider })),
-  );
+  async expire(paymentId: string, now: Date): Promise<'expired' | 'unchanged'> {
+    let refund: Refund | undefined;
+    let provider: Payment['provider'] = this.deps.gateway.provider;
+    const expired = await this.deps.store.runTransaction(async (tx) => {
+      refund = undefined;
+      const current = await tx.getPayment(paymentId);
+      if (!current || current.subjectType !== 'booking' || current.status !== 'created' || !current.expiresAt) {
+        return false;
+      }
+      if (Date.parse(current.expiresAt) > now.getTime()) return false;
+      provider = current.provider;
+      refund = await expireOpenPayment(tx, this.deps, current, now);
+      return true;
+    });
 
-  return { outcome: result.outcome, ...(result.paymentId ? { paymentId: result.paymentId } : {}) };
+    if (!expired) return 'unchanged';
+    if (refund) {
+      await this.dispatchRefund(refund, { provider } as Payment);
+    }
+    return 'expired';
+  }
+
+  async dispatchRefund(refund: Refund, payment: Payment): Promise<Refund> {
+    const res = await dispatchRefunds(this.deps, [{ refund, provider: payment.provider }]);
+    return res[0] ?? refund;
+  }
+
+  async statusOf(payment: Payment): Promise<string> {
+    const booking = await this.deps.store.getBooking(payment.subjectId);
+    return booking?.status ?? 'gone';
+  }
+}
+
+export function bookingPaymentLookup(store: BookingStore): PaymentLookup {
+  return {
+    getPayment: (id) => store.getPayment(id),
+    findPaymentsByTransferCode: (code) => store.findPaymentsByTransferCode(code),
+    getTransferRecord: (id) => store.getTransferRecord(id),
+    saveUnmatchedTransfer: async (record) => {
+      await store.runTransaction(async (tx) => {
+        const seen = await tx.getTransferRecord(record.id);
+        if (!seen) await tx.saveTransferRecord(record);
+      });
+    },
+    findPaymentsToReconcile: (createdBefore, limit) => store.findPaymentsToReconcile(createdBefore, limit),
+    findOverduePayments: (now, limit) => store.findOverduePayments(now, limit),
+  };
+}
+
+export function bookingSettlement(deps: BookingDeps): SettlementDeps {
+  return {
+    payments: bookingPaymentLookup(deps.store),
+    gateway: deps.gateway,
+    clock: deps.clock,
+    subjects: {
+      booking: new BookingPaymentSettler(deps),
+    },
+  };
+}
+
+export function asSettlement(deps: SettlementDeps | BookingDeps): SettlementDeps {
+  return 'subjects' in deps ? (deps as SettlementDeps) : bookingSettlement(deps as BookingDeps);
+}
+
+/**
+ * Handles one transfer the provider reports (already authenticated by the adapter).
+ * Wrapper around settleTransfer using bookingSettlement.
+ */
+export async function handleTransferNotification(deps: BookingDeps, n: TransferNotification): Promise<TransferResult> {
+  return settleTransfer(bookingSettlement(deps), n);
 }
 
 /** The payment if `customerId` is its payer: `not_found` / `permission_denied` otherwise. */
