@@ -2,9 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/booking/booking_providers.dart';
-import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 
 /// S04.04's "Giả lập chuyển khoản" text button: opens [FakePaymentSheet] on
 /// test builds and draws nothing when real payments are on.
@@ -47,8 +46,8 @@ class _FakePaymentSheetState extends ConsumerState<FakePaymentSheet> {
     setState(() => _sending = kind);
     try {
       await ref
-          .read(bookingRepositoryProvider)
-          .confirmFakePayment(paymentId: widget.paymentId, kind: kind);
+          .read(paymentsRepositoryProvider)
+          .confirmFake(widget.paymentId, kind: kind);
     } catch (_) {
       // Ignored here: S04.04 shows the real status.
     } finally {

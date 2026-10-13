@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 
 /// What S04.04 shows to pay one booking: the client mirror of
 /// `bookings/{id}.checkout`, written by the `createPayment` callable (the
@@ -52,6 +53,21 @@ class BookingCheckout {
     final left = expiresAt.difference(now);
     return left.isNegative ? Duration.zero : left;
   }
+
+  /// Converts checkout into generic PaymentInstructions.
+  PaymentInstructions toInstructions() => PaymentInstructions(
+        paymentId: paymentId,
+        method: method,
+        amount: amount,
+        expiresAt: expiresAt,
+        transferCode: transferCode,
+        attempt: attempt,
+        qrPayload: qrPayload,
+        bankName: bankName,
+        accountMasked: accountMasked,
+        payUrl: payUrl,
+        bankAppsUrl: bankAppsUrl,
+      );
 
   @override
   bool operator ==(Object other) =>

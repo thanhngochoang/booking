@@ -18,6 +18,8 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
+import 'fake_payments_repository.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
@@ -182,6 +184,13 @@ Future<BookingWorldHandles> pumpBookingRoute(
     );
   }
   final externalLauncher = FakeExternalLauncher();
+  final paymentsRepo = FakePaymentsRepository();
+  paymentsRepo.onConfirm = (paymentId, kind) async {
+    await effectiveBookings.confirmFakePayment(
+      paymentId: paymentId,
+      kind: kind,
+    );
+  };
 
   tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
@@ -343,6 +352,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
       FakePublicProfileRepository([bookingProfile]),
     ),
     realPaymentsProvider.overrideWithValue(realPayments),
+    paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
     ...extraOverrides,
   ];
 

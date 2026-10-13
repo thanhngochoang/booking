@@ -94,8 +94,6 @@ void main() {
     expect(PayMethod.zaloPay.code, 'zalopay');
     expect(PayMethod.fromCode('cash'), isNull);
     expect(PayMethod.fromCode(null), isNull);
-    // Tickets (S11.03) still map to a provider.
-    expect(PayMethod.zaloPay.provider, PaymentProviderCode.vnpay);
   });
 
   test('FakeTransferKind codes match the callable', () {

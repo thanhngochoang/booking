@@ -6,8 +6,7 @@ import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 
 /// Single choice of a ticket payment method (mock S11.03): "Chuyển khoản QR"
-/// takes the wider slot, then MoMo and ZaloPay; each method maps onto a
-/// gateway code ([PayMethod.provider]).
+/// takes the wider slot, then MoMo and ZaloPay.
 class PayMethodPicker extends StatelessWidget {
   const PayMethodPicker({
     super.key,

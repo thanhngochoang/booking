@@ -3,6 +3,10 @@ import 'dart:io' show SocketException;
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
+
+export 'package:photobooking/data/payments/payments_repository.dart'
+    show FakeTransferKind;
 
 class BookingException implements Exception {
   const BookingException(this.code);
@@ -100,20 +104,6 @@ class CheckPaymentResponse {
 
   final bool paid;
   final Booking? booking;
-}
-
-/// What the fake gateway simulates (`confirmFakePayment`, dev only): the
-/// mis-transfer table of the payments spec.
-enum FakeTransferKind {
-  exact('exact'),
-  under('under'),
-  over('over'),
-  wrongContent('wrong_content');
-
-  const FakeTransferKind(this.code);
-
-  /// Wire code of the callable's `kind`.
-  final String code;
 }
 
 enum BookingRole { customer, photographer }

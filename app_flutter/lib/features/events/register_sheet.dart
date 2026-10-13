@@ -135,7 +135,7 @@ class _RegisterSheetState extends ConsumerState<RegisterSheet> {
       ref,
       paymentId: paymentId,
       amountVnd: _controller.totalVnd,
-      payUrl: hold.payUrl,
+      payUrl: hold.instructions?.payUrl,
     );
     if (!mounted) {
       return;

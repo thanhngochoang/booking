@@ -302,7 +302,7 @@ class _TicketTile extends ConsumerWidget {
           name: r.userName,
         );
         paymentId = again.paymentId ?? paymentId;
-        payUrl = again.payUrl;
+        payUrl = again.instructions?.payUrl;
       }
       if (paymentId == null || !context.mounted) {
         return;

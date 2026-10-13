@@ -166,7 +166,7 @@ class RegisterController extends Notifier<RegisterState> {
             args.eventId,
             quantity: state.quantity,
             name: state.trimmedName,
-            provider: args.paid ? state.method.provider : null,
+            method: args.paid ? state.method : null,
           );
       if (outcome.status == RegistrationStatus.held) {
         state = state.copyWith(submitting: false, hold: outcome);

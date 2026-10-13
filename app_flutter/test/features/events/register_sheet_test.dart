@@ -294,13 +294,13 @@ void main() {
       );
     });
 
-    testWidgets('the method maps onto the gateway codes', (tester) async {
+    testWidgets('the method maps onto the payment methods', (tester) async {
       final w = await _open(tester, event: _paid());
       await tester.tap(find.byKey(const Key('pay-method-momo')));
       await tester.pump();
       await tester.tap(find.byKey(const Key('register-submit')));
       await settle(tester);
-      expect(w.repo.registerProviders.last, PaymentProviderCode.momo);
+      expect(w.repo.registerMethods.last, PayMethod.momo);
     });
 
     testWidgets('Thanh toán starts the hold countdown', (tester) async {
@@ -310,8 +310,8 @@ void main() {
       final r = w.repo.registrations.single;
       expect(r.status, RegistrationStatus.held);
       expect(r.amount, 250000);
-      // Default method "Chuyển khoản QR" goes through the VNPay gateway code.
-      expect(w.repo.registerProviders.single, PaymentProviderCode.vnpay);
+      // Default method "Chuyển khoản QR".
+      expect(w.repo.registerMethods.single, PayMethod.bankQr);
       expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
       // The quantity is fixed while the seats are held.
       expect(

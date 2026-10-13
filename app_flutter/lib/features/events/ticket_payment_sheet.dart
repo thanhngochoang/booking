@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
-import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 
 /// Opens the payment step of a held ticket: in fake mode (emulator, dev) the
 /// [TicketPaymentSheet]; with real payments the gateway's [payUrl]. The
@@ -63,9 +63,10 @@ class _TicketPaymentSheetState extends ConsumerState<TicketPaymentSheet> {
     setState(() => _loading = true);
     RegistrationStatus? status;
     try {
-      status = await ref
-          .read(eventRepositoryProvider)
-          .confirmFakeTicketPayment(widget.paymentId);
+      final outcome = await ref
+          .read(paymentsRepositoryProvider)
+          .confirmFake(widget.paymentId);
+      status = outcome == 'paid' ? RegistrationStatus.paid : RegistrationStatus.held;
     } catch (e) {
       // The registration stream shows the real state (still held, expired);
       // the customer is told the payment did not go through.

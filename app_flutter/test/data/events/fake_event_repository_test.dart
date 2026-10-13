@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
@@ -94,10 +95,17 @@ void main() {
     'a paid event is held for ten minutes and a free ticket unlocks no contact',
     () async {
       final paid = withEvent(priceVnd: 200000);
-      final out = await paid.register('ev1', quantity: 2, name: 'Lan');
+      final out = await paid.register(
+        'ev1',
+        quantity: 2,
+        name: 'Lan',
+        method: PayMethod.bankQr,
+      );
       expect(out.status, RegistrationStatus.held);
       expect(out.holdExpiresAt, eventNow.add(const Duration(minutes: 10)));
-      expect(out.payUrl, isNotNull);
+      expect(out.instructions, isNotNull);
+      expect(out.instructions?.transferCode, 'PB 7F3K2Q');
+      expect(paid.registerMethods.single, PayMethod.bankQr);
       expect(paid.event('ev1')!.summary.heldCount, 2);
 
       final reg = (await repo.register('ev1', quantity: 1, name: 'Lan'));

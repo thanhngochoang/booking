@@ -1,39 +1,15 @@
 // lib/core/payments.dart
 
-/// Supported payment providers for booking and ticket payments.
-enum PaymentProviderCode {
-  momo('momo'),
-  vnpay('vnpay');
-
-  const PaymentProviderCode(this.code);
-
-  /// Stable code used in domain rules, callable payloads and analytics.
-  final String code;
-
-  static PaymentProviderCode? fromCode(String? code) {
-    for (final c in values) {
-      if (c.code == code) return c;
-    }
-    return null;
-  }
-}
-
-/// The ways to pay (mock S04.03 and S11.03: "Chuyển khoản QR", "MoMo",
-/// "ZaloPay"). [code] is the `PaymentMethod` the booking callables take
-/// (`createPayment {bookingId, method}`); [provider] is what S11.03 tickets
-/// still send to `registerEvent` until they move too: a bank QR and ZaloPay go
-/// through the VNPay gateway (VNPAY-QR), MoMo through MoMo.
+/// The ways to pay (S04.04 and S11.03: "Chuyển khoản QR", "MoMo", "ZaloPay").
+/// [code] is the wire `PaymentMethod` sent to `createPayment` and `registerEvent`.
 enum PayMethod {
-  bankQr(PaymentProviderCode.vnpay, 'bank_qr'),
-  momo(PaymentProviderCode.momo, 'momo'),
-  zaloPay(PaymentProviderCode.vnpay, 'zalopay');
+  bankQr('bank_qr'),
+  momo('momo'),
+  zaloPay('zalopay');
 
-  const PayMethod(this.provider, this.code);
+  const PayMethod(this.code);
 
-  /// The provider code sent to `registerEvent`.
-  final PaymentProviderCode provider;
-
-  /// Stable wire code of the booking payment method.
+  /// Stable wire code of the payment method.
   final String code;
 
   static PayMethod? fromCode(String? c) {

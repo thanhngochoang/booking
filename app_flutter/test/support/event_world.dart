@@ -23,6 +23,8 @@ import 'package:photobooking/data/events/event_timeline_repository.dart';
 import 'package:photobooking/features/event_chat/event_chat_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/data/events/event_repository.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
+import 'fake_payments_repository.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
@@ -344,7 +346,18 @@ class EventsWorld {
        ),
        nearby = FakeNearbyEventsRepository(
          nearbyEvents ?? [for (final e in events) e.summary],
-       );
+       ) {
+    payments.onConfirm = (paymentId, kind) async {
+      repo.maybeFailForTest();
+      repo.fakeConfirmed.add(paymentId);
+      final r = repo.registrations
+          .where((x) => x.paymentId == paymentId)
+          .firstOrNull;
+      if (r != null) {
+        repo.applyPaymentForTest(paymentId);
+      }
+    };
+  }
 
   final String uid;
   final UserRole role;
@@ -378,6 +391,7 @@ class EventsWorld {
   final FakeEventChatRepository chat;
   final FakeNearbyEventsRepository nearby;
   final launcher = FakeExternalLauncher();
+  final payments = FakePaymentsRepository();
   final contactRepo = FakePhotographerContactRepository();
   final contactLinks = FakeContactLinkRepository();
   late GoRouter router;
@@ -399,6 +413,7 @@ class EventsWorld {
       ),
     ),
     currentContactProvider.overrideWithValue(AsyncData(contact)),
+    paymentsRepositoryProvider.overrideWithValue(payments),
     eventRepositoryProvider.overrideWithValue(repo),
     eventTimelineRepositoryProvider.overrideWithValue(timeline),
     eventChatRepositoryProvider.overrideWithValue(chat),
