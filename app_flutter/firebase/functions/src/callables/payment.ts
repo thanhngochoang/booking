@@ -6,12 +6,20 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import {
   DomainError,
-  assertPaymentPayer,
+  asSettlement,
   checkPayment,
   createPayment,
+  fakeTransferFor,
+  readPaymentInstructions,
+  FAKE_OVERPAY_VND,
+  FAKE_TRANSFER_KINDS,
+  FAKE_WRONG_CONTENT,
   type Booking,
   type BookingDeps,
   type CreatePaymentResult,
+  type FakeTransferKind,
+  type PaymentInstructions,
+  type SettlementDeps,
   type TransferOutcome,
 } from '@photobooking/domain';
 import { assertFakePaymentsAllowed, checkoutGatewayAvailable } from '../infra/fake_payments.js';
@@ -22,14 +30,7 @@ import type { CallableInput } from './get_contact_link.js';
 
 type Env = Readonly<Record<string, string | undefined>>;
 
-/** What `confirmFakePayment` simulates: the mis-transfer table of payments spec §3.3. */
-export const FAKE_TRANSFER_KINDS = ['exact', 'under', 'over', 'wrong_content'] as const;
-export type FakeTransferKind = (typeof FAKE_TRANSFER_KINDS)[number];
-
-/** `over` sends this much above the amount (VND); the excess is refunded. */
-export const FAKE_OVERPAY_VND = 50_000;
-/** `wrong_content`: a memo without any transfer code (staff review). */
-export const FAKE_WRONG_CONTENT = 'CHUYEN TIEN';
+export { FAKE_TRANSFER_KINDS, FAKE_OVERPAY_VND, FAKE_WRONG_CONTENT, type FakeTransferKind };
 
 const isKind = (v: unknown): v is FakeTransferKind =>
   typeof v === 'string' && (FAKE_TRANSFER_KINDS as readonly string[]).includes(v);
@@ -85,7 +86,7 @@ export async function handleCheckPayment(
  */
 export async function handleConfirmFakePayment(
   request: CallableInput,
-  deps: BookingDeps,
+  deps: SettlementDeps | BookingDeps,
   env: Env = process.env,
 ): Promise<{ readonly outcome: TransferOutcome }> {
   const uid = uidOf(request);
@@ -96,25 +97,33 @@ export async function handleConfirmFakePayment(
     const data = dataOf(request);
     const kind = data.kind ?? 'exact';
     if (!isKind(kind)) throw new DomainError('invalid_argument');
-    const payment = await assertPaymentPayer(deps, String(data.paymentId ?? ''), uid);
-    // Only checkout payments (createPayment) have a transfer code; anything else cannot be paid this way.
-    if (payment.subjectType !== 'booking' || payment.transferCode === undefined) throw new DomainError('conflict');
+
+    const d = asSettlement(deps);
+    const paymentId = String(data.paymentId ?? '');
+    const payment = await d.payments.getPayment(paymentId);
+    if (!payment) throw new DomainError('not_found');
+    if (payment.payerId !== uid) throw new DomainError('permission_denied');
+    if (payment.transferCode === undefined) throw new DomainError('conflict');
+    if (!d.subjects[payment.subjectType]) throw new DomainError('not_eligible');
 
     const secret = fakeWebhookSecret(env);
     if (secret === undefined) throw new Error('FAKE_PAYMENT_WEBHOOK_SECRET is not set');
 
-    const now = deps.clock.now();
-    const amount =
-      kind === 'under' ? Math.floor(payment.amount / 2) : kind === 'over' ? payment.amount + FAKE_OVERPAY_VND : payment.amount;
+    const now = d.clock.now();
+    const fakeTransfer = fakeTransferFor(
+      payment as typeof payment & { readonly transferCode: string },
+      kind,
+      now,
+    );
     const rawBody = JSON.stringify({
-      txnId: `fake_${payment.id}_${kind}_${now.getTime()}`,
-      amount,
-      content: kind === 'wrong_content' ? FAKE_WRONG_CONTENT : payment.transferCode,
-      receivedAt: now.toISOString(),
+      txnId: fakeTransfer.txnId,
+      amount: fakeTransfer.amount,
+      content: fakeTransfer.content,
+      receivedAt: fakeTransfer.receivedAt,
     });
     const res = await handlePaymentWebhook(
       { provider: 'fake', rawBody, headers: { [FAKE_SIGNATURE_HEADER]: signFakeWebhook(rawBody, secret) } },
-      deps,
+      d,
       env,
     );
     const outcome = res.body.outcome;
@@ -122,5 +131,22 @@ export async function handleConfirmFakePayment(
     return { outcome: outcome as TransferOutcome };
   } catch (e) {
     handleCallableError('confirmFakePayment', e);
+  }
+}
+
+/**
+ * `{paymentId}` → `{instructions: PaymentInstructions | null}`:
+ * payer only; instructions of a `created` payment, else null.
+ */
+export async function handleGetPaymentInstructions(
+  request: CallableInput,
+  deps: SettlementDeps,
+): Promise<{ readonly instructions: PaymentInstructions | null }> {
+  const uid = uidOf(request);
+  try {
+    const instructions = await readPaymentInstructions(deps, { uid }, dataOf(request));
+    return { instructions };
+  } catch (e) {
+    handleCallableError('getPaymentInstructions', e);
   }
 }

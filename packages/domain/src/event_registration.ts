@@ -91,7 +91,8 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
   const name = r.name.normalize('NFC').trim();
   const n = graphemeCount(name);
   if (n < 1 || n > NAME_MAX) throw new DomainError('invalid_argument');
-  const method = parseMethod(r.method ?? r.provider);
+  if ('provider' in r) throw new DomainError('invalid_argument');
+  const method = parseMethod(r.method);
   const profile = await deps.people.user(caller.uid);
 
   // When method is present and payments lookup exists, draw a fresh payment id before transaction (Decision 5).

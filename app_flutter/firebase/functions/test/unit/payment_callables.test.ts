@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { createBookingDraft, type BookingDeps } from '@photobooking/domain';
-import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment } from '../../src/callables/payment.js';
+import { createBookingDraft, BookingPaymentSettler, type BookingDeps } from '@photobooking/domain';
+import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment, handleGetPaymentInstructions } from '../../src/callables/payment.js';
 import { PROD_ENV, WEBHOOK_ENV, openPayment, paymentWorld } from './support/payment_world.js';
+import { MemoryPaymentLookup } from '../../../../../packages/domain/src/memory_payment_lookup.js';
+import { createTicketPaymentWorld } from '../../../../../packages/domain/test/support/event_world.js';
+import { saveEventDraft, publishEvent, registerEvent } from '@photobooking/domain';
 
 const httpsError = (code: string, detailsCode?: string) => (e: unknown) =>
   e instanceof HttpsError
@@ -189,5 +192,113 @@ describe('payment callables', () => {
       handleCheckPayment({ auth: { uid: 'c2' }, data: { bookingId: p.bookingId } }, w.deps),
       httpsError('permission-denied', 'permission_denied'),
     );
+  });
+
+  it('confirmFakePayment pays a ticket payment through the webhook path', async () => {
+    const tw = createTicketPaymentWorld();
+    const bw = paymentWorld();
+    const host = { uid: 'ph1', staffRole: null } as const;
+    const eventId = '01ARZ3NDEKTSV4RRFFQ69G5F88';
+    const path = `eventCovers/ph1/${eventId}/c.jpg`;
+    await saveEventDraft(tw.deps, host, {
+      eventId, title: 'Walk', type: 'photo_walk', coverUrl: `https://s.test/${path}`, coverPath: path,
+      startAt: '2026-10-15T02:00:00.000Z', endAt: '2026-10-15T05:00:00.000Z',
+      location: { name: 'Lake', lat: 21.0, lng: 105.8 }, capacity: 5, price: 200_000,
+    });
+    await publishEvent(tw.deps, host, { eventId });
+    const cu1 = { uid: 'cu1', staffRole: null } as const;
+    const r = await registerEvent(tw.deps, cu1, { eventId, quantity: 1, name: 'An', method: 'bank_qr' });
+    const eventSettler = tw.settlement.subjects.event_registration;
+    assert.ok(eventSettler);
+    const settlementDeps = {
+      payments: tw.deps.payments,
+      gateway: tw.deps.gateway,
+      clock: tw.deps.clock,
+      subjects: {
+        booking: new BookingPaymentSettler(bw.deps),
+        event_registration: eventSettler,
+      },
+    };
+    const res = await handleConfirmFakePayment(
+      { auth: { uid: 'cu1' }, data: { paymentId: r.paymentId, kind: 'exact' } },
+      settlementDeps,
+      WEBHOOK_ENV,
+    );
+    assert.deepEqual(res, { outcome: 'paid' });
+    assert.equal(tw.store.registrations.get(`${eventId}/${r.registrationId}`)?.status, 'paid');
+  });
+
+  it('confirmFakePayment for a subject without a settler is not_eligible', async () => {
+    const w = paymentWorld();
+    const now = new Date('2026-10-01T10:00:00.000Z');
+    const orphanPayment = {
+      id: 'p_orphan_2',
+      subjectType: 'instant_request' as unknown as import('@photobooking/domain').PaymentSubject,
+      subjectId: 'req_2',
+      payerId: 'c1',
+      payeeId: 'ph1',
+      provider: 'fake' as const,
+      amount: 500_000,
+      status: 'created' as const,
+      escrowStatus: 'held' as const,
+      idempotencyKey: 'idemp_orphan_2',
+      transferCode: 'PB ORPHAN',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+    w.store.payments.set(orphanPayment.id, orphanPayment);
+    const settlementDeps = {
+      payments: new MemoryPaymentLookup([w.store]),
+      gateway: w.deps.gateway,
+      clock: w.deps.clock,
+      subjects: {
+        booking: new BookingPaymentSettler(w.deps),
+      },
+    };
+    await assert.rejects(
+      handleConfirmFakePayment(
+        { auth: { uid: 'c1' }, data: { paymentId: 'p_orphan_2', kind: 'exact' } },
+        settlementDeps,
+        WEBHOOK_ENV,
+      ),
+      httpsError('failed-precondition', 'not_eligible'),
+    );
+  });
+
+  it('getPaymentInstructions returns a created payment\'s instructions to its payer, null once paid, permission_denied for another user, unauthenticated refused', async () => {
+    const w = paymentWorld();
+    const p = await openPayment(w);
+    const settlementDeps = {
+      payments: new MemoryPaymentLookup([w.store]),
+      gateway: w.deps.gateway,
+      clock: w.deps.clock,
+      subjects: {
+        booking: new BookingPaymentSettler(w.deps),
+      },
+    };
+
+    // unauthenticated
+    await assert.rejects(
+      handleGetPaymentInstructions({ data: { paymentId: p.paymentId } }, settlementDeps),
+      httpsError('unauthenticated', 'permission_denied'),
+    );
+
+    // another user
+    await assert.rejects(
+      handleGetPaymentInstructions({ auth: { uid: 'c2' }, data: { paymentId: p.paymentId } }, settlementDeps),
+      httpsError('permission-denied', 'permission_denied'),
+    );
+
+    // payer: gets instructions
+    const before = await handleGetPaymentInstructions({ auth: { uid: 'c1' }, data: { paymentId: p.paymentId } }, settlementDeps);
+    assert.ok(before.instructions);
+    assert.equal(before.instructions.paymentId, p.paymentId);
+    assert.equal(before.instructions.method, 'bank_qr');
+    assert.equal(before.instructions.amount, p.amount);
+
+    // after payment is paid: null
+    await handleConfirmFakePayment({ auth: { uid: 'c1' }, data: { paymentId: p.paymentId, kind: 'exact' } }, settlementDeps, WEBHOOK_ENV);
+    const after = await handleGetPaymentInstructions({ auth: { uid: 'c1' }, data: { paymentId: p.paymentId } }, settlementDeps);
+    assert.equal(after.instructions, null);
   });
 });

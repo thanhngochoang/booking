@@ -11,7 +11,14 @@
  */
 
 import * as logger from 'firebase-functions/logger';
-import { handleTransferNotification, isDomainError, type BookingDeps, type TransferNotification } from '@photobooking/domain';
+import {
+  asSettlement,
+  isDomainError,
+  settleTransfer,
+  type BookingDeps,
+  type SettlementDeps,
+  type TransferNotification,
+} from '@photobooking/domain';
 import { fakePaymentsAllowed } from '../infra/fake_payments.js';
 import { FAKE_SIGNATURE_HEADER, fakeWebhookSecret, parseFakeTransfer, verifyFakeWebhook } from '../infra/fake_webhook.js';
 
@@ -33,7 +40,11 @@ export interface WebhookResponse {
 
 const refuse = (status: number, error: string): WebhookResponse => ({ status, body: { ok: false, error } });
 
-export async function handlePaymentWebhook(req: WebhookRequest, deps: BookingDeps, env: Env = process.env): Promise<WebhookResponse> {
+export async function handlePaymentWebhook(
+  req: WebhookRequest,
+  deps: SettlementDeps | BookingDeps,
+  env: Env = process.env,
+): Promise<WebhookResponse> {
   // The fake provider is the only one so far; it does not exist where real money could move.
   if (req.provider !== 'fake' || !fakePaymentsAllowed(env)) return refuse(404, 'unknown_provider');
 
@@ -56,7 +67,7 @@ export async function handlePaymentWebhook(req: WebhookRequest, deps: BookingDep
   }
 
   try {
-    const { outcome } = await handleTransferNotification(deps, n);
+    const { outcome } = await settleTransfer(asSettlement(deps), n);
     logger.info('paymentWebhook handled', { provider: n.provider, txnId: n.txnId, outcome });
     return { status: 200, body: { ok: true, outcome } };
   } catch (e) {
@@ -87,7 +98,7 @@ export interface HttpResponseLike {
 export async function servePaymentWebhook(
   req: HttpRequestLike,
   res: HttpResponseLike,
-  deps: BookingDeps,
+  deps: SettlementDeps | BookingDeps,
   env: Env = process.env,
 ): Promise<void> {
   if (req.method !== 'POST') {

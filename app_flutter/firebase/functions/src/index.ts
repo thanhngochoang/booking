@@ -8,9 +8,10 @@ import {
   handleTransitionBooking,
   handleOpenDispute,
 } from './callables/booking.js';
-import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment } from './callables/payment.js';
+import { handleCheckPayment, handleConfirmFakePayment, handleCreatePayment, handleGetPaymentInstructions } from './callables/payment.js';
 import { servePaymentWebhook } from './http/payment_webhook.js';
 import { handlePaymentClock } from './scheduled/payment_clock.js';
+import { liveSettlementDeps } from './infra/live_payments.js';
 import { handleCreatePayouts } from './scheduled/create_payouts.js';
 import {
   handleOpenInquiry,
@@ -88,7 +89,6 @@ import {
   handleCancelRegistration,
   handleCheckInRegistration,
   handleCheckTicketPayment,
-  handleConfirmFakeTicketPayment,
   handlePublishEvent,
   handleRegisterEvent,
   handleRespondToHostConsent,
@@ -129,18 +129,26 @@ export const checkPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) => handle
  * (`fake_payments_disabled` elsewhere).
  */
 export const confirmFakePayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
-  handleConfirmFakePayment(request, liveBookingDeps()),
+  handleConfirmFakePayment(request, liveSettlementDeps()),
+);
+
+/**
+ * `{paymentId}` → `{instructions: PaymentInstructions | null}`:
+ * payer only; instructions of a `created` payment, else null.
+ */
+export const getPaymentInstructions = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleGetPaymentInstructions(request, liveSettlementDeps()),
 );
 
 /**
  * `POST /paymentWebhook?provider=fake`: the provider reports a transfer; authenticated by its
  * signature over the raw body (the fake provider exists only where fake payments are allowed).
  */
-export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) => servePaymentWebhook(req, res, liveBookingDeps()));
+export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) => servePaymentWebhook(req, res, liveSettlementDeps()));
 
 /** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
 export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
-  await handlePaymentClock(liveBookingDeps());
+  await handlePaymentClock(liveSettlementDeps());
 });
 
 /** Booking lifecycle transition */
@@ -511,14 +519,9 @@ export const cancelRegistration = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
   handleCancelRegistration(request, liveEventPaymentDeps()),
 );
 
-/** `{paymentId}` → `{status}`: fake ticket payment, emulator and dev project only. */
-export const confirmFakeTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
-  handleConfirmFakeTicketPayment(request, liveEventPaymentDeps()),
-);
-
 /** `{eventId, registrationId}` → `{paid, status}`: back from the gateway, or "Thanh toán tiếp". */
 export const checkTicketPayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
-  handleCheckTicketPayment(request, liveEventPaymentDeps()),
+  handleCheckTicketPayment(request, { ...liveEventPaymentDeps(), settlement: liveSettlementDeps() }),
 );
 
 /** `{eventId, ticketCode}` → `{name, quantity}` */

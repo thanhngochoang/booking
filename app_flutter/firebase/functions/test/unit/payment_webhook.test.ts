@@ -256,4 +256,83 @@ describe('servePaymentWebhook (HTTP adapter)', () => {
     await servePaymentWebhook({ method: 'POST', query: {}, headers: { [FAKE_SIGNATURE_HEADER]: sig }, rawBody: Buffer.from(raw) }, b.res, w.deps, WEBHOOK_ENV);
     assert.equal(b.out.status, 404);
   });
+
+  it('a signed transfer for a ticket payment is settled by the ticket settler (200 paid)', async () => {
+    const { createTicketPaymentWorld } = await import('../../../../../packages/domain/test/support/event_world.js');
+    const { saveEventDraft, publishEvent, registerEvent, BookingPaymentSettler } = await import('@photobooking/domain');
+    const tw = createTicketPaymentWorld();
+    const bw = paymentWorld();
+    const host = { uid: 'ph1', staffRole: null } as const;
+    const eventId = '01ARZ3NDEKTSV4RRFFQ69G5F99';
+    const path = `eventCovers/ph1/${eventId}/c.jpg`;
+    await saveEventDraft(tw.deps, host, {
+      eventId, title: 'Walk', type: 'photo_walk', coverUrl: `https://s.test/${path}`, coverPath: path,
+      startAt: '2026-10-15T02:00:00.000Z', endAt: '2026-10-15T05:00:00.000Z',
+      location: { name: 'Lake', lat: 21.0, lng: 105.8 }, capacity: 5, price: 200_000,
+    });
+    await publishEvent(tw.deps, host, { eventId });
+    const cu1 = { uid: 'cu1', staffRole: null } as const;
+    const r = await registerEvent(tw.deps, cu1, {
+      eventId, quantity: 1, name: 'An', phone: '0901234567', method: 'bank_qr',
+    });
+    assert.ok(r.paymentId);
+    const p = tw.store.payments.get(r.paymentId);
+    assert.ok(p);
+    const eventSettler = tw.settlement.subjects.event_registration;
+    assert.ok(eventSettler);
+
+    const settlementDeps = {
+      payments: tw.deps.payments,
+      gateway: tw.deps.gateway,
+      clock: tw.deps.clock,
+      subjects: {
+        booking: new BookingPaymentSettler(bw.deps),
+        event_registration: eventSettler,
+      },
+    };
+
+    const transferCode = p.transferCode;
+    assert.ok(transferCode);
+    const raw = bodyOf({ amount: p.amount, content: transferCode, receivedAt: p.createdAt });
+    const res = await handlePaymentWebhook(signed(raw), settlementDeps, WEBHOOK_ENV);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { ok: true, outcome: 'paid' });
+    assert.equal(tw.store.registrations.get(`${eventId}/${r.registrationId}`)?.status, 'paid');
+  });
+
+  it('a transfer for a subject without a settler is 200 needs_review', async () => {
+    const { MemoryBookingStore, BookingPaymentSettler } = await import('@photobooking/domain');
+    const w = paymentWorld();
+    const store = new MemoryBookingStore();
+    const now = new Date('2026-10-01T10:00:00.000Z');
+    const orphanPayment = {
+      id: 'p_orphan',
+      subjectType: 'instant_request' as unknown as import('@photobooking/domain').PaymentSubject,
+      subjectId: 'req_1',
+      payerId: 'c1',
+      payeeId: 'ph1',
+      provider: 'fake' as const,
+      amount: 500_000,
+      status: 'created' as const,
+      escrowStatus: 'held' as const,
+      idempotencyKey: 'idemp_orphan',
+      transferCode: 'PB ORPHAN',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+    store.payments.set(orphanPayment.id, orphanPayment);
+    const { MemoryPaymentLookup } = await import('../../../../../packages/domain/src/memory_payment_lookup.js');
+    const settlementDeps = {
+      payments: new MemoryPaymentLookup([store]),
+      gateway: w.deps.gateway,
+      clock: w.deps.clock,
+      subjects: {
+        booking: new BookingPaymentSettler(w.deps),
+      },
+    };
+    const raw = bodyOf({ amount: 500_000, content: 'PB ORPHAN' });
+    const res = await handlePaymentWebhook(signed(raw), settlementDeps, WEBHOOK_ENV);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { ok: true, outcome: 'needs_review' });
+  });
 });
