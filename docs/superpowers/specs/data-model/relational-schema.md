@@ -974,10 +974,11 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 | Giá trị | Nguồn sự thật | Cách giữ |
 |---------|---------------|----------|
-| `posts.like_count`, `save_count` | `likes`, `saves` | Use case/trigger cập nhật; có job đối soát hằng đêm |
-| `photographers.tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`, `review_count`, `completed_count` | `reviews`, `bookings` | `submit_review`, `transition_booking` |
-| `photographers.starting_price` | `min(services.price) where active` | `onPhotographerWrite` |
-| `photographers.next_free_date` | `availability_days`, `bookings` | Cron mỗi giờ |
+| `posts.like_count`, `save_count` | `likes`, `saves` | Use case/trigger cập nhật (`onLikeWrite`, `onSaveWrite`); có job đối soát |
+| `photographers.tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`, `review_count`, `completed_count` | `reviews`, `bookings` | `onReviewWrite`, `onBookingWrite` (#130, #132) |
+| `photographers.starting_price` | `min(services.price) where active` | `onServiceWrite` (#132) |
+| `photographers.next_free_date` | `availability_days`, `bookings` | Hướng sự kiện (`onAvailabilityWrite`) + rollover hằng ngày 00:10 (#132) |
+| `explore_specialty_stats` (view) | `services` active | View `(specialty, service_count, cover_url)` phản chiếu `catalog/explore` (#132) |
 | `photographers.skills_completeness` | kỹ năng đã khai | `onPhotographerWrite` |
 | `events.registered_count`, `held_count` | `event_registrations` | `register_event` trong giao dịch; đối soát khi `release_expired_holds` |
 | `chats.last_message_*`, `chat_members.unread_count` | `messages` | Trigger tin mới |
