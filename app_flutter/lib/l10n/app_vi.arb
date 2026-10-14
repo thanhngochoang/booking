@@ -353,6 +353,23 @@
   "exploreTabStyles": "Phong cách",
   "exploreTabPhotographers": "Thợ ảnh",
   "explorePhotographersAll": "Xem tất cả nhiếp ảnh gia",
+  "exploreSearchHint": "Tìm dịch vụ, địa điểm, tên thợ ảnh",
+  "exploreSearchIdle": "Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.",
+  "exploreSearchEmptyTitle": "Không tìm thấy “{query}”",
+  "@exploreSearchEmptyTitle": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "exploreSearchEmptyBody": "Thử từ ngắn hơn, hoặc gõ không dấu.",
+  "exploreSearchSeeAll": "Xem tất cả thợ ảnh",
+  "exploreSearchClear": "Xoá",
+  "exploreCategoryPackages": "{count} gói",
+  "@exploreCategoryPackages": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "exploreLoadError": "Không tải được sự kiện. Kiểm tra mạng rồi thử lại.",
   "eventDateSpoken": "{weekday, select, 1{Thứ hai} 2{Thứ ba} 3{Thứ tư} 4{Thứ năm} 5{Thứ sáu} 6{Thứ bảy} other{Chủ nhật}}, ngày {day} tháng {month}",
   "@eventDateSpoken": {
@@ -2368,5 +2385,44 @@
   "createEventErrFaq": "Nhập đủ cả câu hỏi và câu trả lời.",
   "bookNotAcceptingOrders": "Nhiếp ảnh gia này chưa nhận đặt lịch.",
   "bookingErrBlocked": "Không đặt lịch được với người này.",
-  "@bookingErrBlocked": {"description": "S04: createBooking/createPayment refused because the customer and the photographer blocked each other (blocked)."}
+  "@bookingErrBlocked": {"description": "S04: createBooking/createPayment refused because the customer and the photographer blocked each other (blocked)."},
+  "savedTitle": "Đã lưu",
+  "savedTabPosts": "Bài · {count}",
+  "@savedTabPosts": {"placeholders": {"count": {"type": "int"}}},
+  "savedTabPhotographers": "Nhiếp ảnh gia · {count}",
+  "@savedTabPhotographers": {"placeholders": {"count": {"type": "int"}}},
+  "savedPostsEmptyTitle": "Chưa lưu bài nào",
+  "savedPostsEmptyBody": "Bấm biểu tượng lưu trên ảnh để xem lại ở đây.",
+  "savedPhotographersEmptyTitle": "Chưa lưu nhiếp ảnh gia nào",
+  "savedPhotographersEmptyBody": "Bấm biểu tượng lưu trên hồ sơ nhiếp ảnh gia để so sánh và đặt lịch sau.",
+  "savedUnsaved": "Đã bỏ lưu {name}",
+  "@savedUnsaved": {"placeholders": {"name": {"type": "String"}}},
+  "savedUndo": "Hoàn tác",
+  "savedBook": "Đặt lịch",
+  "savedToggleOn": "Lưu {name}",
+  "@savedToggleOn": {"placeholders": {"name": {"type": "String"}}},
+  "savedToggleOff": "Bỏ lưu {name}",
+  "@savedToggleOff": {"placeholders": {"name": {"type": "String"}}},
+  "followingTitle": "Đang theo dõi",
+  "followingCount": "{count} nhiếp ảnh gia",
+  "@followingCount": {"placeholders": {"count": {"type": "int"}}},
+  "followingButton": "Đang theo dõi",
+  "followButton": "Theo dõi",
+  "followingUnfollowed": "Đã bỏ theo dõi {name}",
+  "@followingUnfollowed": {"placeholders": {"name": {"type": "String"}}},
+  "followingEmptyTitle": "Bạn chưa theo dõi ai",
+  "followingEmptyBody": "Theo dõi nhiếp ảnh gia để thấy bài mới của họ trước.",
+  "followingEmptyAction": "Khám phá",
+  "followersTitle": "Người theo dõi",
+  "followersCount": "{count} người theo dõi · chỉ bạn xem được danh sách này",
+  "@followersCount": {"placeholders": {"count": {"type": "int"}}},
+  "followersSince": "Theo dõi từ {date}",
+  "@followersSince": {"placeholders": {"date": {"type": "String"}}},
+  "followersEmptyTitle": "Chưa có người theo dõi",
+  "followersEmptyBody": "Đăng bài thường xuyên để có thêm người theo dõi.",
+  "profileCountFollowers": "người theo dõi",
+  "profileSavePhotographer": "Lưu nhiếp ảnh gia",
+  "profileUnsavePhotographer": "Bỏ lưu nhiếp ảnh gia",
+  "reasonFollowing": "Bạn đang theo dõi",
+  "socialToggleFailed": "Chưa lưu được. Thử lại."
 }

@@ -459,19 +459,22 @@ void photographerRepositoryContract(
       expect(m.keys.toSet(), {for (var i = 0; i < 35; i++) 'q$i'});
     });
 
-    test('candidates honours the limit', () async {
-      final repo = await create(contractPhotographers());
-      expect(await repo.candidates(limit: 3), hasLength(3));
-      expect((await repo.candidates()).length, 6);
+    test('candidates returns only bookable providers', () async {
+      final repo = await create([
+        fixturePhotographer('b1', acceptingOrders: true),
+        fixturePhotographer('b2', acceptingOrders: false),
+      ]);
+      final res = await repo.candidates();
+      expect(res.map((p) => p.id), ['b1']);
     });
 
-    test('candidates clamps its limit to 1..200', () async {
+    test('freeThisWeek leaves out providers who do not accept orders', () async {
       final repo = await create([
-        for (var i = 0; i < 205; i++) fixturePhotographer('c$i'),
+        fixturePhotographer('f1', nextFreeDate: '2026-10-02', acceptingOrders: true),
+        fixturePhotographer('f2', nextFreeDate: '2026-10-02', acceptingOrders: false),
       ]);
-      expect(await repo.candidates(limit: 0), hasLength(1));
-      expect(await repo.candidates(limit: -1), hasLength(1));
-      expect(await repo.candidates(limit: 1000), hasLength(200));
+      final res = await repo.freeThisWeek(now: fixtureNow);
+      expect(res.map((p) => p.id), ['f1']);
     });
   });
 }

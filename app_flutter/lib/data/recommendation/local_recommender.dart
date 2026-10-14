@@ -409,13 +409,20 @@ class LocalRecommender implements RecommendationRepository {
       for (final post in page.posts)
         if (authors[post.photographerId] != null) post,
     ];
-    final boosted = known.where(
+    final followed = known.where(
+      (p) =>
+          q.followedIds.contains(p.photographerId) &&
+          now.difference(p.createdAt) <= const Duration(days: 7),
+    );
+    final followedIdsSet = followed.map((p) => p.id).toSet();
+    final notFollowed = known.where((p) => !followedIdsSet.contains(p.id));
+    final boosted = notFollowed.where(
       (p) => _freeSoon(authors[p.photographerId]!, now, days: 14),
     );
-    final rest = known.where(
+    final rest = notFollowed.where(
       (p) => !_freeSoon(authors[p.photographerId]!, now, days: 14),
     );
-    final ordered = [...boosted, ...rest];
+    final ordered = [...followed, ...boosted, ...rest];
     final origin = _origin(q.geohash6);
     return PostRecommendationPage(
       items: [
@@ -423,7 +430,13 @@ class LocalRecommender implements RecommendationRepository {
           () {
             final author = authors[ordered[i].photographerId]!;
             final d = _distance(origin, author);
+            final isFollowedBoost = followedIdsSet.contains(ordered[i].id);
             final reasons = <Reason>[
+              if (isFollowedBoost)
+                Reason(
+                  code: ReasonCode.following,
+                  text: _l.reasonFollowing,
+                ),
               if (_freeSoon(author, now, days: 14) &&
                   author.nextFreeDay != null)
                 Reason(

@@ -26,6 +26,7 @@ import { fromFirestoreChat } from '../../src/infra/chat_firestore.js';
 import { handleChatMessageCreated } from '../../src/triggers/chat_message_created.js';
 import {
   AN,
+  BINH,
   CUC,
   DUNG,
   LAN,
@@ -352,6 +353,8 @@ describe('seed reviews (tomato/brick)', () => {
       tomatoPct: 97,
       score: 0.942,
       punctualMentions: 3,
+      nextFreeDate: '2026-09-01',
+      completedCount: 3,
     });
     const an = reviewsOf(AN);
     assert.deepEqual(an.map((r) => r.id).sort(), ['seed-review-an-1', 'seed-review-an-2', 'seed-review-an-3']);
@@ -385,7 +388,11 @@ describe('seed reviews (tomato/brick)', () => {
     const cuc = reviewsOf(CUC);
     assert.equal(cuc.length, 3);
     assert.ok(cuc.every((r) => r.verdict === 'tomato'));
-    assert.deepEqual(statsOf(CUC), fold(CUC));
+    assert.deepEqual(statsOf(CUC), {
+      ...fold(CUC),
+      nextFreeDate: '2026-09-01',
+      completedCount: 0,
+    });
     assert.equal(statsOf(CUC)?.reviewCount, 3);
     assert.ok((statsOf(CUC)?.reviewCount as number) < TOMATO_PCT_MIN_REVIEWS);
   });
@@ -396,7 +403,11 @@ describe('seed reviews (tomato/brick)', () => {
     const bricks = dung.filter((r) => r.verdict === 'brick');
     assert.equal(bricks.length, 3);
     for (const b of bricks) assert.ok(Array.isArray(b.reasons) && b.reasons.length > 0, b.id);
-    assert.deepEqual(statsOf(DUNG), fold(DUNG));
+    assert.deepEqual(statsOf(DUNG), {
+      ...fold(DUNG),
+      nextFreeDate: '2026-09-01',
+      completedCount: 0,
+    });
     assert.equal(statsOf(DUNG)?.tomatoPct, 50);
   });
 
@@ -532,4 +543,99 @@ describe('seed chats and the inbox', () => {
       }
     }
   });
+
+  test('seed follows give An followerCount 2 and Dũng 1, equal to the follows', () => {
+    const docs = seedDocuments(NOW);
+    const follows = docs.filter((d) => d.path.startsWith('follows/'));
+    const anFollows = follows.filter((d) => (d.data as { photographerId: string }).photographerId === 'seed-photographer-an');
+    const dungFollows = follows.filter((d) => (d.data as { photographerId: string }).photographerId === 'seed-photographer-dung');
+
+    const anDoc = docs.find((d) => d.path === 'photographers/seed-photographer-an')?.data as Record<string, unknown>;
+    const dungDoc = docs.find((d) => d.path === 'photographers/seed-photographer-dung')?.data as Record<string, unknown>;
+
+    assert.equal(anFollows.length, 2);
+    assert.equal(dungFollows.length, 1);
+    assert.equal(anDoc.followerCount, anFollows.length);
+    assert.equal(dungDoc.followerCount, dungFollows.length);
+    assert.ok(anDoc.followerCountAt instanceof Date);
+    assert.ok(dungDoc.followerCountAt instanceof Date);
+  });
+
+  test('Lan has saved posts seed-post-an-1, -2 and saved photographer Cúc', () => {
+    const docs = seedDocuments(NOW);
+    const lanSaves = docs.filter(
+      (d) => d.path.startsWith('saves/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
+    );
+    const lanSavedPosts = lanSaves.map((d) => (d.data as { postId: string }).postId).sort();
+    assert.deepEqual(lanSavedPosts, ['seed-post-an-1', 'seed-post-an-2']);
+
+    const lanSavedPhotographers = docs.filter(
+      (d) => d.path.startsWith('savedPhotographers/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
+    );
+    assert.equal(lanSavedPhotographers.length, 1);
+    assert.equal((lanSavedPhotographers[0]!.data as { photographerId: string }).photographerId, 'seed-photographer-cuc');
+  });
 });
+
+describe('seed discovery stats (S02)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+
+  test('seed photographers carry nextFreeDate, startingPrice and completedCount from the domain rules', () => {
+    const an = get(`photographers/${AN}`);
+    assert.ok(an);
+    assert.equal(an.startingPrice, 1_500_000);
+    const anStats = an.stats as Record<string, unknown>;
+    assert.equal(anStats.completedCount, 3);
+    assert.ok(typeof anStats.nextFreeDate === 'string');
+    assert.match(anStats.nextFreeDate as string, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(anStats.reviewCount, 58);
+    assert.equal(anStats.score, 0.942);
+
+    const binh = get(`photographers/${BINH}`);
+    assert.ok(binh);
+    assert.equal(binh.startingPrice, 1_200_000);
+    const binhStats = binh.stats as Record<string, unknown>;
+    assert.equal(binhStats.completedCount, 0);
+    assert.ok(typeof binhStats.nextFreeDate === 'string');
+    assert.equal(binhStats.reviewCount, 0);
+    assert.equal(binhStats.score, 0);
+
+    const cuc = get(`photographers/${CUC}`);
+    assert.ok(cuc);
+    assert.equal(cuc.startingPrice, null);
+    const cucStats = cuc.stats as Record<string, unknown>;
+    assert.equal(cucStats.completedCount, 0);
+    assert.ok(typeof cucStats.nextFreeDate === 'string');
+
+    const dung = get(`photographers/${DUNG}`);
+    assert.ok(dung);
+    assert.equal(dung.startingPrice, null);
+    const dungStats = dung.stats as Record<string, unknown>;
+    assert.equal(dungStats.completedCount, 0);
+    assert.ok(typeof dungStats.nextFreeDate === 'string');
+  });
+
+  test('seed posts carry likeCount and saveCount equal to their seeded markers', () => {
+    const post1 = get('posts/seed-post-an-1');
+    assert.ok(post1);
+    assert.equal(post1.likeCount, 2);
+    assert.equal(post1.saveCount, 1);
+
+    const post2 = get('posts/seed-post-an-2');
+    assert.ok(post2);
+    assert.equal(post2.likeCount, 0);
+    assert.equal(post2.saveCount, 1);
+
+    const likes = docs.filter((d) => d.path.startsWith('likes/'));
+    assert.equal(likes.length, 2);
+  });
+
+  test('catalog/explore matches the seeded services', () => {
+    const explore = get('catalog/explore') as { specialties: Record<string, { serviceCount: number }> } | undefined;
+    assert.ok(explore);
+    assert.equal(explore.specialties.portrait?.serviceCount, 1);
+    assert.equal(explore.specialties.family?.serviceCount, 1);
+  });
+});
+

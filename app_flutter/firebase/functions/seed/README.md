@@ -183,6 +183,39 @@ npm run payouts -- approve <payoutId> --actor seed-staff-admin
 Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An's availability
 (unless a seed booking already holds that day), and each registration its `ticket_codes/*` entry.
 
+## Follows and saved items (S19)
+
+| Follow | Follower | Followee | Notes |
+|---|---|---|---|
+| Lan → An | Lan (`seed-customer-lan`) | An (`seed-photographer-an`) | An's `followerCount`: 2 |
+| Minh → An | Minh (`seed-customer-minh`) | An (`seed-photographer-an`) | |
+| Lan → Dũng | Lan (`seed-customer-lan`) | Dũng (`seed-photographer-dung`) | Dũng's `followerCount`: 1 |
+
+| Saved item | User | Target | Notes |
+|---|---|---|---|
+| Saved post | Lan | `seed-post-an-1`, `seed-post-an-2` | in `saves/{userId}_{postId}` |
+| Saved photographer | Lan | Cúc (`seed-photographer-cuc`) | in `savedPhotographers/{userId}_{photographerId}` |
+
+## Discovery stats (S02)
+
+| Photographer | `startingPrice` | `stats.nextFreeDate` | `stats.completedCount` | Notes |
+|---|---|---|---|---|
+| An | 1 500 000 ₫ | computed from today & booked days | 3 | completed bookings: `recent`, `old`, `disputed` |
+| Bình | 1 200 000 ₫ | computed from today | 0 | unverified, `acceptingOrders: false` |
+| Cúc | `null` | computed from today | 0 | no services seeded |
+| Dũng | `null` | computed from today | 0 | no services seeded |
+
+| Item | Key / Path | Value | Notes |
+|---|---|---|---|
+| Post likes | `posts/seed-post-an-1` | `likeCount: 2` | Lan, Minh in `likes/{userId}_{postId}` |
+| Post saves | `posts/seed-post-an-1` | `saveCount: 1` | Lan in `saves/{userId}_{postId}` |
+| Explore catalog | `catalog/explore` | `portrait: 1`, `family: 1` | active services with category count |
+
+To recompute all discovery stats across the emulator database:
+```bash
+npm run stats -- recompute
+```
+
 ## Running a clock on the emulators
 
 The emulators never fire scheduled functions. `npm run clock -- events` runs the event clock once

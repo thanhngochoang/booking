@@ -30,6 +30,7 @@ import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
+import 'package:photobooking/features/explore/search/explore_search_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
@@ -43,6 +44,9 @@ import 'package:photobooking/features/photographer_setup/contact_setup_screen.da
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
+import 'package:photobooking/features/saved/followers_screen.dart';
+import 'package:photobooking/features/saved/following_screen.dart';
+import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
@@ -234,6 +238,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/explore/search',
+        builder: (_, _) => const ExploreSearchScreen(),
+      ),
+      GoRoute(
         path: '/p/:postId',
         builder: (_, state) =>
             PhotoDetailScreen(postId: state.pathParameters['postId']!),
@@ -321,6 +329,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
+      GoRoute(
+        path: '/me/saved',
+        builder: (_, state) => SavedScreen(
+          initialTab: state.uri.queryParameters['tab'] == 'photographers'
+              ? SavedTab.photographers
+              : SavedTab.posts,
+        ),
+      ),
+      GoRoute(
+        path: '/me/following',
+        builder: (_, _) => const FollowingScreen(),
+      ),
+      GoRoute(
+        path: '/me/followers',
+        redirect: (_, _) {
+          final role = ref.read(currentProfileProvider).value?.role;
+          if (role != UserRole.photographer) {
+            return '/profile';
+          }
+          return null;
+        },
+        builder: (_, _) => const FollowersScreen(),
+      ),
       GoRoute(
         path: '/u/:uid/albums/:albumId',
         builder: (_, state) => AlbumDetailScreen(

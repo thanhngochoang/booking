@@ -5,11 +5,14 @@ import 'package:go_router/go_router.dart';
 
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/discovery/explore_catalog.dart';
+import 'package:photobooking/data/discovery/explore_catalog_providers.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/area_picker_sheet.dart';
+import 'package:photobooking/features/explore/category_tile.dart';
 import 'package:photobooking/features/explore/event_routes.dart';
 import 'package:photobooking/features/explore/explore_links.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
@@ -443,6 +446,55 @@ class _EmptyNearby extends ConsumerWidget {
   }
 }
 
+class _ExploreSearchBar extends StatelessWidget {
+  const _ExploreSearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final bg = dark ? AppColorsDark.surfaceMuted : AppColors.backgroundSubtle;
+    final fg = dark ? AppColorsDark.foregroundMuted : AppColors.foregroundSecondary;
+
+    return Semantics(
+      button: true,
+      label: l.exploreSearchHint,
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.control),
+          onTap: () => context.push('/explore/search'),
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
+            child: Row(
+              children: [
+                AppIcon(
+                  AppIcons.search,
+                  size: 20,
+                  color: fg,
+                ),
+                const SizedBox(width: AppSpace.s2),
+                Expanded(
+                  child: Text(
+                    l.exploreSearchHint,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: fg,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CategorySection {
   const _CategorySection({
     required this.tab,
@@ -459,6 +511,10 @@ class _CategorySection {
     final tiles = _tiles(context, ref);
     return SliverMainAxisGroup(
       slivers: [
+        const SliverToBoxAdapter(
+          child: _ExploreSearchBar(),
+        ),
+        const _Gap(AppSpace.s3),
         SliverToBoxAdapter(
           child: SegmentedTabs<ExploreCategoryTab>(
             options: [
@@ -492,34 +548,66 @@ class _CategorySection {
     );
   }
 
-  List<_CategoryTile> _tiles(BuildContext context, WidgetRef ref) {
-    _CategoryTile tile(String id, String title, String path) => _CategoryTile(
-      key: Key('category-${tab.name}-$id'),
-      title: title,
-      onTap: tappable ? () => context.go(path) : null,
-    );
+  List<ExploreCategoryTile> _tiles(BuildContext context, WidgetRef ref) {
+    final catalog =
+        ref.watch(exploreCatalogProvider).value ?? ExploreCatalog.empty;
+    final l = context.l10n;
+
+    ExploreCategoryTile tile(
+      String id,
+      String title,
+      String path, {
+      String? imageUrl,
+      String? caption,
+    }) =>
+        ExploreCategoryTile(
+          key: Key('category-${tab.name}-$id'),
+          title: title,
+          imageUrl: imageUrl,
+          caption: caption,
+          onTap: tappable ? () => context.go(path) : null,
+        );
+
     switch (tab) {
       case ExploreCategoryTab.services:
         return [
           for (final o in kSpecialties)
-            tile(o.id, o.labelVi, findPhotographersPath(specialty: o.id)),
+            tile(
+              o.id,
+              o.labelVi,
+              findPhotographersPath(specialty: o.id),
+              imageUrl: catalog.specialties[o.id]?.coverUrl,
+              caption: (catalog.specialties[o.id]?.serviceCount ?? 0) > 0
+                  ? l.exploreCategoryPackages(
+                      catalog.specialties[o.id]!.serviceCount,
+                    )
+                  : null,
+            ),
         ];
       case ExploreCategoryTab.places:
         final areas = ref.watch(areasProvider).value ?? const <AreaOption>[];
         return [
           for (final a in areas)
-            tile(a.id, a.name, findPhotographersPath(area: a.id)),
+            tile(
+              a.id,
+              a.name,
+              findPhotographersPath(area: a.id),
+            ),
         ];
       case ExploreCategoryTab.styles:
         return [
           for (final o in kStyles)
-            tile(o.id, o.labelVi, findPhotographersPath(style: o.id)),
+            tile(
+              o.id,
+              o.labelVi,
+              findPhotographersPath(style: o.id),
+            ),
         ];
       case ExploreCategoryTab.photographers:
         return [
           tile(
             'all',
-            context.l10n.explorePhotographersAll,
+            l.explorePhotographersAll,
             findPhotographersPath(),
           ),
         ];
@@ -532,7 +620,7 @@ class _CategorySection {
 /// the rest of the tab in place.
 class _CategoryGrid extends StatefulWidget {
   const _CategoryGrid({super.key, required this.tiles});
-  final List<_CategoryTile> tiles;
+  final List<ExploreCategoryTile> tiles;
 
   static const shown = 4;
 
@@ -596,45 +684,6 @@ class _CategoryGridState extends State<_CategoryGrid> {
           ],
         );
       },
-    );
-  }
-}
-
-class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({super.key, required this.title, this.onTap});
-  final String title;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    final subtle = dark ? AppColorsDark.primarySubtle : AppColors.primarySubtle;
-    return Semantics(
-      button: onTap != null,
-      label: title,
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Material(
-        color: subtle,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.s3),
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -928,6 +928,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String get explorePhotographersAll => 'Xem tất cả nhiếp ảnh gia';
 
   @override
+  String get exploreSearchHint => 'Tìm dịch vụ, địa điểm, tên thợ ảnh';
+
+  @override
+  String get exploreSearchIdle => 'Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.';
+
+  @override
+  String exploreSearchEmptyTitle(String query) {
+    return 'Không tìm thấy “$query”';
+  }
+
+  @override
+  String get exploreSearchEmptyBody => 'Thử từ ngắn hơn, hoặc gõ không dấu.';
+
+  @override
+  String get exploreSearchSeeAll => 'Xem tất cả thợ ảnh';
+
+  @override
+  String get exploreSearchClear => 'Xoá';
+
+  @override
+  String exploreCategoryPackages(int count) {
+    return '$count gói';
+  }
+
+  @override
   String get exploreLoadError =>
       'Không tải được sự kiện. Kiểm tra mạng rồi thử lại.';
 
@@ -5244,4 +5269,113 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get bookingErrBlocked => 'Không đặt lịch được với người này.';
+
+  @override
+  String get savedTitle => 'Đã lưu';
+
+  @override
+  String savedTabPosts(int count) {
+    return 'Bài · $count';
+  }
+
+  @override
+  String savedTabPhotographers(int count) {
+    return 'Nhiếp ảnh gia · $count';
+  }
+
+  @override
+  String get savedPostsEmptyTitle => 'Chưa lưu bài nào';
+
+  @override
+  String get savedPostsEmptyBody =>
+      'Bấm biểu tượng lưu trên ảnh để xem lại ở đây.';
+
+  @override
+  String get savedPhotographersEmptyTitle => 'Chưa lưu nhiếp ảnh gia nào';
+
+  @override
+  String get savedPhotographersEmptyBody =>
+      'Bấm biểu tượng lưu trên hồ sơ nhiếp ảnh gia để so sánh và đặt lịch sau.';
+
+  @override
+  String savedUnsaved(String name) {
+    return 'Đã bỏ lưu $name';
+  }
+
+  @override
+  String get savedUndo => 'Hoàn tác';
+
+  @override
+  String get savedBook => 'Đặt lịch';
+
+  @override
+  String savedToggleOn(String name) {
+    return 'Lưu $name';
+  }
+
+  @override
+  String savedToggleOff(String name) {
+    return 'Bỏ lưu $name';
+  }
+
+  @override
+  String get followingTitle => 'Đang theo dõi';
+
+  @override
+  String followingCount(int count) {
+    return '$count nhiếp ảnh gia';
+  }
+
+  @override
+  String get followingButton => 'Đang theo dõi';
+
+  @override
+  String get followButton => 'Theo dõi';
+
+  @override
+  String followingUnfollowed(String name) {
+    return 'Đã bỏ theo dõi $name';
+  }
+
+  @override
+  String get followingEmptyTitle => 'Bạn chưa theo dõi ai';
+
+  @override
+  String get followingEmptyBody =>
+      'Theo dõi nhiếp ảnh gia để thấy bài mới của họ trước.';
+
+  @override
+  String get followingEmptyAction => 'Khám phá';
+
+  @override
+  String get followersTitle => 'Người theo dõi';
+
+  @override
+  String followersCount(int count) {
+    return '$count người theo dõi · chỉ bạn xem được danh sách này';
+  }
+
+  @override
+  String followersSince(String date) {
+    return 'Theo dõi từ $date';
+  }
+
+  @override
+  String get followersEmptyTitle => 'Chưa có người theo dõi';
+
+  @override
+  String get followersEmptyBody =>
+      'Đăng bài thường xuyên để có thêm người theo dõi.';
+
+  @override
+  String get profileCountFollowers => 'người theo dõi';
+
+  @override
+  String get profileUnsavePhotographer => 'Bỏ lưu nhiếp ảnh gia';
+
+  @override
+  String get reasonFollowing => 'Bạn đang theo dõi';
+
+  @override
+  String get socialToggleFailed => 'Chưa lưu được. Thử lại.';
 }

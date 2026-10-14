@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/content/cached_photographer_repository.dart';
 import 'package:photobooking/data/content/content_repositories.dart';
 import 'package:photobooking/data/content/firestore_photographer_repository.dart';
 import 'package:photobooking/data/content/firestore_post_publisher.dart';
@@ -14,8 +16,20 @@ final postEngagementRepositoryProvider = Provider<PostEngagementRepository>(
   (ref) => FirestoreEngagementRepository(),
 );
 
+final cachedPhotographerRepositoryProvider =
+    Provider<CachedPhotographerRepository>(
+  (ref) => CachedPhotographerRepository(
+    FirestorePhotographerRepository(),
+    clock: ref.watch(clockProvider),
+  ),
+);
+
 final photographerRepositoryProvider = Provider<PhotographerRepository>(
-  (ref) => FirestorePhotographerRepository(),
+  (ref) => ref.watch(cachedPhotographerRepositoryProvider),
+);
+
+final photographerPoolCacheProvider = Provider<PhotographerPoolCache>(
+  (ref) => ref.watch(cachedPhotographerRepositoryProvider),
 );
 
 final serviceRepositoryProvider = Provider<ServiceRepository>(

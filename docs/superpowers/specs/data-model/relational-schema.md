@@ -118,6 +118,7 @@ create table photographers (
   skills_completeness_next text check (skills_completeness_next in ('specialties', 'levels', 'evidence', 'styles', 'languages', 'audiences', 'extras')),
   skills_completeness_next_after smallint check (skills_completeness_next_after between 0 and 100),
   skills_evidence_removed_at timestamptz,
+  follower_count       int not null default 0, -- dẫn xuất (trigger đếm lại, #143)
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
@@ -221,9 +222,10 @@ create table post_hashtags (
 );
 create index ix_post_hashtags_tag on post_hashtags (tag);
 
-create table likes   (user_id text not null references users(id) on delete cascade, post_id text not null references posts(id) on delete cascade, created_at timestamptz not null default now(), primary key (user_id, post_id));
-create table saves   (user_id text not null references users(id) on delete cascade, post_id text not null references posts(id) on delete cascade, created_at timestamptz not null default now(), primary key (user_id, post_id));
-create table follows (follower_id text not null references users(id) on delete cascade, photographer_id text not null references photographers(user_id) on delete cascade, created_at timestamptz not null default now(), primary key (follower_id, photographer_id));
+create table likes               (user_id text not null references users(id) on delete cascade, post_id text not null references posts(id) on delete cascade, created_at timestamptz not null default now(), primary key (user_id, post_id));
+create table saves               (user_id text not null references users(id) on delete cascade, post_id text not null references posts(id) on delete cascade, created_at timestamptz not null default now(), primary key (user_id, post_id));
+create table saved_photographers (user_id text not null references users(id) on delete cascade, photographer_id text not null references photographers(user_id) on delete cascade, created_at timestamptz not null default now(), primary key (user_id, photographer_id));
+create table follows             (follower_id text not null references users(id) on delete cascade, photographer_id text not null references photographers(user_id) on delete cascade, created_at timestamptz not null default now(), primary key (follower_id, photographer_id));
 ```
 
 ### 2.4 Đặt lịch, thanh toán, tiền treo
@@ -972,10 +974,11 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 
 | Giá trị | Nguồn sự thật | Cách giữ |
 |---------|---------------|----------|
-| `posts.like_count`, `save_count` | `likes`, `saves` | Use case/trigger cập nhật; có job đối soát hằng đêm |
-| `photographers.tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`, `review_count`, `completed_count` | `reviews`, `bookings` | `submit_review`, `transition_booking` |
-| `photographers.starting_price` | `min(services.price) where active` | `onPhotographerWrite` |
-| `photographers.next_free_date` | `availability_days`, `bookings` | Cron mỗi giờ |
+| `posts.like_count`, `save_count` | `likes`, `saves` | Use case/trigger cập nhật (`onLikeWrite`, `onSaveWrite`); có job đối soát |
+| `photographers.tomato_count`, `brick_count`, `signed_sum`, `tomato_pct`, `score`, `review_count`, `completed_count` | `reviews`, `bookings` | `onReviewWrite`, `onBookingWrite` (#130, #132) |
+| `photographers.starting_price` | `min(services.price) where active` | `onServiceWrite` (#132) |
+| `photographers.next_free_date` | `availability_days`, `bookings` | Hướng sự kiện (`onAvailabilityWrite`) + rollover hằng ngày 00:10 (#132) |
+| `explore_specialty_stats` (view) | `services` active | View `(specialty, service_count, cover_url)` phản chiếu `catalog/explore` (#132) |
 | `photographers.skills_completeness` | kỹ năng đã khai | `onPhotographerWrite` |
 | `events.registered_count`, `held_count` | `event_registrations` | `register_event` trong giao dịch; đối soát khi `release_expired_holds` |
 | `chats.last_message_*`, `chat_members.unread_count` | `messages` | Trigger tin mới |

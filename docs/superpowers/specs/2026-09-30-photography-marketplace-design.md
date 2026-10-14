@@ -192,7 +192,7 @@ Mọi chuyển trạng thái đi qua **Cloud Function `transitionBooking`** (cal
 - Đơn vị v1 là **ngày**. Một booking khoá cả ngày cho nhiếp ảnh gia (đơn giản, tránh xung đột đi lại). `slots` để dành cho v1.1.
 - Bốn trạng thái hiển thị: Rảnh (không doc), Chờ (`pending`, booking requested), Đã đặt (`booked`), Nghỉ (`off`).
 - Khách chỉ đặt được ngày Rảnh; ngày Chờ hiển thị nhưng không chọn được, kèm "1 người đang chờ".
-- "Rảnh tuần này" trên Trang chủ = nhiếp ảnh gia có ≥ 1 ngày Rảnh trong 7 ngày tới, do Function tính mỗi giờ vào `photographers.stats.nextFreeDate`.
+- "Rảnh tuần này" trên Trang chủ = nhiếp ảnh gia có ≥ 1 ngày Rảnh trong 7 ngày tới, tính hướng sự kiện (`onAvailabilityWrite`) + rollover 00:10 hằng ngày vào `photographers.stats.nextFreeDate` (xem [kế hoạch S02](../plans/2026-10-07-s02-discover.md)).
 - Chip giờ trong sheet = các mốc cách nhau 30 phút từ 06:00 đến 20:00 trừ `durationMinutes`; nhiếp ảnh gia có thể đặt "giờ gợi ý" trong gói.
 
 ---

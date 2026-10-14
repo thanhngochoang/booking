@@ -342,6 +342,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     publicProfileRepositoryProvider.overrideWithValue(
       FakePublicProfileRepository([bookingProfile]),
     ),
+    photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
     realPaymentsProvider.overrideWithValue(realPayments),
     ...extraOverrides,
   ];
@@ -510,6 +511,7 @@ Future<BookingDetailHandles> pumpBookingDetail(
     photographerContactRepositoryProvider.overrideWithValue(
       photographerContacts,
     ),
+    photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
     if (!hasCustomChat)
       chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
     ...grantedNotificationPermissionUnless(extraOverrides),
@@ -671,6 +673,7 @@ Future<BookingsTabHandles> pumpBookingsTab(
         clock: () => effectiveClock.now,
       ),
     ),
+    photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
     ...grantedNotificationPermissionUnless(extraOverrides),
     ...extraOverrides,
   ];

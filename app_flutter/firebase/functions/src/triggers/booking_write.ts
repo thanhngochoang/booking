@@ -1,4 +1,13 @@
-import { evaluateUserBadges, notifyBookingChange, syncBookingChat, type BadgeDeps, type ChatDeps, type NotifyDeps } from '@photobooking/domain';
+import {
+  evaluateUserBadges,
+  notifyBookingChange,
+  syncBookingChat,
+  refreshCompletedCount,
+  type BadgeDeps,
+  type ChatDeps,
+  type NotifyDeps,
+  type DiscoveryDeps,
+} from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { bookingFromFirestore } from '../infra/booking_firestore.js';
 
@@ -11,6 +20,7 @@ export async function handleBookingWrite(
   deps: ChatDeps,
   updateChatId?: (bookingId: string, chatId: string) => Promise<void>,
   extras?: { notify: NotifyDeps; badges: BadgeDeps },
+  discovery?: DiscoveryDeps,
 ): Promise<{ chatId: string | null; setBookingChatId: boolean }> {
   const before = event.before ? bookingFromFirestore(event.id, event.before) : null;
   const after = event.after ? bookingFromFirestore(event.id, event.after) : null;
@@ -34,6 +44,11 @@ export async function handleBookingWrite(
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failed) throw new Error(`badge evaluation failed after completion: ${String(failed.reason)}`);
     }
+  }
+
+  // Refresh completedCount when a booking enters completed
+  if (discovery && after && before?.status !== 'completed' && after.status === 'completed') {
+    await refreshCompletedCount(discovery, after.photographerId);
   }
 
   return result;

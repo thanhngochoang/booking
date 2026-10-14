@@ -152,12 +152,32 @@ class PostRecommendationQuery {
     this.geohash6,
     this.limit = 20,
     this.cursor,
+    this.followedIds = const {},
   });
 
   final String? specialtyId;
   final String? geohash6;
   final int limit;
   final String? cursor;
+  final Set<String> followedIds;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PostRecommendationQuery &&
+      other.specialtyId == specialtyId &&
+      other.geohash6 == geohash6 &&
+      other.limit == limit &&
+      other.cursor == cursor &&
+      setEquals(other.followedIds, followedIds);
+
+  @override
+  int get hashCode => Object.hash(
+    specialtyId,
+    geohash6,
+    limit,
+    cursor,
+    Object.hashAll(followedIds),
+  );
 }
 
 @immutable

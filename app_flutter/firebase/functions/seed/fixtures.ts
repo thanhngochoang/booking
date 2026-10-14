@@ -11,6 +11,8 @@ import {
   NOTIFICATION_TYPES,
   accountLast4,
   computeDeposit,
+  computeNextFreeDate,
+  computeStartingPrice,
   encodeGeohash,
   formatVnDate,
   hashtagBase,
@@ -233,6 +235,46 @@ export const SEED_AWARDS: readonly SeedAward[] = [
   { id: 'seed-award-binh-1', photographerId: BINH, competition: 'Vietnam Photo Contest', year: 2025, result: 'finalist', status: 'pending' },
 ];
 
+export interface SeedFollow {
+  readonly userId: string;
+  readonly photographerId: string;
+}
+
+export const SEED_FOLLOWS: readonly SeedFollow[] = [
+  { userId: LAN, photographerId: AN },
+  { userId: MINH, photographerId: AN },
+  { userId: LAN, photographerId: DUNG },
+];
+
+export interface SeedLike {
+  readonly userId: string;
+  readonly postId: string;
+}
+
+export const SEED_LIKES: readonly SeedLike[] = [
+  { userId: LAN, postId: 'seed-post-an-1' },
+  { userId: MINH, postId: 'seed-post-an-1' },
+];
+
+export interface SeedSave {
+  readonly userId: string;
+  readonly postId: string;
+}
+
+export const SEED_SAVES: readonly SeedSave[] = [
+  { userId: LAN, postId: 'seed-post-an-1' },
+  { userId: LAN, postId: 'seed-post-an-2' },
+];
+
+export interface SeedSavedPhotographer {
+  readonly userId: string;
+  readonly photographerId: string;
+}
+
+export const SEED_SAVED_PHOTOGRAPHERS: readonly SeedSavedPhotographer[] = [
+  { userId: LAN, photographerId: CUC },
+];
+
 export interface SeedReview {
   /** Synthetic booking id (no booking doc): the review doc id is `reviewDocId(bookingId, 'photographer')`. */
   readonly bookingId: string;
@@ -391,7 +433,36 @@ export function seedDocuments(now: Date): SeedDocument[] {
   }
   for (const p of SEED_PHOTOGRAPHERS) {
     const onboardingComplete = true;
-    const stats = seedStatsOf(p.uid);
+    const baseStats = seedStatsOf(p.uid);
+    const servicesOfP = SEED_SERVICES.filter((s) => s.photographerId === p.uid);
+    const startingPrice = computeStartingPrice(servicesOfP.map((s) => s.price));
+    const completedCount = SEED_BOOKINGS.filter((b) => b.photographerId === p.uid && b.status === 'completed').length;
+    // Calculate blocked days for p.uid from bookings and events
+    const today = formatVnDate(at);
+    const blockedDaysList: string[] = [];
+    for (const b of SEED_BOOKINGS) {
+      if (b.photographerId === p.uid && (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed')) {
+        blockedDaysList.push(b.date);
+      }
+    }
+    // Event days for An
+    if (p.uid === AN) {
+      // 8 days, 15 days, 36 hours from now
+      const freeStart = new Date(now.getTime() + (8 * 24 + 2) * HOUR_MS);
+      const paidStart = new Date(now.getTime() + (15 * 24 + 2) * HOUR_MS);
+      const soonStart = new Date(now.getTime() + 36 * HOUR_MS);
+      blockedDaysList.push(formatVnDate(freeStart), formatVnDate(paidStart), formatVnDate(soonStart));
+    }
+    const nextFreeDate = computeNextFreeDate(today, new Set(blockedDaysList));
+
+    const stats = {
+      reviewCount: 0,
+      score: 0,
+      ...(baseStats !== null ? baseStats : {}),
+      nextFreeDate,
+      completedCount,
+    };
+
     docs.push({
       path: `photographers/${p.uid}`,
       data: {
@@ -406,9 +477,11 @@ export function seedDocuments(now: Date): SeedDocument[] {
         ...(p.verified ? { verifiedAt: at } : {}),
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),
-        // An's stats keep the revocable `top_rated` badge: the evaluator runs on every seed write.
-        ...(stats !== null ? { stats: { ...stats } } : {}),
+        startingPrice,
+        stats,
         approvedAwardCount: SEED_AWARDS.filter((a) => a.photographerId === p.uid && a.status === 'approved').length,
+        followerCount: SEED_FOLLOWS.filter((f) => f.photographerId === p.uid).length,
+        ...(SEED_FOLLOWS.some((f) => f.photographerId === p.uid) ? { followerCountAt: at } : {}),
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
         updatedAt: at,
@@ -426,6 +499,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
   }
   for (const p of SEED_POSTS) {
+    const likeCount = SEED_LIKES.filter((l) => l.postId === p.id).length;
+    const saveCount = SEED_SAVES.filter((s) => s.postId === p.id).length;
     docs.push({
       path: `posts/${p.id}`,
       data: {
@@ -435,8 +510,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
         serviceId: 'seed-service-portrait',
         imageUrls: Array.from({ length: p.images }, (_, i) => `https://seed.test/${p.id}/${i + 1}.jpg`),
         caption: p.caption,
-        likeCount: 0,
-        saveCount: 0,
+        likeCount,
+        saveCount,
         ...(p.album !== null ? { albumId: p.album.id, albumPosition: p.album.position } : {}),
         createdAt: at,
       },
@@ -487,6 +562,30 @@ export function seedDocuments(now: Date): SeedDocument[] {
         links: [`https://seed.test/awards/${a.id}`],
         ...(a.status === 'approved' ? { purgeAfter: new Date(at.getTime() + 30 * DAY_MS) } : {}),
       },
+    });
+  }
+  for (const f of SEED_FOLLOWS) {
+    docs.push({
+      path: `follows/${f.userId}_${f.photographerId}`,
+      data: { userId: f.userId, photographerId: f.photographerId, createdAt: at },
+    });
+  }
+  for (const l of SEED_LIKES) {
+    docs.push({
+      path: `likes/${l.userId}_${l.postId}`,
+      data: { userId: l.userId, postId: l.postId, createdAt: at },
+    });
+  }
+  for (const s of SEED_SAVES) {
+    docs.push({
+      path: `saves/${s.userId}_${s.postId}`,
+      data: { userId: s.userId, postId: s.postId, createdAt: at },
+    });
+  }
+  for (const sp of SEED_SAVED_PHOTOGRAPHERS) {
+    docs.push({
+      path: `savedPhotographers/${sp.userId}_${sp.photographerId}`,
+      data: { userId: sp.userId, photographerId: sp.photographerId, createdAt: at },
     });
   }
   for (const b of SEED_BOOKINGS) {
@@ -618,6 +717,19 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
+
+  // Explore catalog document (S02)
+  docs.push({
+    path: 'catalog/explore',
+    data: {
+      specialties: {
+        portrait: { serviceCount: 1, coverUrl: null, updatedAt: at },
+        family: { serviceCount: 1, coverUrl: null, updatedAt: at },
+      },
+      updatedAt: at,
+    },
+  });
+
   return docs;
 }
 

@@ -14,6 +14,8 @@ import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/content/saved_follow.dart';
+import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/data/notifications/notification_providers.dart';
 import 'package:photobooking/data/notifications/notification_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
@@ -50,6 +52,7 @@ class _World {
   final FakePostRepository posts;
   final notifications = FakeNotificationRepository();
   final badges = FakeBadgeRepository(catalog: badgeCatalogue());
+  final savedFollow = FakeSavedFollowRepository();
   late SharedPreferences prefs;
   late String uid;
 
@@ -114,6 +117,9 @@ class _World {
           '/work/earnings',
           '/u/:uid/badges',
           '/notifications',
+          '/me/following',
+          '/me/saved',
+          '/me/followers',
         ])
           GoRoute(path: p, builder: stub),
       ],
@@ -129,6 +135,7 @@ class _World {
         postRepositoryProvider.overrideWithValue(posts),
         notificationRepositoryProvider.overrideWithValue(notifications),
         badgeRepositoryProvider.overrideWithValue(badges),
+        savedFollowRepositoryProvider.overrideWithValue(savedFollow),
         if (profiles != null)
           publicProfileRepositoryProvider.overrideWithValue(profiles!),
         if (awards != null) awardRepositoryProvider.overrideWithValue(awards!),
@@ -353,44 +360,121 @@ void main() {
     );
   });
 
-  testWidgets('the posts count shows the total; following and saved stay '
-      'hidden', (tester) async {
-    _usePhone(tester);
-    await _open(tester, seed: (w) => w.seedMixed());
-    final posts = find.byKey(const Key('profile-count-posts'));
-    expect(
-      find.descendant(of: posts, matching: find.text('6')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: posts, matching: find.text('bài đăng')),
-      findsOneWidget,
-    );
-    expect(find.text('đang theo dõi'), findsNothing);
-    expect(find.text('đã lưu'), findsNothing);
-  });
-
-  testWidgets('following and saved show once S19 is ready, without links', (
-    tester,
-  ) async {
-    _usePhone(tester);
-    await _open(
-      tester,
-      seed: (w) => w.seedMixed(),
-      extra: [savedListsReadyProvider.overrideWithValue(true)],
-    );
-    expect(find.text('đang theo dõi'), findsOneWidget);
-    expect(find.text('đã lưu'), findsOneWidget);
-    for (final k in ['following', 'saved']) {
-      expect(
-        find.descendant(
-          of: find.byKey(Key('profile-count-$k')),
-          matching: find.byType(InkWell),
-        ),
-        findsNothing,
+  testWidgets(
+    'the posts count shows the total; following and saved stay hidden when ready is false',
+    (tester) async {
+      _usePhone(tester);
+      await _open(
+        tester,
+        seed: (w) => w.seedMixed(),
+        extra: [savedListsReadyProvider.overrideWithValue(false)],
       );
-    }
-  });
+      final posts = find.byKey(const Key('profile-count-posts'));
+      expect(
+        find.descendant(of: posts, matching: find.text('6')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: posts, matching: find.text('bài đăng')),
+        findsOneWidget,
+      );
+      expect(find.text('đang theo dõi'), findsNothing);
+      expect(find.text('đã lưu'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'customer row shows "4 đang theo dõi" and "12 đã lưu" and opens /me/following and /me/saved',
+    (tester) async {
+      _usePhone(tester);
+      final w = await _open(
+        tester,
+        seed: (w) {
+          w.seedMixed();
+          w.savedFollow.seedCounts(
+            w.uid,
+            const SocialCounts(following: 4, savedPosts: 10, savedPhotographers: 2),
+          );
+        },
+      );
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('đang theo dõi'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.text('đã lưu'), findsOneWidget);
+
+      final following = find.byKey(const Key('profile-count-following'));
+      expect(
+        find.descendant(of: following, matching: find.byType(InkWell)),
+        findsOneWidget,
+      );
+      await tester.tap(following);
+      await tester.pumpAndSettle();
+      expect(find.text('stub /me/following'), findsOneWidget);
+
+      // Reopen to test saved tap
+      await tester.pumpWidget(w.app());
+      await tester.pumpAndSettle();
+      final saved = find.byKey(const Key('profile-count-saved'));
+      expect(
+        find.descendant(of: saved, matching: find.byType(InkWell)),
+        findsOneWidget,
+      );
+      await tester.tap(saved);
+      await tester.pumpAndSettle();
+      expect(find.text('stub /me/saved'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'photographer row adds "128 người theo dõi" → /me/followers',
+    (tester) async {
+      _usePhone(tester);
+      await _open(
+        tester,
+        role: UserRole.photographer,
+        seed: (w) {
+          w.seedMixed();
+          w.savedFollow.seedCounts(
+            w.uid,
+            const SocialCounts(following: 5, savedPosts: 3, savedPhotographers: 1),
+          );
+          w.savedFollow.seedFollowerCount(w.uid, 128);
+        },
+      );
+
+      expect(find.text('128'), findsOneWidget);
+      expect(find.text('người theo dõi'), findsOneWidget);
+
+      final followers = find.byKey(const Key('profile-count-followers'));
+      expect(
+        find.descendant(of: followers, matching: find.byType(InkWell)),
+        findsOneWidget,
+      );
+      await tester.tap(followers);
+      await tester.pumpAndSettle();
+      expect(find.text('stub /me/followers'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'while loading the row shows skeleton numbers, on error it shows "—" and stays tappable',
+    (tester) async {
+      _usePhone(tester);
+      await _open(
+        tester,
+        seed: (w) {
+          w.seedMixed();
+          w.savedFollow.failWith = Exception('network error');
+        },
+      );
+
+      expect(find.text('—'), findsAtLeastNWidgets(2));
+      final following = find.byKey(const Key('profile-count-following'));
+      await tester.tap(following);
+      await tester.pumpAndSettle();
+      expect(find.text('stub /me/following'), findsOneWidget);
+    },
+  );
 
   testWidgets('a selected kind that disappears falls back to all', (
     tester,

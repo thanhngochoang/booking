@@ -22,6 +22,7 @@ Future<void> seedPhotographer(
   await db.collection('photographers').doc(p.id).set({
     'onboardingComplete': complete,
     'verified': p.verified,
+    'acceptingOrders': p.acceptingOrders && complete,
     'specialties': p.specialtyIds,
     'styles': p.styleIds,
     if (p.coverUrl != null) 'coverUrl': p.coverUrl,
@@ -330,6 +331,21 @@ void main() {
         ]);
       },
     );
+
+    test('candidates asks acceptingOrders == true', () async {
+      final db = FakeFirebaseFirestore();
+      await seedPhotographer(
+        db,
+        fixturePhotographer('p1', acceptingOrders: true),
+      );
+      await seedPhotographer(
+        db,
+        fixturePhotographer('p2', acceptingOrders: false),
+      );
+      final repo = FirestorePhotographerRepository(db: db);
+      final res = await repo.candidates();
+      expect(res.map((p) => p.id), ['p1']);
+    });
 
     test('summaries still resolve an unpublished author (their old posts keep a name)', () async {
       final db = FakeFirebaseFirestore();

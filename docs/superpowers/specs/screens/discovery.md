@@ -10,7 +10,7 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 - **Mục đích**: cho thấy ảnh đẹp theo gu và vị trí, dẫn tới nhiếp ảnh gia còn lịch.
 - **Điểm vào → ra**: tab Trang chủ. Chạm ảnh → S02.02; chạm tên/avatar → S03.01; "Xem tất cả" ở "Rảnh tuần này" → S02.06; biểu tượng chuông → danh sách thông báo; biểu tượng chat → danh sách hội thoại (qua S05.02 → S07.01).
 - **Bố cục**: tiêu đề "Chào {tên}" + "Hôm nay chụp gì?" (Fraunces), chuông và chat (có chấm khi có chưa đọc); hàng chip danh mục (`FilterChip` kiểu ngữ cảnh: Dành cho bạn, Chân dung, Cưới, Gia đình, Kỷ yếu); một `PhotoCard` lớn 4:5; section "Rảnh tuần này" (hàng ngang `PhotoCard` 3:4 rộng 120); section "Buổi chụp thật" (lưới 2 cột ảnh khách chia sẻ). Chip lý do `ReasonChips` tối đa 2 trên thẻ lớn.
-- **Dữ liệu**: `homeFeedProvider(category)` gọi `RecommendationRepository.recommendPosts` cho thứ tự "Dành cho bạn" (đến khi có, dùng `posts` theo `createdAt` và `nextFreeDate`); "Rảnh tuần này" từ `photographers` có `stats.nextFreeDate` trong 7 ngày; "Buổi chụp thật" từ `posts (kind=real_shoot)`. Phân trang 20/lần, làm mới bằng kéo xuống.
+- **Dữ liệu**: `homeFeedProvider(category)` gọi `RecommendationRepository.recommendPosts` cho thứ tự "Dành cho bạn" (đến khi có, dùng `posts` theo `createdAt` và `nextFreeDate`); "Rảnh tuần này" từ `photographers` có `stats.nextFreeDate` trong 7 ngày (tính hướng sự kiện + rollover 00:10 hằng ngày, #132); "Buổi chụp thật" từ `posts (kind=real_shoot)`. Phân trang 20/lần, làm mới bằng kéo xuống.
 - **Trạng thái**: loading skeleton thẻ lớn + hàng ngang; empty "Chưa có ảnh nào quanh bạn" + nút "Khám phá nhiếp ảnh gia" (→ S02.03); lỗi `ErrorState`; offline đọc cache; chưa có vị trí vẫn hiển thị theo thành phố trong hồ sơ.
 - **Tương tác**: đổi chip lọc nạp lại feed, giữ vị trí cuộn của từng chip; lưu ảnh (biểu tượng dấu trang) lạc quan, hoàn tác khi lỗi; cuộn cuối tải trang kế.
 - **Chuỗi**: `s01_greeting` "Chào {name}", `s01_title` "Hôm nay chụp gì?", `s01_freeThisWeek` "Rảnh tuần này", `s01_realShoots` "Buổi chụp thật", `s01_fromCustomers` "Từ khách hàng", `s01_pillFree` "Rảnh {day} này".
@@ -62,7 +62,7 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 - **Mục đích**: so sánh nhiếp ảnh gia theo khu vực, ngày, dịch vụ, giá, % cà chua.
 - **Điểm vào → ra**: tab giữa (khách), S02.03. Thẻ → S03.01; "Đặt T7" → S04.02 (ngày và dịch vụ sẵn; qua S04.05 nếu thiếu số); biểu tượng ghim → S02.05.
 - **Bố cục**: tiêu đề + biểu tượng ghim; hàng chip lọc đã điền (`FilterChip` kiểu bộ lọc: khu vực·bán kính, ngày, dịch vụ, giá, 🍅 %); dòng đếm "12 nhiếp ảnh gia rảnh thứ 7"; sắp xếp mặc định **Phù hợp nhất** (chip đổi: Gần tôi, Giá, Đánh giá); danh sách `PhotographerCard` (ảnh hero 16:9, pill rảnh, hàng avatar/tên/meta/giá từ, nút Hồ sơ + Đặt) kèm `ReasonChips`.
-- **Dữ liệu**: `searchPhotographersProvider(filters)` gọi `RecommendationRepository.recommendPhotographers` với `specialty`, `date`, `geohash6`, `budgetMax`; sắp xếp khác "Phù hợp nhất" xử lý ở dịch vụ truy vấn thường. Phân trang bằng `cursor`. Khu vực mặc định từ vị trí đã cho phép hoặc khu vực đã chọn ở S02.05.
+- **Dữ liệu**: `searchPhotographersProvider(filters)` gọi `RecommendationRepository.recommendPhotographers` với `specialty`, `date`, `geohash6`, `budgetMax` từ pool thợ ảnh nhận đơn (`acceptingOrders == true`, cached 10 phút, #132); sắp xếp khác "Phù hợp nhất" xử lý ở dịch vụ truy vấn thường. Phân trang bằng `cursor`. Khu vực mặc định từ vị trí đã cho phép hoặc khu vực đã chọn ở S02.05.
 - **Trạng thái**: loading skeleton thẻ; không kết quả → "Chưa có ai khớp bộ lọc" + "Xoá bộ lọc" + gợi ý nới bán kính; dịch vụ gợi ý lỗi → tự dùng `LocalRecommender` và hiện dải nhỏ `findFallbackNote` "Đang xếp theo điểm cà chua và khoảng cách"; offline đọc kết quả cuối.
 - **Tương tác**: chạm chip mở sheet chọn giá trị (khu vực, ngày dùng `AvailabilityCalendar`, dịch vụ, khoảng giá, % cà chua 80/90/95); chip 🍅 là biểu tượng cà chua + `findTomatoMin` "{pct}%+", sheet tiêu đề `findTomatoTitle` "Tỷ lệ hài lòng", thợ dưới 5 đánh giá không qua bộ lọc đã đặt (`FindFilters.minTomatoPct`); sắp xếp "Đánh giá" dùng `smoothedScore`; thay đổi lọc nạp lại và giữ lựa chọn khi quay về; thẻ có ngày kín bị loại khi đã chọn ngày.
 - **Chuỗi**: `s04_title` "Tìm thợ ảnh", `s04_count` "{n} nhiếp ảnh gia rảnh {day}", `s04_sortBest` "Phù hợp nhất", `s04_sortNear` "Gần tôi", `s04_noResult` "Chưa có ai khớp bộ lọc", `s04_clear` "Xoá bộ lọc", `s04_bookDay` "Đặt {day}", `s04_fallbackNote` → khoá thật `findFallbackNote` "Đang xếp theo điểm cà chua và khoảng cách"; `reasonTopRated` "{pct}% cà chua từ {count} đánh giá" (chip lý do, chỉ chữ).
@@ -80,7 +80,7 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 - **Dữ liệu**: `exploreCategoriesProvider(tab)` từ `taxonomy` kèm số gói; `upcomingEventsProvider`; trạng thái quyền từ `locationControllerProvider`; số chấm tab từ `tabBadgesProvider` (sự kiện mới từ lần mở gần nhất, `exploreSeenAt`).
 - **Trạng thái**: trạng thái vị trí: `chưa hỏi` (thẻ) → `đã cho phép` (chuyển sang bố cục S02.04) → `từ chối/để sau` (thu thẻ thành chip "Chọn khu vực" → S02.05); không có sự kiện sắp tới → ẩn section; tìm kiếm không kết quả → empty có gợi ý; lỗi/offline theo quy ước.
 - **Tương tác**: **chỉ** nút "Cho phép" gọi hộp thoại quyền, không hỏi lúc mở app; "Để sau" ghi nhớ 7 ngày rồi mới hiện lại thẻ; mở tab xoá chấm số và ghi `exploreSeenAt`.
-- **Chuỗi**: `s13_title` "Khám phá", `s13_search` "Tìm dịch vụ, địa điểm, tên thợ ảnh", `s13_nearTitle` "Sự kiện gần bạn", `s13_nearBody` "Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.", `s13_allow` "Cho phép", `s13_later` "Để sau", `s13_events` "Sự kiện chụp ảnh".
+- **Chuỗi**: `s13_title` "Khám phá", `s13_search` "Tìm dịch vụ, địa điểm, tên thợ ảnh" (`exploreSearchHint`), `s13_nearTitle` "Sự kiện gần bạn", `s13_nearBody` "Cho phép dùng vị trí để gợi ý sự kiện trong bán kính 25 km. Vị trí chỉ xử lý trên máy.", `s13_allow` "Cho phép", `s13_later` "Để sau", `s13_events` "Sự kiện chụp ảnh", `exploreCategoryPackages` "{count} gói".
 - **Phân tích**: `explore_tab{tab}`, `location_prompt{action:"allow"|"later"}`, `location_result{status}`, `event_open{source:"explore"}`.
 - **Chấp nhận**: không có hộp thoại quyền khi chưa bấm "Cho phép"; chấm số tab xoá khi mở; thẻ vị trí không hiện lại ngay sau "Để sau".
 
@@ -113,3 +113,32 @@ Màn: S02.01, S02.02, S03.01, S02.06, S02.03, S02.04, S02.05. Quy ước chung �
 - **Chuỗi**: `s36_title` "Chọn khu vực của bạn", `s36_body` "Vị trí đang tắt. Chọn khu vực để xem sự kiện quanh đó, hoặc bật vị trí trong Cài đặt.", `s36_openSettings` "Mở Cài đặt để bật vị trí", `s36_use` "Dùng khu vực này".
 - **Phân tích**: `area_select{areaId}`, `location_settings_open`.
 - **Chấp nhận**: khu vực nhớ giữa các lần mở app; S02.06 và S11.01 dùng cùng khu vực; không yêu cầu quyền nào.
+
+---
+
+## S02.07 · Tìm kiếm
+
+- **Thông tin**: `/explore/search` · cả hai · sub‑project 3 · Chưa có.
+- **Mục đích**: Một ô tìm duy nhất cho dịch vụ, phong cách, địa điểm và thợ ảnh, mở từ S02.03.
+- **Điểm vào → ra**: S02.03 (chạm ô tìm kiếm). Hàng dịch vụ/phong cách/địa điểm → `/action?specialty|style|area=…` (S02.06 có bộ lọc); hàng thợ ảnh → `/u/:uid` (S03.01); "Xem tất cả thợ ảnh" (ở trạng thái không kết quả) → `/action` (S02.06 không lọc); nút Quay lại (`arrow_back`) → đóng màn hình, trở về S02.03.
+- **Bố cục**: Thanh trên cùng với nút `arrow_back` và ô `TextField` tìm kiếm (có nút `close` để xoá văn bản); nội dung cuộn gồm các nhóm: Dịch vụ (`Crow` với icon máy ảnh, tên, số gói, `chevron_right`), Phong cách, Địa điểm, Thợ ảnh (avatar, tên, dấu xác minh, quận, % cà chua hoặc "Mới"); không có thanh tab dưới (màn hình được push toàn màn hình).
+- **Dữ liệu**: Lấy danh mục từ taxonomy / explore catalog, danh sách khu vực `AreaOption`, và pool bookable photographers từ `CachedPhotographerRepository`. Tìm kiếm cục bộ trong bộ nhớ bằng accent-folding (Decision 10).
+- **Trạng thái**:
+  - Chưa gõ: gợi ý "Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh."
+  - Có kết quả: danh sách phân nhóm (giới hạn 5 dịch vụ, 5 phong cách, 5 địa điểm, 10 thợ ảnh; thợ ảnh chỉ tìm khi truy vấn ≥ 2 ký tự sau khi gấp âm).
+  - Không kết quả: màn hình rỗng ở giữa: tiêu đề "Không tìm thấy “{query}”", phụ đề "Thử từ ngắn hơn, hoặc gõ không dấu.", nút viền "Xem tất cả thợ ảnh".
+  - Đang tải pool: `DotRingLoader` inline.
+- **Chuỗi**:
+  - `exploreSearchHint`: "Tìm dịch vụ, địa điểm, tên thợ ảnh"
+  - `exploreSearchClear`: "Xoá"
+  - `exploreSearchServices`: "Dịch vụ"
+  - `exploreSearchStyles`: "Phong cách"
+  - `exploreSearchPlaces`: "Địa điểm"
+  - `exploreSearchPhotographers`: "Thợ ảnh"
+  - `exploreSearchPackagesCount`: "{count} gói"
+  - `exploreSearchEmptyTitle`: "Không tìm thấy “{query}”"
+  - `exploreSearchEmptyBody`: "Thử từ ngắn hơn, hoặc gõ không dấu."
+  - `exploreSearchAllPhotographers`: "Xem tất cả thợ ảnh"
+  - `exploreSearchPrompt`: "Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh."
+- **Chấp nhận**: Gõ không dấu ra có dấu (ví dụ "chan dung" ra "Chân dung"); không gọi mạng khi pool thợ đã có trong bộ nhớ đệm; "Xem tất cả thợ ảnh" mở S02.06 không lọc.
+

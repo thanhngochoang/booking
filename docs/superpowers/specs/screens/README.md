@@ -13,6 +13,7 @@ Chi tiết cho mọi màn `S01–S17`, `S24`, `S25`, `S29`, `S30` của spec `..
 | [portfolio-awards.md](portfolio-awards.md) | Thay đổi ở S02.06, S03.01, S08.01, S09.01, S10.01 · S24.01–S24.05 Portfolio album · S25.01–S25.02 Giải thưởng & hạng NAG (spec 10-05) |
 | [jobs.md](jobs.md) | S15.01–S15.04 Đăng việc · S16.01–S16.03 Nhận việc đăng (spec 10-05) |
 | [spots.md](spots.md) | S29.01–S29.06 Điểm chụp đang hot · thay đổi ở S02.01, S02.03, S04 (đặt từ điểm), S06.01, S10.01, S12.01 (spec 10-08) |
+| [saved-following.md](saved-following.md) | S19.01 Đã lưu (bài đăng & nhiếp ảnh gia) · S19.02 Đang theo dõi · S19.03 Người theo dõi |
 | [organizer.md](organizer.md) | S30.01–S30.07 Chủ sự kiện & vé vào cửa · thay đổi ở S04.03, S05.02, S06.01, S09.02, S11.02, S11.04, S12.01, S12.03, S29.02 (spec 10-12) |
 | [account.md](account.md) | S05.05 Đánh giá & chia sẻ · S01.03 Đăng nhập · S01.05 Chọn vai trò · S09.01 Hồ sơ cá nhân · S09.02 Cài đặt · S03.02 Huy hiệu · S01.04 Đăng ký · S09.03 Sửa hồ sơ · S17.01 Thông báo · S17.02 Cài đặt thông báo · S17.03 Xin quyền thông báo |
 | Dashboard web (Phase 1.5) | Khung S23.08–S23.11 và quy ước web: [`../2026-10-08-dashboard-web-design.md`](../2026-10-08-dashboard-web-design.md). Màn của từng ticket: `staff-money.md` (#163), `staff-verification-awards.md` (#164), `staff-disputes-support.md` (#165), `staff-moderation.md` (#166), `studio-web-operations.md` (#167), `staff-config-content.md` (#168), `studio-web-business.md` (#169). Quy ước chung bên dưới chỉ áp dụng cho app Flutter; dashboard theo §8 của spec dashboard. |
