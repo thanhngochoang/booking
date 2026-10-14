@@ -355,4 +355,4 @@ source scripts/env.sh
 cd app_flutter/firebase/rules-test && npm install && npm test
 ```
 
-CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR, cùng job `functions` (test của `packages/domain` và Cloud Functions, kể cả test trên emulator). Test emulator chỉ chạy trên CI.
+CI (`.github/workflows/flutter.yml`) cũng chạy bước này cho mọi PR, cùng job `domain` (test của `packages/domain`). Cloud Functions (lint, typecheck, unit và test trên emulator) **không** chạy lúc PR: job `functions-test` của `.github/workflows/firebase-deploy.yml` build và test chúng sau khi code được merge vào `develop` (hoặc `flutter-rewrite`, `main`). Test emulator chỉ chạy trên CI.

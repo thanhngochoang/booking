@@ -19,6 +19,7 @@ Có những nơi đang "hot" để chụp ảnh (đồi chè mùa sương, phố
 | T7 | Staff quản lý điểm bằng **CLI** ở Phase 1 (`npm run spots`); màn staff trên web để #161/S23. | chủ dự án |
 | T8 | Mã use case **S29** (S28 đang được #161 đề xuất cho studio trên web). | chủ dự án |
 | T9 | Luật tiền, hoàn huỷ, liên hệ sau thanh toán, bàn giao hai lớp, chỉ nhà cung cấp đã duyệt mới nhận đơn: **giữ nguyên**. | CLAUDE.md |
+| T10 | Phí vào cửa, chủ quản lý điểm, thợ tại điểm (miễn vé) và vé vào cửa bán qua app: spec riêng `2026-10-12-spot-organizer-entry-tickets-design.md` (S30, #223). | chủ dự án 2026-10-12 |
 
 ## 3. Điểm chụp và độ hot
 
@@ -154,6 +155,7 @@ S06.01 chỉ thêm một dòng lối vào "Lịch tại điểm" (không cần f
 - Độ hot tự động hoàn toàn: recommender xếp hạng điểm, cá nhân hoá theo người dùng, phát hiện điểm mới từ cụm bài đăng (không cần staff tạo).
 - Lưu/theo dõi điểm chụp (S19) và thông báo "điểm bạn lưu vừa vào mùa / có thợ mới cuối tuần này" (S17).
 - Gói chia suất có dịch vụ đi kèm; bản đồ tương tác trên trang điểm.
+- Bản đồ mật độ check-in (điểm càng nhiều check-in càng đậm) và timeline check-in của mỗi người dùng tại các điểm chụp (#213, chủ dự án 2026-10-09). Check-in = bài hoặc bàn giao đã gắn điểm, không lưu toạ độ thô. Vẽ bằng lớp heatmap có sẵn của `maplibre_gl` (dự phòng `Heatmap` của `google_maps_flutter` ≥ 2.8), server đếm sẵn theo điểm và ô geohash.
 
 ## 12. Câu hỏi còn mở (đã có mặc định)
 
