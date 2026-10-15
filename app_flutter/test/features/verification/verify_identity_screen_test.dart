@@ -15,6 +15,7 @@ Map<String, dynamic> _doc({
   bool identity = false,
   String? failure,
   int attempts = 0,
+  DateTime? checkedAt,
 }) => {
   'uid': 'u',
   'status': 'in_progress',
@@ -31,7 +32,7 @@ Map<String, dynamic> _doc({
     else if (failure != null)
       'identity': {
         'method': 'vneid',
-        'checkedAt': _at,
+        'checkedAt': checkedAt ?? _at,
         'result': 'failed',
         'failure': failure,
         'maskedName': null,
@@ -96,6 +97,7 @@ List<String> _callNames(VerificationWorld w) => [
 
 const _vneid = 'Xác minh bằng VNeID';
 const _nfcLink = 'Không dùng được VNeID? Quét chip CCCD';
+const _failed = 'Chưa xác minh được. Thử lại hoặc dùng cách khác.';
 
 void main() {
   testWidgets('VNeID screen matches the mock copy', (tester) async {
@@ -225,14 +227,68 @@ void main() {
     );
     await _open(tester, w);
     await _tap(tester, find.text(_vneid));
+    // The start counted the try (server model); nothing is decided yet.
+    expect((w.repo.doc(w.uid)!['identityAttempts'] as Map)['count'], 1);
+    expect(find.text(_failed), findsNothing);
 
-    w.repo.seed(w.uid, _doc(failure: 'provider_failed', attempts: 1));
+    // The check finishes as failed: a new checkedAt on the record.
+    w.repo.seed(
+      w.uid,
+      _doc(failure: 'provider_failed', attempts: 1, checkedAt: verificationNow),
+    );
     await _settle(tester);
     expect(
       find.text('Chưa xác minh được. Thử lại hoặc dùng cách khác.'),
       findsOneWidget,
     );
     expect(_primaryLabels(tester), [_vneid]);
+  });
+
+  testWidgets('real mode: an older failure on the record is not this '
+      'session\'s result; it waits, then shows the pass', (tester) async {
+    final w = await _world(tester, real: true);
+    // Failed once earlier today; a retry is offered.
+    w.seedDoc(_doc(failure: 'provider_failed', attempts: 1));
+    w.repo.identitySession = const IdentitySession(
+      sessionId: 's-real',
+      redirectUrl: 'https://vneid.test/consent/s-real',
+    );
+    await _open(tester, w);
+    expect(find.text(_failed), findsNothing);
+
+    await _tap(tester, find.text(_vneid));
+    // The start snapshot (try counted, old failure still there) arrived.
+    expect((w.repo.doc(w.uid)!['identityAttempts'] as Map)['count'], 2);
+    expect(find.text(_failed), findsNothing);
+    expect(
+      tester.widget<AppButton>(find.byKey(const Key('verify-vneid'))).loading,
+      isTrue,
+    );
+
+    w.repo.seed(w.uid, _doc(identity: true, attempts: 2));
+    await _settle(tester);
+    expect(find.text('Đã xác minh: NGUYỄN M** T**'), findsOneWidget);
+    expect(_callNames(w), ['startIdentityVerification']);
+  });
+
+  testWidgets('a final reason shows ahead of the daily limit', (tester) async {
+    final w = await _world(tester);
+    w.seedDoc(_doc(failure: 'underage', attempts: 3));
+    await _open(tester, w);
+
+    expect(find.text('Bạn cần đủ 18 tuổi để nhận đơn.'), findsOneWidget);
+    expect(
+      find.text('Bạn đã thử 3 lần hôm nay. Thử lại vào ngày mai.'),
+      findsNothing,
+    );
+    expect(_primaryLabels(tester), isEmpty);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    final w2 = await _world(tester);
+    w2.seedDoc(_doc(failure: 'identity_in_use', attempts: 3));
+    await _open(tester, w2);
+    expect(find.textContaining('Danh tính này đã gắn'), findsOneWidget);
+    expect(find.textContaining('Bạn đã thử 3 lần'), findsNothing);
   });
 
   testWidgets('underage shows verifyIdUnderage and no retry button', (

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/verification/verification.dart';
@@ -242,6 +243,40 @@ void main() {
     expect(w.repo.calls.last.data, {'taxCode': '0312345678', 'docPath': path});
     expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
     expect(_submit, findsNothing);
+  });
+
+  testWidgets('a new tax code drops the photo of the previous one', (
+    tester,
+  ) async {
+    final w = await _world(tester);
+    w.picker = FakeImagePicker([
+      const [PickedImage(path: '/tmp/a.jpg', name: 'a.jpg')],
+      const [PickedImage(path: '/tmp/b.jpg', name: 'b.jpg')],
+    ]);
+    await _open(w, tester);
+    await _lookUp(tester, '0312345678');
+    await _tap(tester, _upload);
+    final first = w.uploader.uploaded.single;
+    expect(_submitButton(tester).onPressed, isNotNull);
+
+    await _lookUp(tester, '0398765432');
+    expect(find.text('CÔNG TY TNHH STUDIO THỬ 5678'), findsOneWidget);
+    expect(_upload, findsOneWidget);
+    // No photo for the new code yet: nothing to send.
+    expect(_submitButton(tester).onPressed, isNull);
+    expect(
+      find.descendant(of: _upload, matching: find.byType(Image)),
+      findsNothing,
+    );
+
+    await _tap(tester, _upload);
+    final second = w.uploader.uploaded.last;
+    expect(second, isNot(first));
+    await _tap(tester, _submit);
+    expect(w.repo.calls.last.data, {
+      'taxCode': '0398765432',
+      'docPath': second,
+    });
   });
 
   testWidgets('a 12-digit code hides the upload and shows the household note', (

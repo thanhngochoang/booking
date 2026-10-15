@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/verification/verification.dart';
 
 /// A refusal from a verification callable, with the domain code the server
@@ -212,7 +213,30 @@ class FakeVerificationRepository implements VerificationRepository {
   @override
   Future<IdentitySession> startIdentity(IdentityMethod method) async {
     _record('startIdentityVerification', {'method': method.code});
+    // As the server: a passed identity cannot start again, the 4th start of
+    // a Vietnam day is refused, and every start counts a try.
+    final current = _state();
+    if (current.identityPassed) {
+      throw const VerificationError('conflict');
+    }
+    if (current.identityAttemptsLeft == 0) {
+      throw const VerificationError('rate_limited');
+    }
     _sessionMethod = method;
+    final today = vnDateKey(_now());
+    _update((d) {
+      final attempts = d['identityAttempts'];
+      final count = attempts is Map && attempts['dayKey'] == today
+          ? (attempts['count'] as num? ?? 0).toInt()
+          : 0;
+      d['identityAttempts'] = {'dayKey': today, 'count': count + 1};
+      d['identitySession'] = {
+        'id': identitySession.sessionId,
+        'method': method.code,
+        'startedAt': _now(),
+      };
+      return _started(d);
+    });
     return identitySession;
   }
 
@@ -227,6 +251,7 @@ class FakeVerificationRepository implements VerificationRepository {
         'failure': null,
         'maskedName': maskedName,
       };
+      d['identitySession'] = null;
       return _started(d);
     });
     return maskedName;

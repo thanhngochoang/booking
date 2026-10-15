@@ -155,11 +155,18 @@ class VerifyNote extends StatelessWidget {
   }
 }
 
-/// Mock `.warnc` (role alert): a red-outlined card with one message.
+/// Mock `.warnc` (role alert): a red-outlined card with a message, and an
+/// optional bold [title] above it (the message then reads secondary).
 class VerifyAlert extends StatelessWidget {
-  const VerifyAlert(this.text, {super.key, this.icon = AppIcons.info});
+  const VerifyAlert(
+    this.text, {
+    super.key,
+    this.title,
+    this.icon = AppIcons.info,
+  });
 
   final String text;
+  final String? title;
   final IconData icon;
 
   @override
@@ -167,6 +174,7 @@ class VerifyAlert extends StatelessWidget {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
     final bad = dark ? AppColorsDark.error : AppColors.error;
+    final heading = title;
     return Semantics(
       container: true,
       liveRegion: true,
@@ -187,11 +195,28 @@ class VerifyAlert extends StatelessWidget {
               AppIcon(icon, size: AppText.md, color: bad),
               const SizedBox(width: AppSpace.s2),
               Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (heading != null) ...[
+                      Text(
+                        heading,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpace.s1),
+                    ],
+                    Text(
+                      text,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: heading != null
+                            ? verifySecondary(theme)
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

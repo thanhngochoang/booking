@@ -224,15 +224,27 @@ class _BusinessFormState extends ConsumerState<_BusinessForm> {
       _progress == null;
 
   void _onChanged(String text) {
-    if (_error != null || (_lookedUp != null && text.trim() != _lookedUp)) {
+    final otherCode = _lookedUp != null && text.trim() != _lookedUp;
+    if (_error != null || otherCode) {
       setState(() {
         _error = null;
-        if (text.trim() != _lookedUp) {
+        if (otherCode) {
+          // The result and the registration photo belong to the old code.
           _info = null;
           _lookedUp = null;
+          _clearDoc();
         }
       });
     }
+  }
+
+  /// Forgets the registration photo and stops its upload (call in setState).
+  void _clearDoc() {
+    _upload?.cancel();
+    _upload = null;
+    _photo = null;
+    _docPath = null;
+    _progress = null;
   }
 
   String _lookupError(AppLocalizations l, String code) => switch (code) {

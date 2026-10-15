@@ -12,6 +12,7 @@ import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/data/verification/verification_repository.dart';
 import 'package:photobooking/features/verification/widgets/verify_step_tile.dart';
+import 'package:photobooking/features/verification/widgets/verify_parts.dart';
 import 'package:photobooking/features/verification/widgets/verify_timeline.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
@@ -247,7 +248,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
               onPressed: () => _send((r) => r.submit()),
             ),
       children: [
-        _Meta(l.verifyStartIntro),
+        VerifyMeta(l.verifyStartIntro),
         const SizedBox(height: AppSpace.s3),
         Semantics(
           container: true,
@@ -314,14 +315,13 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
     final staffNote = reason == null || reason == RejectReason.other
         ? null
         : s.rejectText;
-    final warn = _WarnCard(
-      key: const Key('verify-rejected'),
-      icon: AppIcons.info,
-      title: l.verifyRejectedTitle,
-      body: [
+    final warn = VerifyAlert(
+      [
         if (reasonText != null) l.verifyRejectedReason(reasonText),
         ?staffNote,
       ].join('\n'),
+      key: const Key('verify-rejected'),
+      title: l.verifyRejectedTitle,
     );
     if (s.rejectionFinal) {
       return _Layout(
@@ -439,7 +439,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
-              if (decided != null) _Meta(verifyAt(decided, _now(), l)),
+              if (decided != null) VerifyMeta(verifyAt(decided, _now(), l)),
             ],
           ),
         ],
@@ -458,7 +458,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
           ),
         ),
         const SizedBox(height: AppSpace.s3),
-        _Meta(l.verifyRejectedNote),
+        VerifyMeta(l.verifyRejectedNote),
       ],
     );
   }
@@ -490,11 +490,11 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
     final l = context.l10n;
     return _Layout(
       children: [
-        _WarnCard(
+        VerifyAlert(
+          l.verifyRevokedBody,
           key: const Key('verify-revoked'),
           icon: AppIcons.warning,
           title: l.verifyRevokedHeading,
-          body: l.verifyRevokedBody,
         ),
         const SizedBox(height: AppSpace.s3),
         _SupportLine(widget.supportAddress),
@@ -534,29 +534,6 @@ class _Layout extends StatelessWidget {
         ),
         if (act != null) AppFooterBar(child: act),
       ],
-    );
-  }
-}
-
-Color _secondary(ThemeData theme) => theme.brightness == Brightness.dark
-    ? AppColorsDark.foregroundSecondary
-    : AppColors.foregroundSecondary;
-
-/// Mock `.meta`: secondary small text.
-class _Meta extends StatelessWidget {
-  const _Meta(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: _secondary(theme),
-        fontFeatures: const [FontFeature.tabularFigures()],
-      ),
     );
   }
 }
@@ -606,7 +583,7 @@ class _Hero extends StatelessWidget {
             text,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: _secondary(theme),
+              color: verifySecondary(theme),
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -639,7 +616,11 @@ class _InfoNote extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppIcon(AppIcons.info, size: AppText.md, color: _secondary(theme)),
+            AppIcon(
+              AppIcons.info,
+              size: AppText.md,
+              color: verifySecondary(theme),
+            ),
             const SizedBox(width: AppSpace.s2),
             Expanded(
               child: Text(
@@ -650,72 +631,6 @@ class _InfoNote extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Mock `.warnc` (role alert): a red-outlined card with a title and body.
-class _WarnCard extends StatelessWidget {
-  const _WarnCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
-    final bad = dark ? AppColorsDark.error : AppColors.error;
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: bad.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: bad.withValues(alpha: 0.55)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s3,
-            vertical: AppSpace.s2h,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppIcon(icon, size: AppText.md, color: bad),
-              const SizedBox(width: AppSpace.s2),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpace.s1),
-                    Text(
-                      body,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: _secondary(theme),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -747,7 +662,7 @@ class _SupportLine extends ConsumerWidget {
           child: Text(
             context.l10n.verifySupportLine(address),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: _secondary(theme),
+              color: verifySecondary(theme),
             ),
           ),
         ),

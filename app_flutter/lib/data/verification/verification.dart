@@ -184,6 +184,7 @@ class VerificationState {
     this.feePaidAt,
     this.identityPassed = false,
     this.identityMethod,
+    this.identityCheckedAt,
     this.maskedName,
     this.identityFailure,
     this.rulesAcceptedAt,
@@ -221,6 +222,10 @@ class VerificationState {
   final DateTime? feePaidAt;
   final bool identityPassed;
   final IdentityMethod? identityMethod;
+
+  /// `steps.identity.checkedAt`: when the last check (passed or failed)
+  /// finished. A new value is how the app tells a new result from an old one.
+  final DateTime? identityCheckedAt;
 
   /// `NGUYỄN M** T**`; the full name never reaches the app.
   final String? maskedName;
@@ -296,6 +301,7 @@ class VerificationState {
       other.feePaidAt == feePaidAt &&
       other.identityPassed == identityPassed &&
       other.identityMethod == identityMethod &&
+      other.identityCheckedAt == identityCheckedAt &&
       other.maskedName == maskedName &&
       other.identityFailure == identityFailure &&
       other.rulesAcceptedAt == rulesAcceptedAt &&
@@ -317,6 +323,7 @@ class VerificationState {
     feePaidAt,
     identityPassed,
     identityMethod,
+    identityCheckedAt,
     maskedName,
     identityFailure,
     rulesAcceptedAt,
@@ -395,6 +402,7 @@ VerificationState verificationFromFirestore(
     feePaidAt: _instant(fee?['paidAt']),
     identityPassed: identity?['result'] == 'passed',
     identityMethod: IdentityMethod.fromCode(identity?['method']),
+    identityCheckedAt: _instant(identity?['checkedAt']),
     maskedName: _str(identity?['maskedName']),
     identityFailure: identity?['result'] == 'failed'
         ? _str(identity?['failure'])

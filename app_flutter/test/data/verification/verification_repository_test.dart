@@ -273,7 +273,9 @@ void main() {
           },
           'rejectReason': {'code': 'other'},
           'steps': {
-            'identity': {'result': 'passed'},
+            // A passed identity cannot start again (`conflict`).
+            if (c.callable != 'startIdentityVerification')
+              'identity': {'result': 'passed'},
             'rules': {'acceptedAt': DateTime.utc(2026, 10, 15)},
           },
         });
@@ -283,6 +285,39 @@ void main() {
         expect(fake.calls.single.data, c.payload, reason: c.callable);
       }
     });
+
+    test(
+      'startIdentity counts a try like the server and refuses the 4th',
+      () async {
+        final fake = FakeVerificationRepository(
+          now: () => DateTime.utc(2026, 10, 15, 2),
+        );
+        for (var i = 1; i <= 3; i++) {
+          await fake.startIdentity(IdentityMethod.nfc);
+          expect(fake.doc('u1')!['identityAttempts'], {
+            'dayKey': '2026-10-15',
+            'count': i,
+          });
+        }
+        expect((fake.doc('u1')!['identitySession'] as Map)['method'], 'nfc');
+        await expectLater(
+          fake.startIdentity(IdentityMethod.vneid),
+          throwsA(
+            isA<VerificationError>().having(
+              (e) => e.code,
+              'code',
+              'rate_limited',
+            ),
+          ),
+        );
+        await fake.completeIdentity('fake-session');
+        expect(fake.doc('u1')!['identitySession'], isNull);
+        expect(
+          ((fake.doc('u1')!['steps'] as Map)['identity'] as Map)['method'],
+          'nfc',
+        );
+      },
+    );
 
     test('failWith throws VerificationError(code) and still records', () async {
       final fake = FakeVerificationRepository()..failWith = 'not_eligible';

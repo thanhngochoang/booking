@@ -111,10 +111,11 @@ class VerifyIdentityController extends Notifier<VerifyIdentityState> {
 
   final IdentityMethod initialMethod;
 
-  /// Today's tries left when the real-mode session started: a failure the
-  /// listener reports must have used one of them (an older failure stays on
-  /// the record until the next check).
-  int? _attemptsAtStart;
+  /// `steps.identity.checkedAt` when the session started. The server counts
+  /// the try on start and keeps an older failure on the record until the
+  /// next check finishes, so only a changed `checkedAt` is this session's
+  /// result.
+  DateTime? _checkedAtStart;
 
   @override
   VerifyIdentityState build() {
@@ -137,31 +138,40 @@ class VerifyIdentityController extends Notifier<VerifyIdentityState> {
     return VerifyIdentityState(
       method: initialMethod,
       phase: IdentityPhase.intro,
-      issue: s != null && s.identityAttemptsLeft == 0
+      // A final reason (underage, identity in use) says more than the daily
+      // limit; a failed vendor check may be retried, so it shows only when
+      // no tries are left today.
+      issue: recorded != null && recorded != IdentityIssue.failed
+          ? recorded
+          : s != null && s.identityAttemptsLeft == 0
           ? IdentityIssue.rateLimited
-          // A failed vendor check may be retried: only final ones show.
-          : recorded == IdentityIssue.failed
-          ? null
-          : recorded,
+          : null,
     );
   }
 
   void _onRecord(VerificationState s) {
+    // A pass on the record is the result whatever the screen is doing.
+    if (s.identityPassed) {
+      if (state.phase != IdentityPhase.passed) {
+        state = state.copyWith(
+          phase: IdentityPhase.passed,
+          maskedName: s.maskedName,
+          sessionId: null,
+          issue: null,
+        );
+      }
+      return;
+    }
     if (state.phase != IdentityPhase.waiting) {
       return;
     }
-    if (s.identityPassed) {
-      state = state.copyWith(
-        phase: IdentityPhase.passed,
-        maskedName: s.maskedName,
-        issue: null,
-      );
-      return;
-    }
-    final before = _attemptsAtStart;
     final failure = _recordedIssue(s.identityFailure);
-    if (failure != null && before != null && s.identityAttemptsLeft < before) {
-      state = state.copyWith(phase: IdentityPhase.intro, issue: failure);
+    if (failure != null && s.identityCheckedAt != _checkedAtStart) {
+      state = state.copyWith(
+        phase: IdentityPhase.intro,
+        sessionId: null,
+        issue: failure,
+      );
     }
   }
 
@@ -193,10 +203,7 @@ class VerifyIdentityController extends Notifier<VerifyIdentityState> {
     final method = state.method;
     state = state.copyWith(phase: IdentityPhase.starting, issue: null);
     final real = ref.read(identityModeRealProvider);
-    _attemptsAtStart = ref
-        .read(myVerificationProvider)
-        .value
-        ?.identityAttemptsLeft;
+    _checkedAtStart = ref.read(myVerificationProvider).value?.identityCheckedAt;
     try {
       final session = await ref
           .read(verificationRepositoryProvider)
