@@ -32,13 +32,29 @@ export const ERROR_CODES = [
   'underage',
   /** Identity verification: maximum attempts exceeded for today (VN calendar day) (#135). */
   'rate_limited',
+  /** The add-on or total the app showed is out of date (S04: the provider changed it); reload. */
+  'addon_changed',
+  /** An add-on does not apply to the chosen package or is not active. */
+  'addon_not_applicable',
+  /** A transport add-on needs a pickup address. */
+  'pickup_required',
+  /** A provider already has the maximum number of active add-ons. */
+  'addon_limit',
+  /** Free text contains a phone number, e-mail or link (contact stays inside the app). */
+  'contact_leak',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
-/** A refused use case. The message is the code itself, so nothing else can leak. */
+/**
+ * A refused use case. The message is the code itself, so nothing else can leak. `field` names the
+ * offending input field for form errors (never user text).
+ */
 export class DomainError extends Error {
-  constructor(readonly code: ErrorCode) {
+  constructor(
+    readonly code: ErrorCode,
+    readonly field?: string,
+  ) {
     super(code);
     this.name = 'DomainError';
   }
