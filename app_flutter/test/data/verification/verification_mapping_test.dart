@@ -261,16 +261,21 @@ void main() {
       'underage': (RejectReason.underage, false),
     };
     for (final MapEntry(key: code, value: (reason, again)) in reasons.entries) {
+      // Every required step done, as the server's resubmit needs.
       final s = _map(
         _doc(
           status: 'rejected',
           rejectReason: {'code': code, 'text': 'Ảnh không rõ mặt'},
           freeResubmitsLeft: 0,
+          identity: _passed(),
+          rules: _rules,
         ),
+        phoneVerified: true,
       );
       expect(s.rejectReason, reason, reason: code);
       expect(s.rejectText, 'Ảnh không rõ mặt');
       expect(s.resubmittable, again, reason: code);
+      expect(s.rejectionFinal, !again, reason: code);
       expect(s.freeResubmitsLeft, 0);
       expect(reason.code, code);
     }
@@ -285,6 +290,46 @@ void main() {
       _doc(status: 'approved', rejectReason: {'code': 'other'}),
     );
     expect(approved.resubmittable, isFalse);
+  });
+
+  test('identity_mismatch rejection with identity cleared is not '
+      'resubmittable until identity passes', () {
+    // Staff's identity_mismatch clears steps.identity (domain).
+    final cleared = _map(
+      _doc(
+        status: 'rejected',
+        rejectReason: {'code': 'identity_mismatch'},
+        rules: _rules,
+      ),
+      phoneVerified: true,
+    );
+    expect(cleared.resubmittable, isFalse);
+    expect(cleared.rejectionFinal, isFalse);
+    expect(cleared.nextStep, VerifyStep.identity);
+
+    final passedAgain = _map(
+      _doc(
+        status: 'rejected',
+        rejectReason: {'code': 'identity_mismatch'},
+        identity: _passed(),
+        rules: _rules,
+      ),
+      phoneVerified: true,
+    );
+    expect(passedAgain.resubmittable, isTrue);
+
+    // A number changed since (contact flag reset) blocks it too (Decision 3).
+    final phoneReset = _map(
+      _doc(
+        status: 'rejected',
+        rejectReason: {'code': 'fake_avatar'},
+        phone: {'doneAt': _ts(DateTime.utc(2026, 10, 14))},
+        identity: _passed(),
+        rules: _rules,
+      ),
+    );
+    expect(phoneReset.resubmittable, isFalse);
+    expect(phoneReset.nextStep, VerifyStep.phone);
   });
 
   test('identity attempts left counts the VN day', () {

@@ -117,6 +117,8 @@ describe('verification callables', () => {
   it('staff decisions answer with the status of their target and audit the actor', async () => {
     const { callDeps, store, notifyStore } = setup();
     store.verifications.set('p1', readyRecord('p1'));
+    // A ready record's phone step is the contact flag (Decision 3), which resubmit re-checks.
+    store.contacts.set('p1', { phone: store.contacts.get('p1')?.phone ?? null, phoneVerified: true });
     assert.deepEqual(
       await handleReviewVerification(as('staff1', { uid: 'p1', action: 'reject', reason: 'fake_avatar' }, ADMIN), callDeps),
       { status: 'rejected' },

@@ -269,10 +269,21 @@ class VerificationState {
   bool get canSubmit =>
       status == VerificationStatus.inProgress && stepsLeft == 0;
 
-  /// A rejection the provider can answer with "Sửa và gửi lại".
+  /// A final rejection (`duplicate_account`, `underage`): no resubmit, the
+  /// screen shows the support line and no primary button.
+  bool get rejectionFinal =>
+      status == VerificationStatus.rejected &&
+      !(rejectReason?.resubmittable ?? false);
+
+  /// "Sửa và gửi lại" can be sent now: a non-final rejection with every
+  /// required step done, the server's `resubmitVerification` gate. A
+  /// non-final rejection with a step undone (`identity_mismatch` clears the
+  /// identity step; a changed number resets the phone) is neither this nor
+  /// [rejectionFinal]: the screen sends the provider to [nextStep] first.
   bool get resubmittable =>
       status == VerificationStatus.rejected &&
-      (rejectReason?.resubmittable ?? false);
+      (rejectReason?.resubmittable ?? false) &&
+      stepsLeft == 0;
 
   @override
   bool operator ==(Object other) =>

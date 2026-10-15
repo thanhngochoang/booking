@@ -97,6 +97,8 @@ class FakeVerificationRepository implements VerificationRepository {
       kind: 'company',
     ),
     this.businessResult = BusinessStatus.submitted,
+    this.phoneVerified = true,
+    this.feeRequired = false,
   }) : _now = now ?? (() => DateTime.now().toUtc());
 
   /// Whose document the calls change.
@@ -110,6 +112,14 @@ class FakeVerificationRepository implements VerificationRepository {
 
   /// When set, every call throws `VerificationError(failWith)`.
   String? failWith;
+
+  /// The contact's `phoneVerified` flag the server reads (Decision 3) when
+  /// [submit] and [resubmit] check the steps; [confirmPhoneVerified] sets it.
+  /// Defaults to true so a seeded ready doc can be sent as is.
+  bool phoneVerified;
+
+  /// The server's `feeRequired` (#135: false).
+  bool feeRequired;
 
   final calls = <VerificationCall>[];
 
@@ -174,12 +184,22 @@ class FakeVerificationRepository implements VerificationRepository {
     _changes.add(uid);
   }
 
+  /// [uid]'s doc read as the server's use cases see it.
+  VerificationState _state() => verificationFromFirestore(
+    _docs[uid],
+    phoneVerified: phoneVerified,
+    kind: VerificationKind.individual,
+    feeRequired: feeRequired,
+    now: _now(),
+  );
+
   Map<String, dynamic> _started(Map<String, dynamic> d) =>
       d['status'] == 'not_started' ? (d..['status'] = 'in_progress') : d;
 
   @override
   Future<void> confirmPhoneVerified() async {
     _record('confirmPhoneVerified');
+    phoneVerified = true;
     _update((d) {
       (d['steps'] as Map<String, dynamic>)['phone'] = {'doneAt': _now()};
       return _started(d);
@@ -223,6 +243,9 @@ class FakeVerificationRepository implements VerificationRepository {
   @override
   Future<void> submit() async {
     _record('submitVerification');
+    if (!_state().canSubmit) {
+      throw const VerificationError('not_eligible');
+    }
     _update(
       (d) => d
         ..['status'] = 'submitted'
@@ -233,6 +256,9 @@ class FakeVerificationRepository implements VerificationRepository {
   @override
   Future<void> resubmit() async {
     _record('resubmitVerification');
+    if (!_state().resubmittable) {
+      throw const VerificationError('not_eligible');
+    }
     _update((d) {
       final left = d['freeResubmitsLeft'];
       return d

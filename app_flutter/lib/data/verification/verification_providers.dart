@@ -35,8 +35,16 @@ final verificationFeeRequiredProvider = Provider<bool>((_) => false);
 final myVerificationProvider = StreamProvider.autoDispose<VerificationState>((
   ref,
 ) async* {
+  // Every watch happens before the first await: a rebuild during an await
+  // must not leave this run calling watch on a disposed ref.
   final feeRequired = ref.watch(verificationFeeRequiredProvider);
-  final user = await ref.watch(authStateProvider.future);
+  final now = ref.watch(clockProvider);
+  final repo = ref.watch(verificationRepositoryProvider);
+  final userFuture = ref.watch(authStateProvider.future);
+  final contactFuture = ref.watch(currentContactProvider.future);
+  final introFuture = ref.watch(myIntroProvider.future);
+
+  final user = await userFuture;
   if (user == null) {
     yield VerificationState.initial(
       VerificationKind.individual,
@@ -44,14 +52,12 @@ final myVerificationProvider = StreamProvider.autoDispose<VerificationState>((
     );
     return;
   }
-  final contact = await ref.watch(currentContactProvider.future);
-  final intro = await ref.watch(myIntroProvider.future);
+  final contact = await contactFuture;
+  final intro = await introFuture;
   final kind = verificationKindOf(
     intro?.providerType ?? ProviderType.individual,
   );
-  final now = ref.watch(clockProvider);
-  yield* ref
-      .watch(verificationRepositoryProvider)
+  yield* repo
       .watchRaw(user.uid)
       .map(
         (d) => verificationFromFirestore(

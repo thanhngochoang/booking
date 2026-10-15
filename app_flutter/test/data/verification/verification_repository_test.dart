@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -263,6 +265,18 @@ void main() {
               ? c.expected! as BusinessStatus
               : BusinessStatus.submitted,
         );
+        // A doc the server would accept the call on.
+        fake.seed('u1', {
+          'status': switch (c.callable) {
+            'resubmitVerification' => 'rejected',
+            _ => 'in_progress',
+          },
+          'rejectReason': {'code': 'other'},
+          'steps': {
+            'identity': {'result': 'passed'},
+            'rules': {'acceptedAt': DateTime.utc(2026, 10, 15)},
+          },
+        });
         final got = await c.run(fake);
         expect(got, c.expected, reason: c.callable);
         expect(fake.calls.single.name, c.callable);
@@ -321,6 +335,61 @@ void main() {
     });
   });
 
+  group('FakeVerificationRepository gates', () {
+    Map<String, dynamic> rejected({bool identity = true}) => {
+      'status': 'rejected',
+      'rejectReason': {'code': 'identity_mismatch'},
+      'freeResubmitsLeft': 1,
+      'steps': {
+        'identity': identity
+            ? {'result': 'passed', 'maskedName': 'AN B**'}
+            : null,
+        'rules': {'acceptedAt': DateTime.utc(2026, 10, 15), 'version': 'v'},
+      },
+    };
+
+    Future<void> expectNotEligible(Future<void> call) => expectLater(
+      call,
+      throwsA(
+        isA<VerificationError>().having((e) => e.code, 'code', 'not_eligible'),
+      ),
+    );
+
+    test('resubmit refuses a missing step like the server', () async {
+      final fake = FakeVerificationRepository(uid: 'u1')
+        ..seed('u1', rejected(identity: false));
+      await expectNotEligible(fake.resubmit());
+      expect(fake.doc('u1')!['status'], 'rejected');
+      expect(fake.calls.single.name, 'resubmitVerification');
+
+      fake.seed('u1', rejected());
+      fake.phoneVerified = false;
+      await expectNotEligible(fake.resubmit());
+
+      fake.phoneVerified = true;
+      await fake.resubmit();
+      expect(fake.doc('u1')!['status'], 'submitted');
+      expect(fake.doc('u1')!['freeResubmitsLeft'], 0);
+    });
+
+    test('resubmit refuses a final reason', () async {
+      final fake = FakeVerificationRepository(uid: 'u1')
+        ..seed('u1', {
+          ...rejected(),
+          'rejectReason': {'code': 'duplicate_account'},
+        });
+      await expectNotEligible(fake.resubmit());
+    });
+
+    test('submit needs every step on an in_progress record', () async {
+      final fake = FakeVerificationRepository(uid: 'u1');
+      await expectNotEligible(fake.submit());
+      fake.seed('u1', {...rejected(), 'status': 'in_progress'});
+      await fake.submit();
+      expect(fake.doc('u1')!['status'], 'submitted');
+    });
+  });
+
   group('myVerificationProvider', () {
     late FakeVerificationRepository verifications;
     late FakeUserContactRepository contacts;
@@ -367,6 +436,59 @@ void main() {
       expect(container.read(verificationFeeRequiredProvider), isFalse);
       expect(container.read(identityModeRealProvider), isFalse);
     });
+
+    test(
+      'updates when the contact flag flips and when the doc changes',
+      () async {
+        final contact = StreamController<UserContact?>();
+        addTearDown(contact.close);
+        final c = ProviderContainer(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(
+              FakeAuthRepository(initialUser: const AuthUser(uid: 'u1')),
+            ),
+            verificationRepositoryProvider.overrideWithValue(verifications),
+            currentContactProvider.overrideWith((ref) => contact.stream),
+            photographerIntroRepositoryProvider.overrideWithValue(intros),
+            clockProvider.overrideWithValue(
+              () => DateTime.utc(2026, 10, 15, 3),
+            ),
+          ],
+        );
+        addTearDown(c.dispose);
+        final sub = c.listen(myVerificationProvider, (_, _) {});
+        addTearDown(sub.close);
+        Future<VerificationState> settled() async {
+          for (var i = 0; i < 10; i++) {
+            await Future<void>.delayed(Duration.zero);
+          }
+          return c.read(myVerificationProvider).requireValue;
+        }
+
+        contact.add(const UserContact(phone: '+84903123456'));
+        expect((await settled()).phoneDone, isFalse);
+
+        // S21.01: the server sets phoneVerified after the OTP link.
+        contact.add(
+          const UserContact(phone: '+84903123456', phoneVerified: true),
+        );
+        var s = await settled();
+        expect(s.phoneDone, isTrue);
+        expect(s.nextStep, VerifyStep.identity);
+
+        verifications.seed('u1', {
+          'status': 'in_progress',
+          'steps': {
+            'identity': {'result': 'passed', 'maskedName': 'AN B**'},
+          },
+        });
+        s = await settled();
+        expect(s.status, VerificationStatus.inProgress);
+        expect(s.identityPassed, isTrue);
+        expect(s.phoneDone, isTrue);
+        expect(s.nextStep, VerifyStep.rules);
+      },
+    );
 
     test('combines the doc, the contact flag and the provider type', () async {
       contacts.seed(

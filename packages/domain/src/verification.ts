@@ -200,7 +200,9 @@ export function requiredSteps(feeRequired: boolean): readonly VerificationStep[]
 export function stepDone(r: VerificationRecord, s: VerificationStep, phoneVerified: boolean): boolean {
   switch (s) {
     case 'phone':
-      return phoneVerified || r.steps.phone !== null;
+      // Decision 3: the contact flag is the step; steps.phone only mirrors it,
+      // and a number change resets the flag, so the step shows undone again.
+      return phoneVerified;
     case 'fee':
       return r.steps.fee !== null;
     case 'identity':

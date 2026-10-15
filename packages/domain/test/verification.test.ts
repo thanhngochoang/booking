@@ -73,6 +73,16 @@ describe('verification domain state', () => {
     assert.equal(stepDone(rec, 'phone', true), true);
   });
 
+  it('a recorded steps.phone without contact.phoneVerified does not count', () => {
+    const now = new Date('2026-10-10T10:00:00.000Z');
+    const empty = emptyVerification('p1', 'individual', now);
+    const rec = { ...empty, steps: { ...empty.steps, phone: { doneAt: now.toISOString() } } };
+    assert.equal(stepDone(rec, 'phone', false), false);
+    assert.equal(nextStep(rec, false, false), 'phone');
+    assert.equal(stepsLeft(rec, false, false), 3);
+    assert.equal(stepDone(rec, 'phone', true), true);
+  });
+
   it('stepsLeft counts undone steps', () => {
     const now = new Date('2026-10-10T10:00:00.000Z');
     const rec = emptyVerification('p1', 'individual', now);
