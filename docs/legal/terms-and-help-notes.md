@@ -33,6 +33,8 @@ Trạng thái: **ĐK** = cần trong điều khoản, **FAQ** = cần trong tr�
 | V4 | Nhân viên có thể thu hồi xác minh khi phát hiện gian lận; khi đó tắt nhận đơn, booking đang chạy xử lý theo khiếu nại. | xác minh §4 | ĐK |
 | V5 | Studio: chủ studio xác minh danh tính là nhận đơn được (tối đa 3 thợ); xác minh doanh nghiệp bằng mã số thuế mở con dấu Studio, tới 30 thợ và tài khoản nhận tiền đứng tên doanh nghiệp, không thu thêm phí. | xác minh §5 | ĐK, FAQ |
 
+**Phiên bản quy định nhận việc (V1).** Bước "Đồng ý quy định nhận việc" của S21.02 hiện 5 dòng tóm tắt (`verifyRule1` đến `verifyRule5` trong `app_vi.arb`) lấy từ P2, P3, P7, P13 và V3 ở trên, và ghi phiên bản vào `verifications/{uid}.steps.rules.version` = `PROVIDER_RULES_VERSION` (`packages/domain/src/verification.ts`), hiện là `'2026-10-06'`. Khi đổi nghĩa của một trong năm mục đó (hoặc câu chữ của năm dòng trong app), đổi hằng số này để lần đồng ý sau ghi phiên bản mới; app chưa yêu cầu thợ đã duyệt đồng ý lại. Văn bản Điều khoản đầy đủ chưa viết nên app chưa có liên kết "xem điều khoản" ở bước này.
+
 ## Liên hệ
 
 | # | Quy định | Nguồn | Dùng ở |

@@ -105,7 +105,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
 | S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi | S19 |
-| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134), nút mở khi có S21.02 (#135) | S22 |
+| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
 | S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày | S43 |
@@ -124,7 +124,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | ⬜ có mock, chưa có plan | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng xác minh/studio ẩn tới #135/#136 | S31 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio ẩn tới #136 | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |
@@ -177,10 +177,10 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | `/report` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
 | S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
 | **S21** | **Xác minh** | | | | | |
-| S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ⬜ có mock, có plan (#135) | — |
-| S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
-| S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
-| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
+| S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
+| S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
+| S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
+| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
 | S22.01 | Lịch sử thanh toán: cọc, vé, hoàn tiền, khoản đang giữ (kể cả Chụp ngay chưa tìm được người), trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ có mock, có plan (#141) | — |
 | S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ⬜ có mock, có plan (#141) | — |
@@ -191,7 +191,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.01 | Khiếu nại: hàng đợi và chi tiết (bằng chứng, hai mốc tiền, hội thoại ba bên, thả / hoàn / chia; hoàn từ 10 triệu cần người thứ hai) | `/staff/disputes` (web) | admin · support (quyết định) · finance (xem số tiền) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
 | S23.02 | Chi trả: duyệt lần chi đầu, tạm giữ, thất bại, đang xử lý quá lâu | `/staff/payouts` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
 | S23.03 | Hoàn tiền: thất bại, chờ quá lâu, ghi nhận hoàn thủ công, tiền giữ lâu | `/staff/refunds` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
-| S23.04 | Duyệt xác minh: danh tính, doanh nghiệp, thu hồi, khôi phục (hai người) | `/staff/verifications` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) | — |
+| S23.04 | Duyệt xác minh: danh tính, doanh nghiệp, thu hồi, khôi phục (hai người) | `/staff/verifications` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) · tạm duyệt bằng CLI (`npm run verifications`) | — |
 | S23.05 | Kiểm duyệt báo cáo, gộp theo nội dung (người dùng, bài, tin nhắn, sự kiện, việc đăng, tin tuyển) | `/staff/reports` (web) | admin · support | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
 | S23.06 | Hộp thư hỗ trợ: hội thoại trợ giúp và hội thoại khiếu nại, nhận xử lý, ghi chú nội bộ | `/staff/inbox` (web) | admin · support · sales (chỉ trợ giúp) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
 | S23.07 | Duyệt giải thưởng (hạng NAG chỉ cấp khi đã xác minh S21): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi | `/staff/awards` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) · tới lúc đó duyệt bằng CLI `scripts/awards-local.sh` / `npm run awards` | — |

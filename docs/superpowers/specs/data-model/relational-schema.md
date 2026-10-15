@@ -928,6 +928,100 @@ create table booking_delivery_previews (
 );
 ```
 
+### 2.10 Xác minh nhận đơn (S21, #135, 2026-10-08)
+
+Theo `domain-model.md` mục 2.9. Chỉ là chuẩn đích: `services/api` chưa có migration cho phần này (không có route đặt lịch ở đó, giống #133).
+
+```sql
+alter table photographers
+  add column business_verified boolean not null default false;   -- công khai, chỉ server ghi (con dấu Studio)
+
+create table verifications (
+  user_id        text primary key references users(id) on delete cascade,
+  kind           text not null check (kind in ('individual','studio')),
+  status         text not null default 'not_started'
+                 check (status in ('not_started','in_progress','submitted','approved','rejected','revoked')),
+  phone_done_at  timestamptz,                       -- phản chiếu user_contacts.phone_verified (bước điện thoại là cờ đó)
+  fee_payment_id text references payments(id),     -- #203; rỗng tới khi phí bật
+  fee_amount     bigint check (fee_amount > 0),
+  fee_paid_at    timestamptz,
+  identity_method text check (identity_method in ('vneid','nfc')),
+  identity_checked_at timestamptz,
+  identity_result text check (identity_result in ('passed','failed')),
+  identity_failure text check (identity_failure in ('underage','identity_in_use','provider_failed')),
+  masked_name    text,                              -- "NGUYỄN M** T**"; tên đầy đủ chỉ ở identities
+  session_id     text,                              -- phiên VNeID/chip đang chờ
+  session_method text check (session_method in ('vneid','nfc')),
+  session_started_at timestamptz,
+  attempts_day   date,                              -- ngày giờ Việt Nam của số đếm
+  attempts_count smallint not null default 0 check (attempts_count between 0 and 3),
+  fee_attempt    smallint not null default 1,
+  rules_accepted_at timestamptz,
+  rules_version  text,
+  submitted_at   timestamptz,
+  decided_at     timestamptz,
+  decided_by     text references users(id),
+  reject_code    text check (reject_code in ('fake_avatar','stolen_portfolio','identity_mismatch','duplicate_account','underage','other')),
+  reject_text    text,
+  free_resubmits_left smallint not null default 1 check (free_resubmits_left >= 0),
+  nudged_at      timestamptz,
+  version        int not null default 1,
+  -- nhánh doanh nghiệp (Firestore: verifications/{uid}.business)
+  business_status text check (business_status in ('submitted','approved','rejected')),
+  business_kind  text check (business_kind in ('company','household')),
+  business_tax_code text,
+  business_name  text,
+  business_address text,
+  business_registry_status text check (business_registry_status in ('active','inactive')),
+  business_doc_file_id text references files(id),   -- Storage businessDocs/{uid}/{ulid}.jpg
+  business_representative_matched boolean,
+  business_submitted_at timestamptz,
+  business_decided_at timestamptz,
+  business_decided_by text references users(id),
+  business_reject_code text check (business_reject_code in ('inactive','representative_mismatch','doc_unreadable','other')),
+  business_reject_text text,
+  business_purge_after timestamptz,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+create index ix_verifications_queue on verifications (status, submitted_at);                      -- hàng đợi staff; Firestore: (status, submittedAt)
+create index ix_verifications_nudge on verifications (status, nudged_at, updated_at);             -- job nhắc; Firestore: (status, nudgedAt, updatedAt), nudgedAt lọc ở truy vấn để bản đã nhắc không chặn trang
+create index ix_verifications_business_queue on verifications (business_status, business_submitted_at);   -- Firestore: (business.status, business.submittedAt)
+
+create table identities (                           -- 🔒 chỉ server; Firestore: users/{uid}/private/identity
+  user_id         text primary key references users(id) on delete cascade,
+  legal_name      text not null,
+  dob             date not null,
+  gender          text check (gender in ('male','female')),
+  id_number_enc   text not null,                    -- mã hoá (KMS); không bao giờ ở dạng rõ
+  id_hash         text not null,                    -- HMAC có khoá bí mật
+  method          text not null check (method in ('vneid','nfc')),
+  provider        text not null,
+  provider_ref    text not null,
+  verified_at     timestamptz not null,
+  created_at      timestamptz not null default now()
+);
+create table identity_hashes (                      -- 🔒 một số định danh một tài khoản; Firestore: identity_hashes/{idHash}
+  id_hash    text primary key,
+  user_id    text not null references users(id) on delete restrict,   -- giữ sau khi xoá tài khoản theo luật thuế (spec xác minh §9, cần kế toán xác nhận)
+  created_at timestamptz not null default now(),
+  unique (user_id)
+);
+create table verification_audit (                   -- 🔒 Firestore: verificationAudit/{id}
+  id         text primary key,
+  user_id    text not null references users(id),
+  target     text not null check (target in ('identity','business')),
+  action     text not null,
+  reason     text,
+  note       text,
+  actor_id   text references users(id),
+  other_user_id text references users(id),          -- tài khoản kia khi trùng danh tính
+  at         timestamptz not null default now()
+);
+create index ix_verification_audit_user on verification_audit (user_id, at desc);
+create trigger trg_verifications_updated before update on verifications for each row execute function set_updated_at();
+```
+
 ## 3. Ánh xạ Firestore → bảng
 
 Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` → `timestamptz`; `GeoPoint` → `lat`+`lng`; mảng → bảng liên kết; tài liệu con (`map`) → cột phẳng có tiền tố; số đếm ghi bởi Functions → cột dẫn xuất.
@@ -936,6 +1030,11 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 |---------------------|------|----------------|
 | `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`devices` |
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
+| `verifications/{uid}` | `verifications` | `steps.*`, `identitySession.*`, `identityAttempts.*`, `rejectReason.*` → cột phẳng có tiền tố; `business.*` → cột `business_*` (cùng bảng); `steps.phone` phản chiếu `user_contacts.phone_verified`; `steps.fee` → `fee_*` (#203) |
+| `users/{uid}/private/identity` | `identities` | Chỉ server đọc/ghi; `idNumberEnc` → `id_number_enc` |
+| `identity_hashes/{idHash}` | `identity_hashes` | Id tài liệu = `id_hash`; `uid` → `user_id` |
+| `verificationAudit/{id}` | `verification_audit` | `actorId` → `actor_id`, `otherUid` → `other_user_id` |
+| `fake_identities/{uid}` | (không có bảng) | Chỉ emulator/dev, kết quả giả của `FakeIdentityVerifier` |
 | `photographers/{uid}` | `photographers` + `photographer_contact_channels` | `stats.*`→cột dẫn xuất; `serviceArea.*`→`service_*`; `skills.completeness`→`skills_completeness`; `skills.completenessNext`→`skills_completeness_next`; `skills.completenessNextAfter`→`skills_completeness_next_after`; `skills.evidenceRemovedAt`→`skills_evidence_removed_at` |
 | `photographers/{uid}/private/contact` | `photographer_contact_numbers` | |
 | `photographers/{uid}.skills.specialties[]` | `photographer_specialties`, `photographer_specialty_evidence` | `evidencePostIds[]` → bảng bằng chứng |
