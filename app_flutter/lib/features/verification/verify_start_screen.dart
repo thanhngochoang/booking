@@ -381,11 +381,18 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
       if (t == null) {
         continue;
       }
+      // Mock `#S21.02-rejected` names the rows "Danh tính" and "Quy định
+      // nhận việc".
+      final title = switch (step) {
+        VerifyStep.identity => l.verifyFixIdentity,
+        VerifyStep.rules => l.verifyRulesTitle,
+        _ => t.title,
+      };
       add(
         (i) => VerifyStepTile(
           key: Key('verify-step-${step.name}'),
           index: i,
-          title: t.title,
+          title: title,
           subtitle: t.subtitle,
           state: done ? VerifyTileState.done : VerifyTileState.fix,
           onTap: done || verifyStepPath(step) == null

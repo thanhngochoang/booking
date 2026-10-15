@@ -2510,6 +2510,7 @@
   "verifyFixAvatarBody": "Cần ảnh chân dung thật, rõ mặt",
   "verifyFixPortfolio": "Portfolio",
   "verifyFixPortfolioBody": "Gỡ ảnh không phải của bạn",
+  "verifyFixIdentity": "Danh tính",
   "verifyRejectedNote": "Chỉ sửa mục bị từ chối; các bước đã xong được giữ nguyên. Gửi lại thì staff duyệt trong 24 giờ.",
   "verifyResubmit": "Sửa và gửi lại",
   "verifyApprovedHeading": "Bạn đã có thể nhận đơn",

@@ -121,6 +121,32 @@ void main() {
     expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
   });
 
+  testWidgets('back from the rules keeps the S21.02 back stack', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final w = VerificationWorld(startScreen: true);
+    await w.init();
+    w.seedDoc(_doc());
+    await tester.pumpWidget(w.app(location: '/profile'));
+    await _settle(tester);
+    w.router.push('/verify/start');
+    await _settle(tester);
+    await _tap(tester, find.byKey(const Key('verify-next')));
+    expect(w.router.state.uri.path, '/verify/start/rules');
+
+    await _tap(tester, find.byKey(const Key('verify-rules-agree')));
+    await _tap(tester, find.byKey(const Key('verify-rules-submit')));
+    expect(w.router.state.uri.path, '/verify/start');
+    expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
+    expect(w.router.canPop(), isTrue);
+    w.router.pop();
+    await _settle(tester);
+    expect(w.router.state.uri.path, '/profile');
+  });
+
   testWidgets('with a step still undone it only accepts and goes back', (
     tester,
   ) async {

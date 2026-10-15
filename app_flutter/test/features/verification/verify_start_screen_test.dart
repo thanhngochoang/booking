@@ -8,6 +8,7 @@ import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/data/verification/phone_verifier.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/verification/widgets/verify_step_tile.dart';
 
@@ -174,6 +175,40 @@ void main() {
       expect(w3.router.state.uri.path, '/verify/start/rules');
     });
 
+    testWidgets('back from the phone step keeps the S21.02 back stack', (
+      tester,
+    ) async {
+      final w = await _world(tester);
+      w.seedDoc(null, phoneVerified: false);
+      w.seedContact('+84912343456');
+      await _open(tester, w, location: '/profile');
+      w.router.push('/verify/start');
+      await _settle(tester);
+
+      await _tap(tester, find.byKey(const Key('verify-next')));
+      expect(w.router.state.uri.path, '/verify/phone');
+      expect(find.text('1 / 3'), findsOneWidget, reason: 'S21.01 in the flow');
+      await tester.tap(find.byKey(const Key('verify-send')));
+      await _settle(tester, 3);
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('verify-code')),
+          matching: find.byType(TextField),
+        ),
+        FakePhoneVerifier.validCode,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('verify-confirm')));
+      await _settle(tester, 5);
+
+      expect(w.repo.calls.map((c) => c.name), ['confirmPhoneVerified']);
+      expect(w.router.state.uri.path, '/verify/start');
+      expect(w.router.canPop(), isTrue);
+      w.router.pop();
+      await _settle(tester, 3);
+      expect(w.router.state.uri.path, '/profile');
+    });
+
     testWidgets('all required steps done shows Gửi duyệt and submits', (
       tester,
     ) async {
@@ -305,7 +340,11 @@ void main() {
         find.descendant(of: fix, matching: find.text('Cần sửa')),
         findsOneWidget,
       );
+      expect(_inTile('identity', 'Danh tính'), findsOneWidget);
+      expect(_inTile('identity', 'Đã khớp qua VNeID'), findsOneWidget);
       expect(_inTile('identity', 'Xong'), findsOneWidget);
+      expect(_inTile('rules', 'Quy định nhận việc'), findsOneWidget);
+      expect(_inTile('rules', 'Đã đồng ý'), findsOneWidget);
       expect(_inTile('rules', 'Xong'), findsOneWidget);
       expect(_tile('phone'), findsNothing, reason: 'a done phone is not drawn');
       expect(
@@ -353,6 +392,7 @@ void main() {
       );
       await _open(tester, w);
 
+      expect(_inTile('identity', 'Danh tính'), findsOneWidget);
       expect(_inTile('identity', 'Cần sửa'), findsOneWidget);
       await _tap(tester, find.byKey(const Key('verify-resubmit')));
       expect(w.repo.calls, isEmpty);

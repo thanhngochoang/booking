@@ -113,7 +113,13 @@ class _VerifyPhoneBodyState extends ConsumerState<_VerifyPhoneBody> {
 
   void _leave() {
     final to = widget.returnTo;
-    if (to != null) {
+    // Back to S21.02 underneath: pop, so the screen it was opened from
+    // (Cài đặt, Công việc, Hồ sơ) stays below it.
+    if (to != null &&
+        Uri.parse(to).path == _verifyStartPath &&
+        context.canPop()) {
+      context.pop();
+    } else if (to != null) {
       context.go(to);
     } else if (context.canPop()) {
       context.pop();

@@ -5636,6 +5636,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get verifyFixPortfolioBody => 'Gỡ ảnh không phải của bạn';
 
   @override
+  String get verifyFixIdentity => 'Danh tính';
+
+  @override
   String get verifyRejectedNote =>
       'Chỉ sửa mục bị từ chối; các bước đã xong được giữ nguyên. Gửi lại thì staff duyệt trong 24 giờ.';
 

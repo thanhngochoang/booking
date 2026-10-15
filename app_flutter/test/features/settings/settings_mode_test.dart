@@ -24,7 +24,6 @@ import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/role_mode_card.dart';
-import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -119,9 +118,6 @@ Future<Widget> _app(
         FakeNotificationPermission(NotificationPermissionStatus.denied),
       ),
       deviceRegistryProvider.overrideWithValue(FakeDeviceRegistry()),
-      // Keeps the mode card inside the 800x600 test view; the S21.02 row is
-      // covered by settings_verify_row_test.dart.
-      verifyStartReadyProvider.overrideWithValue(false),
     ],
     child: MaterialApp.router(
       routerConfig: router,
@@ -132,8 +128,17 @@ Future<Widget> _app(
   );
 }
 
+/// Brings the lazily built mode card into the list (rows above it, e.g.
+/// "Xác minh & nhận đơn", can push it below the 800x600 test view).
+Future<void> _showModeCard(WidgetTester tester) => tester.scrollUntilVisible(
+  find.byKey(const Key('switch-role')),
+  200,
+  scrollable: find.byType(Scrollable).first,
+);
+
 Future<void> _tapSwitch(WidgetTester tester) async {
   final sw = find.byKey(const Key('switch-role'));
+  await _showModeCard(tester);
   await tester.ensureVisible(sw);
   await tester.pumpAndSettle();
   await tester.tap(sw);
@@ -183,6 +188,7 @@ void main() {
     final (auth, users) = await _signedIn(UserRole.photographer);
     await tester.pumpWidget(await _app(auth, users));
     await tester.pumpAndSettle();
+    await _showModeCard(tester);
     expect(find.text('Tôi cần đặt lịch'), findsOneWidget);
     expect(find.text('Chuyển qua chế độ đặt lịch'), findsOneWidget);
   });

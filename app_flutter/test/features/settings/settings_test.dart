@@ -1056,7 +1056,7 @@ void main() {
       );
     });
 
-    testWidgets('flagged rows are hidden while their routes do not exist', (
+    testWidgets('studio rows wait for their routes; the verify row is shown', (
       tester,
     ) async {
       for (final type in [ProviderType.individual, ProviderType.studio]) {

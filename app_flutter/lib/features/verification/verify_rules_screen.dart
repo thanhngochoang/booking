@@ -43,7 +43,12 @@ class _VerifyRulesScreenState extends ConsumerState<VerifyRulesScreen> {
         await repo.submit();
       }
       if (mounted) {
-        context.go(verifyStartPath);
+        // S21.02 is underneath when opened from it: pop keeps its back stack.
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(verifyStartPath);
+        }
       }
     } on VerificationError {
       if (mounted) {

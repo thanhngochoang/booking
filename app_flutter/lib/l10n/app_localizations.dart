@@ -9886,6 +9886,12 @@ abstract class AppLocalizations {
   /// **'Gỡ ảnh không phải của bạn'**
   String get verifyFixPortfolioBody;
 
+  /// No description provided for @verifyFixIdentity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh tính'**
+  String get verifyFixIdentity;
+
   /// No description provided for @verifyRejectedNote.
   ///
   /// In vi, this message translates to:
