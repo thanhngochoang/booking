@@ -1,4 +1,5 @@
 import type { EventCaller, EventRecord, RegistrationDoc } from '../../src/event.js';
+import { TEST_CIPHER } from './test_cipher.js';
 import type { EventDeps, EventPeople } from '../../src/event_ports.js';
 import { MemoryEventStore } from '../../src/memory_event_store.js';
 import type { UserContactReader, UserContactRecord } from '../../src/ports.js';
@@ -170,6 +171,7 @@ export function createTicketPaymentWorld(seed = 7): TicketPaymentWorld {
     ...w.deps,
     gateway,
     payments,
+    cipher: TEST_CIPHER,
   };
   const settler = new TicketPaymentSettler(deps);
   const settlement: SettlementDeps = {

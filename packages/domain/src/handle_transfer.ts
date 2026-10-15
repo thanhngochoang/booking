@@ -117,7 +117,7 @@ import {
 } from './payment_settlement.js';
 
 export class BookingPaymentSettler implements SubjectSettler {
-  constructor(private readonly deps: BookingDeps) {}
+  constructor(readonly deps: BookingDeps) {}
 
   async settle(paymentId: string, transfer: TransferNotification): Promise<Exclude<TransferOutcome, 'needs_review'>> {
     const recordId = transferRecordId(transfer);
@@ -212,6 +212,16 @@ export function bookingSettlement(deps: BookingDeps): SettlementDeps {
 
 export function asSettlement(deps: SettlementDeps | BookingDeps): SettlementDeps {
   return 'subjects' in deps ? (deps as SettlementDeps) : bookingSettlement(deps as BookingDeps);
+}
+
+/**
+ * The booking deps behind either form: the deps themselves, or those of the registered
+ * `BookingPaymentSettler`; null when neither exists (no booking store to read refunds from).
+ */
+export function bookingDepsOf(deps: SettlementDeps | BookingDeps): BookingDeps | null {
+  if (!('subjects' in deps)) return deps as BookingDeps;
+  const booking = (deps as SettlementDeps).subjects.booking;
+  return booking instanceof BookingPaymentSettler ? booking.deps : null;
 }
 
 /**

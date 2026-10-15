@@ -13,7 +13,18 @@ export const FAKE_OVERPAY_VND = 50_000;
 export const FAKE_WRONG_CONTENT = 'CHUYEN TIEN';
 
 /**
- * provider 'fake', txnId `fake_${id}_${kind}_${now ms}`, amount amount | floor(amount/2) | amount + 50 000, content code | 'CHUYEN TIEN'.
+ * Test values only: the sender every simulated transfer carries, so a bank-QR refund in dev has an
+ * account to go back to (V2 Decision 14). Not a real account.
+ */
+export const FAKE_PAYER = {
+  bankCode: 'VCB',
+  accountNumber: '0071000123456',
+  name: 'KHACH THU NGHIEM',
+} as const;
+
+/**
+ * provider 'fake', txnId `fake_${id}_${kind}_${now ms}`, amount amount | floor(amount/2) | amount + 50 000, content code | 'CHUYEN TIEN',
+ * payer FAKE_PAYER.
  */
 export function fakeTransferFor(
   payment: Payment & { readonly transferCode: string },
@@ -34,6 +45,7 @@ export function fakeTransferFor(
     amount,
     content,
     receivedAt: now.toISOString(),
+    payer: { ...FAKE_PAYER },
   };
 }
 

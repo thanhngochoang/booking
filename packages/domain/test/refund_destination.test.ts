@@ -240,7 +240,6 @@ describe('Task 2: payer capture, refund destination and booking dispatch', () =>
     const world = createBookingWorld();
     const draft = await newDraft(world);
     const { paymentId } = await createPayment(world.deps, { bookingId: draft.id, customerId: 'c1', method: 'momo' });
-    world.gateway.markPaid(paymentId);
     const payment = await world.store.getPayment(paymentId);
     assert.ok(payment);
     await world.store.runTransaction(async (tx) => {

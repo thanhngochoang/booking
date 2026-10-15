@@ -12,6 +12,7 @@ import { createBookingDraft } from '../../src/create_booking.js';
 import { createPayment } from '../../src/create_payment.js';
 import { handleTransferNotification } from '../../src/handle_transfer.js';
 import { TEST_CIPHER } from './test_cipher.js';
+export { TEST_CIPHER };
 
 export const TEST_PAYER: NonNullable<TransferNotification['payer']> = {
   bankCode: 'VCB',
