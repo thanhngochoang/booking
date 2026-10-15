@@ -108,6 +108,7 @@ export async function expireOpenPayment(
     payment,
     refundId: deps.ids.newId(),
     ledgerEntryId: deps.ids.newId(),
+    destination: payment.payer,
     now,
   });
   await tx.setPayment(expired);

@@ -52,6 +52,7 @@ export class MemoryBookingStore implements BookingStore {
       setPayment: async (payment) => {
         this.payments.set(payment.id, { ...payment });
       },
+      getRefund: async (id) => this.getRefund(id),
       addRefund: async (refund) => {
         this.refunds.set(refund.id, { ...refund });
       },
@@ -135,6 +136,11 @@ export class MemoryBookingStore implements BookingStore {
     return res;
   }
 
+  async getRefund(id: string): Promise<Refund | null> {
+    const r = this.refunds.get(id);
+    return r ? { ...r } : null;
+  }
+
   async getRefundsForPayment(paymentId: string): Promise<readonly Refund[]> {
     const res: Refund[] = [];
     for (const r of this.refunds.values()) {
@@ -143,6 +149,36 @@ export class MemoryBookingStore implements BookingStore {
       }
     }
     return res;
+  }
+
+  async findPendingRefunds(before: Date, limit = 100): Promise<readonly Refund[]> {
+    const res: Refund[] = [];
+    for (const r of this.refunds.values()) {
+      if (
+        r.status === 'pending' &&
+        r.lastAttemptAt &&
+        Date.parse(r.lastAttemptAt) <= before.getTime()
+      ) {
+        res.push({ ...r });
+      }
+    }
+    res.sort((a, b) => Date.parse(a.lastAttemptAt ?? '') - Date.parse(b.lastAttemptAt ?? ''));
+    return res.slice(0, limit);
+  }
+
+  async awaitingRefundsDue(now: Date, limit: number): Promise<readonly Refund[]> {
+    const res: Refund[] = [];
+    for (const r of this.refunds.values()) {
+      if (
+        r.status === 'awaiting_account' &&
+        r.confirmBy &&
+        Date.parse(r.confirmBy) <= now.getTime()
+      ) {
+        res.push({ ...r });
+      }
+    }
+    res.sort((a, b) => Date.parse(a.confirmBy ?? '') - Date.parse(b.confirmBy ?? ''));
+    return res.slice(0, limit);
   }
 
   async getLedgerEntriesForPayment(paymentId: string): Promise<readonly LedgerEntry[]> {

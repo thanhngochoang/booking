@@ -212,7 +212,8 @@ describe('booking refund_done marker (depositRefundedAt)', () => {
     assert.equal((await dispatchRefund(w.deps, manualRefund(paymentId, 'r_fail'), 'fake')).status, 'failed');
     w.gateway.refundThrowCount = 1;
     const [thrown] = await dispatchRefunds(w.deps, [{ refund: manualRefund(paymentId, 'r_throw'), provider: 'fake' }]);
-    assert.equal(thrown?.status, 'failed');
+    assert.equal(thrown?.status, 'pending');
+    assert.equal(thrown?.attempts, 1);
     assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, undefined);
   });
 

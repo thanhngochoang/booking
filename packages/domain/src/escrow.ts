@@ -255,10 +255,16 @@ export function applyRefundToPayment(params: {
   const newStatus: PaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
   const newEscrowStatus: EscrowStatus = isFullRefund ? 'refunded' : 'partially_refunded';
 
+  const method = refundMethodOf(payment.method);
+  const destination: RefundDestination | null =
+    payment.payer ? { ...payment.payer, source: 'payer' } : null;
+  const isAwaiting = method === 'bank_transfer' && !destination;
+
   const updatedPayment: Payment = {
     ...payment,
     status: newStatus,
     escrowStatus: newEscrowStatus,
+    refundedAmount: (payment.refundedAmount ?? 0) + refundAmount,
     updatedAt: at,
   };
 
@@ -268,12 +274,13 @@ export function applyRefundToPayment(params: {
     subjectType: payment.subjectType,
     amount: refundAmount,
     percent,
-    status: 'pending',
+    status: isAwaiting ? 'awaiting_account' : 'pending',
     manual: false,
     fromEscrow: true,
-    method: refundMethodOf(payment.method),
+    method,
+    destination,
     attempts: 0,
-    lastAttemptAt: at,
+    ...(isAwaiting ? {} : { lastAttemptAt: at }),
     reason,
     createdAt: at,
     updatedAt: at,
