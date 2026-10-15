@@ -1,6 +1,8 @@
 // Contact leak filter (job posts plan Decision 15): no phone, e-mail or link in free text, so contact
 // stays inside the app until payment. Money like "1.000.000.000₫" is removed first so prices never
 // read as phone numbers; digits may be split by spaces, dots, dashes or brackets.
+// The app has a port for inline form errors (app_flutter/lib/core/contact_filter.dart, same table
+// in app_flutter/test/core/contact_filter_test.dart): change both together.
 const MONEY = /\d{1,3}(?:[.,]\d{3})+\s*(?:₫|đ|vnđ|vnd)/gi;
 const PHONE = /(?:\+?84|0)(?:[\s.\-()]*\d){8,10}(?!\d)/;
 const LONG_DIGITS = /(?:\d[\s.\-()]*){9,}/;

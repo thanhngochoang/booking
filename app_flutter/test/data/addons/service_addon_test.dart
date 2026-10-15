@@ -127,10 +127,32 @@ void main() {
       );
     });
 
-    test('"0903 123 456" in the name → contact', () {
+    test('"0903 123 456" in the name → nameContact', () {
       expect(
         validateAddonInput(_input(name: '0903 123 456')),
-        AddonInputError.contact,
+        AddonInputError.nameContact,
+      );
+    });
+
+    test('a phone in the description → descriptionContact', () {
+      expect(
+        validateAddonInput(_input(description: 'Gọi 0903 123 456')),
+        AddonInputError.descriptionContact,
+      );
+    });
+
+    test('words the server filter allows pass, as on the server', () {
+      expect(
+        validateAddonInput(
+          _input(description: 'Chỉnh ảnh chuẩn đăng Facebook'),
+        ),
+        isNull,
+      );
+      expect(validateAddonInput(_input(name: 'Đồ Zalora')), isNull);
+      expect(validateAddonInput(_input(description: 'giá 3.000.000đ')), isNull);
+      expect(
+        validateAddonInput(_input(name: 'nhắn Zalo nhé')),
+        AddonInputError.nameContact,
       );
     });
 

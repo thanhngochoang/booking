@@ -146,6 +146,39 @@ void main() {
     expect(field, findsOneWidget);
   });
 
+  testWidgets('a phone in Mô tả shows the contact message under Mô tả and '
+      'does not call save', (tester) async {
+    final w = await _open(tester);
+    await _fill(tester);
+    await tester.enterText(_key('addon-description'), 'Gọi 0903 123 456');
+    await _save(tester);
+    final field = find.ancestor(
+      of: find.text('Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung'),
+      matching: find.byKey(const Key('addon-description')),
+    );
+    expect(field, findsOneWidget);
+    expect(w.addons.saves, isEmpty);
+  });
+
+  testWidgets('"Chỉnh ảnh chuẩn đăng Facebook" in Mô tả saves', (tester) async {
+    final w = await _open(tester);
+    await _fill(tester, name: 'Chỉnh ảnh');
+    await tester.enterText(
+      _key('addon-description'),
+      'Chỉnh ảnh chuẩn đăng Facebook',
+    );
+    await _save(tester);
+    await _tick(tester);
+    expect(
+      find.text('Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung'),
+      findsNothing,
+    );
+    expect(
+      w.addons.saves.single.input.description,
+      'Chỉnh ảnh chuẩn đăng Facebook',
+    );
+  });
+
   testWidgets('server addon_limit shows the limit message', (tester) async {
     final w = await _open(tester);
     await _fill(tester);

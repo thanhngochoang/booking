@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
@@ -34,11 +36,17 @@ void main() {
 
   late FakeAddonRepository addonRepo;
   late FakeBookingRepository bookings;
+  late FakeUserContactRepository contacts;
 
+  /// [liveContact]: the real `currentContactProvider` over a fake contact
+  /// repository, so a test can push a new contact value with `contacts.save`.
   ProviderContainer makeContainer({
     List<ServiceAddon>? addons,
     Future<List<ServiceAddon>>? addonsFuture,
+    bool liveContact = false,
   }) {
+    contacts = FakeUserContactRepository()
+      ..seed('c1', const UserContact(phone: '+84912345678'));
     addonRepo = FakeAddonRepository();
     for (final a in addons ?? [addonMakeup, addonRetouch, addonTransport]) {
       addonRepo.seed(a);
@@ -50,9 +58,15 @@ void main() {
         calendarTodayProvider.overrideWithValue(today),
         profilePackagesProvider('p1')
             .overrideWithValue(const AsyncData([bookingPortrait2h, couple])),
-        currentContactProvider.overrideWithValue(
-          const AsyncData(UserContact(phone: '+84912345678')),
-        ),
+        if (liveContact) ...[
+          authRepositoryProvider.overrideWithValue(
+            FakeAuthRepository(initialUser: const AuthUser(uid: 'c1')),
+          ),
+          userContactRepositoryProvider.overrideWithValue(contacts),
+        ] else
+          currentContactProvider.overrideWithValue(
+            const AsyncData(UserContact(phone: '+84912345678')),
+          ),
         bookingRepositoryProvider.overrideWithValue(bookings),
         photographerPoolCacheProvider.overrideWithValue(
           FakePhotographerRepository(),
@@ -67,7 +81,7 @@ void main() {
   }
 
   Future<void> settle() async {
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 6; i++) {
       await Future<void>.delayed(Duration.zero);
     }
   }
@@ -318,6 +332,67 @@ void main() {
     expect(read(c).bookingId, isNotNull);
     ctrl.setPickup('Nhà hát Thành phố');
     expect(read(c).bookingId, isNull);
+  });
+
+  test('a package change clears bookingId (Decision 12)', () async {
+    final c = makeContainer();
+    final ctrl = await readyToPay(c);
+    bookings.nextPaymentError = BookingErrorCode.network;
+    await ctrl.submit();
+    expect(read(c).bookingId, 'booking_1');
+
+    ctrl.selectService(couple);
+    expect(read(c).bookingId, isNull);
+  });
+
+  group('contact updates keep the flow', () {
+    const preselected = BookingFlowArgs(photographerId: 'p1', serviceId: 's1');
+
+    test(
+      'a new contact value after the add-ons load keeps S04.01 and the picks',
+      () async {
+        final c = makeContainer(liveContact: true);
+        final ctrl = await open(c, preselected);
+        expect(read(c, preselected).step, BookingStep.service);
+        expect(read(c, preselected).phone, '+84912345678');
+
+        ctrl.setAddonQty('a_makeup', 2);
+        await contacts.save(
+          'c1',
+          phone: '+84987654321',
+          allowZalo: true,
+          allowWhatsApp: false,
+        );
+        await settle();
+
+        final s = read(c, preselected);
+        expect(s.step, BookingStep.service);
+        expect(s.picks, {'a_makeup': 2});
+        expect(s.phone, '+84987654321');
+      },
+    );
+
+    test(
+      'a phone saved during submit does not reset the step or the picks',
+      () async {
+        final c = makeContainer(liveContact: true);
+        final ctrl = await readyToPay(c);
+        ctrl.setPhone('+84987654321');
+        bookings.nextPaymentError = BookingErrorCode.network;
+
+        await ctrl.submit();
+        await settle();
+
+        expect(contacts.stored('c1')?.phone, '+84987654321');
+        final s = read(c);
+        expect(s.step, BookingStep.review);
+        expect(s.picks, {'a_makeup': 2, 'a_car': 1});
+        expect(s.pickupName, 'Ga Sài Gòn, Quận 3');
+        expect(s.bookingId, 'booking_1');
+        expect(s.phone, '+84987654321');
+        expect(s.error, BookingErrorCode.network);
+      },
+    );
   });
 
   test('addon_changed returns to S04.01, invalidates the add-on list and shows bookAddonsChanged', () async {

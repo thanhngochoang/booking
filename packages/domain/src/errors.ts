@@ -34,7 +34,7 @@ export const ERROR_CODES = [
   'rate_limited',
   /** The add-on or total the app showed is out of date (S04: the provider changed it); reload. */
   'addon_changed',
-  /** An add-on does not apply to the chosen package or is not active. */
+  /** An add-on does not apply to the chosen package (a missing or inactive one is `addon_changed`). */
   'addon_not_applicable',
   /** A transport add-on needs a pickup address. */
   'pickup_required',

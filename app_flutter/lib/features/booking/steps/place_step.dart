@@ -216,7 +216,7 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
                       children: [
                         AppIcon(
                           AppIcons.lock,
-                          size: 16,
+                          size: AppSpace.s4,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: AppSpace.s2),

@@ -69,8 +69,18 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       _outcomesController.close();
     });
 
-    final contact = ref.watch(currentContactProvider).value;
-    final initialPhone = contact?.phone;
+    // Listened, not watched: a rebuild would reset the whole flow (step,
+    // picks, draft id) whenever the contact stream emits, e.g. on its first
+    // load or when submit() saves a new phone. Only the phone follows it,
+    // and only while the customer has not typed another number.
+    ref.listen(currentContactProvider, (prev, next) {
+      final phone = next.value?.phone;
+      if (phone == null) return;
+      if (state.phone == null || state.phone == prev?.value?.phone) {
+        state = state.copyWith(phone: phone);
+      }
+    });
+    final initialPhone = ref.read(currentContactProvider).value?.phone;
 
     final today = ref.watch(calendarTodayProvider);
     final todayStr =
@@ -361,6 +371,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
 
   void next() {
     if (!state.canContinue) return;
+    _userActed = true;
     switch (state.step) {
       case BookingStep.service:
         state = state.copyWith(step: BookingStep.datetime);
@@ -374,6 +385,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   }
 
   bool back() {
+    _userActed = true;
     switch (state.step) {
       case BookingStep.review:
         state = state.copyWith(step: BookingStep.place);

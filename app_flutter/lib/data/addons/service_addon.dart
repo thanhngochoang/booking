@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:freezed_annotation/freezed_annotation.dart' show JsonValue;
+import 'package:photobooking/core/core.dart' show findContactLeak;
 
 /// What an add-on is; decides its icon and its group (S08.06, mock `#S08.07`).
 /// Wire code = [name]; order = the server's line order.
@@ -189,14 +190,14 @@ enum AddonInputError {
   descriptionLength,
   priceRange,
   maxQtyRange,
-  contact,
+
+  /// A phone, e-mail, link or Zalo in the name ([findContactLeak]).
+  nameContact,
+
+  /// The same in the description.
+  descriptionContact,
   packagesEmpty,
 }
-
-final _contactPattern = RegExp(
-  r'(?:\+?\d[\s.\-]?){9,}|https?://|www\.|@|\b[\w-]+\.(?:com|vn|me|net|org)\b|zalo|whatsapp|telegram|viber|facebook|fb\.',
-  caseSensitive: false,
-);
 
 /// Mirror of the server's `validateAddonInput` limits, for inline form errors;
 /// the server stays the authority. Returns the first problem, or null.
@@ -211,8 +212,9 @@ AddonInputError? validateAddonInput(AddonInput input) {
   if (description.characters.length > addonDescriptionMax) {
     return AddonInputError.descriptionLength;
   }
-  if (_contactPattern.hasMatch(name) || _contactPattern.hasMatch(description)) {
-    return AddonInputError.contact;
+  if (findContactLeak(name) != null) return AddonInputError.nameContact;
+  if (findContactLeak(description) != null) {
+    return AddonInputError.descriptionContact;
   }
   if (input.price < addonPriceMin || input.price > addonPriceMax) {
     return AddonInputError.priceRange;

@@ -121,11 +121,10 @@ class _AddonRow extends StatelessWidget {
               color: dark ? AppColorsDark.surfaceMuted : AppColors.surfaceMuted,
               shape: BoxShape.circle,
             ),
-            child: SizedBox(
-              width: 32,
-              height: 32,
+            child: SizedBox.square(
+              dimension: AppSpace.s8,
               child: Center(
-                child: AppIcon(addonKindIcon(addon.kind), size: 17),
+                child: AppIcon(addonKindIcon(addon.kind), size: AppSpace.s4),
               ),
             ),
           ),

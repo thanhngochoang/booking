@@ -94,8 +94,9 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
   }
 
   _Field _fieldOf(AddonInputError e) => switch (e) {
-    AddonInputError.nameLength || AddonInputError.contact => _Field.name,
-    AddonInputError.descriptionLength => _Field.description,
+    AddonInputError.nameLength || AddonInputError.nameContact => _Field.name,
+    AddonInputError.descriptionLength ||
+    AddonInputError.descriptionContact => _Field.description,
     AddonInputError.priceRange => _Field.price,
     AddonInputError.maxQtyRange => _Field.maxQty,
     AddonInputError.packagesEmpty => _Field.packages,
@@ -106,7 +107,8 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
     AddonInputError.descriptionLength => l.addonErrDescription,
     AddonInputError.priceRange => l.addonErrPrice,
     AddonInputError.maxQtyRange => l.addonErrMaxQty,
-    AddonInputError.contact => l.addonErrContact,
+    AddonInputError.nameContact ||
+    AddonInputError.descriptionContact => l.addonErrContact,
     AddonInputError.packagesEmpty => l.addonErrPackages,
   };
 
