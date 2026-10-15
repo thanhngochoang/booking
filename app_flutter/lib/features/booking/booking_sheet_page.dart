@@ -138,6 +138,9 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
       case BookingErrorCode.invalidArgument:
+      case BookingErrorCode.addonChanged:
+      case BookingErrorCode.addonNotApplicable:
+      case BookingErrorCode.pickupRequired:
       case BookingErrorCode.unknown:
         final controller = ref.read(
           bookingFlowControllerProvider(widget.args).notifier,

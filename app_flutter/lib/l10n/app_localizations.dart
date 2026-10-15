@@ -10647,6 +10647,108 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.'**
   String get helpProviderPaidA;
+
+  /// No description provided for @addonKindMakeup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trang điểm'**
+  String get addonKindMakeup;
+
+  /// No description provided for @addonKindRetouch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh ảnh'**
+  String get addonKindRetouch;
+
+  /// No description provided for @addonKindTransport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đưa đón'**
+  String get addonKindTransport;
+
+  /// No description provided for @addonKindOutfit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trang phục'**
+  String get addonKindOutfit;
+
+  /// No description provided for @addonKindOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get addonKindOther;
+
+  /// No description provided for @addonOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một lần'**
+  String get addonOnce;
+
+  /// No description provided for @addonUnitPerPerson.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo người'**
+  String get addonUnitPerPerson;
+
+  /// No description provided for @addonUnitPerItem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo số lượng'**
+  String get addonUnitPerItem;
+
+  /// No description provided for @addonNounPerson.
+  ///
+  /// In vi, this message translates to:
+  /// **'người'**
+  String get addonNounPerson;
+
+  /// No description provided for @addonNounPhoto.
+  ///
+  /// In vi, this message translates to:
+  /// **'ảnh'**
+  String get addonNounPhoto;
+
+  /// No description provided for @addonNounSet.
+  ///
+  /// In vi, this message translates to:
+  /// **'bộ'**
+  String get addonNounSet;
+
+  /// No description provided for @addonNounTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'lần'**
+  String get addonNounTime;
+
+  /// No description provided for @addonPriceOnce.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} · một lần'**
+  String addonPriceOnce(String price);
+
+  /// No description provided for @addonPricePer.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price} / {noun}'**
+  String addonPricePer(String price, String noun);
+
+  /// No description provided for @addonLineQty.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {qty} {noun}'**
+  String addonLineQty(String name, int qty, String noun);
+
+  /// No description provided for @addonSummaryItem.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} ×{qty}'**
+  String addonSummaryItem(String name, int qty);
+
+  /// No description provided for @addonsSummary.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ {list}'**
+  String addonsSummary(String list);
 }
 
 class _AppLocalizationsDelegate

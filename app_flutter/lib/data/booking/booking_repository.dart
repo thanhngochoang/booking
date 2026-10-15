@@ -1,6 +1,7 @@
 import 'dart:io' show SocketException;
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
@@ -29,6 +30,9 @@ enum BookingErrorCode {
   notFound,
   invalidArgument,
   paymentAttemptsExceeded,
+  addonChanged,
+  addonNotApplicable,
+  pickupRequired,
   network,
   unknown,
 }
@@ -89,6 +93,12 @@ BookingErrorCode _codeToBookingError(String code) {
       return BookingErrorCode.invalidArgument;
     case 'payment_attempts_exceeded':
       return BookingErrorCode.paymentAttemptsExceeded;
+    case 'addon_changed':
+      return BookingErrorCode.addonChanged;
+    case 'addon_not_applicable':
+      return BookingErrorCode.addonNotApplicable;
+    case 'pickup_required':
+      return BookingErrorCode.pickupRequired;
     case 'unavailable':
     case 'deadline-exceeded':
     case 'network':
@@ -140,7 +150,9 @@ abstract class BookingRepository {
   /// `bookings/{id}/events`, oldest first (4a writes them; the read rule is added in Task 1).
   Stream<List<BookingEventRecord>> watchEvents(String bookingId);
 
-  /// Creates a draft booking.
+  /// Creates a draft booking. [addons] are picks (the server prices them),
+  /// [pickup] is required with a transport pick, [expectedTotal] is the total
+  /// the customer saw (a staleness check, never a price).
   Future<Booking> createBooking({
     required String photographerId,
     required String serviceId,
@@ -149,6 +161,9 @@ abstract class BookingRepository {
     required BookingPlace place,
     String? note,
     int? expectedPrice,
+    List<AddonPick> addons = const [],
+    BookingPlace? pickup,
+    int? expectedTotal,
   });
 
   /// Starts (or restarts, "Tạo QR mới") the payment of a draft booking. The

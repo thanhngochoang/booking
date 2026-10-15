@@ -352,6 +352,9 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
       case BookingErrorCode.invalidArgument:
+      case BookingErrorCode.addonChanged:
+      case BookingErrorCode.addonNotApplicable:
+      case BookingErrorCode.pickupRequired:
       case BookingErrorCode.unknown:
         state = state.copyWith(phase: SubmitPhase.idle, error: err);
     }

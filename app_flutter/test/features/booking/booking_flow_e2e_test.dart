@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
@@ -40,6 +41,9 @@ class _OrderedBookingRepository extends FakeBookingRepository {
     required BookingPlace place,
     String? note,
     int? expectedPrice,
+    List<AddonPick> addons = const [],
+    BookingPlace? pickup,
+    int? expectedTotal,
   }) {
     log.add('createBooking');
     return super.createBooking(
@@ -50,6 +54,9 @@ class _OrderedBookingRepository extends FakeBookingRepository {
       place: place,
       note: note,
       expectedPrice: expectedPrice,
+      addons: addons,
+      pickup: pickup,
+      expectedTotal: expectedTotal,
     );
   }
 

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
@@ -47,6 +48,9 @@ class _ServerLikeRepository extends RecordingBookingRepository {
     required BookingPlace place,
     String? note,
     int? expectedPrice,
+    List<AddonPick> addons = const [],
+    BookingPlace? pickup,
+    int? expectedTotal,
   }) async {
     final b = await super.createBooking(
       photographerId: photographerId,
@@ -56,6 +60,9 @@ class _ServerLikeRepository extends RecordingBookingRepository {
       place: place,
       note: note,
       expectedPrice: expectedPrice,
+      addons: addons,
+      pickup: pickup,
+      expectedTotal: expectedTotal,
     );
     final fixed = b.copyWith(
       serviceSnapshot: const BookingServiceSnapshot(

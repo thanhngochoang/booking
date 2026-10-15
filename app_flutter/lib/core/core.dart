@@ -54,6 +54,7 @@ export 'package:photobooking/core/widgets/otp_code_field.dart';
 export 'package:photobooking/core/widgets/phone_field.dart';
 export 'package:photobooking/core/widgets/photographer_card.dart';
 export 'package:photobooking/core/widgets/photo_card.dart';
+export 'package:photobooking/core/widgets/qty_stepper.dart';
 export 'package:photobooking/core/widgets/reason_chips.dart';
 export 'package:photobooking/core/widgets/screen_code.dart';
 export 'package:photobooking/core/widgets/section_header.dart';

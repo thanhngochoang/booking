@@ -6070,4 +6070,65 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get helpProviderPaidA =>
       'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.';
+
+  @override
+  String get addonKindMakeup => 'Trang điểm';
+
+  @override
+  String get addonKindRetouch => 'Chỉnh ảnh';
+
+  @override
+  String get addonKindTransport => 'Đưa đón';
+
+  @override
+  String get addonKindOutfit => 'Trang phục';
+
+  @override
+  String get addonKindOther => 'Khác';
+
+  @override
+  String get addonOnce => 'Một lần';
+
+  @override
+  String get addonUnitPerPerson => 'Theo người';
+
+  @override
+  String get addonUnitPerItem => 'Theo số lượng';
+
+  @override
+  String get addonNounPerson => 'người';
+
+  @override
+  String get addonNounPhoto => 'ảnh';
+
+  @override
+  String get addonNounSet => 'bộ';
+
+  @override
+  String get addonNounTime => 'lần';
+
+  @override
+  String addonPriceOnce(String price) {
+    return '$price · một lần';
+  }
+
+  @override
+  String addonPricePer(String price, String noun) {
+    return '$price / $noun';
+  }
+
+  @override
+  String addonLineQty(String name, int qty, String noun) {
+    return '$name · $qty $noun';
+  }
+
+  @override
+  String addonSummaryItem(String name, int qty) {
+    return '$name ×$qty';
+  }
+
+  @override
+  String addonsSummary(String list) {
+    return '+ $list';
+  }
 }

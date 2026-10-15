@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 
@@ -34,6 +35,24 @@ abstract class BookingPlace with _$BookingPlace {
 
   factory BookingPlace.fromJson(Map<String, dynamic> json) =>
       _$BookingPlaceFromJson(json);
+}
+
+/// One add-on line of a booking: the snapshot taken when it was created
+/// (`amount = unitPrice × qty`).
+@freezed
+abstract class BookingAddonLine with _$BookingAddonLine {
+  const factory BookingAddonLine({
+    required String addonId,
+    required AddonKind kind,
+    required String name,
+    required AddonUnit unit,
+    required int unitPrice,
+    required int qty,
+    required int amount,
+  }) = _BookingAddonLine;
+
+  factory BookingAddonLine.fromJson(Map<String, dynamic> json) =>
+      _$BookingAddonLineFromJson(json);
 }
 
 @freezed
@@ -80,6 +99,11 @@ abstract class BookingEventRecord with _$BookingEventRecord {
 @freezed
 abstract class Booking with _$Booking {
   const Booking._();
+
+  /// What the customer pays: package price + Σ add-on amounts.
+  int get totalVnd =>
+      addons.fold(serviceSnapshot.price, (total, l) => total + l.amount);
+
   const factory Booking({
     required String id,
     required String customerId,
@@ -91,6 +115,12 @@ abstract class Booking with _$Booking {
     required String end,
     required BookingPlace place,
     String? note,
+
+    /// Add-on snapshot lines (S04.03, S05.02); empty on old bookings.
+    @Default(<BookingAddonLine>[]) List<BookingAddonLine> addons,
+
+    /// Pick-up address, only with a `transport` add-on; two parties read it.
+    BookingPlace? pickup,
     required BookingStatus status,
     required int deposit,
     required int remaining,
@@ -192,8 +222,9 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
         : 0;
 
     final servicePrice = (serviceRaw['price'] as num?)?.toInt() ?? 0;
-    final remaining =
-        (data['remaining'] as num?)?.toInt() ?? (servicePrice - deposit);
+    final addons = _addonLinesFrom(data['addons']);
+    final total = addons.fold(servicePrice, (total, l) => total + l.amount);
+    final remaining = (data['remaining'] as num?)?.toInt() ?? (total - deposit);
 
     final createdAt = toDateTime(data['createdAt']) ?? DateTime.now().toUtc();
     final updatedAt = toDateTime(data['updatedAt']) ?? createdAt;
@@ -213,6 +244,8 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
       end: data['end'] as String? ?? '',
       place: place,
       note: data['note'] as String?,
+      addons: addons,
+      pickup: _placeFrom(data['pickup']),
       status: status,
       deposit: deposit,
       remaining: remaining,
@@ -234,6 +267,57 @@ Booking? bookingFromFirestore(String id, Map<String, dynamic>? data) {
   } catch (_) {
     return null;
   }
+}
+
+List<BookingAddonLine> _addonLinesFrom(Object? raw) {
+  if (raw is! List) return const [];
+  final lines = <BookingAddonLine>[];
+  for (final l in raw) {
+    if (l is! Map) continue;
+    final kind = AddonKind.fromCode(l['kind']);
+    final unit = AddonUnit.fromCode(l['unit']);
+    final addonId = l['addonId'];
+    final name = l['name'];
+    final unitPrice = l['unitPrice'];
+    final qty = l['qty'];
+    final amount = l['amount'];
+    if (kind == null ||
+        unit == null ||
+        addonId is! String ||
+        name is! String ||
+        unitPrice is! num ||
+        qty is! num ||
+        amount is! num) {
+      continue;
+    }
+    lines.add(
+      BookingAddonLine(
+        addonId: addonId,
+        kind: kind,
+        name: name,
+        unit: unit,
+        unitPrice: unitPrice.toInt(),
+        qty: qty.toInt(),
+        amount: amount.toInt(),
+      ),
+    );
+  }
+  return lines;
+}
+
+BookingPlace? _placeFrom(Object? raw) {
+  if (raw is! Map || raw['name'] is! String) return null;
+  double? lat;
+  double? lng;
+  final point = raw['point'];
+  if (point is GeoPoint) {
+    lat = point.latitude;
+    lng = point.longitude;
+  } else if (point is Map) {
+    lat = (point['lat'] as num?)?.toDouble();
+    lng = (point['lng'] as num?)?.toDouble();
+  }
+  return BookingPlace(name: raw['name'] as String, lat: lat, lng: lng);
 }
 
 /// Converts Firestore document snapshot to [BookingContactSnapshot].

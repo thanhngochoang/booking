@@ -109,6 +109,9 @@ abstract final class AppIcons {
   static const IconData personRemove = Symbols.person_remove_rounded;
   static const IconData flag = Symbols.flag_rounded;
   static const IconData help = Symbols.help_rounded;
+  static const IconData car = Symbols.directions_car_rounded;
+  static const IconData checkroom = Symbols.checkroom_rounded;
+  static const IconData addCircle = Symbols.add_circle_rounded;
   static const IconData supportAgent = Symbols.support_agent_rounded;
 }
 
