@@ -130,6 +130,7 @@ Mỗi khoản doanh thu xuất **hoá đơn điện tử** (nhà cung cấp hoá
 - `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }` (cùng `checkPaymentStatus` cho vé tới #137)
 - `PayoutGateway { lookupAccountName, createPayout, queryPayout }`
 - Luật: trạng thái `Payment`, khớp tên, lịch chi, tính số tiền chi, chuyển sai.
+- Điểm mở rộng chủ thể thanh toán (V1, #200): `SubjectSettler` cho từng chủ thể (`booking`, `event_registration`, `instant_request`, `verification_fee`), gom qua `SettlementDeps.subjects` và `liveSettlementDeps()` ở Functions. Mọi khoản chuyển khoản được xử lý thống nhất qua `settleTransfer`: phân bổ theo `subjectType`, ghi `TransferRecord` chống trùng độc lập cho từng chủ thể, và gọi settler tương ứng để cập nhật thực thể nghiệp vụ (`Booking`, `EventRegistration`...) cùng các bút toán ký quỹ.
 
 Bản cài đặt: `Fake*Gateway` (emulator, dev, test; mô phỏng webhook và chuyển sai) và bản thật của tổ chức trung gian được chọn. Webhook là HTTP function (`onRequest`) có kiểm chữ ký; mọi lệnh gọi ra ngoài có `idempotencyKey`. Vì `packages/domain` không được import Node, `verifyWebhook` **không** nằm trên cổng miền: Functions kiểm chữ ký rồi đưa cho miền một `TransferNotification` đã xác thực (cổng miền: `createPayment`, `queryTransfers`, `issueRefund` và `provider`). Cờ `REAL_PAYMENTS` chỉ bật sau khi xong §11.
 

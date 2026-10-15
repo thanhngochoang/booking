@@ -392,6 +392,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `PayMethodSelector` | S04.03 |
 | `PayMethodPicker` | S11.03 |
 | `CountdownPill` | S04.04 |
+| `PaymentScreen`, `QrCheckoutView`, `WalletWaitingView`, `FakeTransferSheet` (`features/payment/`) | S04.04 (mọi chủ thể thanh toán: booking, vé sự kiện, Chụp ngay, phí xác minh) |
 | `ConfirmSheet` | S04.01, S05.03, S06.03, S09.02, S12.03, S13.08 |
 | `CountdownRing`, `CountdownText` | S06.01, S13.03, S13.06, S14.02 |
 | `ChatBubble`, `ChatComposer`, `ConversationRow` | S07.01, S07.02, S11.06 |

@@ -36,22 +36,22 @@ Màn: S11.01, S11.02, S11.03, S11.04, S12.01, S12.02, S12.03. Quy ước chung �
 
 ## S11.03 · Đăng ký sự kiện
 
-- **Thông tin**: `/e/:eventId/join` (sheet) · khách · sub‑project 3b · Chưa có.
+- **Thông tin**: `/e/:eventId/join` (sheet) · khách · sub‑project 3b · Đã làm (mở rộng #200).
 - **Mục đích**: giữ chỗ và thanh toán đủ giá vé.
-- **Bố cục**: tiêu đề + tên sự kiện; hàng "Số vé" với bộ tăng giảm 1–4 (tối đa số chỗ còn); ô họ tên và SĐT (lấy từ hồ sơ; thiếu SĐT → S04.05); bảng tiền (`n` vé × giá, tổng); `EscrowNotice` "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc."; chính sách huỷ; đếm ngược giữ chỗ 10 phút (hiện sau khi bấm thanh toán); chọn MoMo/VNPay; nút "Thanh toán {số tiền}" (sự kiện không thu phí: "Đăng ký không thu phí", bỏ cổng).
-- **Dữ liệu**: `registerEvent` (giữ chỗ, trả `payUrl`); lắng nghe `registrations/{id}`.
-- **Trạng thái**: `sold_out` → báo, quay S11.02 cập nhật số chỗ; `deadline_passed`; `limit_exceeded`; `phone_required` → S04.05; hết 10 phút chưa trả → chỗ nhả, báo "Chỗ giữ đã hết hạn"; lỗi cổng → thử lại.
-- **Chuỗi**: `s17_title` "Đăng ký tham gia", `s17_tickets` "Số vé", `s17_total` "Tổng thanh toán", `s17_hold` "Giữ chỗ còn {mm:ss}", `s17_pay` "Thanh toán {amount}", `s17_free` "Xác nhận đăng ký".
+- **Bố cục**: tiêu đề + tên sự kiện; hàng "Số vé" với bộ tăng giảm 1–4 (tối đa số chỗ còn); ô họ tên và SĐT (lấy từ hồ sơ; thiếu SĐT → S04.05); bảng tiền (`n` vé × giá, tổng); `EscrowNotice` "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc."; chính sách huỷ; chọn phương thức qua `PayMethodPicker` (chuyển khoản QR, MoMo, ZaloPay); nút "Thanh toán {số tiền}" (sự kiện không thu phí: "Xác nhận đăng ký", bỏ phương thức).
+- **Dữ liệu**: `registerEvent({eventId, quantity, name, phone, method})` (giữ chỗ 10 phút, trả `RegisterOutcome` kèm `instructions: PaymentInstructions`); sau khi bấm "Thanh toán", đóng sheet và chuyển sang S04.04 (`openPayment` tới `/e/:eventId/pay/:regId`). Sự kiện không thu phí đăng ký thẳng vé `paid`.
+- **Trạng thái**: `sold_out` → báo, quay S11.02 cập nhật số chỗ; `deadline_passed`; `limit_exceeded`; `phone_required` → S04.05; hết 10 phút chưa trả → trên S04.04 báo "Chỗ giữ đã hết hạn" kèm nút "Về sự kiện"; lỗi mạng → thử lại.
+- **Chuỗi**: `s17_title` "Đăng ký tham gia", `s17_tickets` "Số vé", `s17_total` "Tổng thanh toán", `s17_pay` "Thanh toán {amount}", `s17_free` "Xác nhận đăng ký".
 - **Phân tích**: `event_join_submit{qty, free}`, `event_join_error{code}`.
-- **Chấp nhận**: không bán quá sức chứa khi nhiều người đăng ký cùng lúc; vé chỉ có hiệu lực khi `paid`; thanh toán xong mở S11.04 với vé mới.
+- **Chấp nhận**: không bán quá sức chứa khi nhiều người đăng ký cùng lúc; vé chỉ có hiệu lực khi `paid`; thanh toán xong ở S04.04 tự chuyển sang S11.04 với vé mới.
 
 ---
 
 ## S11.04 · Vé sự kiện
 
-- **Thông tin**: `/bookings?tab=events` · khách · sub‑project 3b · Chưa có.
+- **Thông tin**: `/bookings?tab=events` · khách · sub‑project 3b · Đã làm (#200).
 - **Mục đích**: giữ vé và xuất trình khi check‑in.
-- **Bố cục**: `SegmentedTabs` "Buổi chụp | Vé sự kiện"; `TicketCard` sắp diễn ra (viền nổi bật (trung tính)): tag loại (pill), tên, một dòng ngày giờ · số vé, badge "Đã đăng ký"; hàng mã QR 112dp trên nền trắng với lời nhắc "Đưa mã này cho chủ sự kiện khi đến điểm hẹn." và mã vé chọn‑copy bên phải; "Chỉ đường" (viền) + "Thêm vào lịch" (phụ); "Vào nhóm chat" khi vé đã trả; nút chữ đỏ "Huỷ vé · hoàn {x}%" dưới thẻ; các vé khác (chờ thanh toán có nút nhỏ "Thanh toán tiếp", hết hạn, đã qua, đã huỷ) dạng thẻ gọn.
+- **Bố cục**: `SegmentedTabs` "Buổi chụp | Vé sự kiện"; `TicketCard` sắp diễn ra (viền nổi bật (trung tính)): tag loại (pill), tên, một dòng ngày giờ · số vé, badge "Đã đăng ký"; hàng mã QR 112dp trên nền trắng với lời nhắc "Đưa mã này cho chủ sự kiện khi đến điểm hẹn." và mã vé chọn‑copy bên phải; "Chỉ đường" (viền) + "Thêm vào lịch" (phụ); "Vào nhóm chat" khi vé đã trả; nút chữ đỏ "Huỷ vé · hoàn {x}%" dưới thẻ; các vé khác (chờ thanh toán có nút nhỏ "Thanh toán tiếp", hết hạn, đã qua, đã huỷ) dạng thẻ gọn. "Thanh toán tiếp" gọi `checkTicketPayment` kiểm tra trước; nếu chưa thanh toán thì mở S04.04 (`/e/:eventId/pay/:regId`).
 - **Dữ liệu**: collection group `registrations (userId)` + sự kiện tương ứng; QR mã hoá `ticketCode`.
 - **Trạng thái**: vé chờ thanh toán có "Thanh toán tiếp" (còn thời gian giữ) hoặc "Hết hạn"; vé đã qua mờ, không hiện QR; sự kiện bị huỷ → "Đã hoàn tiền" hoặc "Đang hoàn".
 - **Tương tác**: huỷ vé mở xác nhận nêu số tiền hoàn; chạm QR phóng to với độ sáng cao (nếu khả thi).
