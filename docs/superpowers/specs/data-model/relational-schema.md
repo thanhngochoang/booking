@@ -954,7 +954,7 @@ create table verifications (
   session_method text check (session_method in ('vneid','nfc')),
   session_started_at timestamptz,
   attempts_day   date,                              -- ngày giờ Việt Nam của số đếm
-  attempts_count smallint not null default 0 check (attempts_count between 0 and 3),
+  attempts_count smallint not null default 0 check (attempts_count between 0 and 3),   -- số lần BẮT ĐẦU xác minh trong ngày VN (kể cả bỏ dở)
   fee_attempt    smallint not null default 1,
   rules_accepted_at timestamptz,
   rules_version  text,
@@ -969,7 +969,7 @@ create table verifications (
   -- nhánh doanh nghiệp (Firestore: verifications/{uid}.business)
   business_status text check (business_status in ('submitted','approved','rejected')),
   business_kind  text check (business_kind in ('company','household')),
-  business_tax_code text,
+  business_tax_code text,                           -- hộ kinh doanh: số định danh 12 số của chủ, hiện lưu dạng rõ (câu hỏi mở 9 của spec xác minh)
   business_name  text,
   business_address text,
   business_registry_status text check (business_registry_status in ('active','inactive')),
