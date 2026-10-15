@@ -524,6 +524,14 @@ class BookingFlowController extends Notifier<BookingFlowState> {
           phase: SubmitPhase.idle,
           error: err,
         );
+      case BookingErrorCode.outsideSchedule:
+      case BookingErrorCode.slotTaken:
+      case BookingErrorCode.spotArchived:
+        state = state.copyWith(
+          clearBookingId: true,
+          phase: SubmitPhase.idle,
+          error: err,
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:

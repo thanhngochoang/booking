@@ -14,12 +14,16 @@ class AvailabilityDay {
     required this.state,
     this.bookingId,
     this.eventId,
+    this.scheduleId,
+    this.rawState,
   });
 
   final DateTime day;
   final DayState state;
   final String? bookingId;
   final String? eventId;
+  final String? scheduleId;
+  final String? rawState;
 
   @override
   bool operator ==(Object other) =>
@@ -27,15 +31,19 @@ class AvailabilityDay {
       other.day == day &&
       other.state == state &&
       other.bookingId == bookingId &&
-      other.eventId == eventId;
+      other.eventId == eventId &&
+      other.scheduleId == scheduleId &&
+      other.rawState == rawState;
 
   @override
-  int get hashCode => Object.hash(day, state, bookingId, eventId);
+  int get hashCode =>
+      Object.hash(day, state, bookingId, eventId, scheduleId, rawState);
 }
 
 /// `availability/{uid}/days/{yyyy-MM-dd}` → [AvailabilityDay]. A studio's
-/// `full` day (server-written) reads as [DayState.full]. A document whose
-/// state the app does not know blocks the day (counted as booked).
+/// `full` day (server-written) reads as [DayState.full]. A `spot` day (an open
+/// spot schedule, #194) and any state the app does not know block the day
+/// (counted as booked); [AvailabilityDay.rawState] keeps the server state.
 AvailabilityDay? availabilityDayFromFirestore(
   String id,
   Map<String, dynamic> d,
@@ -44,7 +52,8 @@ AvailabilityDay? availabilityDayFromFirestore(
   if (day == null) {
     return null;
   }
-  final state = switch (d['state']) {
+  final rawState = d['state'] as String?;
+  final state = switch (rawState) {
     'off' => DayState.off,
     'pending' => DayState.pending,
     'full' => DayState.full,
@@ -52,11 +61,14 @@ AvailabilityDay? availabilityDayFromFirestore(
   };
   final booking = d['bookingId'];
   final event = d['eventId'];
+  final scheduleId = d['scheduleId'] as String?;
   return AvailabilityDay(
     day: day,
     state: state,
     bookingId: booking is String ? booking : null,
     eventId: event is String ? event : null,
+    scheduleId: scheduleId,
+    rawState: rawState,
   );
 }
 

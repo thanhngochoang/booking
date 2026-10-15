@@ -44,6 +44,8 @@ class _OrderedBookingRepository extends FakeBookingRepository {
     List<AddonPick> addons = const [],
     BookingPlace? pickup,
     int? expectedTotal,
+    String? spotScheduleId,
+    String? slotOfferId,
   }) {
     log.add('createBooking');
     return super.createBooking(
@@ -57,6 +59,8 @@ class _OrderedBookingRepository extends FakeBookingRepository {
       addons: addons,
       pickup: pickup,
       expectedTotal: expectedTotal,
+      spotScheduleId: spotScheduleId,
+      slotOfferId: slotOfferId,
     );
   }
 

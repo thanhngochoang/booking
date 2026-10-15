@@ -51,6 +51,8 @@ class _ServerLikeRepository extends RecordingBookingRepository {
     List<AddonPick> addons = const [],
     BookingPlace? pickup,
     int? expectedTotal,
+    String? spotScheduleId,
+    String? slotOfferId,
   }) async {
     final b = await super.createBooking(
       photographerId: photographerId,
@@ -63,6 +65,8 @@ class _ServerLikeRepository extends RecordingBookingRepository {
       addons: addons,
       pickup: pickup,
       expectedTotal: expectedTotal,
+      spotScheduleId: spotScheduleId,
+      slotOfferId: slotOfferId,
     );
     final fixed = b.copyWith(
       serviceSnapshot: const BookingServiceSnapshot(

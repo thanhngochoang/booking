@@ -157,6 +157,12 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookAddonsChanged)),
         );
+      case BookingErrorCode.outsideSchedule:
+      case BookingErrorCode.slotTaken:
+      case BookingErrorCode.spotArchived:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookTryAgain)),
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
