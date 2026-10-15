@@ -2,9 +2,9 @@
  * Fake payment gateway reference adapter for testing and dev emulators.
  */
 
-import type { PaymentGateway, PaymentInstructions, TransferNotification } from './booking_ports.js';
+import type { PayerBankAccount, PaymentGateway, PaymentInstructions, TransferNotification } from './booking_ports.js';
 import type { PaymentProvider } from './booking.js';
-import type { PaymentMethod } from './escrow.js';
+import type { PaymentMethod, RefundMethod } from './escrow.js';
 import { buildVietQrPayload } from './vietqr.js';
 
 /** Test values only (#129 Decision 15): a BIDV collection account that receives no real money. */
@@ -30,6 +30,10 @@ export class FakePaymentGateway implements PaymentGateway {
   readonly issuedRefunds = new Map<string, number>();
   /** Every `issueRefund` call, by refund id (repeats included). */
   readonly refundCalls: string[] = [];
+  /** Requests issued to the fake gateway, storing method and destination. */
+  readonly refundRequests = new Map<string, { method: RefundMethod; destination?: PayerBankAccount }>();
+  /** Refund IDs that should answer { success: true, pending: true }. */
+  readonly refundPendingIds = new Set<string>();
   refundFailureId?: string;
   /** The next this-many `issueRefund` calls throw (a provider outage), after being recorded in `refundCalls`. */
   refundThrowCount = 0;
@@ -55,19 +59,35 @@ export class FakePaymentGateway implements PaymentGateway {
     readonly amount: number;
     readonly provider: PaymentProvider;
     readonly providerRef?: string;
-  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }> {
+    readonly method?: RefundMethod;
+    readonly destination?: PayerBankAccount;
+  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly pending?: boolean; readonly error?: string }> {
     this.refundCalls.push(params.refundId);
+    if (params.method) {
+      this.refundRequests.set(params.refundId, {
+        method: params.method,
+        destination: params.destination,
+      });
+    }
     if (this.refundThrowCount > 0) {
       this.refundThrowCount -= 1;
       throw new Error('simulated_gateway_outage');
     }
     if (this.refundFailureId === params.refundId) {
-      return { success: false, error: 'simulated_refund_failure' };
+      return { success: false, error: 'fake_refund_failed' };
     }
     if (!this.issuedRefunds.has(params.refundId)) this.issuedRefunds.set(params.refundId, params.amount);
+    const providerRef = `fake_refund_${params.refundId}`;
+    if (this.refundPendingIds.has(params.refundId)) {
+      return {
+        success: true,
+        pending: true,
+        providerRef: `fake_pending_${params.refundId}`,
+      };
+    }
     return {
       success: true,
-      providerRef: `fake_refund_${params.refundId}`,
+      providerRef,
     };
   }
 

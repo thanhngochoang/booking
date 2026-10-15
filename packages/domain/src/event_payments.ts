@@ -121,6 +121,7 @@ async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, paym
       amount: refund.amount,
       provider: payment.provider,
       providerRef: refund.providerRef,
+      method: refund.method,
     });
   } catch {
     result = { success: false };

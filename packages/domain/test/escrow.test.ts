@@ -9,10 +9,30 @@ import {
 } from '../src/escrow.js';
 import { DomainError } from '../src/errors.js';
 import type { LedgerEntry, Payment, Refund } from '../src/escrow.js';
-import { LEDGER_ENTRY_TYPES, PAYMENT_METHODS, PAYMENT_STATUSES, RESERVED_PAYMENT_METHODS } from '../src/escrow.js';
+import {
+  LEDGER_ENTRY_TYPES,
+  PAYMENT_METHODS,
+  PAYMENT_STATUSES,
+  REFUND_METHODS,
+  REFUND_STATUSES,
+  RESERVED_PAYMENT_METHODS,
+  refundMethodOf,
+} from '../src/escrow.js';
 
 describe('Task 3: Escrow & ledger maths', () => {
   const now = new Date('2026-10-10T10:00:00.000Z');
+
+  it('REFUND_STATUSES lists awaiting_account, pending, done, failed', () => {
+    assert.deepEqual(REFUND_STATUSES, ['awaiting_account', 'pending', 'done', 'failed']);
+    assert.deepEqual(REFUND_METHODS, ['gateway', 'bank_transfer']);
+  });
+
+  it('refundMethodOf: bank_qr → bank_transfer; momo, zalopay, undefined → gateway', () => {
+    assert.equal(refundMethodOf('bank_qr'), 'bank_transfer');
+    assert.equal(refundMethodOf('momo'), 'gateway');
+    assert.equal(refundMethodOf('zalopay'), 'gateway');
+    assert.equal(refundMethodOf(undefined), 'gateway');
+  });
 
   it('createDepositPayment: creates paid payment and payment_received ledger entry', () => {
     const { payment, ledgerEntry } = createDepositPayment({
@@ -73,6 +93,9 @@ describe('Task 3: Escrow & ledger maths', () => {
       assert.equal(res.refund.amount, 300_000);
       assert.equal(res.refund.percent, 100);
       assert.equal(res.refund.status, 'pending');
+      assert.equal(res.refund.method, 'gateway');
+      assert.equal(res.refund.attempts, 0);
+      assert.equal(res.refund.lastAttemptAt, refundNow.toISOString());
 
       assert.equal(res.payment.status, 'refunded');
       assert.equal(res.payment.escrowStatus, 'refunded');
@@ -313,6 +336,8 @@ describe('Task 3: Escrow & ledger maths', () => {
         status: 'done',
         manual: false,
         fromEscrow: false,
+        method: 'bank_transfer',
+        attempts: 1,
         reason,
         createdAt: at,
         updatedAt: at,
@@ -388,6 +413,20 @@ describe('Task 3: Escrow & ledger maths', () => {
     it('old deposit_received entries still count', () => {
       const p = qrPayment({ amount: 300_000, receivedAmount: undefined });
       assert.equal(verifyPaymentLedgerInvariant(p, [], [received('l1', 300_000, 'deposit_received' as LedgerEntry['type'])]), true);
+    });
+
+    it('verifyPaymentLedgerInvariant fails when refundedAmount is present and differs from the sum of refunds', () => {
+      const cancel = refundOf('r1', 500_000, 'customer_cancelled');
+      const p = qrPayment({ status: 'refunded', escrowStatus: 'refunded', refundedAmount: 400_000 });
+      assert.equal(verifyPaymentLedgerInvariant(p, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), false);
+    });
+
+    it('verifyPaymentLedgerInvariant passes when refundedAmount is absent or matches', () => {
+      const cancel = refundOf('r1', 500_000, 'customer_cancelled');
+      const pWithout = qrPayment({ status: 'refunded', escrowStatus: 'refunded', refundedAmount: undefined });
+      assert.equal(verifyPaymentLedgerInvariant(pWithout, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), true);
+      const pWith = qrPayment({ status: 'refunded', escrowStatus: 'refunded', refundedAmount: 500_000 });
+      assert.equal(verifyPaymentLedgerInvariant(pWith, [cancel.refund], [received('l1', 1_500_000), cancel.entry]), true);
     });
   });
 });

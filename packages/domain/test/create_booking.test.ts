@@ -323,7 +323,7 @@ describe('Task 4: createBookingDraft', () => {
       const actualKeys = Object.keys(draft).sort();
       assert.deepEqual(actualKeys, expectedKeys);
       for (const k of actualKeys) {
-        assert.notEqual((draft as Record<string, unknown>)[k], undefined);
+        assert.notEqual((draft as unknown as Record<string, unknown>)[k], undefined);
       }
     });
 

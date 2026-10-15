@@ -65,12 +65,33 @@ export interface Payment {
   readonly dispute?: { readonly reason: string; readonly openedAt: string } | null;
   /** Current payout batch; cleared when that batch fails. */
   readonly payoutId?: string | null;
+  /** Payer account info captured from notification (server-only). */
+  readonly payer?: StoredBankAccount | null;
+  /** VND refunded so far across all refunds on this payment. */
+  readonly refundedAmount?: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
 
-export const REFUND_STATUSES = ['pending', 'done', 'failed'] as const;
+export const REFUND_STATUSES = ['awaiting_account', 'pending', 'done', 'failed'] as const;
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
+
+export const REFUND_METHODS = ['gateway', 'bank_transfer'] as const;
+export type RefundMethod = (typeof REFUND_METHODS)[number];
+
+export function refundMethodOf(method: PaymentMethod | undefined): RefundMethod {
+  return method === 'bank_qr' ? 'bank_transfer' : 'gateway';
+}
+
+export interface StoredBankAccount {
+  readonly bankCode: string;
+  readonly bankName: string;
+  readonly accountNumberEnc: string;
+  readonly accountLast4: string;
+  readonly holderName: string;
+}
+
+export type RefundDestination = StoredBankAccount & { readonly source: 'payer' | 'customer' };
 
 export interface Refund {
   readonly id: string;
@@ -90,6 +111,12 @@ export interface Refund {
    * Rows stored before the field existed are read as true (see `isEscrowRefund`).
    */
   readonly fromEscrow: boolean;
+  readonly method: RefundMethod;
+  readonly destination?: RefundDestination | null;
+  readonly confirmBy?: string | null;
+  readonly attempts: number;
+  readonly lastAttemptAt?: string;
+  readonly failureReason?: string;
   readonly reason?: string;
   readonly providerRef?: string;
   readonly createdAt: string;
@@ -238,6 +265,9 @@ export function applyRefundToPayment(params: {
     status: 'pending',
     manual: false,
     fromEscrow: true,
+    method: refundMethodOf(payment.method),
+    attempts: 0,
+    lastAttemptAt: at,
     reason,
     createdAt: at,
     updatedAt: at,
@@ -346,6 +376,7 @@ export function verifyPaymentLedgerInvariant(
 
   const totalRefundAmount = refunds.reduce((sum, r) => sum + r.amount, 0);
   if (refunded !== totalRefundAmount) return false;
+  if (payment.refundedAmount !== undefined && payment.refundedAmount !== totalRefundAmount) return false;
 
   switch (payment.status) {
     case 'expired':

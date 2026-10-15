@@ -17,6 +17,8 @@ import {
   AUTO_COMPLETE_DELAY_HOURS,
   ESCROW_RELEASE_DELAY_HOURS,
   BOOKING_CONTACT_RETENTION_DAYS,
+  REFUND_RESEND_AFTER_MINUTES,
+  REFUND_MAX_ATTEMPTS,
   isDateString,
   isTimeString,
   clampRevisions,
@@ -37,6 +39,8 @@ describe('Task 1: Booking policy and math', () => {
     assert.equal(AUTO_COMPLETE_DELAY_HOURS, 24);
     assert.equal(ESCROW_RELEASE_DELAY_HOURS, 24);
     assert.equal(BOOKING_CONTACT_RETENTION_DAYS, 30);
+    assert.equal(REFUND_RESEND_AFTER_MINUTES, 10);
+    assert.equal(REFUND_MAX_ATTEMPTS, 6);
   });
 
   it('computeDeposit: the whole price is paid up front', () => {

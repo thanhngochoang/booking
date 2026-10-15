@@ -170,6 +170,7 @@ describe('unpaid booking payments', () => {
 describe('booking refund_done marker (depositRefundedAt)', () => {
   const manualRefund = (paymentId: string, id: string, fromEscrow = true): Refund => ({
     id, paymentId, subjectType: 'booking', amount: 100_000, percent: 10, status: 'pending', manual: false, fromEscrow,
+    method: 'gateway', attempts: 0,
     reason: 'test', createdAt: '2026-10-14T01:00:00.000Z', updatedAt: '2026-10-14T01:00:00.000Z',
   });
 
