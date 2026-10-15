@@ -54,9 +54,11 @@ export interface CustomerContactReader {
 }
 
 export interface AvailabilityDayRecord {
-  /** `full`: derived by the server on a studio's day when its free members are all taken (#136 Decision 26). */
-  readonly state: 'off' | 'booked' | 'pending' | 'full';
+  /** `full`: derived by the server on a studio's day when its free members are all taken (#136 Decision 26); `spot`: an open spot schedule holds the day (#194). */
+  readonly state: 'off' | 'booked' | 'pending' | 'spot' | 'full';
   readonly bookingId?: string;
+  readonly scheduleId?: string;
+  readonly spotId?: string;
 }
 
 /**
