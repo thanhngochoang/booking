@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 7 6.5h14v8.2L17 18.2H3z"/><path d="M3 10h14v8.2M17 10l4-3.5M3 14.1h14M10 10v4.1M7 14.1v4.1M13 14.1v4.1"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="11.5 14 177 177">
+  <!-- Mascot holding a brick; no background, it sits on the button surface. -->
+  <path d="M100 18 C55 18 28 49 28 91 C28 119 43 139 73 158 L70 181 Q70 189 81 189 H132 Q142 189 143 179 L140 155 C164 143 175 121 175 92 C175 49 146 18 100 18Z" fill="#FFF" stroke="#29211E" stroke-width="5" stroke-linejoin="round"/>
+  <ellipse cx="69" cy="87" rx="14" ry="7" fill="#F7A1A8"/>
+  <ellipse cx="128" cy="87" rx="14" ry="7" fill="#F7A1A8"/>
+  <circle cx="75" cy="76" r="4.5" fill="#29211E"/>
+  <circle cx="122" cy="76" r="4.5" fill="#29211E"/>
+  <path d="M83 92 Q99 105 116 92" fill="none" stroke="#29211E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M40 111 Q51 116 58 128 Q68 143 91 151" fill="none" stroke="#29211E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M25 79 L39 57 L91 88 L78 111Z" fill="#FF7B3F" stroke="#71301E" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M25 79 L25 93 L77 124 L78 111Z" fill="#D94D28" stroke="#71301E" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M78 111 L91 88 L91 102 L77 124Z" fill="#BA4325" stroke="#71301E" stroke-width="3" stroke-linejoin="round"/>
+  <g fill="#9F351D">
+    <circle cx="43" cy="69" r="2.5"/><circle cx="56" cy="76" r="2.5"/><circle cx="69" cy="83" r="2.5"/>
+    <circle cx="59" cy="91" r="2.5"/><circle cx="76" cy="94" r="2.5"/><circle cx="34" cy="82" r="2.5"/>
+  </g>
+</svg>

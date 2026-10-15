@@ -197,6 +197,7 @@ class _VerdictButtonState extends State<_VerdictButton>
         side,
         size: compact ? 22 : 40,
         color: selected ? sideColor : ink2,
+        muted: !selected,
       ),
     );
     final Widget content = compact
