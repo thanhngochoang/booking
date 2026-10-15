@@ -945,7 +945,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 - **Chặn**: hai bên không thấy bài của nhau trong feed, không nhắn được, không đặt lịch được với nhau (booking đang có vẫn giữ để không mất tiền; liên hệ đi qua hỗ trợ); bỏ chặn ở S20.02.
 
 ### 3i.4 S21 · Xác minh
-- **S21.01 SĐT** (câu hỏi mở 6): bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
+- **S21.01 SĐT** (câu hỏi mở 6): S21.01 dùng Firebase Auth phone (emulator khi dev); khách chưa phải OTP khi đặt (plan S21 Decision 21). Bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
 - **Đổi 2026-10-06**: S21.02–S21.04 thay bằng luồng "Bắt đầu nhận đơn" có phí trong [`2026-10-06-identity-verification-design.md`](2026-10-06-identity-verification-design.md); đoạn dưới là bản cũ.
 - **S21.02 Dấu tích xanh**: nhiếp ảnh gia đủ điều kiện (đề xuất: hồ sơ hoàn thiện ≥ 80%, ≥ 3 buổi `completed`, không khiếu nại thua trong 90 ngày) gửi yêu cầu kèm giấy tờ tuỳ thân và link portfolio; staff duyệt ở S23.04; kết quả ghi `photographers.verified` (chỉ server ghi). Giấy tờ lưu riêng tư, xoá sau khi duyệt xong 30 ngày.
 
