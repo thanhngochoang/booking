@@ -1,6 +1,6 @@
 // Runs one scheduled clock against the local emulators, which never fire schedules (S17 Decision 11):
 //   npm run clock -- events     # handleEventClock once (closes, completes, refunds, event_soon reminders)
-//   npm run clock -- bookings   # handleBookingClock once (booking sweeps and shoot reminders)
+//   npm run clock -- bookings   # handleBookingClock once (booking sweeps, shoot reminders, verification nudges)
 // Emulators only: refuses unless FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST are local
 // (any project id, like the dev seed). Push is only logged, never sent through FCM.
 
@@ -44,7 +44,9 @@ async function main(): Promise<void> {
     },
     bookings: async () => {
       const { handleBookingClock, liveReminderDeps } = await import('../src/scheduled/booking_clock.js');
-      return handleBookingClock(undefined, { ...liveReminderDeps(), notify: await emulatorNotifyDeps() });
+      const { liveVerificationDeps } = await import('../src/infra/live_verification.js');
+      const notify = await emulatorNotifyDeps();
+      return handleBookingClock(undefined, { ...liveReminderDeps(), notify }, { verification: { deps: liveVerificationDeps(), notify } });
     },
   };
   process.exitCode = await runClock(process.argv.slice(2), process.env, io);

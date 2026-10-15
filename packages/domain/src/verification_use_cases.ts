@@ -1,4 +1,5 @@
 import {
+  BUSINESS_DOC_RETENTION_DAYS,
   type BusinessVerificationRecord,
   emptyVerification,
   PROVIDER_RULES_VERSION,
@@ -474,7 +475,7 @@ export async function reviewVerification(
       }
 
       if (action === 'approve') {
-        const purgeAfter = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const purgeAfter = businessDocPurgeAfter(rec.business.docPath, now);
         const bizAfter: BusinessVerificationRecord = {
           ...rec.business,
           status: 'approved',
@@ -527,6 +528,8 @@ export async function reviewVerification(
             code: reasonCode as BusinessVerificationRecord['rejectReason'] extends { code: infer C } ? C : never,
             text: note,
           },
+          // The registration photo is deleted on the same clock after either decision (Decision 20).
+          purgeAfter: businessDocPurgeAfter(rec.business.docPath, now),
         };
 
         const after: VerificationRecord = {
@@ -554,6 +557,12 @@ export async function reviewVerification(
       }
     }
   });
+}
+
+/** When a company's registration photo is deleted: BUSINESS_DOC_RETENTION_DAYS after the decision; null without a photo. */
+function businessDocPurgeAfter(docPath: string | null, decidedAt: Date): string | null {
+  if (docPath === null) return null;
+  return new Date(decidedAt.getTime() + BUSINESS_DOC_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 }
 
 export async function sendVerificationNudges(

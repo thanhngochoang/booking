@@ -9,6 +9,7 @@ import {
 } from '../src/business_verification.js';
 import { DomainError, type ErrorCode } from '../src/errors.js';
 import { reviewVerification } from '../src/verification_use_cases.js';
+import { BUSINESS_DOC_RETENTION_DAYS } from '../src/verification.js';
 
 const refusedWith = (code: ErrorCode) => (e: unknown) => e instanceof DomainError && e.code === code;
 
@@ -362,6 +363,12 @@ describe('business_verification', () => {
     );
     assert.equal(rejected.after.business?.status, 'rejected');
     assert.equal(rejected.after.business?.rejectReason?.code, 'doc_unreadable');
+    // The registration photo of a rejected company is purged on the same 30-day clock as an approved one.
+    const decided = Date.parse(rejected.after.business?.decidedAt ?? '');
+    assert.equal(
+      rejected.after.business?.purgeAfter,
+      new Date(decided + BUSINESS_DOC_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+    );
   });
 
   it('FakeTaxCodeLookup: …0000 is inactive, 12 digits is household, others a company', async () => {

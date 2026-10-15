@@ -27,6 +27,10 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   otp_required: 'failed-precondition',
   otp_invalid: 'failed-precondition',
   otp_expired: 'failed-precondition',
+  // S21 verification
+  identity_in_use: 'already-exists',
+  underage: 'failed-precondition',
+  rate_limited: 'resource-exhausted',
 };
 
 /**

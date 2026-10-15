@@ -74,6 +74,18 @@ import {
 import { handleAwardWrite } from './triggers/award_write.js';
 import { handleAwardPurge } from './scheduled/award_purge.js';
 import { liveAwardDeps } from './infra/live_award.js';
+import {
+  handleAcceptVerificationRules,
+  handleCompleteIdentityVerification,
+  handleConfirmPhoneVerified,
+  handleLookupTaxCode,
+  handleResubmitVerification,
+  handleReviewVerification,
+  handleStartIdentityVerification,
+  handleSubmitBusinessVerification,
+  handleSubmitVerification,
+} from './callables/verification.js';
+import { liveVerificationCallableDeps, liveVerificationDeps } from './infra/live_verification.js';
 import { evaluateUserBadges } from '@photobooking/domain';
 import { handleMarkAllNotificationsRead } from './callables/notification.js';
 import { FirestoreDeviceDirectory } from './infra/fcm_push.js';
@@ -158,7 +170,9 @@ export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispu
 
 /** 15-minute booking lifecycle and escrow sweep clock */
 export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 300 }, async () => {
-  await handleBookingClock(undefined, liveReminderDeps());
+  await handleBookingClock(undefined, liveReminderDeps(), {
+    verification: { deps: liveVerificationDeps(), notify: liveNotifyDeps() },
+  });
 });
 
 /**
@@ -312,12 +326,57 @@ export const onAwardWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'a
   await handleAwardWrite(before, after, liveAwardDeps());
 });
 
-/** Daily 03:00 Asia/Ho_Chi_Minh: deletes proofs 30 days after a final decision. */
+/** Daily 03:00 Asia/Ho_Chi_Minh: deletes award proofs and S21.04 business photos 30 days after a final decision. */
 export const purgeAwardProofs = onSchedule(
   { ...SCHEDULE_OPTIONS, schedule: 'every day 03:00', timeoutSeconds: 300 },
   async () => {
     await handleAwardPurge();
   },
+);
+
+// ---- provider verification (S21, #135; the fee callables are #203's) ----
+
+/** `{}` → `{phoneVerified: true}`: marks the contact phone verified once the Auth phone (OTP) matches it. */
+export const confirmPhoneVerified = onCall(CALLABLE_OPTIONS, (request) =>
+  handleConfirmPhoneVerified(request, liveVerificationCallableDeps()),
+);
+
+/** `{method: 'vneid' | 'nfc'}` → `{sessionId, redirectUrl}`; fake verifier on the emulator/dev, `not_eligible` elsewhere. */
+export const startIdentityVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleStartIdentityVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{sessionId}` → `{result: 'passed', maskedName}`; `underage`, `identity_in_use`, `rate_limited`, `not_found`. */
+export const completeIdentityVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCompleteIdentityVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{version}` → `{}`: the provider rules of PROVIDER_RULES_VERSION. */
+export const acceptVerificationRules = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAcceptVerificationRules(request, liveVerificationCallableDeps()),
+);
+
+/** `{}` → `{status: 'submitted'}` once every required step is done. */
+export const submitVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{}` → `{status}` after a resubmittable rejection. */
+export const resubmitVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleResubmitVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{taxCode}` → `{name, address, status, kind}` (verified studios; fake lookup on the emulator/dev). */
+export const lookupTaxCode = onCall(CALLABLE_OPTIONS, (request) => handleLookupTaxCode(request, liveVerificationCallableDeps()));
+
+/** `{taxCode, docPath?}` → `{status}`: household matched at once, company to staff. */
+export const submitBusinessVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitBusinessVerification(request, liveVerificationCallableDeps()),
+);
+
+/** Staff only (claim `staffRole: 'admin'`): `{uid, target?, action, reason?, note?}` → `{status}`. */
+export const reviewVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleReviewVerification(request, liveVerificationCallableDeps()),
 );
 
 // ---- notifications and badges (plan 10a) ----
