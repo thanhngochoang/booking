@@ -7,7 +7,6 @@ import {
   newUlid,
   notifyPayoutAccountChanged,
   notifyPayoutAccountNeeded,
-  type AccountCipher,
   type EarningsDeps,
   type NotifyDeps,
   type PayoutAccountDeps,

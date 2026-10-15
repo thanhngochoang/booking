@@ -18,7 +18,6 @@ import {
   type EventStore,
   type EventTx,
   type Payment,
-  type Refund,
   type RefundStatus,
   type RegistrationContact,
   type RegistrationDoc,
