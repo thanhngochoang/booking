@@ -300,6 +300,12 @@ create table payments (
   transfer_code   text,                           -- 'PB XXXXXX', duy nhất trên mọi khoản có mã (ux_payments_transfer_code)
   expires_at      timestamptz,                    -- created_at + 15 phút; chuyển từ lúc này là chuyển muộn
   received_amount bigint check (received_amount >= 0),  -- tổng đã tính vào amount (thiếu thì cộng dồn)
+  payer_bank_code text,                           -- #201: ngân hàng của người chuyển
+  payer_bank_name text,                           -- #201: tên ngân hàng hiển thị
+  payer_account_enc text,                         -- #201: số tài khoản người chuyển đã mã hoá AES-256-GCM
+  payer_account_last4 text,                       -- #201: 4 số cuối tài khoản người chuyển
+  payer_holder_name text,                         -- #201: tên chủ tài khoản người chuyển (in hoa, bỏ dấu)
+  refunded_amount bigint check (refunded_amount >= 0),  -- #201: tổng VND đã hoàn trên payment
   escrow_status   text not null default 'held' check (escrow_status in ('held','released','paid_out','partially_refunded','refunded','disputed')),
   release_after   timestamptz,                    -- hết cửa sổ khiếu nại
   released_at     timestamptz,
@@ -319,20 +325,32 @@ create index ix_payments_event on payments (event_id, status, escrow_status) whe
 create index ix_payments_release on payments (escrow_status, release_after) where escrow_status = 'held';
 
 create table refunds (
-  id         text primary key,                    -- khoá chống trùng gửi sang cổng
-  payment_id text not null references payments(id),
-  subject_type text not null check (subject_type in ('booking','event_registration','instant_request')),
-  amount     bigint not null check (amount > 0),
-  percent    smallint check (percent between 0 and 100),
-  status     text not null check (status in ('pending','done','failed')),
-  manual     boolean not null default false,
-  from_escrow boolean not null default true,      -- false: tiền trả lại ngay khi nhận (thừa, chuyển lần hai, trễ), chưa từng vào ký quỹ
-  reason     text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer
-  provider_ref text,                              -- giao dịch của cổng mà tiền được hoàn từ đó
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id              text primary key,                    -- khoá chống trùng gửi sang cổng
+  payment_id      text not null references payments(id),
+  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request')),
+  amount          bigint not null check (amount > 0),
+  percent         smallint check (percent between 0 and 100),
+  status          text not null check (status in ('awaiting_account','pending','done','failed')),  -- #201: awaiting_account
+  method          text not null default 'gateway' check (method in ('gateway','bank_transfer')),   -- #201: bank_transfer cho bank_qr
+  destination_bank_code text,                          -- #201: ngân hàng nhận hoàn
+  destination_bank_name text,                          -- #201: tên ngân hàng nhận hoàn
+  destination_account_enc text,                        -- #201: số tài khoản nhận hoàn mã hoá
+  destination_account_last4 text,                      -- #201: 4 số cuối tài khoản nhận hoàn
+  destination_holder_name text,                        -- #201: tên chủ tài khoản nhận hoàn
+  destination_source text check (destination_source in ('payer','customer')), -- #201: nguồn gốc tài khoản
+  confirm_by      timestamptz,                         -- #201/#141: hạn xác nhận tài khoản
+  attempts        integer not null default 0,          -- #201: số lần đã gửi lệnh hoàn sang cổng/ngân hàng
+  last_attempt_at timestamptz,                         -- #201: lần gửi gần nhất, dùng cho retry
+  failure_reason  text,                                -- #201: mã hoặc lý do lỗi từ cổng/ngân hàng
+  manual          boolean not null default false,
+  from_escrow     boolean not null default true,       -- false: tiền trả lại ngay khi nhận (thừa, chuyển lần hai, trễ), chưa từng vào ký quỹ
+  reason          text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer
+  provider_ref    text,                                -- giao dịch của cổng mà tiền được hoàn từ đó
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
 );
-create index ix_refunds_resend on refunds (subject_type, status, created_at);
+create index ix_refunds_pending on refunds (status, last_attempt_at) where status = 'pending';
+create index ix_refunds_awaiting on refunds (status, confirm_by) where status = 'awaiting_account';
 
 create table payment_notifications (              -- 🔒 chỉ máy chủ; khoá chống trùng của webhook
   id          text primary key,                   -- '{provider}_{txn_id}'

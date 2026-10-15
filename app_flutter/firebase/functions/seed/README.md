@@ -38,9 +38,11 @@ Password for every account: `seed-password-1`
 | `seed-award-binh-1` | Bình | pending (in the review queue: `npm run awards -- list`) |
 
 Booking payments are paid by bank QR (`method: bank_qr`, `transferCode` "PB" + 6 characters
-derived from the payment id). The fake payment webhook (`paymentWebhook?provider=fake`, and
-`confirmFakePayment`, which signs and runs it in-process) checks its `x-pb-signature` with
-`FAKE_PAYMENT_WEBHOOK_SECRET` from `.env.local` (emulator) and `.env.booking-c1922` (dev project):
+derived from the payment id) and include an encrypted payer account (`VCB`, `•••• 3456`, `KHACH THU NGHIEM`).
+The cancelled booking `seed-booking-cancelled` has a refund `seed-refund-seed-booking-cancelled`
+with `status: done`, `method: bank_transfer`, destination to the seed payer. The fake payment webhook
+(`paymentWebhook?provider=fake`, and `confirmFakePayment`, which signs and runs it in-process) checks its
+`x-pb-signature` with `FAKE_PAYMENT_WEBHOOK_SECRET` from `.env.local` (emulator) and `.env.booking-c1922` (dev project):
 a self-made test value; the real secret comes with the payment intermediary unit.
 
 ## Reviews (tomato/brick)
