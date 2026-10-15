@@ -406,6 +406,46 @@ describe('checkPayment', () => {
       refusedWith('not_found'),
     );
   });
+
+  it('after a revoke a transfer for the draft is refunded provider_not_accepting and the draft stays', async () => {
+    const world = createBookingWorld();
+    const { draft, paymentId, code } = await openCheckout(world);
+    world.clock.advanceMinutes(3);
+
+    // Photographer stops accepting orders (e.g. revoked or turned off)
+    world.providers.set('p1', { verified: false, onboardingComplete: true });
+
+    const n = transferOf(world, { content: code, amount: PRICE });
+    const res = await handleTransferNotification(world.deps, n);
+
+    assert.deepEqual(res, { outcome: 'refunded', paymentId });
+
+    // Payment is refunded 100%
+    const p = await payment(world, paymentId);
+    assert.equal(p.status, 'refunded');
+
+    const refunds = await world.store.getRefundsForPayment(paymentId);
+    assert.equal(refunds.length, 1);
+    assert.equal(refunds[0]?.amount, PRICE);
+    assert.equal(refunds[0]?.failureReason ?? null, null);
+
+    // Booking remains a draft
+    const booking = await world.store.getBooking(draft.id);
+    assert.equal(booking?.status, 'draft');
+  });
+
+  it('a transfer for a draft of an accepting provider still moves it to requested', async () => {
+    const world = createBookingWorld();
+    const { draft, paymentId, code } = await openCheckout(world);
+    world.clock.advanceMinutes(3);
+
+    const n = transferOf(world, { content: code, amount: PRICE });
+    const res = await handleTransferNotification(world.deps, n);
+
+    assert.deepEqual(res, { outcome: 'paid', paymentId });
+    const booking = await world.store.getBooking(draft.id);
+    assert.equal(booking?.status, 'requested');
+  });
 });
 
 describe('assertPaymentPayer', () => {

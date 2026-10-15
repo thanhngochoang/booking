@@ -120,6 +120,12 @@ async function applyTransfer(
         refunds.push(late.refund);
         return { outcome: 'refunded', refunds };
       }
+      const accepts = await deps.providers.acceptsOrders(payment.payeeId);
+      if (!accepts) {
+        const late = await refundLatePayment(tx, deps, paid, now, 'provider_not_accepting');
+        refunds.push(late.refund);
+        return { outcome: 'refunded', refunds };
+      }
       await tx.setPayment(paid);
       await moveDraftToRequested(tx, deps, booking, paid, now);
       return { outcome: decision.excess > 0 ? 'paid_with_refund' : 'paid', refunds };

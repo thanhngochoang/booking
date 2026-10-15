@@ -26,6 +26,12 @@ export const ERROR_CODES = [
   'otp_invalid',
   /** The OTP is older than 5 minutes; request a new one. */
   'otp_expired',
+  /** Identity verification: the id number is already registered to another account (#135). */
+  'identity_in_use',
+  /** Identity verification: provider must be at least 18 years old (#135). */
+  'underage',
+  /** Identity verification: maximum attempts exceeded for today (VN calendar day) (#135). */
+  'rate_limited',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
