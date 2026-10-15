@@ -46,6 +46,7 @@ Decision 18 outcome: #151 was not merged when Task 7 ran, so no S27.07 code was 
 - `pickup_required` while the app sees no transport pick is handled as `addon_changed` (back to S04.01, list reloaded); only reachable with a stale list (Decision 10). Cost: a different error bar.
 - New core `BookingSummary.extraLine` (nullable, additive, documented in `shared-components.md`) for the S04.03 "Điểm đón" line; `BookingCard` had no slot.
 - S05.02: the pickup shows as meta "Điểm đón: {name}" under the transport row, as in mock `#S05.02-addons` (overrides the brief's separate row); a standalone row only when a pickup exists without a transport line. Cost: a layout revert.
+- Opening from "Đặt gói này" shows S04.02 first and moves to S04.01 about one round-trip later, once the add-ons have loaded and the package has an applicable one. Decision 11 does not say what shows before both loads, so this is left as is for the owner to decide (a skeleton hold on S04.01 is the alternative). Cost: one small follow-up.
 
 ## Copy not in the mock (Vietnamese verbatim) and the real l10n keys
 
@@ -82,6 +83,7 @@ The dev project `booking-c1922` is on the Spark plan and `BLAZE_ENABLED` is off,
 - Task 4: client contact regex was broader than the server. Fixed in the final wave: `lib/core/contact_filter.dart` ports `findContactLeak` from `packages/domain/src/contact_filter.ts` exactly (money stripped first, then e-mail, link, phone, Zalo); `validateAddonInput` returns `nameContact` or `descriptionContact` so S08.07 shows the error under the field that matched; `test/core/contact_filter_test.dart` carries the server's 16-row table, so a change to one filter needs the same change to the other. Untested: pickup with a `{lat,lng}` map point in the callable result, and a `createBooking` payload without pickup coordinates.
 - Task 5: settings add-ons row has no subtitle; `settings_mode_test.dart` uses a local `_tall` viewport helper; S08.06 row padding not pixel-matched to the mock's `0 10px`.
 - Task 6: Decision 11 entry flags survived a `build()` re-run, so the sheet could jump S04.01 to S04.02 and lose the picks when the contact stream emitted (first load, or `submit()` saving a new phone). Fixed in the final wave: the controller listens to `currentContactProvider` instead of watching it and only follows the phone while the customer has not typed another one; `next()` / `back()` set `_userActed`; tests cover a second contact value after the add-ons load, a phone saved during submit, and a package change clearing `bookingId`. Still open: the `pickup_required`-without-transport branch is untested (`booking_flow_controller.dart:515`); duplicate kind sort in `addon_pick_block`; an empty description renders an empty `Text`.
+- Final wave: the contact listener does not clear `phone` when the contact becomes null or loses its phone (e.g. sign-out mid-flow); `submit()` still validates and saves the phone, and the server stays the authority.
 - Task 6 concern: a `build()` re-run still resets the flow, but the only remaining watched provider is `calendarTodayProvider`, which never changes while the app runs.
 
 ## Deferred (not in this unit)
