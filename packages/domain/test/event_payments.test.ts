@@ -5,7 +5,7 @@ import type { EventCaller } from '../src/event.js';
 import type { EventPaymentDeps } from '../src/event_ports.js';
 import {
   cancelEventWithRefunds, checkTicketPayment, confirmFakeTicketPayment, handleTicketPayment, refundTicket,
-  releaseEventHolds, resendTicketRefund, ticketRefundPercent,
+  releaseEventHolds, ticketRefundHandler, ticketRefundPercent,
 } from '../src/event_payments.js';
 import { cancelRegistration, registerEvent } from '../src/event_registration.js';
 import { runEventSweeps } from '../src/event_sweeps.js';
@@ -15,6 +15,8 @@ import { getContactLink } from '../src/get_contact_link.js';
 import { MemoryEventStore } from '../src/memory_event_store.js';
 import type { RegistrationRecord } from '../src/ports.js';
 import { END, START, admin, createEventWorld, cu1, cu2, cu3, must, ph1, publishedEvent, type EventWorld } from './support/event_world.js';
+
+import { TEST_CIPHER } from './support/booking_world.js';
 
 const EV = 'ev1_aaaaaaaaaaaaaaaaaaaa';
 const PRICE = 150_000;
@@ -27,7 +29,7 @@ async function paidWorld(over: Record<string, unknown> = {}, host: EventCaller =
   const w = createEventWorld();
   const gateway = new FakePaymentGateway();
   await publishedEvent(w, { price: PRICE, ...over }, host);
-  return { ...w, gateway, pay: { ...w.deps, gateway } };
+  return { ...w, gateway, pay: { ...w.deps, gateway, cipher: TEST_CIPHER } };
 }
 
 const buy = (w: PaidWorld, who: EventCaller, quantity = 1, provider = 'momo') =>
@@ -371,18 +373,6 @@ describe('ticket refunds', () => {
 });
 
 describe('refund state on the ticket', () => {
-  /** Transaction `n` (1-based) of `w.store` throws: the process stopped there. */
-  function crashAt(w: PaidWorld, n: number): EventPaymentDeps {
-    let calls = 0;
-    const store = Object.assign(Object.create(w.store) as MemoryEventStore, {
-      runTransaction: <T>(fn: Parameters<MemoryEventStore['runTransaction']>[0]) => {
-        calls += 1;
-        if (calls === n) return Promise.reject(new Error('crash'));
-        return w.store.runTransaction(fn as never) as Promise<T>;
-      },
-    });
-    return { ...w.pay, events: store };
-  }
 
   test('the ticket mirrors its refund: pending until the gateway says done', async () => {
     const w = await paidWorld();
@@ -394,133 +384,43 @@ describe('refund state on the ticket', () => {
     assert.deepEqual([reg(w, id).status, reg(w, id).refundId, reg(w, id).refundStatus], ['refunded', refund?.id, 'done']);
   });
 
-  test('a gateway failure shows on the ticket as failed and stays with staff', async () => {
+  test('a throwing ticket refund stays pending and the registration still says pending', async () => {
     const w = await paidWorld();
     const id = await bought(w, cu1);
-    w.gateway.refundFailureId = undefined;
-    const fail = w.gateway.issueRefund.bind(w.gateway);
-    w.gateway.issueRefund = async (p) => {
-      w.gateway.refundFailureId = p.refundId;
-      return fail(p);
-    };
+    w.gateway.refundThrowCount = 1;
     await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
-    assert.deepEqual([refund?.status, refund?.manual, reg(w, id).refundStatus], ['failed', true, 'failed']);
-    // The clock never sends a failed refund again.
-    w.clock.advance(2 * HOUR);
-    assert.equal((await runEventSweeps(w.pay)).refundsResent, 0);
-    assert.deepEqual(w.gateway.refundCalls, [refund?.id]);
-    assert.equal(reg(w, id).refundStatus, 'failed');
+    assert.deepEqual([refund?.status, refund?.manual, refund?.attempts, reg(w, id).refundStatus], ['pending', false, 1, 'pending']);
   });
 
-  test('a refund left pending by a crash is sent again by the clock, once', async () => {
+  test('ticketRefundHandler.record mirrors done on the registration', async () => {
     const w = await paidWorld();
     const id = await bought(w, cu1);
-    w.clock.set(new Date(new Date(START).getTime() - 72 * HOUR));
-    // Transactions: 1 decide, 2 refund, (gateway), 3 record the outcome → the process stops at 3.
-    await assert.rejects(cancelRegistration(crashAt(w, 3), cu1, { eventId: EV, registrationId: id }), /crash/);
-    const paymentId = must(reg(w, id).paymentId);
-    const [refund] = w.store.refundsOf(paymentId);
-    assert.deepEqual([refund?.status, reg(w, id).status, reg(w, id).refundStatus], ['pending', 'refunded', 'pending']);
-    // Not before TICKET_REFUND_RESEND_AFTER_MINUTES: a send may still be on its way.
-    w.clock.advance(5 * 60_000);
-    assert.equal((await runEventSweeps(w.pay)).refundsResent, 0);
-    w.clock.advance(5 * 60_000);
-    assert.equal((await runEventSweeps(w.pay)).refundsResent, 1);
-    assert.deepEqual([w.store.refunds.get(must(refund).id)?.status, reg(w, id).refundStatus], ['done', 'done']);
-    // Sent under the same id: the gateway paid back once.
-    assert.deepEqual(w.gateway.refundCalls, [refund?.id, refund?.id]);
-    assert.equal(w.gateway.issuedRefunds.size, 1);
-    assert.equal((await runEventSweeps(w.pay)).refundsResent, 0);
-    assert.equal(w.store.refunds.size, 1);
-    assert.deepEqual(w.store.ledgerOf(paymentId).map((e) => e.type), ['ticket_received', 'refund_issued']);
-  });
-
-  /** A cancel whose outcome transaction crashed: the refund is left `pending`. */
-  async function pendingRefund(w: PaidWorld): Promise<{ id: string; refundId: string }> {
-    const id = await bought(w, cu1);
-    w.clock.set(new Date(new Date(START).getTime() - 72 * HOUR));
-    await assert.rejects(cancelRegistration(crashAt(w, 3), cu1, { eventId: EV, registrationId: id }), /crash/);
+    w.gateway.refundThrowCount = 1;
+    await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
     const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
-    assert.equal(refund?.status, 'pending');
-    return { id, refundId: must(refund).id };
-  }
+    assert.ok(refund);
 
-  test('two resends in parallel: a late failure never overwrites the done refund', async () => {
-    const w = await paidWorld();
-    const { id, refundId } = await pendingRefund(w);
-    // Both sends pass the pending check before either outcome is written; the
-    // first succeeds, the second (same id) comes back failed after it.
-    const gates: Array<() => void> = [];
-    const real = w.gateway.issueRefund.bind(w.gateway);
-    let calls = 0;
-    w.gateway.issueRefund = async (p) => {
-      const n = ++calls;
-      await new Promise<void>((resolve) => gates.push(resolve));
-      return n === 1 ? real(p) : { success: false };
-    };
-    const a = resendTicketRefund(w.pay, refundId);
-    const b = resendTicketRefund(w.pay, refundId);
-    while (gates.length < 2) await new Promise((r) => setImmediate(r));
-    must(gates[0])();
-    assert.equal(await a, true);
-    assert.equal(w.store.refunds.get(refundId)?.status, 'done');
-    must(gates[1])();
-    assert.equal(await b, true);
-    // The outcome is written only while the refund is pending: done stays done.
-    assert.deepEqual(
-      [w.store.refunds.get(refundId)?.status, w.store.refunds.get(refundId)?.manual, reg(w, id).refundStatus],
-      ['done', false, 'done'],
-    );
-    assert.equal(w.gateway.issuedRefunds.size, 1);
-  });
-
-  test('a resend re-checks pending: a done or failed refund is never sent again', async () => {
-    const w = await paidWorld();
-    const { refundId } = await pendingRefund(w);
-    assert.equal(await resendTicketRefund(w.pay, refundId), true);
-    assert.equal(w.store.refunds.get(refundId)?.status, 'done');
-    const sent = w.gateway.refundCalls.length;
-    // The clock picked it up while still pending, but it is done by now.
-    assert.equal(await resendTicketRefund(w.pay, refundId), false);
-    assert.equal(w.gateway.refundCalls.length, sent);
-    // A failed one stays with staff too.
-    w.store.refunds.set(refundId, { ...must(w.store.refunds.get(refundId)), status: 'failed', manual: true });
-    assert.equal(await resendTicketRefund(w.pay, refundId), false);
-    assert.equal(w.gateway.refundCalls.length, sent);
-    assert.equal(w.store.refunds.get(refundId)?.status, 'failed');
-  });
-
-  test('a refund that never reached the gateway is sent by the clock', async () => {
-    const w = await paidWorld();
-    const id = await bought(w, cu1);
-    w.clock.set(new Date(new Date(START).getTime() - 72 * HOUR));
-    const real = w.gateway.issueRefund.bind(w.gateway);
-    w.gateway.issueRefund = async () => {
-      throw new Error('process stopped');
-    };
-    // The outcome cannot be recorded either (the process is gone).
-    await assert.rejects(cancelRegistration(crashAt(w, 3), cu1, { eventId: EV, registrationId: id }), /crash/);
-    w.gateway.issueRefund = real;
-    assert.equal(w.gateway.issuedRefunds.size, 0);
-    w.clock.advance(10 * 60_000);
-    assert.equal((await runEventSweeps(w.pay)).refundsResent, 1);
-    assert.equal(w.gateway.issuedRefunds.size, 1);
+    const handler = ticketRefundHandler(w.pay);
+    await handler.record({ ...refund, status: 'done', attempts: 2 });
+    assert.equal(w.store.refunds.get(refund.id)?.status, 'done');
     assert.equal(reg(w, id).refundStatus, 'done');
   });
 
-  test('a booking refund left pending is not the event clock\'s', async () => {
+  test('ticketRefundHandler.resend sends under the same id', async () => {
     const w = await paidWorld();
     const id = await bought(w, cu1);
-    const p = pay(w, reg(w, id).paymentId);
-    w.store.seedPayment({ ...p, subjectType: 'booking' });
-    w.store.refunds.set('rf_booking', {
-      id: 'rf_booking', paymentId: p.id, subjectType: 'booking', amount: 1, percent: 100, status: 'pending', manual: false, fromEscrow: true,
-      method: 'gateway', attempts: 0,
-      createdAt: new Date(w.clock.now().getTime() - HOUR).toISOString(), updatedAt: w.clock.now().toISOString(),
-    });
-    assert.equal((await runEventSweeps(w.pay)).refundsResent, 0);
-    assert.deepEqual(w.gateway.refundCalls, []);
+    w.gateway.refundThrowCount = 1;
+    await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
+    const [refund] = w.store.refundsOf(must(reg(w, id).paymentId));
+    assert.ok(refund);
+
+    const handler = ticketRefundHandler(w.pay);
+    const resent = await handler.resend(refund);
+    assert.equal(resent.status, 'done');
+    assert.deepEqual(w.gateway.refundCalls, [refund.id, refund.id]);
+    assert.equal(w.gateway.issuedRefunds.size, 1);
+    assert.equal(reg(w, id).refundStatus, 'done');
   });
 
   test('a payment after the hold shows its refund on the cancelled ticket', async () => {

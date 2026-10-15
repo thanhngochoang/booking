@@ -28,6 +28,8 @@ import {
 import { requireCustomerPhone } from './require_phone.js';
 import { isTicketCode, ticketCodeCandidates } from './ticket_code.js';
 
+import type { AccountCipher } from './payout_ports.js';
+
 const HOUR_MS = 3_600_000;
 const NAME_MAX = 60;
 
@@ -66,7 +68,7 @@ export function cancellationRefundPercent(startAt: Date, now: Date): 0 | 100 {
 }
 
 /** Register needs the payment gateway only for paid events (Decision 27 → Task 9). */
-export type RegisterDeps = EventDeps & { readonly gateway?: PaymentGateway };
+export type RegisterDeps = EventDeps & { readonly gateway?: PaymentGateway; readonly cipher?: AccountCipher };
 
 type RegisterOut = { result: RegisterResult | null; soldOut: boolean; intent: Payment | null };
 
@@ -176,8 +178,8 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     return { result: resultOf(reg), soldOut: false, intent: payment };
   });
   if (out.soldOut || out.result === null) throw new DomainError('sold_out');
-  if (out.intent === null || deps.gateway === undefined) return out.result;
-  const payUrl = await issueTicketIntent({ ...deps, gateway: deps.gateway }, out.intent);
+  if (out.intent === null || deps.gateway === undefined || deps.cipher === undefined) return out.result;
+  const payUrl = await issueTicketIntent({ ...deps, gateway: deps.gateway, cipher: deps.cipher }, out.intent);
   return { ...out.result, payUrl };
 }
 
@@ -223,8 +225,8 @@ export async function cancelRegistration(
     return { status: 'cancelled' as const, refundPercent: null, refund: false };
   });
   if (!decided.refund) return { status: decided.status, refundPercent: decided.refundPercent };
-  if (deps.gateway === undefined) throw new DomainError('not_eligible');
-  const done = await refundTicket({ ...deps, gateway: deps.gateway }, eventId, regId, 100, 'customer_cancel');
+  if (deps.gateway === undefined || deps.cipher === undefined) throw new DomainError('not_eligible');
+  const done = await refundTicket({ ...deps, gateway: deps.gateway, cipher: deps.cipher }, eventId, regId, 100, 'customer_cancel');
   if (done === 'skipped') {
     // A host cancel (or a second tap) refunded it first: the ticket is refunded either way.
     const now = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));

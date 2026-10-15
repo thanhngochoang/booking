@@ -24,6 +24,8 @@ import { cancelEvent } from './event_use_cases.js';
 import { isId } from './ids.js';
 import { PLATFORM_PAYEE } from './payout.js';
 import { isVnE164 } from './phone.js';
+import { mergeRefundOutcome, sendRefundOnce } from './refunds.js';
+import type { RefundSubjectHandler } from './refund_subjects.js';
 
 const HOUR_MS = 3_600_000;
 const SWEEP_BATCH = 200;
@@ -102,66 +104,59 @@ export async function issueTicketIntent(deps: EventPaymentDeps, payment: Payment
   return intent.payUrl;
 }
 
-/** The event clock sends a ticket refund again once it has been `pending` this long. */
-export const TICKET_REFUND_RESEND_AFTER_MINUTES = 10;
-
 /**
- * Gateway refund after the money moved in the ledger, keyed by the refund id: the gateway treats a
- * repeated id as the same refund, so sending it again never pays twice. A failure is left to staff
- * (`failed`, `manual`), like bookings. The outcome is written only while the refund is still
- * `pending` (a parallel send that already finished wins) and mirrored on the registration, which
- * says "Đang hoàn" until it is `done`.
+ * Ticket refund subject handler: records outcomes via mergeRefundOutcome and mirrors refundStatus on registration.
  */
-async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, payment: Payment): Promise<Refund> {
-  let result: { success: boolean; providerRef?: string };
-  try {
-    result = await deps.gateway.issueRefund({
-      paymentId: refund.paymentId,
-      refundId: refund.id,
-      amount: refund.amount,
-      provider: payment.provider,
-      providerRef: refund.providerRef,
-      method: refund.method,
-    });
-  } catch {
-    result = { success: false };
-  }
-  return deps.events.runTransaction(async (tx) => {
-    const cur = await tx.getRefund(refund.id);
-    const reg = payment.eventId === undefined ? null : await tx.getRegistration(payment.eventId, payment.subjectId);
-    if (cur !== null && cur.status !== 'pending') return cur;
-    const now = deps.clock.now();
-    const updated: Refund = {
-      ...(cur ?? refund),
-      status: result.success ? 'done' : 'failed',
-      manual: !result.success,
-      providerRef: result.providerRef ?? refund.providerRef,
-      updatedAt: now.toISOString(),
-    };
-    tx.putRefund(updated);
-    if (reg !== null && reg.refundId === refund.id && reg.refundStatus !== updated.status) {
-      tx.putRegistration({ ...reg, refundStatus: updated.status, updatedAt: now, version: reg.version + 1 });
-    }
-    return updated;
-  });
+export function ticketRefundHandler(deps: EventPaymentDeps): RefundSubjectHandler {
+  return {
+    async resend(refund: Refund): Promise<Refund> {
+      const payment = await deps.events.runTransaction((tx) => tx.getPayment(refund.paymentId));
+      if (!payment) return refund;
+      const next = await sendRefundOnce(deps, refund, payment);
+      const recorded = await this.record(next);
+      return recorded ?? next;
+    },
+
+    async record(next: Refund): Promise<Refund | null> {
+      return deps.events.runTransaction(async (tx) => {
+        // Reads first
+        const stored = await tx.getRefund(next.id);
+        const merged = stored ? mergeRefundOutcome(stored, next) : next;
+        if (!merged) return null;
+
+        const payment = await tx.getPayment(merged.paymentId);
+        let reg: RegistrationDoc | null = null;
+        if (payment?.subjectType === 'event_registration' && payment.eventId !== undefined) {
+          reg = await tx.getRegistration(payment.eventId, payment.subjectId);
+        }
+
+        // Writes
+        tx.putRefund(merged);
+
+        if (reg !== null && reg.refundId === merged.id && reg.refundStatus !== merged.status) {
+          const now = deps.clock.now();
+          tx.putRegistration({
+            ...reg,
+            refundStatus: merged.status,
+            updatedAt: now,
+            version: reg.version + 1,
+          });
+        }
+
+        return merged;
+      });
+    },
+  };
 }
 
 /**
- * The event clock: sends a ticket refund left `pending` again (the process stopped between the
- * refund transaction and the gateway call, or before the outcome was saved). Idempotent: only a
- * still-`pending` ticket refund is sent, under its own id; `failed` ones stay with staff.
+ * Gateway refund after the money moved in the ledger, keyed by the refund id: the gateway treats a
+ * repeated id as the same refund, so sending it again never pays twice.
  */
-export async function resendTicketRefund(deps: EventPaymentDeps, refundId: string): Promise<boolean> {
-  const found = await deps.events.runTransaction(async (tx) => {
-    const r = await tx.getRefund(refundId);
-    if (r === null || r.status !== 'pending') return null;
-    const p = await tx.getPayment(r.paymentId);
-    if (p === null || p.subjectType !== 'event_registration') return null;
-    return { refund: r, payment: p };
-  });
-  if (found === null) return false;
-  await dispatchTicketRefund(deps, found.refund, found.payment);
-  return true;
+async function dispatchTicketRefund(deps: EventPaymentDeps, refund: Refund, payment: Payment): Promise<Refund> {
+  const next = await sendRefundOnce(deps, refund, payment);
+  const recorded = await ticketRefundHandler(deps).record(next);
+  return recorded ?? next;
 }
 
 type PendingRefund = { refund: Refund; payment: Payment };

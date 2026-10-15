@@ -220,14 +220,6 @@ export class MemoryEventStore implements EventStore {
     return [...this.registrations.values()].filter((r) => r.refundDue === true).slice(0, limit);
   }
 
-  async pendingTicketRefunds(before: Date, limit: number): Promise<Refund[]> {
-    return [...this.refunds.values()]
-      .filter((r) => r.subjectType === 'event_registration' && r.status === 'pending'
-        && new Date(r.createdAt).getTime() <= before.getTime())
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .slice(0, limit);
-  }
-
   async dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]> {
     return [...this.events.values()]
       .filter((e) => (e.status === 'open' || e.status === 'full' || e.status === 'closed')

@@ -11,6 +11,11 @@ import { expireOpenPayment } from './booking_payment_paths.js';
 import type { Payment, Refund } from './escrow.js';
 import { handleTransferNotification } from './handle_transfer.js';
 import { dispatchRefunds } from './refunds.js';
+import { resendPendingRefunds, type RefundSubjects } from './refund_subjects.js';
+
+export interface PaymentSweepExtras {
+  readonly refundSubjects?: RefundSubjects;
+}
 
 export interface PaymentSweepResults {
   /** Transfers found by reconciliation that were new (not duplicates). */
@@ -19,17 +24,26 @@ export interface PaymentSweepResults {
   readonly expired: number;
   /** Expired payments whose received money was refunded (a refund the gateway refused stays `failed` for staff). */
   readonly refunded: number;
+  /** Refunds left pending that were re-sent successfully. */
+  readonly refundsResent: number;
   /** Provider queries or transfers that threw; the next run retries them. */
   readonly reconcileFailed: number;
   /** Expiries whose transaction threw (the next run retries them), or whose refund result could not be recorded. */
   readonly expireFailed: number;
+  /** Pending refunds whose re-send threw. */
+  readonly resendFailed: number;
+  /** Pending refunds skipped because no subject handler was registered. */
+  readonly skippedRefunds: number;
 }
 
 /** Only checkout payments (with a transfer code) belong to this clock; tickets have their own. */
 const isCheckoutPayment = (p: Payment): p is Payment & { readonly transferCode: string } =>
   p.subjectType === 'booking' && typeof p.transferCode === 'string';
 
-export async function runPaymentSweeps(deps: BookingDeps): Promise<PaymentSweepResults> {
+export async function runPaymentSweeps(
+  deps: BookingDeps,
+  extras?: PaymentSweepExtras,
+): Promise<PaymentSweepResults> {
   const now = deps.clock.now();
 
   // 1. Reconcile: one failing payment or transfer is counted and skipped, never stops the batch.
@@ -93,5 +107,27 @@ export async function runPaymentSweeps(deps: BookingDeps): Promise<PaymentSweepR
     }
   }
 
-  return { reconciled, expired, refunded, reconcileFailed, expireFailed };
+  // 3. Re-send pending refunds: wrapped so a query failure counts as resendFailed and never fails the sweep.
+  let refundsResent = 0;
+  let resendFailed = 0;
+  let skippedRefunds = 0;
+  try {
+    const res = await resendPendingRefunds(deps, extras?.refundSubjects);
+    refundsResent = res.resent;
+    resendFailed = res.failed;
+    skippedRefunds = res.skipped;
+  } catch {
+    resendFailed += 1;
+  }
+
+  return {
+    reconciled,
+    expired,
+    refunded,
+    refundsResent,
+    reconcileFailed,
+    expireFailed,
+    resendFailed,
+    skippedRefunds,
+  };
 }
