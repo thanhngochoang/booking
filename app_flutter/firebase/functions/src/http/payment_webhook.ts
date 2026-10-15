@@ -11,9 +11,21 @@
  */
 
 import * as logger from 'firebase-functions/logger';
-import { handleTransferNotification, isDomainError, type BookingDeps, type TransferNotification } from '@photobooking/domain';
+import {
+  applyRefundEvent,
+  handleTransferNotification,
+  isDomainError,
+  type BookingDeps,
+  type RefundSubjects,
+} from '@photobooking/domain';
 import { fakePaymentsAllowed } from '../infra/fake_payments.js';
-import { FAKE_SIGNATURE_HEADER, fakeWebhookSecret, parseFakeTransfer, verifyFakeWebhook } from '../infra/fake_webhook.js';
+import {
+  FAKE_SIGNATURE_HEADER,
+  fakeWebhookSecret,
+  parseFakeWebhook,
+  verifyFakeWebhook,
+  type FakeWebhookBody,
+} from '../infra/fake_webhook.js';
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -33,7 +45,12 @@ export interface WebhookResponse {
 
 const refuse = (status: number, error: string): WebhookResponse => ({ status, body: { ok: false, error } });
 
-export async function handlePaymentWebhook(req: WebhookRequest, deps: BookingDeps, env: Env = process.env): Promise<WebhookResponse> {
+export async function handlePaymentWebhook(
+  req: WebhookRequest,
+  deps: BookingDeps,
+  env: Env = process.env,
+  refundSubjects?: RefundSubjects,
+): Promise<WebhookResponse> {
   // The fake provider is the only one so far; it does not exist where real money could move.
   if (req.provider !== 'fake' || !fakePaymentsAllowed(env)) return refuse(404, 'unknown_provider');
 
@@ -47,14 +64,31 @@ export async function handlePaymentWebhook(req: WebhookRequest, deps: BookingDep
     return refuse(401, 'bad_signature');
   }
 
-  let n: TransferNotification;
+  let parsed: FakeWebhookBody;
   try {
-    n = parseFakeTransfer(req.rawBody);
+    parsed = parseFakeWebhook(req.rawBody);
   } catch {
     logger.warn('paymentWebhook refused', { provider: req.provider, reason: 'invalid_argument' });
     return refuse(400, 'invalid_argument');
   }
 
+  if (parsed.kind === 'refund') {
+    const e = parsed.event;
+    try {
+      const outcome = await applyRefundEvent(deps, e, refundSubjects);
+      logger.info('paymentWebhook handled', { provider: e.provider, refundId: e.refundId, outcome });
+      return { status: 200, body: { ok: true, outcome } };
+    } catch (err) {
+      if (isDomainError(err) && err.code === 'invalid_argument') {
+        logger.warn('paymentWebhook refused', { provider: e.provider, refundId: e.refundId, reason: 'invalid_argument' });
+        return refuse(400, 'invalid_argument');
+      }
+      logger.error('paymentWebhook failed', { provider: e.provider, refundId: e.refundId, ...(err instanceof Error ? { name: err.name } : {}) });
+      return refuse(500, 'internal');
+    }
+  }
+
+  const n = parsed.transfer;
   try {
     const { outcome } = await handleTransferNotification(deps, n);
     logger.info('paymentWebhook handled', { provider: n.provider, txnId: n.txnId, outcome });
@@ -89,6 +123,7 @@ export async function servePaymentWebhook(
   res: HttpResponseLike,
   deps: BookingDeps,
   env: Env = process.env,
+  refundSubjects?: RefundSubjects,
 ): Promise<void> {
   if (req.method !== 'POST') {
     res.status(405).set('Allow', 'POST').json({ ok: false, error: 'method_not_allowed' });
@@ -100,6 +135,6 @@ export async function servePaymentWebhook(
   }
   const provider = typeof req.query.provider === 'string' ? req.query.provider : undefined;
   const rawBody = Buffer.isBuffer(req.rawBody) ? req.rawBody.toString('utf8') : '';
-  const out = await handlePaymentWebhook({ provider, rawBody, headers }, deps, env);
+  const out = await handlePaymentWebhook({ provider, rawBody, headers }, deps, env, refundSubjects);
   res.status(out.status).json(out.body);
 }

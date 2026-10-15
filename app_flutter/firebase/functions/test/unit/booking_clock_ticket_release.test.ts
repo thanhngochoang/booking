@@ -37,6 +37,8 @@ const START = new Date('2026-10-12T02:00:00.000Z');
 const END = new Date('2026-10-12T05:00:00.000Z');
 const HOUR = 3_600_000;
 
+import { TEST_CIPHER } from './support/payment_world.js';
+
 async function completedTicket(host: EventCaller): Promise<Payment> {
   const store = new MemoryEventStore();
   let now = new Date('2026-10-06T03:00:00.000Z');
@@ -53,6 +55,7 @@ async function completedTicket(host: EventCaller): Promise<Payment> {
     ids: { newId: () => ID(next++) },
     random: (n) => Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11) % 256),
     gateway: new FakePaymentGateway(),
+    cipher: TEST_CIPHER,
   };
   const path = `eventCovers/${host.uid}/${EVENT_ID}/c.jpg`;
   await saveEventDraft(deps, host, {
@@ -80,6 +83,7 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
     providers: { acceptsOrders: async () => true },
     blocks: new FakeBlockGate(),
     gateway: new FakePaymentGateway(),
+    cipher: TEST_CIPHER,
     clock: { now: () => now },
     ids: { newId: () => `led_${next++}` },
   };

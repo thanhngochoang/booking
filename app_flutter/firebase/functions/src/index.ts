@@ -19,6 +19,8 @@ import {
   handleAnswerReschedule,
 } from './callables/chat.js';
 import {
+  BOOKING_CLOCK_OPTIONS,
+  BOOKING_REFUND_CALLABLE_OPTIONS,
   CALLABLE_OPTIONS,
   CREATE_PAYOUTS_OPTIONS,
   PAYMENT_CALLABLE_OPTIONS,
@@ -28,6 +30,7 @@ import {
   TRIGGER_OPTIONS,
   WEBHOOK_OPTIONS,
 } from './config.js';
+import { liveRefundSubjects } from './infra/live_refunds.js';
 import {
   handleLookupPayoutAccountName,
   handleRequestPayoutOtp,
@@ -143,7 +146,9 @@ export const confirmFakePayment = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
  * `POST /paymentWebhook?provider=fake`: the provider reports a transfer; authenticated by its
  * signature over the raw body (the fake provider exists only where fake payments are allowed).
  */
-export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) => servePaymentWebhook(req, res, liveBookingDeps()));
+export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) =>
+  servePaymentWebhook(req, res, liveBookingDeps(), undefined, liveRefundSubjects()),
+);
 
 /** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
 export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
@@ -151,13 +156,13 @@ export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
 });
 
 /** Booking lifecycle transition */
-export const transitionBooking = onCall(CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
+export const transitionBooking = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
 
 /** Open dispute on completed/upcoming booking */
 export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
 
 /** 15-minute booking lifecycle and escrow sweep clock */
-export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 300 }, async () => {
+export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
   await handleBookingClock(undefined, liveReminderDeps());
 });
 

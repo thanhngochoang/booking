@@ -190,4 +190,34 @@ describe('payment callables', () => {
       httpsError('permission-denied', 'permission_denied'),
     );
   });
+
+  it('confirmFakePayment sends FAKE_PAYER, so a cancel refund is sent by bank transfer', async () => {
+    const w = paymentWorld();
+    const p = await openPayment(w);
+    const paid = await handleConfirmFakePayment(
+      { auth: { uid: 'c1' }, data: { paymentId: p.paymentId, kind: 'exact' } },
+      w.deps,
+      WEBHOOK_ENV,
+    );
+    assert.deepEqual(paid, { outcome: 'paid' });
+
+    // Customer cancels the requested booking
+    const { transitionBooking } = await import('@photobooking/domain');
+    const cancelled = await transitionBooking(w.deps, {
+      bookingId: p.bookingId,
+      action: 'cancel',
+      actorId: 'c1',
+    });
+    assert.equal(cancelled.status, 'cancelled');
+
+    const refunds = await w.store.getRefundsForPayment(p.paymentId);
+    assert.equal(refunds.length, 1);
+    const refund = refunds[0];
+    assert.ok(refund);
+    assert.equal(refund.method, 'bank_transfer');
+    assert.equal(refund.status, 'done');
+    assert.equal(refund.destination?.holderName, 'KHACH THU NGHIEM');
+    assert.equal(refund.destination?.source, 'payer');
+  });
 });
+

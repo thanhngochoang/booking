@@ -24,6 +24,7 @@ import {
 } from '../../src/callables/event.js';
 import { handleEventClock } from '../../src/scheduled/event_clock.js';
 import { ownCoverUpload } from '../../src/infra/event_firestore.js';
+import { TEST_CIPHER } from './support/payment_world.js';
 
 const ID = (n: number): string => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n).padStart(2, '0')}`;
 const EVENT_ID = ID(1);
@@ -36,6 +37,7 @@ describe('event callables', () => {
 
   const deps = (): EventCallableDeps & EventPaymentDeps => ({
     gateway: new FakePaymentGateway(),
+    cipher: TEST_CIPHER,
     events: store,
     people: {
       photographer: async (uid) =>
@@ -187,11 +189,11 @@ describe('event callables', () => {
     now = new Date('2026-10-12T00:00:00.000Z'); // after the deadline (start - 12 h)
     // The event starts within 48 h: the reminder step marks it (no paid ticket, nothing sent).
     assert.deepEqual(await handleEventClock(deps() as EventDeps, { notify }), {
-      closed: 1, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0, soonEvents: 1, soonSent: 0,
+      closed: 1, completed: 0, consentExpired: 0, refunded: 0, soonEvents: 1, soonSent: 0,
     });
     now = new Date('2026-10-12T06:00:00.000Z');
     assert.deepEqual(await handleEventClock(deps() as EventDeps, { notify }), {
-      closed: 0, completed: 1, consentExpired: 0, refunded: 0, refundsResent: 0, soonEvents: 0, soonSent: 0,
+      closed: 0, completed: 1, consentExpired: 0, refunded: 0, soonEvents: 0, soonSent: 0,
     });
     assert.equal(store.events.get(EVENT_ID)?.status, 'completed');
   });

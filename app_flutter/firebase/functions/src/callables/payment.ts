@@ -15,7 +15,7 @@ import {
   type TransferOutcome,
 } from '@photobooking/domain';
 import { assertFakePaymentsAllowed, checkoutGatewayAvailable } from '../infra/fake_payments.js';
-import { FAKE_SIGNATURE_HEADER, fakeWebhookSecret, signFakeWebhook } from '../infra/fake_webhook.js';
+import { FAKE_PAYER, FAKE_SIGNATURE_HEADER, fakeWebhookSecret, signFakeWebhook } from '../infra/fake_webhook.js';
 import { handlePaymentWebhook } from '../http/payment_webhook.js';
 import { handleCallableError } from './booking.js';
 import type { CallableInput } from './get_contact_link.js';
@@ -111,6 +111,7 @@ export async function handleConfirmFakePayment(
       amount,
       content: kind === 'wrong_content' ? FAKE_WRONG_CONTENT : payment.transferCode,
       receivedAt: now.toISOString(),
+      payer: FAKE_PAYER,
     });
     const res = await handlePaymentWebhook(
       { provider: 'fake', rawBody, headers: { [FAKE_SIGNATURE_HEADER]: signFakeWebhook(rawBody, secret) } },

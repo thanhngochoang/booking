@@ -25,6 +25,7 @@ import { handleConfirmFakePayment } from '../../src/callables/payment.js';
 import { CALLABLE_OPTIONS, DEV_PROJECT_ID, PAYMENT_CALLABLE_OPTIONS, currentProjectId } from '../../src/config.js';
 import { assertFakePaymentsAllowed, fakePaymentsAllowed } from '../../src/infra/fake_payments.js';
 import { handleEventClock, handleReleaseEventHolds } from '../../src/scheduled/event_clock.js';
+import { TEST_CIPHER } from './support/payment_world.js';
 
 const ID = (n: number): string => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n).padStart(2, '0')}`;
 const EVENT_ID = ID(1);
@@ -84,6 +85,7 @@ describe('fake payment gate', () => {
       providers: { acceptsOrders: async () => true },
       blocks: new FakeBlockGate(),
       gateway: new FakePaymentGateway(),
+      cipher: TEST_CIPHER,
       clock: { now: () => new Date('2026-10-01T10:00:00.000Z') },
       ids: { newId: () => 'id_1' },
     };
@@ -116,6 +118,7 @@ describe('ticket payment callables', () => {
     ids: { newId: () => ID(next++) },
     random: (n) => Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11 + next) % 256),
     gateway,
+    cipher: TEST_CIPHER,
   });
 
   const publishPaid = async (): Promise<void> => {

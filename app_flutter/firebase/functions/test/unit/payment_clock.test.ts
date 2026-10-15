@@ -24,7 +24,16 @@ describe('payment clock', () => {
     const lines = await captureLogs(t, async () => {
       results = await handlePaymentClock(w.deps);
     });
-    assert.deepEqual(results, { reconciled: 1, expired: 1, refunded: 1, reconcileFailed: 0, expireFailed: 0 });
+    assert.deepEqual(results, {
+      reconciled: 1,
+      expired: 1,
+      refunded: 1,
+      refundsResent: 0,
+      reconcileFailed: 0,
+      expireFailed: 0,
+      resendFailed: 0,
+      skippedRefunds: 0,
+    });
     assert.equal((await w.store.getPayment(p.paymentId))?.status, 'expired');
 
     const logged = lines.filter((l) => l.includes('paymentClock'));
@@ -33,11 +42,62 @@ describe('payment clock', () => {
     const { severity: _s, message: _m, ...fields } = entry;
     void _s;
     void _m;
-    assert.deepEqual(fields, { reconciled: 1, expired: 1, refunded: 1, reconcileFailed: 0, expireFailed: 0 });
+    assert.deepEqual(fields, {
+      reconciled: 1,
+      expired: 1,
+      refunded: 1,
+      refundsResent: 0,
+      reconcileFailed: 0,
+      expireFailed: 0,
+      resendFailed: 0,
+      skippedRefunds: 0,
+    });
     for (const l of lines) {
       assert.doesNotMatch(l, /PAYER|5555/, l);
       assert.doesNotMatch(l, new RegExp(p.paymentId), l);
     }
+  });
+
+  it('the clock re-sends a pending refund through the default subjects', async () => {
+    const w = paymentWorld();
+    const p = await openPayment(w);
+    const at = new Date('2026-10-01T10:00:00.000Z');
+    await w.store.runTransaction(async (tx) => {
+      tx.setPayment({
+        id: p.paymentId,
+        subjectType: 'booking',
+        subjectId: p.bookingId,
+        payerId: 'c1',
+        payeeId: 'p1',
+        provider: 'fake',
+        amount: 1_000_000,
+        status: 'paid',
+        escrowStatus: 'held',
+        idempotencyKey: 'idem_1',
+        createdAt: at.toISOString(),
+        updatedAt: at.toISOString(),
+      });
+      tx.addRefund({
+        id: 'ref_pending_1',
+        paymentId: p.paymentId,
+        subjectType: 'booking',
+        amount: 1_000_000,
+        percent: 100,
+        status: 'pending',
+        method: 'gateway',
+        attempts: 1,
+        lastAttemptAt: new Date(at.getTime() - 15 * 60_000).toISOString(),
+        manual: false,
+        fromEscrow: true,
+        createdAt: at.toISOString(),
+        updatedAt: at.toISOString(),
+      });
+    });
+
+    const res = await handlePaymentClock(w.deps, { refundSubjects: {} });
+    assert.equal(res.refundsResent, 1);
+    const ref = await w.store.getRefund('ref_pending_1');
+    assert.equal(ref?.status, 'done');
   });
 
   it('a sweep that throws is logged without details and rethrown', async (t) => {
