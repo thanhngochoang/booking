@@ -24,6 +24,7 @@ import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/settings/role_mode_card.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
@@ -118,6 +119,9 @@ Future<Widget> _app(
         FakeNotificationPermission(NotificationPermissionStatus.denied),
       ),
       deviceRegistryProvider.overrideWithValue(FakeDeviceRegistry()),
+      // Keeps the mode card inside the 800x600 test view; the S21.02 row is
+      // covered by settings_verify_row_test.dart.
+      verifyStartReadyProvider.overrideWithValue(false),
     ],
     child: MaterialApp.router(
       routerConfig: router,

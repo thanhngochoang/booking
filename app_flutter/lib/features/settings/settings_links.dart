@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // plans. A row whose route does not exist yet stays hidden, never a dead
 // link; the plan that adds the route flips its flag to `true`.
 
-/// #135 flips this when `/verify/start` (S21.02) exists.
-final verifyStartReadyProvider = Provider<bool>((ref) => false);
+/// `/verify/start` (S21.02) exists since #135.
+final verifyStartReadyProvider = Provider<bool>((ref) => true);
 
 /// #136 flips this when `/me/studio` (S26.03) and `/studio/members` (S26.01)
 /// exist.

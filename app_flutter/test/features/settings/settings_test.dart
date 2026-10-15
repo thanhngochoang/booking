@@ -1061,13 +1061,11 @@ void main() {
     ) async {
       for (final type in [ProviderType.individual, ProviderType.studio]) {
         await open(tester, type: type);
-        for (final key in [
-          'settings-verify',
-          'settings-my-studio',
-          'settings-studio-members',
-        ]) {
+        for (final key in ['settings-my-studio', 'settings-studio-members']) {
           expect(find.byKey(Key(key)), findsNothing, reason: '$type $key');
         }
+        // `/verify/start` exists since #135: its row shows without overrides.
+        expect(find.byKey(const Key('settings-verify')), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
       }
     });

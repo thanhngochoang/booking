@@ -5436,4 +5436,280 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get verifyPhoneDone => 'Đã xác minh số điện thoại';
+
+  @override
+  String get verifyStartTitle => 'Bắt đầu nhận đơn';
+
+  @override
+  String verifyStepCounter(int n, int total) {
+    return '$n / $total';
+  }
+
+  @override
+  String get verifyStartIntro =>
+      'Làm từng bước, lưu lại tiến độ. Thoát giữa chừng thì lần sau làm tiếp từ bước đang dở.';
+
+  @override
+  String get verifyStepPhone => 'Số điện thoại';
+
+  @override
+  String get verifyStepPhoneTodo => 'Nhận mã 6 số qua SMS';
+
+  @override
+  String verifyStepPhoneDone(String last4) {
+    return 'Đã xác minh · •••• $last4';
+  }
+
+  @override
+  String get verifyStepIdentity => 'Xác minh danh tính';
+
+  @override
+  String get verifyStepIdentityTodo => 'VNeID hoặc quét chip CCCD';
+
+  @override
+  String get verifyStepIdentityDoneVneid => 'Đã khớp qua VNeID';
+
+  @override
+  String get verifyStepIdentityDoneNfc => 'Đã khớp qua chip CCCD';
+
+  @override
+  String get verifyStepRules => 'Đồng ý quy định nhận việc';
+
+  @override
+  String get verifyStepRulesTodo => '5 điều chính và một dấu tích';
+
+  @override
+  String get verifyStepRulesDone => 'Đã đồng ý';
+
+  @override
+  String get verifyStateDone => 'Xong';
+
+  @override
+  String get verifyStateNow => 'Đang làm';
+
+  @override
+  String get verifyStateTodo => 'Chưa làm';
+
+  @override
+  String get verifyStateFix => 'Cần sửa';
+
+  @override
+  String verifyStartNote(int total) {
+    return 'Xong $total bước thì bấm \"Gửi duyệt\". Staff duyệt trong 24 giờ; được duyệt là có tích xanh và nhận đơn ngay.';
+  }
+
+  @override
+  String get verifyContinue => 'Tiếp tục';
+
+  @override
+  String get verifySubmit => 'Gửi duyệt';
+
+  @override
+  String verifyAtToday(String time) {
+    return '$time hôm nay';
+  }
+
+  @override
+  String verifyAtTomorrow(String time) {
+    return '$time ngày mai';
+  }
+
+  @override
+  String verifyAtDate(String time, String date) {
+    return '$time ngày $date';
+  }
+
+  @override
+  String get verifyRulesTitle => 'Quy định nhận việc';
+
+  @override
+  String get verifyRulesIntro => 'Đọc 5 điều chính trước khi gửi duyệt.';
+
+  @override
+  String get verifyRule1 =>
+      'Khách trả 100% khi đặt; tiền được giữ và chuyển cho bạn theo 2 mốc: sau buổi chụp, và sau khi khách đồng ý ảnh + 48 giờ.';
+
+  @override
+  String get verifyRule2 =>
+      'Bàn giao hai lớp: gửi ảnh mẫu có watermark trước; link ảnh gốc chỉ mở khi khách đồng ý.';
+
+  @override
+  String get verifyRule3 =>
+      'Khách huỷ trước 48 giờ được hoàn 100%, 24–48 giờ hoàn 50%, dưới 24 giờ không hoàn; bạn huỷ thì khách được hoàn 100%.';
+
+  @override
+  String get verifyRule4 =>
+      'Thợ cá nhân: nền tảng khấu trừ và nộp thay thuế trên phần chi trả cho bạn.';
+
+  @override
+  String get verifyRule5 =>
+      'Họ tên, ngày sinh, số định danh được mã hoá; không lưu ảnh selfie; chỉ dùng để xác minh, chống trùng tài khoản và khấu trừ thuế.';
+
+  @override
+  String get verifyRulesAgree => 'Tôi đã đọc và đồng ý quy định nhận việc';
+
+  @override
+  String get verifyPendingHeading => 'Đang chờ duyệt · trong 24 giờ';
+
+  @override
+  String verifyPendingSent(String time, String deadline) {
+    return 'Gửi lúc $time · có kết quả trước $deadline';
+  }
+
+  @override
+  String get verifyTlIdentity => 'Đã xác minh danh tính';
+
+  @override
+  String verifyTlIdentityBody(String method, String name) {
+    return '$method · $name';
+  }
+
+  @override
+  String get verifyMethodVneid => 'VNeID';
+
+  @override
+  String get verifyMethodNfc => 'Chip CCCD';
+
+  @override
+  String get verifyTlSubmitted => 'Đã gửi duyệt';
+
+  @override
+  String verifyTlSubmittedBody(String when) {
+    return '$when · đã đồng ý quy định nhận việc';
+  }
+
+  @override
+  String get verifyTlReview => 'Staff duyệt';
+
+  @override
+  String get verifyTlReviewBody => 'Duyệt xong là có tích xanh và nhận đơn';
+
+  @override
+  String get verifyPendingNote =>
+      'Trong lúc chờ, bạn vẫn sửa portfolio, tạo gói và trò chuyện với khách.';
+
+  @override
+  String get verifyViewProfile => 'Xem hồ sơ';
+
+  @override
+  String get verifyRejectedTitle => 'Hồ sơ chưa được duyệt';
+
+  @override
+  String verifyRejectedReason(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String get verifyReject_fake_avatar =>
+      'Ảnh đại diện không phải ảnh người thật. Đổi sang ảnh chân dung rõ mặt của bạn rồi gửi lại.';
+
+  @override
+  String get verifyReject_stolen_portfolio =>
+      'Portfolio có ảnh không phải của bạn. Gỡ những ảnh đó rồi gửi lại.';
+
+  @override
+  String get verifyReject_identity_mismatch =>
+      'Danh tính không khớp với tên trên hồ sơ. Xác minh lại danh tính rồi gửi lại.';
+
+  @override
+  String get verifyReject_duplicate_account =>
+      'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.';
+
+  @override
+  String get verifyReject_underage => 'Bạn cần đủ 18 tuổi để nhận đơn.';
+
+  @override
+  String verifyFreeResubmitsLeft(int n) {
+    return 'Còn $n lần gửi lại miễn phí';
+  }
+
+  @override
+  String get verifyFixAvatar => 'Ảnh đại diện';
+
+  @override
+  String get verifyFixAvatarBody => 'Cần ảnh chân dung thật, rõ mặt';
+
+  @override
+  String get verifyFixPortfolio => 'Portfolio';
+
+  @override
+  String get verifyFixPortfolioBody => 'Gỡ ảnh không phải của bạn';
+
+  @override
+  String get verifyRejectedNote =>
+      'Chỉ sửa mục bị từ chối; các bước đã xong được giữ nguyên. Gửi lại thì staff duyệt trong 24 giờ.';
+
+  @override
+  String get verifyResubmit => 'Sửa và gửi lại';
+
+  @override
+  String get verifyApprovedHeading => 'Bạn đã có thể nhận đơn';
+
+  @override
+  String verifyApprovedBody(String when) {
+    return 'Duyệt lúc $when. Tích xanh đã hiện cạnh tên bạn.';
+  }
+
+  @override
+  String get verifyRevokedHeading => 'Xác minh đã bị thu hồi';
+
+  @override
+  String get verifyRevokedBody =>
+      'Bạn tạm thời không nhận đơn. Liên hệ hỗ trợ để biết thêm.';
+
+  @override
+  String verifySupportLine(String email) {
+    return 'Hỗ trợ: $email';
+  }
+
+  @override
+  String settingsVerifyStepsLeft(int n) {
+    return 'Còn $n bước';
+  }
+
+  @override
+  String get settingsVerifyPending => 'Đang chờ duyệt';
+
+  @override
+  String get settingsVerifyApproved => 'Đã xác minh';
+
+  @override
+  String get settingsVerifyRejected => 'Chưa được duyệt';
+
+  @override
+  String get settingsVerifyRevoked => 'Đã thu hồi';
+
+  @override
+  String get settingsBusiness => 'Xác minh doanh nghiệp';
+
+  @override
+  String get settingsBusinessTodo => 'Con dấu Studio, tới 30 thợ';
+
+  @override
+  String profileOwnerStepsLeft(int n) {
+    return 'Còn $n bước để nhận đơn';
+  }
+
+  @override
+  String get profileOwnerStepsBody =>
+      'Khách chưa đặt được bạn cho tới khi xác minh xong.';
+
+  @override
+  String get profileOwnerPending => 'Đang chờ duyệt · trong 24 giờ';
+
+  @override
+  String get profileOwnerPendingBody =>
+      'Hồ sơ vẫn hiện \"Chưa nhận đơn\" với khách tới khi được duyệt.';
+
+  @override
+  String get profileOwnerRejected => 'Hồ sơ chưa được duyệt';
+
+  @override
+  String get profileOwnerRejectedBody => 'Xem lý do và gửi lại.';
+
+  @override
+  String get profileOwnerContinue => 'Tiếp tục';
+
+  @override
+  String get profileOwnerView => 'Xem';
 }

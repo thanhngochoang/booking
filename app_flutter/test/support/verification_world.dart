@@ -4,24 +4,43 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/data/contact/external_launcher.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/verification/phone_verifier.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/data/verification/verification_repository.dart';
 import 'package:photobooking/features/verification/verify_phone_screen.dart';
+import 'package:photobooking/features/verification/verify_rules_screen.dart';
+import 'package:photobooking/features/verification/verify_start_screen.dart';
 
 import 'screen_host.dart';
 
-/// A signed-in provider with in-memory contact, phone verifier and
-/// verification repository, S21.01 mounted at `/verify/phone`; `/verify/start`
-/// and the profile tab are stubs. [log] records, in order, the phone linked
-/// (`link:+84…`), the contact saved (`save:+84…`) and `confirmPhoneVerified`.
+/// Wednesday 15/10/2026 9:40 in Vietnam.
+final verificationNow = DateTime.utc(2026, 10, 15, 2, 40);
+
+/// The support address the S21.02 tests pass in (the build has none).
+const verificationSupport = 'hotro@photobooking.vn';
+
+/// A signed-in provider with in-memory contact, phone verifier, verification
+/// and intro repositories and a fixed clock ([verificationNow]). S21.01 is
+/// mounted at `/verify/phone`, S21.02 at `/verify/start` (rules at
+/// `/verify/start/rules`) when [startScreen] is true; `/verify/identity`,
+/// `/settings/profile`, `/u/:uid` and the profile tab are stubs. [log]
+/// records, in order, the phone linked (`link:+84…`), the contact saved
+/// (`save:+84…`) and `confirmPhoneVerified`.
 class VerificationWorld {
-  VerificationWorld({this.feeRequired = false});
+  VerificationWorld({this.feeRequired = false, this.startScreen = false});
 
   /// Mirrors `verificationFeeRequiredProvider` (false in #135: 3 steps).
   final bool feeRequired;
+
+  /// Mounts the real S21.02 screens instead of a `/verify/start` stub.
+  final bool startScreen;
 
   late String uid;
   final auth = FakeAuthRepository();
@@ -29,6 +48,8 @@ class VerificationWorld {
   late final contacts = _LoggingContacts(log);
   late final verifier = _LoggingVerifier(log);
   late final repo = _LoggingVerificationRepository(log, uid: uid);
+  final intros = FakePhotographerIntroRepository();
+  final launcher = FakeExternalLauncher();
   late GoRouter router;
 
   /// Registers the signed-in provider; call before [app].
@@ -53,7 +74,23 @@ class VerificationWorld {
     ),
   );
 
+  /// Seeds `verifications/{uid}`; [phoneVerified] is the contact flag both
+  /// the app and the fake server read (Decision 3).
+  void seedDoc(Map<String, dynamic>? doc, {bool phoneVerified = true}) {
+    repo.phoneVerified = phoneVerified;
+    repo.seed(uid, doc);
+    if (phoneVerified) {
+      seedContact('+84912343456', verified: true);
+    }
+  }
+
+  /// Seeds the own `photographers/{uid}` intro.
+  void seedIntro(PhotographerIntro intro) => intros.seed(uid, intro);
+
   List<Override> get overrides => [
+    clockProvider.overrideWithValue(() => verificationNow),
+    photographerIntroRepositoryProvider.overrideWithValue(intros),
+    externalLauncherProvider.overrideWithValue(launcher),
     authRepositoryProvider.overrideWithValue(auth),
     authStateProvider.overrideWith((ref) => Stream.value(AuthUser(uid: uid))),
     userContactRepositoryProvider.overrideWithValue(contacts),
@@ -73,7 +110,23 @@ class VerificationWorld {
           builder: (_, s) =>
               VerifyPhoneScreen(returnTo: s.uri.queryParameters['returnTo']),
         ),
-        GoRoute(path: '/verify/start', builder: stub),
+        if (startScreen)
+          GoRoute(
+            path: '/verify/start',
+            builder: (_, _) =>
+                const VerifyStartScreen(supportAddress: verificationSupport),
+            routes: [
+              GoRoute(
+                path: 'rules',
+                builder: (_, _) => const VerifyRulesScreen(),
+              ),
+            ],
+          )
+        else
+          GoRoute(path: '/verify/start', builder: stub),
+        GoRoute(path: '/verify/identity', builder: stub),
+        GoRoute(path: '/settings/profile', builder: stub),
+        GoRoute(path: '/u/:uid', builder: stub),
         GoRoute(path: '/profile', builder: stub),
       ],
     );
@@ -118,7 +171,8 @@ class _LoggingVerifier extends FakePhoneVerifier {
 }
 
 class _LoggingVerificationRepository extends FakeVerificationRepository {
-  _LoggingVerificationRepository(this.log, {required super.uid});
+  _LoggingVerificationRepository(this.log, {required super.uid})
+    : super(now: () => verificationNow);
   final List<String> log;
 
   @override

@@ -193,7 +193,7 @@ class _VerifyPhoneBodyState extends ConsumerState<_VerifyPhoneBody> {
       VerifyPhoneStep.done => (
         _DoneStep(phone: s.phone, onChangeNumber: _controller.changeNumber),
         AppButton.primary(
-          l.setupNext,
+          l.verifyContinue,
           key: const Key('verify-continue'),
           onPressed: _leave,
         ),

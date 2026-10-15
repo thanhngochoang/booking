@@ -54,6 +54,8 @@ import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
 import 'package:photobooking/features/verification/verify_phone_screen.dart';
+import 'package:photobooking/features/verification/verify_rules_screen.dart';
+import 'package:photobooking/features/verification/verify_start_screen.dart';
 
 const _authRoutes = {'/login', '/register'};
 const _onboardingRoute = '/onboarding/role';
@@ -181,6 +183,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/verify/phone',
         builder: (_, state) =>
             VerifyPhoneScreen(returnTo: state.uri.queryParameters['returnTo']),
+      ),
+      GoRoute(
+        path: verifyStartPath,
+        builder: (_, _) => const VerifyStartScreen(),
+        routes: [
+          GoRoute(path: 'rules', builder: (_, _) => const VerifyRulesScreen()),
+        ],
       ),
       GoRoute(
         path: '/setup',
