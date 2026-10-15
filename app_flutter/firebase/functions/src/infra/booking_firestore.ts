@@ -27,6 +27,7 @@ import {
   type BookingPickup,
   type BookingCheckout,
   type BookingContactSnapshot,
+  type BookingSource,
   type BookingStatus,
   type EscrowStatus,
   type PaymentProvider,
@@ -43,6 +44,8 @@ import {
   type TransferOutcome,
   type TransferRecord,
   type DeliverySample,
+  type SlotOffer,
+  type SpotDay,
 } from '@photobooking/domain';
 import {
   deliveryRoundToFirestore,
@@ -51,6 +54,17 @@ import {
   privateDeliveryToFirestore,
   privateDeliveryFromFirestore,
 } from './delivery_firestore.js';
+import {
+  SPOTS_COLLECTION,
+  SPOT_SCHEDULES_COLLECTION,
+  SPOT_SLOT_OFFERS_COLLECTION,
+  SPOT_DAYS_COLLECTION,
+  spotFromFirestore,
+  scheduleFromFirestore,
+  offerFromFirestore,
+  spotDayFromFirestore,
+  spotDayToFirestore,
+} from './spot_firestore.js';
 
 export const BOOKINGS_COLLECTION = 'bookings';
 export const AVAILABILITY_COLLECTION = 'availability';
@@ -312,6 +326,10 @@ export function bookingToFirestore(b: Booking): DocumentData {
       : null,
     samplesPurgeAfter: toTimestamp(b.samplesPurgeAfter),
     samplesPurged: b.samplesPurged ?? false,
+    source: b.source ?? null,
+    spotId: b.spotId ?? null,
+    spotScheduleId: b.spotScheduleId ?? null,
+    slotOfferId: b.slotOfferId ?? null,
     checkout: checkoutToFirestore(b.checkout),
     payableUntil: toTimestamp(b.payableUntil),
     ...studioFieldsToFirestore(b),
@@ -426,6 +444,10 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     completedAt: toIsoString(d.completedAt),
     reviewedAt: toIsoString(d.reviewedAt),
     chatId: d.chatId ?? undefined,
+    ...(typeof d.source === 'string' ? { source: d.source as BookingSource } : {}),
+    ...(typeof d.spotId === 'string' ? { spotId: d.spotId } : {}),
+    ...(typeof d.spotScheduleId === 'string' ? { spotScheduleId: d.spotScheduleId } : {}),
+    ...(typeof d.slotOfferId === 'string' ? { slotOfferId: d.slotOfferId } : {}),
     ...(typeof d.revisionsIncluded === 'number' ? { revisionsIncluded: d.revisionsIncluded } : {}),
     ...(typeof d.revisionsUsed === 'number' ? { revisionsUsed: d.revisionsUsed } : {}),
     ...(typeof d.revisionsGranted === 'number' ? { revisionsGranted: d.revisionsGranted } : {}),
@@ -791,7 +813,13 @@ export class FirestoreBookingStore implements StudioBookingStore {
           );
           if (!snap.exists) return null;
           const d = snap.data();
-          return d ? { state: d.state, bookingId: d.bookingId } : null;
+          if (!d) return null;
+          return {
+            state: d.state,
+            bookingId: typeof d.bookingId === 'string' ? d.bookingId : undefined,
+            scheduleId: typeof d.scheduleId === 'string' ? d.scheduleId : undefined,
+            spotId: typeof d.spotId === 'string' ? d.spotId : undefined,
+          };
         },
         getCustomerDraftForDay: async (customerId, photographerId, day) => {
           const q = this.firestore
@@ -918,6 +946,28 @@ export class FirestoreBookingStore implements StudioBookingStore {
           const snap = await fTx.get(ref);
           return privateDeliveryFromFirestore(snap.data());
         },
+        getSpot: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(SPOTS_COLLECTION).doc(id));
+          return spotFromFirestore(snap.id, snap.data());
+        },
+        getSpotSchedule: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(SPOT_SCHEDULES_COLLECTION).doc(id));
+          return scheduleFromFirestore(snap.id, snap.data());
+        },
+        getSlotOffer: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(SPOT_SLOT_OFFERS_COLLECTION).doc(id));
+          return offerFromFirestore(snap.id, snap.data());
+        },
+        getSpotDay: async (scheduleId, day) => {
+          const snap = await fTx.get(this.firestore.collection(SPOT_DAYS_COLLECTION).doc(`${scheduleId}_${day}`));
+          return spotDayFromFirestore(snap.data());
+        },
+        setSpotDay: async (spotDay) => {
+          fTx.set(
+            this.firestore.collection(SPOT_DAYS_COLLECTION).doc(`${spotDay.scheduleId}_${spotDay.day}`),
+            spotDayToFirestore(spotDay),
+          );
+        },
       };
 
       return fn(tx);
@@ -933,7 +983,23 @@ export class FirestoreBookingStore implements StudioBookingStore {
     const snap = await this.firestore.collection(AVAILABILITY_COLLECTION).doc(photographerId).collection('days').doc(day).get();
     if (!snap.exists) return null;
     const d = snap.data();
-    return d ? { state: d.state, bookingId: d.bookingId } : null;
+    if (!d) return null;
+    return {
+      state: d.state,
+      bookingId: typeof d.bookingId === 'string' ? d.bookingId : undefined,
+      scheduleId: typeof d.scheduleId === 'string' ? d.scheduleId : undefined,
+      spotId: typeof d.spotId === 'string' ? d.spotId : undefined,
+    };
+  }
+
+  async getSlotOffer(id: string): Promise<SlotOffer | null> {
+    const snap = await this.firestore.collection(SPOT_SLOT_OFFERS_COLLECTION).doc(id).get();
+    return offerFromFirestore(snap.id, snap.data());
+  }
+
+  async getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null> {
+    const snap = await this.firestore.collection(SPOT_DAYS_COLLECTION).doc(`${scheduleId}_${day}`).get();
+    return spotDayFromFirestore(snap.data());
   }
 
   async getCustomerDraftForDay(customerId: string, photographerId: string, day: string): Promise<Booking | null> {

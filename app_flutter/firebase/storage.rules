@@ -105,6 +105,13 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // Spots (plan 2026-10-08 S29): spots/{spotId}/{file}. Signed-in users read;
+    // only the server (CLI) uploads.
+    match /spots/{spotId}/{file} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     // Anything else is closed.
     match /{allPaths=**} {
       allow read, write: if false;

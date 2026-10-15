@@ -337,7 +337,7 @@ export class FirestoreEventStore implements EventStore {
         availability: async (uid, dayKey) => {
           const d = (await fTx.get(dayRef(uid, dayKey))).data();
           if (d === undefined) return null;
-          const state = d.state === 'booked' || d.state === 'pending' ? d.state : 'off';
+          const state = d.state === 'booked' || d.state === 'pending' || d.state === 'spot' ? d.state : 'off';
           const rec: AvailabilityRecord = {
             state,
             ...(str(d.eventId) !== null ? { eventId: str(d.eventId) as string } : {}),

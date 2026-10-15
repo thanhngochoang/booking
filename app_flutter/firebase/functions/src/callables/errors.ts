@@ -38,6 +38,13 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   pickup_required: 'failed-precondition',
   // The provider already has the maximum number of active add-ons.
   addon_limit: 'resource-exhausted',
+  // S29 trending spots & spot schedules
+  outside_schedule: 'failed-precondition',
+  slot_taken: 'failed-precondition',
+  day_conflict: 'failed-precondition',
+  schedule_limit: 'resource-exhausted',
+  spot_archived: 'failed-precondition',
+  schedule_has_bookings: 'failed-precondition',
   // Free text carries a phone number, e-mail or link; `details.field` names the input.
   contact_leak: 'invalid-argument',
   // S26 studio membership (#136): another studio, 7-day cooldown, open assigned bookings; caps and full studio.
@@ -55,7 +62,9 @@ export function toHttpsError(e: unknown): HttpsError {
   if (e instanceof HttpsError) return e;
   if (isDomainError(e)) {
     // `field` names the offending form input (never user text), so the app can mark it.
-    const details = e.field === undefined ? { code: e.code } : { code: e.code, field: e.field };
+    const details: Record<string, unknown> = { code: e.code };
+    if (e.field !== undefined) details.field = e.field;
+    if (e.details !== undefined) Object.assign(details, e.details);
     return new HttpsError(TRANSPORT_CODE[e.code], e.code, details);
   }
   return new HttpsError('internal', 'internal', { code: 'internal' });

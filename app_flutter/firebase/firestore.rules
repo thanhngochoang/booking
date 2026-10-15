@@ -827,6 +827,34 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Spots (spec 2026-10-08 S29). Written only by the server (CLI, rankSpots, callables).
+    match /spots/{spotId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /spot_rankings/{key} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /spot_directory/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /spot_schedules/{id} {
+      allow read: if signedIn() && (resource.data.status == 'open'
+        || resource.data.providerId == request.auth.uid || resource.data.assigneeId == request.auth.uid);
+      allow write: if false;
+    }
+    match /spot_slot_offers/{id} {
+      allow read: if signedIn() && (resource.data.status == 'open' || resource.data.providerId == request.auth.uid);
+      allow write: if false;
+    }
+    // Public projection of a spot day: times only, never who booked (Global Constraints).
+    match /spot_days/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

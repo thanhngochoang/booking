@@ -2475,3 +2475,134 @@ test("a studio's full day is server-written; the owner may only turn it off", as
   await seedDoc('availability/sfs1/days/2026-10-16', { state: 'booked', bookingId: 'b1' });
   await assertFails(setDoc(doc(db, 'availability/sfs1/days/2026-10-16'), { state: 'off' }));
 });
+
+// S29 Trending Spots security rules tests (written, not run locally in CI session)
+test('a signed-in user reads spots, spot_rankings, spot_directory and spot_days; a signed-out user reads none', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spots/spot1'), { name: 'Spot 1' });
+    await setDoc(doc(f, 'spot_rankings/r1'), { rank: 1 });
+    await setDoc(doc(f, 'spot_directory/dir1'), { name: 'Dir 1' });
+    await setDoc(doc(f, 'spot_days/sd1'), { date: '2026-10-15' });
+  });
+  const authDb = env.authenticatedContext('u1').firestore();
+  const unauthDb = env.unauthenticatedContext().firestore();
+  await assertSucceeds(getDoc(doc(authDb, 'spots/spot1')));
+  await assertSucceeds(getDoc(doc(authDb, 'spot_rankings/r1')));
+  await assertSucceeds(getDoc(doc(authDb, 'spot_directory/dir1')));
+  await assertSucceeds(getDoc(doc(authDb, 'spot_days/sd1')));
+
+  await assertFails(getDoc(doc(unauthDb, 'spots/spot1')));
+  await assertFails(getDoc(doc(unauthDb, 'spot_rankings/r1')));
+  await assertFails(getDoc(doc(unauthDb, 'spot_directory/dir1')));
+  await assertFails(getDoc(doc(unauthDb, 'spot_days/sd1')));
+});
+
+test('nobody writes spots, spot_rankings, spot_directory, spot_schedules, spot_slot_offers or spot_days from a client', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spots/sp_w'), { name: 'Spot' });
+    await setDoc(doc(f, 'spot_rankings/rk_w'), { rank: 1 });
+    await setDoc(doc(f, 'spot_directory/dir_w'), { name: 'Dir' });
+    await setDoc(doc(f, 'spot_schedules/sch_w'), { status: 'open', providerId: 'u1' });
+    await setDoc(doc(f, 'spot_slot_offers/off_w'), { status: 'open', providerId: 'u1' });
+    await setDoc(doc(f, 'spot_days/day_w'), { date: '2026-10-15' });
+  });
+  const db = env.authenticatedContext('u1').firestore();
+  // create
+  await assertFails(setDoc(doc(db, 'spots/sp_new'), { name: 'New' }));
+  await assertFails(setDoc(doc(db, 'spot_rankings/rk_new'), { rank: 2 }));
+  await assertFails(setDoc(doc(db, 'spot_directory/dir_new'), { name: 'New' }));
+  await assertFails(setDoc(doc(db, 'spot_schedules/sch_new'), { status: 'open' }));
+  await assertFails(setDoc(doc(db, 'spot_slot_offers/off_new'), { status: 'open' }));
+  await assertFails(setDoc(doc(db, 'spot_days/day_new'), { date: '2026-10-16' }));
+  // update
+  await assertFails(updateDoc(doc(db, 'spots/sp_w'), { name: 'Changed' }));
+  await assertFails(updateDoc(doc(db, 'spot_rankings/rk_w'), { rank: 2 }));
+  await assertFails(updateDoc(doc(db, 'spot_directory/dir_w'), { name: 'Changed' }));
+  await assertFails(updateDoc(doc(db, 'spot_schedules/sch_w'), { status: 'cancelled' }));
+  await assertFails(updateDoc(doc(db, 'spot_slot_offers/off_w'), { status: 'closed' }));
+  await assertFails(updateDoc(doc(db, 'spot_days/day_w'), { date: '2026-10-17' }));
+  // delete
+  await assertFails(deleteDoc(doc(db, 'spots/sp_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_rankings/rk_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_directory/dir_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_schedules/sch_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_slot_offers/off_w')));
+  await assertFails(deleteDoc(doc(db, 'spot_days/day_w')));
+});
+
+test('a customer reads an open schedule and cannot read a cancelled one', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spot_schedules/sch_open'), { status: 'open', providerId: 'prov1', assigneeId: 'asg1' });
+    await setDoc(doc(f, 'spot_schedules/sch_cancelled'), { status: 'cancelled', providerId: 'prov1', assigneeId: 'asg1' });
+  });
+  const db = env.authenticatedContext('cust1').firestore();
+  await assertSucceeds(getDoc(doc(db, 'spot_schedules/sch_open')));
+  await assertFails(getDoc(doc(db, 'spot_schedules/sch_cancelled')));
+});
+
+test('the provider and the assignee read their cancelled schedule', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'spot_schedules/sch_canc_2'), {
+      status: 'cancelled',
+      providerId: 'prov2',
+      assigneeId: 'asg2',
+    });
+  });
+  const provDb = env.authenticatedContext('prov2').firestore();
+  const asgDb = env.authenticatedContext('asg2').firestore();
+  const otherDb = env.authenticatedContext('other_u').firestore();
+  await assertSucceeds(getDoc(doc(provDb, 'spot_schedules/sch_canc_2')));
+  await assertSucceeds(getDoc(doc(asgDb, 'spot_schedules/sch_canc_2')));
+  await assertFails(getDoc(doc(otherDb, 'spot_schedules/sch_canc_2')));
+});
+
+test('a customer list query on spot_schedules filtered by status == open succeeds; unfiltered fails', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'spot_schedules/sch_q1'), {
+      status: 'open',
+      providerId: 'prov_q',
+    });
+  });
+  const db = env.authenticatedContext('cust_q').firestore();
+  await assertSucceeds(getDocs(query(collection(db, 'spot_schedules'), where('status', '==', 'open'))));
+  await assertFails(getDocs(collection(db, 'spot_schedules')));
+});
+
+test('a customer reads an open offer, not a closed one; the provider reads a closed one', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    await setDoc(doc(f, 'spot_slot_offers/off_open'), { status: 'open', providerId: 'prov_off' });
+    await setDoc(doc(f, 'spot_slot_offers/off_closed'), { status: 'closed', providerId: 'prov_off' });
+  });
+  const custDb = env.authenticatedContext('cust_off').firestore();
+  const provDb = env.authenticatedContext('prov_off').firestore();
+  await assertSucceeds(getDoc(doc(custDb, 'spot_slot_offers/off_open')));
+  await assertFails(getDoc(doc(custDb, 'spot_slot_offers/off_closed')));
+  await assertSucceeds(getDoc(doc(provDb, 'spot_slot_offers/off_closed')));
+});
+
+test('the owner cannot create or delete a spot availability day (only off)', async () => {
+  await asPhotographer('spot_p1');
+  const db = env.authenticatedContext('spot_p1').firestore();
+  const day = dayPath('spot_p1', '2026-10-20');
+  await assertFails(setDoc(doc(db, day), { state: 'spot', scheduleId: 'sch1', spotId: 'sp1', updatedAt: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), day), { state: 'spot', scheduleId: 'sch1', spotId: 'sp1' }));
+  await assertFails(deleteDoc(doc(db, day)));
+  await assertFails(setDoc(doc(db, day), { state: 'off' }));
+});
+
+test('spots storage: a signed-in user reads spots/x/card.jpg; nobody uploads there', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await uploadBytes(ref(c.storage(), 'spots/sp1/card.jpg'), photo(), jpeg);
+  });
+  const authSt = env.authenticatedContext('u1').storage();
+  const unauthSt = env.unauthenticatedContext().storage();
+  await assertSucceeds(getBytes(ref(authSt, 'spots/sp1/card.jpg')));
+  await assertFails(getBytes(ref(unauthSt, 'spots/sp1/card.jpg')));
+  await assertFails(uploadBytes(ref(authSt, 'spots/sp1/card.jpg'), photo(), jpeg));
+  await assertFails(deleteObject(ref(authSt, 'spots/sp1/card.jpg')));
+});

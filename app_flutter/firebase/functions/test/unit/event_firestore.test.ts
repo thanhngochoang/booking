@@ -213,4 +213,22 @@ describe('Firestore mapping for events', () => {
     };
     assert.equal(await firestoreRegistrationReader(firestore as never).get('nope'), null);
   });
+
+  it('event adapter maps state spot to spot, not off', async () => {
+    const firestore = {
+      runTransaction: async (fn: (fTx: unknown) => Promise<unknown>) => {
+        const fTx = {
+          get: async () => ({ data: () => ({ state: 'spot' }) }),
+        };
+        return fn(fTx);
+      },
+      doc: () => ({}),
+      collection: () => ({}),
+    };
+    const store = new FirestoreEventStore(firestore as never);
+    const rec = await store.runTransaction(async (tx) => {
+      return (await tx.availability('ph1', '2026-10-18')) as { state: string };
+    });
+    assert.equal(rec.state, 'spot');
+  });
 });

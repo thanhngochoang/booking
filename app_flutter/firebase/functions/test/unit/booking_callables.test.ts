@@ -41,6 +41,7 @@ function createTestDeps(): {
 
   const contactsMap = new Map<string, CustomerContactRecord>([
     ['c1', { name: 'Nguyễn Văn A', phone: '+84903123456', allowZalo: true, allowWhatsApp: false }],
+    ['c2', { name: 'Trần Thị B', phone: '+84903654321', allowZalo: false, allowWhatsApp: false }],
   ]);
 
   const deps: BookingDeps = {
@@ -369,6 +370,112 @@ describe('Booking callables', () => {
       releasedEscrows: 0,
       autoCompletions: 0,
     });
+  });
+
+  test('createBooking with spotScheduleId and a client place stores the spots name', async () => {
+    const { deps, store } = createTestDeps();
+    store.spots.set('spot1', {
+      id: 'spot1',
+      name: 'Hồ Gươm',
+      city: 'Hà Nội',
+      areaCode: 'hn-hoan-kiem',
+      point: { lat: 21.0285, lng: 105.8542 },
+      geohash: 'w7er8u0xx',
+      radiusM: 1000,
+      cover: null,
+      description: 'Hồ Hoàn Kiếm',
+      tips: [],
+      seasonMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      pinned: false,
+      hidden: false,
+      status: 'active',
+      hotScore: 10,
+      stats: { posts14d: 0, events: 0, bookings14d: 0, openSchedules: 1, providersWeek: 1, providersWeekend: 1 },
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+      rankedAt: null,
+      updatedBy: 'system',
+    });
+    store.schedules.set('sched1', {
+      id: 'sched1',
+      providerId: 'p1',
+      assigneeId: null,
+      spotId: 'spot1',
+      days: ['2026-10-15'],
+      window: { start: '06:00', end: '11:00' },
+      serviceIds: ['svc1'],
+      priceFrom: 1_000_000,
+      status: 'open',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    });
+    store.availability.set('p1_2026-10-15', { state: 'spot', scheduleId: 'sched1', spotId: 'spot1' });
+
+    const booking = await handleCreateBooking(
+      {
+        auth: { uid: 'c1' },
+        data: {
+          photographerId: 'p1',
+          serviceId: 'svc1',
+          day: '2026-10-15',
+          start: '06:00',
+          place: { name: 'Nhà tôi' },
+          spotScheduleId: 'sched1',
+        },
+      },
+      deps,
+    );
+    assert.equal(booking.place.name, 'Hồ Gươm');
+    assert.equal(booking.spotId, 'spot1');
+    assert.equal(booking.spotScheduleId, 'sched1');
+    assert.equal(booking.source, 'spot');
+
+    // slot_taken maps to failed-precondition
+    await assert.rejects(
+      handleCreateBooking(
+        {
+          auth: { uid: 'c2' },
+          data: {
+            photographerId: 'p1',
+            serviceId: 'svc1',
+            day: '2026-10-15',
+            start: '07:00',
+            place: { name: 'Bất kỳ' },
+            spotScheduleId: 'sched1',
+          },
+        },
+        deps,
+      ),
+      (err: unknown) => {
+        assert.ok(err instanceof HttpsError);
+        assert.equal(err.code, 'failed-precondition');
+        assert.equal(err.message, 'slot_taken');
+        return true;
+      },
+    );
+
+    // a normal createBooking on a spot day is day_taken
+    await assert.rejects(
+      handleCreateBooking(
+        {
+          auth: { uid: 'c1' },
+          data: {
+            photographerId: 'p1',
+            serviceId: 'svc1',
+            day: '2026-10-15',
+            start: '14:00',
+            place: { name: 'Công viên' },
+          },
+        },
+        deps,
+      ),
+      (err: unknown) => {
+        assert.ok(err instanceof HttpsError);
+        assert.equal(err.code, 'already-exists');
+        assert.equal(err.message, 'day_taken');
+        return true;
+      },
+    );
   });
 });
 

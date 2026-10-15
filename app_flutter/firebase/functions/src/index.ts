@@ -116,6 +116,13 @@ import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './tr
 import { liveAlbumDeps } from './infra/live_album.js';
 import { handleDeleteAddon, handleSaveAddon } from './callables/addon.js';
 import { liveAddonDeps } from './infra/live_addon.js';
+import {
+  handleSaveSpotSchedule,
+  handleCancelSpotSchedule,
+  handleSaveSlotOffer,
+  handleCloseSlotOffer,
+} from './callables/spot.js';
+import { liveSpotScheduleDeps } from './infra/live_spot.js';
 import { FirestoreFollowerCounter } from './infra/follower_counter.js';
 import { handleFollowWrite } from './triggers/engagement_counters.js';
 import { liveDiscoveryDeps } from './infra/live_discovery.js';
@@ -447,6 +454,28 @@ export const saveAddon = onCall(CALLABLE_OPTIONS, (request) => handleSaveAddon(r
 
 /** `{addonId}` → `{}`; bookings keep their snapshot lines. */
 export const deleteAddon = onCall(CALLABLE_OPTIONS, (request) => handleDeleteAddon(request, liveAddonDeps()));
+
+// ---- spot schedules and slot offers (S29) ----
+
+/** `{scheduleId?, spotId, days, window, serviceIds, assigneeId?}` → `{scheduleId, addedDays}` */
+export const saveSpotSchedule = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSaveSpotSchedule(request, liveSpotScheduleDeps()),
+);
+
+/** `{scheduleId}` → `{}` */
+export const cancelSpotSchedule = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCancelSpotSchedule(request, liveSpotScheduleDeps()),
+);
+
+/** `{offerId?, scheduleId, name, price, slotMinutes, gapMinutes, photoCount, editedCount, deliveryDays}` → `{offerId}` */
+export const saveSlotOffer = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSaveSlotOffer(request, liveSpotScheduleDeps()),
+);
+
+/** `{offerId}` → `{}` */
+export const closeSlotOffer = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCloseSlotOffer(request, liveSpotScheduleDeps()),
+);
 
 // ---- portfolio albums (plan C) ----
 

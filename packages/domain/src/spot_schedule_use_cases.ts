@@ -104,7 +104,7 @@ export async function saveSpotSchedule(
     }
     const conflicts = dayConflicts(input.days, availRecords, existing?.id ?? null);
     if (conflicts.length > 0) {
-      throw new DomainError('day_conflict', undefined, { days: conflicts });
+      throw new DomainError('day_conflict', 'days', { days: conflicts });
     }
 
     if (existing) {
@@ -115,7 +115,7 @@ export async function saveSpotSchedule(
       }
       const blocks = scheduleEditBlocks(removedDays, input.window, spotDaysToCheck);
       if (blocks.length > 0) {
-        throw new DomainError('schedule_has_bookings', undefined, { days: blocks });
+        throw new DomainError('schedule_has_bookings', 'days', { days: blocks });
       }
     }
 
