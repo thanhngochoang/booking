@@ -103,16 +103,25 @@ export async function expireOpenPayment(
   payment: Payment,
   now: Date,
 ): Promise<Refund | undefined> {
-  await tx.setPayment({ ...payment, status: 'expired', escrowStatus: 'refunded', updatedAt: now.toISOString() });
   const received = payment.receivedAmount ?? 0;
-  if (received <= 0) return undefined;
-  const { refund, ledgerEntry } = transferRefund({
+  if (received <= 0) {
+    await tx.setPayment({ ...payment, status: 'expired', escrowStatus: 'refunded', updatedAt: now.toISOString() });
+    return undefined;
+  }
+  const { refund, ledgerEntry, payment: updatedPayment } = transferRefund({
     payment,
     refundId: deps.ids.newId(),
     ledgerEntryId: deps.ids.newId(),
     amount: received,
     reason: 'underpaid_expired',
+    destination: payment.payer,
     now,
+  });
+  await tx.setPayment({
+    ...updatedPayment,
+    status: 'expired',
+    escrowStatus: 'refunded',
+    updatedAt: now.toISOString(),
   });
   await tx.addRefund(refund);
   await tx.addLedgerEntry(ledgerEntry);

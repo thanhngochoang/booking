@@ -5,6 +5,7 @@
 import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
 import type { Payment, PaymentMethod, Refund, RefundMethod, LedgerEntry } from './escrow.js';
+import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 
 export interface ServiceRecord {
@@ -119,6 +120,7 @@ export interface BookingTx {
   getPayment(id: string): Promise<Payment | null>;
   getPaymentByIdempotencyKey(key: string): Promise<Payment | null>;
   setPayment(payment: Payment): Promise<void>;
+  getRefund(id: string): Promise<Refund | null>;
   addRefund(refund: Refund): Promise<void>;
   addLedgerEntry(entry: LedgerEntry): Promise<void>;
   addBookingEvent(event: BookingEventRecord): Promise<void>;
@@ -135,7 +137,12 @@ export interface BookingStore {
   getPayment(id: string): Promise<Payment | null>;
   getPaymentByIdempotencyKey(key: string): Promise<Payment | null>;
   getPaymentsForBooking(bookingId: string): Promise<readonly Payment[]>;
+  getRefund(id: string): Promise<Refund | null>;
   getRefundsForPayment(paymentId: string): Promise<readonly Refund[]>;
+  /** status pending, lastAttemptAt <= before, any subject, oldest first. */
+  findPendingRefunds(before: Date, limit?: number): Promise<readonly Refund[]>;
+  /** status awaiting_account, confirmBy <= now (rows without confirmBy never), oldest first. */
+  awaitingRefundsDue(now: Date, limit: number): Promise<readonly Refund[]>;
   getLedgerEntriesForPayment(paymentId: string): Promise<readonly LedgerEntry[]>;
   getContactSnapshot(bookingId: string): Promise<BookingContactSnapshot | null>;
   /**
@@ -221,6 +228,7 @@ export interface BookingDeps {
   readonly blocks: BlockGate;
   readonly contacts: CustomerContactReader;
   readonly gateway: PaymentGateway;
+  readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }

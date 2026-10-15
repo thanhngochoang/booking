@@ -300,8 +300,8 @@ describe('createPayment', () => {
     assert.equal((await world.store.getBooking(draft.id))?.checkout?.paymentId, second.paymentId);
     const refunds = await world.store.getRefundsForPayment(first.paymentId);
     assert.deepEqual(
-      refunds.map((r) => [r.amount, r.reason, r.status, r.manual]),
-      [[400_000, 'underpaid_expired', 'failed', true]],
+      refunds.map((r) => [r.amount, r.reason, r.status, r.manual, r.attempts]),
+      [[400_000, 'underpaid_expired', 'pending', false, 1]],
     );
     assert.equal(world.gateway.issuedRefunds.size, 0);
   });

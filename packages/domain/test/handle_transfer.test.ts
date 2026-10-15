@@ -339,7 +339,7 @@ describe('handleTransferNotification', () => {
     assert.equal(world.store.ledgerEntries.size, 0);
   });
 
-  it('a refund that throws is marked failed and the next refund still goes out', async () => {
+  it('a refund that throws stays pending with attempts 1 and the next refund still goes out', async () => {
     const world = createBookingWorld();
     const { draft, paymentId, code } = await openCheckout(world);
     await world.store.deleteBooking(draft.id);
@@ -351,10 +351,10 @@ describe('handleTransferNotification', () => {
     assert.deepEqual(res, { outcome: 'refunded', paymentId });
     const refunds = await world.store.getRefundsForPayment(paymentId);
     assert.deepEqual(
-      refunds.map((r) => [r.amount, r.reason, r.status, r.manual]),
+      refunds.map((r) => [r.amount, r.reason, r.status, r.manual, r.attempts]),
       [
-        [30_000, 'overpaid_excess', 'failed', true],
-        [PRICE, 'late_payment_draft_expired', 'done', false],
+        [30_000, 'overpaid_excess', 'pending', false, 1],
+        [PRICE, 'late_payment_draft_expired', 'done', false, 1],
       ],
     );
     assert.equal(world.gateway.refundCalls.length, 2);

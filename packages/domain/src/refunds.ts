@@ -1,10 +1,18 @@
 import { REFUND_MAX_ATTEMPTS } from './booking_policy.js';
 import type { BookingDeps, PaymentGateway } from './booking_ports.js';
-import type { Booking, PaymentProvider } from './booking.js';
-import { isEscrowRefund, refundMethodOf, type LedgerEntry, type Payment, type Refund } from './escrow.js';
+import type { PaymentProvider } from './booking.js';
+import {
+  refundMethodOf,
+  type LedgerEntry,
+  type Payment,
+  type Refund,
+  type RefundDestination,
+  type StoredBankAccount,
+} from './escrow.js';
 import { revealDestination } from './payer_account.js';
 import type { AccountCipher } from './payout_ports.js';
 import type { Clock } from './ports.js';
+import { bookingRefundHandler } from './refund_subjects.js';
 
 export interface RefundSendDeps {
   readonly gateway: PaymentGateway;
@@ -106,11 +114,18 @@ export function transferRefund(params: {
   readonly ledgerEntryId: string;
   readonly amount: number;
   readonly reason: PaymentRefundReason;
+  readonly destination?: StoredBankAccount | null;
   readonly providerRef?: string;
   readonly now: Date;
-}): { readonly refund: Refund; readonly ledgerEntry: LedgerEntry } {
-  const { payment, refundId, amount, reason, now } = params;
+}): { readonly refund: Refund; readonly ledgerEntry: LedgerEntry; readonly payment: Payment } {
+  const { payment, refundId, amount, reason, destination, now } = params;
   const at = now.toISOString();
+  const method = refundMethodOf(payment.method);
+  const dest: RefundDestination | null = destination
+    ? { ...destination, source: 'payer' }
+    : null;
+  const isAwaiting = method === 'bank_transfer' && !dest;
+
   const refund: Refund = {
     id: refundId,
     paymentId: payment.id,
@@ -118,13 +133,14 @@ export function transferRefund(params: {
     amount,
     // The whole of the part being given back.
     percent: 100,
-    status: 'pending',
+    status: isAwaiting ? 'awaiting_account' : 'pending',
     manual: false,
     // Sent straight back on arrival: this money never entered escrow.
     fromEscrow: false,
-    method: refundMethodOf(payment.method),
+    method,
+    destination: dest,
     attempts: 0,
-    lastAttemptAt: at,
+    ...(isAwaiting ? {} : { lastAttemptAt: at }),
     reason,
     providerRef: params.providerRef,
     createdAt: at,
@@ -142,68 +158,30 @@ export function transferRefund(params: {
     note: reason,
     at,
   };
-  return { refund, ledgerEntry };
-}
-
-type GatewayRefundResult = Awaited<ReturnType<BookingDeps['gateway']['issueRefund']>>;
-
-/**
- * Records the gateway's answer on the refund: `done`, or `failed` + `manual` for staff.
- * When an escrow refund of a booking payment is `done`, the booking gets `depositRefundedAt` once (in
- * the same transaction), which makes the booking trigger send `refund_done`. A booking that is gone (a
- * late payment whose draft expired) gets nothing: there is no booking to tell the customer about.
- */
-async function recordDispatch(deps: BookingDeps, refund: Refund, gatewayResult: GatewayRefundResult): Promise<Refund> {
-  const now = deps.clock.now();
-  const at = now.toISOString();
-  const updatedRefund: Refund = {
-    ...refund,
-    status: gatewayResult.success ? 'done' : 'failed',
-    manual: !gatewayResult.success,
-    providerRef: gatewayResult.providerRef ?? refund.providerRef,
-    updatedAt: at,
+  const updatedPayment: Payment = {
+    ...payment,
+    refundedAmount: (payment.refundedAmount ?? 0) + amount,
   };
-
-  await deps.store.runTransaction(async (tx) => {
-    let booking: Booking | null = null;
-    if (updatedRefund.status === 'done' && isEscrowRefund(updatedRefund)) {
-      const payment = await tx.getPayment(updatedRefund.paymentId);
-      if (payment?.subjectType === 'booking') booking = await tx.getBooking(payment.subjectId);
-    }
-    await tx.addRefund(updatedRefund);
-    if (booking && !booking.depositRefundedAt) {
-      // A server marker, not an edit: the version stays so a client's pending change is not refused.
-      await tx.setBooking({ ...booking, depositRefundedAt: at, updatedAt: at });
-    }
-  });
-
-  return updatedRefund;
+  return { refund, ledgerEntry, payment: updatedPayment };
 }
 
 /**
  * Sends a refund to the gateway (`refundId` is the idempotency key) and records the result.
- * Call it outside the transaction that created the refund. A gateway throw propagates.
+ * Call it outside the transaction that created the refund.
  */
 export async function dispatchRefund(
   deps: BookingDeps,
   refund: Refund,
   provider: PaymentProvider,
 ): Promise<Refund> {
-  const gatewayResult = await deps.gateway.issueRefund({
-    paymentId: refund.paymentId,
-    refundId: refund.id,
-    amount: refund.amount,
-    provider,
-    providerRef: refund.providerRef,
-    method: refund.method,
-  });
-  return recordDispatch(deps, refund, gatewayResult);
+  const next = await sendRefundOnce(deps, refund, { id: refund.paymentId, provider });
+  const recorded = await bookingRefundHandler(deps).record(next);
+  return recorded ?? next;
 }
 
 /**
- * Sends each refund in turn; a gateway that throws is treated like one that answers
- * `success: false` (the refund becomes `failed` + `manual`, never stays `pending`), and the next
- * refunds still go out. Used by the payment paths, whose own result must not depend on the gateway.
+ * Sends each refund in turn; gateway errors never throw.
+ * Used by the payment paths, whose own result must not depend on the gateway.
  */
 export async function dispatchRefunds(
   deps: BookingDeps,
@@ -211,20 +189,7 @@ export async function dispatchRefunds(
 ): Promise<Refund[]> {
   const done: Refund[] = [];
   for (const { refund, provider } of items) {
-    let gatewayResult: GatewayRefundResult;
-    try {
-      gatewayResult = await deps.gateway.issueRefund({
-        paymentId: refund.paymentId,
-        refundId: refund.id,
-        amount: refund.amount,
-        provider,
-        providerRef: refund.providerRef,
-        method: refund.method,
-      });
-    } catch (e) {
-      gatewayResult = { success: false, error: e instanceof Error ? e.message : 'gateway_error' };
-    }
-    done.push(await recordDispatch(deps, refund, gatewayResult));
+    done.push(await dispatchRefund(deps, refund, provider));
   }
   return done;
 }

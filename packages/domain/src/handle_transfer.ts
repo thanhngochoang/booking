@@ -15,7 +15,8 @@ import type {
 } from './booking_ports.js';
 import { markPaid, moveDraftToRequested, paymentReceivedEntry, refundLatePayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
-import type { Payment, Refund } from './escrow.js';
+import type { Payment, Refund, StoredBankAccount } from './escrow.js';
+import { payerAccountOf } from './payer_account.js';
 import { transferCodesIn } from './payment_code.js';
 import { dispatchRefunds, transferRefund } from './refunds.js';
 import { decideTransfer } from './transfer_rules.js';
@@ -72,6 +73,7 @@ async function applyTransfer(
   payment: Payment,
   booking: Booking | null,
   n: TransferNotification,
+  captured: StoredBankAccount | null,
   now: Date,
 ): Promise<{ readonly outcome: Exclude<TransferOutcome, 'duplicate' | 'needs_review'>; readonly refunds: Refund[] }> {
   const expiresAt =
@@ -87,41 +89,66 @@ async function applyTransfer(
 
   await tx.addLedgerEntry(paymentReceivedEntry(deps, payment, n.amount, now));
 
-  const refundOf = async (amount: number, reason: Parameters<typeof transferRefund>[0]['reason']) => {
-    const { refund, ledgerEntry } = transferRefund({
-      payment,
+  let current: Payment = payment;
+  const refunds: Refund[] = [];
+
+  const addTransferRefund = async (amount: number, reason: Parameters<typeof transferRefund>[0]['reason']) => {
+    const { refund, ledgerEntry, payment: nextPayment } = transferRefund({
+      payment: current,
       refundId: deps.ids.newId(),
       ledgerEntryId: deps.ids.newId(),
       amount,
       reason,
+      destination: captured ?? current.payer,
       providerRef: n.txnId,
       now,
     });
+    current = nextPayment;
     await tx.addRefund(refund);
     await tx.addLedgerEntry(ledgerEntry);
-    return refund;
+    refunds.push(refund);
   };
 
   switch (decision.kind) {
     case 'partial':
-      await tx.setPayment({ ...payment, receivedAmount: decision.received, updatedAt: now.toISOString() });
+      current = {
+        ...current,
+        receivedAmount: decision.received,
+        payer: current.payer ?? captured,
+        updatedAt: now.toISOString(),
+      };
+      await tx.setPayment(current);
       return { outcome: 'partial', refunds: [] };
 
     case 'refund':
-      // The whole transfer goes back; the payment itself does not change.
-      return { outcome: 'refunded', refunds: [await refundOf(n.amount, decision.reason)] };
+      // The whole transfer goes back; the payment's refundedAmount is updated, payer unchanged.
+      await addTransferRefund(n.amount, decision.reason);
+      current = {
+        ...current,
+        updatedAt: now.toISOString(),
+      };
+      await tx.setPayment(current);
+      return { outcome: 'refunded', refunds };
 
     case 'paid': {
-      const refunds: Refund[] = [];
-      const paid = markPaid({ ...payment, receivedAmount: payment.amount }, now);
-      if (decision.excess > 0) refunds.push(await refundOf(decision.excess, 'overpaid_excess'));
+      current = markPaid(
+        {
+          ...current,
+          receivedAmount: payment.amount,
+          payer: current.payer ?? captured,
+        },
+        now,
+      );
+      if (decision.excess > 0) {
+        await addTransferRefund(decision.excess, 'overpaid_excess');
+      }
       if (!booking || booking.status !== 'draft') {
-        const late = await refundLatePayment(tx, deps, paid, now);
+        const late = await refundLatePayment(tx, deps, current, now);
         refunds.push(late.refund);
         return { outcome: 'refunded', refunds };
       }
-      await tx.setPayment(paid);
-      await moveDraftToRequested(tx, deps, booking, paid, now);
+      await tx.setPayment(current);
+      await moveDraftToRequested(tx, deps, booking, current, now);
       return { outcome: decision.excess > 0 ? 'paid_with_refund' : 'paid', refunds };
     }
   }
@@ -142,6 +169,7 @@ export async function handleTransferNotification(deps: BookingDeps, n: TransferN
   const known = await deps.store.getTransferRecord(recordId);
   if (known) return { outcome: 'duplicate', ...(known.paymentId ? { paymentId: known.paymentId } : {}) };
 
+  const captured = await payerAccountOf(deps.cipher, n.payer);
   const matched = await matchPayment(deps, n.content, n.receivedAt);
   const now = deps.clock.now();
   let pending: Refund[] = [];
@@ -167,7 +195,7 @@ export async function handleTransferNotification(deps: BookingDeps, n: TransferN
       return { outcome: 'needs_review' };
     }
 
-    const applied = await applyTransfer(tx, deps, payment, booking, n, now);
+    const applied = await applyTransfer(tx, deps, payment, booking, n, captured, now);
     await tx.saveTransferRecord({ ...base, outcome: applied.outcome, paymentId: payment.id });
     pending = applied.refunds;
     return { outcome: applied.outcome, paymentId: payment.id, provider: payment.provider };

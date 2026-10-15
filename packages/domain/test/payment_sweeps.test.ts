@@ -186,10 +186,10 @@ describe('runPaymentSweeps', () => {
     assert.equal((await payment(world, a.paymentId)).status, 'expired');
     assert.equal((await payment(world, b.paymentId)).status, 'expired');
     assert.deepEqual(
-      [...world.store.refunds.values()].map((r) => [r.amount, r.status, r.manual]),
+      [...world.store.refunds.values()].map((r) => [r.amount, r.status, r.manual, r.attempts]),
       [
-        [300_000, 'failed', true],
-        [200_000, 'done', false],
+        [300_000, 'pending', false, 1],
+        [200_000, 'done', false, 1],
       ],
     );
   });

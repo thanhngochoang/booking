@@ -9,6 +9,14 @@ import type { TransferNotification } from '../../src/booking_ports.js';
 import { createBookingDraft } from '../../src/create_booking.js';
 import { createPayment } from '../../src/create_payment.js';
 import { handleTransferNotification } from '../../src/handle_transfer.js';
+import { TEST_CIPHER } from './test_cipher.js';
+
+export const TEST_PAYER: NonNullable<TransferNotification['payer']> = {
+  bankCode: 'VCB',
+  accountNumber: '0071000123456',
+  name: 'NGUYEN THANH HA',
+  accountMasked: '•••• 3456',
+} as const;
 
 export class ControllableClock implements Clock {
   constructor(private currentTime: Date = new Date('2026-10-10T10:00:00.000Z')) {}
@@ -107,6 +115,7 @@ export function createBookingWorld(initialDate = new Date('2026-10-10T10:00:00.0
     blocks,
     contacts: contactReader,
     gateway,
+    cipher: TEST_CIPHER,
     clock,
     ids,
   };
@@ -136,9 +145,16 @@ let txnCounter = 0;
  */
 export function transferOf(
   world: BookingWorld,
-  p: { readonly content: string; readonly amount: number; readonly txnId?: string; readonly receivedAt?: string },
+  p: {
+    readonly content: string;
+    readonly amount: number;
+    readonly txnId?: string;
+    readonly receivedAt?: string;
+    readonly payer?: TransferNotification['payer'] | null;
+  },
 ): TransferNotification {
   txnCounter += 1;
+  const payer = p.payer === null ? undefined : (p.payer ?? TEST_PAYER);
   return {
     provider: 'fake',
     txnId: p.txnId ?? `txn_${txnCounter}`,
@@ -146,6 +162,7 @@ export function transferOf(
     content: p.content,
     receivedAt: p.receivedAt ?? world.clock.now().toISOString(),
     raw: JSON.stringify({ amount: p.amount, content: p.content }),
+    ...(payer ? { payer } : {}),
   };
 }
 
