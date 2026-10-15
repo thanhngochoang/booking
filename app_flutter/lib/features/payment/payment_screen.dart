@@ -49,6 +49,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     _leaving = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        final router = GoRouter.of(context);
         if (widget.subject is TicketPay) {
           final l10n = context.l10n;
           final messenger = ScaffoldMessenger.of(context);
@@ -60,12 +61,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 content: Text(l10n.registerDone),
                 action: SnackBarAction(
                   label: l10n.registerOpenChat,
-                  onPressed: () => context.push('/e/$eventId/chat'),
+                  onPressed: () => router.push('/e/$eventId/chat'),
                 ),
               ),
             );
         }
-        context.go(path);
+        router.go(path);
       }
     });
   }
@@ -192,25 +193,32 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ),
               ),
             PayOpen(:final instructions, :final who, :final canRenew) =>
-              instructions.method == PayMethod.bankQr
-                  ? QrCheckoutView(
-                      instructions: instructions,
-                      who: who,
-                      canRenew: canRenew,
-                      renewing: _renewing,
-                      onRenew: _renew,
-                      onBack: () => context.go(
-                        isTicket
-                            ? '/e/${(widget.subject as TicketPay).eventId}'
-                            : '/home',
-                      ),
-                    )
-                  : WalletWaitingView(
-                      instructions: instructions,
-                      who: who,
-                      checking: _checking,
-                      onCheck: _check,
-                    ),
+              Builder(
+                builder: (context) {
+                  final formattedWho = isTicket && int.tryParse(who.detail) != null
+                      ? (name: who.name, detail: l10n.ticketCount(int.parse(who.detail)))
+                      : who;
+                  return instructions.method == PayMethod.bankQr
+                      ? QrCheckoutView(
+                          instructions: instructions,
+                          who: formattedWho,
+                          canRenew: canRenew,
+                          renewing: _renewing,
+                          onRenew: _renew,
+                          onBack: () => context.go(
+                            isTicket
+                                ? '/e/${(widget.subject as TicketPay).eventId}'
+                                : '/home',
+                          ),
+                        )
+                      : WalletWaitingView(
+                          instructions: instructions,
+                          who: formattedWho,
+                          checking: _checking,
+                          onCheck: _check,
+                        );
+                },
+              ),
           },
         ),
       ),

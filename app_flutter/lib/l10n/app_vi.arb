@@ -1011,7 +1011,6 @@
   "bookPaymentsOff": "Thanh toán chưa mở trên máy chủ này.",
   "bookNetworkError": "Không gửi được. Kiểm tra mạng rồi thử lại.",
   "fakePayBody": "Bản dùng thử: không có tiền thật nào được trừ.",
-  "fakePayConfirm": "Thanh toán thành công",
   "actionCancel": "Huỷ",
   "actionRetry": "Thử lại",
   "timelineSent": "Đã gửi & thanh toán",
@@ -2325,11 +2324,6 @@
     "description": "S11.03 paid: the primary button.",
     "placeholders": {"amount": {"type": "String"}}
   },
-  "registerHold": "Giữ chỗ còn {time}",
-  "@registerHold": {
-    "description": "S11.03 paid: seats are held while the customer pays (mm:ss).",
-    "placeholders": {"time": {"type": "String"}}
-  },
   "registerHoldExpired": "Chỗ giữ đã hết hạn",
   "registerPolicy": "Huỷ trước 48 giờ hoàn 100%. Vé được giữ 10 phút trong lúc thanh toán.",
   "escrowNoticeTicket": "Tiền vé được giữ an toàn trên ứng dụng cho tới khi sự kiện kết thúc.",
@@ -2338,7 +2332,6 @@
   "ticketRefundAmount": "Bạn nhận lại {amount}",
   "@ticketRefundAmount": {"placeholders": {"amount": {"type": "String"}}},
   "ticketNoRefund": "Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.",
-  "fakeTicketPayTitle": "Thanh toán thử",
   "payMethodBankQr": "Chuyển khoản QR",
   "@payMethodBankQr": {"description": "S11.03 (mock): pay by bank transfer QR."},
   "payMethodMomo": "MoMo",
@@ -2353,10 +2346,6 @@
   "@ticketCancelledRefunded": {"description": "S11.04: a cancelled ticket whose payment came after the hold and was refunded."},
   "ticketCancelledRefunding": "Đã huỷ · đang hoàn tiền",
   "@ticketCancelledRefunding": {"description": "S11.04: as above while the refund is still on its way."},
-  "ticketPayFailed": "Chưa thanh toán được. Kiểm tra mạng rồi thử lại.",
-  "@ticketPayFailed": {"description": "SnackBar when the ticket payment sheet fails."},
-  "ticketPayFakeDisabled": "Thanh toán thử chỉ dùng được trên bản thử nghiệm.",
-  "@ticketPayFakeDisabled": {"description": "SnackBar when the server refuses fake payments (fake_payments_disabled)."},
   "eventRegisteredOf": "{registered}/{capacity} đã đăng ký",
   "@eventRegisteredOf": {"description": "Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).", "placeholders": {"registered": {"type": "int"}, "capacity": {"type": "int"}}},
   "createEventFaqHint": "Hiện ở trang sự kiện để khách đọc trước khi đăng ký. Tối đa {max} câu.",

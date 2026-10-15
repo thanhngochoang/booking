@@ -5,8 +5,13 @@ import 'package:photobooking/data/payments/payments_repository.dart';
 class FakePaymentsRepository implements PaymentsRepository {
   final List<(String, FakeTransferKind)> confirms = [];
   final Map<String, PaymentInstructions?> instructionsById = {};
+  final List<String> instructionCalls = [];
   Future<void> Function(String paymentId, FakeTransferKind kind)? onConfirm;
   Object? nextError;
+
+  void seedInstructions(String paymentId, PaymentInstructions? instructions) {
+    instructionsById[paymentId] = instructions;
+  }
 
   @override
   Future<String> confirmFake(
@@ -33,6 +38,7 @@ class FakePaymentsRepository implements PaymentsRepository {
 
   @override
   Future<PaymentInstructions?> instructions(String paymentId) async {
+    instructionCalls.add(paymentId);
     if (nextError != null) {
       final err = nextError!;
       nextError = null;

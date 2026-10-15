@@ -23,7 +23,10 @@ import 'package:photobooking/data/events/event_timeline_repository.dart';
 import 'package:photobooking/features/event_chat/event_chat_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/data/events/event_repository.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 import 'fake_payments_repository.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact.dart';
@@ -532,6 +535,16 @@ class EventsWorld {
           path: '/e/:eventId/chat',
           builder: (_, s) =>
               EventChatScreen(eventId: s.pathParameters['eventId']!),
+        ),
+        GoRoute(
+          path: '/e/:eventId/pay/:regId',
+          builder: (_, s) => PaymentScreen(
+            subject: TicketPay(
+              s.pathParameters['eventId']!,
+              s.pathParameters['regId']!,
+            ),
+            initial: s.extra as PaymentInstructions?,
+          ),
         ),
         GoRoute(
           path: '/bookings',

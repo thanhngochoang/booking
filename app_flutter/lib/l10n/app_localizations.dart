@@ -3916,12 +3916,6 @@ abstract class AppLocalizations {
   /// **'Bản dùng thử: không có tiền thật nào được trừ.'**
   String get fakePayBody;
 
-  /// No description provided for @fakePayConfirm.
-  ///
-  /// In vi, this message translates to:
-  /// **'Thanh toán thành công'**
-  String get fakePayConfirm;
-
   /// No description provided for @actionCancel.
   ///
   /// In vi, this message translates to:
@@ -9082,12 +9076,6 @@ abstract class AppLocalizations {
   /// **'Thanh toán {amount}'**
   String registerPay(String amount);
 
-  /// S11.03 paid: seats are held while the customer pays (mm:ss).
-  ///
-  /// In vi, this message translates to:
-  /// **'Giữ chỗ còn {time}'**
-  String registerHold(String time);
-
   /// No description provided for @registerHoldExpired.
   ///
   /// In vi, this message translates to:
@@ -9129,12 +9117,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.'**
   String get ticketNoRefund;
-
-  /// No description provided for @fakeTicketPayTitle.
-  ///
-  /// In vi, this message translates to:
-  /// **'Thanh toán thử'**
-  String get fakeTicketPayTitle;
 
   /// S11.03 (mock): pay by bank transfer QR.
   ///
@@ -9183,18 +9165,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã huỷ · đang hoàn tiền'**
   String get ticketCancelledRefunding;
-
-  /// SnackBar when the ticket payment sheet fails.
-  ///
-  /// In vi, this message translates to:
-  /// **'Chưa thanh toán được. Kiểm tra mạng rồi thử lại.'**
-  String get ticketPayFailed;
-
-  /// SnackBar when the server refuses fake payments (fake_payments_disabled).
-  ///
-  /// In vi, this message translates to:
-  /// **'Thanh toán thử chỉ dùng được trên bản thử nghiệm.'**
-  String get ticketPayFakeDisabled;
 
   /// Featured S11.01 card overlay: seats taken of the capacity, no spaces (mock).
   ///

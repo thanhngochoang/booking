@@ -48,27 +48,6 @@ Future<void> _plus(WidgetTester tester, int times) async {
 EventDetail _paid({int registered = 5}) =>
     detailOf('ev1', priceVnd: 250000, registered: registered);
 
-/// [r] as the server rewrites it.
-EventRegistration _as(EventRegistration r, RegistrationStatus status) =>
-    EventRegistration(
-      id: r.id,
-      eventId: r.eventId,
-      userId: r.userId,
-      userName: r.userName,
-      ticketCode: status == RegistrationStatus.paid ? 'VE-PAID-0001' : '',
-      quantity: r.quantity,
-      amount: r.amount,
-      status: status,
-      event: r.event,
-      createdAt: r.createdAt,
-      paymentId: r.paymentId,
-      holdExpiresAt: r.holdExpiresAt,
-      contactEligible: status == RegistrationStatus.paid,
-    );
-
-Finder _inSheet(Finder f) =>
-    find.descendant(of: find.byType(RegisterSheet), matching: f);
-
 String _quantity(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(const Key('register-quantity'))).data!;
 
@@ -303,102 +282,39 @@ void main() {
       expect(w.repo.registerMethods.last, PayMethod.momo);
     });
 
-    testWidgets('Thanh toán starts the hold countdown', (tester) async {
-      final w = await _open(tester, event: _paid());
-      await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      final r = w.repo.registrations.single;
-      expect(r.status, RegistrationStatus.held);
-      expect(r.amount, 250000);
-      // Default method "Chuyển khoản QR".
-      expect(w.repo.registerMethods.single, PayMethod.bankQr);
-      expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
-      // The quantity is fixed while the seats are held.
-      expect(
-        tester
-            .widget<IconButton>(find.byKey(const Key('register-plus')))
-            .onPressed,
-        isNull,
-      );
-      // Closing the fake sheet keeps the hold; the button reopens it.
-      expect(find.text('Thanh toán thử'), findsOneWidget);
-      await tester.tap(find.widgetWithText(AppButton, 'Huỷ'));
-      await settle(tester);
-      expect(find.text('Thanh toán thử'), findsNothing);
-      expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      expect(find.text('Thanh toán thử'), findsOneWidget);
-      expect(w.repo.registrations, hasLength(1));
-    });
+    testWidgets(
+      'Thanh toán registers with the chosen method code, closes the sheet and opens /e/{id}/pay/{regId} with the instructions',
+      (tester) async {
+        final w = await _open(tester, event: _paid());
+        await tester.tap(find.byKey(const Key('register-submit')));
+        await settle(tester);
+        final r = w.repo.registrations.single;
+        expect(r.status, RegistrationStatus.held);
+        expect(r.amount, 250000);
+        expect(w.repo.registerMethods.single, PayMethod.bankQr);
+        expect(find.byType(RegisterSheet), findsNothing);
+        expect(w.location, '/e/ev1/pay/${r.id}');
+      },
+    );
 
-    testWidgets('fake mode confirms through the ticket payment sheet', (
+    testWidgets('a wallet with real payments opens payUrl then S04.04', (
       tester,
     ) async {
-      final w = await _open(tester, event: _paid());
+      final w = await _open(
+        tester,
+        event: _paid(),
+        extra: [realPaymentsProvider.overrideWithValue(true)],
+      );
+      await tester.tap(find.byKey(const Key('pay-method-momo')));
+      await tester.pump();
       await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      expect(find.text('Thanh toán thử'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('ticket-pay-confirm')));
       await settle(tester);
       final r = w.repo.registrations.single;
-      expect(w.repo.fakeConfirmed, [r.paymentId]);
-      expect(r.status, RegistrationStatus.paid);
-      expect(find.byType(RegisterSheet), findsNothing);
-    });
-
-    testWidgets('paid registration opens the tickets tab', (tester) async {
-      final w = await _open(
-        tester,
-        event: _paid(),
-        extra: [realPaymentsProvider.overrideWithValue(true)],
-      );
-      await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      final held = w.repo.registrations.single;
-      // The gateway confirms: the registration stream turns the ticket paid.
-      w.repo.putRegistration(_as(held, RegistrationStatus.paid));
-      await settle(tester);
-      expect(find.byType(RegisterSheet), findsNothing);
-      expect(w.location, '/bookings?tab=events&highlight=${held.id}');
-      expect(find.text('Đã đăng ký'), findsOneWidget);
-    });
-
-    testWidgets('real mode opens payUrl', (tester) async {
-      final w = await _open(
-        tester,
-        event: _paid(),
-        extra: [realPaymentsProvider.overrideWithValue(true)],
-      );
-      await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      final id = w.repo.registrations.single.id;
       expect(w.launcher.opened.map((u) => u.toString()), [
-        'https://pay.test/$id',
+        'https://pay.test/${r.id}',
       ]);
-      expect(find.text('Thanh toán thử'), findsNothing);
-      expect(find.text('Giữ chỗ còn 10:00'), findsOneWidget);
-    });
-
-    testWidgets('an expired hold says Chỗ giữ đã hết hạn', (tester) async {
-      final w = await _open(
-        tester,
-        event: _paid(),
-        extra: [realPaymentsProvider.overrideWithValue(true)],
-      );
-      await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      final held = w.repo.registrations.single;
-      // The server releases the hold after 10 minutes.
-      w.repo.putRegistration(_as(held, RegistrationStatus.cancelled));
-      await settle(tester);
-      expect(find.text('Chỗ giữ đã hết hạn'), findsOneWidget);
-      expect(find.textContaining('Giữ chỗ còn'), findsNothing);
-      expect(_inSheet(find.text('Thanh toán 250.000₫')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('register-submit')));
-      await settle(tester);
-      expect(w.repo.registrations, hasLength(2));
-      expect(find.text('Chỗ giữ đã hết hạn'), findsNothing);
+      expect(find.byType(RegisterSheet), findsNothing);
+      expect(w.location, '/e/ev1/pay/${r.id}');
     });
 
     testWidgets('a gateway error can be retried', (tester) async {

@@ -6,7 +6,6 @@ import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_registration.dart';
-import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/push/notification_permission.dart';
 import 'package:photobooking/data/push/push_providers.dart';
@@ -530,7 +529,7 @@ void main() {
     );
   });
 
-  testWidgets('held ticket offers Thanh toán tiếp then Hết hạn', (
+  testWidgets('Thanh toán tiếp checks first, then opens S04.04 for the hold', (
     tester,
   ) async {
     final live = _reg(
@@ -554,17 +553,26 @@ void main() {
     await tester.tap(find.text('Thanh toán tiếp'));
     await settle(tester);
     expect(w.repo.paymentChecks, ['ev1/h']);
-    expect(find.text('Thanh toán thử'), findsOneWidget);
-    expect(find.text('500.000₫'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('ticket-pay-confirm')));
-    await settle(tester);
-    expect(w.repo.fakeConfirmed, ['pay-h']);
-    expect(
-      w.repo.registrations.firstWhere((r) => r.id == 'h').status,
-      RegistrationStatus.paid,
-    );
-    expect(find.text('ĐÃ ĐĂNG KÝ'), findsOneWidget);
+    expect(w.location, '/e/ev1/pay/h');
   });
+
+  testWidgets(
+    'Thanh toán tiếp on a hold the gateway already has does not open S04.04',
+    (tester) async {
+      final live = _reg(
+        'h',
+        status: RegistrationStatus.held,
+        amount: 500000,
+        holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
+      );
+      final w = await _open(tester, [live], priceVnd: 250000);
+      w.repo.gatewayPaid.add('pay-h');
+      await tester.tap(find.text('Thanh toán tiếp'));
+      await settle(tester);
+      expect(w.repo.paymentChecks, ['ev1/h']);
+      expect(w.location, isNot('/e/ev1/pay/h'));
+    },
+  );
 
   testWidgets('a held ticket flips to Hết hạn when its hold runs out', (
     tester,
@@ -600,48 +608,7 @@ void main() {
     expect(find.text('Thanh toán tiếp'), findsNothing);
   });
 
-  testWidgets('a payment refused by the server says so in a SnackBar', (
-    tester,
-  ) async {
-    final w = await _open(tester, [
-      _reg(
-        'h',
-        status: RegistrationStatus.held,
-        amount: 250000,
-        holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
-      ),
-    ], priceVnd: 250000);
-    await tester.tap(find.text('Thanh toán tiếp'));
-    await settle(tester);
-    w.repo
-      ..failWith = const EventError('fake_payments_disabled')
-      ..failOnce = true;
-    await tester.tap(find.byKey(const Key('ticket-pay-confirm')));
-    await settle(tester);
-    expect(find.text('Thanh toán thử'), findsNothing);
-    expect(
-      find.text('Thanh toán thử chỉ dùng được trên bản thử nghiệm.'),
-      findsOneWidget,
-    );
-    expect(
-      w.repo.registrations.single.status,
-      RegistrationStatus.held,
-      reason: 'nothing was paid',
-    );
 
-    // Any other failure: the generic message.
-    await tester.tap(find.text('Thanh toán tiếp'));
-    await settle(tester);
-    w.repo
-      ..failWith = const EventError('network')
-      ..failOnce = true;
-    await tester.tap(find.byKey(const Key('ticket-pay-confirm')));
-    await settle(tester);
-    expect(
-      find.text('Chưa thanh toán được. Kiểm tra mạng rồi thử lại.'),
-      findsOneWidget,
-    );
-  });
 
   testWidgets('a refunded ticket says Đang hoàn until its refund is done', (
     tester,
@@ -689,29 +656,27 @@ void main() {
     expect(find.text('ĐÃ HUỶ · ĐÃ HOÀN TIỀN'), findsOneWidget);
   });
 
-  testWidgets('Thanh toán tiếp with real payments opens the pay URL', (
-    tester,
-  ) async {
-    final w = await _open(
-      tester,
-      [
-        _reg(
-          'h',
-          status: RegistrationStatus.held,
-          amount: 250000,
-          holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
-        ),
-      ],
-      priceVnd: 250000,
-      extra: [realPaymentsProvider.overrideWithValue(true)],
-    );
-    await tester.tap(find.text('Thanh toán tiếp'));
-    await settle(tester);
-    expect(w.launcher.opened.map((u) => u.toString()), ['https://pay.test/h']);
-    expect(find.text('Thanh toán thử'), findsNothing);
-    // No provider: the server keeps the method chosen on S11.03 (M3).
-    expect(w.repo.registerProviders, [null]);
-  });
+  testWidgets(
+    'Thanh toán tiếp with real payments opens S04.04 (Mở lại there)',
+    (tester) async {
+      final w = await _open(
+        tester,
+        [
+          _reg(
+            'h',
+            status: RegistrationStatus.held,
+            amount: 250000,
+            holdExpiresAt: eventNow.add(const Duration(minutes: 6)),
+          ),
+        ],
+        priceVnd: 250000,
+        extra: [realPaymentsProvider.overrideWithValue(true)],
+      );
+      await tester.tap(find.text('Thanh toán tiếp'));
+      await settle(tester);
+      expect(w.location, '/e/ev1/pay/h');
+    },
+  );
 
   testWidgets('free tickets say Huỷ vé without a percent', (tester) async {
     await _open(tester, [_reg('a')]);
