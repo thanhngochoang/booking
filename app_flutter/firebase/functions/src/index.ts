@@ -129,6 +129,7 @@ import { liveDiscoveryDeps } from './infra/live_discovery.js';
 import { handleAvailabilityWrite, handleStudioDayWrite } from './triggers/availability_write.js';
 import { handleEngagementWrite } from './triggers/engagement_write.js';
 import { handleRollNextFree } from './scheduled/roll_next_free.js';
+import { handleRankSpots, liveRankSpotsDeps } from './scheduled/rank_spots.js';
 import { handleServiceDiscovery } from './triggers/service_write.js';
 import {
   handleCreateAward,
@@ -1037,4 +1038,10 @@ export const onAccountDeletionUpdated = onDocumentWritten(
   },
 );
 
-
+/** Daily 03:00 Asia/Ho_Chi_Minh: updates spot stats, hotScore, and rewrites spot_rankings and spot_directory. */
+export const rankSpots = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '0 3 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handleRankSpots(liveRankSpotsDeps());
+  },
+);

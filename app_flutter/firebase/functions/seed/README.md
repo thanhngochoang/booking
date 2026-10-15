@@ -339,4 +339,15 @@ npm run reports -- takedown <reportId> "<note>" --actor <uid>
   The `onAccountDeletionUpdated` trigger will purge the account and tombstone `users/{uid}`.
 - To test data export: call `requestDataExport` to generate an export JSON under `exports/{uid}/{exportId}.json` in Storage.
 
+## Điểm chụp (S29)
 
+| Điểm chụp | Khu vực | Mùa đẹp | Thợ nhận chụp | Gói chia suất |
+|---|---|---|---|---|
+| `seed-spot-cau-dat` (Đồi chè Cầu Đất) | Đà Lạt (`da-lat`) | Tháng 10–12 | — | — |
+| `seed-spot-hoi-an` (Phố cổ Hội An) | Hội An (`hoi-an`) | Quanh năm | — | — |
+| `seed-spot-ho-tay` (Hồ Tây) | Hà Nội (`hn`) | Quanh năm (ghim) | An (2 cuối tuần tới, 06:00–11:00) | "Bình minh Hồ Tây 30 phút" (490.000₫ · 30/10) |
+| `seed-spot-cau-vang` (Cầu Vàng) | Đà Nẵng (`dn`) | Quanh năm | — (Bình chưa nhận đơn) | — |
+| `seed-spot-mu-cang-chai` (Mù Cang Chải) | Yên Bái (`yen-bai`) | Tháng 9–10 | — | — |
+
+Đăng nhập Lan, Trang chủ → Điểm chụp đang hot → Hồ Tây để thử S29.02 và đặt suất (S29.06).
+Chạy `scripts/spots-local.sh rank` sau khi đổi dữ liệu để cập nhật bảng xếp hạng trên emulator.

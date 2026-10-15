@@ -2,6 +2,8 @@ import type { Auth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
 import { assertLocalEmulators, type LocalGuardOptions } from './local_guard.js';
 import { SEED_PASSWORD, SEED_USERS, seedDocuments } from './fixtures.js';
+import { runSpotRanking } from '@photobooking/domain';
+import { FirestoreSpotCounter, FirestoreSpotRankStore } from '../src/infra/spot_rank_firestore.js';
 
 /** Writes the seed into the emulators. Refuses non-local emulators and, by default, non-`demo-` projects. Idempotent: fixed ids, documents replaced, users updated. */
 export async function applySeed(db: Firestore, auth: Auth, now: Date, guard: LocalGuardOptions = {}): Promise<void> {
@@ -25,4 +27,8 @@ export async function applySeed(db: Firestore, auth: Auth, now: Date, guard: Loc
   const batch = db.batch();
   for (const d of seedDocuments(now)) batch.set(db.doc(d.path), d.data);
   await batch.commit();
+
+  const rankStore = new FirestoreSpotRankStore(db);
+  const counter = new FirestoreSpotCounter(db);
+  await runSpotRanking({ store: rankStore, counter, clock: { now: () => now } });
 }

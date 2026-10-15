@@ -158,3 +158,7 @@ export * from './spot_booking.js';
 export * from './spot_schedule_ports.js';
 export * from './spot_schedule_use_cases.js';
 export * from './memory_spot_store.js';
+export * from './spot_score.js';
+export * from './spot_ranking.js';
+export * from './spot_admin.js';
+export * from './memory_spot_rank_store.js';

@@ -44,6 +44,13 @@ import {
   SEED_USERS,
   SEED_STUDIO_ASSIGNED,
   SEED_STUDIO_UNASSIGNED,
+  SEED_SPOT_CAU_DAT,
+  SEED_SPOT_HOI_AN,
+  SEED_SPOT_HO_TAY,
+  SEED_SPOT_CAU_VANG,
+  SEED_SPOT_MU_CANG_CHAI,
+  SEED_SCHEDULE_AN_HO_TAY,
+  SEED_OFFER_AN_BINH_MINH,
   seedDocuments,
 } from '../../seed/fixtures.js';
 import { bookingFromFirestore } from '../../src/infra/booking_firestore.js';
@@ -841,3 +848,112 @@ describe('seed studio (S26, #136)', () => {
     for (const d of docs.filter((x) => x.path.startsWith(`availability/${CUC}/days/`))) assert.equal(d.data.state, 'full');
   });
 });
+describe('seed photo spots (S29)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data as Record<string, unknown> | undefined;
+
+  test('five spots: Đồi chè Cầu Đất (da-lat, 10–12), Phố cổ Hội An (hoi-an), Hồ Tây (hn), Cầu Vàng (dn), Mù Cang Chải (yen-bai, 9–10), all active', () => {
+    const cauDat = get(`spots/${SEED_SPOT_CAU_DAT}`);
+    assert.ok(cauDat);
+    assert.equal(cauDat.name, 'Đồi chè Cầu Đất');
+    assert.equal(cauDat.areaCode, 'da-lat');
+    assert.deepEqual(cauDat.seasonMonths, [10, 11, 12]);
+    assert.equal(cauDat.status, 'active');
+
+    const hoiAn = get(`spots/${SEED_SPOT_HOI_AN}`);
+    assert.ok(hoiAn);
+    assert.equal(hoiAn.name, 'Phố cổ Hội An');
+    assert.equal(hoiAn.areaCode, 'hoi-an');
+    assert.deepEqual(hoiAn.seasonMonths, []);
+    assert.equal(hoiAn.status, 'active');
+
+    const hoTay = get(`spots/${SEED_SPOT_HO_TAY}`);
+    assert.ok(hoTay);
+    assert.equal(hoTay.name, 'Hồ Tây');
+    assert.equal(hoTay.areaCode, 'hn');
+    assert.deepEqual(hoTay.seasonMonths, []);
+    assert.equal(hoTay.status, 'active');
+    assert.equal(hoTay.pinned, true);
+
+    const cauVang = get(`spots/${SEED_SPOT_CAU_VANG}`);
+    assert.ok(cauVang);
+    assert.equal(cauVang.name, 'Cầu Vàng');
+    assert.equal(cauVang.areaCode, 'dn');
+    assert.deepEqual(cauVang.seasonMonths, []);
+    assert.equal(cauVang.status, 'active');
+
+    const muCangChai = get(`spots/${SEED_SPOT_MU_CANG_CHAI}`);
+    assert.ok(muCangChai);
+    assert.equal(muCangChai.name, 'Mù Cang Chải');
+    assert.equal(muCangChai.areaCode, 'yen-bai');
+    assert.deepEqual(muCangChai.seasonMonths, [9, 10]);
+    assert.equal(muCangChai.status, 'active');
+  });
+
+  test('An has an open schedule at Hồ Tây on the next two Saturdays and Sundays 06:00–11:00 with the offer "Bình minh Hồ Tây 30 phút" 490.000₫ 30/10, and spot availability records on those days', () => {
+    const schedule = get(`spot_schedules/${SEED_SCHEDULE_AN_HO_TAY}`);
+    assert.ok(schedule);
+    assert.equal(schedule.providerId, AN);
+    assert.equal(schedule.spotId, SEED_SPOT_HO_TAY);
+    assert.equal(schedule.status, 'open');
+    assert.deepEqual(schedule.window, { start: '06:00', end: '11:00' });
+    const days = schedule.days as string[];
+    assert.equal(days.length, 4);
+
+    const offer = get(`spot_slot_offers/${SEED_OFFER_AN_BINH_MINH}`);
+    assert.ok(offer);
+    assert.equal(offer.providerId, AN);
+    assert.equal(offer.scheduleId, SEED_SCHEDULE_AN_HO_TAY);
+    assert.equal(offer.spotId, SEED_SPOT_HO_TAY);
+    assert.equal(offer.name, 'Bình minh Hồ Tây 30 phút');
+    assert.equal(offer.price, 490_000);
+    assert.equal(offer.slotMinutes, 30);
+    assert.equal(offer.gapMinutes, 10);
+    assert.equal(offer.status, 'open');
+
+    for (const day of days) {
+      const avail = get(`availability/${AN}/days/${day}`);
+      assert.ok(avail, `availability record on ${day}`);
+      assert.equal(avail.state, 'spot');
+      assert.equal(avail.scheduleId, SEED_SCHEDULE_AN_HO_TAY);
+      assert.equal(avail.spotId, SEED_SPOT_HO_TAY);
+    }
+  });
+
+  test('Bình has an open schedule at Cầu Vàng next Saturday 15:00–18:00 (only when Bình accepts orders in the seed; else the test asserts none)', () => {
+    const binhP = SEED_PHOTOGRAPHERS.find((p) => p.uid === BINH);
+    const binhAccepts = binhP ? acceptsOrders({ verified: binhP.verified, onboardingComplete: true }) : false;
+    const schedule = docs.find((d) => d.path.startsWith('spot_schedules/seed-schedule-binh'));
+    if (binhAccepts) {
+      assert.ok(schedule);
+      assert.equal(schedule.data.providerId, BINH);
+      assert.equal(schedule.data.spotId, SEED_SPOT_CAU_VANG);
+    } else {
+      assert.equal(schedule, undefined);
+    }
+  });
+
+  test('seed-post-an-1 has spotId of Hồ Tây', () => {
+    const post = get('posts/seed-post-an-1');
+    assert.ok(post);
+    assert.equal(post.spotId, SEED_SPOT_HO_TAY);
+  });
+
+  test('no seed spot_days doc contains a booking or customer field', () => {
+    const spotDays = docs.filter((d) => d.path.startsWith('spot_days/'));
+    assert.ok(spotDays.length >= 4);
+    for (const sd of spotDays) {
+      const data = sd.data as Record<string, unknown>;
+      assert.equal(data.customerId, undefined);
+      assert.equal(data.bookingId, undefined);
+      assert.equal(data.customer, undefined);
+      assert.equal(data.booking, undefined);
+      assert.ok(Array.isArray(data.taken));
+      for (const t of data.taken as Record<string, unknown>[]) {
+        assert.equal(t.customerId, undefined);
+        assert.equal(t.bookingId, undefined);
+      }
+    }
+  });
+});
+
