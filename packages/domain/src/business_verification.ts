@@ -96,6 +96,11 @@ export async function submitBusinessVerification(
   return deps.store.runTransaction(async (tx) => {
     const rec = await tx.getVerification(uid);
     if (!rec) throw new DomainError('not_eligible');
+    // A pending record keeps its photo (the purge deletes that path) and an approved one keeps the
+    // businessVerified flag it set; only a rejected record may be sent again.
+    if (rec.business?.status === 'submitted' || rec.business?.status === 'approved') {
+      throw new DomainError('conflict');
+    }
 
     const identity = await tx.getIdentity(uid);
     if (!identity) throw new DomainError('not_eligible');

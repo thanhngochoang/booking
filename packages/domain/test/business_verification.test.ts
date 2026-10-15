@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createVerificationWorld } from './support/verification_world.js';
+import { createVerificationWorld, MemoryIdentityVault } from './support/verification_world.js';
 import { FakeTaxCodeLookup } from '../src/fake_tax_code_lookup.js';
 import {
   isTaxCode,
@@ -237,6 +237,43 @@ describe('business_verification', () => {
     });
     assert.equal(res.after.business?.status, 'submitted');
     assert.equal(res.after.business?.kind, 'company');
+  });
+
+  it('a submitted or approved business record cannot be replaced (conflict)', async () => {
+    const world = createVerificationWorld();
+    const deps = { ...world.deps, taxCodes: new FakeTaxCodeLookup() };
+    world.store.providers.set('s1', { providerType: 'studio', onboardingComplete: true, verified: true, businessVerified: false });
+    world.store.identities.set('s1', {
+      legalName: 'CHỦ STUDIO', dob: '1990-01-01', gender: null, idNumberEnc: 'enc',
+      idHash: await new MemoryIdentityVault().hashId('001234567890'), method: 'vneid', provider: 'fake', providerRef: 'ref',
+      verifiedAt: '2026-10-10T10:00:00.000Z',
+    });
+    world.store.verifications.set('s1', {
+      uid: 's1', kind: 'studio', status: 'approved', steps: { phone: null, fee: null, identity: null, rules: null },
+      identitySession: null, identityAttempts: { dayKey: '2026-10-10', count: 0 }, feeAttempt: 1, submittedAt: null,
+      decidedAt: null, decidedBy: null, rejectReason: null, freeResubmitsLeft: 1, nudgedAt: null, business: null,
+      version: 1, createdAt: '2026-10-10T10:00:00.000Z', updatedAt: '2026-10-10T10:00:00.000Z',
+    });
+    const staff = { uid: 'staff1', isAdmin: true };
+
+    // Submitted company: its photo must stay the one the purge will delete.
+    await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' });
+    await assert.rejects(
+      submitBusinessVerification(deps, 's1', { taxCode: '0398765432', docPath: 'businessDocs/s1/b.jpg' }),
+      refusedWith('conflict'),
+    );
+    assert.equal(world.store.verifications.get('s1')?.business?.docPath, 'businessDocs/s1/a.jpg');
+
+    // Rejected: may send again.
+    await reviewVerification(deps, staff, { uid: 's1', target: 'business', action: 'reject', reason: 'doc_unreadable' });
+    const again = await submitBusinessVerification(deps, 's1', { taxCode: '0312345678', docPath: 'businessDocs/s1/c.jpg' });
+    assert.equal(again.after.business?.status, 'submitted');
+
+    // Approved: the verified business stays as it is (businessVerified and the record agree).
+    await reviewVerification(deps, staff, { uid: 's1', target: 'business', action: 'approve' });
+    await assert.rejects(submitBusinessVerification(deps, 's1', { taxCode: '001234567890' }), refusedWith('conflict'));
+    assert.equal(world.store.verifications.get('s1')?.business?.taxCode, '0312345678');
+    assert.equal(world.store.verifications.get('s1')?.business?.status, 'approved');
   });
 
   it('staff approve sets businessVerified and purgeAfter = decidedAt + 30 days', async () => {

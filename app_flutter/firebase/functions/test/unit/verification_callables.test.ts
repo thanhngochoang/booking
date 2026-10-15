@@ -208,7 +208,7 @@ describe('verification callables', () => {
     assert.equal(store.verifications.get('p1')?.status, 'approved');
   });
 
-  it('studio business: lookup, household matched at once, company to staff and approved', async () => {
+  it('studio business: lookup, household matched at once, then the approved record cannot be replaced', async () => {
     const { callDeps, store, notifyStore } = setup();
     await walkToSubmitted(callDeps, 's1');
     await handleReviewVerification(as('staff1', { uid: 's1', action: 'approve' }, ADMIN), callDeps);
@@ -231,15 +231,46 @@ describe('verification callables', () => {
     assert.equal(store.providerFlags.get('s1')?.businessVerified, true);
     assert.ok(notifyStore.rowsOf('s1').some((r) => r.type === 'business_verified'));
 
-    // A company goes to staff with its photo.
+    // The verified business is not replaced by another submission (businessVerified and the record agree).
+    await assert.rejects(
+      () => handleSubmitBusinessVerification(as('s1', { taxCode: '0312345678', docPath: 'businessDocs/s1/01J.jpg' }), callDeps),
+      refused('aborted', 'conflict'),
+    );
+    assert.equal(store.verifications.get('s1')?.business?.kind, 'household');
+    assert.equal(store.verifications.get('s1')?.business?.status, 'approved');
+  });
+
+  it('studio business: a company goes to staff, cannot be resent while pending, is resent after a rejection', async () => {
+    const { callDeps, store } = setup();
+    await walkToSubmitted(callDeps, 's1');
+    await handleReviewVerification(as('staff1', { uid: 's1', action: 'approve' }, ADMIN), callDeps);
+
     assert.deepEqual(
-      await handleSubmitBusinessVerification(as('s1', { taxCode: '0312345678', docPath: 'businessDocs/s1/01J.jpg' }), callDeps),
+      await handleSubmitBusinessVerification(as('s1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' }), callDeps),
+      { status: 'submitted' },
+    );
+    await assert.rejects(
+      () => handleSubmitBusinessVerification(as('s1', { taxCode: '0312345678', docPath: 'businessDocs/s1/b.jpg' }), callDeps),
+      refused('aborted', 'conflict'),
+    );
+    assert.equal(store.verifications.get('s1')?.business?.docPath, 'businessDocs/s1/a.jpg');
+
+    assert.deepEqual(
+      await handleReviewVerification(
+        as('staff1', { uid: 's1', target: 'business', action: 'reject', reason: 'doc_unreadable' }, ADMIN),
+        callDeps,
+      ),
+      { status: 'rejected' },
+    );
+    assert.deepEqual(
+      await handleSubmitBusinessVerification(as('s1', { taxCode: '0312345678', docPath: 'businessDocs/s1/c.jpg' }), callDeps),
       { status: 'submitted' },
     );
     assert.deepEqual(
       await handleReviewVerification(as('staff1', { uid: 's1', target: 'business', action: 'approve' }, ADMIN), callDeps),
       { status: 'approved' },
     );
+    assert.equal(store.providerFlags.get('s1')?.businessVerified, true);
   });
 
   it('a non-verified provider cannot start the business step', async () => {
