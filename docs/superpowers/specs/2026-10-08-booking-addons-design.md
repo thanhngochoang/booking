@@ -1,6 +1,6 @@
 # Dịch vụ đi kèm khi đặt lịch (S04, S08)
 
-Ngày: 2026-10-08 · Trạng thái: thiết kế đã chốt với chủ dự án (brainstorm 2026-10-08), chờ duyệt bản viết · Dựa trên: `2026-10-06-payments-payouts-design.md` (trả 100% trước, giữ, nhả hai mốc), `2026-10-05-provider-types-portfolio-jobs-design.md` (ba loại nhà cung cấp), `2026-10-06-studio-members-design.md` (S26), `2026-10-07-studio-recruiting-design.md` (S27), plan `2026-10-07-s04-booking-payment.md` (`buildBookingDraft`, Decision 23). Spec đi cùng: điểm chụp đang hot (spec A, viết sau), dùng lại spec này.
+Ngày: 2026-10-08 · Trạng thái: đang làm (#190, [#232](https://github.com/thanhngochoang/booking/pull/232)) · Dựa trên: `2026-10-06-payments-payouts-design.md` (trả 100% trước, giữ, nhả hai mốc), `2026-10-05-provider-types-portfolio-jobs-design.md` (ba loại nhà cung cấp), `2026-10-06-studio-members-design.md` (S26), `2026-10-07-studio-recruiting-design.md` (S27), plan `2026-10-07-s04-booking-payment.md` (`buildBookingDraft`, Decision 23). Spec đi cùng: điểm chụp đang hot (spec A, viết sau), dùng lại spec này.
 
 ## 1. Mục tiêu
 
