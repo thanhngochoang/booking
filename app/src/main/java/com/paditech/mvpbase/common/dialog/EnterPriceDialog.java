@@ -1,6 +1,6 @@
 package com.paditech.mvpbase.common.dialog;
 
-import android.support.v4.app.FragmentManager;
+import androidx.fragment.app.FragmentManager;
 import android.view.View;
 import android.widget.TextView;
 

@@ -1,0 +1,28 @@
+{
+  "accountNumbers": [
+    { "raw": "0123456789", "normalized": "0123456789" },
+    { "raw": "0123 456.789-0", "normalized": "01234567890" },
+    { "raw": "123456", "normalized": "123456" },
+    { "raw": "12345", "normalized": null },
+    { "raw": "123456789012345678901", "normalized": null },
+    { "raw": "12345678a", "normalized": null },
+    { "raw": "", "normalized": null }
+  ],
+  "holderNames": [
+    { "raw": "Nguyễn Văn An", "normalized": "NGUYEN VAN AN" },
+    { "raw": "  đỗ  thị   hồng ", "normalized": "DO THI HONG" },
+    { "raw": "Đặng Lê", "normalized": "DANG LE" },
+    { "raw": "Ñandú", "normalized": "NANDU" },
+    { "raw": "Çelik", "normalized": "CELIK" },
+    { "raw": "Straße Müller", "normalized": "STRASSE MULLER" },
+    { "raw": "An\u00a0Bình", "normalized": "AN BINH" },
+    { "raw": "Čapek Ěva Ćirić", "normalized": "CAPEK EVA CIRIC" },
+    { "raw": "Kelvin \u212a", "normalized": "KELVIN K" },
+    { "raw": "Lê 李", "normalized": null },
+    { "raw": "An", "normalized": "AN" },
+    { "raw": "A", "normalized": null },
+    { "raw": "Nguyen Van A 2", "normalized": null },
+    { "raw": "ABCDEFGHIJ ABCDEFGHIJ ABCDEFGHIJ ABCDEFGHIJ ABCDEFGHIJ", "normalized": null }
+  ],
+  "last4": [{ "number": "0123456789", "last4": "6789" }]
+}

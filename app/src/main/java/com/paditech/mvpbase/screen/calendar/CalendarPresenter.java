@@ -1,7 +1,7 @@
 package com.paditech.mvpbase.screen.calendar;
 
-import android.support.annotation.NonNull;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 
 import com.alamkanak.weekview.WeekViewEvent;
 import com.google.android.gms.tasks.OnCompleteListener;

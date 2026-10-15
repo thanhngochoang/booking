@@ -13,7 +13,7 @@ import java.util.Locale;
  * Created by ThanhNgocHoang on 12/11/2017.
  */
 
-public class PriceEditText extends android.support.v7.widget.AppCompatEditText {
+public class PriceEditText extends androidx.appcompat.widget.AppCompatEditText {
     public PriceEditText(Context context) {
         super(context);
         initView();

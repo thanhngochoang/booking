@@ -12,7 +12,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.provider.Settings;
-import android.support.annotation.DimenRes;
+import androidx.annotation.DimenRes;
 import android.text.Spannable;
 import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;

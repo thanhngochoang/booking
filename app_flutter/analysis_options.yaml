@@ -1,0 +1,17 @@
+include: package:flutter_lints/flutter.yaml
+analyzer:
+  exclude:
+    - lib/**/*.g.dart
+    - lib/**/*.freezed.dart
+    - lib/l10n/*.dart
+    - build/**
+    - android/**
+    - ios/**
+    - macos/**
+linter:
+  rules:
+    prefer_const_constructors: true
+    avoid_print: true
+    require_trailing_commas: true
+    # Absolute imports only (package:photobooking/...), never ../../
+    always_use_package_imports: true

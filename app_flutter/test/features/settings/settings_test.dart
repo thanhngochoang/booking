@@ -1,0 +1,1166 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:photobooking/data/auth/auth_providers.dart';
+import 'package:photobooking/data/award/award_providers.dart';
+import 'package:photobooking/data/award/award_repository.dart';
+import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/photographer/public_profile.dart';
+import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/push/notification_permission.dart';
+import 'package:photobooking/data/push/push_providers.dart';
+import 'package:photobooking/data/skills/photographer_skills.dart';
+import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/skills/skills_repository.dart';
+import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/user/user_contact_providers.dart';
+import 'package:photobooking/data/user/user_contact_repository.dart';
+import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/user/user_repository.dart';
+import 'package:photobooking/features/settings/button_style_controller.dart';
+import 'package:photobooking/features/settings/edit_profile_screen.dart';
+import 'package:photobooking/features/settings/settings_links.dart';
+import 'package:photobooking/features/settings/settings_screen.dart';
+import 'package:photobooking/features/settings/show_screen_codes_controller.dart';
+import 'package:photobooking/features/settings/theme_mode_controller.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
+
+import '../../support/content_fixtures.dart';
+import '../../support/fake_push.dart';
+import '../../support/idle.dart';
+import '../../support/photo_scope.dart';
+
+Future<Widget> _app({
+  required FakeAuthRepository auth,
+  required FakeUserRepository users,
+  required SharedPreferences prefs,
+  FakeUserContactRepository? contacts,
+  FakeImagePicker? picker,
+  FakeMediaUploader? uploader,
+  FakeSkillsRepository? skills,
+  FakeDeviceRegistry? devices,
+  FakePublicProfileRepository? profiles,
+  bool flags = false,
+}) async {
+  Widget stub(BuildContext _, GoRouterState s) =>
+      Scaffold(body: Text('stub ${s.uri}'));
+  final router = GoRouter(
+    initialLocation: '/settings',
+    routes: [
+      GoRoute(
+        path: '/settings',
+        builder: (_, _) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'profile',
+            builder: (_, _) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            path: 'notifications',
+            builder: (_, _) => const Text('notification settings'),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/profile/phone',
+        builder: (_, s) => Text('phone ${s.uri}'),
+      ),
+      GoRoute(path: '/profile/skills', builder: (_, _) => const Text('skills')),
+      GoRoute(path: '/events/mine', builder: (_, _) => const Text('my events')),
+      GoRoute(
+        path: '/u/:uid',
+        builder: (_, s) => Text('public ${s.pathParameters['uid']}'),
+      ),
+      GoRoute(path: '/setup/4', builder: stub),
+      GoRoute(path: '/me/awards', builder: stub),
+      GoRoute(path: '/verify/start', builder: stub),
+      GoRoute(path: '/me/studio', builder: stub),
+      GoRoute(path: '/studio/members', builder: stub),
+    ],
+  );
+  return ProviderScope(
+    retry: (_, _) => null,
+    overrides: [
+      authRepositoryProvider.overrideWithValue(auth),
+      userRepositoryProvider.overrideWithValue(users),
+      userContactRepositoryProvider.overrideWithValue(
+        contacts ?? FakeUserContactRepository(),
+      ),
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      imagePickerProvider.overrideWithValue(picker ?? FakeImagePicker()),
+      mediaUploaderProvider.overrideWithValue(uploader ?? FakeMediaUploader()),
+      skillsRepositoryProvider.overrideWithValue(
+        skills ?? FakeSkillsRepository(),
+      ),
+      // Push ports: no plugin runs in tests.
+      pushMessagingProvider.overrideWithValue(FakePushMessaging()),
+      notificationPermissionProvider.overrideWithValue(
+        FakeNotificationPermission(NotificationPermissionStatus.denied),
+      ),
+      deviceRegistryProvider.overrideWithValue(devices ?? FakeDeviceRegistry()),
+      if (profiles != null) ...[
+        publicProfileRepositoryProvider.overrideWithValue(profiles),
+        // No live tier: the type comes from the profile above.
+        awardRepositoryProvider.overrideWithValue(
+          FakeAwardRepository(uid: auth.currentUser!.uid)..setTier(null),
+        ),
+      ],
+      if (flags) ...[
+        verifyStartReadyProvider.overrideWithValue(true),
+        studioRoutesReadyProvider.overrideWithValue(true),
+      ],
+    ],
+    child: MaterialApp.router(
+      routerConfig: router,
+      builder: (context, child) => testPhotoScope(child: child!),
+      locale: const Locale('vi'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+    ),
+  );
+}
+
+Future<(FakeAuthRepository, FakeUserRepository)> _signedIn([
+  UserRole? role,
+]) async {
+  final auth = FakeAuthRepository();
+  final users = FakeUserRepository();
+  final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');
+  await users.ensureProfile(u);
+  if (role != null) await users.setRole(u.uid, role);
+  return (auth, users);
+}
+
+void main() {
+  test(
+    'button style defaults to gradient and restores the saved choice',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(buttonStyleProvider), ButtonStyleMode.gradient);
+      await c.read(buttonStyleProvider.notifier).set(ButtonStyleMode.avatar);
+      expect(prefs.getString('buttonStyle'), 'avatar');
+      final again = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(again.dispose);
+      expect(again.read(buttonStyleProvider), ButtonStyleMode.avatar);
+    },
+  );
+
+  test('theme mode defaults to dark and restores the saved choice', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final c = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(c.dispose);
+    expect(c.read(themeModeProvider), ThemeMode.dark);
+    await c.read(themeModeProvider.notifier).set(ThemeMode.light);
+    expect(prefs.getString('themeMode'), 'light');
+
+    final again = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(again.dispose);
+    expect(again.read(themeModeProvider), ThemeMode.light);
+  });
+
+  testWidgets('appearance is a SegmentedTabs Tối / Sáng / Theo hệ thống and '
+      'applies at once', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    final tabs = find.byKey(const Key('settings-theme'));
+    SegmentedTabs<ThemeMode> theme() =>
+        tester.widget<SegmentedTabs<ThemeMode>>(tabs);
+    expect(theme().value, ThemeMode.dark);
+    expect(theme().options.map((o) => o.label), [
+      'Tối',
+      'Sáng',
+      'Theo hệ thống',
+    ]);
+    expect(find.byKey(const Key('theme-dark')), findsNothing);
+
+    await tester.ensureVisible(tabs);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Theo hệ thống')),
+    );
+    await tester.pumpAndSettle();
+    expect(theme().value, ThemeMode.system);
+    expect(prefs.getString('themeMode'), 'system');
+    final container = ProviderScope.containerOf(tester.element(tabs));
+    expect(container.read(themeModeProvider), ThemeMode.system);
+  });
+
+  testWidgets('button style is a SegmentedTabs; avatar is disabled with the '
+      'hint until there is an avatar', (tester) async {
+    // A saved avatar choice without a photo still shows (and paints) gradient.
+    SharedPreferences.setMockInitialValues({'buttonStyle': 'avatar'});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    final tabs = find.byKey(const Key('settings-button-style'));
+    SegmentedTabs<ButtonStyleMode> style() =>
+        tester.widget<SegmentedTabs<ButtonStyleMode>>(tabs);
+    expect(style().options.map((o) => o.label), [
+      'Gradient',
+      'Ảnh đại diện làm mờ',
+    ]);
+    expect(style().value, ButtonStyleMode.gradient);
+    expect(style().options.last.enabled, isFalse);
+    expect(
+      find.text('Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.'),
+      findsOneWidget,
+    );
+
+    await tester.ensureVisible(tabs);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Gradient')),
+    );
+    await tester.pumpAndSettle();
+    expect(prefs.getString('buttonStyle'), 'gradient');
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Ảnh đại diện làm mờ')),
+    );
+    await tester.pumpAndSettle();
+    expect(prefs.getString('buttonStyle'), 'gradient', reason: 'locked');
+
+    await users.setAvatar(
+      auth.currentUser!.uid,
+      url: 'https://img.test/a.jpg',
+      storagePath: 'avatars/a.jpg',
+    );
+    await tester.pumpAndSettle();
+    expect(style().options.last.enabled, isTrue);
+    expect(
+      find.text('Thêm ảnh đại diện trong hồ sơ để dùng kiểu này.'),
+      findsNothing,
+    );
+    await tester.tap(
+      find.descendant(of: tabs, matching: find.text('Ảnh đại diện làm mờ')),
+    );
+    await tester.pumpAndSettle();
+    expect(style().value, ButtonStyleMode.avatar);
+    expect(prefs.getString('buttonStyle'), 'avatar');
+  });
+
+  testWidgets('editing the display name saves it and returns to settings', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'Minh'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('edit-name')), '  Minh Thư ');
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+
+    final uid = auth.currentUser!.uid;
+    expect((await users.watch(uid).first)?.displayName, 'Minh Thư');
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.text('Minh Thư'), findsOneWidget);
+    expect(find.text('Đã lưu hồ sơ.'), findsOneWidget);
+  });
+
+  testWidgets('an empty name is rejected before saving', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('edit-name')), '   ');
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+    expect(find.text('Vui lòng nhập tên hiển thị.'), findsOneWidget);
+    expect(find.byType(EditProfileScreen), findsOneWidget);
+    expect(
+      (await users.watch(auth.currentUser!.uid).first)?.displayName,
+      'Minh',
+    );
+  });
+
+  test(
+    'screen codes are on by default in debug and the choice is remembered',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      // Tests run in debug mode, where the tags are shown by default.
+      expect(c.read(showScreenCodesProvider), isTrue);
+      await c.read(showScreenCodesProvider.notifier).set(false);
+      expect(prefs.getBool('showScreenCodes'), isFalse);
+
+      final again = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(again.dispose);
+      expect(again.read(showScreenCodesProvider), isFalse);
+    },
+  );
+
+  testWidgets('the screen-code switch is offered in debug and saves', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    final row = find.byKey(const Key('show-screen-codes'));
+    await tester.scrollUntilVisible(row, 200);
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    expect(tester.widget<SwitchListTile>(row).value, isTrue);
+
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(tester.widget<SwitchListTile>(row).value, isFalse);
+    expect(prefs.getBool('showScreenCodes'), isFalse);
+  });
+
+  testWidgets('settings with the screen-code switch on stays idle', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'showScreenCodes': true});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await expectIdle(tester);
+  });
+
+  testWidgets('editing the phone saves it to the private contact only', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('edit-phone')), '0903123456');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('edit-allow-whatsapp')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+
+    final uid = auth.currentUser!.uid;
+    expect(
+      contacts.stored(uid),
+      const UserContact(
+        phone: '+84903123456',
+        allowZalo: true,
+        allowWhatsApp: true,
+      ),
+    );
+    expect(
+      (await users.watch(uid).first)!.toJson().containsKey('phone'),
+      isFalse,
+    );
+  });
+
+  testWidgets('without a stored number the switches wait for a valid one', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+
+    SwitchListTile tile(String key) =>
+        tester.widget<SwitchListTile>(find.byKey(Key(key)));
+    expect(tile('edit-allow-zalo').onChanged, isNull);
+    expect(tile('edit-allow-whatsapp').onChanged, isNull);
+
+    await tester.enterText(find.byKey(const Key('edit-phone')), '0903123456');
+    await tester.pump();
+    expect(tile('edit-allow-zalo').onChanged, isNotNull);
+    expect(tile('edit-allow-whatsapp').onChanged, isNotNull);
+
+    await tester.tap(find.byKey(const Key('edit-allow-whatsapp')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+    expect(contacts.stored(auth.currentUser!.uid)!.allowWhatsApp, isTrue);
+  });
+
+  testWidgets('an invalid phone blocks saving', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('edit-phone')), '90312345');
+    await tester.tap(find.byKey(const Key('edit-save')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Số điện thoại chưa đúng. Ví dụ: 903 123 456'),
+      findsOneWidget,
+    );
+    expect(contacts.stored(auth.currentUser!.uid), isNull);
+    expect(
+      find.byType(SettingsScreen),
+      findsNothing,
+    ); // still on the edit screen
+  });
+
+  testWidgets(
+    'a stored number prefills the field and an empty field keeps it',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final (auth, users) = await _signedIn();
+      final contacts = FakeUserContactRepository()
+        ..seed(
+          auth.currentUser!.uid,
+          const UserContact(phone: '+84903123456', allowZalo: false),
+        );
+      await tester.pumpWidget(
+        await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-edit-profile')));
+      await tester.pumpAndSettle();
+      // The hint text is also '903 123 456', so read the field's own text.
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('edit-phone')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        '903 123 456',
+      );
+      expect(
+        tester
+            .widget<SwitchListTile>(find.byKey(const Key('edit-allow-zalo')))
+            .value,
+        isFalse,
+      );
+
+      await tester.enterText(find.byKey(const Key('edit-phone')), '');
+      await tester.tap(find.byKey(const Key('edit-save')));
+      await tester.pumpAndSettle();
+      expect(contacts.stored(auth.currentUser!.uid)!.phone, '+84903123456');
+    },
+  );
+
+  testWidgets('S09.03 listens to the private contact only while open', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final contacts = FakeUserContactRepository();
+    await tester.pumpWidget(
+      await _app(auth: auth, users: users, prefs: prefs, contacts: contacts),
+    );
+    await tester.pumpAndSettle();
+    // S09.02's phone row already holds the (autoDispose) contact stream; S09.03
+    // shares that one subscription instead of opening a second.
+    expect(contacts.watchers, 1);
+
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 1);
+    await expectIdle(tester);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 1);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    expect(contacts.watchers, 0);
+  });
+
+  group('mock layout', () {
+    Future<void> openSettings(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final (auth, users) = await _signedIn();
+      await tester.pumpWidget(
+        await _app(auth: auth, users: users, prefs: prefs),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('S09.03: own phone hint, fields on the page, sticky "Lưu"', (
+      tester,
+    ) async {
+      await openSettings(tester);
+      await tester.tap(find.byKey(const Key('settings-edit-profile')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Số điện thoại chỉ hiện với nhiếp ảnh gia sau khi bạn thanh toán.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(GlassCard), findsNothing);
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('edit-save')),
+          matching: find.byType(Scrollable),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('edit-save')),
+          matching: find.byType(AppFooterBar),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('S09.02: small-caps muted group labels', (tester) async {
+      await openSettings(tester);
+      final label = tester.widget<Text>(find.text('TÀI KHOẢN'));
+      expect(label.style?.fontSize, AppText.xs2);
+      expect(label.style?.letterSpacing, closeTo(0.88, 0.01));
+      final dark =
+          Theme.of(tester.element(find.text('TÀI KHOẢN'))).brightness ==
+          Brightness.dark;
+      expect(
+        label.style?.color,
+        dark ? AppColorsDark.foregroundMuted : AppColors.foregroundMuted,
+      );
+      expect(
+        tester.getSemantics(find.text('TÀI KHOẢN')),
+        matchesSemantics(label: 'Tài khoản', isHeader: true),
+      );
+    });
+
+    testWidgets('S09.02: hairlines between rows, small preview button', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openSettings(tester);
+      // Account: 2 rows (edit profile, phone). Theme and button style are
+      // segmented tabs, Thông báo a single row.
+      expect(find.byType(Divider), findsNWidgets(1));
+      final preview = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, 'Xem trước nút'),
+      );
+      expect(preview.size, AppButtonSize.small);
+    });
+  });
+
+  testWidgets('S09.03 name field has no icon', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('edit-name')),
+        matching: find.byIcon(AppIcons.profile),
+      ),
+      findsNothing,
+    );
+  });
+
+  Future<void> openEdit(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    await tester.pumpWidget(await _app(auth: auth, users: users, prefs: prefs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('S09.03 keyboard up at 320x568: name field and Lưu reachable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.reset);
+    await openEdit(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('edit-name')));
+    expect(find.byKey(const Key('edit-name')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('S09.03 fits 320x640 at 1.3x', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await openEdit(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('edit-save')).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('S09.03 changes the avatar and shows it', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final (auth, users) = await _signedIn();
+    final uploader = FakeMediaUploader();
+    await tester.pumpWidget(
+      await _app(
+        auth: auth,
+        users: users,
+        prefs: prefs,
+        picker: FakeImagePicker([
+          [const PickedImage(path: '/tmp/a.jpg', name: 'a.jpg')],
+        ]),
+        uploader: uploader,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-edit-profile')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('change-avatar')));
+    await tester.pumpAndSettle();
+    expect(find.text('Đã đổi ảnh đại diện.'), findsOneWidget);
+    expect(
+      tester.widget<AppAvatar>(find.byType(AppAvatar)).url,
+      'https://storage.test/${uploader.uploaded.single}',
+    );
+  });
+
+  group('S09.02 account rows', () {
+    Future<void> open(
+      WidgetTester tester,
+      FakeAuthRepository auth,
+      FakeUserRepository users, {
+      FakeUserContactRepository? contacts,
+      FakeSkillsRepository? skills,
+      FakeDeviceRegistry? devices,
+    }) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await tester.pumpWidget(
+        await _app(
+          auth: auth,
+          users: users,
+          prefs: prefs,
+          contacts: contacts,
+          skills: skills,
+          devices: devices,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('everyone can add a phone number; customers see no more', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+      expect(find.byKey(const Key('profile-skills')), findsNothing);
+      expect(find.byKey(const Key('profile-public')), findsNothing);
+      expect(find.text('Chưa thêm'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('profile-phone')));
+      await tester.pumpAndSettle();
+      expect(find.text('phone /profile/phone'), findsOneWidget);
+    });
+
+    testWidgets('the phone row shows only the last 4 digits', (tester) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      final contacts = FakeUserContactRepository()
+        ..seed(auth.currentUser!.uid, const UserContact(phone: '0912345678'));
+      await open(tester, auth, users, contacts: contacts);
+      expect(find.text('•••• 5678'), findsOneWidget);
+      expect(find.textContaining('091234'), findsNothing);
+    });
+
+    testWidgets('a phone of 4 digits or fewer is never shown, only "added"', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      final contacts = FakeUserContactRepository()
+        ..seed(auth.currentUser!.uid, const UserContact(phone: '1234'));
+      await open(tester, auth, users, contacts: contacts);
+      expect(find.text('Đã thêm'), findsOneWidget);
+      expect(find.textContaining('1234'), findsNothing);
+    });
+
+    testWidgets('photographers see skills with the meter and public profile', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.photographer);
+      final uid = auth.currentUser!.uid;
+      final skills = FakeSkillsRepository()
+        ..seed(
+          uid,
+          const PhotographerSkills(
+            specialties: [SpecialtySkill(id: 'portrait')],
+            languages: ['vi'],
+          ),
+        );
+      await open(tester, auth, users, skills: skills);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('profile-skills')),
+          matching: find.byType(CompletenessMeter),
+        ),
+        findsOneWidget,
+      );
+      final before = skills.loadCalls;
+      expect(before, 1);
+      await tester.tap(find.byKey(const Key('profile-skills')));
+      await tester.pumpAndSettle();
+      expect(find.text('skills'), findsOneWidget);
+      expect(skills.loadCalls, before, reason: 'no reload while away');
+
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('profile-skills')), findsOneWidget);
+      expect(skills.loadCalls, before + 1, reason: 'reloaded on return');
+      await tester.tap(find.byKey(const Key('profile-public')));
+      await tester.pumpAndSettle();
+      expect(find.text('public $uid'), findsOneWidget);
+    });
+
+    testWidgets('staff see Quản lý sự kiện in S09.02', (tester) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      auth.staff = StaffRole.sales;
+      await open(tester, auth, users);
+      final row = find.byKey(const Key('settings-manage-events'));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: row, matching: find.text('Quản lý sự kiện')),
+        findsOneWidget,
+      );
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('my events'), findsOneWidget);
+    });
+
+    testWidgets('people without a staff role do not see Quản lý sự kiện', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.photographer);
+      await open(tester, auth, users);
+      expect(find.byKey(const Key('settings-manage-events')), findsNothing);
+    });
+
+    testWidgets('sign-out button opens confirmation sheet; keep cancels', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn();
+      await open(tester, auth, users);
+      final btn = find.byKey(const Key('settings-sign-out'));
+      await tester.scrollUntilVisible(btn, 100);
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Bạn có chắc chắn muốn đăng xuất không?'),
+        findsOneWidget,
+      );
+      expect(find.text('Ở lại'), findsOneWidget);
+
+      await tester.tap(find.text('Ở lại'));
+      await tester.pumpAndSettle();
+
+      expect(auth.currentUser, isNotNull);
+      expect(find.text('Bạn có chắc chắn muốn đăng xuất không?'), findsNothing);
+    });
+
+    testWidgets('confirming sign-out signs the user out', (tester) async {
+      final (auth, users) = await _signedIn();
+      await open(tester, auth, users);
+      final btn = find.byKey(const Key('settings-sign-out'));
+      await tester.scrollUntilVisible(btn, 100);
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppButton),
+          matching: find.text('Đăng xuất'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(auth.currentUser, isNull);
+    });
+
+    testWidgets('the Thông báo row opens /settings/notifications', (
+      tester,
+    ) async {
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+      final row = find.byKey(const Key('settings-notifications'));
+      await tester.scrollUntilVisible(row, 100);
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(find.text('Push, giờ yên lặng, nhắc buổi chụp'), findsOneWidget);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.text('notification settings'), findsOneWidget);
+    });
+
+    testWidgets('the Thông báo group sits between the button style and '
+        'Đăng xuất', (tester) async {
+      tester.view.physicalSize = const Size(390, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (auth, users) = await _signedIn(UserRole.customer);
+      await open(tester, auth, users);
+      double y(Finder f) => tester.getTopLeft(f).dy;
+      expect(
+        y(find.text('KIỂU NÚT CHÍNH')),
+        lessThan(y(find.byKey(const Key('settings-notifications')))),
+      );
+      expect(
+        y(find.byKey(const Key('settings-notifications'))),
+        lessThan(y(find.byKey(const Key('settings-sign-out')))),
+      );
+    });
+
+    testWidgets('sign-out unregisters the device first', (tester) async {
+      final (auth, users) = await _signedIn();
+      final devices = FakeDeviceRegistry();
+      final hold = Completer<void>();
+      devices.holdUnregister = hold;
+      await open(tester, auth, users, devices: devices);
+      final uid = auth.currentUser!.uid;
+      final btn = find.byKey(const Key('settings-sign-out'));
+      await tester.scrollUntilVisible(btn, 100);
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppButton),
+          matching: find.text('Đăng xuất'),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(devices.unregistered, [uid]);
+      expect(auth.currentUser, isNotNull, reason: 'still waiting for it');
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(auth.currentUser, isNull);
+    });
+  });
+
+  group('S09.02 order and flagged rows', () {
+    /// Opens S09.02 for a photographer of [type] (null: customer) on a tall
+    /// view, so every row is built.
+    Future<(FakeAuthRepository, FakeUserRepository)> open(
+      WidgetTester tester, {
+      ProviderType? type,
+      String? district,
+      bool flags = false,
+      Size size = const Size(390, 3000),
+      double textScale = 1.0,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      if (textScale != 1.0) {
+        tester.platformDispatcher.textScaleFactorTestValue = textScale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      }
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final (auth, users) = await _signedIn(
+        type == null ? UserRole.customer : UserRole.photographer,
+      );
+      final uid = auth.currentUser!.uid;
+      await tester.pumpWidget(
+        await _app(
+          auth: auth,
+          users: users,
+          prefs: prefs,
+          flags: flags,
+          profiles: FakePublicProfileRepository([
+            if (type != null)
+              PhotographerProfile(
+                summary: fixturePhotographer(
+                  uid,
+                  providerType: type,
+                  studioDistrict: district,
+                ),
+              ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return (auth, users);
+    }
+
+    double y(WidgetTester tester, String key) =>
+        tester.getTopLeft(find.byKey(Key(key))).dy;
+
+    Future<void> tapRow(WidgetTester tester, String key) async {
+      await tester.ensureVisible(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key(key)));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('groups appear in settingsGroupOrder and Đăng xuất is last', (
+      tester,
+    ) async {
+      await open(tester, type: ProviderType.studio, district: 'Quận 1');
+      final present = [
+        for (final name in settingsGroupOrder)
+          if (find.byKey(Key('settings-group-$name')).evaluate().isNotEmpty)
+            name,
+      ];
+      expect(
+        present,
+        containsAllInOrder(<String>[
+          'account',
+          'mode',
+          'appearance',
+          'buttonStyle',
+          'notifications',
+          'signOut',
+        ]),
+      );
+      final ys = [
+        for (final name in present) y(tester, 'settings-group-$name'),
+      ];
+      for (var i = 1; i < ys.length; i++) {
+        expect(
+          ys[i],
+          greaterThan(ys[i - 1]),
+          reason: '${present[i]} after ${present[i - 1]}',
+        );
+      }
+      expect(present.last, 'signOut');
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('settings-group-signOut')),
+          matching: find.byKey(const Key('settings-sign-out')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('photographer rows in order: Kỹ năng, Hình thức nhận việc, '
+        'Giải thưởng, Xem hồ sơ công khai', (tester) async {
+      await open(tester, type: ProviderType.individual);
+      final keys = [
+        'settings-edit-profile',
+        'profile-phone',
+        'profile-skills',
+        'profile-provider-type',
+        'profile-awards',
+        'profile-public',
+      ];
+      for (var i = 1; i < keys.length; i++) {
+        expect(
+          y(tester, keys[i]),
+          greaterThan(y(tester, keys[i - 1])),
+          reason: '${keys[i]} after ${keys[i - 1]}',
+        );
+      }
+    });
+
+    testWidgets('a studio has "Địa chỉ studio" showing its district; it opens '
+        '/setup/4?from=settings', (tester) async {
+      await open(tester, type: ProviderType.studio, district: 'Quận 1');
+      const key = 'settings-studio-address';
+      expect(y(tester, key), greaterThan(y(tester, 'profile-provider-type')));
+      expect(y(tester, key), lessThan(y(tester, 'profile-awards')));
+      final row = find.byKey(const Key(key));
+      expect(
+        find.descendant(of: row, matching: find.text('Địa chỉ studio')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('Quận 1')),
+        findsOneWidget,
+      );
+      await tapRow(tester, key);
+      expect(find.text('stub /setup/4?from=settings'), findsOneWidget);
+    });
+
+    testWidgets('an individual has no address row', (tester) async {
+      await open(tester, type: ProviderType.individual);
+      expect(find.byKey(const Key('profile-provider-type')), findsOneWidget);
+      expect(find.byKey(const Key('settings-studio-address')), findsNothing);
+    });
+
+    testWidgets('a studio without district reads "Chưa có địa chỉ"', (
+      tester,
+    ) async {
+      await open(tester, type: ProviderType.studio);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('settings-studio-address')),
+          matching: find.text('Chưa có địa chỉ'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('flagged rows are hidden while their routes do not exist', (
+      tester,
+    ) async {
+      for (final type in [ProviderType.individual, ProviderType.studio]) {
+        await open(tester, type: type);
+        for (final key in [
+          'settings-verify',
+          'settings-my-studio',
+          'settings-studio-members',
+        ]) {
+          expect(find.byKey(Key(key)), findsNothing, reason: '$type $key');
+        }
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('with the flags on they open their routes', (tester) async {
+      await open(tester, type: ProviderType.individual, flags: true);
+      expect(find.byKey(const Key('settings-studio-members')), findsNothing);
+      expect(
+        y(tester, 'settings-verify'),
+        greaterThan(y(tester, 'profile-awards')),
+      );
+      expect(
+        y(tester, 'settings-my-studio'),
+        greaterThan(y(tester, 'settings-verify')),
+      );
+      expect(
+        y(tester, 'profile-public'),
+        greaterThan(y(tester, 'settings-my-studio')),
+      );
+      expect(
+        find.text('Studio đang ở, việc được giao, lời mời'),
+        findsOneWidget,
+      );
+      await tapRow(tester, 'settings-my-studio');
+      expect(find.text('stub /me/studio'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+
+      await open(tester, type: ProviderType.studio, flags: true);
+      expect(find.byKey(const Key('settings-my-studio')), findsNothing);
+      expect(find.text('Mời thợ, giao việc cho thành viên'), findsOneWidget);
+      await tapRow(tester, 'settings-studio-members');
+      expect(find.text('stub /studio/members'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+
+      await open(tester, type: ProviderType.studio, flags: true);
+      expect(
+        find.text('Xác minh danh tính để bắt đầu nhận đơn'),
+        findsOneWidget,
+      );
+      await tapRow(tester, 'settings-verify');
+      expect(find.text('stub /verify/start'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+
+      // Customers never see them.
+      await open(tester, flags: true);
+      expect(find.byKey(const Key('settings-verify')), findsNothing);
+      expect(find.byKey(const Key('settings-my-studio')), findsNothing);
+    });
+
+    testWidgets('the sign-out confirm button is red', (tester) async {
+      await open(tester);
+      await tapRow(tester, 'settings-sign-out');
+      final confirm = find.descendant(
+        of: find.ancestor(
+          of: find.text('Đăng xuất'),
+          matching: find.byType(AppButton),
+        ),
+        matching: find.byType(FilledButton),
+      );
+      expect(confirm, findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(confirm)
+            .style
+            ?.backgroundColor
+            ?.resolve({}),
+        AppColors.error,
+      );
+      final signOut = tester.widget<TextButton>(
+        find.byKey(const Key('settings-sign-out')),
+      );
+      expect(
+        signOut.style?.foregroundColor?.resolve({}),
+        Theme.of(tester.element(find.byType(SettingsScreen))).colorScheme.error,
+      );
+    });
+
+    testWidgets('fits 320dp at 1.3x text for a studio with all flags on', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await open(
+        tester,
+        type: ProviderType.studio,
+        district: 'Thành phố Thủ Đức',
+        flags: true,
+        size: const Size(320, 4000),
+        textScale: 1.3,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('settings-studio-members')), findsOneWidget);
+      expect(find.byKey(const Key('settings-sign-out')), findsOneWidget);
+      expect(find.text('Ảnh đại diện làm mờ'), findsOneWidget);
+    });
+  });
+}

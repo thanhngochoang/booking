@@ -1,0 +1,272 @@
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'node:test';
+import type { NotifyRequest } from '../src/notification_ports.js';
+import {
+  GROUP_RECENT_EVENT_IDS,
+  markAllRead,
+  notify,
+  pruneReadNotifications,
+  reconcileUnread,
+} from '../src/notification_use_cases.js';
+import { createNotifyWorld, type NotifyWorld } from './support/notify_world.js';
+
+const review = (over: Partial<NotifyRequest> = {}): NotifyRequest => ({
+  userId: 'u1',
+  content: { type: 'review_new', customer: 'An', rating: 5, text: 'Rất tốt' },
+  target: '/u/u1?tab=reviews',
+  dedupeKey: 'review_new_b1',
+  ...over,
+});
+
+const chat = (n: number, actorId: string, eventId: string): NotifyRequest => ({
+  userId: 'u1',
+  content: { type: 'chat_message', sender: actorId, preview: `tin ${n}`, count: 1 },
+  target: '/chat/c1',
+  dedupeKey: 'ignored',
+  groupKey: 'chat:c1',
+  eventId,
+  actor: { id: actorId, name: actorId, avatarUrl: null },
+});
+
+describe('notify', () => {
+  let w: NotifyWorld;
+  beforeEach(() => {
+    w = createNotifyWorld();
+  });
+
+  it('creates a row with readAt null and pushes with its id', async () => {
+    assert.equal(await notify(w.deps, review()), 'created');
+    const [row] = w.store.rowsOf('u1');
+    assert.equal(row?.id, 'n_review_new_b1');
+    assert.equal(row?.readAt, null);
+    assert.equal(row?.tab, 'system');
+    assert.equal(row?.category, 'badges');
+    assert.equal(row?.title, 'An đã đánh giá 5 sao');
+    assert.equal(w.push.sent.length, 1);
+    assert.deepEqual(w.push.sent[0]?.msg.data, {
+      type: 'review_new',
+      target: '/u/u1?tab=reviews',
+      notificationId: 'n_review_new_b1',
+    });
+    assert.equal(w.push.sent[0]?.msg.channel, 'default');
+  });
+
+  it('a duplicate dedupe key writes nothing and does not push', async () => {
+    await notify(w.deps, review());
+    const writes = w.store.writes;
+    assert.equal(await notify(w.deps, review()), 'duplicate');
+    assert.equal(w.store.writes, writes);
+    assert.equal(w.push.sent.length, 1);
+  });
+
+  it('in-app off still pushes without a notification id', async () => {
+    w.store.prefs.set('u1', { channels: { badges: { push: true, inApp: false } } });
+    assert.equal(await notify(w.deps, review()), 'created');
+    assert.equal(w.store.rowsOf('u1').length, 0);
+    assert.equal(w.push.sent.length, 1);
+    assert.equal('notificationId' in (w.push.sent[0]?.msg.data ?? {}), false);
+  });
+
+  it('everything off is suppressed', async () => {
+    w.store.prefs.set('u1', { channels: { badges: { push: false, inApp: false } } });
+    assert.equal(await notify(w.deps, review()), 'suppressed');
+    assert.equal(w.store.rowsOf('u1').length, 0);
+    assert.equal(w.push.sent.length, 0);
+  });
+
+  it('push off keeps the row but sends nothing', async () => {
+    w.store.prefs.set('u1', { channels: { badges: { push: false, inApp: true } } });
+    await notify(w.deps, review());
+    assert.equal(w.store.rowsOf('u1').length, 1);
+    assert.equal(w.push.sent.length, 0);
+  });
+
+  it('quiet hours push on the quiet channel', async () => {
+    w.clock.setTime(new Date('2026-10-10T16:00:00.000Z')); // 23:00 VN
+    await notify(w.deps, review());
+    assert.equal(w.push.sent[0]?.msg.channel, 'quiet');
+  });
+
+  it('grouped events bump count and move to the top while unread', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    const id = 'g_chat_c1';
+    w.clock.advanceMinutes(5);
+    assert.equal(await notify(w.deps, chat(2, 'b', 'm2')), 'grouped');
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.count, 2);
+    assert.equal(row?.readAt, null);
+    assert.equal(row?.createdAt.getTime(), w.clock.now().getTime());
+    assert.equal(row?.body, '2 tin nhắn mới');
+    assert.equal(w.store.rowsOf('u1').length, 1);
+    assert.equal(w.push.sent.length, 2);
+    assert.equal(w.push.sent[1]?.msg.data.notificationId, id);
+  });
+
+  it('a read group restarts at count 1 with a single actor', async () => {
+    for (const [i, a] of ['a', 'b', 'c'].entries()) await notify(w.deps, chat(i, a, `m${i}`));
+    assert.equal(w.store.rowsOf('u1')[0]?.count, 3);
+    await w.store.markRead('u1', ['g_chat_c1'], w.clock.now());
+    assert.equal(await notify(w.deps, chat(9, 'd', 'm9')), 'created');
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.count, 1);
+    assert.equal(row?.body, 'tin 9');
+    assert.deepEqual(row?.actors.map((x) => x.id), ['d']);
+    assert.equal(row?.readAt, null);
+  });
+
+  it('the same event id twice is a duplicate', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+    assert.equal(w.store.rowsOf('u1')[0]?.count, 1);
+    assert.equal(w.push.sent.length, 1);
+  });
+
+  it('a grouped row keeps the last 20 event ids, newest first; an older one counts again', async () => {
+    assert.equal(GROUP_RECENT_EVENT_IDS, 20);
+    for (let i = 0; i < 22; i++) await notify(w.deps, chat(i, 'a', `m${i}`));
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.count, 22);
+    assert.equal(row?.recentEventIds.length, 20);
+    assert.equal(row?.recentEventIds[0], 'm21');
+    assert.equal(row?.recentEventIds[19], 'm2');
+    assert.equal(await notify(w.deps, chat(5, 'a', 'm5')), 'duplicate');
+    // m0 fell out of the window: it counts again.
+    assert.equal(await notify(w.deps, chat(0, 'a', 'm0')), 'grouped');
+    assert.equal(w.store.rowsOf('u1')[0]?.count, 23);
+  });
+
+  it('a row written before recentEventIds still dedupes on lastEventId', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    const prev = w.store.rowsOf('u1')[0];
+    assert.ok(prev);
+    // Simulates an older Firestore doc: the adapter reads a missing list as [].
+    w.store.rows.set(`u1/${prev.id}`, { ...prev, recentEventIds: [] });
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+  });
+
+  it('a read row still treats its last event as a duplicate (retried trigger)', async () => {
+    await notify(w.deps, chat(1, 'a', 'm1'));
+    await w.store.markRead('u1', ['g_chat_c1'], w.clock.now());
+    assert.equal(await notify(w.deps, chat(1, 'a', 'm1')), 'duplicate');
+  });
+
+  it('dedupe and group keys turn ":" and "/" into "_" for the row id', async () => {
+    await notify(w.deps, review({ dedupeKey: 'support_reply:t1/m1' }));
+    await notify(w.deps, { ...chat(1, 'a', 'm1'), groupKey: 'dispute:d/1' });
+    const ids = w.store.rowsOf('u1').map((r) => r.id).sort();
+    assert.deepEqual(ids, ['g_dispute_d_1', 'n_support_reply_t1_m1']);
+    // Keys without "/" keep the id they had.
+    await notify(w.deps, review({ dedupeKey: 'review_new:b2' }));
+    assert.ok(w.store.rowsOf('u1').some((r) => r.id === 'n_review_new_b2'));
+  });
+
+  it('group keeps at most 3 unique actors, newest first', async () => {
+    for (const [i, a] of ['a', 'b', 'c', 'd', 'b'].entries()) await notify(w.deps, chat(i, a, `m${i}`));
+    const row = w.store.rowsOf('u1')[0];
+    assert.deepEqual(row?.actors.map((x) => x.id), ['b', 'd', 'c']);
+    assert.equal(row?.count, 5);
+  });
+
+  it('a grouped request without an actor is invalid', async () => {
+    const { actor: _a, ...rest } = chat(1, 'a', 'm1');
+    void _a;
+    await assert.rejects(notify(w.deps, rest as NotifyRequest), { code: 'invalid_argument' });
+  });
+
+  it('a push failure does not undo the row', async () => {
+    w.push.failWith = new Error('fcm down');
+    assert.equal(await notify(w.deps, review()), 'created');
+    assert.equal(w.store.rowsOf('u1').length, 1);
+    assert.equal(w.pushErrors.length, 1);
+  });
+});
+
+describe('unread count', () => {
+  let w: NotifyWorld;
+  beforeEach(() => {
+    w = createNotifyWorld();
+  });
+
+  it('markAllRead marks every unread row and sets the count to 0', async () => {
+    for (const k of ['a', 'b', 'c']) await notify(w.deps, review({ dedupeKey: `review_${k}` }));
+    await reconcileUnread(w.deps, 'u1');
+    assert.equal(w.store.unread.get('u1')?.count, 3);
+    w.clock.advanceMinutes(1);
+    assert.equal(await markAllRead(w.deps, 'u1'), 3);
+    assert.equal(w.store.unread.get('u1')?.count, 0);
+    assert.equal(await w.store.countUnread('u1'), 0);
+    assert.equal(await markAllRead(w.deps, 'u1'), 0);
+  });
+
+  it('reconcileUnread writes the counted value', async () => {
+    await notify(w.deps, review());
+    assert.equal(await reconcileUnread(w.deps, 'u1'), 1);
+    assert.equal(w.store.unread.get('u1')?.count, 1);
+  });
+
+  it('two counts with equal time are both written', async () => {
+    const at = new Date('2026-10-10T10:00:00.000Z');
+    assert.equal(await w.store.setUnreadCount('u1', 2, at), true);
+    assert.equal(await w.store.setUnreadCount('u1', 4, at), true);
+    assert.equal(w.store.unread.get('u1')?.count, 4);
+  });
+
+  it('an older count never overwrites a newer one', async () => {
+    assert.equal(await w.store.setUnreadCount('u1', 5, new Date('2026-10-10T10:00:02.000Z')), true);
+    assert.equal(await w.store.setUnreadCount('u1', 3, new Date('2026-10-10T10:00:01.000Z')), false);
+    assert.equal(w.store.unread.get('u1')?.count, 5);
+  });
+});
+
+describe('pruneReadNotifications', () => {
+  it('deletes read rows older than 90 days and keeps unread and recent ones', async () => {
+    const w = createNotifyWorld(new Date('2026-06-01T10:00:00.000Z'));
+    await notify(w.deps, review({ dedupeKey: 'old_read' }));
+    await notify(w.deps, review({ dedupeKey: 'old_unread' }));
+    await w.store.markRead('u1', ['n_old_read'], w.clock.now());
+    w.clock.setTime(new Date('2026-09-01T10:00:00.000Z'));
+    await notify(w.deps, review({ dedupeKey: 'new_read' }));
+    await w.store.markRead('u1', ['n_new_read'], w.clock.now());
+    w.clock.setTime(new Date('2026-10-10T10:00:00.000Z'));
+    assert.equal(await pruneReadNotifications(w.deps), 1);
+    assert.deepEqual(w.store.rowsOf('u1').map((r) => r.id).sort(), ['n_new_read', 'n_old_unread']);
+    assert.equal(await pruneReadNotifications(w.deps), 0);
+  });
+});
+
+describe('grouped names', () => {
+  const quote = (actorId: string, name: string, eventId: string): NotifyRequest => ({
+    userId: 'u1',
+    content: { type: 'quote_new', jobTitle: 'Chụp kỷ yếu', count: 1, names: [name] },
+    target: '/jobs/j1/applications',
+    dedupeKey: 'ignored',
+    groupKey: 'job:j1:quotes',
+    eventId,
+    actor: { id: actorId, name, avatarUrl: null },
+  });
+
+  it("grouped render receives the actors' names newest first", async () => {
+    const w = createNotifyWorld();
+    await notify(w.deps, quote('p3', 'Hà', 'p3_1'));
+    await notify(w.deps, quote('p2', 'Lan Chi', 'p2_1'));
+    assert.equal(w.store.rowsOf('u1')[0]?.body, 'Lan Chi và Hà. Xem và so sánh báo giá.');
+    await notify(w.deps, quote('p1', 'Minh Trí', 'p1_1'));
+    const row = w.store.rowsOf('u1')[0];
+    assert.equal(row?.title, '3 nhiếp ảnh gia đã báo giá cho việc “Chụp kỷ yếu”');
+    assert.equal(row?.body, 'Minh Trí, Lan Chi và 1 người khác. Xem và so sánh báo giá.');
+    assert.equal(w.push.sent[2]?.msg.body, row?.body);
+  });
+
+  it('chat_message grouped copy unchanged', async () => {
+    const w = createNotifyWorld();
+    await notify(w.deps, chat(1, 'Lan', 'm1'));
+    assert.deepEqual(
+      { title: w.store.rowsOf('u1')[0]?.title, body: w.store.rowsOf('u1')[0]?.body },
+      { title: 'Lan', body: 'tin 1' },
+    );
+    await notify(w.deps, chat(2, 'Lan', 'm2'));
+    const row = w.store.rowsOf('u1')[0];
+    assert.deepEqual({ title: row?.title, body: row?.body }, { title: 'Lan', body: '2 tin nhắn mới' });
+    assert.equal('names' in (row ?? {}), false);
+  });
+});

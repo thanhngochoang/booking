@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,8 +19,8 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.libraries.places.api.model.Place;
+import com.paditech.mvpbase.common.utils.get_location.PlacePickerHelper;
 import com.paditech.mvpbase.R;
 import com.paditech.mvpbase.common.dialog.ToastPopup;
 import com.paditech.mvpbase.common.event.UploadAlbumSuccess;
@@ -118,14 +118,7 @@ public class CreateAlbumFragment extends MVPFragment<CreateAlbumContact.Presente
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.btn_location:
-                try {
-                    PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
-                    startActivityForResult(builder.build(getActivity()), PLACE_PICKER_REQUEST);
-                } catch (GooglePlayServicesRepairableException e) {
-                    e.printStackTrace();
-                } catch (GooglePlayServicesNotAvailableException e) {
-                    e.printStackTrace();
-                }
+                startActivityForResult(PlacePickerHelper.buildIntent(getActivity()), PLACE_PICKER_REQUEST);
                 break;
             case R.id.btn_create:
                 if (mSelectedPlace == null) return;
@@ -165,7 +158,7 @@ public class CreateAlbumFragment extends MVPFragment<CreateAlbumContact.Presente
         mGetImageManager.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Place place = PlacePicker.getPlace(getActivityContext(), data);
+                Place place = PlacePickerHelper.getPlace(data);
                 if (place != null) {
                     this.mSelectedPlace = place;
                     btnLocation.setText(place.getName());

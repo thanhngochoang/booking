@@ -5,7 +5,7 @@ import android.content.Context;
 import android.os.Build;
 import android.provider.Settings;
 
-import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 /**
  * Created by ThanhNgocHoang on 12/27/2017.
@@ -24,7 +24,9 @@ public class Device {
                     Settings.Secure.ANDROID_ID);
             this.os_version = Build.VERSION.RELEASE;
             this.os_name = "android";
-            this.device_token = FirebaseInstanceId.getInstance().getToken();
+            // Token is fetched asynchronously since FirebaseInstanceId was removed.
+            FirebaseMessaging.getInstance().getToken()
+                    .addOnSuccessListener(token -> this.device_token = token);
         } catch (Exception e){
             e.printStackTrace();
         }

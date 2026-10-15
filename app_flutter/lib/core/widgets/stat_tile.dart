@@ -1,0 +1,168 @@
+// lib/core/widgets/stat_tile.dart
+import 'package:flutter/material.dart';
+
+import 'package:photobooking/core/theme/tokens.g.dart';
+import 'package:photobooking/core/widgets/app_skeleton.dart';
+
+/// A big number over a one-line label. Put two or three in a [StatTileRow].
+class StatTile extends StatelessWidget {
+  static Widget skeleton({Key? key}) => _StatTileSkeleton(key: key);
+
+  const StatTile({
+    super.key,
+    required this.value,
+    required this.label,
+    this.onTap,
+    this.semanticsValue,
+    this.valueLeading,
+  });
+
+  final String value;
+
+  /// Drawn before [value] in the same line (the tomato icon of S03.01's
+  /// "97%"); decorative, so it adds nothing to the spoken label.
+  final Widget? valueLeading;
+  final String label;
+
+  /// Read instead of [value] by screen readers (the full amount for a short
+  /// money value).
+  final String? semanticsValue;
+
+  /// Makes the tile a button (S06.01 "Đang giữ" opens S06.05); null = static.
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final secondary = dark
+        ? AppColorsDark.foregroundSecondary
+        : AppColors.foregroundSecondary;
+    final radius = BorderRadius.circular(AppRadius.xl);
+    final valueText = Text(
+      value,
+      maxLines: 1,
+      style: const TextStyle(
+        fontFamily: AppFonts.display,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        fontFeatures: [FontFeature.tabularFigures()],
+      ),
+    );
+    final content = Padding(
+      // Mock .kpi: padding 10 8 10 12, content pinned to the bottom.
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: valueLeading == null
+                ? valueText
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      valueLeading!,
+                      const SizedBox(width: 4),
+                      valueText,
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(fontSize: 10.5, color: secondary),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Semantics(
+      label: '${semanticsValue ?? value}, $label',
+      button: onTap != null,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          // Translucent fill, no blur: tiles sit on cards that already blur.
+          decoration: BoxDecoration(
+            color: dark ? AppColorsDark.glass : AppColors.glass,
+            borderRadius: radius,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          child: onTap == null
+              ? content
+              : Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: radius,
+                    onTap: onTap,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: content,
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tiles side by side, equal width and equal height.
+class StatTileRow extends StatelessWidget {
+  const StatTileRow({super.key, required this.tiles});
+
+  final List<StatTile> tiles;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < tiles.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpace.s2),
+            Expanded(child: tiles[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatTileSkeleton extends StatelessWidget {
+  const _StatTileSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark ? AppColorsDark.glass : AppColors.glass,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSkeleton.box(width: 48, height: 30),
+            const SizedBox(height: 2),
+            AppSkeleton.box(width: 86, height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}

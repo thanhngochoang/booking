@@ -1,6 +1,6 @@
 package com.paditech.mvpbase.screen.find_project;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.gms.tasks.OnCompleteListener;

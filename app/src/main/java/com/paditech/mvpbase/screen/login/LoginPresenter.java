@@ -6,8 +6,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.v4.app.FragmentActivity;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
 import android.util.Base64;
 import android.util.Log;
 
@@ -17,12 +17,11 @@ import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
-import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
@@ -50,11 +49,11 @@ import java.util.List;
  */
 
 public class LoginPresenter extends ActivityPresenter<LoginContact.ViewOps>
-        implements LoginContact.PresenterViewOps, GoogleApiClient.OnConnectionFailedListener {
+        implements LoginContact.PresenterViewOps {
     private final String TAG = LoginActivity.class.getSimpleName();
     private final int RC_SIGN_IN = 100;
 
-    private GoogleApiClient mGoogleApiClient;
+    private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     private FirebaseAuth.AuthStateListener mAuthListener;
     private CallbackManager mCallbackManager;
@@ -103,10 +102,7 @@ public class LoginPresenter extends ActivityPresenter<LoginContact.ViewOps>
                 .requestEmail()
                 .build();
 
-        mGoogleApiClient = new GoogleApiClient.Builder(getView().getActivityContext())
-                .enableAutoManage((FragmentActivity) getView().getActivityContext(), this)
-                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
-                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(getView().getActivityContext(), gso);
     }
 
     @SuppressLint("PackageManagerGetSignatures")
@@ -204,7 +200,7 @@ public class LoginPresenter extends ActivityPresenter<LoginContact.ViewOps>
         // request login bằng GG
         getView().showProgressbar();
         currentType = type;
-        Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         getView().getActivity().startActivityForResult(signInIntent, RC_SIGN_IN);
     }
 
@@ -244,16 +240,14 @@ public class LoginPresenter extends ActivityPresenter<LoginContact.ViewOps>
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == RC_SIGN_IN) {
-            GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
-            if (result.isSuccess()) {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            try {
                 // Google Sign In was successful, authenticate with Firebase
-                GoogleSignInAccount account = result.getSignInAccount();
-                // Login GG thành công
+                GoogleSignInAccount account = task.getResult(ApiException.class);
                 firebaseAuthWithGoogle(account);
-            } else {
+            } catch (ApiException e) {
+                Log.w(TAG, "Google sign in failed", e);
                 getView().hideProgressbar();
-                // Google Sign In failed, update UI appropriately
-                // ...
             }
         } else {
             mCallbackManager.onActivityResult(requestCode, resultCode, data);
@@ -303,10 +297,6 @@ public class LoginPresenter extends ActivityPresenter<LoginContact.ViewOps>
     }
 
 
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        getView().hideProgressbar();
-    }
 
     //hàm trả về true nếu là đã tồn tại trong dữ liệu
     void saveUser(final User user) {

@@ -1,0 +1,776 @@
+// lib/features/photo/photo_detail_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:photobooking/app/tabs.dart';
+import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
+import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/events/event_providers.dart';
+import 'package:photobooking/data/taxonomy/builtin_taxonomy.dart';
+import 'package:photobooking/features/booking/booking_parties.dart';
+import 'package:photobooking/features/discovery/book_entry.dart';
+import 'package:photobooking/features/discovery/engagement_controller.dart';
+import 'package:photobooking/features/photo/photo_detail_controller.dart';
+import 'package:photobooking/l10n/app_localizations.dart';
+
+/// Mock: the gallery is 3:4.
+const double _galleryAspect = 3 / 4;
+const double _dotSize = 6;
+const double _dotGap = 3;
+const double _dotIdleAlpha = 0.5;
+const double _inactiveOpacity = 0.5;
+const double _thumbSize = 56;
+const double _iconSize = 16;
+const int _moreSlots = 3;
+
+/// At this text size (px for a 16px body) the two bottom buttons stack.
+const double _stackBodyPx = 16;
+const double _stackAbovePx = 18.4;
+
+/// "Chân dung · Quận 3 · 🍅 97% (58)": only the parts that exist (mock S02.02).
+List<MetaPart> _authorMeta(PhotographerSummary p, AppLocalizations l) {
+  final review = reviewMetaPart(p, l, withCount: true);
+  return [
+    if (p.specialtyIds.isNotEmpty)
+      MetaPart.text(specialtyLabel(p.specialtyIds.first)),
+    if (p.areaLabel != null && p.areaLabel!.isNotEmpty)
+      MetaPart.text(p.areaLabel!),
+    ?review,
+  ];
+}
+
+/// S02.02: from one photo to the package it was shot with, and to booking it.
+class PhotoDetailScreen extends ConsumerStatefulWidget {
+  const PhotoDetailScreen({super.key, required this.postId});
+  final String postId;
+
+  @override
+  ConsumerState<PhotoDetailScreen> createState() => _PhotoDetailScreenState();
+}
+
+class _PhotoDetailScreenState extends ConsumerState<PhotoDetailScreen> {
+  final _pages = PageController();
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(postDetailProvider(widget.postId), (prev, next) {
+      final d = next.value;
+      if (d != null && prev?.value?.post.id != d.post.id) {
+        // Not inside initState/build: a cached detail fires this at once.
+        Future.microtask(() {
+          if (!mounted) {
+            return;
+          }
+          ref.read(engagementProvider.notifier).load(d.post);
+          ref.read(followProvider.notifier).load(d.post.photographerId);
+        });
+      }
+    }, fireImmediately: true);
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _toast(String text) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
+
+  Future<void> _like(String postId) async {
+    final ok = await ref.read(engagementProvider.notifier).toggleLike(postId);
+    if (!ok && mounted) {
+      _toast(context.l10n.engagementError);
+    }
+  }
+
+  Future<void> _save(String postId) async {
+    final ok = await ref.read(engagementProvider.notifier).toggleSave(postId);
+    if (!ok && mounted) {
+      _toast(context.l10n.engagementError);
+    }
+  }
+
+  Future<void> _follow(String photographerId) async {
+    final ok = await ref.read(followProvider.notifier).toggle(photographerId);
+    if (!ok && mounted) {
+      _toast(context.l10n.engagementError);
+    }
+  }
+
+  Future<void> _share(String postId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final text = context.l10n.photoShareCopied;
+    await Clipboard.setData(ClipboardData(text: '/p/$postId'));
+    if (!mounted) {
+      return;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final detail = ref.watch(postDetailProvider(widget.postId));
+    return ScreenCode(
+      ScreenCodes.photoDetail,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: AsyncView<PostDetail?>(
+                value: detail,
+                onRetry: () =>
+                    ref.invalidate(postDetailProvider(widget.postId)),
+                skeleton: (_) => const _DetailSkeleton(),
+                error: (context, _, _) => Center(
+                  child: ErrorState(
+                    message: l.photoLoadError,
+                    onRetry: () =>
+                        ref.invalidate(postDetailProvider(widget.postId)),
+                  ),
+                ),
+                data: (context, d) => d == null
+                    ? EmptyState(
+                        title: l.photoRemovedTitle,
+                        body: l.photoRemovedBody,
+                        actionLabel: l.photoBackHome,
+                        onAction: () => context.go(AppTab.home.path),
+                      )
+                    : _Content(
+                        detail: d,
+                        pages: _pages,
+                        page: _page,
+                        onPage: (i) => setState(() => _page = i),
+                        onLike: () => _like(d.post.id),
+                        onSave: () => _save(d.post.id),
+                        onFollow: () => _follow(d.post.photographerId),
+                        onShare: () => _share(d.post.id),
+                      ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpace.s2),
+                  child: IconButton(
+                    key: const Key('photo-back'),
+                    tooltip: l.back,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.overlay,
+                      foregroundColor: AppColors.foregroundInverse,
+                    ),
+                    icon: const AppIcon(AppIcons.back),
+                    onPressed: () => context.canPop()
+                        ? context.pop()
+                        : context.go(AppTab.home.path),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpace.s2),
+                  child: IconButton(
+                    key: const Key('photo-more'),
+                    tooltip: l.photoMoreOptions,
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.overlay,
+                      foregroundColor: AppColors.foregroundInverse,
+                    ),
+                    icon: const AppIcon(AppIcons.more),
+                    onPressed: () => _share(widget.postId),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Content extends ConsumerWidget {
+  const _Content({
+    required this.detail,
+    required this.pages,
+    required this.page,
+    required this.onPage,
+    required this.onLike,
+    required this.onSave,
+    required this.onFollow,
+    required this.onShare,
+  });
+
+  final PostDetail detail;
+  final PageController pages;
+  final int page;
+  final ValueChanged<int> onPage;
+  final VoidCallback onLike;
+  final VoidCallback onSave;
+  final VoidCallback onFollow;
+  final VoidCallback onShare;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final post = detail.post;
+    final author = detail.photographer;
+    final service = detail.service;
+    final view =
+        ref.watch(engagementProvider.select((m) => m[post.id])) ??
+        EngagementView(likeCount: post.likeCount, saveCount: post.saveCount);
+    final following = ref.watch(
+      followProvider.select((m) => m[post.photographerId] ?? false),
+    );
+    final isShare = post.kind == PostKind.eventShare;
+    final active = service != null && service.active;
+    final stack =
+        MediaQuery.textScalerOf(context).scale(_stackBodyPx) > _stackAbovePx;
+
+    final profileButton = AppButton.outline(
+      l.photoViewProfile,
+      key: const Key('photo-profile'),
+      onPressed: () => context.push('/u/${post.photographerId}'),
+    );
+    // A provider not accepting orders (S03.01-new): locked, no gradient. An
+    // unknown author keeps the book button (the server still refuses it).
+    final closed = author?.acceptingOrders == false;
+    final bookButton = closed
+        ? AppButton.outline(
+            l.profileOrdersClosedButton,
+            key: const Key('photo-book-closed'),
+            onPressed: null,
+            style: ordersClosedButtonStyle(context),
+          )
+        : AppButton.primary(
+            active ? l.photoBook : l.photoOtherPackages,
+            key: const Key('photo-book'),
+            onPressed: () {
+              final s = service;
+              if (s != null && s.active) {
+                startBooking(
+                  context,
+                  ref,
+                  photographerId: post.photographerId,
+                  serviceId: s.id,
+                );
+              } else {
+                context.push('/u/${post.photographerId}?tab=services');
+              }
+            },
+          );
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              _Gallery(
+                post: post,
+                pages: pages,
+                page: page,
+                onPage: onPage,
+                onDoubleTap: () {
+                  if (!view.liked) {
+                    onLike();
+                  }
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpace.s4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isShare)
+                      _ShareAuthor(authorId: post.authorId)
+                    else if (author != null)
+                      Row(
+                        children: [
+                          AppAvatar(
+                            url: author.avatarUrl,
+                            name: author.displayName,
+                            decorative: true,
+                          ),
+                          const SizedBox(width: AppSpace.s3),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ProviderName(
+                                  author.displayName,
+                                  mark: providerMarkOf(
+                                    type: author.providerType,
+                                    verified: author.verified,
+                                  ),
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                                MetaLine(
+                                  _authorMeta(author, l),
+                                  maxLines: 2,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSpace.s2),
+                          AppButton.outline(
+                            following ? l.photoFollowing : l.photoFollow,
+                            key: const Key('follow'),
+                            size: AppButtonSize.xsmall,
+                            onPressed: onFollow,
+                          ),
+                        ],
+                      ),
+                    if (post.caption.isNotEmpty) ...[
+                      const SizedBox(height: AppSpace.s3),
+                      Text(post.caption),
+                    ],
+                    if (isShare && post.eventId != null) ...[
+                      const SizedBox(height: AppSpace.s2),
+                      _EventChip(eventId: post.eventId!),
+                    ],
+                    if (post.kind == PostKind.realShoot && author != null) ...[
+                      const SizedBox(height: AppSpace.s2),
+                      Text(
+                        service == null
+                            ? l.photoRealShootByName(author.displayName)
+                            : l.photoRealShootBy(
+                                author.displayName,
+                                service.name,
+                              ),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                    const SizedBox(height: AppSpace.s3),
+                    Row(
+                      children: [
+                        _CountButton(
+                          key: const Key('like'),
+                          icon: AppIcons.favorite,
+                          selected: view.liked,
+                          count: view.likeCount,
+                          label: view.liked ? l.photoUnlike : l.photoLike,
+                          color: view.liked ? theme.colorScheme.error : null,
+                          onTap: onLike,
+                        ),
+                        _CountButton(
+                          key: const Key('save'),
+                          icon: AppIcons.save,
+                          selected: view.saved,
+                          count: view.saveCount,
+                          label: view.saved ? l.photoUnsave : l.photoSave,
+                          onTap: onSave,
+                        ),
+                        if (post.locationName != null) ...[
+                          const SizedBox(width: AppSpace.s2),
+                          const AppIcon(AppIcons.place, size: _iconSize),
+                          const SizedBox(width: AppSpace.s1),
+                          Flexible(
+                            child: Text(
+                              post.locationName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                        ] else
+                          const Spacer(),
+                        IconButton(
+                          key: const Key('photo-share-button'),
+                          tooltip: l.photoSharePost,
+                          icon: const AppIcon(AppIcons.share, size: _iconSize),
+                          onPressed: onShare,
+                        ),
+                      ],
+                    ),
+                    if (service != null) ...[
+                      const SizedBox(height: AppSpace.s3),
+                      _ServiceCard(service: service),
+                    ],
+                    if (detail.more.isNotEmpty && author != null) ...[
+                      const SizedBox(height: AppSpace.s5),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                l.photoMoreOf(author.displayName),
+                                style: theme.textTheme.titleLarge,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                context.push('/u/${post.photographerId}'),
+                            child: Text(l.photoMoreProfile),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpace.s2),
+                      Row(
+                        children: [
+                          for (var i = 0; i < _moreSlots; i++) ...[
+                            if (i > 0) const SizedBox(width: AppSpace.s2),
+                            Expanded(
+                              child: i < detail.more.length
+                                  ? PhotoCard(
+                                      key: Key('more-${detail.more[i].id}'),
+                                      imageUrl: detail.more[i].cover.url,
+                                      aspect: 1,
+                                      // No visible text: name the card by the
+                                      // post's caption, else "Ảnh {i}".
+                                      semanticLabel:
+                                          detail.more[i].caption.isNotEmpty
+                                          ? detail.more[i].caption
+                                          : l.photoItemLabel(i + 1),
+                                      onTap: () => context.push(
+                                        '/p/${detail.more[i].id}',
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!isShare)
+          AppFooterBar(
+            child: stack
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      profileButton,
+                      const SizedBox(height: AppSpace.s2),
+                      bookButton,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(flex: 4, child: profileButton),
+                      const SizedBox(width: AppSpace.s2),
+                      Expanded(flex: 6, child: bookButton),
+                    ],
+                  ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Who shared a photo to an event: a name and an avatar, no follow button.
+class _ShareAuthor extends ConsumerWidget {
+  const _ShareAuthor({required this.authorId});
+  final String authorId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(partyProfileProvider(authorId)).value;
+    final name = profile?.displayName ?? '';
+    return Row(
+      key: const Key('photo-share-author'),
+      children: [
+        AppAvatar(url: profile?.avatarUrl, name: name, decorative: true),
+        const SizedBox(width: AppSpace.s3),
+        Expanded(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "Sự kiện: {title}" under the caption of a photo shared to an event; opens it.
+class _EventChip extends ConsumerWidget {
+  const _EventChip({required this.eventId});
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final event = ref.watch(eventProvider(eventId)).value;
+    if (event == null) {
+      return const SizedBox.shrink();
+    }
+    final label = context.l10n.postEventChip(event.summary.title);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: AppChip(
+        key: const Key('photo-event-chip'),
+        label: label,
+        selected: false,
+        kind: AppChipKind.context,
+        leading: const AppIcon(AppIcons.calendar, size: _iconSize),
+        onChanged: (_) => context.push('/e/$eventId'),
+      ),
+    );
+  }
+}
+
+class _Gallery extends StatelessWidget {
+  const _Gallery({
+    required this.post,
+    required this.pages,
+    required this.page,
+    required this.onPage,
+    required this.onDoubleTap,
+  });
+
+  final PostSummary post;
+  final PageController pages;
+  final int page;
+  final ValueChanged<int> onPage;
+  final VoidCallback onDoubleTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final n = post.images.length;
+    return AspectRatio(
+      aspectRatio: _galleryAspect,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          GestureDetector(
+            key: const Key('photo-gallery'),
+            onDoubleTap: onDoubleTap,
+            child: PageView.builder(
+              controller: pages,
+              itemCount: n,
+              onPageChanged: onPage,
+              itemBuilder: (context, i) => NetworkPhoto(
+                url: post.images[i].url,
+                semanticLabel: l.photoPageOf(i + 1, n),
+              ),
+            ),
+          ),
+          if (n > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: AppSpace.s3,
+              child: ExcludeSemantics(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < n; i++)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _dotGap,
+                        ),
+                        child: DecoratedBox(
+                          key: Key('page-dot-$i'),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.foregroundInverse.withValues(
+                              alpha: i == page ? 1 : _dotIdleAlpha,
+                            ),
+                          ),
+                          child: const SizedBox.square(dimension: _dotSize),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CountButton extends StatelessWidget {
+  const _CountButton({
+    super.key,
+    required this.icon,
+    required this.selected,
+    required this.count,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  final IconData icon;
+  final bool selected;
+  final int count;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$label, $count',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppSpace.s12,
+            minWidth: AppSpace.s12,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.s2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIcon(icon, selected: selected, color: color),
+                const SizedBox(width: AppSpace.s1),
+                Text(
+                  '$count',
+                  style: const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ServiceCard extends StatelessWidget {
+  const _ServiceCard({required this.service});
+  final ServiceSummary service;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final photos = service.editedCount ?? service.photoCount;
+    final details = [
+      if (photos != null) l.servicePhotos(photos),
+      if (service.deliveryDays != null)
+        l.serviceDelivery(service.deliveryDays!),
+      formatDuration(service.durationMinutes, l),
+    ].join(' · ');
+    final cover = service.coverUrl;
+    return Opacity(
+      opacity: service.active ? 1 : _inactiveOpacity,
+      child: Material(
+        key: const Key('service-card'),
+        color: scheme.secondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.s3),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                child: SizedBox.square(
+                  dimension: _thumbSize,
+                  child: cover == null
+                      ? ColoredBox(color: scheme.outlineVariant)
+                      : NetworkPhoto(url: cover, retry: false),
+                ),
+              ),
+              const SizedBox(width: AppSpace.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(service.name, style: theme.textTheme.titleMedium),
+                    Text(details, style: theme.textTheme.bodySmall),
+                    if (!service.active)
+                      Text(
+                        l.photoServiceInactive,
+                        style: TextStyle(
+                          color: scheme.error,
+                          fontSize: AppText.sm,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              Text(
+                formatMoney(service.priceVnd),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: EdgeInsets.zero,
+    physics: const NeverScrollableScrollPhysics(),
+    children: [
+      AspectRatio(
+        aspectRatio: _galleryAspect,
+        child: LayoutBuilder(
+          builder: (context, constraints) =>
+              AppSkeleton.box(height: constraints.maxHeight, radius: 0),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(AppSpace.s4),
+        child: Row(
+          children: [
+            AppAvatar.skeleton(),
+            const SizedBox(width: AppSpace.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppSkeleton.line(width: 140),
+                  const SizedBox(height: AppSpace.s2),
+                  AppSkeleton.line(width: 90),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}

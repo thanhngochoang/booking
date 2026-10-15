@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Design tokens: DIMENSION. Source of truth is design-system/tokens.json.
+  Spacing is a 4dp grid. Text sizes are a 7-step scale.
+-->
+<resources>
+
+    <!-- ===================== PRIMITIVE ===================== -->
+    <!-- Spacing (4dp grid) -->
+    <dimen name="space_0">0dp</dimen>
+    <dimen name="space_1">4dp</dimen>
+    <dimen name="space_2">8dp</dimen>
+    <dimen name="space_3">12dp</dimen>
+    <dimen name="space_4">16dp</dimen>
+    <dimen name="space_5">20dp</dimen>
+    <dimen name="space_6">24dp</dimen>
+    <dimen name="space_8">32dp</dimen>
+    <dimen name="space_10">40dp</dimen>
+    <dimen name="space_12">48dp</dimen>
+    <dimen name="space_16">64dp</dimen>
+
+    <!-- Font sizes -->
+    <dimen name="font_xs">10sp</dimen>
+    <dimen name="font_sm">12sp</dimen>
+    <dimen name="font_base">14sp</dimen>
+    <dimen name="font_md">16sp</dimen>
+    <dimen name="font_lg">20sp</dimen>
+    <dimen name="font_xl">24sp</dimen>
+    <dimen name="font_2xl">35sp</dimen>
+
+    <!-- Corner radius -->
+    <dimen name="radius_none">0dp</dimen>
+    <dimen name="radius_sm">4dp</dimen>
+    <dimen name="radius_md">8dp</dimen>
+    <dimen name="radius_lg">12dp</dimen>
+    <dimen name="radius_full">999dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="elevation_0">0dp</dimen>
+    <dimen name="elevation_1">2dp</dimen>
+    <dimen name="elevation_2">4dp</dimen>
+    <dimen name="elevation_3">8dp</dimen>
+
+    <!-- Stroke -->
+    <dimen name="stroke_hairline">0.8dp</dimen>
+    <dimen name="stroke_thin">1dp</dimen>
+    <dimen name="stroke_thick">2dp</dimen>
+
+    <!-- Touch target -->
+    <dimen name="touch_target_min">48dp</dimen>
+
+    <!-- ===================== SEMANTIC ===================== -->
+    <dimen name="spacing_page_x">@dimen/space_4</dimen>
+    <dimen name="spacing_page_y">@dimen/space_5</dimen>
+    <dimen name="spacing_section">@dimen/space_6</dimen>
+    <dimen name="spacing_list_item">@dimen/space_3</dimen>
+    <dimen name="spacing_inline">@dimen/space_2</dimen>
+    <dimen name="spacing_inline_tight">@dimen/space_1</dimen>
+
+    <dimen name="text_display">@dimen/font_2xl</dimen>
+    <dimen name="text_headline">@dimen/font_xl</dimen>
+    <dimen name="text_title">@dimen/font_lg</dimen>
+    <dimen name="text_subtitle">@dimen/font_md</dimen>
+    <dimen name="text_body">@dimen/font_base</dimen>
+    <dimen name="text_caption">@dimen/font_sm</dimen>
+    <dimen name="text_overline">@dimen/font_xs</dimen>
+
+    <!-- ===================== COMPONENT ===================== -->
+    <dimen name="button_height">@dimen/space_12</dimen>
+    <dimen name="button_height_small">@dimen/space_8</dimen>
+    <dimen name="button_padding_x">@dimen/space_5</dimen>
+    <dimen name="button_radius">@dimen/radius_md</dimen>
+    <dimen name="button_font_size">@dimen/text_body</dimen>
+
+    <dimen name="input_height">@dimen/space_12</dimen>
+    <dimen name="input_padding_x">@dimen/space_3</dimen>
+    <dimen name="input_radius">@dimen/radius_md</dimen>
+
+    <dimen name="card_radius">@dimen/radius_md</dimen>
+    <dimen name="card_padding">@dimen/space_4</dimen>
+    <dimen name="card_elevation">@dimen/elevation_1</dimen>
+    <dimen name="card_gap">@dimen/space_3</dimen>
+
+    <dimen name="badge_height">@dimen/space_6</dimen>
+    <dimen name="badge_padding_x">@dimen/space_2</dimen>
+    <dimen name="badge_radius">@dimen/radius_sm</dimen>
+    <dimen name="badge_font_size">@dimen/text_overline</dimen>
+
+    <dimen name="chip_height">@dimen/space_8</dimen>
+    <dimen name="chip_padding_x">@dimen/space_3</dimen>
+    <dimen name="chip_radius">@dimen/radius_full</dimen>
+
+    <dimen name="avatar_xs">@dimen/space_8</dimen>
+    <dimen name="avatar_sm">@dimen/space_10</dimen>
+    <dimen name="avatar_md">@dimen/space_12</dimen>
+    <dimen name="avatar_lg">@dimen/space_16</dimen>
+    <dimen name="avatar_xl">96dp</dimen>
+    <dimen name="avatar_border_width">@dimen/stroke_thick</dimen>
+
+    <dimen name="toolbar_height">56dp</dimen>
+
+    <dimen name="dialog_radius">@dimen/radius_lg</dimen>
+    <dimen name="dialog_padding">@dimen/space_5</dimen>
+    <dimen name="dialog_min_width">280dp</dimen>
+
+    <dimen name="chat_bubble_radius">@dimen/radius_lg</dimen>
+    <dimen name="chat_bubble_padding">@dimen/space_3</dimen>
+    <dimen name="chat_bubble_max_width">260dp</dimen>
+
+    <dimen name="divider_thickness">@dimen/stroke_hairline</dimen>
+
+    <dimen name="image_hero_height">200dp</dimen>
+    <dimen name="image_card_height">180dp</dimen>
+
+</resources>

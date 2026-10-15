@@ -1,11 +1,11 @@
 package com.paditech.mvpbase.screen.create_project;
 
 import android.content.Intent;
-import android.support.v7.widget.AppCompatRatingBar;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.LinearSnapHelper;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SnapHelper;
+import androidx.appcompat.widget.AppCompatRatingBar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSnapHelper;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SnapHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.location.places.Place;
-import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.libraries.places.api.model.Place;
+import com.paditech.mvpbase.common.utils.get_location.PlacePickerHelper;
 import com.paditech.mvpbase.R;
 import com.paditech.mvpbase.common.dialog.SelectItemDialog;
 import com.paditech.mvpbase.common.dialog.TimePickerDialog;
@@ -267,14 +267,7 @@ public class CreateProjectFragment extends MVPFragment<CreateProjectContact.Pres
     @OnClick(R.id.btn_pick_addr)
     public void onPickAddress() {
         if (mBooking == null) {
-            try {
-                PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
-                startActivityForResult(builder.build(getActivity()), PLACE_PICKER_REQUEST);
-            } catch (GooglePlayServicesRepairableException e) {
-                e.printStackTrace();
-            } catch (GooglePlayServicesNotAvailableException e) {
-                e.printStackTrace();
-            }
+            startActivityForResult(PlacePickerHelper.buildIntent(getActivity()), PLACE_PICKER_REQUEST);
         }
     }
 
@@ -283,7 +276,7 @@ public class CreateProjectFragment extends MVPFragment<CreateProjectContact.Pres
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Place place = PlacePicker.getPlace(getActivityContext(), data);
+                Place place = PlacePickerHelper.getPlace(data);
                 if (place != null) {
                     this.mSelectedPlace = place;
                     btnPickAddress.setText(place.getName());

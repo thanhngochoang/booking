@@ -2,7 +2,7 @@ package com.paditech.mvpbase.screen.calendar;
 
 import android.graphics.RectF;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.view.View;
 
 import com.alamkanak.weekview.DateTimeInterpreter;

@@ -1,0 +1,671 @@
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import type { Timestamp } from 'firebase-admin/firestore';
+import {
+  acceptsOrders,
+  addVerdict,
+  bookingContactUnlocked,
+  computeDeposit,
+  intensityOf,
+  isId,
+  isInquiryClosed,
+  isInternationalE164,
+  isTicketCode,
+  isVnE164,
+  MemoryNotificationStore,
+  MemoryPushSender,
+  MemoryUserDirectory,
+  mentionsPunctual,
+  type NotificationRow,
+  previewOf,
+  reviewDocId,
+  TOMATO_PCT_MIN_REVIEWS,
+  transferCodeFor,
+} from '@photobooking/domain';
+import { fromFirestoreChat } from '../../src/infra/chat_firestore.js';
+import { handleChatMessageCreated } from '../../src/triggers/chat_message_created.js';
+import {
+  AN,
+  BINH,
+  CUC,
+  DUNG,
+  LAN,
+  MINH,
+  ADMIN,
+  SEED_CREATED_AT,
+  SEED_EVENT_SOON,
+  SEED_PASSWORD,
+  SEED_PHOTOGRAPHERS,
+  SEED_REGISTRATION_LAN_SOON,
+  SEED_REVIEWS,
+  SEED_USERS,
+  seedDocuments,
+} from '../../seed/fixtures.js';
+
+const NOW = new Date('2026-10-01T12:00:00Z');
+/** A seeded time: a Date, or a Timestamp when the doc comes from a src/infra mapper. */
+const millis = (v: unknown): number => (v instanceof Date ? v.getTime() : (v as Timestamp).toMillis());
+
+function bookingDoc(id: string): { status: string; timeline: { status: string; at: Date }[] } {
+  const doc = seedDocuments(NOW).find((d) => d.path === `bookings/${id}`);
+  if (doc === undefined) throw new Error(`no seed booking ${id}`);
+  return doc.data as { status: string; timeline: { status: string; at: Date }[] };
+}
+
+describe('seed fixtures', () => {
+  test('seed photographers carry acceptingOrders equal to the rule (An true, Bình false)', () => {
+    const accepting = (uid: string) =>
+      (seedDocuments(NOW).find((d) => d.path === `photographers/${uid}`)?.data as { acceptingOrders?: boolean }).acceptingOrders;
+    for (const p of SEED_PHOTOGRAPHERS) {
+      const doc = seedDocuments(NOW).find((d) => d.path === `photographers/${p.uid}`)?.data as Record<string, unknown>;
+      assert.equal(doc.acceptingOrders, acceptsOrders(doc), p.uid);
+    }
+    assert.equal(accepting('seed-photographer-an'), true);
+    assert.equal(accepting('seed-photographer-binh'), false);
+  });
+
+  test('every path segment is a valid opaque id', () => {
+    for (const d of seedDocuments(NOW)) {
+      for (const segment of d.path.split('/')) assert.ok(isId(segment), d.path);
+    }
+  });
+
+  test('accounts are test-only', () => {
+    for (const u of SEED_USERS) assert.match(u.email, /@seed\.test$/);
+    assert.ok(SEED_PASSWORD.length >= 6, 'the Auth emulator needs at least 6 characters');
+  });
+
+  test('numbers are valid and only in private documents', () => {
+    for (const d of seedDocuments(NOW)) {
+      if (d.path.includes('/private/')) continue;
+      assert.doesNotMatch(JSON.stringify(d.data), /\+\d{8,15}/, d.path);
+      assert.ok(!Object.keys(d.data).some((k) => /phone/i.test(k)), d.path);
+    }
+    for (const p of SEED_PHOTOGRAPHERS) {
+      assert.ok(isVnE164(p.numbers.phone), p.uid);
+      if (p.numbers.zaloPhone !== undefined) assert.ok(isVnE164(p.numbers.zaloPhone), p.uid);
+      if (p.numbers.whatsappPhone !== undefined) assert.ok(isInternationalE164(p.numbers.whatsappPhone), p.uid);
+    }
+  });
+
+  test('money follows the up-front rule: the whole price is paid, nothing remains, integer VND', () => {
+    for (const d of seedDocuments(NOW).filter((x) => x.path.startsWith('bookings/') && !x.path.includes('/private/'))) {
+      const data = d.data as { service: { price: number }; deposit: { amount: number }; remaining: number };
+      assert.equal(data.deposit.amount, computeDeposit(data.service.price).deposit, d.path);
+      assert.equal(data.remaining, 0, d.path);
+      assert.equal(data.deposit.amount + data.remaining, data.service.price, d.path);
+      assert.ok(Number.isInteger(data.remaining), d.path);
+    }
+  });
+
+  test('the bookings cover unlocked and locked contact', () => {
+    const unlocked = (id: string) => {
+      const b = bookingDoc(id);
+      const completedAt = b.timeline.filter((e) => e.status === 'completed').at(-1)?.at ?? null;
+      return bookingContactUnlocked({ status: b.status, completedAt }, NOW);
+    };
+    assert.equal(unlocked('seed-booking-accepted'), true);
+    assert.equal(unlocked('seed-booking-upcoming'), true);
+    assert.equal(unlocked('seed-booking-requested-binh'), true);
+    assert.equal(unlocked('seed-booking-completed-recent'), true);
+    assert.equal(unlocked('seed-booking-cancelled'), false);
+    assert.equal(unlocked('seed-booking-completed-old'), false);
+  });
+
+  test('seed payments, ledger entries, and availability days match booking state', () => {
+    const docs = seedDocuments(NOW);
+
+    // Payments exist for bookings
+    const acceptedPayment = docs.find((d) => d.path === 'payments/seed-payment-seed-booking-accepted');
+    assert.ok(acceptedPayment);
+    assert.equal((acceptedPayment.data as { escrowStatus: string }).escrowStatus, 'held');
+
+    const completedPayment = docs.find((d) => d.path === 'payments/seed-payment-seed-booking-completed-recent');
+    assert.ok(completedPayment);
+    assert.equal((completedPayment.data as { escrowStatus: string }).escrowStatus, 'released');
+
+    // Booking payments look like createPayment's: bank QR with the code of their id, fully received.
+    for (const d of docs.filter((x) => x.path.startsWith('payments/seed-payment-seed-booking-'))) {
+      const pay = d.data as {
+        method?: string;
+        transferCode?: string;
+        receivedAmount?: number;
+        amount: number;
+        expiresAt?: Date;
+        createdAt: Date;
+        payer?: { accountNumberEnc?: string; accountLast4?: string; holderName?: string };
+        refundedAmount?: number;
+      };
+      assert.equal(pay.method, 'bank_qr', d.path);
+      assert.equal(pay.transferCode, transferCodeFor(d.path.slice('payments/'.length)), d.path);
+      assert.equal(pay.receivedAmount, pay.amount, d.path);
+      assert.equal(pay.expiresAt?.getTime(), pay.createdAt.getTime() + 15 * 60_000, d.path);
+      assert.match(String(pay.payer?.accountNumberEnc), /^v1:/, d.path);
+      assert.equal(pay.payer?.accountLast4, '3456', d.path);
+      assert.equal(pay.payer?.holderName, 'KHACH THU NGHIEM', d.path);
+      assert.equal(typeof pay.refundedAmount, 'number', d.path);
+    }
+
+    // Cancelled seed refund is done, bank_transfer, to the seed payer
+    const cancelledRefund = docs.find((d) => d.path === 'refunds/seed-refund-seed-booking-cancelled');
+    assert.ok(cancelledRefund);
+    const rData = cancelledRefund.data as {
+      status?: string;
+      method?: string;
+      destination?: { accountLast4?: string; holderName?: string; source?: string; accountNumberEnc?: string };
+      attempts?: number;
+    };
+    assert.equal(rData.status, 'done');
+    assert.equal(rData.method, 'bank_transfer');
+    assert.equal(rData.destination?.source, 'payer');
+    assert.equal(rData.destination?.accountLast4, '3456');
+    assert.equal(rData.destination?.holderName, 'KHACH THU NGHIEM');
+    assert.match(String(rData.destination?.accountNumberEnc), /^v1:/);
+    assert.equal(rData.attempts, 1);
+
+    // Availability exists
+    const anBookedDay = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-20');
+    assert.ok(anBookedDay);
+    assert.equal((anBookedDay.data as { state: string }).state, 'booked');
+
+    const binhPendingDay = docs.find((d) => d.path === 'availability/seed-photographer-binh/days/2026-10-25');
+    assert.ok(binhPendingDay);
+    assert.equal((binhPendingDay.data as { state: string }).state, 'pending');
+
+    // Contact snapshot exists
+    const contactSnap = docs.find((d) => d.path === 'bookings/seed-booking-accepted/private/contact');
+    assert.ok(contactSnap);
+    assert.equal((contactSnap.data as { phone: string }).phone, '+84903000001');
+  });
+
+  test('deterministic for a given clock', () => {
+    assert.deepEqual(seedDocuments(NOW), seedDocuments(NOW));
+  });
+});
+
+describe('seed notifications and badges', () => {
+  const docs = seedDocuments(NOW);
+  const unreadOf = (uid: string) =>
+    docs.filter((d) => d.path.startsWith(`users/${uid}/notifications/`) && d.data.readAt === null).length;
+
+  test('the stored unread count matches the unread rows', () => {
+    for (const uid of ['seed-customer-lan', 'seed-photographer-an', 'seed-photographer-cuc', 'seed-photographer-dung']) {
+      const inbox = docs.find((d) => d.path === `users/${uid}/private/inbox`);
+      assert.equal(inbox?.data.unreadCount, unreadOf(uid));
+    }
+    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-customer-lan/notifications/')).length, 6);
+    assert.equal(docs.filter((d) => d.path.startsWith('users/seed-photographer-an/notifications/')).length, 3);
+  });
+
+  test('the catalogue, earned badges and progress are seeded; no prefs doc', () => {
+    assert.equal(docs.filter((d) => /^badges\/[^/]+$/.test(d.path)).length, 12);
+    assert.ok(docs.some((d) => d.path === 'users/seed-photographer-an/badges/top_rated'));
+    assert.ok(docs.some((d) => d.path === 'users/seed-customer-lan/badges/loyal_customer'));
+    assert.deepEqual(
+      (docs.find((d) => d.path === 'users/seed-photographer-an/private/badgeProgress')?.data.entries as Record<string, unknown>).punctual,
+      { current: 3, target: 5 },
+    );
+    assert.equal(docs.some((d) => d.path.endsWith('/private/notification_prefs')), false);
+  });
+
+  test("Lan's badge progress equals what the evaluator computes from the seeded reviews and posts", () => {
+    const lan = LAN;
+    const graphemes = (t: string) =>
+      Array.from(new Intl.Segmenter('vi', { granularity: 'grapheme' }).segment(t.trim())).length;
+    const detailed = SEED_REVIEWS.filter((r) => r.customerId === lan && graphemes(r.text) >= 50).length;
+    const shared = docs.filter(
+      (d) => d.path.startsWith('posts/') && d.data.authorId === lan && d.data.kind === 'real_shoot',
+    ).length;
+    const entries = docs.find((d) => d.path === `users/${lan}/private/badgeProgress`)?.data.entries as Record<string, unknown>;
+    assert.equal(detailed, 3);
+    assert.deepEqual(entries.detailed_reviewer, { current: detailed, target: 5 });
+    assert.deepEqual(entries.sharer, { current: shared, target: 5 });
+  });
+});
+
+describe('seed payouts and earnings', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+
+  test('An has an encrypted payout account and a masked view; Bình has none', () => {
+    const view = get('payoutAccounts/seed-photographer-an');
+    assert.equal(view?.accountLast4, '6789');
+    assert.equal(view?.holderName, 'NGUYEN VAN AN');
+    assert.equal('accountNumberEnc' in (view ?? {}), false);
+    const stored = get('payoutAccounts/seed-photographer-an/accounts/seed-account-an-1');
+    assert.match(String(stored?.accountNumberEnc), /^v1:/);
+    assert.doesNotMatch(JSON.stringify(docs.filter((d) => d.path.startsWith('payoutAccounts/'))), /0123456789/);
+    assert.equal(docs.some((d) => d.path.startsWith('payoutAccounts/seed-photographer-binh')), false);
+  });
+
+  test('the old completed payment is paid out in a paid payout with its ledger entry', () => {
+    const pay = get('payments/seed-payment-seed-booking-completed-old');
+    assert.equal(pay?.escrowStatus, 'paid_out');
+    assert.equal(pay?.payoutId, 'seed-payout-an-1');
+    const po = get('payouts/seed-payout-an-1');
+    assert.equal(po?.status, 'paid');
+    assert.equal(po?.amount, pay?.amount);
+    const entry = get('ledger_entries/seed-ledger-seed-payout-an-1-pay');
+    assert.equal(entry?.type, 'payout_paid');
+    assert.equal(entry?.amount, -(po?.amountNet as number));
+  });
+
+  // The brief's 450,000 → 31,500 / 418,500 predates #129 (customers now pay 100% up front): the
+  // seeded payment is the full 1,500,000 price, so 7% is 105,000 and the net 1,395,000.
+  test("An's seeded payout has tax 105,000 and net 1,395,000 with a tax_withheld ledger entry", () => {
+    const po = get('payouts/seed-payout-an-1');
+    // An is an individual: 7% of the 1,500,000 payment is withheld; the gross amount stays.
+    assert.equal(po?.amount, 1_500_000);
+    assert.equal(po?.taxWithheld, 105_000);
+    assert.equal(po?.platformFee, 0);
+    assert.equal(po?.amountNet, 1_395_000);
+    assert.equal(po?.taxRateBp, 700);
+    assert.equal(po?.feeRateBp, 0);
+    assert.equal(po?.firstPayout, true);
+    assert.equal(po?.approvedBy, ADMIN);
+    assert.equal(po?.idempotencyKey, 'seed-payout-an-1');
+    assert.equal(po?.provider, 'fake');
+    assert.deepEqual(po?.items, [
+      { paymentId: 'seed-payment-seed-booking-completed-old', amount: 1_500_000, fee: 0, tax: 105_000, net: 1_395_000 },
+    ]);
+    const pay = get('ledger_entries/seed-ledger-seed-payout-an-1-pay');
+    const tax = get('ledger_entries/seed-ledger-seed-payout-an-1-tax');
+    assert.equal(pay?.amount, -1_395_000);
+    assert.equal(tax?.type, 'tax_withheld');
+    assert.equal(tax?.amount, -105_000);
+    assert.equal(tax?.payoutId, 'seed-payout-an-1');
+    assert.equal(tax?.paymentId, 'seed-payment-seed-booking-completed-old');
+    // Per payment the payout entries net to -amount.
+    assert.equal((pay?.amount as number) + (tax?.amount as number), -1_500_000);
+    assert.equal(get('ledger_entries/seed-ledger-seed-payout-an-1-fee'), undefined);
+    const row = get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old');
+    assert.equal(row?.amount, 1_500_000);
+    assert.equal(row?.taxWithheld, 105_000);
+    assert.equal(row?.netAmount, 1_395_000);
+    assert.equal(row?.estimated, false);
+  });
+
+  test("An's account is matched and active from SEED_CREATED_AT", () => {
+    const stored = get('payoutAccounts/seed-photographer-an/accounts/seed-account-an-1');
+    const view = get('payoutAccounts/seed-photographer-an');
+    assert.equal(stored?.nameStatus, 'matched');
+    assert.equal(view?.nameStatus, 'matched');
+    assert.equal(millis(stored?.activeFrom), SEED_CREATED_AT.getTime());
+    assert.equal(millis(view?.activeFrom), SEED_CREATED_AT.getTime());
+  });
+
+  test('An has an identity legalName', () => {
+    const identity = get('users/seed-photographer-an/private/identity');
+    assert.equal(identity?.legalName, 'Nguyễn Văn An');
+    assert.equal(identity?.method, 'fake');
+    assert.equal(identity?.provider, 'fake');
+    assert.equal(millis(identity?.verifiedAt), SEED_CREATED_AT.getTime());
+  });
+
+  test('the disputed booking holds its payment with the reason', () => {
+    const pay = get('payments/seed-payment-seed-booking-disputed');
+    assert.equal(pay?.escrowStatus, 'disputed');
+    assert.equal((pay?.dispute as { reason: string }).reason, 'Ảnh giao thiếu so với gói');
+    assert.equal(get('bookings/seed-booking-disputed')?.escrowStatus, 'disputed');
+    const item = get('earnings/seed-photographer-an/items/seed-payment-seed-booking-disputed');
+    assert.equal(item?.state, 'disputed');
+    assert.equal(item?.holdReason, 'dispute');
+  });
+
+  test('the earnings projection equals the payments', () => {
+    const e = get('earnings/seed-photographer-an');
+    const dep = (price: number) => computeDeposit(price).deposit;
+    // held: accepted + upcoming + disputed; soon: completed-recent; received: completed-old.
+    assert.equal(e?.heldAmount, 3 * dep(1_500_000));
+    assert.equal(e?.soonAmount, dep(1_500_000));
+    assert.equal(e?.receivedAmount, dep(1_500_000));
+    assert.equal((e?.lastPayout as { status: string }).status, 'paid');
+    assert.equal(get('earnings/seed-photographer-an/items/seed-payment-seed-booking-completed-old')?.state, 'paid_out');
+    assert.equal(get('earnings/seed-photographer-binh')?.heldAmount, dep(1_200_000));
+  });
+});
+
+describe('seed event reminder (S17)', () => {
+  test("SEED_EVENT_SOON starts 36 h after seeding, is open, has soonNoticeAt null and Lan's paid ticket", () => {
+    const docs = seedDocuments(NOW);
+    const get = (path: string) => docs.find((d) => d.path === path)?.data;
+    const ev = get(`events/${SEED_EVENT_SOON}`);
+    assert.ok(ev);
+    assert.equal((ev.startAt as Timestamp).toMillis(), NOW.getTime() + 36 * 3_600_000);
+    assert.equal(ev.status, 'open');
+    assert.equal(ev.title, 'Chụp phố đêm');
+    assert.equal(ev.type, 'photo_walk');
+    assert.equal(ev.price, 0);
+    assert.equal('soonNoticeAt' in ev, true);
+    assert.equal(ev.soonNoticeAt, null);
+    assert.equal(ev.registeredCount, 1);
+    const reg = get(`events/${SEED_EVENT_SOON}/registrations/${SEED_REGISTRATION_LAN_SOON}`);
+    assert.equal(reg?.userId, LAN);
+    assert.equal(reg?.status, 'paid');
+    assert.ok(isTicketCode(String(reg?.ticketCode)));
+    assert.deepEqual(get(`ticket_codes/${String(reg?.ticketCode)}`), { eventId: SEED_EVENT_SOON, registrationId: SEED_REGISTRATION_LAN_SOON });
+    // Every other seed event is still more than 48 hours away (only this one is reminded).
+    for (const d of docs.filter((x) => /^events\/[^/]+$/.test(x.path) && x.path !== `events/${SEED_EVENT_SOON}`)) {
+      assert.ok((d.data.startAt as Timestamp).toMillis() > NOW.getTime() + 48 * 3_600_000, d.path);
+    }
+  });
+
+  test('every path is written once, even when an event day falls on a seed booking day', () => {
+    // 36 h after this clock is 10 Oct in Vietnam, the day of seed-booking-upcoming.
+    const docs = seedDocuments(new Date('2026-10-08T12:00:00Z'));
+    const paths = docs.map((d) => d.path);
+    assert.equal(new Set(paths).size, paths.length);
+    const day = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-10')?.data;
+    assert.equal(day?.bookingId, 'seed-booking-upcoming');
+  });
+});
+
+describe('seed reviews (tomato/brick)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+  const reviewsOf = (uid: string): (Record<string, unknown> & { id: string })[] =>
+    docs
+      .filter((d) => /^reviews\/[^/]+$/.test(d.path) && d.data.subjectId === uid)
+      .map((d) => ({ ...d.data, id: d.path.slice('reviews/'.length) }));
+  const statsOf = (uid: string) => get(`photographers/${uid}`)?.stats as Record<string, unknown> | undefined;
+  const fold = (uid: string) =>
+    reviewsOf(uid).reduce<Record<string, unknown>>(
+      (acc, r) => ({ ...addVerdict(acc, r.verdict as 'tomato' | 'brick', r.intensity as number, mentionsPunctual(String(r.text))) }),
+      {},
+    );
+
+  test("An's stats are 56 tomato and 2 brick (97%) and his seeded reviews are verdict docs", () => {
+    assert.deepEqual(statsOf(AN), {
+      reviewCount: 58,
+      tomatoCount: 56,
+      brickCount: 2,
+      signedSum: 54.62,
+      tomatoPct: 97,
+      score: 0.942,
+      punctualMentions: 3,
+      nextFreeDate: '2026-09-01',
+      completedCount: 3,
+    });
+    const an = reviewsOf(AN);
+    assert.deepEqual(an.map((r) => r.id).sort(), ['seed-review-an-1', 'seed-review-an-2', 'seed-review-an-3']);
+    assert.deepEqual(an.map((r) => `${String(r.verdict)}×${String(r.hits)}`).sort(), ['brick×3', 'tomato×10', 'tomato×6']);
+    const brick = an.find((r) => r.verdict === 'brick');
+    assert.deepEqual(brick?.reasons, ['late', 'slow_delivery']);
+    const topRated = get(`users/${AN}/badges/top_rated`)?.snapshot as { text: string } | undefined;
+    assert.equal(topRated?.text, '97% cà chua từ 58 đánh giá');
+  });
+
+  test('every seeded review is a counted verdict doc keyed by reviewDocId', () => {
+    const all = docs.filter((d) => /^reviews\/[^/]+$/.test(d.path));
+    assert.equal(all.length, 12);
+    for (const d of all) {
+      const r = d.data;
+      assert.equal(d.path, `reviews/${reviewDocId(String(r.bookingId), 'photographer')}`);
+      assert.equal(r.subjectType, 'photographer');
+      assert.equal(r.photographerId, r.subjectId, d.path);
+      assert.equal(r.intensity, intensityOf(r.hits as number), d.path);
+      assert.ok(r.countedAt instanceof Date, `${d.path} is born counted: the trigger neither recounts nor notifies`);
+      assert.match(String(r.bookingDay), /^\d{4}-\d{2}-\d{2}$/);
+      assert.ok(String(r.serviceName).length > 0);
+      assert.ok([LAN, 'seed-customer-minh'].includes(String(r.customerId)), d.path);
+      if (r.verdict === 'tomato') assert.deepEqual(r.reasons, [], d.path);
+    }
+    // Lan can still review the recent shoot.
+    assert.equal(get('reviews/seed-booking-completed-recent'), undefined);
+  });
+
+  test('Cúc has 3 reviews and no tomatoPct shown (under 5)', () => {
+    const cuc = reviewsOf(CUC);
+    assert.equal(cuc.length, 3);
+    assert.ok(cuc.every((r) => r.verdict === 'tomato'));
+    assert.deepEqual(statsOf(CUC), {
+      ...fold(CUC),
+      nextFreeDate: '2026-09-01',
+      completedCount: 0,
+    });
+    assert.equal(statsOf(CUC)?.reviewCount, 3);
+    assert.ok((statsOf(CUC)?.reviewCount as number) < TOMATO_PCT_MIN_REVIEWS);
+  });
+
+  test('Dũng has 6 reviews with 3 bricks, each brick with a reason', () => {
+    const dung = reviewsOf(DUNG);
+    assert.equal(dung.length, 6);
+    const bricks = dung.filter((r) => r.verdict === 'brick');
+    assert.equal(bricks.length, 3);
+    for (const b of bricks) assert.ok(Array.isArray(b.reasons) && b.reasons.length > 0, b.id);
+    assert.deepEqual(statsOf(DUNG), {
+      ...fold(DUNG),
+      nextFreeDate: '2026-09-01',
+      completedCount: 0,
+    });
+    assert.equal(statsOf(DUNG)?.tomatoPct, 50);
+  });
+
+  test('no seed doc carries rating', () => {
+    const keys = (v: unknown): string[] =>
+      v !== null && typeof v === 'object' && !(v instanceof Date)
+        ? Object.entries(v as Record<string, unknown>).flatMap(([k, x]) => [k, ...keys(x)])
+        : [];
+    for (const d of docs) {
+      const k = keys(d.data);
+      assert.equal(k.includes('rating'), false, d.path);
+      assert.equal(k.includes('ratingSum'), false, d.path);
+    }
+  });
+
+  test('the seed inbox review row uses the verdict payload', () => {
+    const rows = docs.filter((d) => d.path.startsWith(`users/${AN}/notifications/`));
+    assert.equal(rows.some((d) => d.data.type === 'review_new'), false);
+    const row = rows.find((d) => d.data.type === 'review_tomato');
+    assert.ok(row);
+    assert.equal(row.data.title, 'Bạn nhận 🍅 ×7 từ buổi chụp CN 27/9');
+    assert.equal(row.data.body, '“Rất hài lòng, đúng giờ.”');
+    assert.equal(row.data.target, `/u/${AN}?tab=reviews`);
+    assert.equal(row.data.category, 'badges');
+    assert.equal(row.data.tab, 'system');
+    // Not the dedupe id of a real notice for the unreviewed recent shoot (Lan can still review it).
+    assert.notEqual(row.path, `users/${AN}/notifications/n_review_tomato_seed-booking-completed-recent_${AN}`);
+  });
+
+  test('seed has a booking chat with bookingStatus equal to its booking', () => {
+    const chat = docs.find((d) => d.path === `chats/${LAN}_${AN}`)?.data;
+    assert.ok(chat);
+    assert.equal(chat.kind, 'booking');
+    assert.equal(chat.bookingId, 'seed-booking-upcoming');
+    assert.equal(chat.bookingStatus, bookingDoc('seed-booking-upcoming').status);
+    assert.deepEqual(chat.members, [LAN, AN]);
+    const messages = docs.filter((d) => d.path.startsWith(`chats/${LAN}_${AN}/messages/`));
+    assert.equal(messages.length, 3);
+    assert.ok(messages.every((m) => m.data.type === 'text'));
+    assert.equal(chat.lastSenderId, AN);
+    const last = messages[messages.length - 1]?.data;
+    assert.equal(chat.lastMessagePreview, previewOf({ type: 'text', body: last?.body as string }));
+    assert.equal(last?.senderId, AN);
+  });
+
+  test('a closed inquiry older than 14 days', () => {
+    const doc = docs.find((d) => d.path === `chats/${LAN}_${CUC}`)?.data;
+    assert.ok(doc);
+    assert.equal(doc.kind, 'inquiry');
+    assert.equal(doc.bookingStatus, null);
+    const chat = fromFirestoreChat(`${LAN}_${CUC}`, doc);
+    assert.equal(isInquiryClosed(chat, NOW), true);
+    assert.equal(docs.filter((d) => d.path.startsWith(`chats/${LAN}_${CUC}/messages/`)).length, 2);
+    assert.equal(NOW.getTime() - (chat.lastMessageAt as Date).getTime(), 20 * 86_400_000);
+  });
+
+  test('an open inquiry with one unread message for the photographer', () => {
+    const doc = docs.find((d) => d.path === `chats/${MINH}_${DUNG}`)?.data;
+    assert.ok(doc);
+    const chat = fromFirestoreChat(`${MINH}_${DUNG}`, doc);
+    assert.equal(chat.kind, 'inquiry');
+    assert.equal(chat.lastSenderId, MINH);
+    assert.equal(isInquiryClosed(chat, NOW), false);
+    assert.equal(docs.filter((d) => d.path.startsWith(`chats/${MINH}_${DUNG}/messages/`)).length, 1);
+    const unread = (uid: string) =>
+      docs.find((d) => d.path === `chats/${MINH}_${DUNG}/members/${uid}`)?.data.unreadCount;
+    assert.equal(unread(DUNG), 1);
+    assert.equal(unread(MINH), 0);
+  });
+
+  test('members docs with unreadCount for both sides', () => {
+    for (const [cid, pid, lan, an] of [
+      [LAN, AN, 2, 0],
+      [LAN, CUC, 0, 0],
+      [MINH, DUNG, 0, 1],
+    ] as const) {
+      const id = `${cid}_${pid}`;
+      const customer = docs.find((d) => d.path === `chats/${id}/members/${cid}`)?.data;
+      const provider = docs.find((d) => d.path === `chats/${id}/members/${pid}`)?.data;
+      assert.ok(customer && provider, id);
+      assert.equal(customer.unreadCount, lan, `${id} customer`);
+      assert.equal(provider.unreadCount, an, `${id} photographer`);
+    }
+  });
+});
+
+describe('seed chats and the inbox', () => {
+  // applySeed writes the chat messages with the Admin SDK, so onChatMessageCreated runs for each of
+  // them after the seed returns. The seeded inbox must already hold what those runs would write, or
+  // they add rows and counts later (a chat row for a 20-day-old message; Lan's 2 unread becoming 4).
+  test('replaying onChatMessageCreated over the seeded messages writes nothing', async () => {
+    const docs = seedDocuments(NOW);
+    const store = new MemoryNotificationStore();
+    for (const d of docs) {
+      const m = /^users\/([^/]+)\/notifications\/([^/]+)$/.exec(d.path);
+      if (m === null) continue;
+      const row = { id: m[2], userId: m[1], ...d.data } as unknown as NotificationRow;
+      store.rows.set(`${row.userId}/${row.id}`, row);
+    }
+    const users = new MemoryUserDirectory();
+    for (const u of SEED_USERS) users.users.set(u.uid, { name: u.displayName, avatarUrl: null });
+    const push = new MemoryPushSender();
+    const deps = { store, push, users, clock: { now: () => NOW } };
+    let replayed = 0;
+    for (const d of docs) {
+      const m = /^chats\/([^/]+)\/messages\/([^/]+)$/.exec(d.path);
+      if (m === null) continue;
+      const chat = docs.find((c) => c.path === `chats/${m[1]}`)?.data;
+      if (chat?.kind === 'event_group') continue;
+      await handleChatMessageCreated(
+        { chatId: m[1] as string, messageId: m[2] as string, message: d.data, members: chat?.members as string[] },
+        deps,
+      );
+      replayed += 1;
+    }
+    assert.equal(replayed, 6);
+    assert.equal(store.writes, 0, [...store.rows.values()].filter((r) => r.createdAt === NOW).map((r) => `${r.userId}/${r.id}`).join(', '));
+    assert.equal(push.sent.length, 0);
+  });
+
+  test('chat rows match the members unread counts', () => {
+    const docs = seedDocuments(NOW);
+    for (const d of docs) {
+      const m = /^chats\/([^/]+)\/members\/([^/]+)$/.exec(d.path);
+      if (m === null || !(m[1] as string).includes('_') || (m[1] as string).startsWith('event_')) continue;
+      const row = docs.find((r) => r.path === `users/${m[2]}/notifications/g_chat_${m[1]}`)?.data;
+      const unread = d.data.unreadCount as number;
+      if (unread > 0) {
+        assert.equal(row?.readAt, null, `${d.path} unread row`);
+        assert.equal(row?.count, unread, `${d.path} count`);
+      } else {
+        assert.ok(row === undefined || row.readAt !== null, `${d.path} has no unread row`);
+      }
+    }
+  });
+
+  test('seed follows give An followerCount 2 and Dũng 1, equal to the follows', () => {
+    const docs = seedDocuments(NOW);
+    const follows = docs.filter((d) => d.path.startsWith('follows/'));
+    const anFollows = follows.filter((d) => (d.data as { photographerId: string }).photographerId === 'seed-photographer-an');
+    const dungFollows = follows.filter((d) => (d.data as { photographerId: string }).photographerId === 'seed-photographer-dung');
+
+    const anDoc = docs.find((d) => d.path === 'photographers/seed-photographer-an')?.data as Record<string, unknown>;
+    const dungDoc = docs.find((d) => d.path === 'photographers/seed-photographer-dung')?.data as Record<string, unknown>;
+
+    assert.equal(anFollows.length, 2);
+    assert.equal(dungFollows.length, 1);
+    assert.equal(anDoc.followerCount, anFollows.length);
+    assert.equal(dungDoc.followerCount, dungFollows.length);
+    assert.ok(anDoc.followerCountAt instanceof Date);
+    assert.ok(dungDoc.followerCountAt instanceof Date);
+  });
+
+  test('Lan has saved posts seed-post-an-1, -2 and saved photographer Cúc', () => {
+    const docs = seedDocuments(NOW);
+    const lanSaves = docs.filter(
+      (d) => d.path.startsWith('saves/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
+    );
+    const lanSavedPosts = lanSaves.map((d) => (d.data as { postId: string }).postId).sort();
+    assert.deepEqual(lanSavedPosts, ['seed-post-an-1', 'seed-post-an-2']);
+
+    const lanSavedPhotographers = docs.filter(
+      (d) => d.path.startsWith('savedPhotographers/') && (d.data as { userId: string }).userId === 'seed-customer-lan',
+    );
+    assert.equal(lanSavedPhotographers.length, 1);
+    assert.equal((lanSavedPhotographers[0]!.data as { photographerId: string }).photographerId, 'seed-photographer-cuc');
+  });
+});
+
+describe('seed discovery stats (S02)', () => {
+  const docs = seedDocuments(NOW);
+  const get = (path: string) => docs.find((d) => d.path === path)?.data;
+
+  test('seed photographers carry nextFreeDate, startingPrice and completedCount from the domain rules', () => {
+    const an = get(`photographers/${AN}`);
+    assert.ok(an);
+    assert.equal(an.startingPrice, 1_500_000);
+    const anStats = an.stats as Record<string, unknown>;
+    assert.equal(anStats.completedCount, 3);
+    assert.ok(typeof anStats.nextFreeDate === 'string');
+    assert.match(anStats.nextFreeDate as string, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(anStats.reviewCount, 58);
+    assert.equal(anStats.score, 0.942);
+
+    const binh = get(`photographers/${BINH}`);
+    assert.ok(binh);
+    assert.equal(binh.startingPrice, 1_200_000);
+    const binhStats = binh.stats as Record<string, unknown>;
+    assert.equal(binhStats.completedCount, 0);
+    assert.ok(typeof binhStats.nextFreeDate === 'string');
+    assert.equal(binhStats.reviewCount, 0);
+    assert.equal(binhStats.score, 0);
+
+    const cuc = get(`photographers/${CUC}`);
+    assert.ok(cuc);
+    assert.equal(cuc.startingPrice, null);
+    const cucStats = cuc.stats as Record<string, unknown>;
+    assert.equal(cucStats.completedCount, 0);
+    assert.ok(typeof cucStats.nextFreeDate === 'string');
+
+    const dung = get(`photographers/${DUNG}`);
+    assert.ok(dung);
+    assert.equal(dung.startingPrice, null);
+    const dungStats = dung.stats as Record<string, unknown>;
+    assert.equal(dungStats.completedCount, 0);
+    assert.ok(typeof dungStats.nextFreeDate === 'string');
+  });
+
+  test('seed posts carry likeCount and saveCount equal to their seeded markers', () => {
+    const post1 = get('posts/seed-post-an-1');
+    assert.ok(post1);
+    assert.equal(post1.likeCount, 2);
+    assert.equal(post1.saveCount, 1);
+
+    const post2 = get('posts/seed-post-an-2');
+    assert.ok(post2);
+    assert.equal(post2.likeCount, 0);
+    assert.equal(post2.saveCount, 1);
+
+    const likes = docs.filter((d) => d.path.startsWith('likes/'));
+    assert.equal(likes.length, 2);
+  });
+
+  test('catalog/explore matches the seeded services', () => {
+    const explore = get('catalog/explore') as { specialties: Record<string, { serviceCount: number }> } | undefined;
+    assert.ok(explore);
+    assert.equal(explore.specialties.portrait?.serviceCount, 1);
+    assert.equal(explore.specialties.family?.serviceCount, 1);
+  });
+});
+

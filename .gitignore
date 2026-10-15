@@ -7,3 +7,30 @@
 /build
 /captures
 .externalNativeBuild
+
+# Project-local toolchain (no admin rights needed) — see README
+/.android-sdk
+/.jdk
+/.certs
+
+/graphify-out/*
+# graphify knowledge graph output (regenerate with /graphify)
+/graphify-out
+/.flutter
+/.pub-cache
+/.home
+/.flutter-config
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md
+# Secrets: local only (see .env.example)
+/.env
+/app/google-services.json
+.claude/*
+!.claude/skills/
+packages/*
+!packages/domain
+!packages/domain/**
+# Extra checkouts made by scripts/worktree.sh
+/.worktrees
+__pycache__/
+*.pyc
