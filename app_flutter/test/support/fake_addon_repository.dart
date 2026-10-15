@@ -14,6 +14,19 @@ class FakeAddonRepository implements AddonRepository {
   String? nextErrorCode;
   String? nextErrorField;
 
+  /// `watchMine` fails while true (the list's load error).
+  bool failWatch = false;
+
+  /// While true, `save` waits for [releaseSave].
+  bool holdSave = false;
+  Completer<void>? _gate;
+
+  void releaseSave() {
+    holdSave = false;
+    _gate?.complete();
+    _gate = null;
+  }
+
   final _changes = StreamController<void>.broadcast();
   int _nextId = 1;
 
@@ -48,6 +61,7 @@ class FakeAddonRepository implements AddonRepository {
 
   @override
   Stream<List<ServiceAddon>> watchMine(String uid) async* {
+    if (failWatch) throw const AddonException('unavailable');
     yield _of(uid, onlyActive: false);
     await for (final _ in _changes.stream) {
       yield _of(uid, onlyActive: false);
@@ -57,6 +71,10 @@ class FakeAddonRepository implements AddonRepository {
   @override
   Future<String> save(AddonInput input, {String? addonId}) async {
     _maybeFail();
+    if (holdSave) {
+      _gate = Completer<void>();
+      await _gate!.future;
+    }
     saves.add((input: input, addonId: addonId));
     return addonId ?? 'addon_${_nextId++}';
   }

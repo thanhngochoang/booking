@@ -85,6 +85,12 @@ class SettingsScreen extends ConsumerWidget {
       if (isPhotographer) ...[
         _SkillsTile(uid: profile!.uid),
         _ProviderTypeTile(uid: profile.uid),
+        _LinkTile(
+          key: const Key('settings-addons'),
+          icon: AppIcons.addCircle,
+          title: l.settingsAddons,
+          path: '/me/addons',
+        ),
         if (type == ProviderType.studio) _StudioAddressTile(uid: profile.uid),
         _LinkTile(
           key: const Key('profile-awards'),

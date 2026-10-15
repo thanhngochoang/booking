@@ -6131,4 +6131,159 @@ class AppLocalizationsVi extends AppLocalizations {
   String addonsSummary(String list) {
     return '+ $list';
   }
+
+  @override
+  String get addonsTitle => 'Dịch vụ đi kèm';
+
+  @override
+  String addonsActiveCount(int n) {
+    return '$n/10 dịch vụ đang bật';
+  }
+
+  @override
+  String get addonsAppliesAll => 'Áp dụng: mọi gói';
+
+  @override
+  String addonsAppliesTo(String names) {
+    return 'Áp dụng: $names';
+  }
+
+  @override
+  String addonsToggle(String name) {
+    return 'Bật $name';
+  }
+
+  @override
+  String get addonsAdd => 'Thêm dịch vụ';
+
+  @override
+  String get addonsEmptyTitle => 'Chưa có dịch vụ đi kèm';
+
+  @override
+  String get addonsEmptyBody =>
+      'Thêm trang điểm, chỉnh ảnh hay xe đưa đón để khách chọn khi đặt lịch.';
+
+  @override
+  String get addonsLoadError => 'Không tải được dịch vụ đi kèm. Thử lại.';
+
+  @override
+  String get addonsLimitReached =>
+      'Bạn đã bật đủ 10 dịch vụ. Tắt bớt một dịch vụ để bật dịch vụ này.';
+
+  @override
+  String get addonsSaveFailed => 'Không lưu được. Thử lại';
+
+  @override
+  String get addonEditAddTitle => 'Thêm dịch vụ đi kèm';
+
+  @override
+  String get addonEditEditTitle => 'Sửa dịch vụ đi kèm';
+
+  @override
+  String get addonEditClose => 'Đóng';
+
+  @override
+  String get addonFieldKind => 'Loại';
+
+  @override
+  String get addonFieldName => 'Tên dịch vụ';
+
+  @override
+  String get addonFieldDescription => 'Mô tả · không bắt buộc';
+
+  @override
+  String get addonFieldUnit => 'Cách tính';
+
+  @override
+  String get addonFieldPriceOnce => 'Giá (₫)';
+
+  @override
+  String addonFieldPricePer(String noun) {
+    return 'Giá / $noun (₫)';
+  }
+
+  @override
+  String get addonFieldMax => 'Tối đa';
+
+  @override
+  String addonFieldMaxValue(int n, String noun) {
+    return '$n $noun';
+  }
+
+  @override
+  String get addonMaxMinus => 'Giảm số lượng tối đa';
+
+  @override
+  String get addonMaxPlus => 'Tăng số lượng tối đa';
+
+  @override
+  String get addonFieldApplies => 'Áp dụng cho';
+
+  @override
+  String get addonAppliesAllChip => 'Mọi gói';
+
+  @override
+  String get addonAppliesPickChip => 'Chọn gói';
+
+  @override
+  String get addonPickPackagesTitle => 'Chọn gói áp dụng';
+
+  @override
+  String get addonPickPackagesDone => 'Xong';
+
+  @override
+  String get addonResponsibility =>
+      'Bạn chịu trách nhiệm với khách về dịch vụ này, kể cả khi thuê người ngoài.';
+
+  @override
+  String get addonSave => 'Lưu';
+
+  @override
+  String get addonDelete => 'Xoá dịch vụ';
+
+  @override
+  String get addonDeleteTitle => 'Xoá dịch vụ này?';
+
+  @override
+  String get addonDeleteBody => 'Booking đã đặt vẫn giữ dịch vụ này.';
+
+  @override
+  String get addonDeleteConfirm => 'Xoá';
+
+  @override
+  String get addonDeleteKeep => 'Giữ lại';
+
+  @override
+  String get addonSaved => 'Đã lưu dịch vụ';
+
+  @override
+  String get addonDeleted => 'Đã xoá dịch vụ';
+
+  @override
+  String get addonErrName => 'Tên 2–60 ký tự';
+
+  @override
+  String get addonErrDescription => 'Mô tả tối đa 200 ký tự';
+
+  @override
+  String get addonErrPrice => 'Giá từ 10.000₫ tới 50.000.000₫';
+
+  @override
+  String get addonErrMaxQty => 'Tối đa từ 1 tới 10';
+
+  @override
+  String get addonErrContact =>
+      'Bỏ số điện thoại, Zalo hoặc link ra khỏi nội dung';
+
+  @override
+  String get addonErrPackages => 'Chọn ít nhất một gói';
+
+  @override
+  String get settingsAddons => 'Dịch vụ đi kèm';
+
+  @override
+  String get profileEditAddons => 'Dịch vụ đi kèm';
+
+  @override
+  String get setupAddAddon => 'Thêm dịch vụ đi kèm';
 }

@@ -135,6 +135,13 @@ Future<void> _showModeCard(WidgetTester tester) => tester.scrollUntilVisible(
   200,
   scrollable: find.byType(Scrollable).first,
 );
+/// A phone tall enough to build the whole photographer list (the account
+/// card has one more row than it had).
+void _tall(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 1600);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
 
 Future<void> _tapSwitch(WidgetTester tester) async {
   final sw = find.byKey(const Key('switch-role'));
@@ -185,6 +192,7 @@ void main() {
   });
 
   testWidgets('a photographer is offered "Tôi cần đặt lịch"', (tester) async {
+    _tall(tester);
     final (auth, users) = await _signedIn(UserRole.photographer);
     await tester.pumpWidget(await _app(auth, users));
     await tester.pumpAndSettle();
@@ -230,6 +238,7 @@ void main() {
   });
 
   testWidgets('switching to customer goes back to /profile', (tester) async {
+    _tall(tester);
     final (auth, users) = await _signedIn(UserRole.photographer);
     final uid = auth.currentUser!.uid;
     await tester.pumpWidget(await _app(auth, users));
@@ -427,6 +436,7 @@ void main() {
 
     testWidgets("to customer: the SnackBar names Đặt lịch and goes to "
         '/profile', (tester) async {
+      _tall(tester);
       final lagging = _LaggingUsers();
       final (auth, users) = await _signedIn(
         UserRole.photographer,
