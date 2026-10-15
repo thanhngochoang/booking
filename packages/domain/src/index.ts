@@ -124,3 +124,8 @@ export * from './support_use_cases.js';
 export * from './support_notifications.js';
 export * from './memory_support_store.js';
 
+export * from './contact_filter.js';
+export * from './addon.js';
+export * from './addon_ports.js';
+export * from './memory_addon_store.js';
+export * from './addon_use_cases.js';
