@@ -1,4 +1,6 @@
 // test/features/verification/verify_identity_screen_test.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/core.dart';
@@ -365,6 +367,43 @@ void main() {
     // A retry and the other method stay offered.
     expect(_primaryLabels(tester), [_vneid]);
     expect(find.text(_nfcLink), findsOneWidget);
+  });
+
+  testWidgets('an unexpected error starting shows verifyIdFailed and back '
+      'leaves the screen', (tester) async {
+    final w = await _world(tester);
+    w.repo.startThrows = StateError('boom');
+    await tester.pumpWidget(w.app(location: '/profile'));
+    await _settle(tester);
+    w.router.push('/verify/identity');
+    await _settle(tester);
+
+    await _tap(tester, find.text(_vneid));
+    expect(find.text(_failed), findsOneWidget);
+    expect(_primaryLabels(tester), [_vneid]);
+
+    await tester.binding.handlePopRoute();
+    await _settle(tester);
+    expect(w.router.state.uri.path, '/profile');
+  });
+
+  testWidgets('an unexpected error completing shows verifyIdFailed and back '
+      'leaves the screen', (tester) async {
+    final w = await _world(tester);
+    w.repo.completeThrows = TimeoutException('complete');
+    await tester.pumpWidget(w.app(location: '/profile'));
+    await _settle(tester);
+    w.router.push('/verify/identity');
+    await _settle(tester);
+
+    await _tap(tester, find.text(_vneid));
+    await _tap(tester, find.text('Đồng ý chia sẻ'));
+    expect(find.text(_failed), findsOneWidget);
+    expect(_primaryLabels(tester), [_vneid]);
+
+    await tester.binding.handlePopRoute();
+    await _settle(tester);
+    expect(w.router.state.uri.path, '/profile');
   });
 
   testWidgets('Quét chip CCCD opens step 1/2, Bắt đầu quét moves to the '

@@ -7,8 +7,9 @@ import 'package:photobooking/data/verification/verification_repository.dart';
 
 /// [VerificationRepository] over the owner listener on `verifications/{uid}`
 /// and the verification callables (region [functionsRegion]). A refusal's
-/// `details.code` becomes [VerificationError]; an unreachable backend becomes
-/// `VerificationError('network')`.
+/// `details.code` becomes [VerificationError]; an unreachable backend, or any
+/// other [Exception] from the call, becomes `VerificationError('network')`;
+/// any other throwable becomes `VerificationError('unknown')`.
 class FirestoreVerificationRepository implements VerificationRepository {
   FirestoreVerificationRepository({
     FirebaseFirestore? db,
@@ -49,6 +50,14 @@ class FirestoreVerificationRepository implements VerificationRepository {
         throw const VerificationError('network');
       }
       throw VerificationError(e.code);
+    } on Exception {
+      // No answer from the server (platform channel, socket, timeout, a
+      // malformed reply): a transport failure the user can retry.
+      throw const VerificationError('network');
+    } on Object {
+      // An Error is a bug, not a refusal: reported as `unknown` so the screen
+      // still leaves its busy state.
+      throw const VerificationError('unknown');
     }
   }
 

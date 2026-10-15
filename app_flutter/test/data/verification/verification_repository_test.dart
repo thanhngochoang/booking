@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -219,6 +220,34 @@ void main() {
           reason: transport,
         );
       }
+    });
+
+    test('an exception other than FirebaseFunctionsException becomes network, '
+        'an error unknown', () async {
+      final c = _MockCallable();
+      when(() => functions.httpsCallable(any(), options: any(named: 'options')))
+          .thenReturn(c);
+      for (final e in <Exception>[
+        PlatformException(code: 'channel-error'),
+        TimeoutException('call'),
+        const FormatException('bad'),
+      ]) {
+        when(() => c.call<Object?>(any())).thenThrow(e);
+        await expectLater(
+          repo.startIdentity(IdentityMethod.vneid),
+          throwsA(
+            isA<VerificationError>().having((e) => e.code, 'code', 'network'),
+          ),
+          reason: '$e',
+        );
+      }
+      when(() => c.call<Object?>(any())).thenThrow(StateError('boom'));
+      await expectLater(
+        repo.completeIdentity('s1'),
+        throwsA(
+          isA<VerificationError>().having((e) => e.code, 'code', 'unknown'),
+        ),
+      );
     });
 
     test('callables run in the app region with a timeout', () async {

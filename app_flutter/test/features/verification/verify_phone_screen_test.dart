@@ -217,6 +217,34 @@ void main() {
     expect(find.byType(OtpCodeField), findsNothing);
   });
 
+  testWidgets('a send that never answers times out and back works again', (
+    tester,
+  ) async {
+    final w = await _world();
+    await tester.pumpWidget(w.app(location: '/profile'));
+    await tester.pump();
+    w.router.push('/verify/phone');
+    await tester.pump();
+    await tester.pump();
+    w.verifier.hangSend = true;
+
+    await _send(tester, number: '912345678');
+    // Sending: back is held while the request is out.
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(w.router.state.uri.path, '/verify/phone');
+
+    await tester.pump(const Duration(seconds: 91));
+    await tester.pump();
+    expect(find.text('Chưa thực hiện được. Thử lại nhé.'), findsOneWidget);
+    expect(find.byType(OtpCodeField), findsNothing);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    await tester.pump();
+    expect(w.router.state.uri.path, '/profile');
+  });
+
   testWidgets('resend is disabled for 60 s and enabled after', (tester) async {
     final w = await _world();
     await _open(tester, w);

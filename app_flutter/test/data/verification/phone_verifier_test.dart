@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -194,6 +197,32 @@ void main() {
     await expectLater(
       verifier.confirmCode(request, '000000'),
       throwsA(_verifyError(PhoneVerifyErrorCode.codeExpired)),
+    );
+  });
+
+  test('a non-Auth error while linking answers network or unknown', () async {
+    const request = PhoneCodeRequest(
+      phone: '+84903123456',
+      verificationId: 'v',
+    );
+    // An exception (platform channel, socket, timeout): no answer from Auth.
+    when(() => user.linkWithCredential(any()))
+        .thenThrow(PlatformException(code: 'channel-error'));
+    await expectLater(
+      verifier.confirmCode(request, '123456'),
+      throwsA(_verifyError(PhoneVerifyErrorCode.network)),
+    );
+    when(() => user.linkWithCredential(any()))
+        .thenThrow(TimeoutException('link'));
+    await expectLater(
+      verifier.confirmCode(request, '123456'),
+      throwsA(_verifyError(PhoneVerifyErrorCode.network)),
+    );
+    // Anything else is unknown.
+    when(() => user.linkWithCredential(any())).thenThrow(StateError('boom'));
+    await expectLater(
+      verifier.confirmCode(request, '123456'),
+      throwsA(_verifyError(PhoneVerifyErrorCode.unknown)),
     );
   });
 

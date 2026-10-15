@@ -303,4 +303,85 @@ describe('identity_verification', () => {
     assert.equal(id1, id2);
     assert.notEqual(id1, id3);
   });
+
+  describe('the vendor is not called when the request is refused', () => {
+    /** Wraps the fake verifier and counts calls to `start` and `result`. */
+    class CountingVerifier extends FakeIdentityVerifier {
+      starts = 0;
+      results = 0;
+      override async start(uid: string, method: 'vneid' | 'nfc') {
+        this.starts++;
+        return super.start(uid, method);
+      }
+      override async result(uid: string, sessionId: string) {
+        this.results++;
+        return super.result(uid, sessionId);
+      }
+    }
+
+    it('start after identity passed is conflict without calling start', async () => {
+      const world = createVerificationWorld();
+      const verifier = new CountingVerifier(async () => null, world.ids);
+      const deps = { ...world.deps, identity: verifier };
+
+      await confirmPhoneVerified(deps, 'p1');
+      const s = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+      await completeIdentityVerification(deps, 'p1', { sessionId: s.sessionId });
+      assert.equal(verifier.starts, 1);
+
+      await assert.rejects(
+        startIdentityVerification(deps, 'p1', { method: 'vneid' }),
+        refusedWith('conflict'),
+      );
+      assert.equal(verifier.starts, 1);
+    });
+
+    it('a rate_limited start does not call start', async () => {
+      const world = createVerificationWorld();
+      const verifier = new CountingVerifier(async () => null, world.ids);
+      const deps = { ...world.deps, identity: verifier };
+
+      await confirmPhoneVerified(deps, 'p1');
+      for (let i = 0; i < 3; i++) {
+        await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+      }
+      assert.equal(verifier.starts, 3);
+
+      await assert.rejects(
+        startIdentityVerification(deps, 'p1', { method: 'nfc' }),
+        refusedWith('rate_limited'),
+      );
+      assert.equal(verifier.starts, 3);
+    });
+
+    it('complete with an unknown session is not_found without calling result', async () => {
+      const world = createVerificationWorld();
+      const verifier = new CountingVerifier(async () => null, world.ids);
+      const deps = { ...world.deps, identity: verifier };
+
+      await confirmPhoneVerified(deps, 'p1');
+      await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+
+      await assert.rejects(
+        completeIdentityVerification(deps, 'p1', { sessionId: 'unknown_session' }),
+        refusedWith('not_found'),
+      );
+      assert.equal(verifier.results, 0);
+    });
+
+    it('complete for another uid\'s session is not_found without calling result', async () => {
+      const world = createVerificationWorld();
+      const verifier = new CountingVerifier(async () => null, world.ids);
+      const deps = { ...world.deps, identity: verifier };
+
+      await confirmPhoneVerified(deps, 'p1');
+      const s = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+
+      await assert.rejects(
+        completeIdentityVerification(deps, 's1', { sessionId: s.sessionId }),
+        refusedWith('not_found'),
+      );
+      assert.equal(verifier.results, 0);
+    });
+  });
 });

@@ -7,6 +7,7 @@ import type {
 } from '../../src/verification_ports.js';
 import type { NotifyDeps } from '../../src/notification_ports.js';
 import { createNotifyWorld } from './notify_world.js';
+import type { MemoryNotificationStore } from '../../src/memory_notification_store.js';
 
 export class MemoryIdentityVault implements IdentityVault {
   async hashId(idNumber: string): Promise<string> {
@@ -34,6 +35,8 @@ export interface VerificationWorld {
   readonly clock: ControllableClock;
   readonly ids: SequentialIdGen;
   readonly notifyDeps: NotifyDeps;
+  /** The notification rows written through [notifyDeps]. */
+  readonly notifyStore: MemoryNotificationStore;
 }
 
 export function createVerificationWorld(options: { feeRequired?: boolean } = {}): VerificationWorld {
@@ -96,5 +99,6 @@ export function createVerificationWorld(options: { feeRequired?: boolean } = {})
     clock,
     ids,
     notifyDeps: notifyWorld.deps,
+    notifyStore: notifyWorld.store,
   };
 }

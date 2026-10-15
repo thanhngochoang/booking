@@ -1,4 +1,6 @@
 // test/support/verification_world.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
@@ -202,6 +204,17 @@ class _LoggingVerifier extends FakePhoneVerifier {
   _LoggingVerifier(this.log);
   final List<String> log;
 
+  /// When true, `sendCode` never answers (the SMS service never calls back).
+  bool hangSend = false;
+
+  @override
+  Future<PhoneCodeRequest> sendCode(String e164, {int? resendToken}) {
+    if (hangSend) {
+      return Completer<PhoneCodeRequest>().future;
+    }
+    return super.sendCode(e164, resendToken: resendToken);
+  }
+
   @override
   Future<void> confirmCode(PhoneCodeRequest request, String smsCode) async {
     await super.confirmCode(request, smsCode);
@@ -222,8 +235,26 @@ class _LoggingVerificationRepository extends FakeVerificationRepository {
   /// When set, `lookupTaxCode` refuses with this code.
   String? lookupFailWith;
 
+  /// When set, `startIdentity` / `completeIdentity` throw this as is (not a
+  /// [VerificationError]): an error the adapter did not map.
+  Object? startThrows;
+  Object? completeThrows;
+
+  @override
+  Future<IdentitySession> startIdentity(IdentityMethod method) async {
+    final e = startThrows;
+    if (e != null) {
+      throw e;
+    }
+    return super.startIdentity(method);
+  }
+
   @override
   Future<String> completeIdentity(String sessionId) async {
+    final thrown = completeThrows;
+    if (thrown != null) {
+      throw thrown;
+    }
     final code = completeFailWith;
     if (code != null) {
       calls.add((

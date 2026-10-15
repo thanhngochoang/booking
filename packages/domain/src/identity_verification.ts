@@ -32,8 +32,14 @@ export async function startIdentityVerification(
   const nowIso = now.toISOString();
   const todayKey = vnDayKey(now);
 
-  const provider = await deps.store.runTransaction((tx) => tx.getProvider(uid));
-  if (!provider) throw new DomainError('permission_denied');
+  // Refuse before calling the vendor: a session costs money and should only be opened for a
+  // request that can be recorded. The write transaction below re-checks the same rules.
+  const provider = await deps.store.runTransaction(async (tx) => {
+    const p = await tx.getProvider(uid);
+    if (!p) throw new DomainError('permission_denied');
+    refuseIdentityStart(await tx.getVerification(uid), todayKey);
+    return p;
+  });
 
   const session = await deps.identity.start(uid, method);
 
@@ -45,19 +51,7 @@ export async function startIdentityVerification(
       rec = { ...rec, kind: verificationKindOf(provider.providerType) };
     }
 
-    if (rec.steps.identity?.result === 'passed') {
-      throw new DomainError('conflict');
-    }
-
-    // Check attempts limit for today
-    let currentAttempts = rec.identityAttempts.count;
-    if (rec.identityAttempts.dayKey !== todayKey) {
-      currentAttempts = 0;
-    }
-
-    if (currentAttempts >= IDENTITY_ATTEMPTS_PER_DAY) {
-      throw new DomainError('rate_limited');
-    }
+    const currentAttempts = refuseIdentityStart(rec, todayKey);
 
     const after: VerificationRecord = {
       ...rec,
@@ -81,6 +75,22 @@ export async function startIdentityVerification(
   return session;
 }
 
+/**
+ * `conflict` once identity passed, `rate_limited` at [IDENTITY_ATTEMPTS_PER_DAY] starts in one
+ * VN day; otherwise today's attempt count so far.
+ */
+function refuseIdentityStart(rec: VerificationRecord | null, todayKey: string): number {
+  if (!rec) return 0;
+  if (rec.steps.identity?.result === 'passed') {
+    throw new DomainError('conflict');
+  }
+  const attempts = rec.identityAttempts.dayKey === todayKey ? rec.identityAttempts.count : 0;
+  if (attempts >= IDENTITY_ATTEMPTS_PER_DAY) {
+    throw new DomainError('rate_limited');
+  }
+  return attempts;
+}
+
 export async function completeIdentityVerification(
   deps: VerificationDeps,
   uid: string,
@@ -99,6 +109,15 @@ export async function completeIdentityVerification(
 
   const now = deps.clock.now();
   const nowIso = now.toISOString();
+
+  // Only ask the vendor about a session this uid started and has not used yet; the write
+  // transaction below re-checks it in case another call used it meanwhile.
+  await deps.store.runTransaction(async (tx) => {
+    const rec = await tx.getVerification(uid);
+    if (!rec || !rec.identitySession || rec.identitySession.id !== sessionId) {
+      throw new DomainError('not_found');
+    }
+  });
 
   // Call identity verifier result outside transaction
   const res = await deps.identity.result(uid, sessionId);

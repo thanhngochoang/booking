@@ -805,10 +805,6 @@ const SEED_DIRECT_CHATS: readonly SeedDirectChat[] = [
 
 const seedMessageId = (chatId: string, i: number): string => `seed-msg-${chatId}-${i + 1}`;
 
-/**
- * Chat fields are folded from the messages with the domain's `afterMessage`, and `bookingStatus`
- * is read from the seeded booking, so nothing here is a hand-written status.
- */
 /** Giang's legal name on the fake card (test value), and Cúc's (owner of the studio, for S21.04). */
 export const SEED_GIANG_LEGAL_NAME = 'NGUYỄN THỊ GIANG';
 export const SEED_CUC_LEGAL_NAME = 'TRẦN THỊ CÚC';
@@ -879,6 +875,10 @@ function verificationDocuments(now: Date): SeedDocument[] {
   return docs;
 }
 
+/**
+ * Chat fields are folded from the messages with the domain's `afterMessage`, and `bookingStatus`
+ * is read from the seeded booking, so nothing here is a hand-written status.
+ */
 function directChatDocuments(now: Date, existing: readonly SeedDocument[]): SeedDocument[] {
   const docs: SeedDocument[] = [];
   for (const c of SEED_DIRECT_CHATS) {

@@ -13,6 +13,11 @@ import 'package:photobooking/data/verification/verification_providers.dart';
 /// Seconds before "Gửi lại mã" is offered again (S21.01-code).
 const verifyPhoneResendSeconds = 60;
 
+/// How long "Gửi mã" waits for the SMS service to answer (code sent,
+/// auto-verified or refused) before giving up as a network failure, so the
+/// screen never stays in [VerifyPhoneStep.sending] with back blocked.
+const verifyPhoneSendTimeout = Duration(seconds: 90);
+
 /// Where S21.01 stands: typing the number, waiting for the SMS, typing the
 /// code, checking it, or verified.
 enum VerifyPhoneStep { enter, sending, code, confirming, done }
@@ -188,7 +193,12 @@ class VerifyPhoneController extends Notifier<VerifyPhoneState> {
     try {
       final r = await ref
           .read(phoneVerifierProvider)
-          .sendCode(e164, resendToken: resendToken);
+          .sendCode(e164, resendToken: resendToken)
+          .timeout(
+            verifyPhoneSendTimeout,
+            onTimeout: () =>
+                throw const PhoneVerifyError(PhoneVerifyErrorCode.network),
+          );
       if (!ref.mounted) {
         return;
       }

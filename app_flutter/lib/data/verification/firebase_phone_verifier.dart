@@ -107,7 +107,9 @@ class FirebasePhoneVerifier implements PhoneVerifier {
   }
 
   /// `updatePhoneNumber` when the account already has the phone provider,
-  /// else `linkWithCredential`.
+  /// else `linkWithCredential`. Always throws a [PhoneVerifyError]: an Auth
+  /// refusal is mapped by [phoneVerifyErrorOf], any other [Exception] is
+  /// `network` and anything else `unknown`.
   Future<void> _link(PhoneAuthCredential credential) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -124,6 +126,11 @@ class FirebasePhoneVerifier implements PhoneVerifier {
       }
     } on FirebaseAuthException catch (e) {
       throw phoneVerifyErrorOf(e);
+    } on Exception {
+      // No answer from Auth (platform channel, socket, timeout).
+      throw const PhoneVerifyError(PhoneVerifyErrorCode.network);
+    } on Object {
+      throw const PhoneVerifyError(PhoneVerifyErrorCode.unknown);
     }
   }
 }

@@ -393,6 +393,27 @@ describe('business_verification', () => {
       refusedWith('invalid_argument'),
     );
 
+    // A note given with any reason is 5–500 characters, like the identity reject.
+    for (const note of ['abc', 'x'.repeat(501)]) {
+      await assert.rejects(
+        reviewVerification(
+          deps,
+          { uid: 'staff1', isAdmin: true },
+          { uid: 's1', target: 'business', action: 'reject', reason: 'doc_unreadable', note },
+        ),
+        refusedWith('invalid_argument'),
+      );
+    }
+    // 'other' needs a note.
+    await assert.rejects(
+      reviewVerification(
+        deps,
+        { uid: 'staff1', isAdmin: true },
+        { uid: 's1', target: 'business', action: 'reject', reason: 'other' },
+      ),
+      refusedWith('invalid_argument'),
+    );
+
     const rejected = await reviewVerification(
       deps,
       { uid: 'staff1', isAdmin: true },

@@ -1,5 +1,7 @@
 import {
   BUSINESS_DOC_RETENTION_DAYS,
+  BUSINESS_REJECT_REASONS,
+  type BusinessRejectReason,
   type BusinessVerificationRecord,
   emptyVerification,
   PROVIDER_RULES_VERSION,
@@ -9,6 +11,7 @@ import {
   RESUBMITTABLE_REASONS,
   stepDone,
   stepsLeft,
+  VERIFICATION_NUDGE_AFTER_HOURS,
   type VerificationRecord,
   verificationKindOf,
 } from './verification.js';
@@ -507,8 +510,8 @@ export async function reviewVerification(
 
         return { before: rec, after };
       } else if (action === 'reject') {
-        const reasonCode = input.reason as string;
-        if (!['inactive', 'representative_mismatch', 'doc_unreadable', 'other'].includes(reasonCode)) {
+        const reasonCode = input.reason as BusinessRejectReason;
+        if (!BUSINESS_REJECT_REASONS.includes(reasonCode)) {
           throw new DomainError('invalid_argument');
         }
 
@@ -517,6 +520,8 @@ export async function reviewVerification(
           if (!note || note.length < 5 || note.length > 500) {
             throw new DomainError('invalid_argument');
           }
+        } else if (note && (note.length < 5 || note.length > 500)) {
+          throw new DomainError('invalid_argument');
         }
 
         const bizAfter: BusinessVerificationRecord = {
@@ -525,7 +530,7 @@ export async function reviewVerification(
           decidedAt: nowIso,
           decidedBy: staff.uid,
           rejectReason: {
-            code: reasonCode as BusinessVerificationRecord['rejectReason'] extends { code: infer C } ? C : never,
+            code: reasonCode,
             text: note,
           },
           // The registration photo is deleted on the same clock after either decision (Decision 20).
@@ -570,18 +575,19 @@ export async function sendVerificationNudges(
   notify: NotifyDeps,
 ): Promise<number> {
   const now = deps.clock.now();
-  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const cutoff = new Date(now.getTime() - VERIFICATION_NUDGE_AFTER_HOURS * 60 * 60 * 1000);
   const candidates = await deps.store.dueForNudge(cutoff, 50);
 
   let sent = 0;
   for (const rec of candidates) {
     const contact = await deps.store.runTransaction((tx) => tx.getContact(rec.uid));
-    const left = stepsLeft(rec, contact.phoneVerified, deps.feeRequired);
+    // A record with every step done is still in_progress until it is sent: sending is the step left.
+    const left = Math.max(1, stepsLeft(rec, contact.phoneVerified, deps.feeRequired));
 
-    await deps.store.runTransaction(async (tx) => {
+    const wrote = await deps.store.runTransaction(async (tx) => {
       const current = await tx.getVerification(rec.uid);
       if (!current || current.status !== 'in_progress' || current.nudgedAt !== null) {
-        return;
+        return false;
       }
       tx.putVerification({
         ...current,
@@ -589,7 +595,10 @@ export async function sendVerificationNudges(
         updatedAt: now.toISOString(),
         version: current.version + 1,
       });
+      return true;
     });
+    // Another run nudged it, or it moved on (submitted, edited) since the query: no push.
+    if (!wrote) continue;
 
     await notifyVerificationReminder(notify, {
       uid: rec.uid,

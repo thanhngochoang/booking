@@ -243,6 +243,16 @@ class VerifyIdentityController extends Notifier<VerifyIdentityState> {
           issue: _issueOf(e.code),
         );
       }
+    } on Object {
+      // Anything unexpected (the launcher, a bug) still ends the call, so
+      // back is not blocked and a retry is offered.
+      if (ref.mounted) {
+        state = state.copyWith(
+          phase: IdentityPhase.intro,
+          sessionId: null,
+          issue: IdentityIssue.failed,
+        );
+      }
     }
   }
 
@@ -293,6 +303,14 @@ class VerifyIdentityController extends Notifier<VerifyIdentityState> {
           phase: IdentityPhase.intro,
           sessionId: null,
           issue: _issueOf(e.code),
+        );
+      }
+    } on Object {
+      if (ref.mounted) {
+        state = state.copyWith(
+          phase: IdentityPhase.intro,
+          sessionId: null,
+          issue: IdentityIssue.failed,
         );
       }
     }

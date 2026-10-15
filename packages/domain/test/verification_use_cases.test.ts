@@ -573,4 +573,43 @@ describe('verification_use_cases', () => {
     count = await sendVerificationNudges(world.deps, world.notifyDeps);
     assert.equal(count, 0);
   });
+
+  it('a reminder for a record with every step done but not sent says at least 1 step', async () => {
+    const world = createVerificationWorld();
+    await confirmPhoneVerified(world.deps, 'p1');
+    const rec = world.store.verifications.get('p1');
+    assert.ok(rec);
+    // Every required step done (no fee), still in_progress because it was never sent.
+    world.store.verifications.set('p1', {
+      ...rec,
+      steps: {
+        ...rec.steps,
+        identity: { method: 'vneid', checkedAt: rec.updatedAt, result: 'passed', failure: null, maskedName: 'N*** T***' },
+        rules: { version: PROVIDER_RULES_VERSION, acceptedAt: rec.updatedAt },
+      },
+    });
+
+    world.clock.advanceHours(25);
+    const count = await sendVerificationNudges(world.deps, world.notifyDeps);
+    assert.equal(count, 1);
+    const rows = world.notifyStore.rowsOf('p1');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.title, 'Còn 1 bước để nhận đơn');
+  });
+
+  it('no reminder is sent when the guarding transaction did not write nudgedAt', async () => {
+    const world = createVerificationWorld();
+    await confirmPhoneVerified(world.deps, 'p1');
+    world.clock.advanceHours(25);
+
+    // The query returns the record, but it was submitted before the transaction ran.
+    const stale = world.store.verifications.get('p1');
+    assert.ok(stale);
+    world.store.verifications.set('p1', { ...stale, status: 'submitted' });
+    world.store.dueForNudge = async () => [stale];
+
+    const count = await sendVerificationNudges(world.deps, world.notifyDeps);
+    assert.equal(count, 0);
+    assert.equal(world.notifyStore.rowsOf('p1').length, 0);
+  });
 });
