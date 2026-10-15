@@ -19,6 +19,7 @@ class BookingSummary {
     this.status,
     this.statusLabel,
     this.tag,
+    this.extraLine,
   });
 
   final String photographerName;
@@ -33,6 +34,9 @@ class BookingSummary {
 
   /// A pill under the title (S06.01 "Giao bởi {Studio}"); null draws none.
   final String? tag;
+
+  /// One more line under the place (S04.03 "Điểm đón: …"); normal size only.
+  final String? extraLine;
 }
 
 enum BookingCardSize { normal, compact }
@@ -156,6 +160,15 @@ class BookingCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11.5, color: fgSec),
                       ),
+                      if (data.extraLine case final line?) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          line,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.5, color: fgSec),
+                        ),
+                      ],
                     ] else ...[
                       Text(
                         data.placeName,

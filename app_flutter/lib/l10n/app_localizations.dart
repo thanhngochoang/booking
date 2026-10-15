@@ -11013,6 +11013,78 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thêm dịch vụ đi kèm'**
   String get setupAddAddon;
+
+  /// No description provided for @bookAddonsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm dịch vụ'**
+  String get bookAddonsTitle;
+
+  /// No description provided for @bookAddonsOptional.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không bắt buộc'**
+  String get bookAddonsOptional;
+
+  /// No description provided for @bookAddonLess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bớt một {unit}'**
+  String bookAddonLess(String unit);
+
+  /// No description provided for @bookAddonMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm một {unit}'**
+  String bookAddonMore(String unit);
+
+  /// No description provided for @bookAddonQty.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name}: {qty} {unit}'**
+  String bookAddonQty(String name, int qty, String unit);
+
+  /// No description provided for @bookAddonDropped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ {names} vì không áp dụng cho gói này'**
+  String bookAddonDropped(String names);
+
+  /// No description provided for @bookAddonsChanged.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán'**
+  String get bookAddonsChanged;
+
+  /// No description provided for @bookPickupTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm đón'**
+  String get bookPickupTitle;
+
+  /// No description provided for @bookPickupHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên điểm đón (tối thiểu 3 ký tự)'**
+  String get bookPickupHint;
+
+  /// No description provided for @bookPickupPrivate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ thợ chụp cho bạn thấy điểm đón.'**
+  String get bookPickupPrivate;
+
+  /// No description provided for @bookPickupRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập điểm đón cho xe đưa đón'**
+  String get bookPickupRequired;
+
+  /// No description provided for @bookPickupLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm đón: {name}'**
+  String bookPickupLine(String name);
 }
 
 class _AppLocalizationsDelegate

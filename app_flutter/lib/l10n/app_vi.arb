@@ -2723,5 +2723,22 @@
   "addonErrPackages": "Chọn ít nhất một gói",
   "settingsAddons": "Dịch vụ đi kèm",
   "profileEditAddons": "Dịch vụ đi kèm",
-  "setupAddAddon": "Thêm dịch vụ đi kèm"
+  "setupAddAddon": "Thêm dịch vụ đi kèm",
+  "bookAddonsTitle": "Thêm dịch vụ",
+  "bookAddonsOptional": "Không bắt buộc",
+  "bookAddonLess": "Bớt một {unit}",
+  "@bookAddonLess": {"placeholders": {"unit": {"type": "String"}}},
+  "bookAddonMore": "Thêm một {unit}",
+  "@bookAddonMore": {"placeholders": {"unit": {"type": "String"}}},
+  "bookAddonQty": "{name}: {qty} {unit}",
+  "@bookAddonQty": {"placeholders": {"name": {"type": "String"}, "qty": {"type": "int"}, "unit": {"type": "String"}}},
+  "bookAddonDropped": "Đã bỏ {names} vì không áp dụng cho gói này",
+  "@bookAddonDropped": {"placeholders": {"names": {"type": "String"}}},
+  "bookAddonsChanged": "Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán",
+  "bookPickupTitle": "Điểm đón",
+  "bookPickupHint": "Tên điểm đón (tối thiểu 3 ký tự)",
+  "bookPickupPrivate": "Chỉ thợ chụp cho bạn thấy điểm đón.",
+  "bookPickupRequired": "Nhập điểm đón cho xe đưa đón",
+  "bookPickupLine": "Điểm đón: {name}",
+  "@bookPickupLine": {"placeholders": {"name": {"type": "String"}}}
 }

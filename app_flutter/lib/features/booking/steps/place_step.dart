@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
@@ -16,19 +17,37 @@ class PlaceStep extends ConsumerStatefulWidget {
 
 class _PlaceStepState extends ConsumerState<PlaceStep> {
   late final TextEditingController _controller;
+  late final TextEditingController _pickupController;
   bool _edited = false;
+  bool _pickupEdited = false;
 
   @override
   void initState() {
     super.initState();
-    final initial = ref.read(bookingFlowControllerProvider(widget.args)).placeName;
-    _controller = TextEditingController(text: initial);
+    final state = ref.read(bookingFlowControllerProvider(widget.args));
+    _controller = TextEditingController(text: state.placeName);
+    _pickupController = TextEditingController(text: state.pickupName);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _pickupController.dispose();
     super.dispose();
+  }
+
+  void _onPickupChanged(String value) {
+    if (!_pickupEdited) {
+      setState(() => _pickupEdited = true);
+    }
+    ref.read(bookingFlowControllerProvider(widget.args).notifier).setPickup(value);
+  }
+
+  void _choosePickup(String text) {
+    _pickupController.text = text;
+    _pickupController.selection = TextSelection.collapsed(offset: text.length);
+    setState(() => _pickupEdited = true);
+    ref.read(bookingFlowControllerProvider(widget.args).notifier).setPickup(text);
   }
 
   void _onChanged(String value) {
@@ -63,6 +82,17 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
     }
 
     final hasError = _edited && state.placeName.trim().length < kPlaceMinLength;
+    final pickupShort =
+        state.pickupName.trim().characters.length < kPlaceMinLength;
+    final String? pickupError;
+    if (state.error == BookingErrorCode.pickupRequired) {
+      pickupError = l10n.bookPickupRequired;
+    } else if (pickupShort && _pickupEdited) {
+      pickupError = l10n.bookPlaceTooShort;
+    } else {
+      pickupError = null;
+    }
+    final transport = state.transportAddon;
 
     return ScreenCode(
       ScreenCodes.bookPlace,
@@ -120,6 +150,87 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
                       ],
                     ),
                   ],
+                  if (transport != null) ...[
+                    const SizedBox(height: AppSpace.s4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              l10n.bookPickupTitle,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpace.s2),
+                        Flexible(
+                          child: Text(
+                            transport.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpace.s2),
+                    TextField(
+                      key: const Key('book-pickup-field'),
+                      controller: _pickupController,
+                      maxLength: kPlaceMaxLength,
+                      onChanged: _onPickupChanged,
+                      decoration: InputDecoration(
+                        labelText: l10n.bookPickupTitle,
+                        hintText: l10n.bookPickupHint,
+                        errorText: pickupError,
+                        counterText: '',
+                      ),
+                    ),
+                    if (suggestions.isNotEmpty) ...[
+                      const SizedBox(height: AppSpace.s3),
+                      Wrap(
+                        spacing: AppSpace.s2,
+                        runSpacing: AppSpace.s2,
+                        children: [
+                          for (final s in suggestions)
+                            AppChip(
+                              key: Key('book-pickup-chip-$s'),
+                              label: s,
+                              selected: state.pickupName == s,
+                              kind: AppChipKind.context,
+                              onChanged: (_) => _choosePickup(s),
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: AppSpace.s3),
+                    // Mock `.lockn`: the pickup stays between the two parties.
+                    Row(
+                      key: const Key('book-pickup-private'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppIcon(
+                          AppIcons.lock,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpace.s2),
+                        Expanded(
+                          child: Text(
+                            l10n.bookPickupPrivate,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -127,7 +238,7 @@ class _PlaceStepState extends ConsumerState<PlaceStep> {
           Padding(
             padding: const EdgeInsets.all(AppSpace.s4),
             child: AppButton.primary(
-              l10n.bookContinuePrice(formatMoney(state.priceVnd ?? 0)),
+              l10n.bookContinuePrice(formatMoney(state.totalVnd ?? 0)),
               onPressed: state.canContinue ? controller.next : null,
             ),
           ),

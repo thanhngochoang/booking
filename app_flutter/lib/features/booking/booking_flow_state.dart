@@ -2,6 +2,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:photobooking/core/payments.dart';
 import 'package:photobooking/core/phone.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 
@@ -57,6 +58,10 @@ class BookingFlowState {
     this.priceChanged = false,
     this.bookingId,
     this.paymentId,
+    this.addons = const [],
+    this.picks = const {},
+    this.pickupName = '',
+    this.droppedAddonNames = const [],
   });
 
   final BookingStep step;
@@ -77,15 +82,63 @@ class BookingFlowState {
   final String? bookingId;
   final String? paymentId;
 
+  /// Every active add-on of the photographer (S04.01), as last loaded.
+  final List<ServiceAddon> addons;
+
+  /// Chosen add-ons: addonId → quantity (always > 0).
+  final Map<String, int> picks;
+
+  /// "Điểm đón" (S04.06); asked and sent only with a transport add-on.
+  final String pickupName;
+
+  /// Names of picks dropped by the last package change; the sheet shows them
+  /// once and calls `consumeDropped`.
+  final List<String> droppedAddonNames;
+
   bool get hasChoices =>
       serviceId != null ||
       day != null ||
       start != null ||
       placeName.isNotEmpty ||
-      note.isNotEmpty;
+      note.isNotEmpty ||
+      picks.isNotEmpty ||
+      pickupName.isNotEmpty;
 
-  /// What the customer pays when booking: the whole price (payments spec M2).
-  int? get payVnd => priceVnd != null ? depositFor(priceVnd!).deposit : null;
+  /// Add-ons that apply to the chosen package, grouped in kind order.
+  List<ServiceAddon> get applicableAddons {
+    final id = serviceId;
+    if (id == null) return const [];
+    return [
+      for (final kind in AddonKind.values)
+        ...addons.where((a) => a.kind == kind && a.appliesTo(id)),
+    ];
+  }
+
+  /// Display sum of the picks; the server prices the booking (Decision 4).
+  int get addonsVnd {
+    var sum = 0;
+    for (final a in addons) {
+      final qty = picks[a.id];
+      if (qty != null) sum += a.price * qty;
+    }
+    return sum;
+  }
+
+  /// Package + add-ons; null until a package is chosen.
+  int? get totalVnd => priceVnd != null ? priceVnd! + addonsVnd : null;
+
+  /// The picked transport add-on, if any: it makes S04.06 ask for a pickup.
+  ServiceAddon? get transportAddon {
+    for (final a in addons) {
+      if (a.kind == AddonKind.transport && picks.containsKey(a.id)) return a;
+    }
+    return null;
+  }
+
+  bool get needsPickup => transportAddon != null;
+
+  /// What the customer pays when booking: the whole total (payments spec M2).
+  int? get payVnd => totalVnd != null ? depositFor(totalVnd!).deposit : null;
 
   String? get end => (start != null && durationMinutes != null)
       ? endTimeFor(start!, durationMinutes!)
@@ -102,7 +155,9 @@ class BookingFlowState {
       case BookingStep.datetime:
         return day != null && start != null;
       case BookingStep.place:
-        return placeName.characters.length >= kPlaceMinLength;
+        return placeName.characters.length >= kPlaceMinLength &&
+            (!needsPickup ||
+                pickupName.trim().characters.length >= kPlaceMinLength);
       case BookingStep.review:
         final p = phone;
         if (p == null || busy) return false;
@@ -133,8 +188,12 @@ class BookingFlowState {
     Set<String>? takenDays,
     bool? priceChanged,
     String? bookingId,
-    bool clearBookingId = false,
+    bool? clearBookingId,
     String? paymentId,
+    List<ServiceAddon>? addons,
+    Map<String, int>? picks,
+    String? pickupName,
+    List<String>? droppedAddonNames,
   }) {
     return BookingFlowState(
       step: step ?? this.step,
@@ -153,8 +212,12 @@ class BookingFlowState {
       error: clearError ? null : (error ?? this.error),
       takenDays: takenDays ?? this.takenDays,
       priceChanged: priceChanged ?? this.priceChanged,
-      bookingId: clearBookingId ? null : (bookingId ?? this.bookingId),
+      bookingId: clearBookingId == true ? null : (bookingId ?? this.bookingId),
       paymentId: paymentId ?? this.paymentId,
+      addons: addons ?? this.addons,
+      picks: picks ?? this.picks,
+      pickupName: pickupName ?? this.pickupName,
+      droppedAddonNames: droppedAddonNames ?? this.droppedAddonNames,
     );
   }
 }

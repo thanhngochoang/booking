@@ -412,4 +412,124 @@ void main() {
       }
     },
   );
+
+  group('S04.03 with add-ons', () {
+    Future<void> toReview(
+      WidgetTester tester, {
+      int makeup = 2,
+      bool car = true,
+    }) async {
+      await pumpBookingRoute(
+        tester,
+        packages: [bookingPortrait2h],
+        addons: [addonMakeup, addonTransport],
+        days: testDays,
+        now: now,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 50));
+      for (var i = 0; i < makeup; i++) {
+        await tester.ensureVisible(find.byKey(const Key('addon-a_makeup-plus')));
+        await tester.tap(find.byKey(const Key('addon-a_makeup-plus')));
+        await tester.pump();
+      }
+      if (car) {
+        await tester.ensureVisible(find.byKey(const Key('addon-a_car-check')));
+        await tester.tap(find.byKey(const Key('addon-a_car-check')));
+        await tester.pump();
+      }
+      final total = formatMoney(
+        1500000 + makeup * 800000 + (car ? 300000 : 0),
+      );
+      Future<void> next() async {
+        final b = find.widgetWithText(AppButton, 'Tiếp tục · $total');
+        await tester.ensureVisible(b);
+        await tester.tap(b);
+        await tester.pumpAndSettle();
+      }
+
+      await next();
+      final day15 = find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == '15 tháng 10, rảnh',
+      );
+      await tester.ensureVisible(day15);
+      await tester.tap(day15);
+      await tester.pumpAndSettle();
+      final slotChip = find.widgetWithText(AppChip, '06:00');
+      await tester.ensureVisible(slotChip);
+      await tester.tap(slotChip);
+      await tester.pumpAndSettle();
+      await next();
+
+      await tester.enterText(find.byType(TextField).first, 'Bến Bạch Đằng, Quận 1');
+      if (car) {
+        await tester.enterText(
+          find.byKey(const Key('book-pickup-field')),
+          'Ga Sài Gòn, Quận 3',
+        );
+      }
+      await tester.pump();
+      await next();
+      expect(find.byType(ReviewStep), findsOneWidget);
+    }
+
+    List<String?> moneyTexts(WidgetTester tester) => tester
+        .widgetList<Text>(
+          find.descendant(
+            of: find.byType(MoneyBreakdown),
+            matching: find.byType(Text),
+          ),
+        )
+        .map((t) => t.data)
+        .toList();
+
+    testWidgets('money lines: Gói Chân dung 2 giờ 1.500.000₫, Trang điểm · 2 người 1.600.000₫, Xe đón trong nội thành 300.000₫, Thanh toán 100% 3.400.000₫', (
+      tester,
+    ) async {
+      await toReview(tester);
+      expect(moneyTexts(tester), [
+        'Gói Chân dung 2 giờ',
+        '1.500.000₫',
+        'Trang điểm · 2 người',
+        '1.600.000₫',
+        'Xe đón trong nội thành',
+        '300.000₫',
+        'Thanh toán 100%',
+        '3.400.000₫',
+      ]);
+    });
+
+    testWidgets('summary card shows "Điểm đón: Ga Sài Gòn, Quận 3"', (
+      tester,
+    ) async {
+      await toReview(tester);
+      expect(
+        find.descendant(
+          of: find.byType(BookingCard),
+          matching: find.text('Điểm đón: Ga Sài Gòn, Quận 3'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('pay button "Thanh toán 3.400.000₫"', (tester) async {
+      await toReview(tester);
+      expect(
+        find.widgetWithText(AppButton, 'Thanh toán 3.400.000₫'),
+        findsOneWidget,
+      );
+      expect(find.byType(CtaSurface), findsOneWidget);
+    });
+
+    testWidgets('without add-ons the lines are as before', (tester) async {
+      await toReview(tester, makeup: 0, car: false);
+      expect(moneyTexts(tester), [
+        'Gói Chân dung 2 giờ',
+        '1.500.000₫',
+        'Thanh toán 100%',
+        '1.500.000₫',
+      ]);
+      expect(find.textContaining('Điểm đón'), findsNothing);
+    });
+  });
 }

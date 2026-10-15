@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/core/payments.dart';
+import 'package:photobooking/data/addons/addon_providers.dart';
 import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
@@ -17,6 +18,7 @@ import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
 
+import '../../support/fake_addon_repository.dart';
 import '../../support/fake_booking_repository.dart';
 
 void main() {
@@ -63,6 +65,7 @@ void main() {
         photographerPoolCacheProvider.overrideWithValue(
           poolCache ?? FakePhotographerRepository(),
         ),
+        addonRepositoryProvider.overrideWithValue(FakeAddonRepository()),
       ],
     );
   }

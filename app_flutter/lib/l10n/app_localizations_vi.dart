@@ -6275,4 +6275,51 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get setupAddAddon => 'Thêm dịch vụ đi kèm';
+
+  @override
+  String get bookAddonsTitle => 'Thêm dịch vụ';
+
+  @override
+  String get bookAddonsOptional => 'Không bắt buộc';
+
+  @override
+  String bookAddonLess(String unit) {
+    return 'Bớt một $unit';
+  }
+
+  @override
+  String bookAddonMore(String unit) {
+    return 'Thêm một $unit';
+  }
+
+  @override
+  String bookAddonQty(String name, int qty, String unit) {
+    return '$name: $qty $unit';
+  }
+
+  @override
+  String bookAddonDropped(String names) {
+    return 'Đã bỏ $names vì không áp dụng cho gói này';
+  }
+
+  @override
+  String get bookAddonsChanged =>
+      'Dịch vụ đi kèm vừa thay đổi, kiểm tra lại trước khi thanh toán';
+
+  @override
+  String get bookPickupTitle => 'Điểm đón';
+
+  @override
+  String get bookPickupHint => 'Tên điểm đón (tối thiểu 3 ký tự)';
+
+  @override
+  String get bookPickupPrivate => 'Chỉ thợ chụp cho bạn thấy điểm đón.';
+
+  @override
+  String get bookPickupRequired => 'Nhập điểm đón cho xe đưa đón';
+
+  @override
+  String bookPickupLine(String name) {
+    return 'Điểm đón: $name';
+  }
 }

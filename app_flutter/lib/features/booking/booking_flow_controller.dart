@@ -1,9 +1,12 @@
 // lib/features/booking/booking_flow_controller.dart
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/payments.dart';
+import 'package:photobooking/data/addons/addon_providers.dart';
+import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/booking/booking_checkout.dart';
@@ -50,6 +53,16 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   final _outcomesController = StreamController<SubmitOutcome>.broadcast();
   Stream<SubmitOutcome> get outcomes => _outcomesController.stream;
 
+  /// True once the customer changed anything; the entry step (Decision 11)
+  /// is never decided after that.
+  bool _userActed = false;
+
+  /// The entry step (Decision 11) is decided once.
+  bool _entryResolved = false;
+
+  /// The add-on list has loaded at least once.
+  bool _addonsLoaded = false;
+
   @override
   BookingFlowState build() {
     ref.onDispose(() {
@@ -78,9 +91,21 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       },
     );
 
+    ref.listen(
+      activeAddonsProvider(args.photographerId),
+      (prev, next) {
+        final list = next.value;
+        if (list != null && !next.isLoading) {
+          applyAddons(list);
+        }
+      },
+    );
+
     final packages =
         ref.read(profilePackagesProvider(args.photographerId)).value ??
         const <ServiceSummary>[];
+    final addons = ref.read(activeAddonsProvider(args.photographerId)).value;
+    if (addons != null) _addonsLoaded = true;
 
     ServiceSummary? matching;
     for (final s in packages) {
@@ -97,7 +122,11 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     String? serviceName;
 
     if (matching != null) {
-      initialStep = BookingStep.datetime;
+      initialStep = _entryStep(
+        BookingStep.datetime,
+        matching.id,
+        addons ?? const [],
+      );
       serviceId = matching.id;
       priceVnd = matching.priceVnd;
       durationMinutes = matching.durationMinutes;
@@ -119,13 +148,62 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       serviceName: serviceName,
       day: initialDay,
       phone: initialPhone,
+      addons: addons ?? const [],
     );
   }
 
+  /// Decision 11: entering with a preselected package opens on S04.01 when
+  /// that package has an applicable add-on. Taken once, when both packages
+  /// and add-ons have loaded, and never after the customer acted.
+  BookingStep _entryStep(
+    BookingStep step,
+    String? serviceId,
+    List<ServiceAddon> addons,
+  ) {
+    if (_entryResolved ||
+        !_addonsLoaded ||
+        serviceId == null ||
+        serviceId != args.serviceId) {
+      return step;
+    }
+    _entryResolved = true;
+    if (_userActed || step != BookingStep.datetime) return step;
+    return addons.any((a) => a.appliesTo(serviceId))
+        ? BookingStep.service
+        : step;
+  }
+
+  /// Fits [picks] to [addons] for [serviceId]: a vanished add-on is removed
+  /// silently (the server would answer `addon_changed`), one that does not
+  /// apply to the package is dropped and named, quantities are clamped.
+  ({Map<String, int> picks, List<String> dropped}) _fit(
+    Map<String, int> picks,
+    List<ServiceAddon> addons,
+    String? serviceId,
+  ) {
+    final kept = <String, int>{};
+    final dropped = <String>[];
+    for (final MapEntry(key: id, value: qty) in picks.entries) {
+      final a = addons.where((x) => x.id == id).firstOrNull;
+      if (a == null) continue;
+      if (serviceId == null || !a.appliesTo(serviceId)) {
+        dropped.add(a.name);
+        continue;
+      }
+      kept[id] = a.unit == AddonUnit.perBooking ? 1 : qty.clamp(1, a.maxQty);
+    }
+    return (picks: kept, dropped: dropped);
+  }
+
+  static bool _hasTransport(Map<String, int> picks, List<ServiceAddon> addons) =>
+      addons.any((a) => a.kind == AddonKind.transport && picks.containsKey(a.id));
+
   void selectService(ServiceSummary s) {
+    _userActed = true;
     final clearStart =
         state.durationMinutes != null &&
         state.durationMinutes != s.durationMinutes;
+    final fit = _fit(state.picks, state.addons, s.id);
     state = state.copyWith(
       serviceId: s.id,
       priceVnd: s.priceVnd,
@@ -133,7 +211,66 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       serviceName: s.name,
       clearStart: clearStart,
       priceChanged: false,
+      picks: fit.picks,
+      droppedAddonNames: fit.dropped,
+      pickupName: _hasTransport(fit.picks, state.addons) ? null : '',
+      clearBookingId: true, // Decision 12
     );
+  }
+
+  /// A fresh add-on list (first load, or reload after `addon_changed`).
+  void applyAddons(List<ServiceAddon> list) {
+    _addonsLoaded = true;
+    final fit = _fit(state.picks, list, state.serviceId);
+    final step = _entryStep(state.step, state.serviceId, list);
+    final changed = !mapEquals(fit.picks, state.picks);
+    state = state.copyWith(
+      addons: list,
+      picks: fit.picks,
+      step: step,
+      pickupName: _hasTransport(fit.picks, list) ? null : '',
+      clearBookingId: changed ? true : null, // Decision 12
+    );
+  }
+
+  /// Sets an add-on's quantity (0 removes it); clamped to its maximum.
+  void setAddonQty(String addonId, int qty) {
+    final a = state.applicableAddons.where((x) => x.id == addonId).firstOrNull;
+    if (a == null) return;
+    _userActed = true;
+    final max = a.unit == AddonUnit.perBooking ? 1 : a.maxQty;
+    final picks = {...state.picks};
+    final q = qty.clamp(0, max);
+    if (q == 0) {
+      picks.remove(addonId);
+    } else {
+      picks[addonId] = q;
+    }
+    state = state.copyWith(
+      picks: picks,
+      pickupName: _hasTransport(picks, state.addons) ? null : '',
+      clearBookingId: true, // Decision 12
+    );
+  }
+
+  /// Ticks or unticks a one-off add-on.
+  void toggleAddon(String addonId) =>
+      setAddonQty(addonId, state.picks.containsKey(addonId) ? 0 : 1);
+
+  void setPickup(String name) {
+    _userActed = true;
+    state = state.copyWith(
+      pickupName: name,
+      clearBookingId: true,
+      // Editing answers the server's `pickup_required`.
+      clearError: state.error == BookingErrorCode.pickupRequired,
+    );
+  }
+
+  /// The sheet has shown [BookingFlowState.droppedAddonNames].
+  void consumeDropped() {
+    if (state.droppedAddonNames.isEmpty) return;
+    state = state.copyWith(droppedAddonNames: const []);
   }
 
   void applyPackages(List<ServiceSummary> list) {
@@ -142,7 +279,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         for (final s in list) {
           if (s.id == args.serviceId) {
             state = state.copyWith(
-              step: BookingStep.datetime,
+              step: _entryStep(BookingStep.datetime, s.id, state.addons),
               serviceId: s.id,
               priceVnd: s.priceVnd,
               durationMinutes: s.durationMinutes,
@@ -179,6 +316,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   }
 
   void selectDay(String day) {
+    _userActed = true;
     final clearStart = day != state.day;
     state = state.copyWith(
       day: day,
@@ -187,6 +325,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   }
 
   void selectStart(String start) {
+    _userActed = true;
     state = state.copyWith(start: start);
   }
 
@@ -201,6 +340,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   }
 
   void setPlace(String name) {
+    _userActed = true;
     state = state.copyWith(placeName: name);
   }
 
@@ -272,6 +412,10 @@ class BookingFlowController extends Notifier<BookingFlowState> {
         }
       }
 
+      final picks = [
+        for (final a in s.applicableAddons)
+          if ((s.picks[a.id] ?? 0) > 0) AddonPick(a.id, s.picks[a.id]!),
+      ];
       final repo = ref.read(bookingRepositoryProvider);
       final bookingId = s.bookingId ??
           (await repo.createBooking(
@@ -282,6 +426,11 @@ class BookingFlowController extends Notifier<BookingFlowState> {
             place: BookingPlace(name: s.placeName.trim()),
             note: s.note.trim().isEmpty ? null : s.note.trim(),
             expectedPrice: s.priceVnd!,
+            addons: picks,
+            pickup: s.needsPickup
+                ? BookingPlace(name: s.pickupName.trim())
+                : null,
+            expectedTotal: picks.isEmpty ? null : s.totalVnd,
           ))
               .id;
 
@@ -348,15 +497,39 @@ class BookingFlowController extends Notifier<BookingFlowState> {
           phase: SubmitPhase.idle,
           error: err,
         );
+      case BookingErrorCode.addonChanged:
+      case BookingErrorCode.addonNotApplicable:
+        _addonsChanged(err);
+      case BookingErrorCode.pickupRequired:
+        if (!state.needsPickup) {
+          // The server sees a transport line the app does not: stale list.
+          _addonsChanged(BookingErrorCode.addonChanged);
+          return;
+        }
+        state = state.copyWith(
+          step: BookingStep.place,
+          clearBookingId: true,
+          phase: SubmitPhase.idle,
+          error: err,
+        );
       case BookingErrorCode.network:
       case BookingErrorCode.conflict:
       case BookingErrorCode.permissionDenied:
       case BookingErrorCode.invalidArgument:
-      case BookingErrorCode.addonChanged:
-      case BookingErrorCode.addonNotApplicable:
-      case BookingErrorCode.pickupRequired:
       case BookingErrorCode.unknown:
         state = state.copyWith(phase: SubmitPhase.idle, error: err);
     }
+  }
+
+  /// `addon_changed` / `addon_not_applicable`: back to S04.01 with a fresh
+  /// add-on list (Decision 10); the sheet shows `bookAddonsChanged`.
+  void _addonsChanged(BookingErrorCode err) {
+    state = state.copyWith(
+      step: BookingStep.service,
+      clearBookingId: true,
+      phase: SubmitPhase.idle,
+      error: err,
+    );
+    ref.invalidate(activeAddonsProvider(args.photographerId));
   }
 }
