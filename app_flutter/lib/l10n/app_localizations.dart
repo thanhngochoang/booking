@@ -13761,6 +13761,348 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Studio chưa giao thợ chụp cho buổi này.'**
   String get reviewNoAssigneeBody;
+
+  /// No description provided for @homeHotSpotsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp đang hot'**
+  String get homeHotSpotsTitle;
+
+  /// No description provided for @homeHotSpots.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp đang hot'**
+  String get homeHotSpots;
+
+  /// No description provided for @homeHotSpotsSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get homeHotSpotsSeeAll;
+
+  /// No description provided for @homeSpotProvidersWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} thợ nhận chụp tuần này'**
+  String homeSpotProvidersWeek(int count);
+
+  /// No description provided for @spotProvidersThisWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} thợ nhận chụp tuần này'**
+  String spotProvidersThisWeek(int count);
+
+  /// No description provided for @exploreNearbySpotsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp gần bạn'**
+  String get exploreNearbySpotsTitle;
+
+  /// No description provided for @exploreSpotsNearby.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp gần bạn'**
+  String get exploreSpotsNearby;
+
+  /// No description provided for @exploreSpotSectionTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get exploreSpotSectionTitle;
+
+  /// No description provided for @spotsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm chụp'**
+  String get spotsTitle;
+
+  /// No description provided for @spotsFilterArea.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực'**
+  String get spotsFilterArea;
+
+  /// No description provided for @spotsFilterAllAreas.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mọi khu vực'**
+  String get spotsFilterAllAreas;
+
+  /// No description provided for @spotsFilterInSeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa'**
+  String get spotsFilterInSeason;
+
+  /// No description provided for @spotsFilterWeekend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cuối tuần này có thợ'**
+  String get spotsFilterWeekend;
+
+  /// No description provided for @spotsInSeasonCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} điểm đang vào mùa'**
+  String spotsInSeasonCount(int count);
+
+  /// No description provided for @spotsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có điểm chụp nào ở khu vực này'**
+  String get spotsEmpty;
+
+  /// No description provided for @spotsLoadError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được điểm chụp.'**
+  String get spotsLoadError;
+
+  /// No description provided for @spotInSeason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa'**
+  String get spotInSeason;
+
+  /// No description provided for @spotInSeasonUntil.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa · tới cuối tháng {month}'**
+  String spotInSeasonUntil(int month);
+
+  /// No description provided for @spotSeasonEnding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang vào mùa · tới cuối tháng {month}'**
+  String spotSeasonEnding(int month);
+
+  /// No description provided for @spotSeasonRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mùa đẹp: tháng {from}–{to}'**
+  String spotSeasonRange(int from, int to);
+
+  /// No description provided for @spotSeasonList.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mùa đẹp: tháng {months}'**
+  String spotSeasonList(String months);
+
+  /// No description provided for @spotSeasonBest.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mùa đẹp: {range}'**
+  String spotSeasonBest(String range);
+
+  /// No description provided for @spotSeasonAllYear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đẹp quanh năm'**
+  String get spotSeasonAllYear;
+
+  /// No description provided for @spotArchivedBand.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này không còn nhận lịch mới'**
+  String get spotArchivedBand;
+
+  /// No description provided for @spotArchivedNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm này không còn nhận lịch mới'**
+  String get spotArchivedNotice;
+
+  /// No description provided for @spotsCardStats.
+  ///
+  /// In vi, this message translates to:
+  /// **'{providers} thợ · {events} sự kiện sắp tới'**
+  String spotsCardStats(int providers, int events);
+
+  /// No description provided for @spotCardStats.
+  ///
+  /// In vi, this message translates to:
+  /// **'{providers} thợ · {events} sự kiện sắp tới'**
+  String spotCardStats(int providers, int events);
+
+  /// No description provided for @spotAvailableLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt {day} · {start}–{end}'**
+  String spotAvailableLabel(String day, String start, String end);
+
+  /// No description provided for @spotProviderAvailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt {day} · {start}–{end}'**
+  String spotProviderAvailable(String day, String start, String end);
+
+  /// No description provided for @spotShare.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ'**
+  String get spotShare;
+
+  /// No description provided for @spotLinkCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết điểm chụp'**
+  String get spotLinkCopied;
+
+  /// No description provided for @spotCopiedLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép liên kết điểm chụp'**
+  String get spotCopiedLink;
+
+  /// No description provided for @spotTipsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mẹo chụp'**
+  String get spotTipsTitle;
+
+  /// No description provided for @spotDirections.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ đường'**
+  String get spotDirections;
+
+  /// No description provided for @spotProvidersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ nhận chụp ở đây'**
+  String get spotProvidersTitle;
+
+  /// No description provided for @spotToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get spotToday;
+
+  /// No description provided for @spotDayToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get spotDayToday;
+
+  /// No description provided for @spotPickDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get spotPickDate;
+
+  /// No description provided for @spotDayPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ngày'**
+  String get spotDayPick;
+
+  /// No description provided for @spotBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt'**
+  String get spotBook;
+
+  /// No description provided for @spotProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ'**
+  String get spotProfile;
+
+  /// No description provided for @spotOffersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói chụp tại điểm'**
+  String get spotOffersTitle;
+
+  /// No description provided for @spotOfferLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {price} · còn {count} suất {day}'**
+  String spotOfferLine(String name, String price, int count, String day);
+
+  /// No description provided for @spotOfferFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'{name} · {price} · hết suất {day}'**
+  String spotOfferFull(String name, String price, String day);
+
+  /// No description provided for @spotPickSlot.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn suất'**
+  String get spotPickSlot;
+
+  /// No description provided for @spotEventsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sự kiện ở đây'**
+  String get spotEventsTitle;
+
+  /// No description provided for @spotPhotosTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh chụp ở đây'**
+  String get spotPhotosTitle;
+
+  /// No description provided for @spotPhotosCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} bài'**
+  String spotPhotosCount(int count);
+
+  /// No description provided for @spotNoProviderDay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thợ nhận chụp ngày này · Xem ngày khác'**
+  String get spotNoProviderDay;
+
+  /// No description provided for @spotEmptyDayTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thợ nhận chụp ngày này'**
+  String get spotEmptyDayTitle;
+
+  /// No description provided for @spotEmptyDayAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem ngày khác'**
+  String get spotEmptyDayAction;
+
+  /// No description provided for @spotProviderHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn là thợ ảnh? Thêm lịch chụp ở điểm này trong Công việc.'**
+  String get spotProviderHint;
+
+  /// No description provided for @spotNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy điểm chụp.'**
+  String get spotNotFound;
+
+  /// No description provided for @spotPriceFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'từ {price}'**
+  String spotPriceFrom(String price);
+
+  /// No description provided for @spotFreeSlotsCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {count} suất {day}'**
+  String spotFreeSlotsCount(int count, String day);
+
+  /// No description provided for @spotSlotsFull.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết suất'**
+  String get spotSlotsFull;
+
+  /// No description provided for @spotSeeMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem thêm'**
+  String get spotSeeMore;
 }
 
 class _AppLocalizationsDelegate

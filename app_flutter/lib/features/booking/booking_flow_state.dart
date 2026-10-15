@@ -15,12 +15,18 @@ class BookingFlowArgs {
     this.serviceId,
     this.day,
     this.area,
+    this.scheduleId,
+    this.slotOfferId,
+    this.start,
   });
 
   final String photographerId;
   final String? serviceId;
   final String? day;
   final String? area;
+  final String? scheduleId;
+  final String? slotOfferId;
+  final String? start;
 
   @override
   bool operator ==(Object other) =>
@@ -30,10 +36,21 @@ class BookingFlowArgs {
           photographerId == other.photographerId &&
           serviceId == other.serviceId &&
           day == other.day &&
-          area == other.area;
+          area == other.area &&
+          scheduleId == other.scheduleId &&
+          slotOfferId == other.slotOfferId &&
+          start == other.start;
 
   @override
-  int get hashCode => Object.hash(photographerId, serviceId, day, area);
+  int get hashCode => Object.hash(
+        photographerId,
+        serviceId,
+        day,
+        area,
+        scheduleId,
+        slotOfferId,
+        start,
+      );
 }
 
 enum SubmitPhase { idle, creating, paying, done }

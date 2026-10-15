@@ -68,6 +68,16 @@ void main() {
       bookingPath(photographerId: 'p1', date: DateTime(2026, 1, 5)),
       '/u/p1/book?date=2026-01-05',
     );
+    expect(
+      bookingPath(
+        photographerId: 'p1',
+        scheduleId: 'sch_1',
+        slotOfferId: 'off_1',
+        start: '06:00',
+        date: DateTime.utc(2026, 10, 18),
+      ),
+      '/u/p1/book?date=2026-10-18&scheduleId=sch_1&offerId=off_1&start=06%3A00',
+    );
   });
 
   testWidgets('with a phone number the booking opens straight away', (

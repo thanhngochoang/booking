@@ -16,6 +16,7 @@ import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/discovery/photographer_meta.dart';
 import 'package:photobooking/features/home/home_controller.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 
 const _chipSpecialties = ['portrait', 'wedding', 'family', 'graduation'];
 
@@ -94,6 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _refresh() async {
     ref.invalidate(freeThisWeekProvider);
     ref.invalidate(realShootsProvider);
+    ref.invalidate(hotSpotsProvider(ref.read(spotRegionProvider)));
     await ref.read(homeFeedProvider.notifier).refresh();
   }
 
@@ -234,6 +236,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             ),
                           ),
+                          const _HotSpotsSection(),
                           _FreeThisWeekSection(customer: customer),
                           const _RealShootsSection(),
                           if (items.length > 1)
@@ -442,6 +445,59 @@ class _HomeFeedSkeleton extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HotSpotsSection extends ConsumerWidget {
+  const _HotSpotsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final region = ref.watch(spotRegionProvider);
+    final spotsAsync = ref.watch(hotSpotsProvider(region));
+
+    return SliverToBoxAdapter(
+      child: spotsAsync.when(
+        data: (entries) {
+          if (entries.isEmpty) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SectionTitle(
+                title: l.homeHotSpots,
+                trailing: TextButton(
+                  key: const Key('hot-spots-see-all'),
+                  onPressed: () => context.push('/spots'),
+                  child: Text(l.exploreSeeAll),
+                ),
+              ),
+              SizedBox(
+                height: 150 / (4 / 5),
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+                  itemCount: entries.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: AppSpace.s2),
+                  itemBuilder: (context, i) {
+                    final entry = entries[i];
+                    return SpotCard(
+                      key: Key('hot-spot-${entry.spotId}'),
+                      entry: entry,
+                      size: SpotCardSize.horizontal,
+                      onTap: () => context.push('/spots/${entry.spotId}'),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, _) => const SizedBox.shrink(),
       ),
     );
   }

@@ -7974,4 +7974,211 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get reviewNoAssigneeBody => 'Studio chưa giao thợ chụp cho buổi này.';
+
+  @override
+  String get homeHotSpotsTitle => 'Điểm chụp đang hot';
+
+  @override
+  String get homeHotSpots => 'Điểm chụp đang hot';
+
+  @override
+  String get homeHotSpotsSeeAll => 'Xem tất cả';
+
+  @override
+  String homeSpotProvidersWeek(int count) {
+    return '$count thợ nhận chụp tuần này';
+  }
+
+  @override
+  String spotProvidersThisWeek(int count) {
+    return '$count thợ nhận chụp tuần này';
+  }
+
+  @override
+  String get exploreNearbySpotsTitle => 'Điểm chụp gần bạn';
+
+  @override
+  String get exploreSpotsNearby => 'Điểm chụp gần bạn';
+
+  @override
+  String get exploreSpotSectionTitle => 'Điểm chụp';
+
+  @override
+  String get spotsTitle => 'Điểm chụp';
+
+  @override
+  String get spotsFilterArea => 'Khu vực';
+
+  @override
+  String get spotsFilterAllAreas => 'Mọi khu vực';
+
+  @override
+  String get spotsFilterInSeason => 'Đang vào mùa';
+
+  @override
+  String get spotsFilterWeekend => 'Cuối tuần này có thợ';
+
+  @override
+  String spotsInSeasonCount(int count) {
+    return '$count điểm đang vào mùa';
+  }
+
+  @override
+  String get spotsEmpty => 'Chưa có điểm chụp nào ở khu vực này';
+
+  @override
+  String get spotsLoadError => 'Không tải được điểm chụp.';
+
+  @override
+  String get spotInSeason => 'Đang vào mùa';
+
+  @override
+  String spotInSeasonUntil(int month) {
+    return 'Đang vào mùa · tới cuối tháng $month';
+  }
+
+  @override
+  String spotSeasonEnding(int month) {
+    return 'Đang vào mùa · tới cuối tháng $month';
+  }
+
+  @override
+  String spotSeasonRange(int from, int to) {
+    return 'Mùa đẹp: tháng $from–$to';
+  }
+
+  @override
+  String spotSeasonList(String months) {
+    return 'Mùa đẹp: tháng $months';
+  }
+
+  @override
+  String spotSeasonBest(String range) {
+    return 'Mùa đẹp: $range';
+  }
+
+  @override
+  String get spotSeasonAllYear => 'Đẹp quanh năm';
+
+  @override
+  String get spotArchivedBand => 'Điểm này không còn nhận lịch mới';
+
+  @override
+  String get spotArchivedNotice => 'Điểm này không còn nhận lịch mới';
+
+  @override
+  String spotsCardStats(int providers, int events) {
+    return '$providers thợ · $events sự kiện sắp tới';
+  }
+
+  @override
+  String spotCardStats(int providers, int events) {
+    return '$providers thợ · $events sự kiện sắp tới';
+  }
+
+  @override
+  String spotAvailableLabel(String day, String start, String end) {
+    return 'Có mặt $day · $start–$end';
+  }
+
+  @override
+  String spotProviderAvailable(String day, String start, String end) {
+    return 'Có mặt $day · $start–$end';
+  }
+
+  @override
+  String get spotShare => 'Chia sẻ';
+
+  @override
+  String get spotLinkCopied => 'Đã sao chép liên kết điểm chụp';
+
+  @override
+  String get spotCopiedLink => 'Đã sao chép liên kết điểm chụp';
+
+  @override
+  String get spotTipsTitle => 'Mẹo chụp';
+
+  @override
+  String get spotDirections => 'Chỉ đường';
+
+  @override
+  String get spotProvidersTitle => 'Thợ nhận chụp ở đây';
+
+  @override
+  String get spotToday => 'Hôm nay';
+
+  @override
+  String get spotDayToday => 'Hôm nay';
+
+  @override
+  String get spotPickDate => 'Chọn ngày';
+
+  @override
+  String get spotDayPick => 'Chọn ngày';
+
+  @override
+  String get spotBook => 'Đặt';
+
+  @override
+  String get spotProfile => 'Hồ sơ';
+
+  @override
+  String get spotOffersTitle => 'Gói chụp tại điểm';
+
+  @override
+  String spotOfferLine(String name, String price, int count, String day) {
+    return '$name · $price · còn $count suất $day';
+  }
+
+  @override
+  String spotOfferFull(String name, String price, String day) {
+    return '$name · $price · hết suất $day';
+  }
+
+  @override
+  String get spotPickSlot => 'Chọn suất';
+
+  @override
+  String get spotEventsTitle => 'Sự kiện ở đây';
+
+  @override
+  String get spotPhotosTitle => 'Ảnh chụp ở đây';
+
+  @override
+  String spotPhotosCount(int count) {
+    return '$count bài';
+  }
+
+  @override
+  String get spotNoProviderDay =>
+      'Chưa có thợ nhận chụp ngày này · Xem ngày khác';
+
+  @override
+  String get spotEmptyDayTitle => 'Chưa có thợ nhận chụp ngày này';
+
+  @override
+  String get spotEmptyDayAction => 'Xem ngày khác';
+
+  @override
+  String get spotProviderHint =>
+      'Bạn là thợ ảnh? Thêm lịch chụp ở điểm này trong Công việc.';
+
+  @override
+  String get spotNotFound => 'Không tìm thấy điểm chụp.';
+
+  @override
+  String spotPriceFrom(String price) {
+    return 'từ $price';
+  }
+
+  @override
+  String spotFreeSlotsCount(int count, String day) {
+    return 'Còn $count suất $day';
+  }
+
+  @override
+  String get spotSlotsFull => 'Hết suất';
+
+  @override
+  String get spotSeeMore => 'Xem thêm';
 }

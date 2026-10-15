@@ -18,6 +18,9 @@ import 'package:photobooking/features/explore/explore_links.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/explore/nearby_events.dart';
 import 'package:photobooking/data/events/event_card_data_of.dart';
+import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
+import 'package:photobooking/data/spots/spot_rules.dart';
 
 enum ExploreCategoryTab { services, places, styles, photographers }
 
@@ -99,6 +102,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             slivers: nearby
                 ? [
                     ..._locationSlivers(context, resolution),
+                    SliverToBoxAdapter(
+                      child: _NearbySpotsSection(origin: resolution.origin),
+                    ),
                     events.build(context, ref),
                     category.build(context, ref),
                   ]
@@ -540,9 +546,14 @@ class _CategorySection {
           ),
         ),
         const _Gap(AppSpace.s3),
-        SliverToBoxAdapter(
-          child: _CategoryGrid(key: ValueKey(tab), tiles: tiles),
-        ),
+        if (tab == ExploreCategoryTab.places)
+          SliverToBoxAdapter(
+            child: _PlacesSpotsSection(tappable: tappable),
+          )
+        else
+          SliverToBoxAdapter(
+            child: _CategoryGrid(key: ValueKey(tab), tiles: tiles),
+          ),
         const _Gap(AppSpace.s5),
       ],
     );
@@ -687,3 +698,144 @@ class _CategoryGridState extends State<_CategoryGrid> {
     );
   }
 }
+
+class _PlacesSpotsSection extends ConsumerWidget {
+  const _PlacesSpotsSection({required this.tappable});
+  final bool tappable;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final directoryAsync = ref.watch(spotDirectoryProvider);
+    final resolution = ref.watch(exploreResolutionProvider);
+    final now = ref.watch(clockProvider)();
+    final month = now.month;
+
+    return directoryAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (all) {
+        if (all.isEmpty) return const SizedBox.shrink();
+        final ordered = orderSpots(
+          all,
+          month: month,
+          lat: resolution.origin?.lat,
+          lng: resolution.origin?.lng,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SectionTitle(
+              l.exploreSpotSectionTitle,
+              onSeeAll: () => context.push('/spots'),
+            ),
+            const SizedBox(height: AppSpace.s2),
+            LayoutBuilder(
+              builder: (context, box) {
+                const gap = AppSpace.s2;
+                final columns =
+                    box.maxWidth >= SliverAdaptiveRows.wideBreakpoint ? 4 : 2;
+                final visible = ordered.take(4).toList();
+                final rows = <Widget>[
+                  for (var r = 0; r * columns < visible.length; r++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: gap),
+                      child: Row(
+                        children: [
+                          for (var k = 0; k < columns; k++) ...[
+                            if (k > 0) const SizedBox(width: gap),
+                            Expanded(
+                              child: r * columns + k < visible.length
+                                  ? SpotCard(
+                                      key: Key(
+                                        'spot-tile-${visible[r * columns + k].spotId}',
+                                      ),
+                                      entry: visible[r * columns + k],
+                                      variant: SpotCardVariant.tile,
+                                      onTap: tappable
+                                          ? () => context.push(
+                                                '/spots/${visible[r * columns + k].spotId}',
+                                              )
+                                          : null,
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                ];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: rows,
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NearbySpotsSection extends ConsumerWidget {
+  const _NearbySpotsSection({required this.origin});
+  final ExploreOrigin? origin;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (origin == null) return const SizedBox.shrink();
+    final l = context.l10n;
+    final directoryAsync = ref.watch(spotDirectoryProvider);
+
+    return directoryAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (all) {
+        final originLat = origin!.lat;
+        final originLng = origin!.lng;
+        final nearbySpots = all.where((s) {
+          final d = haversineKm(originLat, originLng, s.lat, s.lng);
+          return d <= 50;
+        }).toList()
+          ..sort((a, b) => haversineKm(originLat, originLng, a.lat, a.lng)
+              .compareTo(haversineKm(originLat, originLng, b.lat, b.lng)));
+
+        final shown = nearbySpots.take(10).toList();
+        if (shown.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SectionTitle(
+              l.exploreSpotsNearby,
+              onSeeAll: () => context.push('/spots'),
+            ),
+            const SizedBox(height: AppSpace.s2),
+            SizedBox(
+              height: 150 / (4 / 5),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.s4),
+                itemCount: shown.length,
+                separatorBuilder: (_, _) => const SizedBox(width: AppSpace.s2),
+                itemBuilder: (context, i) {
+                  final spot = shown[i];
+                  return SpotCard(
+                    key: Key('nearby-spot-${spot.spotId}'),
+                    entry: spot,
+                    variant: SpotCardVariant.horizontal,
+                    onTap: () => context.push('/spots/${spot.spotId}'),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: AppSpace.s5),
+          ],
+        );
+      },
+    );
+  }
+}
+

@@ -109,3 +109,5 @@ export 'package:photobooking/core/widgets/tomato_ratio_bar.dart';
 export 'package:photobooking/core/widgets/verdict_badge.dart';
 export 'package:photobooking/core/widgets/verdict_icon.dart';
 export 'package:photobooking/core/widgets/verdict_pad.dart';
+export 'package:photobooking/core/widgets/spot_card.dart';
+export 'package:photobooking/core/widgets/season_tag.dart';

@@ -373,6 +373,16 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 #### AssigneeCard · Đã có
 `AssigneeCard({required AssigneeSummary summary, required String studioName, required VoidCallback onViewProfile, String? changeLabel, VoidCallback? onChange})` · `AssigneeSummary({required String id, required String name, String? avatarUrl, bool verified = false, int? tomatoPct, int shoots = 0})` · `AssigneeCard.skeleton()`. Thẻ "Thợ chụp cho bạn" của booking studio phía khách (mock `#S05.02-studio`): `AppAvatar` 48 (trang trí), tên đậm kèm tích xanh khi `verified`, `MetaLine` "🍅 97% · 112 buổi · thợ của Studio Mây" (bỏ phần cà chua khi `tomatoPct` null, tức chưa đủ 5 đánh giá; `studioName` rỗng thì chỉ "112 buổi"), nút viền xsmall "Xem hồ sơ" bên phải (rộng tối đa nửa hàng), và dưới cùng nút viền small `changeLabel` ("Xin đổi thợ (1 lần)"; `onChange` null thì tắt, ví dụ "Đã xin đổi · chờ studio"; `changeLabel` null thì không có nút). Nhãn "Giao {ngày}" và tiêu đề khối nằm ở màn hình (`StudioAssigneeBlock` của S05.02), không trong thẻ. Trình đọc màn hình đọc người là một nhãn "tên, Đã xác minh, 97% cà chua · 112 buổi · thợ của Studio Mây"; mỗi nút giữ nhãn riêng và vùng chạm 48dp. Skeleton: vòng avatar và hai dòng trong khung thẻ (khi hồ sơ thợ đang tải). Dùng ở S05.02 (booking studio, phía khách).
 
+---
+
+### Component của spec 10-08 (điểm chụp đang hot) · Mới
+
+#### SpotCard · Mới
+Thẻ điểm chụp ảnh dạng ngang (ở Home và S02.04, `compact: true`, rộng 200dp) hoặc dạng lớn/dọc (ở S29.01, `compact: false`). Hiển thị ảnh cover `cardUrl`, tên điểm `name`, thành phố `city`, nhãn mùa `SeasonTag` khi `inSeason`, và dòng trạng thái (`spotCardStats(l, entry)`: `{n} thợ · {m} sự kiện sắp tới`). `SpotCard({required SpotEntry entry, VoidCallback? onTap, bool compact = false})`.
+
+#### SeasonTag · Mới
+Tag chỉ báo thời điểm vào mùa của điểm chụp. `SeasonTag({String? label, int? monthTo})`. Nền subtle, viền mảnh, biểu tượng lá `AppIcons.eco`. Khi `monthTo != null` hiển thị "Đang vào mùa · tới cuối tháng {m}", hoặc nhãn tuỳ biến `label` ("Đang vào mùa"). Dùng ở `SpotCard` và đầu trang `SpotScreen` (S29.02).
+
 ## 6. Bảng tra: widget ↔ màn
 
 | Widget | Màn |
@@ -431,6 +441,7 @@ Thay 5 sao bằng một phe: cà chua (hài lòng) hoặc gạch (chưa hài lò
 | `MemberRow` | S26.01, S26.02, S26.03 |
 | `MemberStrip` | S03.01 (studio) |
 | `AssigneeCard` | S05.02 (booking studio, phía khách) |
+| `SpotCard`, `SeasonTag` | S02.01, S02.03, S02.04, S29.01, S29.02 |
 | `ScreenCode` | mọi màn |
 
 ## 7. Thứ tự viết (đổi ngày 2026-10-02: component trước, màn sau)
@@ -541,3 +552,9 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.car` | `directions_car` | `directions_car` (có trong mock) | — |
 | `AppIcons.checkroom` | `checkroom` | `checkroom` (có trong mock) | — |
 | `AppIcons.addCircle` | `add_circle` | (mới, chưa có trong mock) | — |
+| `AppIcons.directions` | `directions` | (mới, chưa có trong mock) | `Icons.directions_rounded` |
+| `AppIcons.landscape` | `landscape` | (mới, chưa có trong mock) | `Icons.landscape_rounded` |
+| `AppIcons.eco` | `eco` | (mới, chưa có trong mock) | `Icons.eco_rounded` |
+| `AppIcons.lightbulb` | `lightbulb` | (mới, chưa có trong mock) | `Icons.lightbulb_rounded` |
+| `AppIcons.eventBusy` | `event_busy` | (mới, chưa có trong mock) | `Icons.event_busy_rounded` |
+| `AppIcons.timer` | `timer` | (mới, chưa có trong mock) | `Icons.timer_rounded` |

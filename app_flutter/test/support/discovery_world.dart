@@ -185,6 +185,7 @@ class DiscoveryWorld {
     LocationPermissionStatus status = LocationPermissionStatus.deniedForever,
     this.prefsValues = const {},
     this.recommenderFactory,
+    this.clock,
   }) : posts = FakePostRepository(posts ?? discoveryPosts()),
        photographers = FakePhotographerRepository(
          photographers ?? discoveryPhotographers(),
@@ -206,6 +207,7 @@ class DiscoveryWorld {
   final UserRole role;
   final bool hasPhone;
   final Map<String, Object> prefsValues;
+  final DateTime Function()? clock;
 
   /// Builds the recommender used by the screens; defaults to a
   /// [LocalRecommender] over the fakes above.
@@ -223,7 +225,7 @@ class DiscoveryWorld {
     posts: posts,
     photographers: photographers,
     availability: availability,
-    clock: () => fixtureNow,
+    clock: clock ?? () => fixtureNow,
   );
 
   Future<void> init() async {
@@ -242,7 +244,7 @@ class DiscoveryWorld {
     recommender = recommenderFactory?.call(this) ?? localRecommender();
     overrides = [
       sharedPreferencesProvider.overrideWithValue(prefs),
-      clockProvider.overrideWithValue(() => fixtureNow),
+      clockProvider.overrideWithValue(clock ?? () => fixtureNow),
       authRepositoryProvider.overrideWithValue(auth),
       userRepositoryProvider.overrideWithValue(users),
       userContactRepositoryProvider.overrideWithValue(contacts),

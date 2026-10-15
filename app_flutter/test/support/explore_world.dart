@@ -14,9 +14,12 @@ import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/features/explore/event_routes.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 import 'package:photobooking/features/settings/theme_mode_controller.dart';
+import 'package:photobooking/data/spots/spot.dart';
+import 'package:photobooking/data/spots/spot_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/events/nearby_events_repository_test.dart' show event;
+import 'fake_spot_repository.dart';
 
 /// Thursday 1 Oct 2026, 12:00 in Vietnam.
 final exploreNow = DateTime.utc(2026, 10, 1, 5);
@@ -77,6 +80,7 @@ class ExploreWorld {
   final FakeLocationRepository location;
   final FakeNearbyEventsRepository repo;
   final FakeExploreCatalogRepository catalogRepo;
+  final FakeSpotRepository spots = FakeSpotRepository();
   final UserRole role;
   final bool routesReady;
   final Map<String, Object> prefsValues;
@@ -91,6 +95,27 @@ class ExploreWorld {
     final u = await auth.registerWithEmail('a@b.vn', 'password1', 'Minh');
     await users.ensureProfile(u);
     await users.setRole(u.uid, role);
+    spots.seedDirectory([
+      const SpotEntry(
+        spotId: 'cau-dat',
+        name: 'Đồi chè Cầu Đất',
+        city: 'Đà Lạt',
+        areaCode: 'da-lat',
+        cardUrl: 'https://example.com/cau-dat.jpg',
+        lat: 11.9,
+        lng: 108.4,
+        radiusM: 1000,
+        seasonMonths: [10, 11, 12],
+        inSeason: true,
+        pinned: true,
+        hidden: false,
+        hotScore: 10,
+        openSchedules: 2,
+        providersWeek: 3,
+        providersWeekend: 2,
+        upcomingEvents: 1,
+      ),
+    ]);
     overrides = [
       sharedPreferencesProvider.overrideWithValue(prefs),
       clockProvider.overrideWithValue(() => exploreNow),
@@ -100,6 +125,7 @@ class ExploreWorld {
       nearbyEventsRepositoryProvider.overrideWithValue(repo),
       eventRoutesReadyProvider.overrideWithValue(routesReady),
       exploreCatalogRepositoryProvider.overrideWithValue(catalogRepo),
+      spotRepositoryProvider.overrideWithValue(spots),
     ];
   }
 }

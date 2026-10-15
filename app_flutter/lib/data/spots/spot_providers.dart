@@ -1,5 +1,7 @@
 // lib/data/spots/spot_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/spots/firestore_spot_repository.dart';
 import 'package:photobooking/data/spots/spot.dart';
@@ -87,3 +89,18 @@ final mySlotOffersProvider =
     return repo.watchMyOffers(uid);
   },
 );
+
+/// Set of user ids hidden/blocked by current user (#144).
+final hiddenUsersProvider = Provider<Set<String>>((ref) => const <String>{});
+
+final spotPhotographerSummariesProvider =
+    FutureProvider.autoDispose.family<Map<String, PhotographerSummary>, String>(
+  (ref, key) async {
+    if (key.isEmpty) return const {};
+    final uids = key.split(',').where((id) => id.isNotEmpty).toList();
+    final repo = ref.watch(photographerRepositoryProvider);
+    return repo.summaries(uids);
+  },
+);
+
+
