@@ -4,6 +4,7 @@
 /// directly to keep the barrel free of cycles.
 library;
 
+export 'package:photobooking/core/app_config.dart';
 export 'package:photobooking/core/calendar_days.dart';
 export 'package:photobooking/core/contact_channel.dart';
 export 'package:photobooking/core/format.dart';

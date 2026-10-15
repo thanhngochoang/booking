@@ -192,6 +192,7 @@ class _FollowingRow extends ConsumerWidget {
     final mark = providerMarkOf(
       type: photographer.providerType,
       verified: photographer.verified,
+      businessVerified: photographer.businessVerified,
     );
 
     final genre = photographer.specialtyIds.isNotEmpty

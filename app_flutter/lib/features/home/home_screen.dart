@@ -370,6 +370,7 @@ class _PostBlock extends ConsumerWidget {
                           mark: providerMarkOf(
                             type: p.providerType,
                             verified: p.verified,
+                            businessVerified: p.businessVerified,
                           ),
                           style: nameStyle,
                         ),
@@ -494,6 +495,7 @@ class _FreeThisWeekSection extends ConsumerWidget {
                     final freeMark = providerMarkOf(
                       type: p.providerType,
                       verified: p.verified,
+                      businessVerified: p.businessVerified,
                     );
                     return SizedBox(
                       width: _freeCardWidth,

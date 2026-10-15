@@ -92,7 +92,8 @@ void main() {
   });
 
   testWidgets(
-    'photo detail author line shows the studio seal for a verified studio',
+    'photo detail author line shows the studio seal for a business-verified '
+    'studio',
     (tester) async {
       await _open(
         tester,
@@ -104,6 +105,7 @@ void main() {
                   'p1',
                   name: 'Minh Trí',
                   verified: true,
+                  businessVerified: true,
                   providerType: ProviderType.studio,
                   specialties: const ['portrait', 'wedding'],
                   areaLabel: 'Quận 3',

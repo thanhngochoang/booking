@@ -48,7 +48,11 @@ class ProfileHeader extends ConsumerWidget {
       for (final id in genres.take(2)) catalog.label(SkillGroup.specialty, id),
       ?(studio ? (s.studioDistrict ?? s.areaLabel) : s.areaLabel),
     ].join(' · ');
-    final mark = providerMarkOf(type: s.providerType, verified: s.verified);
+    final mark = providerMarkOf(
+      type: s.providerType,
+      verified: s.verified,
+      businessVerified: s.businessVerified,
+    );
     final nameStyle = theme.textTheme.headlineSmall?.copyWith(
       fontFamily: AppFonts.display,
       fontWeight: FontWeight.w600,

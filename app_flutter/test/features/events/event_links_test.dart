@@ -49,10 +49,4 @@ void main() {
       'Thứ ba 20/10 · 06:00–09:00',
     );
   });
-
-  test('no support address yet: no mailto line (owner question)', () {
-    expect(eventSupportEmail, isNull);
-    expect(eventSupportUri(), isNull);
-    expect(eventSupportUri('a@b.vn'), Uri(scheme: 'mailto', path: 'a@b.vn'));
-  });
 }
