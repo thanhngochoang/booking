@@ -524,4 +524,4 @@ Quyết định 2026-10-06: một bộ icon duy nhất là **Material Symbols Ro
 | `AppIcons.flag` | `flag` | (mới, chưa có trong mock) | `Icons.flag_outlined` |
 | `AppIcons.car` | `directions_car` | `directions_car` (có trong mock) | — |
 | `AppIcons.checkroom` | `checkroom` | `checkroom` (có trong mock) | — |
-| `AppIcons.addCircle` | `add_circle` | `add_circle` (có trong mock) | — |
+| `AppIcons.addCircle` | `add_circle` | (mới, chưa có trong mock) | — |

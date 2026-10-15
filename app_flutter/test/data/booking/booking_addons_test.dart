@@ -80,6 +80,7 @@ void main() {
       final b = bookingFromFirestore('b1', _doc())!;
       expect(b.addons, isEmpty);
       expect(b.pickup, isNull);
+      expect(b.totalVnd, 1500000);
     });
 
     test('totalVnd = price + Σ amount', () {
