@@ -5378,4 +5378,62 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get socialToggleFailed => 'Chưa lưu được. Thử lại.';
+
+  @override
+  String get verifyPhoneTitle => 'Xác minh số điện thoại';
+
+  @override
+  String get verifyPhoneHeading => 'Nhập số điện thoại của bạn';
+
+  @override
+  String get verifyPhoneBody =>
+      'Chúng tôi gửi mã 6 số qua SMS. Số này dùng để liên hệ khi có đơn, không hiện công khai.';
+
+  @override
+  String get verifyPhoneExample => 'Ví dụ: 0912 345 678.';
+
+  @override
+  String get verifyPhoneSend => 'Gửi mã';
+
+  @override
+  String get verifyCodeHeading => 'Nhập mã 6 số';
+
+  @override
+  String verifyCodeSentTo(String last4) {
+    return 'Đã gửi tới •••• $last4';
+  }
+
+  @override
+  String verifyCodeResendIn(String time) {
+    return 'Gửi lại mã sau $time';
+  }
+
+  @override
+  String get verifyCodeResend => 'Gửi lại mã';
+
+  @override
+  String get verifyCodeChangePhone => 'Đổi số điện thoại';
+
+  @override
+  String get verifyCodeConfirm => 'Xác nhận';
+
+  @override
+  String get verifyCodeWrong => 'Mã không đúng. Kiểm tra lại tin nhắn.';
+
+  @override
+  String get verifyCodeExpired => 'Mã đã hết hạn. Bấm Gửi lại mã.';
+
+  @override
+  String get verifyPhoneTooMany =>
+      'Bạn đã thử quá nhiều lần. Thử lại sau ít phút.';
+
+  @override
+  String get verifyPhoneInUse => 'Số này đã gắn với một tài khoản khác.';
+
+  @override
+  String get verifyPhoneInvalid =>
+      'Số điện thoại chưa đúng. Ví dụ: 0912 345 678.';
+
+  @override
+  String get verifyPhoneDone => 'Đã xác minh số điện thoại';
 }

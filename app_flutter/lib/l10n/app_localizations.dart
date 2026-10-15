@@ -9453,6 +9453,108 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa lưu được. Thử lại.'**
   String get socialToggleFailed;
+
+  /// No description provided for @verifyPhoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh số điện thoại'**
+  String get verifyPhoneTitle;
+
+  /// No description provided for @verifyPhoneHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số điện thoại của bạn'**
+  String get verifyPhoneHeading;
+
+  /// No description provided for @verifyPhoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chúng tôi gửi mã 6 số qua SMS. Số này dùng để liên hệ khi có đơn, không hiện công khai.'**
+  String get verifyPhoneBody;
+
+  /// No description provided for @verifyPhoneExample.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: 0912 345 678.'**
+  String get verifyPhoneExample;
+
+  /// No description provided for @verifyPhoneSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi mã'**
+  String get verifyPhoneSend;
+
+  /// No description provided for @verifyCodeHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã 6 số'**
+  String get verifyCodeHeading;
+
+  /// No description provided for @verifyCodeSentTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi tới •••• {last4}'**
+  String verifyCodeSentTo(String last4);
+
+  /// No description provided for @verifyCodeResendIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã sau {time}'**
+  String verifyCodeResendIn(String time);
+
+  /// No description provided for @verifyCodeResend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã'**
+  String get verifyCodeResend;
+
+  /// No description provided for @verifyCodeChangePhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi số điện thoại'**
+  String get verifyCodeChangePhone;
+
+  /// No description provided for @verifyCodeConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get verifyCodeConfirm;
+
+  /// No description provided for @verifyCodeWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã không đúng. Kiểm tra lại tin nhắn.'**
+  String get verifyCodeWrong;
+
+  /// No description provided for @verifyCodeExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã đã hết hạn. Bấm Gửi lại mã.'**
+  String get verifyCodeExpired;
+
+  /// No description provided for @verifyPhoneTooMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã thử quá nhiều lần. Thử lại sau ít phút.'**
+  String get verifyPhoneTooMany;
+
+  /// No description provided for @verifyPhoneInUse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số này đã gắn với một tài khoản khác.'**
+  String get verifyPhoneInUse;
+
+  /// No description provided for @verifyPhoneInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại chưa đúng. Ví dụ: 0912 345 678.'**
+  String get verifyPhoneInvalid;
+
+  /// No description provided for @verifyPhoneDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh số điện thoại'**
+  String get verifyPhoneDone;
 }
 
 class _AppLocalizationsDelegate
