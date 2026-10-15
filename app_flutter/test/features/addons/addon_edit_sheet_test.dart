@@ -88,11 +88,22 @@ void main() {
     await tester.tap(find.text('Theo số lượng'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Giá / ảnh (₫)'), findsOneWidget);
-    expect(find.text('1 ảnh'), findsOneWidget);
-    await tester.tap(_key('addon-max-plus'));
-    await tester.tap(_key('addon-max-plus'));
+    await tester.enterText(_key('addon-max'), '3');
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('3 ảnh'), findsOneWidget);
+    expect(find.text('ảnh'), findsOneWidget);
+    expect(tester.widget<TextField>(_key('addon-max')).controller!.text, '3');
+  });
+
+  testWidgets('Tối đa outside 1–10 shows "Tối đa từ 1 tới 10" and saves '
+      'nothing', (tester) async {
+    final w = await _open(tester);
+    await _fill(tester);
+    await tester.tap(find.text('Theo người'));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.enterText(_key('addon-max'), '11');
+    await _save(tester);
+    expect(find.text('Tối đa từ 1 tới 10'), findsOneWidget);
+    expect(w.addons.saves, isEmpty);
   });
 
   testWidgets('invalid name shows "Tên 2–60 ký tự" and does not call save', (
@@ -173,7 +184,7 @@ void main() {
     await tester.enterText(_key('addon-description'), 'Áo dài truyền thống');
     await tester.tap(find.text('Theo số lượng'));
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(_key('addon-max-plus'));
+    await tester.enterText(_key('addon-max'), '2');
     await tester.tap(_key('addon-applies-pick'));
     await _tick(tester);
     await tester.tap(_key('addon-package-p2'));

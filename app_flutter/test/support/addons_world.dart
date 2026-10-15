@@ -18,6 +18,7 @@ class AddonsWorld {
 
   Future<void> init({List<ServicePackage> packages = const []}) async {
     await w.init();
+    addons.ownerUid = w.uid;
     for (final p in packages) {
       w.packages.seed(w.uid, p);
     }

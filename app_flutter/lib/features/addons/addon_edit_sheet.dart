@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:photobooking/core/core.dart';
@@ -51,7 +52,7 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
   );
   late AddonKind _kind = widget.addon?.kind ?? AddonKind.makeup;
   late AddonUnit _unit = widget.addon?.unit ?? AddonUnit.perBooking;
-  late int _maxQty = widget.addon?.maxQty ?? 1;
+  late final _max = TextEditingController(text: '${widget.addon?.maxQty ?? 1}');
   late bool _choosePackages = widget.addon?.serviceIds.isNotEmpty ?? false;
   late List<String> _serviceIds = [...?widget.addon?.serviceIds];
   final Map<_Field, String> _errors = {};
@@ -65,6 +66,7 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
     _name.dispose();
     _description.dispose();
     _price.dispose();
+    _max.dispose();
     super.dispose();
   }
 
@@ -76,7 +78,7 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
     description: _description.text,
     price: parseVnd(_price.text) ?? 0,
     unit: _unit,
-    maxQty: _unit == AddonUnit.perBooking ? 1 : _maxQty,
+    maxQty: _unit == AddonUnit.perBooking ? 1 : (int.tryParse(_max.text) ?? 0),
     choosePackages: _choosePackages,
     serviceIds: _serviceIds,
     active: widget.addon?.active ?? true,
@@ -235,49 +237,25 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
 
     final maxField = _unit == AddonUnit.perBooking
         ? null
-        : InputDecorator(
+        : TextField(
+            key: const Key('addon-max'),
+            controller: _max,
+            enabled: !saving,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(2),
+            ],
+            style: const TextStyle(
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
             decoration: InputDecoration(
               labelText: l.addonFieldMax,
+              suffixText: noun,
               errorText: _errors[_Field.maxQty],
               errorMaxLines: 2,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.s2,
-                vertical: AppSpace.s2,
-              ),
             ),
-            child: Row(
-              children: [
-                _MiniButton(
-                  key: const Key('addon-max-minus'),
-                  icon: AppIcons.remove,
-                  tooltip: l.addonMaxMinus,
-                  onPressed: saving || _maxQty <= 1
-                      ? null
-                      : () => setState(() => _maxQty--),
-                ),
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      l.addonFieldMaxValue(_maxQty, noun),
-                      key: const Key('addon-max-value'),
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                ),
-                _MiniButton(
-                  key: const Key('addon-max-plus'),
-                  icon: AppIcons.add,
-                  tooltip: l.addonMaxPlus,
-                  onPressed: saving || _maxQty >= addonMaxQtyLimit
-                      ? null
-                      : () => setState(() => _maxQty++),
-                ),
-              ],
-            ),
+            onChanged: (_) => _clear(_Field.maxQty),
           );
 
     final priceField = TextField(
@@ -512,30 +490,6 @@ class _AddonEditSheetState extends ConsumerState<AddonEditSheet> {
       ),
     );
   }
-}
-
-/// A 32dp minus/plus inside the "Tối đa" field.
-class _MiniButton extends StatelessWidget {
-  const _MiniButton({
-    super.key,
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) => IconButton(
-    tooltip: tooltip,
-    icon: AppIcon(icon, size: 18),
-    visualDensity: VisualDensity.compact,
-    padding: EdgeInsets.zero,
-    constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-    onPressed: onPressed,
-  );
 }
 
 /// The "Chọn gói" checklist: ticks any of the provider's packages (hidden

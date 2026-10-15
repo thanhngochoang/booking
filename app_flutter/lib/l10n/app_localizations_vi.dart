@@ -6206,17 +6206,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get addonFieldMax => 'Tối đa';
 
   @override
-  String addonFieldMaxValue(int n, String noun) {
-    return '$n $noun';
-  }
-
-  @override
-  String get addonMaxMinus => 'Giảm số lượng tối đa';
-
-  @override
-  String get addonMaxPlus => 'Tăng số lượng tối đa';
-
-  @override
   String get addonFieldApplies => 'Áp dụng cho';
 
   @override

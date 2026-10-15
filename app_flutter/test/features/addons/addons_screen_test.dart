@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/core/core.dart' show GlassCard;
+import 'package:photobooking/features/addons/addons_controller.dart';
+import 'package:photobooking/features/addons/addons_screen.dart';
 import 'package:photobooking/data/addons/service_addon.dart';
 import 'package:photobooking/data/photographer/service_package.dart';
 
@@ -123,6 +127,38 @@ void main() {
     expect(save.input.serviceIds, ['p1', 'p2']);
     expect(tester.widget<Switch>(_key('addon-switch-a-hair')).value, isFalse);
     expect(find.text('3/10 dịch vụ đang bật'), findsOneWidget);
+  });
+
+  testWidgets('after a successful switch-off the live list shows it off and '
+      'the optimistic entry is cleared', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world(seed: _seedFour);
+    await _open(tester, w);
+    await tester.tap(_key('addon-switch-a-hair'));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(w.addons.addons['a-hair']!.active, isFalse);
+    expect(tester.widget<Switch>(_key('addon-switch-a-hair')).value, isFalse);
+    expect(find.text('3/10 dịch vụ đang bật'), findsOneWidget);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AddonsScreen)),
+    );
+    expect(container.read(addonsControllerProvider), isEmpty);
+  });
+
+  testWidgets('one card per kind holds its rows', (tester) async {
+    usePhone(tester, height: 1400);
+    final w = await _world(seed: _seedFour);
+    await _open(tester, w);
+    expect(find.byType(GlassCard), findsNWidgets(4));
+    expect(
+      find.descendant(
+        of: find.byType(GlassCard).first,
+        matching: find.byType(Switch),
+      ),
+      findsNWidgets(2),
+      reason: 'Trang điểm and Làm tóc share the first card',
+    );
   });
 
   testWidgets('switching on the 11th returns the switch to off and shows the '

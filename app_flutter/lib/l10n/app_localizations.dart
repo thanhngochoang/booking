@@ -10876,24 +10876,6 @@ abstract class AppLocalizations {
   /// **'Tối đa'**
   String get addonFieldMax;
 
-  /// No description provided for @addonFieldMaxValue.
-  ///
-  /// In vi, this message translates to:
-  /// **'{n} {noun}'**
-  String addonFieldMaxValue(int n, String noun);
-
-  /// No description provided for @addonMaxMinus.
-  ///
-  /// In vi, this message translates to:
-  /// **'Giảm số lượng tối đa'**
-  String get addonMaxMinus;
-
-  /// No description provided for @addonMaxPlus.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tăng số lượng tối đa'**
-  String get addonMaxPlus;
-
   /// No description provided for @addonFieldApplies.
   ///
   /// In vi, this message translates to:

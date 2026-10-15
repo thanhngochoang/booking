@@ -154,15 +154,28 @@ class _AddonList extends StatelessWidget {
                 ),
               ),
             ),
-            for (final a in addons.where((a) => a.kind == kind)) ...[
-              _AddonRow(
-                addon: a,
-                active: on(a),
-                appliesTo: _appliesText(l, a, packages),
-                onToggle: (v) => onToggle(a, v),
+            GlassCard(
+              child: Column(
+                children: [
+                  for (final (i, a)
+                      in addons.where((a) => a.kind == kind).indexed) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        indent: AppSpace.s3,
+                        endIndent: AppSpace.s3,
+                        color: theme.colorScheme.outlineVariant,
+                      ),
+                    _AddonRow(
+                      addon: a,
+                      active: on(a),
+                      appliesTo: _appliesText(l, a, packages),
+                      onToggle: (v) => onToggle(a, v),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: AppSpace.s2),
-            ],
+            ),
           ],
       ],
     );
@@ -206,75 +219,71 @@ class _AddonRow extends StatelessWidget {
         ? AppColorsDark.foregroundMuted
         : AppColors.foregroundMuted;
     final a = addon;
-    return GlassCard(
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          key: Key('addon-${a.id}'),
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          onTap: () => showAddonEditSheet(context, addon: a),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.s3,
-              vertical: AppSpace.s2,
-            ),
-            child: Row(
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Center(child: AppIcon(addonKindIcon(a.kind))),
-                  ),
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        key: Key('addon-${a.id}'),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: () => showAddonEditSheet(context, addon: a),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s3,
+            vertical: AppSpace.s2,
+          ),
+          child: Row(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: AppSpace.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        a.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      Text(
-                        addonPriceLabel(
-                          l,
-                          kind: a.kind,
-                          unit: a.unit,
-                          price: a.price,
-                        ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      Text(
-                        appliesTo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(child: AppIcon(addonKindIcon(a.kind))),
                 ),
-                const SizedBox(width: AppSpace.s2),
-                Semantics(
-                  label: l.addonsToggle(a.name),
-                  child: Switch(
-                    key: Key('addon-switch-${a.id}'),
-                    value: active,
-                    onChanged: onToggle,
-                  ),
+              ),
+              const SizedBox(width: AppSpace.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    Text(
+                      addonPriceLabel(
+                        l,
+                        kind: a.kind,
+                        unit: a.unit,
+                        price: a.price,
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    Text(
+                      appliesTo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              Semantics(
+                label: l.addonsToggle(a.name),
+                child: Switch(
+                  key: Key('addon-switch-${a.id}'),
+                  value: active,
+                  onChanged: onToggle,
+                ),
+              ),
+            ],
           ),
         ),
       ),

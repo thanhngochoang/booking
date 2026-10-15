@@ -17,6 +17,9 @@ class FakeAddonRepository implements AddonRepository {
   /// `watchMine` fails while true (the list's load error).
   bool failWatch = false;
 
+  /// Provider id given to add-ons created by `save`.
+  String? ownerUid;
+
   /// While true, `save` waits for [releaseSave].
   bool holdSave = false;
   Completer<void>? _gate;
@@ -76,7 +79,24 @@ class FakeAddonRepository implements AddonRepository {
       await _gate!.future;
     }
     saves.add((input: input, addonId: addonId));
-    return addonId ?? 'addon_${_nextId++}';
+    final id = addonId ?? 'addon_${_nextId++}';
+    final old = addons[id];
+    addons[id] = ServiceAddon(
+      id: id,
+      providerId: old?.providerId ?? ownerUid ?? '',
+      kind: input.kind,
+      name: input.name.trim(),
+      description: input.description,
+      price: input.price,
+      unit: input.unit,
+      maxQty: input.unit == AddonUnit.perBooking ? 1 : input.maxQty,
+      serviceIds: input.choosePackages ? input.serviceIds : const [],
+      active: input.active,
+      createdAt: old?.createdAt ?? DateTime.utc(2026, 10),
+      updatedAt: DateTime.utc(2026, 10),
+    );
+    _changes.add(null);
+    return id;
   }
 
   @override
