@@ -34,3 +34,5 @@ packages/*
 /.worktrees
 __pycache__/
 *.pyc
+# Agent handoff logs (see .agents/skills/agent-handoff), local to this machine
+/.agents/handoff/
