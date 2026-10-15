@@ -50,19 +50,36 @@ void main() {
   });
 
   testWidgets('per_booking shows "Một lần"', (tester) async {
-    await _pump(tester, _withAddons());
+    await _pump(tester, _withAddons(pickup: false));
 
     expect(find.text('Một lần'), findsOneWidget);
   });
 
-  testWidgets('pickup row only when pickup exists', (tester) async {
+  testWidgets('pickup shows under the transport line, only when it exists', (
+    tester,
+  ) async {
     await _pump(tester, _withAddons());
-    expect(find.text('Điểm đón'), findsOneWidget);
-    expect(find.text('Ga Sài Gòn, Quận 3'), findsOneWidget);
+    expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
+    expect(find.text('Điểm đón'), findsNothing);
+    expect(find.text('Một lần'), findsNothing);
 
     await _pump(tester, _withAddons(pickup: false));
-    expect(find.text('Điểm đón'), findsNothing);
-    expect(find.text('Ga Sài Gòn, Quận 3'), findsNothing);
+    expect(find.textContaining('Điểm đón'), findsNothing);
+    expect(find.text('Một lần'), findsOneWidget);
+  });
+
+  testWidgets('a pickup without a transport line gets its own row', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      makeTestBooking().copyWith(
+        addons: const [testMakeupLine],
+        pickup: testPickup,
+      ),
+    );
+    expect(find.text('Điểm đón'), findsOneWidget);
+    expect(find.text('Ga Sài Gòn, Quận 3'), findsOneWidget);
   });
 
   testWidgets('nothing rendered for a booking without add-ons', (tester) async {
@@ -86,7 +103,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('1.600.000₫'), findsOneWidget);
-      expect(find.text('Ga Sài Gòn, Quận 3'), findsOneWidget);
+      expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
     });
   }
 }

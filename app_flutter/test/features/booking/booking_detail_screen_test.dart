@@ -98,7 +98,7 @@ void main() {
     );
     expect(find.text('Dịch vụ đi kèm'), findsOneWidget);
     expect(find.text('2 người × 800.000₫'), findsOneWidget);
-    expect(find.text('Ga Sài Gòn, Quận 3'), findsOneWidget);
+    expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
   });
 
   testWidgets('the photographer sees the same block and the pickup', (
@@ -117,8 +117,8 @@ void main() {
     expect(find.text('Dịch vụ đi kèm'), findsOneWidget);
     expect(find.text('Trang điểm'), findsOneWidget);
     expect(find.text('1.600.000₫'), findsOneWidget);
-    expect(find.text('Điểm đón'), findsOneWidget);
-    expect(find.text('Ga Sài Gòn, Quận 3'), findsOneWidget);
+    expect(find.text('Điểm đón'), findsNothing);
+    expect(find.text('Điểm đón: Ga Sài Gòn, Quận 3'), findsOneWidget);
   });
 
   testWidgets('a booking without add-ons shows no add-on block', (

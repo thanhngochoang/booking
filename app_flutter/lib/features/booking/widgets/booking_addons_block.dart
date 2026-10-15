@@ -21,6 +21,9 @@ class BookingAddonsBlock extends StatelessWidget {
     if (lines.isEmpty && pickup == null) return const SizedBox.shrink();
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    // The pick-up sits under the transport line; a stray pick-up without one
+    // gets its own row.
+    final transport = lines.indexWhere((l) => l.kind == AddonKind.transport);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -39,11 +42,13 @@ class BookingAddonsBlock extends StatelessWidget {
             ),
             child: Column(
               children: [
-                for (final line in lines)
+                for (final (i, line) in lines.indexed)
                   _Row(
                     icon: addonKindIcon(line.kind),
                     title: line.name,
-                    meta: line.unit == AddonUnit.perBooking
+                    meta: pickup != null && i == transport
+                        ? l10n.bookPickupLine(pickup.name)
+                        : line.unit == AddonUnit.perBooking
                         ? l10n.addonOnce
                         : l10n.addonBlockMeta(
                             line.qty,
@@ -52,7 +57,7 @@ class BookingAddonsBlock extends StatelessWidget {
                           ),
                     amount: formatMoney(line.amount),
                   ),
-                if (pickup != null)
+                if (pickup != null && transport < 0)
                   _Row(
                     icon: AppIcons.place,
                     title: l10n.bookPickupTitle,
@@ -108,12 +113,16 @@ class _Row extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(color: secondary),
                 ),
               ],
