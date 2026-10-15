@@ -171,6 +171,7 @@ describe('Firestore mapping for events', () => {
     assert.deepEqual([plain.refundId, plain.refundStatus], [null, null]);
     const refund: Refund = {
       id: 'rf1', paymentId: 'p1', subjectType: 'event_registration', amount: 250000, percent: 100, status: 'pending',
+      method: 'gateway', attempts: 0,
       manual: false, fromEscrow: true, reason: 'customer_cancel', createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
     };
     assert.deepEqual(refundFromFirestore('rf1', refundToFirestore(refund)), refund);
@@ -179,30 +180,6 @@ describe('Firestore mapping for events', () => {
     assert.equal('subjectType' in (refundFromFirestore('rf1', old) ?? {}), false);
   });
 
-  it('pending ticket refunds are read by subject, status and age', async () => {
-    const asked: unknown[] = [];
-    const refundDoc = refundToFirestore({
-      id: 'rf1', paymentId: 'p1', subjectType: 'event_registration', amount: 1, percent: 100, status: 'pending',
-      manual: false, fromEscrow: true, createdAt: '2026-10-06T03:00:00.000Z', updatedAt: '2026-10-06T03:00:00.000Z',
-    });
-    const q = {
-      where: (...args: unknown[]) => { asked.push(['where', ...args]); return q; },
-      orderBy: (...args: unknown[]) => { asked.push(['orderBy', ...args]); return q; },
-      limit: (n: number) => { asked.push(['limit', n]); return q; },
-      get: async () => ({ docs: [{ id: 'rf1', data: () => refundDoc }] }),
-    };
-    const firestore = { collection: (name: string) => { asked.push(['collection', name]); return q; } };
-    const before = D('2026-10-06T04:00:00.000Z');
-    const got = await new FirestoreEventStore(firestore as never).pendingTicketRefunds(before, 50);
-    assert.deepEqual(got.map((r) => r.id), ['rf1']);
-    assert.deepEqual(asked.slice(0, 4), [
-      ['collection', 'refunds'],
-      ['where', 'subjectType', '==', 'event_registration'],
-      ['where', 'status', '==', 'pending'],
-      ['where', 'createdAt', '<=', Timestamp.fromDate(before)],
-    ]);
-    assert.deepEqual(asked.slice(4), [['orderBy', 'createdAt'], ['limit', 50]]);
-  });
 
   it('registration reader returns the host and end time', async () => {
     const reg = registrationToFirestore(registration({ contactEligible: true }));

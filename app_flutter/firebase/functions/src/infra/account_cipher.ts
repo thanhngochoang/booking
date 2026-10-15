@@ -43,3 +43,12 @@ export function aesGcmCipher(keyB64: string): AccountCipher {
 export function encryptSyncForSeed(keyB64: string, plain: string): string {
   return seal(keyOf(keyB64), plain, Buffer.alloc(12, 1));
 }
+
+export function lazyAccountCipher(readKey: () => string): AccountCipher {
+  let cipher: AccountCipher | undefined;
+  return {
+    encrypt: async (plain) => (cipher ??= aesGcmCipher(readKey())).encrypt(plain),
+    decrypt: async (enc) => (cipher ??= aesGcmCipher(readKey())).decrypt(enc),
+  };
+}
+

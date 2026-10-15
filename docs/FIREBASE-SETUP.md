@@ -310,7 +310,7 @@ Workflow chạy với `--force` để Firebase CLI tự đặt chính sách dọ
 
 ## 12. Khóa mã hóa tài khoản nhận tiền (`PAYOUT_ACCOUNT_KEY`)
 
-Callable `savePayoutAccount` mã hóa số tài khoản ngân hàng của nhiếp ảnh gia bằng AES‑256‑GCM trước khi lưu (`payoutAccounts/{uid}/accounts/{id}`, chỉ server đọc được). Khóa là 32 byte ngẫu nhiên, mã hóa base64, lưu trong Secret Manager với tên `PAYOUT_ACCOUNT_KEY`. **Phải tạo secret này trong từng project trước khi deploy functions**: nếu chưa có, `firebase deploy --only functions` (và job `deploy-functions` của CI) lỗi.
+Callable `savePayoutAccount` mã hóa số tài khoản ngân hàng của nhiếp ảnh gia bằng AES‑256‑GCM trước khi lưu (`payoutAccounts/{uid}/accounts/{id}`, chỉ server đọc được). Khóa là 32 byte ngẫu nhiên, mã hóa base64, lưu trong Secret Manager với tên `PAYOUT_ACCOUNT_KEY`. Khóa này được gắn vào các function xử lý và hoàn tiền tài khoản: `savePayoutAccount`, `requestPayoutOtp`, `createPayouts`, `createPayment`, `checkPayment`, `confirmFakePayment`, `paymentWebhook`, `paymentClock`, `transitionBooking`, `bookingClock`, `registerEvent`, `cancelRegistration`, `confirmFakeTicketPayment`, `checkTicketPayment`. **Phải tạo secret này trong từng project trước khi deploy functions**: nếu chưa có, `firebase deploy --only functions` (và job `deploy-functions` của CI) lỗi.
 
 Tạo secret (một lần cho mỗi project, chạy ở máy bạn, không commit khóa):
 

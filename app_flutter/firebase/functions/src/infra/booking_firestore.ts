@@ -52,7 +52,7 @@ function toIsoString(v: unknown): string | undefined {
   return undefined;
 }
 
-function toTimestamp(iso: string | undefined): Timestamp | null {
+function toTimestamp(iso: string | null | undefined): Timestamp | null {
   if (!iso) return null;
   return Timestamp.fromDate(new Date(iso));
 }
@@ -313,6 +313,14 @@ export function paymentToFirestore(p: Payment): DocumentData {
     expiresAt: toTimestamp(p.expiresAt),
     receivedAmount: p.receivedAmount ?? null,
     instructions: p.instructions ?? null,
+    payer: p.payer ? {
+      bankCode: p.payer.bankCode,
+      bankName: p.payer.bankName,
+      accountNumberEnc: p.payer.accountNumberEnc,
+      accountLast4: p.payer.accountLast4,
+      holderName: p.payer.holderName,
+    } : null,
+    refundedAmount: p.refundedAmount ?? null,
     paidAt: toTimestamp(p.paidAt),
     releasedAt: toTimestamp(p.releasedAt),
     releaseAfter: toTimestamp(p.releaseAfter),
@@ -325,6 +333,16 @@ export function paymentToFirestore(p: Payment): DocumentData {
 
 export function paymentFromFirestore(id: string, d: DocumentData | undefined): Payment | null {
   if (!d) return null;
+  const payer = d.payer && typeof d.payer === 'object' && typeof d.payer.bankCode === 'string'
+    ? {
+        bankCode: d.payer.bankCode,
+        bankName: d.payer.bankName ?? d.payer.bankCode,
+        accountNumberEnc: d.payer.accountNumberEnc,
+        accountLast4: d.payer.accountLast4,
+        holderName: d.payer.holderName,
+      }
+    : d.payer === null ? null : undefined;
+
   return {
     id,
     subjectType: d.subjectType,
@@ -343,6 +361,8 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
     ...(toIsoString(d.expiresAt) !== undefined ? { expiresAt: toIsoString(d.expiresAt) } : {}),
     ...(typeof d.receivedAmount === 'number' ? { receivedAmount: d.receivedAmount } : {}),
     ...(d.instructions && typeof d.instructions === 'object' ? { instructions: d.instructions } : {}),
+    ...(payer !== undefined ? { payer } : {}),
+    ...(typeof d.refundedAmount === 'number' ? { refundedAmount: d.refundedAmount } : {}),
     paidAt: toIsoString(d.paidAt),
     releasedAt: toIsoString(d.releasedAt),
     releaseAfter: toIsoString(d.releaseAfter),
@@ -363,6 +383,19 @@ export function refundToFirestore(r: Refund): DocumentData {
     amount: r.amount,
     percent: r.percent,
     status: r.status,
+    method: r.method,
+    destination: r.destination ? {
+      bankCode: r.destination.bankCode,
+      bankName: r.destination.bankName,
+      accountNumberEnc: r.destination.accountNumberEnc,
+      accountLast4: r.destination.accountLast4,
+      holderName: r.destination.holderName,
+      source: r.destination.source,
+    } : null,
+    confirmBy: toTimestamp(r.confirmBy),
+    attempts: r.attempts,
+    lastAttemptAt: toTimestamp(r.lastAttemptAt),
+    failureReason: r.failureReason ?? null,
     manual: r.manual,
     fromEscrow: r.fromEscrow,
     reason: r.reason ?? null,
@@ -374,6 +407,17 @@ export function refundToFirestore(r: Refund): DocumentData {
 
 export function refundFromFirestore(id: string, d: DocumentData | undefined): Refund | null {
   if (!d) return null;
+  const destination = d.destination && typeof d.destination === 'object' && typeof d.destination.bankCode === 'string'
+    ? {
+        bankCode: d.destination.bankCode,
+        bankName: d.destination.bankName ?? d.destination.bankCode,
+        accountNumberEnc: d.destination.accountNumberEnc,
+        accountLast4: d.destination.accountLast4,
+        holderName: d.destination.holderName,
+        source: d.destination.source as 'payer' | 'customer',
+      }
+    : undefined;
+
   return {
     id,
     paymentId: d.paymentId,
@@ -381,6 +425,12 @@ export function refundFromFirestore(id: string, d: DocumentData | undefined): Re
     amount: d.amount,
     percent: d.percent,
     status: d.status as RefundStatus,
+    method: (d.method as Refund['method']) ?? 'gateway',
+    ...(destination ? { destination } : {}),
+    ...(toIsoString(d.confirmBy) !== undefined ? { confirmBy: toIsoString(d.confirmBy) } : {}),
+    attempts: typeof d.attempts === 'number' ? d.attempts : 0,
+    ...(toIsoString(d.lastAttemptAt) !== undefined ? { lastAttemptAt: toIsoString(d.lastAttemptAt) } : {}),
+    ...(typeof d.failureReason === 'string' ? { failureReason: d.failureReason } : {}),
     manual: d.manual ?? false,
     // Stored before the marker existed: a cancellation/decline/dispute refund, out of escrow.
     fromEscrow: d.fromEscrow !== false,
@@ -558,6 +608,10 @@ export class FirestoreBookingStore implements BookingStore {
         setPayment: async (payment) => {
           fTx.set(this.firestore.collection(PAYMENTS_COLLECTION).doc(payment.id), paymentToFirestore(payment));
         },
+        getRefund: async (id) => {
+          const snap = await fTx.get(this.firestore.collection(REFUNDS_COLLECTION).doc(id));
+          return refundFromFirestore(snap.id, snap.data());
+        },
         addRefund: async (refund) => {
           fTx.set(this.firestore.collection(REFUNDS_COLLECTION).doc(refund.id), refundToFirestore(refund));
         },
@@ -635,8 +689,47 @@ export class FirestoreBookingStore implements BookingStore {
     return res;
   }
 
+  async getRefund(id: string): Promise<Refund | null> {
+    const snap = await this.firestore.collection(REFUNDS_COLLECTION).doc(id).get();
+    return refundFromFirestore(snap.id, snap.data());
+  }
+
   async getRefundsForPayment(paymentId: string): Promise<readonly Refund[]> {
     const snap = await this.firestore.collection(REFUNDS_COLLECTION).where('paymentId', '==', paymentId).get();
+    const res: Refund[] = [];
+    for (const doc of snap.docs) {
+      const r = refundFromFirestore(doc.id, doc.data());
+      if (r) res.push(r);
+    }
+    return res;
+  }
+
+  /** status pending, lastAttemptAt <= before, any subject, oldest first. */
+  async findPendingRefunds(before: Date, limit = 100): Promise<readonly Refund[]> {
+    const snap = await this.firestore
+      .collection(REFUNDS_COLLECTION)
+      .where('status', '==', 'pending')
+      .where('lastAttemptAt', '<=', Timestamp.fromDate(before))
+      .orderBy('lastAttemptAt')
+      .limit(limit)
+      .get();
+    const res: Refund[] = [];
+    for (const doc of snap.docs) {
+      const r = refundFromFirestore(doc.id, doc.data());
+      if (r) res.push(r);
+    }
+    return res;
+  }
+
+  /** status awaiting_account, confirmBy <= now (rows without confirmBy never), oldest first. */
+  async awaitingRefundsDue(now: Date, limit = 100): Promise<readonly Refund[]> {
+    const snap = await this.firestore
+      .collection(REFUNDS_COLLECTION)
+      .where('status', '==', 'awaiting_account')
+      .where('confirmBy', '<=', Timestamp.fromDate(now))
+      .orderBy('confirmBy')
+      .limit(limit)
+      .get();
     const res: Refund[] = [];
     for (const doc of snap.docs) {
       const r = refundFromFirestore(doc.id, doc.data());

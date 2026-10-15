@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { DomainError } from '@photobooking/domain';
+import { DomainError, bookingSettlement } from '@photobooking/domain';
 import {
   FAKE_SIGNATURE_HEADER,
   fakeWebhookSecret,
@@ -200,6 +200,126 @@ describe('handlePaymentWebhook (fake provider)', () => {
       assert.doesNotMatch(l, /SECRET|9876/, l);
       assert.doesNotMatch(l, new RegExp(p.transferCode), l);
     }
+  });
+
+  it('a transfer with payer.accountNumber stores the payer encrypted on the payment and redacts raw', async () => {
+    const w = paymentWorld();
+    const p = await openPayment(w);
+    const raw = bodyOf({
+      amount: p.amount,
+      content: p.transferCode,
+      payer: { bankCode: 'VCB', accountNumber: '0071000123456', name: 'NGUYEN THANH HA' },
+    });
+    const res = await handlePaymentWebhook(signed(raw), w.deps, WEBHOOK_ENV);
+    assert.deepEqual(res, { status: 200, body: { ok: true, outcome: 'paid' } });
+
+    const pay = await w.store.getPayment(p.paymentId);
+    assert.ok(pay?.payer);
+    assert.equal(pay?.payer?.bankCode, 'VCB');
+    assert.equal(pay?.payer?.accountLast4, '3456');
+    assert.equal(pay?.payer?.holderName, 'NGUYEN THANH HA');
+    assert.doesNotMatch(pay?.payer?.accountNumberEnc ?? '', /0071000123456/);
+
+    const rec = w.store.transferRecords.get('fake_txn_0001');
+    assert.ok(rec);
+    assert.doesNotMatch(rec.raw ?? '', /0071000123456/);
+    assert.match(rec.raw ?? '', /•••• 3456/);
+  });
+
+  it('a refund body done moves the refund to done (200 refund_applied)', async () => {
+    const w = paymentWorld();
+    const p = await openPayment(w);
+    const at = '2026-10-01T10:00:00.000Z';
+    await w.store.runTransaction(async (tx) => {
+      tx.setPayment({
+        id: p.paymentId,
+        subjectType: 'booking',
+        subjectId: p.bookingId,
+        payerId: 'c1',
+        payeeId: 'p1',
+        provider: 'fake',
+        amount: 1_000_000,
+        status: 'paid',
+        escrowStatus: 'held',
+        idempotencyKey: 'idem_1',
+        createdAt: at,
+        updatedAt: at,
+      });
+      tx.addRefund({
+        id: 'ref_1',
+        paymentId: p.paymentId,
+        subjectType: 'booking',
+        amount: 1_000_000,
+        percent: 100,
+        status: 'pending',
+        method: 'gateway',
+        attempts: 1,
+        manual: false,
+        fromEscrow: true,
+        createdAt: at,
+        updatedAt: at,
+      });
+    });
+
+    const refundBody = JSON.stringify({
+      type: 'refund',
+      refundId: 'ref_1',
+      status: 'done',
+      providerRef: 'pref_1',
+    });
+    const res = await handlePaymentWebhook(signed(refundBody), w.deps, WEBHOOK_ENV);
+    assert.deepEqual(res, { status: 200, body: { ok: true, outcome: 'refund_applied' } });
+    const ref = await w.store.getRefund('ref_1');
+    assert.equal(ref?.status, 'done');
+    assert.equal(ref?.providerRef, 'pref_1');
+  });
+
+  it('a refund body reaches the refund through SettlementDeps (the live wiring)', async () => {
+    const w = paymentWorld();
+    const p = await openPayment(w);
+    const at = '2026-10-01T10:00:00.000Z';
+    await w.store.runTransaction(async (tx) => {
+      tx.addRefund({
+        id: 'ref_s1', paymentId: p.paymentId, subjectType: 'booking', amount: 1_000_000, percent: 100,
+        status: 'pending', method: 'gateway', attempts: 1, manual: false, fromEscrow: true, createdAt: at, updatedAt: at,
+      });
+    });
+    const body = JSON.stringify({ type: 'refund', refundId: 'ref_s1', status: 'done' });
+    const res = await handlePaymentWebhook(signed(body), bookingSettlement(w.deps), WEBHOOK_ENV);
+    assert.deepEqual(res, { status: 200, body: { ok: true, outcome: 'refund_applied' } });
+    assert.equal((await w.store.getRefund('ref_s1'))?.status, 'done');
+    // Without a booking settler there is no refund store to read: refund_unknown, no retry storm.
+    const none = await handlePaymentWebhook(signed(body), { ...bookingSettlement(w.deps), subjects: {} }, WEBHOOK_ENV);
+    assert.deepEqual(none, { status: 200, body: { ok: true, outcome: 'refund_unknown' } });
+  });
+
+  it('a refund body for an unknown id answers 200 refund_unknown', async () => {
+    const w = paymentWorld();
+    const refundBody = JSON.stringify({
+      type: 'refund',
+      refundId: 'ref_unknown_999',
+      status: 'done',
+    });
+    const res = await handlePaymentWebhook(signed(refundBody), w.deps, WEBHOOK_ENV);
+    assert.deepEqual(res, { status: 200, body: { ok: true, outcome: 'refund_unknown' } });
+  });
+
+  it('a refund body with a bad signature is 401', async () => {
+    const w = paymentWorld();
+    const refundBody = JSON.stringify({ type: 'refund', refundId: 'ref_1', status: 'done' });
+    const res = await handlePaymentWebhook(
+      { provider: 'fake', rawBody: refundBody, headers: { [FAKE_SIGNATURE_HEADER]: signFakeWebhook(refundBody, 'wrong') } },
+      w.deps,
+      WEBHOOK_ENV,
+    );
+    assert.equal(res.status, 401);
+  });
+
+  it('a refund body with a bad status is 400', async () => {
+    const w = paymentWorld();
+    const refundBody = JSON.stringify({ type: 'refund', refundId: 'ref_1', status: 'invalid_status' });
+    const res = await handlePaymentWebhook(signed(refundBody), w.deps, WEBHOOK_ENV);
+    assert.equal(res.status, 400);
   });
 });
 

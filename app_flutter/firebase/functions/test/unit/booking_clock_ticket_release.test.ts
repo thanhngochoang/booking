@@ -35,6 +35,8 @@ const START = new Date('2026-10-12T02:00:00.000Z');
 const END = new Date('2026-10-12T05:00:00.000Z');
 const HOUR = 3_600_000;
 
+import { TEST_CIPHER } from './support/payment_world.js';
+
 async function completedTicket(host: EventCaller): Promise<Payment> {
   const tw = createTicketPaymentWorld();
   tw.clock.now = () => new Date('2026-10-06T03:00:00.000Z');
@@ -65,6 +67,7 @@ function bookingDeps(store: MemoryBookingStore, now: Date): BookingDeps {
     providers: { acceptsOrders: async () => true },
     blocks: new FakeBlockGate(),
     gateway: new FakePaymentGateway(),
+    cipher: TEST_CIPHER,
     clock: { now: () => now },
     ids: { newId: () => `led_${next++}` },
   };

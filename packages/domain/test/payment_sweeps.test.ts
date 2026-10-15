@@ -279,6 +279,30 @@ describe('runPaymentSweeps', () => {
     assert.equal(rDone?.attempts, 2);
   });
 
+  it('given SettlementDeps, the clock re-sends through the booking settler\'s deps', async () => {
+    const world = createBookingWorld();
+    const a = await openCheckout(world);
+    await handleTransferNotification(world.deps, transferOf(world, { content: a.code, amount: 300_000 }));
+    world.gateway.refundThrowCount = 1;
+    world.clock.advanceMinutes(16);
+    await runPaymentSweeps(world.settlement);
+    const [r0] = await world.store.getRefundsForPayment(a.paymentId);
+    assert.equal(r0?.status, 'pending');
+
+    world.clock.advanceMinutes(10);
+    const res = await runPaymentSweeps(world.settlement);
+    assert.equal(res.refundsResent, 1);
+    const [r1] = await world.store.getRefundsForPayment(a.paymentId);
+    assert.equal(r1?.status, 'done');
+    assert.deepEqual(world.gateway.refundCalls, [r0?.id, r0?.id]);
+  });
+
+  it('given SettlementDeps without a booking settler, the re-send step is skipped', async () => {
+    const world = createBookingWorld();
+    const res = await runPaymentSweeps({ ...world.settlement, subjects: {} });
+    assert.deepEqual([res.refundsResent, res.resendFailed, res.skippedRefunds], [0, 0, 0]);
+  });
+
   it('awaiting_account and failed refunds are never re-sent', async () => {
     const world = createBookingWorld();
     const a = await openCheckout(world);

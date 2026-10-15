@@ -14,11 +14,15 @@ function io() {
     print: (l) => void out.push(l),
     events: async () => {
       calls.push('events');
-      return { closed: 0, completed: 1, consentExpired: 0, refunded: 0, refundsResent: 0, soonEvents: 1, soonSent: 2 };
+      return { closed: 0, completed: 1, consentExpired: 0, refunded: 0, soonEvents: 1, soonSent: 2 };
     },
     bookings: async () => {
       calls.push('bookings');
       return { cleanedDrafts: 0, expiredRequests: 0, upcomingTransitions: 1, autoCompletions: 0, releasedEscrows: 0 };
+    },
+    payments: async () => {
+      calls.push('payments');
+      return { reconciled: 1, expired: 0, refunded: 0, refundsResent: 0, reconcileFailed: 0, expireFailed: 0, resendFailed: 0, skippedRefunds: 0 };
     },
   };
   return { out, calls, clockIo };
@@ -39,7 +43,7 @@ describe('clock CLI', () => {
     const t = io();
     assert.equal(await runClock(['events'], LOCAL, t.clockIo), 0);
     assert.deepEqual(t.calls, ['events']);
-    assert.deepEqual(t.out, ['eventClock: closed=0 completed=1 consentExpired=0 refunded=0 refundsResent=0 soonEvents=1 soonSent=2']);
+    assert.deepEqual(t.out, ['eventClock: closed=0 completed=1 consentExpired=0 refunded=0 soonEvents=1 soonSent=2']);
   });
 
   it('bookings runs handleBookingClock once', async () => {
@@ -49,8 +53,15 @@ describe('clock CLI', () => {
     assert.match(t.out[0] ?? '', /^bookingClock: .*upcomingTransitions=1/);
   });
 
+  it('payments runs handlePaymentClock once and prints counts', async () => {
+    const t = io();
+    assert.equal(await runClock(['payments'], LOCAL, t.clockIo), 0);
+    assert.deepEqual(t.calls, ['payments']);
+    assert.match(t.out[0] ?? '', /^paymentClock: reconciled=1 expired=0/);
+  });
+
   it('unknown command prints usage', async () => {
-    for (const argv of [[], ['payments'], ['--help']]) {
+    for (const argv of [[], ['unknown'], ['--help']]) {
       const t = io();
       assert.equal(await runClock(argv, LOCAL, t.clockIo), argv[0] === '--help' ? 0 : 2);
       assert.deepEqual(t.out, [USAGE]);

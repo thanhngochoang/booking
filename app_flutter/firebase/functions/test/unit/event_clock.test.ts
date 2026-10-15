@@ -60,11 +60,11 @@ describe('handleEventClock', () => {
   it('keeps the sweep counts and adds soonEvents and soonSent', async () => {
     const w = setup();
     assert.deepEqual(await handleEventClock(w.deps, { notify: w.notify }), {
-      closed: 0, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0, soonEvents: 1, soonSent: 1,
+      closed: 0, completed: 0, consentExpired: 0, refunded: 0, soonEvents: 1, soonSent: 1,
     });
     assert.equal(w.store.rowsOf('cu1')[0]?.type, 'event_soon');
     assert.deepEqual(await handleEventClock(w.deps, { notify: w.notify }), {
-      closed: 0, completed: 0, consentExpired: 0, refunded: 0, refundsResent: 0, soonEvents: 0, soonSent: 0,
+      closed: 0, completed: 0, consentExpired: 0, refunded: 0, soonEvents: 0, soonSent: 0,
     });
   });
 

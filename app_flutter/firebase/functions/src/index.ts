@@ -20,8 +20,12 @@ import {
   handleAnswerReschedule,
 } from './callables/chat.js';
 import {
+  BOOKING_CLOCK_OPTIONS,
+  BOOKING_REFUND_CALLABLE_OPTIONS,
   CALLABLE_OPTIONS,
   CREATE_PAYOUTS_OPTIONS,
+  EVENT_CLOCK_OPTIONS,
+  EVENT_REFUND_CALLABLE_OPTIONS,
   PAYMENT_CALLABLE_OPTIONS,
   PAYMENT_CLOCK_OPTIONS,
   PAYOUT_ACCOUNT_KEY,
@@ -29,6 +33,7 @@ import {
   TRIGGER_OPTIONS,
   WEBHOOK_OPTIONS,
 } from './config.js';
+import { liveRefundSubjects } from './infra/live_refunds.js';
 import {
   handleLookupPayoutAccountName,
   handleRequestPayoutOtp,
@@ -169,7 +174,9 @@ export const getPaymentInstructions = onCall(PAYMENT_CALLABLE_OPTIONS, (request)
  * `POST /paymentWebhook?provider=fake`: the provider reports a transfer; authenticated by its
  * signature over the raw body (the fake provider exists only where fake payments are allowed).
  */
-export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) => servePaymentWebhook(req, res, liveSettlementDeps()));
+export const paymentWebhook = onRequest(WEBHOOK_OPTIONS, (req, res) =>
+  servePaymentWebhook(req, res, liveSettlementDeps(), undefined, liveRefundSubjects()),
+);
 
 /** Every 5 minutes: reconcile open payments with the provider and expire unpaid QRs. */
 export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
@@ -177,13 +184,13 @@ export const paymentClock = onSchedule(PAYMENT_CLOCK_OPTIONS, async () => {
 });
 
 /** Booking lifecycle transition */
-export const transitionBooking = onCall(CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
+export const transitionBooking = onCall(BOOKING_REFUND_CALLABLE_OPTIONS, (request) => handleTransitionBooking(request, liveBookingDeps()));
 
 /** Open dispute on completed/upcoming booking */
 export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispute(request, liveBookingDeps()));
 
 /** 15-minute booking lifecycle and escrow sweep clock */
-export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 300 }, async () => {
+export const bookingClock = onSchedule(BOOKING_CLOCK_OPTIONS, async () => {
   await handleBookingClock(undefined, liveReminderDeps(), {
     verification: { deps: liveVerificationDeps(), notify: liveNotifyDeps() },
   });
@@ -594,7 +601,7 @@ export const publishEvent = onCall(CALLABLE_OPTIONS, (request) => handlePublishE
 export const updateEvent = onCall(CALLABLE_OPTIONS, (request) => handleUpdateEvent(request, liveEventDeps()));
 
 /** `{eventId}` → `{paidRegistrationIds, refunded, failed}`: cancels and refunds every paid ticket 100%. */
-export const cancelEvent = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 60 }, (request) =>
+export const cancelEvent = onCall(EVENT_REFUND_CALLABLE_OPTIONS, (request) =>
   handleCancelEvent(request, liveEventPaymentDeps()),
 );
 
@@ -631,7 +638,7 @@ export const checkInRegistration = onCall(CALLABLE_OPTIONS, (request) =>
  * bookingClock release), expires unanswered host invitations, retries refunds of cancelled events,
  * then reminds paid ticket holders 48 h before the start (S17 `event_soon`).
  */
-export const eventClock = onSchedule({ ...SCHEDULE_OPTIONS, schedule: 'every 5 minutes', timeoutSeconds: 120 }, async () => {
+export const eventClock = onSchedule(EVENT_CLOCK_OPTIONS, async () => {
   await handleEventClock();
 });
 

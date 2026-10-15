@@ -262,7 +262,7 @@ push is only logged.
 ```bash
 export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=<project>
 npm run clock -- events
-# eventClock: closed=0 completed=0 consentExpired=0 refunded=0 refundsResent=0 soonEvents=1 soonSent=1
+# eventClock: closed=0 completed=0 consentExpired=0 refunded=0 soonEvents=1 soonSent=1
 # Lan's inbox now has "Chụp phố đêm bắt đầu ngày mai" (or "sau 2 ngày"); a second run sends nothing.
 ```
 

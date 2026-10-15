@@ -10,6 +10,17 @@ import type { ScheduleOptions } from 'firebase-functions/v2/scheduler';
 export const REGION = 'asia-southeast1';
 
 /**
+ * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
+ * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts
+ * (`savePayoutAccount`), the callable that decrypts the active account to refuse a code for it
+ * (`requestPayoutOtp`) and the job that decrypts to send (`createPayouts`), nothing else; the
+ * emulator reads it from `.secret.local`.
+ */
+export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');
+
+export const PAYMENT_SECRETS = [PAYOUT_ACCOUNT_KEY];
+
+/**
  * Options shared by every callable. Passed explicitly to each `onCall` (not through
  * setGlobalOptions) so the value cannot depend on module evaluation order.
  * App Check is not enforced in phase 1: the emulators do not verify App Check tokens; the cloud
@@ -32,6 +43,19 @@ export const CALLABLE_OPTIONS = {
 export const PAYMENT_CALLABLE_OPTIONS = {
   ...CALLABLE_OPTIONS,
   timeoutSeconds: 30,
+  secrets: PAYMENT_SECRETS,
+} as const satisfies CallableOptions;
+
+export const BOOKING_REFUND_CALLABLE_OPTIONS = {
+  ...CALLABLE_OPTIONS,
+  secrets: PAYMENT_SECRETS,
+} as const satisfies CallableOptions;
+
+/** `cancelEvent`: refunds every paid ticket, by bank transfer to the payer for bank-QR tickets. */
+export const EVENT_REFUND_CALLABLE_OPTIONS = {
+  ...CALLABLE_OPTIONS,
+  timeoutSeconds: 60,
+  secrets: PAYMENT_SECRETS,
 } as const satisfies CallableOptions;
 
 /**
@@ -47,6 +71,7 @@ export const WEBHOOK_OPTIONS = {
   maxInstances: 10,
   minInstances: 0,
   invoker: 'public',
+  secrets: PAYMENT_SECRETS,
 } as const satisfies HttpsOptions;
 
 /**
@@ -93,6 +118,23 @@ export const SCHEDULE_OPTIONS = {
   retryCount: 0,
 } as const satisfies ScheduleOptions;
 
+export const BOOKING_CLOCK_OPTIONS = {
+  ...SCHEDULE_OPTIONS,
+  timeoutSeconds: 300,
+  secrets: PAYMENT_SECRETS,
+} as const satisfies ScheduleOptions;
+
+/**
+ * The event clock (every 5 minutes): its refund step pays back tickets of cancelled events, which go
+ * to the payer's bank account when they were paid by bank QR (V1 + V2), so it binds the account key.
+ */
+export const EVENT_CLOCK_OPTIONS = {
+  ...SCHEDULE_OPTIONS,
+  schedule: 'every 5 minutes',
+  timeoutSeconds: 120,
+  secrets: PAYMENT_SECRETS,
+} as const satisfies ScheduleOptions;
+
 /**
  * The payment clock (payments spec §3.3): reconciliation of open payments and QR expiry every
  * 5 minutes. One instance, and a run ends before the next one starts.
@@ -101,6 +143,7 @@ export const PAYMENT_CLOCK_OPTIONS = {
   ...SCHEDULE_OPTIONS,
   schedule: 'every 5 minutes',
   timeoutSeconds: 240,
+  secrets: PAYMENT_SECRETS,
 } as const satisfies ScheduleOptions;
 
 /**
@@ -140,14 +183,6 @@ export function storageUrlPrefixes(): string[] {
 }
 
 
-/**
- * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
- * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts
- * (`savePayoutAccount`), the callable that decrypts the active account to refuse a code for it
- * (`requestPayoutOtp`) and the job that decrypts to send (`createPayouts`), nothing else; the
- * emulator reads it from `.secret.local`.
- */
-export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');
 
 /**
  * `createPayouts` (payments spec M5, §6.1 "đề xuất 10:00"): daily at 10:00 Vietnam time, one

@@ -13,6 +13,7 @@ import {
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
 import { BUSINESS_PURGE_PAGE, handleAwardPurge, purgeBusinessDocs, type BusinessDocPurgeDeps } from '../../src/scheduled/award_purge.js';
 import { NOW, readyRecord, verificationWorld } from './verification_support.js';
+import { TEST_CIPHER } from './support/payment_world.js';
 
 const HOUR = 3_600_000;
 
@@ -25,6 +26,7 @@ function bookingDeps(now: Date): BookingDeps {
     providers: { acceptsOrders: async () => true },
     blocks: new FakeBlockGate(),
     gateway: new FakePaymentGateway(),
+    cipher: TEST_CIPHER,
     clock: { now: () => now },
     ids: { newId: () => '01ARZ3NDEKTSV4RRFFQ69G5F01' },
   };
