@@ -995,7 +995,7 @@ create table job_invites (
 
 -- Hợp đồng (đề xuất)
 alter table bookings
-  add column source          text not null default 'package' check (source in ('package','quote','instant')),
+  add column source          text not null default 'package' check (source in ('package','quote','instant','spot','spot_slot')),
   add column terms           jsonb,              -- BookingTerms; null với booking cũ (đọc service_snapshot)
   add column job_id          text references jobs(id),
   add column quote_id        text references quotes(id),
@@ -1259,6 +1259,15 @@ create table spot_day_intervals (
   booking_id     text references bookings(id) on delete cascade,
   created_at     timestamptz not null default now()
 );
+
+-- Mở rộng bookings cho điểm chụp và chia suất (#194)
+alter table bookings
+  add column spot_id          text references spots(id),
+  add column spot_schedule_id text references spot_schedules(id),
+  add column slot_offer_id    text references spot_slot_offers(id),
+  add column assignee_id      text references photographers(user_id),
+  add column assignee_kind    text check (assignee_kind in ('solo','member')),
+  add column assigned_at      timestamptz;
 ```
 
 ### 2.12 Studio và thành viên (S26, #136)

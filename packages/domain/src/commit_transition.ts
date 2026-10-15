@@ -11,6 +11,7 @@ import { DomainError } from './errors.js';
 import { applyRefundToPayment, isSettledPayment, type Payment, type Refund } from './escrow.js';
 import { releaseMilestone, splitMilestones, withMilestones } from './milestones.js';
 import { dispatchRefund } from './refunds.js';
+import { withoutInterval } from './spot_booking.js';
 import { studioDayLoadWith } from './studio_capacity.js';
 
 export async function commitTransition(
@@ -36,10 +37,13 @@ export async function commitTransition(
     const startsAt = parseVnDateTime(current.day, current.start);
 
     // 1. Calendar availability updates. A studio booking is held on the studio's day load, never on the
-    // studio's own day, and its assignee's day is booked by assignBooking (#136 Decision 26).
+    // studio's own day, and its assignee's day is booked by assignBooking (#136 Decision 26). A spot booking
+    // holds an interval of its schedule's spot day instead: accept writes nothing, the record stays `spot`
+    // (#194 Decision 4), and a studio's spot booking is pre-assigned and never on the day load (Decision 7).
     const isStudio = current.isStudio === true;
+    const isSpot = current.spotScheduleId !== undefined;
     if (nextStatus === 'accepted') {
-      if (!isStudio) {
+      if (!isStudio && !isSpot) {
         await tx.setAvailabilityDay(current.photographerId, current.day, {
           state: 'booked',
           bookingId: current.id,
@@ -47,13 +51,16 @@ export async function commitTransition(
       }
     } else if (['declined', 'expired', 'cancelled'].includes(nextStatus)) {
       // Every read before the first write
-      const day = await tx.getAvailabilityDay(current.photographerId, current.day);
-      const assigneeDay = isStudio && current.assigneeId
+      const spotDay = current.spotScheduleId !== undefined ? await tx.getSpotDay(current.spotScheduleId, current.day) : null;
+      const day = !isSpot ? await tx.getAvailabilityDay(current.photographerId, current.day) : null;
+      const assigneeDay = isStudio && !isSpot && current.assigneeId
         ? await tx.getAvailabilityDay(current.assigneeId, current.day)
         : null;
-      const load = isStudio ? await tx.getStudioDayLoad(current.photographerId, current.day) : null;
-      // Clear availability days held by this booking
-      if (day && day.bookingId === current.id) {
+      const load = isStudio && !isSpot ? await tx.getStudioDayLoad(current.photographerId, current.day) : null;
+      // Clear availability days (or the spot interval) held by this booking
+      if (isSpot && spotDay) {
+        await tx.setSpotDay(withoutInterval(spotDay, current, now.toISOString()));
+      } else if (day && day.bookingId === current.id) {
         await tx.deleteAvailabilityDay(current.photographerId, current.day);
       }
       if (current.assigneeId && assigneeDay?.bookingId === current.id) {

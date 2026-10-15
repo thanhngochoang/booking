@@ -47,7 +47,7 @@ export interface SpotScheduleInput {
 
 export function minutesOf(t: string): number {
   const parts = t.split(':');
-  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  return parseInt(parts[0] ?? '0', 10) * 60 + parseInt(parts[1] ?? '0', 10);
 }
 
 export function timeOf(minutes: number): string {

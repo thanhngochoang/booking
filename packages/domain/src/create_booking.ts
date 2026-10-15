@@ -16,6 +16,10 @@ import { validateCreateBookingDraftInput } from './booking_requests.js';
 import { DomainError } from './errors.js';
 import { profileOrderBlocker } from './order_gate.js';
 import { requireCustomerPhone } from './require_phone.js';
+import type { Spot } from './spot.js';
+import { dayHolderOf, type SpotSchedule } from './spot_schedule.js';
+import type { SlotOffer } from './spot_slots.js';
+import { assertSpotBooking, withInterval, withoutInterval, type SpotDay } from './spot_booking.js';
 
 // ── Draft slots: imports (one block per unit; edit only your own) ──
 // slot #139 (quotes)
@@ -45,6 +49,14 @@ export interface BookingDraftCore {
 
 /** Core + the optional fields of later units, one slot each (Decision 2). */
 export interface BookingDraftInput extends BookingDraftCore {
+  readonly spot?: {
+    readonly spotId: string;
+    readonly scheduleId: string;
+    readonly source: 'spot' | 'spot_slot';
+    readonly slotOfferId?: string;
+  };
+  readonly assigneeId?: string | null;
+
   // slot #139 (quotes): readonly quote?: { jobId: string; quoteId: string; terms: BookingTerms };
 
   // slot #136 (studio): readonly providerType?: ProviderType | null;
@@ -109,7 +121,32 @@ export function buildBookingDraft(i: BookingDraftInput): Booking {
     // slot #136 (studio): ...studioDraftFields(i, core),
     ...studioDraftFields(i, core),
 
+    // #194: spot fields; a studio's spot booking comes already assigned to the schedule's member (Decision 7)
+    ...spotDraftFields(i),
+
     ...addonDraftFields(i),
+  };
+}
+
+function spotDraftFields(i: BookingDraftInput): Partial<Booking> {
+  if (!i.spot) return {};
+  const at = i.now.toISOString();
+  return {
+    spotId: i.spot.spotId,
+    spotScheduleId: i.spot.scheduleId,
+    source: i.spot.source,
+    ...(i.spot.slotOfferId ? { slotOfferId: i.spot.slotOfferId } : {}),
+    ...(i.assigneeId
+      ? {
+          assigneeId: i.assigneeId,
+          assigneeKind: 'member' as const,
+          assignStatus: 'assigned' as const,
+          assignedAt: at,
+          assignments: [
+            { assigneeId: i.assigneeId, assigneeKind: 'member' as const, at, by: i.photographerId, reason: null, late: false },
+          ],
+        }
+      : {}),
   };
 }
 
@@ -120,10 +157,30 @@ export async function createBookingDraft(
   const now = deps.clock.now();
   const input = validateCreateBookingDraftInput(rawInput, now);
 
-  // 1. Service check
-  const service = await deps.services.getService(input.photographerId, input.serviceId);
-  if (!service || !service.active || service.photographerId !== input.photographerId) {
-    throw new DomainError('not_found');
+  // Service check
+  let service: ServiceRecord;
+  if (input.slotOfferId !== undefined) {
+    const preOffer = deps.store.getSlotOffer ? await deps.store.getSlotOffer(input.slotOfferId) : null;
+    if (!preOffer) {
+      throw new DomainError('not_found');
+    }
+    if (preOffer.status !== 'open') {
+      throw new DomainError('outside_schedule');
+    }
+    service = {
+      id: preOffer.id,
+      photographerId: input.photographerId,
+      name: preOffer.name,
+      price: preOffer.price,
+      durationMinutes: preOffer.slotMinutes,
+      active: true,
+    };
+  } else {
+    const s = await deps.services.getService(input.photographerId, input.serviceId);
+    if (!s || !s.active || s.photographerId !== input.photographerId) {
+      throw new DomainError('not_found');
+    }
+    service = s;
   }
 
   // Providers who cannot take orders yet, and blocked pairs, are not bookable. One read gives the gate
@@ -155,41 +212,93 @@ export async function createBookingDraft(
   const phone = await requireCustomerPhone(deps.contacts, input.customerId);
   const contactRecord = await deps.contacts.get(input.customerId);
 
+  const end = addMinutesToTime(input.start, service.durationMinutes);
+
   // 3. Transactional availability hold and booking creation
   return deps.store.runTransaction(async (tx) => {
-    const existingDay = await tx.getAvailabilityDay(input.photographerId, input.day);
-    const existingDraft = await tx.getCustomerDraftForDay(
+    let ctx: {
+      schedule: SpotSchedule;
+      spot: Spot;
+      offer: SlotOffer | null;
+      spotDay: SpotDay | null;
+    } | null = null;
+
+    if (input.spotScheduleId !== undefined) {
+      const schedule = await tx.getSpotSchedule(input.spotScheduleId);
+      if (!schedule || schedule.providerId !== input.photographerId) {
+        throw new DomainError('outside_schedule');
+      }
+      const spot = await tx.getSpot(schedule.spotId);
+      if (!spot) {
+        throw new DomainError('not_found');
+      }
+      let offer: SlotOffer | null = null;
+      if (input.slotOfferId !== undefined) {
+        offer = await tx.getSlotOffer(input.slotOfferId);
+        if (!offer || offer.scheduleId !== schedule.id) {
+          throw new DomainError('outside_schedule');
+        }
+      }
+      const spotDay = await tx.getSpotDay(schedule.id, input.day);
+      ctx = { schedule, spot, offer, spotDay };
+    }
+
+    const holder = ctx ? dayHolderOf(ctx.schedule) : input.photographerId;
+    const day = await tx.getAvailabilityDay(holder, input.day);
+    const draft = await tx.getCustomerDraftForDay(
       input.customerId,
       input.photographerId,
       input.day,
     );
+    const draftDay = draft?.spotScheduleId !== undefined && draft.spotScheduleId !== input.spotScheduleId
+      ? await tx.getSpotDay(draft.spotScheduleId, draft.day)
+      : null;
     // A studio holds its day on the load doc, one booking per free member (Decision 26); a member's own booking
-    // must leave the studio enough free members that day.
-    const loadOwner = isStudio ? input.photographerId : memberOf;
+    // must leave the studio enough free members that day. A spot booking (a studio's too) holds an interval of
+    // its spot day instead and never enters the load (#194 Decision 7); the load is still read when it replaces
+    // the customer's earlier non-spot studio draft, to take that draft off it.
+    const draftOnLoad = isStudio && draft !== null && draft.spotScheduleId === undefined;
+    const loadOwner = ctx ? (draftOnLoad ? input.photographerId : null) : isStudio ? input.photographerId : memberOf;
     const load = loadOwner ? await tx.getStudioDayLoad(loadOwner, input.day) : null;
-    const memberDays = loadOwner ? await tx.getMemberDays(loadOwner, input.day) : [];
+    const memberDays = loadOwner && !ctx ? await tx.getMemberDays(loadOwner, input.day) : [];
 
-    if (isStudio) {
+    if (ctx) {
+      if (day?.state !== 'spot' || day.scheduleId !== ctx.schedule.id) {
+        throw new DomainError('outside_schedule');
+      }
+      const own = draft?.spotScheduleId === ctx.schedule.id ? draft : null;
+      const taken = (ctx.spotDay?.taken ?? []).filter((t) => !(own && t.start === own.start && t.end === own.end));
+      assertSpotBooking({
+        spot: ctx.spot,
+        schedule: ctx.schedule,
+        offer: ctx.offer,
+        serviceId: service.id,
+        day: input.day,
+        start: input.start,
+        end,
+        taken,
+      });
+    } else if (isStudio) {
       const facts = {
-        studioOff: existingDay?.state === 'off',
+        studioOff: day?.state === 'off',
         memberDays,
-        unassignedIds: (load?.unassignedIds ?? []).filter((id) => id !== existingDraft?.id),
+        unassignedIds: (load?.unassignedIds ?? []).filter((id) => id !== draft?.id),
         assignedIds: load?.assignedIds ?? [],
       };
       if (!studioDayCapacity(facts).bookable) throw new DomainError('day_taken');
-    } else if (existingDay) {
-      if (existingDay.state === 'off' || existingDay.state === 'booked') {
+    } else if (day) {
+      if (day.state === 'spot' || day.state === 'off' || day.state === 'booked' || day.state === 'full') {
         throw new DomainError('day_taken');
       }
-      if (existingDay.state === 'pending') {
+      if (day.state === 'pending') {
         // Allowed only if it is the same customer's own earlier draft (Review Focus 2)
-        const isOwnDraft = existingDraft && existingDay.bookingId === existingDraft.id;
+        const isOwnDraft = draft && day.bookingId === draft.id;
         if (!isOwnDraft) {
           throw new DomainError('day_taken');
         }
       }
     }
-    if (memberOf) {
+    if (memberOf && !ctx) {
       const facts = {
         studioOff: false,
         memberDays,
@@ -199,10 +308,18 @@ export async function createBookingDraft(
       if (!memberDayReleasable(facts, input.photographerId)) throw new DomainError('day_taken');
     }
 
+    const nowIso = now.toISOString();
+
     // Replace customer's earlier draft if present
-    if (existingDraft) {
-      await tx.deleteBooking(existingDraft.id);
-      await tx.deleteContactSnapshot(existingDraft.id);
+    if (draft) {
+      await tx.deleteBooking(draft.id);
+      await tx.deleteContactSnapshot(draft.id);
+      if (draftDay) {
+        await tx.setSpotDay(withoutInterval(draftDay, draft, nowIso));
+      } else if (ctx && !draft.spotScheduleId && day && day.bookingId === draft.id) {
+        // only a spot booking leaves the day without a new pending write (one write per document)
+        await tx.deleteAvailabilityDay(input.photographerId, input.day);
+      }
     }
 
     const bookingId = deps.ids.newId();
@@ -213,25 +330,56 @@ export async function createBookingDraft(
       service,
       day: input.day,
       start: input.start,
-      place: input.place,
+      place: ctx ? { name: ctx.spot.name, point: ctx.spot.point } : input.place,
       note: input.note,
       providerType: profile?.providerType ?? null,
       addons,
       pickup,
       now,
+      spot: ctx
+        ? {
+            spotId: ctx.spot.id,
+            scheduleId: ctx.schedule.id,
+            source: ctx.offer ? 'spot_slot' : 'spot',
+            ...(ctx.offer ? { slotOfferId: ctx.offer.id } : {}),
+          }
+        : undefined,
+      assigneeId: ctx?.schedule.assigneeId ?? undefined,
     });
 
     await tx.setBooking(booking);
-    if (isStudio) {
-      const key = { studioId: input.photographerId, day: input.day };
-      const withoutOld = existingDraft ? studioDayLoadWith(load, key, existingDraft.id, null, now.toISOString()) : load;
-      await tx.setStudioDayLoad(studioDayLoadWith(withoutOld, key, bookingId, 'unassigned', now.toISOString()));
+    const loadKey = { studioId: input.photographerId, day: input.day };
+    if (ctx) {
+      if (draftOnLoad && draft) {
+        await tx.setStudioDayLoad(studioDayLoadWith(load, loadKey, draft.id, null, nowIso));
+      }
+      const base = {
+        scheduleId: ctx.schedule.id,
+        spotId: ctx.spot.id,
+        providerId: input.photographerId,
+        day: input.day,
+      };
+      const latest = draft?.spotScheduleId === ctx.schedule.id && ctx.spotDay
+        ? withoutInterval(ctx.spotDay, draft, nowIso)
+        : ctx.spotDay;
+      await tx.setSpotDay(
+        withInterval(
+          latest,
+          base,
+          { start: input.start, end, ...(ctx.offer ? { offerId: ctx.offer.id } : {}) },
+          nowIso,
+        ),
+      );
+    } else if (isStudio) {
+      const withoutOld = draft ? studioDayLoadWith(load, loadKey, draft.id, null, nowIso) : load;
+      await tx.setStudioDayLoad(studioDayLoadWith(withoutOld, loadKey, bookingId, 'unassigned', nowIso));
     } else {
       await tx.setAvailabilityDay(input.photographerId, input.day, {
         state: 'pending',
         bookingId,
       });
     }
+
     await tx.setContactSnapshot(bookingId, {
       name: contactRecord?.name ?? '',
       phone,
@@ -242,3 +390,4 @@ export async function createBookingDraft(
     return booking;
   });
 }
+

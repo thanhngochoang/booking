@@ -27,6 +27,9 @@ export const TEST_PAYER: NonNullable<TransferNotification['payer']> = {
 import type { SettlementDeps } from '../../src/payment_settlement.js';
 import { BookingPaymentSettler } from '../../src/handle_transfer.js';
 import { MemoryPaymentLookup } from '../../src/memory_payment_lookup.js';
+import type { Spot } from '../../src/spot.js';
+import type { SpotSchedule } from '../../src/spot_schedule.js';
+import type { SlotOffer } from '../../src/spot_slots.js';
 
 export class ControllableClock implements Clock {
   constructor(private currentTime: Date = new Date('2026-10-10T10:00:00.000Z')) {}
@@ -312,3 +315,18 @@ export async function acceptedStudioBooking(
   await payDraft(world, draft.id, customerId);
   return transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: studioId });
 }
+export function withSpot(world: BookingWorld, spot: Spot): BookingWorld {
+  world.store.spots.set(spot.id, { ...spot });
+  return world;
+}
+
+export function withSchedule(world: BookingWorld, schedule: SpotSchedule): BookingWorld {
+  world.store.schedules.set(schedule.id, { ...schedule });
+  return world;
+}
+
+export function withOffer(world: BookingWorld, offer: SlotOffer): BookingWorld {
+  world.store.offers.set(offer.id, { ...offer });
+  return world;
+}
+

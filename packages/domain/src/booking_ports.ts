@@ -11,6 +11,10 @@ import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 import type { ProviderType } from './provider_type.js';
 import type { StudioDayFacts } from './studio_capacity.js';
+import type { Spot } from './spot.js';
+import type { SpotSchedule } from './spot_schedule.js';
+import type { SlotOffer } from './spot_slots.js';
+import type { SpotDay } from './spot_booking.js';
 
 export interface ServiceRecord {
   readonly id: string;
@@ -150,6 +154,11 @@ export interface BookingTx {
   deleteDeliverySamples(bookingId: string, fileIds: readonly string[]): Promise<void>;
   setPrivateDelivery(bookingId: string, p: PrivateDelivery): Promise<void>;
   getPrivateDelivery(bookingId: string): Promise<PrivateDelivery | null>;
+  getSpot(id: string): Promise<Spot | null>;
+  getSpotSchedule(id: string): Promise<SpotSchedule | null>;
+  getSlotOffer(id: string): Promise<SlotOffer | null>;
+  getSpotDay(scheduleId: string, day: string): Promise<SpotDay | null>;
+  setSpotDay(spotDay: SpotDay): Promise<void>;
 }
 
 /**
@@ -194,6 +203,8 @@ export interface BookingStore {
   awaitingRefundsDue(now: Date, limit: number): Promise<readonly Refund[]>;
   getLedgerEntriesForPayment(paymentId: string): Promise<readonly LedgerEntry[]>;
   getContactSnapshot(bookingId: string): Promise<BookingContactSnapshot | null>;
+  getSlotOffer?(id: string): Promise<SlotOffer | null>;
+  getSpotDay?(scheduleId: string, day: string): Promise<SpotDay | null>;
   /**
    * Every payment whose `transferCode` is `code`, any status. Codes are unique among open
    * (`created`) payments only, so closed ones can share a code.

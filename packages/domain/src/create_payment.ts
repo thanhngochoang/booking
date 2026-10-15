@@ -242,7 +242,12 @@ export async function createPayment(
     if (booking.customerId !== input.customerId) throw new DomainError('permission_denied');
     if (booking.status !== 'draft') throw new DomainError('conflict');
 
-    if (booking.isStudio === true) {
+    if (booking.spotScheduleId) {
+      // A spot draft holds an interval of its schedule's spot day (#194), studio or not (Decision 7).
+      const spotDay = await tx.getSpotDay(booking.spotScheduleId, booking.day);
+      const hasInterval = spotDay?.taken.some((t) => t.start === booking.start && t.end === booking.end);
+      if (!hasInterval) throw new DomainError('day_taken');
+    } else if (booking.isStudio === true) {
       // A studio's draft is held on its day load, not on its own day (#136 Decision 26).
       const load = await tx.getStudioDayLoad(booking.photographerId, booking.day);
       if (!load?.unassignedIds.includes(booking.id)) throw new DomainError('day_taken');

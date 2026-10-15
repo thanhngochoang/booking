@@ -36,6 +36,20 @@ export async function proposeReschedule(
   if (booking.status !== 'accepted' && booking.status !== 'upcoming') {
     throw new DomainError('not_eligible');
   }
+  if (booking.spotScheduleId !== undefined) {
+    throw new DomainError('not_eligible');
+  }
+
+  const targetDay = await deps.bookings.getAvailabilityDay(booking.photographerId, input.day);
+  if (
+    targetDay !== null &&
+    (targetDay.state === 'spot' ||
+      targetDay.state === 'off' ||
+      targetDay.state === 'booked' ||
+      targetDay.state === 'full')
+  ) {
+    throw new DomainError('day_taken');
+  }
 
   const chatId = chatIdFor(booking.customerId, booking.photographerId);
   const pending = await deps.chats.pendingProposal(chatId);
@@ -190,6 +204,9 @@ export async function answerReschedule(
       if (!booking) {
         throw new DomainError('not_found');
       }
+      if (booking.spotScheduleId !== undefined) {
+        throw new DomainError('not_eligible');
+      }
       if (booking.status !== 'accepted' && booking.status !== 'upcoming') {
         cTx.updateMessageSystem(input.chatId, input.messageId, {
           ...system,
@@ -202,7 +219,13 @@ export async function answerReschedule(
 
       // Check day hold
       const newDayHold = await bTx.getAvailabilityDay(booking.photographerId, proposal.day);
-      if (newDayHold !== null && newDayHold.bookingId !== booking.id) {
+      if (
+        newDayHold !== null &&
+        (newDayHold.bookingId !== booking.id ||
+          newDayHold.state === 'spot' ||
+          newDayHold.state === 'off' ||
+          newDayHold.state === 'full')
+      ) {
         throw new DomainError('day_taken');
       }
 

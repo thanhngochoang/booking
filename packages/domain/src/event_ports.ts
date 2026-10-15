@@ -14,7 +14,7 @@ export class RetryableConflict extends Error {
   }
 }
 
-export type AvailabilityRecord = { state: 'off' | 'booked' | 'pending'; eventId?: string; bookingId?: string };
+export type AvailabilityRecord = { state: 'off' | 'booked' | 'pending' | 'spot'; eventId?: string; bookingId?: string };
 
 /** Decision 18 shape, created at publish (`chats/event_{eventId}`). */
 export interface EventGroupChatSeed {

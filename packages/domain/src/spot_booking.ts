@@ -3,10 +3,12 @@
  */
 
 import { DomainError } from './errors.js';
+import { formatVnDate } from './booking_policy.js';
 import { minutesOf, timeOf, type SpotSchedule, type SpotWindow } from './spot_schedule.js';
 import { slotsFor, type SlotOffer } from './spot_slots.js';
 import type { Spot } from './spot.js';
-import type { AvailabilityDayRecord } from './booking_ports.js';
+import type { AvailabilityDayRecord, BookingTx } from './booking_ports.js';
+import type { Booking } from './booking.js';
 
 export const SPOT_BOOKING_GAP_MINUTES = 15;
 
@@ -202,6 +204,11 @@ export function spotBusyAt(
     return false;
   }
 
+  const today = formatVnDate(now);
+  if (!schedule.days.includes(today)) {
+    return false;
+  }
+
   // Convert now to VN minutes
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -217,5 +224,17 @@ export function spotBusyAt(
   const wStart = minutesOf(schedule.window.start);
   const wEnd = minutesOf(schedule.window.end);
 
-  return nowMin >= wStart && nowMin <= wEnd;
+  return nowMin >= wStart && nowMin < wEnd;
+}
+
+export async function releaseSpotInterval(
+  tx: BookingTx,
+  booking: Pick<Booking, 'spotScheduleId' | 'day' | 'start' | 'end'>,
+  now: Date,
+): Promise<void> {
+  if (!booking.spotScheduleId) return;
+  const spotDay = await tx.getSpotDay(booking.spotScheduleId, booking.day);
+  if (spotDay) {
+    await tx.setSpotDay(withoutInterval(spotDay, booking, now.toISOString()));
+  }
 }

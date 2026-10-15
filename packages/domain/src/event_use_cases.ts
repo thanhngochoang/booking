@@ -220,7 +220,7 @@ export async function publishEvent(deps: EventDeps, caller: EventCaller, raw: un
     const hostId = ev.host.type === 'photographer' ? ev.host.id : null;
     const dayKey = f.dayKey as string;
     const av = hostId === null ? null : await tx.availability(hostId, dayKey);
-    if (av !== null && (av.state === 'booked' || av.state === 'pending')) throw new DomainError('day_taken');
+    if (av !== null && (av.state === 'booked' || av.state === 'pending' || av.state === 'spot')) throw new DomainError('day_taken');
 
     const chatId = `event_${ev.id}`;
     const moderators = [...new Set([hostId, ev.createdBy].filter((x): x is string => x !== null))];
@@ -273,7 +273,7 @@ export async function updateEvent(deps: EventDeps, caller: EventCaller, raw: unk
     const moveDay = hostId !== null && f.dayKey !== ev.dayKey;
     const newDay = moveDay ? await tx.availability(hostId, f.dayKey as string) : null;
     const oldDay = moveDay && ev.dayKey !== null ? await tx.availability(hostId, ev.dayKey) : null;
-    if (newDay !== null && (newDay.state === 'booked' || newDay.state === 'pending')) {
+    if (newDay !== null && (newDay.state === 'booked' || newDay.state === 'pending' || newDay.state === 'spot')) {
       throw new DomainError('day_taken');
     }
 
