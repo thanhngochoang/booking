@@ -427,7 +427,7 @@ describe('checkPayment', () => {
     const refunds = await world.store.getRefundsForPayment(paymentId);
     assert.equal(refunds.length, 1);
     assert.equal(refunds[0]?.amount, PRICE);
-    assert.equal(refunds[0]?.failureReason ?? null, null);
+    assert.equal(refunds[0]?.reason, 'provider_not_accepting');
 
     // Booking remains a draft
     const booking = await world.store.getBooking(draft.id);
