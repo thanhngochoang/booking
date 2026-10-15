@@ -30,6 +30,11 @@ describe('Firestore <-> Domain booking mappers', () => {
     end: '16:00',
     place: { name: 'Nhà thờ Lớn', point: { lat: 21.0285, lng: 105.8542 } },
     note: 'Chụp ảnh ngoại cảnh',
+    addons: [
+      { addonId: 'a_01', kind: 'makeup', name: 'Trang điểm', unit: 'per_person', unitPrice: 800_000, qty: 2, amount: 1_600_000 },
+      { addonId: 'a_02', kind: 'transport', name: 'Xe đón', unit: 'per_booking', unitPrice: 300_000, qty: 1, amount: 300_000 },
+    ],
+    pickup: { name: '12 Lê Lợi, Quận 1', point: { lat: 10.7769, lng: 106.7009 } },
     status: 'requested',
     deposit: 1_000_000,
     remaining: 0,
@@ -72,6 +77,20 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual(restored.cancel, sampleBooking.cancel);
     assert.equal(restored.revisionsIncluded, 2);
     assert.equal(restored.version, sampleBooking.version);
+    assert.deepEqual(restored.addons, sampleBooking.addons);
+    assert.deepEqual(restored.pickup, sampleBooking.pickup);
+    assert.ok(docData.pickup.point instanceof GeoPoint);
+  });
+
+  it('a booking without add-ons writes neither addons nor pickup', () => {
+    const { addons: _a, pickup: _p, ...plain } = sampleBooking;
+    const docData = bookingToFirestore(plain);
+    assert.equal('addons' in docData, false);
+    assert.equal('pickup' in docData, false);
+    const restored = bookingFromFirestore('b_01', docData);
+    assert.ok(restored);
+    assert.equal(restored.addons, undefined);
+    assert.equal(restored.pickup, undefined);
   });
 
   it('a booking without revisionsIncluded reads it as undefined', () => {

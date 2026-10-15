@@ -219,6 +219,18 @@ Each event also has its hashtag guard (`event_hashtags/*`), the booked day in An
 | Saved post | Lan | `seed-post-an-1`, `seed-post-an-2` | in `saves/{userId}_{postId}` |
 | Saved photographer | Lan | Cúc (`seed-photographer-cuc`) | in `savedPhotographers/{userId}_{photographerId}` |
 
+## Service add-ons (S04, S08.06)
+
+| Add-on | Owner | Kind · unit · price | Applies to |
+|---|---|---|---|
+| `seed-addon-makeup` | An | makeup · per_person (max 4) · 800 000 ₫ | all packages |
+| `seed-addon-retouch` | An | retouch · per_item (max 10) · 20 000 ₫ | all packages |
+| `seed-addon-car` | An | transport · per_booking · 300 000 ₫ | `seed-service-portrait` only |
+| `seed-addon-outfit` | Cúc (studio) | outfit · per_item (max 4) · 250 000 ₫ | all packages |
+
+`photographers/{uid}/private/addons` holds `activeCount` (An 3, Cúc 1), the lock of `saveAddon`/`deleteAddon`.
+Đặt An · Chân dung 2 giờ để thử khối Thêm dịch vụ (S04.01) và điểm đón (S04.06).
+
 ## Discovery stats (S02)
 
 | Photographer | `startingPrice` | `stats.nextFreeDate` | `stats.completedCount` | Notes |

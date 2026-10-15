@@ -59,6 +59,8 @@ import {
 } from './callables/album.js';
 import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './triggers/post_created.js';
 import { liveAlbumDeps } from './infra/live_album.js';
+import { handleDeleteAddon, handleSaveAddon } from './callables/addon.js';
+import { liveAddonDeps } from './infra/live_addon.js';
 import { FirestoreFollowerCounter } from './infra/follower_counter.js';
 import { handleFollowWrite } from './triggers/engagement_counters.js';
 import { liveDiscoveryDeps } from './infra/live_discovery.js';
@@ -280,6 +282,14 @@ export const setProviderType = onCall(CALLABLE_OPTIONS, (request) =>
 export const setStudioAddress = onCall(CALLABLE_OPTIONS, (request) =>
   handleSetStudioAddress(request, liveProviderDeps()),
 );
+
+// ---- service add-ons (S08.06, #190) ----
+
+/** `{addonId?, kind, name, description?, price, unit, maxQty, serviceIds, active}` → `{addonId}`; addon_limit at 10 active. */
+export const saveAddon = onCall(CALLABLE_OPTIONS, (request) => handleSaveAddon(request, liveAddonDeps()));
+
+/** `{addonId}` → `{}`; bookings keep their snapshot lines. */
+export const deleteAddon = onCall(CALLABLE_OPTIONS, (request) => handleDeleteAddon(request, liveAddonDeps()));
 
 // ---- portfolio albums (plan C) ----
 

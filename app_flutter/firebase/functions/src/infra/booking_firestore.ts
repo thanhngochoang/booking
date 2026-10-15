@@ -12,9 +12,13 @@ import {
 import {
   PAYMENT_METHODS,
   escrowRefundedTotal,
+  isAddonKind,
+  isAddonUnit,
   isPaymentMethod,
   isPaymentSubject,
+  type AddonLine,
   type Booking,
+  type BookingPickup,
   type BookingCheckout,
   type BookingContactSnapshot,
   type BookingStatus,
@@ -125,6 +129,27 @@ export function bookingToFirestore(b: Booking): DocumentData {
       point: b.place.point ? new GeoPoint(b.place.point.lat, b.place.point.lng) : null,
     },
     note: b.note ?? null,
+    ...(b.addons && b.addons.length > 0
+      ? {
+          addons: b.addons.map((l) => ({
+            addonId: l.addonId,
+            kind: l.kind,
+            name: l.name,
+            unit: l.unit,
+            unitPrice: l.unitPrice,
+            qty: l.qty,
+            amount: l.amount,
+          })),
+        }
+      : {}),
+    ...(b.pickup
+      ? {
+          pickup: {
+            name: b.pickup.name,
+            point: b.pickup.point ? new GeoPoint(b.pickup.point.lat, b.pickup.point.lng) : null,
+          },
+        }
+      : {}),
     status: b.status,
     deposit: b.deposit,
     remaining: b.remaining,
@@ -154,6 +179,44 @@ export function bookingToFirestore(b: Booking): DocumentData {
   };
 }
 
+function addonLinesFromFirestore(v: unknown): AddonLine[] {
+  if (!Array.isArray(v)) return [];
+  const lines: AddonLine[] = [];
+  for (const raw of v) {
+    const l = (raw ?? {}) as Record<string, unknown>;
+    if (
+      typeof l.addonId === 'string' &&
+      isAddonKind(l.kind) &&
+      typeof l.name === 'string' &&
+      isAddonUnit(l.unit) &&
+      typeof l.unitPrice === 'number' &&
+      typeof l.qty === 'number' &&
+      typeof l.amount === 'number'
+    ) {
+      lines.push({
+        addonId: l.addonId,
+        kind: l.kind,
+        name: l.name,
+        unit: l.unit,
+        unitPrice: l.unitPrice,
+        qty: l.qty,
+        amount: l.amount,
+      });
+    }
+  }
+  return lines;
+}
+
+function pickupFromFirestore(v: unknown): BookingPickup | undefined {
+  if (typeof v !== 'object' || v === null) return undefined;
+  const p = v as { name?: unknown; point?: unknown };
+  if (typeof p.name !== 'string') return undefined;
+  return {
+    name: p.name,
+    ...(p.point instanceof GeoPoint ? { point: { lat: p.point.latitude, lng: p.point.longitude } } : {}),
+  };
+}
+
 export function bookingFromFirestore(id: string, d: DocumentData | undefined): Booking | null {
   if (!d) return null;
   const { customerId, photographerId, serviceId, serviceSnapshot, day, start, end, place, status } = d;
@@ -174,6 +237,9 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
   const checkout = checkoutFromFirestore(d.checkout);
   const payableUntil = toIsoString(d.payableUntil);
   const pointGeo = place.point instanceof GeoPoint ? { lat: place.point.latitude, lng: place.point.longitude } : undefined;
+
+  const addons = addonLinesFromFirestore(d.addons);
+  const pickup = pickupFromFirestore(d.pickup);
 
   let cancelObj: Booking['cancel'] | undefined;
   if (d.cancel && typeof d.cancel === 'object') {
@@ -203,6 +269,8 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
       point: pointGeo,
     },
     note: d.note ?? undefined,
+    ...(addons.length > 0 ? { addons } : {}),
+    ...(pickup !== undefined ? { pickup } : {}),
     status: status as BookingStatus,
     deposit: typeof d.deposit === 'number' ? d.deposit : typeof (d.deposit as { amount?: unknown })?.amount === 'number' ? (d.deposit as { amount: number }).amount : 0,
     remaining: d.remaining,

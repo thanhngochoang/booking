@@ -48,6 +48,7 @@ export function paymentWorld(start = new Date('2026-10-01T10:00:00.000Z')): Paym
       const s = services.get(id);
       return s === undefined ? null : { ...s, photographerId };
     } },
+    addons: { listAddons: async () => [] },
     contacts: { get: async (uid) => contacts.get(uid) ?? null },
     providers: { acceptsOrders: async () => true },
     blocks,

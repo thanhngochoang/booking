@@ -31,6 +31,14 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
   identity_in_use: 'already-exists',
   underage: 'failed-precondition',
   rate_limited: 'resource-exhausted',
+  // S04 add-ons: the app reloads the block (addon_changed), or asks for the pickup address.
+  addon_changed: 'failed-precondition',
+  addon_not_applicable: 'failed-precondition',
+  pickup_required: 'failed-precondition',
+  // The provider already has the maximum number of active add-ons.
+  addon_limit: 'resource-exhausted',
+  // Free text carries a phone number, e-mail or link; `details.field` names the input.
+  contact_leak: 'invalid-argument',
 };
 
 /**
@@ -39,6 +47,10 @@ const TRANSPORT_CODE: Record<ErrorCode, FunctionsErrorCode> = {
  */
 export function toHttpsError(e: unknown): HttpsError {
   if (e instanceof HttpsError) return e;
-  if (isDomainError(e)) return new HttpsError(TRANSPORT_CODE[e.code], e.code, { code: e.code });
+  if (isDomainError(e)) {
+    // `field` names the offending form input (never user text), so the app can mark it.
+    const details = e.field === undefined ? { code: e.code } : { code: e.code, field: e.field };
+    return new HttpsError(TRANSPORT_CODE[e.code], e.code, details);
+  }
   return new HttpsError('internal', 'internal', { code: 'internal' });
 }

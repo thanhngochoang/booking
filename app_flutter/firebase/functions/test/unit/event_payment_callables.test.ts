@@ -83,6 +83,7 @@ describe('fake payment gate', () => {
     const deps: BookingDeps = {
       store: counting,
       services: { getService: async () => null },
+      addons: { listAddons: async () => [] },
       contacts: { get: async () => null },
       providers: { acceptsOrders: async () => true },
       blocks: new FakeBlockGate(),

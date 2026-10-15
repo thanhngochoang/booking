@@ -184,6 +184,41 @@ export const SEED_SERVICES: readonly SeedService[] = [
   { id: 'seed-service-family', photographerId: BINH, name: 'Gia đình 90 phút', price: 1_200_000, durationMinutes: 90 },
 ];
 
+export interface SeedAddon {
+  readonly id: string;
+  readonly providerId: string;
+  readonly kind: 'makeup' | 'retouch' | 'transport' | 'outfit' | 'other';
+  readonly name: string;
+  readonly description?: string;
+  /** Integer VND. */
+  readonly price: number;
+  readonly unit: 'per_booking' | 'per_person' | 'per_item';
+  readonly maxQty: number;
+  /** `[]` = every package. */
+  readonly serviceIds: readonly string[];
+}
+
+/** Service add-ons (S04.01, S08.06): An three, Cúc one studio add-on. All active. */
+export const SEED_ADDONS: readonly SeedAddon[] = [
+  {
+    id: 'seed-addon-makeup', providerId: AN, kind: 'makeup', name: 'Trang điểm',
+    description: 'Trang điểm tự nhiên, làm tóc cơ bản', price: 800_000, unit: 'per_person', maxQty: 4, serviceIds: [],
+  },
+  {
+    id: 'seed-addon-retouch', providerId: AN, kind: 'retouch', name: 'Chỉnh thêm ảnh',
+    description: 'Hậu kỳ thêm ngoài số ảnh của gói', price: 20_000, unit: 'per_item', maxQty: 10, serviceIds: [],
+  },
+  {
+    id: 'seed-addon-car', providerId: AN, kind: 'transport', name: 'Xe đón trong nội thành',
+    description: 'Đón đi và đưa về, xe 4 chỗ', price: 300_000, unit: 'per_booking', maxQty: 1,
+    serviceIds: ['seed-service-portrait'],
+  },
+  {
+    id: 'seed-addon-outfit', providerId: CUC, kind: 'outfit', name: 'Thuê áo dài',
+    price: 250_000, unit: 'per_item', maxQty: 4, serviceIds: [],
+  },
+];
+
 export interface SeedBooking {
   readonly id: string;
   readonly customerId: string;
@@ -518,6 +553,30 @@ export function seedDocuments(now: Date): SeedDocument[] {
     docs.push({
       path: `photographers/${s.photographerId}/services/${s.id}`,
       data: { name: s.name, price: s.price, currency: 'VND', durationMinutes: s.durationMinutes, active: true, createdAt: at },
+    });
+  }
+  for (const a of SEED_ADDONS) {
+    docs.push({
+      path: `photographers/${a.providerId}/addons/${a.id}`,
+      data: {
+        kind: a.kind,
+        name: a.name,
+        ...(a.description !== undefined ? { description: a.description } : {}),
+        price: a.price,
+        unit: a.unit,
+        maxQty: a.maxQty,
+        serviceIds: [...a.serviceIds],
+        active: true,
+        createdAt: at,
+        updatedAt: at,
+      },
+    });
+  }
+  for (const providerId of new Set(SEED_ADDONS.map((a) => a.providerId))) {
+    // The lock document of saveAddon/deleteAddon (Decision 8): its count matches the active add-ons.
+    docs.push({
+      path: `photographers/${providerId}/private/addons`,
+      data: { activeCount: SEED_ADDONS.filter((a) => a.providerId === providerId).length, updatedAt: at },
     });
   }
   for (const p of SEED_POSTS) {
