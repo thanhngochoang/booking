@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
 import 'package:photobooking/features/awards/my_awards_screen.dart';
@@ -53,6 +54,8 @@ import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
+import 'package:photobooking/features/verification/verify_business_screen.dart';
+import 'package:photobooking/features/verification/verify_identity_screen.dart';
 import 'package:photobooking/features/verification/verify_phone_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
 import 'package:photobooking/features/verification/verify_start_screen.dart';
@@ -190,6 +193,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: 'rules', builder: (_, _) => const VerifyRulesScreen()),
         ],
+      ),
+      GoRoute(
+        path: '/verify/identity',
+        builder: (_, state) => VerifyIdentityScreen(
+          method: state.uri.queryParameters['method'] == IdentityMethod.nfc.code
+              ? IdentityMethod.nfc
+              : IdentityMethod.vneid,
+        ),
+      ),
+      GoRoute(
+        path: '/verify/business',
+        builder: (_, _) => const VerifyBusinessScreen(),
       ),
       GoRoute(
         path: '/setup',

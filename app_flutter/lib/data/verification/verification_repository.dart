@@ -123,6 +123,9 @@ class FakeVerificationRepository implements VerificationRepository {
 
   final calls = <VerificationCall>[];
 
+  /// The method of the last started identity session.
+  IdentityMethod? _sessionMethod;
+
   /// Open [watchRaw] subscriptions.
   int watchers = 0;
 
@@ -209,6 +212,7 @@ class FakeVerificationRepository implements VerificationRepository {
   @override
   Future<IdentitySession> startIdentity(IdentityMethod method) async {
     _record('startIdentityVerification', {'method': method.code});
+    _sessionMethod = method;
     return identitySession;
   }
 
@@ -217,7 +221,7 @@ class FakeVerificationRepository implements VerificationRepository {
     _record('completeIdentityVerification', {'sessionId': sessionId});
     _update((d) {
       (d['steps'] as Map<String, dynamic>)['identity'] = {
-        'method': IdentityMethod.vneid.code,
+        'method': (_sessionMethod ?? IdentityMethod.vneid).code,
         'checkedAt': _now(),
         'result': 'passed',
         'failure': null,

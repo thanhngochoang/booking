@@ -9934,6 +9934,330 @@ abstract class AppLocalizations {
   /// **'Hỗ trợ: {email}'**
   String verifySupportLine(String email);
 
+  /// No description provided for @verifyIdTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh danh tính'**
+  String get verifyIdTitle;
+
+  /// No description provided for @verifyIdHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh bằng căn cước điện tử'**
+  String get verifyIdHeading;
+
+  /// No description provided for @verifyIdBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không cần gõ hay chụp giấy tờ: mở app VNeID, đồng ý chia sẻ rồi nhập mã PIN VNeID.'**
+  String get verifyIdBody;
+
+  /// No description provided for @verifyIdWeOnlyGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chúng tôi chỉ nhận'**
+  String get verifyIdWeOnlyGet;
+
+  /// No description provided for @verifyIdFieldName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Họ tên'**
+  String get verifyIdFieldName;
+
+  /// No description provided for @verifyIdFieldDob.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày sinh'**
+  String get verifyIdFieldDob;
+
+  /// No description provided for @verifyIdFieldNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số định danh'**
+  String get verifyIdFieldNumber;
+
+  /// No description provided for @verifyIdPrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu ảnh selfie. Dùng để khớp tên tài khoản nhận tiền và chống giả mạo; số định danh được mã hoá.'**
+  String get verifyIdPrivacy;
+
+  /// No description provided for @verifyIdConsent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bấm \"Xác minh bằng VNeID\" là bạn đồng ý chia sẻ ba thông tin trên.'**
+  String get verifyIdConsent;
+
+  /// No description provided for @verifyIdNfcLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không dùng được VNeID? Quét chip CCCD'**
+  String get verifyIdNfcLink;
+
+  /// No description provided for @verifyIdVneid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh bằng VNeID'**
+  String get verifyIdVneid;
+
+  /// No description provided for @verifyNfcTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét chip CCCD'**
+  String get verifyNfcTitle;
+
+  /// No description provided for @verifyNfcStep1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bước 1/2 · Đọc chip'**
+  String get verifyNfcStep1;
+
+  /// No description provided for @verifyNfcStep2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bước 2/2 · Selfie'**
+  String get verifyNfcStep2;
+
+  /// No description provided for @verifyNfcHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp CCCD vào mặt sau điện thoại'**
+  String get verifyNfcHeading;
+
+  /// No description provided for @verifyNfcBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ yên thẻ ở giữa lưng máy tới khi máy rung. Tháo ốp lưng dày nếu đọc chậm.'**
+  String get verifyNfcBody;
+
+  /// No description provided for @verifyNfcNextTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp theo'**
+  String get verifyNfcNextTitle;
+
+  /// No description provided for @verifyNfcNextBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp selfie để kiểm tra người thật'**
+  String get verifyNfcNextBody;
+
+  /// No description provided for @verifyNfcNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Máy cần có NFC. Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.'**
+  String get verifyNfcNote;
+
+  /// No description provided for @verifyNfcStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu quét'**
+  String get verifyNfcStart;
+
+  /// No description provided for @verifySelfieHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp selfie 3–5 giây'**
+  String get verifySelfieHeading;
+
+  /// No description provided for @verifySelfieBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhìn thẳng vào camera, quay đầu chậm sang trái rồi sang phải.'**
+  String get verifySelfieBody;
+
+  /// No description provided for @verifySelfieNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.'**
+  String get verifySelfieNote;
+
+  /// No description provided for @verifySelfieStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu chụp'**
+  String get verifySelfieStart;
+
+  /// No description provided for @verifyIdPassed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh: {name}'**
+  String verifyIdPassed(String name);
+
+  /// No description provided for @verifyIdUnderage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần đủ 18 tuổi để nhận đơn.'**
+  String get verifyIdUnderage;
+
+  /// No description provided for @verifyIdInUse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.'**
+  String get verifyIdInUse;
+
+  /// No description provided for @verifyIdRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã thử 3 lần hôm nay. Thử lại vào ngày mai.'**
+  String get verifyIdRateLimited;
+
+  /// No description provided for @verifyIdFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác minh được. Thử lại hoặc dùng cách khác.'**
+  String get verifyIdFailed;
+
+  /// No description provided for @verifyIdFakeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'VNeID (giả lập)'**
+  String get verifyIdFakeTitle;
+
+  /// No description provided for @verifyIdFakeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Môi trường thử: không mở app VNeID thật. Bấm Đồng ý để nhận một danh tính thử.'**
+  String get verifyIdFakeBody;
+
+  /// No description provided for @verifyIdFakeAgree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý chia sẻ'**
+  String get verifyIdFakeAgree;
+
+  /// No description provided for @verifyBizTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp'**
+  String get verifyBizTitle;
+
+  /// No description provided for @verifyBizIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần cho con dấu Studio, hơn 3 thành viên và tài khoản nhận tiền đứng tên công ty. Không cần để nhận đơn.'**
+  String get verifyBizIntro;
+
+  /// No description provided for @verifyBizTaxCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế'**
+  String get verifyBizTaxCode;
+
+  /// No description provided for @verifyBizLookup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tra cứu'**
+  String get verifyBizLookup;
+
+  /// No description provided for @verifyBizName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên'**
+  String get verifyBizName;
+
+  /// No description provided for @verifyBizAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ'**
+  String get verifyBizAddress;
+
+  /// No description provided for @verifyBizStatus.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tình trạng'**
+  String get verifyBizStatus;
+
+  /// No description provided for @verifyBizActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoạt động'**
+  String get verifyBizActive;
+
+  /// No description provided for @verifyBizInactive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngừng hoạt động'**
+  String get verifyBizInactive;
+
+  /// No description provided for @verifyBizDocTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người đại diện: cần ảnh giấy đăng ký kinh doanh'**
+  String get verifyBizDocTitle;
+
+  /// No description provided for @verifyBizDocBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff đối chiếu người đại diện với chủ studio đã xác minh'**
+  String get verifyBizDocBody;
+
+  /// No description provided for @verifyBizHouseholdNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hộ kinh doanh: mã số thuế là số định danh của chủ, tự khớp, không cần tải giấy.'**
+  String get verifyBizHouseholdNote;
+
+  /// No description provided for @verifyBizSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi duyệt'**
+  String get verifyBizSubmit;
+
+  /// No description provided for @verifyBizPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ duyệt · trong 24 giờ'**
+  String get verifyBizPending;
+
+  /// No description provided for @verifyBizApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh doanh nghiệp'**
+  String get verifyBizApproved;
+
+  /// No description provided for @verifyBizRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa được duyệt: {reason}'**
+  String verifyBizRejected(String reason);
+
+  /// No description provided for @verifyBizReject_inactive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Doanh nghiệp không ở tình trạng đang hoạt động.'**
+  String get verifyBizReject_inactive;
+
+  /// No description provided for @verifyBizReject_representative_mismatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế không khớp với danh tính chủ studio.'**
+  String get verifyBizReject_representative_mismatch;
+
+  /// No description provided for @verifyBizReject_doc_unreadable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh giấy đăng ký không đọc được. Chụp lại rõ nét.'**
+  String get verifyBizReject_doc_unreadable;
+
+  /// No description provided for @verifyBizNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy mã số thuế này.'**
+  String get verifyBizNotFound;
+
+  /// No description provided for @verifyBizNeedsIdentity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh danh tính chủ studio trước.'**
+  String get verifyBizNeedsIdentity;
+
+  /// No description provided for @verifyBizInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế gồm 10 hoặc 12 chữ số.'**
+  String get verifyBizInvalid;
+
   /// No description provided for @settingsVerifyStepsLeft.
   ///
   /// In vi, this message translates to:

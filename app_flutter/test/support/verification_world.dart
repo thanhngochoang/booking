@@ -7,13 +7,19 @@ import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
+import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/media/media_providers.dart';
+import 'package:photobooking/data/media/media_uploader.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_contact_repository.dart';
 import 'package:photobooking/data/verification/phone_verifier.dart';
+import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/data/verification/verification_repository.dart';
+import 'package:photobooking/features/verification/verify_business_screen.dart';
+import 'package:photobooking/features/verification/verify_identity_screen.dart';
 import 'package:photobooking/features/verification/verify_phone_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
 import 'package:photobooking/features/verification/verify_start_screen.dart';
@@ -29,12 +35,20 @@ const verificationSupport = 'hotro@photobooking.vn';
 /// A signed-in provider with in-memory contact, phone verifier, verification
 /// and intro repositories and a fixed clock ([verificationNow]). S21.01 is
 /// mounted at `/verify/phone`, S21.02 at `/verify/start` (rules at
-/// `/verify/start/rules`) when [startScreen] is true; `/verify/identity`,
+/// `/verify/start/rules`), S21.03 at `/verify/identity` and S21.04 at
+/// `/verify/business` when [startScreen] is true (stubs otherwise);
 /// `/settings/profile`, `/u/:uid` and the profile tab are stubs. [log]
 /// records, in order, the phone linked (`link:+84…`), the contact saved
 /// (`save:+84…`) and `confirmPhoneVerified`.
 class VerificationWorld {
-  VerificationWorld({this.feeRequired = false, this.startScreen = false});
+  VerificationWorld({
+    this.feeRequired = false,
+    this.startScreen = false,
+    this.identityReal = false,
+  });
+
+  /// Mirrors `identityModeRealProvider`: false shows the fake VNeID sheet.
+  final bool identityReal;
 
   /// Mirrors `verificationFeeRequiredProvider` (false in #135: 3 steps).
   final bool feeRequired;
@@ -50,6 +64,12 @@ class VerificationWorld {
   late final repo = _LoggingVerificationRepository(log, uid: uid);
   final intros = FakePhotographerIntroRepository();
   final launcher = FakeExternalLauncher();
+  final uploader = FakeMediaUploader();
+
+  /// The gallery answers, in order (S21.04's registration photo).
+  FakeImagePicker picker = FakeImagePicker([
+    const [PickedImage(path: '/tmp/gpkd.jpg', name: 'gpkd.jpg')],
+  ]);
   late GoRouter router;
 
   /// Registers the signed-in provider; call before [app].
@@ -97,6 +117,9 @@ class VerificationWorld {
     phoneVerifierProvider.overrideWithValue(verifier),
     verificationRepositoryProvider.overrideWithValue(repo),
     verificationFeeRequiredProvider.overrideWithValue(feeRequired),
+    identityModeRealProvider.overrideWithValue(identityReal),
+    mediaUploaderProvider.overrideWithValue(uploader),
+    imagePickerProvider.overrideWithValue(picker),
   ];
 
   Widget app({String location = '/verify/phone', double textScale = 1.0}) {
@@ -124,7 +147,23 @@ class VerificationWorld {
           )
         else
           GoRoute(path: '/verify/start', builder: stub),
-        GoRoute(path: '/verify/identity', builder: stub),
+        if (startScreen) ...[
+          GoRoute(
+            path: '/verify/identity',
+            builder: (_, s) => VerifyIdentityScreen(
+              method: s.uri.queryParameters['method'] == 'nfc'
+                  ? IdentityMethod.nfc
+                  : IdentityMethod.vneid,
+            ),
+          ),
+          GoRoute(
+            path: '/verify/business',
+            builder: (_, _) => const VerifyBusinessScreen(),
+          ),
+        ] else ...[
+          GoRoute(path: '/verify/identity', builder: stub),
+          GoRoute(path: '/verify/business', builder: stub),
+        ],
         GoRoute(path: '/settings/profile', builder: stub),
         GoRoute(path: '/u/:uid', builder: stub),
         GoRoute(path: '/profile', builder: stub),
@@ -174,6 +213,37 @@ class _LoggingVerificationRepository extends FakeVerificationRepository {
   _LoggingVerificationRepository(this.log, {required super.uid})
     : super(now: () => verificationNow);
   final List<String> log;
+
+  /// When set, `completeIdentityVerification` refuses with this code (after
+  /// recording the call), as the server does for `underage`,
+  /// `identity_in_use`, `not_eligible`…
+  String? completeFailWith;
+
+  /// When set, `lookupTaxCode` refuses with this code.
+  String? lookupFailWith;
+
+  @override
+  Future<String> completeIdentity(String sessionId) async {
+    final code = completeFailWith;
+    if (code != null) {
+      calls.add((
+        name: 'completeIdentityVerification',
+        data: {'sessionId': sessionId},
+      ));
+      throw VerificationError(code);
+    }
+    return super.completeIdentity(sessionId);
+  }
+
+  @override
+  Future<TaxCodeInfo> lookupTaxCode(String taxCode) async {
+    final code = lookupFailWith;
+    if (code != null) {
+      calls.add((name: 'lookupTaxCode', data: {'taxCode': taxCode}));
+      throw VerificationError(code);
+    }
+    return super.lookupTaxCode(taxCode);
+  }
 
   @override
   Future<void> confirmPhoneVerified() async {

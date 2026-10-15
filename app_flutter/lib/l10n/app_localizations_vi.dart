@@ -5666,6 +5666,190 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get verifyIdTitle => 'Xác minh danh tính';
+
+  @override
+  String get verifyIdHeading => 'Xác minh bằng căn cước điện tử';
+
+  @override
+  String get verifyIdBody =>
+      'Không cần gõ hay chụp giấy tờ: mở app VNeID, đồng ý chia sẻ rồi nhập mã PIN VNeID.';
+
+  @override
+  String get verifyIdWeOnlyGet => 'Chúng tôi chỉ nhận';
+
+  @override
+  String get verifyIdFieldName => 'Họ tên';
+
+  @override
+  String get verifyIdFieldDob => 'Ngày sinh';
+
+  @override
+  String get verifyIdFieldNumber => 'Số định danh';
+
+  @override
+  String get verifyIdPrivacy =>
+      'Không lưu ảnh selfie. Dùng để khớp tên tài khoản nhận tiền và chống giả mạo; số định danh được mã hoá.';
+
+  @override
+  String get verifyIdConsent =>
+      'Bấm \"Xác minh bằng VNeID\" là bạn đồng ý chia sẻ ba thông tin trên.';
+
+  @override
+  String get verifyIdNfcLink => 'Không dùng được VNeID? Quét chip CCCD';
+
+  @override
+  String get verifyIdVneid => 'Xác minh bằng VNeID';
+
+  @override
+  String get verifyNfcTitle => 'Quét chip CCCD';
+
+  @override
+  String get verifyNfcStep1 => 'Bước 1/2 · Đọc chip';
+
+  @override
+  String get verifyNfcStep2 => 'Bước 2/2 · Selfie';
+
+  @override
+  String get verifyNfcHeading => 'Áp CCCD vào mặt sau điện thoại';
+
+  @override
+  String get verifyNfcBody =>
+      'Giữ yên thẻ ở giữa lưng máy tới khi máy rung. Tháo ốp lưng dày nếu đọc chậm.';
+
+  @override
+  String get verifyNfcNextTitle => 'Tiếp theo';
+
+  @override
+  String get verifyNfcNextBody => 'Chụp selfie để kiểm tra người thật';
+
+  @override
+  String get verifyNfcNote =>
+      'Máy cần có NFC. Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.';
+
+  @override
+  String get verifyNfcStart => 'Bắt đầu quét';
+
+  @override
+  String get verifySelfieHeading => 'Chụp selfie 3–5 giây';
+
+  @override
+  String get verifySelfieBody =>
+      'Nhìn thẳng vào camera, quay đầu chậm sang trái rồi sang phải.';
+
+  @override
+  String get verifySelfieNote =>
+      'Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.';
+
+  @override
+  String get verifySelfieStart => 'Bắt đầu chụp';
+
+  @override
+  String verifyIdPassed(String name) {
+    return 'Đã xác minh: $name';
+  }
+
+  @override
+  String get verifyIdUnderage => 'Bạn cần đủ 18 tuổi để nhận đơn.';
+
+  @override
+  String get verifyIdInUse =>
+      'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.';
+
+  @override
+  String get verifyIdRateLimited =>
+      'Bạn đã thử 3 lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get verifyIdFailed =>
+      'Chưa xác minh được. Thử lại hoặc dùng cách khác.';
+
+  @override
+  String get verifyIdFakeTitle => 'VNeID (giả lập)';
+
+  @override
+  String get verifyIdFakeBody =>
+      'Môi trường thử: không mở app VNeID thật. Bấm Đồng ý để nhận một danh tính thử.';
+
+  @override
+  String get verifyIdFakeAgree => 'Đồng ý chia sẻ';
+
+  @override
+  String get verifyBizTitle => 'Xác minh doanh nghiệp';
+
+  @override
+  String get verifyBizIntro =>
+      'Cần cho con dấu Studio, hơn 3 thành viên và tài khoản nhận tiền đứng tên công ty. Không cần để nhận đơn.';
+
+  @override
+  String get verifyBizTaxCode => 'Mã số thuế';
+
+  @override
+  String get verifyBizLookup => 'Tra cứu';
+
+  @override
+  String get verifyBizName => 'Tên';
+
+  @override
+  String get verifyBizAddress => 'Địa chỉ';
+
+  @override
+  String get verifyBizStatus => 'Tình trạng';
+
+  @override
+  String get verifyBizActive => 'Đang hoạt động';
+
+  @override
+  String get verifyBizInactive => 'Ngừng hoạt động';
+
+  @override
+  String get verifyBizDocTitle =>
+      'Người đại diện: cần ảnh giấy đăng ký kinh doanh';
+
+  @override
+  String get verifyBizDocBody =>
+      'Staff đối chiếu người đại diện với chủ studio đã xác minh';
+
+  @override
+  String get verifyBizHouseholdNote =>
+      'Hộ kinh doanh: mã số thuế là số định danh của chủ, tự khớp, không cần tải giấy.';
+
+  @override
+  String get verifyBizSubmit => 'Gửi duyệt';
+
+  @override
+  String get verifyBizPending => 'Đang chờ duyệt · trong 24 giờ';
+
+  @override
+  String get verifyBizApproved => 'Đã xác minh doanh nghiệp';
+
+  @override
+  String verifyBizRejected(String reason) {
+    return 'Chưa được duyệt: $reason';
+  }
+
+  @override
+  String get verifyBizReject_inactive =>
+      'Doanh nghiệp không ở tình trạng đang hoạt động.';
+
+  @override
+  String get verifyBizReject_representative_mismatch =>
+      'Mã số thuế không khớp với danh tính chủ studio.';
+
+  @override
+  String get verifyBizReject_doc_unreadable =>
+      'Ảnh giấy đăng ký không đọc được. Chụp lại rõ nét.';
+
+  @override
+  String get verifyBizNotFound => 'Không tìm thấy mã số thuế này.';
+
+  @override
+  String get verifyBizNeedsIdentity => 'Xác minh danh tính chủ studio trước.';
+
+  @override
+  String get verifyBizInvalid => 'Mã số thuế gồm 10 hoặc 12 chữ số.';
+
+  @override
   String settingsVerifyStepsLeft(int n) {
     return 'Còn $n bước';
   }
