@@ -4,7 +4,7 @@
  * Every order path builds its booking with `buildBookingDraft`; later units extend it only through the slots.
  */
 
-import type { Booking } from './booking.js';
+import type { AddonLine, Booking, BookingPickup } from './booking.js';
 import {
   DRAFT_EXPIRY_MINUTES,
   addMinutesToTime,
@@ -22,7 +22,7 @@ import { requireCustomerPhone } from './require_phone.js';
 
 // slot #136 (studio)
 
-// slot #190 (add-ons)
+import { addonDraftFields, bookingTotal, priceAddonLines, requirePickup } from './addon_pricing.js';
 
 // ── end draft slot imports ──
 
@@ -41,18 +41,18 @@ export interface BookingDraftCore {
 }
 
 /** Core + the optional fields of later units, one slot each (Decision 2). */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BookingDraftInput extends BookingDraftCore {
   // slot #139 (quotes): readonly quote?: { jobId: string; quoteId: string; terms: BookingTerms };
 
   // slot #136 (studio): readonly providerType?: ProviderType | null;
 
-  // slot #190 (add-ons): readonly addons?: readonly AddonLine[]; readonly pickup?: BookingPickup;
+  readonly addons?: readonly AddonLine[];
+  readonly pickup?: BookingPickup;
 }
 
 /** The amount the customer pays; #190 replaces the body (Decision 3). */
 export function draftTotal(i: BookingDraftInput): number {
-  return i.service.price; // slot #190 (add-ons): bookingTotal(i.service, i.addons ?? [])
+  return bookingTotal(i.service, i.addons ?? []);
 }
 
 function coreDraft(i: BookingDraftInput): Booking {
@@ -104,7 +104,7 @@ export function buildBookingDraft(i: BookingDraftInput): Booking {
 
     // slot #136 (studio): ...studioDraftFields(i, core),
 
-    // slot #190 (add-ons): ...addonDraftFields(i),
+    ...addonDraftFields(i),
   };
 }
 
@@ -126,6 +126,16 @@ export async function createBookingDraft(
 
   if (input.expectedPrice !== undefined && input.expectedPrice !== service.price) {
     throw new DomainError('price_changed');
+  }
+
+  // Add-ons: priced from the provider's catalogue; the read is skipped without picks
+  const addons =
+    input.addons.length > 0
+      ? priceAddonLines(await deps.addons.listAddons(input.photographerId), input.addons, input.serviceId)
+      : [];
+  const pickup = requirePickup(addons, input.pickup);
+  if (input.expectedTotal !== undefined && input.expectedTotal !== bookingTotal(service, addons)) {
+    throw new DomainError('addon_changed');
   }
 
   // 2. Phone requirement check (server enforced)
@@ -170,6 +180,8 @@ export async function createBookingDraft(
       start: input.start,
       place: input.place,
       note: input.note,
+      addons,
+      pickup,
       now,
     });
 

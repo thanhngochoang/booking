@@ -266,6 +266,8 @@ create table bookings (
   end_time         time not null check (end_time > start_time),
   place_name       text, place_lat double precision, place_lng double precision,
   note             text,
+  pickup_name      text,                          -- chỉ khi có dịch vụ transport (#190); không bao giờ ở bảng công khai
+  pickup_point     jsonb,                         -- {lat, lng}
   status           text not null check (status in ('draft','requested','accepted','declined','expired','cancelled','upcoming','completed','reviewed')),
   deposit_amount   bigint not null check (deposit_amount >= 0),
   remaining_amount bigint not null check (remaining_amount >= 0),
@@ -282,7 +284,20 @@ create table bookings (
   version          int not null default 1,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
-  check (deposit_amount + remaining_amount = service_price)   -- từ #129: deposit_amount = giá, remaining_amount = 0
+  -- từ #129: deposit_amount = tổng, remaining_amount = 0; tổng = service_price + Σ booking_addons.amount_vnd (#190, kiểm trong use case, không còn check một bảng)
+  check (remaining_amount = 0 or deposit_amount + remaining_amount >= service_price)
+);
+
+create table booking_addons (                     -- bản chụp dịch vụ đi kèm lúc đặt (#190)
+  booking_id     text not null references bookings(id) on delete cascade,
+  addon_id       text not null,
+  kind           text not null check (kind in ('makeup','retouch','transport','outfit','other')),
+  name           text not null,
+  unit           text not null check (unit in ('per_booking','per_person','per_item')),
+  unit_price_vnd bigint not null check (unit_price_vnd > 0),
+  qty            int not null check (qty between 1 and 10),
+  amount_vnd     bigint not null check (amount_vnd = unit_price_vnd * qty),
+  primary key (booking_id, addon_id)
 );
 create index ix_bookings_customer on bookings (customer_id, status, day);
 create index ix_bookings_photographer on bookings (photographer_id, status, day);

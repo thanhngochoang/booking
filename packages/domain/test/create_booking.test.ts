@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDeposit } from '../src/booking_policy.js';
-import { createBookingWorld, newDraft } from './support/booking_world.js';
+import { createBookingWorld, newDraft, withAddons } from './support/booking_world.js';
+import type { ServiceAddon } from '../src/addon.js';
+import { addonDraftFields } from '../src/addon_pricing.js';
 import {
   buildBookingDraft,
   createBookingDraft,
@@ -394,5 +396,107 @@ describe('Task 4: createBookingDraft', () => {
       now: world.clock.now(),
     });
     assert.deepEqual(stored, expected);
+  });
+
+  describe('add-ons (#190)', () => {
+    const T = '2026-10-01T00:00:00.000Z';
+    const mk = (id: string, over: Partial<ServiceAddon>): ServiceAddon => ({
+      id, providerId: 'p1', kind: 'makeup', name: id, price: 800_000, unit: 'per_person', maxQty: 4,
+      serviceIds: [], active: true, createdAt: T, updatedAt: T, ...over,
+    });
+    const worldWithAddons = () =>
+      withAddons(createBookingWorld(), 'p1', [
+        mk('makeup', {}),
+        mk('transport', { kind: 'transport', unit: 'per_booking', price: 300_000, maxQty: 1 }),
+      ]);
+    const rejectsWith = async (p: Promise<unknown>, c: string): Promise<void> => {
+      await assert.rejects(p, (e: unknown) => e instanceof DomainError && e.code === c);
+    };
+    const BASE_DRAFT: BookingDraftInput = {
+      id: 'b1', customerId: 'c1', photographerId: 'p1',
+      service: { id: 'srv_01', photographerId: 'p1', name: 'Gói', price: 1_000_000, durationMinutes: 120, active: true },
+      day: '2026-10-15', start: '14:00', place: { name: 'Nhà thờ Lớn' }, now: new Date('2026-10-10T10:00:00.000Z'),
+    };
+    const LINE = {
+      addonId: 'makeup', kind: 'makeup', name: 'makeup', unit: 'per_person', unitPrice: 800_000, qty: 2, amount: 1_600_000,
+    } as const;
+
+    it('buildBookingDraft with addons sets deposit to the total and remaining 0', () => {
+      const d = buildBookingDraft({ ...BASE_DRAFT, addons: [LINE] });
+      assert.equal(d.deposit, 2_600_000);
+      assert.equal(d.remaining, 0);
+      assert.deepEqual(d.addons, [LINE]);
+    });
+
+    it('buildBookingDraft without addons writes no addons field and no pickup', () => {
+      for (const d of [buildBookingDraft(BASE_DRAFT), buildBookingDraft({ ...BASE_DRAFT, addons: [] })]) {
+        assert.equal('addons' in d, false);
+        assert.equal('pickup' in d, false);
+      }
+    });
+
+    it('addonDraftFields returns {} without add-ons and pickup', () => {
+      assert.deepEqual(addonDraftFields({}), {});
+    });
+
+    it('draftTotal is the package price without add-ons and the total with them', () => {
+      assert.equal(draftTotal(BASE_DRAFT), 1_000_000);
+      assert.equal(draftTotal({ ...BASE_DRAFT, addons: [LINE] }), 2_600_000);
+    });
+
+    it('createBookingDraft prices picks from the catalogue and stores the lines', async () => {
+      const world = worldWithAddons();
+      const b = await newDraft(world, { addons: [{ addonId: 'transport', qty: 1 }, { addonId: 'makeup', qty: 2 }], pickup: { name: '12 Lê Lợi' } });
+      assert.deepEqual(b.addons?.map((l) => [l.addonId, l.amount]), [['makeup', 1_600_000], ['transport', 300_000]]);
+      assert.equal(b.deposit, 2_900_000);
+      assert.deepEqual(await world.store.getBooking(b.id), b);
+    });
+
+    it('createBookingDraft charges the server total whatever expectedTotal says', async () => {
+      const world = worldWithAddons();
+      await rejectsWith(newDraft(world, { addons: [{ addonId: 'makeup', qty: 2 }], expectedTotal: 1_000_000 }), 'addon_changed');
+      assert.equal(world.store.bookings.size, 0);
+      assert.equal(await world.store.getAvailabilityDay('p1', '2026-10-15'), null);
+    });
+
+    it('matching expectedTotal succeeds', async () => {
+      const world = worldWithAddons();
+      const b = await newDraft(world, { addons: [{ addonId: 'makeup', qty: 2 }], expectedTotal: 2_600_000 });
+      assert.equal(b.deposit, 2_600_000);
+    });
+
+    it('a changed package price is still price_changed before any add-on check', async () => {
+      const world = worldWithAddons();
+      await rejectsWith(
+        newDraft(world, { expectedPrice: 900_000, addons: [{ addonId: 'nope', qty: 1 }], expectedTotal: 1 }),
+        'price_changed',
+      );
+    });
+
+    it('pickup_required without pickup when transport is picked', async () => {
+      await rejectsWith(newDraft(worldWithAddons(), { addons: [{ addonId: 'transport', qty: 1 }] }), 'pickup_required');
+    });
+
+    it('the pickup is stored when transport is picked; dropped otherwise', async () => {
+      const world = worldWithAddons();
+      const b = await newDraft(world, { addons: [{ addonId: 'transport', qty: 1 }], pickup: { name: '12 Lê Lợi' } });
+      assert.deepEqual(b.pickup, { name: '12 Lê Lợi' });
+      const other = createBookingWorld();
+      const c = await newDraft(other, { pickup: { name: '12 Lê Lợi' } });
+      assert.equal('pickup' in c, false);
+    });
+
+    it('a closed provider is still refused before add-ons are read', async () => {
+      const world = worldWithAddons();
+      world.providers.set('p1', { verified: false, onboardingComplete: false });
+      let reads = 0;
+      const real = world.addons.listAddons.bind(world.addons);
+      world.addons.listAddons = async (id) => {
+        reads += 1;
+        return real(id);
+      };
+      await rejectsWith(newDraft(world, { addons: [{ addonId: 'nope', qty: 1 }] }), 'not_accepting_orders');
+      assert.equal(reads, 0);
+    });
   });
 });

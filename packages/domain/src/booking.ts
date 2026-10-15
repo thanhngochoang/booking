@@ -3,6 +3,7 @@
  * Follows data-model/domain-model.md §2.4, §4, §5.
  */
 
+import type { AddonKind, AddonUnit } from './addon.js';
 import type { PaymentMethod } from './escrow.js';
 
 export const BOOKING_STATUSES = [
@@ -84,6 +85,23 @@ export interface BookingCheckout {
   readonly bankAppsUrl?: string;
 }
 
+/** One priced add-on line, a snapshot taken when the draft is created (amount = unitPrice × qty). */
+export interface AddonLine {
+  readonly addonId: string;
+  readonly kind: AddonKind;
+  readonly name: string;
+  readonly unit: AddonUnit;
+  readonly unitPrice: number;
+  readonly qty: number;
+  readonly amount: number;
+}
+
+/** Where the photographer picks the customer up (transport add-on); same shape as `place`. */
+export interface BookingPickup {
+  readonly name: string;
+  readonly point?: { readonly lat: number; readonly lng: number };
+}
+
 export interface Booking {
   readonly id: string;
   readonly customerId: string;
@@ -95,6 +113,10 @@ export interface Booking {
   readonly end: string; // HH:mm
   readonly place: { readonly name: string; readonly point?: { readonly lat: number; readonly lng: number } };
   readonly note?: string;
+  /** Add-on lines; written only when there is at least one (readers default to []). */
+  readonly addons?: readonly AddonLine[];
+  /** Written only with a transport add-on; never copied to a public document or a message. */
+  readonly pickup?: BookingPickup;
   readonly status: BookingStatus;
   readonly deposit: number;
   readonly remaining: number;
