@@ -2674,6 +2674,8 @@
   "@addonLineQty": {"placeholders": {"name": {"type": "String"}, "qty": {"type": "int"}, "noun": {"type": "String"}}},
   "addonSummaryItem": "{name} ×{qty}",
   "@addonSummaryItem": {"placeholders": {"name": {"type": "String"}, "qty": {"type": "int"}}},
+  "addonBlockMeta": "{qty} {noun} × {price}",
+  "@addonBlockMeta": {"placeholders": {"qty": {"type": "int"}, "noun": {"type": "String"}, "price": {"type": "String"}}},
   "addonsSummary": "+ {list}",
   "@addonsSummary": {"placeholders": {"list": {"type": "String"}}},
   "addonsTitle": "Dịch vụ đi kèm",

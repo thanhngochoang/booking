@@ -11,6 +11,7 @@ import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_status.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
+import 'package:photobooking/features/addons/addon_format.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
@@ -457,7 +458,7 @@ class _RequestCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppSpace.s2),
                     Text(
-                      formatMoney(b.serviceSnapshot.price, short: true),
+                      formatMoney(b.totalVnd, short: true),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -465,6 +466,17 @@ class _RequestCard extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (b.addons.isNotEmpty) ...[
+                  const SizedBox(height: AppSpace.s2),
+                  Text(
+                    addonsSummary(l10n, b.addons),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: secondary,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpace.s2),
                 Text(
                   note == null || note.isEmpty

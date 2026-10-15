@@ -600,6 +600,31 @@ void main() {
       expect(d.monthRevenueVnd, 3000000);
     });
 
+    test('the month sum counts the total of completed bookings with '
+        'add-ons', () {
+      final d = workDashboard(
+        [
+          _b(
+            BookingStatus.completed,
+            id: 'with_addons',
+            price: 1500000,
+            escrow: EscrowStatus.released,
+            completedAt: DateTime.utc(2026, 10, 5),
+          ).copyWith(addons: const [testMakeupLine, testTransportLine]),
+          _b(
+            BookingStatus.completed,
+            id: 'plain',
+            price: 1000000,
+            escrow: EscrowStatus.released,
+            completedAt: DateTime.utc(2026, 10, 6),
+          ),
+        ],
+        now,
+        uid: 'p1',
+      );
+      expect(d.monthRevenueVnd, 3400000 + 1000000);
+    });
+
     test('held sums deposit minus refunded for held, partially refunded and '
         'disputed', () {
       final d = workDashboard(

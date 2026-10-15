@@ -10744,6 +10744,12 @@ abstract class AppLocalizations {
   /// **'{name} ×{qty}'**
   String addonSummaryItem(String name, int qty);
 
+  /// No description provided for @addonBlockMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{qty} {noun} × {price}'**
+  String addonBlockMeta(int qty, String noun, String price);
+
   /// No description provided for @addonsSummary.
   ///
   /// In vi, this message translates to:

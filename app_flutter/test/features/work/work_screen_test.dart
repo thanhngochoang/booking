@@ -146,6 +146,43 @@ Finder _acceptButton(String label) =>
     find.ancestor(of: find.text(label), matching: find.byType(AppButton));
 
 void main() {
+  testWidgets('request card shows the total 3,4M and "+ Trang điểm ×2 · Xe '
+      'đón trong nội thành"', (tester) async {
+    final r = _b(
+      'r1',
+      BookingStatus.requested,
+      deadlineIn: const Duration(hours: 22),
+    ).copyWith(
+      addons: const [testMakeupLine, testTransportLine],
+      deposit: 3400000,
+    );
+    await _pump(tester, _repo([r]));
+    await _settle(tester);
+
+    expect(find.text('3,4M'), findsWidgets);
+    final summary = find.text('+ Trang điểm ×2 · Xe đón trong nội thành');
+    expect(summary, findsOneWidget);
+    final text = tester.widget<Text>(summary);
+    expect(text.maxLines, 1);
+    expect(text.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('no summary line without add-ons', (tester) async {
+    await _pump(
+      tester,
+      _repo([
+        _b(
+          'r1',
+          BookingStatus.requested,
+          deadlineIn: const Duration(hours: 22),
+        ),
+      ]),
+    );
+    await _settle(tester);
+
+    expect(find.textContaining('+ '), findsNothing);
+  });
+
   testWidgets('first load shows BookingCard.skeleton and three '
       'StatTile.skeleton', (tester) async {
     final never = StreamController<List<Booking>>();

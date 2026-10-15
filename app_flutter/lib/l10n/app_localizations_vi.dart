@@ -6128,6 +6128,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String addonBlockMeta(int qty, String noun, String price) {
+    return '$qty $noun × $price';
+  }
+
+  @override
   String addonsSummary(String list) {
     return '+ $list';
   }

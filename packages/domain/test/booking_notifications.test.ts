@@ -67,6 +67,17 @@ describe('notifyBookingChange', () => {
     assert.equal(w.store.rowsOf('c1').length, 0);
   });
 
+  it('notification content for a booking with pickup contains no pickup text', async () => {
+    const pickup = { name: 'Ga Sài Gòn, Quận 3' };
+    await notifyBookingChange(w.deps, b({ status: 'draft', pickup }), b({ status: 'requested', pickup }));
+    await notifyBookingChange(w.deps, b({ status: 'requested', pickup }), b({ status: 'accepted', pickup }));
+    const rows = [...w.store.rowsOf('p1'), ...w.store.rowsOf('c1')];
+    assert.equal(rows.length, 2);
+    for (const row of rows) {
+      assert.ok(!JSON.stringify(row).includes('Ga Sài Gòn'), JSON.stringify(row));
+    }
+  });
+
   it('accept notifies the customer', async () => {
     await notifyBookingChange(w.deps, b({ status: 'requested' }), b({ status: 'accepted' }));
     const [row] = w.store.rowsOf('c1');
