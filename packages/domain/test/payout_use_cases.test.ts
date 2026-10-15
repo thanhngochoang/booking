@@ -143,6 +143,7 @@ describe('payout use cases', () => {
     const b = await releasedPayment(w, '2026-10-16');
     w.store.refunds.set('r1', {
       id: 'r1', paymentId: b, amount: 100_000, percent: 33, status: 'done', manual: false, fromEscrow: true,
+      method: 'gateway', attempts: 1,
       createdAt: 'x', updatedAt: 'x',
     });
     const po = await createPayout(w.payoutDeps, ADMIN, 'p1');

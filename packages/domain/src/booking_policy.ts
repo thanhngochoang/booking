@@ -20,6 +20,9 @@ export const AUTO_COMPLETE_DELAY_HOURS = 24;
 export const ESCROW_RELEASE_DELAY_HOURS = 24;
 export const BOOKING_CONTACT_RETENTION_DAYS = 30;
 
+export const REFUND_RESEND_AFTER_MINUTES = 10;
+export const REFUND_MAX_ATTEMPTS = 6;
+
 export const DEFAULT_REVISIONS = 1;
 export const REVISIONS_MAX = 5;
 

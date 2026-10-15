@@ -1,10 +1,82 @@
-/**
- * Dispatch refund to payment gateway and update refund status.
- */
-
-import type { BookingDeps } from './booking_ports.js';
+import { REFUND_MAX_ATTEMPTS } from './booking_policy.js';
+import type { BookingDeps, PaymentGateway } from './booking_ports.js';
 import type { Booking, PaymentProvider } from './booking.js';
-import { isEscrowRefund, type LedgerEntry, type Payment, type Refund } from './escrow.js';
+import { isEscrowRefund, refundMethodOf, type LedgerEntry, type Payment, type Refund } from './escrow.js';
+import { revealDestination } from './payer_account.js';
+import type { AccountCipher } from './payout_ports.js';
+import type { Clock } from './ports.js';
+
+export interface RefundSendDeps {
+  readonly gateway: PaymentGateway;
+  readonly cipher: AccountCipher;
+  readonly clock: Clock;
+}
+
+/** Decision 5. At most one gateway call under refund.id; never throws; non-pending → returned unchanged, no call. */
+export async function sendRefundOnce(
+  d: RefundSendDeps,
+  refund: Refund,
+  payment: Pick<Payment, 'id' | 'provider'>,
+): Promise<Refund> {
+  if (refund.status !== 'pending') return refund;
+  const at = d.clock.now().toISOString();
+  const attempts = refund.attempts + 1;
+  const stop = (failureReason: string, n = attempts): Refund => ({
+    ...refund,
+    status: 'failed',
+    manual: true,
+    failureReason,
+    attempts: n,
+    lastAttemptAt: at,
+    updatedAt: at,
+  });
+  if (refund.method === 'bank_transfer' && !refund.destination) return stop('no_destination', refund.attempts); // no call made
+  let result: Awaited<ReturnType<PaymentGateway['issueRefund']>>;
+  try {
+    const destination =
+      refund.method === 'bank_transfer' && refund.destination
+        ? await revealDestination(d.cipher, refund.destination)
+        : undefined;
+    result = await d.gateway.issueRefund({
+      paymentId: payment.id,
+      refundId: refund.id,
+      amount: refund.amount,
+      provider: payment.provider,
+      providerRef: refund.providerRef,
+      method: refund.method,
+      ...(destination ? { destination } : {}),
+    });
+  } catch {
+    if (attempts >= REFUND_MAX_ATTEMPTS) return stop('gateway_unavailable');
+    return { ...refund, attempts, lastAttemptAt: at, updatedAt: at };
+  }
+  if (!result.success) return stop(result.error ?? 'gateway_refused');
+  const providerRef = result.providerRef ?? refund.providerRef;
+  if (result.pending) return { ...refund, providerRef, attempts, lastAttemptAt: at, updatedAt: at };
+  return { ...refund, status: 'done', manual: false, providerRef, attempts, lastAttemptAt: at, updatedAt: at };
+}
+
+/** Decision 6. What to store after an outcome; null = leave the stored refund as it is. */
+export function mergeRefundOutcome(stored: Refund, next: Refund): Refund | null {
+  if (stored.status === 'done' || stored.status === 'awaiting_account') return null;
+  if (stored.status === 'failed' && next.status !== 'done') return null;
+
+  const attempts = Math.max(stored.attempts, next.attempts);
+  const outcomeFields: Partial<Refund> = {
+    status: next.status,
+    manual: next.status === 'done' ? false : next.status === 'failed' ? true : next.manual,
+    providerRef: next.providerRef ?? stored.providerRef,
+    failureReason: next.status === 'failed' ? next.failureReason : undefined,
+    attempts,
+    lastAttemptAt: next.lastAttemptAt ?? stored.lastAttemptAt,
+    updatedAt: next.updatedAt,
+  };
+
+  return {
+    ...stored,
+    ...outcomeFields,
+  };
+}
 
 /**
  * Why a booking payment's money went back without a cancellation (#129 Decisions 6–8):
@@ -51,6 +123,9 @@ export function transferRefund(params: {
     manual: false,
     // Sent straight back on arrival: this money never entered escrow.
     fromEscrow: false,
+    method: refundMethodOf(payment.method),
+    attempts: 0,
+    lastAttemptAt: at,
     reason,
     providerRef: params.providerRef,
     createdAt: at,
@@ -121,6 +196,7 @@ export async function dispatchRefund(
     amount: refund.amount,
     provider,
     providerRef: refund.providerRef,
+    method: refund.method,
   });
   return recordDispatch(deps, refund, gatewayResult);
 }
@@ -144,6 +220,7 @@ export async function dispatchRefunds(
         amount: refund.amount,
         provider,
         providerRef: refund.providerRef,
+        method: refund.method,
       });
     } catch (e) {
       gatewayResult = { success: false, error: e instanceof Error ? e.message : 'gateway_error' };

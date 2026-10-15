@@ -5,7 +5,7 @@
 import type { AddonCatalog } from './addon_ports.js';
 import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
-import type { Payment, PaymentMethod, PaymentSubject, Refund, LedgerEntry } from './escrow.js';
+import type { Payment, PaymentMethod, PaymentSubject, Refund, RefundMethod, LedgerEntry } from './escrow.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 
 export interface ServiceRecord {
@@ -59,7 +59,18 @@ export interface TransferNotification {
   readonly receivedAt: string;
   /** The provider's body as received, kept on the transfer record only. */
   readonly raw?: string;
-  readonly payer?: { readonly bankCode?: string; readonly accountMasked?: string; readonly name?: string };
+  readonly payer?: {
+    readonly bankCode?: string;
+    readonly accountMasked?: string;
+    readonly name?: string;
+    readonly accountNumber?: string;
+  };
+}
+
+export interface PayerBankAccount {
+  readonly bankCode: string;
+  readonly accountNumber: string;
+  readonly holderName: string;
 }
 
 /** The gateway's answer to createPayment. Renamed from #129's `PaymentInstructions` (Decision 4). */
@@ -184,7 +195,9 @@ export interface PaymentGateway {
     readonly amount: number;
     readonly provider: PaymentProvider;
     readonly providerRef?: string;
-  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }>;
+    readonly method?: RefundMethod;
+    readonly destination?: PayerBankAccount;
+  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly pending?: boolean; readonly error?: string }>;
 }
 
 export interface BookingDeps {
