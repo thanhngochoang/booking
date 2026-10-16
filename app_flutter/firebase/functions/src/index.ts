@@ -124,8 +124,12 @@ import {
 } from './callables/event_chat.js';
 import { handleRegistrationWrite } from './triggers/registration_write.js';
 import { liveEventChatDeps, liveTimelineDeps } from './infra/live_event_social.js';
+import { handleSendSupportMessage } from './callables/support.js';
+import { liveSupportDeps } from './infra/live_support.js';
+import { handleSupportMessageCreated } from './triggers/support_message_created.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
+
 
 /** `{bookingId | registrationId, channel}` → `{url}`; contract in plan 2b "Out of scope". */
 export const getContactLink = onCall(CALLABLE_OPTIONS, (request) => handleGetContactLink(request, liveContactDeps()));
@@ -721,3 +725,32 @@ export const rollNextFreeDates = onSchedule(
     await handleRollNextFree(liveDiscoveryDeps());
   },
 );
+
+/** Send support message (help chat or dispute thread) */
+export const sendSupportMessage = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSendSupportMessage(request, liveSupportDeps()),
+);
+
+/** Notify recipient when a new support message is created */
+export const onSupportMessageCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'support_threads/{threadId}/messages/{messageId}' },
+  async (event) => {
+    const message = event.data?.data();
+    if (!message) return;
+    await handleSupportMessageCreated(
+      {
+        threadId: event.params.threadId,
+        messageId: event.params.messageId,
+        messageData: message as Record<string, unknown>,
+      },
+      {
+        notify: liveNotifyDeps(),
+        getThreadData: async (threadId) => {
+          const snap = await db().collection('support_threads').doc(threadId).get();
+          return snap.exists ? (snap.data() as Record<string, unknown>) : null;
+        },
+      },
+    );
+  },
+);
+

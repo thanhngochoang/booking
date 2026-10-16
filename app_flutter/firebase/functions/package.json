@@ -16,6 +16,7 @@
     "awards": "tsx tools/awards.ts",
     "verifications": "tsx tools/verifications.ts",
     "payouts": "tsx tools/payouts.ts",
+    "support": "tsx tools/support.ts",
     "clock": "tsx tools/clock.ts",
     "stats": "tsx tools/discovery_stats.ts",
     "try:contact": "node --import tsx seed/try_contact_link.ts"

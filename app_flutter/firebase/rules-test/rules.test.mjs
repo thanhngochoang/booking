@@ -2140,3 +2140,47 @@ test('the owner uploads a business photo once, cannot overwrite, others cannot r
   await assertFails(uploadBytes(ref(st, 'businessDocs/bd1/a.png'), photo(), { contentType: 'image/png' }));
   await assertFails(uploadBytes(ref(st, 'businessDocs/bd1/a.pdf'), photo(), { contentType: 'application/pdf' }));
 });
+
+// ---- S18 support threads (#204) ----
+
+test('a user gets their missing help thread (no error)', async () => {
+  const db = env.authenticatedContext('u1').firestore();
+  // Document does not exist, getDoc should succeed (returning exists === false)
+  const snap = await assertSucceeds(getDoc(doc(db, 'support_threads/help_u1')));
+  assert.equal(snap.exists(), false);
+});
+
+test('a user cannot get another users help thread', async () => {
+  const db = env.authenticatedContext('u2').firestore();
+  await assertFails(getDoc(doc(db, 'support_threads/help_u1')));
+});
+
+test('nobody writes support threads or messages from the client', async () => {
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(setDoc(doc(db, 'support_threads/help_u1'), { kind: 'help' }));
+  await assertFails(setDoc(doc(db, 'support_threads/help_u1/messages/m1'), { body: 'hack' }));
+});
+
+test('a participant reads the threads messages, a third user cannot', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'support_threads/help_u1'), {
+      id: 'help_u1',
+      kind: 'help',
+      participants: ['u1'],
+      status: 'open',
+    });
+    await setDoc(doc(c.firestore(), 'support_threads/help_u1/messages/m1'), {
+      id: 'm1',
+      threadId: 'help_u1',
+      body: 'Xin chao',
+      senderRole: 'user',
+    });
+  });
+
+  const participantDb = env.authenticatedContext('u1').firestore();
+  await assertSucceeds(getDoc(doc(participantDb, 'support_threads/help_u1/messages/m1')));
+
+  const thirdPartyDb = env.authenticatedContext('u3').firestore();
+  await assertFails(getDoc(doc(thirdPartyDb, 'support_threads/help_u1/messages/m1')));
+});
+

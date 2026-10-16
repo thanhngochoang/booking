@@ -1043,6 +1043,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "support_threads",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "awaitingStaff",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastMessageAt",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
