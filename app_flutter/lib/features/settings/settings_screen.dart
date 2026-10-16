@@ -271,6 +271,23 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: AppSpace.s6),
+                  _SectionLabel(
+                    l.settingsSupportSection,
+                    key: const Key('settings-group-support'),
+                  ),
+                  guard(
+                    GlassCard(
+                      highlight: false,
+                      child: _LinkTile(
+                        key: const Key('settings-help'),
+                        icon: AppIcons.help,
+                        title: l.settingsHelp,
+                        subtitle: l.settingsHelpBody,
+                        path: '/help',
+                      ),
+                    ),
+                  ),
                   if (kDebugMode) ...[
                     const SizedBox(height: AppSpace.s6),
                     _SectionLabel(

@@ -5899,4 +5899,179 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileOwnerView => 'Xem';
+
+  @override
+  String get settingsSupportSection => 'Hỗ trợ';
+
+  @override
+  String get settingsHelp => 'Trợ giúp';
+
+  @override
+  String get settingsHelpBody => 'Câu hỏi thường gặp, liên hệ hỗ trợ';
+
+  @override
+  String get helpTitle => 'Trợ giúp';
+
+  @override
+  String get helpMyDisputes => 'Khiếu nại của bạn';
+
+  @override
+  String helpDisputeRow(String code, String name) => 'Khiếu nại #$code · $name';
+
+  @override
+  String helpDisputeRowMeta(String status, String date) => '$status · $date';
+
+  @override
+  String get helpFaqTitle => 'Câu hỏi thường gặp';
+
+  @override
+  String get helpContactSupport => 'Liên hệ hỗ trợ';
+
+  @override
+  String helpEmailLine(String email) => 'Email hỗ trợ: $email';
+
+  @override
+  String get supportChatTitle => 'Hỗ trợ';
+
+  @override
+  String get supportChatNote =>
+      'Chỉ bạn và đội hỗ trợ xem được cuộc trò chuyện này. Đừng gửi mật khẩu hay mã OTP.';
+
+  @override
+  String get supportChatHint => 'Nhắn cho hỗ trợ…';
+
+  @override
+  String get supportChatEmpty =>
+      'Bạn cần giúp gì? Nhắn cho đội hỗ trợ, chúng tôi trả lời tại đây và báo cho bạn khi có tin mới.';
+
+  @override
+  String get supportSendFailed => 'Chưa gửi được tin nhắn. Thử lại.';
+
+  @override
+  String get supportRateLimited => 'Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.';
+
+  @override
+  String get helpTopicPayments => 'Thanh toán';
+
+  @override
+  String get helpTopicCancel => 'Huỷ & hoàn tiền';
+
+  @override
+  String get helpTopicDelivery => 'Bàn giao ảnh';
+
+  @override
+  String get helpTopicDisputes => 'Khiếu nại';
+
+  @override
+  String get helpTopicContact => 'Liên hệ';
+
+  @override
+  String get helpTopicReviews => 'Đánh giá';
+
+  @override
+  String get helpTopicProviders => 'Dành cho thợ ảnh';
+
+  @override
+  String get helpPayFullQ => 'Vì sao phải trả trước 100%?';
+
+  @override
+  String get helpPayFullA =>
+      'Tiền không đến tay thợ ngay. Ứng dụng giữ tiền và chỉ chuyển cho thợ theo 2 đợt: sau buổi chụp, và sau khi bạn đồng ý ảnh rồi kiểm tra bộ ảnh gốc trong 48 giờ. Có lỗi thì bạn được hoàn qua ứng dụng.';
+
+  @override
+  String get helpPayHeldQ => 'Tiền của tôi được giữ ở đâu?';
+
+  @override
+  String get helpPayHeldA =>
+      'Tiền do một tổ chức trung gian thanh toán được cấp phép giữ, không nằm trong tài khoản của ứng dụng, và chưa chuyển cho thợ cho tới khi đủ điều kiện.';
+
+  @override
+  String get helpPayQrQ => 'Chuyển khoản QR sai số tiền thì sao?';
+
+  @override
+  String get helpPayQrA =>
+      'Hãy chuyển đúng số tiền và nội dung trong 15 phút. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động về tài khoản đã chuyển.';
+
+  @override
+  String get helpCancelRefundQ => 'Huỷ buổi chụp được hoàn bao nhiêu?';
+
+  @override
+  String get helpCancelRefundA =>
+      'Huỷ trước giờ chụp từ 48 giờ trở lên: hoàn 100%. Từ 24 đến 48 giờ: hoàn 50%. Dưới 24 giờ: không hoàn. Tính trên toàn bộ số đã trả. Thợ huỷ thì bạn được hoàn 100%.';
+
+  @override
+  String get helpCancelWhereQ => 'Tiền hoàn về đâu?';
+
+  @override
+  String get helpCancelWhereA =>
+      'Trả bằng ví MoMo hoặc ZaloPay thì hoàn về ví. Chuyển khoản thì hoàn về tài khoản đã chuyển, hoặc tài khoản khác bạn khai.';
+
+  @override
+  String get helpCancelLateQ => 'Thợ giao ảnh trễ thì sao?';
+
+  @override
+  String get helpCancelLateA =>
+      'Quá số ngày đã hẹn, bạn được huỷ phần bàn giao và hoàn 100% đợt thanh toán thứ hai; thợ giữ đợt đầu.';
+
+  @override
+  String get helpDeliverySampleQ => 'Ảnh mẫu có watermark là gì?';
+
+  @override
+  String get helpDeliverySampleA =>
+      'Thợ gửi ảnh mẫu có watermark trước. Link bộ ảnh gốc bị che và chỉ mở khi bạn bấm \"Đồng ý ảnh\". Không phản hồi trong 3 ngày thì hệ thống tự đồng ý.';
+
+  @override
+  String get helpDeliveryEditQ => 'Muốn sửa ảnh thì làm sao?';
+
+  @override
+  String get helpDeliveryEditA =>
+      'Trao đổi màu sắc, chỉnh sửa ngay trên ảnh mẫu. Số vòng sửa miễn phí theo gói. Hết lượt thì bạn đồng ý, xin thêm một vòng, hoặc mở khiếu nại.';
+
+  @override
+  String get helpDisputeWhenQ => 'Khi nào tôi mở khiếu nại được?';
+
+  @override
+  String get helpDisputeWhenA =>
+      'Trong 24 giờ sau khi buổi chụp hoàn thành, hoặc trong 24 giờ sau khi sự kiện có vé trả tiền kết thúc. Với bộ ảnh gốc, bạn có 48 giờ kể từ khi đồng ý ảnh. Quá thời hạn thì nút \"Báo vấn đề\" không còn. Vé không thu phí không có khiếu nại vì không có tiền được giữ.';
+
+  @override
+  String get helpDisputeMoneyQ => 'Trong lúc khiếu nại, tiền ở đâu?';
+
+  @override
+  String get helpDisputeMoneyA =>
+      'Tiền tiếp tục được giữ, không chuyển cho thợ. Đội hỗ trợ xem bằng chứng của hai bên rồi quyết định: chuyển cho thợ, hoàn cho bạn, hoặc chia.';
+
+  @override
+  String get helpDisputeEvidenceQ => 'Ai xem được ảnh bằng chứng?';
+
+  @override
+  String get helpDisputeEvidenceA => 'Chỉ bạn, người bị khiếu nại và đội hỗ trợ.';
+
+  @override
+  String get helpContactQ => 'Khi nào tôi gọi được cho thợ?';
+
+  @override
+  String get helpContactA =>
+      'Gọi, Zalo, WhatsApp chỉ mở sau khi bạn đã thanh toán. Trước đó bạn nhắn tin hỏi trong ứng dụng. Số điện thoại không hiện công khai.';
+
+  @override
+  String get helpReviewQ => 'Cà chua và gạch là gì?';
+
+  @override
+  String get helpReviewA =>
+      'Cà chua là hài lòng, gạch là chưa hài lòng; bấm 1 đến 10 lần để nói mức độ. Hồ sơ thợ hiện tỉ lệ cà chua. Mỗi buổi chụp đánh giá một lần, gửi rồi không sửa.';
+
+  @override
+  String get helpProviderStartQ => 'Làm sao để bắt đầu nhận đơn?';
+
+  @override
+  String get helpProviderStartA =>
+      'Xác minh số điện thoại, đóng phí xác minh (thợ ảnh 99.000₫, studio 299.000₫, không hoàn), xác minh danh tính bằng VNeID hoặc chip CCCD và đồng ý quy định nhận việc. Nhân viên duyệt trong 24 giờ.';
+
+  @override
+  String get helpProviderPaidQ => 'Khi nào tôi nhận được tiền?';
+
+  @override
+  String get helpProviderPaidA =>
+      'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.';
 }

@@ -56,7 +56,8 @@ import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
 import 'package:photobooking/features/verification/verify_identity_screen.dart';
-import 'package:photobooking/features/verification/verify_phone_screen.dart';
+import 'package:photobooking/features/help/help_screen.dart';
+import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
 import 'package:photobooking/features/verification/verify_start_screen.dart';
 
@@ -401,6 +402,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.queryParameters['tab'],
           ),
         ),
+      ),
+      GoRoute(
+        path: '/help',
+        builder: (_, _) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: '/help/chat',
+        builder: (_, _) => const SupportChatScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => TabShell(shell),
