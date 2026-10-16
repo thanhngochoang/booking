@@ -5,7 +5,6 @@ import {
   FakePaymentGateway,
   FakePayoutGateway,
   MemoryBookingStore,
-  MemoryEventStore,
   MemoryPayoutStore,
   createPayout,
   listDuePayees,
@@ -15,17 +14,16 @@ import {
   type PayoutAccountDeps,
   type PayoutDeps,
   DEFAULT_PAYOUT_POLICY,
-  confirmFakeTicketPayment,
   publishEvent,
   registerEvent,
   runEventSweeps,
   saveEventDraft,
   type BookingDeps,
   type EventCaller,
-  type EventPaymentDeps,
   type Payment,
 } from '@photobooking/domain';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
+import { createTicketPaymentWorld } from '../../../../../packages/domain/test/support/event_world.js';
 
 // Ticket money goes through the booking escrow release (bookingClock step 5) unchanged: the event
 // clock only stamps `releaseAfter` at completion. Both stores stand for the same `payments`
@@ -38,35 +36,21 @@ const END = new Date('2026-10-12T05:00:00.000Z');
 const HOUR = 3_600_000;
 
 async function completedTicket(host: EventCaller): Promise<Payment> {
-  const store = new MemoryEventStore();
-  let now = new Date('2026-10-06T03:00:00.000Z');
-  let next = 10;
-  const deps: EventPaymentDeps = {
-    events: store,
-    people: {
-      photographer: async (uid) => (uid === 'ph1' ? { onboardingComplete: true, name: 'Lan', avatarUrl: null, verified: true } : null),
-      user: async (uid) => ({ name: uid, avatarUrl: null }),
-    },
-    contacts: { get: async () => ({ phone: '+84912000001' }) },
-    media: { isOwnUpload: (url, path, uid, eventId) => path.startsWith(`eventCovers/${uid}/${eventId}/`) && url.endsWith(path) },
-    clock: { now: () => now },
-    ids: { newId: () => ID(next++) },
-    random: (n) => Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11) % 256),
-    gateway: new FakePaymentGateway(),
-  };
+  const tw = createTicketPaymentWorld();
+  tw.clock.now = () => new Date('2026-10-06T03:00:00.000Z');
   const path = `eventCovers/${host.uid}/${EVENT_ID}/c.jpg`;
-  await saveEventDraft(deps, host, {
+  await saveEventDraft(tw.deps, host, {
     eventId: EVENT_ID, title: 'Photo walk', type: 'photo_walk', coverUrl: `https://s.test/${path}`, coverPath: path,
     startAt: START.toISOString(), endAt: END.toISOString(),
     location: { name: 'Hồ Gươm', lat: 21.0285, lng: 105.8542 }, capacity: 5, price: 200_000,
   });
-  await publishEvent(deps, host, { eventId: EVENT_ID });
+  await publishEvent(tw.deps, host, { eventId: EVENT_ID });
   const cu1: EventCaller = { uid: 'cu1', staffRole: null };
-  const r = await registerEvent(deps, cu1, { eventId: EVENT_ID, quantity: 1, name: 'An', provider: 'momo' });
-  await confirmFakeTicketPayment(deps, cu1, { paymentId: r.paymentId });
-  now = new Date(END.getTime() + 60_000);
-  await runEventSweeps(deps);
-  const p = store.payments.get(r.paymentId as string);
+  const r = await registerEvent(tw.deps, cu1, { eventId: EVENT_ID, quantity: 1, name: 'An', method: 'bank_qr' });
+  await tw.payTicket(r.paymentId as string, 'exact', cu1);
+  tw.clock.now = () => new Date(END.getTime() + 60_000);
+  await runEventSweeps(tw.deps);
+  const p = tw.store.payments.get(r.paymentId as string);
   assert.ok(p);
   return p;
 }

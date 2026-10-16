@@ -3,20 +3,29 @@
  * Opens a payment of the full price for a draft booking and mirrors how to pay it on the booking.
  */
 
-import type { BookingCheckout } from './booking.js';
+import type { BookingCheckout, PaymentProvider } from './booking.js';
 import {
   DRAFT_EXPIRY_MINUTES,
   DRAFT_PAYMENT_GRACE_MINUTES,
   MAX_PAYMENT_ATTEMPTS,
   PAYMENT_EXPIRY_MINUTES,
 } from './booking_policy.js';
-import type { BookingDeps } from './booking_ports.js';
+import type { BookingDeps, GatewayInstructions, PaymentGateway } from './booking_ports.js';
 import { expireOpenPayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
-import { isPaymentMethod, type Payment, type Refund } from './escrow.js';
+import {
+  isPaymentMethod,
+  type Payment,
+  type PaymentMethod,
+  type PaymentSubject,
+  type Refund,
+} from './escrow.js';
 import { isId } from './ids.js';
 import { assertOrderAllowed } from './order_gate.js';
 import { transferCodeFor } from './payment_code.js';
+import type { PaymentInstructions } from './payment_ports.js';
+import { type PaymentLookup, type SettlementDeps, settleTransfer } from './payment_settlement.js';
+import type { IdGenerator } from './ports.js';
 import { dispatchRefunds } from './refunds.js';
 import { requireCustomerPhone } from './require_phone.js';
 
@@ -30,17 +39,164 @@ export interface CreatePaymentResult {
 }
 
 /**
- * A new payment id whose transfer code no payment of any status uses, so a transfer to an old QR
- * can never reach another customer's payment.
+ * Creates a brand new Payment object for any subject.
  */
-async function freshPaymentId(deps: BookingDeps): Promise<{ readonly id: string; readonly code: string }> {
+export function newSubjectPayment(p: {
+  readonly id: string;
+  readonly subjectType: PaymentSubject;
+  readonly subjectId: string;
+  readonly payerId: string;
+  readonly payeeId: string;
+  readonly amount: number;
+  readonly method: PaymentMethod;
+  readonly provider: PaymentProvider;
+  readonly idempotencyKey: string;
+  readonly now: Date;
+  readonly expiresAt: Date;
+}): Payment {
+  const at = p.now.toISOString();
+  return {
+    id: p.id,
+    subjectType: p.subjectType,
+    subjectId: p.subjectId,
+    payerId: p.payerId,
+    payeeId: p.payeeId,
+    provider: p.provider,
+    amount: p.amount,
+    status: 'created',
+    escrowStatus: 'held',
+    idempotencyKey: p.idempotencyKey,
+    method: p.method,
+    transferCode: transferCodeFor(p.id),
+    expiresAt: p.expiresAt.toISOString(),
+    receivedAmount: 0,
+    createdAt: at,
+    updatedAt: at,
+  };
+}
+
+/**
+ * A payment id whose transfer code no payment of any subject or status uses (#129 Decision 5, now cross-subject).
+ */
+export async function freshPaymentId(
+  payments: Pick<PaymentLookup, 'findPaymentsByTransferCode'>,
+  ids: IdGenerator,
+): Promise<string> {
   for (let i = 0; i < CODE_TRIES; i++) {
-    const id = deps.ids.newId();
+    const id = ids.newId();
     const code = transferCodeFor(id);
-    const taken = (await deps.store.findPaymentsByTransferCode(code)).length > 0;
-    if (!taken) return { id, code };
+    const taken = (await payments.findPaymentsByTransferCode(code)).length > 0;
+    if (!taken) return id;
   }
   throw new DomainError('conflict');
+}
+
+/**
+ * Outside any transaction: gateway.createPayment, then save(providerRef, instructions)
+ * (the caller's short tx, only while still created).
+ */
+export async function issuePaymentInstructions(
+  gateway: PaymentGateway,
+  payment: Payment,
+  save: (providerRef: string | undefined, instructions: GatewayInstructions) => Promise<void>,
+): Promise<PaymentInstructions> {
+  if (payment.status !== 'created' || !payment.method || !payment.transferCode || !payment.expiresAt) {
+    throw new DomainError('conflict');
+  }
+
+  const instructions = await gateway.createPayment({
+    paymentId: payment.id,
+    subjectType: payment.subjectType,
+    subjectId: payment.subjectId,
+    amount: payment.amount,
+    method: payment.method,
+    transferCode: payment.transferCode,
+    expiresAt: payment.expiresAt,
+    idempotencyKey: payment.idempotencyKey,
+  });
+
+  const { providerRef, ...restInstructions } = instructions;
+  await save(providerRef, restInstructions);
+
+  const updated: Payment = {
+    ...payment,
+    ...(providerRef ? { providerRef } : {}),
+    instructions: restInstructions,
+  };
+
+  const result = instructionsOf(updated);
+  if (!result) throw new DomainError('conflict');
+  return result;
+}
+
+/**
+ * From the stored payment (reuse on a second tap); null without method, transferCode, expiresAt or instructions.
+ */
+export function instructionsOf(payment: Payment): PaymentInstructions | null {
+  if (!payment.method || !payment.transferCode || !payment.expiresAt || !payment.instructions) {
+    return null;
+  }
+  const inst = payment.instructions;
+  return {
+    paymentId: payment.id,
+    subjectType: payment.subjectType,
+    subjectId: payment.subjectId,
+    method: payment.method,
+    amount: payment.amount,
+    expiresAt: payment.expiresAt,
+    transferCode: payment.transferCode,
+    ...(inst.qrPayload !== undefined ? { qrPayload: inst.qrPayload } : {}),
+    ...(inst.bankName !== undefined ? { bankName: inst.bankName } : {}),
+    ...(inst.accountMasked !== undefined ? { accountMasked: inst.accountMasked } : {}),
+    ...(inst.payUrl !== undefined ? { payUrl: inst.payUrl } : {}),
+    ...(inst.bankAppsUrl !== undefined ? { bankAppsUrl: inst.bankAppsUrl } : {}),
+  };
+}
+
+/**
+ * "Kiểm tra lại" for any subject: queryTransfers for each created payment, settleTransfer each; true when one is now paid.
+ */
+export async function checkSubjectPayments(
+  deps: SettlementDeps,
+  payments: readonly Payment[],
+): Promise<boolean> {
+  for (const payment of payments) {
+    if (payment.status !== 'created' || !payment.transferCode) continue;
+    const transfers = await deps.gateway.queryTransfers({
+      paymentId: payment.id,
+      transferCode: payment.transferCode,
+      providerRef: payment.providerRef,
+    });
+    for (const n of transfers) {
+      await settleTransfer(deps, n);
+    }
+  }
+
+  for (const payment of payments) {
+    const reRead = await deps.payments.getPayment(payment.id);
+    if (reRead?.status === 'paid') return true;
+  }
+  return false;
+}
+
+/**
+ * getPaymentInstructions: payer only; instructions of a `created` payment, else null.
+ */
+export async function readPaymentInstructions(
+  deps: Pick<SettlementDeps, 'payments'>,
+  caller: { readonly uid: string },
+  raw: unknown,
+): Promise<PaymentInstructions | null> {
+  if (typeof raw !== 'object' || raw === null) throw new DomainError('invalid_argument');
+  const { paymentId } = raw as { paymentId?: unknown };
+  if (typeof paymentId !== 'string' || !isId(paymentId)) throw new DomainError('invalid_argument');
+
+  const payment = await deps.payments.getPayment(paymentId);
+  if (!payment) throw new DomainError('not_found');
+  if (payment.payerId !== caller.uid) throw new DomainError('permission_denied');
+
+  if (payment.status !== 'created') return null;
+  return instructionsOf(payment);
 }
 
 /**
@@ -71,7 +227,8 @@ export async function createPayment(
   }
 
   const prior = await deps.store.getPaymentsForBooking(input.bookingId);
-  const { id: paymentId, code: transferCode } = await freshPaymentId(deps);
+  const paymentId = await freshPaymentId(deps.store, deps.ids);
+  const transferCode = transferCodeFor(paymentId);
   const now = deps.clock.now();
   const createdAt = now.toISOString();
   const expiresAt = new Date(now.getTime() + PAYMENT_EXPIRY_MINUTES * MINUTE).toISOString();
@@ -102,6 +259,8 @@ export async function createPayment(
     const idempotencyKey = `pay_${booking.id}_${attempt}`;
     const instructions = await deps.gateway.createPayment({
       paymentId,
+      subjectType: 'booking',
+      subjectId: booking.id,
       bookingId: booking.id,
       amount: booking.deposit,
       method,
@@ -116,6 +275,7 @@ export async function createPayment(
       if (refund) pendingRefunds.push({ refund, provider: p.provider });
     }
 
+    const { providerRef, ...clientInstructions } = instructions;
     const payment: Payment = {
       id: paymentId,
       subjectType: 'booking',
@@ -131,7 +291,8 @@ export async function createPayment(
       transferCode,
       expiresAt,
       receivedAmount: 0,
-      ...(instructions.providerRef ? { providerRef: instructions.providerRef } : {}),
+      ...(providerRef ? { providerRef } : {}),
+      instructions: clientInstructions,
       createdAt,
       updatedAt: createdAt,
     };

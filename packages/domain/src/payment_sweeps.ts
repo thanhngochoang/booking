@@ -7,10 +7,8 @@
 
 import { PAYMENT_RECONCILE_AFTER_MINUTES } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
-import { expireOpenPayment } from './booking_payment_paths.js';
-import type { Payment, Refund } from './escrow.js';
-import { handleTransferNotification } from './handle_transfer.js';
-import { dispatchRefunds } from './refunds.js';
+import { asSettlement } from './handle_transfer.js';
+import { type SettlementDeps, settleTransfer } from './payment_settlement.js';
 
 export interface PaymentSweepResults {
   /** Transfers found by reconciliation that were new (not duplicates). */
@@ -25,20 +23,19 @@ export interface PaymentSweepResults {
   readonly expireFailed: number;
 }
 
-/** Only checkout payments (with a transfer code) belong to this clock; tickets have their own. */
-const isCheckoutPayment = (p: Payment): p is Payment & { readonly transferCode: string } =>
-  p.subjectType === 'booking' && typeof p.transferCode === 'string';
-
-export async function runPaymentSweeps(deps: BookingDeps): Promise<PaymentSweepResults> {
+export async function runPaymentSweeps(raw: SettlementDeps | BookingDeps): Promise<PaymentSweepResults> {
+  const deps = asSettlement(raw);
   const now = deps.clock.now();
 
   // 1. Reconcile: one failing payment or transfer is counted and skipped, never stops the batch.
   let reconciled = 0;
   let reconcileFailed = 0;
   const cutoff = new Date(now.getTime() - PAYMENT_RECONCILE_AFTER_MINUTES * 60_000);
-  for (const p of await deps.store.findPaymentsToReconcile(cutoff)) {
-    if (!isCheckoutPayment(p)) continue;
-    let transfers: Awaited<ReturnType<BookingDeps['gateway']['queryTransfers']>>;
+  for (const p of await deps.payments.findPaymentsToReconcile(cutoff)) {
+    if (!p.transferCode) continue;
+    if (!deps.subjects[p.subjectType]) continue;
+
+    let transfers: Awaited<ReturnType<SettlementDeps['gateway']['queryTransfers']>>;
     try {
       transfers = await deps.gateway.queryTransfers({
         paymentId: p.id,
@@ -51,7 +48,7 @@ export async function runPaymentSweeps(deps: BookingDeps): Promise<PaymentSweepR
     }
     for (const n of transfers) {
       try {
-        const res = await handleTransferNotification(deps, n);
+        const res = await settleTransfer(deps, n);
         if (res.outcome !== 'duplicate') reconciled += 1;
       } catch {
         reconcileFailed += 1;
@@ -63,33 +60,20 @@ export async function runPaymentSweeps(deps: BookingDeps): Promise<PaymentSweepR
   let expired = 0;
   let refunded = 0;
   let expireFailed = 0;
-  for (const p of await deps.store.findOverduePayments(now)) {
-    if (!isCheckoutPayment(p)) continue;
-    let refund: Refund | undefined;
-    let done: boolean;
+  for (const p of await deps.payments.findOverduePayments(now)) {
+    const settler = deps.subjects[p.subjectType];
+    if (!settler) continue;
+
     try {
-      done = await deps.store.runTransaction(async (tx) => {
-        refund = undefined;
-        const current = await tx.getPayment(p.id);
-        if (!current || current.status !== 'created' || !current.expiresAt) return false;
-        if (Date.parse(current.expiresAt) > now.getTime()) return false;
-        refund = await expireOpenPayment(tx, deps, current, now);
-        return true;
-      });
+      const outcome = await settler.expire(p.id, now);
+      if (outcome === 'expired') {
+        expired += 1;
+        if ((p.receivedAmount ?? 0) > 0) {
+          refunded += 1;
+        }
+      }
     } catch {
       expireFailed += 1;
-      continue;
-    }
-    if (!done) continue;
-    expired += 1;
-    if (refund) {
-      refunded += 1;
-      try {
-        // Gateway errors are absorbed (refund left `failed`); only a store write can throw here.
-        await dispatchRefunds(deps, [{ refund, provider: p.provider }]);
-      } catch {
-        expireFailed += 1;
-      }
     }
   }
 

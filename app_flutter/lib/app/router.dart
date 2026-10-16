@@ -12,10 +12,12 @@ import 'package:photobooking/features/awards/my_awards_screen.dart';
 import 'package:photobooking/features/badges/badges_screen.dart';
 import 'package:photobooking/features/auth/login_screen.dart';
 import 'package:photobooking/features/auth/register_screen.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_flow_state.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
-import 'package:photobooking/features/booking/payment_pending_screen.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 import 'package:photobooking/features/calendar/my_calendar_screen.dart';
 import 'package:photobooking/features/chat/chat_list_screen.dart';
 import 'package:photobooking/features/chat/chat_screen.dart';
@@ -292,8 +294,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/b/:id/pay',
-        builder: (_, state) =>
-            PaymentPendingScreen(bookingId: state.pathParameters['id']!),
+        builder: (_, state) => PaymentScreen(
+          subject: BookingPay(state.pathParameters['id']!),
+          initial: state.extra as PaymentInstructions?,
+        ),
+      ),
+      GoRoute(
+        path: '/e/:eventId/pay/:regId',
+        builder: (_, state) => PaymentScreen(
+          subject: TicketPay(
+            state.pathParameters['eventId']!,
+            state.pathParameters['regId']!,
+          ),
+          initial: state.extra as PaymentInstructions?,
+        ),
       ),
       ...bookingDetailRoutes(),
       GoRoute(path: '/chats', builder: (_, _) => const ChatListScreen()),

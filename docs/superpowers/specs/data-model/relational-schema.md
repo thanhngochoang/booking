@@ -289,7 +289,7 @@ alter table posts add constraint fk_posts_booking foreign key (booking_id) refer
 
 create table payments (
   id              text primary key,
-  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request')),
+  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request','verification_fee')),
   subject_id      text not null,
   payee_id        text references users(id),      -- nhiếp ảnh gia / chủ sự kiện nhận tiền; null = nền tảng
   provider        text not null check (provider in ('momo','vnpay')),
@@ -300,6 +300,7 @@ create table payments (
   transfer_code   text,                           -- 'PB XXXXXX', duy nhất trên mọi khoản có mã (ux_payments_transfer_code)
   expires_at      timestamptz,                    -- created_at + 15 phút; chuyển từ lúc này là chuyển muộn
   received_amount bigint check (received_amount >= 0),  -- tổng đã tính vào amount (thiếu thì cộng dồn)
+  instructions    jsonb,                          -- PaymentInstructions cho client (QR, tài khoản, hạn)
   escrow_status   text not null default 'held' check (escrow_status in ('held','released','paid_out','partially_refunded','refunded','disputed')),
   release_after   timestamptz,                    -- hết cửa sổ khiếu nại
   released_at     timestamptz,

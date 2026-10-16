@@ -18,6 +18,9 @@ import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
+import 'fake_payments_repository.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
@@ -44,7 +47,8 @@ import 'package:photobooking/data/chat/chat_providers.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
 import 'package:photobooking/features/booking/booking_sheet_page.dart';
-import 'package:photobooking/features/booking/payment_pending_screen.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 import 'package:photobooking/features/chat/chat_list_screen.dart';
 import 'package:photobooking/features/chat/chat_screen.dart';
 import 'package:photobooking/features/chat/inquiry_entry.dart';
@@ -182,6 +186,13 @@ Future<BookingWorldHandles> pumpBookingRoute(
     );
   }
   final externalLauncher = FakeExternalLauncher();
+  final paymentsRepo = FakePaymentsRepository();
+  paymentsRepo.onConfirm = (paymentId, kind) async {
+    await effectiveBookings.confirmFakePayment(
+      paymentId: paymentId,
+      kind: kind,
+    );
+  };
 
   tester.view.physicalSize = viewSize;
   tester.view.devicePixelRatio = 1;
@@ -237,8 +248,10 @@ Future<BookingWorldHandles> pumpBookingRoute(
       ),
       GoRoute(
         path: '/b/:id/pay',
-        builder: (_, s) =>
-            PaymentPendingScreen(bookingId: s.pathParameters['id']!),
+        builder: (_, s) => PaymentScreen(
+          subject: BookingPay(s.pathParameters['id']!),
+          initial: s.extra as PaymentInstructions?,
+        ),
       ),
       GoRoute(
         path: '/chat/:chatId',
@@ -344,6 +357,7 @@ Future<BookingWorldHandles> pumpBookingRoute(
     ),
     photographerPoolCacheProvider.overrideWithValue(FakePhotographerRepository()),
     realPaymentsProvider.overrideWithValue(realPayments),
+    paymentsRepositoryProvider.overrideWithValue(paymentsRepo),
     ...extraOverrides,
   ];
 

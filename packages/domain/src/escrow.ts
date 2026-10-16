@@ -4,6 +4,7 @@
  */
 
 import type { EscrowStatus, PaymentProvider } from './booking.js';
+import type { GatewayInstructions } from './booking_ports.js';
 import { computeRefund } from './booking_policy.js';
 import { DomainError } from './errors.js';
 
@@ -30,7 +31,10 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
   typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 
-export type PaymentSubject = 'booking' | 'event_registration';
+export const PAYMENT_SUBJECTS = ['booking', 'event_registration'] as const;
+export type PaymentSubject = (typeof PAYMENT_SUBJECTS)[number];
+export const isPaymentSubject = (v: unknown): v is PaymentSubject =>
+  typeof v === 'string' && (PAYMENT_SUBJECTS as readonly string[]).includes(v);
 
 export interface Payment {
   readonly id: string;
@@ -58,6 +62,8 @@ export interface Payment {
    * counted; the ledger has every transfer.
    */
   readonly receivedAmount?: number;
+  /** Gateway instructions as answered when opened (server-only). */
+  readonly instructions?: GatewayInstructions;
   readonly paidAt?: string;
   readonly releasedAt?: string;
   readonly releaseAfter?: string;

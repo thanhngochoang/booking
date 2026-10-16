@@ -23,16 +23,20 @@ import {
   type RegistrationContact,
   type RegistrationDoc,
   type RegistrationReader,
+  type TransferRecord,
 } from '@photobooking/domain';
 import {
   LEDGER_COLLECTION,
   PAYMENTS_COLLECTION,
+  PAYMENT_NOTIFICATIONS_COLLECTION,
   REFUNDS_COLLECTION,
   ledgerEntryToFirestore,
   paymentFromFirestore,
   paymentToFirestore,
   refundFromFirestore,
   refundToFirestore,
+  transferRecordFromFirestore,
+  transferRecordToFirestore,
 } from './booking_firestore.js';
 
 export const EVENTS_COLLECTION = 'events';
@@ -365,6 +369,13 @@ export class FirestoreEventStore implements EventStore {
         getRefund: async (id) => {
           const s = await fTx.get(fs.collection(REFUNDS_COLLECTION).doc(id));
           return s.exists ? refundFromFirestore(s.id, s.data()) : null;
+        },
+        getTransferRecord: async (id) => {
+          const s = await fTx.get(fs.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(id));
+          return s.exists ? transferRecordFromFirestore(s.id, s.data()) : null;
+        },
+        putTransferRecord: (r: TransferRecord) => {
+          writes.push(() => fTx.set(fs.collection(PAYMENT_NOTIFICATIONS_COLLECTION).doc(r.id), transferRecordToFirestore(r)));
         },
         putEvent: (e) => {
           writes.push(() => fTx.set(eventRef(e.id), eventToFirestore(e)));

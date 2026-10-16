@@ -2,14 +2,15 @@
 import 'dart:async';
 import 'dart:io' show SocketException;
 
-import 'package:photobooking/core/ulid.dart';
 import 'package:photobooking/core/payments.dart';
+import 'package:photobooking/core/ulid.dart';
 import 'package:photobooking/data/booking/booking.dart';
 import 'package:photobooking/data/events/event_detail.dart';
 import 'package:photobooking/data/events/event_draft.dart';
 import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 
 /// A refused or failed event call. [code] is the domain code the callable sent
 /// in `details.code`: `sold_out`, `deadline_passed`, `phone_required`,
@@ -49,14 +50,14 @@ class RegisterOutcome {
     required this.registrationId,
     required this.status,
     this.paymentId,
-    this.payUrl,
+    this.instructions,
     this.holdExpiresAt,
   });
 
   final String registrationId;
   final RegistrationStatus status;
   final String? paymentId;
-  final String? payUrl;
+  final PaymentInstructions? instructions;
   final DateTime? holdExpiresAt;
 }
 
@@ -112,19 +113,13 @@ abstract class EventRepository {
     String eventId, {
     required int quantity,
     required String name,
-    PaymentProviderCode? provider,
+    PayMethod? method,
   });
 
   Future<({RegistrationStatus status, int? refundPercent})> cancelRegistration(
     String eventId,
     String registrationId,
   );
-
-  /// Fake gateway mode (emulator and dev project only; the server refuses it
-  /// elsewhere with `fake_payments_disabled`): the payer confirms a ticket
-  /// payment. Returns the registration's status afterwards (`paid`, or
-  /// `cancelled` when the hold had already lapsed and the money is refunded).
-  Future<RegistrationStatus> confirmFakeTicketPayment(String paymentId);
 
   /// Asks the gateway about a held ticket's payment and applies it if paid.
   Future<({bool paid, RegistrationStatus status})> checkTicketPayment(
@@ -217,6 +212,8 @@ class FakeEventRepository implements EventRepository {
       throw e;
     }
   }
+
+  void maybeFailForTest() => _maybeFail();
 
   /// The current value now, then again after every change. A plain controller
   /// (not `async*`) so a cancel completes at once.
@@ -456,7 +453,7 @@ class FakeEventRepository implements EventRepository {
     String eventId, {
     required int quantity,
     required String name,
-    PaymentProviderCode? provider,
+    PayMethod? method,
   }) async {
     _maybeFail();
     final me = uid;
@@ -473,7 +470,7 @@ class FakeEventRepository implements EventRepository {
     if (quantity > 4) {
       throw const EventError('limit_exceeded');
     }
-    registerProviders.add(provider);
+    registerMethods.add(method);
     final now = _clock();
     // A lapsed hold is not active any more: the server releases it on the
     // next tap and starts a new hold.
@@ -488,11 +485,25 @@ class FakeEventRepository implements EventRepository {
         .firstOrNull;
     if (active != null) {
       final held = active.status == RegistrationStatus.held;
+      final m = method ?? PayMethod.bankQr;
+      final exp = active.holdExpiresAt ?? now.add(const Duration(minutes: 10));
       return RegisterOutcome(
         registrationId: active.id,
         status: active.status,
         paymentId: active.paymentId,
-        payUrl: held ? 'https://pay.test/${active.id}' : null,
+        instructions: held
+            ? PaymentInstructions(
+                paymentId: active.paymentId ?? 'pay-${active.id}',
+                method: m,
+                amount: active.amount,
+                expiresAt: exp,
+                transferCode: 'PB 7F3K2Q',
+                bankName: 'BIDV',
+                accountMasked: '9624 •••• 3812',
+                qrPayload: '000201010212...',
+                payUrl: 'https://pay.test/${active.id}',
+              )
+            : null,
         holdExpiresAt: active.holdExpiresAt,
       );
     }
@@ -548,11 +559,25 @@ class FakeEventRepository implements EventRepository {
       held: held,
     );
     _changes.add(null);
+    final m = method ?? PayMethod.bankQr;
+    final exp = reg.holdExpiresAt ?? now.add(const Duration(minutes: 10));
     return RegisterOutcome(
       registrationId: id,
       status: status,
       paymentId: reg.paymentId,
-      payUrl: free ? null : 'https://pay.test/$id',
+      instructions: free
+          ? null
+          : PaymentInstructions(
+              paymentId: reg.paymentId ?? 'pay-$id',
+              method: m,
+              amount: reg.amount,
+              expiresAt: exp,
+              transferCode: 'PB 7F3K2Q',
+              bankName: 'BIDV',
+              accountMasked: '9624 •••• 3812',
+              qrPayload: '000201010212...',
+              payUrl: 'https://pay.test/$id',
+            ),
       holdExpiresAt: reg.holdExpiresAt,
     );
   }
@@ -617,10 +642,13 @@ class FakeEventRepository implements EventRepository {
     return (status: status, refundPercent: percent);
   }
 
-  /// The provider of every `register` call, in order.
-  final List<PaymentProviderCode?> registerProviders = [];
+  /// The method of every `register` call, in order.
+  final List<PayMethod?> registerMethods = [];
 
-  /// Payment ids confirmed through [confirmFakeTicketPayment].
+  /// Kept for Task 5 compatibility until Task 7 updates tickets_tab_test.
+  List<dynamic> get registerProviders => registerMethods;
+
+  /// Payment ids confirmed through confirmFakeTicketPayment / confirmFake.
   final List<String> fakeConfirmed = [];
 
   /// Payment ids the "gateway" reports as paid to [checkTicketPayment].
@@ -721,12 +749,9 @@ class FakeEventRepository implements EventRepository {
     return RegistrationStatus.paid;
   }
 
-  @override
-  Future<RegistrationStatus> confirmFakeTicketPayment(String paymentId) async {
-    _maybeFail();
-    fakeConfirmed.add(paymentId);
-    return _applyPayment(paymentId);
-  }
+  /// Test helper to simulate payment settlement on a held ticket.
+  RegistrationStatus applyPaymentForTest(String paymentId) =>
+      _applyPayment(paymentId);
 
   @override
   Future<({bool paid, RegistrationStatus status})> checkTicketPayment(

@@ -6,6 +6,7 @@ import { firestoreEventPeople, FirestoreEventStore, ownCoverUpload } from './eve
 import { firestoreUserContactReader } from './firestore.js';
 import { getSharedFakeGateway } from './live_booking.js';
 import { liveNotifyDeps } from './live_notification.js';
+import { FirestorePaymentLookup } from './payment_firestore.js';
 
 export function liveEventDeps(): EventDeps {
   const firestore = db();
@@ -23,7 +24,8 @@ export function liveEventDeps(): EventDeps {
 
 /** Paid tickets use the booking payment wiring (the same gateway instance as deposits). */
 export function liveEventPaymentDeps(): EventPaymentDeps {
-  return { ...liveEventDeps(), gateway: getSharedFakeGateway() };
+  const firestore = db();
+  return { ...liveEventDeps(), gateway: getSharedFakeGateway(), payments: new FirestorePaymentLookup(firestore) };
 }
 
 export function liveEventCallableDeps(): EventCallableDeps {

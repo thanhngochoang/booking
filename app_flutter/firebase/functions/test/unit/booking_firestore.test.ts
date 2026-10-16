@@ -272,6 +272,64 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.deepEqual(transferRecordFromFirestore('fake_txn_2', transferRecordToFirestore(review)), review);
     assert.equal(transferRecordFromFirestore('x', undefined), null);
   });
+
+  it('round-trips Payment with instructions for each subject', () => {
+    for (const subjectType of ['booking', 'event_registration'] as const) {
+      const p: Payment = {
+        id: `pay_${subjectType}`,
+        subjectType,
+        subjectId: 'sub_01',
+        ...(subjectType === 'event_registration' ? { eventId: 'ev_01' } : {}),
+        payerId: 'cust_01',
+        payeeId: 'photog_01',
+        provider: 'fake',
+        amount: 500_000,
+        status: 'created',
+        escrowStatus: 'held',
+        idempotencyKey: `idem_${subjectType}`,
+        method: 'bank_qr',
+        transferCode: 'PB 7F3K2Q',
+        expiresAt: '2026-10-10T09:15:00.000Z',
+        instructions: {
+          providerRef: 'fake_ref_1',
+          qrPayload: '000201...',
+          bankName: 'BIDV',
+          accountMasked: '9624 •••• 3812',
+          bankAppsUrl: 'https://fake-pay.local/bank-apps',
+        },
+        createdAt: '2026-10-10T09:00:00.000Z',
+        updatedAt: '2026-10-10T09:00:00.000Z',
+      };
+      const docData = paymentToFirestore(p);
+      const restored = paymentFromFirestore(p.id, docData);
+      assert.ok(restored);
+      assert.equal(restored.subjectType, subjectType);
+      assert.deepEqual(restored.instructions, p.instructions);
+      if (subjectType === 'event_registration') {
+        assert.equal(restored.eventId, 'ev_01');
+      }
+    }
+  });
+
+  it('a refund with subjectType event_registration keeps it', () => {
+    const r: Refund = {
+      id: 'ref_tkt_1',
+      paymentId: 'pay_tkt_1',
+      subjectType: 'event_registration',
+      amount: 200_000,
+      percent: 100,
+      status: 'pending',
+      manual: false,
+      fromEscrow: true,
+      reason: 'event_cancelled',
+      createdAt: '2026-10-10T09:00:00.000Z',
+      updatedAt: '2026-10-10T09:00:00.000Z',
+    };
+    const docData = refundToFirestore(r);
+    const restored = refundFromFirestore(r.id, docData);
+    assert.ok(restored);
+    assert.equal(restored.subjectType, 'event_registration');
+  });
 });
 
 /** Records the query a FirestoreBookingStore sweep builds and answers it with `docs`. */

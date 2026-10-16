@@ -92,7 +92,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S04.01 | Đặt lịch 1/4 · Gói | `/u/:uid/book` (bước `service`) | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S05 |
 | S04.02 | Đặt lịch 2/4 · Ngày & giờ | bước `datetime` | khách | 4 | ✅ đã làm (4b) · bước địa điểm chưa có bản đồ | S06 |
 | S04.03 | Đặt lịch 4/4 · Xem lại & thanh toán (100%, VietQR/ví; đổi 2026-10-06) | bước `review` (bước 3 Địa điểm dùng chung layout S04.01) | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · bước địa điểm chưa có bản đồ | S07 |
-| S04.04 | Chờ thanh toán | `/b/:id/pay` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) | S08 |
+| S04.04 | Chờ thanh toán | `/b/:id/pay`, `/e/:eventId/pay/:regId` | khách | 4 | ✅ thanh toán 100%, VietQR (#129) · dùng chung mọi chủ thể (PR #200) | S08 |
 | S04.05 | Thêm số điện thoại (sheet) | `/profile/phone?returnTo=…` | khách | 2 | ✅ đã làm · khớp mock (mock-parity-1) | S33 |
 | S04.06 | Đặt lịch 3/4 · Địa điểm (bản đồ nhỏ, ô địa điểm, chip gợi ý); ô **Điểm đón** khi có dịch vụ xe đưa đón | bước `place` | khách | spec 10-08 dịch vụ đi kèm | ✅ bước có sẵn (4b), chưa có bản đồ · ô Điểm đón: ⬜ có mock, chưa có plan | — |
 | **S05** | **Theo dõi buổi chụp (khách)** | | | | | |
@@ -131,8 +131,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S11** | **Tham gia sự kiện** | | | | | |
 | S11.01 | Danh sách sự kiện | `/events` | cả hai | 3b | ✅ đã làm (10c) | S15 |
 | S11.02 | Chi tiết sự kiện | `/e/:eventId` | cả hai | 3b | ✅ đã làm (10c) | S16 |
-| S11.03 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ✅ đã làm (10c) | S17 |
-| S11.04 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ✅ đã làm (10c) | S18 |
+| S11.03 | Đăng ký sự kiện (sheet) | `/e/:eventId/join` | khách | 3b | ✅ đã làm (10c) · thanh toán qua S04.04 (PR #200) | S17 |
+| S11.04 | Vé sự kiện | `/bookings?tab=events` | khách | 3b | ✅ đã làm (10c) · thanh toán tiếp qua S04.04 (PR #200) | S18 |
 | S11.05 | Timeline sự kiện (bài theo hashtag) | `/e/:eventId/timeline` (cũng là tab ở S11.02) | cả hai | 3b | ✅ đã làm (10c) | S45 |
 | S11.06 | Nhóm chat sự kiện | `/e/:eventId/chat` | thành viên (người đăng ký, chủ sự kiện, staff) | 3b | ✅ đã làm (10c) | S46 |
 | **S12** | **Tổ chức sự kiện** | | | | | |

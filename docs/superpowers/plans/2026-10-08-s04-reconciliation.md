@@ -135,15 +135,14 @@ Mỗi chỗ thêm có ghi chú "trước đây do S04 làm; #129 không làm (xe
 Ba việc dưới đây lớn hơn một task nhỏ. Cập nhật 2026-10-08: V1 và V2 đã có issue và plan (xem dòng "Issue và plan" ở mỗi mục); plan dùng chúng ghi "Blocked by" trỏ tới issue đó. V3 vẫn chưa có issue và plan.
 
 ### V1. Thanh toán dùng chung cho mọi chủ thể (vé, Chụp ngay, phí xác minh) và S04.04 dùng chung
+(Đã hoàn thành ở **#200**, plan `docs/superpowers/plans/2026-10-08-v1-subject-payments.md`. Bảng sai lệch thực tế được ghi nhận tại mục "Deviations" của plan và `docs/superpowers/handover/ledger-v1-subject-payments.md`).
 
-Hôm nay chỉ booking có `createPayment`, VietQR, webhook và đối soát; `handleTransferNotification` chỉ khớp payment `subjectType === 'booking'`; S04.04 là `PaymentPendingScreen` đọc `bookings/{id}.checkout`. Cần:
+- Domain: điểm mở rộng chủ thể thanh toán (`PaymentSubject` gồm `booking`, `event_registration`, `instant_request`, `verification_fee`; `SubjectSettler`, `SettlementDeps.subjects`, `settleTransfer` phân chia theo `subjectType`), các hàm dùng chung `newSubjectPayment`, `issuePaymentInstructions`, `instructionsOf`, `checkSubjectPayments`, bản export của `applyTransfer` và `expireUnpaid`, kiểu `PaymentInstructions` độc lập không gắn với booking; `confirmFakePayment` dùng chung cho mọi chủ thể qua `PaymentsRepository.confirmFake`.
+- Functions: `liveSettlementDeps()` tổng hợp settlers; `handleTransferNotification` và `paymentClock` (`runPaymentSweeps`) quét và đối soát theo chủ thể.
+- App: `features/payment/` (`PaySubject`, `BookingPay`, `TicketPay`, `PaymentScreen`, `PaymentController`, `openPayment`, `QrCheckoutView`, `WalletWaitingView`, `FakeTransferSheet`), `PaymentsRepository.confirmFake`, `PaymentInstructions` (Dart).
+- Vé S11.03 và S11.04 chuyển sang mô hình này (`TicketPay`, route `/e/:eventId/pay/:regId`, `registerEvent` nhận `method`); xoá `PaymentProviderCode`, `createDepositIntent`, `checkPaymentStatus`, `confirmFakeTicketPayment`, `ticket_payment_sheet.dart`.
 
-- Domain: điểm mở rộng chủ thể thanh toán (`PaymentSubject` thêm mã mới, `SubjectSettler`, `SettlementDeps` + `subjects`, `settleTransfer` chia theo `subjectType`), các hàm dùng chung `newSubjectPayment`, `issuePaymentInstructions`, `instructionsOf`, `checkSubjectPayments`, bản export của `applyTransfer` và `expireUnpaid`, kiểu `PaymentInstructions` không gắn với booking; `confirmFakePayment` cho mọi chủ thể.
-- Functions: `liveSettlementDeps()`; webhook và `paymentClock` đi qua dispatch theo chủ thể.
-- App: `features/payment/` (`PaySubject`, `PaymentScreen`, `PaymentController`, `openPayment`, `FakeWalletSheet`), `PaymentsRepository.confirmFake`, `PaymentInstructions` (Dart).
-- Vé S11.03 chuyển sang mô hình này (`TicketPay`, route `/e/:eventId/pay/:regId`, `registerEvent` nhận `method`); bỏ `PaymentProviderCode`, `createDepositIntent`, `checkPaymentStatus`, `confirmFakeTicketPayment`.
-
-**Issue và plan:** #200, `docs/superpowers/plans/2026-10-08-v1-subject-payments.md` (Blocked by: nothing; tên thật và bảng Deviations trong plan đó thắng tên ở mục này, ví dụ không có `FakeWalletSheet`).
+**Issue và plan:** #200, `docs/superpowers/plans/2026-10-08-v1-subject-payments.md` (Đã hoàn thành).
 
 Plan bị chặn: #203 S21 phí xác minh (tách khỏi #135 ngày 2026-10-08; chủ thể `verification_fee`), #140 S13–S14 (chủ thể `instant_request`) và #140 S13 khách (trả tiền ở S04.04). #138 S17 chỉ bị ảnh hưởng nhẹ (vé trả tiền vẫn về `/bookings?tab=events&highlight=…`).
 

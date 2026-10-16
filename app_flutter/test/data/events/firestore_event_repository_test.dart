@@ -642,32 +642,42 @@ void main() {
     });
 
     test(
-      'registerEvent sends quantity, name and provider and parses the outcome',
+      'register sends method: momo and parses instructions',
       () async {
         answer({
           'registrationId': 'r1',
           'status': 'held',
           'paymentId': 'pay1',
-          'payUrl': 'https://pay.test/1',
+          'instructions': {
+            'paymentId': 'pay1',
+            'method': 'momo',
+            'amount': 250000,
+            'transferCode': 'PB 7F3K2Q',
+            'expiresAt': '2026-10-10T03:10:00.000Z',
+            'payUrl': 'https://pay.test/1',
+          },
           'holdExpiresAt': '2026-10-10T03:10:00.000Z',
         });
         final out = await repo.register(
           'ev1',
           quantity: 2,
           name: 'Lan',
-          provider: PaymentProviderCode.momo,
+          method: PayMethod.momo,
         );
         expect(out.registrationId, 'r1');
         expect(out.status, RegistrationStatus.held);
         expect(out.paymentId, 'pay1');
-        expect(out.payUrl, 'https://pay.test/1');
+        expect(out.instructions?.method, PayMethod.momo);
+        expect(out.instructions?.amount, 250000);
+        expect(out.instructions?.transferCode, 'PB 7F3K2Q');
+        expect(out.instructions?.payUrl, 'https://pay.test/1');
         expect(out.holdExpiresAt, DateTime.utc(2026, 10, 10, 3, 10));
         verify(
           () => callable.call<Object?>({
             'eventId': 'ev1',
             'quantity': 2,
             'name': 'Lan',
-            'provider': 'momo',
+            'method': 'momo',
           }),
         ).called(1);
       },
@@ -678,13 +688,13 @@ void main() {
         'registrationId': 'r1',
         'status': 'paid',
         'paymentId': null,
-        'payUrl': null,
+        'instructions': null,
         'holdExpiresAt': null,
       });
       final out = await repo.register('ev1', quantity: 1, name: 'Lan');
       expect(out.status, RegistrationStatus.paid);
       expect(
-        (out.paymentId, out.payUrl, out.holdExpiresAt),
+        (out.paymentId, out.instructions, out.holdExpiresAt),
         (null, null, null),
       );
       verify(
@@ -734,24 +744,6 @@ void main() {
   });
 
   group('ticket payments', () {
-    test(
-      'confirmFakeTicketPayment sends the payment id and parses the status',
-      () async {
-        answer({'status': 'paid'});
-        expect(
-          await repo.confirmFakeTicketPayment('pay1'),
-          RegistrationStatus.paid,
-        );
-        verify(() => callable.call<Object?>({'paymentId': 'pay1'})).called(1);
-        verify(
-          () => functions.httpsCallable(
-            'confirmFakeTicketPayment',
-            options: any(named: 'options'),
-          ),
-        ).called(1);
-      },
-    );
-
     test('checkTicketPayment sends event and registration', () async {
       answer({'paid': false, 'status': 'held'});
       final r = await repo.checkTicketPayment('ev1', 'r1');
@@ -760,26 +752,6 @@ void main() {
         () =>
             callable.call<Object?>({'eventId': 'ev1', 'registrationId': 'r1'}),
       ).called(1);
-    });
-
-    test('fake payments refused by the server surface their code', () async {
-      when(() => callable.call<Object?>(any())).thenThrow(
-        FirebaseFunctionsException(
-          message: 'fake_payments_disabled',
-          code: 'failed-precondition',
-          details: {'code': 'fake_payments_disabled'},
-        ),
-      );
-      await expectLater(
-        repo.confirmFakeTicketPayment('pay1'),
-        throwsA(
-          isA<EventError>().having(
-            (e) => e.code,
-            'code',
-            'fake_payments_disabled',
-          ),
-        ),
-      );
     });
 
     test(

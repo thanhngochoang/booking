@@ -4,7 +4,6 @@ import {
   cancelEventWithRefunds,
   cancelRegistration,
   checkTicketPayment,
-  confirmFakeTicketPayment,
   checkInRegistration,
   publishEvent,
   registerEvent,
@@ -14,11 +13,12 @@ import {
   type EventCaller,
   type EventDeps,
   type EventPaymentDeps,
+  type PaymentInstructions,
   type RegisterResult,
   type RegistrationStatus,
+  type SettlementDeps,
 } from '@photobooking/domain';
 import { toHttpsError } from './errors.js';
-import { assertFakePaymentsAllowed } from '../infra/fake_payments.js';
 
 /** The part of a callable request the event handlers use (a `CallableRequest` fits). */
 export interface EventCallableInput {
@@ -132,8 +132,8 @@ export async function handleRespondToHostConsent(
 }
 
 /**
- * `{eventId, quantity, name, provider?}` → `{registrationId, status, paymentId, payUrl, holdExpiresAt}`.
- * Paid events need `provider` (`momo` | `vnpay` | `fake`) and return a 10-minute hold with a pay URL.
+ * `{eventId, quantity, name, method?}` → `{registrationId, status, paymentId, instructions, holdExpiresAt}`.
+ * Paid events need `method` (`bank_qr` | `momo` | `zalopay`) and return a 10-minute hold with instructions.
  */
 export async function handleRegisterEvent(
   request: EventCallableInput,
@@ -142,7 +142,7 @@ export async function handleRegisterEvent(
   registrationId: string;
   status: RegistrationStatus;
   paymentId: string | null;
-  payUrl: string | null;
+  instructions: PaymentInstructions | null;
   holdExpiresAt: string | null;
 }> {
   const caller = eventCallerOf(request);
@@ -151,7 +151,7 @@ export async function handleRegisterEvent(
     registrationId: r.registrationId,
     status: r.status,
     paymentId: r.paymentId,
-    payUrl: r.payUrl,
+    instructions: r.instructions,
     holdExpiresAt: r.holdExpiresAt === null ? null : r.holdExpiresAt.toISOString(),
   };
 }
@@ -174,24 +174,10 @@ export async function handleCheckInRegistration(
   return runEventCallable('checkInRegistration', () => checkInRegistration(deps, caller, dataOf(request)));
 }
 
-/**
- * `{paymentId}` → `{status}`: fake gateway mode, the payer confirms their own ticket payment.
- * Refused with `fake_payments_disabled` outside the emulator and the dev project (security gate).
- */
-export async function handleConfirmFakeTicketPayment(
-  request: EventCallableInput,
-  deps: EventPaymentDeps,
-  env: Readonly<Record<string, string | undefined>> = process.env,
-): Promise<{ status: RegistrationStatus }> {
-  const caller = eventCallerOf(request);
-  assertFakePaymentsAllowed(env);
-  return runEventCallable('confirmFakeTicketPayment', () => confirmFakeTicketPayment(deps, caller, dataOf(request)));
-}
-
 /** `{eventId, registrationId}` → `{paid, status}`: asks the gateway and applies a payment it reports. */
 export async function handleCheckTicketPayment(
   request: EventCallableInput,
-  deps: EventPaymentDeps,
+  deps: EventPaymentDeps & { settlement?: SettlementDeps },
 ): Promise<{ paid: boolean; status: RegistrationStatus }> {
   const caller = eventCallerOf(request);
   return runEventCallable('checkTicketPayment', () => checkTicketPayment(deps, caller, dataOf(request)));

@@ -31,7 +31,7 @@ describe('registerEvent', () => {
     await publishedEvent(w);
     const r = await register(w, cu1, 'ev1_aaaaaaaaaaaaaaaaaaaa', 3);
     assert.equal(r.status, 'paid');
-    assert.deepEqual([r.paymentId, r.payUrl, r.holdExpiresAt], [null, null, null]);
+    assert.deepEqual([r.paymentId, r.instructions, r.holdExpiresAt], [null, null, null]);
     const doc = w.store.registrations.get(`ev1_aaaaaaaaaaaaaaaaaaaa/${r.registrationId}`);
     assert.deepEqual([doc?.amount, doc?.quantity, doc?.userId, doc?.checkedInAt], [0, 3, 'cu1', null]);
     assert.match(doc?.ticketCode ?? '', /^VE-[A-HJ-NP-Z2-9]{4}-1004$/);

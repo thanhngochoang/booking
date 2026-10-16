@@ -5,6 +5,7 @@ import {
   FakePaymentGateway,
   MemoryEventStore,
   MemoryNotificationStore,
+  MemoryPaymentLookup,
   MemoryPushSender,
   MemoryUserDirectory,
   type EventDeps,
@@ -36,6 +37,7 @@ describe('event callables', () => {
 
   const deps = (): EventCallableDeps & EventPaymentDeps => ({
     gateway: new FakePaymentGateway(),
+    payments: new MemoryPaymentLookup([store]),
     events: store,
     people: {
       photographer: async (uid) =>

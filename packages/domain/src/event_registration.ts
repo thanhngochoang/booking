@@ -1,7 +1,7 @@
 import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
 import type { PaymentGateway } from './booking_ports.js';
-import type { Payment } from './escrow.js';
+import { isPaymentMethod, type Payment, type PaymentMethod } from './escrow.js';
 import {
   CHECKIN_GRACE_HOURS,
   HOLD_MINUTES,
@@ -18,15 +18,17 @@ import type { EventDeps } from './event_ports.js';
 import { RetryableConflict } from './event_ports.js';
 import { isId } from './ids.js';
 import {
-  issueTicketIntent,
   newTicketPayment,
-  parseTicketProvider,
   refundTicket,
   ticketIdempotencyKey,
   ticketRefundPercent,
 } from './event_payments.js';
 import { requireCustomerPhone } from './require_phone.js';
 import { isTicketCode, ticketCodeCandidates } from './ticket_code.js';
+import type { PaymentInstructions } from './payment_ports.js';
+import type { PaymentLookup } from './payment_settlement.js';
+import { freshPaymentId, instructionsOf, issuePaymentInstructions } from './create_payment.js';
+import { MemoryPaymentLookup, type PaymentSource } from './memory_payment_lookup.js';
 
 const HOUR_MS = 3_600_000;
 const NAME_MAX = 60;
@@ -35,7 +37,7 @@ export interface RegisterResult {
   readonly registrationId: string;
   readonly status: RegistrationStatus;
   readonly paymentId: string | null;
-  readonly payUrl: string | null;
+  readonly instructions: PaymentInstructions | null;
   readonly holdExpiresAt: Date | null;
 }
 
@@ -49,11 +51,17 @@ function idOf(v: unknown): string {
   return v;
 }
 
+function parseMethod(v: unknown): PaymentMethod | null {
+  if (v === undefined || v === null) return null;
+  if (!isPaymentMethod(v)) throw new DomainError('invalid_argument');
+  return v;
+}
+
 const resultOf = (r: RegistrationDoc): RegisterResult => ({
   registrationId: r.id,
   status: r.status,
   paymentId: r.paymentId,
-  payUrl: null,
+  instructions: null,
   holdExpiresAt: r.holdExpiresAt,
 });
 
@@ -66,7 +74,10 @@ export function cancellationRefundPercent(startAt: Date, now: Date): 0 | 100 {
 }
 
 /** Register needs the payment gateway only for paid events (Decision 27 → Task 9). */
-export type RegisterDeps = EventDeps & { readonly gateway?: PaymentGateway };
+export type RegisterDeps = EventDeps & {
+  readonly gateway?: PaymentGateway;
+  readonly payments?: PaymentLookup;
+};
 
 type RegisterOut = { result: RegisterResult | null; soldOut: boolean; intent: Payment | null };
 
@@ -80,8 +91,14 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
   const name = r.name.normalize('NFC').trim();
   const n = graphemeCount(name);
   if (n < 1 || n > NAME_MAX) throw new DomainError('invalid_argument');
-  const provider = parseTicketProvider(r.provider);
+  if ('provider' in r) throw new DomainError('invalid_argument');
+  const method = parseMethod(r.method);
   const profile = await deps.people.user(caller.uid);
+
+  // When method is present and payments lookup exists, draw a fresh payment id before transaction (Decision 5).
+  const preDrawnPaymentId = method !== null && deps.payments !== undefined
+    ? await freshPaymentId(deps.payments, deps.ids)
+    : deps.ids.newId();
 
   const out = await deps.events.runTransaction(async (tx): Promise<RegisterOut> => {
     const now = deps.clock.now();
@@ -104,15 +121,16 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
       return { result: resultOf(live), soldOut: false, intent: null };
     }
     if (live !== null) {
-      // Same hold, another tap: reuse the provider's payment, or open a second intent.
-      // Without a provider ("Thanh toán tiếp") the hold keeps the provider of its current payment.
-      const current = provider === null && live.paymentId !== null ? await tx.getPayment(live.paymentId) : null;
-      const chosen = provider ?? current?.provider ?? null;
+      // Same hold, another tap: reuse the method's payment, or open a second intent.
+      // Without a method ("Thanh toán tiếp") the hold keeps the method of its current payment.
+      const current = method === null && live.paymentId !== null ? await tx.getPayment(live.paymentId) : null;
+      const chosen = method ?? current?.method ?? null;
       if (chosen === null) throw new DomainError('invalid_argument');
       const existing = current ?? await tx.paymentByIdempotencyKey(ticketIdempotencyKey(live.id, chosen));
+      const holdExpiresAt = live.holdExpiresAt ?? new Date(now.getTime() + HOLD_MINUTES * 60_000);
       const payment = existing ?? newTicketPayment({
-        id: deps.ids.newId(), event: ev, registrationId: live.id, payerId: caller.uid, provider: chosen,
-        amount: live.amount, now,
+        id: preDrawnPaymentId, event: ev, registrationId: live.id, payerId: caller.uid, method: chosen,
+        provider: deps.gateway?.provider ?? 'fake', amount: live.amount, now, expiresAt: holdExpiresAt,
       });
       if (existing === null) tx.putPayment(payment);
       const reg = live.paymentId === payment.id
@@ -121,7 +139,7 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
       if (reg !== live) tx.putRegistration(reg);
       return { result: resultOf(reg), soldOut: false, intent: payment };
     }
-    if (paidEvent && provider === null) throw new DomainError('invalid_argument');
+    if (paidEvent && method === null) throw new DomainError('invalid_argument');
     const codes = ticketCodeCandidates(ev.startAt as Date, deps.random, 5);
     const taken = await Promise.all(codes.map((c) => tx.ticketCodeTaken(c)));
     const code = codes.find((_, i) => !taken[i]);
@@ -143,10 +161,12 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     const regId = deps.ids.newId();
     const start = ev.startAt as Date;
     const loc = ev.location as NonNullable<EventRecord['location']>;
-    const payment = paidEvent && provider !== null
+    const holdExpiresAt = new Date(now.getTime() + HOLD_MINUTES * 60_000);
+    const payment = paidEvent && method !== null
       ? newTicketPayment({
-        id: deps.ids.newId(), event: ev, registrationId: regId, payerId: caller.uid, provider,
-        amount: q * (ev.price as number), now,
+        id: preDrawnPaymentId, event: ev, registrationId: regId, payerId: caller.uid, method,
+        provider: deps.gateway?.provider ?? 'fake',
+        amount: q * (ev.price as number), now, expiresAt: holdExpiresAt,
       })
       : null;
     const reg: RegistrationDoc = {
@@ -156,7 +176,7 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
       amount: payment?.amount ?? 0,
       // Free: a ticket at once. Paid: seats held 10 minutes while the customer pays (Decision 9).
       status: payment === null ? 'paid' : 'held',
-      holdExpiresAt: payment === null ? null : new Date(now.getTime() + HOLD_MINUTES * 60_000),
+      holdExpiresAt: payment === null ? null : holdExpiresAt,
       ticketCode: code, paymentId: payment?.id ?? null,
       contactEligible: false, // O3: free never unlocks contact; a paid ticket does once the payment lands
       checkedInAt: null, cancelledAt: null, refundPercent: null,
@@ -177,8 +197,32 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
   });
   if (out.soldOut || out.result === null) throw new DomainError('sold_out');
   if (out.intent === null || deps.gateway === undefined) return out.result;
-  const payUrl = await issueTicketIntent({ ...deps, gateway: deps.gateway }, out.intent);
-  return { ...out.result, payUrl };
+
+  const storedInst = instructionsOf(out.intent);
+  if (storedInst !== null) {
+    return { ...out.result, instructions: storedInst };
+  }
+
+  const intent = out.intent;
+  const intentId = intent.id;
+  const instructions = await issuePaymentInstructions(
+    deps.gateway,
+    intent,
+    async (providerRef, restInstructions) => {
+      await deps.events.runTransaction(async (tx) => {
+        const cur = await tx.getPayment(intentId);
+        if (cur === null || cur.status !== 'created') return;
+        tx.putPayment({
+          ...cur,
+          ...(providerRef ? { providerRef } : {}),
+          instructions: restInstructions,
+          updatedAt: deps.clock.now().toISOString(),
+        });
+      });
+    },
+  );
+
+  return { ...out.result, instructions };
 }
 
 export async function cancelRegistration(
@@ -224,7 +268,8 @@ export async function cancelRegistration(
   });
   if (!decided.refund) return { status: decided.status, refundPercent: decided.refundPercent };
   if (deps.gateway === undefined) throw new DomainError('not_eligible');
-  const done = await refundTicket({ ...deps, gateway: deps.gateway }, eventId, regId, 100, 'customer_cancel');
+  const payments = deps.payments ?? new MemoryPaymentLookup([deps.events as unknown as PaymentSource]);
+  const done = await refundTicket({ ...deps, gateway: deps.gateway, payments }, eventId, regId, 100, 'customer_cancel');
   if (done === 'skipped') {
     // A host cancel (or a second tap) refunded it first: the ticket is refunded either way.
     const now = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));

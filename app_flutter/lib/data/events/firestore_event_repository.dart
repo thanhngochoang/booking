@@ -14,6 +14,7 @@ import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/firestore_event_mapping.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/image_purpose.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
@@ -364,14 +365,14 @@ class FirestoreEventRepository implements EventRepository {
     String eventId, {
     required int quantity,
     required String name,
-    PaymentProviderCode? provider,
+    PayMethod? method,
   }) async {
     final data = _asMap(
       await _call('registerEvent', {
         'eventId': eventId,
         'quantity': quantity,
         'name': name,
-        'provider': ?provider?.code,
+        'method': ?method?.code,
       }, timeout: _paymentTimeout),
     );
     final id = data['registrationId'];
@@ -383,7 +384,7 @@ class FirestoreEventRepository implements EventRepository {
       registrationId: id,
       status: RegistrationStatus.fromCode(data['status'] as String?),
       paymentId: data['paymentId'] as String?,
-      payUrl: data['payUrl'] as String?,
+      instructions: paymentInstructionsFrom(data['instructions']),
       holdExpiresAt: hold is String ? DateTime.tryParse(hold)?.toUtc() : null,
     );
   }
@@ -404,16 +405,6 @@ class FirestoreEventRepository implements EventRepository {
       status: RegistrationStatus.fromCode(data['status'] as String?),
       refundPercent: percent is num ? percent.toInt() : null,
     );
-  }
-
-  @override
-  Future<RegistrationStatus> confirmFakeTicketPayment(String paymentId) async {
-    final data = _asMap(
-      await _call('confirmFakeTicketPayment', {
-        'paymentId': paymentId,
-      }, timeout: _paymentTimeout),
-    );
-    return RegistrationStatus.fromCode(data['status'] as String?);
   }
 
   @override

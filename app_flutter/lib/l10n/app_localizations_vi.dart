@@ -2167,6 +2167,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chưa nhận được thanh toán nên yêu cầu đã huỷ. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
 
   @override
+  String get payTicketExpiredBody =>
+      'Chưa nhận được thanh toán nên chỗ giữ đã nhả. Nếu tiền đã bị trừ, ứng dụng tự hoàn lại.';
+
+  @override
+  String get payBackToEvent => 'Về sự kiện';
+
+  @override
   String get payRetry => 'Đặt lại';
 
   @override
@@ -2210,9 +2217,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get fakePayBody => 'Bản dùng thử: không có tiền thật nào được trừ.';
-
-  @override
-  String get fakePayConfirm => 'Thanh toán thành công';
 
   @override
   String get actionCancel => 'Huỷ';
@@ -5170,11 +5174,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String registerHold(String time) {
-    return 'Giữ chỗ còn $time';
-  }
-
-  @override
   String get registerHoldExpired => 'Chỗ giữ đã hết hạn';
 
   @override
@@ -5201,9 +5200,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Vé không được hoàn tiền khi huỷ trong vòng 48 giờ.';
 
   @override
-  String get fakeTicketPayTitle => 'Thanh toán thử';
-
-  @override
   String get payMethodBankQr => 'Chuyển khoản QR';
 
   @override
@@ -5226,14 +5222,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ticketCancelledRefunding => 'Đã huỷ · đang hoàn tiền';
-
-  @override
-  String get ticketPayFailed =>
-      'Chưa thanh toán được. Kiểm tra mạng rồi thử lại.';
-
-  @override
-  String get ticketPayFakeDisabled =>
-      'Thanh toán thử chỉ dùng được trên bản thử nghiệm.';
 
   @override
   String eventRegisteredOf(int registered, int capacity) {

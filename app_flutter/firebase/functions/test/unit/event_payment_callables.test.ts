@@ -16,15 +16,18 @@ import {
   handleCancelEvent,
   handleCancelRegistration,
   handleCheckTicketPayment,
-  handleConfirmFakeTicketPayment,
   handlePublishEvent,
   handleRegisterEvent,
   handleSaveEventDraft,
 } from '../../src/callables/event.js';
 import { handleConfirmFakePayment } from '../../src/callables/payment.js';
+import * as allExports from '../../src/index.js';
 import { CALLABLE_OPTIONS, DEV_PROJECT_ID, PAYMENT_CALLABLE_OPTIONS, currentProjectId } from '../../src/config.js';
 import { assertFakePaymentsAllowed, fakePaymentsAllowed } from '../../src/infra/fake_payments.js';
 import { handleEventClock, handleReleaseEventHolds } from '../../src/scheduled/event_clock.js';
+import { MemoryPaymentLookup } from '../../../../../packages/domain/src/memory_payment_lookup.js';
+import { TicketPaymentSettler } from '../../../../../packages/domain/src/event_payments.js';
+import type { SettlementDeps } from '../../../../../packages/domain/src/payment_settlement.js';
 
 const ID = (n: number): string => `01ARZ3NDEKTSV4RRFFQ69G5F${String(n).padStart(2, '0')}`;
 const EVENT_ID = ID(1);
@@ -103,20 +106,34 @@ describe('ticket payment callables', () => {
   let next: number;
   let now: Date;
 
-  const deps = (): EventPaymentDeps => ({
-    events: store,
-    people: {
-      photographer: async (uid) =>
-        uid === 'ph1' ? { onboardingComplete: true, name: 'Lan', avatarUrl: null, verified: true } : null,
-      user: async (uid) => ({ name: uid, avatarUrl: null }),
-    },
-    contacts: { get: async (uid) => (uid === 'cu1' || uid === 'cu2' ? { phone: '+84912000001' } : null) },
-    media: { isOwnUpload: (url, path, uid, eventId) => path.startsWith(`eventCovers/${uid}/${eventId}/`) && url.endsWith(path) },
-    clock: { now: () => now },
-    ids: { newId: () => ID(next++) },
-    random: (n) => Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11 + next) % 256),
-    gateway,
-  });
+  const deps = (): EventPaymentDeps => {
+    const d: EventPaymentDeps = {
+      events: store,
+      people: {
+        photographer: async (uid) =>
+          uid === 'ph1' ? { onboardingComplete: true, name: 'Lan', avatarUrl: null, verified: true } : null,
+        user: async (uid) => ({ name: uid, avatarUrl: null }),
+      },
+      contacts: { get: async (uid) => (uid === 'cu1' || uid === 'cu2' ? { phone: '+84912000001' } : null) },
+      media: { isOwnUpload: (url, path, uid, eventId) => path.startsWith(`eventCovers/${uid}/${eventId}/`) && url.endsWith(path) },
+      clock: { now: () => now },
+      ids: { newId: () => ID(next++) },
+      random: (n) => Uint8Array.from({ length: n }, (_, i) => (i * 37 + 11 + next) % 256),
+      gateway,
+      payments: new MemoryPaymentLookup([store]),
+    };
+    return d;
+  };
+
+  const settlementDeps = (): SettlementDeps => {
+    const d = deps();
+    return {
+      payments: d.payments,
+      gateway: d.gateway,
+      clock: d.clock,
+      subjects: { event_registration: new TicketPaymentSettler(d) },
+    };
+  };
 
   const publishPaid = async (): Promise<void> => {
     const path = `eventCovers/ph1/${EVENT_ID}/c.jpg`;
@@ -128,8 +145,8 @@ describe('ticket payment callables', () => {
     await handlePublishEvent({ auth: { uid: 'ph1' }, data: { eventId: EVENT_ID } }, deps());
   };
 
-  const register = (uid: string, provider = 'momo') =>
-    handleRegisterEvent({ auth: { uid }, data: { eventId: EVENT_ID, quantity: 2, name: 'An', provider } }, deps());
+  const register = (uid: string, method: unknown = 'bank_qr') =>
+    handleRegisterEvent({ auth: { uid }, data: { eventId: EVENT_ID, quantity: 2, name: 'An', method } }, deps());
 
   beforeEach(() => {
     store = new MemoryEventStore();
@@ -138,69 +155,62 @@ describe('ticket payment callables', () => {
     now = new Date('2026-10-06T03:00:00.000Z');
   });
 
+  it('there is no confirmFakeTicketPayment export', () => {
+    assert.equal('confirmFakeTicketPayment' in allExports, false);
+  });
+
   it('registerEvent and the ticket payment callables get 30 s (contention)', () => {
     assert.equal(PAYMENT_CALLABLE_OPTIONS.timeoutSeconds, 30);
     assert.equal(PAYMENT_CALLABLE_OPTIONS.region, CALLABLE_OPTIONS.region);
     assert.equal(CALLABLE_OPTIONS.timeoutSeconds, 10);
   });
 
-  it('registerEvent returns the hold and the payment fields', async () => {
+  it('registerEvent takes method and returns instructions', async () => {
     await publishPaid();
-    const r = await register('cu1');
+    const r = await register('cu1', 'bank_qr');
     assert.equal(r.status, 'held');
     assert.ok(r.paymentId);
-    assert.match(r.payUrl ?? '', /^https:\/\/fake-pay\.local\//);
+    assert.ok(r.instructions);
+    assert.equal(r.instructions.method, 'bank_qr');
+    assert.equal(r.instructions.amount, 400_000);
+    assert.match(r.instructions.transferCode, /^PB /);
     assert.equal(r.holdExpiresAt, new Date(now.getTime() + 10 * 60_000).toISOString());
   });
 
-  it('confirmFakeTicketPayment is refused outside the emulator and the dev project, before any write', async () => {
+  it('registerEvent refuses provider-only input (invalid_argument)', async () => {
     await publishPaid();
-    const r = await register('cu1');
-    const writes = store.writes;
     await assert.rejects(
-      handleConfirmFakeTicketPayment({ auth: { uid: 'cu1' }, data: { paymentId: r.paymentId } }, deps(), PROD),
-      disabled,
-    );
-    assert.equal(store.writes, writes);
-    assert.equal(store.registrations.get(`${EVENT_ID}/${r.registrationId}`)?.status, 'held');
-    await assert.rejects(
-      handleConfirmFakeTicketPayment({ auth: undefined, data: {} }, deps(), EMULATOR),
-      (e: unknown) => e instanceof HttpsError && e.code === 'unauthenticated',
+      handleRegisterEvent({ auth: { uid: 'cu1' }, data: { eventId: EVENT_ID, quantity: 2, name: 'An', provider: 'momo' } }, deps()),
+      (e: unknown) => e instanceof HttpsError && e.code === 'invalid-argument',
     );
   });
 
-  it('confirmFakeTicketPayment pays on the emulator and on dev, payer only', async () => {
-    await publishPaid();
-    const a = await register('cu1');
-    await assert.rejects(
-      handleConfirmFakeTicketPayment({ auth: { uid: 'cu2' }, data: { paymentId: a.paymentId } }, deps(), EMULATOR),
-      (e: unknown) => e instanceof HttpsError && e.code === 'permission-denied',
-    );
-    assert.deepEqual(
-      await handleConfirmFakeTicketPayment({ auth: { uid: 'cu1' }, data: { paymentId: a.paymentId } }, deps(), EMULATOR),
-      { status: 'paid' },
-    );
-    const b = await register('cu2');
-    assert.deepEqual(
-      await handleConfirmFakeTicketPayment({ auth: { uid: 'cu2' }, data: { paymentId: b.paymentId } }, deps(), DEV),
-      { status: 'paid' },
-    );
-    assert.equal(store.events.get(EVENT_ID)?.registeredCount, 4);
-  });
-
-  it('checkTicketPayment reports the gateway state', async () => {
+  it('checkTicketPayment applies a transfer the gateway reports', async () => {
     await publishPaid();
     const r = await register('cu1');
     const ask = { auth: { uid: 'cu1' }, data: { eventId: EVENT_ID, registrationId: r.registrationId } };
-    assert.deepEqual(await handleCheckTicketPayment(ask, deps()), { paid: false, status: 'held' });
-    gateway.markPaid(r.paymentId as string);
-    assert.deepEqual(await handleCheckTicketPayment(ask, deps()), { paid: true, status: 'paid' });
+    assert.deepEqual(await handleCheckTicketPayment(ask, { ...deps(), settlement: settlementDeps() }), { paid: false, status: 'held' });
+    const p = store.payments.get(r.paymentId as string);
+    assert.ok(p);
+    assert.ok(p.transferCode);
+    gateway.pushTransfer(p.id, {
+      provider: 'fake',
+      txnId: 'tx_gw_1',
+      amount: p.amount,
+      content: p.transferCode,
+      receivedAt: now.toISOString(),
+    });
+    assert.deepEqual(await handleCheckTicketPayment(ask, { ...deps(), settlement: settlementDeps() }), { paid: true, status: 'paid' });
   });
 
   it('cancelRegistration ≥ 48 h before refunds 100%', async () => {
     await publishPaid();
     const r = await register('cu1');
-    await handleConfirmFakeTicketPayment({ auth: { uid: 'cu1' }, data: { paymentId: r.paymentId } }, deps(), EMULATOR);
+    await handleConfirmFakePayment(
+      { auth: { uid: 'cu1' }, data: { paymentId: r.paymentId, kind: 'exact' } },
+      settlementDeps(),
+      { ...EMULATOR, FAKE_PAYMENT_WEBHOOK_SECRET: 'test-secret' },
+    );
     const out = await handleCancelRegistration(
       { auth: { uid: 'cu1' }, data: { eventId: EVENT_ID, registrationId: r.registrationId } }, deps(),
     );
@@ -211,7 +221,11 @@ describe('ticket payment callables', () => {
   it('cancelEvent refunds every paid ticket', async () => {
     await publishPaid();
     const r = await register('cu1');
-    await handleConfirmFakeTicketPayment({ auth: { uid: 'cu1' }, data: { paymentId: r.paymentId } }, deps(), EMULATOR);
+    await handleConfirmFakePayment(
+      { auth: { uid: 'cu1' }, data: { paymentId: r.paymentId, kind: 'exact' } },
+      settlementDeps(),
+      { ...EMULATOR, FAKE_PAYMENT_WEBHOOK_SECRET: 'test-secret' },
+    );
     const out = await handleCancelEvent({ auth: { uid: 'ph1' }, data: { eventId: EVENT_ID } }, deps());
     assert.deepEqual(out, { paidRegistrationIds: [r.registrationId], refunded: 1, failed: 0 });
     assert.equal(store.registrations.get(`${EVENT_ID}/${r.registrationId}`)?.status, 'refunded');

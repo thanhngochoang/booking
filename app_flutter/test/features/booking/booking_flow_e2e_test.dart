@@ -12,8 +12,8 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/features/booking/booking_detail_screen.dart';
 import 'package:photobooking/features/booking/booking_flow_controller.dart';
-import 'package:photobooking/features/booking/fake_payment_sheet.dart';
-import 'package:photobooking/features/booking/payment_pending_screen.dart';
+import 'package:photobooking/features/payment/fake_transfer_sheet.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 import 'package:photobooking/features/booking/steps/datetime_step.dart';
 import 'package:photobooking/features/booking/steps/place_step.dart';
 import 'package:photobooking/features/booking/steps/review_step.dart';
@@ -141,7 +141,7 @@ void main() {
       await _pumpWhileWaiting(tester);
 
       // No sheet yet: S04.04 shows the QR and waits for the transfer.
-      expect(find.byType(FakePaymentSheet), findsNothing);
+      expect(find.byType(FakeTransferSheet), findsNothing);
       expect(handles.router.state.uri.toString(), '/b/booking_1/pay');
       expect(find.byType(QrImageView), findsOneWidget);
       // The test bank's simulator sends the exact amount.
@@ -152,7 +152,7 @@ void main() {
 
       // S04.04 saw the status leave draft and moved on to S05.02.
       expect(handles.router.state.uri.toString(), '/b/booking_1?paid=1');
-      expect(find.byType(PaymentPendingScreen), findsNothing);
+      expect(find.byType(PaymentScreen), findsNothing);
       expect(find.byType(BookingDetailScreen), findsOneWidget);
       expect(
         find.textContaining('tiền được giữ an toàn.'),

@@ -3,6 +3,7 @@ import type { EventDeps } from './event_ports.js';
 import { GROUP_READONLY_DAYS } from './event_chat.js';
 import { TICKET_REFUND_RESEND_AFTER_MINUTES, refundTicket, resendTicketRefund, stampTicketRelease } from './event_payments.js';
 import { expireHostConsent } from './event_use_cases.js';
+import { MemoryPaymentLookup, type PaymentSource } from './memory_payment_lookup.js';
 
 export type EventSweepStep = 'close' | 'complete' | 'consent' | 'refund' | 'refund_resend';
 
@@ -78,14 +79,16 @@ export async function runEventSweeps(
   let refundsResent = 0;
   const { gateway } = deps;
   if (gateway !== undefined) {
+    const payments = new MemoryPaymentLookup([deps.events as unknown as PaymentSource]);
+    const payDeps = { ...deps, gateway, payments };
     for (const due of await deps.events.paidUnrefundedOfCancelled(BATCH)) {
       const did = await guarded(due.eventId, 'refund', async () =>
-        (await refundTicket({ ...deps, gateway }, due.eventId, due.id, 100, 'event_cancelled')) === 'refunded');
+        (await refundTicket(payDeps, due.eventId, due.id, 100, 'event_cancelled')) === 'refunded');
       if (did) refunded += 1;
     }
     const before = new Date(deps.clock.now().getTime() - TICKET_REFUND_RESEND_AFTER_MINUTES * 60_000);
     for (const r of await deps.events.pendingTicketRefunds(before, BATCH)) {
-      const did = await guarded(r.id, 'refund_resend', async () => resendTicketRefund({ ...deps, gateway }, r.id));
+      const did = await guarded(r.id, 'refund_resend', async () => resendTicketRefund(payDeps, r.id));
       if (did) refundsResent += 1;
     }
   }

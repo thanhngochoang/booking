@@ -1,4 +1,5 @@
-import type { PaymentGateway } from './booking_ports.js';
+import type { PaymentGateway, TransferRecord } from './booking_ports.js';
+import type { PaymentLookup } from './payment_settlement.js';
 import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
 import type { Clock, IdGenerator, UserContactReader } from './ports.js';
@@ -70,6 +71,8 @@ export interface EventTx {
   putPayment(p: Payment): void;
   putRefund(r: Refund): void;
   putLedgerEntry(e: LedgerEntry): void;
+  getTransferRecord(id: string): Promise<TransferRecord | null>;
+  putTransferRecord(r: TransferRecord): void;
   setAvailabilityBooked(photographerId: string, dayKey: string, eventId: string): void;
   deleteAvailability(photographerId: string, dayKey: string): void;
   putGroupChat(chat: EventGroupChatSeed): void;
@@ -118,4 +121,5 @@ export interface EventDeps {
 /** Paid tickets: the booking payment gateway (fake in phase 1; VietQR/intermediary later, #129). */
 export interface EventPaymentDeps extends EventDeps {
   readonly gateway: PaymentGateway;
+  readonly payments: PaymentLookup;
 }

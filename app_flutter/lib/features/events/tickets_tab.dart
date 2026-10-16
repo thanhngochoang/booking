@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/events/event_providers.dart';
@@ -15,8 +14,8 @@ import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/features/events/event_links.dart';
-import 'package:photobooking/features/events/ticket_payment_sheet.dart';
 import 'package:photobooking/features/notifications/notification_primer.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// Hours before the start up to which cancelling a paid ticket refunds all of
@@ -279,8 +278,8 @@ class _TicketTile extends ConsumerWidget {
   }
 
   /// "Thanh toán tiếp": the same hold's payment step. Asks the server first
-  /// (the gateway may already have it); then the fake sheet, or with real
-  /// payments the gateway's pay URL for the same hold.
+  /// (the gateway may already have it); then pushes S04.04 without extra, where
+  /// it reads instructions with getPaymentInstructions.
   Future<void> _continuePayment(BuildContext context, WidgetRef ref) async {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
@@ -291,29 +290,10 @@ class _TicketTile extends ConsumerWidget {
       if (check.paid || check.status != RegistrationStatus.held) {
         return; // the stream redraws the card
       }
-      var paymentId = r.paymentId;
-      String? payUrl;
-      if (ref.read(realPaymentsProvider)) {
-        // No provider: the server keeps the one of the hold's payment (the
-        // method the customer chose on S11.03).
-        final again = await repo.register(
-          r.eventId,
-          quantity: r.quantity,
-          name: r.userName,
-        );
-        paymentId = again.paymentId ?? paymentId;
-        payUrl = again.payUrl;
-      }
-      if (paymentId == null || !context.mounted) {
+      if (!context.mounted) {
         return;
       }
-      await openTicketPayment(
-        context,
-        ref,
-        paymentId: paymentId,
-        amountVnd: r.amount,
-        payUrl: payUrl,
-      );
+      context.push(payPathOf(TicketPay(r.eventId, r.id)));
     } catch (_) {
       messenger
         ..hideCurrentSnackBar()

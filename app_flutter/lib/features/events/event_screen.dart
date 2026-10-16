@@ -104,7 +104,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
   }
 
   Future<void> _openRegister(EventDetail event) =>
-      showRegisterSheet(context, event: event);
+      showRegisterSheet(context, ref, event: event);
 
   /// "Đăng ảnh với #Tag": photographers write a post (S10.01), everyone else
   /// shares photos here.

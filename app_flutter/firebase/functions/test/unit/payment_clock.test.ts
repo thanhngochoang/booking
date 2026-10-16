@@ -59,4 +59,48 @@ describe('payment clock', () => {
     assert.equal(WEBHOOK_OPTIONS.region, REGION);
     assert.equal(WEBHOOK_OPTIONS.invoker, 'public');
   });
+
+  it('the clock expires a ticket payment through liveSettlementDeps-shaped deps', async () => {
+    const { createTicketPaymentWorld } = await import('../../../../../packages/domain/test/support/event_world.js');
+    const { saveEventDraft, publishEvent, registerEvent, BookingPaymentSettler } = await import('@photobooking/domain');
+    const tw = createTicketPaymentWorld();
+    const bw = paymentWorld();
+    const host = { uid: 'ph1', staffRole: null } as const;
+    const eventId = '01ARZ3NDEKTSV4RRFFQ69G5F77';
+    const path = `eventCovers/ph1/${eventId}/c.jpg`;
+    await saveEventDraft(tw.deps, host, {
+      eventId, title: 'Walk', type: 'photo_walk', coverUrl: `https://s.test/${path}`, coverPath: path,
+      startAt: '2026-10-15T02:00:00.000Z', endAt: '2026-10-15T05:00:00.000Z',
+      location: { name: 'Lake', lat: 21.0, lng: 105.8 }, capacity: 5, price: 200_000,
+    });
+    await publishEvent(tw.deps, host, { eventId });
+    const cu1 = { uid: 'cu1', staffRole: null } as const;
+    const r = await registerEvent(tw.deps, cu1, {
+      eventId, quantity: 1, name: 'An', phone: '0901234567', method: 'bank_qr',
+    });
+    assert.ok(r.paymentId);
+    const p = tw.store.payments.get(r.paymentId);
+    assert.ok(p);
+    const expiresAt = p.expiresAt;
+    assert.ok(expiresAt);
+    const eventSettler = tw.settlement.subjects.event_registration;
+    assert.ok(eventSettler);
+
+    const settlementDeps = {
+      payments: tw.deps.payments,
+      gateway: tw.deps.gateway,
+      clock: tw.deps.clock,
+      subjects: {
+        booking: new BookingPaymentSettler(bw.deps),
+        event_registration: eventSettler,
+      },
+    };
+
+    // Advance clock past 10-minute hold expiry
+    tw.clock.now = () => new Date(Date.parse(expiresAt) + 1000);
+
+    const res = await handlePaymentClock(settlementDeps);
+    assert.equal(res.expired, 1);
+    assert.equal(tw.store.payments.get(p.id)?.status, 'expired');
+  });
 });

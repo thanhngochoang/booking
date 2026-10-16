@@ -8,7 +8,7 @@ import type { Booking } from './booking.js';
 import { computeAcceptDeadline, parseVnDateTime } from './booking_policy.js';
 import type { BookingDeps, BookingTx } from './booking_ports.js';
 import { applyRefundToPayment, type LedgerEntry, type Payment, type Refund } from './escrow.js';
-import { transferRefund } from './refunds.js';
+import { expireUnpaid } from './payment_settlement.js';
 
 /** The payment reached its amount: `paid`, escrow `held`. */
 export function markPaid(payment: Payment, now: Date, providerRef?: string): Payment {
@@ -104,18 +104,17 @@ export async function expireOpenPayment(
   payment: Payment,
   now: Date,
 ): Promise<Refund | undefined> {
-  await tx.setPayment({ ...payment, status: 'expired', escrowStatus: 'refunded', updatedAt: now.toISOString() });
-  const received = payment.receivedAmount ?? 0;
-  if (received <= 0) return undefined;
-  const { refund, ledgerEntry } = transferRefund({
+  const { payment: expired, refund, ledgerEntry } = expireUnpaid({
     payment,
     refundId: deps.ids.newId(),
     ledgerEntryId: deps.ids.newId(),
-    amount: received,
-    reason: 'underpaid_expired',
     now,
   });
-  await tx.addRefund(refund);
-  await tx.addLedgerEntry(ledgerEntry);
-  return refund;
+  await tx.setPayment(expired);
+  if (refund && ledgerEntry) {
+    await tx.addRefund(refund);
+    await tx.addLedgerEntry(ledgerEntry);
+    return refund;
+  }
+  return undefined;
 }
