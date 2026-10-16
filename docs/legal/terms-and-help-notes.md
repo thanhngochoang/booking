@@ -16,6 +16,7 @@ Trạng thái: **ĐK** = cần trong điều khoản, **FAQ** = cần trong tr�
 | P6 | Thợ giao trễ quá số ngày đã hẹn: khách được "Huỷ phần bàn giao", **hoàn 100% mốc 2**; thợ giữ mốc 1. | provider-types §4.1 | ĐK, FAQ |
 | P7 | Huỷ trước buổi chụp: ≥ 48 giờ hoàn 100%, 24–48 giờ hoàn 50%, < 24 giờ không hoàn; tính trên toàn bộ tiền đã trả. Thợ huỷ: khách hoàn 100%. | provider-types §4.3 | ĐK, FAQ |
 | P8 | Khiếu nại mở được trong cửa sổ của từng mốc; trong lúc khiếu nại, tiền tiếp tục được giữ tới khi có kết quả (thả, hoàn hoặc chia). | spec chính S18; provider-types §4.1 | ĐK, FAQ |
+*Ghi chú FAQ (S18.03)*: Trích dẫn ở các câu hỏi FAQ `helpDisputeWhenQ`/`helpDisputeWhenA`, `helpDisputeMoneyQ`/`helpDisputeMoneyA`, `helpDisputeEvidenceQ`/`helpDisputeEvidenceA`.
 | P9 | Vì sao trả trước 100%: nửa sau tiền không đến tay thợ cho tới khi bạn đồng ý ảnh mẫu và kiểm xong bộ ảnh gốc; có lỗi thì được hoàn qua app. Thợ cũng yên tâm không bị quỵt, nên nhận lịch nhanh hơn. | quyết định 2026-10-06 (chọn giữ trả trước 100%, không dùng "cọc + trả nốt sau khi nhận ảnh") | FAQ |
 | P10 | Chuyển khoản QR: chuyển đúng số tiền và nội dung trong 15 phút. Chuyển thiếu, thừa hoặc sau khi QR hết hạn được **hoàn tự động** về tài khoản đã chuyển. | thanh toán §3.3 | ĐK, FAQ |
 | P11 | Hoàn tiền: ví hoàn về ví; chuyển khoản hoàn về tài khoản đã chuyển (khách xác nhận hoặc khai tài khoản khác). Thời gian nhận tiền hoàn theo từng phương thức (điền khi chọn đối tác). | thanh toán §5 | ĐK, FAQ |

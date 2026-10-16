@@ -168,7 +168,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
 | S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute` (sheet trên S05.02; `?from=delivery` từ S05.06) · sheet trên S11.04 (vé) | khách | mới | ⬜ có mock, có plan (#142) | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ có mock, có plan (#142) | — |
-| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help`, `/help/chat` | cả hai | mới | ⬜ có mock, có plan (#204) | — |
+| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help`, `/help/chat` | cả hai | mới | ✅ đã làm (#204) | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
 | S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ✅ đã làm (#143) | — |
 | S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ✅ đã làm (#143) | — |
