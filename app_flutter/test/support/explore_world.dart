@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/discovery/explore_catalog.dart';
+import 'package:photobooking/data/discovery/explore_catalog_providers.dart';
+import 'package:photobooking/data/discovery/fake_explore_catalog_repository.dart';
 import 'package:photobooking/data/events/event_summary.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
@@ -55,6 +58,7 @@ class ExploreWorld {
     LocationPermissionStatus status = LocationPermissionStatus.notAsked,
     LocationPermissionStatus afterRequest = LocationPermissionStatus.granted,
     List<EventSummary>? events,
+    ExploreCatalog catalog = ExploreCatalog.empty,
     this.role = UserRole.customer,
     this.routesReady = true,
     this.prefsValues = const {},
@@ -67,10 +71,12 @@ class ExploreWorld {
            capturedAt: exploreNow,
          ),
        ),
-       repo = FakeNearbyEventsRepository(events ?? exploreEvents);
+       repo = FakeNearbyEventsRepository(events ?? exploreEvents),
+       catalogRepo = FakeExploreCatalogRepository(catalog);
 
   final FakeLocationRepository location;
   final FakeNearbyEventsRepository repo;
+  final FakeExploreCatalogRepository catalogRepo;
   final UserRole role;
   final bool routesReady;
   final Map<String, Object> prefsValues;
@@ -93,6 +99,7 @@ class ExploreWorld {
       locationRepositoryProvider.overrideWithValue(location),
       nearbyEventsRepositoryProvider.overrideWithValue(repo),
       eventRoutesReadyProvider.overrideWithValue(routesReady),
+      exploreCatalogRepositoryProvider.overrideWithValue(catalogRepo),
     ];
   }
 }

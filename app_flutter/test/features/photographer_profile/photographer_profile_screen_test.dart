@@ -434,6 +434,10 @@ void main() {
       expect(_key('profile-save'), findsOneWidget);
       expect(_key('profile-more'), findsOneWidget);
 
+      await tester.tap(_key('profile-save'));
+      await tester.pumpAndSettle();
+      expect(w.savedFollow.isPhotographerSaved(w.uid, 'p1'), completion(isTrue));
+
       await tester.tap(_key('profile-more'));
       await tester.pump();
       expect(copied, '/u/p1');

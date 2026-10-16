@@ -173,6 +173,25 @@ void main() {
     );
   });
 
+  testWidgets('the "Rảnh tuần này" shelf hides when repository returns empty', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      DiscoveryWorld(
+        photographers: [
+          for (final p in discoveryPhotographers())
+            fixturePhotographer(
+              p.id,
+              name: p.displayName,
+              nextFreeDate: null,
+            ),
+        ],
+      ),
+    );
+    expect(find.text('Rảnh tuần này'), findsNothing);
+  });
+
   testWidgets('a long name in the free card ellipsizes at 320 x 1.3 text', (
     tester,
   ) async {

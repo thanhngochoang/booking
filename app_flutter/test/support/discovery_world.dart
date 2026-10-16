@@ -7,6 +7,7 @@ import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/events/nearby_events_repository.dart';
 import 'package:photobooking/data/location/location_repository.dart';
@@ -198,6 +199,7 @@ class DiscoveryWorld {
   final FakePhotographerRepository photographers;
   final FakeServiceRepository services;
   final FakePostEngagementRepository engagement;
+  final FakeSavedFollowRepository savedFollow = FakeSavedFollowRepository();
   final FakeAvailabilityLookup availability;
   final FakeLocationRepository location;
   final FakeUserContactRepository contacts;
@@ -250,6 +252,7 @@ class DiscoveryWorld {
       ),
       postRepositoryProvider.overrideWithValue(posts),
       postEngagementRepositoryProvider.overrideWithValue(engagement),
+      savedFollowRepositoryProvider.overrideWithValue(savedFollow),
       photographerRepositoryProvider.overrideWithValue(photographers),
       serviceRepositoryProvider.overrideWithValue(services),
       availabilityLookupProvider.overrideWithValue(availability),

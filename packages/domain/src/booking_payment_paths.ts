@@ -69,21 +69,22 @@ export async function moveDraftToRequested(
 
 /**
  * Late path: a paid payment whose draft is gone or no longer a draft is refunded in full
- * (`late_payment_draft_expired`). Writes the refunded payment, the refund and its ledger entry;
- * the caller dispatches the refund after the transaction.
+ * (`late_payment_draft_expired`), or when provider stopped accepting orders (`provider_not_accepting`).
+ * Writes the refunded payment, the refund and its ledger entry; the caller dispatches the refund after the transaction.
  */
 export async function refundLatePayment(
   tx: BookingTx,
   deps: BookingDeps,
   paid: Payment,
   now: Date,
+  reason: 'late_payment_draft_expired' | 'provider_not_accepting' = 'late_payment_draft_expired',
 ): Promise<{ readonly payment: Payment; readonly refund: Refund }> {
   const r = applyRefundToPayment({
     payment: paid,
     refundId: deps.ids.newId(),
     percent: 100,
     ledgerEntryId: deps.ids.newId(),
-    reason: 'late_payment_draft_expired',
+    reason,
     now,
   });
   await tx.setPayment(r.payment);

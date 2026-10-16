@@ -20,6 +20,7 @@ export const PAYMENT_REFUND_REASONS = [
   'late_transfer',
   'extra_transfer',
   'late_payment_draft_expired',
+  'provider_not_accepting',
 ] as const;
 export type PaymentRefundReason = (typeof PAYMENT_REFUND_REASONS)[number];
 

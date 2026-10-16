@@ -94,6 +94,22 @@ void main() {
       final allow = tester.getRect(find.byKey(const Key('location-allow')));
       expect(allow.bottom, lessThan(844));
     });
+
+    testWidgets('order search row -> tabs -> grid -> location card -> events on S02.03', (
+      tester,
+    ) async {
+      await _open(tester);
+      final search = tester.getRect(find.text('Tìm dịch vụ, địa điểm, tên thợ ảnh'));
+      final tabs = tester.getRect(find.text('Dịch vụ'));
+      final grid = tester.getRect(_tiles().at(0));
+      final locationCard = tester.getRect(find.byKey(const Key('location-allow')));
+      final events = tester.getRect(find.text('Sự kiện chụp ảnh'));
+
+      expect(search.bottom, lessThan(tabs.top));
+      expect(tabs.bottom, lessThan(grid.top));
+      expect(grid.bottom, lessThan(locationCard.top));
+      expect(locationCard.bottom, lessThan(events.top));
+    });
   });
 
   group('LocationPromptCard', () {

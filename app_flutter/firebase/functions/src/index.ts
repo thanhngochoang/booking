@@ -59,6 +59,13 @@ import {
 } from './callables/album.js';
 import { handleLinkEventPosts, handlePostCreated, mayLinkEventPosts } from './triggers/post_created.js';
 import { liveAlbumDeps } from './infra/live_album.js';
+import { FirestoreFollowerCounter } from './infra/follower_counter.js';
+import { handleFollowWrite } from './triggers/engagement_counters.js';
+import { liveDiscoveryDeps } from './infra/live_discovery.js';
+import { handleAvailabilityWrite } from './triggers/availability_write.js';
+import { handleEngagementWrite } from './triggers/engagement_write.js';
+import { handleRollNextFree } from './scheduled/roll_next_free.js';
+import { handleServiceDiscovery } from './triggers/service_write.js';
 import {
   handleCreateAward,
   handleDeleteAward,
@@ -68,6 +75,18 @@ import {
 import { handleAwardWrite } from './triggers/award_write.js';
 import { handleAwardPurge } from './scheduled/award_purge.js';
 import { liveAwardDeps } from './infra/live_award.js';
+import {
+  handleAcceptVerificationRules,
+  handleCompleteIdentityVerification,
+  handleConfirmPhoneVerified,
+  handleLookupTaxCode,
+  handleResubmitVerification,
+  handleReviewVerification,
+  handleStartIdentityVerification,
+  handleSubmitBusinessVerification,
+  handleSubmitVerification,
+} from './callables/verification.js';
+import { liveVerificationCallableDeps, liveVerificationDeps } from './infra/live_verification.js';
 import { evaluateUserBadges } from '@photobooking/domain';
 import { handleMarkAllNotificationsRead } from './callables/notification.js';
 import { FirestoreDeviceDirectory } from './infra/fcm_push.js';
@@ -105,8 +124,12 @@ import {
 } from './callables/event_chat.js';
 import { handleRegistrationWrite } from './triggers/registration_write.js';
 import { liveEventChatDeps, liveTimelineDeps } from './infra/live_event_social.js';
+import { handleSendSupportMessage } from './callables/support.js';
+import { liveSupportDeps } from './infra/live_support.js';
+import { handleSupportMessageCreated } from './triggers/support_message_created.js';
 
 // Entry point of the Cloud Functions codebase. Each export is one deployed function.
+
 
 /** `{bookingId | registrationId, channel}` → `{url}`; contract in plan 2b "Out of scope". */
 export const getContactLink = onCall(CALLABLE_OPTIONS, (request) => handleGetContactLink(request, liveContactDeps()));
@@ -159,7 +182,9 @@ export const openDispute = onCall(CALLABLE_OPTIONS, (request) => handleOpenDispu
 
 /** 15-minute booking lifecycle and escrow sweep clock */
 export const bookingClock = onSchedule({ ...SCHEDULE_OPTIONS, timeoutSeconds: 300 }, async () => {
-  await handleBookingClock(undefined, liveReminderDeps());
+  await handleBookingClock(undefined, liveReminderDeps(), {
+    verification: { deps: liveVerificationDeps(), notify: liveNotifyDeps() },
+  });
 });
 
 /**
@@ -172,9 +197,12 @@ export const onPhotographerWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, docum
   const uid = event.params.uid;
   const after = event.data?.after;
   const live = after?.exists === true ? after : undefined;
-  await handlePhotographerEvent({ uid, time: event.time, before: event.data?.before.data(), after: live?.data() }, () =>
-    liveSkillsDeps(uid, live?.updateTime),
+  await handlePhotographerEvent(
+    { uid, time: event.time, before: event.data?.before.data(), after: live?.data() },
+    () => liveSkillsDeps(uid, live?.updateTime),
     liveAcceptingOrdersWriter(),
+    new Date(),
+    liveDiscoveryDeps(),
   );
   // `fast_reply` follows stats.responseMinutes (written by the server only).
   if (live !== undefined && live.get('stats.responseMinutes') !== event.data?.before.get('stats.responseMinutes')) {
@@ -209,10 +237,16 @@ export const onBookingWrite = onDocumentWritten(
     const bookingId = event.params.bookingId;
     const before = event.data?.before.exists ? (event.data.before.data() as Record<string, unknown>) : undefined;
     const after = event.data?.after.exists ? (event.data.after.data() as Record<string, unknown>) : undefined;
-    await handleBookingWrite({ id: bookingId, before, after }, liveChatDeps(), undefined, {
-      notify: liveNotifyDeps(),
-      badges: liveBadgeDeps(),
-    });
+    await handleBookingWrite(
+      { id: bookingId, before, after },
+      liveChatDeps(),
+      undefined,
+      {
+        notify: liveNotifyDeps(),
+        badges: liveBadgeDeps(),
+      },
+      liveDiscoveryDeps(),
+    );
   },
 );
 
@@ -304,12 +338,57 @@ export const onAwardWrite = onDocumentWritten({ ...TRIGGER_OPTIONS, document: 'a
   await handleAwardWrite(before, after, liveAwardDeps());
 });
 
-/** Daily 03:00 Asia/Ho_Chi_Minh: deletes proofs 30 days after a final decision. */
+/** Daily 03:00 Asia/Ho_Chi_Minh: deletes award proofs and S21.04 business photos 30 days after a final decision. */
 export const purgeAwardProofs = onSchedule(
   { ...SCHEDULE_OPTIONS, schedule: 'every day 03:00', timeoutSeconds: 300 },
   async () => {
     await handleAwardPurge();
   },
+);
+
+// ---- provider verification (S21, #135; the fee callables are #203's) ----
+
+/** `{}` → `{phoneVerified: true}`: marks the contact phone verified once the Auth phone (OTP) matches it. */
+export const confirmPhoneVerified = onCall(CALLABLE_OPTIONS, (request) =>
+  handleConfirmPhoneVerified(request, liveVerificationCallableDeps()),
+);
+
+/** `{method: 'vneid' | 'nfc'}` → `{sessionId, redirectUrl}`; fake verifier on the emulator/dev, `not_eligible` elsewhere. */
+export const startIdentityVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleStartIdentityVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{sessionId}` → `{result: 'passed', maskedName}`; `underage`, `identity_in_use`, `rate_limited`, `not_found`. */
+export const completeIdentityVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleCompleteIdentityVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{version}` → `{}`: the provider rules of PROVIDER_RULES_VERSION. */
+export const acceptVerificationRules = onCall(CALLABLE_OPTIONS, (request) =>
+  handleAcceptVerificationRules(request, liveVerificationCallableDeps()),
+);
+
+/** `{}` → `{status: 'submitted'}` once every required step is done. */
+export const submitVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{}` → `{status}` after a resubmittable rejection. */
+export const resubmitVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleResubmitVerification(request, liveVerificationCallableDeps()),
+);
+
+/** `{taxCode}` → `{name, address, status, kind}` (verified studios; fake lookup on the emulator/dev). */
+export const lookupTaxCode = onCall(CALLABLE_OPTIONS, (request) => handleLookupTaxCode(request, liveVerificationCallableDeps()));
+
+/** `{taxCode, docPath?}` → `{status}`: household matched at once, company to staff. */
+export const submitBusinessVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSubmitBusinessVerification(request, liveVerificationCallableDeps()),
+);
+
+/** Staff only (claim `staffRole: 'admin'`): `{uid, target?, action, reason?, note?}` → `{status}`. */
+export const reviewVerification = onCall(CALLABLE_OPTIONS, (request) =>
+  handleReviewVerification(request, liveVerificationCallableDeps()),
 );
 
 // ---- notifications and badges (plan 10a) ----
@@ -393,15 +472,23 @@ export const onUserCreated = onDocumentCreated({ ...TRIGGER_OPTIONS, document: '
   await handleUserCreated(event.params.uid, liveBadgeDeps());
 });
 
-/** Package changes can complete `complete_profile`. */
+/** Package changes can complete `complete_profile` and refresh discovery starting price and catalog. */
 export const onServiceWrite = onDocumentWritten(
   { ...TRIGGER_OPTIONS, document: 'photographers/{uid}/services/{serviceId}' },
   async (event) => {
+    const before = event.data?.before.exists ? event.data.before.data() : undefined;
+    const after = event.data?.after.exists ? event.data.after.data() : undefined;
     await handleServiceWrite(
       event.params.uid,
-      event.data?.before.exists ? event.data.before.data() : undefined,
-      event.data?.after.exists ? event.data.after.data() : undefined,
+      before,
+      after,
       liveBadgeDeps(),
+    );
+    await handleServiceDiscovery(
+      event.params.uid,
+      before,
+      after,
+      liveDiscoveryDeps(),
     );
   },
 );
@@ -583,3 +670,90 @@ export const onRegistrationWrite = onDocumentWritten(
     );
   },
 );
+
+/** A follow marker created or deleted recounts photographer followers. */
+export const onFollowWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'follows/{docId}' },
+  async (event) => {
+    const counter = new FirestoreFollowerCounter(db());
+    await handleFollowWrite(
+      {
+        time: event.time,
+        before: event.data?.before.exists ? (event.data.before.data() as { userId?: string; photographerId?: string }) : null,
+        after: event.data?.after.exists ? (event.data.after.data() as { userId?: string; photographerId?: string }) : null,
+      },
+      counter,
+    );
+  },
+);
+
+/** An availability day write updates nextFreeDate when inside the horizon. */
+export const onAvailabilityWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'availability/{uid}/days/{dayKey}' },
+  async (event) => {
+    await handleAvailabilityWrite(event.params.uid, event.params.dayKey, liveDiscoveryDeps());
+  },
+);
+
+/** Like marker created or deleted recounts post likes. */
+export const onLikeWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'likes/{docId}' },
+  async (event) => {
+    await handleEngagementWrite(
+      'like',
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveDiscoveryDeps(),
+    );
+  },
+);
+
+/** Save marker created or deleted recounts post saves. */
+export const onSaveWrite = onDocumentWritten(
+  { ...TRIGGER_OPTIONS, document: 'saves/{docId}' },
+  async (event) => {
+    await handleEngagementWrite(
+      'save',
+      event.data?.before.exists ? event.data.before.data() : undefined,
+      event.data?.after.exists ? event.data.after.data() : undefined,
+      liveDiscoveryDeps(),
+    );
+  },
+);
+
+/** Daily 00:10 Asia/Ho_Chi_Minh: rolls nextFreeDate for photographers whose date has passed. */
+export const rollNextFreeDates = onSchedule(
+  { ...SCHEDULE_OPTIONS, schedule: '10 0 * * *', timeZone: 'Asia/Ho_Chi_Minh', maxInstances: 1, timeoutSeconds: 300 },
+  async () => {
+    await handleRollNextFree(liveDiscoveryDeps());
+  },
+);
+
+/** Send support message (help chat or dispute thread) */
+export const sendSupportMessage = onCall(CALLABLE_OPTIONS, (request) =>
+  handleSendSupportMessage(request, liveSupportDeps()),
+);
+
+/** Notify recipient when a new support message is created */
+export const onSupportMessageCreated = onDocumentCreated(
+  { ...TRIGGER_OPTIONS, document: 'support_threads/{threadId}/messages/{messageId}' },
+  async (event) => {
+    const message = event.data?.data();
+    if (!message) return;
+    await handleSupportMessageCreated(
+      {
+        threadId: event.params.threadId,
+        messageId: event.params.messageId,
+        messageData: message as Record<string, unknown>,
+      },
+      {
+        notify: liveNotifyDeps(),
+        getThreadData: async (threadId) => {
+          const snap = await db().collection('support_threads').doc(threadId).get();
+          return snap.exists ? (snap.data() as Record<string, unknown>) : null;
+        },
+      },
+    );
+  },
+);
+

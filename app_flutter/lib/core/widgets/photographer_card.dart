@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:photobooking/core/format.dart';
 import 'package:photobooking/core/l10n_ext.dart';
 import 'package:photobooking/core/review_meta.dart';
+import 'package:photobooking/core/theme/app_icons.dart';
 import 'package:photobooking/core/theme/tokens.g.dart';
 import 'package:photobooking/core/widgets/app_avatar.dart';
 import 'package:photobooking/core/widgets/app_button.dart';
@@ -32,6 +33,8 @@ class PhotographerCard extends StatelessWidget {
     required this.onProfile,
     this.onBook,
     this.bookLabel,
+    this.saved,
+    this.onToggleSave,
   });
 
   final PhotographerSummary data;
@@ -45,6 +48,12 @@ class PhotographerCard extends StatelessWidget {
 
   /// Label of the second button; defaults to "Đặt lịch".
   final String? bookLabel;
+
+  /// Whether the photographer is saved by the viewer (S19).
+  final bool? saved;
+
+  /// Callback to toggle the saved state. When non-null, a bookmark overlay is shown.
+  final VoidCallback? onToggleSave;
 
   /// "Chân dung · 1,2 km · 🍅 97% · 112 buổi" (mock S02.06); "Mới · 3 đánh giá"
   /// under five reviews and no review part without any.
@@ -81,6 +90,7 @@ class PhotographerCard extends StatelessWidget {
     final mark = providerMarkOf(
       type: data.providerType,
       verified: data.verified,
+      businessVerified: data.businessVerified,
     );
     final awards = data.providerType == ProviderType.artist
         ? data.approvedAwardCount
@@ -96,11 +106,11 @@ class PhotographerCard extends StatelessWidget {
         null => null,
       },
       if (awards > 0) l.providerAwardsCount(awards),
-      // A verified studio's mark already says Studio; an unverified one has
-      // no mark, so its tag text (Studio, or Studio · district) is read.
+      // The studio seal already says Studio; without it (unverified, or only
+      // the blue tick) the tag text (Studio, or Studio · district) is read.
       if (studio && mark == ProviderMarkKind.studio && district.isNotEmpty)
         district,
-      if (studio && mark == null)
+      if (studio && mark != ProviderMarkKind.studio)
         district.isEmpty
             ? l.providerStudio
             : l.providerStudioDistrict(district),
@@ -167,6 +177,35 @@ class PhotographerCard extends StatelessWidget {
                               child: PhotoPill(
                                 label: availabilityLabel!,
                                 dot: PhotoPillDot.ok,
+                              ),
+                            ),
+                          if (onToggleSave != null)
+                            Positioned(
+                              right: AppSpace.s2,
+                              top: AppSpace.s2,
+                              child: Semantics(
+                                button: true,
+                                label: (saved ?? false)
+                                    ? l.savedToggleOff(data.displayName)
+                                    : l.savedToggleOn(data.displayName),
+                                child: DecoratedBox(
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.overlay,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    key: Key('card-save-${data.id}'),
+                                    tooltip: (saved ?? false)
+                                        ? l.savedToggleOff(data.displayName)
+                                        : l.savedToggleOn(data.displayName),
+                                    icon: AppIcon(
+                                      AppIcons.save,
+                                      selected: saved ?? false,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: onToggleSave,
+                                  ),
+                                ),
                               ),
                             ),
                         ],

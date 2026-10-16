@@ -33,6 +33,7 @@ void main() {
       'awardProofs/{uid}/{awardId}/{file}': ImagePurpose.document,
       'chats/{chatId}/{uid}/{file}': ImagePurpose.chat,
       'eventCovers/{uid}/{eventId}/{file}': ImagePurpose.share,
+      'businessDocs/{uid}/{file}': ImagePurpose.document,
     };
     for (final MapEntry(key: path, value: purpose) in table.entries) {
       expect(
@@ -64,7 +65,7 @@ void main() {
         .where((m) => RegExp(r'\b(create|update|write)\b').hasMatch(m.group(1)!))
         .where((m) => m.group(2)!.trim() != 'false')
         .toList();
-    // Five upload paths today; a new one must come with its own jpegUpTo line.
+    // Six upload paths today; a new one must come with its own jpegUpTo line.
     expect(statements, isNotEmpty);
     for (final m in statements) {
       expect(

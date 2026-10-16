@@ -115,7 +115,7 @@ class EventInfoTab extends ConsumerWidget {
               Text(f.answer, style: theme.textTheme.bodySmall),
             ],
           ],
-          if ((eventSupportEmail, eventSupportUri()) case (
+          if ((supportEmail, supportEmailUri()) case (
             final email?,
             final mailto?,
           )) ...[

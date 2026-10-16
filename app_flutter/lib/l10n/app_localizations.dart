@@ -1774,6 +1774,48 @@ abstract class AppLocalizations {
   /// **'Xem tất cả nhiếp ảnh gia'**
   String get explorePhotographersAll;
 
+  /// No description provided for @exploreSearchHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm dịch vụ, địa điểm, tên thợ ảnh'**
+  String get exploreSearchHint;
+
+  /// No description provided for @exploreSearchIdle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.'**
+  String get exploreSearchIdle;
+
+  /// No description provided for @exploreSearchEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy “{query}”'**
+  String exploreSearchEmptyTitle(String query);
+
+  /// No description provided for @exploreSearchEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử từ ngắn hơn, hoặc gõ không dấu.'**
+  String get exploreSearchEmptyBody;
+
+  /// No description provided for @exploreSearchSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả thợ ảnh'**
+  String get exploreSearchSeeAll;
+
+  /// No description provided for @exploreSearchClear.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get exploreSearchClear;
+
+  /// No description provided for @exploreCategoryPackages.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} gói'**
+  String exploreCategoryPackages(int count);
+
   /// No description provided for @exploreLoadError.
   ///
   /// In vi, this message translates to:
@@ -9219,6 +9261,1128 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không đặt lịch được với người này.'**
   String get bookingErrBlocked;
+
+  /// No description provided for @savedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu'**
+  String get savedTitle;
+
+  /// No description provided for @savedTabPosts.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bài · {count}'**
+  String savedTabPosts(int count);
+
+  /// No description provided for @savedTabPhotographers.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhiếp ảnh gia · {count}'**
+  String savedTabPhotographers(int count);
+
+  /// No description provided for @savedPostsEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu bài nào'**
+  String get savedPostsEmptyTitle;
+
+  /// No description provided for @savedPostsEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bấm biểu tượng lưu trên ảnh để xem lại ở đây.'**
+  String get savedPostsEmptyBody;
+
+  /// No description provided for @savedPhotographersEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu nhiếp ảnh gia nào'**
+  String get savedPhotographersEmptyTitle;
+
+  /// No description provided for @savedPhotographersEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bấm biểu tượng lưu trên hồ sơ nhiếp ảnh gia để so sánh và đặt lịch sau.'**
+  String get savedPhotographersEmptyBody;
+
+  /// No description provided for @savedUnsaved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ lưu {name}'**
+  String savedUnsaved(String name);
+
+  /// No description provided for @savedUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get savedUndo;
+
+  /// No description provided for @savedBook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch'**
+  String get savedBook;
+
+  /// No description provided for @savedToggleOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu {name}'**
+  String savedToggleOn(String name);
+
+  /// No description provided for @savedToggleOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu {name}'**
+  String savedToggleOff(String name);
+
+  /// No description provided for @followingTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get followingTitle;
+
+  /// No description provided for @followingCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} nhiếp ảnh gia'**
+  String followingCount(int count);
+
+  /// No description provided for @followingButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang theo dõi'**
+  String get followingButton;
+
+  /// No description provided for @followButton.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi'**
+  String get followButton;
+
+  /// No description provided for @followingUnfollowed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã bỏ theo dõi {name}'**
+  String followingUnfollowed(String name);
+
+  /// No description provided for @followingEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa theo dõi ai'**
+  String get followingEmptyTitle;
+
+  /// No description provided for @followingEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi nhiếp ảnh gia để thấy bài mới của họ trước.'**
+  String get followingEmptyBody;
+
+  /// No description provided for @followingEmptyAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá'**
+  String get followingEmptyAction;
+
+  /// No description provided for @followersTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người theo dõi'**
+  String get followersTitle;
+
+  /// No description provided for @followersCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} người theo dõi · chỉ bạn xem được danh sách này'**
+  String followersCount(int count);
+
+  /// No description provided for @followersSince.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo dõi từ {date}'**
+  String followersSince(String date);
+
+  /// No description provided for @followersEmptyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có người theo dõi'**
+  String get followersEmptyTitle;
+
+  /// No description provided for @followersEmptyBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng bài thường xuyên để có thêm người theo dõi.'**
+  String get followersEmptyBody;
+
+  /// No description provided for @profileCountFollowers.
+  ///
+  /// In vi, this message translates to:
+  /// **'người theo dõi'**
+  String get profileCountFollowers;
+
+  /// No description provided for @profileUnsavePhotographer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bỏ lưu nhiếp ảnh gia'**
+  String get profileUnsavePhotographer;
+
+  /// No description provided for @reasonFollowing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang theo dõi'**
+  String get reasonFollowing;
+
+  /// No description provided for @socialToggleFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được. Thử lại.'**
+  String get socialToggleFailed;
+
+  /// No description provided for @verifyPhoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh số điện thoại'**
+  String get verifyPhoneTitle;
+
+  /// No description provided for @verifyPhoneHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số điện thoại của bạn'**
+  String get verifyPhoneHeading;
+
+  /// No description provided for @verifyPhoneBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chúng tôi gửi mã 6 số qua SMS. Số này dùng để liên hệ khi có đơn, không hiện công khai.'**
+  String get verifyPhoneBody;
+
+  /// No description provided for @verifyPhoneExample.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví dụ: 0912 345 678.'**
+  String get verifyPhoneExample;
+
+  /// No description provided for @verifyPhoneSend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi mã'**
+  String get verifyPhoneSend;
+
+  /// No description provided for @verifyCodeHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã 6 số'**
+  String get verifyCodeHeading;
+
+  /// No description provided for @verifyCodeSentTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi tới •••• {last4}'**
+  String verifyCodeSentTo(String last4);
+
+  /// No description provided for @verifyCodeResendIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã sau {time}'**
+  String verifyCodeResendIn(String time);
+
+  /// No description provided for @verifyCodeResend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã'**
+  String get verifyCodeResend;
+
+  /// No description provided for @verifyCodeChangePhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi số điện thoại'**
+  String get verifyCodeChangePhone;
+
+  /// No description provided for @verifyCodeConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get verifyCodeConfirm;
+
+  /// No description provided for @verifyCodeWrong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã không đúng. Kiểm tra lại tin nhắn.'**
+  String get verifyCodeWrong;
+
+  /// No description provided for @verifyCodeExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã đã hết hạn. Bấm Gửi lại mã.'**
+  String get verifyCodeExpired;
+
+  /// No description provided for @verifyPhoneTooMany.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã thử quá nhiều lần. Thử lại sau ít phút.'**
+  String get verifyPhoneTooMany;
+
+  /// No description provided for @verifyPhoneInUse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số này đã gắn với một tài khoản khác.'**
+  String get verifyPhoneInUse;
+
+  /// No description provided for @verifyPhoneInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại chưa đúng. Ví dụ: 0912 345 678.'**
+  String get verifyPhoneInvalid;
+
+  /// No description provided for @verifyPhoneDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh số điện thoại'**
+  String get verifyPhoneDone;
+
+  /// No description provided for @verifyStartTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu nhận đơn'**
+  String get verifyStartTitle;
+
+  /// No description provided for @verifyStepCounter.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} / {total}'**
+  String verifyStepCounter(int n, int total);
+
+  /// No description provided for @verifyStartIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Làm từng bước, lưu lại tiến độ. Thoát giữa chừng thì lần sau làm tiếp từ bước đang dở.'**
+  String get verifyStartIntro;
+
+  /// No description provided for @verifyStepPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get verifyStepPhone;
+
+  /// No description provided for @verifyStepPhoneTodo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận mã 6 số qua SMS'**
+  String get verifyStepPhoneTodo;
+
+  /// No description provided for @verifyStepPhoneDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh · •••• {last4}'**
+  String verifyStepPhoneDone(String last4);
+
+  /// No description provided for @verifyStepIdentity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh danh tính'**
+  String get verifyStepIdentity;
+
+  /// No description provided for @verifyStepIdentityTodo.
+  ///
+  /// In vi, this message translates to:
+  /// **'VNeID hoặc quét chip CCCD'**
+  String get verifyStepIdentityTodo;
+
+  /// No description provided for @verifyStepIdentityDoneVneid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khớp qua VNeID'**
+  String get verifyStepIdentityDoneVneid;
+
+  /// No description provided for @verifyStepIdentityDoneNfc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khớp qua chip CCCD'**
+  String get verifyStepIdentityDoneNfc;
+
+  /// No description provided for @verifyStepRules.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý quy định nhận việc'**
+  String get verifyStepRules;
+
+  /// No description provided for @verifyStepRulesTodo.
+  ///
+  /// In vi, this message translates to:
+  /// **'5 điều chính và một dấu tích'**
+  String get verifyStepRulesTodo;
+
+  /// No description provided for @verifyStepRulesDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đồng ý'**
+  String get verifyStepRulesDone;
+
+  /// No description provided for @verifyStateDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong'**
+  String get verifyStateDone;
+
+  /// No description provided for @verifyStateNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang làm'**
+  String get verifyStateNow;
+
+  /// No description provided for @verifyStateTodo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa làm'**
+  String get verifyStateTodo;
+
+  /// No description provided for @verifyStateFix.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần sửa'**
+  String get verifyStateFix;
+
+  /// No description provided for @verifyStartNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xong {total} bước thì bấm \"Gửi duyệt\". Staff duyệt trong 24 giờ; được duyệt là có tích xanh và nhận đơn ngay.'**
+  String verifyStartNote(int total);
+
+  /// No description provided for @verifyContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get verifyContinue;
+
+  /// No description provided for @verifySubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi duyệt'**
+  String get verifySubmit;
+
+  /// An instant on today's Vietnamese date, e.g. 9:12 hôm nay (mock S21.02-pending).
+  ///
+  /// In vi, this message translates to:
+  /// **'{time} hôm nay'**
+  String verifyAtToday(String time);
+
+  /// No description provided for @verifyAtTomorrow.
+  ///
+  /// In vi, this message translates to:
+  /// **'{time} ngày mai'**
+  String verifyAtTomorrow(String time);
+
+  /// No description provided for @verifyAtDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'{time} ngày {date}'**
+  String verifyAtDate(String time, String date);
+
+  /// No description provided for @verifyRulesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quy định nhận việc'**
+  String get verifyRulesTitle;
+
+  /// No description provided for @verifyRulesIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đọc 5 điều chính trước khi gửi duyệt.'**
+  String get verifyRulesIntro;
+
+  /// No description provided for @verifyRule1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách trả 100% khi đặt; tiền được giữ và chuyển cho bạn theo 2 mốc: sau buổi chụp, và sau khi khách đồng ý ảnh + 48 giờ.'**
+  String get verifyRule1;
+
+  /// No description provided for @verifyRule2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao hai lớp: gửi ảnh mẫu có watermark trước; link ảnh gốc chỉ mở khi khách đồng ý.'**
+  String get verifyRule2;
+
+  /// No description provided for @verifyRule3.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách huỷ trước 48 giờ được hoàn 100%, 24–48 giờ hoàn 50%, dưới 24 giờ không hoàn; bạn huỷ thì khách được hoàn 100%.'**
+  String get verifyRule3;
+
+  /// No description provided for @verifyRule4.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ cá nhân: nền tảng khấu trừ và nộp thay thuế trên phần chi trả cho bạn.'**
+  String get verifyRule4;
+
+  /// No description provided for @verifyRule5.
+  ///
+  /// In vi, this message translates to:
+  /// **'Họ tên, ngày sinh, số định danh được mã hoá; không lưu ảnh selfie; chỉ dùng để xác minh, chống trùng tài khoản và khấu trừ thuế.'**
+  String get verifyRule5;
+
+  /// No description provided for @verifyRulesAgree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đã đọc và đồng ý quy định nhận việc'**
+  String get verifyRulesAgree;
+
+  /// No description provided for @verifyPendingHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ duyệt · trong 24 giờ'**
+  String get verifyPendingHeading;
+
+  /// No description provided for @verifyPendingSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lúc {time} · có kết quả trước {deadline}'**
+  String verifyPendingSent(String time, String deadline);
+
+  /// No description provided for @verifyTlIdentity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh danh tính'**
+  String get verifyTlIdentity;
+
+  /// No description provided for @verifyTlIdentityBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{method} · {name}'**
+  String verifyTlIdentityBody(String method, String name);
+
+  /// No description provided for @verifyMethodVneid.
+  ///
+  /// In vi, this message translates to:
+  /// **'VNeID'**
+  String get verifyMethodVneid;
+
+  /// No description provided for @verifyMethodNfc.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chip CCCD'**
+  String get verifyMethodNfc;
+
+  /// No description provided for @verifyTlSubmitted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi duyệt'**
+  String get verifyTlSubmitted;
+
+  /// No description provided for @verifyTlSubmittedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{when} · đã đồng ý quy định nhận việc'**
+  String verifyTlSubmittedBody(String when);
+
+  /// No description provided for @verifyTlReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff duyệt'**
+  String get verifyTlReview;
+
+  /// No description provided for @verifyTlReviewBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt xong là có tích xanh và nhận đơn'**
+  String get verifyTlReviewBody;
+
+  /// No description provided for @verifyPendingNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong lúc chờ, bạn vẫn sửa portfolio, tạo gói và trò chuyện với khách.'**
+  String get verifyPendingNote;
+
+  /// No description provided for @verifyViewProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ'**
+  String get verifyViewProfile;
+
+  /// No description provided for @verifyRejectedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ chưa được duyệt'**
+  String get verifyRejectedTitle;
+
+  /// No description provided for @verifyRejectedReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}'**
+  String verifyRejectedReason(String reason);
+
+  /// No description provided for @verifyReject_fake_avatar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh đại diện không phải ảnh người thật. Đổi sang ảnh chân dung rõ mặt của bạn rồi gửi lại.'**
+  String get verifyReject_fake_avatar;
+
+  /// No description provided for @verifyReject_stolen_portfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Portfolio có ảnh không phải của bạn. Gỡ những ảnh đó rồi gửi lại.'**
+  String get verifyReject_stolen_portfolio;
+
+  /// No description provided for @verifyReject_identity_mismatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh tính không khớp với tên trên hồ sơ. Xác minh lại danh tính rồi gửi lại.'**
+  String get verifyReject_identity_mismatch;
+
+  /// No description provided for @verifyReject_duplicate_account.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.'**
+  String get verifyReject_duplicate_account;
+
+  /// No description provided for @verifyReject_underage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần đủ 18 tuổi để nhận đơn.'**
+  String get verifyReject_underage;
+
+  /// No description provided for @verifyFreeResubmitsLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} lần gửi lại miễn phí'**
+  String verifyFreeResubmitsLeft(int n);
+
+  /// No description provided for @verifyFixAvatar.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh đại diện'**
+  String get verifyFixAvatar;
+
+  /// No description provided for @verifyFixAvatarBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần ảnh chân dung thật, rõ mặt'**
+  String get verifyFixAvatarBody;
+
+  /// No description provided for @verifyFixPortfolio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Portfolio'**
+  String get verifyFixPortfolio;
+
+  /// No description provided for @verifyFixPortfolioBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gỡ ảnh không phải của bạn'**
+  String get verifyFixPortfolioBody;
+
+  /// No description provided for @verifyFixIdentity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh tính'**
+  String get verifyFixIdentity;
+
+  /// No description provided for @verifyRejectedNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ sửa mục bị từ chối; các bước đã xong được giữ nguyên. Gửi lại thì staff duyệt trong 24 giờ.'**
+  String get verifyRejectedNote;
+
+  /// No description provided for @verifyResubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa và gửi lại'**
+  String get verifyResubmit;
+
+  /// No description provided for @verifyApprovedHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có thể nhận đơn'**
+  String get verifyApprovedHeading;
+
+  /// No description provided for @verifyApprovedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duyệt lúc {when}. Tích xanh đã hiện cạnh tên bạn.'**
+  String verifyApprovedBody(String when);
+
+  /// No description provided for @verifyRevokedHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh đã bị thu hồi'**
+  String get verifyRevokedHeading;
+
+  /// No description provided for @verifyRevokedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn tạm thời không nhận đơn. Liên hệ hỗ trợ để biết thêm.'**
+  String get verifyRevokedBody;
+
+  /// No description provided for @verifySupportLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỗ trợ: {email}'**
+  String verifySupportLine(String email);
+
+  /// No description provided for @verifyIdTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh danh tính'**
+  String get verifyIdTitle;
+
+  /// No description provided for @verifyIdHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh bằng căn cước điện tử'**
+  String get verifyIdHeading;
+
+  /// No description provided for @verifyIdBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không cần gõ hay chụp giấy tờ: mở app VNeID, đồng ý chia sẻ rồi nhập mã PIN VNeID.'**
+  String get verifyIdBody;
+
+  /// No description provided for @verifyIdWeOnlyGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chúng tôi chỉ nhận'**
+  String get verifyIdWeOnlyGet;
+
+  /// No description provided for @verifyIdFieldName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Họ tên'**
+  String get verifyIdFieldName;
+
+  /// No description provided for @verifyIdFieldDob.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày sinh'**
+  String get verifyIdFieldDob;
+
+  /// No description provided for @verifyIdFieldNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số định danh'**
+  String get verifyIdFieldNumber;
+
+  /// No description provided for @verifyIdPrivacy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không lưu ảnh selfie. Dùng để khớp tên tài khoản nhận tiền và chống giả mạo; số định danh được mã hoá.'**
+  String get verifyIdPrivacy;
+
+  /// No description provided for @verifyIdConsent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bấm \"Xác minh bằng VNeID\" là bạn đồng ý chia sẻ ba thông tin trên.'**
+  String get verifyIdConsent;
+
+  /// No description provided for @verifyIdNfcLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không dùng được VNeID? Quét chip CCCD'**
+  String get verifyIdNfcLink;
+
+  /// No description provided for @verifyIdVneid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh bằng VNeID'**
+  String get verifyIdVneid;
+
+  /// No description provided for @verifyNfcTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét chip CCCD'**
+  String get verifyNfcTitle;
+
+  /// No description provided for @verifyNfcStep1.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bước 1/2 · Đọc chip'**
+  String get verifyNfcStep1;
+
+  /// No description provided for @verifyNfcStep2.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bước 2/2 · Selfie'**
+  String get verifyNfcStep2;
+
+  /// No description provided for @verifyNfcHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp CCCD vào mặt sau điện thoại'**
+  String get verifyNfcHeading;
+
+  /// No description provided for @verifyNfcBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ yên thẻ ở giữa lưng máy tới khi máy rung. Tháo ốp lưng dày nếu đọc chậm.'**
+  String get verifyNfcBody;
+
+  /// No description provided for @verifyNfcNextTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp theo'**
+  String get verifyNfcNextTitle;
+
+  /// No description provided for @verifyNfcNextBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp selfie để kiểm tra người thật'**
+  String get verifyNfcNextBody;
+
+  /// No description provided for @verifyNfcNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Máy cần có NFC. Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.'**
+  String get verifyNfcNote;
+
+  /// No description provided for @verifyNfcStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu quét'**
+  String get verifyNfcStart;
+
+  /// No description provided for @verifySelfieHeading.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp selfie 3–5 giây'**
+  String get verifySelfieHeading;
+
+  /// No description provided for @verifySelfieBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhìn thẳng vào camera, quay đầu chậm sang trái rồi sang phải.'**
+  String get verifySelfieBody;
+
+  /// No description provided for @verifySelfieNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.'**
+  String get verifySelfieNote;
+
+  /// No description provided for @verifySelfieStart.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu chụp'**
+  String get verifySelfieStart;
+
+  /// No description provided for @verifyIdPassed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh: {name}'**
+  String verifyIdPassed(String name);
+
+  /// No description provided for @verifyIdUnderage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần đủ 18 tuổi để nhận đơn.'**
+  String get verifyIdUnderage;
+
+  /// No description provided for @verifyIdInUse.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.'**
+  String get verifyIdInUse;
+
+  /// No description provided for @verifyIdRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã thử 3 lần hôm nay. Thử lại vào ngày mai.'**
+  String get verifyIdRateLimited;
+
+  /// No description provided for @verifyIdFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác minh được. Thử lại hoặc dùng cách khác.'**
+  String get verifyIdFailed;
+
+  /// No description provided for @verifyIdFakeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'VNeID (giả lập)'**
+  String get verifyIdFakeTitle;
+
+  /// No description provided for @verifyIdFakeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Môi trường thử: không mở app VNeID thật. Bấm Đồng ý để nhận một danh tính thử.'**
+  String get verifyIdFakeBody;
+
+  /// No description provided for @verifyIdFakeAgree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý chia sẻ'**
+  String get verifyIdFakeAgree;
+
+  /// No description provided for @verifyBizTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp'**
+  String get verifyBizTitle;
+
+  /// No description provided for @verifyBizIntro.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần cho con dấu Studio, hơn 3 thành viên và tài khoản nhận tiền đứng tên công ty. Không cần để nhận đơn.'**
+  String get verifyBizIntro;
+
+  /// No description provided for @verifyBizTaxCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế'**
+  String get verifyBizTaxCode;
+
+  /// No description provided for @verifyBizLookup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tra cứu'**
+  String get verifyBizLookup;
+
+  /// No description provided for @verifyBizName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên'**
+  String get verifyBizName;
+
+  /// No description provided for @verifyBizAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ'**
+  String get verifyBizAddress;
+
+  /// No description provided for @verifyBizStatus.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tình trạng'**
+  String get verifyBizStatus;
+
+  /// No description provided for @verifyBizActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoạt động'**
+  String get verifyBizActive;
+
+  /// No description provided for @verifyBizInactive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngừng hoạt động'**
+  String get verifyBizInactive;
+
+  /// No description provided for @verifyBizDocTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Người đại diện: cần ảnh giấy đăng ký kinh doanh'**
+  String get verifyBizDocTitle;
+
+  /// No description provided for @verifyBizDocBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff đối chiếu người đại diện với chủ studio đã xác minh'**
+  String get verifyBizDocBody;
+
+  /// No description provided for @verifyBizHouseholdNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hộ kinh doanh: mã số thuế là số định danh của chủ, tự khớp, không cần tải giấy.'**
+  String get verifyBizHouseholdNote;
+
+  /// No description provided for @verifyBizSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi duyệt'**
+  String get verifyBizSubmit;
+
+  /// No description provided for @verifyBizPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ duyệt · trong 24 giờ'**
+  String get verifyBizPending;
+
+  /// No description provided for @verifyBizApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh doanh nghiệp'**
+  String get verifyBizApproved;
+
+  /// No description provided for @verifyBizRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa được duyệt: {reason}'**
+  String verifyBizRejected(String reason);
+
+  /// No description provided for @verifyBizReject_inactive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Doanh nghiệp không ở tình trạng đang hoạt động.'**
+  String get verifyBizReject_inactive;
+
+  /// No description provided for @verifyBizReject_representative_mismatch.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế không khớp với danh tính chủ studio.'**
+  String get verifyBizReject_representative_mismatch;
+
+  /// No description provided for @verifyBizReject_doc_unreadable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh giấy đăng ký không đọc được. Chụp lại rõ nét.'**
+  String get verifyBizReject_doc_unreadable;
+
+  /// No description provided for @verifyBizNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy mã số thuế này.'**
+  String get verifyBizNotFound;
+
+  /// No description provided for @verifyBizNeedsIdentity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh danh tính chủ studio trước.'**
+  String get verifyBizNeedsIdentity;
+
+  /// No description provided for @verifyBizInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã số thuế gồm 10 hoặc 12 chữ số.'**
+  String get verifyBizInvalid;
+
+  /// No description provided for @settingsVerifyStepsLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} bước'**
+  String settingsVerifyStepsLeft(int n);
+
+  /// No description provided for @settingsVerifyPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ duyệt'**
+  String get settingsVerifyPending;
+
+  /// No description provided for @settingsVerifyApproved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh'**
+  String get settingsVerifyApproved;
+
+  /// No description provided for @settingsVerifyRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa được duyệt'**
+  String get settingsVerifyRejected;
+
+  /// No description provided for @settingsVerifyRevoked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu hồi'**
+  String get settingsVerifyRevoked;
+
+  /// No description provided for @settingsBusiness.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh doanh nghiệp'**
+  String get settingsBusiness;
+
+  /// No description provided for @settingsBusinessTodo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Con dấu Studio, tới 30 thợ'**
+  String get settingsBusinessTodo;
+
+  /// No description provided for @profileOwnerStepsLeft.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {n} bước để nhận đơn'**
+  String profileOwnerStepsLeft(int n);
+
+  /// No description provided for @profileOwnerStepsBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chưa đặt được bạn cho tới khi xác minh xong.'**
+  String get profileOwnerStepsBody;
+
+  /// No description provided for @profileOwnerPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ duyệt · trong 24 giờ'**
+  String get profileOwnerPending;
+
+  /// No description provided for @profileOwnerPendingBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ vẫn hiện \"Chưa nhận đơn\" với khách tới khi được duyệt.'**
+  String get profileOwnerPendingBody;
+
+  /// No description provided for @profileOwnerRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ chưa được duyệt'**
+  String get profileOwnerRejected;
+
+  /// No description provided for @profileOwnerRejectedBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem lý do và gửi lại.'**
+  String get profileOwnerRejectedBody;
+
+  /// No description provided for @profileOwnerContinue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiếp tục'**
+  String get profileOwnerContinue;
+
+  /// No description provided for @profileOwnerView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem'**
+  String get profileOwnerView;
+
+  String get settingsSupportSection;
+  String get settingsHelp;
+  String get settingsHelpBody;
+  String get helpTitle;
+  String get helpMyDisputes;
+  String helpDisputeRow(String code, String name);
+  String helpDisputeRowMeta(String status, String date);
+  String get helpFaqTitle;
+  String get helpContactSupport;
+  String helpEmailLine(String email);
+  String get supportChatTitle;
+  String get supportChatNote;
+  String get supportChatHint;
+  String get supportChatEmpty;
+  String get supportSendFailed;
+  String get supportRateLimited;
+  String get helpTopicPayments;
+  String get helpTopicCancel;
+  String get helpTopicDelivery;
+  String get helpTopicDisputes;
+  String get helpTopicContact;
+  String get helpTopicReviews;
+  String get helpTopicProviders;
+  String get helpPayFullQ;
+  String get helpPayFullA;
+  String get helpPayHeldQ;
+  String get helpPayHeldA;
+  String get helpPayQrQ;
+  String get helpPayQrA;
+  String get helpCancelRefundQ;
+  String get helpCancelRefundA;
+  String get helpCancelWhereQ;
+  String get helpCancelWhereA;
+  String get helpCancelLateQ;
+  String get helpCancelLateA;
+  String get helpDeliverySampleQ;
+  String get helpDeliverySampleA;
+  String get helpDeliveryEditQ;
+  String get helpDeliveryEditA;
+  String get helpDisputeWhenQ;
+  String get helpDisputeWhenA;
+  String get helpDisputeMoneyQ;
+  String get helpDisputeMoneyA;
+  String get helpDisputeEvidenceQ;
+  String get helpDisputeEvidenceA;
+  String get helpContactQ;
+  String get helpContactA;
+  String get helpReviewQ;
+  String get helpReviewA;
+  String get helpProviderStartQ;
+  String get helpProviderStartA;
+  String get helpProviderPaidQ;
+  String get helpProviderPaidA;
 }
 
 class _AppLocalizationsDelegate

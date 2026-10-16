@@ -7,7 +7,13 @@ import { SEED_PASSWORD, SEED_USERS, seedDocuments } from './fixtures.js';
 export async function applySeed(db: Firestore, auth: Auth, now: Date, guard: LocalGuardOptions = {}): Promise<void> {
   assertLocalEmulators(guard);
   for (const u of SEED_USERS) {
-    const props = { email: u.email, password: SEED_PASSWORD, displayName: u.displayName, emailVerified: true };
+    const props = {
+      email: u.email,
+      password: SEED_PASSWORD,
+      displayName: u.displayName,
+      emailVerified: true,
+      ...(u.phoneNumber !== undefined ? { phoneNumber: u.phoneNumber } : {}),
+    };
     try {
       await auth.updateUser(u.uid, props);
     } catch (e) {

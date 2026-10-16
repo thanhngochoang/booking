@@ -7,6 +7,7 @@ import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
+import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
 import 'package:photobooking/features/discovery/auth_reset.dart';
@@ -62,11 +63,15 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
   }
 
   Future<HomeFeedState> _loadFirst(String? category) async {
+    final followedIds =
+        (await ref.read(followingIdsProvider.future).catchError((_) => <String>{}))
+            .toSet();
     final page = await _recommender.recommendPosts(
       PostRecommendationQuery(
         specialtyId: category,
         geohash6: _geohash6,
         limit: pageSize,
+        followedIds: followedIds,
       ),
     );
     unawaited(
@@ -160,12 +165,16 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
     }
     state = AsyncData(current.copyWith(loadingMore: true));
     try {
+      final followedIds =
+          (await ref.read(followingIdsProvider.future).catchError((_) => <String>{}))
+              .toSet();
       final page = await _recommender.recommendPosts(
         PostRecommendationQuery(
           specialtyId: current.category,
           geohash6: _geohash6,
           limit: pageSize,
           cursor: current.cursor,
+          followedIds: followedIds,
         ),
       );
       final latest = state.value;

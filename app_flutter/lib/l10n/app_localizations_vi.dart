@@ -928,6 +928,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String get explorePhotographersAll => 'Xem tất cả nhiếp ảnh gia';
 
   @override
+  String get exploreSearchHint => 'Tìm dịch vụ, địa điểm, tên thợ ảnh';
+
+  @override
+  String get exploreSearchIdle => 'Gõ tên dịch vụ, khu vực hoặc tên thợ ảnh.';
+
+  @override
+  String exploreSearchEmptyTitle(String query) {
+    return 'Không tìm thấy “$query”';
+  }
+
+  @override
+  String get exploreSearchEmptyBody => 'Thử từ ngắn hơn, hoặc gõ không dấu.';
+
+  @override
+  String get exploreSearchSeeAll => 'Xem tất cả thợ ảnh';
+
+  @override
+  String get exploreSearchClear => 'Xoá';
+
+  @override
+  String exploreCategoryPackages(int count) {
+    return '$count gói';
+  }
+
+  @override
   String get exploreLoadError =>
       'Không tải được sự kiện. Kiểm tra mạng rồi thử lại.';
 
@@ -5232,4 +5257,809 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get bookingErrBlocked => 'Không đặt lịch được với người này.';
+
+  @override
+  String get savedTitle => 'Đã lưu';
+
+  @override
+  String savedTabPosts(int count) {
+    return 'Bài · $count';
+  }
+
+  @override
+  String savedTabPhotographers(int count) {
+    return 'Nhiếp ảnh gia · $count';
+  }
+
+  @override
+  String get savedPostsEmptyTitle => 'Chưa lưu bài nào';
+
+  @override
+  String get savedPostsEmptyBody =>
+      'Bấm biểu tượng lưu trên ảnh để xem lại ở đây.';
+
+  @override
+  String get savedPhotographersEmptyTitle => 'Chưa lưu nhiếp ảnh gia nào';
+
+  @override
+  String get savedPhotographersEmptyBody =>
+      'Bấm biểu tượng lưu trên hồ sơ nhiếp ảnh gia để so sánh và đặt lịch sau.';
+
+  @override
+  String savedUnsaved(String name) {
+    return 'Đã bỏ lưu $name';
+  }
+
+  @override
+  String get savedUndo => 'Hoàn tác';
+
+  @override
+  String get savedBook => 'Đặt lịch';
+
+  @override
+  String savedToggleOn(String name) {
+    return 'Lưu $name';
+  }
+
+  @override
+  String savedToggleOff(String name) {
+    return 'Bỏ lưu $name';
+  }
+
+  @override
+  String get followingTitle => 'Đang theo dõi';
+
+  @override
+  String followingCount(int count) {
+    return '$count nhiếp ảnh gia';
+  }
+
+  @override
+  String get followingButton => 'Đang theo dõi';
+
+  @override
+  String get followButton => 'Theo dõi';
+
+  @override
+  String followingUnfollowed(String name) {
+    return 'Đã bỏ theo dõi $name';
+  }
+
+  @override
+  String get followingEmptyTitle => 'Bạn chưa theo dõi ai';
+
+  @override
+  String get followingEmptyBody =>
+      'Theo dõi nhiếp ảnh gia để thấy bài mới của họ trước.';
+
+  @override
+  String get followingEmptyAction => 'Khám phá';
+
+  @override
+  String get followersTitle => 'Người theo dõi';
+
+  @override
+  String followersCount(int count) {
+    return '$count người theo dõi · chỉ bạn xem được danh sách này';
+  }
+
+  @override
+  String followersSince(String date) {
+    return 'Theo dõi từ $date';
+  }
+
+  @override
+  String get followersEmptyTitle => 'Chưa có người theo dõi';
+
+  @override
+  String get followersEmptyBody =>
+      'Đăng bài thường xuyên để có thêm người theo dõi.';
+
+  @override
+  String get profileCountFollowers => 'người theo dõi';
+
+  @override
+  String get profileUnsavePhotographer => 'Bỏ lưu nhiếp ảnh gia';
+
+  @override
+  String get reasonFollowing => 'Bạn đang theo dõi';
+
+  @override
+  String get socialToggleFailed => 'Chưa lưu được. Thử lại.';
+
+  @override
+  String get verifyPhoneTitle => 'Xác minh số điện thoại';
+
+  @override
+  String get verifyPhoneHeading => 'Nhập số điện thoại của bạn';
+
+  @override
+  String get verifyPhoneBody =>
+      'Chúng tôi gửi mã 6 số qua SMS. Số này dùng để liên hệ khi có đơn, không hiện công khai.';
+
+  @override
+  String get verifyPhoneExample => 'Ví dụ: 0912 345 678.';
+
+  @override
+  String get verifyPhoneSend => 'Gửi mã';
+
+  @override
+  String get verifyCodeHeading => 'Nhập mã 6 số';
+
+  @override
+  String verifyCodeSentTo(String last4) {
+    return 'Đã gửi tới •••• $last4';
+  }
+
+  @override
+  String verifyCodeResendIn(String time) {
+    return 'Gửi lại mã sau $time';
+  }
+
+  @override
+  String get verifyCodeResend => 'Gửi lại mã';
+
+  @override
+  String get verifyCodeChangePhone => 'Đổi số điện thoại';
+
+  @override
+  String get verifyCodeConfirm => 'Xác nhận';
+
+  @override
+  String get verifyCodeWrong => 'Mã không đúng. Kiểm tra lại tin nhắn.';
+
+  @override
+  String get verifyCodeExpired => 'Mã đã hết hạn. Bấm Gửi lại mã.';
+
+  @override
+  String get verifyPhoneTooMany =>
+      'Bạn đã thử quá nhiều lần. Thử lại sau ít phút.';
+
+  @override
+  String get verifyPhoneInUse => 'Số này đã gắn với một tài khoản khác.';
+
+  @override
+  String get verifyPhoneInvalid =>
+      'Số điện thoại chưa đúng. Ví dụ: 0912 345 678.';
+
+  @override
+  String get verifyPhoneDone => 'Đã xác minh số điện thoại';
+
+  @override
+  String get verifyStartTitle => 'Bắt đầu nhận đơn';
+
+  @override
+  String verifyStepCounter(int n, int total) {
+    return '$n / $total';
+  }
+
+  @override
+  String get verifyStartIntro =>
+      'Làm từng bước, lưu lại tiến độ. Thoát giữa chừng thì lần sau làm tiếp từ bước đang dở.';
+
+  @override
+  String get verifyStepPhone => 'Số điện thoại';
+
+  @override
+  String get verifyStepPhoneTodo => 'Nhận mã 6 số qua SMS';
+
+  @override
+  String verifyStepPhoneDone(String last4) {
+    return 'Đã xác minh · •••• $last4';
+  }
+
+  @override
+  String get verifyStepIdentity => 'Xác minh danh tính';
+
+  @override
+  String get verifyStepIdentityTodo => 'VNeID hoặc quét chip CCCD';
+
+  @override
+  String get verifyStepIdentityDoneVneid => 'Đã khớp qua VNeID';
+
+  @override
+  String get verifyStepIdentityDoneNfc => 'Đã khớp qua chip CCCD';
+
+  @override
+  String get verifyStepRules => 'Đồng ý quy định nhận việc';
+
+  @override
+  String get verifyStepRulesTodo => '5 điều chính và một dấu tích';
+
+  @override
+  String get verifyStepRulesDone => 'Đã đồng ý';
+
+  @override
+  String get verifyStateDone => 'Xong';
+
+  @override
+  String get verifyStateNow => 'Đang làm';
+
+  @override
+  String get verifyStateTodo => 'Chưa làm';
+
+  @override
+  String get verifyStateFix => 'Cần sửa';
+
+  @override
+  String verifyStartNote(int total) {
+    return 'Xong $total bước thì bấm \"Gửi duyệt\". Staff duyệt trong 24 giờ; được duyệt là có tích xanh và nhận đơn ngay.';
+  }
+
+  @override
+  String get verifyContinue => 'Tiếp tục';
+
+  @override
+  String get verifySubmit => 'Gửi duyệt';
+
+  @override
+  String verifyAtToday(String time) {
+    return '$time hôm nay';
+  }
+
+  @override
+  String verifyAtTomorrow(String time) {
+    return '$time ngày mai';
+  }
+
+  @override
+  String verifyAtDate(String time, String date) {
+    return '$time ngày $date';
+  }
+
+  @override
+  String get verifyRulesTitle => 'Quy định nhận việc';
+
+  @override
+  String get verifyRulesIntro => 'Đọc 5 điều chính trước khi gửi duyệt.';
+
+  @override
+  String get verifyRule1 =>
+      'Khách trả 100% khi đặt; tiền được giữ và chuyển cho bạn theo 2 mốc: sau buổi chụp, và sau khi khách đồng ý ảnh + 48 giờ.';
+
+  @override
+  String get verifyRule2 =>
+      'Bàn giao hai lớp: gửi ảnh mẫu có watermark trước; link ảnh gốc chỉ mở khi khách đồng ý.';
+
+  @override
+  String get verifyRule3 =>
+      'Khách huỷ trước 48 giờ được hoàn 100%, 24–48 giờ hoàn 50%, dưới 24 giờ không hoàn; bạn huỷ thì khách được hoàn 100%.';
+
+  @override
+  String get verifyRule4 =>
+      'Thợ cá nhân: nền tảng khấu trừ và nộp thay thuế trên phần chi trả cho bạn.';
+
+  @override
+  String get verifyRule5 =>
+      'Họ tên, ngày sinh, số định danh được mã hoá; không lưu ảnh selfie; chỉ dùng để xác minh, chống trùng tài khoản và khấu trừ thuế.';
+
+  @override
+  String get verifyRulesAgree => 'Tôi đã đọc và đồng ý quy định nhận việc';
+
+  @override
+  String get verifyPendingHeading => 'Đang chờ duyệt · trong 24 giờ';
+
+  @override
+  String verifyPendingSent(String time, String deadline) {
+    return 'Gửi lúc $time · có kết quả trước $deadline';
+  }
+
+  @override
+  String get verifyTlIdentity => 'Đã xác minh danh tính';
+
+  @override
+  String verifyTlIdentityBody(String method, String name) {
+    return '$method · $name';
+  }
+
+  @override
+  String get verifyMethodVneid => 'VNeID';
+
+  @override
+  String get verifyMethodNfc => 'Chip CCCD';
+
+  @override
+  String get verifyTlSubmitted => 'Đã gửi duyệt';
+
+  @override
+  String verifyTlSubmittedBody(String when) {
+    return '$when · đã đồng ý quy định nhận việc';
+  }
+
+  @override
+  String get verifyTlReview => 'Staff duyệt';
+
+  @override
+  String get verifyTlReviewBody => 'Duyệt xong là có tích xanh và nhận đơn';
+
+  @override
+  String get verifyPendingNote =>
+      'Trong lúc chờ, bạn vẫn sửa portfolio, tạo gói và trò chuyện với khách.';
+
+  @override
+  String get verifyViewProfile => 'Xem hồ sơ';
+
+  @override
+  String get verifyRejectedTitle => 'Hồ sơ chưa được duyệt';
+
+  @override
+  String verifyRejectedReason(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String get verifyReject_fake_avatar =>
+      'Ảnh đại diện không phải ảnh người thật. Đổi sang ảnh chân dung rõ mặt của bạn rồi gửi lại.';
+
+  @override
+  String get verifyReject_stolen_portfolio =>
+      'Portfolio có ảnh không phải của bạn. Gỡ những ảnh đó rồi gửi lại.';
+
+  @override
+  String get verifyReject_identity_mismatch =>
+      'Danh tính không khớp với tên trên hồ sơ. Xác minh lại danh tính rồi gửi lại.';
+
+  @override
+  String get verifyReject_duplicate_account =>
+      'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.';
+
+  @override
+  String get verifyReject_underage => 'Bạn cần đủ 18 tuổi để nhận đơn.';
+
+  @override
+  String verifyFreeResubmitsLeft(int n) {
+    return 'Còn $n lần gửi lại miễn phí';
+  }
+
+  @override
+  String get verifyFixAvatar => 'Ảnh đại diện';
+
+  @override
+  String get verifyFixAvatarBody => 'Cần ảnh chân dung thật, rõ mặt';
+
+  @override
+  String get verifyFixPortfolio => 'Portfolio';
+
+  @override
+  String get verifyFixPortfolioBody => 'Gỡ ảnh không phải của bạn';
+
+  @override
+  String get verifyFixIdentity => 'Danh tính';
+
+  @override
+  String get verifyRejectedNote =>
+      'Chỉ sửa mục bị từ chối; các bước đã xong được giữ nguyên. Gửi lại thì staff duyệt trong 24 giờ.';
+
+  @override
+  String get verifyResubmit => 'Sửa và gửi lại';
+
+  @override
+  String get verifyApprovedHeading => 'Bạn đã có thể nhận đơn';
+
+  @override
+  String verifyApprovedBody(String when) {
+    return 'Duyệt lúc $when. Tích xanh đã hiện cạnh tên bạn.';
+  }
+
+  @override
+  String get verifyRevokedHeading => 'Xác minh đã bị thu hồi';
+
+  @override
+  String get verifyRevokedBody =>
+      'Bạn tạm thời không nhận đơn. Liên hệ hỗ trợ để biết thêm.';
+
+  @override
+  String verifySupportLine(String email) {
+    return 'Hỗ trợ: $email';
+  }
+
+  @override
+  String get verifyIdTitle => 'Xác minh danh tính';
+
+  @override
+  String get verifyIdHeading => 'Xác minh bằng căn cước điện tử';
+
+  @override
+  String get verifyIdBody =>
+      'Không cần gõ hay chụp giấy tờ: mở app VNeID, đồng ý chia sẻ rồi nhập mã PIN VNeID.';
+
+  @override
+  String get verifyIdWeOnlyGet => 'Chúng tôi chỉ nhận';
+
+  @override
+  String get verifyIdFieldName => 'Họ tên';
+
+  @override
+  String get verifyIdFieldDob => 'Ngày sinh';
+
+  @override
+  String get verifyIdFieldNumber => 'Số định danh';
+
+  @override
+  String get verifyIdPrivacy =>
+      'Không lưu ảnh selfie. Dùng để khớp tên tài khoản nhận tiền và chống giả mạo; số định danh được mã hoá.';
+
+  @override
+  String get verifyIdConsent =>
+      'Bấm \"Xác minh bằng VNeID\" là bạn đồng ý chia sẻ ba thông tin trên.';
+
+  @override
+  String get verifyIdNfcLink => 'Không dùng được VNeID? Quét chip CCCD';
+
+  @override
+  String get verifyIdVneid => 'Xác minh bằng VNeID';
+
+  @override
+  String get verifyNfcTitle => 'Quét chip CCCD';
+
+  @override
+  String get verifyNfcStep1 => 'Bước 1/2 · Đọc chip';
+
+  @override
+  String get verifyNfcStep2 => 'Bước 2/2 · Selfie';
+
+  @override
+  String get verifyNfcHeading => 'Áp CCCD vào mặt sau điện thoại';
+
+  @override
+  String get verifyNfcBody =>
+      'Giữ yên thẻ ở giữa lưng máy tới khi máy rung. Tháo ốp lưng dày nếu đọc chậm.';
+
+  @override
+  String get verifyNfcNextTitle => 'Tiếp theo';
+
+  @override
+  String get verifyNfcNextBody => 'Chụp selfie để kiểm tra người thật';
+
+  @override
+  String get verifyNfcNote =>
+      'Máy cần có NFC. Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.';
+
+  @override
+  String get verifyNfcStart => 'Bắt đầu quét';
+
+  @override
+  String get verifySelfieHeading => 'Chụp selfie 3–5 giây';
+
+  @override
+  String get verifySelfieBody =>
+      'Nhìn thẳng vào camera, quay đầu chậm sang trái rồi sang phải.';
+
+  @override
+  String get verifySelfieNote =>
+      'Ảnh selfie chỉ dùng để so với ảnh trong chip, không lưu.';
+
+  @override
+  String get verifySelfieStart => 'Bắt đầu chụp';
+
+  @override
+  String verifyIdPassed(String name) {
+    return 'Đã xác minh: $name';
+  }
+
+  @override
+  String get verifyIdUnderage => 'Bạn cần đủ 18 tuổi để nhận đơn.';
+
+  @override
+  String get verifyIdInUse =>
+      'Danh tính này đã gắn với một tài khoản nhận đơn khác. Liên hệ hỗ trợ nếu đây là nhầm lẫn.';
+
+  @override
+  String get verifyIdRateLimited =>
+      'Bạn đã thử 3 lần hôm nay. Thử lại vào ngày mai.';
+
+  @override
+  String get verifyIdFailed =>
+      'Chưa xác minh được. Thử lại hoặc dùng cách khác.';
+
+  @override
+  String get verifyIdFakeTitle => 'VNeID (giả lập)';
+
+  @override
+  String get verifyIdFakeBody =>
+      'Môi trường thử: không mở app VNeID thật. Bấm Đồng ý để nhận một danh tính thử.';
+
+  @override
+  String get verifyIdFakeAgree => 'Đồng ý chia sẻ';
+
+  @override
+  String get verifyBizTitle => 'Xác minh doanh nghiệp';
+
+  @override
+  String get verifyBizIntro =>
+      'Cần cho con dấu Studio, hơn 3 thành viên và tài khoản nhận tiền đứng tên công ty. Không cần để nhận đơn.';
+
+  @override
+  String get verifyBizTaxCode => 'Mã số thuế';
+
+  @override
+  String get verifyBizLookup => 'Tra cứu';
+
+  @override
+  String get verifyBizName => 'Tên';
+
+  @override
+  String get verifyBizAddress => 'Địa chỉ';
+
+  @override
+  String get verifyBizStatus => 'Tình trạng';
+
+  @override
+  String get verifyBizActive => 'Đang hoạt động';
+
+  @override
+  String get verifyBizInactive => 'Ngừng hoạt động';
+
+  @override
+  String get verifyBizDocTitle =>
+      'Người đại diện: cần ảnh giấy đăng ký kinh doanh';
+
+  @override
+  String get verifyBizDocBody =>
+      'Staff đối chiếu người đại diện với chủ studio đã xác minh';
+
+  @override
+  String get verifyBizHouseholdNote =>
+      'Hộ kinh doanh: mã số thuế là số định danh của chủ, tự khớp, không cần tải giấy.';
+
+  @override
+  String get verifyBizSubmit => 'Gửi duyệt';
+
+  @override
+  String get verifyBizPending => 'Đang chờ duyệt · trong 24 giờ';
+
+  @override
+  String get verifyBizApproved => 'Đã xác minh doanh nghiệp';
+
+  @override
+  String verifyBizRejected(String reason) {
+    return 'Chưa được duyệt: $reason';
+  }
+
+  @override
+  String get verifyBizReject_inactive =>
+      'Doanh nghiệp không ở tình trạng đang hoạt động.';
+
+  @override
+  String get verifyBizReject_representative_mismatch =>
+      'Mã số thuế không khớp với danh tính chủ studio.';
+
+  @override
+  String get verifyBizReject_doc_unreadable =>
+      'Ảnh giấy đăng ký không đọc được. Chụp lại rõ nét.';
+
+  @override
+  String get verifyBizNotFound => 'Không tìm thấy mã số thuế này.';
+
+  @override
+  String get verifyBizNeedsIdentity => 'Xác minh danh tính chủ studio trước.';
+
+  @override
+  String get verifyBizInvalid => 'Mã số thuế gồm 10 hoặc 12 chữ số.';
+
+  @override
+  String settingsVerifyStepsLeft(int n) {
+    return 'Còn $n bước';
+  }
+
+  @override
+  String get settingsVerifyPending => 'Đang chờ duyệt';
+
+  @override
+  String get settingsVerifyApproved => 'Đã xác minh';
+
+  @override
+  String get settingsVerifyRejected => 'Chưa được duyệt';
+
+  @override
+  String get settingsVerifyRevoked => 'Đã thu hồi';
+
+  @override
+  String get settingsBusiness => 'Xác minh doanh nghiệp';
+
+  @override
+  String get settingsBusinessTodo => 'Con dấu Studio, tới 30 thợ';
+
+  @override
+  String profileOwnerStepsLeft(int n) {
+    return 'Còn $n bước để nhận đơn';
+  }
+
+  @override
+  String get profileOwnerStepsBody =>
+      'Khách chưa đặt được bạn cho tới khi xác minh xong.';
+
+  @override
+  String get profileOwnerPending => 'Đang chờ duyệt · trong 24 giờ';
+
+  @override
+  String get profileOwnerPendingBody =>
+      'Hồ sơ vẫn hiện \"Chưa nhận đơn\" với khách tới khi được duyệt.';
+
+  @override
+  String get profileOwnerRejected => 'Hồ sơ chưa được duyệt';
+
+  @override
+  String get profileOwnerRejectedBody => 'Xem lý do và gửi lại.';
+
+  @override
+  String get profileOwnerContinue => 'Tiếp tục';
+
+  @override
+  String get profileOwnerView => 'Xem';
+
+  @override
+  String get settingsSupportSection => 'Hỗ trợ';
+
+  @override
+  String get settingsHelp => 'Trợ giúp';
+
+  @override
+  String get settingsHelpBody => 'Câu hỏi thường gặp, liên hệ hỗ trợ';
+
+  @override
+  String get helpTitle => 'Trợ giúp';
+
+  @override
+  String get helpMyDisputes => 'Khiếu nại của bạn';
+
+  @override
+  String helpDisputeRow(String code, String name) => 'Khiếu nại #$code · $name';
+
+  @override
+  String helpDisputeRowMeta(String status, String date) => '$status · $date';
+
+  @override
+  String get helpFaqTitle => 'Câu hỏi thường gặp';
+
+  @override
+  String get helpContactSupport => 'Liên hệ hỗ trợ';
+
+  @override
+  String helpEmailLine(String email) => 'Email hỗ trợ: $email';
+
+  @override
+  String get supportChatTitle => 'Hỗ trợ';
+
+  @override
+  String get supportChatNote =>
+      'Chỉ bạn và đội hỗ trợ xem được cuộc trò chuyện này. Đừng gửi mật khẩu hay mã OTP.';
+
+  @override
+  String get supportChatHint => 'Nhắn cho hỗ trợ…';
+
+  @override
+  String get supportChatEmpty =>
+      'Bạn cần giúp gì? Nhắn cho đội hỗ trợ, chúng tôi trả lời tại đây và báo cho bạn khi có tin mới.';
+
+  @override
+  String get supportSendFailed => 'Chưa gửi được tin nhắn. Thử lại.';
+
+  @override
+  String get supportRateLimited => 'Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.';
+
+  @override
+  String get helpTopicPayments => 'Thanh toán';
+
+  @override
+  String get helpTopicCancel => 'Huỷ & hoàn tiền';
+
+  @override
+  String get helpTopicDelivery => 'Bàn giao ảnh';
+
+  @override
+  String get helpTopicDisputes => 'Khiếu nại';
+
+  @override
+  String get helpTopicContact => 'Liên hệ';
+
+  @override
+  String get helpTopicReviews => 'Đánh giá';
+
+  @override
+  String get helpTopicProviders => 'Dành cho thợ ảnh';
+
+  @override
+  String get helpPayFullQ => 'Vì sao phải trả trước 100%?';
+
+  @override
+  String get helpPayFullA =>
+      'Tiền không đến tay thợ ngay. Ứng dụng giữ tiền và chỉ chuyển cho thợ theo 2 đợt: sau buổi chụp, và sau khi bạn đồng ý ảnh rồi kiểm tra bộ ảnh gốc trong 48 giờ. Có lỗi thì bạn được hoàn qua ứng dụng.';
+
+  @override
+  String get helpPayHeldQ => 'Tiền của tôi được giữ ở đâu?';
+
+  @override
+  String get helpPayHeldA =>
+      'Tiền do một tổ chức trung gian thanh toán được cấp phép giữ, không nằm trong tài khoản của ứng dụng, và chưa chuyển cho thợ cho tới khi đủ điều kiện.';
+
+  @override
+  String get helpPayQrQ => 'Chuyển khoản QR sai số tiền thì sao?';
+
+  @override
+  String get helpPayQrA =>
+      'Hãy chuyển đúng số tiền và nội dung trong 15 phút. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động về tài khoản đã chuyển.';
+
+  @override
+  String get helpCancelRefundQ => 'Huỷ buổi chụp được hoàn bao nhiêu?';
+
+  @override
+  String get helpCancelRefundA =>
+      'Huỷ trước giờ chụp từ 48 giờ trở lên: hoàn 100%. Từ 24 đến 48 giờ: hoàn 50%. Dưới 24 giờ: không hoàn. Tính trên toàn bộ số đã trả. Thợ huỷ thì bạn được hoàn 100%.';
+
+  @override
+  String get helpCancelWhereQ => 'Tiền hoàn về đâu?';
+
+  @override
+  String get helpCancelWhereA =>
+      'Trả bằng ví MoMo hoặc ZaloPay thì hoàn về ví. Chuyển khoản thì hoàn về tài khoản đã chuyển, hoặc tài khoản khác bạn khai.';
+
+  @override
+  String get helpCancelLateQ => 'Thợ giao ảnh trễ thì sao?';
+
+  @override
+  String get helpCancelLateA =>
+      'Quá số ngày đã hẹn, bạn được huỷ phần bàn giao và hoàn 100% đợt thanh toán thứ hai; thợ giữ đợt đầu.';
+
+  @override
+  String get helpDeliverySampleQ => 'Ảnh mẫu có watermark là gì?';
+
+  @override
+  String get helpDeliverySampleA =>
+      'Thợ gửi ảnh mẫu có watermark trước. Link bộ ảnh gốc bị che và chỉ mở khi bạn bấm \"Đồng ý ảnh\". Không phản hồi trong 3 ngày thì hệ thống tự đồng ý.';
+
+  @override
+  String get helpDeliveryEditQ => 'Muốn sửa ảnh thì làm sao?';
+
+  @override
+  String get helpDeliveryEditA =>
+      'Trao đổi màu sắc, chỉnh sửa ngay trên ảnh mẫu. Số vòng sửa miễn phí theo gói. Hết lượt thì bạn đồng ý, xin thêm một vòng, hoặc mở khiếu nại.';
+
+  @override
+  String get helpDisputeWhenQ => 'Khi nào tôi mở khiếu nại được?';
+
+  @override
+  String get helpDisputeWhenA =>
+      'Trong 24 giờ sau khi buổi chụp hoàn thành, hoặc trong 24 giờ sau khi sự kiện có vé trả tiền kết thúc. Với bộ ảnh gốc, bạn có 48 giờ kể từ khi đồng ý ảnh. Quá thời hạn thì nút \"Báo vấn đề\" không còn. Vé không thu phí không có khiếu nại vì không có tiền được giữ.';
+
+  @override
+  String get helpDisputeMoneyQ => 'Trong lúc khiếu nại, tiền ở đâu?';
+
+  @override
+  String get helpDisputeMoneyA =>
+      'Tiền tiếp tục được giữ, không chuyển cho thợ. Đội hỗ trợ xem bằng chứng của hai bên rồi quyết định: chuyển cho thợ, hoàn cho bạn, hoặc chia.';
+
+  @override
+  String get helpDisputeEvidenceQ => 'Ai xem được ảnh bằng chứng?';
+
+  @override
+  String get helpDisputeEvidenceA => 'Chỉ bạn, người bị khiếu nại và đội hỗ trợ.';
+
+  @override
+  String get helpContactQ => 'Khi nào tôi gọi được cho thợ?';
+
+  @override
+  String get helpContactA =>
+      'Gọi, Zalo, WhatsApp chỉ mở sau khi bạn đã thanh toán. Trước đó bạn nhắn tin hỏi trong ứng dụng. Số điện thoại không hiện công khai.';
+
+  @override
+  String get helpReviewQ => 'Cà chua và gạch là gì?';
+
+  @override
+  String get helpReviewA =>
+      'Cà chua là hài lòng, gạch là chưa hài lòng; bấm 1 đến 10 lần để nói mức độ. Hồ sơ thợ hiện tỉ lệ cà chua. Mỗi buổi chụp đánh giá một lần, gửi rồi không sửa.';
+
+  @override
+  String get helpProviderStartQ => 'Làm sao để bắt đầu nhận đơn?';
+
+  @override
+  String get helpProviderStartA =>
+      'Xác minh số điện thoại, đóng phí xác minh (thợ ảnh 99.000₫, studio 299.000₫, không hoàn), xác minh danh tính bằng VNeID hoặc chip CCCD và đồng ý quy định nhận việc. Nhân viên duyệt trong 24 giờ.';
+
+  @override
+  String get helpProviderPaidQ => 'Khi nào tôi nhận được tiền?';
+
+  @override
+  String get helpProviderPaidA =>
+      'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.';
 }

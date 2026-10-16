@@ -4,12 +4,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/discovery/explore_catalog.dart';
 import 'package:photobooking/data/location/area.dart';
 import 'package:photobooking/data/location/location_repository.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
-import 'package:photobooking/core/core.dart';
 
 import '../../support/explore_world.dart';
 import '../../support/screen_host.dart';
@@ -454,6 +455,67 @@ void main() {
       await tester.tap(find.text('Thợ ảnh'));
       await tester.pumpAndSettle();
       expect(find.text('Xem tất cả nhiếp ảnh gia'), findsOneWidget);
+    });
+
+    testWidgets('the search row opens /explore/search', (tester) async {
+      String? routedTo;
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const ExploreScreen()),
+          GoRoute(
+            path: '/explore/search',
+            builder: (_, state) {
+              routedTo = state.uri.toString();
+              return const Scaffold(body: Text('Search Screen'));
+            },
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        await _app(
+          ExploreWorld(status: LocationPermissionStatus.denied),
+          router: router,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tìm dịch vụ, địa điểm, tên thợ ảnh'));
+      await tester.pumpAndSettle();
+      expect(routedTo, '/explore/search');
+    });
+
+    testWidgets('service tiles show "{n} gói" from the catalog', (tester) async {
+      final w = ExploreWorld(
+        status: LocationPermissionStatus.denied,
+        catalog: const ExploreCatalog({
+          'portrait': ExploreCategoryStat(serviceCount: 128),
+        }),
+      );
+      await tester.pumpWidget(await _app(w));
+      await tester.pumpAndSettle();
+      expect(find.text('128 gói'), findsOneWidget);
+    });
+
+    testWidgets('a zero count hides the caption', (tester) async {
+      final w = ExploreWorld(
+        status: LocationPermissionStatus.denied,
+        catalog: const ExploreCatalog({
+          'portrait': ExploreCategoryStat(serviceCount: 0),
+        }),
+      );
+      await tester.pumpWidget(await _app(w));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('gói'), findsNothing);
+    });
+
+    testWidgets('a failing catalog still shows the tiles without counts', (
+      tester,
+    ) async {
+      final w = ExploreWorld(status: LocationPermissionStatus.denied);
+      w.catalogRepo.failWith = StateError('network error');
+      await tester.pumpWidget(await _app(w));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('category-services-portrait')), findsOneWidget);
+      expect(find.textContaining('gói'), findsNothing);
     });
   });
 

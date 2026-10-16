@@ -99,11 +99,32 @@ describe('onPhotographerWrite event policy', () => {
     await assert.rejects(handlePhotographerEvent(input(0), () => failingDeps(error), noSync, NOW), /unavailable/);
   });
 
-  test('a missing or unparsable event time is handled (never dropped as old)', async () => {
+  test('a profile that becomes bookable gets a nextFreeDate refreshed', async () => {
+    let refreshedUid: string | null = null;
+    const discoveryDeps = {
+      stats: {
+        snapshot: async (uid: string) => ({ nextFreeDate: null, score: null, reviewCount: null, startingPrice: null, completedCount: null }),
+        blockedDays: async () => new Set<string>(),
+        apply: async (uid: string) => { refreshedUid = uid; return 'written' as const; },
+        ensureScore: async () => 'unchanged' as const,
+        completedBookings: async () => 0,
+        staleNextFree: async () => [],
+      },
+      catalog: { get: async () => null, countActive: async () => 0, latestActiveCover: async () => null, put: async () => 'written' as const },
+      engagement: { recount: async () => 'written' as const },
+      clock: { now: () => NOW },
+    };
     const deps: ScoreSkillsDeps = {
       posts: { owned: async () => new Set<string>() },
       writer: { write: async () => 'written', reread: () => assert.fail('no reread') },
     };
-    assert.equal(await handlePhotographerEvent({ ...input(0), time: 'not a time' }, () => deps, noSync, NOW), 'written');
+    const ev = {
+      ...input(0),
+      before: { acceptingOrders: false, onboardingComplete: false },
+      after: { skills, acceptingOrders: true, onboardingComplete: true },
+    };
+    await handlePhotographerEvent(ev, () => deps, noSync, NOW, discoveryDeps as any);
+    assert.equal(refreshedUid, 'p1');
   });
 });
+

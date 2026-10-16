@@ -105,7 +105,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
 | S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi | S19 |
-| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134), nút mở khi có S21.02 (#135) | S22 |
+| S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
 | S06.03 | Từ chối yêu cầu (sheet) | `/b/:id/decline` | NAG | 5 | ✅ đã làm (4c) | S23 |
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
 | S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày | S43 |
@@ -124,7 +124,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S08.07 | Thêm/sửa dịch vụ đi kèm (sheet) | — (sheet) | thợ ảnh · studio | spec 10-08 dịch vụ đi kèm | ⬜ có mock, chưa có plan | — |
 | **S09** | **Hồ sơ cá nhân & cài đặt** | | | | | |
 | S09.01 | Hồ sơ cá nhân (bài đăng của mình) | `/profile` | cả hai | 1 · **đã có**, làm lại ở 3 | ✅ làm lại theo mock (#148) · lưới bài đăng, chip theo loại | S30 |
-| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng xác minh/studio ẩn tới #135/#136 | S31 |
+| S09.02 | Cài đặt | `/settings` | cả hai | 1 · **đã có**, thêm kiểu nút, chế độ, đăng xuất | ✅ khớp mock (#148) · dòng "Xác minh & nhận đơn" đã bật (#135; phụ đề "Còn {n} bước", "Đang chờ duyệt", "Đã xác minh", "Chưa được duyệt", "Đã thu hồi") · dòng studio ẩn tới #136 | S31 |
 | S09.03 | Sửa hồ sơ | `/settings/profile` | cả hai | 1 · **đã có**, thêm ảnh đại diện, số điện thoại và công tắc liên hệ | ✅ đã làm · khớp mock (mock-parity-1) | S42 |
 | **S10** | **Đăng bài** | | | | | |
 | S10.01 | Đăng bài | `/action` (NAG) | NAG | 3 | ✅ đã làm (3c) · khớp mock, ảnh nén theo mục đích (#147) | S21 |
@@ -166,21 +166,21 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
 | S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ (10a) · thêm sau khi mua vé (#138) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
-| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ có mock, có plan (#142) | — |
+| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute` (sheet trên S05.02; `?from=delivery` từ S05.06) · sheet trên S11.04 (vé) | khách | mới | ⬜ có mock, có plan (#142) | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ có mock, có plan (#142) | — |
-| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help` | cả hai | mới | ⬜ có mock, có plan (#142) | — |
+| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help`, `/help/chat` | cả hai | mới | ✅ đã làm (#204) | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
-| S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ⬜ có mock, có plan (#143) | — |
-| S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ⬜ có mock, có plan (#143) | — |
-| S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ⬜ có mock, có plan (#143) | — |
+| S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ✅ đã làm (#143) | — |
+| S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ✅ đã làm (#143) | — |
+| S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ✅ đã làm (#143) | — |
 | **S20** | **Báo cáo & chặn** | | | | | |
 | S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | `/report` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
 | S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
 | **S21** | **Xác minh** | | | | | |
-| S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ⬜ có mock, có plan (#135) | — |
-| S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
-| S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
-| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ⬜ có mock, chưa có plan | — |
+| S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
+| S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
+| S21.03 | Xác minh danh tính (VNeID / chip CCCD) | `/verify/identity` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
+| S21.04 | Xác minh doanh nghiệp (studio) | `/verify/business` | studio | spec 10-06 xác minh | ✅ đã làm (#135) · danh tính/thuế giả lập · phí xác minh: #203 | — |
 | **S22** | **Thanh toán & tài khoản** | | | | | |
 | S22.01 | Lịch sử thanh toán: cọc, vé, hoàn tiền, khoản đang giữ (kể cả Chụp ngay chưa tìm được người), trạng thái từng khoản | `/me/payments` | khách | mới | ⬜ có mock, có plan (#141) | — |
 | S22.02 | Xoá tài khoản: điều kiện (không còn buổi chụp, vé hay tiền đang giữ), hậu quả, xác nhận | `/settings/delete-account` | cả hai | mới | ⬜ có mock, có plan (#141) | — |
@@ -191,7 +191,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S23.01 | Khiếu nại: hàng đợi và chi tiết (bằng chứng, hai mốc tiền, hội thoại ba bên, thả / hoàn / chia; hoàn từ 10 triệu cần người thứ hai) | `/staff/disputes` (web) | admin · support (quyết định) · finance (xem số tiền) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
 | S23.02 | Chi trả: duyệt lần chi đầu, tạm giữ, thất bại, đang xử lý quá lâu | `/staff/payouts` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
 | S23.03 | Hoàn tiền: thất bại, chờ quá lâu, ghi nhận hoàn thủ công, tiền giữ lâu | `/staff/refunds` (web) | admin · finance | Phase 1.5 (`screens/staff-money.md`, #163) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#163) | — |
-| S23.04 | Duyệt xác minh: danh tính, doanh nghiệp, thu hồi, khôi phục (hai người) | `/staff/verifications` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) | — |
+| S23.04 | Duyệt xác minh: danh tính, doanh nghiệp, thu hồi, khôi phục (hai người) | `/staff/verifications` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) · tạm duyệt bằng CLI (`npm run verifications`) | — |
 | S23.05 | Kiểm duyệt báo cáo, gộp theo nội dung (người dùng, bài, tin nhắn, sự kiện, việc đăng, tin tuyển) | `/staff/reports` (web) | admin · support | Phase 1.5 (`screens/staff-moderation.md`, #166) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#166) | — |
 | S23.06 | Hộp thư hỗ trợ: hội thoại trợ giúp và hội thoại khiếu nại, nhận xử lý, ghi chú nội bộ | `/staff/inbox` (web) | admin · support · sales (chỉ trợ giúp) | Phase 1.5 (`screens/staff-disputes-support.md`, #165) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#165) | — |
 | S23.07 | Duyệt giải thưởng (hạng NAG chỉ cấp khi đã xác minh S21): xem minh chứng, Duyệt / Cần bổ sung / Từ chối / Thu hồi | `/staff/awards` (web) | admin · support | Phase 1.5 (`screens/staff-verification-awards.md`, #164) | ⬜ có mock (`dashboard-mock.html`), chưa có plan (#164) · tới lúc đó duyệt bằng CLI `scripts/awards-local.sh` / `npm run awards` | — |
@@ -684,7 +684,7 @@ Phản hồi: `requestId`, `algorithm`, `algorithmVersion`, `items[{photographer
 
 - Ứng dụng gửi lô tín hiệu qua hàm `recommendFeedback`: `impression` (thẻ hiện ≥ 50% trong ≥ 1 giây), `click` (mở S03.01), `inquiry` (mở S05.04 hoặc gửi tin nhắn), `booking` (cọc thành công). Mỗi tín hiệu mang `requestId`, `photographerId`, `rank`, `algorithmVersion`.
 - Chỉ lưu mã người dùng đã băm, không lưu SĐT, vị trí chính xác hay nội dung tin nhắn. Giữ nhật ký 180 ngày.
-- Sở thích rõ ràng của khách (chọn "Bạn cần chụp gì?") là câu hỏi mở số 12; v1 dùng tín hiệu ngầm (thể loại đã xem, đã lưu, đã tìm).
+- Sở thích rõ ràng của khách (chọn "Bạn cần chụp gì?") là câu hỏi mở số 12; v1 dùng tín hiệu ngầm (thể loại đã xem, đã lưu, đã tìm). "Theo dõi" là tín hiệu đẩy bài mới (trong vòng 7 ngày) của thợ ảnh lên đầu bảng tin trang chủ (S19 #143).
 
 ### 3e.8 Đánh giá và nâng cấp
 
@@ -703,6 +703,8 @@ Phản hồi: `requestId`, `algorithm`, `algorithmVersion`, `items[{photographer
 | S03.01 | Mục "Thợ ảnh tương tự" |
 | S02.06 | Sắp xếp mặc định "Phù hợp nhất" (cùng "Gần tôi", "Giá", "Đánh giá"); chip lý do trên thẻ |
 | S02.04 | Giai đoạn sau: gợi ý sự kiện cùng API |
+
+> **2026-10-07 (Quyết định 1, #132)**: Giữ `LocalRecommender` cho giai đoạn 1 ra mắt. Chưa dựng Cloud Run recommender riêng hay callable `recommend`. Chuyển sang dịch vụ độc lập chỉ khi đạt một trong các ngưỡng: ≥ 5.000 nhiếp ảnh gia hoạt động; p95 > 400 ms; cần mô hình/đặc trưng ngoại tuyến; hoặc có client web/thứ hai. Chi tiết xem `services/recommender/README.md`.
 
 ## 3g. Tiền treo (escrow) và chi trả
 
@@ -931,6 +933,11 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 - **Luồng**: S05.02 / S11.04 hiện "Báo vấn đề" khi booking `completed` hoặc vé đã dùng và còn trong `dispute_window_hours` → S18.01 → `openDispute` (khoản tiền `held → disputed`, khoản chi trả `on_hold`) → S18.02 theo dõi; nhiếp ảnh gia nhận thông báo, xem S18.02 và gửi giải trình; staff xử lý ở S23.01 (`resolveDispute`: thả / hoàn / chia), hai bên nhận thông báo và tiền đi theo kết quả.
 - **Quy tắc**: một khiếu nại mở cho mỗi booking hoặc vé; quá cửa sổ thì nút ẩn và S18.03 giải thích; ảnh bằng chứng lưu riêng tư (chỉ hai bên và staff đọc); không có kênh liên hệ ngoài app mới nào được mở vì khiếu nại.
 - **S18.03 Trợ giúp**: câu hỏi thường gặp tĩnh (tiền treo, huỷ, hoàn, Chụp ngay) và "Liên hệ hỗ trợ" mở chat với hộp thư hỗ trợ (S23.06, câu hỏi mở 16).
+- **Đã chốt khi viết plan #142/#204 (2026-10-07, tách 2026-10-08)**:
+  - Khách chỉ mở khiếu nại trong cửa sổ thời hạn (sau buổi chụp 24h hoặc kiểm tra bộ ảnh gốc 48h; vé sự kiện có phí trong 24h sau kết thúc; vé miễn phí không có khiếu nại).
+  - Tiền tạm dừng chuyển cho mốc/khoản bị khiếu nại. Kết quả gồm: thả (chuyển thợ), hoàn (cho khách), hoặc chia theo tỉ lệ %. Tiền hoàn chỉ từ số đang giữ.
+  - Hội thoại khiếu nại gồm 3 bên (khách, bên cung cấp, hỗ trợ).
+  - Trợ giúp S18.03 gồm FAQ tĩnh và chat hỗ trợ 1-1 qua `support_threads/help_{uid}`. Khiếu nại dùng chung nền tảng `support_threads` này.
 
 ### 3i.2 S19 · Lưu & theo dõi
 - **Vì sao cần**: S09.01 có hàng số "đang theo dõi · đã lưu" đang ẩn vì chưa có danh sách; nút lưu ở S02.02 và tín hiệu "đã lưu" của gợi ý (mục 3e.7) cần nơi xem lại.
@@ -943,7 +950,7 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 - **Chặn**: hai bên không thấy bài của nhau trong feed, không nhắn được, không đặt lịch được với nhau (booking đang có vẫn giữ để không mất tiền; liên hệ đi qua hỗ trợ); bỏ chặn ở S20.02.
 
 ### 3i.4 S21 · Xác minh
-- **S21.01 SĐT** (câu hỏi mở 6): bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
+- **S21.01 SĐT** (câu hỏi mở 6): S21.01 dùng Firebase Auth phone (emulator khi dev); khách chưa phải OTP khi đặt (plan S21 Decision 21). Bật cờ `phoneVerified` sau OTP; khi bật thì S04.05 thêm bước OTP. Chọn nhà cung cấp OTP trước khi làm.
 - **Đổi 2026-10-06**: S21.02–S21.04 thay bằng luồng "Bắt đầu nhận đơn" có phí trong [`2026-10-06-identity-verification-design.md`](2026-10-06-identity-verification-design.md); đoạn dưới là bản cũ.
 - **S21.02 Dấu tích xanh**: nhiếp ảnh gia đủ điều kiện (đề xuất: hồ sơ hoàn thiện ≥ 80%, ≥ 3 buổi `completed`, không khiếu nại thua trong 90 ngày) gửi yêu cầu kèm giấy tờ tuỳ thân và link portfolio; staff duyệt ở S23.04; kết quả ghi `photographers.verified` (chỉ server ghi). Giấy tờ lưu riêng tư, xoá sau khi duyệt xong 30 ngày.
 
@@ -1010,10 +1017,10 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 
 | Mã | Nội dung chính | Trạng thái & ràng buộc | Chấp nhận |
 |----|----------------|------------------------|-----------|
-| S02.01 | Header chào + chuông + chat; chip danh mục; thẻ ảnh lớn; "Rảnh tuần này" ngang; "Buổi chụp thật" | Empty: `EmptyState` có nút "Khám phá nhiếp ảnh gia". Feed phân trang 20/lần. Chấm lịch lấy từ `stats.nextFreeDate`. | Chạm ảnh → S02.02; chạm tên → S03.01; pill "Rảnh T7" hiện đúng ngày thật. |
-| S02.02 | Ảnh lớn, tác giả + `VerifiedMark`, mô tả, like/save/vị trí/chia sẻ, gói gắn bài, "Thêm của …" | Like/save lạc quan, hoàn tác khi lỗi. Bài `real_shoot` hiện "Chụp bởi … · gói …". | "Đặt gói này" mở S04.01 đã chọn gói (bỏ bước 1); thiếu SĐT → S04.05 trước. |
+| S02.01 | Header chào + chuông + chat; chip danh mục; thẻ ảnh lớn; "Rảnh tuần này" ngang; "Buổi chụp thật" | ✅ Đã xong (#132). Dữ liệu thật: Rảnh tuần này (`stats.nextFreeDate`), giá từ (`startingPrice`), số buổi (`completedCount`). Feed phân trang 20/lần. | Chạm ảnh → S02.02; chạm tên → S03.01; pill "Rảnh T7" hiện đúng ngày thật. |
+| S02.02 | Ảnh lớn, tác giả + `VerifiedMark`, mô tả, like/save/vị trí/chia sẻ, gói gắn bài, "Thêm của …" | ✅ Đã xong (#132). Đếm thích/lưu thật (`likeCount`, `saveCount`), lạc quan + hoàn tác khi lỗi. Bài `real_shoot` hiện "Chụp bởi … · gói …". | "Đặt gói này" mở S04.01 đã chọn gói (bỏ bước 1); thiếu SĐT → S04.05 trước. |
 | S03.01 | Hero, avatar, tên + `VerifiedMark`, thống kê, bio, **hàng huy hiệu** (+ "Xem tất cả" → S03.02), tab Portfolio/Gói/Lịch/Đánh giá; nút cố định gồm nút **Nhắn tin hỏi trước** (biểu tượng chat, mở chat `inquiry`) + **Đặt lịch** | Tab Lịch dùng `AvailabilityCalendar` chỉ đọc. Chưa có đánh giá → empty có chữ rõ. Chưa có huy hiệu → ẩn hàng. | Nút chat mở chat hỏi trước (không có gọi/Zalo/WhatsApp trước khi đặt); "Đặt lịch" mở S04.01 (qua S04.05 nếu thiếu SĐT). |
-| S02.06 | Chip lọc đã điền (khu vực, ngày, dịch vụ, giá, % cà chua), đếm kết quả, danh sách `PhotographerCard` (tên + `VerifiedMark`, tối đa 2 huy hiệu) | Khu vực mặc định lấy từ vị trí hoặc khu vực đã chọn (mục 3c). Không kết quả: gợi ý nới bộ lọc, nút "Xoá bộ lọc". | "Đặt T7" mở S04.02 với ngày và dịch vụ sẵn (qua S04.05 nếu thiếu SĐT). |
+| S02.06 | Chip lọc đã điền (khu vực, ngày, dịch vụ, giá, % cà chua), đếm kết quả, danh sách `PhotographerCard` (tên + `VerifiedMark`, tối đa 2 huy hiệu) | ✅ Đã xong (#132). Chỉ thợ nhận đơn (`acceptingOrders == true`), pool 10 phút, `LocalRecommender` dự phòng. | "Đặt T7" mở S04.02 với ngày và dịch vụ sẵn (qua S04.05 nếu thiếu SĐT). |
 | S04.01 | Chọn gói (thumb, mô tả, giá); tổng tiền trên nút | Bước 3 Địa điểm: bản đồ nhỏ + ô địa chỉ, mặc định từ lọc. Đóng sheet khi đã chọn → hỏi xác nhận. | Chuyển bước giữ lựa chọn khi quay lại. |
 | S04.02 | Lưới tháng 4 trạng thái; chip giờ theo `durationMinutes`; gợi ý giờ của nhiếp ảnh gia | Ngày "Chờ" xem được, không chọn được. Kiểm tra lại availability khi vào bước 4. | Ngày bị chiếm → lỗi `day_taken`, quay S04.02 với ngày gạch. |
 | S04.03 | Tóm tắt booking, hàng **Ghi chú + SĐT của bạn** (lấy từ hồ sơ, sửa được), bảng tiền hai hàng ("Gói {tên}", "Thanh toán 100%"), một dòng chữ phụ về giữ tiền và huỷ, chọn phương thức (Chuyển khoản QR chọn sẵn · MoMo · ZaloPay) | Nút "Thanh toán {số tiền}" loading + vô hiệu mọi điều khiển khi đang gọi `createPayment`. SĐT sai/thiếu → lỗi dưới ô, không gọi `createPayment`. | Thành công sang S04.04; client không tin redirect, chờ `bookings.status`. |
@@ -1022,7 +1029,8 @@ Mọi màn dùng chung: loading = skeleton (không spinner chặn > 1 giây); l�
 | S05.03 | Bảng hoàn tiền (tính trên số đã trả), dòng áp dụng nổi bật, số tiền nhận lại, lý do, Giữ lịch / Huỷ | Lý do mặc định "Đổi kế hoạch". Nút đỏ chỉ trong sheet này. | Sau huỷ: `cancelled`, toast, availability được nhả. |
 | S07.01 | Thanh ngữ cảnh booking, hành động nhanh, bong bóng, ô nhập + gửi + ảnh | Realtime qua snapshot; gửi lỗi → thử lại tại chỗ. Tin `system` cho đổi lịch. | Gửi ảnh nén 1280px q75, bỏ EXIF (`ImagePurpose.chat`, #147). |
 | S05.05 | `VerdictPad` cà chua/gạch (1–10 hit; gạch kèm lý do), nhận xét (bắt buộc), lưới chọn ảnh chia sẻ (≤ 10) | Chưa chọn ảnh: một nút "Gửi đánh giá"; có ảnh: "Chỉ đánh giá" + "Gửi & chia sẻ n ảnh". Chỉ mở khi `isReviewable` (hiện `completed`), đã đánh giá thì xem lại (`reviewedAt`). | Tạo `reviews/{bookingId}` (doc id theo `reviewDocId`) + post `real_shoot`; booking không đổi `status`; có thể kích hoạt huy hiệu. |
-| S02.03 | Ô tìm kiếm; nhóm Dịch vụ/Địa điểm/Phong cách/Thợ ảnh; **thẻ "Sự kiện gần bạn"** xin vị trí; section Sự kiện chụp ảnh | Trạng thái vị trí: chưa hỏi (thẻ), cho phép → S02.04, từ chối/để sau → chip "Chọn khu vực" → S02.05. Section sự kiện ẩn nếu không có sự kiện sắp tới. | Chỉ bấm "Cho phép" mới hiện hộp thoại quyền; "Xem tất cả" → S11.01. |
+| S02.03 | Ô tìm kiếm; nhóm Dịch vụ/Địa điểm/Phong cách/Thợ ảnh; **thẻ "Sự kiện gần bạn"** xin vị trí; section Sự kiện chụp ảnh | ✅ Đã xong (#132). Ô tìm kiếm dẫn sang S02.07; ô ảnh có số gói thật (`catalog/explore`); vị trí chưa hỏi (thẻ) / đã cho phép / từ chối. | Chỉ bấm "Cho phép" mới hiện hộp thoại quyền; "Xem tất cả" → S11.01. |
+| S02.07 | Tìm kiếm: ô gõ trực tiếp + phân nhóm Dịch vụ/Phong cách/Địa điểm/Thợ ảnh | ✅ Đã xong (#132). Gõ không dấu ra có dấu, lọc pool thợ ảnh nhận đơn, chuyển tiếp sang S02.06 hoặc S03.01. | Tìm tức thì với debounce 250ms; kết quả rỗng có nút "Xem tất cả thợ ảnh". |
 | S05.01 | `SegmentedTabs` Sắp tới / Đang chờ / Đã xong; `BookingCard` có hành động | Empty mỗi nhóm có hành động riêng. Đã xong chưa review: nút "Đánh giá". | Chạm card → S05.02. |
 | S02.04 | Dòng "Quanh Quận 1 · vị trí gần đúng" + Đổi, chip bán kính/thời gian, thẻ sự kiện nổi bật, danh sách sắp theo khoảng cách | Không có sự kiện trong bán kính → gợi ý tăng bán kính hoặc tạo sự kiện (NAG). Khoảng cách làm tròn 0,1 km. | Đổi khu vực → S02.05; chạm thẻ → S11.02. |
 | S02.05 | Sheet chọn quận/thành phố (radio), "Mở Cài đặt để bật vị trí" (chỉ khi từ chối vĩnh viễn), "Dùng khu vực này" | Nhớ khu vực lần trước. Đóng không chọn = giữ trạng thái cũ. | Lưu khu vực ở máy; S02.06, S11.01 dùng chung. |

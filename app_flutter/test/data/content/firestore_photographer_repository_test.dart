@@ -22,6 +22,7 @@ Future<void> seedPhotographer(
   await db.collection('photographers').doc(p.id).set({
     'onboardingComplete': complete,
     'verified': p.verified,
+    'acceptingOrders': p.acceptingOrders && complete,
     'specialties': p.specialtyIds,
     'styles': p.styleIds,
     if (p.coverUrl != null) 'coverUrl': p.coverUrl,
@@ -143,6 +144,17 @@ void main() {
       final p = from({'providerType': 'artist', 'approvedAwardCount': 3});
       expect(p.providerType, ProviderType.artist);
       expect(p.approvedAwardCount, 3);
+    });
+    test('businessVerified reads true only when stored true', () {
+      expect(from({}).businessVerified, isFalse);
+      expect(from({'businessVerified': 'yes'}).businessVerified, isFalse);
+      final p = from({
+        'providerType': 'studio',
+        'verified': true,
+        'businessVerified': true,
+      });
+      expect(p.businessVerified, isTrue);
+      expect(p.verified, isTrue);
     });
     test('studio reads its district', () {
       final p = from({'providerType': 'studio', 'studioDistrict': 'Quận 1'});
@@ -330,6 +342,21 @@ void main() {
         ]);
       },
     );
+
+    test('candidates asks acceptingOrders == true', () async {
+      final db = FakeFirebaseFirestore();
+      await seedPhotographer(
+        db,
+        fixturePhotographer('p1', acceptingOrders: true),
+      );
+      await seedPhotographer(
+        db,
+        fixturePhotographer('p2', acceptingOrders: false),
+      );
+      final repo = FirestorePhotographerRepository(db: db);
+      final res = await repo.candidates();
+      expect(res.map((p) => p.id), ['p1']);
+    });
 
     test('summaries still resolve an unpublished author (their old posts keep a name)', () async {
       final db = FakeFirebaseFirestore();

@@ -128,8 +128,17 @@ Future<Widget> _app(
   );
 }
 
+/// Brings the lazily built mode card into the list (rows above it, e.g.
+/// "Xác minh & nhận đơn", can push it below the 800x600 test view).
+Future<void> _showModeCard(WidgetTester tester) => tester.scrollUntilVisible(
+  find.byKey(const Key('switch-role')),
+  200,
+  scrollable: find.byType(Scrollable).first,
+);
+
 Future<void> _tapSwitch(WidgetTester tester) async {
   final sw = find.byKey(const Key('switch-role'));
+  await _showModeCard(tester);
   await tester.ensureVisible(sw);
   await tester.pumpAndSettle();
   await tester.tap(sw);
@@ -179,6 +188,7 @@ void main() {
     final (auth, users) = await _signedIn(UserRole.photographer);
     await tester.pumpWidget(await _app(auth, users));
     await tester.pumpAndSettle();
+    await _showModeCard(tester);
     expect(find.text('Tôi cần đặt lịch'), findsOneWidget);
     expect(find.text('Chuyển qua chế độ đặt lịch'), findsOneWidget);
   });

@@ -18,7 +18,8 @@ fun secret(name: String): String {
 
 android {
     namespace = "com.thanhbk.photobooking"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android 14.x needs 37; flutter.compileSdkVersion is still 36.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     buildFeatures {

@@ -40,6 +40,7 @@ void main() {
         equipment: ['Sony A7 IV'],
         onboardingComplete: true,
         acceptingOrders: true,
+        verified: true,
       ),
     );
     expect(p.published, isTrue);

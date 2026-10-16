@@ -1,5 +1,14 @@
 import * as logger from 'firebase-functions/logger';
-import { runBookingSweeps, sendDueReminders, type Booking, type BookingDeps, type BookingSweepResults, type NotifyDeps } from '@photobooking/domain';
+import {
+  runBookingSweeps,
+  sendDueReminders,
+  sendVerificationNudges,
+  type Booking,
+  type BookingDeps,
+  type BookingSweepResults,
+  type NotifyDeps,
+  type VerificationDeps,
+} from '@photobooking/domain';
 import { db } from '../infra/admin.js';
 import { FirestoreBookingStore } from '../infra/booking_firestore.js';
 import { liveBookingDeps } from '../infra/live_booking.js';
@@ -15,6 +24,15 @@ export interface ReminderDeps {
   upcoming(limit: number, after: unknown): Promise<{ bookings: readonly Booking[]; next: unknown }>;
 }
 
+/**
+ * Optional steps of the same 15-minute job that are not booking sweeps (no existing parameter
+ * changes for them). `verification`: the one-time reminder of an unfinished verification
+ * (S21, Decision 18).
+ */
+export interface BookingClockExtras {
+  readonly verification?: { readonly deps: VerificationDeps; readonly notify: NotifyDeps };
+}
+
 export function liveReminderDeps(): ReminderDeps {
   const store = new FirestoreBookingStore(db());
   return { notify: liveNotifyDeps(), upcoming: (limit, after) => store.findUpcomingPage(limit, after) };
@@ -23,6 +41,7 @@ export function liveReminderDeps(): ReminderDeps {
 export async function handleBookingClock(
   deps: BookingDeps = liveBookingDeps(),
   reminders?: ReminderDeps,
+  extras: BookingClockExtras = {},
 ): Promise<BookingSweepResults> {
   let results: BookingSweepResults;
   try {
@@ -32,15 +51,26 @@ export async function handleBookingClock(
     logger.error('bookingClock sweep failed', { error: String(e) });
     throw e;
   }
+  let reminderError: unknown = null;
   if (reminders) {
     try {
       const sent = await sweepReminders(reminders);
       logger.info('bookingClock reminders completed', { sent });
     } catch (e) {
       logger.error('bookingClock reminders failed', { error: String(e) });
-      throw e;
+      reminderError = e;
     }
   }
+  // Last step, its own try: a failure is logged and retried on the next tick, never thrown.
+  if (extras.verification) {
+    try {
+      const nudged = await sendVerificationNudges(extras.verification.deps, extras.verification.notify);
+      logger.info('bookingClock verificationNudges completed', { nudged });
+    } catch (e) {
+      logger.error('bookingClock verificationNudges failed', { error: String(e) });
+    }
+  }
+  if (reminderError !== null) throw reminderError;
   return results;
 }
 

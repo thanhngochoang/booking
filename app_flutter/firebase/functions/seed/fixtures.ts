@@ -11,12 +11,18 @@ import {
   NOTIFICATION_TYPES,
   accountLast4,
   computeDeposit,
+  computeNextFreeDate,
+  computeStartingPrice,
   encodeGeohash,
   formatVnDate,
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  emptyVerification,
+  fakeIdNumberOf,
+  maskLegalName,
   providerTypeOf,
+  PROVIDER_RULES_VERSION,
   payoutLineOf,
   DEFAULT_PAYOUT_POLICY,
   renderNotification,
@@ -40,12 +46,15 @@ import {
   type PhotographerStatsPatch,
   type ReviewReason,
   type Verdict,
+  type VerificationRecord,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
 import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
 import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
+import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
+import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -60,6 +69,8 @@ export const AN = 'seed-photographer-an';
 export const BINH = 'seed-photographer-binh';
 export const CUC = 'seed-photographer-cuc';
 export const DUNG = 'seed-photographer-dung';
+/** Unverified photographer whose S21 verification waits for staff (`npm run verifications -- approve`). */
+export const GIANG = 'seed-photographer-giang';
 /** Staff account with the custom claim `staffRole: 'admin'` (reviews awards; see `applySeed`). */
 export const ADMIN = 'seed-staff-admin';
 
@@ -70,6 +81,8 @@ export interface SeedUser {
   readonly role: 'customer' | 'photographer';
   /** Custom auth claim `staffRole`, set by `applySeed`. */
   readonly staffRole?: 'admin';
+  /** Auth phone (E.164) as if linked by the S21.01 OTP, set by `applySeed`. */
+  readonly phoneNumber?: string;
 }
 
 export const SEED_USERS: readonly SeedUser[] = [
@@ -79,6 +92,7 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: BINH, email: 'binh.unverified@seed.test', displayName: 'Bình (seed)', role: 'photographer' },
   { uid: CUC, email: 'cuc.studio@seed.test', displayName: 'Cúc Studio (seed)', role: 'photographer' },
   { uid: DUNG, email: 'dung.artist@seed.test', displayName: 'Dũng (seed, nghệ sĩ)', role: 'photographer' },
+  { uid: GIANG, email: 'giang.pending@seed.test', displayName: 'Giang (seed, chờ duyệt)', role: 'photographer', phoneNumber: '+84976000001' },
   { uid: ADMIN, email: 'admin.staff@seed.test', displayName: 'Admin (seed, nhân viên)', role: 'customer', staffRole: 'admin' },
 ];
 
@@ -143,6 +157,16 @@ export const SEED_PHOTOGRAPHERS: readonly SeedPhotographer[] = [
     channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
     numbers: { phone: '+84905000001' },
     providerType: 'artist',
+  },
+  {
+    uid: GIANG,
+    verified: false,
+    bio: 'Chân dung ngoài trời, mới tham gia.',
+    city: 'Cần Thơ',
+    radiusKm: 15,
+    specialties: ['portrait'],
+    channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    numbers: { phone: '+84976000001' },
   },
 ];
 
@@ -231,6 +255,46 @@ export const SEED_AWARDS: readonly SeedAward[] = [
   { id: 'seed-award-dung-2', photographerId: DUNG, competition: 'Siena International Photo Awards', year: 2023, result: 'silver', status: 'approved' },
   { id: 'seed-award-dung-3', photographerId: DUNG, competition: 'Hội Nghệ sĩ Nhiếp ảnh Việt Nam', year: 2022, result: 'bronze', status: 'approved' },
   { id: 'seed-award-binh-1', photographerId: BINH, competition: 'Vietnam Photo Contest', year: 2025, result: 'finalist', status: 'pending' },
+];
+
+export interface SeedFollow {
+  readonly userId: string;
+  readonly photographerId: string;
+}
+
+export const SEED_FOLLOWS: readonly SeedFollow[] = [
+  { userId: LAN, photographerId: AN },
+  { userId: MINH, photographerId: AN },
+  { userId: LAN, photographerId: DUNG },
+];
+
+export interface SeedLike {
+  readonly userId: string;
+  readonly postId: string;
+}
+
+export const SEED_LIKES: readonly SeedLike[] = [
+  { userId: LAN, postId: 'seed-post-an-1' },
+  { userId: MINH, postId: 'seed-post-an-1' },
+];
+
+export interface SeedSave {
+  readonly userId: string;
+  readonly postId: string;
+}
+
+export const SEED_SAVES: readonly SeedSave[] = [
+  { userId: LAN, postId: 'seed-post-an-1' },
+  { userId: LAN, postId: 'seed-post-an-2' },
+];
+
+export interface SeedSavedPhotographer {
+  readonly userId: string;
+  readonly photographerId: string;
+}
+
+export const SEED_SAVED_PHOTOGRAPHERS: readonly SeedSavedPhotographer[] = [
+  { userId: LAN, photographerId: CUC },
 ];
 
 export interface SeedReview {
@@ -391,7 +455,36 @@ export function seedDocuments(now: Date): SeedDocument[] {
   }
   for (const p of SEED_PHOTOGRAPHERS) {
     const onboardingComplete = true;
-    const stats = seedStatsOf(p.uid);
+    const baseStats = seedStatsOf(p.uid);
+    const servicesOfP = SEED_SERVICES.filter((s) => s.photographerId === p.uid);
+    const startingPrice = computeStartingPrice(servicesOfP.map((s) => s.price));
+    const completedCount = SEED_BOOKINGS.filter((b) => b.photographerId === p.uid && b.status === 'completed').length;
+    // Calculate blocked days for p.uid from bookings and events
+    const today = formatVnDate(at);
+    const blockedDaysList: string[] = [];
+    for (const b of SEED_BOOKINGS) {
+      if (b.photographerId === p.uid && (b.status === 'accepted' || b.status === 'upcoming' || b.status === 'completed')) {
+        blockedDaysList.push(b.date);
+      }
+    }
+    // Event days for An
+    if (p.uid === AN) {
+      // 8 days, 15 days, 36 hours from now
+      const freeStart = new Date(now.getTime() + (8 * 24 + 2) * HOUR_MS);
+      const paidStart = new Date(now.getTime() + (15 * 24 + 2) * HOUR_MS);
+      const soonStart = new Date(now.getTime() + 36 * HOUR_MS);
+      blockedDaysList.push(formatVnDate(freeStart), formatVnDate(paidStart), formatVnDate(soonStart));
+    }
+    const nextFreeDate = computeNextFreeDate(today, new Set(blockedDaysList));
+
+    const stats = {
+      reviewCount: 0,
+      score: 0,
+      ...(baseStats !== null ? baseStats : {}),
+      nextFreeDate,
+      completedCount,
+    };
+
     docs.push({
       path: `photographers/${p.uid}`,
       data: {
@@ -406,9 +499,11 @@ export function seedDocuments(now: Date): SeedDocument[] {
         ...(p.verified ? { verifiedAt: at } : {}),
         ...(p.providerType !== undefined ? { providerType: p.providerType } : {}),
         ...(p.providerType === 'artist' ? { artistSince: at } : {}),
-        // An's stats keep the revocable `top_rated` badge: the evaluator runs on every seed write.
-        ...(stats !== null ? { stats: { ...stats } } : {}),
+        startingPrice,
+        stats,
         approvedAwardCount: SEED_AWARDS.filter((a) => a.photographerId === p.uid && a.status === 'approved').length,
+        followerCount: SEED_FOLLOWS.filter((f) => f.photographerId === p.uid).length,
+        ...(SEED_FOLLOWS.some((f) => f.photographerId === p.uid) ? { followerCountAt: at } : {}),
         ...(p.studioAddress !== undefined ? { studioDistrict: p.studioAddress.district, studioCity: p.studioAddress.city } : {}),
         createdAt: at,
         updatedAt: at,
@@ -426,6 +521,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
     });
   }
   for (const p of SEED_POSTS) {
+    const likeCount = SEED_LIKES.filter((l) => l.postId === p.id).length;
+    const saveCount = SEED_SAVES.filter((s) => s.postId === p.id).length;
     docs.push({
       path: `posts/${p.id}`,
       data: {
@@ -435,8 +532,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
         serviceId: 'seed-service-portrait',
         imageUrls: Array.from({ length: p.images }, (_, i) => `https://seed.test/${p.id}/${i + 1}.jpg`),
         caption: p.caption,
-        likeCount: 0,
-        saveCount: 0,
+        likeCount,
+        saveCount,
         ...(p.album !== null ? { albumId: p.album.id, albumPosition: p.album.position } : {}),
         createdAt: at,
       },
@@ -487,6 +584,30 @@ export function seedDocuments(now: Date): SeedDocument[] {
         links: [`https://seed.test/awards/${a.id}`],
         ...(a.status === 'approved' ? { purgeAfter: new Date(at.getTime() + 30 * DAY_MS) } : {}),
       },
+    });
+  }
+  for (const f of SEED_FOLLOWS) {
+    docs.push({
+      path: `follows/${f.userId}_${f.photographerId}`,
+      data: { userId: f.userId, photographerId: f.photographerId, createdAt: at },
+    });
+  }
+  for (const l of SEED_LIKES) {
+    docs.push({
+      path: `likes/${l.userId}_${l.postId}`,
+      data: { userId: l.userId, postId: l.postId, createdAt: at },
+    });
+  }
+  for (const s of SEED_SAVES) {
+    docs.push({
+      path: `saves/${s.userId}_${s.postId}`,
+      data: { userId: s.userId, postId: s.postId, createdAt: at },
+    });
+  }
+  for (const sp of SEED_SAVED_PHOTOGRAPHERS) {
+    docs.push({
+      path: `savedPhotographers/${sp.userId}_${sp.photographerId}`,
+      data: { userId: sp.userId, photographerId: sp.photographerId, createdAt: at },
     });
   }
   for (const b of SEED_BOOKINGS) {
@@ -618,6 +739,20 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
+  docs.push(...verificationDocuments(now));
+
+  // Explore catalog document (S02)
+  docs.push({
+    path: 'catalog/explore',
+    data: {
+      specialties: {
+        portrait: { serviceCount: 1, coverUrl: null, updatedAt: at },
+        family: { serviceCount: 1, coverUrl: null, updatedAt: at },
+      },
+      updatedAt: at,
+    },
+  });
+
   return docs;
 }
 
@@ -669,6 +804,76 @@ const SEED_DIRECT_CHATS: readonly SeedDirectChat[] = [
 ];
 
 const seedMessageId = (chatId: string, i: number): string => `seed-msg-${chatId}-${i + 1}`;
+
+/** Giang's legal name on the fake card (test value), and Cúc's (owner of the studio, for S21.04). */
+export const SEED_GIANG_LEGAL_NAME = 'NGUYỄN THỊ GIANG';
+export const SEED_CUC_LEGAL_NAME = 'TRẦN THỊ CÚC';
+/** Minh's fake card says 16: the underage example if Minh switches to a photographer role. */
+export const SEED_MINH_FAKE_DOB = '2010-05-01';
+
+/**
+ * S21 verification (#135, fee-free until #203): the verified seed photographers have an approved
+ * record; Giang has a submitted one (phone, fake identity and rules done; `steps.fee` null) for
+ * the staff CLI; Bình has none and walks the whole flow; Cúc's identity (fake id number of her uid)
+ * lets her household tax code (that same number) match in S21.04. Identity docs hold the dev-vault
+ * hash and ciphertext of `fakeIdNumberOf(uid)`, so a second account presenting it gets
+ * `identity_in_use`.
+ */
+function verificationDocuments(now: Date): SeedDocument[] {
+  const at = SEED_CREATED_AT;
+  const docs: SeedDocument[] = [];
+  const done = (uid: string, legalName: string, doneAt: Date, status: VerificationRecord['status']): VerificationRecord => {
+    const iso = doneAt.toISOString();
+    const p = SEED_PHOTOGRAPHERS.find((x) => x.uid === uid);
+    const base = emptyVerification(uid, p?.providerType === 'studio' ? 'studio' : 'individual', doneAt);
+    return {
+      ...base,
+      status,
+      steps: {
+        phone: { doneAt: iso },
+        fee: null,
+        identity: { method: 'vneid', checkedAt: iso, result: 'passed', failure: null, maskedName: maskLegalName(legalName) },
+        rules: { acceptedAt: iso, version: PROVIDER_RULES_VERSION },
+      },
+      identityAttempts: { dayKey: formatVnDate(doneAt), count: 1 },
+      submittedAt: iso,
+      ...(status === 'approved' ? { decidedAt: iso, decidedBy: ADMIN } : {}),
+      version: 5,
+    };
+  };
+  const identity = (uid: string, legalName: string, dob: string, gender: 'male' | 'female', verifiedAt: Date) => {
+    const idNumber = fakeIdNumberOf(uid);
+    const idHash = devHashIdSync(idNumber);
+    docs.push({
+      path: `users/${uid}/private/identity`,
+      data: identityToFirestore({
+        legalName, dob, gender, idNumberEnc: devEncryptIdForSeed(idNumber), idHash, method: 'vneid', provider: 'fake',
+        providerRef: `fake_ref_${uid}`, verifiedAt: verifiedAt.toISOString(),
+      }),
+    });
+    docs.push({ path: `identity_hashes/${idHash}`, data: { uid, createdAt: verifiedAt } });
+  };
+
+  // Approved: mirrors `verified: true` on photographers/{uid}. An's identity doc is the payout seed's.
+  for (const [uid, name] of [[AN, SEED_AN_LEGAL_NAME.toUpperCase()], [CUC, SEED_CUC_LEGAL_NAME], [DUNG, 'LÊ VĂN DŨNG']] as const) {
+    docs.push({ path: `verifications/${uid}`, data: verificationToFirestore(done(uid, name, at, 'approved')) });
+  }
+  identity(CUC, SEED_CUC_LEGAL_NAME, '1988-03-08', 'female', at);
+
+  // Giang: submitted 26 hours before seeding, so `npm run verifications -- list` marks it overdue (!).
+  const submitted = new Date(now.getTime() - 26 * HOUR_MS);
+  docs.push({ path: `verifications/${GIANG}`, data: verificationToFirestore(done(GIANG, SEED_GIANG_LEGAL_NAME, submitted, 'submitted')) });
+  identity(GIANG, SEED_GIANG_LEGAL_NAME, '1996-04-12', 'female', submitted);
+  const giang = SEED_PHOTOGRAPHERS.find((p) => p.uid === GIANG);
+  docs.push({
+    path: `users/${GIANG}/private/contact`,
+    data: { phone: giang?.numbers.phone, phoneVerified: true, allowZalo: false, allowWhatsApp: false, updatedAt: submitted },
+  });
+
+  // Fake identity override (server-only, emulator/dev): Minh is under 18 on the fake card.
+  docs.push({ path: `fake_identities/${MINH}`, data: { dob: SEED_MINH_FAKE_DOB } });
+  return docs;
+}
 
 /**
  * Chat fields are folded from the messages with the domain's `afterMessage`, and `bookingStatus`

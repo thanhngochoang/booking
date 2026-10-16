@@ -6,6 +6,9 @@ import 'package:photobooking/data/booking/booking_providers.dart';
 import 'package:photobooking/data/booking/booking_repository.dart';
 import 'package:photobooking/data/booking/booking_rules.dart';
 import 'package:photobooking/data/clock/clock.dart';
+import 'package:photobooking/data/content/content_providers.dart';
+import 'package:photobooking/data/content/content_repositories.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/service_summary.dart';
 import 'package:photobooking/data/photographer/availability_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
@@ -43,6 +46,7 @@ void main() {
     UserContact? contact,
     DateTime? now,
     FakeBookingRepository? bookings,
+    PhotographerPoolCache? poolCache,
   }) {
     final effectiveNow = now ?? today;
     return ProviderContainer(
@@ -56,6 +60,9 @@ void main() {
           AsyncData(contact ?? const UserContact(phone: '+84912345678')),
         ),
         if (bookings != null) bookingRepositoryProvider.overrideWithValue(bookings),
+        photographerPoolCacheProvider.overrideWithValue(
+          poolCache ?? FakePhotographerRepository(),
+        ),
       ],
     );
   }
@@ -488,6 +495,24 @@ void main() {
       expect(state.bookingId, isNull);
       expect(outcomes, isEmpty);
       expect(profileReads, readsBefore);
+    });
+
+    test('a not_accepting_orders refusal clears the pool cache', () async {
+      final repo = FakeBookingRepository()
+        ..nextPaymentError = BookingErrorCode.notAcceptingOrders;
+      final pool = FakePhotographerRepository();
+      final container = makeContainer(bookings: repo, poolCache: pool);
+      addTearDown(container.dispose);
+      final outcomes = <SubmitOutcome>[];
+      final ctrl = readyToPay(container, outcomes);
+
+      expect(pool.invalidateCalls, 0);
+      await ctrl.submit();
+      await Future<void>.delayed(Duration.zero);
+
+      final state = container.read(bookingFlowControllerProvider(args));
+      expect(state.error, BookingErrorCode.notAcceptingOrders);
+      expect(pool.invalidateCalls, 1);
     });
   });
 }

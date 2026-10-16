@@ -1986,3 +1986,201 @@ test('chat storage: a member uploads up to 1.5 MiB of JPEG, nothing else', async
   await assertFails(uploadBytes(ref(st, 'chats/event_e5/att1/ok.jpg'), photo(), jpeg));
 });
 function evStorage(uid) { return env.authenticatedContext(uid).storage(); }
+
+// S02 Discover security rules tests (written, not run locally in CI session)
+test('signed-in users read catalog/explore', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'catalog/explore'), { specialties: { portrait: { serviceCount: 1 } } }));
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'catalog/explore')));
+});
+
+test('nobody writes catalog/explore', async () => {
+  await assertFails(setDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore'), { specialties: {} }));
+  await assertFails(updateDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore'), { updatedAt: serverTimestamp() }));
+  await assertFails(deleteDoc(doc(env.authenticatedContext('u1').firestore(), 'catalog/explore')));
+});
+
+test('a client cannot write stats.nextFreeDate or startingPrice (create and update)', async () => {
+  await asPhotographer('p_disc');
+  const db = env.authenticatedContext('p_disc').firestore();
+  // create with stats.nextFreeDate
+  await assertFails(setDoc(doc(db, 'photographers/p_disc'), {
+    onboardingComplete: false,
+    verified: false,
+    specialties: [],
+    stats: { nextFreeDate: '2026-10-10' },
+  }));
+  // create with startingPrice
+  await assertFails(setDoc(doc(db, 'photographers/p_disc'), {
+    onboardingComplete: false,
+    verified: false,
+    specialties: [],
+    startingPrice: 500000,
+  }));
+  // valid create
+  await assertSucceeds(setDoc(doc(db, 'photographers/p_disc'), {
+    onboardingComplete: false,
+    verified: false,
+    specialties: [],
+  }));
+  // update with stats.nextFreeDate
+  await assertFails(updateDoc(doc(db, 'photographers/p_disc'), {
+    'stats.nextFreeDate': '2026-10-10',
+  }));
+  // update with startingPrice
+  await assertFails(updateDoc(doc(db, 'photographers/p_disc'), {
+    startingPrice: 500000,
+  }));
+});
+
+test('a client cannot update likeCount on a post', async () => {
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'posts/post_disc'), {
+      likeCount: 0,
+      saveCount: 0,
+      authorId: 'u1',
+    }));
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(updateDoc(doc(db, 'posts/post_disc'), { likeCount: 5 }));
+});
+
+// ---- provider verification (S21, #135) ----
+
+const seedVerification = (uid) => env.withSecurityRulesDisabled(async (c) =>
+  setDoc(doc(c.firestore(), `verifications/${uid}`), {
+    uid, kind: 'individual', status: 'in_progress', steps: { phone: null, fee: null, identity: null, rules: null },
+    version: 1, createdAt: Timestamp.now(), updatedAt: Timestamp.now(),
+  }));
+
+test('the owner reads verifications/{uid}, another user cannot', async () => {
+  await seedVerification('ver1');
+  await assertSucceeds(getDoc(doc(env.authenticatedContext('ver1').firestore(), 'verifications/ver1')));
+  await assertFails(getDoc(doc(env.authenticatedContext('ver2').firestore(), 'verifications/ver1')));
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'verifications/ver1')));
+  await assertFails(getDocs(query(collection(env.authenticatedContext('ver2').firestore(), 'verifications'),
+    where('status', '==', 'in_progress'))));
+});
+
+test('nobody writes verifications', async () => {
+  await seedVerification('ver3');
+  const owner = env.authenticatedContext('ver3').firestore();
+  await assertFails(updateDoc(doc(owner, 'verifications/ver3'), { status: 'approved' }));
+  await assertFails(setDoc(doc(owner, 'verifications/ver3'), { uid: 'ver3', status: 'submitted' }));
+  await assertFails(deleteDoc(doc(owner, 'verifications/ver3')));
+  await assertFails(setDoc(doc(env.authenticatedContext('ver4').firestore(), 'verifications/ver4'), { uid: 'ver4', status: 'approved' }));
+});
+
+test('the owner cannot read private/identity but still reads private/contact', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'users/ver5/private/identity'), {
+      legalName: 'NGUYỄN MINH TRÍ', dob: '1995-01-01', idNumberEnc: 'v1:a:b:c', idHash: 'h', method: 'vneid', provider: 'fake',
+    });
+    await setDoc(doc(c.firestore(), contactPath('ver5')), { phone: '+84903123456', phoneVerified: true });
+  });
+  const owner = env.authenticatedContext('ver5').firestore();
+  await assertFails(getDoc(doc(owner, 'users/ver5/private/identity')));
+  await assertFails(setDoc(doc(owner, 'users/ver5/private/identity'), { legalName: 'X' }));
+  await assertFails(getDoc(doc(env.authenticatedContext('ver6').firestore(), 'users/ver5/private/identity')));
+  await assertSucceeds(getDoc(doc(owner, contactPath('ver5'))));
+});
+
+test('identity_hashes, verificationAudit, fake_identities are closed', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'identity_hashes/h1'), { uid: 'ver7', createdAt: Timestamp.now() });
+    await setDoc(doc(c.firestore(), 'verificationAudit/a1'), { uid: 'ver7', target: 'identity', action: 'approve', actorId: 'staff' });
+    await setDoc(doc(c.firestore(), 'fake_identities/ver7'), { dob: '2010-05-01' });
+  });
+  const owner = env.authenticatedContext('ver7').firestore();
+  const staff = env.authenticatedContext('staff', { staffRole: 'admin' }).firestore();
+  for (const path of ['identity_hashes/h1', 'verificationAudit/a1', 'fake_identities/ver7']) {
+    await assertFails(getDoc(doc(owner, path)));
+    await assertFails(getDoc(doc(staff, path)));
+    await assertFails(setDoc(doc(owner, path), { uid: 'ver7' }));
+  }
+  await assertFails(setDoc(doc(owner, 'identity_hashes/h2'), { uid: 'ver7' }));
+  await assertFails(setDoc(doc(owner, 'fake_identities/ver7'), { dob: '1990-01-01' }, { merge: true }));
+});
+
+test('a client cannot set businessVerified on photographers', async () => {
+  await asPhotographer('bv1'); await asPhotographer('bv2');
+  const db = env.authenticatedContext('bv1').firestore();
+  await assertFails(setDoc(doc(db, 'photographers/bv1'), { onboardingComplete: false, verified: false, businessVerified: true }));
+  await assertFails(setDoc(doc(db, 'photographers/bv1'), { onboardingComplete: false, verified: false, businessVerified: false }));
+  await assertSucceeds(setDoc(doc(db, 'photographers/bv1'), { onboardingComplete: false, verified: false }));
+  await assertFails(updateDoc(doc(db, 'photographers/bv1'), { businessVerified: true }));
+  await env.withSecurityRulesDisabled(async (c) =>
+    setDoc(doc(c.firestore(), 'photographers/bv2'), { onboardingComplete: true, verified: true, businessVerified: true, bio: 'x' }));
+  const owner2 = env.authenticatedContext('bv2').firestore();
+  await assertFails(updateDoc(doc(owner2, 'photographers/bv2'), { businessVerified: false }));
+  await assertFails(updateDoc(doc(owner2, 'photographers/bv2'), { businessVerified: deleteField() }));
+  await assertSucceeds(updateDoc(doc(owner2, 'photographers/bv2'), { bio: 'y' }));
+});
+
+test('a client cannot set phoneVerified true on private/contact', async () => {
+  const db = env.authenticatedContext('pv1').firestore();
+  await assertFails(setDoc(doc(db, contactPath('pv1')), { phone: '+84903123456', phoneVerified: true }));
+  await assertSucceeds(setDoc(doc(db, contactPath('pv1')), { phone: '+84903123456', phoneVerified: false }));
+  await assertFails(updateDoc(doc(db, contactPath('pv1')), { phoneVerified: true }));
+  await assertFails(setDoc(doc(db, contactPath('pv1')), { phone: '+84903123456', phoneVerified: true }, { merge: true }));
+});
+
+test('the owner uploads a business photo once, cannot overwrite, others cannot read', async () => {
+  const st = env.authenticatedContext('bd1').storage();
+  const own = ref(st, 'businessDocs/bd1/01JBUSINESS.jpg');
+  await assertSucceeds(uploadBytes(own, photo(), jpeg));
+  await assertSucceeds(getBytes(own));
+  await assertFails(uploadBytes(own, photo(), jpeg));
+  await assertFails(deleteObject(own));
+  await assertFails(getBytes(ref(env.authenticatedContext('bd2').storage(), 'businessDocs/bd1/01JBUSINESS.jpg')));
+  await assertFails(getBytes(ref(env.unauthenticatedContext().storage(), 'businessDocs/bd1/01JBUSINESS.jpg')));
+  await assertFails(uploadBytes(ref(env.authenticatedContext('bd2').storage(), 'businessDocs/bd1/other.jpg'), photo(), jpeg));
+  await assertSucceeds(uploadBytes(ref(st, 'businessDocs/bd1/max.jpg'), photo(3 * 1024 * 1024), jpeg));
+  await assertFails(uploadBytes(ref(st, 'businessDocs/bd1/big.jpg'), photo(3 * 1024 * 1024 + 1), jpeg));
+  await assertFails(uploadBytes(ref(st, 'businessDocs/bd1/a.png'), photo(), { contentType: 'image/png' }));
+  await assertFails(uploadBytes(ref(st, 'businessDocs/bd1/a.pdf'), photo(), { contentType: 'application/pdf' }));
+});
+
+// ---- S18 support threads (#204) ----
+
+test('a user gets their missing help thread (no error)', async () => {
+  const db = env.authenticatedContext('u1').firestore();
+  // Document does not exist, getDoc should succeed (returning exists === false)
+  const snap = await assertSucceeds(getDoc(doc(db, 'support_threads/help_u1')));
+  assert.equal(snap.exists(), false);
+});
+
+test('a user cannot get another users help thread', async () => {
+  const db = env.authenticatedContext('u2').firestore();
+  await assertFails(getDoc(doc(db, 'support_threads/help_u1')));
+});
+
+test('nobody writes support threads or messages from the client', async () => {
+  const db = env.authenticatedContext('u1').firestore();
+  await assertFails(setDoc(doc(db, 'support_threads/help_u1'), { kind: 'help' }));
+  await assertFails(setDoc(doc(db, 'support_threads/help_u1/messages/m1'), { body: 'hack' }));
+});
+
+test('a participant reads the threads messages, a third user cannot', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'support_threads/help_u1'), {
+      id: 'help_u1',
+      kind: 'help',
+      participants: ['u1'],
+      status: 'open',
+    });
+    await setDoc(doc(c.firestore(), 'support_threads/help_u1/messages/m1'), {
+      id: 'm1',
+      threadId: 'help_u1',
+      body: 'Xin chao',
+      senderRole: 'user',
+    });
+  });
+
+  const participantDb = env.authenticatedContext('u1').firestore();
+  await assertSucceeds(getDoc(doc(participantDb, 'support_threads/help_u1/messages/m1')));
+
+  const thirdPartyDb = env.authenticatedContext('u3').firestore();
+  await assertFails(getDoc(doc(thirdPartyDb, 'support_threads/help_u1/messages/m1')));
+});
+

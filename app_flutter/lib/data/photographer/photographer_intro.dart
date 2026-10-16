@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:photobooking/data/content/provider_type.dart';
+
 /// Step 1 of profile setup (S08.01): what a customer reads first. Lives on the
 /// public `photographers/{uid}` document; no contact data here.
 @immutable
@@ -11,6 +13,9 @@ class PhotographerIntro {
     this.equipment = const [],
     this.onboardingComplete = false,
     this.acceptingOrders = false,
+    this.verified = false,
+    this.businessVerified = false,
+    this.providerType = ProviderType.individual,
   });
 
   final String bio;
@@ -24,13 +29,26 @@ class PhotographerIntro {
   /// `photographerSummaryFrom`). Read here, never written.
   final bool acceptingOrders;
 
+  /// Identity verified and approved by staff (S21); server-written.
+  final bool verified;
+
+  /// Studio business record approved (S21.04); server-written.
+  final bool businessVerified;
+
+  /// Individual, artist (server-set) or studio; changed through the
+  /// `setProviderType` callable, never written here.
+  final ProviderType providerType;
+
   @override
   bool operator ==(Object other) =>
       other is PhotographerIntro &&
       other.bio == bio &&
       listEquals(other.equipment, equipment) &&
       other.onboardingComplete == onboardingComplete &&
-      other.acceptingOrders == acceptingOrders;
+      other.acceptingOrders == acceptingOrders &&
+      other.verified == verified &&
+      other.businessVerified == businessVerified &&
+      other.providerType == providerType;
 
   @override
   int get hashCode => Object.hash(
@@ -38,6 +56,9 @@ class PhotographerIntro {
     Object.hashAll(equipment),
     onboardingComplete,
     acceptingOrders,
+    verified,
+    businessVerified,
+    providerType,
   );
 }
 
@@ -46,6 +67,7 @@ PhotographerIntro introFromFirestore(Map<String, dynamic> d) {
   final equipment = d['equipment'];
   final onboardingComplete = d['onboardingComplete'] == true;
   final accepting = d['acceptingOrders'];
+  final verified = d['verified'] == true;
   return PhotographerIntro(
     bio: bio is String ? bio : '',
     equipment: [
@@ -56,7 +78,10 @@ PhotographerIntro introFromFirestore(Map<String, dynamic> d) {
     onboardingComplete: onboardingComplete,
     acceptingOrders: accepting is bool
         ? accepting
-        : d['verified'] == true && onboardingComplete,
+        : verified && onboardingComplete,
+    verified: verified,
+    businessVerified: d['businessVerified'] == true,
+    providerType: ProviderType.fromCode(d['providerType']),
   );
 }
 
@@ -135,6 +160,9 @@ class FakePhotographerIntroRepository implements PhotographerIntroRepository {
       equipment: List.unmodifiable(equipment),
       onboardingComplete: old.onboardingComplete,
       acceptingOrders: old.acceptingOrders,
+      verified: old.verified,
+      businessVerified: old.businessVerified,
+      providerType: old.providerType,
     );
     _changes.add(uid);
   }

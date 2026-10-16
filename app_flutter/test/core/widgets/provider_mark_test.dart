@@ -9,6 +9,7 @@ import 'widget_host.dart';
 Widget _row(
   ProviderType type, {
   bool verified = true,
+  bool businessVerified = false,
   int awards = 0,
   String? district,
 }) => hostWidget(
@@ -17,7 +18,11 @@ Widget _row(
     children: [
       ProviderName(
         'Lê Hoàng Vũ',
-        mark: providerMarkOf(type: type, verified: verified),
+        mark: providerMarkOf(
+          type: type,
+          verified: verified,
+          businessVerified: businessVerified,
+        ),
       ),
       ProviderTag(type: type, awards: awards, district: district),
     ],
@@ -62,14 +67,43 @@ void main() {
   });
 
   testWidgets(
-    'verified studio shows the seal and the Studio tag with district',
+    'businessVerified studio shows the seal and the Studio tag with district',
     (tester) async {
-      await tester.pumpWidget(_row(ProviderType.studio, district: 'Hoàn Kiếm'));
+      await tester.pumpWidget(
+        _row(
+          ProviderType.studio,
+          businessVerified: true,
+          district: 'Hoàn Kiếm',
+        ),
+      );
       final mark = tester.widget<ProviderMark>(find.byType(ProviderMark));
       expect(mark.kind, ProviderMarkKind.studio);
+      expect(find.byType(VerifiedMark), findsNothing);
       expect(find.text('Studio · Hoàn Kiếm'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'a verified studio without businessVerified shows the blue tick',
+    (tester) async {
+      await tester.pumpWidget(_row(ProviderType.studio, district: 'Quận 3'));
+      final mark = tester.widget<ProviderMark>(find.byType(ProviderMark));
+      expect(mark.kind, ProviderMarkKind.verified);
+      expect(find.byType(VerifiedMark), findsOneWidget);
+      expect(find.text('Studio · Quận 3'), findsOneWidget);
+    },
+  );
+
+  testWidgets('artist keeps the gold tick', (tester) async {
+    for (final verified in [false, true]) {
+      await tester.pumpWidget(
+        _row(ProviderType.artist, verified: verified, businessVerified: true),
+      );
+      final mark = tester.widget<ProviderMark>(find.byType(ProviderMark));
+      expect(mark.kind, ProviderMarkKind.artist);
+      expect(find.byType(VerifiedMark), findsNothing);
+    }
+  });
 
   testWidgets('unverified studio shows only the tag', (tester) async {
     await tester.pumpWidget(
@@ -79,14 +113,19 @@ void main() {
     expect(find.text('Studio · Quận 3'), findsOneWidget);
   });
 
-  test('providerMarkOf follows decision 5', () {
-    ProviderMarkKind? of(ProviderType t, bool v) =>
-        providerMarkOf(type: t, verified: v);
+  test('providerMarkOf follows decision 5 and #135 Decision 17', () {
+    ProviderMarkKind? of(ProviderType t, bool v, [bool b = false]) =>
+        providerMarkOf(type: t, verified: v, businessVerified: b);
     expect(of(ProviderType.artist, false), ProviderMarkKind.artist);
     expect(of(ProviderType.artist, true), ProviderMarkKind.artist);
-    expect(of(ProviderType.studio, true), ProviderMarkKind.studio);
+    expect(of(ProviderType.artist, true, true), ProviderMarkKind.artist);
+    expect(of(ProviderType.studio, true), ProviderMarkKind.verified);
+    expect(of(ProviderType.studio, true, true), ProviderMarkKind.studio);
     expect(of(ProviderType.studio, false), isNull);
+    // The seal needs the identity too; a stray business flag alone is not it.
+    expect(of(ProviderType.studio, false, true), isNull);
     expect(of(ProviderType.individual, true), ProviderMarkKind.verified);
+    expect(of(ProviderType.individual, true, true), ProviderMarkKind.verified);
     expect(of(ProviderType.individual, false), isNull);
   });
 

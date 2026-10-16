@@ -10,6 +10,7 @@ import 'package:photobooking/data/badges/badge_repository.dart';
 import 'package:photobooking/data/award/award_providers.dart';
 import 'package:photobooking/data/award/award_repository.dart';
 import 'package:photobooking/data/album/album_repository.dart';
+import 'package:photobooking/data/content/fake_content_repositories.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
@@ -19,6 +20,7 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 import 'package:photobooking/data/photographer/photographer_contact_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
@@ -26,6 +28,8 @@ import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/skills/skills_repository.dart';
 import 'package:photobooking/data/review/review_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/verification/verification_providers.dart';
+import 'package:photobooking/data/verification/verification_repository.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/photographer_profile/photographer_profile_screen.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
@@ -81,9 +85,17 @@ class ProfileWorld {
 
   /// Albums of any photographer; empty unless a test adds some.
   final albums = FakeAlbumRepository();
+
+  /// The signed-in user's `verifications/{uid}` (S03.01 owner card); none
+  /// unless a test seeds one.
+  final verifications = FakeVerificationRepository();
+
+  /// The signed-in user's own `photographers/{uid}` intro (owner listener).
+  final intros = FakePhotographerIntroRepository();
   late GoRouter router;
 
   String get uid => discovery.uid;
+  FakeSavedFollowRepository get savedFollow => discovery.savedFollow;
 
   Future<void> init() async {
     await discovery.init();
@@ -131,6 +143,8 @@ class ProfileWorld {
     albumRepositoryProvider.overrideWithValue(albums),
     awardRepositoryProvider.overrideWithValue(awards),
     badgeRepositoryProvider.overrideWithValue(badges),
+    verificationRepositoryProvider.overrideWithValue(verifications),
+    photographerIntroRepositoryProvider.overrideWithValue(intros),
   ];
 
   Widget app(
@@ -174,6 +188,7 @@ class ProfileWorld {
           '/settings/profile',
           '/p/:id',
           '/me/albums',
+          '/verify/start',
         ])
           GoRoute(path: p, builder: stub),
       ],

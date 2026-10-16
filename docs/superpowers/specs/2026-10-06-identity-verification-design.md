@@ -1,6 +1,6 @@
 # Xác minh để nhận đơn (S21)
 
-Ngày: 2026-10-06 · Trạng thái: chờ duyệt · Thay: S21.02 "Xin dấu tích xanh" và §3d.1, §3i.4 (điều kiện dấu tích), câu hỏi mở 23 của spec chính `2026-10-01-remaining-screens.md`. Nghiên cứu nền: [`docs/research/2026-10-06-identity-vneid.md`](../../research/2026-10-06-identity-vneid.md).
+Ngày: 2026-10-06 · Trạng thái: #135 đã làm (ba bước, danh tính và mã số thuế giả lập, staff duyệt bằng CLI); phí xác minh là #203; bản cài đặt thật còn lại (§6) · Thay: S21.02 "Xin dấu tích xanh" và §3d.1, §3i.4 (điều kiện dấu tích), câu hỏi mở 23 của spec chính `2026-10-01-remaining-screens.md`. Nghiên cứu nền: [`docs/research/2026-10-06-identity-vneid.md`](../../research/2026-10-06-identity-vneid.md).
 
 ## 1. Mục tiêu
 
@@ -24,37 +24,43 @@ Căn cứ: Luật Thương mại điện tử 122/2025 (Điều 17) và Nghị �
 
 `photographers/{uid}` (công khai): `verified: bool`, `verifiedAt?`, `acceptingOrders: bool` (= `verified` và hồ sơ đủ để đặt). Chỉ server ghi.
 
-`users/{uid}/private/verification` (chỉ chủ tài khoản đọc, chỉ server ghi):
+`verifications/{uid}` (cấp cao nhất, chủ tài khoản đọc, chỉ server ghi; **đổi 2026-10-08, #135**: spec cũ để ở `users/{uid}/private/verification`, nhưng staff cần truy vấn hàng đợi (`status == 'submitted'`, `business.status == 'submitted'`, nhắc) và truy vấn collection-group trên `private` sẽ lẫn `contact`, `inbox`, `business` có cùng tên trường):
 
 | Trường | Ghi chú |
 |---|---|
 | `status` | `not_started` · `in_progress` · `submitted` · `approved` · `rejected` · `revoked` |
-| `steps` | `{phone: done?, fee: {paymentId, paidAt}?, identity: {method: vneid \| nfc, checkedAt, result: passed \| failed}?, rules: {acceptedAt, version}?}` |
+| `steps` | `{phone: done?, fee: {paymentId, amount, paidAt}?, identity: {method: vneid \| nfc, checkedAt, result: passed \| failed}?, rules: {acceptedAt, version}?}` |
 | `submittedAt`, `decidedAt`, `decidedBy`, `rejectReason?` (mã + chữ), `freeResubmitsLeft` (1) | |
-| `kind` | `individual` \| `studio` (quyết định mức phí) |
+| `kind` | `individual` \| `studio` (quyết định mức phí); suy lại từ `providerType` mỗi lần ghi cho tới khi bước phí xong (nghệ sĩ NAG trả mức cá nhân) |
+| `identitySession`, `identityAttempts` `{dayKey, count}`, `feeAttempt` (1), `nudgedAt?`, `version` | Phiên VNeID/chip đang chờ; số lần bắt đầu xác minh trong ngày VN; lần trả phí (chỉ #203 tăng); mốc đã nhắc (một lần); số phiên bản của bản ghi |
+| `steps.identity` | thêm `failure?` (`underage` \| `identity_in_use` \| `provider_failed`) và `maskedName` (họ tên đã che, ví dụ "NGUYỄN M** T**": từ đầu giữ nguyên, mỗi từ sau chỉ chữ cái đầu + `**`); bản ghi này là chỗ **duy nhất** chủ tài khoản thấy tên, họ tên đầy đủ không nằm ở đây |
+| `steps.fee` | luôn `null` tới khi #203 bật phí; trường có sẵn để #203 không cần di chuyển dữ liệu |
+| `business` | nhánh doanh nghiệp (S21.04), xem cuối mục |
 
-`users/{uid}/private/identity` (chỉ server đọc/ghi; staff xem qua S23.04): `legalName`, `dob`, `gender?`, `idNumberEnc` (mã hoá bằng KMS), `idHash` (HMAC có khoá bí mật), `method`, `provider`, `providerRef`, `verifiedAt`. **Không lưu** ảnh selfie, video kiểm tra người thật, dữ liệu chip thô.
+`users/{uid}/private/identity` (chỉ server đọc/ghi, rules chặn cả chủ tài khoản đọc; staff xem qua S23.04; còn trong `private` vì chỉ truy cập theo uid): `legalName`, `dob`, `gender?`, `idNumberEnc` (mã hoá bằng KMS), `idHash` (HMAC có khoá bí mật), `method`, `provider`, `providerRef`, `verifiedAt`. **Không lưu** ảnh selfie, video kiểm tra người thật, dữ liệu chip thô.
 
-`identity_hashes/{idHash}` → `uid`: một số định danh chỉ gắn với một tài khoản nhận đơn. Trùng → `identity_in_use`, staff xem.
+`identity_hashes/{idHash}` → `uid`: một số định danh chỉ gắn với một tài khoản nhận đơn; tạo trong cùng giao dịch với `private/identity`. Trùng → `identity_in_use`, và một dòng nhật ký ghi uid kia cho staff.
 
-Xác minh doanh nghiệp: `photographers/{uid}.businessVerified: bool` (công khai, quyết định con dấu Studio) và `users/{uid}/private/business` (`taxCode`, `name`, `address`, `status`, `kind: company \| household`, `registrationDocPath?`, `representativeMatched: bool`).
+`verificationAudit/{id}` (chỉ server): mỗi quyết định của staff một dòng `{uid, target: identity \| business, action, reason?, note?, actorId, at}` (trùng danh tính thêm `otherUid`). `fake_identities/{uid}` (chỉ server): kết quả giả lập cho emulator và dev (§6).
+
+Xác minh doanh nghiệp: `photographers/{uid}.businessVerified: bool` (công khai, quyết định con dấu Studio) và nhánh `verifications/{uid}.business` (**đổi 2026-10-08, #135**: spec cũ để ở `users/{uid}/private/business`; mã số thuế công ty và tên là dữ liệu đăng ký công khai nên không cần riêng tư hơn; **ngoại lệ hộ kinh doanh**: mã số thuế 12 số chính là số định danh cá nhân của chủ, và #135 hiện lưu nó dạng rõ ở `business.taxCode`, chỉ chủ tài khoản đọc; xem câu hỏi mở 9): `status` (`submitted` \| `approved` \| `rejected`), `kind: company \| household`, `taxCode`, `name`, `address`, `registryStatus` (`active` \| `inactive`), `docPath?` (ảnh giấy đăng ký ở `businessDocs/{uid}/{ulid}.jpg`), `representativeMatched: bool`, `submittedAt`, `decidedAt?`, `decidedBy?`, `rejectReason?` (`inactive`, `representative_mismatch`, `doc_unreadable`, `other`), `purgeAfter?` (30 ngày sau quyết định).
 
 ## 4. Luồng
 
 Điểm vào **"Bắt đầu nhận đơn"**: S06.02 (Công việc trống), hồ sơ của chính mình (S03.01, chế độ chủ hồ sơ), S09.02 Cài đặt. Khách mở hồ sơ thợ chưa nhận đơn thấy nhãn "Chưa nhận đơn", vẫn nhắn hỏi được; nút đặt lịch và mời báo giá không có. Thợ chưa nhận đơn không hiện trong S02.06 Tìm thợ (bài đăng vẫn hiện trên feed).
 
-**S21.02 Bắt đầu nhận đơn**: danh sách 4 bước, mỗi bước một màn, làm lúc nào cũng được, tiến độ lưu ở `steps`. Nút chính "Tiếp tục" mở bước đầu chưa xong.
+**S21.02 Bắt đầu nhận đơn**: danh sách 4 bước, mỗi bước một màn, làm lúc nào cũng được, tiến độ lưu ở `steps`. Nút chính "Tiếp tục" mở bước đầu chưa xong. **Từ #135 đến khi #203 gộp, danh sách chỉ có 3 bước (số điện thoại, danh tính, quy định) và bộ đếm "{n} / {total}" có `total` = 3**; bước phí (mục 2 dưới đây) do #203 thêm cùng lúc với việc bật cờ `feeRequired` ở cả server (`VerificationDeps.feeRequired`) lẫn app (`verificationFeeRequiredProvider`), để một bản phát hành không bao giờ lệch nhau. Khi phí tắt: danh tính không cần phí, `steps.fee` là `null`, không có thanh toán, và lần gửi lại khi hết lượt miễn phí vẫn miễn phí (về thẳng `submitted`, `freeResubmitsLeft` giữ 0). Khi phí bật, danh tính cần phí đã trả trước (phí kiểm tra của nhà cung cấp tốn tiền) và hết lượt thì chuyển `in_progress`, xoá bước phí, tăng `feeAttempt`.
 
 1. **Số điện thoại** (S21.01, OTP). Đã `phoneVerified` thì tự đánh dấu xong.
-2. **Phí xác minh**: màn nêu những gì nhận được (dấu tích xanh, nhận đơn và báo giá, staff duyệt trong 24 giờ), mức phí, "Phí không hoàn vì chi phí kiểm tra đã phát sinh; bị từ chối được gửi lại miễn phí 1 lần". Trả bằng VietQR hoặc ví (spec thanh toán §3). Đây là **doanh thu của nền tảng**, thu vào tài khoản của nền tảng, tách khỏi tiền giữ hộ, xuất hoá đơn điện tử (spec thanh toán §8).
+2. **Phí xác minh** (**#203**, chưa làm trong #135): màn nêu những gì nhận được (dấu tích xanh, nhận đơn và báo giá, staff duyệt trong 24 giờ), mức phí, "Phí không hoàn vì chi phí kiểm tra đã phát sinh; bị từ chối được gửi lại miễn phí 1 lần". Trả bằng VietQR hoặc ví (spec thanh toán §3). Đây là **doanh thu của nền tảng**, thu vào tài khoản của nền tảng, tách khỏi tiền giữ hộ, xuất hoá đơn điện tử (spec thanh toán §8).
 3. **Danh tính** (S21.03):
    - Màn đồng ý ngắn: thu họ tên, ngày sinh, số định danh, giới tính; dùng để xác minh, chống trùng tài khoản, khấu trừ thuế; không lưu ảnh selfie.
    - Nút chính **"Xác minh bằng VNeID"**: app gửi yêu cầu qua nhà cung cấp, người dùng đồng ý trong app VNeID và nhập PIN, quay lại app. Không gõ gì.
    - Liên kết **"Không dùng được VNeID? Quét chip CCCD"** (S21.03 biến thể NFC): bước 1/2 áp CCCD vào điện thoại; bước 2/2 selfie 3–5 giây.
-   - Kết quả: chỉ hiện họ tên đã che bớt để xác nhận ("NGUYỄN M** T**"). Dưới 18 tuổi → không nhận đơn được (`underage`). Thất bại được thử lại; quá 3 lần trong ngày thì khoá tới hôm sau.
-4. **Đồng ý quy định nhận việc**: 5 dòng tóm tắt (tiền giữ theo mốc, bàn giao hai lớp, huỷ và hoàn tiền, khấu trừ thuế với cá nhân, dữ liệu danh tính) lấy từ `docs/legal/terms-and-help-notes.md`, liên kết tới điều khoản đầy đủ, một ô đồng ý (`rules.version` ghi phiên bản). Nút chính **"Gửi duyệt"** → `submitted`.
+   - Kết quả: chỉ hiện họ tên đã che bớt để xác nhận ("NGUYỄN M** T**"). Dưới 18 tuổi → không nhận đơn được (`underage`). Thất bại được thử lại; mỗi lần bắt đầu tính một lần trong ngày VN, kể cả bỏ dở, và lần bắt đầu thứ 4 bị khoá tới hôm sau.
+4. **Đồng ý quy định nhận việc**: 5 dòng tóm tắt (tiền giữ theo mốc, bàn giao hai lớp, huỷ và hoàn tiền, khấu trừ thuế với cá nhân, dữ liệu danh tính) lấy từ `docs/legal/terms-and-help-notes.md`, một ô đồng ý (`rules.version` ghi phiên bản, `PROVIDER_RULES_VERSION = '2026-10-06'`). Chưa có liên kết tới điều khoản đầy đủ vì văn bản điều khoản chưa viết (hoãn tới khi có văn bản). Nút chính **"Gửi duyệt"** → `submitted`.
 
-**Chờ duyệt** (S21.02 trạng thái chờ): dòng thời gian 4 mốc, "trong 24 giờ"; người dùng vẫn sửa hồ sơ, portfolio được.
+**Chờ duyệt** (S21.02 trạng thái chờ): dòng thời gian 4 mốc (3 mốc tới khi #203 thêm bước phí), "trong 24 giờ"; người dùng vẫn sửa hồ sơ, portfolio được.
 
 **Staff duyệt** (S23.04): xem kết quả kiểm tra tự động, họ tên/ngày sinh (không thấy số định danh đầy đủ, chỉ 4 số cuối), ảnh đại diện, vài ảnh portfolio, cảnh báo trùng. Quyết định:
 - **Duyệt** → `approved`, `verified = true`, `acceptingOrders` theo hồ sơ, thông báo "Bạn đã có thể nhận đơn".
@@ -63,16 +69,22 @@ Xác minh doanh nghiệp: `photographers/{uid}.businessVerified: bool` (công kh
 
 **Thu hồi** (`revoked`): staff thu hồi khi phát hiện gian lận sau này; tắt nhận đơn, ẩn dấu tích; booking đang chạy xử lý theo khiếu nại (S18), không tự huỷ.
 
-**Nhắc**: bỏ dở thì gửi **một** thông báo sau 24 giờ và một banner có thể tắt ở S06.01. Không nhắc thêm, không email.
+**Nhắc**: bỏ dở thì gửi **một** thông báo sau 24 giờ (`verification_reminder`, chạy trong `bookingClock`, `nudgedAt` đảm bảo một lần) và một banner có thể tắt ở S06.01. Không nhắc thêm, không email. **Banner S06.01 không làm**: thợ chưa xác minh không có việc nào, họ thấy S06.02 với nút "Bắt đầu nhận đơn".
+
+**Hàng đợi quá hạn**: CLI `list` đánh dấu `!` các hàng chờ quá 24 giờ (`REVIEW_SLA_HOURS`); chưa có job hay thông báo cho staff.
+
+**Staff duyệt bằng CLI tới khi có S23.04 (phase 1.5, #83)**: `npm run verifications -- list | show <uid> | approve <uid> | reject <uid> <lý do> ["ghi chú"] | revoke <uid> "ghi chú" | business-approve <uid> | business-reject <uid> <lý do> ["ghi chú"] --actor <uid>` (uid phải có claim admin) đi qua đúng use case `reviewVerification` và callable cùng tên (`{uid, target: identity | business, action, reason?, note?}`); duyệt ghi `verifications/{uid}` và `photographers/{uid}` (`verified`, `verifiedAt`, `acceptingOrders`) trong **một giao dịch**, thu hồi ghi `verified: false, acceptingOrders: false` cùng cách (booking đang chạy không bị đụng). Lý do từ chối mở lại gì: `fake_avatar` → dòng sửa "Ảnh đại diện" (→ `/settings/profile`); `stolen_portfolio` → dòng "Portfolio" (→ `/u/{uid}`); `identity_mismatch` → xoá bước danh tính, phải xác minh lại; `other` → hiện ghi chú của staff, gửi lại bình thường; `duplicate_account` và `underage` là cuối cùng (không gửi lại, chỉ dòng hỗ trợ). `revoked` là cuối trong app (chỉ hiện trạng thái và email hỗ trợ); khôi phục là câu hỏi mở với chủ sản phẩm (§11).
 
 Hook: `notifyVerificationDecision` (duyệt, từ chối, thu hồi), `notifyBusinessDecision` (doanh nghiệp), `notifyVerificationReminder` trong `packages/domain/src/notification_hooks.ts` (#138); #135 gọi sau khi quyết định được ghi. Cả ba đều mở S21.02 hoặc S21.04, quyết định là thông báo quan trọng.
 
 ## 5. Xác minh doanh nghiệp cho studio (S21.04)
 
 - Mở khi studio cần: chạm giới hạn 3 thợ ở S26.01, xin con dấu Studio, hoặc thêm tài khoản nhận tiền đứng tên doanh nghiệp. Không có trong S21.02.
-- Studio nhập **mã số thuế**; app tra tên, địa chỉ, tình trạng (nguồn tra cứu chọn trong plan; ứng viên ở nghiên cứu §D).
-- **Hộ kinh doanh**: mã số thuế là số định danh của chủ → so `idHash` với chủ studio, khớp thì tự duyệt.
-- **Công ty**: tải ảnh giấy đăng ký kinh doanh; staff đối chiếu người đại diện với danh tính chủ studio ở S23.04.
+- Studio nhập **mã số thuế** (10 số: công ty; 10 số + `-` + 3 số: chi nhánh, tính là công ty; 12 số: hộ kinh doanh, số định danh cá nhân của chủ từ 01/07/2025); app tra tên, địa chỉ, tình trạng qua cổng `TaxCodeLookup`. **Đã làm (#135)**: chỉ `FakeTaxCodeLookup` (emulator, dev): mã kết thúc `0000` → công ty "CÔNG TY TNHH STUDIO {4 số cuối}" ngừng hoạt động; 12 số → hộ kinh doanh "HỘ KINH DOANH STUDIO THỬ" (trừ mã 12 số kết thúc `0000`: nhánh ngừng hoạt động đi trước nên thành công ty ngừng hoạt động, `not_eligible`); còn lại → công ty "CÔNG TY TNHH STUDIO THỬ {4 số cuối}"; địa chỉ luôn là "12 Nguyễn Huệ, Phường Sài Gòn, TP. Hồ Chí Minh", và hai loại sau đang hoạt động. **Hoãn**: tra thật ứng viên `api.vietqr.io/v2/business/{mst}` (cần ra mạng ngoài, tức gói Blaze; nghiên cứu §D); ngoài emulator/dev callable trả `not_eligible`.
+- Chỉ mở với studio đã `verified`. Ngừng hoạt động → `not_eligible`.
+- **Hộ kinh doanh**: mã số thuế là số định danh của chủ → so `idHash` của mã số thuế với `idHash` danh tính chủ studio, khớp thì tự duyệt (`businessVerified: true`), không khớp thì từ chối `representative_mismatch`. **Ngoại lệ về lưu trữ**: vì mã số thuế 12 số là số định danh cá nhân, `business.taxCode` của hộ kinh doanh đang lưu **dạng rõ** (chỉ chủ tài khoản đọc), trái với nguyên tắc ở §9 (số định danh mã hoá); #135 giữ nguyên, câu hỏi mở 9 hỏi có nên chỉ lưu băm hoặc 4 số cuối.
+- **Công ty**: tải ảnh giấy đăng ký kinh doanh (`businessDocs/{uid}/{ulid}.jpg`, JPEG tới 3 MiB, chỉ tạo mới, ảnh xoá 30 ngày sau quyết định bởi bước thứ hai của job `purgeAwardProofs` hằng ngày); staff đối chiếu người đại diện với danh tính chủ studio (CLI `show` tải ảnh, S23.04 sau). Hộ kinh doanh và công ty gửi lại chỉ khi bản ghi cũ đã bị từ chối.
+- Con dấu: `providerMarkOf` có thêm `businessVerified`; studio có tích xanh khi `verified`, con dấu Studio vàng chỉ khi `businessVerified` (V4, V5); nghệ sĩ giữ tích vàng, cá nhân không đổi.
 - Tình trạng không "Đang hoạt động" → không duyệt.
 - Không thu thêm phí (đã gồm trong 299.000đ).
 
@@ -86,15 +98,25 @@ Hook: `notifyVerificationDecision` (duyệt, từ chối, thu hồi), `notifyBus
 | `VneidVerifier` | qua Trung tâm RAR (C06) trực tiếp hoặc đơn vị trung gian đã kết nối RAR |
 | `ChipEkycVerifier` | NFC + selfie qua nhà cung cấp eKYC có đối chiếu C06; SDK native bọc bằng platform channel nếu không có SDK Flutter |
 
-Cloud Functions chỉ là adapter (callable `startIdentityVerification`, webhook kết quả nếu nhà cung cấp gửi về). Nhà cung cấp thường đòi IP ra cố định và mTLS: cần Cloud NAT cho Functions (kiểm lại với nhà cung cấp).
+**Đã làm (#135)**: chỉ `FakeIdentityVerifier` và hai bản giả đi kèm; `VneidVerifier`, `ChipEkycVerifier` và `TaxCodeLookup` thật là **Hoãn** tới khi có hợp đồng nhà cung cấp.
 
-Callable khác: `submitVerification`, `reviewVerification` (staff), `revokeVerification` (staff), `verifyBusiness`.
+- `FakeIdentityVerifier` chạy khi `fakePaymentsAllowed()` (emulator hoặc dev): kết quả lấy từ `fake_identities/{uid}` (`{legalName, dob, gender, idNumber, passed}`, do seed hoặc Emulator UI ghi), không có thì họ tên = tên hiển thị bỏ dấu viết hoa (dự phòng "NGUOI DUNG THU"), `dob` 1995-01-01, số định danh = "0" + 11 số từ băm FNV-1a của uid. Ngoài hai môi trường đó các callable danh tính trả `not_eligible`, và app chỉ hiện hai sheet VNeID/NFC giả khi `--dart-define=REAL_IDENTITY` **không** đặt (`identityModeProvider` false).
+- Cổng `IdentityVault { hashId, encryptId }`: bản `devIdentityVault` dùng HMAC-SHA256 và AES-256-GCM với khoá dev cố định có ghi nhãn, từ chối chạy ngoài `fakePaymentsAllowed()`. **Hoãn**: vault dùng KMS (cần Secret Manager, chưa có trong plan), nên chưa thể lưu số định danh thật.
+- Luật danh tính: dưới 18 tuổi theo ngày VN → `underage`; trùng → `identity_in_use`; nhà cung cấp trả "không đạt" → bước `failed`, callable `not_eligible`. Giới hạn **3 lần mỗi ngày VN** đếm ở `startIdentityVerification`: mỗi lần bắt đầu tính một lần, kể cả bỏ dở; lần bắt đầu thứ 4 trong ngày VN bị `rate_limited` tới ngày hôm sau. Kết quả thất bại (`underage`, `identity_in_use`, `provider_failed`) được ghi trước và lỗi ném sau khi giao dịch xong, để bản ghi thất bại không bị hoàn tác.
+
+Cloud Functions chỉ là adapter (callable `startIdentityVerification`, `completeIdentityVerification`, webhook kết quả nếu nhà cung cấp gửi về). Nhà cung cấp thường đòi IP ra cố định và mTLS: cần Cloud NAT cho Functions (kiểm lại với nhà cung cấp).
+
+Callable đã có (vùng `asia-southeast1`): `confirmPhoneVerified`, `startIdentityVerification`, `completeIdentityVerification`, `acceptVerificationRules`, `submitVerification`, `resubmitVerification`, `lookupTaxCode`, `submitBusinessVerification` và `reviewVerification` (staff, thay cho `revokeVerification` và `verifyBusiness` của bản đầu: một callable với `target` và `action`). Callable phí (`startVerificationFee`, `checkVerificationFee`) là #203.
+
+Điện thoại (S21.01): app liên kết số với tài khoản Firebase Auth (`linkWithCredential`, hoặc `updatePhoneNumber` khi đã có số), rồi `confirmPhoneVerified` so số của Auth (Admin SDK) với `contact.phone` và đặt `phoneVerified: true` từ server. Bước này **là** cờ `contact.phoneVerified`; đổi số sẽ đặt lại cờ (rules sẵn có) nên bước hiện chưa xong, còn thợ đã duyệt vẫn giữ trạng thái duyệt (số điện thoại là liên hệ, không phải danh tính).
 
 ## 7. Server chặn ở đâu
 
 `acceptingOrders`/`verified` được kiểm tra trên server ở: tạo booking (`createBookingDraft`, Chụp ngay), gửi báo giá, mời báo giá, `assignBooking` (thành viên phải đã xác minh), chi trả (tài khoản nhận tiền phải khớp danh tính, spec thanh toán §6). Rules: client không ghi được các trường này.
 
 Cổng chung là port `ProviderOrderGate` (`packages/domain`, đọc `verified` + `onboardingComplete` của `photographers/{uid}`) và mã lỗi `not_accepting_orders` (Functions: `failed-precondition`); đã dùng ở `createBookingDraft` (#133), các cổng sau (Chụp ngay, báo giá, `assignBooking`) dùng lại chính nó.
+
+Hai chỗ kiểm lại khi tiền đi qua (thêm 2026-10-08): (1) `createPayment` từ chối thợ không còn nhận đơn (`not_accepting_orders`) qua `assertOrderAllowed` của #198; (2) việc kiểm khi **ghi nhận tiền** là của #135: `handleTransferNotification` đọc `acceptsOrders(payment.payeeId)` trong giao dịch (trong `applyTransfer`), sau khi khoản chuyển đã làm khoản thanh toán `paid` và booking vẫn là nháp; nếu `false`, hoàn 100% qua `refundLatePayment` với lý do mới `provider_not_accepting` (thêm vào `PAYMENT_REFUND_REASONS`; `refundLatePayment` có thêm tham số lý do, mặc định `late_payment_draft_expired`) thay vì `moveDraftToRequested`; booking vẫn là nháp và job quét nháp trả ngày. Đây là nơi duy nhất giữ luật này.
 
 ## 8. Màn hình
 
@@ -118,7 +140,7 @@ S09.02: dòng "Xác minh & nhận đơn" (`settings-verify`) có sẵn trong `Se
 
 ## 10. Kiểm thử
 
-- Domain: chuyển trạng thái; phí theo `kind`; lượt gửi lại; tuổi; trùng `idHash`; khoá thử lại 3 lần/ngày; studio hộ kinh doanh tự khớp.
+- Domain: chuyển trạng thái; phí theo `kind`; lượt gửi lại; tuổi; trùng `idHash`; khoá 3 lần bắt đầu mỗi ngày VN; studio hộ kinh doanh tự khớp.
 - Rules: client không đọc `identity`, không ghi `verified`/`acceptingOrders`/`verification`.
 - Functions: `FakeIdentityVerifier`; chặn tạo booking/báo giá/giao việc khi chưa xác minh; webhook idempotent.
 - App: S21.02 các trạng thái (từng bước, chờ, bị từ chối, đã duyệt), S21.03 hai cách, S21.04, thẻ "Còn n bước", nhãn "Chưa nhận đơn".
@@ -129,9 +151,15 @@ S09.02: dòng "Xác minh & nhận đơn" (`settings-verify`) có sẵn trong `Se
 2. Báo giá và thời gian đăng ký với Trung tâm RAR hoặc đơn vị trung gian (VNPT, GTEL…); nhà cung cấp eKYC chip CCCD.
 3. Lưu dữ liệu danh tính ở Singapore hay máy chủ trong nước.
 4. Kế toán: hoá đơn điện tử cho phí xác minh; thời hạn giữ `idHash` sau khi xoá tài khoản.
+5. **Khách có phải nhập OTP khi đặt (S04.05)?** Chưa: chi phí SMS và quyết định về tiền ngày 2026-10-07; S21.01 hiện chỉ dùng cho thợ (Decision 21 của plan).
+6. Đổi loại thợ sau khi đã trả phí cá nhân: mặc định không thu thêm, loại được cố định khi phí đã trả (#203).
+7. Khôi phục thợ đã bị thu hồi: mặc định cuối trong app; hỗ trợ xử lý ngoài, công cụ staff sau (#83).
+8. Đổi số điện thoại sau khi được duyệt: mặc định vẫn đã duyệt, chỉ bước điện thoại hiện chưa xong tới khi xác minh lại.
+9. Hộ kinh doanh: mã số thuế 12 số là số định danh cá nhân, hiện lưu dạng rõ ở `verifications/{uid}.business.taxCode`. Chỉ lưu băm hoặc 4 số cuối cho hộ kinh doanh? (mặc định hiện tại: lưu rõ, chờ chủ sản phẩm quyết).
 
 ## 12. Chia việc
 
-1. Domain + Functions + rules: trạng thái, cổng `IdentityVerifier` (bản giả), chặn ở §7, staff duyệt.
-2. App: S21.02, S21.03, S21.04, thay đổi S06.02, S03.01, S09.02, S26.01.
-3. Bản cài đặt thật (VNeID, chip CCCD) sau khi có hợp đồng.
+1. Domain + Functions + rules: trạng thái, cổng `IdentityVerifier` (bản giả), chặn ở §7, staff duyệt. **Đã làm (#135).**
+2. App: S21.01 đến S21.04, thay đổi S06.02, S03.01, S09.02 (dòng "Xác minh & nhận đơn" bật), thẻ "Còn {n} bước để nhận đơn". **Đã làm (#135).** S26.01 (giới hạn 3 thợ dẫn tới S21.04) là #136.
+3. Phí xác minh: bước phí, `verification_fee` trên mô hình thanh toán chung, hai callable, `VerifyFeeScreen`, bật cờ ở server và app trong cùng một PR (**#203**).
+4. Bản cài đặt thật (VNeID, chip CCCD, tra mã số thuế, vault KMS) sau khi có hợp đồng.

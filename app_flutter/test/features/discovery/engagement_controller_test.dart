@@ -5,6 +5,8 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/content/content_providers.dart';
 import 'package:photobooking/data/content/fake_content_repositories.dart';
+import 'package:photobooking/data/content/saved_follow.dart';
+import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 
 import '../../support/content_fixtures.dart';
@@ -223,6 +225,65 @@ void main() {
         isFalse,
         reason: 'back to the value before the failed tap',
       );
+    });
+
+    test('a successful follow toggle invalidates socialCountsProvider and followingIdsProvider', () async {
+      final (c, repo, uid) = await _make();
+      final savedRepo = FakeSavedFollowRepository();
+      // override savedFollowRepositoryProvider
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(c.read(authRepositoryProvider)),
+          postEngagementRepositoryProvider.overrideWithValue(repo),
+          savedFollowRepositoryProvider.overrideWithValue(savedRepo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final countsStates = <AsyncValue<SocialCounts>>[];
+      final followingIdsStates = <AsyncValue<Set<String>>>[];
+      container.listen(socialCountsProvider, (_, next) => countsStates.add(next));
+      container.listen(followingIdsProvider, (_, next) => followingIdsStates.add(next));
+
+      await _settle(container);
+      expect(countsStates.last.hasValue, isTrue);
+      expect(followingIdsStates.last.hasValue, isTrue);
+
+      final initialCountsStateCount = countsStates.length;
+      final initialFollowingIdsStateCount = followingIdsStates.length;
+
+      await container.read(followProvider.notifier).toggle('p1');
+      await _settle(container);
+      expect(countsStates.length, greaterThan(initialCountsStateCount));
+      expect(followingIdsStates.length, greaterThan(initialFollowingIdsStateCount));
+    });
+  });
+
+  group('saved photographer', () {
+    test('SavedPhotographerController toggles optimistically and rolls back on failure', () async {
+      final (c, _, uid) = await _make();
+      final savedRepo = FakeSavedFollowRepository();
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(c.read(authRepositoryProvider)),
+          savedFollowRepositoryProvider.overrideWithValue(savedRepo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final n = container.read(savedPhotographerProvider.notifier);
+      expect(container.read(savedPhotographerProvider)['p1'], isNull);
+
+      await n.load('p1');
+      expect(container.read(savedPhotographerProvider)['p1'], isFalse);
+
+      expect(await n.toggle('p1'), isTrue);
+      expect(container.read(savedPhotographerProvider)['p1'], isTrue);
+      expect(await savedRepo.isPhotographerSaved(uid!, 'p1'), isTrue);
+
+      savedRepo.failWith = StateError('offline');
+      expect(await n.toggle('p1'), isFalse);
+      expect(container.read(savedPhotographerProvider)['p1'], isTrue);
     });
   });
 }

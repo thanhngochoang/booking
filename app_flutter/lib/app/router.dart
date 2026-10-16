@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/app/tabs.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/features/album/album_detail_screen.dart';
 import 'package:photobooking/features/album/my_albums_screen.dart';
 import 'package:photobooking/features/awards/my_awards_screen.dart';
@@ -32,6 +33,7 @@ import 'package:photobooking/features/events/event_screen.dart';
 import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
+import 'package:photobooking/features/explore/search/explore_search_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
@@ -45,12 +47,21 @@ import 'package:photobooking/features/photographer_setup/contact_setup_screen.da
 import 'package:photobooking/features/photographer_setup/setup_draft_store.dart';
 import 'package:photobooking/features/photographer_setup/setup_intro_screen.dart';
 import 'package:photobooking/features/photographer_setup/setup_packages_screen.dart';
+import 'package:photobooking/features/saved/followers_screen.dart';
+import 'package:photobooking/features/saved/following_screen.dart';
+import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
+import 'package:photobooking/features/verification/verify_business_screen.dart';
+import 'package:photobooking/features/verification/verify_identity_screen.dart';
+import 'package:photobooking/features/help/help_screen.dart';
+import 'package:photobooking/features/help/support_chat_screen.dart';
+import 'package:photobooking/features/verification/verify_rules_screen.dart';
+import 'package:photobooking/features/verification/verify_start_screen.dart';
 
 const _authRoutes = {'/login', '/register'};
 const _onboardingRoute = '/onboarding/role';
@@ -175,6 +186,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             AddPhoneScreen(returnTo: state.uri.queryParameters['returnTo']),
       ),
       GoRoute(
+        path: '/verify/phone',
+        builder: (_, state) =>
+            VerifyPhoneScreen(returnTo: state.uri.queryParameters['returnTo']),
+      ),
+      GoRoute(
+        path: verifyStartPath,
+        builder: (_, _) => const VerifyStartScreen(),
+        routes: [
+          GoRoute(path: 'rules', builder: (_, _) => const VerifyRulesScreen()),
+        ],
+      ),
+      GoRoute(
+        path: '/verify/identity',
+        builder: (_, state) => VerifyIdentityScreen(
+          method: state.uri.queryParameters['method'] == IdentityMethod.nfc.code
+              ? IdentityMethod.nfc
+              : IdentityMethod.vneid,
+        ),
+      ),
+      GoRoute(
+        path: '/verify/business',
+        builder: (_, _) => const VerifyBusinessScreen(),
+      ),
+      GoRoute(
         path: '/setup',
         redirect: (_, _) {
           final away = photographersOnly();
@@ -234,6 +269,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => ContactSetupScreen(
           popOnDone: state.uri.queryParameters['from'] == 'settings',
         ),
+      ),
+      GoRoute(
+        path: '/explore/search',
+        builder: (_, _) => const ExploreSearchScreen(),
       ),
       GoRoute(
         path: '/p/:postId',
@@ -336,6 +375,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/me/albums', builder: (_, _) => const MyAlbumsScreen()),
       GoRoute(path: '/me/awards', builder: (_, _) => const MyAwardsScreen()),
       GoRoute(
+        path: '/me/saved',
+        builder: (_, state) => SavedScreen(
+          initialTab: state.uri.queryParameters['tab'] == 'photographers'
+              ? SavedTab.photographers
+              : SavedTab.posts,
+        ),
+      ),
+      GoRoute(
+        path: '/me/following',
+        builder: (_, _) => const FollowingScreen(),
+      ),
+      GoRoute(
+        path: '/me/followers',
+        redirect: (_, _) {
+          final role = ref.read(currentProfileProvider).value?.role;
+          if (role != UserRole.photographer) {
+            return '/profile';
+          }
+          return null;
+        },
+        builder: (_, _) => const FollowersScreen(),
+      ),
+      GoRoute(
         path: '/u/:uid/albums/:albumId',
         builder: (_, state) => AlbumDetailScreen(
           uid: state.pathParameters['uid']!,
@@ -354,6 +416,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.uri.queryParameters['tab'],
           ),
         ),
+      ),
+      GoRoute(
+        path: '/help',
+        builder: (_, _) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: '/help/chat',
+        builder: (_, _) => const SupportChatScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => TabShell(shell),

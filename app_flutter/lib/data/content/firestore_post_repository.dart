@@ -261,6 +261,40 @@ class FirestorePostRepository implements PostRepository {
     final data = snap.data();
     return data == null ? null : postFromFirestore(snap.id, data);
   }
+
+  @override
+  Future<Map<String, PostSummary>> byIds(Iterable<String> ids) async {
+    final validIds = [
+      for (final id in ids.toSet())
+        if (_validId(id)) id,
+    ];
+    if (validIds.isEmpty) return const {};
+
+    const chunkSize = 30;
+    final snaps = await Future.wait([
+      for (var i = 0; i < validIds.length; i += chunkSize)
+        _posts
+            .where(
+              FieldPath.documentId,
+              whereIn: validIds.sublist(
+                i,
+                i + chunkSize > validIds.length ? validIds.length : i + chunkSize,
+              ),
+            )
+            .get(),
+    ]);
+
+    final result = <String, PostSummary>{};
+    for (final snap in snaps) {
+      for (final doc in snap.docs) {
+        final p = postFromFirestore(doc.id, doc.data());
+        if (p != null) {
+          result[doc.id] = p;
+        }
+      }
+    }
+    return result;
+  }
 }
 
 class FirestoreEngagementRepository implements PostEngagementRepository {

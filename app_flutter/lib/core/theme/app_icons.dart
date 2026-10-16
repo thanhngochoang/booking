@@ -92,6 +92,7 @@ abstract final class AppIcons {
   static const IconData work = Symbols.work_rounded;
   static const IconData store = Symbols.storefront_rounded;
   static const IconData verifiedUser = Symbols.verified_user_rounded;
+  static const IconData businessVerify = Symbols.domain_verification_rounded;
   static const IconData people = Symbols.group_rounded;
   static const IconData celebration = Symbols.celebration_rounded;
   static const IconData trendingUp = Symbols.trending_up_rounded;
@@ -107,6 +108,7 @@ abstract final class AppIcons {
   static const IconData delete = Symbols.delete_rounded;
   static const IconData personRemove = Symbols.person_remove_rounded;
   static const IconData flag = Symbols.flag_rounded;
+  static const IconData help = Symbols.help_rounded;
   static const IconData supportAgent = Symbols.support_agent_rounded;
 }
 

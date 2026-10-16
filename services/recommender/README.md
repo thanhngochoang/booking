@@ -18,6 +18,15 @@ Thuật toán gợi ý sẽ đổi nhiều lần (luật → học xếp hạng 
 - Dịch vụ không mở công khai; chỉ tài khoản dịch vụ của hàm `recommend` được gọi.
 - Vị trí chỉ là `geohash6`, không có toạ độ. Mã người dùng là `userKey` đã băm.
 
+## Quyết định 2026-10-07 (Quyết định 1, #132)
+
+**Giữ `LocalRecommender` cho giai đoạn 1 ra mắt.** Chưa dựng dịch vụ Cloud Run độc lập hay hàm callable `recommend`.
+Chuyển sang dịch vụ riêng ở thư mục này chỉ khi chạm một trong các ngưỡng:
+1. Có ≥ 5.000 nhiếp ảnh gia hoạt động;
+2. Độ trễ gợi ý p95 > 400 ms;
+3. Cần tính toán đặc trưng / huấn luyện mô hình ngoại tuyến;
+4. Có ứng dụng thứ hai (web dashboard, nền tảng đối tác) cần dùng chung API gợi ý.
+
 ## Có cần dịch vụ riêng ngay không?
 
 **Chưa.** v1 là luật có trọng số trên vài trăm ứng viên đã lọc theo khu vực và ngày, nên chạy được trong hàm Cloud Functions `recommend`. Vì vậy:

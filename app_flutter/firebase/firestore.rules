@@ -174,7 +174,7 @@ service cloud.firestore {
         ? request.resource.data.keys()
         : request.resource.data.diff(resource.data).affectedKeys();
       return !changed.hasAny(['providerType', 'artistSince', 'studioDistrict', 'studioCity', 'approvedAwardCount',
-                                'acceptingOrders']);
+                              'acceptingOrders', 'followerCount', 'followerCountAt', 'businessVerified']);
     }
 
     // Setup, once finished, stays finished: an update may not move onboardingComplete from true
@@ -376,7 +376,9 @@ service cloud.firestore {
       allow delete: if false;
 
       match /private/{docId} {
-        allow read: if isOwner(uid);
+        // identity (S21: legal name, dob, encrypted id number and its hash) is server-only, even
+        // for its owner; the app shows the masked name from verifications/{uid}.
+        allow read: if isOwner(uid) && docId != 'identity';
         // inbox (unreadCount) and badgeProgress are written by Cloud Functions only.
         allow create, update: if isOwner(uid)
           && ((docId == 'contact' && validContact(uid))
@@ -594,6 +596,25 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ---- provider verification (S21, #135) ----
+    // The owner follows their own record (steps, status, reason, business sub-record); only the
+    // verification callables and the staff CLI write it (Admin SDK).
+    match /verifications/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+    // Server-only: one doc per hashed id number (duplicate-account guard), the staff decision log
+    // and the emulator/dev fake identity overrides.
+    match /identity_hashes/{h} {
+      allow read, write: if false;
+    }
+    match /verificationAudit/{id} {
+      allow read, write: if false;
+    }
+    match /fake_identities/{uid} {
+      allow read, write: if false;
+    }
+
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if signedIn() && validPostCreate();
@@ -613,6 +634,13 @@ service cloud.firestore {
       allow delete: if ownMarkerName(docId) && ownMarkerDoc();
     }
     match /follows/{docId} {
+      allow get: if ownMarkerName(docId) && (resource == null || ownMarkerDoc());
+      allow list: if signedIn() && (resource.data.userId == request.auth.uid
+                                    || resource.data.photographerId == request.auth.uid);
+      allow create, update: if ownMarkerName(docId) && validMarker(docId, 'photographerId');
+      allow delete: if ownMarkerName(docId) && ownMarkerDoc();
+    }
+    match /savedPhotographers/{docId} {
       allow get: if ownMarkerName(docId) && (resource == null || ownMarkerDoc());
       allow list: if signedIn() && resource.data.userId == request.auth.uid;
       allow create, update: if ownMarkerName(docId) && validMarker(docId, 'photographerId');
@@ -722,9 +750,30 @@ service cloud.firestore {
     match /event_hashtags/{key} { allow read, write: if false; }
     match /ticket_codes/{code} { allow read, write: if false; }
 
+    // Explore catalogue cache: readable by any signed-in user, written by Cloud Functions only.
+    match /catalog/{docId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /support_threads/{threadId} {
+      // A missing help thread must read as "none", not as a denial.
+      allow get: if signedIn() && (threadId == 'help_' + request.auth.uid
+                                   || request.auth.uid in resource.data.participants);
+      allow list: if signedIn() && request.auth.uid in resource.data.participants;
+      allow write: if false;
+      match /messages/{messageId} {
+        allow read: if signedIn() && request.auth.uid in
+          get(/databases/$(database)/documents/support_threads/$(threadId)).data.participants;
+        allow write: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
+
 

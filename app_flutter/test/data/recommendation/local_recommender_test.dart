@@ -648,6 +648,57 @@ void main() {
     });
 
     test(
+      'followed authors\' posts of the last 7 days come first with "Bạn đang theo dõi"',
+      () async {
+        // 'never' is followed; post 'd' was created 4 hours ago.
+        final page = await make(
+          photographers: photographers,
+          posts: posts,
+        ).recommendPosts(
+          const PostRecommendationQuery(followedIds: {'never'}),
+        );
+        // 'd' (followed) beats 'b' and 'e' (free soon) and 'a'
+        expect(page.items.map((e) => e.post.id), ['d', 'b', 'e', 'a']);
+        expect(page.items.first.reasons.first.code, ReasonCode.following);
+        expect(page.items.first.reasons.first.text, 'Bạn đang theo dõi');
+      },
+    );
+
+    test('an 8-day-old post of a followed author keeps its place', () async {
+      final oldPosts = [
+        fixturePost('new_free', photographerId: 'soon', age: const Duration(hours: 1)),
+        fixturePost(
+          'old_followed',
+          photographerId: 'never',
+          age: const Duration(days: 8),
+        ),
+      ];
+      final page = await make(
+        photographers: photographers,
+        posts: oldPosts,
+      ).recommendPosts(
+        const PostRecommendationQuery(followedIds: {'never'}),
+      );
+      // 'new_free' comes first because 'old_followed' is > 7 days old
+      expect(page.items.map((e) => e.post.id), ['new_free', 'old_followed']);
+      expect(
+        page.items
+            .firstWhere((e) => e.post.id == 'old_followed')
+            .reasons
+            .where((r) => r.code == ReasonCode.following),
+        isEmpty,
+      );
+    });
+
+    test('no followedIds keeps today\'s order (regression)', () async {
+      final page = await make(
+        photographers: photographers,
+        posts: posts,
+      ).recommendPosts(const PostRecommendationQuery(followedIds: {}));
+      expect(page.items.map((e) => e.post.id), ['b', 'e', 'a', 'd']);
+    });
+
+    test(
       'category filter and paging pass through to the post repository',
       () async {
         final tagged = [
