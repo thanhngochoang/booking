@@ -61,6 +61,7 @@ Tỷ giá dùng trong file: **1 USD = 26.000 VND** (giả định, chưa xác nh
 
 - Đăng nhập Google/Facebook/ẩn danh/điện thoại: miễn phí tới 50.000 MAU; từ 50.000 đến 99.999 MAU $0.0055/MAU; OIDC/SAML $0.015/MAU từ MAU thứ 50 **[S]** https://cloud.google.com/identity-platform/pricing (2026-10-07). Chưa cần nâng lên Identity Platform ở quy mô 10.000 MAU.
 - SMS xác thực: 10 SMS đầu mỗi ngày miễn phí; **Việt Nam $0.15/SMS** **[S]** (cùng trang; chưa xác nhận trực tiếp bảng giá theo nước, nên xem lại). Giới hạn Firebase Auth: 3.000 SMS/ngày, 900/phút, 50/phút và 500/giờ mỗi IP **[T]** https://firebase.google.com/docs/auth/limits. Số điện thoại test (cấu hình trong console) không tốn SMS thật.
+- **Lượng SMS của S21.01 (#135)**: mỗi thợ xác minh số một lần khi bấm "Bắt đầu nhận đơn" (kèm gửi lại sau 60 giây nếu cần, và đổi số nếu nhập sai). Khách **không** nhập OTP khi đặt lịch (plan S21 Decision 21; S04.05 chưa thêm bước OTP), nên dòng "SMS" của bảng ước tính ở mục 12 (giả định 40-50% người dùng mới cần xác minh) là cận trên: chỉ người chọn làm thợ mới tốn SMS. App liên kết số bằng `linkWithCredential` (một SMS mỗi lần gửi mã); dev và emulator dùng số test, không tốn SMS thật. Chưa chạy trên điện thoại thật nên chưa có số liệu thực.
 - Firebase Phone Number Verification (sản phẩm riêng): bảng giá công khai chỉ liệt kê Đức, Indonesia, Malaysia; Việt Nam chưa xác nhận.
 - Phương án rẻ hơn: SMS brand name/ZNS Zalo qua nhà mạng nội địa, quanh 200-500 VND/tin (theo nguồn thứ cấp, chưa xác nhận), gắn qua Cloud Function tự xác minh.
 

@@ -18,7 +18,11 @@ import {
   hashtagBase,
   hashtagKeyOf,
   earningItemOf,
+  emptyVerification,
+  fakeIdNumberOf,
+  maskLegalName,
   providerTypeOf,
+  PROVIDER_RULES_VERSION,
   payoutLineOf,
   DEFAULT_PAYOUT_POLICY,
   renderNotification,
@@ -42,12 +46,15 @@ import {
   type PhotographerStatsPatch,
   type ReviewReason,
   type Verdict,
+  type VerificationRecord,
 } from '@photobooking/domain';
 import { encryptSyncForSeed } from '../src/infra/account_cipher.js';
 import { toFirestoreChat, toFirestoreMessage } from '../src/infra/chat_firestore.js';
 import { eventToFirestore, groupChatToFirestore, registrationToFirestore } from '../src/infra/event_firestore.js';
 import { earningItemToFirestore } from '../src/infra/earnings_firestore.js';
 import { accountToFirestore, accountViewToFirestore, payoutToFirestore } from '../src/infra/payout_firestore.js';
+import { devEncryptIdForSeed, devHashIdSync } from '../src/infra/identity_vault.js';
+import { identityToFirestore, verificationToFirestore } from '../src/infra/verification_firestore.js';
 import { emulatorPayoutKey } from './emulator_key.js';
 
 export const SEED_PASSWORD = 'seed-password-1';
@@ -62,6 +69,8 @@ export const AN = 'seed-photographer-an';
 export const BINH = 'seed-photographer-binh';
 export const CUC = 'seed-photographer-cuc';
 export const DUNG = 'seed-photographer-dung';
+/** Unverified photographer whose S21 verification waits for staff (`npm run verifications -- approve`). */
+export const GIANG = 'seed-photographer-giang';
 /** Staff account with the custom claim `staffRole: 'admin'` (reviews awards; see `applySeed`). */
 export const ADMIN = 'seed-staff-admin';
 
@@ -72,6 +81,8 @@ export interface SeedUser {
   readonly role: 'customer' | 'photographer';
   /** Custom auth claim `staffRole`, set by `applySeed`. */
   readonly staffRole?: 'admin';
+  /** Auth phone (E.164) as if linked by the S21.01 OTP, set by `applySeed`. */
+  readonly phoneNumber?: string;
 }
 
 export const SEED_USERS: readonly SeedUser[] = [
@@ -81,6 +92,7 @@ export const SEED_USERS: readonly SeedUser[] = [
   { uid: BINH, email: 'binh.unverified@seed.test', displayName: 'Bình (seed)', role: 'photographer' },
   { uid: CUC, email: 'cuc.studio@seed.test', displayName: 'Cúc Studio (seed)', role: 'photographer' },
   { uid: DUNG, email: 'dung.artist@seed.test', displayName: 'Dũng (seed, nghệ sĩ)', role: 'photographer' },
+  { uid: GIANG, email: 'giang.pending@seed.test', displayName: 'Giang (seed, chờ duyệt)', role: 'photographer', phoneNumber: '+84976000001' },
   { uid: ADMIN, email: 'admin.staff@seed.test', displayName: 'Admin (seed, nhân viên)', role: 'customer', staffRole: 'admin' },
 ];
 
@@ -145,6 +157,16 @@ export const SEED_PHOTOGRAPHERS: readonly SeedPhotographer[] = [
     channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
     numbers: { phone: '+84905000001' },
     providerType: 'artist',
+  },
+  {
+    uid: GIANG,
+    verified: false,
+    bio: 'Chân dung ngoài trời, mới tham gia.',
+    city: 'Cần Thơ',
+    radiusKm: 15,
+    specialties: ['portrait'],
+    channels: { call: true, zalo: false, whatsapp: false, acceptInquiries: true },
+    numbers: { phone: '+84976000001' },
   },
 ];
 
@@ -717,6 +739,7 @@ export function seedDocuments(now: Date): SeedDocument[] {
   docs.push(...payoutAndEarningsDocuments(now, docs));
   docs.push(...eventDocuments(now, docs));
   docs.push(...directChatDocuments(now, docs));
+  docs.push(...verificationDocuments(now));
 
   // Explore catalog document (S02)
   docs.push({
@@ -781,6 +804,76 @@ const SEED_DIRECT_CHATS: readonly SeedDirectChat[] = [
 ];
 
 const seedMessageId = (chatId: string, i: number): string => `seed-msg-${chatId}-${i + 1}`;
+
+/** Giang's legal name on the fake card (test value), and Cúc's (owner of the studio, for S21.04). */
+export const SEED_GIANG_LEGAL_NAME = 'NGUYỄN THỊ GIANG';
+export const SEED_CUC_LEGAL_NAME = 'TRẦN THỊ CÚC';
+/** Minh's fake card says 16: the underage example if Minh switches to a photographer role. */
+export const SEED_MINH_FAKE_DOB = '2010-05-01';
+
+/**
+ * S21 verification (#135, fee-free until #203): the verified seed photographers have an approved
+ * record; Giang has a submitted one (phone, fake identity and rules done; `steps.fee` null) for
+ * the staff CLI; Bình has none and walks the whole flow; Cúc's identity (fake id number of her uid)
+ * lets her household tax code (that same number) match in S21.04. Identity docs hold the dev-vault
+ * hash and ciphertext of `fakeIdNumberOf(uid)`, so a second account presenting it gets
+ * `identity_in_use`.
+ */
+function verificationDocuments(now: Date): SeedDocument[] {
+  const at = SEED_CREATED_AT;
+  const docs: SeedDocument[] = [];
+  const done = (uid: string, legalName: string, doneAt: Date, status: VerificationRecord['status']): VerificationRecord => {
+    const iso = doneAt.toISOString();
+    const p = SEED_PHOTOGRAPHERS.find((x) => x.uid === uid);
+    const base = emptyVerification(uid, p?.providerType === 'studio' ? 'studio' : 'individual', doneAt);
+    return {
+      ...base,
+      status,
+      steps: {
+        phone: { doneAt: iso },
+        fee: null,
+        identity: { method: 'vneid', checkedAt: iso, result: 'passed', failure: null, maskedName: maskLegalName(legalName) },
+        rules: { acceptedAt: iso, version: PROVIDER_RULES_VERSION },
+      },
+      identityAttempts: { dayKey: formatVnDate(doneAt), count: 1 },
+      submittedAt: iso,
+      ...(status === 'approved' ? { decidedAt: iso, decidedBy: ADMIN } : {}),
+      version: 5,
+    };
+  };
+  const identity = (uid: string, legalName: string, dob: string, gender: 'male' | 'female', verifiedAt: Date) => {
+    const idNumber = fakeIdNumberOf(uid);
+    const idHash = devHashIdSync(idNumber);
+    docs.push({
+      path: `users/${uid}/private/identity`,
+      data: identityToFirestore({
+        legalName, dob, gender, idNumberEnc: devEncryptIdForSeed(idNumber), idHash, method: 'vneid', provider: 'fake',
+        providerRef: `fake_ref_${uid}`, verifiedAt: verifiedAt.toISOString(),
+      }),
+    });
+    docs.push({ path: `identity_hashes/${idHash}`, data: { uid, createdAt: verifiedAt } });
+  };
+
+  // Approved: mirrors `verified: true` on photographers/{uid}. An's identity doc is the payout seed's.
+  for (const [uid, name] of [[AN, SEED_AN_LEGAL_NAME.toUpperCase()], [CUC, SEED_CUC_LEGAL_NAME], [DUNG, 'LÊ VĂN DŨNG']] as const) {
+    docs.push({ path: `verifications/${uid}`, data: verificationToFirestore(done(uid, name, at, 'approved')) });
+  }
+  identity(CUC, SEED_CUC_LEGAL_NAME, '1988-03-08', 'female', at);
+
+  // Giang: submitted 26 hours before seeding, so `npm run verifications -- list` marks it overdue (!).
+  const submitted = new Date(now.getTime() - 26 * HOUR_MS);
+  docs.push({ path: `verifications/${GIANG}`, data: verificationToFirestore(done(GIANG, SEED_GIANG_LEGAL_NAME, submitted, 'submitted')) });
+  identity(GIANG, SEED_GIANG_LEGAL_NAME, '1996-04-12', 'female', submitted);
+  const giang = SEED_PHOTOGRAPHERS.find((p) => p.uid === GIANG);
+  docs.push({
+    path: `users/${GIANG}/private/contact`,
+    data: { phone: giang?.numbers.phone, phoneVerified: true, allowZalo: false, allowWhatsApp: false, updatedAt: submitted },
+  });
+
+  // Fake identity override (server-only, emulator/dev): Minh is under 18 on the fake card.
+  docs.push({ path: `fake_identities/${MINH}`, data: { dob: SEED_MINH_FAKE_DOB } });
+  return docs;
+}
 
 /**
  * Chat fields are folded from the messages with the domain's `afterMessage`, and `bookingStatus`

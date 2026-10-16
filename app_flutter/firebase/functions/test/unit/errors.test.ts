@@ -34,6 +34,9 @@ describe('toHttpsError', () => {
       otp_required: 'failed-precondition',
       otp_invalid: 'failed-precondition',
       otp_expired: 'failed-precondition',
+      identity_in_use: 'already-exists',
+      underage: 'failed-precondition',
+      rate_limited: 'resource-exhausted',
     };
     for (const code of ERROR_CODES) assert.equal(toHttpsError(new DomainError(code)).code, expected[code], code);
   });

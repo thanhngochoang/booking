@@ -24,6 +24,7 @@ Widget _card({
   Brightness brightness = Brightness.dark,
   List<PhotoRequest>? log,
   ProviderType type = ProviderType.individual,
+  bool businessVerified = false,
   int awards = 0,
   String? district,
   int tomato = 56,
@@ -36,6 +37,7 @@ Widget _card({
         'p1',
         name: name,
         verified: verified,
+        businessVerified: businessVerified,
         startingPrice: price,
         providerType: type,
         approvedAwards: awards,
@@ -407,6 +409,7 @@ void main() {
       _card(
         name: 'Studio Mây',
         type: ProviderType.studio,
+        businessVerified: true,
         district: 'Hoàn Kiếm',
       ),
     );
@@ -452,6 +455,32 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a verified studio without its business shows the blue tick '
+      'and announces Studio', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _card(
+        name: 'Studio Mây',
+        type: ProviderType.studio,
+        district: 'Hoàn Kiếm',
+        distanceKm: null,
+        price: null,
+        availability: null,
+      ),
+    );
+    expect(
+      tester.widget<ProviderMark>(find.byType(ProviderMark)).kind,
+      ProviderMarkKind.verified,
+    );
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^Studio Mây, Đã xác minh, Studio · Hoàn Kiếm(, |$)'),
+      ),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
   testWidgets('verified studio and artist headers read as before', (
     tester,
   ) async {
@@ -460,6 +489,7 @@ void main() {
       _card(
         name: 'Studio Mây',
         type: ProviderType.studio,
+        businessVerified: true,
         district: 'Hoàn Kiếm',
         distanceKm: null,
         price: null,

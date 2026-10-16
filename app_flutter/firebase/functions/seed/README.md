@@ -15,6 +15,7 @@ Password for every account: `seed-password-1`
 | `binh.unverified@seed.test` | `seed-photographer-binh` | photographer | not verified, Đà Nẵng; Gọi only; `+84987000001`; shows the S03.01 "Chưa nhận đơn" variant and cannot be booked (`acceptingOrders: false`) |
 | `cuc.studio@seed.test` | `seed-photographer-cuc` | photographer | studio (`providerType: studio`), TP.HCM; private studio address, public district Quận 1; Gọi only; `+84938000001` |
 | `dung.artist@seed.test` | `seed-photographer-dung` | photographer | artist (NAG tier, `providerType: artist`, `approvedAwardCount: 3`), Huế; Gọi only; `+84905000001` |
+| `giang.pending@seed.test` | `seed-photographer-giang` | photographer | not verified, Cần Thơ; Gọi only; `+84976000001` (also her Auth phone); S21 verification submitted, waiting for staff (see "Verification (S21)") |
 | `admin.staff@seed.test` | `seed-staff-admin` | staff | custom claim `staffRole: 'admin'`: may call `reviewAward` and is the `--actor` of `npm run awards` |
 
 | Booking | Customer ↔ photographer | Status | `getContactLink` |
@@ -145,6 +146,28 @@ Run the CLI directly, with `GOOGLE_APPLICATION_CREDENTIALS` (a service account k
 `npm run awards -- list`. `show` prints signed URLs that expire in 15 minutes, so the credentials
 must be able to sign. `--actor` is the uid of a user with the admin claim. The dev project
 `booking-c1922` is on Spark, so reviews there are not run; this is for the production project.
+
+## Verification (S21)
+
+Verification is free until #203 adds the fee: three steps (phone, identity, rules), `steps.fee` stays
+null. Identity uses the fake verifier on the emulator (and the dev project): it reads the override
+`fake_identities/{uid}` if one exists (fields `legalName`, `dob`, `gender`, `idNumber`, `passed`;
+edit it in the Emulator UI), else the legal name is the display name without accents in capitals,
+`dob` 1995-01-01 and the id number is derived from the uid. Identity docs store only the dev-vault
+hash and ciphertext of that number (`identity_hashes/{hash}` guards duplicates).
+
+| Who / what | State | Try |
+|---|---|---|
+| Giang (`seed-photographer-giang`) | `verifications/{uid}` `submitted` 26 h before seeding (phone, fake identity `NGUYỄN T** G**`, rules done); `verified: false`, `acceptingOrders: false` | `list` shows her with `!` (over 24 h); `approve` → verified, accepting orders, push `verification_approved`; or `reject <uid> fake_avatar` → S21.02 rejected with one free resubmit |
+| Bình (`seed-photographer-binh`) | no verification record, no `fake_identities` override | sign in and walk S21.01 → S21.03 → rules → submit; then `approve` with the CLI |
+| An, Cúc, Dũng | `approved` records (match `verified: true`) | Cúc (studio) has a full fake identity: in S21.04 her household tax code is her fake id number `001461723292` (`fakeIdNumberOf('seed-photographer-cuc')`) and is approved at once; any other 10-digit code is a company (needs a photo, goes to staff); codes ending `0000` are inactive |
+| Minh (`seed-customer-minh`) | `fake_identities` override `{dob: '2010-05-01'}` | the underage example (`underage`) if Minh switches to a photographer role |
+| Staff CLI (`tools/verifications.ts`, actor `seed-staff-admin`) | `scripts/verifications-local.sh list` · `show <uid>` · `approve <uid>` · `reject <uid> <reason> ["note"]` · `revoke <uid> "note"` · `business-approve <uid>` · `business-reject <uid> <reason> ["note"]`, each decision with `--actor seed-staff-admin` | decisions go through the same `reviewVerification` use case and notifications as the callable; reasons: `fake_avatar`, `stolen_portfolio`, `identity_mismatch`, `duplicate_account`, `underage`, `other` (business: `inactive`, `representative_mismatch`, `doc_unreadable`, `other`); `other` and `revoke` need a 5-500 character note |
+
+`scripts/verifications-local.sh` uses the same local environment and guards as
+`scripts/awards-local.sh`; `show` downloads a business photo to `$TMPDIR/verifications/<uid>/`. On a
+real project run `npm run verifications -- …` with the environment of `npm run awards`. The 24-hour
+reminder (`verification_reminder`) runs inside `bookingClock`: `npm run clock -- bookings`.
 
 ## Staff CLI for payouts
 

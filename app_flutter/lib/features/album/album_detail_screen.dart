@@ -441,6 +441,7 @@ class _AuthorRow extends ConsumerWidget {
                         mark: providerMarkOf(
                           type: s.providerType,
                           verified: s.verified,
+                          businessVerified: s.businessVerified,
                         ),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,

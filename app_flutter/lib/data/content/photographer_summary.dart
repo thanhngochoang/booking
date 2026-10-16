@@ -10,6 +10,7 @@ class PhotographerSummary {
     this.avatarUrl,
     this.coverUrl,
     this.verified = false,
+    this.businessVerified = false,
     this.acceptingOrders = false,
     this.specialtyIds = const [],
     this.styleIds = const [],
@@ -36,6 +37,10 @@ class PhotographerSummary {
   final String? avatarUrl;
   final String? coverUrl;
   final bool verified;
+
+  /// A studio whose business record staff approved (S21.04): with [verified]
+  /// it earns the gold Studio seal instead of the blue tick (#135 Decision 17).
+  final bool businessVerified;
 
   /// True when the provider can be booked (verified and onboarded); set by the
   /// server. Closed providers show "Chưa nhận đơn" and are left out of Find.

@@ -118,7 +118,7 @@ Nguồn: [`../2026-10-05-provider-types-portfolio-jobs-design.md`](../2026-10-05
 
 | Thực thể | Trường chính | Ghi chú |
 |----------|--------------|---------|
-| `Photographer` (thêm trường) | `providerType: ProviderType = individual`, `artistSince?: Instant`, `studioDistrict?: string`, `studioCity?: string` (công khai, sao từ `StudioAddress`, chỉ server ghi), `approvedAwardCount` (dẫn xuất), `acceptingOrders: bool` (dẫn xuất = `verified` và `onboardingComplete`, công khai, chỉ server ghi; quy tắc `acceptsOrders` trong `packages/domain`) | `artist` chỉ server ghi (mục 2.3 spec 10-05); `acceptingOrders` do trigger `onPhotographerWrite` giữ đồng bộ, cổng server đọc `verified` + `onboardingComplete` chứ không đọc cờ này (#133) |
+| `Photographer` (thêm trường) | `providerType: ProviderType = individual`, `artistSince?: Instant`, `studioDistrict?: string`, `studioCity?: string` (công khai, sao từ `StudioAddress`, chỉ server ghi), `approvedAwardCount` (dẫn xuất), `acceptingOrders: bool` (dẫn xuất = `verified` và `onboardingComplete`, công khai, chỉ server ghi; quy tắc `acceptsOrders` trong `packages/domain`), `businessVerified = false` (studio đã xác minh doanh nghiệp, công khai, chỉ server ghi; quyết định con dấu Studio, #135) | `artist` chỉ server ghi (mục 2.3 spec 10-05); `acceptingOrders` do trigger `onPhotographerWrite` giữ đồng bộ, cổng server đọc `verified` + `onboardingComplete` chứ không đọc cờ này (#133); khi staff duyệt hoặc thu hồi, `verified`, `verifiedAt`, `acceptingOrders` được ghi cùng giao dịch với `Verification` nên trigger thấy cờ đã bằng và không ghi lại (#135) |
 | `StudioAddress` 🔒 | `photographerId` PK/FK, `line`, `ward?`, `district`, `city`, `point?` | Chỉ khi `studio`; công khai tới mức quận, đầy đủ sau khi đã đặt |
 | `Award` | `id` PK, `photographerId` FK, `competition`, `year`, `category?`, `result: AwardResult`, `workPostId?` FK, `status: AwardStatus`, `reviewNote?`, `reviewedBy?`, `reviewedAt?`, `createdAt`, `updatedAt` | Chỉ `approved` công khai |
 | `AwardProof` 🔒 | `awardId` PK/FK, `files: List<FileRef>` (≤ 3), `links: List<Url>` (≤ 2, https), `purgeAfter?` | Chủ hồ sơ và staff đọc; xoá 30 ngày sau trạng thái cuối |
@@ -133,6 +133,20 @@ Nguồn: [`../2026-10-05-provider-types-portfolio-jobs-design.md`](../2026-10-05
 | `JobPost` | `id` PK, `customerId` FK, `specialtyId`, `title` (10–60), `description` (≤ 1000), `references: List<FileRef>` (≤ 5), `schedule: {kind: ScheduleKind, day?, start?, end?, from?, to?, durationMinutes}`, `area: {city, district, geohash}`, `budget?: {min: Money, max: Money}`, `wants: {editedCount?, deliveryDays?}`, `allowedProviders: AllowedProviders`, `quoteDeadline: Instant`, `extended = false`, `status: JobStatus`, `quoteCount`, `viewCount`, `awardedQuoteId?`, `bookingId?`, `createdAt`, `updatedAt` | Không chứa địa chỉ cụ thể hay số điện thoại |
 | `Quote` | `id` PK, `jobId` FK, `photographerId` FK, `basedOnServiceId?`, `terms: BookingTerms`, `message` (20–500), `albumId?`, `status: QuoteStatus`, `createdAt`, `updatedAt` | Duy nhất `(jobId, photographerId)` |
 | `JobInvite` | `jobId`, `photographerId`, `createdAt`, `seenAt?` | PK ghép; tối đa 5 mỗi việc |
+
+### 2.9 Xác minh nhận đơn (S21, #135, 2026-10-08)
+
+Nguồn: [`../2026-10-06-identity-verification-design.md`](../2026-10-06-identity-verification-design.md). Mã nguồn: `packages/domain/src/verification*.ts`, `identity_verification.ts`, `business_verification.ts`.
+
+| Thực thể | Trường chính | Ghi chú |
+|----------|--------------|---------|
+| `Verification` | `userId` PK/FK, `kind: VerificationKind`, `status: VerificationStatus`, `steps: {phone?: {doneAt}, fee?: {paymentId, amount, paidAt}, identity?: {method, checkedAt, result, failure?, maskedName?}, rules?: {acceptedAt, version}}`, `identitySession?: {id, method, startedAt}`, `identityAttempts: {dayKey, count}`, `feeAttempt = 1`, `submittedAt?`, `decidedAt?`, `decidedBy?`, `rejectReason?: {code: RejectReason, text?}`, `freeResubmitsLeft = 1`, `nudgedAt?`, `business?: BusinessVerification`, `version`, `createdAt`, `updatedAt` | Một bản ghi mỗi người; chủ tài khoản đọc, chỉ server ghi. Bước điện thoại **là** `UserContact.phoneVerified` (`steps.phone` chỉ phản chiếu); `steps.fee` luôn rỗng tới #203; `maskedName` là họ tên đã che, họ tên đầy đủ không nằm ở đây |
+| `BusinessVerification` (đối tượng giá trị trong `Verification.business`) | `status: submitted \| approved \| rejected`, `kind: company \| household`, `taxCode`, `name`, `address`, `registryStatus: active \| inactive`, `docPath?` (`businessDocs/{uid}/{ulid}.jpg`), `representativeMatched`, `submittedAt`, `decidedAt?`, `decidedBy?`, `rejectReason?: {code: BusinessRejectReason, text?}`, `purgeAfter?` | Mã số thuế công ty và tên là dữ liệu đăng ký công khai; **hộ kinh doanh**: `taxCode` 12 số là số định danh cá nhân của chủ và hiện lưu dạng rõ (chỉ chủ tài khoản đọc), ngoại lệ chờ chủ sản phẩm quyết (spec xác minh §11, câu 9); ảnh giấy đăng ký xoá 30 ngày sau quyết định; chỉ gửi lại được khi bản cũ đã bị từ chối |
+| `IdentityRecord` 🔒 | `userId` PK/FK, `legalName`, `dob` (`yyyy-MM-dd`), `gender?`, `idNumberEnc`, `idHash`, `method: IdentityMethod`, `provider`, `providerRef`, `verifiedAt` | Chỉ server đọc và ghi (rules chặn cả chủ tài khoản); `idNumberEnc` mã hoá (KMS khi có, bản dev dùng khoá cố định chỉ chạy ở emulator/dev); không lưu selfie hay dữ liệu chip thô |
+| `IdentityHash` 🔒 | `idHash` PK, `userId` FK duy nhất, `createdAt` | `idHash` là HMAC của số định danh; tạo cùng giao dịch với `IdentityRecord`; trùng → `identity_in_use` |
+| `VerificationAudit` 🔒 | `id` PK, `userId` FK, `target: identity \| business`, `action`, `reason?`, `note?`, `actorId?`, `otherUid?`, `at` | Nhật ký mỗi quyết định của staff và mỗi lần trùng danh tính; chỉ server đọc và ghi |
+
+`PaymentSubject 'verification_fee'`, `VerificationFeeStep` có thanh toán và `fee_charged` trong sổ cái là của #203, chưa có trong mô hình này.
 
 ## 3. Quan hệ (ERD)
 
@@ -205,7 +219,13 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `DayState` | `off`, `booked`, `pending` | Rảnh = không có bản ghi |
 | `PostKind` | `work`, `real_shoot`, `event_share` | `event_share`: người tham gia đăng về sự kiện; `photographerId` để rỗng nên bài không vào portfolio của ai |
 | `BookingStatus` | `draft`, `requested`, `accepted`, `declined`, `expired`, `cancelled`, `upcoming`, `completed`, `reviewed` | Máy trạng thái ở mục 5 |
-| `PaymentSubject` | `booking`, `event_registration` | |
+| `PaymentSubject` | `booking`, `event_registration` | `verification_fee` do #203 thêm, chưa có trong #135 |
+| `VerificationStatus` | `not_started`, `in_progress`, `submitted`, `approved`, `rejected`, `revoked` | Máy trạng thái ở mục 5 |
+| `VerificationKind` | `individual`, `studio` | Quyết định mức phí (99.000đ / 299.000đ, #203); nghệ sĩ NAG tính là `individual` |
+| `VerificationStep` | `phone`, `fee`, `identity`, `rules` | Thứ tự bắt buộc từ `requiredSteps(feeRequired)`: không có `fee` khi phí tắt |
+| `IdentityMethod` | `vneid`, `nfc` | |
+| `RejectReason` | `fake_avatar`, `stolen_portfolio`, `identity_mismatch`, `duplicate_account`, `underage`, `other` | Gửi lại được: `fake_avatar`, `stolen_portfolio`, `identity_mismatch`, `other`; `duplicate_account` và `underage` là cuối cùng |
+| `BusinessRejectReason` | `inactive`, `representative_mismatch`, `doc_unreadable`, `other` | |
 | `PaymentProvider` | `momo`, `vnpay` | |
 | `PaymentStatus` | `created`, `paid`, `expired`, `needs_review`, `refunded`, `partially_refunded` | Trạng thái giao dịch với cổng. `expired`: không ai trả đủ trong hạn, hoặc QR bị thay bằng "Tạo QR mới". `needs_review`: để dành cho nhân viên (S23.02), chưa có đường code nào ghi lên `Payment` (chuyển không khớp được khoản nào chỉ ghi ở `PaymentNotification`). `failed` đã bỏ (chưa từng được ghi) |
 | `PaymentMethod` | `bank_qr` (mặc định), `momo`, `zalopay`; để sẵn `domestic_card`, `intl_card` (tắt bằng cờ cấu hình, không nhận) | Cách khách trả; tách khỏi `PaymentProvider` (tổ chức trung gian) |
@@ -235,7 +255,7 @@ Mã chuỗi ổn định, nhãn nằm ở i18n. Không đổi nghĩa hay xoá m�
 | `ReasonCode` | `skill_match`, `near`, `free_on_date`, `top_rated`, `fast_reply`, `new_talent` | |
 | `SignalType` | `impression`, `click`, `inquiry`, `booking` | |
 | `ContactChannel` | `in_app`, `call`, `zalo`, `whatsapp` | |
-| `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict`, `no_match`, `offer_expired`, `already_assigned`, `not_eligible`, `outside_service_area`, `price_changed`, `reauth_required`, `not_accepting_orders`, `blocked` | Mã lỗi nghiệp vụ ổn định; `reauth_required`: đổi tài khoản nhận tiền cần đăng nhập lại trong 5 phút; `not_accepting_orders`: thợ chưa nhận đơn (chưa `verified` hoặc chưa xong hồ sơ), máy chủ riêng trả 403 (spec xác minh §7); `blocked`: khách và thợ đã chặn nhau (một trong hai chiều); không đơn mới giữa hai người, máy chủ riêng trả 403. Tầng HTTP của máy chủ riêng thêm hai mã giao vận `unauthenticated` (401) và `internal` (500); use case không dùng hai mã này; sáu mã cuối của Chụp ngay (`../2026-10-01-instant-booking-design.md` mục 6) |
+| `ErrorCode` | `day_taken`, `phone_required`, `contact_locked`, `sold_out`, `deadline_passed`, `limit_exceeded`, `invalid_argument`, `permission_denied`, `not_found`, `conflict`, `no_match`, `offer_expired`, `already_assigned`, `not_eligible`, `outside_service_area`, `price_changed`, `reauth_required`, `not_accepting_orders`, `blocked`, `identity_in_use`, `underage`, `rate_limited` | Mã lỗi nghiệp vụ ổn định; `reauth_required`: đổi tài khoản nhận tiền cần đăng nhập lại trong 5 phút; `not_accepting_orders`: thợ chưa nhận đơn (chưa `verified` hoặc chưa xong hồ sơ), máy chủ riêng trả 403 (spec xác minh §7); `identity_in_use`: số định danh đã gắn với tài khoản khác (#135); `underage`: dưới 18 tuổi theo ngày giờ Việt Nam (#135); `rate_limited`: lần bắt đầu xác minh danh tính thứ 4 trong ngày VN (mỗi lần bắt đầu tính một lần, kể cả bỏ dở), mở lại ngày hôm sau (#135); `blocked`: khách và thợ đã chặn nhau (một trong hai chiều); không đơn mới giữa hai người, máy chủ riêng trả 403. Tầng HTTP của máy chủ riêng thêm hai mã giao vận `unauthenticated` (401) và `internal` (500); use case không dùng hai mã này; sáu mã cuối của Chụp ngay (`../2026-10-01-instant-booking-design.md` mục 6) |
 
 | `ProviderType` | `individual`, `artist`, `studio` | `artist` = hạng NAG, chỉ server ghi (spec 10-05) |
 | `AwardResult` | `gold`, `silver`, `bronze`, `honorable`, `finalist`, `exhibited` | |
@@ -324,6 +344,16 @@ shot ─(quá deliveryDays, khách huỷ phần giao)─▶ completed (mốc del
 Milestone: held ─(điều kiện mốc + hết cửa sổ khiếu nại)─▶ released     held ─▶ refunded | disputed
 ```
 
+### Xác minh nhận đơn (spec xác minh 2026-10-06, #135)
+
+```
+not_started ─▶ in_progress ─(đủ bước, "Gửi duyệt")─▶ submitted ─(staff duyệt)─▶ approved ─(staff thu hồi)─▶ revoked (cuối trong app)
+                                                         └─(staff từ chối + lý do)─▶ rejected ─(sửa, gửi lại)─▶ submitted
+                                                                                     rejected ─(hết lượt miễn phí, chỉ khi phí bật, #203)─▶ in_progress
+```
+
+Bước cần làm: `phone → identity → rules` khi phí tắt (#135), `phone → fee → identity → rules` khi bật (#203); làm theo thứ tự nào cũng được, trừ danh tính cần phí đã trả khi phí bật. Từ chối `identity_mismatch` xoá bước danh tính. `approved` ghi `photographers.verified`, `verifiedAt`, `acceptingOrders` cùng giao dịch; `revoked` ghi `verified = false`, `acceptingOrders = false` và không đụng booking đang chạy. Doanh nghiệp (`Verification.business`): `submitted → approved | rejected`; hộ kinh doanh tự `approved` khi băm mã số thuế khớp `IdentityRecord.idHash`.
+
 ### Việc đăng và báo giá (spec 10-05 mục 5.2)
 
 ```
@@ -357,3 +387,6 @@ Quote:   submitted ─▶ withdrawn | accepted | not_selected | declined
 22. Chỉ `Payment` `released` vào lô; `escrowStatus = paid_out` ⇔ lô chứa nó `paid`; mỗi item một bút toán `payout_paid` âm cho người nhận, cộng `tax_withheld` và `platform_fee` âm khi > 0: với mỗi khoản, `payout_paid + tax_withheld + platform_fee = −amount`.
 23. Không lô nào được tạo hay chuyển trước `PayoutAccount.activeFrom` của tài khoản đích (`not_eligible`); khi đổi tài khoản, các lô đang mở (`pending`, `on_hold`, `needs_approval`) chuyển sang tài khoản mới và lô `pending` về `needs_approval`, mọi duyệt cũ mất.
 24. `OtpChallenge` chỉ lưu băm có muối; mã gắn với đúng một `targetHash`, dùng một lần (`consumedAt`), sai quá 5 lần hoặc quá 5 phút thì không dùng được; số gửi mỗi ngày giờ Việt Nam ≤ 5.
+25. `Photographer.verified` chỉ do use case xác minh hoặc công cụ dev ghi: duyệt đặt `true` và thu hồi đặt `false` trong cùng giao dịch với `Verification.status` (tài khoản seed ở emulator/dev có thể `verified: true` mà không có bản ghi `Verification`; môi trường thật thì không); `acceptingOrders = acceptsOrders({verified, onboardingComplete})`. Thợ `acceptingOrders = false` không tạo được thanh toán mới, và khoản chuyển đến sau đó cho một booking nháp còn hiệu lực được hoàn 100% (`provider_not_accepting`).
+26. `Verification.status = submitted` chỉ khi mọi bước của `requiredSteps(feeRequired)` đã xong (điện thoại theo `UserContact.phoneVerified`, danh tính `passed`, quy định: `stepDone('rules')` chỉ kiểm bước đã có, còn phiên bản `PROVIDER_RULES_VERSION` chỉ được kiểm lúc đồng ý, ở `acceptVerificationRules`); một `IdentityRecord.idHash` chỉ thuộc một `userId`; số lần **bắt đầu** xác minh danh tính trong một ngày VN tối đa 3 (đếm ở `startIdentityVerification`, kể cả bỏ dở).
+27. `Photographer.businessVerified = true` chỉ khi `Verification.business.status = approved`, và chỉ với `providerType = studio` đã `verified`; ảnh giấy đăng ký bị xoá sau `purgeAfter` (30 ngày). Số điện thoại không bao giờ nằm ở `User`, `Photographer` hay `Verification`, và số định danh của danh tính chỉ ở `IdentityRecord` (mã hoá) và `IdentityHash` (băm); `Verification` chỉ có `maskedName`. **Ngoại lệ hiện có**: `Verification.business.taxCode` của hộ kinh doanh là số định danh cá nhân 12 số của chủ và đang lưu dạng rõ (chỉ chủ tài khoản đọc), chờ chủ sản phẩm quyết có nên chỉ lưu băm hoặc 4 số cuối.

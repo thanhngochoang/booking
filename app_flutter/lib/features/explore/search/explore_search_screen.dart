@@ -344,7 +344,11 @@ class _PhotographerTile extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final p = photographer;
-    final mark = providerMarkOf(type: p.providerType, verified: p.verified);
+    final mark = providerMarkOf(
+      type: p.providerType,
+      verified: p.verified,
+      businessVerified: p.businessVerified,
+    );
     final meta = areaRatingMeta(p, l);
 
     return ListTile(

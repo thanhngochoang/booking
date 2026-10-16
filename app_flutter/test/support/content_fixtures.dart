@@ -60,6 +60,7 @@ PhotographerSummary fixturePhotographer(
   String id, {
   String name = 'Minh Trí',
   bool verified = false,
+  bool businessVerified = false,
   List<String> specialties = const ['portrait'],
   List<String> styles = const [],
   int tomatoCount = 0,
@@ -85,6 +86,7 @@ PhotographerSummary fixturePhotographer(
   avatarUrl: avatarUrl ?? 'https://img.test/avatar-$id.jpg',
   coverUrl: coverUrl,
   verified: verified,
+  businessVerified: businessVerified,
   acceptingOrders: acceptingOrders,
   specialtyIds: specialties,
   styleIds: styles,

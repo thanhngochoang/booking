@@ -44,6 +44,18 @@ service firebase.storage {
         && jpegUpTo(3 * 1024 * 1024);
     }
 
+    // Business registration photos (S21.04, purpose document, 2048 px): businessDocs/{uid}/{file}.
+    // Owner only (staff read through the Admin SDK), JPEG up to 3 MiB, create once: a submitted
+    // photo cannot be overwritten (the app names each file with a fresh ULID) nor deleted by the
+    // client; the daily purge deletes it 30 days after the decision.
+    match /businessDocs/{uid}/{file} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && resource == null
+        && jpegUpTo(3 * 1024 * 1024);
+      allow update, delete: if false;
+    }
+
     // Chat images (purpose chat, 1280 px): chats/{chatId}/{uid}/{file}. Only chat members may
     // read. The sender uploads under their own uid (1.5 MiB), update/delete disallowed;
     // `resource == null` also refuses an overwrite where the Storage emulator reports it as a

@@ -62,8 +62,11 @@ async function matchPayment(deps: BookingDeps, content: string, receivedAt: stri
 }
 
 /**
- * Applies one matched transfer inside the transaction (all reads already done): records it as
- * `payment_received`, then pays, keeps the running total, or refunds, per `decideTransfer`.
+ * Applies one matched transfer inside the transaction: records it as `payment_received`, then
+ * pays, keeps the running total, or refunds, per `decideTransfer`. The caller has read the payment
+ * and booking; the one read left is the payee's `acceptsOrders` on the paid path, made through
+ * `deps.providers` (not a transaction read, so not part of the transaction's snapshot), possibly
+ * after an overpayment refund is staged.
  * Returns the outcome and the refunds to dispatch after the transaction.
  */
 async function applyTransfer(
@@ -117,6 +120,12 @@ async function applyTransfer(
       if (decision.excess > 0) refunds.push(await refundOf(decision.excess, 'overpaid_excess'));
       if (!booking || booking.status !== 'draft') {
         const late = await refundLatePayment(tx, deps, paid, now);
+        refunds.push(late.refund);
+        return { outcome: 'refunded', refunds };
+      }
+      const accepts = await deps.providers.acceptsOrders(payment.payeeId);
+      if (!accepts) {
+        const late = await refundLatePayment(tx, deps, paid, now, 'provider_not_accepting');
         refunds.push(late.refund);
         return { outcome: 'refunded', refunds };
       }

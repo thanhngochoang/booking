@@ -145,6 +145,17 @@ void main() {
       expect(p.providerType, ProviderType.artist);
       expect(p.approvedAwardCount, 3);
     });
+    test('businessVerified reads true only when stored true', () {
+      expect(from({}).businessVerified, isFalse);
+      expect(from({'businessVerified': 'yes'}).businessVerified, isFalse);
+      final p = from({
+        'providerType': 'studio',
+        'verified': true,
+        'businessVerified': true,
+      });
+      expect(p.businessVerified, isTrue);
+      expect(p.verified, isTrue);
+    });
     test('studio reads its district', () {
       final p = from({'providerType': 'studio', 'studioDistrict': 'Quận 1'});
       expect(p.providerType, ProviderType.studio);

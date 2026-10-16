@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 
 void main() {
@@ -16,12 +17,28 @@ void main() {
         equipment: ['Sony A7 IV', 'Godox V1'],
         onboardingComplete: true,
         acceptingOrders: true,
+        verified: true,
       ),
     );
     expect(
       introFromFirestore({'bio': 12, 'equipment': 'Sony'}),
       const PhotographerIntro(),
     );
+  });
+
+  test('reads verified, businessVerified and providerType (S21)', () {
+    final i = introFromFirestore({
+      'verified': true,
+      'businessVerified': true,
+      'providerType': 'studio',
+    });
+    expect(i.verified, isTrue);
+    expect(i.businessVerified, isTrue);
+    expect(i.providerType, ProviderType.studio);
+    final none = introFromFirestore({'providerType': 'x'});
+    expect(none.verified, isFalse);
+    expect(none.businessVerified, isFalse);
+    expect(none.providerType, ProviderType.individual);
   });
 
   test('PhotographerIntro.acceptingOrders: stored flag wins; '

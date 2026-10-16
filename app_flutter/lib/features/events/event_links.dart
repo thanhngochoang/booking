@@ -4,13 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
-const _supportEmail = String.fromEnvironment('SUPPORT_EMAIL');
-
-/// The support address S11.02 shows on platform-hosted events until the
-/// support inbox (S23.06) exists (owner decision O2). Build config, set later
-/// by the owner: `--dart-define=SUPPORT_EMAIL=...`. Unset hides the line.
-const String? eventSupportEmail = _supportEmail == '' ? null : _supportEmail;
-
 /// `yyyyMMddTHHmmssZ`, the form Google Calendar takes.
 String _calendarStamp(DateTime instant) {
   final u = instant.toUtc();
@@ -56,10 +49,6 @@ String eventShareLink(String eventId) => '/e/$eventId';
 
 Future<void> copyEventLink(String eventId) =>
     Clipboard.setData(ClipboardData(text: eventShareLink(eventId)));
-
-/// `mailto:` for the support line; null while [eventSupportEmail] is unset.
-Uri? eventSupportUri([String? email = eventSupportEmail]) =>
-    email == null ? null : Uri(scheme: 'mailto', path: email);
 
 /// "Chủ nhật 20/10 · 06:00–09:00" in Vietnam time (events are one day).
 String eventWhenLabel(AppLocalizations l, DateTime startsAt, DateTime endsAt) {

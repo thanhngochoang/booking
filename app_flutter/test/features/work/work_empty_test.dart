@@ -175,7 +175,12 @@ void main() {
 
     testWidgets('"Bắt đầu nhận đơn" is hidden while verifyStartReadyProvider '
         'is false', (tester) async {
-      await _pump(tester, photos: 8, intro: closed);
+      await _pump(
+        tester,
+        photos: 8,
+        intro: closed,
+        extraOverrides: [verifyStartReadyProvider.overrideWithValue(false)],
+      );
 
       expect(find.text('Bắt đầu nhận đơn'), findsNothing);
       expect(find.text('Mở nhận đơn để khách đặt được bạn'), findsOneWidget);

@@ -321,6 +321,7 @@ class _Content extends ConsumerWidget {
                                   mark: providerMarkOf(
                                     type: author.providerType,
                                     verified: author.verified,
+                                    businessVerified: author.businessVerified,
                                   ),
                                   style: theme.textTheme.titleMedium,
                                 ),

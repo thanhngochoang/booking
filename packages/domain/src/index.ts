@@ -108,3 +108,12 @@ export * from './discovery_stats.js';
 export * from './discovery_ports.js';
 export * from './discovery_use_cases.js';
 export * from './memory_discovery_store.js';
+export * from './verification.js';
+export * from './verification_ports.js';
+export * from './verification_use_cases.js';
+export * from './memory_verification_store.js';
+export * from './identity_verification.js';
+export * from './business_verification.js';
+export * from './fake_identity_verifier.js';
+export * from './fake_tax_code_lookup.js';
+

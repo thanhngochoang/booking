@@ -10,6 +10,8 @@ import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/skills/photographer_skills.dart';
 import 'package:photobooking/data/skills/skill_taxonomy.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
+import 'package:photobooking/data/verification/verification.dart';
+import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_section.dart';
 import 'package:photobooking/features/photographer_profile/widgets/awards_strip.dart';
@@ -48,7 +50,11 @@ class ProfileHeader extends ConsumerWidget {
       for (final id in genres.take(2)) catalog.label(SkillGroup.specialty, id),
       ?(studio ? (s.studioDistrict ?? s.areaLabel) : s.areaLabel),
     ].join(' · ');
-    final mark = providerMarkOf(type: s.providerType, verified: s.verified);
+    final mark = providerMarkOf(
+      type: s.providerType,
+      verified: s.verified,
+      businessVerified: s.businessVerified,
+    );
     final nameStyle = theme.textTheme.headlineSmall?.copyWith(
       fontFamily: AppFonts.display,
       fontWeight: FontWeight.w600,
@@ -188,6 +194,7 @@ class ProfileHeader extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (owner && !s.verified) const OwnerVerifyCard(),
               if (closed) _OrdersClosedNote(name: s.displayName),
               if (artist)
                 AwardsStrip(photographerId: s.id, reserveWhileLoading: true),
@@ -226,6 +233,106 @@ class ProfileHeader extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The owner's verification card under the stats (mock `#S03.01-owner`):
+/// "Còn {n} bước để nhận đơn" + "Tiếp tục" while steps are left, then the
+/// pending or rejected variant + "Xem", all opening S21.02. Hidden while
+/// the record loads, once approved, and after a revocation (S21.02 and
+/// Cài đặt say so). Only [ProfileHeader] with `owner` shows it.
+class OwnerVerifyCard extends ConsumerWidget {
+  const OwnerVerifyCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final v = ref.watch(myVerificationProvider).value;
+    final texts = switch (v?.status) {
+      VerificationStatus.notStarted || VerificationStatus.inProgress => (
+        // All done but not sent yet: sending is the step left.
+        l.profileOwnerStepsLeft(v!.stepsLeft == 0 ? 1 : v.stepsLeft),
+        l.profileOwnerStepsBody,
+        l.profileOwnerContinue,
+      ),
+      VerificationStatus.submitted => (
+        l.profileOwnerPending,
+        l.profileOwnerPendingBody,
+        l.profileOwnerView,
+      ),
+      VerificationStatus.rejected => (
+        l.profileOwnerRejected,
+        l.profileOwnerRejectedBody,
+        l.profileOwnerView,
+      ),
+      null || VerificationStatus.approved || VerificationStatus.revoked => null,
+    };
+    if (texts == null) {
+      return const SizedBox.shrink();
+    }
+    final (title, body, action) = texts;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s3),
+      child: DecoratedBox(
+        key: const Key('profile-owner-verify'),
+        decoration: BoxDecoration(
+          color: dark ? AppColorsDark.glass : AppColors.glass,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.s3),
+          child: Row(
+            children: [
+              Container(
+                width: AppSpace.s10,
+                height: AppSpace.s10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: dark ? AppColorsDark.accentSoft : AppColors.accentSoft,
+                ),
+                child: AppIcon(
+                  AppIcons.verifiedUser,
+                  size: AppText.lg,
+                  color: dark ? AppColorsDark.accent : AppColors.accent,
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2h),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      body,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: dark
+                            ? AppColorsDark.foregroundSecondary
+                            : AppColors.foregroundSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              AppButton.outline(
+                action,
+                key: const Key('profile-owner-verify-open'),
+                size: AppButtonSize.xsmall,
+                onPressed: () => context.push('/verify/start'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

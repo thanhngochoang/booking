@@ -36,7 +36,7 @@ for arg in "$@"; do
     -h|--help)
       usage
       if [ -d "$FN/node_modules" ]; then
-        exec npm --prefix "$FN" run --silent awards -- --help
+        exec npm --prefix "$FN" run --silent "${STAFF_CLI:-awards}" -- --help
       fi
       echo "(run npm --prefix app_flutter/firebase/functions ci to see the CLI's own usage)"
       exit 0
@@ -88,4 +88,5 @@ export FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199
 export GCLOUD_PROJECT="$PROJECT"
 export STORAGE_BUCKET
 
-exec npm --prefix "$FN" run --silent awards -- "$@"
+# STAFF_CLI: the npm script to run (scripts/verifications-local.sh sets "verifications").
+exec npm --prefix "$FN" run --silent "${STAFF_CLI:-awards}" -- "$@"

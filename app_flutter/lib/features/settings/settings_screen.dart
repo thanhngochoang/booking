@@ -6,11 +6,14 @@ import 'package:go_router/go_router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/push/push_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/verification/verification.dart';
+import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/onboarding/role_controller.dart';
 import 'package:photobooking/features/photographer_setup/stored_provider_type.dart';
 import 'package:photobooking/features/settings/button_style_controller.dart';
@@ -56,6 +59,10 @@ class SettingsScreen extends ConsumerWidget {
         ? ref.watch(liveProviderTypeProvider).value
         : null;
     final verifyReady = ref.watch(verifyStartReadyProvider);
+    // S21.04 opens once the studio owner is verified (Decision 16).
+    final ownerVerified =
+        type == ProviderType.studio &&
+        (ref.watch(myIntroProvider).value?.verified ?? false);
     final studioReady = ref.watch(studioRoutesReadyProvider);
     final isStaff = ref.watch(staffRoleProvider).value != null;
     // While the mode switches, only the mode card reacts.
@@ -86,14 +93,10 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: l.settingsAwardsBody,
           path: '/me/awards',
         ),
-        if (verifyReady)
-          _LinkTile(
-            key: const Key('settings-verify'),
-            icon: AppIcons.verified,
-            title: l.settingsVerify,
-            subtitle: l.settingsVerifyBody,
-            path: '/verify/start',
-          ),
+        if (verifyReady) ...[
+          const _VerifyTile(),
+          if (ownerVerified) const _BusinessTile(),
+        ],
         if (studioReady && type == ProviderType.studio)
           _LinkTile(
             key: const Key('settings-studio-members'),
@@ -492,6 +495,55 @@ class _LinkTile extends StatelessWidget {
     trailing: const AppIcon(AppIcons.chevron),
     onTap: () => context.push(path),
   );
+}
+
+/// "Xác minh & nhận đơn" (S21.02) with where the provider stands: the intro
+/// line until they start (or while it loads), then Còn {n} bước, Đang chờ
+/// duyệt, Đã xác minh, Chưa được duyệt or Đã thu hồi.
+class _VerifyTile extends ConsumerWidget {
+  const _VerifyTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final s = ref.watch(myVerificationProvider).value;
+    final subtitle = switch (s?.status) {
+      null || VerificationStatus.notStarted => l.settingsVerifyBody,
+      // All done but not sent yet: sending is the step left.
+      VerificationStatus.inProgress => l.settingsVerifyStepsLeft(
+        s!.stepsLeft == 0 ? 1 : s.stepsLeft,
+      ),
+      VerificationStatus.submitted => l.settingsVerifyPending,
+      VerificationStatus.approved => l.settingsVerifyApproved,
+      VerificationStatus.rejected => l.settingsVerifyRejected,
+      VerificationStatus.revoked => l.settingsVerifyRevoked,
+    };
+    return _LinkTile(
+      key: const Key('settings-verify'),
+      icon: AppIcons.verified,
+      title: l.settingsVerify,
+      subtitle: subtitle,
+      path: '/verify/start',
+    );
+  }
+}
+
+/// "Xác minh doanh nghiệp" (S21.04): a studio whose owner is verified
+/// (Decision 16).
+class _BusinessTile extends StatelessWidget {
+  const _BusinessTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return _LinkTile(
+      key: const Key('settings-verify-business'),
+      icon: AppIcons.businessVerify,
+      title: l.settingsBusiness,
+      subtitle: l.settingsBusinessTodo,
+      path: '/verify/business',
+    );
+  }
 }
 
 /// "Địa chỉ studio" (studios only): the public district, else "Chưa có địa

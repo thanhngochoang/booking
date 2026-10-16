@@ -11,15 +11,19 @@ import 'package:photobooking/data/content/provider_type.dart';
 /// kind never rests on colour alone: blue disc, gold disc, gold scalloped seal.
 enum ProviderMarkKind { verified, artist, studio }
 
-/// Picks the mark for a provider (plan A1, decision 5): an artist always gets
-/// the gold tick; a studio gets the seal only once verified; an individual
-/// gets the blue tick only once verified. `null` means no mark.
+/// Picks the mark for a provider (plan A1, decision 5; #135 Decision 17): an
+/// artist always gets the gold tick; an individual gets the blue tick once
+/// verified; a studio gets the blue tick once verified and the gold seal only
+/// once its business is verified too. `null` means no mark.
 ProviderMarkKind? providerMarkOf({
   required ProviderType type,
   required bool verified,
+  bool businessVerified = false,
 }) => switch (type) {
   ProviderType.artist => ProviderMarkKind.artist,
-  ProviderType.studio => verified ? ProviderMarkKind.studio : null,
+  ProviderType.studio when !verified => null,
+  ProviderType.studio =>
+    businessVerified ? ProviderMarkKind.studio : ProviderMarkKind.verified,
   ProviderType.individual => verified ? ProviderMarkKind.verified : null,
 };
 
