@@ -253,3 +253,16 @@ npm run clock -- events
 # eventClock: closed=0 completed=0 consentExpired=0 refunded=0 refundsResent=0 soonEvents=1 soonSent=1
 # Lan's inbox now has "Chụp phố đêm bắt đầu ngày mai" (or "sau 2 ngày"); a second run sends nothing.
 ```
+
+## Staff CLI for support
+
+The staff CLI allows administrators and sales staff to view and reply to support threads:
+
+```bash
+npm run support -- list
+npm run support -- show <threadId>
+npm run support -- reply <threadId> "<text>" --actor <uid>
+```
+
+`--actor` must have the custom claim `staffRole: 'admin'` or `'sales'`.
+

@@ -510,6 +510,36 @@ create table chat_pins (
   primary key (chat_id, message_id)
 );
 
+create table support_threads (
+  id              text primary key,                   -- 'help_{uid}' hoặc 'dispute_{id}'
+  kind            text not null check (kind in ('help', 'dispute')),
+  owner_id        text not null references users(id) on delete cascade,
+  status          text not null default 'open' check (status in ('open', 'closed')),
+  dispute_id      text,
+  awaiting_staff  boolean not null default false,
+  last_message    jsonb,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index ix_support_threads_owner on support_threads (owner_id, updated_at desc);
+
+create table support_thread_participants (
+  thread_id text not null references support_threads(id) on delete cascade,
+  user_id   text not null references users(id) on delete cascade,
+  primary key (thread_id, user_id)
+);
+
+create table support_messages (
+  id          text primary key,
+  thread_id   text not null references support_threads(id) on delete cascade,
+  sender_id   text not null references users(id),
+  sender_role text not null check (sender_role in ('user', 'staff')),
+  sender_name text not null,
+  body        text not null,
+  created_at  timestamptz not null default now()
+);
+create index ix_support_messages_thread on support_messages (thread_id, created_at asc);
+
 create table notifications (
   id         text primary key,                   -- 'n_{dedupeKey}' hoặc 'g_{groupKey}' (dòng gom)
   user_id    text not null references users(id) on delete cascade,
@@ -1052,6 +1082,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột; `chats.bookingStatus`→không có cột, suy ra từ `bookings.status` qua `chats.booking_id` (join; trường Firestore chỉ là read model cho danh sách S07.02) |
+| `support_threads/{id}` + `support_threads/{id}/messages/{id}` | `support_threads`, `support_thread_participants`, `support_messages` | `participants[]`→`support_thread_participants`; `lastMessage`→jsonb cột `last_message` |
 | `users/{uid}/notifications/{id}` | `notifications` | `actors[]`→`actors jsonb`; `users/{uid}/private/inbox.unreadCount` không có cột (đếm `read_at is null`) |
 | `users/{uid}/private/notification_prefs` | `notification_prefs` | `quietHours.*`→`quiet_*`, `reminders.*`→`reminder_*` |
 | `events/{id}` | `events` | `location.*`→cột phẳng; `host.*`, `createdBy*` |

@@ -189,6 +189,7 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 | `register_event`, `cancel_registration`, `check_in_registration`, `release_expired_holds`, `close_events` | Đăng ký, vé, check‑in, dọn giữ chỗ | `registerEvent`, `cancelRegistration`, `checkInRegistration`, `releaseExpiredHolds`, `closeEvents` |
 | `get_contact_link` | Trả URL gọi/Zalo/WhatsApp nếu đã mở khoá | `getContactLink` |
 | `send_message_guard` | Áp hạn mức chat hỏi trước (3 tin tới khi nhiếp ảnh gia trả lời), đóng sau 14 ngày | trigger `messages` |
+| `send_support_message` | Gửi tin nhắn vào hộp thư hỗ trợ hoặc luồng khiếu nại (tự động tạo thread `help_{uid}` nếu chưa có) | `sendSupportMessage` |
 | `award_badges`, `reconcile_badges` | Trao/thu hồi huy hiệu | `onReviewWrite`, cron |
 | `recommend`, `record_recommendation_feedback` | Gợi ý và nhật ký | `recommend`, `recommendFeedback` |
 | `erase_user`, `export_user_data` | Xoá/ẩn danh, xuất dữ liệu cá nhân | mới |

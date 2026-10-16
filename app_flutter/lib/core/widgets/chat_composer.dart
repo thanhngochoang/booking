@@ -83,45 +83,47 @@ class _ChatComposerState extends State<ChatComposer> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Image / Camera button
-          Semantics(
-            button: true,
-            label: 'Chọn ảnh',
-            enabled: canPick,
-            child: Material(
-              type: MaterialType.transparency,
-              child: Ink(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: fieldBg,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                  border: Border.all(color: border),
-                ),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: canPick ? widget.onPickImage : null,
-                  child: Center(
-                    child: widget.busy
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: FittedBox(
-                              child: SignatureLoader(size: LoaderSize.inline),
+          if (widget.onPickImage != null) ...[
+            Semantics(
+              button: true,
+              label: 'Chọn ảnh',
+              enabled: canPick,
+              child: Material(
+                type: MaterialType.transparency,
+                child: Ink(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: fieldBg,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    border: Border.all(color: border),
+                  ),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: canPick ? widget.onPickImage : null,
+                    child: Center(
+                      child: widget.busy
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: FittedBox(
+                                child: SignatureLoader(size: LoaderSize.inline),
+                              ),
+                            )
+                          : AppIcon(
+                              AppIcons.camera,
+                              size: 20,
+                              color: canPick
+                                  ? theme.colorScheme.primary
+                                  : secondary,
                             ),
-                          )
-                        : AppIcon(
-                            AppIcons.camera,
-                            size: 20,
-                            color: canPick
-                                ? theme.colorScheme.primary
-                                : secondary,
-                          ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
 
           // Message input
           Expanded(

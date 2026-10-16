@@ -2592,5 +2592,75 @@
   "profileOwnerRejected": "Hồ sơ chưa được duyệt",
   "profileOwnerRejectedBody": "Xem lý do và gửi lại.",
   "profileOwnerContinue": "Tiếp tục",
-  "profileOwnerView": "Xem"
+  "profileOwnerView": "Xem",
+  "settingsSupportSection": "Hỗ trợ",
+  "settingsHelp": "Trợ giúp",
+  "settingsHelpBody": "Câu hỏi thường gặp, liên hệ hỗ trợ",
+  "helpTitle": "Trợ giúp",
+  "helpMyDisputes": "Khiếu nại của bạn",
+  "helpDisputeRow": "Khiếu nại #{code} · {name}",
+  "@helpDisputeRow": {
+    "placeholders": {
+      "code": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "helpDisputeRowMeta": "{status} · {date}",
+  "@helpDisputeRowMeta": {
+    "placeholders": {
+      "status": {"type": "String"},
+      "date": {"type": "String"}
+    }
+  },
+  "helpFaqTitle": "Câu hỏi thường gặp",
+  "helpContactSupport": "Liên hệ hỗ trợ",
+  "helpEmailLine": "Email hỗ trợ: {email}",
+  "@helpEmailLine": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "supportChatTitle": "Hỗ trợ",
+  "supportChatNote": "Chỉ bạn và đội hỗ trợ xem được cuộc trò chuyện này. Đừng gửi mật khẩu hay mã OTP.",
+  "supportChatHint": "Nhắn cho hỗ trợ…",
+  "supportChatEmpty": "Bạn cần giúp gì? Nhắn cho đội hỗ trợ, chúng tôi trả lời tại đây và báo cho bạn khi có tin mới.",
+  "supportSendFailed": "Chưa gửi được tin nhắn. Thử lại.",
+  "supportRateLimited": "Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.",
+  "helpTopicPayments": "Thanh toán",
+  "helpTopicCancel": "Huỷ & hoàn tiền",
+  "helpTopicDelivery": "Bàn giao ảnh",
+  "helpTopicDisputes": "Khiếu nại",
+  "helpTopicContact": "Liên hệ",
+  "helpTopicReviews": "Đánh giá",
+  "helpTopicProviders": "Dành cho thợ ảnh",
+  "helpPayFullQ": "Vì sao phải trả trước 100%?",
+  "helpPayFullA": "Tiền không đến tay thợ ngay. Ứng dụng giữ tiền và chỉ chuyển cho thợ theo 2 đợt: sau buổi chụp, và sau khi bạn đồng ý ảnh rồi kiểm tra bộ ảnh gốc trong 48 giờ. Có lỗi thì bạn được hoàn qua ứng dụng.",
+  "helpPayHeldQ": "Tiền của tôi được giữ ở đâu?",
+  "helpPayHeldA": "Tiền do một tổ chức trung gian thanh toán được cấp phép giữ, không nằm trong tài khoản của ứng dụng, và chưa chuyển cho thợ cho tới khi đủ điều kiện.",
+  "helpPayQrQ": "Chuyển khoản QR sai số tiền thì sao?",
+  "helpPayQrA": "Hãy chuyển đúng số tiền và nội dung trong 15 phút. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động về tài khoản đã chuyển.",
+  "helpCancelRefundQ": "Huỷ buổi chụp được hoàn bao nhiêu?",
+  "helpCancelRefundA": "Huỷ trước giờ chụp từ 48 giờ trở lên: hoàn 100%. Từ 24 đến 48 giờ: hoàn 50%. Dưới 24 giờ: không hoàn. Tính trên toàn bộ số đã trả. Thợ huỷ thì bạn được hoàn 100%.",
+  "helpCancelWhereQ": "Tiền hoàn về đâu?",
+  "helpCancelWhereA": "Trả bằng ví MoMo hoặc ZaloPay thì hoàn về ví. Chuyển khoản thì hoàn về tài khoản đã chuyển, hoặc tài khoản khác bạn khai.",
+  "helpCancelLateQ": "Thợ giao ảnh trễ thì sao?",
+  "helpCancelLateA": "Quá số ngày đã hẹn, bạn được huỷ phần bàn giao và hoàn 100% đợt thanh toán thứ hai; thợ giữ đợt đầu.",
+  "helpDeliverySampleQ": "Ảnh mẫu có watermark là gì?",
+  "helpDeliverySampleA": "Thợ gửi ảnh mẫu có watermark trước. Link bộ ảnh gốc bị che và chỉ mở khi bạn bấm \"Đồng ý ảnh\". Không phản hồi trong 3 ngày thì hệ thống tự đồng ý.",
+  "helpDeliveryEditQ": "Muốn sửa ảnh thì làm sao?",
+  "helpDeliveryEditA": "Trao đổi màu sắc, chỉnh sửa ngay trên ảnh mẫu. Số vòng sửa miễn phí theo gói. Hết lượt thì bạn đồng ý, xin thêm một vòng, hoặc mở khiếu nại.",
+  "helpDisputeWhenQ": "Khi nào tôi mở khiếu nại được?",
+  "helpDisputeWhenA": "Trong 24 giờ sau khi buổi chụp hoàn thành, hoặc trong 24 giờ sau khi sự kiện có vé trả tiền kết thúc. Với bộ ảnh gốc, bạn có 48 giờ kể từ khi đồng ý ảnh. Quá thời hạn thì nút \"Báo vấn đề\" không còn. Vé không thu phí không có khiếu nại vì không có tiền được giữ.",
+  "helpDisputeMoneyQ": "Trong lúc khiếu nại, tiền ở đâu?",
+  "helpDisputeMoneyA": "Tiền tiếp tục được giữ, không chuyển cho thợ. Đội hỗ trợ xem bằng chứng của hai bên rồi quyết định: chuyển cho thợ, hoàn cho bạn, hoặc chia.",
+  "helpDisputeEvidenceQ": "Ai xem được ảnh bằng chứng?",
+  "helpDisputeEvidenceA": "Chỉ bạn, người bị khiếu nại và đội hỗ trợ.",
+  "helpContactQ": "Khi nào tôi gọi được cho thợ?",
+  "helpContactA": "Gọi, Zalo, WhatsApp chỉ mở sau khi bạn đã thanh toán. Trước đó bạn nhắn tin hỏi trong ứng dụng. Số điện thoại không hiện công khai.",
+  "helpReviewQ": "Cà chua và gạch là gì?",
+  "helpReviewA": "Cà chua là hài lòng, gạch là chưa hài lòng; bấm 1 đến 10 lần để nói mức độ. Hồ sơ thợ hiện tỉ lệ cà chua. Mỗi buổi chụp đánh giá một lần, gửi rồi không sửa.",
+  "helpProviderStartQ": "Làm sao để bắt đầu nhận đơn?",
+  "helpProviderStartA": "Xác minh số điện thoại, đóng phí xác minh (thợ ảnh 99.000₫, studio 299.000₫, không hoàn), xác minh danh tính bằng VNeID hoặc chip CCCD và đồng ý quy định nhận việc. Nhân viên duyệt trong 24 giờ.",
+  "helpProviderPaidQ": "Khi nào tôi nhận được tiền?",
+  "helpProviderPaidA": "Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt."
 }

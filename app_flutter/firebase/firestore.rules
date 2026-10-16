@@ -756,10 +756,24 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /support_threads/{threadId} {
+      // A missing help thread must read as "none", not as a denial.
+      allow get: if signedIn() && (threadId == 'help_' + request.auth.uid
+                                   || request.auth.uid in resource.data.participants);
+      allow list: if signedIn() && request.auth.uid in resource.data.participants;
+      allow write: if false;
+      match /messages/{messageId} {
+        allow read: if signedIn() && request.auth.uid in
+          get(/databases/$(database)/documents/support_threads/$(threadId)).data.participants;
+        allow write: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
 
 

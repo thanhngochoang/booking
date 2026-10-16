@@ -166,9 +166,9 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S17.02 | Cài đặt thông báo | `/settings/notifications` | cả hai | N | ✅ đã làm (10a) | S64 |
 | S17.03 | Xin quyền thông báo (sheet) | `/notifications/permission` | cả hai | N | ✅ (10a) · thêm sau khi mua vé (#138) | S65 |
 | **S18** | **Khiếu nại & hỗ trợ** | | | | | |
-| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute`, `/tickets/:id/dispute` | khách | mới | ⬜ có mock, có plan (#142) | — |
+| S18.01 | Mở khiếu nại (sheet): chọn buổi chụp/vé còn trong cửa sổ khiếu nại, lý do, mô tả, ảnh bằng chứng ≤ 5 | `/b/:id/dispute` (sheet trên S05.02; `?from=delivery` từ S05.06) · sheet trên S11.04 (vé) | khách | mới | ⬜ có mock, có plan (#142) | — |
 | S18.02 | Chi tiết khiếu nại: trạng thái, tiền đang tạm giữ, trao đổi với hỗ trợ, kết quả (thả / hoàn / chia) | `/disputes/:id` | khách · NAG | mới | ⬜ có mock, có plan (#142) | — |
-| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help` | cả hai | mới | ⬜ có mock, có plan (#142) | — |
+| S18.03 | Trợ giúp: câu hỏi thường gặp theo chủ đề, "Liên hệ hỗ trợ" (chat với hộp thư hỗ trợ) | `/help`, `/help/chat` | cả hai | mới | ✅ đã làm (#204) | — |
 | **S19** | **Lưu & theo dõi** | | | | | |
 | S19.01 | Đã lưu: SegmentedTabs Bài · Nhiếp ảnh gia, lưới bài đã lưu, danh sách PhotographerCard đã lưu | `/me/saved` | cả hai | mới | ✅ đã làm (#143) | — |
 | S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ✅ đã làm (#143) | — |
@@ -933,6 +933,11 @@ Rà lại toàn bộ spec, mô hình dữ liệu và backend đã thiết kế t
 - **Luồng**: S05.02 / S11.04 hiện "Báo vấn đề" khi booking `completed` hoặc vé đã dùng và còn trong `dispute_window_hours` → S18.01 → `openDispute` (khoản tiền `held → disputed`, khoản chi trả `on_hold`) → S18.02 theo dõi; nhiếp ảnh gia nhận thông báo, xem S18.02 và gửi giải trình; staff xử lý ở S23.01 (`resolveDispute`: thả / hoàn / chia), hai bên nhận thông báo và tiền đi theo kết quả.
 - **Quy tắc**: một khiếu nại mở cho mỗi booking hoặc vé; quá cửa sổ thì nút ẩn và S18.03 giải thích; ảnh bằng chứng lưu riêng tư (chỉ hai bên và staff đọc); không có kênh liên hệ ngoài app mới nào được mở vì khiếu nại.
 - **S18.03 Trợ giúp**: câu hỏi thường gặp tĩnh (tiền treo, huỷ, hoàn, Chụp ngay) và "Liên hệ hỗ trợ" mở chat với hộp thư hỗ trợ (S23.06, câu hỏi mở 16).
+- **Đã chốt khi viết plan #142/#204 (2026-10-07, tách 2026-10-08)**:
+  - Khách chỉ mở khiếu nại trong cửa sổ thời hạn (sau buổi chụp 24h hoặc kiểm tra bộ ảnh gốc 48h; vé sự kiện có phí trong 24h sau kết thúc; vé miễn phí không có khiếu nại).
+  - Tiền tạm dừng chuyển cho mốc/khoản bị khiếu nại. Kết quả gồm: thả (chuyển thợ), hoàn (cho khách), hoặc chia theo tỉ lệ %. Tiền hoàn chỉ từ số đang giữ.
+  - Hội thoại khiếu nại gồm 3 bên (khách, bên cung cấp, hỗ trợ).
+  - Trợ giúp S18.03 gồm FAQ tĩnh và chat hỗ trợ 1-1 qua `support_threads/help_{uid}`. Khiếu nại dùng chung nền tảng `support_threads` này.
 
 ### 3i.2 S19 · Lưu & theo dõi
 - **Vì sao cần**: S09.01 có hàng số "đang theo dõi · đã lưu" đang ẩn vì chưa có danh sách; nút lưu ở S02.02 và tín hiệu "đã lưu" của gợi ý (mục 3e.7) cần nơi xem lại.

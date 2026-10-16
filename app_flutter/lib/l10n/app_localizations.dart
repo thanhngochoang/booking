@@ -10347,6 +10347,60 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xem'**
   String get profileOwnerView;
+
+  String get settingsSupportSection;
+  String get settingsHelp;
+  String get settingsHelpBody;
+  String get helpTitle;
+  String get helpMyDisputes;
+  String helpDisputeRow(String code, String name);
+  String helpDisputeRowMeta(String status, String date);
+  String get helpFaqTitle;
+  String get helpContactSupport;
+  String helpEmailLine(String email);
+  String get supportChatTitle;
+  String get supportChatNote;
+  String get supportChatHint;
+  String get supportChatEmpty;
+  String get supportSendFailed;
+  String get supportRateLimited;
+  String get helpTopicPayments;
+  String get helpTopicCancel;
+  String get helpTopicDelivery;
+  String get helpTopicDisputes;
+  String get helpTopicContact;
+  String get helpTopicReviews;
+  String get helpTopicProviders;
+  String get helpPayFullQ;
+  String get helpPayFullA;
+  String get helpPayHeldQ;
+  String get helpPayHeldA;
+  String get helpPayQrQ;
+  String get helpPayQrA;
+  String get helpCancelRefundQ;
+  String get helpCancelRefundA;
+  String get helpCancelWhereQ;
+  String get helpCancelWhereA;
+  String get helpCancelLateQ;
+  String get helpCancelLateA;
+  String get helpDeliverySampleQ;
+  String get helpDeliverySampleA;
+  String get helpDeliveryEditQ;
+  String get helpDeliveryEditA;
+  String get helpDisputeWhenQ;
+  String get helpDisputeWhenA;
+  String get helpDisputeMoneyQ;
+  String get helpDisputeMoneyA;
+  String get helpDisputeEvidenceQ;
+  String get helpDisputeEvidenceA;
+  String get helpContactQ;
+  String get helpContactA;
+  String get helpReviewQ;
+  String get helpReviewA;
+  String get helpProviderStartQ;
+  String get helpProviderStartA;
+  String get helpProviderPaidQ;
+  String get helpProviderPaidA;
 }
 
 class _AppLocalizationsDelegate
