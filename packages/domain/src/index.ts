@@ -116,4 +116,8 @@ export * from './identity_verification.js';
 export * from './business_verification.js';
 export * from './fake_identity_verifier.js';
 export * from './fake_tax_code_lookup.js';
+export * from './support_thread.js';
+export * from './support_use_cases.js';
+export * from './support_notifications.js';
+export * from './memory_support_store.js';
 
