@@ -174,9 +174,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S19.02 | Đang theo dõi: danh sách nhiếp ảnh gia đang theo dõi, bỏ theo dõi | `/me/following` | cả hai | mới | ✅ đã làm (#143) | — |
 | S19.03 | Người theo dõi (của nhiếp ảnh gia) | `/me/followers` | NAG | mới | ✅ đã làm (#143) | — |
 | **S20** | **Báo cáo & chặn** | | | | | |
-| S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | — (sheet) | cả hai | mới | ⬜ có mock, có plan (#144) | — |
-
-| S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ⬜ có mock, có plan (#144) | — |
+| S20.01 | Báo cáo (sheet dùng chung cho người dùng, bài, tin nhắn, sự kiện): lý do, mô tả tuỳ chọn, tuỳ chọn chặn luôn | — (sheet) | cả hai | mới | ✅ đã làm (#144) | — |
+| S20.02 | Người đã chặn: danh sách, bỏ chặn | `/settings/blocked` | cả hai | mới | ✅ đã làm (#144) | — |
 | **S21** | **Xác minh** | | | | | |
 | S21.01 | Xác minh số điện thoại (OTP) | `/verify/phone` | cả hai | mới | ✅ đã làm (#135) · danh tính/thuế giả lập | — |
 | S21.02 | Bắt đầu nhận đơn: danh sách bước (SĐT, phí xác minh, danh tính, quy định), chờ duyệt, bị từ chối | `/verify/start` | thợ ảnh · studio | spec 10-06 xác minh | ✅ đã làm (#135, phí xác minh #203) · danh tính/thuế giả lập | — |

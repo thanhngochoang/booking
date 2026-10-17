@@ -6,7 +6,7 @@ Màn: S20.01 (Báo cáo sheet), S20.02 (Người đã chặn), các trạng thá
 
 ## S20.01 · Báo cáo (sheet)
 
-- **Thông tin**: `— (sheet)` · cả hai vai trò · sub‑project 6 · **Chưa có** (#144)
+- **Thông tin**: `— (sheet)` · cả hai vai trò · sub‑project 6 · **Đã làm** (#144)
 - **Mục đích**: Báo cáo người dùng, bài viết, tin nhắn hoặc sự kiện với lý do cố định, mô tả tuỳ chọn và tuỳ chọn chặn luôn đối tượng.
 - **Điểm vào → ra**:
   - Menu "…" trên hồ sơ nhiếp ảnh gia (S03.01), bài viết (S02.02, S11.05), tin nhắn (nhấn giữ ở S07.01, S11.06), sự kiện (S11.02), portfolio album (S24.01).
@@ -46,7 +46,7 @@ Màn: S20.01 (Báo cáo sheet), S20.02 (Người đã chặn), các trạng thá
 
 ## S20.02 · Người đã chặn
 
-- **Thông tin**: `/settings/blocked` · cả hai vai trò · sub‑project 6 · **Chưa có** (#144)
+- **Thông tin**: `/settings/blocked` · cả hai vai trò · sub‑project 6 · **Đã làm** (#144)
 - **Mục đích**: Xem danh sách những người mình đã chặn và bỏ chặn khi muốn kết nối lại.
 - **Điểm vào → ra**: Cài đặt (S09.02) → "Người đã chặn". Nút bỏ chặn mở dialog / sheet xác nhận.
 - **Bố cục** (theo mock `#S20.02`):

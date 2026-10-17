@@ -192,6 +192,8 @@ Mỗi use case có tên, đầu vào/ra, điều kiện, phụ thuộc cổng. H
 | `send_support_message` | Gửi tin nhắn vào hộp thư hỗ trợ hoặc luồng khiếu nại (tự động tạo thread `help_{uid}` nếu chưa có) | `sendSupportMessage` |
 | `award_badges`, `reconcile_badges` | Trao/thu hồi huy hiệu | `onReviewWrite`, cron |
 | `recommend`, `record_recommendation_feedback` | Gợi ý và nhật ký | `recommend`, `recommendFeedback` |
+| `block_user`, `unblock_user` | Chặn/bỏ chặn người dùng, cập nhật chỉ mục hai chiều và đóng/mở chat 1-1 | `blockUser`, `unblockUser` |
+| `submit_report`, `decide_report` | Báo cáo nội dung vi phạm kèm bản chụp, hạn ngạch 20/ngày; staff xử lý | `submitReport`, CLI `reports` |
 | `erase_user`, `export_user_data` | Xoá/ẩn danh, xuất dữ liệu cá nhân | mới |
 
 ## 6. Kế hoạch di trú sang hệ thống riêng
