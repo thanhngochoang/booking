@@ -54,6 +54,7 @@ import 'package:photobooking/features/saved/followers_screen.dart';
 import 'package:photobooking/features/saved/following_screen.dart';
 import 'package:photobooking/features/saved/saved_screen.dart';
 import 'package:photobooking/features/profile/profile_tab.dart';
+import 'package:photobooking/features/safety/blocked_users_screen.dart';
 import 'package:photobooking/features/settings/edit_profile_screen.dart';
 import 'package:photobooking/features/settings/settings_screen.dart';
 import 'package:photobooking/features/shell/placeholder_tabs.dart';
@@ -176,6 +177,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'notifications',
             builder: (_, _) => const NotificationSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'blocked',
+            builder: (_, _) => const BlockedUsersScreen(),
           ),
         ],
       ),

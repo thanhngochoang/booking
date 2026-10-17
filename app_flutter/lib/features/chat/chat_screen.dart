@@ -227,6 +227,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             final isReadOnly =
                 thread.readOnlyAt != null && now.isAfter(thread.readOnlyAt!);
 
+            final isBlocked = thread.blockedAt != null;
+            final blockIndex = ref.watch(blockIndexProvider).value;
+            final blockedByMe = blockIndex?.blockedByMe(counterpartId) ?? false;
+
             // Closed inquiry?
             final isClosedInquiry = thread.isClosedInquiryAt(now);
 
@@ -239,7 +243,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 thread.customerMessagesBeforeReply >= 3;
 
             String? disabledReason;
-            if (inquiryLimitReached) {
+            if (isBlocked) {
+              disabledReason = blockedByMe
+                  ? l10n.chatBlockedByMe(counterpartName)
+                  : l10n.chatBlocked;
+            } else if (inquiryLimitReached) {
               disabledReason = l10n.chatInquiryCap(counterpartName);
             }
 
@@ -396,7 +404,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                       ),
                     )
-                  else ...[
+                  else if (isBlocked) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s3,
+                        vertical: AppSpace.s2,
+                      ),
+                      child: Row(
+                        children: [
+                          const AppIcon(AppIcons.block, size: 16),
+                          const SizedBox(width: AppSpace.s2),
+                          Expanded(
+                            child: Text(
+                              disabledReason ?? '',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          if (blockedByMe) ...[
+                            const SizedBox(width: AppSpace.s2),
+                            TextButton(
+                              onPressed: () => confirmUnblock(
+                                context,
+                                ref,
+                                userId: counterpartId,
+                                name: counterpartName,
+                              ),
+                              child: Text(l10n.blockedUnblock),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ] else ...[
                     if (isClosedInquiry)
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -554,6 +593,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final thread = ref.read(chatThreadProvider(widget.chatId)).value;
     final now = ref.read(clockProvider)();
     final message = switch (code) {
+      ChatErrorCode.blocked => l10n.chatErrBlocked,
       ChatErrorCode.notEligible
           when thread != null && thread.isClosedInquiryAt(now) =>
         l10n.chatInquiriesOff,

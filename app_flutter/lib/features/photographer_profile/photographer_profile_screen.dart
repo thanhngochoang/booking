@@ -9,6 +9,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
 import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/skills/skills_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/photographer_profile/profile_providers.dart';
@@ -16,6 +17,7 @@ import 'package:photobooking/features/photographer_profile/profile_section.dart'
 import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_header.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_sections.dart';
+import 'package:photobooking/features/safety/blocked_profile_view.dart';
 import 'package:photobooking/features/safety/safety_menu.dart';
 
 /// S03.01 "Hồ sơ nhiếp ảnh gia" at `/u/:uid`, for visitors and the owner.
@@ -98,6 +100,12 @@ class _PhotographerProfileScreenState
     final profile = ref.watch(photographerProfileProvider(widget.uid));
     final owner =
         ref.read(authRepositoryProvider).currentUser?.uid == widget.uid;
+    final blockIndex = ref.watch(blockIndexProvider).value;
+    if (blockIndex != null && blockIndex.hides(widget.uid) && !owner) {
+      final byMe = blockIndex.blockedByMe(widget.uid);
+      final name = profile.value?.summary.displayName ?? '';
+      return BlockedProfileView(uid: widget.uid, name: name, byMe: byMe);
+    }
     return ScreenCode(
       ScreenCodes.photographerProfile,
       child: AsyncView<PhotographerProfile?>(

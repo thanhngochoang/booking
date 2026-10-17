@@ -16,6 +16,7 @@ import 'package:photobooking/data/contact/contact_link_repository.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/photographer/photographer_contact_providers.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/booking/booking_errors.dart';
 import 'package:photobooking/features/booking/booking_features.dart';
 import 'package:photobooking/features/booking/booking_parties.dart';
@@ -413,30 +414,61 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       out.add(w);
     }
 
-    // "Nhắn tin" (outline) + "Liên hệ" (dial), side by side (mock).
-    final contact = has(DetailAction.contact) ? _contact(b, role) : null;
-    final row = <Widget>[
-      if (has(DetailAction.message))
-        Expanded(
-          child: AppButton.outline(
-            l10n.detailMessage,
-            size: AppButtonSize.small,
-            onPressed: () => run(DetailAction.message),
+    final counterpartId =
+        role == BookingRole.customer ? b.photographerId : b.customerId;
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
+    final isBlockedPair = hiddenUsers.contains(counterpartId);
+
+    if (isBlockedPair) {
+      add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: AppIcon(AppIcons.block, size: 16),
+              ),
+              const SizedBox(width: AppSpace.s2),
+              Expanded(
+                child: Text(
+                  l10n.bookingBlockedNote,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ?contact,
-    ];
-    if (row.isNotEmpty) {
-      add(
-        Row(
-          children: [
-            for (var i = 0; i < row.length; i++) ...[
-              if (i > 0) const SizedBox(width: AppSpace.s2),
-              row[i],
-            ],
-          ],
-        ),
       );
+    } else {
+      // "Nhắn tin" (outline) + "Liên hệ" (dial), side by side (mock).
+      final contact = has(DetailAction.contact) ? _contact(b, role) : null;
+      final row = <Widget>[
+        if (has(DetailAction.message))
+          Expanded(
+            child: AppButton.outline(
+              l10n.detailMessage,
+              size: AppButtonSize.small,
+              onPressed: () => run(DetailAction.message),
+            ),
+          ),
+        ?contact,
+      ];
+      if (row.isNotEmpty) {
+        add(
+          Row(
+            children: [
+              for (var i = 0; i < row.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpace.s2),
+                row[i],
+              ],
+            ],
+          ),
+        );
+      }
     }
 
     if (has(DetailAction.directions)) {

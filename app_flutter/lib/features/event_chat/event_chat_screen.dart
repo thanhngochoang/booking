@@ -15,6 +15,7 @@ import 'package:photobooking/features/event_chat/members_sheet.dart';
 import 'package:photobooking/features/safety/block_confirm.dart';
 import 'package:photobooking/features/safety/report_sheet.dart';
 import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/l10n/app_localizations.dart';
 
 /// S11.06: the group chat of an event, for the people holding a paid ticket
@@ -403,7 +404,10 @@ class _EventChatScreenState extends ConsumerState<EventChatScreen> {
       for (final m in stream) m.id: m,
       for (final m in state.pending) m.id: m,
     };
-    final ordered = merged.values.toList()
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
+    final ordered = merged.values
+        .where((m) => m.senderId == null || !hiddenUsers.contains(m.senderId))
+        .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final newestFirst = ordered.reversed.toList();
 

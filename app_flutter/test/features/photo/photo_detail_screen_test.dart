@@ -12,6 +12,7 @@ import 'package:photobooking/data/events/event_providers.dart';
 import 'package:photobooking/data/events/event_repository.dart';
 import 'package:photobooking/data/content/provider_type.dart';
 import 'package:photobooking/data/content/service_summary.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 
 import '../../support/content_fixtures.dart';
 import '../../support/discovery_world.dart';
@@ -517,6 +518,25 @@ void main() {
       await tester.tap(find.byKey(const Key('photo-profile')));
       await tester.pumpAndSettle();
       expect(find.text('profile p1 '), findsOneWidget);
+    });
+
+    testWidgets('shows post hidden empty state when author is blocked', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        DiscoveryWorld(),
+        extra: [
+          hiddenUsersProvider.overrideWithValue(const {'p1'}),
+        ],
+      );
+      expect(find.text('Không xem được bài này'), findsOneWidget);
+      expect(
+        find.text(
+          'Bài này không hiển thị với bạn.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

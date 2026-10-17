@@ -3,6 +3,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/saved_follow.dart';
 import 'package:photobooking/data/content/saved_follow_providers.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/saved/saved_controller.dart';
 
@@ -18,6 +19,7 @@ class FollowingController
     if (uid == null) {
       return const SavedListState<PhotographerSummary>();
     }
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
     final page = await ref
         .read(savedFollowRepositoryProvider)
         .following(uid, limit: pageSize);
@@ -25,8 +27,9 @@ class FollowingController
     for (final item in page.items) {
       followNotifier.set(item.id, true);
     }
+    final visible = page.items.where((i) => !hiddenUsers.contains(i.id)).toList();
     return SavedListState<PhotographerSummary>(
-      items: page.items,
+      items: visible,
       cursor: page.cursor,
     );
   }
@@ -42,6 +45,7 @@ class FollowingController
     }
     state = AsyncData(current.copyWith(loadingMore: true, moreFailed: false));
     try {
+      final hiddenUsers = ref.read(hiddenUsersProvider);
       final page = await ref
           .read(savedFollowRepositoryProvider)
           .following(uid, cursor: current.cursor, limit: pageSize);
@@ -49,8 +53,9 @@ class FollowingController
       for (final item in page.items) {
         followNotifier.set(item.id, true);
       }
+      final newVisible = page.items.where((i) => !hiddenUsers.contains(i.id)).toList();
       final updated = current.copyWith(
-        items: [...current.items, ...page.items],
+        items: [...current.items, ...newVisible],
         cursor: () => page.cursor,
         loadingMore: false,
         moreFailed: false,
@@ -85,11 +90,13 @@ class FollowersController extends AsyncNotifier<SavedListState<Follower>> {
     if (uid == null) {
       return const SavedListState<Follower>();
     }
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
     final page = await ref
         .read(savedFollowRepositoryProvider)
         .followers(uid, limit: pageSize);
+    final visible = page.items.where((i) => !hiddenUsers.contains(i.userId)).toList();
     return SavedListState<Follower>(
-      items: page.items,
+      items: visible,
       cursor: page.cursor,
     );
   }
@@ -105,11 +112,13 @@ class FollowersController extends AsyncNotifier<SavedListState<Follower>> {
     }
     state = AsyncData(current.copyWith(loadingMore: true, moreFailed: false));
     try {
+      final hiddenUsers = ref.read(hiddenUsersProvider);
       final page = await ref
           .read(savedFollowRepositoryProvider)
           .followers(uid, cursor: current.cursor, limit: pageSize);
+      final newVisible = page.items.where((i) => !hiddenUsers.contains(i.userId)).toList();
       final updated = current.copyWith(
-        items: [...current.items, ...page.items],
+        items: [...current.items, ...newVisible],
         cursor: () => page.cursor,
         loadingMore: false,
         moreFailed: false,

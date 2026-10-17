@@ -10,6 +10,7 @@ import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/saved_follow_providers.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/discovery/auth_reset.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
@@ -63,6 +64,7 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
   }
 
   Future<HomeFeedState> _loadFirst(String? category) async {
+    final hiddenUsers = ref.read(hiddenUsersProvider);
     final followedIds =
         (await ref.read(followingIdsProvider.future).catchError((_) => <String>{}))
             .toSet();
@@ -74,12 +76,20 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
         followedIds: followedIds,
       ),
     );
+    final visible = page.items
+        .where(
+          (e) =>
+              !hiddenUsers.contains(e.post.photographerId) &&
+              !hiddenUsers.contains(e.post.authorId) &&
+              !hiddenUsers.contains(e.photographer.id),
+        )
+        .toList();
     unawaited(
-      ref.read(engagementProvider.notifier).seed(page.items.map((e) => e.post)),
+      ref.read(engagementProvider.notifier).seed(visible.map((e) => e.post)),
     );
     return HomeFeedState(
       category: category,
-      items: page.items,
+      items: visible,
       cursor: page.nextCursor,
     );
   }
@@ -127,6 +137,11 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
       try {
         final post = await ref.read(postRepositoryProvider).byId(postId);
         if (post != null) {
+          final hiddenUsers = ref.read(hiddenUsersProvider);
+          if (hiddenUsers.contains(post.photographerId) ||
+              hiddenUsers.contains(post.authorId)) {
+            return;
+          }
           final authors = await ref
               .read(photographerRepositoryProvider)
               .summaries([post.photographerId]);
@@ -165,6 +180,7 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
     }
     state = AsyncData(current.copyWith(loadingMore: true));
     try {
+      final hiddenUsers = ref.read(hiddenUsersProvider);
       final followedIds =
           (await ref.read(followingIdsProvider.future).catchError((_) => <String>{}))
               .toSet();
@@ -185,16 +201,24 @@ class HomeFeedController extends AsyncNotifier<HomeFeedState> {
           latest.cursor != current.cursor) {
         return;
       }
+      final newVisible = page.items
+          .where(
+            (e) =>
+                !hiddenUsers.contains(e.post.photographerId) &&
+                !hiddenUsers.contains(e.post.authorId) &&
+                !hiddenUsers.contains(e.photographer.id),
+          )
+          .toList();
       unawaited(
         ref
             .read(engagementProvider.notifier)
-            .seed(page.items.map((e) => e.post)),
+            .seed(newVisible.map((e) => e.post)),
       );
       state = AsyncData(
         latest.copyWith(
           items: [
             ...latest.items,
-            ...page.items.where(
+            ...newVisible.where(
               (e) => !latest.items.any((o) => o.post.id == e.post.id),
             ),
           ],
@@ -222,9 +246,13 @@ final homeFeedProvider =
 /// "Rảnh tuần này": photographers whose next free day is within a week.
 final freeThisWeekProvider =
     FutureProvider.autoDispose<List<PhotographerSummary>>(
-      (ref) => ref
-          .watch(photographerRepositoryProvider)
-          .freeThisWeek(now: ref.watch(clockProvider)()),
+      (ref) async {
+        final hiddenUsers = ref.watch(hiddenUsersProvider);
+        final list = await ref
+            .watch(photographerRepositoryProvider)
+            .freeThisWeek(now: ref.watch(clockProvider)());
+        return list.where((p) => !hiddenUsers.contains(p.id)).toList();
+      },
     );
 
 @immutable
@@ -238,6 +266,7 @@ class FeedPost {
 final realShootsProvider = FutureProvider.autoDispose<List<FeedPost>>((
   ref,
 ) async {
+  final hiddenUsers = ref.watch(hiddenUsersProvider);
   final page = await ref
       .watch(postRepositoryProvider)
       .feed(kind: PostKind.realShoot, limit: 6);
@@ -246,7 +275,9 @@ final realShootsProvider = FutureProvider.autoDispose<List<FeedPost>>((
       .summaries(page.posts.map((p) => p.photographerId));
   return [
     for (final p in page.posts)
-      if (authors[p.photographerId] != null)
+      if (authors[p.photographerId] != null &&
+          !hiddenUsers.contains(p.photographerId) &&
+          !hiddenUsers.contains(p.authorId))
         FeedPost(p, authors[p.photographerId]!),
   ];
 });

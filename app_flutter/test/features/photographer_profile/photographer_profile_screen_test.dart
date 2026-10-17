@@ -13,9 +13,13 @@ import 'package:photobooking/data/photographer/availability_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/public_profile.dart';
 import 'package:photobooking/data/user/user_profile.dart';
+import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/photographer_profile/widgets/profile_bottom_bar.dart';
+import 'package:photobooking/features/safety/blocked_profile_view.dart';
 
 import '../../support/content_fixtures.dart';
+import '../../support/fake_safety_repository.dart';
 import '../../support/profile_world.dart';
 
 Finder _key(String k) => find.byKey(Key(k));
@@ -1106,6 +1110,29 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('shows BlockedProfileView when photographer is blocked', (
+      tester,
+    ) async {
+      final safetyRepo = FakeSafetyRepository(
+        initialIndex: const BlockIndex(blockedIds: {'p1'}),
+      );
+      final w = await _world(tester);
+      await tester.pumpWidget(
+        w.app(
+          '/u/p1',
+          extraOverrides: [
+            safetyRepositoryProvider.overrideWithValue(safetyRepo),
+            blockIndexProvider.overrideWith((ref) => safetyRepo.watchIndex()),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BlockedProfileView), findsOneWidget);
+      expect(find.text('Bạn đã chặn Minh Trí'), findsOneWidget);
+      expect(find.text('Bỏ chặn'), findsOneWidget);
+    });
   });
 }
 

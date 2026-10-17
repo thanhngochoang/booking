@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/discovery/engagement_controller.dart';
 import 'package:photobooking/features/home/home_controller.dart';
 
@@ -300,4 +301,21 @@ void main() {
       expect(ids.toSet(), hasLength(ids.length));
     },
   );
+
+  test('home feed filters out posts from hidden/blocked users', () async {
+    final world = DiscoveryWorld();
+    await world.init();
+    final c = ProviderContainer(
+      overrides: [
+        ...world.overrides,
+        hiddenUsersProvider.overrideWithValue(const {'p1'}),
+      ],
+      retry: (_, _) => null,
+    );
+    addTearDown(c.dispose);
+
+    final s = await c.read(homeFeedProvider.future);
+    expect(s.items.any((item) => item.post.photographerId == 'p1'), isFalse);
+    expect(s.items.any((item) => item.post.photographerId == 'p2'), isTrue);
+  });
 }

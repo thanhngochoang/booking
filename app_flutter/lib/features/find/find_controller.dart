@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/recommendation/recommendation_models.dart';
 import 'package:photobooking/data/recommendation/recommendation_providers.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/features/discovery/auth_reset.dart';
 import 'package:photobooking/features/explore/location_controller.dart';
 
@@ -205,19 +206,23 @@ class FindResultsController extends AsyncNotifier<FindResults> {
         cursor: cursor,
       );
 
-  /// Drops providers who cannot be booked yet, then applies the tomato floor.
+  /// Drops providers who cannot be booked yet or are hidden, then applies the tomato floor.
   List<RecommendedPhotographer> _visible(
     List<RecommendedPhotographer> items,
     FindFilters f,
-  ) => items
-      .where(
-        (i) =>
-            i.photographer.acceptingOrders &&
-            (f.minTomatoPct == null ||
-                (i.photographer.hasTomatoPct &&
-                    i.photographer.tomatoPct >= f.minTomatoPct!)),
-      )
-      .toList();
+  ) {
+    final hiddenUsers = ref.read(hiddenUsersProvider);
+    return items
+        .where(
+          (i) =>
+              !hiddenUsers.contains(i.photographer.id) &&
+              i.photographer.acceptingOrders &&
+              (f.minTomatoPct == null ||
+                  (i.photographer.hasTomatoPct &&
+                      i.photographer.tomatoPct >= f.minTomatoPct!)),
+        )
+        .toList();
+  }
 
   Future<void> loadMore() async {
     final current = state.value;

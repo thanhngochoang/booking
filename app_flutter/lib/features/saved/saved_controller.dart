@@ -4,6 +4,7 @@ import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/content/photographer_summary.dart';
 import 'package:photobooking/data/content/post_summary.dart';
 import 'package:photobooking/data/content/saved_follow_providers.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 
 @immutable
 class SavedListState<T> {
@@ -44,11 +45,19 @@ class SavedPostsController extends AsyncNotifier<SavedListState<PostSummary>> {
     if (uid == null) {
       return const SavedListState<PostSummary>();
     }
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
     final page = await ref
         .read(savedFollowRepositoryProvider)
         .savedPosts(uid, limit: pageSize);
+    final visible = page.items
+        .where(
+          (p) =>
+              !hiddenUsers.contains(p.photographerId) &&
+              !hiddenUsers.contains(p.authorId),
+        )
+        .toList();
     return SavedListState<PostSummary>(
-      items: page.items,
+      items: visible,
       cursor: page.cursor,
     );
   }
@@ -64,11 +73,19 @@ class SavedPostsController extends AsyncNotifier<SavedListState<PostSummary>> {
     }
     state = AsyncData(current.copyWith(loadingMore: true, moreFailed: false));
     try {
+      final hiddenUsers = ref.read(hiddenUsersProvider);
       final page = await ref
           .read(savedFollowRepositoryProvider)
           .savedPosts(uid, cursor: current.cursor, limit: pageSize);
+      final newVisible = page.items
+          .where(
+            (p) =>
+                !hiddenUsers.contains(p.photographerId) &&
+                !hiddenUsers.contains(p.authorId),
+          )
+          .toList();
       final updated = current.copyWith(
-        items: [...current.items, ...page.items],
+        items: [...current.items, ...newVisible],
         cursor: () => page.cursor,
         loadingMore: false,
         moreFailed: false,
@@ -104,11 +121,13 @@ class SavedPhotographersController
     if (uid == null) {
       return const SavedListState<PhotographerSummary>();
     }
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
     final page = await ref
         .read(savedFollowRepositoryProvider)
         .savedPhotographers(uid, limit: pageSize);
+    final visible = page.items.where((p) => !hiddenUsers.contains(p.id)).toList();
     return SavedListState<PhotographerSummary>(
-      items: page.items,
+      items: visible,
       cursor: page.cursor,
     );
   }
@@ -124,11 +143,13 @@ class SavedPhotographersController
     }
     state = AsyncData(current.copyWith(loadingMore: true, moreFailed: false));
     try {
+      final hiddenUsers = ref.read(hiddenUsersProvider);
       final page = await ref
           .read(savedFollowRepositoryProvider)
           .savedPhotographers(uid, cursor: current.cursor, limit: pageSize);
+      final newVisible = page.items.where((p) => !hiddenUsers.contains(p.id)).toList();
       final updated = current.copyWith(
-        items: [...current.items, ...page.items],
+        items: [...current.items, ...newVisible],
         cursor: () => page.cursor,
         loadingMore: false,
         moreFailed: false,

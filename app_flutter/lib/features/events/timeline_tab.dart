@@ -10,6 +10,7 @@ import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/events/event_social_providers.dart';
 import 'package:photobooking/data/events/event_timeline.dart';
 import 'package:photobooking/data/safety/safety.dart';
+import 'package:photobooking/data/safety/safety_providers.dart';
 import 'package:photobooking/data/user/user_profile.dart';
 import 'package:photobooking/features/events/timeline_controller.dart';
 import 'package:photobooking/features/safety/report_sheet.dart';
@@ -253,6 +254,10 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
     final e = widget.event;
     final state = ref.watch(timelineControllerProvider(_key));
     final controller = ref.read(timelineControllerProvider(_key).notifier);
+    final hiddenUsers = ref.watch(hiddenUsersProvider);
+    final visibleItems = state.items
+        .where((i) => !hiddenUsers.contains(i.authorId))
+        .toList();
     final pending = widget.isManager
         ? ref.watch(timelinePendingCountProvider(e.id)).value ?? 0
         : 0;
@@ -265,7 +270,7 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
         message: l.authErrorNetwork,
         onRetry: controller.refresh,
       );
-    } else if (state.items.isEmpty) {
+    } else if (visibleItems.isEmpty) {
       body = Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
         child: Column(
@@ -289,7 +294,7 @@ class _TimelineTabState extends ConsumerState<TimelineTab> {
       body = Column(
         children: [
           _Masonry(
-            items: state.items,
+            items: visibleItems,
             showPending: _review,
             onOpen: (i) => context.push('/p/${i.postId}'),
             onMenu: _menu,
