@@ -109,3 +109,17 @@ Plan: `docs/superpowers/plans/2026-10-08-v2-refund-destination.md`, Tasks 1–5.
 - **#142:** Dispute refund dispatch (`dispatchDisputeRefund` using `sendRefundOnce` + `mergeRefundOutcome`).
 - **#140 / #200:** Register additional subject handlers in `liveRefundSubjects()`; support `payerAccountOf` and `transferRefund({ destination })`.
 - **Intermediary integration:** Real intermediary refund API, webhook event format, and cryptographic signature verification.
+
+---
+
+## 6. Rebase onto V1 (#200) and S21 (#135), 2026-10-17
+
+V1 landed first, so this branch was rebased onto it (merge rules in the V1 plan, section "V1 and V2 (#201) in either order"):
+
+- **Booking:** payer capture moved into `BookingPaymentSettler.settle` (`payerAccountOf` before its transaction); the private `applyTransfer` builds on V1's pure `applyTransfer` and keeps V2's `refundedAmount` and `destination`. #135's rule stays: a paid transfer whose payee no longer accepts orders is refunded 100% with `provider_not_accepting` (destination = the captured payer).
+- **Expiry:** V1's `expireUnpaid` gained `destination?` (default `payment.payer`) and returns the payment with `refundedAmount`.
+- **Tickets:** tickets now pay by bank QR (V1), so `TicketPaymentSettler.settle` captures the payer too and its refunds carry `destination`/`refundedAmount`; `dispatchRefund` = `dispatchTicketRefund` (`sendRefundOnce` + `ticketRefundHandler.record`). Registration mirrors take the refund's own status (`awaiting_account` included) instead of a literal `pending`. `EventPaymentDeps` has both `payments` (V1) and `cipher` (V2).
+- **Fake transfers:** `FAKE_PAYER` moved to the domain (`fake_payment_gateway.ts`, re-exported by Functions `fake_webhook.ts`); V1's `fakeTransferFor` adds it, so `confirmFakePayment` and domain tests pay with a sender.
+- **Sweeps and webhook:** `runPaymentSweeps(SettlementDeps | BookingDeps, extras?)`; the `resend` step and refund events reach the refunds collection through `bookingDepsOf(deps)` (the `BookingPaymentSettler`'s deps); without a booking settler the step is skipped and a refund event answers `refund_unknown`. `paymentWebhook`/`paymentClock` keep `liveSettlementDeps()` plus `liveRefundSubjects()`.
+- **Secrets:** `cancelEvent` (`EVENT_REFUND_CALLABLE_OPTIONS`) and `eventClock` (`EVENT_CLOCK_OPTIONS`) bind `PAYMENT_SECRETS`, since ticket refunds can be bank transfers now.
+- **Tests:** V1 tests that posted a bank-QR transfer without a sender now include `FAKE_PAYER` (without it the refund correctly waits in `awaiting_account`); new tests pin ticket payer capture, the no-sender case, the sweep and the refund webhook through `SettlementDeps`.

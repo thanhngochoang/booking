@@ -134,7 +134,7 @@ Mỗi khoản doanh thu xuất **hoá đơn điện tử** (nhà cung cấp hoá
 ## 9. Cổng kỹ thuật
 
 `packages/domain`:
-- `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }` (cùng `checkPaymentStatus` cho vé tới #137). Lệnh `issueRefund(params)` nhận `{ refundId, paymentId, providerRef?, amount, reason?, method, destination? }` trong đó `destination?: PayerBankAccount` (số tài khoản giải mã trong bộ nhớ, không lưu/log), trả về `{ success, providerRef?, pending?, error? }` (#201).
+- `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }` (vé thanh toán như booking từ #200, không còn `checkPaymentStatus`). Lệnh `issueRefund(params)` nhận `{ refundId, paymentId, providerRef?, amount, reason?, method, destination? }` trong đó `destination?: PayerBankAccount` (số tài khoản giải mã trong bộ nhớ, không lưu/log), trả về `{ success, providerRef?, pending?, error? }` (#201).
 - `PayoutGateway { lookupAccountName, createPayout, queryPayout }`
 - Luật: trạng thái `Payment`, khớp tên, lịch chi, tính số tiền chi, chuyển sai.
 - Điểm mở rộng chủ thể thanh toán (V1, #200): `SubjectSettler` cho từng chủ thể (`booking`, `event_registration`, `instant_request`, `verification_fee`), gom qua `SettlementDeps.subjects` và `liveSettlementDeps()` ở Functions. Mọi khoản chuyển khoản được xử lý thống nhất qua `settleTransfer`: phân bổ theo `subjectType`, ghi `TransferRecord` chống trùng độc lập cho từng chủ thể, và gọi settler tương ứng để cập nhật thực thể nghiệp vụ (`Booking`, `EventRegistration`...) cùng các bút toán ký quỹ.
