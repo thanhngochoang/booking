@@ -170,6 +170,7 @@ describe('unpaid booking payments', () => {
 describe('booking refund_done marker (depositRefundedAt)', () => {
   const manualRefund = (paymentId: string, id: string, fromEscrow = true): Refund => ({
     id, paymentId, subjectType: 'booking', amount: 100_000, percent: 10, status: 'pending', manual: false, fromEscrow,
+    method: 'gateway', attempts: 0,
     reason: 'test', createdAt: '2026-10-14T01:00:00.000Z', updatedAt: '2026-10-14T01:00:00.000Z',
   });
 
@@ -211,7 +212,8 @@ describe('booking refund_done marker (depositRefundedAt)', () => {
     assert.equal((await dispatchRefund(w.deps, manualRefund(paymentId, 'r_fail'), 'fake')).status, 'failed');
     w.gateway.refundThrowCount = 1;
     const [thrown] = await dispatchRefunds(w.deps, [{ refund: manualRefund(paymentId, 'r_throw'), provider: 'fake' }]);
-    assert.equal(thrown?.status, 'failed');
+    assert.equal(thrown?.status, 'pending');
+    assert.equal(thrown?.attempts, 1);
     assert.equal(w.store.bookings.get(bookingId)?.depositRefundedAt, undefined);
   });
 

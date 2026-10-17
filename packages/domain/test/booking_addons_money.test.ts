@@ -58,6 +58,22 @@ describe('booking with add-ons: money follows the total', () => {
     assert.deepEqual(refunds.map((r) => r.amount), [TOTAL]);
   });
 
+  it('the cancel refund of the total goes back to the payer by bank transfer (V2)', async () => {
+    const world = basketWorld();
+    const { draft, paymentId } = await paid(world);
+    world.clock.setTime(new Date('2026-10-12T10:00:00.000Z'));
+    await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1' });
+    const [refund] = [...world.store.refunds.values()].filter((r) => r.paymentId === paymentId && r.fromEscrow);
+    assert.ok(refund);
+    assert.deepEqual(
+      [refund.amount, refund.method, refund.status, refund.destination?.accountLast4],
+      [TOTAL, 'bank_transfer', 'done', '3456'],
+    );
+    assert.equal(world.gateway.refundRequests.get(refund.id)?.destination?.accountNumber, '0071000123456');
+    assert.equal(world.gateway.issuedRefunds.get(refund.id), TOTAL);
+    assert.equal((await world.store.getPayment(paymentId))?.refundedAmount, TOTAL);
+  });
+
   it('refund at 24–48 h is 50% of the total', async () => {
     const world = basketWorld();
     const { draft, paymentId } = await paid(world);

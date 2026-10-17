@@ -13,6 +13,10 @@ import { FirestoreBookingStore } from './booking_firestore.js';
 import { liveBlockGate } from './live_safety.js';
 import { FirestoreCustomerContactReader, FirestoreProviderOrderGate, FirestoreServiceCatalog } from './booking_readers.js';
 
+import { PAYOUT_ACCOUNT_KEY } from '../config.js';
+import { lazyAccountCipher } from './account_cipher.js';
+import type { AccountCipher } from '@photobooking/domain';
+
 let sharedFakeGateway: FakePaymentGateway | undefined;
 
 export function getSharedFakeGateway(): FakePaymentGateway {
@@ -20,6 +24,10 @@ export function getSharedFakeGateway(): FakePaymentGateway {
     sharedFakeGateway = new FakePaymentGateway();
   }
   return sharedFakeGateway;
+}
+
+export function liveAccountCipher(): AccountCipher {
+  return lazyAccountCipher(() => PAYOUT_ACCOUNT_KEY.value());
 }
 
 export function liveBookingDeps(): BookingDeps {
@@ -32,6 +40,7 @@ export function liveBookingDeps(): BookingDeps {
     providers: new FirestoreProviderOrderGate(firestore),
     blocks: liveBlockGate(),
     gateway: getSharedFakeGateway(),
+    cipher: liveAccountCipher(),
     clock: { now: () => new Date() },
     ids: { newId: () => newUlid(Date.now()) },
   };

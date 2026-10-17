@@ -7,7 +7,6 @@ import {
   newUlid,
   notifyPayoutAccountChanged,
   notifyPayoutAccountNeeded,
-  type AccountCipher,
   type EarningsDeps,
   type NotifyDeps,
   type PayoutAccountDeps,
@@ -17,7 +16,7 @@ import {
   type VerifiedNameReader,
 } from '@photobooking/domain';
 import { PAYOUT_ACCOUNT_KEY } from '../config.js';
-import { aesGcmCipher } from './account_cipher.js';
+import { aesGcmCipher, lazyAccountCipher } from './account_cipher.js';
 import { db } from './admin.js';
 import { FirestoreEarningsStore } from './earnings_firestore.js';
 import { fakePayoutsMode } from './fake_payments.js';
@@ -91,11 +90,7 @@ function sharedFake(): FakePayoutGateway {
  * use case asks for it (after its role and quota transaction, Ruling 5): the fake lookup echoes it.
  */
 export function livePayoutAccountDeps(uid: string, mode: 'fake' | 'off' = lookupMode()): PayoutAccountDeps {
-  let cipher: AccountCipher | undefined;
-  const lazy: AccountCipher = {
-    encrypt: (plain) => (cipher ??= aesGcmCipher(PAYOUT_ACCOUNT_KEY.value())).encrypt(plain),
-    decrypt: (enc) => (cipher ??= aesGcmCipher(PAYOUT_ACCOUNT_KEY.value())).decrypt(enc),
-  };
+  const lazy = lazyAccountCipher(() => PAYOUT_ACCOUNT_KEY.value());
   const firestore = db();
   const reader = new FirestoreVerifiedNameReader(firestore);
   const read = new Map<string, Promise<string | null>>();

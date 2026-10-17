@@ -24,15 +24,18 @@ enum RegistrationStatus {
 /// "Đang hoàn" until it is [done]; [failed] stays with staff, so the money
 /// is still on its way for the customer.
 enum TicketRefundStatus {
-  pending,
-  done,
-  failed;
+  pending('pending'),
+  awaitingAccount('awaiting_account'),
+  done('done'),
+  failed('failed');
 
-  String get code => name;
+  const TicketRefundStatus(this.code);
+
+  final String code;
 
   /// Null for a missing or unknown code (no refund).
   static TicketRefundStatus? fromCode(String? code) =>
-      values.where((s) => s.name == code).firstOrNull;
+      values.where((s) => s.code == code).firstOrNull;
 }
 
 /// The event as it was when the ticket was bought (S11.04 shows it without

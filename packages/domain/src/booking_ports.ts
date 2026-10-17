@@ -5,7 +5,8 @@
 import type { AddonCatalog } from './addon_ports.js';
 import type { BlockGate } from './block_ports.js';
 import type { Booking, BookingContactSnapshot, BookingEventRecord, PaymentProvider } from './booking.js';
-import type { Payment, PaymentMethod, PaymentSubject, Refund, LedgerEntry } from './escrow.js';
+import type { Payment, PaymentMethod, PaymentSubject, Refund, RefundMethod, LedgerEntry } from './escrow.js';
+import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactRecord } from './ports.js';
 
 export interface ServiceRecord {
@@ -59,7 +60,18 @@ export interface TransferNotification {
   readonly receivedAt: string;
   /** The provider's body as received, kept on the transfer record only. */
   readonly raw?: string;
-  readonly payer?: { readonly bankCode?: string; readonly accountMasked?: string; readonly name?: string };
+  readonly payer?: {
+    readonly bankCode?: string;
+    readonly accountMasked?: string;
+    readonly name?: string;
+    readonly accountNumber?: string;
+  };
+}
+
+export interface PayerBankAccount {
+  readonly bankCode: string;
+  readonly accountNumber: string;
+  readonly holderName: string;
 }
 
 /** The gateway's answer to createPayment. Renamed from #129's `PaymentInstructions` (Decision 4). */
@@ -109,6 +121,7 @@ export interface BookingTx {
   getPayment(id: string): Promise<Payment | null>;
   getPaymentByIdempotencyKey(key: string): Promise<Payment | null>;
   setPayment(payment: Payment): Promise<void>;
+  getRefund(id: string): Promise<Refund | null>;
   addRefund(refund: Refund): Promise<void>;
   addLedgerEntry(entry: LedgerEntry): Promise<void>;
   addBookingEvent(event: BookingEventRecord): Promise<void>;
@@ -125,7 +138,12 @@ export interface BookingStore {
   getPayment(id: string): Promise<Payment | null>;
   getPaymentByIdempotencyKey(key: string): Promise<Payment | null>;
   getPaymentsForBooking(bookingId: string): Promise<readonly Payment[]>;
+  getRefund(id: string): Promise<Refund | null>;
   getRefundsForPayment(paymentId: string): Promise<readonly Refund[]>;
+  /** status pending, lastAttemptAt <= before, any subject, oldest first. */
+  findPendingRefunds(before: Date, limit?: number): Promise<readonly Refund[]>;
+  /** status awaiting_account, confirmBy <= now (rows without confirmBy never), oldest first. */
+  awaitingRefundsDue(now: Date, limit: number): Promise<readonly Refund[]>;
   getLedgerEntriesForPayment(paymentId: string): Promise<readonly LedgerEntry[]>;
   getContactSnapshot(bookingId: string): Promise<BookingContactSnapshot | null>;
   /**
@@ -184,7 +202,9 @@ export interface PaymentGateway {
     readonly amount: number;
     readonly provider: PaymentProvider;
     readonly providerRef?: string;
-  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }>;
+    readonly method?: RefundMethod;
+    readonly destination?: PayerBankAccount;
+  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly pending?: boolean; readonly error?: string }>;
 }
 
 export interface BookingDeps {
@@ -197,6 +217,7 @@ export interface BookingDeps {
   readonly blocks: BlockGate;
   readonly contacts: CustomerContactReader;
   readonly gateway: PaymentGateway;
+  readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }

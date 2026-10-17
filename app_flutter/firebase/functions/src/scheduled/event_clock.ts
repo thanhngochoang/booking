@@ -21,21 +21,26 @@ export interface EventClockResults {
   readonly completed: number;
   readonly consentExpired: number;
   readonly refunded: number;
-  readonly refundsResent: number;
   readonly soonEvents: number;
   readonly soonSent: number;
 }
 
 /**
  * Closes registration, completes events (stamping `releaseAfter` on held ticket money), expires
- * unanswered host invitations, retries refunds of cancelled events and sends again ticket refunds
- * left `pending` (the gateway keys them by refund id). Last step: `event_soon` reminders 48 hours
- * before the start (S17), in its own try/catch so a failure never fails the sweeps above.
+ * unanswered host invitations, and retries refunds of cancelled events.
+ * Last step: `event_soon` reminders 48 hours before the start (S17), in its own try/catch so a failure never fails the sweeps above.
  */
 export async function handleEventClock(
-  deps: EventDeps & { readonly gateway?: EventPaymentDeps['gateway'] } = liveEventPaymentDeps(),
+  deps: EventDeps & {
+    readonly gateway?: EventPaymentDeps['gateway'];
+    readonly cipher?: EventPaymentDeps['cipher'];
+  } = liveEventPaymentDeps(),
   extras: EventClockExtras = {},
 ): Promise<EventClockResults> {
+  if (deps.gateway !== undefined && deps.cipher === undefined) {
+    // The refund step needs both (bank-QR tickets are refunded to the payer's account).
+    logger.warn('eventClock refund step skipped', { reason: 'no_cipher' });
+  }
   let sweeps: Awaited<ReturnType<typeof runEventSweeps>>;
   try {
     sweeps = await runEventSweeps(deps, (eventId, step, error) => {

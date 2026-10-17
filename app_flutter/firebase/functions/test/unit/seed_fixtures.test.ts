@@ -150,12 +150,42 @@ describe('seed fixtures', () => {
 
     // Booking payments look like createPayment's: bank QR with the code of their id, fully received.
     for (const d of docs.filter((x) => x.path.startsWith('payments/seed-payment-seed-booking-'))) {
-      const pay = d.data as { method?: string; transferCode?: string; receivedAmount?: number; amount: number; expiresAt?: Date; createdAt: Date };
+      const pay = d.data as {
+        method?: string;
+        transferCode?: string;
+        receivedAmount?: number;
+        amount: number;
+        expiresAt?: Date;
+        createdAt: Date;
+        payer?: { accountNumberEnc?: string; accountLast4?: string; holderName?: string };
+        refundedAmount?: number;
+      };
       assert.equal(pay.method, 'bank_qr', d.path);
       assert.equal(pay.transferCode, transferCodeFor(d.path.slice('payments/'.length)), d.path);
       assert.equal(pay.receivedAmount, pay.amount, d.path);
       assert.equal(pay.expiresAt?.getTime(), pay.createdAt.getTime() + 15 * 60_000, d.path);
+      assert.match(String(pay.payer?.accountNumberEnc), /^v1:/, d.path);
+      assert.equal(pay.payer?.accountLast4, '3456', d.path);
+      assert.equal(pay.payer?.holderName, 'KHACH THU NGHIEM', d.path);
+      assert.equal(typeof pay.refundedAmount, 'number', d.path);
     }
+
+    // Cancelled seed refund is done, bank_transfer, to the seed payer
+    const cancelledRefund = docs.find((d) => d.path === 'refunds/seed-refund-seed-booking-cancelled');
+    assert.ok(cancelledRefund);
+    const rData = cancelledRefund.data as {
+      status?: string;
+      method?: string;
+      destination?: { accountLast4?: string; holderName?: string; source?: string; accountNumberEnc?: string };
+      attempts?: number;
+    };
+    assert.equal(rData.status, 'done');
+    assert.equal(rData.method, 'bank_transfer');
+    assert.equal(rData.destination?.source, 'payer');
+    assert.equal(rData.destination?.accountLast4, '3456');
+    assert.equal(rData.destination?.holderName, 'KHACH THU NGHIEM');
+    assert.match(String(rData.destination?.accountNumberEnc), /^v1:/);
+    assert.equal(rData.attempts, 1);
 
     // Availability exists
     const anBookedDay = docs.find((d) => d.path === 'availability/seed-photographer-an/days/2026-10-20');

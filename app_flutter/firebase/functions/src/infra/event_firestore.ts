@@ -18,7 +18,6 @@ import {
   type EventStore,
   type EventTx,
   type Payment,
-  type Refund,
   type RefundStatus,
   type RegistrationContact,
   type RegistrationDoc,
@@ -499,17 +498,6 @@ export class FirestoreEventStore implements EventStore {
       .map((d) => registrationFromFirestore(d.id, d.data()));
   }
 
-  /** `refunds` where `subjectType == event_registration`, `status == pending`, `createdAt <= before` (composite index). */
-  async pendingTicketRefunds(before: Date, limit: number): Promise<Refund[]> {
-    const snap = await this.firestore.collection(REFUNDS_COLLECTION)
-      .where('subjectType', '==', 'event_registration')
-      .where('status', '==', 'pending')
-      .where('createdAt', '<=', Timestamp.fromDate(before))
-      .orderBy('createdAt')
-      .limit(limit)
-      .get();
-    return snap.docs.flatMap((d) => refundFromFirestore(d.id, d.data()) ?? []);
-  }
 
   /** S17 reminder: composite index events (status, soonNoticeAt, startAt) in firestore.indexes.json. */
   dueForSoonNotice(now: Date, horizon: Date, limit: number): Promise<EventRecord[]> {

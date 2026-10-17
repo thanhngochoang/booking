@@ -2,6 +2,7 @@ import type { PaymentGateway, TransferRecord } from './booking_ports.js';
 import type { PaymentLookup } from './payment_settlement.js';
 import type { EventRecord, RegistrationContact, RegistrationDoc } from './event.js';
 import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { AccountCipher } from './payout_ports.js';
 import type { Clock, IdGenerator, UserContactReader } from './ports.js';
 import type { RandomBytes } from './ids.js';
 
@@ -94,11 +95,6 @@ export interface EventStore {
   expiredHoldsAll(now: Date, limit: number): Promise<RegistrationDoc[]>;
   /** Registrations with `refundDue == true`: tickets of a cancelled event still to refund. */
   paidUnrefundedOfCancelled(limit: number): Promise<RegistrationDoc[]>;
-  /**
-   * Ticket refunds (`subjectType == event_registration`) still `pending` that were created at or
-   * before `before`: the transaction committed but the gateway call never ran or never got recorded.
-   */
-  pendingTicketRefunds(before: Date, limit: number): Promise<Refund[]>;
 }
 
 export interface EventPeople {
@@ -122,4 +118,5 @@ export interface EventDeps {
 export interface EventPaymentDeps extends EventDeps {
   readonly gateway: PaymentGateway;
   readonly payments: PaymentLookup;
+  readonly cipher: AccountCipher;
 }

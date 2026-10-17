@@ -30,6 +30,8 @@ import type { PaymentLookup } from './payment_settlement.js';
 import { freshPaymentId, instructionsOf, issuePaymentInstructions } from './create_payment.js';
 import { MemoryPaymentLookup, type PaymentSource } from './memory_payment_lookup.js';
 
+import type { AccountCipher } from './payout_ports.js';
+
 const HOUR_MS = 3_600_000;
 const NAME_MAX = 60;
 
@@ -77,6 +79,7 @@ export function cancellationRefundPercent(startAt: Date, now: Date): 0 | 100 {
 export type RegisterDeps = EventDeps & {
   readonly gateway?: PaymentGateway;
   readonly payments?: PaymentLookup;
+  readonly cipher?: AccountCipher;
 };
 
 type RegisterOut = { result: RegisterResult | null; soldOut: boolean; intent: Payment | null };
@@ -267,9 +270,10 @@ export async function cancelRegistration(
     return { status: 'cancelled' as const, refundPercent: null, refund: false };
   });
   if (!decided.refund) return { status: decided.status, refundPercent: decided.refundPercent };
-  if (deps.gateway === undefined) throw new DomainError('not_eligible');
+  if (deps.gateway === undefined || deps.cipher === undefined) throw new DomainError('not_eligible');
   const payments = deps.payments ?? new MemoryPaymentLookup([deps.events as unknown as PaymentSource]);
-  const done = await refundTicket({ ...deps, gateway: deps.gateway, payments }, eventId, regId, 100, 'customer_cancel');
+  const done = await refundTicket(
+    { ...deps, gateway: deps.gateway, cipher: deps.cipher, payments }, eventId, regId, 100, 'customer_cancel');
   if (done === 'skipped') {
     // A host cancel (or a second tap) refunded it first: the ticket is refunded either way.
     const now = await deps.events.runTransaction((tx) => tx.getRegistration(eventId, regId));

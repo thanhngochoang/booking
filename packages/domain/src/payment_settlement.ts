@@ -16,6 +16,7 @@ import type {
   PaymentStatus,
   PaymentSubject,
   Refund,
+  StoredBankAccount,
 } from './escrow.js';
 import {
   FAKE_TRANSFER_KINDS,
@@ -163,6 +164,8 @@ export function expireUnpaid(p: {
   payment: Payment;
   refundId: string;
   ledgerEntryId: string;
+  /** Where a bank-transfer refund goes; omitted → `payment.payer` (the first sender), null → none (awaiting_account). */
+  destination?: StoredBankAccount | null;
   now: Date;
 }): {
   payment: Payment;
@@ -190,17 +193,18 @@ export function expireUnpaid(p: {
     };
   }
 
-  const { refund, ledgerEntry } = transferRefund({
+  const { refund, ledgerEntry, payment: refunded } = transferRefund({
     payment: p.payment,
     refundId: p.refundId,
     ledgerEntryId: p.ledgerEntryId,
     amount: received,
     reason: 'underpaid_expired',
+    destination: 'destination' in p ? p.destination : p.payment.payer,
     now: p.now,
   });
 
   return {
-    payment: expiredPayment,
+    payment: { ...expiredPayment, refundedAmount: refunded.refundedAmount },
     refund,
     ledgerEntry,
   };

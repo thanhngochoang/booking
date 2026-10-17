@@ -699,6 +699,14 @@ export function seedDocuments(now: Date): SeedDocument[] {
     const paymentId = `seed-payment-${b.id}`;
     const paidOut = b.id === SEED_PAID_OUT_BOOKING;
     const escrowStatus = paidOut ? 'paid_out' : escrowOf(b);
+    const seedPayer = {
+      bankCode: 'VCB',
+      bankName: 'Vietcombank',
+      accountNumberEnc: encryptSyncForSeed(emulatorPayoutKey(), '0071000123456'),
+      accountLast4: '3456',
+      holderName: 'KHACH THU NGHIEM',
+    };
+    const refundedAmount = b.status === 'cancelled' ? deposit : 0;
     const paymentData: Record<string, unknown> = {
       subjectType: 'booking',
       subjectId: b.id,
@@ -714,6 +722,8 @@ export function seedDocuments(now: Date): SeedDocument[] {
       transferCode: transferCodeFor(paymentId),
       expiresAt: new Date(createdAt.getTime() + PAYMENT_EXPIRY_MINUTES * 60_000),
       receivedAmount: deposit,
+      payer: seedPayer,
+      refundedAmount,
       ...(paidOut ? { payoutId: SEED_PAYOUT_AN } : {}),
       ...(b.dispute !== undefined ? { dispute: { reason: b.dispute.reason, openedAt: new Date(updatedAt.getTime() + HOUR_MS) } } : {}),
       createdAt,
@@ -758,7 +768,14 @@ export function seedDocuments(now: Date): SeedDocument[] {
           paymentId,
           amount: deposit,
           percent: 100,
-          status: 'completed',
+          status: 'done',
+          method: 'bank_transfer',
+          destination: {
+            ...seedPayer,
+            source: 'payer',
+          },
+          attempts: 1,
+          lastAttemptAt: updatedAt,
           manual: false,
           fromEscrow: true,
           createdAt: updatedAt,

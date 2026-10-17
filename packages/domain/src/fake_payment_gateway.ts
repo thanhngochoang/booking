@@ -2,9 +2,9 @@
  * Fake payment gateway reference adapter for testing and dev emulators.
  */
 
-import type { GatewayInstructions, PaymentGateway, TransferNotification } from './booking_ports.js';
+import type { GatewayInstructions, PayerBankAccount, PaymentGateway, TransferNotification } from './booking_ports.js';
 import type { PaymentProvider } from './booking.js';
-import type { Payment, PaymentMethod, PaymentSubject } from './escrow.js';
+import type { Payment, PaymentMethod, PaymentSubject, RefundMethod } from './escrow.js';
 import { buildVietQrPayload } from './vietqr.js';
 
 export const FAKE_TRANSFER_KINDS = ['exact', 'under', 'over', 'wrong_content'] as const;
@@ -13,7 +13,18 @@ export const FAKE_OVERPAY_VND = 50_000;
 export const FAKE_WRONG_CONTENT = 'CHUYEN TIEN';
 
 /**
- * provider 'fake', txnId `fake_${id}_${kind}_${now ms}`, amount amount | floor(amount/2) | amount + 50 000, content code | 'CHUYEN TIEN'.
+ * Test values only: the sender every simulated transfer carries, so a bank-QR refund in dev has an
+ * account to go back to (V2 Decision 14). Not a real account.
+ */
+export const FAKE_PAYER = {
+  bankCode: 'VCB',
+  accountNumber: '0071000123456',
+  name: 'KHACH THU NGHIEM',
+} as const;
+
+/**
+ * provider 'fake', txnId `fake_${id}_${kind}_${now ms}`, amount amount | floor(amount/2) | amount + 50 000, content code | 'CHUYEN TIEN',
+ * payer FAKE_PAYER.
  */
 export function fakeTransferFor(
   payment: Payment & { readonly transferCode: string },
@@ -34,6 +45,7 @@ export function fakeTransferFor(
     amount,
     content,
     receivedAt: now.toISOString(),
+    payer: { ...FAKE_PAYER },
   };
 }
 
@@ -60,6 +72,10 @@ export class FakePaymentGateway implements PaymentGateway {
   readonly issuedRefunds = new Map<string, number>();
   /** Every `issueRefund` call, by refund id (repeats included). */
   readonly refundCalls: string[] = [];
+  /** Requests issued to the fake gateway, storing method and destination. */
+  readonly refundRequests = new Map<string, { method: RefundMethod; destination?: PayerBankAccount }>();
+  /** Refund IDs that should answer { success: true, pending: true }. */
+  readonly refundPendingIds = new Set<string>();
   refundFailureId?: string;
   /** The next this-many `issueRefund` calls throw (a provider outage), after being recorded in `refundCalls`. */
   refundThrowCount = 0;
@@ -72,19 +88,35 @@ export class FakePaymentGateway implements PaymentGateway {
     readonly amount: number;
     readonly provider: PaymentProvider;
     readonly providerRef?: string;
-  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly error?: string }> {
+    readonly method?: RefundMethod;
+    readonly destination?: PayerBankAccount;
+  }): Promise<{ readonly success: boolean; readonly providerRef?: string; readonly pending?: boolean; readonly error?: string }> {
     this.refundCalls.push(params.refundId);
+    if (params.method) {
+      this.refundRequests.set(params.refundId, {
+        method: params.method,
+        destination: params.destination,
+      });
+    }
     if (this.refundThrowCount > 0) {
       this.refundThrowCount -= 1;
       throw new Error('simulated_gateway_outage');
     }
     if (this.refundFailureId === params.refundId) {
-      return { success: false, error: 'simulated_refund_failure' };
+      return { success: false, error: 'fake_refund_failed' };
     }
     if (!this.issuedRefunds.has(params.refundId)) this.issuedRefunds.set(params.refundId, params.amount);
+    const providerRef = `fake_refund_${params.refundId}`;
+    if (this.refundPendingIds.has(params.refundId)) {
+      return {
+        success: true,
+        pending: true,
+        providerRef: `fake_pending_${params.refundId}`,
+      };
+    }
     return {
       success: true,
-      providerRef: `fake_refund_${params.refundId}`,
+      providerRef,
     };
   }
 

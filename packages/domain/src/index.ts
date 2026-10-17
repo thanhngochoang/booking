@@ -27,6 +27,8 @@ export * from './booking_requests.js';
 export * from './memory_booking_store.js';
 export * from './fake_payment_gateway.js';
 export * from './refunds.js';
+export * from './refund_subjects.js';
+export * from './payer_account.js';
 export * from './create_booking.js';
 export * from './create_payment.js';
 export * from './handle_transfer.js';

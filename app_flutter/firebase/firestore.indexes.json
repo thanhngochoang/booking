@@ -965,15 +965,25 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "subjectType",
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
+        {
+          "fieldPath": "lastAttemptAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "refunds",
+      "queryScope": "COLLECTION",
+      "fields": [
         {
           "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "createdAt",
+          "fieldPath": "confirmBy",
           "order": "ASCENDING"
         }
       ]

@@ -141,6 +141,25 @@ describe('Firestore <-> Domain booking mappers', () => {
     assert.equal(restored.status, samplePayment.status);
     assert.equal(restored.escrowStatus, samplePayment.escrowStatus);
     assert.equal(restored.releaseAfter, samplePayment.releaseAfter);
+
+    // a payment round-trips payer and refundedAmount, and stores no plain number
+    const paymentWithPayer: Payment = {
+      ...samplePayment,
+      releasedAt: undefined,
+      dispute: null,
+      payoutId: null,
+      payer: {
+        bankCode: 'VCB',
+        bankName: 'Vietcombank',
+        accountNumberEnc: 'v1:fake-enc-val',
+        accountLast4: '3456',
+        holderName: 'NGUYEN THANH HA',
+      },
+      refundedAmount: 150_000,
+    };
+    const payerDoc = paymentToFirestore(paymentWithPayer);
+    assert.doesNotMatch(JSON.stringify(payerDoc), /0071000123456/);
+    assert.deepEqual(paymentFromFirestore('pay_01', payerDoc), paymentWithPayer);
   });
 
   it('round-trips Refund and LedgerEntry', () => {
@@ -150,6 +169,8 @@ describe('Firestore <-> Domain booking mappers', () => {
       amount: 150_000,
       percent: 50,
       status: 'pending',
+      method: 'gateway',
+      attempts: 0,
       manual: false,
       fromEscrow: true,
       reason: 'customer_late_cancel',
@@ -169,6 +190,47 @@ describe('Firestore <-> Domain booking mappers', () => {
     const legacyDoc = { ...refundDoc };
     delete legacyDoc.fromEscrow;
     assert.equal(refundFromFirestore('ref_01', legacyDoc)?.fromEscrow, true);
+
+    // a refund round-trips method, destination, confirmBy, attempts, lastAttemptAt, failureReason and status awaiting_account
+    const complexRefund: Refund = {
+      id: 'ref_02',
+      paymentId: 'pay_01',
+      amount: 100_000,
+      percent: 100,
+      status: 'awaiting_account',
+      method: 'bank_transfer',
+      destination: {
+        bankCode: 'TCB',
+        bankName: 'Techcombank',
+        accountNumberEnc: 'v1:enc-destination',
+        accountLast4: '8888',
+        holderName: 'TRAN VAN B',
+        source: 'payer',
+      },
+      confirmBy: '2026-10-13T10:00:00.000Z',
+      attempts: 2,
+      lastAttemptAt: '2026-10-12T11:00:00.000Z',
+      failureReason: 'gateway_unavailable',
+      manual: false,
+      fromEscrow: true,
+      createdAt: '2026-10-12T10:00:00.000Z',
+      updatedAt: '2026-10-12T11:00:00.000Z',
+    };
+    const cDoc = refundToFirestore(complexRefund);
+    assert.ok(cDoc.confirmBy instanceof Timestamp);
+    assert.ok(cDoc.lastAttemptAt instanceof Timestamp);
+    assert.deepEqual(refundFromFirestore('ref_02', cDoc), complexRefund);
+
+    // a refund without method or attempts reads as gateway and 0
+    const minimalDoc = {
+      paymentId: 'pay_01',
+      amount: 50_000,
+      percent: 100,
+      status: 'pending',
+    };
+    const minRestored = refundFromFirestore('ref_min', minimalDoc);
+    assert.equal(minRestored?.method, 'gateway');
+    assert.equal(minRestored?.attempts, 0);
 
     const sampleEntry: LedgerEntry = {
       id: 'led_01',
@@ -340,6 +402,8 @@ describe('Firestore <-> Domain booking mappers', () => {
       status: 'pending',
       manual: false,
       fromEscrow: true,
+      method: 'gateway',
+      attempts: 0,
       reason: 'event_cancelled',
       createdAt: '2026-10-10T09:00:00.000Z',
       updatedAt: '2026-10-10T09:00:00.000Z',

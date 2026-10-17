@@ -120,6 +120,7 @@ export async function handleConfirmFakePayment(
       amount: fakeTransfer.amount,
       content: fakeTransfer.content,
       receivedAt: fakeTransfer.receivedAt,
+      payer: fakeTransfer.payer,
     });
     const res = await handlePaymentWebhook(
       { provider: 'fake', rawBody, headers: { [FAKE_SIGNATURE_HEADER]: signFakeWebhook(rawBody, secret) } },

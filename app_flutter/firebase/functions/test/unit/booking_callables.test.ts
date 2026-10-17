@@ -20,6 +20,7 @@ import {
 } from '../../src/callables/booking.js';
 import { handleConfirmFakePayment, handleCreatePayment } from '../../src/callables/payment.js';
 import { handleBookingClock } from '../../src/scheduled/booking_clock.js';
+import { TEST_CIPHER } from './support/payment_world.js';
 
 function createTestDeps(): {
   deps: BookingDeps;
@@ -57,6 +58,7 @@ function createTestDeps(): {
     providers: { acceptsOrders: async (id) => id !== 'closed1' },
     blocks,
     gateway,
+    cipher: TEST_CIPHER,
     clock: { now: () => new Date('2026-10-01T10:00:00.000Z') },
     ids: { newId: () => `id_${idCounter++}` },
   };

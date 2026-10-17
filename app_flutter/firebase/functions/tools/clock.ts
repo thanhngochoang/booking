@@ -7,12 +7,13 @@
 import { fileURLToPath } from 'node:url';
 import { assertLocalEmulators } from '../seed/local_guard.js';
 
-export const USAGE = 'usage: npm run clock -- events | bookings   (local emulators only)';
+export const USAGE = 'usage: npm run clock -- events | bookings | payments   (local emulators only)';
 
 export interface ClockIo {
   print(line: string): void;
   events(): Promise<object>;
   bookings(): Promise<object>;
+  payments(): Promise<object>;
 }
 
 const counts = (r: object): string => Object.entries(r).map(([k, v]) => `${k}=${String(v)}`).join(' ');
@@ -24,13 +25,14 @@ export async function runClock(
   io: ClockIo,
 ): Promise<number> {
   const command = argv[0];
-  if (command !== 'events' && command !== 'bookings') {
+  if (command !== 'events' && command !== 'bookings' && command !== 'payments') {
     io.print(USAGE);
     return command === '--help' || command === '-h' ? 0 : 2;
   }
   assertLocalEmulators({ allowAnyProject: true }, env);
   if (command === 'events') io.print(`eventClock: ${counts(await io.events())}`);
-  else io.print(`bookingClock: ${counts(await io.bookings())}`);
+  else if (command === 'bookings') io.print(`bookingClock: ${counts(await io.bookings())}`);
+  else io.print(`paymentClock: ${counts(await io.payments())}`);
   return 0;
 }
 
@@ -47,6 +49,10 @@ async function main(): Promise<void> {
       const { liveVerificationDeps } = await import('../src/infra/live_verification.js');
       const notify = await emulatorNotifyDeps();
       return handleBookingClock(undefined, { ...liveReminderDeps(), notify }, { verification: { deps: liveVerificationDeps(), notify } });
+    },
+    payments: async () => {
+      const { handlePaymentClock } = await import('../src/scheduled/payment_clock.js');
+      return handlePaymentClock();
     },
   };
   process.exitCode = await runClock(process.argv.slice(2), process.env, io);

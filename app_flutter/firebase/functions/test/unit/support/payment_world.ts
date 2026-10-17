@@ -28,6 +28,11 @@ export interface PaymentWorld {
   advanceMinutes(minutes: number): void;
 }
 
+import { aesGcmCipher } from '../../../src/infra/account_cipher.js';
+
+const TEST_KEY_B64 = Buffer.alloc(32, 7).toString('base64');
+export const TEST_CIPHER = aesGcmCipher(TEST_KEY_B64);
+
 /** p1 sells `svc1` (1 000 000 VND); c1 and c2 have phones. */
 export function paymentWorld(start = new Date('2026-10-01T10:00:00.000Z')): PaymentWorld {
   const store = new MemoryBookingStore();
@@ -53,6 +58,7 @@ export function paymentWorld(start = new Date('2026-10-01T10:00:00.000Z')): Paym
     providers: { acceptsOrders: async () => true },
     blocks,
     gateway,
+    cipher: TEST_CIPHER,
     clock: { now: () => new Date(now) },
     ids: { newId: () => `id_${String(++n).padStart(4, '0')}` },
   };

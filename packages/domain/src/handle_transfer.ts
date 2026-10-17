@@ -13,7 +13,8 @@ import type {
 } from './booking_ports.js';
 import { moveDraftToRequested, refundLatePayment } from './booking_payment_paths.js';
 import { DomainError } from './errors.js';
-import type { Payment, Refund } from './escrow.js';
+import type { Payment, Refund, StoredBankAccount } from './escrow.js';
+import { payerAccountOf } from './payer_account.js';
 import { dispatchRefunds, transferRefund } from './refunds.js';
 
 import {
@@ -38,6 +39,7 @@ async function applyTransfer(
   payment: Payment,
   booking: Booking | null,
   n: TransferNotification,
+  captured: StoredBankAccount | null,
   now: Date,
 ): Promise<{ readonly outcome: Exclude<TransferOutcome, 'duplicate' | 'needs_review'>; readonly refunds: Refund[] }> {
   const { payment: stepPayment, ledgerEntry, decision, excess } = applyTransferPure({
@@ -49,47 +51,56 @@ async function applyTransfer(
 
   await tx.addLedgerEntry(ledgerEntry);
 
-  const refundOf = async (amount: number, reason: Parameters<typeof transferRefund>[0]['reason']) => {
-    const { refund, ledgerEntry: refundLedger } = transferRefund({
-      payment,
+  let current: Payment = payment;
+  const refunds: Refund[] = [];
+
+  const addTransferRefund = async (amount: number, reason: Parameters<typeof transferRefund>[0]['reason']) => {
+    const { refund, ledgerEntry: refundLedger, payment: nextPayment } = transferRefund({
+      payment: current,
       refundId: deps.ids.newId(),
       ledgerEntryId: deps.ids.newId(),
       amount,
       reason,
+      destination: captured ?? current.payer,
       providerRef: n.txnId,
       now,
     });
+    current = nextPayment;
     await tx.addRefund(refund);
     await tx.addLedgerEntry(refundLedger);
-    return refund;
+    refunds.push(refund);
   };
 
   switch (decision.kind) {
     case 'partial':
-      await tx.setPayment(stepPayment);
+      // The first sender that counts toward the payment is kept as its payer (V2 Decision 2).
+      current = { ...stepPayment, payer: payment.payer ?? captured };
+      await tx.setPayment(current);
       return { outcome: 'partial', refunds: [] };
 
     case 'refund':
-      // The whole transfer goes back; the payment itself does not change.
-      return { outcome: 'refunded', refunds: [await refundOf(n.amount, decision.reason)] };
+      // The whole transfer goes back; the payment's refundedAmount is updated, payer unchanged.
+      await addTransferRefund(n.amount, decision.reason);
+      current = { ...current, updatedAt: now.toISOString() };
+      await tx.setPayment(current);
+      return { outcome: 'refunded', refunds };
 
     case 'paid': {
-      const refunds: Refund[] = [];
-      const paid = stepPayment;
-      if (excess > 0) refunds.push(await refundOf(excess, 'overpaid_excess'));
+      current = { ...stepPayment, payer: payment.payer ?? captured };
+      if (excess > 0) await addTransferRefund(excess, 'overpaid_excess');
       if (!booking || booking.status !== 'draft') {
-        const late = await refundLatePayment(tx, deps, paid, now);
+        const late = await refundLatePayment(tx, deps, current, now);
         refunds.push(late.refund);
         return { outcome: 'refunded', refunds };
       }
       const accepts = await deps.providers.acceptsOrders(payment.payeeId);
       if (!accepts) {
-        const late = await refundLatePayment(tx, deps, paid, now, 'provider_not_accepting');
+        const late = await refundLatePayment(tx, deps, current, now, 'provider_not_accepting');
         refunds.push(late.refund);
         return { outcome: 'refunded', refunds };
       }
-      await tx.setPayment(paid);
-      await moveDraftToRequested(tx, deps, booking, paid, now);
+      await tx.setPayment(current);
+      await moveDraftToRequested(tx, deps, booking, current, now);
       return { outcome: excess > 0 ? 'paid_with_refund' : 'paid', refunds };
     }
   }
@@ -106,10 +117,12 @@ import {
 } from './payment_settlement.js';
 
 export class BookingPaymentSettler implements SubjectSettler {
-  constructor(private readonly deps: BookingDeps) {}
+  constructor(readonly deps: BookingDeps) {}
 
   async settle(paymentId: string, transfer: TransferNotification): Promise<Exclude<TransferOutcome, 'needs_review'>> {
     const recordId = transferRecordId(transfer);
+    // Encrypted before the transaction; a cipher failure fails the notification (provider retries).
+    const captured = await payerAccountOf(this.deps.cipher, transfer.payer);
     const now = this.deps.clock.now();
     let pending: Refund[] = [];
     let provider: Payment['provider'] = this.deps.gateway.provider;
@@ -124,7 +137,7 @@ export class BookingPaymentSettler implements SubjectSettler {
       provider = payment.provider;
       const booking = await tx.getBooking(payment.subjectId);
 
-      const applied = await applyTransfer(tx, this.deps, payment, booking, transfer, now);
+      const applied = await applyTransfer(tx, this.deps, payment, booking, transfer, captured, now);
       await tx.saveTransferRecord(transferRecordOf(transfer, applied.outcome, payment.id));
       pending = applied.refunds;
       return applied.outcome;
@@ -199,6 +212,16 @@ export function bookingSettlement(deps: BookingDeps): SettlementDeps {
 
 export function asSettlement(deps: SettlementDeps | BookingDeps): SettlementDeps {
   return 'subjects' in deps ? (deps as SettlementDeps) : bookingSettlement(deps as BookingDeps);
+}
+
+/**
+ * The booking deps behind either form: the deps themselves, or those of the registered
+ * `BookingPaymentSettler`; null when neither exists (no booking store to read refunds from).
+ */
+export function bookingDepsOf(deps: SettlementDeps | BookingDeps): BookingDeps | null {
+  if (!('subjects' in deps)) return deps as BookingDeps;
+  const booking = (deps as SettlementDeps).subjects.booking;
+  return booking instanceof BookingPaymentSettler ? booking.deps : null;
 }
 
 /**

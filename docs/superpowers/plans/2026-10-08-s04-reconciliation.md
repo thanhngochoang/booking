@@ -28,24 +28,24 @@ Cách đọc cột "Trạng thái":
 | `DRAFT_MAX_MINUTES` = 60 | (c) | — | Thay bằng `MAX_PAYMENT_ATTEMPTS` = 3, lỗi `payment_attempts_exceeded`. Xem "Câu hỏi cho chủ dự án". |
 | `LATE_TRANSFER_GRACE_MINUTES` | (b) | `DRAFT_PAYMENT_GRACE_MINUTES` = 5 | Là phần cộng thêm vào `payableUntil` sau hạn QR. |
 | `RECONCILE_AFTER_MINUTES` | (b) | `PAYMENT_RECONCILE_AFTER_MINUTES` = 3 | |
-| `REFUND_RESEND_AFTER_MINUTES` | (c) | — | Chỉ vé có `TICKET_REFUND_RESEND_AFTER_MINUTES` (`event_payments.ts`). Gửi lại hoàn tiền booking: V2. |
+| `REFUND_RESEND_AFTER_MINUTES` | (a) | `REFUND_RESEND_AFTER_MINUTES` = 10 (`booking_policy.ts`) | Đã làm ở #201: dùng cho bước `resend` trong `paymentClock`. |
 | `paymentCodeOf`, `displayPaymentCode` | (b) | `transferCodeFor(paymentId)` (`payment_code.ts`) | Trả sẵn dạng hiển thị `PB XXXXXX` (có dấu cách); băm FNV-1a, bảng chữ `TRANSFER_CODE_ALPHABET`; không trùng mã giữa mọi payment (Ruling 6). |
 | `paymentCodeIn(content)` | (b) | `transferCodesIn(content)` | Trả danh sách mã đọc được, theo thứ tự. |
 | `crc16Ccitt`, `buildVietQrPayload` | (a) | `vietqr.ts` | Tham số `{bin, accountNumber, amount, content}` (không phải `bankBin`). |
 | `VietQrInstructions` | (c) | — | Câu trả lời của cổng là `PaymentInstructions` (dòng dưới). |
 | `PaymentInstructions` (kiểu chung cho mọi chủ thể, app đọc) | (b) | Hai thứ: `PaymentInstructions` (`booking_ports.ts`, câu trả lời của cổng: `providerRef?`, `qrPayload?`, `bankName?`, `accountMasked?`, `payUrl?`, `bankAppsUrl?`); và thứ `createPayment` trả: `CreatePaymentResult {paymentId, checkout: BookingCheckout}` (`create_payment.ts`, `booking.ts`), chép vào `bookings/{id}.checkout` | Kiểu chung cho chủ thể khác (vé, Chụp ngay, phí xác minh): V1. |
 | `TransferEvent` | (b) | `TransferNotification {provider, txnId, amount, content, receivedAt, raw?, payer?}` (`booking_ports.ts`) | `payer` chỉ có `bankCode?`, `accountMasked?`, `name?`, không lưu riêng. |
-| `PayerBankAccount`, `StoredBankAccount`, `Payment.payer` | (c) | — | V2. |
-| `RefundEvent`, `GatewayEvent`, `applyRefundEvent` | (c) | — | Không có webhook hoàn tiền. V2. |
+| `PayerBankAccount`, `StoredBankAccount`, `Payment.payer` | (a) | `PayerBankAccount` (`booking_ports.ts`), `StoredBankAccount` (`escrow.ts`), `Payment.payer` | Đã làm ở #201. |
+| `RefundEvent`, `GatewayEvent`, `applyRefundEvent` | (a) | `RefundEvent` (`refund_subjects.ts`), `applyRefundEvent` (`refunds.ts`) | Đã làm ở #201. |
 | `PaymentGateway {createPayment, queryPayment, refund, verifyWebhook}` | (b) | `PaymentGateway {provider, createPayment, queryTransfers, issueRefund, createDepositIntent, checkPaymentStatus}` (`booking_ports.ts`) | Kiểm chữ ký nằm ở Functions (`verifyFakeWebhook`), không ở port. `createDepositIntent`, `checkPaymentStatus` còn cho vé. |
 | `PAYMENT_STATUSES` có `expired`, `needs_review` | (a) | `escrow.ts` | Bỏ `failed`. Chưa code nào ghi `needs_review` lên `Payment`; chuyển khoản không khớp chỉ có bản ghi `payment_notifications` với `outcome: 'needs_review'`. |
 | `Payment.code` | (b) | `Payment.transferCode` | |
 | `Payment.method`, `expiresAt`, `receivedAmount` | (a) | `escrow.ts` | Tuỳ chọn (payment cũ và vé không có). |
-| `Payment.refundedAmount`, `appliedTransferIds`, `instructions` | (c) | — | Idempotent theo `TransferRecord` (`payment_notifications/{provider}_{txnId}`, `transferRecordId`); cách trả lưu ở `bookings/{id}.checkout`. `refundedAmount`: V2. |
-| `REFUND_STATUSES` có `awaiting_account` | (c) | `pending`, `done`, `failed` | V2. |
+| `Payment.refundedAmount`, `appliedTransferIds`, `instructions` | (a) | `Payment.refundedAmount` (`escrow.ts`) | Đã làm ở #201 (`refundedAmount`). Idempotent theo `TransferRecord` (`payment_notifications/{provider}_{txnId}`, `transferRecordId`); cách trả lưu ở `bookings/{id}.checkout`. |
+| `REFUND_STATUSES` có `awaiting_account` | (a) | `REFUND_STATUSES = ['awaiting_account', 'pending', 'done', 'failed']` | Đã làm ở #201. |
 | `RefundKind` (`policy` \| `excess`), `Refund.kind` | (b) | `Refund.fromEscrow: boolean` (`true` = hoàn từ tiền đang giữ: huỷ, từ chối, hết hạn, khiếu nại; `false` = trả lại ngay khi tiền tới); `isEscrowRefund(r)` | Dòng cũ không có trường đọc là `true`. |
 | `ExcessReason` | (b) | `PaymentRefundReason` (`refunds.ts`): `overpaid_excess`, `underpaid_expired`, `late_transfer`, `extra_transfer`, `late_payment_draft_expired` | |
-| `RefundMethod`, `refundMethodOf`, `Refund.method`, `Refund.destination` | (c) | — | V2. |
+| `RefundMethod`, `refundMethodOf`, `Refund.method`, `Refund.destination` | (a) | `RefundMethod`, `refundMethodOf`, `Refund.method`, `Refund.destination` (`escrow.ts`) | Đã làm ở #201. |
 | `LEDGER_ENTRY_TYPES` có `payment_received` | (a) | `escrow.ts` | `deposit_received` cũ vẫn được đọc (`LEGACY_PAYMENT_RECEIVED_TYPE`). |
 | `policyRefundTotal(refunds)` | (b) | `escrowRefundedTotal(refunds)` (`escrow.ts`); Functions `escrowRefundedOfDocs(docs)` (`infra/booking_firestore.ts`) | Giải ngân, chi trả và thu nhập đã dùng nó (Ruling 10). |
 | `excessRefund(...)` | (b) | `transferRefund({payment, refundId, ledgerEntryId, amount, reason, providerRef?, now})` (`refunds.ts`) | |
@@ -53,10 +53,10 @@ Cách đọc cột "Trạng thái":
 | `TransferDecision`, `decideTransfer` | (a) | `transfer_rules.ts` | Dạng khác: `{kind: 'paid', excess} \| {kind: 'partial', received} \| {kind: 'refund', amount, reason}`. |
 | `applyTransfer` (hàm thuần, export) | (b) | hàm nội bộ `applyTransfer` trong `handle_transfer.ts` (không export, chạy trong `BookingTx`) | Bản thuần dùng chung: V1. |
 | `SettlementOutcome` | (b) | `TransferOutcome`: `paid`, `paid_with_refund`, `partial`, `refunded`, `needs_review`, `duplicate` | |
-| `PaymentLookup` | (b) | các truy vấn trên `BookingStore`: `findPaymentsByTransferCode`, `findPaymentsToReconcile`, `findOverduePayments`, `getTransferRecord` | `pendingRefunds`, `recordEvent` không có (V2). |
+| `PaymentLookup` | (b) | các truy vấn trên `BookingStore`: `findPaymentsByTransferCode`, `findPaymentsToReconcile`, `findOverduePayments`, `getTransferRecord`, `findPendingRefunds`, `awaitingRefundsDue` | Đã làm ở #201 (`findPendingRefunds`, `awaitingRefundsDue`). |
 | `settleBookingTransfer` | (b) | `handleTransferNotification(deps: BookingDeps, n)` (`handle_transfer.ts`) → `TransferResult {outcome, paymentId?}`; booking nháp đã trả đi qua `moveDraftToRequested` (`booking_payment_paths.ts`) | Chỉ khớp payment có `subjectType === 'booking'`. |
-| `handlePaymentWebhook` (domain) | (b) | Functions: `handlePaymentWebhook(req, deps, env)` và `servePaymentWebhook` (`http/payment_webhook.ts`) | Domain chỉ nhận `TransferNotification` đã kiểm chữ ký. |
-| `reconcilePayments` | (b) | `runPaymentSweeps(deps)` (`payment_sweeps.ts`) → `PaymentSweepResults` | Chỉ đối soát + cho hết hạn payment booking; **không** gửi lại hoàn tiền (V2). |
+| `handlePaymentWebhook` (domain) | (b) | Functions: `handlePaymentWebhook(req, deps, env)` và `servePaymentWebhook` (`http/payment_webhook.ts`) | Domain chỉ nhận `TransferNotification` hoặc `RefundEvent` đã kiểm chữ ký. |
+| `reconcilePayments` | (a) | `runPaymentSweeps(deps)` (`payment_sweeps.ts`) → `PaymentSweepResults` | Đã làm ở #201: đối soát, hết hạn, và gửi lại hoàn tiền `resend`. |
 | `createPayment` | (a) | `createPayment(deps, {bookingId, customerId, method})` → `CreatePaymentResult` | Không có `renew`/`returnUrl`: mỗi lần gọi là một QR mới (QR đang mở hết hạn, tiền đã nhận được hoàn), tối đa 3 lần. **Không** kiểm lại cổng nhận đơn (xem #144 bên dưới). |
 | `checkPayment` | (a) | `checkPayment(deps, {bookingId, customerId})` → `{paid, booking}` | Không trả instructions. |
 | `dispatchRefund` | (a) | `dispatchRefund(deps, refund, provider)` (lỗi cổng ném ra ngoài); `dispatchRefunds(deps, items)` (lỗi cổng → `failed` + `manual`, Ruling 7) | Không gửi lại tự động. |
@@ -65,12 +65,12 @@ Cách đọc cột "Trạng thái":
 | `SubjectSettler`, `SettlementDeps` (+ `subjects`), `settleTransfer` | (c) | — | V1. |
 | `newSubjectPayment`, `issuePaymentInstructions`, `instructionsOf`, `checkSubjectPayments` | (c) | — | V1. |
 | `expireUnpaid` | (b) nội bộ | `expireOpenPayment(tx, deps, payment, now)` (`booking_payment_paths.ts`, không export từ `index.ts`) | Bản export dùng chung: V1. |
-| `sendRefundOnce`, `mergeRefundOutcome` | (c) | — | V2. |
+| `sendRefundOnce`, `mergeRefundOutcome` | (a) | `sendRefundOnce`, `mergeRefundOutcome` (`refunds.ts`) | Đã làm ở #201. |
 | `BookingDraftInput`, `buildBookingDraft` | (c) | `createBookingDraft` dựng booking ngay trong hàm | **#152 (S05 bàn giao), Task 2** tạo (việc nhỏ). |
 | `OrderGateDeps`, `orderBlocker`, `assertOrderAllowed` | (c) | `createBookingDraft` gọi thẳng `deps.providers.acceptsOrders` | **#198 (N1, `2026-10-08-n1-order-gate.md`)** tạo. |
 | Decision 9 (1): `createPayment` kiểm lại cổng nhận đơn | (c) | — | **#198 (N1)**: `createPayment` gọi `assertOrderAllowed`. |
 | Decision 9 (2): tiền tới cho bản nháp của thợ đã ngừng nhận đơn → hoàn 100% (`provider_not_accepting`) | (c) | — | **#135 (S21), Task 2** (việc nhỏ trong `handle_transfer.ts`). |
-| `BookingDeps.cipher` | (c) | — | V2. |
+| `BookingDeps.cipher` | (a) | `BookingDeps.cipher: AccountCipher` | Đã làm ở #201. |
 | `BookingStore.findExpiredDrafts(now, limit?)` | (a) | `booking_ports.ts` | Trả bản nháp có `payableUntil <= now`; bản nháp không có trường thì không bao giờ bị dọn. |
 | `upfrontAmount(price)` | (b) | `computeDeposit(price)` → `{deposit: price, remaining: 0}` (`UPFRONT_PERCENT` = 100) | |
 | `computeRefund(amount, percent)` | (a) | `booking_policy.ts` | Tham số vẫn tên `deposit`. |
@@ -147,6 +147,8 @@ Ba việc dưới đây lớn hơn một task nhỏ. Cập nhật 2026-10-08: V1
 Plan bị chặn: #203 S21 phí xác minh (tách khỏi #135 ngày 2026-10-08; chủ thể `verification_fee`), #140 S13–S14 (chủ thể `instant_request`) và #140 S13 khách (trả tiền ở S04.04). #138 S17 chỉ bị ảnh hưởng nhẹ (vé trả tiền vẫn về `/bookings?tab=events&highlight=…`).
 
 ### V2. Hoàn tiền về tài khoản người chuyển, gửi lại hoàn tiền và webhook hoàn tiền
+
+**Đã làm ở #201.**
 
 Hôm nay: không lưu tài khoản người chuyển (chỉ nằm trong `raw` của `payment_notifications`), `Refund` không có `method`/`destination`, không có trạng thái `awaiting_account`; lỗi cổng khi hoàn ở các đường thanh toán thành `failed` + `manual` (Ruling 7), không gửi lại. Cần:
 

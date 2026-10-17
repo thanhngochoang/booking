@@ -75,6 +75,13 @@ Khiếu nại → mốc liên quan `disputed`, chi trả `on_hold` (§3g.2 giữ
 
 `Refund` thêm `method` (`gateway` \| `bank_transfer`), `destinationAccount?` (che, mã hoá), `providerRef`, `failureReason?`. Hoàn sau khi đã chi cho thợ: bút toán `adjustment` trừ vào lần chi sau (§3g.3 giữ nguyên). Chính sách hoàn giữ nguyên, tính trên toàn bộ số đã trả; lỗi của thợ/studio hoàn 100%.
 
+**Đã làm ở #201 (V2 hoàn tiền về tài khoản người chuyển)**:
+- Ghi nhận tài khoản người chuyển (`payer`) từ lần chuyển tiền đầu tiên được chấp nhận (`partial` hoặc `paid`), lưu mã hoá AES-256-GCM qua `AccountCipher` với khoá `PAYOUT_ACCOUNT_KEY`, che số tài khoản chỉ lưu 4 số cuối (Decisions 2, 12).
+- Xác định phương thức và đích hoàn tiền (`method = refundMethodOf(payment.method)`): thanh toán qua `bank_qr` hoàn về `bank_transfer` tới `payment.payer`; nếu chưa có thông tin người chuyển chuyển trạng thái sang `awaiting_account` chờ khách xác nhận ở S22.04 (#141) (Decision 3).
+- Bổ sung trường `Payment.refundedAmount` theo dõi tổng tiền đã hoàn trên payment (Decision 4).
+- Gửi lệnh hoàn tiền qua `sendRefundOnce` với cơ chế retry tối đa 6 lần (`REFUND_MAX_ATTEMPTS`) qua cronjob `paymentClock` (`resend` mỗi 10 phút, `REFUND_RESEND_AFTER_MINUTES`), thay thế bước `refund_resend` của `eventClock` (Decisions 5, 7, 8).
+- Nhận kết quả hoàn tiền qua webhook `paymentWebhook?provider=...` với định dạng sự kiện `{type: 'refund', refundId, status, providerRef?, failureReason?}` và hợp nhất kết quả an toàn bằng `mergeRefundOutcome` (Decisions 6, 9).
+
 Hook: `notifyRefundAccountNeeded` trong `packages/domain/src/notification_hooks.ts` (#138) ("Chọn tài khoản nhận hoàn"), mục tiêu `/me/payments`; #141 là chỗ gọi duy nhất.
 
 ## 6. Chi trả
@@ -127,7 +134,7 @@ Mỗi khoản doanh thu xuất **hoá đơn điện tử** (nhà cung cấp hoá
 ## 9. Cổng kỹ thuật
 
 `packages/domain`:
-- `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }` (cùng `checkPaymentStatus` cho vé tới #137)
+- `PaymentGateway { provider, createPayment, queryTransfers, issueRefund }` (vé thanh toán như booking từ #200, không còn `checkPaymentStatus`). Lệnh `issueRefund(params)` nhận `{ refundId, paymentId, providerRef?, amount, reason?, method, destination? }` trong đó `destination?: PayerBankAccount` (số tài khoản giải mã trong bộ nhớ, không lưu/log), trả về `{ success, providerRef?, pending?, error? }` (#201).
 - `PayoutGateway { lookupAccountName, createPayout, queryPayout }`
 - Luật: trạng thái `Payment`, khớp tên, lịch chi, tính số tiền chi, chuyển sai.
 - Điểm mở rộng chủ thể thanh toán (V1, #200): `SubjectSettler` cho từng chủ thể (`booking`, `event_registration`, `instant_request`, `verification_fee`), gom qua `SettlementDeps.subjects` và `liveSettlementDeps()` ở Functions. Mọi khoản chuyển khoản được xử lý thống nhất qua `settleTransfer`: phân bổ theo `subjectType`, ghi `TransferRecord` chống trùng độc lập cho từng chủ thể, và gọi settler tương ứng để cập nhật thực thể nghiệp vụ (`Booking`, `EventRegistration`...) cùng các bút toán ký quỹ.
