@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:photobooking/core/app_config.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/support/support_providers.dart';
@@ -22,7 +21,7 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final topics = l != null ? faqTopics(l) : const <FaqTopic>[];
+    final topics = faqTopics(l);
     final currentTopic = topics.firstWhere(
       (t) => t.id == _selectedTopicId,
       orElse: () => topics.isNotEmpty
@@ -36,9 +35,7 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(l?.helpTitle ?? 'Trợ giúp'),
-          ),
+          appBar: AppBar(title: Text(l.helpTitle)),
           body: ListView(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s4,
@@ -49,10 +46,9 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
 
               // "Câu hỏi thường gặp" Section
               Text(
-                l?.helpFaqTitle ?? 'Câu hỏi thường gặp',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                l.helpFaqTitle,
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: AppSpace.s2),
 
@@ -92,9 +88,9 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
 
               // Contact support primary CTA
               AppButton.primary(
-                l?.helpContactSupport ?? 'Liên hệ hỗ trợ',
+                l.helpContactSupport,
                 key: const Key('help-contact-support'),
-                icon: AppIcons.supportAgent,
+                icon: const AppIcon(AppIcons.supportAgent, size: 20),
                 onPressed: () => context.push('/help/chat'),
               ),
 
@@ -117,11 +113,11 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
                         vertical: AppSpace.s1,
                       ),
                       child: Text(
-                        l?.helpEmailLine(email) ?? 'Email hỗ trợ: $email',
+                        l.helpEmailLine(email),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                            ),
+                          color: Theme.of(context).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ),
@@ -165,19 +161,15 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
                     Expanded(
                       child: Text(
                         item.question,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     const SizedBox(width: AppSpace.s2),
                     AnimatedRotation(
                       turns: isExpanded ? 0.5 : 0.0,
                       duration: const Duration(milliseconds: 200),
-                      child: const AppIcon(
-                        AppIcons.expandMore,
-                        size: 20,
-                      ),
+                      child: const AppIcon(AppIcons.expandMore, size: 20),
                     ),
                   ],
                 ),
@@ -186,9 +178,9 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
                   Text(
                     item.answer,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ],

@@ -10,12 +10,14 @@ final supportRepositoryProvider = Provider<SupportRepository>((ref) {
 
 final supportEmailProvider = Provider<String?>((ref) => supportEmail);
 
-final supportThreadProvider = StreamProvider.autoDispose.family<SupportThread?, String>((ref, threadId) {
-  final repo = ref.watch(supportRepositoryProvider);
-  return repo.watchThread(threadId);
-});
+final supportThreadProvider = StreamProvider.autoDispose
+    .family<SupportThread?, String>((ref, threadId) {
+      final repo = ref.watch(supportRepositoryProvider);
+      return repo.watchThread(threadId);
+    });
 
-final supportMessagesProvider = StreamProvider.autoDispose.family<List<SupportMessage>, String>((ref, threadId) {
-  final repo = ref.watch(supportRepositoryProvider);
-  return repo.watchMessages(threadId);
-});
+final supportMessagesProvider = StreamProvider.autoDispose
+    .family<List<SupportMessage>, String>((ref, threadId) {
+      final repo = ref.watch(supportRepositoryProvider);
+      return repo.watchMessages(threadId);
+    });

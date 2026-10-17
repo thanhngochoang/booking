@@ -1,11 +1,7 @@
 import 'package:photobooking/l10n/app_localizations.dart';
 
 class FaqTopic {
-  const FaqTopic({
-    required this.id,
-    required this.label,
-    required this.items,
-  });
+  const FaqTopic({required this.id, required this.label, required this.items});
 
   final String id;
   final String label;
@@ -13,10 +9,7 @@ class FaqTopic {
 }
 
 class FaqItem {
-  const FaqItem({
-    required this.question,
-    required this.answer,
-  });
+  const FaqItem({required this.question, required this.answer});
 
   final String question;
   final String answer;
@@ -56,22 +49,21 @@ List<FaqTopic> faqTopics(AppLocalizations l) {
       items: [
         FaqItem(question: l.helpDisputeWhenQ, answer: l.helpDisputeWhenA),
         FaqItem(question: l.helpDisputeMoneyQ, answer: l.helpDisputeMoneyA),
-        FaqItem(question: l.helpDisputeEvidenceQ, answer: l.helpDisputeEvidenceA),
+        FaqItem(
+          question: l.helpDisputeEvidenceQ,
+          answer: l.helpDisputeEvidenceA,
+        ),
       ],
     ),
     FaqTopic(
       id: 'contact',
       label: l.helpTopicContact,
-      items: [
-        FaqItem(question: l.helpContactQ, answer: l.helpContactA),
-      ],
+      items: [FaqItem(question: l.helpContactQ, answer: l.helpContactA)],
     ),
     FaqTopic(
       id: 'reviews',
       label: l.helpTopicReviews,
-      items: [
-        FaqItem(question: l.helpReviewQ, answer: l.helpReviewA),
-      ],
+      items: [FaqItem(question: l.helpReviewQ, answer: l.helpReviewA)],
     ),
     FaqTopic(
       id: 'providers',

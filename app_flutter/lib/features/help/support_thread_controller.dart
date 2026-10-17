@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/ulid.dart';
@@ -32,14 +33,14 @@ class SupportThreadState {
   }
 }
 
-class SupportThreadController extends AutoDisposeFamilyNotifier<SupportThreadState, String?> {
-  SupportThreadController();
+class SupportThreadController extends Notifier<SupportThreadState> {
+  SupportThreadController(this._threadId);
 
-  String? get _threadId => arg;
+  final String? _threadId;
   String? get _uid => ref.read(authStateProvider).value?.uid;
 
   @override
-  SupportThreadState build(String? arg) => const SupportThreadState();
+  SupportThreadState build() => const SupportThreadState();
 
   void syncWithStream(List<SupportMessage> stream) {
     if (state.pending.isEmpty) return;
@@ -80,9 +81,9 @@ class SupportThreadController extends AutoDisposeFamilyNotifier<SupportThreadSta
 
   Future<void> retry(String clientId) async {
     final msg = state.pending.cast<SupportMessage?>().firstWhere(
-          (m) => m?.id == clientId,
-          orElse: () => null,
-        );
+      (m) => m?.id == clientId,
+      orElse: () => null,
+    );
     if (msg == null) return;
 
     _updatePendingState(clientId, MessageSendState.sending);
@@ -91,12 +92,14 @@ class SupportThreadController extends AutoDisposeFamilyNotifier<SupportThreadSta
 
   Future<void> _performSend(String clientId, String text) async {
     final repo = ref.read(supportRepositoryProvider);
+    final uid = _uid;
+    // The user's own help thread is sent without an id: the callable creates
+    // it on the first message and refuses an id that does not exist yet.
+    final threadId = uid != null && _threadId == repo.helpThreadIdFor(uid)
+        ? null
+        : _threadId;
     try {
-      await repo.send(
-        threadId: _threadId,
-        text: text,
-        clientId: clientId,
-      );
+      await repo.send(threadId: threadId, text: text, clientId: clientId);
       // Wait for stream sync to drop it, or update to sent
       _updatePendingState(clientId, MessageSendState.sent);
     } catch (e) {
@@ -118,7 +121,7 @@ class SupportThreadController extends AutoDisposeFamilyNotifier<SupportThreadSta
   }
 }
 
-final supportThreadControllerProvider =
-    NotifierProvider.autoDispose.family<SupportThreadController, SupportThreadState, String?>(
-  SupportThreadController.new,
-);
+final supportThreadControllerProvider = NotifierProvider.autoDispose
+    .family<SupportThreadController, SupportThreadState, String?>(
+      SupportThreadController.new,
+    );
