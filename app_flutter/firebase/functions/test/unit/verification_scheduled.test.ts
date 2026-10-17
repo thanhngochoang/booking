@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   FakeBlockGate,
   FakePaymentGateway,
+  MemoryAddonStore,
   MemoryAwardStore,
   MemoryBookingStore,
   type AwardDeps,
@@ -19,6 +20,7 @@ function bookingDeps(now: Date): BookingDeps {
   return {
     store: new MemoryBookingStore(),
     services: { getService: async () => null },
+    addons: new MemoryAddonStore(),
     contacts: { get: async () => null },
     providers: { acceptsOrders: async () => true },
     blocks: new FakeBlockGate(),
