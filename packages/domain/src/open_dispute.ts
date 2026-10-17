@@ -8,7 +8,7 @@ import { DISPUTE_WINDOW_HOURS, MIN_DISPUTE_REASON_LENGTH, MAX_DISPUTE_REASON_LEN
 import type { BookingDeps } from './booking_ports.js';
 import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
-import { disputeEscrowPayment, isSettledPayment } from './escrow.js';
+import { disputeEscrowPayment, isSettledPayment, type Payment } from './escrow.js';
 import { disputeMilestone } from './milestones.js';
 import { isId } from './ids.js';
 

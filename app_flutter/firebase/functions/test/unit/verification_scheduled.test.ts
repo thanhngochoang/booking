@@ -63,7 +63,16 @@ describe('bookingClock verification step', () => {
 
   it('without extras the clock is what it was', async () => {
     const res = await handleBookingClock(bookingDeps(NOW));
-    assert.deepEqual(res, { cleanedDrafts: 0, expiredRequests: 0, upcomingTransitions: 0, autoCompletions: 0, releasedEscrows: 0 });
+    assert.deepEqual(res, {
+      cleanedDrafts: 0,
+      expiredRequests: 0,
+      upcomingTransitions: 0,
+      autoShots: 0,
+      autoApprovals: 0,
+      finishedChecks: 0,
+      releasedEscrows: 0,
+      autoCompletions: 0,
+    });
   });
 });
 

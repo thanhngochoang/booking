@@ -100,7 +100,7 @@ export function parseDeliveryUploadPath(path: string): { bookingId: string; uplo
   const bookingId = parts[1];
   const uploaderId = parts[2];
   const filename = parts[3];
-  if (!bookingId || !uploaderId || !filename.endsWith('.jpg')) return null;
+  if (!bookingId || !uploaderId || !filename || !filename.endsWith('.jpg')) return null;
   const fileId = filename.slice(0, -4);
   if (!ULID_REGEX.test(fileId)) return null;
   return { bookingId, uploaderId, fileId };

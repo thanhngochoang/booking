@@ -3,6 +3,7 @@ import {
   runBookingSweeps,
   sendDueReminders,
   sendVerificationNudges,
+  notifyDeliveryAutoApproveSoon,
   type Booking,
   type BookingDeps,
   type BookingSweepResults,
@@ -13,6 +14,7 @@ import { db } from '../infra/admin.js';
 import { FirestoreBookingStore } from '../infra/booking_firestore.js';
 import { liveBookingDeps } from '../infra/live_booking.js';
 import { liveNotifyDeps } from '../infra/live_notification.js';
+import { purgeDeliverySamples, type PurgeDeliverySamplesDeps } from './purge_delivery_samples.js';
 
 export const REMINDER_PAGE = 200;
 export const REMINDER_BATCH = 20;
@@ -27,10 +29,37 @@ export interface ReminderDeps {
 /**
  * Optional steps of the same 15-minute job that are not booking sweeps (no existing parameter
  * changes for them). `verification`: the one-time reminder of an unfinished verification
- * (S21, Decision 18).
+ * (S21, Decision 18). `delivery`: auto-approve reminder and sample purge.
  */
 export interface BookingClockExtras {
   readonly verification?: { readonly deps: VerificationDeps; readonly notify: NotifyDeps };
+  readonly delivery?: { readonly notify: NotifyDeps; readonly purge?: PurgeDeliverySamplesDeps };
+}
+
+export async function remindAutoApprovals(deps: BookingDeps, notify: NotifyDeps, limit = 50): Promise<number> {
+  const due = await deps.store.findDueAutoApproveNotices(deps.clock.now(), limit);
+  let count = 0;
+  for (const b of due) {
+    const now = deps.clock.now();
+    await deps.store.runTransaction(async (tx) => {
+      const live = await tx.getBooking(b.id);
+      if (!live || live.status !== 'delivered' || live.autoApproveNoticeAt !== null) return;
+      await tx.setBooking({
+        ...live,
+        autoApproveNoticeAt: now.toISOString(),
+        version: live.version + 1,
+        updatedAt: now.toISOString(),
+      });
+      await notifyDeliveryAutoApproveSoon(notify, {
+        bookingId: live.id,
+        customerId: live.customerId,
+        delivererId: live.photographerId,
+        round: live.deliveryRound ?? 1,
+      });
+      count++;
+    });
+  }
+  return count;
 }
 
 export function liveReminderDeps(): ReminderDeps {
@@ -61,6 +90,17 @@ export async function handleBookingClock(
       reminderError = e;
     }
   }
+
+  // Delivery auto-approval notice step
+  if (extras.delivery?.notify) {
+    try {
+      const notices = await remindAutoApprovals(deps, extras.delivery.notify);
+      logger.info('bookingClock remindAutoApprovals completed', { notices });
+    } catch (e) {
+      logger.error('bookingClock remindAutoApprovals failed', { error: String(e) });
+    }
+  }
+
   // Last step, its own try: a failure is logged and retried on the next tick, never thrown.
   if (extras.verification) {
     try {
@@ -70,6 +110,17 @@ export async function handleBookingClock(
       logger.error('bookingClock verificationNudges failed', { error: String(e) });
     }
   }
+
+  // Delivery sample purge step
+  if (extras.delivery?.purge) {
+    try {
+      const purged = await purgeDeliverySamples(extras.delivery.purge);
+      logger.info('bookingClock purgeDeliverySamples completed', { purged });
+    } catch (e) {
+      logger.error('bookingClock purgeDeliverySamples failed', { error: String(e) });
+    }
+  }
+
   if (reminderError !== null) throw reminderError;
   return results;
 }

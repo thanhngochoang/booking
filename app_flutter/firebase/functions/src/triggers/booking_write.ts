@@ -3,6 +3,11 @@ import {
   notifyBookingChange,
   syncBookingChat,
   refreshCompletedCount,
+  deliveryNotices,
+  notifyDeliverySubmitted,
+  notifyDeliveryRevisionRequested,
+  notifyDeliveryApproved,
+  notifyDeliveryExtraRound,
   type BadgeDeps,
   type ChatDeps,
   type NotifyDeps,
@@ -37,6 +42,46 @@ export async function handleBookingWrite(
   if (extras) {
     // Idempotent (deterministic notification ids, badge evaluation), so a retry of the event is safe.
     await notifyBookingChange(extras.notify, before, after);
+
+    if (after) {
+      const dNotices = deliveryNotices(before, after);
+      for (const dn of dNotices) {
+        if (dn.kind === 'submitted') {
+          // Fetch sample count of the round
+          const roundDoc = await db().collection('bookings').doc(after.id).collection('deliveries').doc(String(dn.round)).get();
+          const count = Number(roundDoc.data()?.photoCount ?? (roundDoc.data()?.samples?.length ?? 0));
+          await notifyDeliverySubmitted(extras.notify, {
+            bookingId: after.id,
+            customerId: after.customerId,
+            delivererId: after.photographerId,
+            round: dn.round,
+            count,
+          });
+        } else if (dn.kind === 'revision_requested') {
+          await notifyDeliveryRevisionRequested(extras.notify, {
+            bookingId: after.id,
+            customerId: after.customerId,
+            delivererId: after.photographerId,
+            round: dn.round,
+          });
+        } else if (dn.kind === 'approved') {
+          await notifyDeliveryApproved(extras.notify, {
+            bookingId: after.id,
+            customerId: after.customerId,
+            delivererId: after.photographerId,
+          });
+        } else if (dn.kind === 'extra_round') {
+          await notifyDeliveryExtraRound(extras.notify, {
+            bookingId: after.id,
+            customerId: after.customerId,
+            delivererId: after.photographerId,
+            round: dn.round,
+            granted: dn.granted,
+          });
+        }
+      }
+    }
+
     if (after && before?.status !== 'completed' && after.status === 'completed') {
       const results = await Promise.allSettled(
         [after.customerId, after.photographerId].map((uid) => evaluateUserBadges(extras.badges, uid)),

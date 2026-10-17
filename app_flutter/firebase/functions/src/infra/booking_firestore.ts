@@ -35,7 +35,15 @@ import {
   type LedgerEntryType,
   type TransferOutcome,
   type TransferRecord,
+  type DeliverySample,
 } from '@photobooking/domain';
+import {
+  deliveryRoundToFirestore,
+  deliveryRoundFromFirestore,
+  deliverySampleFromFirestore,
+  privateDeliveryToFirestore,
+  privateDeliveryFromFirestore,
+} from './delivery_firestore.js';
 
 export const BOOKINGS_COLLECTION = 'bookings';
 export const AVAILABILITY_COLLECTION = 'availability';
@@ -171,6 +179,28 @@ export function bookingToFirestore(b: Booking): DocumentData {
     reviewedAt: toTimestamp(b.reviewedAt),
     chatId: b.chatId ?? null,
     revisionsIncluded: b.revisionsIncluded ?? null,
+    revisionsUsed: b.revisionsUsed ?? null,
+    revisionsGranted: b.revisionsGranted ?? null,
+    deliveryRound: b.deliveryRound ?? null,
+    shotAt: toTimestamp(b.shotAt),
+    deliveredAt: toTimestamp(b.deliveredAt),
+    approvedAt: toTimestamp(b.approvedAt),
+    checkUntil: toTimestamp(b.checkUntil),
+    autoApproveAt: toTimestamp(b.autoApproveAt),
+    autoApproveNoticeAt: toTimestamp(b.autoApproveNoticeAt),
+    extraRound: b.extraRound
+      ? {
+          status: b.extraRound.status,
+          at: toTimestamp(b.extraRound.at),
+          note: b.extraRound.note ?? null,
+          photoNotes: b.extraRound.photoNotes.map((pn) => ({
+            sampleIndex: pn.sampleIndex,
+            note: pn.note,
+          })),
+        }
+      : null,
+    samplesPurgeAfter: toTimestamp(b.samplesPurgeAfter),
+    samplesPurged: b.samplesPurged ?? false,
     checkout: checkoutToFirestore(b.checkout),
     payableUntil: toTimestamp(b.payableUntil),
     version: b.version,
@@ -285,6 +315,30 @@ export function bookingFromFirestore(id: string, d: DocumentData | undefined): B
     reviewedAt: toIsoString(d.reviewedAt),
     chatId: d.chatId ?? undefined,
     ...(typeof d.revisionsIncluded === 'number' ? { revisionsIncluded: d.revisionsIncluded } : {}),
+    ...(typeof d.revisionsUsed === 'number' ? { revisionsUsed: d.revisionsUsed } : {}),
+    ...(typeof d.revisionsGranted === 'number' ? { revisionsGranted: d.revisionsGranted } : {}),
+    ...(typeof d.deliveryRound === 'number' ? { deliveryRound: d.deliveryRound } : {}),
+    shotAt: toIsoString(d.shotAt),
+    deliveredAt: toIsoString(d.deliveredAt),
+    approvedAt: toIsoString(d.approvedAt),
+    checkUntil: toIsoString(d.checkUntil),
+    autoApproveAt: toIsoString(d.autoApproveAt),
+    autoApproveNoticeAt: d.autoApproveNoticeAt !== undefined ? toIsoString(d.autoApproveNoticeAt) : undefined,
+    extraRound: d.extraRound && typeof d.extraRound === 'object'
+      ? {
+          status: d.extraRound.status,
+          at: toIsoString(d.extraRound.at) ?? new Date(0).toISOString(),
+          note: typeof d.extraRound.note === 'string' ? d.extraRound.note : null,
+          photoNotes: Array.isArray(d.extraRound.photoNotes)
+            ? d.extraRound.photoNotes.map((pn: { sampleIndex?: unknown; note?: unknown }) => ({
+                sampleIndex: Number(pn?.sampleIndex ?? 0),
+                note: String(pn?.note ?? ''),
+              }))
+            : [],
+        }
+      : null,
+    samplesPurgeAfter: d.samplesPurgeAfter !== undefined ? toIsoString(d.samplesPurgeAfter) : undefined,
+    samplesPurged: Boolean(d.samplesPurged),
     ...(checkout !== undefined ? { checkout } : {}),
     ...(payableUntil !== undefined ? { payableUntil } : {}),
     version: d.version ?? 1,
@@ -326,6 +380,17 @@ export function paymentToFirestore(p: Payment): DocumentData {
     releaseAfter: toTimestamp(p.releaseAfter),
     dispute: p.dispute ? { reason: p.dispute.reason, openedAt: toTimestamp(p.dispute.openedAt) } : null,
     payoutId: p.payoutId ?? null,
+    payableAmount: p.payableAmount ?? null,
+    milestones: p.milestones
+      ? p.milestones.map((m) => ({
+          kind: m.kind,
+          amount: m.amount,
+          status: m.status,
+          releaseAfter: toTimestamp(m.releaseAfter),
+          releasedAt: toTimestamp(m.releasedAt),
+          payoutId: m.payoutId ?? null,
+        }))
+      : null,
     createdAt: toTimestamp(p.createdAt),
     updatedAt: toTimestamp(p.updatedAt),
   };
@@ -371,6 +436,19 @@ export function paymentFromFirestore(id: string, d: DocumentData | undefined): P
         ? { reason: d.dispute.reason, openedAt: toIsoString(d.dispute.openedAt) ?? new Date(0).toISOString() }
         : null,
     payoutId: typeof d.payoutId === 'string' && d.payoutId !== '' ? d.payoutId : null,
+    ...(typeof d.payableAmount === 'number' ? { payableAmount: d.payableAmount } : {}),
+    ...(Array.isArray(d.milestones)
+      ? {
+          milestones: d.milestones.map((m: { kind?: unknown; amount?: unknown; status?: unknown; releaseAfter?: unknown; releasedAt?: unknown; payoutId?: unknown }) => ({
+            kind: m.kind as 'shoot' | 'delivery',
+            amount: Number(m.amount ?? 0),
+            status: m.status as 'held' | 'released' | 'paid_out' | 'disputed' | 'refunded',
+            releaseAfter: toIsoString(m.releaseAfter) ?? null,
+            releasedAt: toIsoString(m.releasedAt) ?? null,
+            payoutId: typeof m.payoutId === 'string' && m.payoutId !== '' ? m.payoutId : null,
+          })),
+        }
+      : {}),
     createdAt: toIsoString(d.createdAt) ?? new Date().toISOString(),
     updatedAt: toIsoString(d.updatedAt) ?? new Date().toISOString(),
   };
@@ -633,6 +711,39 @@ export class FirestoreBookingStore implements BookingStore {
             actorId: event.actorId ?? null,
           });
         },
+        getDelivery: async (bookingId, round) => {
+          const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(bookingId).collection('deliveries').doc(String(round));
+          const snap = await fTx.get(ref);
+          return deliveryRoundFromFirestore(round, snap.data());
+        },
+        setDelivery: async (d) => {
+          const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(d.bookingId).collection('deliveries').doc(String(d.round));
+          fTx.set(ref, deliveryRoundToFirestore(d));
+        },
+        getDeliverySamples: async (bookingId, fileIds) => {
+          const results: (DeliverySample | null)[] = [];
+          for (const fid of fileIds) {
+            const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(bookingId).collection('deliverySamples').doc(fid);
+            const snap = await fTx.get(ref);
+            results.push(deliverySampleFromFirestore(fid, snap.data()));
+          }
+          return results;
+        },
+        deleteDeliverySamples: async (bookingId, fileIds) => {
+          for (const fid of fileIds) {
+            const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(bookingId).collection('deliverySamples').doc(fid);
+            fTx.delete(ref);
+          }
+        },
+        setPrivateDelivery: async (bookingId, p) => {
+          const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(bookingId).collection('private').doc('delivery');
+          fTx.set(ref, privateDeliveryToFirestore(p));
+        },
+        getPrivateDelivery: async (bookingId) => {
+          const ref = this.firestore.collection(BOOKINGS_COLLECTION).doc(bookingId).collection('private').doc('delivery');
+          const snap = await fTx.get(ref);
+          return privateDeliveryFromFirestore(snap.data());
+        },
       };
 
       return fn(tx);
@@ -893,6 +1004,53 @@ export class FirestoreBookingStore implements BookingStore {
     for (const doc of snap.docs) {
       const p = paymentFromFirestore(doc.id, doc.data());
       if (p) res.push(p);
+    }
+    return res;
+  }
+
+  async findDueAutoApprovals(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'delivered')
+      .where('autoApproveAt', '<=', Timestamp.fromDate(now))
+      .limit(limit)
+      .get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b) res.push(b);
+    }
+    return res;
+  }
+
+  async findDueChecks(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'approved')
+      .where('checkUntil', '<=', Timestamp.fromDate(now))
+      .limit(limit)
+      .get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b) res.push(b);
+    }
+    return res;
+  }
+
+  async findDueAutoApproveNotices(now: Date, limit = 100): Promise<readonly Booking[]> {
+    const cutoff = new Date(now.getTime() + 24 * 3600 * 1000);
+    const snap = await this.firestore
+      .collection(BOOKINGS_COLLECTION)
+      .where('status', '==', 'delivered')
+      .where('autoApproveNoticeAt', '==', null)
+      .where('autoApproveAt', '<=', Timestamp.fromDate(cutoff))
+      .limit(limit)
+      .get();
+    const res: Booking[] = [];
+    for (const doc of snap.docs) {
+      const b = bookingFromFirestore(doc.id, doc.data());
+      if (b) res.push(b);
     }
     return res;
   }
