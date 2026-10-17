@@ -1,6 +1,6 @@
 # Handover ledger — plan S21 provider verification: S21.01, S21.02, S21.03, S21.04 (issue #135)
 
-Plan: `docs/superpowers/plans/2026-10-07-s21-verification.md`, Tasks 1–9. Branch `plan/135-s21-verification`, based on `origin/develop` (2e9017c). The fee, the `verification_fee` payment subject, the two fee callables and `VerifyFeeScreen` (plan Tasks 10–13) are **#203**, not this unit. Commits:
+Plan: `docs/superpowers/plans/2026-10-07-s21-verification.md`, Tasks 1–9. Branch `plan/135-s21-verification`, based on `origin/develop` (2e9017c). The fee, the `verification_fee` payment subject, the two fee callables and `VerifyFeeScreen` (plan Tasks 10–13) are **#203**, not this unit; they are written up in the "#203" section at the end of this file (the sections above describe #135 as it was handed over, with the fee off). Commits:
 - `43fc2cf` docs(mock): S21 rules, approved, revoked and owner frames (Task 1)
 - `f4a5120` feat(domain): verification states, staff decisions and gate re-checks (Task 2)
 - `c20fba8` feat(domain): identity and business verification with fake adapters (Task 3)
@@ -51,11 +51,11 @@ Each ruling lists what it costs if wrong.
 - The reminder is one push 24 h after the last change of an `in_progress` record, inside the existing `bookingClock`; no S06.01 banner.
 - Customers do not get an OTP at booking (S04.05); S21.01 is for providers only.
 - Notifications use #138's hooks (`notifyVerificationDecision`, `notifyBusinessDecision`, `notifyVerificationReminder`) after the use case commits.
-- Free until #203 (Decision 24): `feeRequired` false on the server (`liveVerificationDeps()`) and in the app (`verificationFeeRequiredProvider`).
+- Free until #203 (Decision 24): `feeRequired` was false on the server (`liveVerificationDeps()`) and in the app (`verificationFeeRequiredProvider`). **#203 flipped both to true** in one PR (see the "#203" section).
 
 ## Needs the owner (defaults taken)
 1. OTP for customers at booking (S04.05): not now.
-2. Provider type changed after paying the individual fee: no top-up (matters from #203).
+2. Provider type changed after paying the individual fee: no top-up (in force since #203: `kind` is frozen when the fee is recorded).
 3. Reinstating a revoked provider: terminal in the app; support handles it outside; staff tool later (#83).
 4. Phone change after approval: stays approved; the phone step shows undone until re-verified.
 5. Household tax code (12 digits = the owner's personal ID): store only a hash or the last 4 digits instead of plain text in `business.taxCode`? Default now: plain text, owner-readable only.
@@ -94,7 +94,7 @@ Each ruling lists what it costs if wrong.
 2. The identity callables answer `not_eligible` on any project that is not the emulator or dev (`fakePaymentsAllowed()`), until a real vendor and a KMS-backed vault exist.
 3. Dev providers who must stay bookable keep `verified: true` from the seed or the CLI (`npm run verifications -- approve <uid> --actor <uid>`); the gate now refuses providers without it.
 4. `REAL_IDENTITY` must stay unset in builds until (2) is resolved: with it unset the app shows its fake VNeID and NFC sheets.
-5. Verification is free until #203 merges (Decision 24): `feeRequired` is false on both the server and the app. #203 flips both in one PR so a released build never disagrees.
+5. Verification was free until #203 (Decision 24): #203 flips `feeRequired` to true on both the server and the app in one PR so a released build never disagrees. Deploy order for that flip is in the "#203" section.
 6. Set `SUPPORT_EMAIL` in release builds (the revoked and duplicate-account states show a support line only when it is set).
 
 ## Index deviation
@@ -102,12 +102,85 @@ Each ruling lists what it costs if wrong.
 
 ## Mock follow-ups (the mock was not edited in Task 9)
 - `#S21.02`: the counter reads "1 / 4" while step 2 is current; with the position-of-current-step rule it should read the current step's position (or the frame should show step 1).
-- `#S21.02-rejected`: the caption says "Còn 1 lần gửi lại miễn phí" is always shown; the app hides "Còn 0 lần gửi lại miễn phí" at 0 while the fee is off (ruling 11). Update the caption once #203 decides.
+- `#S21.02-rejected`: the caption says "Còn 1 lần gửi lại miễn phí" is always shown; the app hides "Còn 0 lần gửi lại miễn phí" at 0 while the fee is off (ruling 11). The target behaviour (line shown at 1, and at 0 as "Hết lượt gửi lại miễn phí · gửi lại cần trả phí xác minh mới") is in the app since #203; the mock caption still needs the 0 variant (see the "#203" section).
 - Missing frames: the S21.03 identity result ("Đã xác minh: {name}"), the S21.03 error alerts (underage, in use, rate limited, failed), and S21.04 pending, approved and rejected.
-- **#203 must fill** the fee step: the fee row's title and subtitle in `verify_start_screen.dart` (the `VerifyStep.fee` case of the row text builder returns null today), the fee screen route, and `verifyStepPath(VerifyStep.fee)` (null today), then flip `verificationFeeRequiredProvider` and the server `feeRequired` together. The mock frames `#S21.02-fee` and the "Đã trả phí xác minh" timeline row already show the target.
+- **Done in #203**: the fee row texts, the fee screen route, `verifyStepPath(VerifyStep.fee)` and the flag flip (the old "#203 must fill" list). The mock frames `#S21.02-fee` and the "Đã trả phí xác minh" timeline row were already the target.
 
 ## Base of this branch
 This branch was **rebased from `origin/main` onto `origin/develop`** (backup in the local branch `backup/135-before-rebase`). `origin/main` (07cbc98) holds #201's PR #230, which was merged into main instead of develop, so basing on it would have put #201's 73 files into this PR. One conflict, in `handle_transfer.ts`, was resolved by keeping develop's `paid` variable around the Decision 15 check. If #201's refund changes are later re-merged into develop (an owner action), this branch needs one more rebase.
 
 ## Sandbox note
 `gh` and `git` to GitHub need `dangerouslyDisableSandbox` in this environment (the keychain token is unreadable inside the sandbox).
+
+---
+
+# #203 — verification fee (plan Tasks 10–13)
+
+Branch `plan/203-s21-verification-fee`, based on `origin/develop` e29ca39 (has #135, #200 V1 payments, #201 V2 refunds, #190, #204). Commits:
+- `c3a7d2e` feat(domain): verification fee as a payment subject (Task 10)
+- `9613e45`, `7d83906` fix(domain): fee amount, attempt and paid resubmit guards; no fee for final rejections and grandfathered free resubmits (Task 10 fix rounds)
+- `7cc1e8f` feat(functions): verification fee callables and settlement subject (Task 11)
+- `e80b914`, `7846f21` feat(verify): S21.02 verification fee on S04.04; fix(domain): identity start honours the grandfathered fee waiver (Task 12)
+- Task 13: specs, data model and this section (one docs commit).
+
+## Built (#203)
+- **Domain** (`packages/domain/src`): `verification_fee.ts` (`startVerificationFee`, `checkVerificationFee`, `feePayable`, `VerificationFeeSettler`, `verificationFeeRefundHandler`), `feeWaived` in `verification.ts`, `PaymentSubject` gains `verification_fee` in `escrow.ts` (V1 had not added it on develop), `VerificationTx` and `VerificationDeps` gain the payment members and `gateway`, `payments`, `cipher`. Identity start needs the fee step done.
+- **Functions**: callables `startVerificationFee` and `checkVerificationFee`; `FirestoreVerificationTx` reads and writes the shared `payments`, `refunds`, `ledger_entries` and `payment_notifications` collections; `liveVerificationDeps()` has `feeRequired: true`; the fee is registered in `liveSettlementDeps()` (as `verification_fee: new VerificationFeeSettler(...)`, through the new `settlementSubjectsOf`) and in `liveRefundSubjects()` (through `refundSubjectsOf`), so the webhook, the payment clock, `confirmFakePayment` and the refund re-send all reach it. Seed: Giang's submitted record holds a paid fee with its payment and two ledger entries; An, Cúc and Dũng (approved before #203) keep `steps.fee` null.
+- **App**: `VerifyFeeScreen` at `/verify/start/fee`, S04.04 with the `VerificationFeePay` subject at `/verify/start/fee/pay`, the fee row on S21.02, the fee-paid timeline row, the no-free-resubmit line, S21.03 sending an unpaid provider to the fee, `verificationFeeRequiredProvider` true. Strings use the `verifyFee*`, `verifyStepFee*`, `verifyTlFee*` and `verifyNoFreeResubmit` keys (every quoted string equals `app_vi.arb` and the mock).
+
+## Rules worth knowing (#203)
+- **Refund reasons**: `duplicate_verification_fee` when a fee arrives for a record that already holds one (second payment, two methods paid); `stale_verification_fee` when the payment is no longer this attempt's fee (the code was for the other kind's amount, for an earlier attempt, or the record cannot take a fee any more: past the steps, finally rejected, waived or gone). Both refund 100% through V2; they are `applyRefundToPayment` policy refunds and live in `VERIFICATION_FEE_REFUND_REASONS`, not in `PAYMENT_REFUND_REASONS` (which holds `transferRefund` reasons).
+- **`feePayable`**: no fee for a final rejection (`underage`, `duplicate_account`); `startVerificationFee` answers `not_eligible`, and a payment that still arrives is refunded as stale.
+- **`feeWaived` (Decision 24)**: a record with status `rejected`, a free resubmit left, `submittedAt` set and `steps.fee` null was submitted before the fee existed, so its free resubmit needs no fee. **Flipping `feeRequired` off and on again waives records submitted while it was off** in the same way (same signature). Cost if wrong: those providers skip one 99.000₫ or 299.000₫ fee.
+- **Identity start honours the waiver**: `startIdentityVerification` treats the fee step as done when paid or waived, so a grandfathered record rejected for `identity_mismatch` can re-verify without paying (found in Task 12; fixed in `7846f21`).
+- **Ledger sign convention**: `fee_charged` is written **positive** to `platform_revenue`, next to the positive `payment_received` to `platform_escrow` that V1 writes on receipt; `platform_fee` entries are **negative** (the commission taken out of a provider's payout). Do not sum the two types without the sign.
+- **The fee is a registered subject**: `liveSettlementDeps()` and `liveRefundSubjects()` both carry `verification_fee`; a new subject must add its line to both, or its payments are unmatched and its refunds are never re-sent.
+
+## Rulings (#203)
+Each ruling lists what it costs if wrong.
+
+1. **Fee before phone is allowed.** Decision 2: steps go in any order except that identity needs the fee. If wrong: one guard.
+2. **A fee paid after a rejection counts as the paid resubmit.** For a pre-#203 record with no free resubmit left, a fee paid after the rejection (`steps.fee.paidAt` later than `decidedAt`) sends the resubmit straight to `submitted`, keeps the fee and does not bump `feeAttempt`; otherwise the provider would pay twice. If wrong: one branch.
+3. **The settler records a fee only when it fits the record.** The amount must equal the fee of the current kind and the payment must belong to the record's `feeAttempt`; otherwise it is refunded 100% as `stale_verification_fee`. `startVerificationFee` also expires every open code of the attempt whose amount no longer matches the kind. If wrong: a studio could end up verified for 99.000₫.
+4. **Implementer deviations accepted**: renewed codes use keys `vfee_{uid}_{attempt}_{method}_{n}` and the live payment is found by `feePaymentsOf` (a fixed key cannot find a renewed code); one upsert `putRefund`; `cipher` and `payments` on `VerificationDeps`; `verification_fee` added to `PaymentSubject` here; the refund handler is registered in Task 11. If wrong: names only.
+5. **Rejected records with a non-resubmittable reason cannot open the fee**, and a payment for one is refunded as stale. Cost: none.
+6. **Grandfathering by signature** (`submittedAt` set, `steps.fee` null): every #203 submit carries a fee and a paid resubmit clears `submittedAt`, so the signature only matches old records. If wrong: such providers skip one fee.
+7. **After paying, S04.04 returns to S21.02 by pop** (`go` only as a fallback), not the plain `go('/verify/start')` of the brief, so S21.02 keeps its own back stack like #135. Cost: none.
+8. **Mock caption gaps are ledger follow-ups, the brief wins on behaviour** (see below). Cost: a mock edit later.
+
+## V1/V2 contract differences found in Tasks 10–12 (merged code wins)
+- `PaymentSubject` on develop held only `booking` and `event_registration`; the V1 ledger said V1 had added `verification_fee`, the code had not. Added in Task 10. (The data-model tables already listed it.)
+- `VerificationTx` has `feePaymentsOf(uid)` instead of a lookup by idempotency key, one upsert `putRefund` (no `addRefund`), and `getTransferRecord` / `putTransferRecord` because V1's `SubjectSettler.settle` writes the transfer record in the subject's transaction.
+- `VerificationDeps` gains `gateway`, `payments: PaymentLookup` (V1's `freshPaymentId` needs a cross-subject lookup by transfer code) and `cipher: AccountCipher` (V2 payer capture and bank-transfer refunds); the settler takes only `(deps)`.
+- V2 has no refund-subject registry in the domain: handlers are per-subject factories wired in `infra/live_refunds.ts`; the fee adds `verificationFeeRefundHandler(deps)` there. Only the V2 path (`sendRefundOnce` plus `mergeRefundOutcome`) exists; no V1 fallback.
+- `checkVerificationFee` lives in the domain and takes the settlement as an argument (the callable passes `liveSettlementDeps()`); it answers `{paid, instructions}` over V1's `checkSubjectPayments`.
+- An already-paid fee answers `not_eligible`, not `conflict`.
+- The Functions gateway is `getSharedFakeGateway()` (the same instance as the booking deps, without building them); `settlementSubjectsOf` and `refundSubjectsOf` are new composition helpers so tests use the live registry. "Payments off" means `!checkoutGatewayAvailable(env)`, the same check `createPayment` makes; `startVerificationFee` refuses before any read or write.
+- App: V1's `PaymentCheck` lives in `data/payments/payments_repository.dart`; `PayDone` gains `paid` (default true) so a "nothing to pay" exit shows no snack; for the fee, `renew()` puts the new instructions in the controller state itself (no stream carries them); resuming `/verify/start/fee/pay` with no extra calls `checkFee` and, with no live payment, returns to S21.02 with no message.
+- The seed adds both ledger entries the settler would write, not just the paid payment.
+
+## Deferred minors (#203, not fixed)
+- `feeWaived`'s `submittedAt` term is redundant on a `rejected` record that was submitted; fix the doc comment in `verification.ts` to say so.
+- `FirestoreVerificationTx` writes at once (`tx.set`) while the event adapter queues, and `MemoryVerificationStore` returns staged writes; the fee use cases do all reads before writes, which Firestore requires. Add a comment or queue the writes. Cost if wrong: a future use case that writes before reading fails only on Firestore.
+- Two concurrent first fee taps are serialised only by the `payments` query; always touching the verification document in `startVerificationFee` would serialise them. Cost if wrong: two live codes for one attempt (the second is refunded as duplicate if both are paid).
+- The integration test variable `noRecordCheck` really tests "not a provider"; rename.
+- `checkVerificationFee` has no `checkoutGatewayAvailable` gate (harmless: it only reads and settles).
+- `FakeVerificationRepository.startIdentity` ignores `feeWaived` (it checks `feePaidAt` only), so the fake diverges from the server after `7846f21`; fix in the final fix wave.
+- `_resumeFee` re-checks `_seeded` only before the await (harmless).
+- A waived record that reaches the fee routes by a direct link sees "Đã nhận phí xác minh" although nothing was paid.
+
+## Written, not run (#203)
+- **Functions integration suite** (`test/integration/verification.test.ts`, the fee path: identity refused until paid, bank QR payload `000201…`, reuse on a second tap, check, `confirmFakePayment`, the `fee_charged` and `payment_received` entries, a second method refused). It depends on emulator behaviour the sandbox cannot start; CI runs it on push.
+- **Rules test** ("the payer cannot read or forge a verification fee payment, its refund or ledger entry, or set `steps.fee`", `app_flutter/firebase/rules-test/rules.test.mjs`): `node --check` passes, not run.
+- Ran clean: domain 1324/1324 (and lint), Functions unit 498/498 (and build), the Flutter verification, data, payment, app, settings and other folders touched by the flag flip, `flutter analyze`.
+
+## Deploy note (#203)
+1. **The server and app flags flip in this PR**: `feeRequired` is true in `liveVerificationDeps()` and in `verificationFeeRequiredProvider`. **Deploy Functions before shipping the app build that shows the fee step**, so the new callables and the fee settler exist when the app calls them; an old server with the new app answers `not_found` on the fee callables.
+2. **Tasks 11 and 12 must ship together** (server `feeRequired` true, app flag true). On this branch the server was true while the app was still false between those two commits; only the pair is safe to release.
+3. Functions deploy only behind `BLAZE_ENABLED` (owner keeps it off, 2026-10-09), so until it is on the fee runs on the emulators and the fake gateway; the callables answer `not_eligible` on a project without a checkout gateway. The real payment intermediary and the e-invoice for the fee are still Deferred.
+4. No new secret, service, index or rules change: `payments`, `refunds` and `ledger_entries` stay closed, and `verifications` stays server-written.
+
+## Mock follow-ups (#203; the mock was not edited)
+- `#S21.02-fee`: the caption says "Trả xong tự sang bước danh tính", but the app returns to S21.02, where the identity row is "Đang làm" and "Tiếp tục" opens it (ruling 7). Change the caption.
+- `#S21.02-rejected`: the frame shows only "Còn 1 lần gửi lại miễn phí"; add the 0 variant "Hết lượt gửi lại miễn phí · gửi lại cần trả phí xác minh mới" that the app shows when no free resubmit is left and the fee is on.
+- The mock has no frame for the fee paid line `verifyFeePaid` ("Đã nhận phí xác minh") on S21.02-fee or the snack on return from S04.04.
