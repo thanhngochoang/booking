@@ -5449,6 +5449,60 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String verifyStepFee(String amount) {
+    return 'Phí xác minh $amount';
+  }
+
+  @override
+  String get verifyStepFeeTodoIndividual =>
+      'Studio 299.000₫ · trả bằng QR hoặc ví';
+
+  @override
+  String get verifyStepFeeTodoStudio =>
+      'Thợ ảnh cá nhân 99.000₫ · trả bằng QR hoặc ví';
+
+  @override
+  String verifyStepFeeDone(String amount) {
+    return 'Đã trả $amount';
+  }
+
+  @override
+  String get verifyFeeTitle => 'Phí xác minh';
+
+  @override
+  String get verifyFeeYouGet => 'Bạn nhận được';
+
+  @override
+  String get verifyFeeBenefitTick => 'Tích xanh cạnh tên trên hồ sơ';
+
+  @override
+  String get verifyFeeBenefitOrders => 'Nhận đơn đặt lịch và gửi báo giá';
+
+  @override
+  String get verifyFeeBenefitReview => 'Staff duyệt trong 24 giờ';
+
+  @override
+  String get verifyFeeKindIndividual => 'Thợ ảnh cá nhân · studio 299.000₫';
+
+  @override
+  String get verifyFeeKindStudio => 'Studio · thợ ảnh cá nhân 99.000₫';
+
+  @override
+  String get verifyFeeNoRefund =>
+      'Phí không hoàn vì chi phí kiểm tra đã phát sinh; bị từ chối được gửi lại miễn phí 1 lần.';
+
+  @override
+  String verifyFeePay(String amount) {
+    return 'Thanh toán $amount';
+  }
+
+  @override
+  String get verifyFeePaid => 'Đã nhận phí xác minh';
+
+  @override
+  String get verifyFeeFailed => 'Chưa thanh toán được. Thử lại.';
+
+  @override
   String get verifyStepIdentity => 'Xác minh danh tính';
 
   @override
@@ -5545,6 +5599,14 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get verifyTlFee => 'Đã trả phí xác minh';
+
+  @override
+  String verifyTlFeeBody(String when, String amount) {
+    return '$when · $amount';
+  }
+
+  @override
   String get verifyTlIdentity => 'Đã xác minh danh tính';
 
   @override
@@ -5610,6 +5672,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String verifyFreeResubmitsLeft(int n) {
     return 'Còn $n lần gửi lại miễn phí';
   }
+
+  @override
+  String get verifyNoFreeResubmit =>
+      'Hết lượt gửi lại miễn phí · gửi lại cần trả phí xác minh mới';
 
   @override
   String get verifyFixAvatar => 'Ảnh đại diện';

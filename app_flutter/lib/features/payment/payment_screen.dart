@@ -44,11 +44,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
   }
 
-  void _navigate(String path) {
+  void _navigate(String path, {required bool paid}) {
     if (_leaving) return;
     _leaving = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && widget.subject is VerificationFeePay) {
+        _backToVerification(path, paid: paid);
+      } else if (mounted) {
         final router = GoRouter.of(context);
         if (widget.subject is TicketPay) {
           final l10n = context.l10n;
@@ -69,6 +71,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         router.go(path);
       }
     });
+  }
+
+  /// The fee is a step of S21.02 ([path]): pop back to it when it is in the
+  /// stack (it keeps its own back stack, as #135's steps do), else go there.
+  void _backToVerification(String path, {required bool paid}) {
+    final router = GoRouter.of(context);
+    if (paid) {
+      showPaymentSnack(
+        ScaffoldMessenger.of(context),
+        context.l10n.verifyFeePaid,
+      );
+    }
+    var found = false;
+    Navigator.of(context).popUntil((route) {
+      if (route.settings.name == path) {
+        found = true;
+        return true;
+      }
+      return route.isFirst;
+    });
+    if (!found) {
+      router.go(path);
+    }
   }
 
   PaymentInstructions? _created;
@@ -145,20 +170,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
 
     final isTicket = widget.subject is TicketPay;
+    final isFee = widget.subject is VerificationFeePay;
     final isWallet = state is PayOpen && state.instructions.method != PayMethod.bankQr;
 
     return ScreenCode(
       ScreenCodes.awaitingPayment,
-      label: isTicket ? 'ticket' : null,
+      label: isTicket ? 'ticket' : (isFee ? 'fee' : null),
       child: Scaffold(
         appBar: AppBar(title: Text(isWallet ? l10n.payTitle : l10n.payQrTitle)),
         body: SafeArea(
           bottom: false,
           child: switch (state) {
             PayLoading() => const Center(child: DotRingLoader()),
-            PayDone(:final path) => Builder(
+            PayDone(:final path, :final paid) => Builder(
                 builder: (context) {
-                  _navigate(path);
+                  _navigate(path, paid: paid);
                   return const Center(child: SignatureLoader());
                 },
               ),
@@ -195,7 +221,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             PayOpen(:final instructions, :final who, :final canRenew) =>
               Builder(
                 builder: (context) {
-                  final formattedWho = isTicket && int.tryParse(who.detail) != null
+                  final formattedWho = isFee
+                      ? (name: l10n.verifyFeeTitle, detail: '')
+                      : isTicket && int.tryParse(who.detail) != null
                       ? (name: who.name, detail: l10n.ticketCount(int.parse(who.detail)))
                       : who;
                   return instructions.method == PayMethod.bankQr
@@ -208,6 +236,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           onBack: () => context.go(
                             isTicket
                                 ? '/e/${(widget.subject as TicketPay).eventId}'
+                                : isFee
+                                ? verifyFeeDonePath
                                 : '/home',
                           ),
                         )

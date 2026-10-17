@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/backend/backend_config.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_repository.dart';
 
@@ -72,6 +75,31 @@ class FirestoreVerificationRepository implements VerificationRepository {
   @override
   Future<void> confirmPhoneVerified() async {
     await _call('confirmPhoneVerified');
+  }
+
+  @override
+  Future<PaymentInstructions> startFee(
+    PayMethod method, {
+    bool renew = false,
+  }) async {
+    final d = await _call('startVerificationFee', {
+      'method': method.code,
+      if (renew) 'renew': true,
+    });
+    final inst = paymentInstructionsFrom(d);
+    if (inst == null) {
+      throw const VerificationError('bad_response:instructions');
+    }
+    return inst;
+  }
+
+  @override
+  Future<PaymentCheck> checkFee() async {
+    final d = await _call('checkVerificationFee');
+    return PaymentCheck(
+      paid: d['paid'] == true,
+      instructions: paymentInstructionsFrom(d['instructions']),
+    );
   }
 
   @override

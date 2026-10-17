@@ -36,9 +36,9 @@ String verifyWhen(DateTime instant, DateTime now, AppLocalizations l) {
       : '${formatDayMonth(toVn(instant))} $time';
 }
 
-/// The S21.02-pending timeline: identity checked (method · masked name),
-/// sent for review (time · rules accepted), then "Staff duyệt" as the current
-/// step. The fee row ("Đã trả phí xác minh") is #203's (Decision 24).
+/// The S21.02-pending timeline: the fee paid (time · amount; only when a fee
+/// was recorded), identity checked (method · masked name), sent for review
+/// (time · rules accepted), then "Staff duyệt" as the current step.
 class VerifyTimeline extends StatelessWidget {
   const VerifyTimeline({super.key, required this.state, required this.now});
 
@@ -54,9 +54,20 @@ class VerifyTimeline extends StatelessWidget {
     };
     final name = state.maskedName;
     final sent = state.submittedAt;
+    final feePaid = state.feePaidAt;
+    final feeAmount = state.feeAmount;
     return StatusTimeline(
       key: const Key('verify-timeline'),
       steps: [
+        if (feePaid != null && feeAmount != null)
+          TimelineStep(
+            title: l.verifyTlFee,
+            subtitle: l.verifyTlFeeBody(
+              verifyWhen(feePaid, now, l),
+              formatMoney(feeAmount),
+            ),
+            state: TimelineStepState.done,
+          ),
         TimelineStep(
           title: l.verifyTlIdentity,
           subtitle: name == null

@@ -9574,6 +9574,96 @@ abstract class AppLocalizations {
   /// **'Đã xác minh · •••• {last4}'**
   String verifyStepPhoneDone(String last4);
 
+  /// S21.02 fee row title, amount already formatted (99.000₫).
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí xác minh {amount}'**
+  String verifyStepFee(String amount);
+
+  /// Subtitle of an individual's fee row: names the other kind's price, as the mock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio 299.000₫ · trả bằng QR hoặc ví'**
+  String get verifyStepFeeTodoIndividual;
+
+  /// Subtitle of a studio's fee row: names the other kind's price, as the mock.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh cá nhân 99.000₫ · trả bằng QR hoặc ví'**
+  String get verifyStepFeeTodoStudio;
+
+  /// No description provided for @verifyStepFeeDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả {amount}'**
+  String verifyStepFeeDone(String amount);
+
+  /// No description provided for @verifyFeeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí xác minh'**
+  String get verifyFeeTitle;
+
+  /// No description provided for @verifyFeeYouGet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn nhận được'**
+  String get verifyFeeYouGet;
+
+  /// No description provided for @verifyFeeBenefitTick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tích xanh cạnh tên trên hồ sơ'**
+  String get verifyFeeBenefitTick;
+
+  /// No description provided for @verifyFeeBenefitOrders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận đơn đặt lịch và gửi báo giá'**
+  String get verifyFeeBenefitOrders;
+
+  /// No description provided for @verifyFeeBenefitReview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Staff duyệt trong 24 giờ'**
+  String get verifyFeeBenefitReview;
+
+  /// No description provided for @verifyFeeKindIndividual.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ ảnh cá nhân · studio 299.000₫'**
+  String get verifyFeeKindIndividual;
+
+  /// No description provided for @verifyFeeKindStudio.
+  ///
+  /// In vi, this message translates to:
+  /// **'Studio · thợ ảnh cá nhân 99.000₫'**
+  String get verifyFeeKindStudio;
+
+  /// No description provided for @verifyFeeNoRefund.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí không hoàn vì chi phí kiểm tra đã phát sinh; bị từ chối được gửi lại miễn phí 1 lần.'**
+  String get verifyFeeNoRefund;
+
+  /// No description provided for @verifyFeePay.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán {amount}'**
+  String verifyFeePay(String amount);
+
+  /// No description provided for @verifyFeePaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận phí xác minh'**
+  String get verifyFeePaid;
+
+  /// No description provided for @verifyFeeFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thanh toán được. Thử lại.'**
+  String get verifyFeeFailed;
+
   /// No description provided for @verifyStepIdentity.
   ///
   /// In vi, this message translates to:
@@ -9736,6 +9826,18 @@ abstract class AppLocalizations {
   /// **'Gửi lúc {time} · có kết quả trước {deadline}'**
   String verifyPendingSent(String time, String deadline);
 
+  /// No description provided for @verifyTlFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã trả phí xác minh'**
+  String get verifyTlFee;
+
+  /// No description provided for @verifyTlFeeBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'{when} · {amount}'**
+  String verifyTlFeeBody(String when, String amount);
+
   /// No description provided for @verifyTlIdentity.
   ///
   /// In vi, this message translates to:
@@ -9843,6 +9945,12 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Còn {n} lần gửi lại miễn phí'**
   String verifyFreeResubmitsLeft(int n);
+
+  /// No description provided for @verifyNoFreeResubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết lượt gửi lại miễn phí · gửi lại cần trả phí xác minh mới'**
+  String get verifyNoFreeResubmit;
 
   /// No description provided for @verifyFixAvatar.
   ///

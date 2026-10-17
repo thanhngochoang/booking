@@ -60,6 +60,7 @@ import 'package:photobooking/features/shell/placeholder_tabs.dart';
 import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
+import 'package:photobooking/features/verification/verify_fee_screen.dart';
 import 'package:photobooking/features/verification/verify_identity_screen.dart';
 import 'package:photobooking/features/verification/verify_phone_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
@@ -197,6 +198,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const VerifyStartScreen(),
         routes: [
           GoRoute(path: 'rules', builder: (_, _) => const VerifyRulesScreen()),
+          GoRoute(
+            path: 'fee',
+            builder: (_, _) => const VerifyFeeScreen(),
+            routes: [
+              GoRoute(
+                path: 'pay',
+                builder: (_, state) => PaymentScreen(
+                  subject: const VerificationFeePay(),
+                  initial: state.extra as PaymentInstructions?,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(

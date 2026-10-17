@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/booking/payments_mode.dart';
 import 'package:photobooking/data/clock/clock.dart';
 import 'package:photobooking/data/contact/contact_providers.dart';
 import 'package:photobooking/data/contact/external_launcher.dart';
 import 'package:photobooking/data/media/image_picker_port.dart';
 import 'package:photobooking/data/media/media_providers.dart';
 import 'package:photobooking/data/media/media_uploader.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/photographer/photographer_setup_providers.dart';
 import 'package:photobooking/data/user/user_contact_providers.dart';
@@ -20,12 +23,16 @@ import 'package:photobooking/data/verification/phone_verifier.dart';
 import 'package:photobooking/data/verification/verification.dart';
 import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/data/verification/verification_repository.dart';
+import 'package:photobooking/features/payment/pay_subject.dart';
+import 'package:photobooking/features/payment/payment_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
+import 'package:photobooking/features/verification/verify_fee_screen.dart';
 import 'package:photobooking/features/verification/verify_identity_screen.dart';
 import 'package:photobooking/features/verification/verify_phone_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
 import 'package:photobooking/features/verification/verify_start_screen.dart';
 
+import 'fake_payments_repository.dart';
 import 'screen_host.dart';
 
 /// Wednesday 15/10/2026 9:40 in Vietnam.
@@ -37,7 +44,8 @@ const verificationSupport = 'hotro@photobooking.vn';
 /// A signed-in provider with in-memory contact, phone verifier, verification
 /// and intro repositories and a fixed clock ([verificationNow]). S21.01 is
 /// mounted at `/verify/phone`, S21.02 at `/verify/start` (rules at
-/// `/verify/start/rules`), S21.03 at `/verify/identity` and S21.04 at
+/// `/verify/start/rules`, the fee at `/verify/start/fee` and its S04.04 at
+/// `/verify/start/fee/pay`), S21.03 at `/verify/identity` and S21.04 at
 /// `/verify/business` when [startScreen] is true (stubs otherwise);
 /// `/settings/profile`, `/u/:uid` and the profile tab are stubs. [log]
 /// records, in order, the phone linked (`link:+84…`), the contact saved
@@ -47,12 +55,18 @@ class VerificationWorld {
     this.feeRequired = false,
     this.startScreen = false,
     this.identityReal = false,
+    this.realPayments = false,
   });
+
+  /// Mirrors `realPaymentsProvider`: false shows S04.04's fake transfer.
+  final bool realPayments;
 
   /// Mirrors `identityModeRealProvider`: false shows the fake VNeID sheet.
   final bool identityReal;
 
-  /// Mirrors `verificationFeeRequiredProvider` (false in #135: 3 steps).
+  /// Mirrors `verificationFeeRequiredProvider` (true in the app since #203;
+  /// false here keeps the three-step tests of #135) and the fake server's
+  /// `feeRequired`.
   final bool feeRequired;
 
   /// Mounts the real S21.02 screens instead of a `/verify/start` stub.
@@ -63,7 +77,14 @@ class VerificationWorld {
   final log = <String>[];
   late final contacts = _LoggingContacts(log);
   late final verifier = _LoggingVerifier(log);
-  late final repo = _LoggingVerificationRepository(log, uid: uid);
+  late final repo = _LoggingVerificationRepository(
+    log,
+    uid: uid,
+    feeRequired: feeRequired,
+  );
+
+  /// V1's payments port: S04.04's fake transfer confirms through it.
+  final payments = FakePaymentsRepository();
   final intros = FakePhotographerIntroRepository();
   final launcher = FakeExternalLauncher();
   final uploader = FakeMediaUploader();
@@ -122,6 +143,8 @@ class VerificationWorld {
     identityModeRealProvider.overrideWithValue(identityReal),
     mediaUploaderProvider.overrideWithValue(uploader),
     imagePickerProvider.overrideWithValue(picker),
+    paymentsRepositoryProvider.overrideWithValue(payments),
+    realPaymentsProvider.overrideWithValue(realPayments),
   ];
 
   Widget app({String location = '/verify/phone', double textScale = 1.0}) {
@@ -144,6 +167,19 @@ class VerificationWorld {
               GoRoute(
                 path: 'rules',
                 builder: (_, _) => const VerifyRulesScreen(),
+              ),
+              GoRoute(
+                path: 'fee',
+                builder: (_, _) => const VerifyFeeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'pay',
+                    builder: (_, s) => PaymentScreen(
+                      subject: const VerificationFeePay(),
+                      initial: s.extra as PaymentInstructions?,
+                    ),
+                  ),
+                ],
               ),
             ],
           )
@@ -223,8 +259,11 @@ class _LoggingVerifier extends FakePhoneVerifier {
 }
 
 class _LoggingVerificationRepository extends FakeVerificationRepository {
-  _LoggingVerificationRepository(this.log, {required super.uid})
-    : super(now: () => verificationNow);
+  _LoggingVerificationRepository(
+    this.log, {
+    required super.uid,
+    required super.feeRequired,
+  }) : super(now: () => verificationNow);
   final List<String> log;
 
   /// When set, `completeIdentityVerification` refuses with this code (after

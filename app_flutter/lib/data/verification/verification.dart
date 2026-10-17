@@ -122,8 +122,8 @@ enum BusinessStatus {
 /// `PROVIDER_RULES_VERSION` of the domain: the rules the provider accepts.
 const providerRulesVersion = '2026-10-06';
 
-/// Integer VND per kind (`VERIFICATION_FEE_VND`); charged only once #203 turns
-/// the fee on.
+/// Integer VND per kind (`VERIFICATION_FEE_VND`), charged once the fee is on
+/// (#203).
 const verificationFeeVnd = {
   VerificationKind.individual: 99000,
   VerificationKind.studio: 299000,
@@ -211,7 +211,7 @@ class VerificationState {
   final VerificationStatus status;
   final VerificationKind kind;
 
-  /// `verificationFeeRequiredProvider` (Decision 24): false until #203.
+  /// `verificationFeeRequiredProvider` (Decision 24): true since #203.
   final bool feeRequired;
 
   /// The contact's `phoneVerified` flag (Decision 3).
@@ -251,9 +251,19 @@ class VerificationState {
         ]
       : const [VerifyStep.phone, VerifyStep.identity, VerifyStep.rules];
 
+  /// The domain's `feeWaived`: a record rejected before the fee existed
+  /// (sent, so `submittedAt` is set, with no fee recorded) keeps its free
+  /// resubmit without paying, so its fee step counts as done. Its paid
+  /// resubmit (no free one left) needs the fee like any other.
+  bool get feeWaived =>
+      status == VerificationStatus.rejected &&
+      freeResubmitsLeft > 0 &&
+      submittedAt != null &&
+      feePaidAt == null;
+
   bool isDone(VerifyStep step) => switch (step) {
     VerifyStep.phone => phoneDone,
-    VerifyStep.fee => feePaidAt != null,
+    VerifyStep.fee => feePaidAt != null || feeWaived,
     VerifyStep.identity => identityPassed,
     VerifyStep.rules => rulesAcceptedAt != null,
   };

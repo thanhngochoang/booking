@@ -24,4 +24,14 @@ void main() {
     expect(t1.hashCode, t2.hashCode);
     expect(t1 == tOther, isFalse);
   });
+
+  test('the verification fee pays at /verify/start/fee/pay and every '
+      'instance is the same subject', () {
+    expect(payPathOf(const VerificationFeePay()), '/verify/start/fee/pay');
+    // ignore: prefer_const_constructors
+    final a = VerificationFeePay();
+    expect(a, const VerificationFeePay());
+    expect(a.hashCode, const VerificationFeePay().hashCode);
+    expect(a == const BookingPay('b1'), isFalse);
+  });
 }

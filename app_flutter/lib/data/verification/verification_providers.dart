@@ -26,8 +26,8 @@ final identityModeRealProvider = Provider<bool>(
 );
 
 /// Whether the verification fee is a required step (Decision 24). Mirrors the
-/// server's `VerificationDeps.feeRequired`; #203 flips both to true together.
-final verificationFeeRequiredProvider = Provider<bool>((_) => false);
+/// server's `VerificationDeps.feeRequired`; #203 turned both on together.
+final verificationFeeRequiredProvider = Provider<bool>((_) => true);
 
 /// The signed-in provider's verification: `verifications/{uid}` read with the
 /// contact's `phoneVerified` flag and the kind of the own provider type. A

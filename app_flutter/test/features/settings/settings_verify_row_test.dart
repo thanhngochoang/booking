@@ -155,7 +155,7 @@ Finder _subtitle(String text) => find.descendant(
 
 void main() {
   testWidgets('S09.02 shows Xác minh & nhận đơn with settingsVerifyBody / Còn '
-      '2 bước / Đang chờ duyệt / Đã xác minh', (tester) async {
+      '3 bước / Đang chờ duyệt / Đã xác minh', (tester) async {
     await _open(tester);
     final row = find.byKey(const Key('settings-verify'));
     expect(
@@ -170,7 +170,8 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
 
     await _open(tester, doc: _doc('in_progress'), phoneVerified: true);
-    expect(_subtitle('Còn 2 bước'), findsOneWidget);
+    // Phone done; fee (#203), identity and rules left.
+    expect(_subtitle('Còn 3 bước'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
 
     for (final (status, text) in [

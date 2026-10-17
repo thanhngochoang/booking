@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
 import 'package:photobooking/data/clock/clock.dart';
@@ -36,6 +37,13 @@ typedef _Case = ({
   Future<Object?> Function(VerificationRepository r) run,
   Object? expected,
 });
+
+/// `steps.fee` once the fee settled (#203).
+final _paidFee = {
+  'paymentId': 'pay1',
+  'amount': 99000,
+  'paidAt': DateTime.utc(2026, 10, 15, 2),
+};
 
 final List<_Case> _cases = [
   (
@@ -159,6 +167,69 @@ void main() {
             .single;
         expect(sent, c.payload, reason: c.callable);
       }
+    });
+
+    test('startFee and checkFee send the documented payloads', () async {
+      final qr = {
+        'paymentId': 'pay1',
+        'method': 'bank_qr',
+        'amount': 99000,
+        'expiresAt': '2026-10-15T03:15:00.000Z',
+        'transferCode': 'PB 7F3K2Q',
+        'attempt': 1,
+        'qrPayload': '000201',
+        'bankName': 'BIDV',
+        'accountMasked': '9624 •••• 3812',
+      };
+      var callable = stub('startVerificationFee', qr);
+      final inst = await repo.startFee(PayMethod.bankQr);
+      expect(inst.paymentId, 'pay1');
+      expect(inst.method, PayMethod.bankQr);
+      expect(inst.amount, 99000);
+      expect(inst.expiresAt, DateTime.utc(2026, 10, 15, 3, 15));
+      expect(inst.transferCode, 'PB 7F3K2Q');
+      expect(inst.qrPayload, '000201');
+      expect(
+        verify(() => callable.call<Object?>(captureAny())).captured.single,
+        {'method': 'bank_qr'},
+      );
+
+      callable = stub('startVerificationFee', {
+        ...qr,
+        'method': 'zalopay',
+        'payUrl': 'https://fake-pay.local/zalopay?paymentId=pay2',
+        'paymentId': 'pay2',
+      });
+      final renewed = await repo.startFee(PayMethod.zaloPay, renew: true);
+      expect(renewed.paymentId, 'pay2');
+      expect(renewed.payUrl, 'https://fake-pay.local/zalopay?paymentId=pay2');
+      expect(
+        verify(() => callable.call<Object?>(captureAny())).captured.single,
+        {'method': 'zalopay', 'renew': true},
+      );
+
+      callable = stub('checkVerificationFee', {
+        'paid': false,
+        'instructions': qr,
+      });
+      final open = await repo.checkFee();
+      expect(open.paid, isFalse);
+      expect(open.instructions?.paymentId, 'pay1');
+      expect(
+        verify(() => callable.call<Object?>(captureAny())).captured.single,
+        const <String, Object?>{},
+      );
+      stub('checkVerificationFee', {'paid': true, 'instructions': null});
+      final paid = await repo.checkFee();
+      expect(paid.paid, isTrue);
+      expect(paid.instructions, isNull);
+
+      // A reply without instructions is a bad response, not a payment.
+      stub('startVerificationFee', const <String, Object?>{});
+      await expectLater(
+        repo.startFee(PayMethod.momo),
+        throwsA(isA<VerificationError>()),
+      );
     });
 
     test('an inactive tax code reads active false', () async {
@@ -399,6 +470,99 @@ void main() {
     });
   });
 
+  group('FakeVerificationRepository fee', () {
+    test(
+      'startFee records the payload, reuses the open payment per method '
+      'and renew issues a new one; checkFee answers paid after settleFee',
+      () async {
+        final fake = FakeVerificationRepository(
+          uid: 'u1',
+          now: () => DateTime.utc(2026, 10, 15, 3),
+          feeRequired: true,
+        )..seed('u1', {'status': 'in_progress', 'steps': <String, dynamic>{}});
+
+        final qr = await fake.startFee(PayMethod.bankQr);
+        expect(qr.method, PayMethod.bankQr);
+        expect(qr.amount, 99000);
+        expect(qr.qrPayload, isNotNull);
+        expect(qr.expiresAt, DateTime.utc(2026, 10, 15, 3, 15));
+        expect(fake.calls.last.name, 'startVerificationFee');
+        expect(fake.calls.last.data, {'method': 'bank_qr'});
+        expect((await fake.startFee(PayMethod.bankQr)).paymentId, qr.paymentId);
+
+        final momo = await fake.startFee(PayMethod.momo);
+        expect(momo.paymentId, isNot(qr.paymentId));
+        expect(momo.payUrl, isNotNull);
+
+        final renewed = await fake.startFee(PayMethod.bankQr, renew: true);
+        expect(fake.calls.last.data, {'method': 'bank_qr', 'renew': true});
+        expect(renewed.paymentId, isNot(qr.paymentId));
+
+        var check = await fake.checkFee();
+        expect(fake.calls.last.name, 'checkVerificationFee');
+        expect(fake.calls.last.data, isEmpty);
+        expect(check.paid, isFalse);
+        expect(check.instructions?.paymentId, renewed.paymentId);
+
+        fake.settleFee(renewed.paymentId);
+        final fee = (fake.doc('u1')!['steps'] as Map)['fee'] as Map;
+        expect(fee['paymentId'], renewed.paymentId);
+        expect(fee['amount'], 99000);
+        check = await fake.checkFee();
+        expect(check.paid, isTrue);
+        expect(check.instructions, isNull);
+
+        // A paid fee cannot start again.
+        await expectLater(
+          fake.startFee(PayMethod.bankQr),
+          throwsA(
+            isA<VerificationError>().having(
+              (e) => e.code,
+              'code',
+              'not_eligible',
+            ),
+          ),
+        );
+      },
+    );
+
+    test('a studio pays 299.000₫', () async {
+      final fake = FakeVerificationRepository(
+        uid: 'u1',
+        feeRequired: true,
+        kind: VerificationKind.studio,
+      );
+      expect((await fake.startFee(PayMethod.bankQr)).amount, 299000);
+    });
+
+    test('resubmit with no free resubmit left goes back to in_progress with '
+        'the fee open under a new attempt', () async {
+      final fake = FakeVerificationRepository(uid: 'u1', feeRequired: true)
+        ..seed('u1', {
+          'status': 'rejected',
+          'rejectReason': {'code': 'other'},
+          'freeResubmitsLeft': 0,
+          'feeAttempt': 1,
+          'submittedAt': DateTime.utc(2026, 10, 14),
+          'steps': {
+            'fee': {
+              'paymentId': 'pay1',
+              'amount': 99000,
+              'paidAt': DateTime.utc(2026, 10, 14),
+            },
+            'identity': {'result': 'passed'},
+            'rules': {'acceptedAt': DateTime.utc(2026, 10, 14)},
+          },
+        });
+      await fake.resubmit();
+      final d = fake.doc('u1')!;
+      expect(d['status'], 'in_progress');
+      expect((d['steps'] as Map)['fee'], isNull);
+      expect(d['feeAttempt'], 2);
+      expect(d['submittedAt'], isNull);
+    });
+  });
+
   group('FakeVerificationRepository gates', () {
     Map<String, dynamic> rejected({bool identity = true}) => {
       'status': 'rejected',
@@ -495,9 +659,16 @@ void main() {
       final s = await settle();
       expect(s.status, VerificationStatus.notStarted);
       expect(s.kind, VerificationKind.studio);
-      expect(s.feeRequired, isFalse);
+      expect(s.feeRequired, isTrue);
+      expect(s.requiredSteps, [
+        VerifyStep.phone,
+        VerifyStep.fee,
+        VerifyStep.identity,
+        VerifyStep.rules,
+      ]);
       expect(s.phoneDone, isFalse);
-      expect(container.read(verificationFeeRequiredProvider), isFalse);
+      // #203 turns the fee on together with the server's feeRequired.
+      expect(container.read(verificationFeeRequiredProvider), isTrue);
       expect(container.read(identityModeRealProvider), isFalse);
     });
 
@@ -538,11 +709,12 @@ void main() {
         );
         var s = await settled();
         expect(s.phoneDone, isTrue);
-        expect(s.nextStep, VerifyStep.identity);
+        expect(s.nextStep, VerifyStep.fee);
 
         verifications.seed('u1', {
           'status': 'in_progress',
           'steps': {
+            'fee': _paidFee,
             'identity': {'result': 'passed', 'maskedName': 'AN B**'},
           },
         });
@@ -567,6 +739,7 @@ void main() {
         'status': 'in_progress',
         'kind': 'individual',
         'steps': {
+          'fee': _paidFee,
           'identity': {'result': 'passed', 'maskedName': 'AN B**'},
         },
       });
