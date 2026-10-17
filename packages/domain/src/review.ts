@@ -44,9 +44,9 @@ export function reviewDocId(bookingId: string, subjectType: ReviewSubjectType): 
   return subjectType === 'studio' ? `${bookingId}_studio` : bookingId;
 }
 
-/** A booking can be reviewed once the shoot is completed. */
+/** A booking can be reviewed once approved or completed. */
 export function isReviewable(status: BookingStatus): boolean {
-  return status === 'completed';
+  return status === 'approved' || status === 'completed';
 }
 
 export interface ReviewPhoto {

@@ -42,6 +42,8 @@ export const ERROR_CODES = [
   'addon_limit',
   /** Free text contains a phone number, e-mail or link (contact stays inside the app). */
   'contact_leak',
+  /** A delivery sample is missing, failed, or still processing. */
+  'not_ready',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

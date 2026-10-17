@@ -139,3 +139,5 @@ export * from './addon_ports.js';
 export * from './memory_addon_store.js';
 export * from './addon_use_cases.js';
 export * from './addon_pricing.js';
+export * from './delivery.js';
+export * from './delivery_use_cases.js';

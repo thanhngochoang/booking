@@ -301,4 +301,17 @@ describe('submitReview', () => {
         err instanceof DomainError && err.code === 'not_found'
     );
   });
+
+  it('submitReview on an approved booking succeeds and status stays approved', async () => {
+    const booking = makeCompletedBooking({ status: 'approved' });
+    store.seedBooking(booking);
+
+    const res = await submitReview(deps, 'cust1', tomatoInput());
+    assert.ok(res.review);
+
+    const storedBooking = store.bookings.get('book1');
+    assert.ok(storedBooking);
+    assert.equal(storedBooking.status, 'approved');
+    assert.equal(storedBooking.reviewedAt, now.toISOString());
+  });
 });

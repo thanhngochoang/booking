@@ -54,9 +54,9 @@ describe('reviewDocId and isReviewable', () => {
     assert.equal(reviewDocId('b1', 'studio'), 'b1_studio');
   });
 
-  it('isReviewable is true only for completed', () => {
+  it('isReviewable is true for approved and completed', () => {
     for (const status of BOOKING_STATUSES) {
-      assert.equal(isReviewable(status), status === 'completed', status);
+      assert.equal(isReviewable(status), status === 'approved' || status === 'completed', status);
     }
   });
 });

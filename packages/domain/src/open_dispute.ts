@@ -42,11 +42,28 @@ export async function openDispute(
       throw new DomainError('permission_denied');
     }
 
-    if (!['upcoming', 'completed'].includes(booking.status)) {
+    if (!['upcoming', 'shot', 'approved', 'completed'].includes(booking.status)) {
       throw new DomainError('conflict');
     }
 
-    if (booking.completedAt) {
+    if (booking.status === 'shot') {
+      if (!booking.shotAt) {
+        throw new DomainError('conflict');
+      }
+      const shotTime = new Date(booking.shotAt).getTime();
+      const elapsedHours = (now.getTime() - shotTime) / (1000 * 60 * 60);
+      if (elapsedHours > DISPUTE_WINDOW_HOURS) {
+        throw new DomainError('conflict');
+      }
+    } else if (booking.status === 'approved') {
+      if (!booking.checkUntil) {
+        throw new DomainError('conflict');
+      }
+      const checkUntilTime = new Date(booking.checkUntil).getTime();
+      if (now.getTime() > checkUntilTime) {
+        throw new DomainError('conflict');
+      }
+    } else if (booking.completedAt) {
       const completedTime = new Date(booking.completedAt).getTime();
       const elapsedHours = (now.getTime() - completedTime) / (1000 * 60 * 60);
       if (elapsedHours > DISPUTE_WINDOW_HOURS) {

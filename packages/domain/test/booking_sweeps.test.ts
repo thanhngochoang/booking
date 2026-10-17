@@ -88,7 +88,7 @@ describe('Task 5: runBookingSweeps', () => {
     assert.equal(b?.status, 'upcoming');
   });
 
-  it('auto-completes upcoming booking 24h after end time', async () => {
+  it('auto mark-shots upcoming booking 24h after end time', async () => {
     // Booking end: 2026-10-15 16:00 VN = 09:00 UTC
     const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
     const draft = await createBookingDraft(world.deps, {
@@ -106,41 +106,108 @@ describe('Task 5: runBookingSweeps', () => {
     world.clock.setTime(new Date('2026-10-16T09:00:00.000Z'));
 
     const sweeps = await runBookingSweeps(world.deps);
-    assert.equal(sweeps.autoCompletions, 1);
+    assert.equal(sweeps.autoShots, 1);
 
     const b = await world.store.getBooking(draft.id);
-    assert.equal(b?.status, 'completed');
+    assert.equal(b?.status, 'shot');
   });
 
-  it('releases held escrow 24h after completion', async () => {
+  it('auto-approve a delivered booking past autoApproveAt', async () => {
     const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
-    const draft = await createBookingDraft(world.deps, {
+    const booking = {
+      id: 'b_del',
       customerId: 'c1',
       photographerId: 'p1',
       serviceId: 'srv_01',
+      serviceSnapshot: { name: 'Chân dung', price: 1_000_000, durationMinutes: 120 },
       day: '2026-10-15',
       start: '14:00',
-      place: { name: 'Nhà thờ Lớn' },
-    });
-    await payDraft(world, draft.id);
-    await transitionBooking(world.deps, { bookingId: draft.id, action: 'accept', actorId: 'p1' });
+      end: '16:00',
+      place: { name: 'Studio' },
+      status: 'delivered' as const,
+      deposit: 1_000_000,
+      remaining: 0,
+      deliveryRound: 1,
+      autoApproveAt: '2026-10-18T10:00:00.000Z',
+      version: 1,
+      createdAt: '2026-10-10T10:00:00.000Z',
+      updatedAt: '2026-10-10T10:00:00.000Z',
+    };
+    world.store.bookings.set(booking.id, booking);
 
-    // Complete at 2026-10-15 09:30 UTC
-    world.clock.setTime(new Date('2026-10-15T09:30:00.000Z'));
-    await transitionBooking(world.deps, { bookingId: draft.id, action: 'complete', actorId: 'p1' });
-
-    // Advance to 24 hours after completion: 2026-10-16 09:30 UTC
-    world.clock.setTime(new Date('2026-10-16T09:30:00.000Z'));
-
+    world.clock.setTime(new Date('2026-10-18T10:00:01.000Z'));
     const sweeps = await runBookingSweeps(world.deps);
-    assert.equal(sweeps.releasedEscrows, 1);
+    assert.equal(sweeps.autoApprovals, 1);
 
-    const payment = (await world.store.getPaymentsForBooking(draft.id))[0];
-    assert.equal(payment?.escrowStatus, 'released');
-    assert.ok(payment?.releasedAt);
+    const updated = await world.store.getBooking(booking.id);
+    assert.equal(updated?.status, 'approved');
+  });
 
-    const b = await world.store.getBooking(draft.id);
-    assert.equal(b?.escrowStatus, 'released');
+  it('finish an approved booking past checkUntil', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    const booking = {
+      id: 'b_app',
+      customerId: 'c1',
+      photographerId: 'p1',
+      serviceId: 'srv_01',
+      serviceSnapshot: { name: 'Chân dung', price: 1_000_000, durationMinutes: 120 },
+      day: '2026-10-15',
+      start: '14:00',
+      end: '16:00',
+      place: { name: 'Studio' },
+      status: 'approved' as const,
+      deposit: 1_000_000,
+      remaining: 0,
+      deliveryRound: 1,
+      checkUntil: '2026-10-20T10:00:00.000Z',
+      version: 1,
+      createdAt: '2026-10-10T10:00:00.000Z',
+      updatedAt: '2026-10-10T10:00:00.000Z',
+    };
+    world.store.bookings.set(booking.id, booking);
+
+    world.clock.setTime(new Date('2026-10-20T10:00:01.000Z'));
+    const sweeps = await runBookingSweeps(world.deps);
+    assert.equal(sweeps.finishedChecks, 1);
+
+    const updated = await world.store.getBooking(booking.id);
+    assert.equal(updated?.status, 'completed');
+    assert.ok(updated?.samplesPurgeAfter);
+  });
+
+  it('a failing item does not stop the batch', async () => {
+    const world = createBookingWorld(new Date('2026-10-10T10:00:00.000Z'));
+    // seeded bad booking in delivered with no delivery document
+    const badBooking = {
+      id: 'b_bad',
+      customerId: 'c1',
+      photographerId: 'p1',
+      serviceId: 'srv_01',
+      serviceSnapshot: { name: 'Chân dung', price: 1_000_000, durationMinutes: 120 },
+      day: '2026-10-15',
+      start: '14:00',
+      end: '16:00',
+      place: { name: 'Studio' },
+      status: 'delivered' as const,
+      deposit: 1_000_000,
+      remaining: 0,
+      deliveryRound: 1,
+      autoApproveAt: '2026-10-18T10:00:00.000Z',
+      version: 1,
+      createdAt: '2026-10-10T10:00:00.000Z',
+      updatedAt: '2026-10-10T10:00:00.000Z',
+    };
+    const goodBooking = {
+      ...badBooking,
+      id: 'b_good',
+    };
+    world.store.bookings.set(badBooking.id, badBooking);
+    world.store.bookings.set(goodBooking.id, goodBooking);
+
+    world.clock.setTime(new Date('2026-10-18T10:00:01.000Z'));
+    const sweeps = await runBookingSweeps(world.deps);
+    // both processed
+    assert.equal(sweeps.autoApprovals, 2);
   });
 
   it('drafts are deleted when payableUntil has passed', async () => {

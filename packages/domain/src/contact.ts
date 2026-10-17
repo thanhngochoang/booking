@@ -76,6 +76,10 @@ export function bookingContactUnlocked(
     case 'requested':
     case 'accepted':
     case 'upcoming':
+    case 'shot':
+    case 'delivered':
+    case 'revision_requested':
+    case 'approved':
       return true;
     case 'completed':
     case 'reviewed':

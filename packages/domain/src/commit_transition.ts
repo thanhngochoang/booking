@@ -87,14 +87,14 @@ export async function commitTransition(
         depositRefunded += refundResult.refund.amount;
         pendingRefund = { refund: refundResult.refund, provider: payment.provider };
       }
-    } else if (nextStatus === 'completed') {
-      // Completed booking: the paid payment releases after the 24h dispute window (never a
-      // `created` or stray row, whose escrow is `held` from creation).
+    } else if (nextStatus === 'completed' || nextStatus === 'shot') {
+      // For legacy bookings without milestones (or in Task 2 before Task 3 splits milestones):
+      // schedule releaseAfter 24h from now.
       const payments = await deps.store.getPaymentsForBooking(current.id);
       const payment = payments.find(
         (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded'),
       );
-      if (payment) {
+      if (payment && !payment.milestones) {
         const releaseAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         const updatedPayment = {
           ...payment,
@@ -105,14 +105,20 @@ export async function commitTransition(
     }
 
     // 3. Update booking
+    const samplesPurgeAfter = nextStatus === 'completed'
+      ? new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
+      : current.samplesPurgeAfter;
+
     const resultBooking: Booking = {
       ...current,
       status: nextStatus,
       escrowStatus: newEscrowStatus,
       depositRefunded: depositRefunded > 0 ? depositRefunded : undefined,
       cancel: decision.cancelRecord ?? current.cancel,
+      shotAt: nextStatus === 'shot' ? (current.shotAt ?? now.toISOString()) : current.shotAt,
       completedAt: nextStatus === 'completed' ? now.toISOString() : current.completedAt,
       reviewedAt: nextStatus === 'reviewed' ? now.toISOString() : current.reviewedAt,
+      samplesPurgeAfter,
       version: current.version + 1,
       updatedAt: now.toISOString(),
     };
