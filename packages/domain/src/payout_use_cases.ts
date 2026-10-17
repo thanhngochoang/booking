@@ -13,6 +13,7 @@ import {
   type PayoutItem,
   type PayoutStatus,
 } from './payout.js';
+import { type MilestoneKind, type PaymentMilestone, withMilestones } from './milestones.js';
 import { isAccountActiveAt, type PayoutAccount } from './payout_account.js';
 import { payoutLineOf, taxRateBpOf } from './payout_policy.js';
 import type { PayoutDeps, PayoutTx } from './payout_ports.js';
@@ -65,18 +66,33 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
     // No money moves before the account's activeFrom (the 72 hours after a change).
     if (account === null || !isAccountActiveAt(account, clockNow)) throw new DomainError('not_eligible');
     const payeeType = await tx.getPayeeType(payeeId);
-    const payable: { payment: Payment; gross: number }[] = [];
+    const payableItems: { payment: Payment; gross: number; milestone?: MilestoneKind }[] = [];
     for (const p of await tx.listPayablePayments(payeeId)) {
-      const gross = p.amount - (await tx.refundedTotal(p.id));
-      if (gross > 0) payable.push({ payment: p, gross });
+      if (p.milestones) {
+        for (const m of p.milestones) {
+          if (m.status === 'released' && !m.payoutId) {
+            payableItems.push({ payment: p, gross: m.amount, milestone: m.kind });
+          }
+        }
+      } else {
+        const gross = p.amount - (await tx.refundedTotal(p.id));
+        if (gross > 0) payableItems.push({ payment: p, gross });
+      }
     }
     const cleared = await tx.hasApprovedOrPaidPayout(account.id);
     const held = await failedTooOften(tx, account.id);
-    if (payable.length === 0) throw new DomainError('not_eligible');
+    if (payableItems.length === 0) throw new DomainError('not_eligible');
 
-    const items: PayoutItem[] = payable.map(({ payment, gross }) => {
+    const items: PayoutItem[] = payableItems.map(({ payment, gross, milestone }) => {
       const line = payoutLineOf(gross, payeeType, deps.policy);
-      return { paymentId: payment.id, amount: line.gross, fee: line.fee, tax: line.tax, net: line.net };
+      return {
+        paymentId: payment.id,
+        amount: line.gross,
+        fee: line.fee,
+        tax: line.tax,
+        net: line.net,
+        ...(milestone ? { milestone } : {}),
+      };
     });
     const sum = (f: (i: PayoutItem) => number): number => items.reduce((s, i) => s + f(i), 0);
     const status: PayoutStatus = held ? 'on_hold' : needsApproval(account, cleared) ? 'needs_approval' : 'pending';
@@ -99,7 +115,27 @@ export async function createPayout(deps: PayoutDeps, actor: StaffActor, payeeId:
       updatedAt: now,
     };
     tx.putPayout(payout);
-    for (const { payment } of payable) tx.setPayment({ ...payment, payoutId: payout.id, updatedAt: now });
+
+    // Group payable items by payment to update milestones or payment payoutId
+    const distinctPaymentIds = [...new Set(payableItems.map((pi) => pi.payment.id))];
+    for (const pid of distinctPaymentIds) {
+      const pay = payableItems.find((pi) => pi.payment.id === pid)?.payment;
+      if (!pay) continue;
+      if (pay.milestones) {
+        const kindsToBatch = new Set(
+          payableItems
+            .filter((pi) => pi.payment.id === pid && pi.milestone !== undefined && pi.milestone !== null)
+            .map((pi) => pi.milestone as MilestoneKind),
+        );
+        const updatedMs: PaymentMilestone[] = pay.milestones.map((m) =>
+          kindsToBatch.has(m.kind) ? { ...m, payoutId: payout.id } : m,
+        );
+        const updatedPayment = withMilestones(pay, updatedMs, now);
+        tx.setPayment(updatedPayment);
+      } else {
+        tx.setPayment({ ...pay, payoutId: payout.id, updatedAt: now });
+      }
+    }
     return payout;
   });
 }
@@ -183,22 +219,37 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
     if (p === null) throw new DomainError('not_found');
     if (p.status !== 'processing') throw new DomainError('conflict');
     const at = deps.clock.now().toISOString();
-    const payments = await tx.getPayments(p.items.map((i) => i.paymentId));
-    // Every batched payment must still be released into this batch; otherwise nothing is written
-    // (no partial ledger) and the payout stays `processing` for staff to look at.
-    if (payments.some((pay) => pay === null || pay.escrowStatus !== 'released' || pay.payoutId !== p.id)) {
-      throw new DomainError('conflict');
+    const paymentIds = [...new Set(p.items.map((i) => i.paymentId))];
+    const paymentsList = await tx.getPayments(paymentIds);
+    const paymentsMap = new Map<string, Payment>();
+    paymentsList.forEach((pay) => {
+      if (pay) paymentsMap.set(pay.id, pay);
+    });
+
+    // Validate that every batched item is still valid:
+    for (const item of p.items) {
+      const pay = paymentsMap.get(item.paymentId);
+      if (!pay) throw new DomainError('conflict');
+      if (pay.milestones) {
+        if (!item.milestone) throw new DomainError('conflict');
+        const ms = pay.milestones.find((m) => m.kind === item.milestone);
+        if (!ms || ms.status !== 'released' || ms.payoutId !== p.id) {
+          throw new DomainError('conflict');
+        }
+      } else {
+        if (pay.escrowStatus !== 'released' || pay.payoutId !== p.id) {
+          throw new DomainError('conflict');
+        }
+      }
     }
 
     if (outcome.status === 'paid') {
       const done: Payout = { ...p, status: 'paid', paidAt: at, reference: outcome.reference, updatedAt: at };
       tx.putPayout(done);
-      p.items.forEach((item, idx) => {
-        const pay = payments[idx];
-        if (pay === null || pay === undefined) return;
-        tx.setPayment({ ...pay, escrowStatus: 'paid_out', updatedAt: at });
-        // Per payment: transfer + tax + fee = −amount, so the ledger nets to zero (no zero entries).
-        // A zero line (nothing to transfer, no tax, no fee) is skipped: never a −0 entry.
+
+      for (const item of p.items) {
+        const pay = paymentsMap.get(item.paymentId);
+        if (!pay) continue;
         const split = itemSplit(item);
         const lines: [LedgerEntryType, number][] = [
           ['payout_paid', split.net],
@@ -221,7 +272,25 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
           };
           tx.addLedgerEntry(entry);
         }
-      });
+      }
+
+      // Update payments
+      for (const pay of paymentsMap.values()) {
+        if (pay.milestones) {
+          const batchedKinds = new Set(
+            p.items
+              .filter((it) => it.paymentId === pay.id && it.milestone !== undefined && it.milestone !== null)
+              .map((it) => it.milestone as MilestoneKind),
+          );
+          const updatedMs: PaymentMilestone[] = pay.milestones.map((m) =>
+            batchedKinds.has(m.kind) ? { ...m, status: 'paid_out' as const, payoutId: p.id } : m,
+          );
+          const updatedPay = withMilestones(pay, updatedMs, at);
+          tx.setPayment(updatedPay);
+        } else {
+          tx.setPayment({ ...pay, escrowStatus: 'paid_out', updatedAt: at });
+        }
+      }
       return done;
     }
 
@@ -232,8 +301,21 @@ export async function executePayout(deps: PayoutDeps, actor: StaffActor, payoutI
       updatedAt: at,
     };
     tx.putPayout(failed);
-    for (const pay of payments) {
-      if (pay !== null) tx.setPayment({ ...pay, payoutId: null, updatedAt: at });
+    for (const pay of paymentsMap.values()) {
+      if (pay.milestones) {
+        const batchedKinds = new Set(
+          p.items
+            .filter((it) => it.paymentId === pay.id && it.milestone !== undefined && it.milestone !== null)
+            .map((it) => it.milestone as MilestoneKind),
+        );
+        const updatedMs: PaymentMilestone[] = pay.milestones.map((m) =>
+          batchedKinds.has(m.kind) ? { ...m, payoutId: null } : m,
+        );
+        const updatedPay = withMilestones(pay, updatedMs, at);
+        tx.setPayment(updatedPay);
+      } else {
+        tx.setPayment({ ...pay, payoutId: null, updatedAt: at });
+      }
     }
     return failed;
   });

@@ -5,6 +5,7 @@
 import { AUTO_COMPLETE_DELAY_HOURS } from './booking_policy.js';
 import type { BookingDeps } from './booking_ports.js';
 import { escrowRefundedTotal, releaseEscrowPayment } from './escrow.js';
+import { releaseDueMilestones } from './milestones.js';
 import { transitionBooking } from './transition_booking.js';
 import { approveDelivery } from './delivery_use_cases.js';
 
@@ -122,30 +123,49 @@ export async function runBookingSweeps(deps: BookingDeps): Promise<BookingSweepR
     await deps.store.runTransaction(async (tx) => {
       const p = await tx.getPayment(payment.id);
       if (p && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded')) {
-        // Only what escrow gave back: an over-transfer's excess or a second transfer never entered it.
-        const totalRefunded = escrowRefundedTotal(await deps.store.getRefundsForPayment(p.id));
+        if (p.milestones) {
+          const { payment: updatedP, ledgerEntries } = releaseDueMilestones(p, now, () => deps.ids.newId());
+          if (ledgerEntries.length > 0) {
+            await tx.setPayment(updatedP);
+            for (const entry of ledgerEntries) {
+              await tx.addLedgerEntry(entry);
+            }
+            const booking = await tx.getBooking(p.subjectId);
+            if (booking) {
+              await tx.setBooking({
+                ...booking,
+                escrowStatus: updatedP.escrowStatus,
+                updatedAt: now.toISOString(),
+              });
+            }
+            releasedEscrows += 1;
+          }
+        } else {
+          // Only what escrow gave back: an over-transfer's excess or a second transfer never entered it.
+          const totalRefunded = escrowRefundedTotal(await deps.store.getRefundsForPayment(p.id));
 
-        const res = releaseEscrowPayment({
-          payment: p,
-          refundAmount: totalRefunded,
-          ledgerEntryId: deps.ids.newId(),
-          now,
-        });
-
-        await tx.setPayment(res.payment);
-        await tx.addLedgerEntry(res.ledgerEntry);
-
-        // Update booking's mirrored escrowStatus
-        const booking = await tx.getBooking(p.subjectId);
-        if (booking) {
-          await tx.setBooking({
-            ...booking,
-            escrowStatus: 'released',
-            updatedAt: now.toISOString(),
+          const res = releaseEscrowPayment({
+            payment: p,
+            refundAmount: totalRefunded,
+            ledgerEntryId: deps.ids.newId(),
+            now,
           });
-        }
 
-        releasedEscrows += 1;
+          await tx.setPayment(res.payment);
+          await tx.addLedgerEntry(res.ledgerEntry);
+
+          // Update booking's mirrored escrowStatus
+          const booking = await tx.getBooking(p.subjectId);
+          if (booking) {
+            await tx.setBooking({
+              ...booking,
+              escrowStatus: 'released',
+              updatedAt: now.toISOString(),
+            });
+          }
+
+          releasedEscrows += 1;
+        }
       }
     });
   }

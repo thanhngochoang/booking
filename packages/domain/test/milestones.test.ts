@@ -6,6 +6,10 @@ import {
   DEFAULT_MILESTONE_PERCENTS,
   MILESTONE_KINDS,
   milestoneAmounts,
+  splitMilestones,
+  aggregateEscrow,
+  withMilestones,
+  releaseDueMilestones,
 } from '../src/milestones.js';
 import { milestoneAmounts as milestoneAmountsFromIndex } from '../src/index.js';
 
@@ -107,3 +111,86 @@ test('DEFAULT_MILESTONE_PERCENTS is 50/50 and MILESTONE_KINDS is [shoot, deliver
 test('milestoneAmounts is exported from the package index', () => {
   assert.equal(milestoneAmountsFromIndex, milestoneAmounts);
 });
+
+test('splitMilestones(1_500_001, shotAt) gives 750,000 (releaseAfter = shotAt + 24h) and 750,001 (releaseAfter null)', () => {
+  const shotAt = new Date('2026-10-15T14:00:00.000Z');
+  const ms = splitMilestones(1_500_001, shotAt);
+  assert.equal(ms.length, 2);
+  const shoot = ms.find((m) => m.kind === 'shoot');
+  const delivery = ms.find((m) => m.kind === 'delivery');
+  assert.ok(shoot);
+  assert.ok(delivery);
+  assert.equal(shoot.amount, 750_000);
+  assert.equal(shoot.status, 'held');
+  assert.equal(shoot.releaseAfter, new Date(shotAt.getTime() + 24 * 3600 * 1000).toISOString());
+  assert.equal(delivery.amount, 750_001);
+  assert.equal(delivery.status, 'held');
+  assert.equal(delivery.releaseAfter, null);
+  assert.equal(shoot.amount + delivery.amount, 1_500_001);
+});
+
+test('splitMilestones with percents {shoot: 30, delivery: 70} on 1_000_001 → 300,000 / 700,001', () => {
+  const shotAt = new Date('2026-10-15T14:00:00.000Z');
+  const ms = splitMilestones(1_000_001, shotAt, { shoot: 30, delivery: 70 });
+  const shoot = ms.find((m) => m.kind === 'shoot');
+  const delivery = ms.find((m) => m.kind === 'delivery');
+  assert.ok(shoot);
+  assert.ok(delivery);
+  assert.equal(shoot.amount, 300_000);
+  assert.equal(delivery.amount, 700_001);
+  const amounts = milestoneAmounts(1_000_001, { shoot: 30, delivery: 70 });
+  assert.equal(shoot.amount, amounts.shoot);
+  assert.equal(delivery.amount, amounts.delivery);
+});
+
+test('aggregateEscrow precedence: disputed > held > released > paid_out; all refunded -> refunded', () => {
+  const m = (kind: 'shoot' | 'delivery', status: 'held' | 'released' | 'paid_out' | 'disputed' | 'refunded') =>
+    ({ kind, amount: 500_000, status, releaseAfter: null, releasedAt: null, payoutId: null, paidOutAt: null });
+
+  assert.equal(aggregateEscrow([m('shoot', 'disputed'), m('delivery', 'held')]), 'disputed');
+  assert.equal(aggregateEscrow([m('shoot', 'disputed'), m('delivery', 'released')]), 'disputed');
+  assert.equal(aggregateEscrow([m('shoot', 'disputed'), m('delivery', 'paid_out')]), 'disputed');
+  assert.equal(aggregateEscrow([m('shoot', 'held'), m('delivery', 'released')]), 'held');
+  assert.equal(aggregateEscrow([m('shoot', 'released'), m('delivery', 'released')]), 'released');
+  assert.equal(aggregateEscrow([m('shoot', 'paid_out'), m('delivery', 'released')]), 'released');
+  assert.equal(aggregateEscrow([m('shoot', 'paid_out'), m('delivery', 'paid_out')]), 'paid_out');
+  assert.equal(aggregateEscrow([m('shoot', 'refunded'), m('delivery', 'refunded')]), 'refunded');
+});
+
+test('releaseDueMilestones is idempotent', () => {
+  const shotAt = new Date('2026-10-15T14:00:00.000Z');
+  const ms = splitMilestones(1_000_000, shotAt);
+  const payment = withMilestones(
+    {
+      id: 'pay_1',
+      bookingId: 'bk_1',
+      subjectType: 'booking',
+      subjectId: 'bk_1',
+      customerId: 'c1',
+      payeeId: 'p1',
+      amount: 1_000_000,
+      receivedAmount: 1_000_000,
+      status: 'paid',
+      escrowStatus: 'held',
+      method: 'bank_qr',
+      provider: 'sepay',
+      idempotencyKey: 'k',
+      createdAt: shotAt.toISOString(),
+      updatedAt: shotAt.toISOString(),
+    },
+    ms,
+    shotAt.toISOString(),
+  );
+
+  const nowPastShoot = new Date(shotAt.getTime() + 25 * 3600 * 1000);
+  let idCounter = 1;
+  const rel1 = releaseDueMilestones(payment, nowPastShoot, () => `led_${idCounter++}`);
+  assert.equal(rel1.ledgerEntries.length, 1);
+  assert.equal(rel1.ledgerEntries[0].amount, 500_000);
+  assert.equal(rel1.payment.payableAmount, 500_000);
+
+  const rel2 = releaseDueMilestones(rel1.payment, nowPastShoot, () => `led_${idCounter++}`);
+  assert.equal(rel2.ledgerEntries.length, 0);
+  assert.equal(rel2.payment, rel1.payment);
+});
+

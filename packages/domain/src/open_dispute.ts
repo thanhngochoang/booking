@@ -9,6 +9,7 @@ import type { BookingDeps } from './booking_ports.js';
 import { graphemeCount } from './booking_requests.js';
 import { DomainError } from './errors.js';
 import { disputeEscrowPayment, isSettledPayment } from './escrow.js';
+import { disputeMilestone } from './milestones.js';
 import { isId } from './ids.js';
 
 export interface OpenDisputeInput {
@@ -74,16 +75,29 @@ export async function openDispute(
     const payments = await deps.store.getPaymentsForBooking(booking.id);
     // The paid payment only: a `created` or stray row has escrow `held` from creation.
     const payment = payments.find(
-      (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded'),
+      (p) => isSettledPayment(p) && (p.escrowStatus === 'held' || p.escrowStatus === 'partially_refunded' || (p.milestones && p.escrowStatus !== 'disputed' && p.escrowStatus !== 'refunded')),
     );
     if (!payment) {
       throw new DomainError('conflict');
     }
 
-    const disputedPayment = {
-      ...disputeEscrowPayment(payment, now),
-      dispute: { reason: reasonTrimmed, openedAt: now.toISOString() },
-    };
+    let disputedPayment: Payment;
+    if (payment.milestones && booking.status === 'approved') {
+      disputedPayment = {
+        ...disputeMilestone(payment, 'delivery', now),
+        dispute: { reason: reasonTrimmed, openedAt: now.toISOString() },
+      };
+    } else if (payment.milestones && booking.status === 'shot') {
+      disputedPayment = {
+        ...disputeMilestone(payment, 'shoot', now),
+        dispute: { reason: reasonTrimmed, openedAt: now.toISOString() },
+      };
+    } else {
+      disputedPayment = {
+        ...disputeEscrowPayment(payment, now),
+        dispute: { reason: reasonTrimmed, openedAt: now.toISOString() },
+      };
+    }
     await tx.setPayment(disputedPayment);
 
     const updatedBooking: Booking = {

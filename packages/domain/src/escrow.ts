@@ -76,6 +76,10 @@ export interface Payment {
   readonly payer?: StoredBankAccount | null;
   /** VND refunded so far across all refunds on this payment. */
   readonly refundedAmount?: number;
+  /** Two-layer booking milestones (fake rails): shoot and delivery. */
+  readonly milestones?: readonly import('./milestones.js').PaymentMilestone[];
+  /** VND of released, unbatched milestones available for payout. */
+  readonly payableAmount?: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

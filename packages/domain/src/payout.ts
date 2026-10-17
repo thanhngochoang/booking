@@ -1,6 +1,7 @@
 /** Payout batch model (domain-model.md §2.4 `Payout`, `PayoutItem`). */
 
 import type { Payment } from './escrow.js';
+import type { MilestoneKind } from './milestones.js';
 
 /** Payee of a platform-hosted event's ticket money: the platform keeps it, no provider payout. */
 export const PLATFORM_PAYEE = 'platform';
@@ -10,7 +11,11 @@ export const PLATFORM_PAYEE = 'platform';
  * Bookings and event tickets (payee = host) alike; the platform payee never enters a payout.
  */
 export function isPayoutPayable(p: Payment): boolean {
-  return p.escrowStatus === 'released' && !p.payoutId && p.payeeId !== '' && p.payeeId !== PLATFORM_PAYEE;
+  if (p.payeeId === '' || p.payeeId === PLATFORM_PAYEE) return false;
+  if (p.milestones) {
+    return (p.payableAmount ?? 0) > 0;
+  }
+  return p.escrowStatus === 'released' && !p.payoutId;
 }
 
 /**
@@ -32,6 +37,7 @@ export interface PayoutItem {
   readonly fee: number;
   readonly tax: number;
   readonly net: number;
+  readonly milestone?: MilestoneKind | null;
 }
 
 export interface Payout {
