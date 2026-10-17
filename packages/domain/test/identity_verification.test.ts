@@ -10,6 +10,7 @@ import { DomainError, type ErrorCode } from '../src/errors.js';
 import { confirmPhoneVerified, reviewVerification, submitVerification } from '../src/verification_use_cases.js';
 import { acceptVerificationRules } from '../src/verification_use_cases.js';
 import { PROVIDER_RULES_VERSION } from '../src/verification.js';
+import { startVerificationFee } from '../src/verification_fee.js';
 
 const refusedWith = (code: ErrorCode) => (e: unknown) => e instanceof DomainError && e.code === code;
 
@@ -22,6 +23,54 @@ describe('identity_verification', () => {
     await confirmPhoneVerified(deps, 'p1');
     const res = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
     assert.ok(res.sessionId);
+  });
+
+  it('start needs the fee paid', async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    let starts = 0;
+    const fakeVerifier = new FakeIdentityVerifier(async () => null, world.ids);
+    const counting = { start: async (uid: string, m: 'vneid' | 'nfc') => { starts++; return fakeVerifier.start(uid, m); }, result: fakeVerifier.result.bind(fakeVerifier) };
+    const deps = { ...world.deps, identity: counting };
+
+    await confirmPhoneVerified(deps, 'p1');
+    await assert.rejects(startIdentityVerification(deps, 'p1', { method: 'vneid' }), refusedWith('not_eligible'));
+    // Refused before the vendor: a session costs money.
+    assert.equal(starts, 0);
+
+    const inst = await startVerificationFee(deps, 'p1', { method: 'bank_qr' });
+    await world.payFee(inst.paymentId);
+    const res = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+    assert.ok(res.sessionId);
+    assert.equal(starts, 1);
+  });
+
+  it('a grandfathered record rejected for identity_mismatch can start identity without paying', async () => {
+    // Submitted and rejected while the fee was off (#135), then the fee turned on (#203).
+    const free = createVerificationWorld({ feeRequired: false });
+    let starts = 0;
+    const fakeVerifier = new FakeIdentityVerifier(async () => null, free.ids);
+    const counting = { start: async (uid: string, m: 'vneid' | 'nfc') => { starts++; return fakeVerifier.start(uid, m); }, result: fakeVerifier.result.bind(fakeVerifier) };
+    const freeDeps = { ...free.deps, identity: counting };
+    await confirmPhoneVerified(freeDeps, 'p1');
+    const first = await startIdentityVerification(freeDeps, 'p1', { method: 'vneid' });
+    await completeIdentityVerification(freeDeps, 'p1', { sessionId: first.sessionId });
+    await acceptVerificationRules(freeDeps, 'p1', { version: PROVIDER_RULES_VERSION });
+    await submitVerification(freeDeps, 'p1');
+    await reviewVerification(freeDeps, { uid: 'staff1', isAdmin: true }, { uid: 'p1', action: 'reject', reason: 'identity_mismatch' });
+
+    const deps = { ...freeDeps, feeRequired: true };
+    const rec = free.store.verifications.get('p1');
+    assert.ok(rec);
+    assert.equal(rec.steps.fee, null);
+    assert.equal(rec.steps.identity, null);
+    assert.equal(rec.freeResubmitsLeft, 1);
+
+    const again = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+    assert.ok(again.sessionId);
+    assert.equal(starts, 2);
+    const done = await completeIdentityVerification(deps, 'p1', { sessionId: again.sessionId });
+    assert.equal(done.result, 'passed');
+    assert.equal(free.store.payments.size, 0);
   });
 
   it('start after identity passed is conflict', async () => {

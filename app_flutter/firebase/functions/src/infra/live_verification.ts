@@ -13,6 +13,8 @@ import { deleteStorageFiles } from './live_award.js';
 import { fakePaymentsAllowed } from './fake_payments.js';
 import { devIdentityVault } from './identity_vault.js';
 import { liveNotifyDeps } from './live_notification.js';
+import { getSharedFakeGateway, liveAccountCipher } from './live_booking.js';
+import { FirestorePaymentLookup } from './payment_firestore.js';
 import {
   FAKE_IDENTITIES_COLLECTION,
   FirestoreVerificationStore,
@@ -50,7 +52,10 @@ export async function readFakeIdentity(firestore: Firestore, uid: string): Promi
 /**
  * Identity, vault and tax-code lookup exist only where fake payments are allowed (the emulator on
  * `demo-*`, the dev project); elsewhere they are null and the use cases answer `not_eligible`.
- * `feeRequired` stays false until #203 (Decision 24).
+ * The fee step is on (#203, Decision 24): it runs on #129's gateway (the same instance as bookings
+ * and tickets; the fee callable is refused where no gateway is available, `checkoutGatewayAvailable`),
+ * V1's cross-subject payment lookup and V2's account cipher (the key is read on first use, so only
+ * functions that bind `PAYMENT_SECRETS` ever touch it).
  */
 export function liveVerificationDeps(env: Env = process.env): VerificationDeps {
   const firestore = db();
@@ -62,7 +67,10 @@ export function liveVerificationDeps(env: Env = process.env): VerificationDeps {
     identity: fake ? new FakeIdentityVerifier((uid) => readFakeIdentity(firestore, uid), ids) : null,
     vault: fake ? devIdentityVault(env) : null,
     taxCodes: fake ? new FakeTaxCodeLookup() : null,
-    feeRequired: false,
+    feeRequired: true,
+    gateway: getSharedFakeGateway(),
+    payments: new FirestorePaymentLookup(firestore),
+    cipher: liveAccountCipher(),
     clock: { now: () => new Date() },
     ids,
   };

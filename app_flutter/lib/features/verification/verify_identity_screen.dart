@@ -15,8 +15,8 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// S21.03 "Xác minh danh tính": VNeID first (mock `#S21.03`), the chip
 /// fallback in two steps (`#S21.03-nfc`, `#S21.03-selfie`), then the result.
 /// [method] picks the screen it opens on (`/verify/identity?method=nfc`).
-/// The identity step needs no fee while `verificationFeeRequiredProvider` is
-/// false (#203 adds that gate).
+/// With the fee on (#203) the identity needs the fee paid first (the vendor
+/// check costs money): until then the start buttons open the fee step.
 class VerifyIdentityScreen extends ConsumerWidget {
   const VerifyIdentityScreen({super.key, this.method = IdentityMethod.vneid});
 
@@ -72,6 +72,14 @@ class _IdentityViewState extends ConsumerState<_IdentityView> {
     }
   }
 
+  /// S21.02-fee, while the fee is unpaid.
+  void _openFee() {
+    final path = verifyStepPath(VerifyStep.fee);
+    if (path != null) {
+      context.push(path);
+    }
+  }
+
   /// Back to S21.02: pop when it is underneath, so its back stack stays.
   void _leave() {
     if (context.canPop()) {
@@ -107,6 +115,9 @@ class _IdentityViewState extends ConsumerState<_IdentityView> {
         );
     final steps = record.requiredSteps;
     final position = steps.indexOf(VerifyStep.identity) + 1;
+    final feeFirst =
+        steps.contains(VerifyStep.fee) && !record.isDone(VerifyStep.fee);
+    final start = feeFirst ? _openFee : _controller.start;
 
     final passed = s.phase == IdentityPhase.passed;
     final nfc = !passed && s.method == IdentityMethod.nfc;
@@ -152,9 +163,7 @@ class _IdentityViewState extends ConsumerState<_IdentityView> {
                     l.verifyNfcStart,
                     key: const Key('verify-nfc-start'),
                     loading: s.busy,
-                    onPressed: s.phase == IdentityPhase.intro
-                        ? _controller.start
-                        : null,
+                    onPressed: s.phase == IdentityPhase.intro ? start : null,
                   )
                 : null,
           )
@@ -171,9 +180,7 @@ class _IdentityViewState extends ConsumerState<_IdentityView> {
                     l.verifyIdVneid,
                     key: const Key('verify-vneid'),
                     loading: s.busy,
-                    onPressed: s.phase == IdentityPhase.intro
-                        ? _controller.start
-                        : null,
+                    onPressed: s.phase == IdentityPhase.intro ? start : null,
                   )
                 : null,
           );

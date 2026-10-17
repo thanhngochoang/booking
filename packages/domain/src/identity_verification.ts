@@ -6,6 +6,7 @@ import {
   type IdentityMethod,
   maskLegalName,
   MIN_PROVIDER_AGE_YEARS,
+  stepDone,
   type VerificationRecord,
   verificationKindOf,
   vnDayKey,
@@ -37,7 +38,7 @@ export async function startIdentityVerification(
   const provider = await deps.store.runTransaction(async (tx) => {
     const p = await tx.getProvider(uid);
     if (!p) throw new DomainError('permission_denied');
-    refuseIdentityStart(await tx.getVerification(uid), todayKey);
+    refuseIdentityStart(await tx.getVerification(uid), todayKey, deps.feeRequired);
     return p;
   });
 
@@ -51,7 +52,7 @@ export async function startIdentityVerification(
       rec = { ...rec, kind: verificationKindOf(provider.providerType) };
     }
 
-    const currentAttempts = refuseIdentityStart(rec, todayKey);
+    const currentAttempts = refuseIdentityStart(rec, todayKey, deps.feeRequired);
 
     const after: VerificationRecord = {
       ...rec,
@@ -76,14 +77,21 @@ export async function startIdentityVerification(
 }
 
 /**
- * `conflict` once identity passed, `rate_limited` at [IDENTITY_ATTEMPTS_PER_DAY] starts in one
- * VN day; otherwise today's attempt count so far.
+ * `conflict` once identity passed; with the fee on (#203, Decision 2), `not_eligible` until the
+ * fee step is done (the vendor check costs money): paid, or waived for a record rejected before the
+ * fee existed with a free resubmit left (`feeWaived`, same rule as the S21.02 step helpers);
+ * `rate_limited` at [IDENTITY_ATTEMPTS_PER_DAY] starts in one VN day; otherwise today's attempt
+ * count so far.
  */
-function refuseIdentityStart(rec: VerificationRecord | null, todayKey: string): number {
-  if (!rec) return 0;
-  if (rec.steps.identity?.result === 'passed') {
+function refuseIdentityStart(rec: VerificationRecord | null, todayKey: string, feeRequired: boolean): number {
+  if (rec?.steps.identity?.result === 'passed') {
     throw new DomainError('conflict');
   }
+  // The phone flag plays no part in the fee step.
+  if (feeRequired && (rec === null || !stepDone(rec, 'fee', false))) {
+    throw new DomainError('not_eligible');
+  }
+  if (!rec) return 0;
   const attempts = rec.identityAttempts.dayKey === todayKey ? rec.identityAttempts.count : 0;
   if (attempts >= IDENTITY_ATTEMPTS_PER_DAY) {
     throw new DomainError('rate_limited');

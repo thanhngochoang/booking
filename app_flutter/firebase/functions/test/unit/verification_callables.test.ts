@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { PROVIDER_RULES_VERSION, fakeIdNumberOf, type NotifyDeps } from '@photobooking/domain';
+import { PROVIDER_RULES_VERSION, fakeIdNumberOf, type NotifyDeps, type SettlementDeps } from '@photobooking/domain';
+import { handleConfirmFakePayment } from '../../src/callables/payment.js';
+import { settlementSubjectsOf } from '../../src/infra/live_payments.js';
 import {
   handleAcceptVerificationRules,
+  handleCheckVerificationFee,
+  handleStartVerificationFee,
   handleCompleteIdentityVerification,
   handleConfirmPhoneVerified,
   handleLookupTaxCode,
@@ -14,8 +18,10 @@ import {
   handleSubmitVerification,
   type VerificationCallableDeps,
   type VerificationCallableInput,
+  type VerificationFeeCallableDeps,
 } from '../../src/callables/verification.js';
 import { liveVerificationDeps } from '../../src/infra/live_verification.js';
+import { WEBHOOK_ENV } from './support/payment_world.js';
 import { EMULATOR_ENV, PROD_ENV, readyRecord, verificationWorld } from './verification_support.js';
 
 type Handler = (r: VerificationCallableInput, d: VerificationCallableDeps) => Promise<unknown>;
@@ -41,10 +47,18 @@ const as = (uid: string, data: unknown = {}, token: Record<string, unknown> = {}
 });
 const ADMIN = { staffRole: 'admin' };
 
-function setup(options: { fakes?: boolean } = {}) {
+function setup(options: { fakes?: boolean; feeRequired?: boolean } = {}) {
   const w = verificationWorld(options);
   const deps: VerificationCallableDeps = { verification: w.deps, notify: w.notify };
-  return { ...w, callDeps: deps };
+  // V1's settlement as liveSettlementDeps() builds it, with the fee settler over this world.
+  const settlement: SettlementDeps = {
+    payments: w.deps.payments,
+    gateway: w.gateway,
+    clock: w.deps.clock,
+    subjects: settlementSubjectsOf({ verification: w.deps }),
+  };
+  const feeDeps: VerificationFeeCallableDeps = { ...deps, settlement };
+  return { ...w, callDeps: deps, feeDeps, settlement };
 }
 
 /** Phone, identity (fake) and rules done through the callables, then submitted. */
@@ -180,15 +194,19 @@ describe('verification callables', () => {
     );
   });
 
-  it('liveVerificationDeps wires the fakes only on the emulator or the dev project, and never the fee', () => {
+  it('liveVerificationDeps wires the fakes only on the emulator or the dev project, and requires the fee (#203)', () => {
     const prod = liveVerificationDeps(PROD_ENV);
     assert.equal(prod.identity, null);
     assert.equal(prod.vault, null);
     assert.equal(prod.taxCodes, null);
-    assert.equal(prod.feeRequired, false);
+    assert.equal(prod.feeRequired, true);
     const emulator = liveVerificationDeps(EMULATOR_ENV);
     assert.ok(emulator.identity !== null && emulator.vault !== null && emulator.taxCodes !== null);
-    assert.equal(emulator.feeRequired, false);
+    assert.equal(emulator.feeRequired, true);
+    // #129's gateway, V1's cross-subject lookup and V2's cipher (read lazily, so no secret here).
+    assert.equal(emulator.gateway.provider, 'fake');
+    assert.equal(typeof emulator.payments.findPaymentsByTransferCode, 'function');
+    assert.equal(typeof emulator.cipher.encrypt, 'function');
     const dev = liveVerificationDeps({ GCLOUD_PROJECT: 'booking-c1922' });
     assert.ok(dev.identity !== null);
     // FUNCTIONS_EMULATOR alone on a real project id is not enough.
@@ -281,5 +299,84 @@ describe('verification callables', () => {
       () => handleSubmitBusinessVerification(as('s1', { taxCode: '0312345678', docPath: 'businessDocs/s1/a.jpg' }), callDeps),
       refused('failed-precondition', 'not_eligible'),
     );
+  });
+});
+
+describe('verification fee callables (#203)', () => {
+  it('unauthenticated fee calls are refused', async () => {
+    const { feeDeps, store } = setup({ feeRequired: true });
+    await assert.rejects(
+      () => handleStartVerificationFee({ auth: undefined, data: { method: 'bank_qr' } }, feeDeps, EMULATOR_ENV),
+      refused('unauthenticated', 'permission_denied'),
+    );
+    await assert.rejects(() => handleCheckVerificationFee({ auth: undefined, data: {} }, feeDeps), refused('unauthenticated', 'permission_denied'));
+    assert.equal(store.payments.size, 0);
+  });
+
+  it('startVerificationFee in payments-off mode is not_eligible', async () => {
+    const { feeDeps, store } = setup({ feeRequired: true });
+    await assert.rejects(
+      () => handleStartVerificationFee(as('p1', { method: 'bank_qr' }), feeDeps, PROD_ENV),
+      refused('failed-precondition', 'not_eligible'),
+    );
+    assert.equal(store.payments.size, 0);
+    assert.equal(store.verifications.size, 0);
+  });
+
+  it('startVerificationFee refuses bad input and customers; checkVerificationFee without a record is not_found', async () => {
+    const { feeDeps } = setup({ feeRequired: true });
+    await assert.rejects(
+      () => handleStartVerificationFee(as('p1', { method: 'cash' }), feeDeps, EMULATOR_ENV),
+      refused('invalid-argument', 'invalid_argument'),
+    );
+    await assert.rejects(
+      () => handleStartVerificationFee(as('c1', { method: 'bank_qr' }), feeDeps, EMULATOR_ENV),
+      refused('permission-denied', 'permission_denied'),
+    );
+    await assert.rejects(() => handleCheckVerificationFee(as('p1'), feeDeps), refused('not-found', 'not_found'));
+  });
+
+  it('the full path with the fee: phone, fee (fake), identity (fake), rules, submit, approve', async () => {
+    const { callDeps, feeDeps, settlement, store, gateway } = setup({ feeRequired: true });
+    assert.deepEqual(await handleConfirmPhoneVerified(as('p1'), callDeps), { phoneVerified: true });
+    // Identity needs the fee paid.
+    await assert.rejects(
+      () => handleStartIdentityVerification(as('p1', { method: 'vneid' }), callDeps),
+      refused('failed-precondition', 'not_eligible'),
+    );
+
+    const inst = await handleStartVerificationFee(as('p1', { method: 'bank_qr' }), feeDeps, EMULATOR_ENV);
+    assert.equal(inst.amount, 99_000);
+    assert.equal(inst.method, 'bank_qr');
+    const payment = store.payments.get(inst.paymentId);
+    assert.equal(payment?.subjectType, 'verification_fee');
+    assert.equal(payment?.payeeId, 'platform');
+    // A second tap reuses the live code (no new payment, no gateway call).
+    const calls = gateway.createPaymentCalls.length;
+    assert.equal((await handleStartVerificationFee(as('p1', { method: 'bank_qr' }), feeDeps, EMULATOR_ENV)).paymentId, inst.paymentId);
+    assert.equal(gateway.createPaymentCalls.length, calls);
+    assert.deepEqual(await handleCheckVerificationFee(as('p1'), feeDeps), { paid: false, instructions: inst });
+
+    // V1's unified fake confirmation, through the webhook handler and the registered fee settler.
+    assert.deepEqual(
+      await handleConfirmFakePayment(as('p1', { paymentId: inst.paymentId }), settlement, WEBHOOK_ENV),
+      { outcome: 'paid' },
+    );
+    assert.deepEqual(await handleCheckVerificationFee(as('p1'), feeDeps), { paid: true, instructions: null });
+    assert.equal(store.verifications.get('p1')?.steps.fee?.amount, 99_000);
+    await assert.rejects(
+      () => handleStartVerificationFee(as('p1', { method: 'momo' }), feeDeps, EMULATOR_ENV),
+      refused('failed-precondition', 'not_eligible'),
+    );
+
+    const start = await handleStartIdentityVerification(as('p1', { method: 'vneid' }), callDeps);
+    await handleCompleteIdentityVerification(as('p1', { sessionId: start.sessionId }), callDeps);
+    await handleAcceptVerificationRules(as('p1', { version: PROVIDER_RULES_VERSION }), callDeps);
+    assert.deepEqual(await handleSubmitVerification(as('p1'), callDeps), { status: 'submitted' });
+    assert.deepEqual(
+      await handleReviewVerification(as('staff1', { uid: 'p1', action: 'approve' }, ADMIN), callDeps),
+      { status: 'approved' },
+    );
+    assert.equal(store.providerFlags.get('p1')?.acceptingOrders, true);
   });
 });

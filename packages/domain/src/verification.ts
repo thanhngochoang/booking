@@ -197,6 +197,16 @@ export function requiredSteps(feeRequired: boolean): readonly VerificationStep[]
   return feeRequired ? ['phone', 'fee', 'identity', 'rules'] : ['phone', 'identity', 'rules'];
 }
 
+/**
+ * A record sent to staff before the fee existed (#203, Decision 24: `submittedAt` set, `steps.fee`
+ * null; every #203 submit carries a fee and a paid resubmit clears `submittedAt`), rejected with a
+ * free resubmit left: that free resubmit needs no fee, so the fee step counts as done. Its paid
+ * resubmit (no free one left) needs the fee like any other.
+ */
+export function feeWaived(r: VerificationRecord): boolean {
+  return r.status === 'rejected' && r.freeResubmitsLeft > 0 && r.submittedAt !== null && r.steps.fee === null;
+}
+
 export function stepDone(r: VerificationRecord, s: VerificationStep, phoneVerified: boolean): boolean {
   switch (s) {
     case 'phone':
@@ -204,7 +214,7 @@ export function stepDone(r: VerificationRecord, s: VerificationStep, phoneVerifi
       // and a number change resets the flag, so the step shows undone again.
       return phoneVerified;
     case 'fee':
-      return r.steps.fee !== null;
+      return r.steps.fee !== null || feeWaived(r);
     case 'identity':
       return r.steps.identity !== null && r.steps.identity.result === 'passed';
     case 'rules':

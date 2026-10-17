@@ -12,6 +12,8 @@ import 'package:photobooking/data/events/event_registration.dart';
 import 'package:photobooking/data/payments/payment_instructions.dart';
 import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/photographer/public_profile_providers.dart';
+import 'package:photobooking/data/verification/verification.dart';
+import 'package:photobooking/data/verification/verification_providers.dart';
 import 'package:photobooking/features/discovery/book_entry.dart';
 import 'package:photobooking/features/payment/pay_subject.dart';
 
@@ -52,20 +54,28 @@ final class PayOpen extends PayView {
 }
 
 final class PayDone extends PayView {
-  const PayDone(this.path);
+  const PayDone(this.path, {this.paid = true});
 
   final String path;
+
+  /// False when the screen leaves with nothing paid (the verification fee
+  /// resumed with no open payment): no "paid" message.
+  final bool paid;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is PayDone &&
           runtimeType == other.runtimeType &&
-          path == other.path;
+          path == other.path &&
+          paid == other.paid;
 
   @override
-  int get hashCode => path.hashCode;
+  int get hashCode => Object.hash(path, paid);
 }
+
+/// Where S04.04 returns once the verification fee is recorded: S21.02.
+const verifyFeeDonePath = '/verify/start';
 
 final class PayGone extends PayView {
   const PayGone(this.kind, this.actionPath);
@@ -117,11 +127,12 @@ class PaymentController extends Notifier<PayView> {
       final who = switch (subject) {
         BookingPay() => (name: '', detail: ''),
         TicketPay() => (name: '', detail: ''),
+        VerificationFeePay() => (name: '', detail: ''),
       };
       state = PayOpen(
         instructions: initial,
         who: who,
-        canRenew: subject is BookingPay,
+        canRenew: subject is BookingPay || subject is VerificationFeePay,
       );
     }
   }
@@ -134,7 +145,79 @@ class PaymentController extends Notifier<PayView> {
         eventId,
         registrationId,
       ),
+      VerificationFeePay() => _buildFee(),
     };
+  }
+
+  /// The verification fee (#203): paid once `myVerificationProvider` shows
+  /// the fee step done (the server records it in the settlement), then back
+  /// to S21.02. The instructions come from S21.02-fee's `startFee` (seeded);
+  /// on a resume without them, `checkFee` answers the live payment.
+  PayView _buildFee() {
+    final async = ref.watch(myVerificationProvider);
+    if (async.isLoading && !async.isRefreshing) {
+      return _seededView(canRenew: true) ?? const PayLoading();
+    }
+    if (async.hasError) {
+      return _seededView(canRenew: true) ??
+          const PayFailed(BookingErrorCode.network);
+    }
+    final v = async.requireValue;
+    // Paid for this attempt only: a rejected record awaiting its paid
+    // resubmit still holds the rejected attempt's fee (a plain exit below).
+    if (v.feePaidThisAttempt) {
+      return const PayDone(verifyFeeDonePath);
+    }
+    final steps =
+        v.status == VerificationStatus.notStarted ||
+        v.status == VerificationStatus.inProgress ||
+        v.status == VerificationStatus.rejected;
+    if (!steps || v.isDone(VerifyStep.fee)) {
+      // Nothing to pay here any more (sent, decided, or waived).
+      return const PayDone(verifyFeeDonePath, paid: false);
+    }
+    final seeded = _seeded;
+    if (seeded != null) {
+      return PayOpen(
+        instructions: seeded,
+        who: (name: '', detail: ''),
+        canRenew: true,
+      );
+    }
+    _resumeFee();
+    return const PayLoading();
+  }
+
+  /// Resume without instructions: ask the server for the live fee payment.
+  /// Runs after the frame, so S21.02-fee's seed (a post-frame callback) wins.
+  void _resumeFee() {
+    if (_creating) return;
+    _creating = true;
+    scheduleMicrotask(() async {
+      try {
+        if (_seeded != null) return;
+        final check = await ref.read(verificationRepositoryProvider).checkFee();
+        final inst = check.instructions;
+        if (check.paid) {
+          ref.invalidate(myVerificationProvider);
+        } else if (inst == null) {
+          state = const PayDone(verifyFeeDonePath, paid: false);
+        } else {
+          _seeded = inst;
+          state = PayOpen(
+            instructions: inst,
+            who: (name: '', detail: ''),
+            canRenew: true,
+          );
+        }
+      } catch (_) {
+        if (_seeded == null) {
+          state = const PayFailed(BookingErrorCode.network);
+        }
+      } finally {
+        _creating = false;
+      }
+    });
   }
 
   PayView _buildBooking(String bookingId) {
@@ -295,9 +378,19 @@ class PaymentController extends Notifier<PayView> {
 
   Future<PaymentInstructions?> renew() async {
     final s = subject;
-    if (s is! BookingPay) return null;
     final current = state;
     if (current is! PayOpen || !current.canRenew) return null;
+    if (s is VerificationFeePay) {
+      // "Tạo QR mới": expire the open fee payment and issue a new code. No
+      // stream carries fee instructions, so the view takes them here.
+      final inst = await ref
+          .read(verificationRepositoryProvider)
+          .startFee(current.instructions.method, renew: true);
+      _seeded = inst;
+      state = PayOpen(instructions: inst, who: current.who, canRenew: true);
+      return inst;
+    }
+    if (s is! BookingPay) return null;
 
     final checkout = await ref
         .read(bookingRepositoryProvider)
@@ -322,6 +415,8 @@ class PaymentController extends Notifier<PayView> {
                 .read(eventRepositoryProvider)
                 .checkTicketPayment(eventId, registrationId))
             .paid,
+      VerificationFeePay() =>
+        (await ref.read(verificationRepositoryProvider).checkFee()).paid,
     };
   }
 

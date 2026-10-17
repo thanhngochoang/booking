@@ -8,6 +8,11 @@ import type {
 import type { NotifyDeps } from '../../src/notification_ports.js';
 import { createNotifyWorld } from './notify_world.js';
 import type { MemoryNotificationStore } from '../../src/memory_notification_store.js';
+import { FakePaymentGateway, type FakeTransferKind } from '../../src/fake_payment_gateway.js';
+import { MemoryPaymentLookup } from '../../src/memory_payment_lookup.js';
+import { confirmFakePayment, type SettlementDeps } from '../../src/payment_settlement.js';
+import { VerificationFeeSettler } from '../../src/verification_fee.js';
+import { TEST_CIPHER } from './test_cipher.js';
 
 export class MemoryIdentityVault implements IdentityVault {
   async hashId(idNumber: string): Promise<string> {
@@ -37,8 +42,15 @@ export interface VerificationWorld {
   readonly notifyDeps: NotifyDeps;
   /** The notification rows written through [notifyDeps]. */
   readonly notifyStore: MemoryNotificationStore;
+  /** #129's fake gateway; `pushTransfer` simulates a transfer `queryTransfers` finds. */
+  readonly gateway: FakePaymentGateway;
+  /** V1's settlement with `subjects.verification_fee` registered. */
+  readonly settlement: SettlementDeps;
+  /** V1's `confirmFakePayment` on the payer's own fee payment. */
+  readonly payFee: (paymentId: string, kind?: FakeTransferKind, uid?: string) => ReturnType<typeof confirmFakePayment>;
 }
 
+/** `feeRequired: true` is the #203 world (four steps, fee before identity); the default stays #135's. */
 export function createVerificationWorld(options: { feeRequired?: boolean } = {}): VerificationWorld {
   const store = new MemoryVerificationStore();
   const authPhones = new MapAuthPhoneReader();
@@ -76,6 +88,8 @@ export function createVerificationWorld(options: { feeRequired?: boolean } = {})
     phoneVerified: true,
   });
 
+  const gateway = new FakePaymentGateway();
+  const payments = new MemoryPaymentLookup([store]);
   const deps: VerificationDeps = {
     store,
     authPhones,
@@ -83,9 +97,20 @@ export function createVerificationWorld(options: { feeRequired?: boolean } = {})
     vault: new MemoryIdentityVault(),
     taxCodes: null,
     feeRequired: options.feeRequired ?? false,
+    gateway,
+    payments,
+    cipher: TEST_CIPHER,
     clock,
     ids,
   };
+  const settlement: SettlementDeps = {
+    payments,
+    gateway,
+    clock,
+    subjects: { verification_fee: new VerificationFeeSettler(deps) },
+  };
+  const payFee = (paymentId: string, kind: FakeTransferKind = 'exact', uid = 'p1') =>
+    confirmFakePayment(settlement, { uid }, { paymentId, kind });
 
   const notifyWorld = createNotifyWorld(clock.now());
   notifyWorld.users.users.set('p1', { name: 'Thợ P1', avatarUrl: null });
@@ -100,5 +125,8 @@ export function createVerificationWorld(options: { feeRequired?: boolean } = {})
     ids,
     notifyDeps: notifyWorld.deps,
     notifyStore: notifyWorld.store,
+    gateway,
+    settlement,
+    payFee,
   };
 }

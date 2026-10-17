@@ -365,7 +365,7 @@ create index ix_payments_release on payments (escrow_status, release_after) wher
 create table refunds (
   id              text primary key,                    -- khoá chống trùng gửi sang cổng
   payment_id      text not null references payments(id),
-  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request')),
+  subject_type    text not null check (subject_type in ('booking','event_registration','instant_request','verification_fee')),
   amount          bigint not null check (amount > 0),
   percent         smallint check (percent between 0 and 100),
   status          text not null check (status in ('awaiting_account','pending','done','failed')),  -- #201: awaiting_account
@@ -382,7 +382,7 @@ create table refunds (
   failure_reason  text,                                -- #201: mã hoặc lý do lỗi từ cổng/ngân hàng
   manual          boolean not null default false,
   from_escrow     boolean not null default true,       -- false: tiền trả lại ngay khi nhận (thừa, chuyển lần hai, trễ), chưa từng vào ký quỹ
-  reason          text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer
+  reason          text,                                -- vd overpaid_excess, underpaid_expired, late_transfer, extra_transfer, duplicate_verification_fee, stale_verification_fee
   provider_ref    text,                                -- giao dịch của cổng mà tiền được hoàn từ đó
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
@@ -458,7 +458,7 @@ create table ledger_entries (                     -- bất biến, chỉ thêm
   refund_id       text references refunds(id),
   payout_id       text references payouts(id),
   account_owner_id text references users(id),      -- người được ghi có (nhiếp ảnh gia) hoặc null = nền tảng
-  amount          bigint not null,                 -- có dấu
+  amount          bigint not null,                 -- có dấu: fee_charged dương (doanh thu nền tảng), platform_fee âm (hoa hồng trừ khỏi tiền chi cho thợ)
   currency        char(3) not null default 'VND',
   note            text,
   at              timestamptz not null default now()
@@ -1028,7 +1028,7 @@ create table verifications (
   status         text not null default 'not_started'
                  check (status in ('not_started','in_progress','submitted','approved','rejected','revoked')),
   phone_done_at  timestamptz,                       -- phản chiếu user_contacts.phone_verified (bước điện thoại là cờ đó)
-  fee_payment_id text references payments(id),     -- #203; rỗng tới khi phí bật
+  fee_payment_id text references payments(id),     -- #203; payments.subject_type = 'verification_fee'; rỗng tới khi phí được ghi (và ở bản ghi gửi trước #203)
   fee_amount     bigint check (fee_amount > 0),
   fee_paid_at    timestamptz,
   identity_method text check (identity_method in ('vneid','nfc')),
@@ -1116,7 +1116,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 |---------------------|------|----------------|
 | `users/{uid}` | `users` | `displayName`→`display_name`, `avatarUrl` + `avatarPath`→`avatar_file_id` (tạo `files`, `avatarPath` là khoá Storage `avatars/{uid}/{ulid}.jpg`); `fcmTokens[]`→`devices` |
 | `users/{uid}/private/contact` | `user_contacts` | Số điện thoại khách |
-| `verifications/{uid}` | `verifications` | `steps.*`, `identitySession.*`, `identityAttempts.*`, `rejectReason.*` → cột phẳng có tiền tố; `business.*` → cột `business_*` (cùng bảng); `steps.phone` phản chiếu `user_contacts.phone_verified`; `steps.fee` → `fee_*` (#203) |
+| `verifications/{uid}` | `verifications` | `steps.*`, `identitySession.*`, `identityAttempts.*`, `rejectReason.*` → cột phẳng có tiền tố; `business.*` → cột `business_*` (cùng bảng); `steps.phone` phản chiếu `user_contacts.phone_verified`; `steps.fee` → `fee_*` (#203; khoản thanh toán là dòng `payments` có `subject_type = 'verification_fee'`) |
 | `users/{uid}/private/identity` | `identities` | Chỉ server đọc/ghi; `idNumberEnc` → `id_number_enc` |
 | `identity_hashes/{idHash}` | `identity_hashes` | Id tài liệu = `id_hash`; `uid` → `user_id` |
 | `verificationAudit/{id}` | `verification_audit` | `actorId` → `actor_id`, `otherUid` → `other_user_id` |
@@ -1135,7 +1135,7 @@ Quy tắc chung: tên trường `camelCase` ↔ cột `snake_case`; `Timestamp` 
 | `jobs/{id}`, `jobs/{id}/quotes/{photographerId}`, `jobs/{id}/invites/{photographerId}` | `jobs` + `job_references`, `quotes`, `job_invites` | `schedule.*`, `area.*`, `budget.*`, `wants.*` → cột phẳng; id báo giá Firestore là uid, bảng dùng `id` riêng + `unique (job_id, photographer_id)` |
 | `bookings/{id}/milestones/{kind}`, `bookings/{id}/deliveries/{round}` | `booking_milestones`, `booking_deliveries` + `booking_delivery_previews` | Đề xuất (spec 10-05) |
 | `bookings/{id}` + `bookings/{id}/private/contact` | `bookings` + `booking_events` + `booking_contacts` | `service.*`→`service_*`; `deposit.*`→`deposit_*`; `cancel.*`→`cancelled_*`; `timeline[]`→`booking_events`; `bookings/{id}/private/contact`→`booking_contacts` |
-| `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received` |
+| `payments/{id}` | `payments`, `refunds`, `ledger_entries` | `raw`→`jsonb`; thêm cột escrow; bút toán sinh từ lịch sử; `deposit_received` cũ đổi thành `payment_received`; (đề xuất) tài khoản nền tảng của Firestore (`platform_escrow`, `platform_revenue` ở `accountOwnerId`) thành `account_owner_id` null, phân biệt bằng `type` (`fee_charged` là doanh thu) |
 | `payment_notifications/{provider}_{txnId}` | `payment_notifications` | Giữ nguyên id; `raw` là chuỗi gốc của webhook |
 | `reviews/{reviewId}` (`reviewId = reviewDocId(bookingId, subjectType)`: `bookingId` hoặc `{bookingId}_studio`) | `reviews` | Khoá `(booking_id, subject_type)`; `reviewId` không thành cột |
 | `chats/{id}` + `chats/{id}/messages/{id}` | `chats`, `chat_members`, `messages`, `chat_pins` | `members[]`→`chat_members`; `unread{}`→`chat_members.unread_count`; `lastMessage`→cột; `chats.bookingStatus`→không có cột, suy ra từ `bookings.status` qua `chats.booking_id` (join; trường Firestore chỉ là read model cho danh sách S07.02) |

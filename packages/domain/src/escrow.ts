@@ -31,7 +31,8 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const isPaymentMethod = (v: unknown): v is PaymentMethod =>
   typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v);
 
-export const PAYMENT_SUBJECTS = ['booking', 'event_registration'] as const;
+/** `verification_fee`: the S21 fee, platform revenue (payee `platform`), never earnings or payouts (#203). */
+export const PAYMENT_SUBJECTS = ['booking', 'event_registration', 'verification_fee'] as const;
 export type PaymentSubject = (typeof PAYMENT_SUBJECTS)[number];
 export const isPaymentSubject = (v: unknown): v is PaymentSubject =>
   typeof v === 'string' && (PAYMENT_SUBJECTS as readonly string[]).includes(v);

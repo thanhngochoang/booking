@@ -84,12 +84,14 @@ import { handleAwardPurge } from './scheduled/award_purge.js';
 import { liveAwardDeps } from './infra/live_award.js';
 import {
   handleAcceptVerificationRules,
+  handleCheckVerificationFee,
   handleCompleteIdentityVerification,
   handleConfirmPhoneVerified,
   handleLookupTaxCode,
   handleResubmitVerification,
   handleReviewVerification,
   handleStartIdentityVerification,
+  handleStartVerificationFee,
   handleSubmitBusinessVerification,
   handleSubmitVerification,
 } from './callables/verification.js';
@@ -364,6 +366,20 @@ export const purgeAwardProofs = onSchedule(
 );
 
 // ---- provider verification (S21, #135; the fee callables are #203's) ----
+
+/**
+ * `{method: 'bank_qr' | 'momo' | 'zalopay', renew?}` → `PaymentInstructions`: opens (or reuses) the
+ * 99.000₫ / 299.000₫ verification fee payment (#203); `not_eligible` where no gateway is available.
+ * Paid through the shared settlement (`paymentWebhook`, `confirmFakePayment`, `paymentClock`).
+ */
+export const startVerificationFee = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleStartVerificationFee(request, liveVerificationCallableDeps()),
+);
+
+/** `{}` → `{paid, instructions}`: "Kiểm tra" asks the gateway about the open fee payments (#203). */
+export const checkVerificationFee = onCall(PAYMENT_CALLABLE_OPTIONS, (request) =>
+  handleCheckVerificationFee(request, { ...liveVerificationCallableDeps(), settlement: liveSettlementDeps() }),
+);
 
 /** `{}` → `{phoneVerified: true}`: marks the contact phone verified once the Auth phone (OTP) matches it. */
 export const confirmPhoneVerified = onCall(CALLABLE_OPTIONS, (request) =>

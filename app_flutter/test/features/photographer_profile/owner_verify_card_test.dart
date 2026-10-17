@@ -63,7 +63,8 @@ void main() {
     final w = await _open(tester);
 
     expect(find.byType(OwnerVerifyCard), findsOneWidget);
-    expect(_inCard('Còn 3 bước để nhận đơn'), findsOneWidget);
+    // Phone, fee (#203), identity and rules all to do.
+    expect(_inCard('Còn 4 bước để nhận đơn'), findsOneWidget);
     expect(
       _inCard('Khách chưa đặt được bạn cho tới khi xác minh xong.'),
       findsOneWidget,

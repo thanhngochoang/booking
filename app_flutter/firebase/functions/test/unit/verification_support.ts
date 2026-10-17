@@ -1,17 +1,21 @@
 import {
   FakeIdentityVerifier,
+  FakePaymentGateway,
   FakeTaxCodeLookup,
   MemoryNotificationStore,
+  MemoryPaymentLookup,
   MemoryPushSender,
   MemoryUserDirectory,
   MemoryVerificationStore,
   emptyVerification,
   type IdentityResult,
   type NotifyDeps,
+  type PaymentSource,
   type VerificationDeps,
   type VerificationRecord,
 } from '@photobooking/domain';
 import { devIdentityVault } from '../../src/infra/identity_vault.js';
+import { TEST_CIPHER } from './support/payment_world.js';
 
 /** Where the dev vault and the fake verifier may run (the emulator on a demo-* project). */
 export const EMULATOR_ENV = { FUNCTIONS_EMULATOR: 'true', GCLOUD_PROJECT: 'demo-nag' } as const;
@@ -22,9 +26,10 @@ export const NOW = new Date('2026-10-10T10:00:00.000Z');
 /**
  * Memory world of the verification use cases with the shipped fakes (fake verifier, dev vault,
  * fake tax codes): p1 individual and s1 studio, both onboarded, unverified, with a contact phone
- * equal to their Auth phone.
+ * equal to their Auth phone. `feeRequired` (default false, #135's three steps) turns on the #203
+ * fee step; the fee runs on #129's fake gateway and a payment lookup over this store.
  */
-export function verificationWorld(options: { fakes?: boolean } = {}) {
+export function verificationWorld(options: { fakes?: boolean; feeRequired?: boolean } = {}) {
   const fakes = options.fakes ?? true;
   const store = new MemoryVerificationStore();
   const phones = new Map<string, string>();
@@ -44,6 +49,7 @@ export function verificationWorld(options: { fakes?: boolean } = {}) {
   }
   store.contacts.set('c1', { phone: '+84901111111', phoneVerified: true });
 
+  const gateway = new FakePaymentGateway();
   const deps: VerificationDeps = {
     store,
     authPhones: { verifiedPhoneOf: async (uid) => phones.get(uid) ?? null },
@@ -52,7 +58,10 @@ export function verificationWorld(options: { fakes?: boolean } = {}) {
       : null,
     vault: fakes ? devIdentityVault(EMULATOR_ENV) : null,
     taxCodes: fakes ? new FakeTaxCodeLookup() : null,
-    feeRequired: false,
+    feeRequired: options.feeRequired ?? false,
+    gateway,
+    payments: new MemoryPaymentLookup([store]),
+    cipher: TEST_CIPHER,
     clock,
     ids,
   };
@@ -71,6 +80,7 @@ export function verificationWorld(options: { fakes?: boolean } = {}) {
   return {
     deps,
     store,
+    gateway,
     phones,
     overrides,
     notify,
@@ -79,6 +89,11 @@ export function verificationWorld(options: { fakes?: boolean } = {}) {
       now = d;
     },
   };
+}
+
+/** The #203 payment deps of a hand-built VerificationDeps: fake gateway, lookup over `sources`, test cipher. */
+export function feeDepsOf(...sources: PaymentSource[]): Pick<VerificationDeps, 'gateway' | 'payments' | 'cipher'> {
+  return { gateway: new FakePaymentGateway(), payments: new MemoryPaymentLookup(sources), cipher: TEST_CIPHER };
 }
 
 /** A record with every #135 step done, in `status` (default submitted). */

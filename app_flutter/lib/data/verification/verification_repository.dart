@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:photobooking/core/core.dart';
+import 'package:photobooking/data/payments/payment_instructions.dart';
+import 'package:photobooking/data/payments/payments_repository.dart';
 import 'package:photobooking/data/verification/verification.dart';
 
 /// A refusal from a verification callable, with the domain code the server
@@ -56,7 +58,15 @@ abstract class VerificationRepository {
   /// with the contact phone and sets `phoneVerified`.
   Future<void> confirmPhoneVerified();
 
-  // #203 adds startFee(PayMethod, {renew}) and checkFee().
+  /// `startVerificationFee {method, renew?}` (#203): V1's payment
+  /// instructions for the fee (bank QR → S04.04's VietQR; a wallet → its
+  /// `payUrl`). The same method again reuses the open payment; [renew]
+  /// expires it and issues a new code ("Tạo QR mới").
+  Future<PaymentInstructions> startFee(PayMethod method, {bool renew = false});
+
+  /// `checkVerificationFee {}` (#203, S04.04's "Kiểm tra lại" and resume):
+  /// asks the gateway about the open fee payments; the live one, if unpaid.
+  Future<PaymentCheck> checkFee();
 
   Future<IdentitySession> startIdentity(IdentityMethod method);
 
@@ -100,6 +110,7 @@ class FakeVerificationRepository implements VerificationRepository {
     this.businessResult = BusinessStatus.submitted,
     this.phoneVerified = true,
     this.feeRequired = false,
+    this.kind = VerificationKind.individual,
   }) : _now = now ?? (() => DateTime.now().toUtc());
 
   /// Whose document the calls change.
@@ -119,8 +130,23 @@ class FakeVerificationRepository implements VerificationRepository {
   /// Defaults to true so a seeded ready doc can be sent as is.
   bool phoneVerified;
 
-  /// The server's `feeRequired` (#135: false).
+  /// The server's `feeRequired` (true since #203; false keeps #135's three
+  /// steps).
   bool feeRequired;
+
+  /// The kind of the provider type the server reads (the fee amount).
+  VerificationKind kind;
+
+  /// The fee payments issued so far, newest last ([startFee]).
+  final feePayments = <PaymentInstructions>[];
+
+  /// The instructions [startFee] answered last.
+  PaymentInstructions? get lastFeeInstructions =>
+      feePayments.isEmpty ? null : feePayments.last;
+
+  /// Open (unpaid, not renewed) fee payment per method, as the server's
+  /// `instructionsOf` reuse.
+  final _openFee = <PayMethod, PaymentInstructions>{};
 
   final calls = <VerificationCall>[];
 
@@ -192,7 +218,7 @@ class FakeVerificationRepository implements VerificationRepository {
   VerificationState _state() => verificationFromFirestore(
     _docs[uid],
     phoneVerified: phoneVerified,
-    kind: VerificationKind.individual,
+    kind: kind,
     feeRequired: feeRequired,
     now: _now(),
   );
@@ -211,13 +237,105 @@ class FakeVerificationRepository implements VerificationRepository {
   }
 
   @override
+  Future<PaymentInstructions> startFee(
+    PayMethod method, {
+    bool renew = false,
+  }) async {
+    _record('startVerificationFee', {
+      'method': method.code,
+      if (renew) 'renew': true,
+    });
+    // As the server (domain `feePayable`): the fee off, a paid or waived
+    // fee, a record past the steps or a final rejection is `not_eligible`.
+    final current = _state();
+    final open =
+        current.status == VerificationStatus.notStarted ||
+        current.status == VerificationStatus.inProgress ||
+        (current.status == VerificationStatus.rejected &&
+            (current.rejectReason?.resubmittable ?? false));
+    if (!feeRequired || !open || current.isDone(VerifyStep.fee)) {
+      throw const VerificationError('not_eligible');
+    }
+    final live = _openFee[method];
+    if (!renew && live != null && !live.isExpiredAt(_now())) {
+      feePayments.add(live);
+      return live;
+    }
+    final n = feePayments.length + 1;
+    final id = 'vfee-$uid-$n';
+    final code = 'PB VF${n.toString().padLeft(4, '0')}';
+    final inst = PaymentInstructions(
+      paymentId: id,
+      method: method,
+      amount: verificationFeeVnd[current.kind]!,
+      expiresAt: _now().add(const Duration(minutes: 15)),
+      transferCode: code,
+      attempt: n,
+      qrPayload: method == PayMethod.bankQr ? '000201010212$n' : null,
+      bankName: method == PayMethod.bankQr ? 'BIDV' : null,
+      accountMasked: method == PayMethod.bankQr ? '9624 •••• 3812' : null,
+      payUrl: method == PayMethod.bankQr
+          ? null
+          : 'https://fake-pay.local/${method.code}?paymentId=$id',
+    );
+    _openFee[method] = inst;
+    feePayments.add(inst);
+    _update(_started);
+    return inst;
+  }
+
+  @override
+  Future<PaymentCheck> checkFee() async {
+    _record('checkVerificationFee');
+    final paid = _state().feePaidAt != null;
+    if (paid) {
+      return const PaymentCheck(paid: true);
+    }
+    // As the server: the newest code still open (not renewed, not paid) and
+    // not lapsed, else none.
+    final now = _now();
+    PaymentInstructions? live;
+    for (final p in _openFee.values) {
+      if (!p.isExpiredAt(now) &&
+          (live == null || (p.attempt ?? 0) > (live.attempt ?? 0))) {
+        live = p;
+      }
+    }
+    return PaymentCheck(paid: false, instructions: live);
+  }
+
+  /// Test helper: the gateway's transfer settled [paymentId] (V1's
+  /// settlement through the fee settler), recording `steps.fee`.
+  void settleFee(String paymentId) {
+    final inst = feePayments.lastWhere(
+      (p) => p.paymentId == paymentId,
+      orElse: () => throw StateError('unknown fee payment $paymentId'),
+    );
+    _openFee.clear();
+    _update((d) {
+      (d['steps'] as Map<String, dynamic>)['fee'] = {
+        'paymentId': paymentId,
+        'amount': inst.amount,
+        'paidAt': _now(),
+      };
+      d['kind'] = _state().kind.code;
+      return _started(d);
+    });
+  }
+
+  @override
   Future<IdentitySession> startIdentity(IdentityMethod method) async {
     _record('startIdentityVerification', {'method': method.code});
-    // As the server: a passed identity cannot start again, the 4th start of
-    // a Vietnam day is refused, and every start counts a try.
+    // As the server: a passed identity cannot start again, the fee step must
+    // be done first (#203: paid, or waived for a record rejected before the
+    // fee existed), the 4th start of a Vietnam day is refused, and
+    // every start counts a try.
     final current = _state();
     if (current.identityPassed) {
       throw const VerificationError('conflict');
+    }
+    if (feeRequired && !current.isDone(VerifyStep.fee)) {
+      throw const VerificationError('not_eligible');
     }
     if (current.identityAttemptsLeft == 0) {
       throw const VerificationError('rate_limited');
@@ -288,14 +406,34 @@ class FakeVerificationRepository implements VerificationRepository {
     if (!_state().resubmittable) {
       throw const VerificationError('not_eligible');
     }
+    final before = _state();
+    final paidAt = before.feePaidAt;
+    final decidedAt = before.decidedAt;
+    // A fee paid while rejected is that paid resubmit (domain
+    // `feePaidAfterRejection`).
+    final paidAfterRejection =
+        paidAt != null && decidedAt != null && paidAt.isAfter(decidedAt);
     _update((d) {
       final left = d['freeResubmitsLeft'];
+      final free = left is int && left > 0;
+      if (!free && feeRequired && !paidAfterRejection) {
+        // Paid resubmit (#203): back to the steps with the fee open under a
+        // new attempt.
+        final attempt = d['feeAttempt'];
+        (d['steps'] as Map<String, dynamic>)['fee'] = null;
+        return d
+          ..['status'] = 'in_progress'
+          ..['feeAttempt'] = (attempt is int ? attempt : 1) + 1
+          ..['submittedAt'] = null
+          ..['decidedAt'] = null
+          ..['rejectReason'] = null;
+      }
       return d
         ..['status'] = 'submitted'
         ..['submittedAt'] = _now()
         ..['decidedAt'] = null
         ..['rejectReason'] = null
-        ..['freeResubmitsLeft'] = left is int && left > 0 ? left - 1 : 0;
+        ..['freeResubmitsLeft'] = free ? left - 1 : 0;
     });
   }
 

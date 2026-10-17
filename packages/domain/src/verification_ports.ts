@@ -1,3 +1,7 @@
+import type { PaymentGateway, TransferRecord } from './booking_ports.js';
+import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { PaymentLookup } from './payment_settlement.js';
+import type { AccountCipher } from './payout_ports.js';
 import type { ProviderType } from './provider_type.js';
 import type { Clock, IdGenerator } from './ports.js';
 import type {
@@ -31,6 +35,12 @@ export interface VerificationTx {
   getContact(uid: string): Promise<{ phone: string | null; phoneVerified: boolean }>;
   getIdentity(uid: string): Promise<IdentityRecord | null>;
   identityOwner(idHash: string): Promise<string | null>;
+  // The verification fee (#203): the shared `payments`, `refunds`, `ledger` and transfer records.
+  getPayment(id: string): Promise<Payment | null>;
+  /** Every `verification_fee` payment of this uid (any attempt, method and status); a handful at most. */
+  feePaymentsOf(uid: string): Promise<readonly Payment[]>;
+  getRefund(id: string): Promise<Refund | null>;
+  getTransferRecord(id: string): Promise<TransferRecord | null>;
   putVerification(r: VerificationRecord): void;
   setProviderFlags(
     uid: string,
@@ -40,6 +50,11 @@ export interface VerificationTx {
   putIdentity(uid: string, r: IdentityRecord): void;
   putIdentityHash(idHash: string, uid: string): void;
   addAudit(e: VerificationAuditEntry): void;
+  putPayment(p: Payment): void;
+  /** Creates or replaces a refund (same id = the same refund). */
+  putRefund(r: Refund): void;
+  addLedgerEntry(e: LedgerEntry): void;
+  putTransferRecord(r: TransferRecord): void;
 }
 
 export interface VerificationStore {
@@ -90,6 +105,12 @@ export interface VerificationDeps {
   readonly vault: IdentityVault | null;
   readonly taxCodes: TaxCodeLookup | null;
   readonly feeRequired: boolean;
+  /** #129's gateway: opens fee payments and sends their refunds (#203). */
+  readonly gateway: PaymentGateway;
+  /** V1's cross-subject lookup: a fee payment's transfer code must not clash with any payment's. */
+  readonly payments: PaymentLookup;
+  /** V2: encrypts the sender's account kept on the payment and reveals it for a bank-transfer refund. */
+  readonly cipher: AccountCipher;
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }

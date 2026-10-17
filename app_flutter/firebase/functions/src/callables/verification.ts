@@ -1,7 +1,9 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import {
+  DomainError,
   acceptVerificationRules,
+  checkVerificationFee,
   completeIdentityVerification,
   confirmPhoneVerified,
   lookupTaxCode,
@@ -9,20 +11,31 @@ import {
   resubmitVerification,
   reviewVerification,
   startIdentityVerification,
+  startVerificationFee,
   submitBusinessVerification,
   submitVerification,
   type NotifyDeps,
+  type PaymentInstructions,
+  type SettlementDeps,
   type TaxCodeInfo,
   type VerificationChange,
   type VerificationDeps,
   type VerificationStatus,
 } from '@photobooking/domain';
+import { checkoutGatewayAvailable } from '../infra/fake_payments.js';
 import { toHttpsError } from './errors.js';
+
+type Env = Readonly<Record<string, string | undefined>>;
 
 /** The use cases' deps plus the notification deps the decision hooks (#138) are called with. */
 export interface VerificationCallableDeps {
   readonly verification: VerificationDeps;
   readonly notify: NotifyDeps;
+}
+
+/** `checkVerificationFee` also needs V1's settlement with every subject (`liveSettlementDeps()`). */
+export interface VerificationFeeCallableDeps extends VerificationCallableDeps {
+  readonly settlement: SettlementDeps;
 }
 
 /** The part of a callable request the verification handlers use (a `CallableRequest` fits). */
@@ -76,6 +89,37 @@ export async function handleConfirmPhoneVerified(
     await notifyAfterCommit(deps.notify, change, 'confirmPhoneVerified');
     return { phoneVerified: true };
   });
+}
+
+/**
+ * `{method: 'bank_qr' | 'momo' | 'zalopay', renew?}` → V1's `PaymentInstructions` (S21.02-fee,
+ * S04.04 "Tạo QR mới" with `renew`). Refused with `not_eligible` before any read or write where no
+ * gateway is available (`checkoutGatewayAvailable`, as `createPayment`); the use case refuses a paid,
+ * waived or closed fee with `not_eligible`. It returns no verification change, so nothing is notified.
+ */
+export async function handleStartVerificationFee(
+  request: VerificationCallableInput,
+  deps: VerificationCallableDeps,
+  env: Env = process.env,
+): Promise<PaymentInstructions> {
+  const uid = requireUid(request);
+  return run('startVerificationFee', async () => {
+    if (!checkoutGatewayAvailable(env)) throw new DomainError('not_eligible');
+    return startVerificationFee(deps.verification, uid, request.data);
+  });
+}
+
+/**
+ * `{}` → `{paid, instructions}` ("Kiểm tra" on resume): V1's `checkSubjectPayments` over the
+ * current attempt's open fee payments, through the registered fee settler; `not_found` without a
+ * record. A recorded fee is a step, not a decision, so nothing is notified.
+ */
+export async function handleCheckVerificationFee(
+  request: VerificationCallableInput,
+  deps: VerificationFeeCallableDeps,
+): Promise<{ paid: boolean; instructions: PaymentInstructions | null }> {
+  const uid = requireUid(request);
+  return run('checkVerificationFee', () => checkVerificationFee(deps.verification, uid, deps.settlement));
 }
 
 /** `{method: 'vneid' | 'nfc'}` → `{sessionId, redirectUrl}`; `not_eligible` where no verifier is wired. */

@@ -19,13 +19,13 @@ import 'package:photobooking/l10n/app_localizations.dart';
 /// S21.02's own path; the steps come back here when done.
 const verifyStartPath = '/verify/start';
 
-/// The screen that does [step], or null while it has none (the fee is #203).
+/// The screen that does [step] (null for a step without one).
 String? verifyStepPath(VerifyStep step) => switch (step) {
   VerifyStep.phone => Uri(
     path: '/verify/phone',
     queryParameters: {'returnTo': verifyStartPath},
   ).toString(),
-  VerifyStep.fee => null,
+  VerifyStep.fee => '$verifyStartPath/fee',
   VerifyStep.identity => '/verify/identity',
   VerifyStep.rules => '$verifyStartPath/rules',
 };
@@ -76,8 +76,16 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
     }
   }
 
-  void _open(VerifyStep? step) {
-    final path = step == null ? null : verifyStepPath(step);
+  /// Opens [step]; with the fee on, identity needs the fee paid first
+  /// (Decision 2: the vendor check costs money), so its row opens the fee.
+  void _open(VerificationState s, VerifyStep? step) {
+    final target =
+        step == VerifyStep.identity &&
+            s.requiredSteps.contains(VerifyStep.fee) &&
+            !s.isDone(VerifyStep.fee)
+        ? VerifyStep.fee
+        : step;
+    final path = target == null ? null : verifyStepPath(target);
     if (path != null) {
       context.push(path);
     }
@@ -159,8 +167,8 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
 
   DateTime _now() => ref.read(clockProvider)();
 
-  /// Title and subtitle of one required step's row; null for a row this
-  /// build does not draw (the fee, #203).
+  /// Title and subtitle of one required step's row; null for a row that is
+  /// not drawn.
   ({String title, String subtitle})? _texts(
     AppLocalizations l,
     VerificationState s,
@@ -179,8 +187,16 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
               : l.verifyPhoneDone,
         );
       case VerifyStep.fee:
-        // #203 adds the fee row's texts; without the fee it is not drawn.
-        return null;
+        final amount = formatMoney(s.feeAmount ?? verificationFeeVnd[s.kind]!);
+        return (
+          title: l.verifyStepFee(amount),
+          // Mock: each kind's row names the other kind's price.
+          subtitle: done
+              ? l.verifyStepFeeDone(amount)
+              : s.kind == VerificationKind.studio
+              ? l.verifyStepFeeTodoStudio
+              : l.verifyStepFeeTodoIndividual,
+        );
       case VerifyStep.identity:
         return (
           title: l.verifyStepIdentity,
@@ -223,7 +239,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
               : VerifyTileState.todo,
           onTap: done || verifyStepPath(step) == null
               ? null
-              : () => _open(step),
+              : () => _open(s, step),
         ),
       );
     }
@@ -239,7 +255,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
               key: const Key('verify-next'),
               onPressed: verifyStepPath(next) == null
                   ? null
-                  : () => _open(next),
+                  : () => _open(s, next),
             )
           : AppButton.primary(
               l.verifySubmit,
@@ -377,6 +393,11 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
       if (step == VerifyStep.phone && done) {
         continue;
       }
+      // A fee waived for a record sent before the fee existed was never paid:
+      // no "Đã trả" row.
+      if (step == VerifyStep.fee && s.feeWaived) {
+        continue;
+      }
       final t = _texts(l, s, step);
       if (t == null) {
         continue;
@@ -385,6 +406,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
       // nhận việc".
       final title = switch (step) {
         VerifyStep.identity => l.verifyFixIdentity,
+        VerifyStep.fee => l.verifyFeeTitle,
         VerifyStep.rules => l.verifyRulesTitle,
         _ => t.title,
       };
@@ -397,7 +419,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
           state: done ? VerifyTileState.done : VerifyTileState.fix,
           onTap: done || verifyStepPath(step) == null
               ? null
-              : () => _open(step),
+              : () => _open(s, step),
         ),
       );
     }
@@ -405,9 +427,11 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
     final fixNext = s.nextStep;
     final decided = s.decidedAt;
     final left = s.freeResubmitsLeft;
-    // Without the fee a resubmit is free whatever the count, so 0 says
-    // nothing; #203 shows "Hết lượt gửi lại miễn phí" there.
-    final showLeft = left > 0;
+    // With the fee on the line always shows (mock), at 0 as "Hết lượt gửi
+    // lại miễn phí"; without the fee a resubmit is free whatever the count,
+    // so 0 says nothing.
+    final feeOn = s.requiredSteps.contains(VerifyStep.fee);
+    final showLeft = left > 0 || feeOn;
     final theme = Theme.of(context);
     return _Layout(
       action: AppButton.primary(
@@ -419,7 +443,7 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
             ? () => _send((r) => r.resubmit())
             : fixNext == null || verifyStepPath(fixNext) == null
             ? null
-            : () => _open(fixNext),
+            : () => _open(s, fixNext),
       ),
       children: [
         warn,
@@ -430,7 +454,9 @@ class _VerifyStartScreenState extends ConsumerState<VerifyStartScreen> {
               Expanded(
                 child: showLeft
                     ? Text(
-                        l.verifyFreeResubmitsLeft(left),
+                        left > 0
+                            ? l.verifyFreeResubmitsLeft(left)
+                            : l.verifyNoFreeResubmit,
                         key: const Key('verify-free-resubmits'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w700,

@@ -47,13 +47,18 @@ Map<String, dynamic> _doc({
 Future<VerificationWorld> _world(
   WidgetTester tester, {
   bool real = false,
+  bool fee = false,
   double width = 390,
   double height = 844,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final w = VerificationWorld(startScreen: true, identityReal: real);
+  final w = VerificationWorld(
+    startScreen: true,
+    identityReal: real,
+    feeRequired: fee,
+  );
   await w.init();
   w.seedDoc(_doc());
   return w;
@@ -489,6 +494,61 @@ void main() {
     expect(_primaryLabels(tester), [_vneid]);
     await _tap(tester, find.text(_vneid));
     expect(_callNames(w), ['startIdentityVerification']);
+  });
+
+  testWidgets('the identity step is disabled until the fee is paid (tap '
+      'opens the fee route)', (tester) async {
+    final w = await _world(tester, fee: true);
+    await _open(tester, w);
+
+    expect(find.text('3 / 4'), findsOneWidget);
+    await _tap(tester, find.text(_vneid));
+    expect(_callNames(w), isEmpty);
+    expect(w.router.state.uri.path, '/verify/start/fee');
+
+    // The chip fallback is closed the same way.
+    await tester.pumpWidget(const SizedBox.shrink());
+    final w2 = await _world(tester, fee: true);
+    await _open(tester, w2, location: '/verify/identity?method=nfc');
+    await _tap(tester, find.text('Bắt đầu quét'));
+    expect(_callNames(w2), isEmpty);
+    expect(w2.router.state.uri.path, '/verify/start/fee');
+
+    // Paid: the identity starts.
+    await tester.pumpWidget(const SizedBox.shrink());
+    final w3 = await _world(tester, fee: true);
+    w3.seedDoc({
+      ..._doc(),
+      'steps': {
+        ...(_doc()['steps'] as Map<String, dynamic>),
+        'fee': {'paymentId': 'pay1', 'amount': 99000, 'paidAt': _at},
+      },
+    });
+    await _open(tester, w3);
+    await _tap(tester, find.text(_vneid));
+    expect(_callNames(w3), ['startIdentityVerification']);
+  });
+
+  testWidgets('a record rejected before the fee existed (fee waived) for '
+      'identity_mismatch starts the identity without paying', (tester) async {
+    final w = await _world(tester, fee: true);
+    w.seedDoc({
+      ..._doc(),
+      'status': 'rejected',
+      'submittedAt': DateTime.utc(2026, 10, 14, 2),
+      'decidedAt': _at,
+      'rejectReason': {'code': 'identity_mismatch', 'text': null},
+      'freeResubmitsLeft': 1,
+    });
+    await _open(tester, w);
+
+    await _tap(tester, find.text(_vneid));
+    expect(w.router.state.uri.path, '/verify/identity');
+    expect(_callNames(w), [
+      'startIdentityVerification',
+    ], reason: 'the waived fee counts as done, as on the server');
+    expect(find.text(_failed), findsNothing);
+    expect(find.text('VNeID (giả lập)'), findsOneWidget);
   });
 
   testWidgets('an identity already passed shows the result', (tester) async {

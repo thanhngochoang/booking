@@ -44,9 +44,24 @@ final class TicketPay extends PaySubject {
   int get hashCode => Object.hash(eventId, registrationId);
 }
 
+/// The signed-in provider's verification fee (S21.02-fee, #203); the
+/// payment belongs to the caller, so the subject carries no id.
+@immutable
+final class VerificationFeePay extends PaySubject {
+  const VerificationFeePay();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is VerificationFeePay;
+
+  @override
+  int get hashCode => (VerificationFeePay).hashCode;
+}
+
 /// Route path for [subject].
 String payPathOf(PaySubject s) => switch (s) {
   BookingPay(:final bookingId) => '/b/$bookingId/pay',
   TicketPay(:final eventId, :final registrationId) =>
     '/e/$eventId/pay/$registrationId',
+  VerificationFeePay() => '/verify/start/fee/pay',
 };

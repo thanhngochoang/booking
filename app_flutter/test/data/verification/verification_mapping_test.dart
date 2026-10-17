@@ -332,6 +332,74 @@ void main() {
     expect(phoneReset.nextStep, VerifyStep.phone);
   });
 
+  test('a pre-#203 rejected record with a free resubmit counts the fee as '
+      'done (domain feeWaived)', () {
+    // Sent before the fee existed: submittedAt set, no steps.fee.
+    Map<String, dynamic> pre({int left = 1, String status = 'rejected'}) =>
+        _doc(
+          status: status,
+          rejectReason: {'code': 'fake_avatar'},
+          freeResubmitsLeft: left,
+          identity: _passed(),
+          rules: _rules,
+          submittedAt: DateTime.utc(2026, 10, 10),
+        );
+
+    final waived = _map(pre(), phoneVerified: true, feeRequired: true);
+    expect(waived.feeWaived, isTrue);
+    expect(waived.feePaidAt, isNull);
+    expect(waived.isDone(VerifyStep.fee), isTrue);
+    expect(waived.stepsLeft, 0);
+    expect(waived.nextStep, isNull);
+    expect(waived.resubmittable, isTrue);
+
+    // Its paid resubmit (no free one left) needs the fee like any other.
+    final paidResubmit = _map(
+      pre(left: 0),
+      phoneVerified: true,
+      feeRequired: true,
+    );
+    expect(paidResubmit.feeWaived, isFalse);
+    expect(paidResubmit.isDone(VerifyStep.fee), isFalse);
+    expect(paidResubmit.nextStep, VerifyStep.fee);
+    expect(paidResubmit.resubmittable, isFalse);
+
+    // Never sent (no submittedAt), or not rejected: no waiver.
+    final neverSent = _map(
+      {...pre(), 'submittedAt': null},
+      phoneVerified: true,
+      feeRequired: true,
+    );
+    expect(neverSent.feeWaived, isFalse);
+    expect(neverSent.nextStep, VerifyStep.fee);
+    final inProgress = _map(
+      pre(status: 'in_progress'),
+      phoneVerified: true,
+      feeRequired: true,
+    );
+    expect(inProgress.feeWaived, isFalse);
+    expect(inProgress.isDone(VerifyStep.fee), isFalse);
+
+    // A recorded fee is paid, not waived.
+    final paid = _map(
+      {
+        ...pre(),
+        'steps': {
+          ...(pre()['steps'] as Map<String, dynamic>),
+          'fee': {
+            'paymentId': 'pay1',
+            'amount': 99000,
+            'paidAt': _ts(DateTime.utc(2026, 10, 9)),
+          },
+        },
+      },
+      phoneVerified: true,
+      feeRequired: true,
+    );
+    expect(paid.feeWaived, isFalse);
+    expect(paid.isDone(VerifyStep.fee), isTrue);
+  });
+
   test('identity attempts left counts the VN day', () {
     // 10:00 VN on 15 Oct; two attempts today.
     expect(

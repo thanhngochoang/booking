@@ -7,6 +7,8 @@ import 'package:photobooking/app/router.dart';
 import 'package:photobooking/core/core.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/auth/auth_repository.dart';
+import 'package:photobooking/data/content/provider_type.dart';
+import 'package:photobooking/data/photographer/photographer_intro.dart';
 import 'package:photobooking/data/user/user_repository.dart';
 import 'package:photobooking/data/verification/phone_verifier.dart';
 import 'package:photobooking/features/settings/settings_links.dart';
@@ -27,11 +29,17 @@ Map<String, dynamic> _doc({
   String? reject,
   String? rejectText,
   int freeResubmitsLeft = 1,
+  DateTime? feePaidAt,
+  int feeAmount = 99000,
 }) => {
   'uid': 'u',
   'status': status,
+  'kind': 'individual',
+  'feeAttempt': 1,
   'steps': {
     'phone': {'doneAt': _sentAt},
+    if (feePaidAt != null)
+      'fee': {'paymentId': 'pay1', 'amount': feeAmount, 'paidAt': feePaidAt},
     if (identity)
       'identity': {
         'method': method,
@@ -52,11 +60,12 @@ Future<VerificationWorld> _world(
   WidgetTester tester, {
   double width = 390,
   double height = 844,
+  bool fee = false,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final w = VerificationWorld(startScreen: true);
+  final w = VerificationWorld(startScreen: true, feeRequired: fee);
   await w.init();
   return w;
 }
@@ -511,6 +520,266 @@ void main() {
     });
   });
 
+  group('S21.02 with the fee (#203)', () {
+    testWidgets('a new provider sees four steps, counter 1 / 4', (
+      tester,
+    ) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(null, phoneVerified: false);
+      await _open(tester, w);
+
+      expect(find.text('1 / 4'), findsOneWidget);
+      expect(find.byType(VerifyStepTile), findsNWidgets(4));
+      expect(_inTile('fee', 'Phí xác minh 99.000₫'), findsOneWidget);
+      expect(
+        _inTile('fee', 'Studio 299.000₫ · trả bằng QR hoặc ví'),
+        findsOneWidget,
+      );
+      expect(_inTile('fee', 'Chưa làm'), findsOneWidget);
+      expect(_inTile('phone', 'Đang làm'), findsOneWidget);
+      expect(
+        find.text(
+          'Xong 4 bước thì bấm "Gửi duyệt". Staff duyệt trong 24 giờ; được '
+          'duyệt là có tích xanh và nhận đơn ngay.',
+        ),
+        findsOneWidget,
+      );
+      // Mock order: phone, fee, identity, rules.
+      final ys = [
+        for (final step in ['phone', 'fee', 'identity', 'rules'])
+          tester.getTopLeft(_tile(step)).dy,
+      ];
+      expect([...ys]..sort(), ys);
+    });
+
+    testWidgets('with the phone done the fee is Đang làm, 2 / 4, and Tiếp '
+        'tục opens the fee screen', (tester) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(_doc());
+      await _open(tester, w);
+
+      expect(find.text('2 / 4'), findsOneWidget);
+      expect(_inTile('fee', 'Đang làm'), findsOneWidget);
+      expect(_inTile('identity', 'Chưa làm'), findsOneWidget);
+      await _tap(tester, find.byKey(const Key('verify-next')));
+      expect(w.router.state.uri.path, '/verify/start/fee');
+    });
+
+    testWidgets('the studio fee row shows 299.000₫ and the individual '
+        'alternative', (tester) async {
+      final w = await _world(tester, fee: true);
+      w.seedIntro(const PhotographerIntro(providerType: ProviderType.studio));
+      w.seedDoc(_doc());
+      await _open(tester, w);
+
+      expect(_inTile('fee', 'Phí xác minh 299.000₫'), findsOneWidget);
+      expect(
+        _inTile('fee', 'Thợ ảnh cá nhân 99.000₫ · trả bằng QR hoặc ví'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a paid fee shows Đã trả 99.000₫ and Xong', (tester) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(_doc(feePaidAt: _sentAt));
+      await _open(tester, w);
+
+      expect(_inTile('fee', 'Đã trả 99.000₫'), findsOneWidget);
+      expect(_inTile('fee', 'Xong'), findsOneWidget);
+      expect(_inTile('identity', 'Đang làm'), findsOneWidget);
+      expect(find.text('3 / 4'), findsOneWidget);
+    });
+
+    testWidgets('the identity step is closed until the fee is paid: its row '
+        'opens the fee screen', (tester) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(_doc());
+      await _open(tester, w);
+
+      await _tap(tester, _tile('identity'));
+      expect(w.router.state.uri.path, '/verify/start/fee');
+    });
+
+    testWidgets('rejected with no free resubmit shows the paid line and '
+        'resubmit moves back to the list with the fee step open', (
+      tester,
+    ) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(
+        _doc(
+          status: 'rejected',
+          identity: true,
+          rules: true,
+          feePaidAt: _sentAt,
+          submittedAt: _sentAt,
+          decidedAt: DateTime.utc(2026, 10, 15, 2, 40),
+          reject: 'fake_avatar',
+          freeResubmitsLeft: 0,
+        ),
+      );
+      await _open(tester, w);
+
+      expect(
+        find.text(
+          'Hết lượt gửi lại miễn phí · gửi lại cần trả phí xác minh mới',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Còn 0 lần gửi lại miễn phí'), findsNothing);
+      expect(_inTile('fee', 'Phí xác minh'), findsOneWidget);
+      expect(_inTile('fee', 'Đã trả 99.000₫'), findsOneWidget);
+      expect(_inTile('fee', 'Xong'), findsOneWidget);
+      // Mock order in the rejected list: identity, fee, rules.
+      expect(
+        tester.getTopLeft(_tile('identity')).dy,
+        lessThan(tester.getTopLeft(_tile('fee')).dy),
+      );
+      expect(
+        tester.getTopLeft(_tile('fee')).dy,
+        lessThan(tester.getTopLeft(_tile('rules')).dy),
+      );
+      expect(_primaryLabels(tester), ['Sửa và gửi lại']);
+
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.calls.map((c) => c.name), ['resubmitVerification']);
+      expect(w.repo.doc(w.uid)!['status'], 'in_progress');
+      expect(find.text('2 / 4'), findsOneWidget);
+      expect(_inTile('fee', 'Phí xác minh 99.000₫'), findsOneWidget);
+      expect(_inTile('fee', 'Đang làm'), findsOneWidget);
+      expect(_primaryLabels(tester), ['Tiếp tục']);
+    });
+
+    testWidgets('rejected with a free resubmit left still shows Còn 1 lần gửi '
+        'lại miễn phí', (tester) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(
+        _doc(
+          status: 'rejected',
+          identity: true,
+          rules: true,
+          feePaidAt: _sentAt,
+          reject: 'other',
+          rejectText: 'Ảnh bìa mờ',
+        ),
+      );
+      await _open(tester, w);
+      expect(find.text('Còn 1 lần gửi lại miễn phí'), findsOneWidget);
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.doc(w.uid)!['status'], 'submitted');
+    });
+
+    testWidgets('a record rejected before the fee existed keeps its free '
+        'resubmit: no unpaid fee row', (tester) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(
+        _doc(
+          status: 'rejected',
+          identity: true,
+          rules: true,
+          submittedAt: _sentAt,
+          reject: 'fake_avatar',
+        ),
+      );
+      await _open(tester, w);
+
+      expect(_tile('fee'), findsNothing);
+      expect(find.text('Cần sửa'), findsOneWidget, reason: 'avatar row only');
+      expect(find.text('Còn 1 lần gửi lại miễn phí'), findsOneWidget);
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.calls.map((c) => c.name), ['resubmitVerification']);
+      expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
+    });
+
+    testWidgets('a record rejected before the fee existed with no free '
+        'resubmit left pays the fee first, then Sửa và gửi lại sends it', (
+      tester,
+    ) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(
+        _doc(
+          status: 'rejected',
+          identity: true,
+          rules: true,
+          submittedAt: DateTime.utc(2026, 10, 14, 2),
+          decidedAt: _sentAt,
+          reject: 'fake_avatar',
+          freeResubmitsLeft: 0,
+        ),
+      );
+      await _open(tester, w, location: '/profile');
+      w.router.push('/verify/start');
+      await _settle(tester);
+
+      // No free resubmit: the fee is not waived, its row is a fix row.
+      expect(_inTile('fee', 'Phí xác minh'), findsOneWidget);
+      expect(_inTile('fee', 'Cần sửa'), findsOneWidget);
+      expect(_primaryLabels(tester), ['Sửa và gửi lại']);
+
+      // The fee row opens the fee.
+      await _tap(tester, _tile('fee'));
+      expect(w.router.state.uri.path, '/verify/start/fee');
+      w.router.pop();
+      await _settle(tester);
+
+      // So does the primary, and nothing is sent yet.
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.calls, isEmpty);
+      expect(w.router.state.uri.path, '/verify/start/fee');
+
+      // Paid while rejected (after the decision): back on S21.02.
+      await _tap(tester, find.text('Thanh toán 99.000₫'));
+      expect(w.router.state.uri.path, '/verify/start/fee/pay');
+      w.repo.settleFee(w.repo.lastFeeInstructions!.paymentId);
+      await _settle(tester);
+      expect(w.router.state.uri.path, '/verify/start');
+      expect(_inTile('fee', 'Đã trả 99.000₫'), findsOneWidget);
+      expect(find.text('Đã nhận phí xác minh'), findsOneWidget);
+      // The snack sits over the footer: let it go.
+      ScaffoldMessenger.of(
+        tester.element(find.byKey(const Key('verify-resubmit'))),
+      ).hideCurrentSnackBar();
+      await _settle(tester);
+
+      // That payment is the paid resubmit: straight back to staff.
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.calls.last.name, 'resubmitVerification');
+      expect(w.repo.doc(w.uid)!['status'], 'submitted');
+      expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
+    });
+
+    testWidgets('the pending timeline shows Đã trả phí xác minh', (
+      tester,
+    ) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(
+        _doc(
+          status: 'submitted',
+          identity: true,
+          rules: true,
+          // 8:50 today in Vietnam.
+          feePaidAt: DateTime.utc(2026, 10, 15, 1, 50),
+          submittedAt: _sentAt,
+        ),
+      );
+      await _open(tester, w);
+
+      expect(find.text('Đã trả phí xác minh'), findsOneWidget);
+      expect(find.text('Hôm nay 8:50 · 99.000₫'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Đã trả phí xác minh')).dy,
+        lessThan(tester.getTopLeft(find.text('Đã xác minh danh tính')).dy),
+      );
+    });
+
+    testWidgets('fits 320dp at 1.3x text', (tester) async {
+      final w = await _world(tester, width: 320, height: 640, fee: true);
+      w.seedIntro(const PhotographerIntro(providerType: ProviderType.studio));
+      w.seedDoc(_doc());
+      await _open(tester, w, textScale: 1.3);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('entry', () {
     test('verifyStartReadyProvider is true and /verify/start resolves', () {
       final c = ProviderContainer(
@@ -532,6 +801,11 @@ void main() {
       expect(rules.isError, isFalse);
       expect(rules.matches.last.matchedLocation, '/verify/start/rules');
       expect(rules.matches.last.route, isA<GoRoute>());
+      for (final path in ['/verify/start/fee', '/verify/start/fee/pay']) {
+        final m = router.configuration.findMatch(Uri.parse(path));
+        expect(m.isError, isFalse, reason: path);
+        expect(m.matches.last.matchedLocation, path);
+      }
     });
   });
 }
