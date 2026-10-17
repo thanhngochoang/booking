@@ -66,6 +66,30 @@ describe('verification domain state', () => {
     assert.equal(nextStep(allDone, true, false), null);
   });
 
+  it('nextStep follows phone, fee, identity, rules when feeRequired', () => {
+    const now = new Date('2026-10-10T10:00:00.000Z');
+    const rec = emptyVerification('p1', 'individual', now);
+    assert.equal(nextStep(rec, false, true), 'phone');
+    assert.equal(nextStep(rec, true, true), 'fee');
+    assert.equal(stepsLeft(rec, true, true), 3);
+
+    const paid = { ...rec, steps: { ...rec.steps, fee: { paymentId: 'pay1', amount: 99_000, paidAt: now.toISOString() } } };
+    assert.equal(nextStep(paid, true, true), 'identity');
+    const withIdentity = {
+      ...paid,
+      steps: {
+        ...paid.steps,
+        identity: { method: 'vneid' as const, checkedAt: now.toISOString(), result: 'passed' as const, failure: null, maskedName: 'A' },
+      },
+    };
+    assert.equal(nextStep(withIdentity, true, true), 'rules');
+    const allDone = { ...withIdentity, steps: { ...withIdentity.steps, rules: { acceptedAt: now.toISOString(), version: '2026-10-06' } } };
+    assert.equal(nextStep(allDone, true, true), null);
+    // The fee alone is not enough without the identity step, and identity alone is not enough without the fee.
+    const identityNoFee = { ...withIdentity, steps: { ...withIdentity.steps, fee: null } };
+    assert.equal(nextStep(identityNoFee, true, true), 'fee');
+  });
+
   it('phoneVerified on the contact counts as the phone step', () => {
     const now = new Date('2026-10-10T10:00:00.000Z');
     const rec = emptyVerification('p1', 'individual', now);

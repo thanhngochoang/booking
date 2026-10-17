@@ -10,6 +10,7 @@ import { DomainError, type ErrorCode } from '../src/errors.js';
 import { confirmPhoneVerified, reviewVerification, submitVerification } from '../src/verification_use_cases.js';
 import { acceptVerificationRules } from '../src/verification_use_cases.js';
 import { PROVIDER_RULES_VERSION } from '../src/verification.js';
+import { startVerificationFee } from '../src/verification_fee.js';
 
 const refusedWith = (code: ErrorCode) => (e: unknown) => e instanceof DomainError && e.code === code;
 
@@ -22,6 +23,25 @@ describe('identity_verification', () => {
     await confirmPhoneVerified(deps, 'p1');
     const res = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
     assert.ok(res.sessionId);
+  });
+
+  it('start needs the fee paid', async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    let starts = 0;
+    const fakeVerifier = new FakeIdentityVerifier(async () => null, world.ids);
+    const counting = { start: async (uid: string, m: 'vneid' | 'nfc') => { starts++; return fakeVerifier.start(uid, m); }, result: fakeVerifier.result.bind(fakeVerifier) };
+    const deps = { ...world.deps, identity: counting };
+
+    await confirmPhoneVerified(deps, 'p1');
+    await assert.rejects(startIdentityVerification(deps, 'p1', { method: 'vneid' }), refusedWith('not_eligible'));
+    // Refused before the vendor: a session costs money.
+    assert.equal(starts, 0);
+
+    const inst = await startVerificationFee(deps, 'p1', { method: 'bank_qr' });
+    await world.payFee(inst.paymentId);
+    const res = await startIdentityVerification(deps, 'p1', { method: 'vneid' });
+    assert.ok(res.sessionId);
+    assert.equal(starts, 1);
   });
 
   it('start after identity passed is conflict', async () => {

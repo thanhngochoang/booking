@@ -282,7 +282,8 @@ export async function resubmitVerification(
           version: rec.version + 1,
         };
       } else {
-        // When feeRequired is true (implemented in #203 Task 10)
+        // Paid resubmit (#203, Decision 13): back to the steps with the fee open under a new attempt
+        // (`vfee_{uid}_{feeAttempt}_…`); pay again, then "Gửi duyệt".
         after = {
           ...rec,
           status: 'in_progress',

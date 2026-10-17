@@ -1,3 +1,6 @@
+import type { TransferRecord } from './booking_ports.js';
+import type { LedgerEntry, Payment, Refund } from './escrow.js';
+import type { PaymentSource } from './memory_payment_lookup.js';
 import type {
   IdentityRecord,
   VerificationRecord,
@@ -9,7 +12,7 @@ import type {
   VerificationTx,
 } from './verification_ports.js';
 
-export class MemoryVerificationStore implements VerificationStore {
+export class MemoryVerificationStore implements VerificationStore, PaymentSource {
   readonly verifications = new Map<string, VerificationRecord>();
   readonly providers = new Map<string, ProviderVerificationView>();
   readonly contacts = new Map<string, { phone: string | null; phoneVerified: boolean }>();
@@ -17,6 +20,11 @@ export class MemoryVerificationStore implements VerificationStore {
   readonly identityHashes = new Map<string, string>(); // hash -> uid
   readonly audits: VerificationAuditEntry[] = [];
   readonly providerFlags = new Map<string, { verified?: boolean; verifiedAt?: string | null; acceptingOrders?: boolean; businessVerified?: boolean }>();
+  // The verification fee (#203); also a PaymentSource for MemoryPaymentLookup.
+  readonly payments = new Map<string, Payment>();
+  readonly refunds = new Map<string, Refund>();
+  readonly ledger: LedgerEntry[] = [];
+  readonly transferRecords = new Map<string, TransferRecord>();
 
   async runTransaction<T>(fn: (tx: VerificationTx) => Promise<T>): Promise<T> {
     const stagedVerifications = new Map<string, VerificationRecord>();
@@ -25,6 +33,10 @@ export class MemoryVerificationStore implements VerificationStore {
     const stagedIdentities = new Map<string, IdentityRecord>();
     const stagedHashes = new Map<string, string>();
     const stagedAudits: VerificationAuditEntry[] = [];
+    const stagedPayments = new Map<string, Payment>();
+    const stagedRefunds = new Map<string, Refund>();
+    const stagedLedger: LedgerEntry[] = [];
+    const stagedTransferRecords = new Map<string, TransferRecord>();
 
     const tx: VerificationTx = {
       getVerification: async (uid) => {
@@ -60,6 +72,14 @@ export class MemoryVerificationStore implements VerificationStore {
         if (staged !== undefined) return staged;
         return this.identityHashes.get(idHash) ?? null;
       },
+      getPayment: async (id) => stagedPayments.get(id) ?? this.payments.get(id) ?? null,
+      feePaymentsOf: async (uid) => {
+        const all = new Map(this.payments);
+        for (const [id, p] of stagedPayments) all.set(id, p);
+        return [...all.values()].filter((p) => p.subjectType === 'verification_fee' && p.subjectId === uid);
+      },
+      getRefund: async (id) => stagedRefunds.get(id) ?? this.refunds.get(id) ?? null,
+      getTransferRecord: async (id) => stagedTransferRecords.get(id) ?? this.transferRecords.get(id) ?? null,
       putVerification: (r) => {
         stagedVerifications.set(r.uid, r);
       },
@@ -78,6 +98,18 @@ export class MemoryVerificationStore implements VerificationStore {
       },
       addAudit: (e) => {
         stagedAudits.push(e);
+      },
+      putPayment: (p) => {
+        stagedPayments.set(p.id, p);
+      },
+      putRefund: (r) => {
+        stagedRefunds.set(r.id, r);
+      },
+      addLedgerEntry: (e) => {
+        stagedLedger.push(e);
+      },
+      putTransferRecord: (r) => {
+        stagedTransferRecords.set(r.id, r);
       },
     };
 
@@ -110,6 +142,10 @@ export class MemoryVerificationStore implements VerificationStore {
     for (const a of stagedAudits) {
       this.audits.push(a);
     }
+    for (const [id, p] of stagedPayments) this.payments.set(id, p);
+    for (const [id, r] of stagedRefunds) this.refunds.set(id, r);
+    this.ledger.push(...stagedLedger);
+    for (const [id, r] of stagedTransferRecords) this.transferRecords.set(id, r);
 
     return result;
   }
