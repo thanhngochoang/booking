@@ -50,6 +50,10 @@ export async function openInquiry(
       throw new DomainError('not_eligible');
     }
 
+    if (await deps.blocks.isBlockedEitherWay(input.customerId, input.photographerId)) {
+      throw new DomainError('blocked');
+    }
+
     const newChat: Chat = {
       id: chatId,
       kind: 'inquiry',
@@ -63,6 +67,7 @@ export async function openInquiry(
       lastMessagePreview: null,
       lastSenderId: null,
       readOnlyAt: null,
+      blockedAt: null,
       rescheduleUsed: false,
       createdAt: now,
       updatedAt: now,

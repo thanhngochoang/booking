@@ -26,6 +26,7 @@ export interface Chat {
   readonly lastMessagePreview: string | null;
   readonly lastSenderId: string | null;
   readonly readOnlyAt: Date | null;
+  readonly blockedAt: Date | null;
   readonly rescheduleUsed: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -104,6 +105,9 @@ export function isInquiryClosed(chat: Chat, now: Date): boolean {
 export function assertCanSend(chat: Chat, senderId: string, now: Date): void {
   const role = roleInChat(chat, senderId);
   if (role === null) throw new DomainError('permission_denied');
+  if (chat.blockedAt !== null) {
+    throw new DomainError('blocked');
+  }
   if (chat.readOnlyAt !== null && now.getTime() >= chat.readOnlyAt.getTime()) {
     throw new DomainError('not_eligible');
   }

@@ -1,4 +1,4 @@
-// packages/domain/src/get_contact_link.ts
+import type { BlockGate } from './block_ports.js';
 import {
   bookingContactUnlocked,
   contactUrlFor,
@@ -22,6 +22,7 @@ export interface GetContactLinkDeps {
   /** Absent until event registrations exist (events plan): registration requests are then `not_found`. */
   readonly registrations?: RegistrationReader;
   readonly photographers: PhotographerContactReader;
+  readonly blocks?: BlockGate;
   readonly log: ContactAccessLogWriter;
   readonly clock: Clock;
   readonly ids: IdGenerator;
@@ -67,6 +68,9 @@ async function decide(
 ): Promise<Outcome> {
   const party = await findParty(requesterId, subject, now, deps);
   if ('error' in party) return party;
+  if (deps.blocks && await deps.blocks.isBlockedEitherWay(requesterId, party.photographerId)) {
+    return { error: 'blocked' };
+  }
   const { channels, numbers } = await deps.photographers.read(party.photographerId);
   if (channels === null || !channels[channel] || numbers === null) return { error: 'not_found' };
   const url = contactUrlFor(channel, numbers);

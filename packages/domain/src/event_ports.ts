@@ -104,11 +104,14 @@ export interface EventPeople {
   user(uid: string): Promise<{ name: string; avatarUrl: string | null } | null>;
 }
 
+import type { BlockGate } from './block_ports.js';
+
 export interface EventDeps {
   readonly events: EventStore;
   readonly people: EventPeople;
   readonly contacts: UserContactReader;
   readonly media: { isOwnUpload(url: string, path: string, uid: string, eventId: string): boolean };
+  readonly blocks?: BlockGate;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly random: RandomBytes;

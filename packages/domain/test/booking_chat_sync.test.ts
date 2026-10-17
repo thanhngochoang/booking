@@ -125,6 +125,40 @@ describe('syncBookingChat (Task 4)', () => {
     assert.equal(chat.readOnlyAt, null);
   });
 
+  it('booking chat sync keeps blockedAt', async () => {
+    const { deps, chats, clock } = createChatWorld();
+    const chatId = chatIdFor('cust1', 'phot1');
+    const blockedAt = clock.now();
+
+    // Booking requested
+    await syncBookingChat(deps, {
+      before: null,
+      after: baseBooking,
+    });
+
+    // Chat gets blocked
+    await deps.chats.runTransaction(async (tx) => {
+      const c = await tx.getChat(chatId);
+      if (c) {
+        tx.setChat({ ...c, blockedAt });
+      }
+    });
+
+    // Booking status transitions to accepted
+    const acceptedBooking: Booking = {
+      ...baseBooking,
+      status: 'accepted',
+    };
+    await syncBookingChat(deps, {
+      before: baseBooking,
+      after: acceptedBooking,
+    });
+
+    const chat = chats.chats.get(chatId);
+    assert.ok(chat);
+    assert.deepEqual(chat.blockedAt, blockedAt);
+  });
+
   it('each status posts once even when the trigger runs twice', async () => {
     const { deps, chats } = createChatWorld();
     const chatId = chatIdFor('cust1', 'phot1');

@@ -395,4 +395,31 @@ describe('sendMessage (Task 2)', () => {
     });
     assert.equal(again.id, first.id);
   });
+
+  it('sendMessage on a chat with blockedAt → blocked (before read-only)', async () => {
+    const { deps, clock } = createChatWorld();
+    const { chatId } = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+
+    // Set blockedAt and readOnlyAt on the chat
+    await deps.chats.runTransaction(async (tx) => {
+      const c = await tx.getChat(chatId);
+      if (c) {
+        tx.setChat({
+          ...c,
+          blockedAt: clock.now(),
+          readOnlyAt: clock.now(),
+        });
+      }
+    });
+
+    await assert.rejects(
+      () =>
+        sendMessage(deps, {
+          senderId: 'cust1',
+          chatId,
+          message: { type: 'text', body: 'Hello', clientId: 'c_blocked' },
+        }),
+      (err: unknown) => err instanceof DomainError && err.code === 'blocked',
+    );
+  });
 });

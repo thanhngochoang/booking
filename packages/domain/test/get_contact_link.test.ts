@@ -180,4 +180,22 @@ describe('getContactLink', () => {
     const { deps } = harness({ failLog: true });
     await assert.rejects(getContactLink('c1', { bookingId: 'b1', channel: 'call' }, deps), /log unavailable/);
   });
+
+  test('getContactLink → blocked and logs not granted', async () => {
+    const { deps, logs } = harness();
+    const depsWithBlock: GetContactLinkDeps = {
+      ...deps,
+      blocks: {
+        async isBlockedEitherWay(a: string, b: string) {
+          return (a === 'c1' && b === 'p1') || (a === 'p1' && b === 'c1');
+        },
+      },
+    };
+
+    await assert.rejects(
+      getContactLink('c1', { bookingId: 'b1', channel: 'call' }, depsWithBlock),
+      isCode('blocked'),
+    );
+    assert.deepEqual(logs.map((l) => [l.requesterId, l.granted]), [['c1', false]]);
+  });
 });

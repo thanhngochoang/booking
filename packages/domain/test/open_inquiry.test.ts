@@ -61,6 +61,25 @@ describe('openInquiry (Task 2)', () => {
     );
   });
 
+  it('openInquiry refused for a new chat between a blocked pair; an existing chat id is still returned', async () => {
+    const { deps, blocks } = createChatWorld();
+
+    // Blocked pair before chat exists
+    blocks.block('cust1', 'phot1');
+    await assert.rejects(
+      () => openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' }),
+      (err: unknown) => err instanceof DomainError && err.code === 'blocked',
+    );
+
+    // Existing chat returned even when blocked
+    blocks.unblock('cust1', 'phot1');
+    const { chatId } = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    blocks.block('cust1', 'phot1');
+    const again = await openInquiry(deps, { customerId: 'cust1', photographerId: 'phot1' });
+    assert.equal(again.chatId, chatId);
+    assert.equal(again.created, false);
+  });
+
   async function readOnlyBookingChat(repliedAt: 'set' | 'null' = 'set', unanswered = 2) {
     const world = createChatWorld();
     const { deps, clock } = world;
@@ -90,6 +109,7 @@ describe('openInquiry (Task 2)', () => {
       lastMessagePreview: 'Cảm ơn bạn',
       lastSenderId: 'phot1',
       readOnlyAt,
+      blockedAt: null,
       rescheduleUsed: false,
       createdAt: clock.now(),
       updatedAt: clock.now(),

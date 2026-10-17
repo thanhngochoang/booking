@@ -1,3 +1,4 @@
+import type { BlockGate } from './block_ports.js';
 import type { Chat, Message, SystemPayload } from './chat.js';
 import type { Clock, IdGenerator } from './ports.js';
 
@@ -22,6 +23,8 @@ export interface PhotographerInquiryReader {
 export interface ChatDeps {
   readonly chats: ChatStore;
   readonly photographers: PhotographerInquiryReader;
+  readonly blocks: BlockGate;
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }
+

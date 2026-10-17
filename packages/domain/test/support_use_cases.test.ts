@@ -100,7 +100,7 @@ describe('support_use_cases', () => {
     );
 
     // Advance clock past 10 minutes
-    (world.clock as { advanceMinutes: (m: number) => void }).advanceMinutes(11);
+    world.clock.advanceMinutes(11);
 
     // Now send succeeds again
     const res = await sendSupportMessage(world.deps, 'u1', {
@@ -121,7 +121,7 @@ describe('support_use_cases', () => {
     assert.ok(threadBefore);
     assert.equal(threadBefore.awaitingStaff, true);
 
-    (world.clock as { advanceMinutes: (m: number) => void }).advanceMinutes(1);
+    world.clock.advanceMinutes(1);
 
     const replyRes = await staffReply(world.deps, 'staff1', {
       threadId: 'help_u1',

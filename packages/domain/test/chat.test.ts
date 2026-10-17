@@ -27,6 +27,7 @@ describe('chat model and rules (Task 1)', () => {
     lastMessagePreview: null,
     lastSenderId: null,
     readOnlyAt: null,
+    blockedAt: null,
     rescheduleUsed: false,
     createdAt: new Date('2026-10-01T00:00:00Z'),
     updatedAt: new Date('2026-10-01T00:00:00Z'),

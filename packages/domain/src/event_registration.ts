@@ -108,6 +108,11 @@ export async function registerEvent(deps: RegisterDeps, caller: EventCaller, raw
     const ev = await tx.getEvent(eventId);
     if (!ev || ev.status === 'draft') throw new DomainError('not_found');
     if (isEventManager(ev, caller)) throw new DomainError('permission_denied');
+    if (ev.host.type === 'photographer' && ev.host.id && deps.blocks) {
+      if (await deps.blocks.isBlockedEitherWay(caller.uid, ev.host.id)) {
+        throw new DomainError('blocked');
+      }
+    }
     // §3b.1: every registration needs a phone, free ones too. Enforced here, not only in the UI.
     await requireCustomerPhone(deps.contacts, caller.uid);
     if (ev.status === 'cancelled' || ev.status === 'completed' || ev.status === 'closed'

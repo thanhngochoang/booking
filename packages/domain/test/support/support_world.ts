@@ -5,7 +5,7 @@ import type { DisplayNames, SupportDeps } from '../../src/support_use_cases.js';
 export interface SupportWorld {
   readonly store: MemorySupportStore;
   readonly names: DisplayNames;
-  readonly clock: Clock;
+  readonly clock: Clock & { set: (d: Date) => void; advanceMinutes: (m: number) => void };
   readonly ids: IdGenerator;
   readonly deps: SupportDeps;
 }

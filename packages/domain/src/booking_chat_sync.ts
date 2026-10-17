@@ -66,6 +66,7 @@ export async function syncBookingChat(
         lastMessagePreview: null,
         lastSenderId: null,
         readOnlyAt: null,
+        blockedAt: null,
         rescheduleUsed: false,
         createdAt: now,
         updatedAt: now,

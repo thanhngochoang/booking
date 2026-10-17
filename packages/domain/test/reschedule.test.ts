@@ -56,6 +56,7 @@ describe('reschedule proposal and answer (Task 3)', () => {
       lastMessagePreview: 'OK',
       lastSenderId: booking.photographerId,
       readOnlyAt: null,
+      blockedAt: null,
       rescheduleUsed: false,
       createdAt: new Date('2026-10-01T12:00:00.000Z'),
       updatedAt: new Date('2026-10-01T12:00:00.000Z'),
