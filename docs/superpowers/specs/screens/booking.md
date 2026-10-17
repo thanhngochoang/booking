@@ -84,14 +84,52 @@ Các màn mock của một luồng `BookingSheetController` (`/u/:uid/book`), b�
 | Trạng thái | Hành động khách | Hành động NAG |
 |-----------|-----------------|---------------|
 | `requested` | Liên hệ, Huỷ | Nhận, Từ chối (S06.03) |
-| `accepted`/`upcoming` | Liên hệ, Đổi lịch, Chỉ đường, Huỷ | Liên hệ, Đổi lịch, Hoàn thành (sau giờ), Huỷ |
+| `accepted`/`upcoming` | Liên hệ, Đổi lịch, Chỉ đường, Huỷ | Liên hệ, Đổi lịch, Hoàn thành (sau giờ: "Đã chụp xong", tự chuyển sau 24h), Huỷ |
+| `shot` | Liên hệ, Đổi lịch | Liên hệ, Nộp bàn giao (S06.07) |
+| `delivered` | Liên hệ, Xem bàn giao (S05.06) | Liên hệ, Xem bàn giao (S05.06) |
+| `revision_requested` | Liên hệ, Xem bàn giao (S05.06) | Liên hệ, Nộp bàn giao (vòng n, S06.07), Trả lời xin thêm vòng (nếu có) |
+| `approved` | Liên hệ, Xem bàn giao (S05.06: mở link, kiểm tra 48h), Đánh giá (S05.05) | Liên hệ, Xem bàn giao (S05.06: thông báo tiền chuyển sau 48h) |
 | `declined`/`expired`/`cancelled` | Đặt lại | — |
-| `completed` | Đánh giá (S05.05) | — |
-| `reviewed` | Xem đánh giá | — |
+| `completed` | Xem bàn giao, Đánh giá (S05.05) | Xem bàn giao |
+| `reviewed` | Xem bàn giao, Xem đánh giá | Xem bàn giao |
 
-- **Chuỗi**: `s09_title` "Buổi chụp #{code}", `s09_contact` "Liên hệ", `s09_reschedule` "Đổi lịch", `s09_cancel` "Huỷ yêu cầu · hoàn {pct}%", `s09_directions` "Chỉ đường".
+- **Chuỗi**: `s09_title` "Buổi chụp #{code}", `s09_contact` "Liên hệ", `s09_reschedule` "Đổi lịch", `s09_cancel` "Huỷ yêu cầu · hoàn {pct}%", `s09_directions` "Chỉ đường"; chi tiết bàn giao: `detailMarkShot` "Đã chụp xong", `detailDeliver` "Nộp bàn giao", `detailDeliverRound` "Nộp vòng {round}", `detailViewDelivery` "Xem bàn giao", `detailRevisionCard` "Khách muốn chỉnh sửa vòng {round}", `detailWaitingApproval` "Đã gửi vòng {round} · chờ khách duyệt", `detailApprovedProvider` "Khách đã đồng ý ảnh; tiền chuyển sau 48 giờ kiểm tra", `detailExtraRoundTitle` "{name} xin thêm 1 vòng sửa", `detailExtraGrant` "Cho thêm 1 vòng", `detailExtraDecline` "Không thêm".
 - **Phân tích**: `booking_open{status}`, `contact_tapped{channel, source:"S05.02"}`, `booking_action{action}`.
-- **Chấp nhận**: timeline đúng thứ tự và thời điểm; số hoàn trên nút huỷ khớp bảng chính sách theo giờ hiện tại; trạng thái đổi theo thời gian thực không cần tải lại.
+- **Chấp nhận**: timeline đúng thứ tự và thời điểm (thêm bước Bàn giao & duyệt ảnh); số hoàn trên nút huỷ khớp bảng chính sách theo giờ hiện tại; trạng thái đổi theo thời gian thực không cần tải lại; hiển thị đúng các nút hành động bàn giao theo vai trò và trạng thái.
+
+---
+
+## S05.06 · Xem bàn giao & duyệt ảnh
+
+- **Thông tin**: `/b/:id/delivery` · khách (và NAG xem ở chế độ chỉ đọc) · sub‑project 4 · Chưa có (kế hoạch `2026-10-07-s05-delivery-two-layer.md` #152).
+- **Mục đích**: xem ảnh mẫu đã đóng watermark trên server, yêu cầu chỉnh sửa hoặc đồng ý để mở link bộ ảnh gốc và kích hoạt 48 giờ kiểm tra.
+- **Điểm vào → ra**: từ nút "Xem bàn giao" ở S05.02 hoặc push thông báo bàn giao. "Yêu cầu chỉnh sửa" / "Xin thêm 1 vòng" mở sheet S05.07; "Đồng ý ảnh" mở sheet xác nhận; "Mở bộ ảnh gốc" mở link trình duyệt ngoài (`drive.google.com`, `dropbox.com`,...); "Báo vấn đề với ảnh gốc" mở sheet báo cáo sự cố (#S18.01 / `#S05.06-report`); "Đánh giá buổi chụp" → S05.05.
+- **Bố cục (trước khi duyệt)**: thanh trên "Bàn giao · vòng {round}"; dòng "{name} gửi {count} ảnh mẫu · {date}"; lưới ảnh mẫu (thumbnail 400px, bấm mở xem toàn màn hình 1600px có watermark); thẻ "Bộ ảnh gốc · {count} ảnh" bị khoá, link bị che dạng `{host}/••••••••`, dòng chú thích "Mở khi bạn đồng ý ảnh"; thông tin lượt sửa: "Còn {left}/{total} lượt sửa miễn phí" (hoặc "Hết lượt sửa miễn phí ({total}/{total})"); đếm ngược "Tự đồng ý sau {time} nếu bạn không phản hồi" (3 ngày kể từ khi nộp); thanh dưới:
+  - Còn lượt sửa: nút viền "Yêu cầu chỉnh sửa" + nút chính "Đồng ý ảnh".
+  - Hết lượt sửa: nút viền "Xin thêm 1 vòng" + nút chính "Đồng ý ảnh".
+  - Đã xin thêm 1 vòng đang chờ: dòng "Đã xin thêm 1 vòng · chờ {name} trả lời", nút viền ẩn.
+  - Bị từ chối thêm vòng: dòng "{name} không thêm vòng sửa", chỉ còn nút chính "Đồng ý ảnh".
+- **Bố cục (sau khi duyệt - trạng thái `approved` / `completed`)**:
+  - Tiêu đề "Bàn giao · đã đồng ý"; thẻ link bộ ảnh gốc đã mở kèm nút viền "Mở bộ ảnh gốc";
+  - Khung kiểm tra 48 giờ: "Kiểm tra bộ ảnh gốc trong 48 giờ: còn {hours} giờ {minutes} phút", giải thích "Thiếu ảnh, link hỏng hay ảnh khác bản mẫu? Báo trong thời gian này, đợt thanh toán thứ hai vẫn được giữ.";
+  - Hàng nút: nút chữ đỏ "Báo vấn đề với ảnh gốc" + nút chính "Đánh giá buổi chụp".
+  - Khi quá 48 giờ: dòng "Đã hết thời gian kiểm tra", nút báo vấn đề ẩn.
+  - Sau 90 ngày hoàn thành: ảnh mẫu xoá tự động, hiện dòng "Ảnh mẫu đã xoá sau 90 ngày".
+- **Dữ liệu**: `deliveryRoundsProvider(bookingId)` lắng nghe các vòng giao; `deliveryLinkProvider(bookingId)` chỉ lắng nghe khi đã duyệt (`approved` / `completed`) hoặc đối với NAG; server lưu link trong `bookings/{id}/private/delivery`.
+- **Chuỗi**: các khoá `deliveryTitleRound`, `deliveryTitleApproved`, `deliverySentBy`, `deliveryOriginals`, `deliveryLinkLocked`, `deliveryLinkMasked`, `deliveryRoundsLeft`, `deliveryNoRoundsLeft`, `deliveryAutoApproveIn`, `deliveryRequestRevision`, `deliveryAskExtra`, `deliveryExtraPending`, `deliveryExtraDeclined`, `deliveryApprove`, `deliveryOpenOriginals`, `deliveryCheckTitle`, `deliveryCheckHint`, `deliveryReport`, `deliveryReviewShoot`, `deliverySamplesPurged`.
+- **Chấp nhận**: khách không bao giờ đọc được link ảnh gốc trước khi bấm "Đồng ý ảnh"; ảnh mẫu hiển thị luôn có watermark của server; tự động chuyển `approved` sau 72 giờ nếu khách không thao tác.
+
+---
+
+## S05.07 · Yêu cầu chỉnh sửa ảnh (sheet)
+
+- **Thông tin**: sheet mở trên S05.06 · khách · sub‑project 4 · Chưa có (kế hoạch `2026-10-07-s05-delivery-two-layer.md` #152).
+- **Mục đích**: gửi phản hồi chi tiết cho từng ảnh mẫu hoặc ghi chú chung cho thợ để sửa vòng tiếp theo, hoặc xin thêm 1 vòng ngoài số lượt miễn phí.
+- **Bố cục**: thanh kéo sheet, tiêu đề "Yêu cầu chỉnh sửa" (hoặc "Xin thêm 1 vòng" khi `extra = true`); dòng trạng thái lượt sửa: "Vòng sửa {round}/{total} (miễn phí)" (hoặc "Hết lượt sửa miễn phí. {name} có thể cho thêm hoặc không."); danh sách/lưới ảnh mẫu kèm ghi chú riêng từng ảnh (chạm ảnh để nhập ghi chú hoặc chọn chip gợi ý: "Da sáng hơn", "Bớt vàng", "Xoá vật thể", "Cân lại nghiêng"); ô "Ghi chú chung" (≤ 500 ký tự); nút chính "Gửi yêu cầu" (hoặc "Gửi đề nghị").
+- **Dữ liệu**: gọi callable `requestRevision({bookingId, note, photoNotes, extra})`.
+- **Trạng thái**: chưa nhập ghi chú chung lẫn ghi chú riêng → nút vô hiệu; đang gửi → loading; thành công → đóng sheet, S05.06 cập nhật trạng thái `revision_requested` hoặc `extraRound.status = 'pending'`.
+- **Chuỗi**: `revisionTitle`, `revisionCount`, `revisionTapHint`, `revisionGeneralNote`, `revisionRoundOf`, `revisionSend`, `revisionExtraTitle`, `revisionExtraHint`, `revisionExtraSend`, `revisionNeedSomething`, `revisionChipSkin`, `revisionChipWarm`, `revisionChipRemove`, `revisionChipLevel`, `revisionPhotoNote`, `revisionSent`, `revisionExtraSent`.
+- **Chấp nhận**: không cho gửi yêu cầu rỗng; chặn gửi vòng sửa mới khi hết lượt mà không bật cờ `extra`; lưu đầy đủ danh sách `photoNotes` vào tài liệu vòng bàn giao.
 
 ---
 

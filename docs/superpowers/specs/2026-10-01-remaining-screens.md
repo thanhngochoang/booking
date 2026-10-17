@@ -101,8 +101,8 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S05.03 | Huỷ booking (sheet) | `/b/:id/cancel` | khách | 4 | ✅ đã làm (4c) | S10 |
 | S05.04 | Liên hệ **sau khi đã đặt** (nút nhỏ bung gọi/Zalo/WhatsApp, không phải sheet) | — (popover, không có route) | cả hai | 2 | ✅ đã làm (`ContactDial`, plan 2b) | S32 |
 | S05.05 | Đánh giá & chia sẻ | `/b/:id/review` | khách | 6 | ✅ đã làm (4e) · cà chua/gạch ✅ (#130) | S12 |
-| S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
-| S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
+| S05.06 | Xem bàn giao & duyệt (ảnh mẫu có watermark, link ảnh gốc mở khi đồng ý, 48 giờ kiểm tra) | `/b/:id/delivery` | khách | spec 10-06 bàn giao | ⬜ có mock, có plan `2026-10-07-s05-delivery-two-layer.md` (#152) | — |
+| S05.07 | Yêu cầu chỉnh sửa (sheet) | — (sheet) | khách | spec 10-06 bàn giao | ⬜ có mock, có plan `2026-10-07-s05-delivery-two-layer.md` (#152) | — |
 | **S06** | **Nhận việc (nhiếp ảnh gia)** | | | | | |
 | S06.01 | Công việc | `/bookings` (nhiếp ảnh gia) | NAG | 5 | ✅ đã làm (4c) · nhãn Giao bởi {Studio} (#134, dữ liệu #136) · ẩn Sự kiện của tôi | S19 |
 | S06.02 | Empty state Công việc | `/bookings` khi trống | NAG | 1 (đã có dạng chung) | ✅ · biến thể chưa nhận đơn (#134) · nút "Bắt đầu nhận đơn" mở S21.02 (#135 ✅) | S22 |
@@ -110,7 +110,7 @@ Mỗi `Sxx` là một **use case** (một luồng việc trọn vẹn của ngư
 | S06.04 | Lịch của tôi | `/work/calendar` | NAG | 2 | ✅ đã làm (2d1) | S20 |
 | S06.05 | Thu nhập (đang giữ, chờ chi trả, đã nhận) | `/work/earnings` | NAG | 5 | ✅ (10b, #134) · thuế khấu trừ, chi tự động mỗi ngày | S43 |
 | S06.06 | Tài khoản nhận tiền | `/work/earnings/account` | NAG | 5 | ✅ (10b, #134) · tra tên, OTP, 72 giờ (cổng giả) | S44 |
-| S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, chưa có plan | — |
+| S06.07 | Nộp bàn giao (sheet; booking studio: chỉ studio) | — (sheet) | thợ ảnh · studio | spec 10-06 bàn giao | ⬜ có mock, có plan `2026-10-07-s05-delivery-two-layer.md` (#152) | — |
 | **S07** | **Hội thoại** | | | | | |
 | S07.01 | Hội thoại | `/chat/:chatId` | cả hai | 4d | ✅ đã làm (4d) · ảnh, gửi lại ảnh (#131) | S11 |
 | S07.02 | Danh sách hội thoại | `/chats` | cả hai | 4d | ✅ đã làm (4d) · badge trạng thái thật, hỏi trước đã đóng (#131) | — (mới) |
