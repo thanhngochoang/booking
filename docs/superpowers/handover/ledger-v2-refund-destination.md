@@ -89,7 +89,7 @@ Plan: `docs/superpowers/plans/2026-10-08-v2-refund-destination.md`, Tasks 1–5.
      - `refunds (status ASC, confirmBy ASC)`
    - Wait until indexes finish building in Firebase Console before deploying functions.
 2. **Cloud Functions:**
-   - Deploy Cloud Functions. Ensure `PAYOUT_ACCOUNT_KEY` secret is accessible to `paymentWebhook`, `paymentClock`, `transitionBooking`, `bookingClock`, `createPayment`, `checkPayment`, `confirmFakePayment`.
+   - Deploy Cloud Functions. Ensure `PAYOUT_ACCOUNT_KEY` secret is accessible to `paymentWebhook`, `paymentClock`, `transitionBooking`, `bookingClock`, `createPayment`, `checkPayment`, `confirmFakePayment`, `getPaymentInstructions`, `registerEvent`, `cancelRegistration`, `checkTicketPayment`, `cancelEvent`, `eventClock` (and the payout functions `savePayoutAccount`, `requestPayoutOtp`, `createPayouts`).
 3. **App build:**
    - Deploy Flutter client app containing `TicketRefundStatus.awaitingAccount`.
 
@@ -123,3 +123,18 @@ V1 landed first, so this branch was rebased onto it (merge rules in the V1 plan,
 - **Sweeps and webhook:** `runPaymentSweeps(SettlementDeps | BookingDeps, extras?)`; the `resend` step and refund events reach the refunds collection through `bookingDepsOf(deps)` (the `BookingPaymentSettler`'s deps); without a booking settler the step is skipped and a refund event answers `refund_unknown`. `paymentWebhook`/`paymentClock` keep `liveSettlementDeps()` plus `liveRefundSubjects()`.
 - **Secrets:** `cancelEvent` (`EVENT_REFUND_CALLABLE_OPTIONS`) and `eventClock` (`EVENT_CLOCK_OPTIONS`) bind `PAYMENT_SECRETS`, since ticket refunds can be bank transfers now.
 - **Tests:** V1 tests that posted a bank-QR transfer without a sender now include `FAKE_PAYER` (without it the refund correctly waits in `awaiting_account`); new tests pin ticket payer capture, the no-sender case, the sweep and the refund webhook through `SettlementDeps`.
+
+---
+
+## 7. Review fixes (PR #234), 2026-10-17
+
+- **Re-send re-checks pending.** Both `bookingRefundHandler.resend` and `ticketRefundHandler.resend` re-read the refund and send only while it is still `pending` (a refund event or staff may have settled it after the clock's query; sending then could pay twice). Pinned for both subjects ("a resend re-checks pending: a done or failed refund is never sent again").
+- **The queue keeps moving.** A pending refund whose subject has no handler is stamped (`attempts + 1`, `lastAttemptAt = now`) when skipped, so it no longer heads the oldest-first query; a pending refund whose payment is gone goes to `failed` + `manual` with `failureReason 'payment_missing'`.
+- `applyRefundEvent` answers `refund_unchanged` when the stored refund may not change (done, awaiting_account); the webhook passes it through with 200.
+- `paymentClock` and `paymentWebhook` log a warning when the deps have no booking settler (re-send skipped / refund event `refund_unknown`); `eventClock` logs when it has a gateway but no cipher.
+- `expireUnpaid({destination: null})` now means "no destination" (`awaiting_account`); omitted still means `payment.payer`.
+
+## 8. Needs the owner (no code yet)
+
+1. **Asynchronous refunds without a cap.** A refund the provider accepted with `pending: true` stays `pending` and is re-sent every 10 minutes under the same id with no attempts cap (only thrown calls count toward `REFUND_MAX_ATTEMPTS`). Decide a limit (or a staff hand-off after N hours) before a real intermediary is wired.
+2. **Extra transfer without full sender details.** An extra or late transfer whose sender is incomplete is refunded to the payment's first payer (Decision 3 fallback). The owner may prefer `awaiting_account` for non-escrow refunds whose own sender is unknown.
