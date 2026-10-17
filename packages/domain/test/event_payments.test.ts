@@ -289,6 +289,23 @@ describe('refund state on the ticket', () => {
     assert.equal(reg(w, id).refundStatus, 'done');
   });
 
+  test('a ticket resend re-checks pending: a done or failed refund is never sent again', async () => {
+    for (const settled of ['done', 'failed'] as const) {
+      const w = await paidWorld();
+      const id = await bought(w, cu1);
+      w.gateway.refundThrowCount = 1;
+      await cancelEventWithRefunds(w.pay, ph1, { eventId: EV });
+      const [queried] = w.store.refundsOf(must(reg(w, id).paymentId));
+      assert.equal(queried?.status, 'pending');
+      const calls = w.gateway.refundCalls.length;
+      w.store.refunds.set(must(queried).id, { ...must(queried), status: settled, manual: settled === 'failed' });
+      const out = await ticketRefundHandler(w.pay).resend(must(queried));
+      assert.equal(out.status, settled);
+      assert.equal(w.gateway.refundCalls.length, calls, `${settled}: no gateway call`);
+      assert.equal(w.store.refunds.get(must(queried).id)?.status, settled);
+    }
+  });
+
   test('a payment after the hold shows its refund on the cancelled ticket', async () => {
     const w = await paidWorld();
     const r = await buy(w, cu1);

@@ -1,5 +1,6 @@
 import * as logger from 'firebase-functions/logger';
 import {
+  bookingDepsOf,
   runPaymentSweeps,
   type BookingDeps,
   type PaymentSweepExtras,
@@ -23,6 +24,10 @@ export async function handlePaymentClock(
   deps: SettlementDeps | BookingDeps = liveSettlementDeps(),
   extras: PaymentClockExtras = { refundSubjects: liveRefundSubjects() },
 ): Promise<PaymentSweepResults> {
+  if (bookingDepsOf(deps) === null) {
+    // Refunds are read through the booking settler's store; without it the re-send step does nothing.
+    logger.warn('paymentClock refund re-send skipped', { reason: 'no_booking_settler' });
+  }
   let results: PaymentSweepResults;
   try {
     const sweepExtras: PaymentSweepExtras = {

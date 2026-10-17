@@ -274,7 +274,7 @@ describe('handlePaymentWebhook (fake provider)', () => {
     assert.equal(ref?.providerRef, 'pref_1');
   });
 
-  it('a refund body reaches the refund through SettlementDeps (the live wiring)', async () => {
+  it('a refund body reaches the refund through SettlementDeps (the live wiring)', async (t) => {
     const w = paymentWorld();
     const p = await openPayment(w);
     const at = '2026-10-01T10:00:00.000Z';
@@ -289,8 +289,15 @@ describe('handlePaymentWebhook (fake provider)', () => {
     assert.deepEqual(res, { status: 200, body: { ok: true, outcome: 'refund_applied' } });
     assert.equal((await w.store.getRefund('ref_s1'))?.status, 'done');
     // Without a booking settler there is no refund store to read: refund_unknown, no retry storm.
-    const none = await handlePaymentWebhook(signed(body), { ...bookingSettlement(w.deps), subjects: {} }, WEBHOOK_ENV);
+    let none: unknown;
+    const lines = await captureLogs(t, async () => {
+      none = await handlePaymentWebhook(signed(body), { ...bookingSettlement(w.deps), subjects: {} }, WEBHOOK_ENV);
+    });
     assert.deepEqual(none, { status: 200, body: { ok: true, outcome: 'refund_unknown' } });
+    assert.ok(lines.some((l) => l.includes('without a booking settler')), lines.join(''));
+    // A second done event leaves the done refund as it is.
+    const again = await handlePaymentWebhook(signed(body), bookingSettlement(w.deps), WEBHOOK_ENV);
+    assert.deepEqual(again, { status: 200, body: { ok: true, outcome: 'refund_unchanged' } });
   });
 
   it('a refund body for an unknown id answers 200 refund_unknown', async () => {

@@ -18,15 +18,39 @@ export interface RefundSubjectHandler {
 export type RefundSubjects = Readonly<Partial<Record<PaymentSubject, RefundSubjectHandler>>>;
 
 /**
+ * A pending refund whose payment cannot be read any more: nothing can be sent, so it goes to staff
+ * (`failed`, `manual`, `payment_missing`) and leaves the re-send queue.
+ */
+export function refundWithoutPayment(stored: Refund, now: Date): Refund {
+  const at = now.toISOString();
+  return {
+    ...stored,
+    status: 'failed',
+    manual: true,
+    failureReason: 'payment_missing',
+    attempts: stored.attempts + 1,
+    lastAttemptAt: at,
+    updatedAt: at,
+  };
+}
+
+/**
  * Booking refunds: record re-reads the refund in a BookingTx, merges, and sets booking.depositRefundedAt once
  * when an escrow refund becomes done (the rule refunds.ts has today).
  */
 export function bookingRefundHandler(deps: BookingDeps): RefundSubjectHandler {
   return {
     async resend(refund: Refund): Promise<Refund> {
-      const payment = await deps.store.getPayment(refund.paymentId);
-      if (!payment) return refund;
-      const next = await sendRefundOnce(deps, refund, payment);
+      // Re-read: a refund event (or staff) may have settled it since the clock's query. Sending a
+      // refund that is no longer pending could pay twice (gateway + by hand).
+      const stored = await deps.store.getRefund(refund.id);
+      if (!stored || stored.status !== 'pending') return stored ?? refund;
+      const payment = await deps.store.getPayment(stored.paymentId);
+      if (!payment) {
+        const gone = refundWithoutPayment(stored, deps.clock.now());
+        return (await this.record(gone)) ?? gone;
+      }
+      const next = await sendRefundOnce(deps, stored, payment);
       const recorded = await this.record(next);
       return recorded ?? next;
     },
@@ -80,7 +104,14 @@ export async function resendPendingRefunds(
       : subjects[r.subjectType];
 
     if (!handler) {
+      // No handler yet for this subject: stamp the attempt so the row moves to the back of the
+      // queue (oldest lastAttemptAt first) and never starves the refunds behind it.
       skipped += 1;
+      try {
+        await stampSkippedRefund(deps, r.id);
+      } catch {
+        failed += 1;
+      }
       continue;
     }
 
@@ -95,6 +126,16 @@ export async function resendPendingRefunds(
   return { resent, failed, skipped };
 }
 
+/** Re-send skipped (no subject handler): `attempts + 1`, `lastAttemptAt = now`, only while still pending. */
+async function stampSkippedRefund(deps: BookingDeps, refundId: string): Promise<void> {
+  await deps.store.runTransaction(async (tx) => {
+    const cur = await tx.getRefund(refundId);
+    if (!cur || cur.status !== 'pending') return;
+    const at = deps.clock.now().toISOString();
+    await tx.addRefund({ ...cur, attempts: cur.attempts + 1, lastAttemptAt: at, updatedAt: at });
+  });
+}
+
 export interface RefundEvent {
   readonly refundId: string;
   readonly provider: PaymentProvider;
@@ -103,7 +144,8 @@ export interface RefundEvent {
   readonly failureReason?: string;
 }
 
-export type RefundEventOutcome = 'refund_applied' | 'refund_unknown';
+/** `refund_unchanged`: the stored refund already holds a final state the event may not change (Decision 6). */
+export type RefundEventOutcome = 'refund_applied' | 'refund_unchanged' | 'refund_unknown';
 
 /**
  * Applies an asynchronous refund event (e.g. from webhook or gateway polling).
@@ -135,6 +177,6 @@ export async function applyRefundEvent(
 
   if (!handler) return 'refund_unknown';
 
-  await handler.record(next);
-  return 'refund_applied';
+  const recorded = await handler.record(next);
+  return recorded === null ? 'refund_unchanged' : 'refund_applied';
 }

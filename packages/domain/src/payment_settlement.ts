@@ -164,7 +164,7 @@ export function expireUnpaid(p: {
   payment: Payment;
   refundId: string;
   ledgerEntryId: string;
-  /** Where a bank-transfer refund goes; defaults to `payment.payer` (the first sender). */
+  /** Where a bank-transfer refund goes; omitted → `payment.payer` (the first sender), null → none (awaiting_account). */
   destination?: StoredBankAccount | null;
   now: Date;
 }): {
@@ -199,7 +199,7 @@ export function expireUnpaid(p: {
     ledgerEntryId: p.ledgerEntryId,
     amount: received,
     reason: 'underpaid_expired',
-    destination: p.destination ?? p.payment.payer,
+    destination: 'destination' in p ? p.destination : p.payment.payer,
     now: p.now,
   });
 

@@ -35,7 +35,7 @@ import {
 import type { TransferNotification, TransferOutcome } from './booking_ports.js';
 import { DISPUTE_WINDOW_HOURS } from './booking_policy.js';
 import { mergeRefundOutcome, sendRefundOnce, transferRefund } from './refunds.js';
-import type { RefundSubjectHandler } from './refund_subjects.js';
+import { refundWithoutPayment, type RefundSubjectHandler } from './refund_subjects.js';
 import { checkSubjectPayments } from './create_payment.js';
 import { transferCodeFor } from './payment_code.js';
 import { payerAccountOf } from './payer_account.js';
@@ -111,9 +111,19 @@ function releaseHoldWrites(tx: EventTx, ev: EventRecord | null, holds: readonly 
 export function ticketRefundHandler(deps: EventPaymentDeps): RefundSubjectHandler {
   return {
     async resend(refund: Refund): Promise<Refund> {
-      const payment = await deps.events.runTransaction((tx) => tx.getPayment(refund.paymentId));
-      if (!payment) return refund;
-      const next = await sendRefundOnce(deps, refund, payment);
+      // Re-read in a transaction: only a refund still pending is sent (a done or failed one never again).
+      const found = await deps.events.runTransaction(async (tx) => {
+        const stored = await tx.getRefund(refund.id);
+        const payment = stored === null ? null : await tx.getPayment(stored.paymentId);
+        return { stored, payment };
+      });
+      const { stored, payment } = found;
+      if (stored === null || stored.status !== 'pending') return stored ?? refund;
+      if (payment === null) {
+        const gone = refundWithoutPayment(stored, deps.clock.now());
+        return (await this.record(gone)) ?? gone;
+      }
+      const next = await sendRefundOnce(deps, stored, payment);
       const recorded = await this.record(next);
       return recorded ?? next;
     },

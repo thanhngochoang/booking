@@ -31,9 +31,16 @@ export interface EventClockResults {
  * Last step: `event_soon` reminders 48 hours before the start (S17), in its own try/catch so a failure never fails the sweeps above.
  */
 export async function handleEventClock(
-  deps: EventDeps & { readonly gateway?: EventPaymentDeps['gateway'] } = liveEventPaymentDeps(),
+  deps: EventDeps & {
+    readonly gateway?: EventPaymentDeps['gateway'];
+    readonly cipher?: EventPaymentDeps['cipher'];
+  } = liveEventPaymentDeps(),
   extras: EventClockExtras = {},
 ): Promise<EventClockResults> {
+  if (deps.gateway !== undefined && deps.cipher === undefined) {
+    // The refund step needs both (bank-QR tickets are refunded to the payer's account).
+    logger.warn('eventClock refund step skipped', { reason: 'no_cipher' });
+  }
   let sweeps: Awaited<ReturnType<typeof runEventSweeps>>;
   try {
     sweeps = await runEventSweeps(deps, (eventId, step, error) => {

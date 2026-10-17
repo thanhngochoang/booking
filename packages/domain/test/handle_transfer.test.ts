@@ -428,6 +428,10 @@ describe('checkPayment', () => {
     assert.equal(refunds.length, 1);
     assert.equal(refunds[0]?.amount, PRICE);
     assert.equal(refunds[0]?.reason, 'provider_not_accepting');
+    // V2: back to the sender's account, sent at once.
+    assert.equal(refunds[0]?.method, 'bank_transfer');
+    assert.equal(refunds[0]?.destination?.accountLast4, '3456');
+    assert.equal(refunds[0]?.status, 'done');
 
     // Booking remains a draft
     const booking = await world.store.getBooking(draft.id);

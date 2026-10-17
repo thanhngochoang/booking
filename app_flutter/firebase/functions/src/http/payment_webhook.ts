@@ -81,6 +81,9 @@ export async function handlePaymentWebhook(
     try {
       // Refunds of every subject live in the booking store's refunds collection.
       const bookingDeps = bookingDepsOf(deps);
+      if (bookingDeps === null) {
+        logger.warn('paymentWebhook refund event without a booking settler', { provider: e.provider, refundId: e.refundId });
+      }
       const outcome = bookingDeps === null ? 'refund_unknown' : await applyRefundEvent(bookingDeps, e, refundSubjects);
       logger.info('paymentWebhook handled', { provider: e.provider, refundId: e.refundId, outcome });
       return { status: 200, body: { ok: true, outcome } };

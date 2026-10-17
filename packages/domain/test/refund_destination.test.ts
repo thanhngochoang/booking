@@ -3,7 +3,7 @@ import test, { describe } from 'node:test';
 import { createPayment } from '../src/create_payment.js';
 import { verifyPaymentLedgerInvariant } from '../src/escrow.js';
 import { dispatchRefund } from '../src/refunds.js';
-import { bookingRefundHandler } from '../src/refund_subjects.js';
+import { applyRefundEvent } from '../src/refund_subjects.js';
 import { handleTransferNotification } from '../src/handle_transfer.js';
 import { transitionBooking } from '../src/transition_booking.js';
 import { createBookingWorld, newDraft, payDraft, transferOf, TEST_PAYER } from './support/booking_world.js';
@@ -404,20 +404,20 @@ describe('Task 2: payer capture, refund destination and booking dispatch', () =>
     const world = createBookingWorld();
     const draft = await newDraft(world);
     const { paymentId } = await payDraft(world, draft.id);
+
+    // The provider's "done" event lands while the dispatch call is still in flight; the call then
+    // answers a refusal. The refund is pending when the event arrives, done after both.
+    let eventOutcome: string | undefined;
+    world.gateway.issueRefund = async (p) => {
+      assert.equal((await world.store.getRefund(p.refundId))?.status, 'pending');
+      eventOutcome = await applyRefundEvent(world.deps, { refundId: p.refundId, provider: 'fake', status: 'done' });
+      return { success: false, error: 'late_refusal' };
+    };
     await transitionBooking(world.deps, { bookingId: draft.id, action: 'cancel', actorId: 'c1', reason: 'Bận' });
 
+    assert.equal(eventOutcome, 'refund_applied');
     const [refund] = await world.store.getRefundsForPayment(paymentId);
-    assert.ok(refund);
-
-    // Simulate an event arriving and marking it done first
-    await bookingRefundHandler(world.deps).record({ ...refund, status: 'done' });
-    const storedDone = await world.store.getRefund(refund.id);
-    assert.equal(storedDone?.status, 'done');
-
-    // Now record a pending answer: stored must stay done
-    await bookingRefundHandler(world.deps).record({ ...refund, status: 'pending', attempts: 1 });
-    const storedAfter = await world.store.getRefund(refund.id);
-    assert.equal(storedAfter?.status, 'done');
+    assert.deepEqual([refund?.status, refund?.manual], ['done', false]);
   });
 
   test('dispatchRefund on a refund already done makes no gateway call', async () => {

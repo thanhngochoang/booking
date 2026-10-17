@@ -11,10 +11,12 @@ export const REGION = 'asia-southeast1';
 
 /**
  * Key of the payout account cipher: 32 random bytes, base64 (Secret Manager; see
- * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the callable that encrypts
- * (`savePayoutAccount`), the callable that decrypts the active account to refuse a code for it
- * (`requestPayoutOtp`) and the job that decrypts to send (`createPayouts`), nothing else; the
- * emulator reads it from `.secret.local`.
+ * docs/FIREBASE-SETUP.md "Payout account key"). Bound to the payout functions (`savePayoutAccount`
+ * encrypts, `requestPayoutOtp` and `createPayouts` decrypt) and, through `PAYMENT_SECRETS`, to every
+ * function that captures a payer's account from a transfer or sends a bank-transfer refund
+ * (`PAYMENT_CALLABLE_OPTIONS`, `WEBHOOK_OPTIONS`, `PAYMENT_CLOCK_OPTIONS`, `BOOKING_REFUND_CALLABLE_OPTIONS`,
+ * `BOOKING_CLOCK_OPTIONS`, `EVENT_REFUND_CALLABLE_OPTIONS`, `EVENT_CLOCK_OPTIONS`); the emulator
+ * reads it from `.secret.local`.
  */
 export const PAYOUT_ACCOUNT_KEY = defineSecret('PAYOUT_ACCOUNT_KEY');
 
