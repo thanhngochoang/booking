@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:photobooking/core/constants.dart';
+
+import 'package:photobooking/data/backend/backend_config.dart';
 import 'package:photobooking/data/support/support_repository.dart';
 import 'package:photobooking/data/support/support_thread.dart';
 
@@ -8,11 +9,16 @@ class FirestoreSupportRepository implements SupportRepository {
   FirestoreSupportRepository({
     FirebaseFirestore? firestore,
     FirebaseFunctions? functions,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _functions = functions ?? FirebaseFunctions.instanceFor(region: functionsRegion);
+  }) : _firestoreOverride = firestore,
+       _functionsOverride = functions;
 
-  final FirebaseFirestore _firestore;
-  final FirebaseFunctions _functions;
+  final FirebaseFirestore? _firestoreOverride;
+  final FirebaseFunctions? _functionsOverride;
+  FirebaseFirestore get _firestore =>
+      _firestoreOverride ?? FirebaseFirestore.instance;
+  FirebaseFunctions get _functions =>
+      _functionsOverride ??
+      FirebaseFunctions.instanceFor(region: functionsRegion);
 
   @override
   String helpThreadIdFor(String uid) => 'help_$uid';
@@ -27,7 +33,10 @@ class FirestoreSupportRepository implements SupportRepository {
   }
 
   @override
-  Stream<List<SupportMessage>> watchMessages(String threadId, {int limit = 30}) {
+  Stream<List<SupportMessage>> watchMessages(
+    String threadId, {
+    int limit = 30,
+  }) {
     return _firestore
         .collection('support_threads')
         .doc(threadId)
@@ -36,7 +45,9 @@ class FirestoreSupportRepository implements SupportRepository {
         .limit(limit)
         .snapshots()
         .map((snap) {
-          final list = snap.docs.map((d) => SupportMessage.fromFirestore(d)).toList();
+          final list = snap.docs
+              .map((d) => SupportMessage.fromFirestore(d))
+              .toList();
           return list.reversed.toList();
         });
   }
@@ -54,10 +65,10 @@ class FirestoreSupportRepository implements SupportRepository {
             options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
           )
           .call<Map<String, dynamic>>({
-        'threadId': threadId,
-        'text': text,
-        'clientId': clientId,
-      });
+            'threadId': threadId,
+            'text': text,
+            'clientId': clientId,
+          });
 
       final data = res.data;
       final returnedThreadId = data['threadId'] as String?;

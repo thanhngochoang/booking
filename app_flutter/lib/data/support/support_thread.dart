@@ -36,7 +36,9 @@ class SupportThread {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  factory SupportThread.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SupportThread.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? <String, dynamic>{};
     return SupportThread.fromMap(doc.id, data);
   }
@@ -81,7 +83,9 @@ class SupportThread {
       'participants': participants,
       'status': status,
       'awaitingStaff': awaitingStaff,
-      'lastMessageAt': lastMessageAt != null ? Timestamp.fromDate(lastMessageAt!) : null,
+      'lastMessageAt': lastMessageAt != null
+          ? Timestamp.fromDate(lastMessageAt!)
+          : null,
       'lastMessagePreview': lastMessagePreview,
       'lastSenderRole': lastSenderRole?.name,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
@@ -134,7 +138,9 @@ class SupportMessage {
     );
   }
 
-  factory SupportMessage.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory SupportMessage.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? <String, dynamic>{};
     return SupportMessage.fromMap(doc.id, data);
   }
@@ -166,17 +172,17 @@ class SupportMessage {
 }
 
 SupportSenderRole _parseRole(String role) => switch (role) {
-      'customer' => SupportSenderRole.customer,
-      'provider' => SupportSenderRole.provider,
-      'staff' => SupportSenderRole.staff,
-      'system' => SupportSenderRole.system,
-      _ => SupportSenderRole.user,
-    };
+  'customer' => SupportSenderRole.customer,
+  'provider' => SupportSenderRole.provider,
+  'staff' => SupportSenderRole.staff,
+  'system' => SupportSenderRole.system,
+  _ => SupportSenderRole.user,
+};
 
 DateTime? _parseDateTime(dynamic v) {
   if (v == null) return null;
-  if (v is Timestamp) return v.toDate();
-  if (v is DateTime) return v;
-  if (v is String) return DateTime.tryParse(v);
+  if (v is Timestamp) return v.toDate().toUtc();
+  if (v is DateTime) return v.toUtc();
+  if (v is String) return DateTime.tryParse(v)?.toUtc();
   return null;
 }

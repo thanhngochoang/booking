@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photobooking/core/core.dart';
-import 'package:photobooking/core/widgets/chat_bubble.dart';
-import 'package:photobooking/core/widgets/chat_composer.dart';
 import 'package:photobooking/data/auth/auth_providers.dart';
 import 'package:photobooking/data/chat/chat.dart';
 import 'package:photobooking/data/support/support_providers.dart';
@@ -63,18 +61,19 @@ class _SupportThreadViewState extends ConsumerState<SupportThreadView> {
     final l = AppLocalizations.of(context);
     final currentUid = ref.watch(authStateProvider).value?.uid;
     final messagesAsync = ref.watch(supportMessagesProvider(widget.threadId));
-    final controller = ref.read(supportThreadControllerProvider(widget.threadId).notifier);
+    final controller = ref.read(
+      supportThreadControllerProvider(widget.threadId).notifier,
+    );
     final state = ref.watch(supportThreadControllerProvider(widget.threadId));
 
     ref.listen(supportThreadControllerProvider(widget.threadId), (prev, next) {
       if (next.errorCode != null && next.errorSeq != prev?.errorSeq) {
         final message = switch (next.errorCode) {
-          'limit_exceeded' => l?.supportRateLimited ?? 'Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.',
-          _ => l?.supportSendFailed ?? 'Chưa gửi được tin nhắn. Thử lại.',
+          'limit_exceeded' => l.supportRateLimited,
+          _ => l.supportSendFailed,
         };
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
       }
     });
 
@@ -97,15 +96,16 @@ class _SupportThreadViewState extends ConsumerState<SupportThreadView> {
       children: [
         if (widget.header != null) widget.header!,
         Expanded(
-          child: messagesAsync.when(
-            loading: () => const Center(child: SignatureLoader()),
-            error: (_, __) => Center(
-              child: Text(
-                l?.supportSendFailed ?? 'Lỗi tải tin nhắn',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+          child: AsyncView<List<SupportMessage>>(
+            value: messagesAsync,
+            skeleton: (_) => Column(
+              children: [
+                for (var i = 0; i < 6; i++) ChatBubble.skeleton(mine: i.isOdd),
+              ],
             ),
-            data: (_) {
+            onRetry: () =>
+                ref.invalidate(supportMessagesProvider(widget.threadId)),
+            data: (context, _) {
               if (allMessages.isEmpty && widget.emptyPlaceholder != null) {
                 return widget.emptyPlaceholder!;
               }
@@ -119,8 +119,10 @@ class _SupportThreadViewState extends ConsumerState<SupportThreadView> {
                 itemCount: allMessages.length,
                 itemBuilder: (context, index) {
                   final msg = allMessages[index];
-                  final isMine = (currentUid != null && msg.senderId == currentUid) ||
-                      (msg.senderRole == SupportSenderRole.user && msg.senderId == null);
+                  final isMine =
+                      (currentUid != null && msg.senderId == currentUid) ||
+                      (msg.senderRole == SupportSenderRole.user &&
+                          msg.senderId == null);
                   final label = widget.senderLabel(msg);
 
                   return Padding(
@@ -158,8 +160,8 @@ class _SupportThreadViewState extends ConsumerState<SupportThreadView> {
                 child: Text(
                   widget.disabledReason!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),

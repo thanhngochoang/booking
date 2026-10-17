@@ -23,16 +23,16 @@ class SupportChatScreen extends ConsumerWidget {
       child: AuroraBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(l?.supportChatTitle ?? 'Hỗ trợ'),
-          ),
+          appBar: AppBar(title: Text(l.supportChatTitle)),
           body: SupportThreadView(
             threadId: threadId,
             enabled: true,
-            hint: l?.supportChatHint ?? 'Nhắn cho hỗ trợ…',
+            hint: l.supportChatHint,
             senderLabel: (msg) {
               if (msg.senderRole == SupportSenderRole.staff) {
-                return msg.senderName.isNotEmpty ? msg.senderName : 'Hỗ trợ';
+                return msg.senderName.isNotEmpty
+                    ? msg.senderName
+                    : l.supportChatTitle;
               }
               return '';
             },
@@ -44,24 +44,24 @@ class SupportChatScreen extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(AppSpace.s3),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
+                    AppIcon(
+                      AppIcons.lock,
                       size: 16,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: AppSpace.s2),
                     Expanded(
                       child: Text(
-                        l?.supportChatNote ??
-                            'Chỉ bạn và đội hỗ trợ xem được cuộc trò chuyện này. Đừng gửi mật khẩu hay mã OTP.',
+                        l.supportChatNote,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -81,12 +81,11 @@ class SupportChatScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpace.s3),
                     Text(
-                      l?.supportChatEmpty ??
-                          'Bạn cần giúp gì? Nhắn cho đội hỗ trợ, chúng tôi trả lời tại đây và báo cho bạn khi có tin mới.',
+                      l.supportChatEmpty,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:photobooking/data/support/support_repository.dart';
 import 'package:photobooking/data/support/support_thread.dart';
 
@@ -16,13 +17,18 @@ class FakeSupportRepository implements SupportRepository {
     }
   }
 
+  final SupportThread? initialThread;
   final Map<String, SupportThread?> _threads = {};
   final Map<String, List<SupportMessage>> _messages = {};
   final Map<String, StreamController<SupportThread?>> _threadControllers = {};
-  final Map<String, StreamController<List<SupportMessage>>> _messageControllers = {};
+  final Map<String, StreamController<List<SupportMessage>>>
+  _messageControllers = {};
 
   Object? sendError;
   final List<({String? threadId, String text, String clientId})> sentCalls = [];
+
+  /// The text of every [send] call, in order.
+  List<String> get sentBodies => [for (final c in sentCalls) c.text];
 
   @override
   String helpThreadIdFor(String uid) => 'help_$uid';
@@ -41,7 +47,10 @@ class FakeSupportRepository implements SupportRepository {
   }
 
   @override
-  Stream<List<SupportMessage>> watchMessages(String threadId, {int limit = 30}) {
+  Stream<List<SupportMessage>> watchMessages(
+    String threadId, {
+    int limit = 30,
+  }) {
     final controller = _messageControllers.putIfAbsent(
       threadId,
       () => StreamController<List<SupportMessage>>.broadcast(
@@ -65,7 +74,8 @@ class FakeSupportRepository implements SupportRepository {
     }
 
     final targetThreadId = threadId ?? 'help_test_user';
-    final existingThread = _threads[targetThreadId] ??
+    final existingThread =
+        _threads[targetThreadId] ??
         SupportThread(
           id: targetThreadId,
           kind: SupportThreadKind.help,
@@ -79,7 +89,7 @@ class FakeSupportRepository implements SupportRepository {
     setThread(existingThread);
 
     final msg = SupportMessage(
-      id: 'msg_${clientId}',
+      id: 'msg_$clientId',
       threadId: targetThreadId,
       senderId: 'test_user',
       senderRole: SupportSenderRole.user,
