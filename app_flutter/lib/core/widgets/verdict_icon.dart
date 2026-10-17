@@ -18,25 +18,33 @@ Color verdictColor(BuildContext context, VerdictKind kind) {
   };
 }
 
-/// The tomato or brick line icon (mock `.tm svg`, `#i-tomato`, `#i-brick`),
-/// tinted with the token colour unless [color] is given. Decorative: callers
-/// put the spoken text on the surrounding widget.
+/// The tomato line icon (mock `#i-tomato`), tinted with the token colour
+/// unless [color] is given, or the brick mascot (mock `#i-brick`), drawn in
+/// its own colours with no background so it sits on the surface below it:
+/// [color] does not apply to the brick, and [muted] fades it for an
+/// unselected button. Decorative: callers put the spoken text on the
+/// surrounding widget.
 class VerdictIcon extends StatelessWidget {
-  const VerdictIcon(this.kind, {super.key, this.size = 16, this.color});
+  const VerdictIcon(
+    this.kind, {
+    super.key,
+    this.size = 16,
+    this.color,
+    this.muted = false,
+  });
 
   final VerdictKind kind;
   final double size;
   final Color? color;
 
+  /// Brick only: draws the mascot faded (the tomato fades through [color]).
+  final bool muted;
+
   @override
   Widget build(BuildContext context) {
-    final asset = switch (kind) {
-      VerdictKind.tomato => 'assets/icons/tomato.svg',
-      VerdictKind.brick => 'assets/icons/brick.svg',
-    };
-    return ExcludeSemantics(
-      child: SvgPicture.asset(
-        asset,
+    final Widget picture = switch (kind) {
+      VerdictKind.tomato => SvgPicture.asset(
+        'assets/icons/tomato.svg',
         width: size,
         height: size,
         colorFilter: ColorFilter.mode(
@@ -44,6 +52,15 @@ class VerdictIcon extends StatelessWidget {
           BlendMode.srcIn,
         ),
       ),
-    );
+      VerdictKind.brick => Opacity(
+        opacity: muted ? 0.5 : 1,
+        child: SvgPicture.asset(
+          'assets/icons/brick.svg',
+          width: size,
+          height: size,
+        ),
+      ),
+    };
+    return ExcludeSemantics(child: picture);
   }
 }

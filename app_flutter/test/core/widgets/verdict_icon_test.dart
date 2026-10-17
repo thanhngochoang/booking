@@ -26,15 +26,25 @@ void main() {
     expect(svg.colorFilter, _mode(AppColors.tomato));
   });
 
-  testWidgets('draws the brick asset in the brick token', (tester) async {
+  testWidgets('draws the brick mascot in its own colours, no tint', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       hostWidget(
-        const VerdictIcon(VerdictKind.brick, size: 24),
+        const VerdictIcon(VerdictKind.brick, size: 24, color: Colors.grey),
         brightness: Brightness.light,
       ),
     );
     expect(_svg(tester).width, 24);
-    expect(_svg(tester).colorFilter, _mode(AppColors.brick));
+    expect(_svg(tester).colorFilter, isNull);
+    expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 1);
+  });
+
+  testWidgets('a muted brick is faded', (tester) async {
+    await tester.pumpWidget(
+      hostWidget(const VerdictIcon(VerdictKind.brick, muted: true)),
+    );
+    expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 0.5);
   });
 
   testWidgets('uses the dark tokens on the dark theme', (tester) async {
@@ -45,7 +55,7 @@ void main() {
   testWidgets('an explicit colour wins', (tester) async {
     await tester.pumpWidget(
       hostWidget(
-        const VerdictIcon(VerdictKind.brick, color: Color(0xFF123456)),
+        const VerdictIcon(VerdictKind.tomato, color: Color(0xFF123456)),
       ),
     );
     expect(_svg(tester).colorFilter, _mode(const Color(0xFF123456)));
