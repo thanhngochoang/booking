@@ -5904,10 +5904,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get helpMyDisputes => 'Khiếu nại của bạn';
 
   @override
-  String helpDisputeRow(String code, String name) => 'Khiếu nại #$code · $name';
+  String helpDisputeRow(String code, String name) {
+    return 'Khiếu nại #$code · $name';
+  }
 
   @override
-  String helpDisputeRowMeta(String status, String date) => '$status · $date';
+  String helpDisputeRowMeta(String status, String date) {
+    return '$status · $date';
+  }
 
   @override
   String get helpFaqTitle => 'Câu hỏi thường gặp';
@@ -5916,7 +5920,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get helpContactSupport => 'Liên hệ hỗ trợ';
 
   @override
-  String helpEmailLine(String email) => 'Email hỗ trợ: $email';
+  String helpEmailLine(String email) {
+    return 'Email hỗ trợ: $email';
+  }
 
   @override
   String get supportChatTitle => 'Hỗ trợ';
@@ -5936,7 +5942,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get supportSendFailed => 'Chưa gửi được tin nhắn. Thử lại.';
 
   @override
-  String get supportRateLimited => 'Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.';
+  String get supportRateLimited =>
+      'Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.';
 
   @override
   String get helpTopicPayments => 'Thanh toán';
@@ -6033,7 +6040,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get helpDisputeEvidenceQ => 'Ai xem được ảnh bằng chứng?';
 
   @override
-  String get helpDisputeEvidenceA => 'Chỉ bạn, người bị khiếu nại và đội hỗ trợ.';
+  String get helpDisputeEvidenceA =>
+      'Chỉ bạn, người bị khiếu nại và đội hỗ trợ.';
 
   @override
   String get helpContactQ => 'Khi nào tôi gọi được cho thợ?';

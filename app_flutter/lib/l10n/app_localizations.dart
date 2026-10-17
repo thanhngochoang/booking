@@ -10330,58 +10330,322 @@ abstract class AppLocalizations {
   /// **'Xem'**
   String get profileOwnerView;
 
+  /// No description provided for @settingsSupportSection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỗ trợ'**
   String get settingsSupportSection;
+
+  /// No description provided for @settingsHelp.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trợ giúp'**
   String get settingsHelp;
+
+  /// No description provided for @settingsHelpBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi thường gặp, liên hệ hỗ trợ'**
   String get settingsHelpBody;
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trợ giúp'**
   String get helpTitle;
+
+  /// No description provided for @helpMyDisputes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại của bạn'**
   String get helpMyDisputes;
+
+  /// No description provided for @helpDisputeRow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại #{code} · {name}'**
   String helpDisputeRow(String code, String name);
+
+  /// No description provided for @helpDisputeRowMeta.
+  ///
+  /// In vi, this message translates to:
+  /// **'{status} · {date}'**
   String helpDisputeRowMeta(String status, String date);
+
+  /// No description provided for @helpFaqTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi thường gặp'**
   String get helpFaqTitle;
+
+  /// No description provided for @helpContactSupport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ hỗ trợ'**
   String get helpContactSupport;
+
+  /// No description provided for @helpEmailLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Email hỗ trợ: {email}'**
   String helpEmailLine(String email);
+
+  /// No description provided for @supportChatTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỗ trợ'**
   String get supportChatTitle;
+
+  /// No description provided for @supportChatNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ bạn và đội hỗ trợ xem được cuộc trò chuyện này. Đừng gửi mật khẩu hay mã OTP.'**
   String get supportChatNote;
+
+  /// No description provided for @supportChatHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhắn cho hỗ trợ…'**
   String get supportChatHint;
+
+  /// No description provided for @supportChatEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần giúp gì? Nhắn cho đội hỗ trợ, chúng tôi trả lời tại đây và báo cho bạn khi có tin mới.'**
   String get supportChatEmpty;
+
+  /// No description provided for @supportSendFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa gửi được tin nhắn. Thử lại.'**
   String get supportSendFailed;
+
+  /// No description provided for @supportRateLimited.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn gửi hơi nhanh. Đợi vài phút rồi gửi tiếp.'**
   String get supportRateLimited;
+
+  /// No description provided for @helpTopicPayments.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
   String get helpTopicPayments;
+
+  /// No description provided for @helpTopicCancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ & hoàn tiền'**
   String get helpTopicCancel;
+
+  /// No description provided for @helpTopicDelivery.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bàn giao ảnh'**
   String get helpTopicDelivery;
+
+  /// No description provided for @helpTopicDisputes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại'**
   String get helpTopicDisputes;
+
+  /// No description provided for @helpTopicContact.
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ'**
   String get helpTopicContact;
+
+  /// No description provided for @helpTopicReviews.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
   String get helpTopicReviews;
+
+  /// No description provided for @helpTopicProviders.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dành cho thợ ảnh'**
   String get helpTopicProviders;
+
+  /// No description provided for @helpPayFullQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vì sao phải trả trước 100%?'**
   String get helpPayFullQ;
+
+  /// No description provided for @helpPayFullA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền không đến tay thợ ngay. Ứng dụng giữ tiền và chỉ chuyển cho thợ theo 2 đợt: sau buổi chụp, và sau khi bạn đồng ý ảnh rồi kiểm tra bộ ảnh gốc trong 48 giờ. Có lỗi thì bạn được hoàn qua ứng dụng.'**
   String get helpPayFullA;
+
+  /// No description provided for @helpPayHeldQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền của tôi được giữ ở đâu?'**
   String get helpPayHeldQ;
+
+  /// No description provided for @helpPayHeldA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền do một tổ chức trung gian thanh toán được cấp phép giữ, không nằm trong tài khoản của ứng dụng, và chưa chuyển cho thợ cho tới khi đủ điều kiện.'**
   String get helpPayHeldA;
+
+  /// No description provided for @helpPayQrQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển khoản QR sai số tiền thì sao?'**
   String get helpPayQrQ;
+
+  /// No description provided for @helpPayQrA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hãy chuyển đúng số tiền và nội dung trong 15 phút. Chuyển thiếu, thừa hoặc sau khi QR hết hạn sẽ được hoàn tự động về tài khoản đã chuyển.'**
   String get helpPayQrA;
+
+  /// No description provided for @helpCancelRefundQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ buổi chụp được hoàn bao nhiêu?'**
   String get helpCancelRefundQ;
+
+  /// No description provided for @helpCancelRefundA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ trước giờ chụp từ 48 giờ trở lên: hoàn 100%. Từ 24 đến 48 giờ: hoàn 50%. Dưới 24 giờ: không hoàn. Tính trên toàn bộ số đã trả. Thợ huỷ thì bạn được hoàn 100%.'**
   String get helpCancelRefundA;
+
+  /// No description provided for @helpCancelWhereQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền hoàn về đâu?'**
   String get helpCancelWhereQ;
+
+  /// No description provided for @helpCancelWhereA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trả bằng ví MoMo hoặc ZaloPay thì hoàn về ví. Chuyển khoản thì hoàn về tài khoản đã chuyển, hoặc tài khoản khác bạn khai.'**
   String get helpCancelWhereA;
+
+  /// No description provided for @helpCancelLateQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ giao ảnh trễ thì sao?'**
   String get helpCancelLateQ;
+
+  /// No description provided for @helpCancelLateA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quá số ngày đã hẹn, bạn được huỷ phần bàn giao và hoàn 100% đợt thanh toán thứ hai; thợ giữ đợt đầu.'**
   String get helpCancelLateA;
+
+  /// No description provided for @helpDeliverySampleQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ảnh mẫu có watermark là gì?'**
   String get helpDeliverySampleQ;
+
+  /// No description provided for @helpDeliverySampleA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thợ gửi ảnh mẫu có watermark trước. Link bộ ảnh gốc bị che và chỉ mở khi bạn bấm \"Đồng ý ảnh\". Không phản hồi trong 3 ngày thì hệ thống tự đồng ý.'**
   String get helpDeliverySampleA;
+
+  /// No description provided for @helpDeliveryEditQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Muốn sửa ảnh thì làm sao?'**
   String get helpDeliveryEditQ;
+
+  /// No description provided for @helpDeliveryEditA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trao đổi màu sắc, chỉnh sửa ngay trên ảnh mẫu. Số vòng sửa miễn phí theo gói. Hết lượt thì bạn đồng ý, xin thêm một vòng, hoặc mở khiếu nại.'**
   String get helpDeliveryEditA;
+
+  /// No description provided for @helpDisputeWhenQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi nào tôi mở khiếu nại được?'**
   String get helpDisputeWhenQ;
+
+  /// No description provided for @helpDisputeWhenA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong 24 giờ sau khi buổi chụp hoàn thành, hoặc trong 24 giờ sau khi sự kiện có vé trả tiền kết thúc. Với bộ ảnh gốc, bạn có 48 giờ kể từ khi đồng ý ảnh. Quá thời hạn thì nút \"Báo vấn đề\" không còn. Vé không thu phí không có khiếu nại vì không có tiền được giữ.'**
   String get helpDisputeWhenA;
+
+  /// No description provided for @helpDisputeMoneyQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong lúc khiếu nại, tiền ở đâu?'**
   String get helpDisputeMoneyQ;
+
+  /// No description provided for @helpDisputeMoneyA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền tiếp tục được giữ, không chuyển cho thợ. Đội hỗ trợ xem bằng chứng của hai bên rồi quyết định: chuyển cho thợ, hoàn cho bạn, hoặc chia.'**
   String get helpDisputeMoneyA;
+
+  /// No description provided for @helpDisputeEvidenceQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ai xem được ảnh bằng chứng?'**
   String get helpDisputeEvidenceQ;
+
+  /// No description provided for @helpDisputeEvidenceA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ bạn, người bị khiếu nại và đội hỗ trợ.'**
   String get helpDisputeEvidenceA;
+
+  /// No description provided for @helpContactQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi nào tôi gọi được cho thợ?'**
   String get helpContactQ;
+
+  /// No description provided for @helpContactA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gọi, Zalo, WhatsApp chỉ mở sau khi bạn đã thanh toán. Trước đó bạn nhắn tin hỏi trong ứng dụng. Số điện thoại không hiện công khai.'**
   String get helpContactA;
+
+  /// No description provided for @helpReviewQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cà chua và gạch là gì?'**
   String get helpReviewQ;
+
+  /// No description provided for @helpReviewA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cà chua là hài lòng, gạch là chưa hài lòng; bấm 1 đến 10 lần để nói mức độ. Hồ sơ thợ hiện tỉ lệ cà chua. Mỗi buổi chụp đánh giá một lần, gửi rồi không sửa.'**
   String get helpReviewA;
+
+  /// No description provided for @helpProviderStartQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Làm sao để bắt đầu nhận đơn?'**
   String get helpProviderStartQ;
+
+  /// No description provided for @helpProviderStartA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác minh số điện thoại, đóng phí xác minh (thợ ảnh 99.000₫, studio 299.000₫, không hoàn), xác minh danh tính bằng VNeID hoặc chip CCCD và đồng ý quy định nhận việc. Nhân viên duyệt trong 24 giờ.'**
   String get helpProviderStartA;
+
+  /// No description provided for @helpProviderPaidQ.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi nào tôi nhận được tiền?'**
   String get helpProviderPaidQ;
+
+  /// No description provided for @helpProviderPaidA.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền về theo 2 đợt: sau buổi chụp, và sau khi khách đồng ý ảnh và hết 48 giờ kiểm tra. Chi tự động mỗi ngày vào tài khoản đã xác minh; lần chi đầu do nhân viên duyệt.'**
   String get helpProviderPaidA;
 }
 

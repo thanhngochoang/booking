@@ -59,7 +59,9 @@ final class PayDone extends PayView {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is PayDone && runtimeType == other.runtimeType && path == other.path;
+      other is PayDone &&
+          runtimeType == other.runtimeType &&
+          path == other.path;
 
   @override
   int get hashCode => path.hashCode;
@@ -113,14 +115,8 @@ class PaymentController extends Notifier<PayView> {
     _seeded = initial;
     if (state is PayLoading) {
       final who = switch (subject) {
-        BookingPay() => (
-          name: '',
-          detail: '',
-        ),
-        TicketPay() => (
-          name: '',
-          detail: '',
-        ),
+        BookingPay() => (name: '', detail: ''),
+        TicketPay() => (name: '', detail: ''),
       };
       state = PayOpen(
         instructions: initial,
@@ -134,83 +130,77 @@ class PaymentController extends Notifier<PayView> {
   PayView build() {
     return switch (subject) {
       BookingPay(:final bookingId) => _buildBooking(bookingId),
-      TicketPay(:final eventId, :final registrationId) =>
-        _buildTicket(eventId, registrationId),
+      TicketPay(:final eventId, :final registrationId) => _buildTicket(
+        eventId,
+        registrationId,
+      ),
     };
   }
 
   PayView _buildBooking(String bookingId) {
     final bookingAsync = ref.watch(bookingProvider(bookingId));
 
-    return bookingAsync.when(
-      loading: () {
-        if (_seeded != null) {
-          return PayOpen(
-            instructions: _seeded!,
-            who: (name: '', detail: ''),
-            canRenew: true,
-          );
-        }
-        return const PayLoading();
-      },
-      error: (err, _) {
-        if (_seeded != null) {
-          return PayOpen(
-            instructions: _seeded!,
-            who: (name: '', detail: ''),
-            canRenew: true,
-          );
-        }
-        return PayFailed(bookingErrorOf(err));
-      },
-      data: (booking) {
-        if (booking != null) {
-          _lastKnownBooking = booking;
-        }
+    // Same branches as AsyncValue.when: a refresh keeps the last value.
+    if (bookingAsync.isLoading && !bookingAsync.isRefreshing) {
+      return _seededView(canRenew: true) ?? const PayLoading();
+    }
+    if (bookingAsync.error case final err?) {
+      return _seededView(canRenew: true) ?? PayFailed(bookingErrorOf(err));
+    }
+    final booking = bookingAsync.requireValue;
+    if (booking != null) {
+      _lastKnownBooking = booking;
+    }
 
-        if (booking == null) {
-          final last = _lastKnownBooking;
-          final path = last != null
-              ? bookingPath(
-                  photographerId: last.photographerId,
-                  serviceId: last.serviceId,
-                )
-              : '/home';
-          return PayGone(PayGoneKind.booking, path);
-        }
+    if (booking == null) {
+      final last = _lastKnownBooking;
+      final path = last != null
+          ? bookingPath(
+              photographerId: last.photographerId,
+              serviceId: last.serviceId,
+            )
+          : '/home';
+      return PayGone(PayGoneKind.booking, path);
+    }
 
-        if (booking.status != BookingStatus.draft) {
-          return PayDone('/b/$bookingId?paid=1');
-        }
+    if (booking.status != BookingStatus.draft) {
+      return PayDone('/b/$bookingId?paid=1');
+    }
 
-        final checkout = booking.checkout;
-        if (checkout != null) {
-          _seeded = checkout.toInstructions();
-          final profile = ref
-              .watch(photographerProfileProvider(booking.photographerId))
-              .value;
-          final photographerName = profile?.summary.displayName ?? '';
-          return PayOpen(
-            instructions: _seeded!,
-            who: (
-              name: photographerName,
-              detail: booking.serviceSnapshot.name,
-            ),
-            canRenew: true,
-          );
-        }
+    final checkout = booking.checkout;
+    if (checkout != null) {
+      _seeded = checkout.toInstructions();
+      final profile = ref
+          .watch(photographerProfileProvider(booking.photographerId))
+          .value;
+      final photographerName = profile?.summary.displayName ?? '';
+      return PayOpen(
+        instructions: _seeded!,
+        who: (name: photographerName, detail: booking.serviceSnapshot.name),
+        canRenew: true,
+      );
+    }
 
-        // Draft without checkout: create one for bankQr once
-        _ensureBookingPayment(booking);
-        if (_seeded != null) {
-          return PayOpen(
-            instructions: _seeded!,
-            who: (name: '', detail: booking.serviceSnapshot.name),
-            canRenew: true,
-          );
-        }
-        return const PayLoading();
-      },
+    // Draft without checkout: create one for bankQr once
+    _ensureBookingPayment(booking);
+    if (_seeded != null) {
+      return PayOpen(
+        instructions: _seeded!,
+        who: (name: '', detail: booking.serviceSnapshot.name),
+        canRenew: true,
+      );
+    }
+    return const PayLoading();
+  }
+
+  /// The checkout already known while the subject reloads or fails to load.
+  PayOpen? _seededView({required bool canRenew}) {
+    final seeded = _seeded;
+    if (seeded == null) return null;
+    return PayOpen(
+      instructions: seeded,
+      who: (name: '', detail: ''),
+      canRenew: canRenew,
     );
   }
 
@@ -235,61 +225,42 @@ class PaymentController extends Notifier<PayView> {
   PayView _buildTicket(String eventId, String registrationId) {
     final regAsync = ref.watch(myEventRegistrationProvider(eventId));
 
-    return regAsync.when(
-      loading: () {
-        if (_seeded != null) {
-          return PayOpen(
-            instructions: _seeded!,
-            who: (name: '', detail: ''),
-            canRenew: false,
-          );
-        }
-        return const PayLoading();
-      },
-      error: (e, _) {
-        if (_seeded != null) {
-          return PayOpen(
-            instructions: _seeded!,
-            who: (name: '', detail: ''),
-            canRenew: false,
-          );
-        }
+    if (regAsync.isLoading && !regAsync.isRefreshing) {
+      return _seededView(canRenew: false) ?? const PayLoading();
+    }
+    if (regAsync.hasError) {
+      return _seededView(canRenew: false) ??
+          PayGone(PayGoneKind.ticket, '/e/$eventId');
+    }
+    final reg = regAsync.requireValue;
+    if (reg == null || reg.id != registrationId) {
+      return PayGone(PayGoneKind.ticket, '/e/$eventId');
+    }
+
+    if (reg.status == RegistrationStatus.paid) {
+      return PayDone('/bookings?tab=events&highlight=$registrationId');
+    }
+
+    if (reg.status == RegistrationStatus.held) {
+      if (_seeded != null) {
+        return PayOpen(
+          instructions: _seeded!,
+          who: (name: reg.event.title, detail: reg.quantity.toString()),
+          canRenew: false,
+        );
+      }
+
+      // Fetch instructions if paymentId exists
+      final paymentId = reg.paymentId;
+      if (paymentId != null) {
+        _fetchTicketInstructions(paymentId, eventId, reg);
+      } else {
         return PayGone(PayGoneKind.ticket, '/e/$eventId');
-      },
-      data: (reg) {
-        if (reg == null || reg.id != registrationId) {
-          return PayGone(PayGoneKind.ticket, '/e/$eventId');
-        }
+      }
+      return const PayLoading();
+    }
 
-        if (reg.status == RegistrationStatus.paid) {
-          return PayDone('/bookings?tab=events&highlight=$registrationId');
-        }
-
-        if (reg.status == RegistrationStatus.held) {
-          if (_seeded != null) {
-            return PayOpen(
-              instructions: _seeded!,
-              who: (
-                name: reg.event.title,
-                detail: reg.quantity.toString(),
-              ),
-              canRenew: false,
-            );
-          }
-
-          // Fetch instructions if paymentId exists
-          final paymentId = reg.paymentId;
-          if (paymentId != null) {
-            _fetchTicketInstructions(paymentId, eventId, reg);
-          } else {
-            return PayGone(PayGoneKind.ticket, '/e/$eventId');
-          }
-          return const PayLoading();
-        }
-
-        return PayGone(PayGoneKind.ticket, '/e/$eventId');
-      },
-    );
+    return PayGone(PayGoneKind.ticket, '/e/$eventId');
   }
 
   void _fetchTicketInstructions(
@@ -310,10 +281,7 @@ class PaymentController extends Notifier<PayView> {
           _seeded = inst;
           state = PayOpen(
             instructions: inst,
-            who: (
-              name: reg.event.title,
-              detail: reg.quantity.toString(),
-            ),
+            who: (name: reg.event.title, detail: reg.quantity.toString()),
             canRenew: false,
           );
         }
@@ -333,7 +301,10 @@ class PaymentController extends Notifier<PayView> {
 
     final checkout = await ref
         .read(bookingRepositoryProvider)
-        .createPayment(bookingId: s.bookingId, method: current.instructions.method);
+        .createPayment(
+          bookingId: s.bookingId,
+          method: current.instructions.method,
+        );
     final inst = checkout.toInstructions();
     ref.invalidate(bookingProvider(s.bookingId));
     return inst;

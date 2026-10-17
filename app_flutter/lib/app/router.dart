@@ -34,6 +34,8 @@ import 'package:photobooking/features/events/event_share_composer.dart';
 import 'package:photobooking/features/events/events_list_screen.dart';
 import 'package:photobooking/features/explore/explore_screen.dart';
 import 'package:photobooking/features/explore/search/explore_search_screen.dart';
+import 'package:photobooking/features/help/help_screen.dart';
+import 'package:photobooking/features/help/support_chat_screen.dart';
 import 'package:photobooking/features/home/home_screen.dart';
 import 'package:photobooking/features/notifications/notification_settings_screen.dart';
 import 'package:photobooking/features/notifications/notifications_screen.dart';
@@ -58,8 +60,7 @@ import 'package:photobooking/features/shell/tab_shell.dart';
 import 'package:photobooking/features/skills/skills_screen.dart';
 import 'package:photobooking/features/verification/verify_business_screen.dart';
 import 'package:photobooking/features/verification/verify_identity_screen.dart';
-import 'package:photobooking/features/help/help_screen.dart';
-import 'package:photobooking/features/help/support_chat_screen.dart';
+import 'package:photobooking/features/verification/verify_phone_screen.dart';
 import 'package:photobooking/features/verification/verify_rules_screen.dart';
 import 'package:photobooking/features/verification/verify_start_screen.dart';
 
@@ -417,14 +418,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ),
       ),
-      GoRoute(
-        path: '/help',
-        builder: (_, _) => const HelpScreen(),
-      ),
-      GoRoute(
-        path: '/help/chat',
-        builder: (_, _) => const SupportChatScreen(),
-      ),
+      GoRoute(path: '/help', builder: (_, _) => const HelpScreen()),
+      GoRoute(path: '/help/chat', builder: (_, _) => const SupportChatScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => TabShell(shell),
         branches: [
