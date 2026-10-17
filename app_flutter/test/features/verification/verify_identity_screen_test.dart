@@ -529,6 +529,28 @@ void main() {
     expect(_callNames(w3), ['startIdentityVerification']);
   });
 
+  testWidgets('a record rejected before the fee existed (fee waived) for '
+      'identity_mismatch starts the identity without paying', (tester) async {
+    final w = await _world(tester, fee: true);
+    w.seedDoc({
+      ..._doc(),
+      'status': 'rejected',
+      'submittedAt': DateTime.utc(2026, 10, 14, 2),
+      'decidedAt': _at,
+      'rejectReason': {'code': 'identity_mismatch', 'text': null},
+      'freeResubmitsLeft': 1,
+    });
+    await _open(tester, w);
+
+    await _tap(tester, find.text(_vneid));
+    expect(w.router.state.uri.path, '/verify/identity');
+    expect(_callNames(w), [
+      'startIdentityVerification',
+    ], reason: 'the waived fee counts as done, as on the server');
+    expect(find.text(_failed), findsNothing);
+    expect(find.text('VNeID (giả lập)'), findsOneWidget);
+  });
+
   testWidgets('an identity already passed shows the result', (tester) async {
     final w = await _world(tester);
     w.seedDoc(_doc(identity: true));

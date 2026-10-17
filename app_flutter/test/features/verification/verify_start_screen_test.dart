@@ -690,6 +690,63 @@ void main() {
       expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
     });
 
+    testWidgets('a record rejected before the fee existed with no free '
+        'resubmit left pays the fee first, then Sửa và gửi lại sends it', (
+      tester,
+    ) async {
+      final w = await _world(tester, fee: true);
+      w.seedDoc(
+        _doc(
+          status: 'rejected',
+          identity: true,
+          rules: true,
+          submittedAt: DateTime.utc(2026, 10, 14, 2),
+          decidedAt: _sentAt,
+          reject: 'fake_avatar',
+          freeResubmitsLeft: 0,
+        ),
+      );
+      await _open(tester, w, location: '/profile');
+      w.router.push('/verify/start');
+      await _settle(tester);
+
+      // No free resubmit: the fee is not waived, its row is a fix row.
+      expect(_inTile('fee', 'Phí xác minh'), findsOneWidget);
+      expect(_inTile('fee', 'Cần sửa'), findsOneWidget);
+      expect(_primaryLabels(tester), ['Sửa và gửi lại']);
+
+      // The fee row opens the fee.
+      await _tap(tester, _tile('fee'));
+      expect(w.router.state.uri.path, '/verify/start/fee');
+      w.router.pop();
+      await _settle(tester);
+
+      // So does the primary, and nothing is sent yet.
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.calls, isEmpty);
+      expect(w.router.state.uri.path, '/verify/start/fee');
+
+      // Paid while rejected (after the decision): back on S21.02.
+      await _tap(tester, find.text('Thanh toán 99.000₫'));
+      expect(w.router.state.uri.path, '/verify/start/fee/pay');
+      w.repo.settleFee(w.repo.lastFeeInstructions!.paymentId);
+      await _settle(tester);
+      expect(w.router.state.uri.path, '/verify/start');
+      expect(_inTile('fee', 'Đã trả 99.000₫'), findsOneWidget);
+      expect(find.text('Đã nhận phí xác minh'), findsOneWidget);
+      // The snack sits over the footer: let it go.
+      ScaffoldMessenger.of(
+        tester.element(find.byKey(const Key('verify-resubmit'))),
+      ).hideCurrentSnackBar();
+      await _settle(tester);
+
+      // That payment is the paid resubmit: straight back to staff.
+      await _tap(tester, find.byKey(const Key('verify-resubmit')));
+      expect(w.repo.calls.last.name, 'resubmitVerification');
+      expect(w.repo.doc(w.uid)!['status'], 'submitted');
+      expect(find.text('Đang chờ duyệt · trong 24 giờ'), findsOneWidget);
+    });
+
     testWidgets('the pending timeline shows Đã trả phí xác minh', (
       tester,
     ) async {

@@ -97,7 +97,11 @@ class _VerifyFeeScreenState extends ConsumerState<VerifyFeeScreen> {
     final l = context.l10n;
     final theme = Theme.of(context);
     final amount = formatMoney(s.feeAmount ?? verificationFeeVnd[s.kind]!);
-    final paid = s.isDone(VerifyStep.fee);
+    // Nothing to pay once the step is done; "Đã nhận phí xác minh" only for
+    // a fee actually paid (a waived one, [VerificationState.feeWaived], was
+    // never paid: the screen just has nothing to do).
+    final done = s.isDone(VerifyStep.fee);
+    final paid = s.feePaidAt != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -141,7 +145,7 @@ class _VerifyFeeScreenState extends ConsumerState<VerifyFeeScreen> {
                 const SizedBox(height: AppSpace.s4),
                 if (paid)
                   VerifyMeta(l.verifyFeePaid)
-                else
+                else if (!done)
                   PayMethodSelector(
                     value: _method,
                     enabled: !_busy,
@@ -156,7 +160,7 @@ class _VerifyFeeScreenState extends ConsumerState<VerifyFeeScreen> {
             l.verifyFeePay(amount),
             key: const Key('verify-fee-pay'),
             loading: _busy,
-            onPressed: paid || _busy ? null : _pay,
+            onPressed: done || _busy ? null : _pay,
           ),
         ),
       ],

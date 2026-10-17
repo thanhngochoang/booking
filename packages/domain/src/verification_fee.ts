@@ -156,14 +156,15 @@ export async function startVerificationFee(
       }
     }
 
-    if (stored === null || stored.status === 'not_started' || stored.kind !== rec.kind) {
-      tx.putVerification({
-        ...rec,
-        status: rec.status === 'not_started' ? 'in_progress' : rec.status,
-        updatedAt: nowIso,
-        version: rec.version + 1,
-      });
-    }
+    // Always written, even when nothing on it changes: two starts racing on the same attempt then
+    // conflict on this document (the payments query alone does not serialize them, and both could
+    // write a payment under the same idempotency key).
+    tx.putVerification({
+      ...rec,
+      status: rec.status === 'not_started' ? 'in_progress' : rec.status,
+      updatedAt: nowIso,
+      version: rec.version + 1,
+    });
     if (reuse) return live;
 
     const payment = newSubjectPayment({

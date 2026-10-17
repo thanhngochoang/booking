@@ -245,14 +245,15 @@ class FakeVerificationRepository implements VerificationRepository {
       'method': method.code,
       if (renew) 'renew': true,
     });
-    // As the server: a paid or waived fee, or a record past the steps, is
-    // `not_eligible`.
+    // As the server (domain `feePayable`): the fee off, a paid or waived
+    // fee, a record past the steps or a final rejection is `not_eligible`.
     final current = _state();
     final open =
         current.status == VerificationStatus.notStarted ||
         current.status == VerificationStatus.inProgress ||
-        current.status == VerificationStatus.rejected;
-    if (!open || current.isDone(VerifyStep.fee)) {
+        (current.status == VerificationStatus.rejected &&
+            (current.rejectReason?.resubmittable ?? false));
+    if (!feeRequired || !open || current.isDone(VerifyStep.fee)) {
       throw const VerificationError('not_eligible');
     }
     final live = _openFee[method];
@@ -287,10 +288,20 @@ class FakeVerificationRepository implements VerificationRepository {
   Future<PaymentCheck> checkFee() async {
     _record('checkVerificationFee');
     final paid = _state().feePaidAt != null;
-    return PaymentCheck(
-      paid: paid,
-      instructions: paid ? null : lastFeeInstructions,
-    );
+    if (paid) {
+      return const PaymentCheck(paid: true);
+    }
+    // As the server: the newest code still open (not renewed, not paid) and
+    // not lapsed, else none.
+    final now = _now();
+    PaymentInstructions? live;
+    for (final p in _openFee.values) {
+      if (!p.isExpiredAt(now) &&
+          (live == null || (p.attempt ?? 0) > (live.attempt ?? 0))) {
+        live = p;
+      }
+    }
+    return PaymentCheck(paid: false, instructions: live);
   }
 
   /// Test helper: the gateway's transfer settled [paymentId] (V1's
@@ -315,14 +326,15 @@ class FakeVerificationRepository implements VerificationRepository {
   @override
   Future<IdentitySession> startIdentity(IdentityMethod method) async {
     _record('startIdentityVerification', {'method': method.code});
-    // As the server: a passed identity cannot start again, the fee must be
-    // recorded first (#203), the 4th start of a Vietnam day is refused, and
+    // As the server: a passed identity cannot start again, the fee step must
+    // be done first (#203: paid, or waived for a record rejected before the
+    // fee existed), the 4th start of a Vietnam day is refused, and
     // every start counts a try.
     final current = _state();
     if (current.identityPassed) {
       throw const VerificationError('conflict');
     }
-    if (feeRequired && current.feePaidAt == null) {
+    if (feeRequired && !current.isDone(VerifyStep.fee)) {
       throw const VerificationError('not_eligible');
     }
     if (current.identityAttemptsLeft == 0) {

@@ -163,7 +163,9 @@ class PaymentController extends Notifier<PayView> {
           const PayFailed(BookingErrorCode.network);
     }
     final v = async.requireValue;
-    if (v.feePaidAt != null) {
+    // Paid for this attempt only: a rejected record awaiting its paid
+    // resubmit still holds the rejected attempt's fee (a plain exit below).
+    if (v.feePaidThisAttempt) {
       return const PayDone(verifyFeeDonePath);
     }
     final steps =

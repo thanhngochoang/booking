@@ -707,6 +707,28 @@ describe('verification_use_cases with the fee (feeRequired: true)', () => {
     assert.equal(world.store.payments.get(momo.paymentId)?.idempotencyKey, 'vfee_p1_1_momo');
   });
 
+  it('every start writes the record, so concurrent starts conflict on it (version moves each time)', async () => {
+    const world = createVerificationWorld({ feeRequired: true });
+    await confirmPhoneVerified(world.deps, 'p1');
+    const v0 = world.store.verifications.get('p1')?.version ?? 0;
+    assert.equal(world.store.verifications.get('p1')?.status, 'in_progress');
+
+    await startVerificationFee(world.deps, 'p1', { method: 'bank_qr' });
+    const v1 = world.store.verifications.get('p1')?.version ?? 0;
+    assert.equal(v1, v0 + 1);
+
+    // Reusing the live code still writes the record (in_progress, same kind).
+    world.clock.advanceMinutes(1);
+    await startVerificationFee(world.deps, 'p1', { method: 'bank_qr' });
+    const rec = world.store.verifications.get('p1');
+    assert.equal(rec?.version, v1 + 1);
+    assert.equal(rec?.updatedAt, world.clock.now().toISOString());
+    assert.equal(rec?.status, 'in_progress');
+
+    await startVerificationFee(world.deps, 'p1', { method: 'momo' });
+    assert.equal(world.store.verifications.get('p1')?.version, v1 + 2);
+  });
+
   it('renew expires the live payment and issues a new code', async () => {
     const world = createVerificationWorld({ feeRequired: true });
     const first = await startVerificationFee(world.deps, 'p1', { method: 'bank_qr' });

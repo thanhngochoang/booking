@@ -526,6 +526,77 @@ void main() {
       },
     );
 
+    test('startFee refuses like the domain feePayable: the fee off, a final '
+        'rejection; a resubmittable rejection with no fee can pay', () async {
+      Matcher notEligible() => throwsA(
+        isA<VerificationError>().having((e) => e.code, 'code', 'not_eligible'),
+      );
+      Map<String, dynamic> rejected(String code) => {
+        'status': 'rejected',
+        'rejectReason': {'code': code},
+        'freeResubmitsLeft': 0,
+        'submittedAt': DateTime.utc(2026, 10, 14),
+        'steps': <String, dynamic>{},
+      };
+
+      final off = FakeVerificationRepository(uid: 'u1')
+        ..seed('u1', {'status': 'in_progress', 'steps': <String, dynamic>{}});
+      await expectLater(off.startFee(PayMethod.bankQr), notEligible());
+
+      final fake = FakeVerificationRepository(uid: 'u1', feeRequired: true);
+      for (final code in ['duplicate_account', 'underage']) {
+        fake.seed('u1', rejected(code));
+        await expectLater(
+          fake.startFee(PayMethod.bankQr),
+          notEligible(),
+          reason: code,
+        );
+      }
+      expect(fake.feePayments, isEmpty);
+
+      fake.seed('u1', rejected('fake_avatar'));
+      final inst = await fake.startFee(PayMethod.bankQr);
+      expect(inst.amount, 99000);
+      // A rejected record stays rejected while it pays.
+      expect(fake.doc('u1')!['status'], 'rejected');
+    });
+
+    test('checkFee answers only the newest live instructions, like the '
+        'server', () async {
+      var now = DateTime.utc(2026, 10, 15, 3);
+      final fake = FakeVerificationRepository(
+        uid: 'u1',
+        now: () => now,
+        feeRequired: true,
+      )..seed('u1', {'status': 'in_progress', 'steps': <String, dynamic>{}});
+
+      final qr = await fake.startFee(PayMethod.bankQr);
+      now = now.add(const Duration(minutes: 5));
+      final momo = await fake.startFee(PayMethod.momo);
+      // Reusing the older code does not make it the newest.
+      expect((await fake.startFee(PayMethod.bankQr)).paymentId, qr.paymentId);
+      expect((await fake.checkFee()).instructions?.paymentId, momo.paymentId);
+
+      // The bank code lapses; the wallet one is still live.
+      now = now.add(const Duration(minutes: 11));
+      expect((await fake.checkFee()).instructions?.paymentId, momo.paymentId);
+
+      // Every code lapsed: nothing to show.
+      now = now.add(const Duration(minutes: 5));
+      final lapsed = await fake.checkFee();
+      expect(lapsed.paid, isFalse);
+      expect(lapsed.instructions, isNull);
+
+      // A renewed code replaces the one it renews.
+      final first = await fake.startFee(PayMethod.zaloPay);
+      final renewed = await fake.startFee(PayMethod.zaloPay, renew: true);
+      expect(
+        (await fake.checkFee()).instructions?.paymentId,
+        renewed.paymentId,
+      );
+      expect(renewed.paymentId, isNot(first.paymentId));
+    });
+
     test('a studio pays 299.000₫', () async {
       final fake = FakeVerificationRepository(
         uid: 'u1',

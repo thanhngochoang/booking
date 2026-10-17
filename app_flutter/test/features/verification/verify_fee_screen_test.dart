@@ -209,6 +209,131 @@ void main() {
     expect(w.router.state.uri.path, '/profile');
   });
 
+  testWidgets('back on the fee S04.04 pops to S21.02 and keeps its back '
+      'stack', (tester) async {
+    final w = await _world(tester);
+    await _open(tester, w, location: '/profile');
+    w.router.push('/verify/start');
+    await _settle(tester);
+    await _tap(tester, find.byKey(const Key('verify-next')));
+    await _tap(tester, find.text(_pay));
+    expect(w.router.state.uri.path, '/verify/start/fee/pay');
+
+    // The view's back action (shown once a code lapses and cannot renew).
+    tester.widget<QrCheckoutView>(find.byType(QrCheckoutView)).onBack();
+    await _settle(tester);
+
+    expect(w.router.state.uri.path, '/verify/start');
+    expect(find.text('Đã nhận phí xác minh'), findsNothing);
+    expect(w.router.canPop(), isTrue);
+    w.router.pop();
+    await _settle(tester);
+    expect(w.router.state.uri.path, '/profile');
+  });
+
+  testWidgets('a direct link to the fee S04.04 of a record rejected with no '
+      'free resubmit, holding the rejected attempt\'s fee, is a plain exit', (
+    tester,
+  ) async {
+    final w = await _world(tester);
+    w.seedDoc({
+      ..._doc(),
+      'status': 'rejected',
+      'submittedAt': DateTime.utc(2026, 10, 14, 2),
+      'decidedAt': _at,
+      'rejectReason': {'code': 'fake_avatar', 'text': null},
+      'freeResubmitsLeft': 0,
+      'steps': {
+        ...(_doc()['steps'] as Map<String, dynamic>),
+        // Paid for the attempt staff rejected (before the decision).
+        'fee': {
+          'paymentId': 'pay1',
+          'amount': 99000,
+          'paidAt': DateTime.utc(2026, 10, 14, 1),
+        },
+      },
+    });
+    await _open(tester, w, location: '/verify/start/fee/pay');
+
+    expect(w.router.state.uri.path, '/verify/start');
+    expect(find.text('Đã nhận phí xác minh'), findsNothing);
+    expect(w.repo.calls, isEmpty);
+  });
+
+  testWidgets('a direct link to the fee S04.04 after a fee paid while '
+      'rejected says Đã nhận phí xác minh', (tester) async {
+    final w = await _world(tester);
+    w.seedDoc({
+      ..._doc(),
+      'status': 'rejected',
+      'submittedAt': DateTime.utc(2026, 10, 14, 2),
+      'decidedAt': DateTime.utc(2026, 10, 14, 3),
+      'rejectReason': {'code': 'fake_avatar', 'text': null},
+      'freeResubmitsLeft': 0,
+      'steps': {
+        ...(_doc()['steps'] as Map<String, dynamic>),
+        'fee': {'paymentId': 'pay1', 'amount': 99000, 'paidAt': _at},
+      },
+    });
+    await _open(tester, w, location: '/verify/start/fee/pay');
+
+    expect(w.router.state.uri.path, '/verify/start');
+    expect(find.text('Đã nhận phí xác minh'), findsOneWidget);
+  });
+
+  testWidgets('a waived fee (rejected before the fee existed, free resubmit '
+      'left) shows no paid line and nothing to pay', (tester) async {
+    final w = await _world(tester);
+    w.seedDoc({
+      ..._doc(),
+      'status': 'rejected',
+      'submittedAt': DateTime.utc(2026, 10, 14, 2),
+      'decidedAt': _at,
+      'rejectReason': {'code': 'fake_avatar', 'text': null},
+      'freeResubmitsLeft': 1,
+    });
+    await _open(tester, w);
+
+    expect(find.text('Đã nhận phí xác minh'), findsNothing);
+    expect(find.byType(PayMethodSelector), findsNothing);
+    final pay = tester.widget<AppButton>(
+      find.byKey(const Key('verify-fee-pay')),
+    );
+    expect(pay.onPressed, isNull);
+
+    // Its S04.04 by direct link: back to S21.02 without the paid line.
+    await tester.pumpWidget(const SizedBox.shrink());
+    final w2 = await _world(tester);
+    w2.seedDoc({
+      ..._doc(),
+      'status': 'rejected',
+      'submittedAt': DateTime.utc(2026, 10, 14, 2),
+      'decidedAt': _at,
+      'rejectReason': {'code': 'fake_avatar', 'text': null},
+      'freeResubmitsLeft': 1,
+    });
+    await _open(tester, w2, location: '/verify/start/fee/pay');
+    expect(w2.router.state.uri.path, '/verify/start');
+    expect(find.text('Đã nhận phí xác minh'), findsNothing);
+  });
+
+  testWidgets('a paid fee shows Đã nhận phí xác minh on the fee screen', (
+    tester,
+  ) async {
+    final w = await _world(tester);
+    w.seedDoc({
+      ..._doc(),
+      'steps': {
+        ...(_doc()['steps'] as Map<String, dynamic>),
+        'fee': {'paymentId': 'pay1', 'amount': 99000, 'paidAt': _at},
+      },
+    });
+    await _open(tester, w);
+
+    expect(find.text('Đã nhận phí xác minh'), findsOneWidget);
+    expect(find.byType(PayMethodSelector), findsNothing);
+  });
+
   testWidgets("a wallet in fake mode goes to S04.04's waiting view and "
       'confirmFake pays it', (tester) async {
     final w = await _world(tester);

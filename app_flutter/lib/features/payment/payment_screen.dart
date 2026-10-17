@@ -233,13 +233,18 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           canRenew: canRenew,
                           renewing: _renewing,
                           onRenew: _renew,
-                          onBack: () => context.go(
-                            isTicket
-                                ? '/e/${(widget.subject as TicketPay).eventId}'
-                                : isFee
-                                ? verifyFeeDonePath
-                                : '/home',
-                          ),
+                          // The fee pops back to S21.02 (its back stack
+                          // kept), going there only when it is not below.
+                          onBack: isFee
+                              ? () => _backToVerification(
+                                    verifyFeeDonePath,
+                                    paid: false,
+                                  )
+                              : () => context.go(
+                                    isTicket
+                                        ? '/e/${(widget.subject as TicketPay).eventId}'
+                                        : '/home',
+                                  ),
                         )
                       : WalletWaitingView(
                           instructions: instructions,

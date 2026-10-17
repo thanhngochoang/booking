@@ -261,6 +261,28 @@ class VerificationState {
       submittedAt != null &&
       feePaidAt == null;
 
+  /// The recorded fee belongs to the attempt staff rejected, and the next
+  /// resubmit is the paid one (domain `resubmitVerification`): rejected, no
+  /// free resubmit left, the fee on, and the fee paid before the decision
+  /// (one paid after it, `feePaidAfterRejection`, is that paid resubmit).
+  /// The step still reads done (the domain's `stepDone`), but nothing was
+  /// paid for this attempt and `startVerificationFee` refuses it
+  /// (`feePayable`: a fee is recorded) until the resubmit clears it.
+  bool get feeAwaitsPaidResubmit {
+    final paidAt = feePaidAt;
+    final decided = decidedAt;
+    return feeRequired &&
+        status == VerificationStatus.rejected &&
+        freeResubmitsLeft <= 0 &&
+        paidAt != null &&
+        !(decided != null && paidAt.isAfter(decided));
+  }
+
+  /// The fee of the current attempt was paid: recorded, and not the one of
+  /// a rejected attempt awaiting its paid resubmit ([feeAwaitsPaidResubmit]).
+  /// A waived fee ([feeWaived]) was never paid.
+  bool get feePaidThisAttempt => feePaidAt != null && !feeAwaitsPaidResubmit;
+
   bool isDone(VerifyStep step) => switch (step) {
     VerifyStep.phone => phoneDone,
     VerifyStep.fee => feePaidAt != null || feeWaived,
